@@ -12,9 +12,9 @@
  * - /packages/core/src/ClickableCard/ClickableCard.doc.mjs (props table, features)
  * - /packages/core/src/ClickableCard/index.ts (exports if types change)
  * - /apps/storybook/stories/ClickableCard.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Card/ClickableCardShowcase.tsx (showcase block)
- * - /packages/cli/templates/blocks/components/Card/ClickableCardWithNestedButton.tsx (block)
- * - /packages/cli/templates/blocks/components/Card/ClickableCardElevated.tsx (block)
+ * - /packages/cli/assets/templates/blocks/components/Card/ClickableCardShowcase.tsx (showcase block)
+ * - /packages/cli/assets/templates/blocks/components/Card/ClickableCardWithNestedButton.tsx (block)
+ * - /packages/cli/assets/templates/blocks/components/Card/ClickableCardElevated.tsx (block)
  *
  * Composes Card for all visual styling (radius, padding, variants,
  * container tokens, theming). Adds an interactive wrapper with
@@ -39,14 +39,16 @@ import {
   easeVars,
 } from '../theme/tokens.stylex';
 import type {SizeValue, SpacingStep, Elevation} from '../utils/types';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {Card} from '../Card/Card';
 import type {CardVariant} from '../Card/Card';
 import {useClickableContainer} from '../hooks/useClickableContainer';
 import type {BaseProps} from '../BaseProps';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Styles — only the interactive layer, Card handles everything else
 // =============================================================================
@@ -54,16 +56,12 @@ import {themeProps} from '../utils/themeProps';
 const styles = stylex.create({
   interactive: {
     position: 'relative',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     textDecoration: 'none',
     color: 'inherit',
-    outlineOffset: '2px',
-  },
-  focusWithin: {
-    ':has(:focus-visible)': {
-      outline: `2px solid ${colorVars['--color-accent']}`,
-      outlineOffset: '2px',
-    },
   },
   // Hover overlay — guarded by @media (hover: hover) so touch devices
   // don't show a stuck hover state. Active/pressed state works everywhere.
@@ -84,7 +82,7 @@ const styles = stylex.create({
   },
   hoverOnPointer: {
     '@media (hover: hover)': {
-      ':hover::after': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))::after': {
         backgroundColor: colorVars['--color-overlay-hover'],
       },
     },
@@ -116,13 +114,13 @@ const styles = stylex.create({
   // @media (hover: hover) so touch devices don't get a stuck hover state.
   borderedHoverOnPointer: {
     '@media (hover: hover)': {
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         borderColor: colorVars['--color-border-emphasized'],
       },
     },
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
   },
   srOnly: {
@@ -300,21 +298,22 @@ export function ClickableCard({
 
   return (
     <Card
-      ref={mergeRefs(ref, containerRef)}
+      ref={useMergedRefs(ref, containerRef)}
       width={width}
       height={height}
       maxWidth={maxWidth}
       padding={padding}
       variant={variant}
       elevation={elevation}
-      {...mergeProps(themeProps('clickable-card', {variant}), {
-        className: classNameProp,
+      {...mergeProps(
+        themeProps('clickable-card', {variant}),
+        focusOutlineProps.focusWithin(),
+        classNameProp,
         style,
-      })}
+      )}
       xstyle={
         [
           styles.interactive,
-          styles.focusWithin,
           hasBorder ? styles.bordered : styles.borderless,
           !isDisabled && styles.overlay,
           !isDisabled && styles.hoverOnPointer,

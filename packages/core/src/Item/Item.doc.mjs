@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Item',
@@ -18,6 +18,16 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-item', visualProps: ['density', 'align', 'variant']},
+    ],
+    vars: [
+      {name: '--_item-label-color', description: 'Color of the label line. Unset by default (the label uses the primary text token); a parent sets it to recolor the label it renders, as the destructive dropdown/context menu item does.', default: 'var(--color-text-primary)', private: true},
+      {name: '--_item-description-color', description: 'Companion to --_item-label-color for the secondary description line.', default: 'var(--color-text-secondary)', private: true},
+      {name: '--_item-inset-inline', description: 'Inline inset of the row. Item derives its paddingInline from this variable, and List reads it to cancel the inset when edgeCompensation="inline". Set paddingInline on `item` in a theme and both stay in sync.', default: 'var(--spacing-2) (var(--spacing-3) for density="spacious")', private: true},
+      {name: '--_item-padding-block', description: 'Block padding of the row, set per density. Item derives its paddingBlock from this variable, and variant="outline" subtracts the border width from it (and from --_item-inset-inline) so the border sits inside the padding. Set paddingBlock on `item` in a theme to feed it.', default: 'var(--spacing-2) (var(--spacing-1) for density="compact", var(--spacing-3) for density="spacious")', private: true},
+    ],
+    derived: [
+      {property: 'paddingInline', vars: ['--_item-inset-inline']},
+      {property: 'paddingBlock', vars: ['--_item-padding-block']},
     ],
   },
   components: [
@@ -37,9 +47,10 @@ export const docs = {
         {name: 'variant', type: "'transparent' | 'outline' | 'muted'", description: 'Surface treatment. "transparent" paints no surface, "outline" draws the border only, and "muted" draws the muted background with no border. The surfaced variants use Card\'s tokens at Item\'s element radius.', default: "'transparent'"},
         {name: 'labelLines', type: 'number', description: 'Max lines before label truncates with ellipsis.'},
         {name: 'descriptionLines', type: 'number', description: 'Max lines before description truncates with ellipsis.'},
+        {name: 'layout', type: "'stacked' | 'inline'", description: 'How the label and description sit together. stacked puts the description on its own line below the label; inline keeps both on one line, description ellipsizing first, so the row fits a fixed-height host.', default: "'stacked'"},
         {name: 'onClick', type: '(event: MouseEvent) => void', description: 'Click handler. Makes the item clickable with button semantics.'},
-        {name: 'interactiveRef', type: 'RefObject<HTMLElement | null>', description: 'Ref to a nested control (e.g. a checkbox in startContent) that owns the item\'s keyboard access and action. The row becomes an enlarged click/tap target that delegates surface clicks to it (useClickableContainer) and renders no invisible button/anchor, so the row adds no second tab stop (WCAG 4.1.2). Mutually exclusive with onClick/href — those are ignored when set.'},
-        {name: 'href', type: 'string', description: 'Link URL. Makes the item a link via an invisible anchor element.'},
+        {name: 'interactiveRef', type: 'RefObject<HTMLElement | null>', description: 'Ref to a nested control (e.g. a checkbox in startContent) that owns the item\'s keyboard access and action. The row becomes an enlarged click/tap target that delegates surface clicks to it (useClickableContainer) and renders no invisible button/anchor, so the row adds no second tab stop (WCAG 4.1.2). Mutually exclusive with onClick/href; those are ignored when set.'},
+        {name: 'href', type: 'string', description: 'Link URL. Makes the item a link via an invisible anchor element. The destination follows the shared navigation rule described on the Link `href` prop.'},
         {name: 'target', type: "'_blank' | '_self'", description: 'Link target. Only used with href. target="_blank" automatically adds noopener noreferrer.'},
         {name: 'rel', type: 'string', description: 'Link relationship tokens. noopener noreferrer are merged automatically for target="_blank".'},
         {name: 'isHighlighted', type: 'boolean', description: 'Highlighted state (hover/keyboard focus appearance).', default: 'false'},
@@ -73,7 +84,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   components: [
     {
@@ -129,7 +140,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'universal item primitive w/ startContent+label+description+endContent layout. building block for list items, menu items, contacts, notifications',
   usage: {
@@ -166,7 +177,7 @@ export const docsDense = {
         onClick: 'Click handler; enables button semantics.',
         interactiveRef:
           'Ref to a nested control that owns the item\'s keyboard access/action; row delegates surface clicks to it (useClickableContainer), no invisible button/anchor, no second tab stop (WCAG 4.1.2). Mutually exclusive with onClick/href.',
-        href: 'Link URL; enables anchor semantics.',
+        href: 'Link URL; enables anchor semantics. Follows the shared navigation rule (see Link href).',
         target:
           'Link target, only with href. target="_blank" auto-adds noopener noreferrer.',
         rel: 'Link relationship tokens. noopener noreferrer are merged for target="_blank".',

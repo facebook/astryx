@@ -2,7 +2,7 @@
 
 /**
  * @file Guards the --dense / --zh reference-doc overlays against drift (#2182).
- * @input packages/cli/docs/{topic}.doc.mjs and its .doc.dense.mjs / .doc.zh.mjs overlays.
+ * @input packages/cli/assets/docs/{topic}.doc.mjs and its .doc.dense.mjs / .doc.zh.mjs overlays.
  * @output Vitest failures naming any overlay section that does not anchor to a
  *   real base section, or whose content overrides land on the wrong block type.
  * @position Regression gate for the docs API. Sits with the loader it guards.
@@ -25,7 +25,7 @@ import * as path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {docs} from './docs.mjs';
 
-const DOCS_DIR = path.join(import.meta.dirname, '..', '..', 'docs');
+const DOCS_DIR = path.join(import.meta.dirname, '..', '..', 'assets', 'docs');
 
 /** Every base reference doc that has at least one overlay. */
 function overlayPairs() {

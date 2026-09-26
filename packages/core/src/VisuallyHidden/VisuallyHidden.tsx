@@ -1,7 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-'use client';
-
 /**
  * @file VisuallyHidden.tsx
  * @input Uses React createElement/ElementType, stylex
@@ -13,7 +11,7 @@
  * - /packages/core/src/VisuallyHidden/VisuallyHidden.doc.mjs
  * - /packages/core/src/VisuallyHidden/VisuallyHidden.test.tsx
  * - /apps/storybook/stories/VisuallyHidden.stories.tsx
- * - /packages/cli/templates/blocks/components/VisuallyHidden/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/VisuallyHidden/ (showcase blocks)
  */
 
 import {createElement, type ElementType, type ReactNode, type Ref} from 'react';

@@ -7,8 +7,10 @@ import {
   RichTextView,
   markdownToEditorStateJSON,
   editorStateJSONToMarkdown,
+  RichTextEditorToolbar,
+  RichTextEditorAutoLinkPlugin,
   type RichTextEditorRef,
-} from '@astryxdesign/lab';
+} from '@astryxdesign/richtext';
 import type {EditorState} from 'lexical';
 import {BOLD_STAR, ITALIC_STAR, UNORDERED_LIST} from '@lexical/markdown';
 import {$getRoot} from 'lexical';
@@ -29,7 +31,16 @@ const meta: Meta<typeof RichTextEditor> = {
     hasMarkdownShortcuts: {control: 'boolean'},
     hasAutoFocus: {control: 'boolean'},
     maxLength: {control: 'number'},
+    minHeight: {
+      control: 'text',
+      description:
+        'Minimum height of the editable surface (number in pixels or CSS length).',
+    },
     size: {control: 'select', options: ['sm', 'md', 'lg']},
+    statusVariant: {
+      control: 'select',
+      options: ['attached', 'detached', 'tooltip'],
+    },
   },
 };
 
@@ -40,6 +51,97 @@ export const Default: Story = {
   args: {
     label: 'Notes',
     placeholder: 'Write something…',
+  },
+};
+
+export const WithToolbar: Story = {
+  args: {
+    label: 'Notes',
+    placeholder: 'Format with the toolbar above…',
+    toolbar: <RichTextEditorToolbar />,
+  },
+};
+
+export const ResponsiveToolbar: Story = {
+  name: 'Responsive toolbar',
+  render: args => (
+    <div
+      style={{
+        width: 420,
+        minWidth: 280,
+        maxWidth: '100%',
+        resize: 'horizontal',
+        overflow: 'hidden',
+      }}>
+      <RichTextEditor {...args} />
+    </div>
+  ),
+  args: {
+    label: 'Notes',
+    description: 'Resize the editor to test the horizontal toolbar scroll.',
+    placeholder: 'Every formatting action stays directly available…',
+    toolbar: <RichTextEditorToolbar />,
+  },
+};
+
+export const ResponsiveToolbarStressTest: Story = {
+  name: 'Responsive toolbar — stress test',
+  render: args => {
+    const [width, setWidth] = useState(420);
+
+    return (
+      <div style={{display: 'grid', gap: 16}}>
+        <label
+          style={{
+            display: 'grid',
+            gap: 8,
+            maxWidth: 560,
+            font: 'inherit',
+          }}>
+          <span>Editor width: {width}px</span>
+          <input
+            type="range"
+            min={240}
+            max={900}
+            step={10}
+            value={width}
+            aria-label="Editor width"
+            onChange={event => setWidth(event.currentTarget.valueAsNumber)}
+          />
+        </label>
+        <div style={{width, maxWidth: '100%'}}>
+          <RichTextEditor {...args} />
+        </div>
+      </div>
+    );
+  },
+  args: {
+    label: 'Responsive toolbar stress test',
+    description:
+      'Sweep from 240px to 900px to stress the horizontal toolbar scroll.',
+    placeholder: 'Scroll the toolbar and toggle several formats…',
+    toolbar: <RichTextEditorToolbar />,
+  },
+};
+
+export const WithLinks: Story = {
+  args: {
+    label: 'Notes',
+    placeholder:
+      'Select text and press the Link button (or Cmd/Ctrl+K) to add a link…',
+    // The toolbar's Link button creates new-tab links by default (target/rel
+    // baked into the node). No extra plugin needed.
+    toolbar: <RichTextEditorToolbar />,
+  },
+};
+
+export const WithAutoLink: Story = {
+  args: {
+    label: 'Notes',
+    placeholder: 'Type a URL like https://astryx.dev and it auto-links…',
+    toolbar: <RichTextEditorToolbar />,
+    // Auto-linkify typed/pasted URLs + emails (open in a new tab).
+    plugins: <RichTextEditorAutoLinkPlugin />,
   },
 };
 
@@ -63,7 +165,8 @@ export const WithCharacterLimit: Story = {
   args: {
     label: 'Bio',
     maxLength: 80,
-    description: 'A character counter appears below the editor when maxLength is set.',
+    description:
+      'A character counter appears below the editor when maxLength is set.',
     placeholder: 'Type past 80 characters to see the counter turn red…',
   },
 };
@@ -83,6 +186,25 @@ export const ErrorStatus: Story = {
     label: 'Notes',
     placeholder: 'Write something…',
     status: {type: 'error', message: 'This field is required.'},
+    statusVariant: 'attached',
+  },
+};
+
+export const DetachedStatus: Story = {
+  args: {
+    label: 'Notes',
+    placeholder: 'Write something…',
+    status: {type: 'warning', message: 'Review this content before saving.'},
+    statusVariant: 'detached',
+  },
+};
+
+export const TooltipStatus: Story = {
+  args: {
+    label: 'Notes',
+    placeholder: 'Write something…',
+    status: {type: 'error', message: 'This field is required.'},
+    statusVariant: 'tooltip',
   },
 };
 
@@ -181,7 +303,9 @@ export const ImperativeRef = {
             onClick={() => {
               const state = ref.current?.getEditorState();
               const text = state?.read(() => $getRoot().getTextContent());
-              setReadout(`getEditorState() text content: ${JSON.stringify(text)}`);
+              setReadout(
+                `getEditorState() text content: ${JSON.stringify(text)}`,
+              );
             }}>
             getEditorState()
           </button>
@@ -273,7 +397,7 @@ export const MarkdownSerializers = {
           </div>
           <textarea
             value={markdown}
-            onChange={(e) => setMarkdown(e.target.value)}
+            onChange={e => setMarkdown(e.target.value)}
             rows={10}
             style={{
               width: '100%',

@@ -17,12 +17,12 @@
 
 export {Theme} from './Theme';
 export {MediaTheme} from './MediaTheme';
-export type {MediaThemeProps} from './MediaTheme';
+export type {MediaThemeProps, MediaThemeMode} from './MediaTheme';
 export {
   defineTheme,
   generateThemeCSS,
-  generateThemeCSSFlat,
   generateOnMediaCSS,
+  generateAdaptationCSS,
   generateThemeRules,
   generateThemeRulesSplit,
   type ThemeCSSOutput,
@@ -30,15 +30,38 @@ export {
   isDefinedTheme,
   tokenDefaults,
 } from './defineTheme';
+export {
+  registerTheme,
+  getRegisteredTheme,
+  getRegisteredThemes,
+  resetThemes,
+} from './themeRegistry';
 export type {
   DefineThemeInput,
   DefinedTheme,
+  ResolvedDefinedTheme,
   CoreTokenName,
   TokenName,
   TokenValue,
   ComponentStyleMap,
   StyleOverrides,
 } from './defineTheme';
+
+// Ordered environment-conditioned theme adaptations
+export {
+  DEFAULT_WIDTH_BREAKPOINTS,
+  WIDTH_BREAKPOINT_NAMES,
+} from './themeAdaptations';
+export type {
+  WidthBreakpointName,
+  WidthBreakpoints,
+  ThemeAdaptations,
+  ThemeAdaptationCondition,
+  ThemeAdaptationWidthCondition,
+  ThemeAdaptationRule,
+  ThemeAdaptationValue,
+  ThemeAdaptationTypographyConfig,
+} from './themeAdaptations';
 
 export type {
   SyntaxTokenName,
@@ -85,11 +108,11 @@ export {
   spacingDefaults,
   sizeDefaults,
   borderDefaults,
+  focusDefaults,
   radiusDefaults,
   shadowDefaults,
   durationDefaults,
   easeDefaults,
-  transitionDefaults,
   typographyDefaults,
   textSizeDefaults,
   fontWeightDefaults,
@@ -98,11 +121,11 @@ export {
   spacingVars,
   sizeVars,
   borderVars,
+  focusVars,
   radiusVars,
   shadowVars,
   durationVars,
   easeVars,
-  transitionVars,
   typographyVars,
   textSizeVars,
   fontWeightVars,
@@ -119,15 +142,27 @@ export type {
   ShadowVarName,
   DurationVarName,
   EaseVarName,
-  TransitionVarName,
   TypographyVarName,
   TextSizeVarName,
   FontWeightVarName,
   TypeScaleVarName,
 } from './tokens.stylex';
 
-export {useTheme, ThemeContext} from './useTheme';
+export {useTheme, useThemeName, ThemeContext} from './useTheme';
 export type {UseThemeReturn, ThemeContextValue} from './useTheme';
+
+export type {
+  IndicatorComponent,
+  IndicatorFamily,
+  IndicatorFamilyMap,
+  IndicatorMap,
+  IndicatorName,
+  IndicatorNameOfFamily,
+  IndicatorProps,
+  IndicatorRegistry,
+  IndicatorSize,
+  IndicatorState,
+} from '../Indicator';
 export {
   resolveThemeToken,
   resolveThemeTokens,
@@ -140,6 +175,7 @@ export type {
   ResolvedThemeMode,
 } from './tokens';
 
+export type {TextColorMap} from '../Text';
 export type {
   ThemeMode,
   HeadingTag,
@@ -150,7 +186,6 @@ export type {
   TextWeight,
   TextColor,
   BuiltinTextColor,
-  TextColorMap,
   TypographyConfig,
   TypographyRole,
   FontWeight,

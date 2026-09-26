@@ -14,9 +14,9 @@
  */
 
 import {findComponent, loadValidatedDoc} from '../../_adapter.mjs';
-import {levenshteinDistance} from '../../../../lib/string-utils.mjs';
+import {levenshteinDistance} from '../../../../foundation/text/string-utils.mjs';
 import {AstryxError} from '../../../error.mjs';
-import {ERROR_CODES} from '../../../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
 
 /**
  * Wrap an already-resolved component in the discover.detail.doc envelope by
@@ -36,7 +36,7 @@ export async function docFromResult(result, opts) {
  * (ERR_UNKNOWN_COMPONENT) — with substring/fuzzy suggestions — when the
  * component is not in the package.
  *
- * @param {import('../../../../lib/package-scanner.mjs').ScannedPackage[]} packages
+ * @param {import('../../_package-scanner.mjs').ScannedPackage[]} packages
  * @param {string} pkgName
  * @param {string} compName
  * @param {{lang?: string | null, zh?: boolean}} opts

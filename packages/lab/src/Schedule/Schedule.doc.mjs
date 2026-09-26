@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../../../core/src/docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Schedule',
@@ -21,6 +21,11 @@ export const docs = {
         guidance: true,
         description:
           'Match the view to the density of the data: a month grid for at-a-glance load, a day or week time grid when start and end times matter, a list when the schedule is sparse.',
+      },
+      {
+        guidance: true,
+        description:
+          'Wrap Schedule in InternationalizationProvider to choose the language, numbering, and field order used by its date and time labels. Schedule date values and calendar arithmetic remain Gregorian for every locale.',
       },
       {
         guidance: true,

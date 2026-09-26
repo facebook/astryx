@@ -12,7 +12,7 @@
  * - /packages/core/src/Divider/Divider.doc.mjs
  * - /packages/core/src/Divider/Divider.test.tsx
  * - /apps/storybook/stories/Divider.stories.tsx
- * - /packages/cli/templates/blocks/components/Divider/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Divider/ (showcase blocks)
  */
 
 import {useId, type ReactNode} from 'react';
@@ -27,24 +27,7 @@ import {
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
-
-/**
- * Extensible variant map for Divider.
- *
- * Theme packages can add custom variants via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/Divider' {
- *   interface DividerVariantMap {
- *     'accent': true;
- *   }
- * }
- * ```
- */
-export interface DividerVariantMap {
-  subtle: true;
-  strong: true;
-}
+import type {DividerVariantMap} from './index';
 
 /**
  * Divider variant type. Extensible via module augmentation of DividerVariantMap.

@@ -12,7 +12,7 @@
  * Threading a logger through agent-docs is a separate cleanup.
  */
 
-import {removeAgentDocs} from '../../../lib/agent-docs/agent-docs.mjs';
+import {removeAgentDocs} from '../../../foundation/agent-docs/agent-docs.mjs';
 import {logger} from '../../logger.mjs';
 
 /**
@@ -24,6 +24,6 @@ import {logger} from '../../logger.mjs';
  */
 export async function remove({cwd = process.cwd()} = {}) {
   removeAgentDocs(cwd);
-  logger.log('✓ AI agent docs removed.');
+  logger.log('[ok] AI agent docs removed.');
   return {type: 'init.remove', data: {removed: true}};
 }

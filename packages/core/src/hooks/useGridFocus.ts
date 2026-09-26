@@ -90,18 +90,6 @@ export interface UseGridFocusOptions {
   onPageDown?: () => void;
 
   /**
-   * Whether the grid is in a right-to-left context. When true, ArrowLeft and
-   * ArrowRight are swapped so horizontal navigation follows visual direction.
-   *
-   * When omitted, the direction is auto-detected from the container's computed
-   * `direction` (read lazily on keydown, only for horizontal arrow keys), so
-   * grids inside `dir="rtl"` subtrees flip automatically. Pass an explicit
-   * boolean to override detection.
-   * @default undefined (auto-detect from the container)
-   */
-  isRtl?: boolean;
-
-  /**
    * Roving-tabindex ownership. When true, the hook manages a single tab stop
    * across the grid: exactly one focusable cell carries `tabindex="0"` and the
    * rest `tabindex="-1"`. The tab stop is stamped on mount and repaired
@@ -226,7 +214,6 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
     onNavigateAfter,
     onPageUp,
     onPageDown,
-    isRtl,
     hasRovingTabIndex = false,
   } = options;
 
@@ -466,11 +453,11 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
       // follows visual direction. Vertical keys (Up/Down) are unaffected.
       // Direction is resolved lazily — getComputedStyle runs only when a
       // horizontal arrow key is actually pressed (SSR-safe, no layout thrash
-      // on unrelated keys) — and an explicit `isRtl` always wins.
+      // on unrelated keys).
       let key = e.key;
       if (
         (key === 'ArrowLeft' || key === 'ArrowRight') &&
-        (isRtl ?? isRtlElement(gridRef.current))
+        isRtlElement(gridRef.current)
       ) {
         key = key === 'ArrowLeft' ? 'ArrowRight' : 'ArrowLeft';
       }
@@ -593,7 +580,6 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
       focusLast,
       getCells,
       getCurrentIndex,
-      isRtl,
       onNavigateAfter,
       onNavigateBefore,
       onPageDown,

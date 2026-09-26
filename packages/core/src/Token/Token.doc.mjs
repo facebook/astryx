@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Token',
@@ -55,7 +55,7 @@ export const docs = {
       name: 'href',
       type: 'string',
       description:
-        'Link URL. When provided, the token renders as an <a> element.',
+        'Link URL. When provided, the token renders as an <a> element. The destination follows the shared navigation rule described on the Link `href` prop.',
     },
     {
       name: 'description',
@@ -112,7 +112,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'Token',
   displayName: 'Token',
@@ -217,7 +217,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'compact chip/tag for inline metadata, filters, selections. 11 colors, 3 sizes, removable, clickable, linkable.',
   usage: {
@@ -241,7 +241,7 @@ export const docsDense = {
     isDisabled: 'Reduces opacity, blocks interactions.',
     onRemove: 'Fired on remove button click. Renders X button when provided.',
     onClick: 'Click handler. Renders <span> w/ invisible <button> inside for a11y.',
-    href: 'Link URL. Renders as <a> element.',
+    href: 'Link URL. Renders as <a> element. Follows the shared navigation rule (see Link href).',
     description: 'A11y description via aria-description on root.',
     endContent: 'Content after label, before remove button.',
     isLabelHidden: 'Visually hides label w/ screen-reader-only clip; stays accessible.',

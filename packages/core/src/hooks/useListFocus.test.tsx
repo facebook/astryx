@@ -3,14 +3,14 @@
 /**
  * @file useListFocus.test.tsx
  * @input Uses vitest, @testing-library/react, useListFocus hook
- * @output Unit tests for useListFocus disabled-item skipping, navigation, and
- *   RTL auto-detection
+ * @output Unit tests for useListFocus disabled-item skipping, navigation,
+ *   Escape consumption, and RTL auto-detection
  * @position Testing; validates useListFocus.ts keyboard navigation
  *
  * SYNC: When useListFocus.ts changes, update tests to match new behavior
  */
 
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, vi} from 'vitest';
 import type {KeyboardEvent as ReactKeyboardEvent} from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {useListFocus} from './useListFocus';
@@ -109,7 +109,7 @@ describe('useListFocus disabled-item skipping', () => {
 
 // ---------------------------------------------------------------------------
 // Roving-tabindex mode + composite navigation behaviors.
-// These exercise the opt-in `hasRovingTabIndex`, `isRtl`, `orientation: 'both'`,
+// These exercise the opt-in `hasRovingTabIndex`, `orientation: 'both'`,
 // `hasCaretGuard`, and shortcut-passthrough behaviors.
 // ---------------------------------------------------------------------------
 
@@ -204,15 +204,6 @@ describe('useListFocus roving tabindex (hasRovingTabIndex)', () => {
     expect(screen.getByTestId('C')).toHaveFocus();
     fireEvent.keyDown(toolbar, {key: 'Home'});
     expect(screen.getByTestId('A')).toHaveFocus();
-  });
-
-  it('flips ArrowLeft/ArrowRight under RTL', () => {
-    render(<RovingToolbar isRtl />);
-    const toolbar = screen.getByRole('toolbar');
-    screen.getByTestId('A').focus();
-    // In RTL, ArrowLeft is "forward".
-    fireEvent.keyDown(toolbar, {key: 'ArrowLeft'});
-    expect(screen.getByTestId('B')).toHaveFocus();
   });
 
   it('orientation "both" navigates with all four arrows', () => {
@@ -382,10 +373,9 @@ describe('useListFocus shortcut passthrough', () => {
  * `dir` is set on the list container itself — the element the hook reads via
  * listRef.
  */
-function HorizontalMenu({dir, isRtl}: {dir?: 'ltr' | 'rtl'; isRtl?: boolean}) {
+function HorizontalMenu({dir}: {dir?: 'ltr' | 'rtl'}) {
   const {listRef, handleKeyDown} = useListFocus<HTMLDivElement>({
     orientation: 'horizontal',
-    isRtl,
   });
   const items = ['One', 'Two', 'Three'];
   return (
@@ -421,22 +411,6 @@ describe('useListFocus RTL auto-detection (WCAG 1.3.2)', () => {
     const menu = screen.getByRole('menu');
     screen.getByTestId('One').focus();
     fireEvent.keyDown(menu, {key: 'ArrowRight'});
-    expect(screen.getByTestId('Two')).toHaveFocus();
-  });
-
-  it('explicit isRtl={false} overrides a dir="rtl" container', () => {
-    render(<HorizontalMenu dir="rtl" isRtl={false} />);
-    const menu = screen.getByRole('menu');
-    screen.getByTestId('One').focus();
-    fireEvent.keyDown(menu, {key: 'ArrowRight'});
-    expect(screen.getByTestId('Two')).toHaveFocus();
-  });
-
-  it('explicit isRtl={true} flips arrows without a dir attribute', () => {
-    render(<HorizontalMenu isRtl />);
-    const menu = screen.getByRole('menu');
-    screen.getByTestId('One').focus();
-    fireEvent.keyDown(menu, {key: 'ArrowLeft'});
     expect(screen.getByTestId('Two')).toHaveFocus();
   });
 });
@@ -523,5 +497,67 @@ describe('useListFocus boundarySelector (nested lists)', () => {
     const innerProbe = screen.getByTestId('inner-probe');
     fireEvent.keyDown(innerProbe, {key: 'ArrowDown'});
     expect(innerProbe).toHaveAttribute('data-owns', 'false');
+  });
+});
+
+// A list inside a host that dismisses on Escape. The host's guard mirrors
+// `useFocusTrap`: it acts only on a key no inner handler has consumed.
+function EscapeHost({
+  onEscape,
+  onHostEscape,
+}: {
+  onEscape?: () => void;
+  onHostEscape: () => void;
+}) {
+  const {listRef, handleKeyDown} = useListFocus<HTMLDivElement>({onEscape});
+  return (
+    <div
+      data-testid="host"
+      onKeyDown={e => {
+        if (e.key === 'Escape' && !e.defaultPrevented) {
+          onHostEscape();
+        }
+      }}>
+      <div ref={listRef} role="menu" onKeyDown={handleKeyDown}>
+        <div role="menuitem" tabIndex={-1} data-testid="One">
+          One
+        </div>
+        <div role="menuitem" tabIndex={-1} data-testid="Two">
+          Two
+        </div>
+      </div>
+    </div>
+  );
+}
+
+describe('useListFocus Escape', () => {
+  it('leaves Escape to the host when no onEscape is supplied', () => {
+    const onHostEscape = vi.fn();
+    render(<EscapeHost onHostEscape={onHostEscape} />);
+
+    fireEvent.keyDown(screen.getByRole('menu'), {key: 'Escape'});
+    expect(onHostEscape).toHaveBeenCalledTimes(1);
+  });
+
+  it('consumes Escape and runs onEscape when one is supplied', () => {
+    const onEscape = vi.fn();
+    const onHostEscape = vi.fn();
+    render(<EscapeHost onEscape={onEscape} onHostEscape={onHostEscape} />);
+
+    fireEvent.keyDown(screen.getByRole('menu'), {key: 'Escape'});
+    expect(onEscape).toHaveBeenCalledTimes(1);
+    expect(onHostEscape).not.toHaveBeenCalled();
+  });
+
+  it('still consumes arrow keys with no onEscape (page-scroll suppression)', () => {
+    render(<EscapeHost onHostEscape={() => {}} />);
+    screen.getByTestId('One').focus();
+
+    // fireEvent returns false when a handler cancelled the event.
+    const wasCancelled = !fireEvent.keyDown(screen.getByRole('menu'), {
+      key: 'ArrowDown',
+    });
+    expect(wasCancelled).toBe(true);
+    expect(screen.getByTestId('Two')).toHaveFocus();
   });
 });

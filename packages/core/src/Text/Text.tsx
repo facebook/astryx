@@ -13,7 +13,7 @@
  * - /packages/core/src/Text/Text.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Text/index.ts (exports if types change)
  * - /apps/storybook/stories/Text.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Text/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Text/ (showcase blocks)
  */
 
 import {lazy, Suspense, useRef, type ReactNode} from 'react';
@@ -48,7 +48,8 @@ import {
 } from './text.stylex';
 import {useTruncation} from './useTruncation';
 import type {LayerPlacement} from '../Layer';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 
@@ -271,13 +272,16 @@ export function Text({
   // Ref for the text element (used as tooltip anchor)
   const textRef = useRef<HTMLElement>(null);
 
+  // Keep the merged ref stable across rerenders.
+  const mergedRef = useMergedRefs(ref, truncation.ref, textRef);
+
   // Build inline style for -webkit-line-clamp (dynamic value)
   const inlineStyle = maxLines > 1 ? {WebkitLineClamp: maxLines} : undefined;
 
   return (
     <>
       <Component
-        ref={mergeRefs(ref, truncation.ref, textRef)}
+        ref={mergedRef}
         {...mergeProps(
           themeProps('text', {type, size, color: resolvedColor}),
           stylex.props(
@@ -309,7 +313,6 @@ export function Text({
           className,
           {...style, ...inlineStyle},
         )}
-        title={tooltipEnabled ? truncation.fullText : undefined}
         {...props}>
         {children}
       </Component>

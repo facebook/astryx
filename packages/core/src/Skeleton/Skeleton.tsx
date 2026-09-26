@@ -1,7 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-'use client';
-
 /**
  * @file Skeleton.tsx
  * @input Uses React, StyleX keyframes and tokens
@@ -12,7 +10,7 @@
  * - /packages/core/src/Skeleton/Skeleton.doc.mjs
  * - /packages/core/src/Skeleton/index.ts
  * - /apps/storybook/stories/Skeleton.stories.tsx
- * - /packages/cli/templates/blocks/components/Skeleton/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Skeleton/ (showcase blocks)
  */
 
 import type {BaseProps} from '../BaseProps';

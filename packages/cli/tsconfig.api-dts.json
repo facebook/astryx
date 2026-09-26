@@ -9,6 +9,15 @@
     "outDir": "/tmp/astryx-dts-build",
     "customConditions": ["source"]
   },
-  "include": ["api/**/*.mjs", "types/**/*.d.ts"],
+  "include": [
+    "api/**/*.mjs",
+    "api/**/*.d.ts",
+    "authoring/**/*.mjs",
+    "authoring/**/*.ts",
+    "foundation/**/*.mjs",
+    "foundation/**/*.ts",
+    "clients/cli/lib/*.d.ts",
+    "assets/codemods/*.d.ts"
+  ],
   "exclude": ["**/*.test.mjs"]
 }

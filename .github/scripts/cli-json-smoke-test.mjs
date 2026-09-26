@@ -25,7 +25,7 @@ import * as path from 'node:path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '../..');
-const CLI = path.join(ROOT, 'packages/cli/bin/astryx.mjs');
+const CLI = path.join(ROOT, 'packages/cli/clients/cli/bin/astryx.mjs');
 
 let passed = 0;
 let failed = 0;
@@ -233,6 +233,12 @@ checkJson('template (not found)', ['template', 'nonexistent_template_xyz'], {exp
 console.log('\nswizzle --json');
 checkJson('swizzle --list', ['swizzle', '--list'], {expectType: 'swizzle.list'});
 checkJson('swizzle (not found)', ['swizzle', 'NonexistentComponent99'], {expectError: true});
+
+// ── Gap reports ─────────────────────────────────────────────────────
+console.log('\ngap-report --json');
+checkJson('gap-report --list-categories', ['gap-report', '--list-categories'], {
+  expectType: 'gap-report.categories',
+});
 
 // ── Build ────────────────────────────────────────────────────────────
 console.log('\nbuild --json');

@@ -22,15 +22,21 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {createRequire} from 'node:module';
 
-import {MIN_NODE_VERSION, isNodeVersionSupported} from '../../lib/node-version.mjs';
-import {CLI_ROOT, findCoreDir} from '../../utils/paths.mjs';
-import {detectPackageManager, getCliInvocation} from '../../utils/package-manager.mjs';
-import {findConfigPath, Project} from '../../lib/project.mjs';
-import {semverCompare, isValidSemver} from '../../utils/semver.mjs';
-
-const _require = createRequire(import.meta.url);
+import {MIN_NODE_VERSION, isNodeVersionSupported} from '../../foundation/env/node-version.mjs';
+import {CLI_ROOT, findCoreDir, findInstalledPackage} from '../../foundation/fs/paths.mjs';
+import {explainPackageManager, getCliInvocation} from '../../foundation/env/package-manager.mjs';
+import {findConfigPath, Project} from '../../foundation/config/project.mjs';
+import {DocsCatalog} from '../../foundation/discovery/docs-discovery.mjs';
+import {buildDocsIndexData} from '../../foundation/discovery/docs-section-key.mjs';
+import {
+  DOC_OUTPUT_BUDGET_BYTES,
+  docsIndexBytes,
+  oversizedDocSections,
+} from '../../foundation/discovery/docs-output-budget.mjs';
+import {compileTopic, lowerTopic, overlayLanguages} from '../docs/_adapter.mjs';
+import {detailView, indexView} from '../../foundation/doc-compiler/lenses.mjs';
+import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
 
 /**
  * @typedef {'pass'|'warn'|'fail'|'info'} DoctorStatus
@@ -52,6 +58,14 @@ const _require = createRequire(import.meta.url);
  * @property {string|null} coreDir - Resolved core package directory, or null.
  * @property {string|null} configPath - Resolved astryx.config.mjs path, or null.
  * @property {string|null} configTheme - theme value read from config, or null.
+ * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]|null} [integrations]
+ *   Every integration the project loaded, or null when the project could not be
+ *   read at all.
+ * @property {DocsCatalog|null} [docsCatalog] - The topics a docs read sees.
+ * @property {Array<{package?: string, code: string, message: string}>} [docsCatalogIssues]
+ *   `invalid_doc` issues from the project's contributed docs.
+ * @property {string|null} [docsCatalogError] - Why the project's docs catalog
+ *   could not be built, when it could not.
  * @property {Error|null} [configError] - Error thrown while resolving the config
  *   path (e.g. multiple config files present), surfaced by checkConfig as a FAIL.
  */
@@ -354,7 +368,91 @@ export async function checkConfig(ctx) {
 }
 
 /**
- * Check 6 — agent docs exist and contain the Astryx section markers.
+ * Check 6 — integrations that are loaded without an astryx.config entry.
+ *
+ * The CLI autolinks an installed dependency that ships an
+ * `astryx.integration.*` manifest, so a project can be getting components,
+ * templates, themes, docs and codemods from a package nothing in the project mentions.
+ * Two questions follow, and this line is the answer to both:
+ *
+ *   - "Why can the CLI see this?" — asked by an author who greps the project
+ *     for the package name and finds nothing. Reading our source should not be
+ *     part of that answer.
+ *   - "Can I delete this dependency?" — asked by an unused-dependency sweep,
+ *     which decides by looking for source imports. In exactly this population
+ *     there are none: the manifest is the whole link. Naming the dependency
+ *     here marks it load-bearing.
+ *
+ * Always informational. Doctor is a CI gate, and a project that acquired an
+ * integration correctly has done nothing to warn about — the point is to say
+ * what is loaded, never to push anyone into writing a config entry.
+ *
+ * @param {DoctorContext} ctx
+ * @returns {DoctorCheck}
+ */
+export function checkImplicitIntegrations(ctx) {
+  const id = 'implicit-integrations';
+  const label = 'Implicitly linked integrations';
+
+  if (ctx.integrations == null) {
+    return {
+      id,
+      label,
+      status: 'info',
+      message: 'Skipped — the project configuration could not be read.',
+    };
+  }
+
+  const implicit = ctx.integrations.filter(
+    integration => integration.__autolinked,
+  );
+
+  if (implicit.length === 0) {
+    return {
+      id,
+      label,
+      status: 'info',
+      message:
+        ctx.integrations.length > 0
+          ? 'None — every loaded integration is named in astryx.config.'
+          : 'None — no installed dependency ships an astryx.integration.* manifest.',
+    };
+  }
+
+  const described = implicit.map(integration => {
+    const version = integration.version ? `@${integration.version}` : '';
+    // An npm alias installs a package under a different key. The package's own
+    // name is its identity; the KEY is what package.json says and what a
+    // dependency sweep reads, so when they differ both have to be here.
+    const alias =
+      integration.__spec && integration.__spec !== integration.name
+        ? ` (declared as "${integration.__spec}")`
+        : '';
+    const roots = ['components', 'templates', 'themes', 'docs', 'codemods'].filter(
+      root => integration[/** @type {'components'} */ (root)],
+    );
+    const contributes = roots.length > 0 ? roots.join(', ') : 'nothing';
+    return `${integration.name}${version}${alias} from ${integration.__dependencyField}, contributing ${contributes}`;
+  });
+
+  const plural = implicit.length === 1 ? '' : 's';
+  return {
+    id,
+    label,
+    status: 'info',
+    message:
+      `${implicit.length} integration${plural} loaded from installed ` +
+      `dependencies with no astryx.config entry: ${described.join('; ')}.`,
+    fix:
+      'Nothing to fix. Keep these dependencies installed. The CLI links them ' +
+      'from package.json, so an unused-dependency check that looks only for ' +
+      'source imports will report them as unused. Add them to `integrations` ' +
+      'in astryx.config.* to make the link explicit.',
+  };
+}
+
+/**
+ * Check 7 — agent docs exist and contain the Astryx section markers.
  * @param {DoctorContext} ctx
  * @returns {DoctorCheck}
  */
@@ -408,7 +506,7 @@ export function checkAgentDocs(ctx) {
 }
 
 /**
- * Check 7 — @astryxdesign/core peer dependencies are satisfied by installed packages.
+ * Check 8 — @astryxdesign/core peer dependencies are satisfied by installed packages.
  * @param {DoctorContext} ctx
  * @returns {DoctorCheck}
  */
@@ -436,30 +534,45 @@ export function checkPeerDeps(ctx) {
   }
 
   const missing = [];
+  /** @type {Array<{name: string, want: string, have: string}>} */
+  const mismatched = [];
   for (const name of peerNames) {
-    let present = false;
-    try {
-      _require.resolve(`${name}/package.json`, {paths: [ctx.cwd]});
-      present = true;
-    } catch {
-      // Some packages don't expose package.json — try resolving the entry.
-      try {
-        _require.resolve(name, {paths: [ctx.cwd]});
-        present = true;
-      } catch {
-        // Still unresolved — leave present at its initial false.
-      }
+    const want = peers[name];
+    const installedDir = findInstalledPackage(ctx.cwd, name);
+    if (!installedDir) {
+      missing.push(`${name}@${want}`);
+      continue;
     }
-    if (!present) missing.push(`${name}@${peers[name]}`);
+    // Present and version-readable: verify it actually satisfies the range,
+    // not just that the package exists (a bare `npm install` can resolve an
+    // out-of-range version from a stale consumer range and still "look" fine).
+    const have = pkgVersion(installedDir);
+    if (have && !satisfiesRange(have, want)) {
+      mismatched.push({name, want, have});
+    }
   }
 
-  if (missing.length > 0) {
+  if (missing.length > 0 || mismatched.length > 0) {
+    const problems = [];
+    if (missing.length) problems.push(`missing: ${missing.join(', ')}`);
+    if (mismatched.length) {
+      problems.push(
+        `out of range: ${mismatched
+          .map(m => `${m.name}@${m.have} (needs ${m.want})`)
+          .join(', ')}`,
+      );
+    }
+    // Pin the required range for anything wrong so the hint fixes it even when a
+    // stale consumer range would otherwise resolve an incompatible version.
+    // Quote targets containing shell metacharacters (e.g. `react@>=19.0.0`).
+    const quote = (/** @type {string} */ s) => (/[<>|() ]/.test(s) ? `'${s}'` : s);
+    const targets = [...missing, ...mismatched.map(m => `${m.name}@${m.want}`)].map(quote);
     return {
       id: 'peer-deps',
       label: '@astryxdesign/core peer dependencies',
       status: 'warn',
-      message: `Missing peer dependencies: ${missing.join(', ')}.`,
-      fix: `Install the required peers, e.g. \`npm install ${missing.map(m => m.split('@')[0]).join(' ')}\`.`,
+      message: `Peer dependency issues — ${problems.join('; ')}.`,
+      fix: `Install compatible peers: \`npm install ${targets.join(' ')}\`.`,
     };
   }
 
@@ -472,20 +585,425 @@ export function checkPeerDeps(ctx) {
 }
 
 /**
- * Check 8 — report the detected package manager (informational).
+ * Check 9 — report the detected package manager, and say so when the project's
+ * own declaration disagrees with what is on disk.
+ *
+ * Two states are worth surfacing rather than guessing past, because in both the
+ * commands the CLI prints can be silently wrong for the project:
+ *
+ * - FAIL: several lockfiles tie with nothing project-owned to break them.
+ * - WARN: a `packageManager` field is declared and a lockfile it contradicts
+ *   sits beside it. Astryx follows the declaration, so its own output is right;
+ *   the warning is that a tool which follows the lockfile will install with
+ *   something else, and that used to be reported as a healthy setup.
+ *
  * @param {DoctorContext} ctx
  * @returns {DoctorCheck}
  */
 export function checkPackageManager(ctx) {
-  const pm = detectPackageManager(ctx.cwd);
-  const detected = pm !== 'npx';
+  const {pm, ambiguous, dir, candidates, declared, strayLockfiles} =
+    explainPackageManager(ctx.cwd);
+
+  if (ambiguous) {
+    return {
+      id: 'package-manager',
+      label: 'Package manager',
+      status: 'fail',
+      message: `Cannot tell which package manager this project uses: ${candidates.join(' and ')} lockfiles both sit in ${dir}, and nothing the project owns picks between them. Commands are printed with the neutral \`npx\` form until this is resolved.`,
+      fix: `Add a \`packageManager\` field to ${dir}/package.json, or delete the lockfile that does not belong.`,
+    };
+  }
+
+  if (declared && strayLockfiles.length > 0) {
+    const files = strayLockfiles.map(lock => lock.file).join(' and ');
+    const owners = [...new Set(strayLockfiles.map(lock => lock.pm))].join(
+      ' and ',
+    );
+    return {
+      id: 'package-manager',
+      label: 'Package manager',
+      status: 'warn',
+      message: `This project declares \`packageManager: ${declared}\` in ${dir}/package.json, but ${files} also sits there. Astryx follows the declaration and prints ${pm} commands; anything that follows the lockfile instead will use ${owners}.`,
+      fix: `Delete ${files} from ${dir} and reinstall with ${declared}, or change the \`packageManager\` field if ${owners} is what this project actually uses.`,
+    };
+  }
+
   return {
     id: 'package-manager',
     label: 'Package manager',
     status: 'info',
-    message: detected
-      ? `Detected package manager: ${pm}.`
-      : 'No lockfile detected — defaulting to npm/npx.',
+    message:
+      pm !== 'npx'
+        ? declared
+          ? `Detected package manager: ${pm} (declared in ${dir}/package.json).`
+          : `Detected package manager: ${pm}.`
+        : 'No lockfile detected — defaulting to npm/npx.',
+  };
+}
+
+/**
+ * Check 6b — every contributing integration owns its provider identity.
+ *
+ * Artifact and document IDs are provider-scoped, so a package that claims a
+ * provider ID an earlier-loaded package already holds is loaded inert: its
+ * components, templates, themes, docs, and codemods are withdrawn while the
+ * earlier package keeps contributing. That can be a deliberate transition
+ * (a renamed package installed beside its predecessor), so it warns rather
+ * than fails, but it is never allowed to happen quietly.
+ *
+ * @param {DoctorContext} ctx
+ * @returns {DoctorCheck}
+ */
+export function checkProviderIdentity(ctx) {
+  const id = 'provider-identity';
+  const label = 'Integration provider identity';
+
+  if (ctx.integrations == null) {
+    return {
+      id,
+      label,
+      status: 'info',
+      message: 'Skipped — the project configuration could not be read.',
+    };
+  }
+
+  const conflicts = ctx.integrations.filter(
+    integration => integration.__providerConflict,
+  );
+  if (conflicts.length > 0) {
+    return {
+      id,
+      label,
+      status: 'warn',
+      message: conflicts
+        .map(integration => integration.__providerConflict?.message)
+        .join(' '),
+      fix:
+        'Give each integration its own `providerId` in astryx.integration.*. ' +
+        "A renamed package may keep its predecessor's ID only when the " +
+        'predecessor is no longer installed.',
+    };
+  }
+
+  const count = ctx.integrations.filter(
+    integration =>
+      integration.providerId != null && integration.__loadError == null,
+  ).length;
+  if (count === 0) {
+    return {
+      id,
+      label,
+      status: 'info',
+      message: 'None — no loaded integration has a provider identity.',
+    };
+  }
+  return {
+    id,
+    label,
+    status: 'pass',
+    message:
+      count === 1
+        ? '1 loaded integration has its own provider ID.'
+        : `${count} loaded integrations each have their own provider ID.`,
+  };
+}
+
+/** @param {number} bytes */
+const kilobytes = bytes => `${Math.ceil(bytes / 1024)} KB`;
+
+/**
+ * @param {string[]} problems
+ * @returns {string}
+ */
+function joinProblems(problems) {
+  return problems.length === 1
+    ? problems[0]
+    : `${problems.length} problems: ${problems.join('; ')}`;
+}
+
+/** How the self-doc audit's problems are fixed. */
+const AUTHORING_DOCS_FIX =
+  'List every authoring self-doc in AUTHORING_SELF_DOCS, fix the one that fails to load, and split a section that is too large.';
+
+/** How the public-surface audit's problems are fixed. */
+const AUTHORING_SURFACE_FIX =
+  'Put a self-doc beside each module whose types @astryxdesign/cli/authoring exports and list it in AUTHORING_SELF_DOCS; export what each listed self-doc documents, or remove that self-doc.';
+
+/** Types one problem names before it counts the rest. */
+const NAMED_TYPES = 40;
+
+/**
+ * @param {string[]} names
+ * @returns {string}
+ */
+function nameTypes(names) {
+  return names.length <= NAMED_TYPES
+    ? names.join(', ')
+    : `${names.slice(0, NAMED_TYPES).join(', ')} and ${names.length - NAMED_TYPES} more`;
+}
+
+/**
+ * The section keys `astryx docs authoring --index` lists, read the way that
+ * command reads them.
+ * @returns {Promise<{keys: Set<string>} | {keys: null, error: string}>}
+ */
+async function authoringTopicKeys() {
+  try {
+    const catalog = DocsCatalog.fromBuiltins();
+    const entry = catalog.resolve('authoring');
+    if (!entry) return {keys: null, error: 'it is not a built-in topic'};
+    const index = indexView(await lowerTopic(catalog, entry));
+    return {keys: new Set(index.sections.map(section => section.id))};
+  } catch (err) {
+    return {
+      keys: null,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
+/**
+ * @param {Awaited<ReturnType<typeof import('../../foundation/discovery/authoring-surface.mjs').auditAuthoringSurface>>} surface
+ * @returns {string[]}
+ */
+function surfaceProblems(surface) {
+  /** @type {string[]} */
+  const problems = [];
+  if (surface.types === 0 && surface.untraced.length === 0) {
+    problems.push(
+      '@astryxdesign/cli/authoring exports no types, so nothing was compared with `astryx docs authoring`',
+    );
+  }
+  for (const {module, names, reason, source, key} of surface.unreadable) {
+    const why =
+      reason === 'no-self-doc'
+        ? `no self-doc sits beside ${module}`
+        : reason === 'unregistered'
+          ? `${source} is not listed in AUTHORING_SELF_DOCS`
+          : reason === 'failed'
+            ? `${source} does not load`
+            : `${source} renders section "${key}", which the topic's index does not list`;
+    problems.push(
+      `${nameTypes(names)} from ${module} ${names.length === 1 ? 'has' : 'have'} no doc in \`astryx docs authoring\`: ${why}`,
+    );
+  }
+  for (const {name, reason} of surface.untraced) {
+    problems.push(
+      `${name} cannot be traced to the module that declares it: ${reason}`,
+    );
+  }
+  for (const {source, subject} of surface.unmatched) {
+    problems.push(
+      subject
+        ? `${source} documents ${subject}, which @astryxdesign/cli/authoring does not export`
+        : `${source} documents no type @astryxdesign/cli/authoring exports`,
+    );
+  }
+  return problems;
+}
+
+/**
+ * Every authoring self-doc is reachable from `astryx docs authoring`, loads,
+ * and fits in one read, and every type `@astryxdesign/cli/authoring` exports
+ * has its doc there: the self-doc beside the module that declares it. The
+ * audits are imported here, inside the try, so a malformed self-doc is
+ * reported rather than taking Doctor down.
+ * @param {DoctorContext} [_ctx]
+ * @param {{root?: string, sources?: string[], topicKeys?: Set<string> | null}} [options]
+ *   Another authoring tree, list, or topic index to audit (for tests).
+ * @returns {Promise<DoctorCheck>}
+ */
+export async function checkAuthoringDocs(_ctx, options = {}) {
+  const id = 'authoring-docs';
+  const label = 'Authoring docs';
+  try {
+    const {auditAuthoringSelfDocs} =
+      await import('../../foundation/discovery/authoring-self-docs.mjs');
+    const {auditAuthoringSurface} =
+      await import('../../foundation/discovery/authoring-surface.mjs');
+    const {root, sources} = options;
+    const audit = await auditAuthoringSelfDocs({root, sources});
+    const problems = [
+      ...audit.unreachable.map(
+        source => `${source} is not in \`astryx docs authoring\``,
+      ),
+      ...audit.failed.map(
+        ({source, error}) => `${source} failed to load: ${error}`,
+      ),
+      ...audit.oversized.map(
+        ({key, bytes}) =>
+          `authoring section "${key}" is ${kilobytes(bytes)}, over the ${kilobytes(DOC_OUTPUT_BUDGET_BYTES)} one read may return`,
+      ),
+    ];
+    const topic =
+      options.topicKeys === undefined
+        ? await authoringTopicKeys()
+        : {keys: options.topicKeys};
+    const surface = [
+      ...('error' in topic
+        ? [`\`astryx docs authoring\` could not be read: ${topic.error}`]
+        : []),
+      ...surfaceProblems(
+        await auditAuthoringSurface({root, sources, topicKeys: topic.keys}),
+      ),
+    ];
+    if (problems.length + surface.length > 0) {
+      return {
+        id,
+        label,
+        status: 'fail',
+        message: joinProblems([...problems, ...surface]),
+        fix: [
+          problems.length > 0 ? AUTHORING_DOCS_FIX : null,
+          surface.length > 0 ? AUTHORING_SURFACE_FIX : null,
+        ]
+          .filter(Boolean)
+          .join(' '),
+      };
+    }
+    return {
+      id,
+      label,
+      status: 'pass',
+      message: `All ${audit.sections} authoring schemas are readable in \`astryx docs authoring\`.`,
+    };
+  } catch (err) {
+    return {
+      id,
+      label,
+      status: 'fail',
+      message: `The authoring docs could not be audited: ${err instanceof Error ? err.message : String(err)}`,
+      fix: 'Reinstall @astryxdesign/cli.',
+    };
+  }
+}
+
+/** How the CLI-docs audit's problems are fixed. */
+const CLI_DOCS_FIX =
+  "Set `namespace` on each CLI doc to the one that reads it: cli/commands for a command, cli/api for an API function or the output schema, error codes, and response types, and authoring for a file an author writes (and list it in AUTHORING_SELF_DOCS).";
+
+/**
+ * Every command, API function, schema, and enum doc the CLI ships declares a
+ * namespace, and the topic that namespace names reads it: `astryx docs cli`
+ * for `cli/commands` and `cli/api`, `astryx docs authoring` for `authoring`.
+ * @param {DoctorContext | Partial<DoctorContext>} _ctx
+ * @param {{root?: string, sources?: string[], authoringSources?: string[]}} [options]
+ *   test seams: the CLI root, the docs to audit, and the authoring topic's list
+ * @returns {Promise<DoctorCheck>}
+ */
+export async function checkCliDocs(_ctx, options = {}) {
+  const id = 'cli-docs';
+  const label = 'CLI docs';
+  try {
+    const {auditCliSelfDocs} =
+      await import('../../foundation/discovery/cli-self-docs.mjs');
+    const audit = await auditCliSelfDocs(options);
+    const problems = [
+      ...audit.missing.map(
+        source =>
+          `${source} has no namespace, so no \`astryx docs\` topic reads it`,
+      ),
+      ...audit.unknown.map(
+        ({source, namespace}) =>
+          `${source} has namespace "${namespace}", which no \`astryx docs\` topic reads`,
+      ),
+      ...audit.misfiled.map(({message}) => message),
+      ...audit.failed.map(
+        ({source, error}) => `${source} failed to load: ${error}`,
+      ),
+      ...audit.keyProblems.map(problem => `\`astryx docs cli\`: ${problem}`),
+      ...audit.oversized.map(
+        ({key, bytes}) =>
+          `cli section "${key}" is ${kilobytes(bytes)}, over the ${kilobytes(DOC_OUTPUT_BUDGET_BYTES)} one read may return`,
+      ),
+    ];
+    if (problems.length > 0) {
+      return {
+        id,
+        label,
+        status: 'fail',
+        message: joinProblems(problems),
+        fix: CLI_DOCS_FIX,
+      };
+    }
+    return {
+      id,
+      label,
+      status: 'pass',
+      message: `All ${audit.docs} CLI docs are readable: ${audit.sections} in \`astryx docs cli\` and ${audit.authoring} in \`astryx docs authoring\`.`,
+    };
+  } catch (err) {
+    return {
+      id,
+      label,
+      status: 'fail',
+      message: `The CLI docs could not be audited: ${err instanceof Error ? err.message : String(err)}`,
+      fix: 'Reinstall @astryxdesign/cli.',
+    };
+  }
+}
+
+/**
+ * Every topic reads progressively, in every language it ships: it loads, its
+ * section index and each of its sections fit in one read, and no contributed
+ * doc is invalid.
+ * @param {DoctorContext | Partial<DoctorContext>} ctx
+ * @returns {Promise<DoctorCheck>}
+ */
+export async function checkDocsProgressiveDisclosure(ctx) {
+  const id = 'docs-progressive-disclosure';
+  const label = 'Documentation navigation and size';
+  const budget = kilobytes(DOC_OUTPUT_BUDGET_BYTES);
+  /** @type {string[]} */
+  const problems = [];
+  if (ctx.docsCatalogError) {
+    problems.push(`The docs catalog could not be built: ${ctx.docsCatalogError}`);
+  }
+  for (const issue of ctx.docsCatalogIssues ?? []) {
+    problems.push(`${issue.package ?? 'a contributed doc'}: ${issue.message}`);
+  }
+  let topics = 0;
+  const catalog = ctx.docsCatalog;
+  if (catalog) {
+    for (const entry of catalog.entries()) {
+      for (const lang of [null, ...overlayLanguages(entry)]) {
+        const where = lang ? `${entry.name} [${lang}]` : entry.name;
+        try {
+          const doc = detailView(await compileTopic(catalog, entry, lang));
+          if (lang == null) topics += 1;
+          const indexBytes = docsIndexBytes(buildDocsIndexData(doc));
+          if (indexBytes > DOC_OUTPUT_BUDGET_BYTES) {
+            problems.push(
+              `${where}: its section index is ${kilobytes(indexBytes)}, over the ${budget} one read may return`,
+            );
+          }
+          for (const over of oversizedDocSections(doc.sections)) {
+            problems.push(
+              `${where} ${over.key}: ${kilobytes(over.bytes)}, over the ${budget} one read may return`,
+            );
+          }
+        } catch (err) {
+          problems.push(
+            `${where}: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        }
+      }
+    }
+  }
+  if (problems.length > 0) {
+    return {
+      id,
+      label,
+      status: 'fail',
+      message: joinProblems(problems),
+      fix: 'Fix the doc each problem names; split a section that is too large into smaller ones, each with its own key.',
+    };
+  }
+  return {
+    id,
+    label,
+    status: 'pass',
+    message: `${topics} topics: every section index and section fits in one ${budget} read.`,
   };
 }
 
@@ -499,6 +1017,8 @@ export const SYNC_CHECKS = [
   checkCoreInstalled,
   checkVersionAlignment,
   checkThemes,
+  checkImplicitIntegrations,
+  checkProviderIdentity,
   checkAgentDocs,
   checkPeerDeps,
   checkPackageManager,
@@ -525,12 +1045,33 @@ export async function runChecks(options = {}) {
     configError = /** @type {Error} */ (err);
   }
 
-  // Resolve a possible theme key from config (best-effort; never throws).
+  // Resolve a possible theme key from config, and the integrations the project
+  // actually loaded (best-effort; never throws).
   let configTheme = null;
+  /** @type {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]|null} */
+  let integrations = null;
+  // A docs read falls back to the built-in topics when the project cannot be
+  // read, so the docs checks do too; the config check reports the config.
+  /** @type {DocsCatalog|null} */
+  let docsCatalog = DocsCatalog.fromBuiltins();
+  /** @type {Array<{package?: string, code: string, message: string}>} */
+  let docsCatalogIssues = [];
+  /** @type {string|null} */
+  let docsCatalogError = null;
   try {
     const project = await Project.load(cwd);
     configTheme =
       /** @type {{theme?: string}} */ (project.config ?? {}).theme ?? null;
+    integrations = project.loadedIntegrations;
+    try {
+      docsCatalog = await project.docs();
+      docsCatalogIssues = (await project.issues()).filter(
+        issue => issue.code === 'invalid_doc',
+      );
+    } catch (err) {
+      docsCatalog = null;
+      docsCatalogError = err instanceof Error ? err.message : String(err);
+    }
   } catch {
     // Best-effort: a missing/invalid config leaves configTheme null.
   }
@@ -542,6 +1083,10 @@ export async function runChecks(options = {}) {
     coreDir,
     configPath,
     configTheme,
+    integrations,
+    docsCatalog,
+    docsCatalogIssues,
+    docsCatalogError,
     configError,
   };
 
@@ -554,6 +1099,9 @@ export async function runChecks(options = {}) {
       checks.push(await checkConfig(ctx));
     }
   }
+  checks.push(await checkAuthoringDocs(ctx));
+  checks.push(await checkCliDocs(ctx));
+  checks.push(await checkDocsProgressiveDisclosure(ctx));
 
   const summary = {pass: 0, warn: 0, fail: 0, info: 0};
   for (const c of checks) summary[c.status] += 1;

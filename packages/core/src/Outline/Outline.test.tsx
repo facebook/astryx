@@ -162,8 +162,9 @@ describe('Outline', () => {
     expect(screen.getByRole('link', {name: 'API'}).className).toContain(
       'active',
     );
-    expect(screen.getByRole('link', {name: 'API'}).className).toContain(
-      'level-3',
+    expect(screen.getByRole('link', {name: 'API'})).toHaveAttribute(
+      'data-level',
+      '3',
     );
   });
 
@@ -171,14 +172,16 @@ describe('Outline', () => {
     render(
       <Outline items={items} density="compact" data-testid="outline-compact" />,
     );
-    expect(screen.getByTestId('outline-compact').className).toContain(
+    expect(screen.getByTestId('outline-compact')).toHaveAttribute(
+      'data-density',
       'compact',
     );
   });
 
   it('renders with density="default" by default', () => {
     render(<Outline items={items} data-testid="outline-default" />);
-    expect(screen.getByTestId('outline-default').className).toContain(
+    expect(screen.getByTestId('outline-default')).toHaveAttribute(
+      'data-density',
       'default',
     );
   });

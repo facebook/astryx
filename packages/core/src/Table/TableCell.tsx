@@ -11,7 +11,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Table/Table.doc.mjs
  * - /packages/core/src/Table/index.ts
- * - /packages/cli/templates/blocks/components/Table/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Table/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';
@@ -252,7 +252,7 @@ export function TableCell({
       ref={ref}
       {...props}
       {...mergeProps(
-        themeProps('table-cell'),
+        themeProps('table-cell', {density: ctx?.density}),
         stylex.props(...mergeXStyle(cellStyles, xstyle)),
         incomingClassName,
         incomingStyle,

@@ -242,6 +242,9 @@ let editorInstanceCounter = 0;
  * The escape is advertised to assistive technology via a visually hidden
  * aria-describedby hint (see `escapeHint`).
  *
+ * The editor carries an explicit tabindex="0" (including when read-only) so
+ * the scrollable container passes axe's scrollable-region-focusable check.
+ *
  * @example
  * ```
  * const [code, setCode] = useState('');
@@ -575,6 +578,12 @@ export function CodeEditor({
             ref={editorRef}
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             contentEditable={isReadOnly ? false : ('plaintext-only' as any)}
+            // Explicit tabindex: editing hosts have an effective tabIndex of 0
+            // already, but axe reads the attribute, and contenteditable is not
+            // on its natively-focusable whitelist — without it a maxHeight
+            // editor fails scrollable-region-focusable. Also keeps read-only
+            // editors keyboard-focusable, like a readonly textarea.
+            tabIndex={0}
             role="textbox"
             aria-multiline="true"
             aria-label={label}

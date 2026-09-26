@@ -5,7 +5,7 @@
 /**
  * @file Item.tsx
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, useClickableContainer
- * @output Exports Item component, ItemProps and ItemVariant types
+ * @output Exports Item component, ItemProps and ItemVariant types; publishes the shared inline inset
  * @position Core layout primitive; consumed by index.ts, tested by Item.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -13,10 +13,10 @@
  * - /packages/core/src/Item/Item.test.tsx
  * - /packages/core/src/Item/index.ts
  * - /apps/storybook/stories/Item.stories.tsx
- * - /packages/cli/templates/blocks/components/Item/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Item/ (showcase blocks)
  */
 
-import {useRef, type ReactNode} from 'react';
+import {useId, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   borderVars,
@@ -28,12 +28,16 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
-import {mergeProps, mergeRefs} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
+import {ItemDescriptionContext} from './ItemDescriptionContext';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import {computeTargetAndRel} from '../Link/computeTargetAndRel';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {useClickableContainer} from '../hooks/useClickableContainer';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 
 // =============================================================================
 // Types
@@ -130,6 +134,15 @@ export interface ItemProps extends BaseProps<HTMLElement> {
   descriptionLines?: number;
 
   /**
+   * How the label and description sit together. `stacked` puts the description
+   * on its own line below the label; `inline` keeps both on one line, with the
+   * description ellipsizing first, so the row fits a fixed-height host.
+   *
+   * @default 'stacked'
+   */
+  layout?: 'stacked' | 'inline';
+
+  /**
    * Click handler. Makes the item clickable with button semantics.
    */
   onClick?: (event: React.MouseEvent) => void;
@@ -220,9 +233,15 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-    // Values come from the density styles below; the outline variant subtracts
-    // the border width from these same vars.
-    paddingInline: 'var(--_item-padding-inline)',
+    // The inline inset is published as --_item-inset-inline and the padding
+    // derives from it, so consumers that need to compensate for the inset
+    // (List's edgeCompensation) read the var instead of mirroring the values.
+    // Themes that set paddingInline on `item` also feed this var via the
+    // derived var registry, keeping padding and compensation in sync.
+    '--_item-inset-inline': spacingVars['--spacing-2'],
+    paddingInline: 'var(--_item-inset-inline)',
+    // Block padding comes from the density styles below. The outline variant
+    // subtracts the border width from both of these vars.
     paddingBlock: 'var(--_item-padding-block)',
     position: 'relative',
     boxSizing: 'border-box',
@@ -236,20 +255,16 @@ const styles = stylex.create({
   // background-color, so they composite *over* the variant surface (which owns
   // background-color) instead of replacing it. Without this, `muted` would show
   // no hover at all — --color-background-muted and --color-overlay-hover are the
-  // same value in light mode. Same technique as TreeListItem and
-  // AvatarGroupOverflow.
+  // same value in light mode. The hover/pressed layer is the shared
+  // interactionOverlayStyles.backgroundImage, as in TreeListItem.
   interactive: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transitionProperty: 'background-image',
     transitionDuration: durationVars['--duration-fast-min'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    backgroundImage: {
-      default: null,
-      ':hover': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
   },
   // The border is drawn *inside* the padding — its width is subtracted from
   // each side — so the total inset (border + padding) equals the density's
@@ -260,20 +275,10 @@ const styles = stylex.create({
     borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
     borderColor: colorVars['--color-border-emphasized'],
-    paddingInlineStart: `calc(var(--_item-padding-inline) - ${borderVars['--border-width']})`,
-    paddingInlineEnd: `calc(var(--_item-padding-inline) - ${borderVars['--border-width']})`,
+    paddingInlineStart: `calc(var(--_item-inset-inline) - ${borderVars['--border-width']})`,
+    paddingInlineEnd: `calc(var(--_item-inset-inline) - ${borderVars['--border-width']})`,
     paddingBlockStart: `calc(var(--_item-padding-block) - ${borderVars['--border-width']})`,
     paddingBlockEnd: `calc(var(--_item-padding-block) - ${borderVars['--border-width']})`,
-  },
-  focusVisibleOutline: {
-    outline: {
-      default: 'none',
-      ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':has(:focus-visible)': '2px',
-    },
   },
   highlighted: {
     backgroundImage: `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
@@ -282,7 +287,7 @@ const styles = stylex.create({
     backgroundImage: `linear-gradient(${colorVars['--color-accent-muted']}, ${colorVars['--color-accent-muted']})`,
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     pointerEvents: 'none' as const,
   },
   disabledContent: {
@@ -290,7 +295,10 @@ const styles = stylex.create({
   },
   invisibleButton: {
     all: 'unset',
-    cursor: 'inherit',
+    cursor: {
+      default: 'inherit',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     font: 'inherit',
     color: 'inherit',
     display: 'flex',
@@ -302,7 +310,10 @@ const styles = stylex.create({
   },
   invisibleAnchor: {
     all: 'unset',
-    cursor: 'inherit',
+    cursor: {
+      default: 'inherit',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     font: 'inherit',
     color: 'inherit',
     display: 'flex',
@@ -320,8 +331,29 @@ const styles = stylex.create({
     minWidth: 0,
     textAlign: 'start',
   },
+  // `layout="inline"`: label and description share one line, so the row fits a
+  // fixed-height host such as a Selector trigger inside an InputGroup.
+  inlineContent: {
+    flexDirection: 'row',
+    // Centered, not baseline-aligned: two different font sizes on a shared
+    // baseline make a line box taller than either line, which would push a
+    // fixed-height host (a Selector trigger) a pixel off its size token.
+    alignItems: 'center',
+    columnGap: spacingVars['--spacing-1'],
+  },
+  inlineLabel: {
+    flexShrink: 0,
+  },
+  // The description yields width first, so the label — the part that identifies
+  // the item — is the last thing to ellipsize.
+  inlineDescription: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
   label: {
-    color: colorVars['--color-text-primary'],
+    // Falls back to the primary text token; a parent (e.g. a destructive menu
+    // item) can recolor the label by setting --_item-label-color.
+    color: `var(--_item-label-color, ${colorVars['--color-text-primary']})`,
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
   },
@@ -336,7 +368,8 @@ const styles = stylex.create({
     WebkitBoxOrient: 'vertical' as const,
   },
   description: {
-    color: colorVars['--color-text-secondary'],
+    // Companion to --_item-label-color for the secondary line.
+    color: `var(--_item-description-color, ${colorVars['--color-text-secondary']})`,
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
   },
@@ -372,16 +405,14 @@ const dynamicStyles = stylex.create({
 // padding is in play, without duplicating a density × variant matrix.
 const densityStyles = stylex.create({
   compact: {
-    '--_item-padding-inline': spacingVars['--spacing-2'],
     '--_item-padding-block': spacingVars['--spacing-1'],
   },
   balanced: {
-    '--_item-padding-inline': spacingVars['--spacing-2'],
     '--_item-padding-block': spacingVars['--spacing-2'],
   },
   spacious: {
-    '--_item-padding-inline': spacingVars['--spacing-3'],
     '--_item-padding-block': spacingVars['--spacing-3'],
+    '--_item-inset-inline': spacingVars['--spacing-3'],
   },
 });
 
@@ -429,6 +460,7 @@ export function Item({
   variant = 'transparent',
   labelLines,
   descriptionLines,
+  layout = 'stacked',
   onClick,
   interactiveRef,
   href,
@@ -479,6 +511,15 @@ export function Item({
   // that need selection semantics pass a permitted role.
   const allowsAriaSelected = role != null && ARIA_SELECTED_ROLES.has(role);
 
+  // The description element's id, published through ItemDescriptionContext so a
+  // control Item renders in a slot can point at it with `aria-describedby`.
+  // `isRenderable` rather than `!= null` so the common empty values — `null`,
+  // `undefined`, `false`, `''` — publish no id and leave a consumer with no
+  // dangling reference. It is a shallow check: content that renders nothing
+  // only once React runs it, such as an empty fragment, still publishes an id.
+  const descriptionID = useId();
+  const hasRenderableDescription = isRenderable(description);
+
   const isStringLabel = typeof label === 'string';
   const isStringDescription = typeof description === 'string';
 
@@ -491,12 +532,16 @@ export function Item({
         ? styles.labelSingleTruncate
         : null;
 
+  // Inline rows are one line by definition, so the description always
+  // ellipsizes there — a ReactNode description cannot wrap the row open.
+  const isInline = layout === 'inline' && description != null;
+
   const descriptionTruncateStyle =
     descriptionLines != null
       ? descriptionLines === 1
         ? styles.descriptionSingleTruncate
         : styles.descriptionMultiTruncate
-      : isStringDescription
+      : isStringDescription || isInline
         ? styles.descriptionSingleTruncate
         : null;
 
@@ -505,6 +550,7 @@ export function Item({
       <span
         {...stylex.props(
           styles.label,
+          isInline && styles.inlineLabel,
           labelTruncateStyle,
           labelLines != null &&
             labelLines > 1 &&
@@ -514,8 +560,10 @@ export function Item({
       </span>
       {description != null && (
         <span
+          id={hasRenderableDescription ? descriptionID : undefined}
           {...stylex.props(
             styles.description,
+            isInline && styles.inlineDescription,
             descriptionTruncateStyle,
             descriptionLines != null &&
               descriptionLines > 1 &&
@@ -552,6 +600,7 @@ export function Item({
         <span
           {...stylex.props(
             styles.content,
+            isInline && styles.inlineContent,
             isDisabled && styles.disabledContent,
           )}>
           {labelAndDescription}
@@ -565,6 +614,7 @@ export function Item({
           tabIndex={isDisabled ? -1 : undefined}
           {...stylex.props(
             styles.invisibleAnchor,
+            isInline && styles.inlineContent,
             isDisabled && styles.disabledContent,
           )}>
           {labelAndDescription}
@@ -576,6 +626,7 @@ export function Item({
           disabled={isDisabled}
           {...stylex.props(
             styles.invisibleButton,
+            isInline && styles.inlineContent,
             isDisabled && styles.disabledContent,
           )}>
           {labelAndDescription}
@@ -584,6 +635,7 @@ export function Item({
         <span
           {...stylex.props(
             styles.content,
+            isInline && styles.inlineContent,
             isDisabled && styles.disabledContent,
           )}>
           {labelAndDescription}
@@ -602,11 +654,11 @@ export function Item({
     </>
   );
 
+  const mergedRef = useMergedRefs(ref, containerRef);
+
   return (
     <Component
-      ref={
-        (isDelegate ? mergeRefs(ref, containerRef) : ref) as React.Ref<never>
-      }
+      ref={(isDelegate ? mergedRef : ref) as React.Ref<never>}
       {...restProps}
       aria-selected={(allowsAriaSelected && isSelected) || undefined}
       // aria-selected is invalid on roles that don't permit it (listitem, a
@@ -619,18 +671,25 @@ export function Item({
       }
       aria-disabled={isDisabled || undefined}
       {...mergeProps(
-        themeProps('item', {density, align, variant}),
-        stylex.props(
+        themeProps('item', {
+          density,
+          align,
+          // The default surface is left unreflected, as DropdownMenuItem does
+          // with its own default: a menu row is this same element, and its
+          // `data-variant="destructive"` must not be overwritten.
+          variant: variant === 'transparent' ? null : variant,
+        }),
+        focusOutlineProps.focusWithin(
           styles.root,
           densityStyles[density],
           align === 'start' && styles.alignStart,
           variant !== 'transparent' && variantStyles[variant],
           isInteractive && styles.interactive,
-          isInteractive && styles.focusVisibleOutline,
+          isInteractive && interactionOverlayStyles.backgroundImage,
           isHighlighted && styles.highlighted,
           isSelected && styles.selected,
           // After the density padding so the border-inset calc wins; it reads
-          // the --_item-padding-* vars published above.
+          // the --_item-inset-inline and --_item-padding-block vars above.
           variant === 'outline' && styles.withBorder,
           isDisabled && !hasParentRole && styles.disabled,
           xstyle,
@@ -648,7 +707,10 @@ export function Item({
               ? handleContainerClick
               : undefined
       }>
-      {innerContent}
+      <ItemDescriptionContext
+        value={hasRenderableDescription ? descriptionID : null}>
+        {innerContent}
+      </ItemDescriptionContext>
     </Component>
   );
 }

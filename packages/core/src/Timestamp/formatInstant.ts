@@ -30,6 +30,7 @@
  */
 
 import {SHARED_DATE_FORMAT_OPTIONS, getTimeZoneParts} from '../utils/plainDate';
+import type {Locale} from '../i18n/types';
 import type {TimestampFormat} from './Timestamp';
 
 // =============================================================================
@@ -41,12 +42,11 @@ import type {TimestampFormat} from './Timestamp';
  * style ("February 19, 2026 at 5:00:00 PM UTC") that backs a relative
  * timestamp's accessible name and the tooltip's default line.
  *
- * `'relative'` and `'auto'` are excluded: a relative phrase names no instant,
- * so a zone could not change what it says.
+ * `'relative'`, `'relative_short'`, and `'auto'` are excluded: a relative
+ * phrase names no instant, so a zone could not change what it says.
  */
 export type InstantFormat =
-  | Exclude<TimestampFormat, 'relative' | 'auto'>
-  | 'full';
+  Exclude<TimestampFormat, 'relative' | 'relative_short' | 'auto'> | 'full';
 
 export interface FormatInstantOptions {
   /**
@@ -70,6 +70,16 @@ export interface FormatInstantOptions {
    * @default false
    */
   isTimezoneShown?: boolean;
+  /**
+   * How the zone name is spelled when a format carries one. `'short'` is the
+   * abbreviation ("PST"); `'long'` spells it out ("Pacific Standard Time").
+   * Only `'full'` honours it — it is the one format that always names its zone.
+   * The spelled-out form backs a relative timestamp's accessible name, where an
+   * abbreviation reads as an unexpanded initialism to a screen reader
+   * (WCAG 3.1.4); every visible surface keeps the abbreviation.
+   * @default 'short'
+   */
+  timeZoneNameStyle?: 'short' | 'long';
 }
 
 // =============================================================================
@@ -150,51 +160,62 @@ function getWallClock(date: Date, timeZone: string | undefined): WallClock {
 /**
  * Renders one instant in one absolute format.
  *
- * Pure: the same arguments always produce the same string for a given host
+ * Pure: the same arguments always produce the same string for the requested
  * locale (and, when no `timeZone` is given, host zone).
  */
 export function formatInstant(
   date: Date,
   format: InstantFormat,
-  {timeZone, isTimezoneShown = false}: FormatInstantOptions = {},
+  locale: Locale,
+  {
+    timeZone,
+    isTimezoneShown = false,
+    timeZoneNameStyle = 'short',
+  }: FormatInstantOptions = {},
 ): string {
   const zone = timeZone === undefined ? {} : {timeZone};
   const zoneName = isTimezoneShown ? {timeZoneName: 'short' as const} : {};
 
   switch (format) {
     case 'full':
-      return new Intl.DateTimeFormat(undefined, {
+      return new Intl.DateTimeFormat(locale, {
         ...FULL_OPTIONS,
+        timeZoneName: timeZoneNameStyle,
         ...zone,
+        calendar: 'gregory',
       }).format(date);
 
     case 'date':
-      return new Intl.DateTimeFormat(undefined, {
+      return new Intl.DateTimeFormat(locale, {
         ...SHARED_DATE_FORMAT_OPTIONS.date,
         ...zone,
+        calendar: 'gregory',
       }).format(date);
 
     case 'date_long':
-      return new Intl.DateTimeFormat(undefined, {
+      return new Intl.DateTimeFormat(locale, {
         ...SHARED_DATE_FORMAT_OPTIONS.date_long,
         ...zone,
+        calendar: 'gregory',
       }).format(date);
 
     case 'date_weekday':
-      return new Intl.DateTimeFormat(undefined, {
+      return new Intl.DateTimeFormat(locale, {
         ...SHARED_DATE_FORMAT_OPTIONS.date_weekday,
         ...zone,
+        calendar: 'gregory',
       }).format(date);
 
     case 'date_time':
-      return new Intl.DateTimeFormat(undefined, {
+      return new Intl.DateTimeFormat(locale, {
         ...DATE_TIME_OPTIONS,
         ...zoneName,
         ...zone,
+        calendar: 'gregory',
       }).format(date);
 
     case 'time':
-      return new Intl.DateTimeFormat(undefined, {
+      return new Intl.DateTimeFormat(locale, {
         ...TIME_OPTIONS,
         ...zoneName,
         ...zone,
@@ -214,5 +235,11 @@ export function formatInstant(
       const w = getWallClock(date, timeZone);
       return `${pad(w.hour)}:${pad(w.minute)}:${pad(w.second)}`;
     }
+
+    case 'unix_seconds':
+      // Unix time in whole seconds since the epoch. The epoch is an absolute
+      // instant, so this is zone-independent — `timeZone` is intentionally
+      // ignored (a wall-clock zone can't change how many seconds have elapsed).
+      return String(Math.floor(date.getTime() / 1000));
   }
 }

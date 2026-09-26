@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'LayoutFooter',
@@ -8,6 +8,23 @@ export const docs = {
   displayName: 'Layout Footer',
   isHiddenFromOverview: true,
   description: 'Bottom bar for action bars, pagination, and status bars.',
+  playground: {
+    defaults: {
+      children: 'Footer content: status bar or actions',
+      hasDivider: true,
+    },
+    wrapper: {
+      component: 'Layout',
+      slotProp: 'footer',
+      props: {
+        content: {
+          __element: 'LayoutContent',
+          props: {},
+          children: 'Main content area',
+        },
+      },
+    },
+  },
   props: [
     {
       name: 'children',

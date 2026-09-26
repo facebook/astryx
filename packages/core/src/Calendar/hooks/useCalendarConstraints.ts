@@ -20,6 +20,7 @@ import {
   plainDateToDate,
   plainDateIsBefore,
   plainDateIsAfter,
+  plainDateDiffDays,
 } from '../../utils/plainDate';
 
 /**
@@ -35,6 +36,25 @@ export interface UseCalendarConstraintsOptions {
    * Date is disabled if ANY function returns false.
    */
   dateConstraints?: ReadonlyArray<(date: Date) => boolean>;
+  /**
+   * Maximum number of days a range may span, counting both endpoints
+   * (a value of 7 allows a 7-day window). In range mode, once a start is
+   * picked, dates further than this from it are disabled. No effect until a
+   * range anchor exists.
+   */
+  maxRangeSpan?: number;
+  /**
+   * Minimum number of days a range must span, counting both endpoints
+   * (a value of 2 forbids a single-day range). In range mode, once a start
+   * is picked, dates closer than this to it are disabled.
+   */
+  minRangeSpan?: number;
+  /**
+   * The in-progress range start (first click, awaiting the second). Span
+   * constraints are measured from this date. Null when no selection is
+   * underway.
+   */
+  rangeAnchor?: PlainDate | null;
 }
 
 /**
@@ -53,13 +73,15 @@ export interface UseCalendarConstraintsReturn {
  * Hook for managing calendar date validation constraints.
  *
  * Provides a function to check if a date is disabled based on
- * min/max bounds and custom constraint functions.
+ * min/max bounds, range-span bounds, and custom constraint functions.
  *
  * @example
  * ```
  * const {isDateDisabled} = useCalendarConstraints({
  *   min: '2026-01-01',
  *   max: '2026-12-31',
+ *   maxRangeSpan: 7, // once a start is picked, cap the window at 7 days
+ *   rangeAnchor, // the in-progress start (null before the first click)
  *   dateConstraints: [
  *     (date) => date.getDay() !== 0, // No Sundays (receives native Date)
  *   ],
@@ -74,7 +96,8 @@ export interface UseCalendarConstraintsReturn {
 export function useCalendarConstraints(
   options: UseCalendarConstraintsOptions,
 ): UseCalendarConstraintsReturn {
-  const {min, max, dateConstraints} = options;
+  const {min, max, dateConstraints, maxRangeSpan, minRangeSpan, rangeAnchor} =
+    options;
 
   // Parse min/max dates
   const minDate = useMemo(() => (min ? plainDateFromISO(min) : null), [min]);
@@ -93,6 +116,27 @@ export function useCalendarConstraints(
         return true;
       }
 
+      // Range-span bounds, measured from the in-progress start. Spans count
+      // both endpoints (a span of 7 spans a 7-day window), so the reachable
+      // distance from the anchor is `span - 1` days in either direction. Only
+      // active once a start is picked — before that, every day stays pickable.
+      if (rangeAnchor) {
+        const distance = Math.abs(plainDateDiffDays(rangeAnchor, date));
+        if (maxRangeSpan != null && distance > maxRangeSpan - 1) {
+          return true;
+        }
+        // The anchor itself (distance 0) is never disabled by minRangeSpan —
+        // it is the picked start, and disabling it would render the active
+        // selection start as aria-disabled to keyboard and screen-reader users.
+        if (
+          minRangeSpan != null &&
+          distance > 0 &&
+          distance < minRangeSpan - 1
+        ) {
+          return true;
+        }
+      }
+
       // Check custom constraints (convert to Date for public API compatibility)
       if (dateConstraints) {
         for (const constraint of dateConstraints) {
@@ -104,7 +148,14 @@ export function useCalendarConstraints(
 
       return false;
     },
-    [minDate, maxDate, dateConstraints],
+    [
+      minDate,
+      maxDate,
+      dateConstraints,
+      maxRangeSpan,
+      minRangeSpan,
+      rangeAnchor,
+    ],
   );
 
   return {

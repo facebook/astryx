@@ -92,6 +92,7 @@ export function DropdownMenuRadioGroup({
   label,
   hasCloseOnSelect = true,
   children,
+  xstyle,
   className,
   style,
   ...rest
@@ -106,7 +107,7 @@ export function DropdownMenuRadioGroup({
       {...rest}
       role="group"
       aria-label={label}
-      {...mergeProps(stylex.props(styles.group), {className, style})}>
+      {...mergeProps(stylex.props(styles.group, xstyle), {className, style})}>
       <DropdownMenuRadioGroupContext value={contextValue}>
         {children}
       </DropdownMenuRadioGroupContext>

@@ -12,7 +12,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Layout/Layout.doc.mjs
  * - /apps/storybook/stories/Layout.stories.tsx
- * - /packages/cli/templates/blocks/components/Layout/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Layout/ (showcase blocks)
  */
 
 import type {AriaRole, ReactNode} from 'react';
@@ -167,7 +167,7 @@ export interface LayoutPanelProps extends BaseProps<HTMLDivElement> {
    *
    * @example
    * ```
-   * const sidebar = useResizable({ defaultSize: 250, minSizePx: 200 });
+   * const sidebar = useResizable({ defaultSize: 250, minSize: 200 });
    * <LayoutPanel resizable={sidebar.props}>
    *   <Navigation />
    * </LayoutPanel>

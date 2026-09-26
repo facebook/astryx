@@ -22,7 +22,7 @@ import {detail} from './detail/detail.mjs';
 import {doc} from './detail/doc/doc.mjs';
 import {search} from './search/search.mjs';
 import {AstryxError} from '../error.mjs';
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
 /**
  * @param {string} [query]

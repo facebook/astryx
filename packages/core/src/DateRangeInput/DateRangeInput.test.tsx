@@ -9,9 +9,14 @@
  * SYNC: When DateRangeInput.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
+function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+  const {prose, component} = generateThemeCSS(theme);
+  return [prose, component].filter(Boolean).join('\n\n');
+}
 // getButton/queryButton instead of getByRole('button', {name}): the closed
 // popover keeps a two-month Calendar (~85 role=button nodes) mounted, which
 // made every role+name query compute ~85 accessible names through jsdom's
@@ -21,7 +26,8 @@ import {DateRangeInput} from './DateRangeInput';
 import type {DateRange} from './DateRangeInput';
 import {Icon} from '../Icon';
 import {defineTheme} from '../theme/defineTheme';
-import {generateThemeCSSFlat} from '../theme/generateThemeRules';
+import {generateThemeCSS} from '../theme/generateThemeRules';
+import {InternationalizationProvider} from '../i18n';
 
 describe('DateRangeInput', () => {
   it('renders with label', () => {
@@ -65,6 +71,29 @@ describe('DateRangeInput', () => {
     expect(trigger.textContent).toMatch(/Mar/);
     expect(trigger.textContent).toMatch(/15/);
     expect(trigger.textContent).toMatch(/22/);
+  });
+
+  it('updates the committed range display when provider locale changes', () => {
+    const range: DateRange = {
+      start: '2025-01-02',
+      end: '2025-01-05',
+    };
+    const renderDateRangeInput = (locale: 'en-US' | 'es-ES') => (
+      <InternationalizationProvider locale={locale}>
+        <DateRangeInput
+          label="Range"
+          value={range}
+          onChange={() => {}}
+          hasClear={false}
+        />
+      </InternationalizationProvider>
+    );
+    const {rerender} = render(renderDateRangeInput('en-US'));
+
+    expect(screen.getByText('Jan 2, 2025 – Jan 5, 2025')).toBeInTheDocument();
+
+    rerender(renderDateRangeInput('es-ES'));
+    expect(screen.getByText('2 ene 2025 – 5 ene 2025')).toBeInTheDocument();
   });
 
   it('forwards ref to trigger button', () => {
@@ -341,10 +370,15 @@ describe('DateRangeInput', () => {
       expect(
         screen.queryByRole('listbox', {hidden: true}),
       ).not.toBeInTheDocument();
-      expect(
-        screen.getByRole('group', {name: 'Preset date ranges', hidden: true}),
-      ).toBeInTheDocument();
-      expect(getButton('Last 7 days')).toBeInTheDocument();
+      const group = screen.getByRole('group', {
+        name: 'Preset date ranges',
+        hidden: true,
+      });
+      expect(group).toBeInTheDocument();
+      expect(group).toHaveClass('astryx-date-range-input-presets');
+      expect(getButton('Last 7 days')).toHaveClass(
+        'astryx-date-range-input-preset',
+      );
     });
 
     it('marks the applied preset with aria-current, not aria-selected', () => {
@@ -357,10 +391,98 @@ describe('DateRangeInput', () => {
         />,
       );
       const active = getButton('Last 7 days');
+      expect(active).toHaveClass('astryx-date-range-input-preset');
+      expect(active).toHaveAttribute('data-selected', 'selected');
       expect(active).toHaveAttribute('aria-current', 'true');
       expect(active).not.toHaveAttribute('aria-selected');
       const inactive = getButton('This month');
+      expect(inactive).toHaveClass('astryx-date-range-input-preset');
+      expect(inactive).not.toHaveAttribute('data-selected');
+      expect(inactive).not.toHaveAttribute('data-disabled');
       expect(inactive).not.toHaveAttribute('aria-current');
+    });
+
+    it('disables a preset when its start is before min', () => {
+      const handleChange = vi.fn();
+      render(
+        <DateRangeInput
+          label="Range"
+          value={null}
+          onChange={handleChange}
+          min="2026-03-02"
+          presets={[presets[0]]}
+        />,
+      );
+
+      const preset = getButton('Last 7 days');
+      expect(preset).toBeDisabled();
+      fireEvent.click(preset);
+      expect(handleChange).not.toHaveBeenCalled();
+    });
+
+    it('disables a preset when its end is after max', () => {
+      const handleChange = vi.fn();
+      render(
+        <DateRangeInput
+          label="Range"
+          value={null}
+          onChange={handleChange}
+          max="2026-03-06"
+          presets={[presets[0]]}
+        />,
+      );
+
+      const preset = getButton('Last 7 days');
+      expect(preset).toBeDisabled();
+      fireEvent.click(preset);
+      expect(handleChange).not.toHaveBeenCalled();
+    });
+
+    it('disables a preset when either endpoint fails dateConstraints', () => {
+      const handleChange = vi.fn();
+      render(
+        <DateRangeInput
+          label="Range"
+          value={null}
+          onChange={handleChange}
+          dateConstraints={[date => date.getDate() !== 7]}
+          presets={[presets[0]]}
+        />,
+      );
+
+      const preset = getButton('Last 7 days');
+      expect(preset).toBeDisabled();
+      fireEvent.click(preset);
+      expect(handleChange).not.toHaveBeenCalled();
+    });
+
+    it('commits an enabled preset using its already-resolved range', () => {
+      const range = {start: '2026-03-01', end: '2026-03-07'} as const;
+      const getRange = vi.fn(() => range);
+      let getRangeCallsAtChange = 0;
+      const handleChange = vi.fn(() => {
+        getRangeCallsAtChange = getRange.mock.calls.length;
+      });
+      render(
+        <DateRangeInput
+          label="Range"
+          value={null}
+          onChange={handleChange}
+          min="2026-03-01"
+          max="2026-03-31"
+          dateConstraints={[date => date.getDate() !== 13]}
+          minRangeSpan={2}
+          maxRangeSpan={7}
+          presets={[{label: 'Allowed range', getRange}]}
+        />,
+      );
+
+      const getRangeCallsBeforeClick = getRange.mock.calls.length;
+      const preset = getButton('Allowed range');
+      expect(preset).not.toBeDisabled();
+      fireEvent.click(preset);
+      expect(handleChange).toHaveBeenCalledWith(range);
+      expect(getRangeCallsAtChange).toBe(getRangeCallsBeforeClick);
     });
   });
   describe('disabledMessage', () => {
@@ -506,6 +628,72 @@ describe('DateRangeInput statusVariant forwarding', () => {
       'detached',
     );
   });
+
+  describe('weekStartsOn', () => {
+    // The calendar popover renders in the top layer; jsdom keeps the content in
+    // the DOM but role queries skip it, so read the columnheaders directly.
+    const openAndReadWeekdays = (container: HTMLElement): (string | null)[] => {
+      fireEvent.click(getButton('Open calendar'));
+      return Array.from(container.querySelectorAll('[role="columnheader"]'))
+        .slice(0, 7)
+        .map(h => h.textContent);
+    };
+
+    it('defaults to a Sunday-first week', () => {
+      const {container} = render(
+        <DateRangeInput label="Range" value={null} onChange={() => {}} />,
+      );
+      expect(openAndReadWeekdays(container)).toEqual([
+        'Su',
+        'Mo',
+        'Tu',
+        'We',
+        'Th',
+        'Fr',
+        'Sa',
+      ]);
+    });
+
+    it('forwards a numeric weekStartsOn to the calendar', () => {
+      const {container} = render(
+        <DateRangeInput
+          label="Range"
+          value={null}
+          onChange={() => {}}
+          weekStartsOn={1}
+        />,
+      );
+      expect(openAndReadWeekdays(container)).toEqual([
+        'Mo',
+        'Tu',
+        'We',
+        'Th',
+        'Fr',
+        'Sa',
+        'Su',
+      ]);
+    });
+
+    it('accepts a three-letter day name', () => {
+      const {container} = render(
+        <DateRangeInput
+          label="Range"
+          value={null}
+          onChange={() => {}}
+          weekStartsOn="mon"
+        />,
+      );
+      expect(openAndReadWeekdays(container)).toEqual([
+        'Mo',
+        'Tu',
+        'We',
+        'Th',
+        'Fr',
+        'Sa',
+        'Su',
+      ]);
+    });
+  });
 });
 
 describe('DateRangeInput icon theme targets', () => {
@@ -521,7 +709,7 @@ describe('DateRangeInput icon theme targets', () => {
     return icon as HTMLElement;
   };
 
-  it('renders astryx-date-range-input-clear-icon on the clear glyph', () => {
+  it('renders astryx-input-clear-icon (plus the legacy alias) on the clear glyph', () => {
     render(
       <DateRangeInput
         label="Range"
@@ -530,10 +718,13 @@ describe('DateRangeInput icon theme targets', () => {
         hasClear
       />,
     );
-    // The stable target lands on the icon element itself (not the button), so a
-    // theme can restyle just this glyph (color, size, hover) via defineTheme —
-    // a button-level target could not reach the icon's own color/size.
+    // The canonical target lands on the icon element itself (not the button),
+    // so a theme can restyle just this glyph (color, size, hover) via
+    // defineTheme — a button-level target could not reach the icon's own
+    // color/size. The original per-component name remains as a compatibility
+    // alias.
     const icon = iconIn(getButton('Clear Range'));
+    expect(icon).toHaveClass('astryx-input-clear-icon');
     expect(icon).toHaveClass('astryx-date-range-input-clear-icon');
     expect(icon).toHaveClass('astryx-icon');
   });
@@ -547,11 +738,12 @@ describe('DateRangeInput icon theme targets', () => {
     expect(icon).toHaveAttribute('data-state', 'collapsed');
   });
 
-  it('renders the default icons (secondary color, sm size) byte-identically', () => {
-    // Pixel-identical default guard: the glyphs must carry the exact same
-    // StyleX color/size classes as a standalone secondary/sm icon. The added
-    // target class is purely additive — it changes nothing until a theme
-    // targets it.
+  it('routes the clear glyph through the shared clear button (default look unchanged)', () => {
+    // Default-look guard for the clear affordance. It now composes the shared
+    // InputClearButton (a ghost Button with a secondary/sm glyph), so aside
+    // from its target classes the glyph matches a standalone `secondary`/`sm`
+    // close icon — the default clear look is defined once, in InputClearButton.
+    // (The calendar-toggle glyph is covered separately.)
     render(
       <DateRangeInput
         label="Range"
@@ -562,22 +754,24 @@ describe('DateRangeInput icon theme targets', () => {
     );
     const clearIcon = iconIn(getButton('Clear Range'));
 
-    const {container: refContainer} = render(
+    const {container: clearRefContainer} = render(
       <Icon icon="close" size="sm" color="secondary" />,
     );
-    const refIcon = refContainer.querySelector('.astryx-icon') as HTMLElement;
+    const clearRefIcon = clearRefContainer.querySelector(
+      '.astryx-icon',
+    ) as HTMLElement;
 
     const styleClasses = (el: HTMLElement) =>
       el.className
         .split(' ')
         .filter(
           c =>
-            c !== 'astryx-date-range-input-clear-icon' &&
-            c !== 'astryx-date-range-input-toggle-icon',
+            c !== 'astryx-input-clear-icon' &&
+            c !== 'astryx-date-range-input-clear-icon',
         )
         .sort();
 
-    expect(styleClasses(clearIcon)).toEqual(styleClasses(refIcon));
+    expect(styleClasses(clearIcon)).toEqual(styleClasses(clearRefIcon));
   });
 
   it('exposes the icon targets so a theme reaches icon color, size, and hover', () => {
@@ -603,11 +797,139 @@ describe('DateRangeInput icon theme targets', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-date-range-input-clear-icon');
     expect(css).toContain('.astryx-date-range-input-toggle-icon');
     expect(css).toContain(':hover');
     expect(css).toContain('12px');
     expect(css).toContain('14px');
+  });
+});
+
+describe('DateRangeInput disabled theme state', () => {
+  it('reflects disabled on the root target so themes can gate paint on it', () => {
+    const {container} = render(
+      <DateRangeInput
+        label="Range"
+        value={null}
+        onChange={() => {}}
+        isDisabled
+      />,
+    );
+    const root = container.querySelector('.astryx-date-range-input');
+    expect(root).toHaveAttribute('data-disabled', 'disabled');
+  });
+
+  it('omits data-disabled when enabled, like status does', () => {
+    const {container} = render(
+      <DateRangeInput label="Range" value={null} onChange={() => {}} />,
+    );
+    const root = container.querySelector('.astryx-date-range-input');
+    expect(root).not.toHaveAttribute('data-disabled');
+  });
+});
+
+describe('DateRangeInput range-span forwarding', () => {
+  // Pin "today" so the popover opens on a known month and the day buttons we
+  // query are guaranteed to render.
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-05T12:00:00Z'));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  // The calendar renders in the top layer; jsdom keeps day buttons in the DOM
+  // but role queries skip them, so reach them by their machine-readable
+  // data-date (ISO) attribute — the same approach Calendar's own tests use.
+  const dayButton = (iso: string): HTMLButtonElement | null =>
+    document.querySelector<HTMLButtonElement>(`button[data-date="${iso}"]`);
+
+  it('allows selecting a one-day range when minRangeSpan is 1', () => {
+    const handleChange = vi.fn();
+    render(
+      <DateRangeInput
+        label="Reporting period"
+        value={null}
+        onChange={handleChange}
+        minRangeSpan={1}
+        numberOfMonths={1}
+      />,
+    );
+
+    fireEvent.click(getButton('Open calendar'));
+    fireEvent.click(dayButton('2026-01-10') as HTMLButtonElement);
+    fireEvent.click(dayButton('2026-01-10') as HTMLButtonElement);
+
+    expect(handleChange).toHaveBeenCalledWith({
+      start: '2026-01-10',
+      end: '2026-01-10',
+    });
+  });
+
+  it('forwards maxRangeSpan so the window caps after a start is picked', () => {
+    render(
+      <DateRangeInput
+        label="Reporting period"
+        value={null}
+        onChange={() => {}}
+        maxRangeSpan={7}
+      />,
+    );
+
+    fireEvent.click(getButton('Open calendar'));
+
+    // Before a start is picked, a far-off day is selectable.
+    expect(dayButton('2026-01-20')).not.toBeDisabled();
+
+    fireEvent.click(dayButton('2026-01-10') as HTMLButtonElement);
+
+    // A 7-day window spans start ± 6 days: Jan 16 is the edge, Jan 17 is out.
+    expect(dayButton('2026-01-16')).not.toBeDisabled();
+    expect(dayButton('2026-01-17')).toBeDisabled();
+  });
+
+  it('disables a preset whose range violates the span cap', () => {
+    const presets = [
+      {
+        label: 'Last 3 days',
+        getRange: (): DateRange => ({
+          start: '2026-01-08',
+          end: '2026-01-10',
+        }),
+      },
+      {
+        label: 'Last 30 days',
+        getRange: (): DateRange => ({
+          start: '2025-12-12',
+          end: '2026-01-10',
+        }),
+      },
+    ];
+    const handleChange = vi.fn();
+    render(
+      <DateRangeInput
+        label="Reporting period"
+        value={null}
+        onChange={handleChange}
+        maxRangeSpan={7}
+        presets={presets}
+      />,
+    );
+
+    fireEvent.click(getButton('Open calendar'));
+
+    // The 3-day preset fits the 7-day cap; the 30-day preset can't be committed.
+    const withinCap = getButton('Last 3 days');
+    const overCap = getButton('Last 30 days');
+    expect(withinCap).not.toBeDisabled();
+    expect(withinCap).not.toHaveAttribute('data-disabled');
+    expect(overCap).toBeDisabled();
+    expect(overCap).toHaveClass('astryx-date-range-input-preset');
+    expect(overCap).toHaveAttribute('data-disabled', 'disabled');
+
+    fireEvent.click(overCap);
+    expect(handleChange).not.toHaveBeenCalled();
   });
 });

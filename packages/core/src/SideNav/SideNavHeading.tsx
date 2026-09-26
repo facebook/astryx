@@ -16,7 +16,7 @@
  * - /packages/core/src/SideNav/SideNav.test.tsx
  * - /packages/core/src/SideNav/index.ts
  * - /apps/storybook/stories/SideNav.stories.tsx
- * - /packages/cli/templates/blocks/components/SideNav/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
 import {useMemo, useRef, type ReactNode} from 'react';
@@ -33,13 +33,16 @@ import {
 // of lazy loading layer resources.
 import {usePopover} from '../Popover/usePopover';
 import {Link} from '../Link';
-import {getIcon} from '../Icon/globalIconRegistry';
+import {Icon} from '../Icon';
 import {Tooltip} from '../Tooltip';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useSideNavCollapse} from './SideNavCollapseContext';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {BaseProps} from '../BaseProps';
 import {useMenuHover} from '../hooks/useMenuHover';
 import {NavHeadingCloseContext} from '../NavMenu/NavMenuContext';
@@ -58,7 +61,7 @@ const styles = stylex.create({
     minHeight: spacingVars['--spacing-8'],
     paddingInlineStart: {
       default: spacingVars['--spacing-2'],
-      ':has(.astryx-navicon)': 0,
+      ':has(.astryx-nav-icon)': 0,
     },
     paddingInlineEnd: spacingVars['--spacing-2'],
     paddingBlock: 0,
@@ -72,7 +75,10 @@ const styles = stylex.create({
     paddingInline: 0,
   },
   interactive: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
     borderWidth: 0,
     borderStyle: 'none',
@@ -81,7 +87,7 @@ const styles = stylex.create({
     fontSize: 'inherit',
     fontWeight: fontWeightVars['--font-weight-normal'],
     textAlign: 'start',
-    ':hover': {
+    ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
       '@media (hover: hover)': {
         backgroundColor: colorVars['--color-overlay-hover'],
       },
@@ -90,7 +96,10 @@ const styles = stylex.create({
   // Menu trigger: like interactive but no hover background.
   // Only cursor:pointer signals interactivity; the popover provides context.
   menuTrigger: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     borderRadius: radiusVars['--radius-element'],
     borderWidth: 0,
     borderStyle: 'none',
@@ -103,7 +112,7 @@ const styles = stylex.create({
   interactiveCollapsed: {
     backgroundColor: {
       default: 'transparent',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': 'transparent',
       },
     },
@@ -172,6 +181,11 @@ const styles = stylex.create({
     minWidth: spacingVars['--spacing-7'],
     minHeight: spacingVars['--spacing-7'],
     color: colorVars['--color-icon-secondary'],
+    // 28px is the hit/alignment box, not the glyph. Icon sizes its own span
+    // with a matching font-size (the registry chevron is a 1em SVG), so pin
+    // font-size back to inherit to keep the glyph at the 14px it renders at
+    // today. The 28px min box still wins over Icon's width/height.
+    fontSize: 'inherit',
   },
   headerEndContent: {
     flexShrink: 0,
@@ -199,14 +213,17 @@ const styles = stylex.create({
     minHeight: spacingVars['--spacing-8'],
     paddingInlineStart: {
       default: spacingVars['--spacing-2'],
-      ':has(.astryx-navicon)': 0,
+      ':has(.astryx-nav-icon)': 0,
     },
     paddingInlineEnd: spacingVars['--spacing-2'],
     paddingBlock: 0,
     marginBlockStart: spacingVars['--spacing-1'],
     marginBlockEnd: spacingVars['--spacing-2'],
     marginInline: spacingVars['--spacing-1'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   // Chevron inside the popover heading — same as chevron but rotated up
   popoverChevron: {
@@ -217,7 +234,14 @@ const styles = stylex.create({
     minWidth: spacingVars['--spacing-7'],
     minHeight: spacingVars['--spacing-7'],
     color: colorVars['--color-icon-secondary'],
+    // See `chevron` — keep the glyph on the inherited font-size.
+    fontSize: 'inherit',
     transform: 'rotate(180deg)',
+  },
+  // Glyph inside a chevron *trigger* (the button already carries the 28px box
+  // and the color, so the Icon only has to avoid resizing itself).
+  chevronGlyph: {
+    fontSize: 'inherit',
   },
   popover: {
     minWidth: 'anchor-size(width)',
@@ -358,25 +382,36 @@ export function SideNavHeading({
     hasCloseButton: false,
   });
 
-  const closeMenuCtx = useMemo(
-    () => ({closeMenu: popover.hide}),
-    [popover.hide],
-  );
-
-  const {triggerProps, contentProps, menuRef, setTriggerEl} =
-    useMenuHover<HTMLDivElement>({
-      show: popover.show,
-      hide: popover.hide,
-      isOpen: popover.isOpen,
-      isEnabled: !!menu,
-      showDelay: 0,
-    });
-
-  const setRef = mergeRefs<HTMLDivElement>(
-    rootRef,
+  const {
+    triggerProps,
+    contentProps,
+    menuRef,
     setTriggerEl,
+    close: closeMenu,
+  } = useMenuHover<HTMLDivElement>({
+    show: popover.show,
+    hide: popover.hide,
+    isOpen: popover.isOpen,
+    isEnabled: !!menu,
+    showDelay: 0,
+  });
+
+  const closeMenuCtx = useMemo(() => ({closeMenu}), [closeMenu]);
+
+  // setTriggerEl belongs on the chevron button, not this root: it is the
+  // focus-restore target and a <div> cannot take focus. triggerRef stays here
+  // because the panel anchors to the whole heading.
+  const setRef = useMergedRefs<HTMLDivElement>(
+    rootRef,
     ref,
     menu ? popover.triggerRef : undefined,
+  );
+  const collapsedSetRef = useMergedRefs<HTMLElement>(
+    collapsedItemRef,
+    ref,
+    // Collapsed, this button is the trigger, so it takes both roles.
+    menu ? popover.triggerRef : undefined,
+    menu ? setTriggerEl : undefined,
   );
 
   // In collapsed mode: hide if no icon, show icon-only if has icon
@@ -385,8 +420,6 @@ export function SideNavHeading({
   }
   if (isCollapsed && icon) {
     const collapsedIcon = <span {...stylex.props(styles.icon)}>{icon}</span>;
-
-    const collapsedSetRef = mergeRefs<HTMLElement>(collapsedItemRef, ref);
 
     let collapsedElement: ReactNode;
 
@@ -399,7 +432,12 @@ export function SideNavHeading({
           data-testid={testId}
           {...mergeProps(
             themeProps('side-nav-heading'),
-            stylex.props(navItemStyles.item, styles.rootCollapsed, xstyle),
+            focusOutlineProps.focusVisible(
+              navItemStyles.item,
+              interactionOverlayStyles.backgroundColor,
+              styles.rootCollapsed,
+              xstyle,
+            ),
             className,
             style,
           )}>
@@ -418,8 +456,9 @@ export function SideNavHeading({
             {...triggerProps}
             {...mergeProps(
               themeProps('side-nav-heading'),
-              stylex.props(
+              focusOutlineProps.focusVisible(
                 navItemStyles.item,
+                interactionOverlayStyles.backgroundColor,
                 styles.rootCollapsed,
                 styles.menuTrigger,
                 xstyle,
@@ -436,8 +475,9 @@ export function SideNavHeading({
               {...contentProps}>
               <button
                 type="button"
-                {...stylex.props(styles.popoverHeading)}
-                onClick={triggerProps.onClick}>
+                {...focusOutlineProps.focusVisible(styles.popoverHeading)}
+                // A close affordance, not the trigger: dismiss only.
+                onClick={closeMenu}>
                 {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
                 <span {...stylex.props(styles.textContainer)}>
                   {superheading && (
@@ -453,9 +493,12 @@ export function SideNavHeading({
                       )}>
                       {heading}
                     </span>
-                    <span {...stylex.props(styles.popoverChevron)}>
-                      {getIcon('chevronDown')}
-                    </span>
+                    <Icon
+                      icon="chevronDown"
+                      size="sm"
+                      color="secondary"
+                      xstyle={styles.popoverChevron}
+                    />
                   </span>
                   {subheading && (
                     <span {...stylex.props(styles.subheading)}>
@@ -530,7 +573,10 @@ export function SideNavHeading({
         {hasAnyHref && headingHref && menu ? (
           <LinkComponent
             href={headingHref}
-            {...stylex.props(styles.heading, styles.headingLink)}>
+            {...focusOutlineProps.focusVisible(
+              styles.heading,
+              styles.headingLink,
+            )}>
             {heading}
           </LinkComponent>
         ) : (
@@ -550,7 +596,12 @@ export function SideNavHeading({
   );
 
   const chevronElement = showChevron && (
-    <span {...stylex.props(styles.chevron)}>{getIcon('chevronDown')}</span>
+    <Icon
+      icon="chevronDown"
+      size="sm"
+      color="secondary"
+      xstyle={styles.chevron}
+    />
   );
 
   const headerEndContentElement = headerEndContent && (
@@ -562,13 +613,17 @@ export function SideNavHeading({
   const popoverHeadingContent = (
     <button
       type="button"
-      {...stylex.props(styles.popoverHeading)}
-      onClick={triggerProps.onClick}>
+      {...focusOutlineProps.focusVisible(styles.popoverHeading)}
+      // A close affordance, not the trigger: dismiss only.
+      onClick={closeMenu}>
       {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
       {renderTextContent(
-        <span {...stylex.props(styles.popoverChevron)}>
-          {getIcon('chevronDown')}
-        </span>,
+        <Icon
+          icon="chevronDown"
+          size="sm"
+          color="secondary"
+          xstyle={styles.popoverChevron}
+        />,
       )}
     </button>
   );
@@ -582,7 +637,11 @@ export function SideNavHeading({
         data-testid={testId}
         {...mergeProps(
           themeProps('side-nav-heading'),
-          stylex.props(styles.root, styles.menuTrigger, xstyle),
+          focusOutlineProps.focusVisible(
+            styles.root,
+            styles.menuTrigger,
+            xstyle,
+          ),
           className,
           style,
         )}
@@ -612,6 +671,7 @@ export function SideNavHeading({
           {icon && <span {...stylex.props(styles.icon)}>{icon}</span>}
           {renderTextContent(
             <button
+              ref={setTriggerEl}
               type="button"
               aria-label={t('@astryx.sideNav.heading.openMenu')}
               onClick={e => {
@@ -619,8 +679,16 @@ export function SideNavHeading({
                 triggerProps.onClick();
               }}
               {...popover.triggerProps}
-              {...stylex.props(styles.chevron, styles.interactive)}>
-              {getIcon('chevronDown')}
+              {...focusOutlineProps.focusVisible(
+                styles.chevron,
+                styles.interactive,
+              )}>
+              <Icon
+                icon="chevronDown"
+                size="sm"
+                color="inherit"
+                xstyle={styles.chevronGlyph}
+              />
             </button>,
           )}
           {headerEndContentElement}
@@ -669,7 +737,7 @@ export function SideNavHeading({
               <LinkComponent
                 href={headingHref}
                 aria-label={heading}
-                {...stylex.props(styles.icon)}>
+                {...focusOutlineProps.focusVisible(styles.icon)}>
                 {icon}
               </LinkComponent>
             ) : (
@@ -678,6 +746,7 @@ export function SideNavHeading({
           {renderTextContent(
             showChevron ? (
               <button
+                ref={setTriggerEl}
                 type="button"
                 aria-label={t('@astryx.sideNav.heading.openMenu')}
                 onClick={e => {
@@ -685,8 +754,16 @@ export function SideNavHeading({
                   triggerProps.onClick();
                 }}
                 {...popover.triggerProps}
-                {...stylex.props(styles.chevron, styles.interactive)}>
-                {getIcon('chevronDown')}
+                {...focusOutlineProps.focusVisible(
+                  styles.chevron,
+                  styles.interactive,
+                )}>
+                <Icon
+                  icon="chevronDown"
+                  size="sm"
+                  color="inherit"
+                  xstyle={styles.chevronGlyph}
+                />
               </button>
             ) : undefined,
           )}
@@ -733,7 +810,7 @@ export function SideNavHeading({
             <LinkComponent
               href={headingHref}
               aria-label={heading}
-              {...stylex.props(styles.icon)}>
+              {...focusOutlineProps.focusVisible(styles.icon)}>
               {icon}
             </LinkComponent>
           ) : (

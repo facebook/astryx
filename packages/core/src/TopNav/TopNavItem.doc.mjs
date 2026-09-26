@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'TopNavItem',
@@ -8,6 +8,9 @@ export const docs = {
   displayName: 'Top Nav Item',
   isHiddenFromOverview: true,
   description: 'Navigation link item for use in TopNav startContent: renders as an anchor with hover and selected states.',
+  playground: {
+    defaults: {label: 'Projects', href: '#', isSelected: true},
+  },
   props: [
     {
       name: 'label',

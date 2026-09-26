@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').HookDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookDoc} */
 export const docs = {
   name: 'useTreeFocus',
   displayName: 'useTreeFocus',
@@ -106,7 +106,7 @@ export const docs = {
   category: 'focus',
 };
 
-/** @type {import('../docs-types').HookTranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description:
     'Manages roving-tabindex focus + WAI-ARIA tree keyboard model. ArrowUp/Down/Home/End roam linearly over visible treeitems (skip disabled); ArrowRight/Left carry tree semantics (expand/collapse, move to first-child/parent). Enter/Space activate; printable chars trigger typeahead.',

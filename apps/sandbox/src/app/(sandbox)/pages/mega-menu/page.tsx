@@ -213,7 +213,7 @@ export default function MegaMenuPage() {
                 <TopNavHeading
                   heading="Marketing"
                   logo={<NavIcon icon={<LogoIcon />} />}
-                  href="#"
+                  headingHref="#"
                 />
               }
               startContent={
@@ -325,7 +325,7 @@ export default function MegaMenuPage() {
           <div {...stylex.props(styles.navWrapper)}>
             <TopNav
               label="Simple navigation"
-              heading={<TopNavHeading heading="App" href="#" />}
+              heading={<TopNavHeading heading="App" headingHref="#" />}
               startContent={
                 <>
                   <TopNavItem label="Home" href="#" isSelected />

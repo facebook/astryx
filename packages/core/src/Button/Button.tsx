@@ -13,7 +13,7 @@
  * - /packages/core/src/Button/Button.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Button/index.ts (exports if types change)
  * - /apps/storybook/stories/Button.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Button/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Button/ (showcase blocks)
  *
  * Last synced props: label, variant, size, isDisabled, isLoading, isInterruptible, clickAction, icon, isIconOnly, width, children, tooltip, endContent, href, as, target, rel
  */
@@ -34,18 +34,25 @@ import {
   fontWeightVars,
   typeScaleVars,
   shadowVars,
+  focusVars,
 } from '../theme/tokens.stylex';
 import {Spinner} from '../Spinner';
 import {VisuallyHidden} from '../VisuallyHidden';
+import {IconDefaultSizeProvider} from '../Icon/IconDefaultSizeContext';
+import {iconBoxSizeStyles, type IconSize} from '../Icon/IconSize.stylex';
 
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {useSize} from '../SizeContext/SizeContext';
 import {useButtonGroup} from '../ButtonGroup/ButtonGroupContext';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useTranslator} from '../i18n';
+import type {ButtonVariantMap} from './index';
 
 /**
  * Base button styles
@@ -54,6 +61,15 @@ import {useTranslator} from '../i18n';
  */
 const styles = stylex.create({
   base: {
+    // Kept as a public themeable var (documented in Button.doc.mjs) even though
+    // it now defaults to the shared token: removing it would break any theme
+    // setting it, for no gain. It overrides the shared offset, so a theme can
+    // still tune the ring distance on buttons specifically.
+    '--button-focus-offset': focusVars['--focus-outline-offset'],
+    outlineOffset: {
+      default: '0',
+      ':focus-visible': 'var(--button-focus-offset)',
+    },
     position: 'relative',
     display: 'inline-flex',
     alignItems: 'center',
@@ -70,7 +86,10 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     whiteSpace: 'nowrap',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transitionProperty:
       'background-image, background-color, color, opacity, transform',
     transitionDuration: {
@@ -82,24 +101,26 @@ const styles = stylex.create({
   pressable: {
     transform: {
       default: 'scale(1)',
-      ':active': 'scale(0.98)',
+      ':active:where(:not(:disabled,[aria-disabled="true"]))': 'scale(0.98)',
     },
   },
-  disabled: {
-    cursor: 'not-allowed',
-    opacity: 0.5,
+  inactive: {
+    cursor: 'default',
     backgroundImage: 'none',
     transform: {
       default: 'none',
       ':active': 'none',
     },
   },
+  disabled: {
+    opacity: 0.5,
+  },
   ariaDisabled: {
+    // The variants' hover treatment already steps aside for
+    // `[aria-disabled]`; `:active` still matches a press on an aria-disabled
+    // button, so that one is suppressed here.
     backgroundImage: {
       default: 'none',
-      ':hover': {
-        '@media (hover: hover)': 'none',
-      },
       ':active': 'none',
     },
   },
@@ -152,17 +173,6 @@ const sizeStyles = stylex.create({
 });
 
 /**
- * Icon size per button size.
- * Matches Icon sizing: sm/md=16px, lg=20px.
- * fontSize is set so emoji and text-based icons scale correctly.
- */
-const iconSizeStyles = stylex.create({
-  sm: {width: 16, height: 16, fontSize: 16},
-  md: {width: 16, height: 16, fontSize: 16},
-  lg: {width: 20, height: 20, fontSize: 20},
-});
-
-/**
  * Resting elevation for floating buttons (e.g. a FAB). `none` is the default
  * flat button; `low`/`med`/`high` map to the shadow token scale. 'none' stays
  * a literal so it never conflicts with a variant's background layering.
@@ -178,110 +188,30 @@ const elevationStyles = stylex.create({
  * Variant styles using backgroundImage for layered colors
  * Pseudo-classes are nested within properties per StyleX recommendation
  * Overlay is stacked on top of base color using multiple linear-gradients
- * Focus outline color matches variant (destructive uses negative color)
+ * Focus outline is shared across variants for consistent keyboard affordance.
  */
 const variants = stylex.create({
   primary: {
     backgroundColor: colorVars['--color-accent'],
     color: colorVars['--color-on-accent'],
-    backgroundImage: {
-      default: null,
-      ':hover': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    '--button-focus-offset': '3px',
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': 'var(--button-focus-offset)',
-    },
   },
   secondary: {
     backgroundColor: colorVars['--color-neutral'],
     color: colorVars['--color-text-primary'],
-    backgroundImage: {
-      default: null,
-      ':hover': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    '--button-focus-offset': '3px',
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': 'var(--button-focus-offset)',
-    },
   },
   ghost: {
     backgroundColor: 'transparent',
     color: colorVars['--color-text-primary'],
-    backgroundImage: {
-      default: null,
-      ':hover': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    '--button-focus-offset': '3px',
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': 'var(--button-focus-offset)',
-    },
   },
   destructive: {
     backgroundColor: colorVars['--color-error'],
     color: colorVars['--color-on-error'],
-    backgroundImage: {
-      default: null,
-      ':hover': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-error']}`,
-    },
-    '--button-focus-offset': '3px',
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': 'var(--button-focus-offset)',
-    },
+    // The ring matches the variant it rings: an accent-colored outline on a
+    // red button reads as another control's focus. Only the color differs —
+    // width, style and offset come from the shared outline.
+    outlineColor: {default: null, ':focus-visible': colorVars['--color-error']},
   },
 });
-
-/**
- * Extensible variant map for Button.
- *
- * Theme packages can add custom variants via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/Button' {
- *   interface ButtonVariantMap {
- *     'primary-muted': true;
- *   }
- * }
- * ```
- */
-export interface ButtonVariantMap {
-  primary: true;
-  secondary: true;
-  ghost: true;
-  destructive: true;
-}
 
 /**
  * Button variant type derived from ButtonVariantMap.
@@ -293,6 +223,12 @@ export type ButtonVariant = keyof ButtonVariantMap;
  * Button size type derived from the sizeStyles StyleX object
  */
 export type ButtonSize = keyof typeof sizeStyles;
+
+const iconSizeByButtonSize = {
+  sm: 'sm',
+  md: 'sm',
+  lg: 'md',
+} satisfies Record<ButtonSize, IconSize>;
 
 export interface ButtonProps extends BaseProps<HTMLButtonElement> {
   /** Ref forwarded to the root element */
@@ -333,7 +269,8 @@ export interface ButtonProps extends BaseProps<HTMLButtonElement> {
    */
   isDisabled?: boolean;
   /**
-   * Whether the button is in a loading state.
+   * Whether the button is in a loading state. Loading prevents interaction
+   * without dimming the spinner; explicit disabled states remain dimmed.
    * @default false
    */
   isLoading?: boolean;
@@ -478,8 +415,10 @@ const loadingStyles = stylex.create({
  *
  * Layers always carry the native `popover` attribute (useLayer.tsx), and a
  * popover is never an in-flow member — it is `display: none` until shown, then
- * promoted to the top layer. So "last member" is: no following element sibling
- * that isn't a popover.
+ * promoted to the top layer. Context layers also retain an inert `<template>`
+ * marker so they can re-resolve their JSX position. Neither element is a group
+ * member, so "last member" is: no following element sibling besides those two
+ * pieces of layer infrastructure.
  *
  * Reading it the other way round — marking the *buttons* and testing for a
  * marked sibling — is the trap: it silently reclassifies anything it doesn't
@@ -495,7 +434,7 @@ const loadingStyles = stylex.create({
  * The leading edge still uses `:first-child` — a member's button always precedes
  * its own layer, so the first button is genuinely `:first-child`.
  */
-const IS_LAST_ITEM = ':not(:has(~ *:not([popover])))';
+const IS_LAST_ITEM = ':not(:has(~ *:not([popover]):not(template)))';
 
 const groupStyles = stylex.create({
   horizontal: {
@@ -634,6 +573,10 @@ export function Button({
   // not disabled, so clicks keep landing and can interrupt the in-flight action.
   const buttonDisabled =
     isDisabled || groupDisabled || (isLoadingState && !isInterruptible);
+  // A loading button remains non-interactive, but its spinner communicates an
+  // active state and must retain contrast. Only explicitly disabled controls
+  // receive the visually dimmed treatment.
+  const visuallyDisabled = isDisabled || groupDisabled;
   // isIconOnly prop is the source of truth for icon-only rendering.
   // When false (default), label is always rendered as visible text.
 
@@ -695,12 +638,13 @@ export function Button({
   const edgeCompAttr = isFlat ? {[EDGE_COMP_ATTR]: ''} : null;
 
   // Shared StyleX props for both button and link rendering
-  const sharedStylexProps = stylex.props(
+  const sharedStylexProps = focusOutlineProps.focusVisible(
     styles.base,
     sizeStyles[size],
-    variants[variant],
     isIconOnly && styles.iconOnly,
-    buttonDisabled && styles.disabled,
+    interactionOverlayStyles.backgroundImage,
+    buttonDisabled && styles.inactive,
+    visuallyDisabled && styles.disabled,
     useAriaDisabled && styles.ariaDisabled,
     renderAsLink && styles.link,
     !buttonGroup && styles.pressable,
@@ -712,20 +656,31 @@ export function Button({
       (variant === 'primary' || variant === 'destructive') &&
       (buttonGroup.orientation === 'horizontal'
         ? groupStyles.onSolidHorizontal
-        : groupStyles.onSolidVertical),
-    // Standalone floating buttons only — a grouped button's elevation is owned
+        : groupStyles.onSolidVertical), // Standalone floating buttons only — a grouped button's elevation is owned
     // by the ButtonGroup so the shared surface lifts as one unit.
     !buttonGroup && elevationStyles[elevation],
     width != null && dynamicStyles.width(width),
+    // AFTER the shared focus outline: the outline supplies width/style/offset
+    // for every variant, and `destructive` re-colors just the ring to match
+    // its own surface. Ordering is the mechanism — StyleX is last-wins.
+    variants[variant],
     xstyle,
   );
 
   const sharedMergedProps = mergeProps(
-    themeProps('button', {variant, size}),
+    // Inside a group the group owns the surface's elevation, so the button
+    // reflects the tier it actually paints rather than the prop it was handed.
+    themeProps('button', {
+      variant,
+      size,
+      elevation: buttonGroup ? 'none' : elevation,
+    }),
     sharedStylexProps,
     className,
     style,
   );
+
+  const iconSize = iconSizeByButtonSize[size];
 
   const buttonContent = (
     <>
@@ -749,8 +704,11 @@ export function Button({
         )}
         aria-hidden={isLoadingState || undefined}>
         {icon && (
-          <span {...stylex.props(styles.iconWrapper, iconSizeStyles[size])}>
-            {icon}
+          <span
+            {...stylex.props(styles.iconWrapper, iconBoxSizeStyles[iconSize])}>
+            <IconDefaultSizeProvider value={iconSize}>
+              {icon}
+            </IconDefaultSizeProvider>
           </span>
         )}
         {isIconOnly ? null : (
@@ -790,9 +748,9 @@ export function Button({
       : null;
 
   // Merge the consumer ref with the tooltip hook's trigger ref so both point at
-  // the same element. mergeRefs tolerates undefined, so this is a no-op for the
-  // tooltip side when no tooltip is set.
-  const mergedButtonRef = mergeRefs(
+  // the same element. useMergedRefs tolerates undefined, so this is a no-op for
+  // the tooltip side when no tooltip is set.
+  const mergedButtonRef = useMergedRefs(
     ref,
     tooltip != null ? tooltipHook.ref : undefined,
   );

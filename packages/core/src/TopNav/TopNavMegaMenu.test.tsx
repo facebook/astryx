@@ -9,12 +9,66 @@
  * SYNC: When TopNavMegaMenu changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import * as stylex from '@stylexjs/stylex';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {describe, it, expect, vi, beforeAll, afterAll, afterEach} from 'vitest';
+import {render, screen, act, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TopNavMegaMenu} from './TopNavMegaMenu';
 import {TopNavMegaMenuItem} from './TopNavMegaMenuItem';
 import {TopNavRenderContext} from './TopNavRenderContext';
+
+// =============================================================================
+// Popover API mock — jsdom implements no Popover API, so default-mode tests
+// that actually open/close the panel install these shims on HTMLElement.
+// =============================================================================
+
+let originalMatches: typeof HTMLElement.prototype.matches;
+
+function installPopoverApiMock() {
+  originalMatches = HTMLElement.prototype.matches;
+  HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+    // Model the browser's auto-popover stack: opening one auto popover evicts
+    // any currently open auto popover before showing the new one.
+    if (this.getAttribute('popover') === 'auto') {
+      document
+        .querySelectorAll<HTMLElement>('[popover="auto"][popover-open]')
+        .forEach(openPopover => {
+          if (openPopover === this) {
+            return;
+          }
+          openPopover.removeAttribute('popover-open');
+          const closeEvent = new Event('toggle', {bubbles: false});
+          Object.defineProperty(closeEvent, 'newState', {value: 'closed'});
+          openPopover.dispatchEvent(closeEvent);
+        });
+    }
+    this.setAttribute('popover-open', '');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'open'});
+    this.dispatchEvent(event);
+  });
+  HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+    this.removeAttribute('popover-open');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'closed'});
+    this.dispatchEvent(event);
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (HTMLElement.prototype as any).matches = function (
+    selector: string,
+  ): boolean {
+    if (selector === ':popover-open') {
+      return this.hasAttribute('popover-open');
+    }
+    return originalMatches.call(this, selector);
+  };
+}
+
+function restorePopoverApiMock() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (HTMLElement.prototype as any).matches = originalMatches;
+}
 
 // =============================================================================
 // Default (desktop) mode
@@ -80,37 +134,8 @@ describe('TopNavMegaMenu — default mode', () => {
 // =============================================================================
 
 describe('TopNavMegaMenu — popup semantics', () => {
-  // Mock the Popover API (not implemented in jsdom).
-  const originalMatches = HTMLElement.prototype.matches;
-
-  beforeAll(() => {
-    HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
-      this.setAttribute('popover-open', '');
-      const event = new Event('toggle', {bubbles: false});
-      Object.defineProperty(event, 'newState', {value: 'open'});
-      this.dispatchEvent(event);
-    });
-    HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
-      this.removeAttribute('popover-open');
-      const event = new Event('toggle', {bubbles: false});
-      Object.defineProperty(event, 'newState', {value: 'closed'});
-      this.dispatchEvent(event);
-    });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (HTMLElement.prototype as any).matches = function (
-      selector: string,
-    ): boolean {
-      if (selector === ':popover-open') {
-        return this.hasAttribute('popover-open');
-      }
-      return originalMatches.call(this, selector);
-    };
-  });
-
-  afterAll(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (HTMLElement.prototype as any).matches = originalMatches;
-  });
+  beforeAll(installPopoverApiMock);
+  afterAll(restorePopoverApiMock);
 
   it('trigger aria-controls resolves to the popup element', async () => {
     const user = userEvent.setup();
@@ -220,6 +245,383 @@ describe('TopNavMegaMenu — popup semantics', () => {
     expect(
       screen.getByRole('link', {name: /Reports/, hidden: true}),
     ).toHaveAttribute('href', '/reports');
+  });
+});
+
+// =============================================================================
+// Hover → click guard (default mode) — issue #3121
+//
+// The trigger opens on hover and on click. A hover-open records a timestamp so
+// the click that naturally follows a hover confirms and pins the panel for
+// CLICK_GUARD_MS (the panel just appeared under the cursor) instead of toggling
+// it shut. Deliberate clicks outside that window still toggle.
+// =============================================================================
+
+describe('TopNavMegaMenu — hover/click guard (default mode)', () => {
+  beforeAll(installPopoverApiMock);
+  afterAll(restorePopoverApiMock);
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function renderMenu() {
+    render(
+      <TopNavMegaMenu
+        label="Products"
+        items={<TopNavMegaMenuItem title="Analytics" href="/analytics" />}
+      />,
+    );
+    return screen.getByRole('button', {name: 'Products'});
+  }
+
+  it('keeps the panel open when a hover-open is immediately clicked', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    const trigger = renderMenu();
+
+    // Hover opens the panel after the show delay (150ms).
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // The click that naturally follows the hover must NOT toggle it shut.
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // It is still a click interaction, so it pins the panel just like a
+    // click-open. Leaving the trigger must not dismiss it.
+    await user.unhover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('closes on a click that lands well after the hover-open (past the guard)', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    const trigger = renderMenu();
+
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // Past the guard window, a click is a deliberate dismissal.
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('toggles cleanly for click-only interaction (no hover, no guard)', async () => {
+    const user = userEvent.setup();
+    const trigger = renderMenu();
+
+    // A click with no preceding hover opens...
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // ...and the next click closes — the guard only applies after a hover-open.
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('closes a hover-opened (transient) panel when the pointer leaves', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    const trigger = renderMenu();
+
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // Leaving closes it after hideDelay (250ms) — hover opens are transient.
+    await user.unhover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('keeps a click-opened (pinned) panel open when the pointer leaves', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    const trigger = renderMenu();
+
+    // A click pins the panel open (a deliberate open should persist).
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    await user.unhover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('re-entering the trigger cancels a pending hide', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    const trigger = renderMenu();
+
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // Leave (schedules a hide), then return before hideDelay elapses.
+    await user.unhover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(100);
+    });
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('does not reopen when the pointer enters the panel after close', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    const trigger = renderMenu();
+    const panel = screen.getByRole('group', {
+      name: 'Products',
+      hidden: true,
+    });
+
+    await user.click(trigger);
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    // The exit transition can leave the closed panel briefly hit-testable.
+    fireEvent.mouseEnter(panel);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('re-hovering an open panel does not refresh the click guard', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    const trigger = renderMenu();
+
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // Wait past the guard window, re-hovering along the way. The re-hover must
+    // NOT re-stamp the guard timestamp (only a fresh open may), so the click
+    // below is still judged a deliberate close.
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('opening a sibling mega menu closes the pinned menu through the native auto-popover stack', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    render(
+      <>
+        <TopNavMegaMenu
+          label="Products"
+          items={<TopNavMegaMenuItem title="Analytics" href="/analytics" />}
+        />
+        <TopNavMegaMenu
+          label="Solutions"
+          items={<TopNavMegaMenuItem title="Enterprise" href="/enterprise" />}
+        />
+      </>,
+    );
+
+    const products = screen.getByRole('button', {name: 'Products'});
+    const solutions = screen.getByRole('button', {name: 'Solutions'});
+
+    await user.click(products);
+    expect(products).toHaveAttribute('aria-expanded', 'true');
+
+    await user.hover(solutions);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+
+    expect(products).toHaveAttribute('aria-expanded', 'false');
+    expect(solutions).toHaveAttribute('aria-expanded', 'true');
+  });
+});
+
+// =============================================================================
+// Dismissal (default mode) — issue #3121
+//
+// The panel stays an *auto* popover for native light dismiss and stack
+// exclusivity. `popoverTarget` makes the button its native invoker so trigger
+// activation is not treated as an outside click before the guard can run.
+// jsdom cannot exercise that native event ordering; these tests lock in the
+// required wiring, while the end-to-end interaction is browser-verified in the
+// PR's manual test plan.
+// =============================================================================
+
+describe('TopNavMegaMenu — dismissal (default mode)', () => {
+  beforeAll(installPopoverApiMock);
+  afterAll(restorePopoverApiMock);
+
+  function renderAndOpen() {
+    render(
+      <TopNavMegaMenu
+        label="Products"
+        items={<TopNavMegaMenuItem title="Analytics" href="/analytics" />}
+      />,
+    );
+    return screen.getByRole('button', {name: 'Products'});
+  }
+
+  it('renders an auto popover and registers the trigger as its native invoker', () => {
+    const trigger = renderAndOpen();
+    const popup = document.getElementById(
+      trigger.getAttribute('aria-controls') as string,
+    );
+    expect(popup).toHaveAttribute('popover', 'auto');
+    expect(trigger).toHaveAttribute('popovertarget', popup?.id);
+  });
+
+  it('prevents the native invoker toggle so the click guard owns activation', async () => {
+    const trigger = renderAndOpen();
+
+    const clickEvent = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      detail: 1,
+    });
+    fireEvent(trigger, clickEvent);
+
+    expect(clickEvent.defaultPrevented).toBe(true);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('reconciles a browser-initiated native light dismiss', async () => {
+    const user = userEvent.setup();
+    const trigger = renderAndOpen();
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    const popup = document.getElementById(
+      trigger.getAttribute('aria-controls') as string,
+    ) as HTMLElement;
+    popup.removeAttribute('popover-open');
+    const toggleEvent = new Event('toggle', {bubbles: false});
+    Object.defineProperty(toggleEvent, 'newState', {value: 'closed'});
+    fireEvent(popup, toggleEvent);
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
+// =============================================================================
+// Keyboard (default mode) — issue #3121
+//
+// Keyboard activation always OPENS (never toggles the panel closed) and moves
+// focus into the panel; Escape closes it and returns focus to the trigger.
+// =============================================================================
+
+describe('TopNavMegaMenu — keyboard (default mode)', () => {
+  beforeAll(installPopoverApiMock);
+  afterAll(restorePopoverApiMock);
+
+  it('opens on Enter (keyboard activation)', async () => {
+    const user = userEvent.setup();
+    render(
+      <TopNavMegaMenu
+        label="Products"
+        items={<TopNavMegaMenuItem title="Analytics" href="/analytics" />}
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Products'});
+    trigger.focus();
+
+    await user.keyboard('{Enter}');
+
+    // aria-expanded is the observable signal. Enter also auto-focuses the first
+    // link (unlike pointer/hover opens, which keep focus on the trigger), but
+    // that focus landing is only verifiable in a real browser — jsdom renders
+    // the popover content display:none, so activeElement can't move onto it
+    // (browser-verified via the Playwright checks for #3121). Panel content
+    // presence is deliberately NOT asserted: useLayer renders it into the DOM
+    // even while closed, so such an assertion would be vacuous.
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('opens on Space', async () => {
+    const user = userEvent.setup();
+    render(
+      <TopNavMegaMenu
+        label="Products"
+        items={<TopNavMegaMenuItem title="Analytics" href="/analytics" />}
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Products'});
+    trigger.focus();
+
+    await user.keyboard(' ');
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('keyboard activation never toggles an open panel closed', async () => {
+    const user = userEvent.setup();
+    render(
+      <TopNavMegaMenu
+        label="Products"
+        items={<TopNavMegaMenuItem title="Analytics" href="/analytics" />}
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Products'});
+
+    // Open via pointer (focus stays on the trigger).
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // Enter on an already-open panel keeps it open — no toggle-close.
+    trigger.focus();
+    await user.keyboard('{Enter}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('closes on Escape and returns focus to the trigger', async () => {
+    const user = userEvent.setup();
+    render(
+      <TopNavMegaMenu
+        label="Products"
+        items={<TopNavMegaMenuItem title="Analytics" href="/analytics" />}
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Products'});
+
+    // Pointer open leaves focus on the trigger.
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    await user.keyboard('{Escape}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).toHaveFocus();
   });
 });
 
@@ -415,5 +817,150 @@ describe('TopNavMegaMenuItem', () => {
       </TopNavRenderContext>,
     );
     expect(screen.getByRole('link', {name: /Analytics/})).toBeInTheDocument();
+  });
+});
+
+// =============================================================================
+// The shared focus ring (#4654) — see the note in SideNav.test.tsx: jsdom will
+// not derive `:focus-visible` here, so what is pinned is that the focusable
+// element composes the shared utility's classes rather than falling back to
+// the browser's own outline.
+// =============================================================================
+
+const sharedFocusRingClasses = stylex
+  .props(focusOutlineStyles.focusVisible)
+  .className!.split(' ');
+
+function expectSharedFocusRing(el: Element) {
+  const classes = el.className.split(' ');
+  for (const c of sharedFocusRingClasses) {
+    expect(classes).toContain(c);
+  }
+}
+
+describe('TopNavMegaMenu — drawer focus ring', () => {
+  it('draws the shared ring on the drawer section header', () => {
+    render(
+      <TopNavRenderContext value="drawer">
+        <TopNavMegaMenu
+          label="Products"
+          items={<TopNavMegaMenuItem title="Analytics" href="/analytics" />}
+        />
+      </TopNavRenderContext>,
+    );
+    expectSharedFocusRing(screen.getByRole('button', {name: 'Products'}));
+  });
+
+  it('draws the shared ring on a drawer item', () => {
+    render(
+      <TopNavRenderContext value="drawer">
+        <TopNavMegaMenuItem title="Analytics" href="/analytics" />
+      </TopNavRenderContext>,
+    );
+    expectSharedFocusRing(screen.getByRole('link', {name: /Analytics/}));
+  });
+});
+
+describe('TopNavMegaMenu pass-through props', () => {
+  it('forwards pass-through props to the trigger button', () => {
+    render(
+      <TopNavMegaMenu
+        label="Products"
+        aria-label="Products mega menu"
+        id="mega-trigger"
+        data-source="nav"
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Products mega menu'});
+    expect(trigger).toHaveAttribute('id', 'mega-trigger');
+    expect(trigger).toHaveAttribute('data-source', 'nav');
+  });
+
+  it('forwards pass-through props to the drawer trigger', () => {
+    render(
+      <TopNavRenderContext value="drawer">
+        <TopNavMegaMenu label="Products" id="mega-drawer" data-source="nav" />
+      </TopNavRenderContext>,
+    );
+    const trigger = screen.getByRole('button', {name: /Products/});
+    expect(trigger).toHaveAttribute('id', 'mega-drawer');
+    expect(trigger).toHaveAttribute('data-source', 'nav');
+  });
+});
+
+describe('TopNavMegaMenu — owned handlers on the trigger', () => {
+  beforeAll(installPopoverApiMock);
+  afterAll(restorePopoverApiMock);
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("composes a caller's onClick with the trigger's own open behavior", async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+    render(
+      <TopNavMegaMenu
+        label="Products"
+        items={<TopNavMegaMenuItem title="Analytics" href="/analytics" />}
+        onClick={handleClick}
+      />,
+    );
+
+    const trigger = screen.getByRole('button', {name: 'Products'});
+    await user.click(trigger);
+
+    expect(handleClick).toHaveBeenCalledOnce();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it("composes a caller's hover handlers with the trigger's hover-open behavior", async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    const handleMouseEnter = vi.fn();
+    const handleMouseLeave = vi.fn();
+    render(
+      <TopNavMegaMenu
+        label="Products"
+        items={<TopNavMegaMenuItem title="Analytics" href="/analytics" />}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      />,
+    );
+
+    const trigger = screen.getByRole('button', {name: 'Products'});
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    expect(handleMouseEnter).toHaveBeenCalledOnce();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    await user.unhover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
+    expect(handleMouseLeave).toHaveBeenCalledOnce();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it("composes a caller's onClick with the drawer section toggle", async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+    render(
+      <TopNavRenderContext value="drawer">
+        <TopNavMegaMenu
+          label="Products"
+          items={<TopNavMegaMenuItem title="Analytics" href="/analytics" />}
+          onClick={handleClick}
+        />
+      </TopNavRenderContext>,
+    );
+
+    const trigger = screen.getByRole('button', {name: /Products/});
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(trigger);
+    expect(handleClick).toHaveBeenCalledOnce();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 });

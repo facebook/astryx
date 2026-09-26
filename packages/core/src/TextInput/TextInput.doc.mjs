@@ -1,11 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'TextInput',
   displayName: 'Text Input',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: ["textinput","textfield","input","search","clearable","prefix","suffix","adornment","validation"],
   props: [
     {
@@ -72,10 +72,28 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'onEnter',
+      type: '() => void',
+      description:
+        'Callback fired when the user presses the Enter key. IME-safe: Enter used to commit a Japanese/Chinese/Korean conversion does not fire it.',
+    },
+    {
+      name: 'onKeyDown',
+      type: '(e: KeyboardEvent<HTMLInputElement>) => void',
+      description: 'Callback fired on keydown events on the input.',
+    },
+    {
       name: 'isDisabled',
       type: 'boolean',
       description:
         'Disables the input, preventing interaction and dimming the element.',
+      default: 'false',
+    },
+    {
+      name: 'isReadOnly',
+      type: 'boolean',
+      description:
+        'Makes the input read-only: the value is shown at full opacity and still submits with the form, but cannot be edited. Unlike isDisabled, a read-only input is not dimmed and stays in the tab order. isDisabled takes precedence when both are set.',
       default: 'false',
     },
     {
@@ -146,10 +164,16 @@ export const docs = {
       description:
         'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
+    {
+      name: 'autoComplete',
+      type: 'string',
+      description:
+        'The native autocomplete attribute, forwarded to the input unchanged. Does not affect the controlled value.',
+    },
   ],
   theming: {
     targets: [
-      {className: 'astryx-text-input', visualProps: ['size', 'status']},
+      {className: 'astryx-text-input', visualProps: ['size', 'status'], states: ['disabled', 'readonly']},
     ],
   },
   usage: {
@@ -177,7 +201,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'TextInput',
   displayName: 'Text Input',
@@ -252,6 +276,13 @@ export const docsZh = {
       default: 'false',
     },
     {
+      name: 'isReadOnly',
+      type: 'boolean',
+      description:
+        '将输入框设为只读：值以完整不透明度显示并仍随表单提交，但无法编辑。与 isDisabled 不同，只读输入框不会变暗，并保留在 Tab 顺序中。同时设置时 isDisabled 优先。',
+      default: 'false',
+    },
+    {
       name: 'disabledMessage',
       type: 'string',
       description:
@@ -312,10 +343,16 @@ export const docsZh = {
       description:
         '输入框的 HTML name 属性，用于表单提交。',
     },
+    {
+      name: 'autoComplete',
+      type: 'string',
+      description:
+        '原生 autocomplete 属性，原样转发给输入框。不影响受控的值。',
+    },
   ],
   theming: {
     targets: [
-      {className: 'astryx-text-input', visualProps: ['size', 'status']},
+      {className: 'astryx-text-input', visualProps: ['size', 'status'], states: ['disabled', 'readonly']},
     ],
   },
   usage: {
@@ -343,7 +380,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Text input for collecting user text w/ label, description, validation status, optional/required indicators.',
   usage: {
@@ -381,6 +418,8 @@ export const docsDense = {
     isOptional: 'Shows "Optional" indicator. Mutually exclusive w/ isRequired.',
     isRequired: 'Shows "Required" indicator+sets aria-required. Mutually exclusive w/ isOptional.',
     isDisabled: 'Disables input, prevents interaction, dims element.',
+    isReadOnly:
+      'Read-only: value visible + still submits, but not editable. Unlike isDisabled: not dimmed, stays in tab order.',
     disabledMessage:
       'Explains why input is disabled. With isDisabled, shows tooltip on hover/focus + keeps input focusable via aria-disabled (field becomes read-only). Use instead of wrapping a disabled TextInput in Tooltip.',
     isLoading: 'Loading state w/ spinner+aria-busy.',
@@ -392,5 +431,6 @@ export const docsDense = {
     hasClear: 'Shows clear button when input has value. Clears value on click.',
     hasAutoFocus: 'Auto-focus input on mount.',
     htmlName: 'HTML name attr for form submissions.',
+    autoComplete: 'Native autocomplete attr, forwarded unchanged. Does not affect the controlled value.',
   },
 };

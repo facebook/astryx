@@ -10,7 +10,7 @@
 
 import * as fs from 'node:fs';
 import {AstryxError} from '../../../error.mjs';
-import {ERROR_CODES} from '../../../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
 
 /**
  * Read a resolved component source path into the `component.detail.source`

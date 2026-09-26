@@ -20,7 +20,7 @@
  * @property {(silent: boolean) => void} setSilent Enable/disable output.
  */
 
-import {humanLog} from '../lib/json.mjs';
+import {humanLog} from '../foundation/response/json.mjs';
 
 /**
  * The single logger instance. Silent until the CLI enables output.

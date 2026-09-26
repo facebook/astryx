@@ -11,11 +11,14 @@
  * SYNC: When modified, update this header
  */
 
-export {useFocusTrap} from './useFocusTrap';
+export {hasActiveFocusTrapEscape, useFocusTrap} from './useFocusTrap';
 export type {UseFocusTrapOptions, UseFocusTrapReturn} from './useFocusTrap';
 
 export {useAnnounce} from './useAnnounce';
 export type {AnnounceFn, AnnouncePoliteness} from './useAnnounce';
+
+export {useClipboard} from './useClipboard';
+export type {UseClipboardOptions, UseClipboardReturn} from './useClipboard';
 
 export {useGridFocus} from './useGridFocus';
 export type {UseGridFocusOptions, UseGridFocusReturn} from './useGridFocus';
@@ -45,11 +48,26 @@ export type {UseTypeaheadOptions, UseTypeaheadReturn} from './useTypeahead';
 
 export {useMediaQuery} from './useMediaQuery';
 
+export {useMergedRefs} from './useMergedRefs';
+
 export {useOverflow} from './useOverflow';
 export type {UseOverflowOptions, UseOverflowReturn} from './useOverflow';
 
 export {useScrollOverflow} from './useScrollOverflow';
 export type {ScrollOverflowState} from './useScrollOverflow';
+
+export {useScrollableArea} from './useScrollableArea';
+export type {
+  ScrollAxis,
+  ScrollAxisState,
+  ScrollOverscroll,
+  ScrollStickyContainment,
+  ScrollKeyboardAccess,
+  ScrollableAreaState,
+  ScrollableElementProps,
+  UseScrollableAreaOptions,
+  UseScrollableAreaResult,
+} from './useScrollableArea';
 
 export {useScrollLock} from './useScrollLock';
 
@@ -92,10 +110,12 @@ export {useLongPress} from './useLongPress';
 export type {UseLongPressOptions, UseLongPressHandlers} from './useLongPress';
 
 export {useDevWarning} from './useDevWarning';
+export {useIndicatorFocusRing} from './useIndicatorFocusRing';
 
 export {useContainerReveal} from './useContainerReveal';
 export type {
   UseContainerRevealOptions,
   UseContainerRevealReturn,
+  ContainerRevealOptions,
   ContentRevealOptions,
 } from './useContainerReveal';

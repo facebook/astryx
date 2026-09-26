@@ -9,14 +9,14 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /apps/storybook/stories/CommandPalette.stories.tsx
- * - /packages/cli/templates/blocks/components/CommandPalette/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/CommandPalette/ (showcase blocks)
  */
 
 import {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {
   colorVars,
   typeScaleVars,
@@ -29,6 +29,7 @@ import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const styles = stylex.create({
   wrapper: {
     display: 'flex',
@@ -72,9 +73,14 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     color: colorVars['--color-text-primary'],
     fontFamily: typographyVars['--font-family-body'],
+    // The 16px floor is iOS-only: iOS Safari zooms the page when a focused
+    // control sits under 16px, and only iOS WebKit implements
+    // -webkit-touch-callout to key the coarse-pointer floor to it.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-body-leading'],
     padding: 0,
@@ -163,6 +169,8 @@ export function CommandPaletteInput({
   onKeyDown,
   ref,
   xstyle,
+  className,
+  style,
   ...props
 }: CommandPaletteInputProps) {
   const t = useTranslator();
@@ -207,12 +215,14 @@ export function CommandPaletteInput({
       {...mergeProps(
         themeProps('command-palette-input'),
         stylex.props(styles.wrapper, xstyle),
+        className,
+        style,
       )}>
       <span {...stylex.props(styles.icon)}>
         <Icon icon="search" size="sm" color="inherit" />
       </span>
       <input
-        ref={mergeRefs(ref, inputRef)}
+        ref={useMergedRefs(ref, inputRef)}
         type="text"
         role="combobox"
         aria-expanded={ctx?.isOpen ?? true}

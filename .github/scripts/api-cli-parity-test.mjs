@@ -19,7 +19,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const CLI = path.join(ROOT, 'packages/cli/bin/astryx.mjs');
+const CLI = path.join(ROOT, 'packages/cli/clients/cli/bin/astryx.mjs');
 const skipBaseline = process.argv.includes('--no-baseline');
 const baselineRef = process.argv.includes('--baseline')
   ? process.argv[process.argv.indexOf('--baseline') + 1]
@@ -200,14 +200,33 @@ if (firstTemplate) {
 add('template nonexistent', ['template', 'nonexistent99'],
   () => apiCall(api.template, 'nonexistent99'));
 
+// Integration authoring — each per-kind API must match the generic CLI route.
+add('integration add component (dry run)',
+  ['integration', 'add', 'component', 'ParityProbe', '--dry-run'],
+  () => apiCall(api.integrationAddComponent, 'ParityProbe', {cwd: ROOT, dryRun: true}));
+add('integration add doc (dry run)',
+  ['integration', 'add', 'doc', 'parity-probe', '--dry-run'],
+  () => apiCall(api.integrationAddDoc, 'parity-probe', {cwd: ROOT, dryRun: true}));
+add('integration add template (dry run)',
+  ['integration', 'add', 'template', 'parity-probe', '--type', 'block', '--dry-run'],
+  () => apiCall(api.integrationAddTemplate, 'parity-probe', {cwd: ROOT, type: 'block', dryRun: true}));
+add('integration add codemod (dry run)',
+  ['integration', 'add', 'codemod', 'parity-probe', '--to', '9.9.9', '--dry-run'],
+  () => apiCall(api.integrationAddCodemod, 'parity-probe', {cwd: ROOT, to: '9.9.9', dryRun: true}));
+add('integration add agent-doc (dry run)',
+  ['integration', 'add', 'agent-doc', 'Use ParityProbe.', '--dry-run'],
+  () => apiCall(api.integrationAddAgentDoc, 'Use ParityProbe.', {cwd: ROOT, dryRun: true}));
+add('integration add theme (dry run)',
+  ['integration', 'add', 'theme', 'parity-probe', '--dry-run'],
+  () => apiCall(api.integrationAddTheme, 'parity-probe', {cwd: ROOT, dryRun: true}));
+
 // Theme list + add error path (read-only; never scaffolds files here).
-// `theme list` / `theme add --list` are served by the dedicated themeList()
-// leaf (the CLI routes the --list affordance there); themeAdd() now only
-// scaffolds a named slug and throws on a missing/unknown one.
+// The CLI routes its project-aware list surfaces to themeListAvailable(); the
+// synchronous themeList() export stays bundled-only for API compatibility.
 add('theme list', ['theme', 'list'],
-  () => apiCall(api.themeList));
+  () => apiCall(api.themeListAvailable, {cwd: ROOT}));
 add('theme add --list', ['theme', 'add', '--list'],
-  () => apiCall(api.themeList));
+  () => apiCall(api.themeListAvailable, {cwd: ROOT}));
 add('theme add nonexistent', ['theme', 'add', 'nonexistent99'],
   () => apiCall(api.themeAdd, 'nonexistent99', {cwd: ROOT}));
 
@@ -272,6 +291,11 @@ add('swizzle --list', ['swizzle', '--list'],
 add('swizzle (not found)', ['swizzle', 'NotARealComponent99'],
   () => apiCall(api.swizzle, 'NotARealComponent99', {cwd: ROOT}));
 
+// Gap report categories are read-only and deterministic; filing paths are
+// exercised with isolated package handlers in the focused suite.
+add('gap-report --list-categories', ['gap-report', '--list-categories'],
+  () => apiCall(api.gapReport, undefined, {listCategories: true, cwd: ROOT}));
+
 // Upgrade — list + the two argument-validation errors are read-only: they
 // return/throw before any codemod or agent-docs side effect, so the api matches
 // the CLI envelope exactly. The full run/status pipeline is covered by the
@@ -316,7 +340,12 @@ if (!skipBaseline) {
     if (!fs.existsSync(path.join(wt, 'node_modules'))) {
       execSync('pnpm install --frozen-lockfile 2>/dev/null || true', {cwd: wt, timeout: 60_000});
     }
-    const oldCli = path.join(wt, 'packages/cli/bin/astryx.mjs');
+    const oldCli =
+      [
+        path.join(wt, 'packages/cli/clients/cli/bin/astryx.mjs'),
+        path.join(wt, 'packages/cli/bin/astryx.mjs'),
+      ].find(p => fs.existsSync(p)) ??
+      path.join(wt, 'packages/cli/clients/cli/bin/astryx.mjs');
     for (const r of results) {
       const old = spawnSync(process.execPath, [oldCli, '--json', ...r.cli], {
         cwd: wt, encoding: 'utf8', timeout: 30_000,

@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'ListItem',
@@ -62,12 +62,12 @@ export const docs = {
     {
       name: 'interactiveRef',
       type: 'RefObject<HTMLElement | null>',
-      description: 'Ref to a nested control (e.g. a checkbox in startContent) that owns the item\'s keyboard access and action. The row becomes an enlarged click/tap target that delegates surface clicks to it (useClickableContainer) and renders no invisible button/anchor, so the row adds no second tab stop (WCAG 4.1.2). Mutually exclusive with onClick/href — those are ignored when set.',
+      description: 'Ref to a nested control (e.g. a checkbox in startContent) that owns the item\'s keyboard access and action. The row becomes an enlarged click/tap target that delegates surface clicks to it (useClickableContainer) and renders no invisible button/anchor, so the row adds no second tab stop (WCAG 4.1.2). Mutually exclusive with onClick/href; those are ignored when set.',
     },
     {
       name: 'href',
       type: 'string',
-      description: 'Link URL; enables the invisible anchor pattern.',
+      description: 'Link URL; enables the invisible anchor pattern. The destination follows the shared navigation rule described on the Link `href` prop.',
     },
     {
       name: 'target',
@@ -174,7 +174,7 @@ export const docsDense = {
     onClick: 'Click handler; enables invisible button pattern.',
     interactiveRef:
       'Ref to a nested control that owns the item\'s keyboard access/action; row delegates surface clicks to it (useClickableContainer), no invisible button/anchor, no second tab stop (WCAG 4.1.2). Mutually exclusive with onClick/href.',
-    href: 'Link URL; enables invisible anchor pattern.',
+    href: 'Link URL; enables invisible anchor pattern. Follows the shared navigation rule (see Link href).',
     target: 'Link target attribute, only when href provided. target="_blank" auto-adds noopener noreferrer.',
     rel: 'Link relationship tokens. noopener noreferrer are merged for target="_blank".',
     isDisabled: 'Disabled state; sets aria-disabled.',

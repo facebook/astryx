@@ -5,7 +5,7 @@
 /**
  * @file FileInput.tsx
  * @input Uses React, useId, Field, Icon, Spinner, VisuallyHidden
- * @output Exports FileInput component, FileInputProps, FileInputStatus
+ * @output Exports FileInput component, public types, and its root/icon theme targets
  * @position Core implementation; consumed by index.ts, tested by FileInput.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -13,7 +13,7 @@
  * - /packages/core/src/FileInput/FileInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/FileInput/index.ts (exports if types change)
  * - /apps/storybook/stories/FileInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/FileInput/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/FileInput/ (showcase blocks)
  */
 
 import {
@@ -54,12 +54,14 @@ export type {
   InputStatus as FileInputStatus,
   InputStatusType as FileInputStatusType,
 } from '../Field';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import type {TranslatorFn} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) {
     return `${bytes} B`;
@@ -76,12 +78,13 @@ function validateFiles(
   maxSize: number | undefined,
   maxFiles: number | undefined,
   isMultiple: boolean,
+  t: TranslatorFn,
 ): {valid: File[]; errors: string[]} {
   const errors: string[] = [];
   let valid = files;
 
   if (accept) {
-    const acceptedTypes = accept.split(',').map(t => t.trim().toLowerCase());
+    const acceptedTypes = accept.split(',').map(s => s.trim().toLowerCase());
     valid = valid.filter(file => {
       const matches = acceptedTypes.some(type => {
         if (type.startsWith('.')) {
@@ -93,7 +96,9 @@ function validateFiles(
         return file.type.toLowerCase() === type;
       });
       if (!matches) {
-        errors.push(`"${file.name}" is not an accepted file type`);
+        errors.push(
+          t('@astryx.fileInput.errorInvalidType', {fileName: file.name}),
+        );
       }
       return matches;
     });
@@ -102,7 +107,12 @@ function validateFiles(
   if (maxSize != null) {
     valid = valid.filter(file => {
       if (file.size > maxSize) {
-        errors.push(`"${file.name}" exceeds ${formatFileSize(maxSize)} limit`);
+        errors.push(
+          t('@astryx.fileInput.errorMaxSize', {
+            fileName: file.name,
+            maxSize: formatFileSize(maxSize),
+          }),
+        );
         return false;
       }
       return true;
@@ -110,7 +120,7 @@ function validateFiles(
   }
 
   if (isMultiple && maxFiles != null && valid.length > maxFiles) {
-    errors.push(`Maximum ${maxFiles} files allowed`);
+    errors.push(t('@astryx.fileInput.errorMaxFiles', {maxFiles}));
     valid = valid.slice(0, maxFiles);
   }
 
@@ -143,13 +153,16 @@ const styles = stylex.create({
       '@media (prefers-reduced-motion: reduce)': '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     outline: 'none',
   },
   dropzoneHover: {
     boxShadow: {
       default: null,
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `inset 0 0 0 2px color-mix(in srgb, ${colorVars['--color-accent']} 20%, transparent)`,
       },
     },
@@ -159,7 +172,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-accent-muted'],
   },
   dropzoneDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
     borderColor: colorVars['--color-border-emphasized'],
   },
@@ -188,16 +201,20 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
     boxShadow: {
       default: 'none',
-      ':hover:not(:focus-within)': {
-        '@media (hover: hover)': `inset 0 0 0 2px color-mix(in srgb, ${colorVars['--color-accent']} 20%, transparent)`,
-      },
+      ':hover:not(:focus-within):where(:not(:disabled,[aria-disabled="true"]))':
+        {
+          '@media (hover: hover)': `inset 0 0 0 2px color-mix(in srgb, ${colorVars['--color-accent']} 20%, transparent)`,
+        },
     },
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     height: sizeVars['--size-element-md'],
     outline: 'none',
   },
   compactDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
     borderColor: colorVars['--color-border-emphasized'],
   },
@@ -214,9 +231,14 @@ const styles = stylex.create({
   },
   placeholderText: {
     fontFamily: typographyVars['--font-family-body'],
+    // The 16px floor is iOS-only: iOS Safari zooms the page when a focused
+    // control sits under 16px, and only iOS WebKit implements
+    // -webkit-touch-callout to key the coarse-pointer floor to it.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-secondary'],
@@ -225,9 +247,13 @@ const styles = stylex.create({
   },
   fileNameText: {
     fontFamily: typographyVars['--font-family-body'],
+    // ...and the filename beside it keeps the same floor, so both lines the
+    // control shows stay the same size.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-primary'],
@@ -488,7 +514,9 @@ export function FileInput({
       .filter(Boolean)
       .join(' ') || undefined;
 
-  const defaultPlaceholder = isMultiple ? 'Choose files' : 'Choose file';
+  const defaultPlaceholder = isMultiple
+    ? t('@astryx.fileInput.placeholderMultiple')
+    : t('@astryx.fileInput.placeholder');
   const displayPlaceholder = placeholder ?? defaultPlaceholder;
 
   const handleFiles = useCallback(
@@ -503,6 +531,7 @@ export function FileInput({
         maxSize,
         maxFiles,
         isMultiple,
+        t,
       );
 
       if (errors.length > 0) {
@@ -526,8 +555,8 @@ export function FileInput({
       if (errors.length === 0) {
         announce(
           valid.length === 1
-            ? `1 file selected: ${valid[0].name}`
-            : `${valid.length} files selected`,
+            ? t('@astryx.fileInput.fileSelected', {fileName: valid[0].name})
+            : t('@astryx.fileInput.filesSelected', {count: valid.length}),
         );
       }
 
@@ -547,6 +576,7 @@ export function FileInput({
       changeAction,
       startTransition,
       announce,
+      t,
     ],
   );
 
@@ -568,7 +598,16 @@ export function FileInput({
       onChange(null);
       if (inputRef.current) {
         inputRef.current.value = '';
-        inputRef.current.focus();
+        const targetInput = inputRef.current;
+        if (e.detail === 0) {
+          targetInput.focus();
+        } else {
+          // Defer focus restoration past the button's unmount task so iOS Safari
+          // and touch browsers don't jump the page scroll to 0 on tap.
+          requestAnimationFrame(() => {
+            targetInput.focus({preventScroll: true});
+          });
+        }
       }
     },
     [onChange],
@@ -677,9 +716,14 @@ export function FileInput({
     }
     return (
       <>
-        <Icon icon="arrowUp" size="md" color="secondary" />
+        <Icon
+          icon="arrowUp"
+          size="md"
+          color="secondary"
+          {...themeProps('file-input-icon', {mode})}
+        />
         <span {...stylex.props(styles.placeholderText)}>
-          {isDragOver ? 'Drop files here' : displayPlaceholder}
+          {isDragOver ? t('@astryx.fileInput.dropHint') : displayPlaceholder}
         </span>
       </>
     );
@@ -698,7 +742,12 @@ export function FileInput({
     }
     return (
       <>
-        <Icon icon="arrowUp" size="sm" color="secondary" />
+        <Icon
+          icon="arrowUp"
+          size="sm"
+          color="secondary"
+          {...themeProps('file-input-icon', {mode})}
+        />
         <span
           {...stylex.props(
             hasFiles ? styles.fileNameText : styles.placeholderText,
@@ -807,7 +856,7 @@ export function FileInput({
         </VisuallyHidden>
         <input
           {...rest}
-          ref={mergeRefs(ref, inputRef)}
+          ref={useMergedRefs(ref, inputRef)}
           id={id}
           type="file"
           accept={accept}

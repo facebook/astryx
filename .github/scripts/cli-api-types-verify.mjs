@@ -2,11 +2,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Verify the PUBLISHED `@astryxdesign/cli/api` type surface.
+ * Verify the PUBLISHED `@astryxdesign/cli/api` and `/authoring` type surfaces.
  *
- * The `./api` declarations (`api/**\/*.d.mts`) are generated from the JSDoc in
- * `api/**\/*.mjs` at `prepack` — they are NOT committed. This test proves the
- * surface a consumer actually installs is correct, end to end:
+ * Both sets of declarations (`api/**\/*.d.mts`, `authoring/**\/*.d.mts`) are
+ * generated from the JSDoc in their `.mjs` at `prepack` — they are NOT
+ * committed. This test proves the surface a consumer actually installs is
+ * correct, end to end:
  *
  *   1. `pnpm pack` the CLI (fires `prepack` → `sync:api-types`), producing the
  *      exact tarball that would be published.
@@ -73,19 +74,52 @@ if (!fs.existsSync(path.join(pkgDir, 'api', 'index.d.mts'))) {
   fail('packaged tarball is missing api/index.d.mts \u2014 the ./api types did not ship');
 }
 console.log('\u2713 tarball ships api/index.d.mts');
+// The authoring parser declarations are generated too, so the same "did it
+// actually ship" question applies to them.
+if (!fs.existsSync(path.join(pkgDir, 'authoring', 'doctypes', 'parse.d.mts'))) {
+  fail(
+    'packaged tarball is missing authoring/doctypes/parse.d.mts \u2014 the generated ./authoring types did not ship',
+  );
+}
+console.log('\u2713 tarball ships the generated ./authoring declarations');
+// The api declarations re-export from foundation (e.g. api/template re-exports
+// the template adapter), so foundation's declarations have to ship too or those
+// re-exports resolve to `any` for a strict consumer.
+if (!fs.existsSync(path.join(pkgDir, 'foundation', 'discovery', 'template-adapter.d.mts'))) {
+  fail(
+    'packaged tarball is missing foundation/discovery/template-adapter.d.mts \u2014 the api declarations re-export from foundation, so its declarations must ship too',
+  );
+}
+console.log('\u2713 tarball ships the generated foundation declarations');
 fs.symlinkSync(CORE_DIR, path.join(nm, 'core'), 'dir');
+// The scratch area sits inside packages/cli, so without a package.json of its
+// own the consumer would resolve `@astryxdesign/cli` through package
+// self-reference to the workspace sources instead of the extracted tarball.
+fs.writeFileSync(
+  path.join(VERIFY_DIR, 'package.json'),
+  JSON.stringify({name: 'packed-cli-consumer', private: true, type: 'module'}),
+);
 
 // 3. Type-check a representative consumer against the packed types.
 const scenario = `
 import {
   component, docs, blog, discover, template, hook, search, build, swizzle,
-  upgrade, init, doctor, layoutExpand, layoutCheck, layoutGrammar,
+  gapReport, upgrade, init, doctor, layoutExpand, layoutCheck, layoutGrammar,
   themeBuild, themeAdd, themeList, listThemes,
+  integrationAdd, integrationAddComponent, integrationAddDoc,
+  integrationAddTemplate, integrationAddCodemod, integrationAddAgentDoc,
+  integrationAddTheme, integrationPackCheck,
   validateIntegration, summarizeIssues, logger, AstryxError,
 } from '@astryxdesign/cli/api';
 import type {
-  ComponentOptions, SearchOptions, UpgradeOptions,
-  ComponentDetailResponse, SearchResponse, UpgradeRunResponse, Logger,
+  ComponentOptions, SearchOptions, UpgradeOptions, GapReportOptions,
+  ComponentDetailResponse, SearchResponse, UpgradeRunResponse,
+  GapReportReceiptResponse, GapReportCategoriesResponse, Logger,
+  IntegrationAddComponentOptions, IntegrationAddDocOptions,
+  IntegrationAddTemplateOptions, IntegrationAddCodemodOptions,
+  IntegrationAddAgentDocOptions, IntegrationAddThemeOptions,
+  IntegrationAddResponse, IntegrationPackCheckOptions,
+  IntegrationPackCheckResponse,
 } from '@astryxdesign/cli/api';
 
 async function main() {
@@ -93,13 +127,71 @@ async function main() {
   if (r.type === 'component.detail') { const n: string = r.data.name; void n; }
   const s: SearchOptions = { limit: 5, type: 'component' };
   const l: Logger = logger; l.setSilent(false); l.log('x');
-  void ({} as ComponentOptions); void ({} as UpgradeOptions);
+  void ({} as ComponentOptions); void ({} as UpgradeOptions); void ({} as GapReportOptions);
   void ({} as ComponentDetailResponse); void ({} as SearchResponse); void ({} as UpgradeRunResponse);
-  void [docs, blog, discover, template, hook, search, build, swizzle, upgrade, init,
+  void ({} as GapReportReceiptResponse); void ({} as GapReportCategoriesResponse);
+  void [docs, blog, discover, template, hook, search, build, swizzle, gapReport, upgrade, init,
     doctor, layoutExpand, layoutCheck, layoutGrammar, themeBuild, themeAdd, themeList,
     listThemes, validateIntegration, summarizeIssues, AstryxError, s];
 }
 void main;
+
+async function integrationSurface() {
+  const componentOptions: IntegrationAddComponentOptions = {dryRun: true};
+  const docOptions: IntegrationAddDocOptions = {dryRun: true, replaces: 'old'};
+  const templateOptions: IntegrationAddTemplateOptions = {dryRun: true, type: 'block'};
+  const codemodOptions: IntegrationAddCodemodOptions = {dryRun: true, to: '1.2.0'};
+  const agentDocOptions: IntegrationAddAgentDocOptions = {dryRun: true};
+  const themeOptions: IntegrationAddThemeOptions = {dryRun: true};
+  const packOptions: IntegrationPackCheckOptions = {cwd: '.'};
+  const responses: IntegrationAddResponse[] = [
+    await integrationAddComponent('Card', componentOptions),
+    await integrationAddDoc('guide', docOptions),
+    await integrationAddTemplate('account-page', templateOptions),
+    await integrationAddCodemod('rename-card', codemodOptions),
+    await integrationAddAgentDoc('Use Card.', agentDocOptions),
+    await integrationAddTheme('ocean', themeOptions),
+    await integrationAdd('component', 'Card', {dryRun: true}),
+  ];
+  const packed: IntegrationPackCheckResponse = await integrationPackCheck(packOptions);
+  void [responses, packed];
+}
+void integrationSurface;
+
+// ── ./authoring ─────────────────────────────────────────────────────────
+// These declarations are generated from JSDoc too. The narrowing below is the
+// regression test for a stale parseDoc return union: when three doc kinds were
+// missing from it, \`doc.type === 'schema'\` was a no-overlap error and \`fields\`
+// was inaccessible — while everything still compiled inside the repo.
+import {
+  parseDoc, parseComponent, parseHook, parseFunction, parseReference,
+  parseTemplate, parseSchema, parseCommand, parseEnum,
+} from '@astryxdesign/cli/authoring';
+import type {
+  SchemaDoc, CommandDoc, EnumDoc, FunctionDoc, GapReportHandler,
+} from '@astryxdesign/cli/authoring';
+
+function authoringSurface(raw: unknown) {
+  const doc = parseDoc(raw);
+  if (doc.type === 'schema') { const f = doc.fields; void f; }
+  if (doc.type === 'command') { const su: string = doc.summary; void su; }
+  if (doc.type === 'enum') { const m = doc.members; void m; }
+
+  const schema: SchemaDoc = parseSchema(raw);
+  const command: CommandDoc = parseCommand(raw);
+  const enumDoc: EnumDoc = parseEnum(raw);
+  const fn: FunctionDoc = parseFunction(raw);
+  const gapHandler: GapReportHandler = {
+    audience: 'public',
+    async handle(_report, {signal}) {
+      void signal;
+      return {status: 'skipped'};
+    },
+  };
+  void [schema, command, enumDoc, fn, gapHandler];
+  void [parseComponent, parseHook, parseReference, parseTemplate];
+}
+void authoringSurface;
 export {};
 `;
 fs.writeFileSync(path.join(VERIFY_DIR, 'scenario.ts'), scenario);
@@ -146,5 +238,75 @@ if (errors.length > 0) {
   fail('a consumer of the packaged @astryxdesign/cli/api does not type-check', errors.join('\n'));
 }
 
-console.log('\u2713 packaged @astryxdesign/cli/api type-checks for a strict consumer');
-console.log('\nAll ./api type-surface checks passed.');
+console.log(
+  '\u2713 packaged @astryxdesign/cli/api + /authoring type-check for a strict consumer',
+);
+
+// 4. The authoring surface alone, as an integration package sees it: with
+// `nodenext` resolution (a relative import without its extension does not
+// resolve there) and with no Node types installed. The authoring declarations
+// must need nothing beyond what they ship.
+const authoringScenario = `
+import type {
+  AstryxConfig, AstryxIntegration, ComponentDoc, HookDoc, FunctionDoc,
+  ReferenceDoc, TemplateDoc, SchemaDoc, CommandDoc, EnumDoc, NamespaceDoc,
+} from '@astryxdesign/cli/authoring';
+import {parseDoc, parseConfig, parseIntegration} from '@astryxdesign/cli/authoring';
+import type {BlockTemplateDoc, UsageDoc} from '@astryxdesign/cli/doc';
+import type {PostCodemodCommand} from '@astryxdesign/cli/config';
+import type {AstryxIntegration as SubpathIntegration} from '@astryxdesign/cli/integration';
+import type {AstryxCodemod} from '@astryxdesign/cli/codemod';
+import type {DebugEvent} from '@astryxdesign/cli/debug';
+import type {PageTemplateDoc} from '@astryxdesign/cli/template';
+
+export const component: ComponentDoc = {
+  name: 'Badge', displayName: 'Badge', props: [], usage: {description: 'A badge.'},
+};
+export const block = {
+  type: 'block', name: 'badge-counts', displayName: 'Badge counts', aspectRatio: 1,
+} satisfies BlockTemplateDoc;
+export const page = {type: 'page', name: 'settings', displayName: 'Settings'} satisfies PageTemplateDoc;
+export const command: PostCodemodCommand = {
+  command: 'pnpm', args: ['install'], options: {env: {CI: '1'}},
+};
+const doc = parseDoc({} as unknown);
+if (doc.type === 'enum') void doc.members;
+export type Surface = [
+  AstryxConfig, AstryxIntegration, SubpathIntegration, AstryxCodemod, DebugEvent,
+  HookDoc, FunctionDoc, ReferenceDoc, TemplateDoc, SchemaDoc, CommandDoc, EnumDoc,
+  NamespaceDoc, UsageDoc,
+];
+void [parseConfig, parseIntegration];
+`;
+fs.writeFileSync(path.join(VERIFY_DIR, 'authoring.mts'), authoringScenario);
+for (const [label, options] of [
+  ['nodenext resolution and no Node types', {module: 'nodenext', moduleResolution: 'nodenext'}],
+  ['bundler resolution and no Node types', {module: 'esnext', moduleResolution: 'bundler'}],
+]) {
+  const config = path.join(VERIFY_DIR, 'tsconfig.authoring.json');
+  fs.writeFileSync(
+    config,
+    JSON.stringify(
+      {
+        extends: '../../../tsconfig.json',
+        compilerOptions: {noEmit: true, skipLibCheck: false, types: [], ...options},
+        files: ['authoring.mts'],
+      },
+      null,
+      2,
+    ),
+  );
+  const run = spawnSync(tsc, ['--project', config], {cwd: ROOT, encoding: 'utf8'});
+  if (run.error) fail('failed to run tsc', String(run.error));
+  const out = `${run.stdout || ''}\n${run.stderr || ''}`;
+  const found = out.split('\n').filter(line => /error TS/.test(line));
+  if (run.status !== 0 || found.length > 0) {
+    fail(
+      `the packaged authoring types do not type-check with ${label}`,
+      (found.length > 0 ? found.join('\n') : out).trim(),
+    );
+  }
+  console.log(`\u2713 packaged authoring types type-check with ${label}`);
+}
+
+console.log('\nAll published type-surface checks passed.');

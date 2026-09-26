@@ -4,7 +4,7 @@
 
 /**
  * @file ListItem.tsx
- * @input Uses React, ReactNode, StyleXStyles, theme tokens
+ * @input Uses React, ReactNode, StyleXStyles, theme tokens, List edge compensation
  * @output Exports ListItem component, ListItemProps type
  * @position Core implementation; consumed by List, index.ts, tested by List.test.tsx
  *
@@ -16,7 +16,7 @@
  * - /packages/core/src/List/List.test.tsx
  * - /packages/core/src/List/index.ts
  * - /apps/storybook/stories/List.stories.tsx
- * - /packages/cli/templates/blocks/components/List/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/List/ (showcase blocks)
  */
 
 import {use, type ReactNode} from 'react';
@@ -124,12 +124,34 @@ const styles = stylex.create({
   withCounter: {
     counterIncrement: 'astryx-list',
   },
+  // List's inline edge compensation cancels as much of the row's built-in
+  // inline inset as the container padding allows (e.g. under a heading).
+  // The margins read --_item-inset-inline — the same variable Item derives
+  // its paddingInline from — on the row element itself (custom properties
+  // only cascade downward, so the <ul> could not read it). Density changes
+  // and theme paddingInline overrides on `item` move both values together.
+  // Each edge clamps against ITS OWN container padding var: a single
+  // start-var clamp on both margins over-cancels the end edge under
+  // asymmetric container padding (16px start / 4px end) and the selected
+  // row paints past the outer border. Logical properties keep RTL correct,
+  // and a zero-padding/full-bleed surface (min(inset, 0px) = 0px) leaves
+  // the row in place instead of pulling it outside its content edge.
+  inlineEdgeCompensation: {
+    marginInlineStart:
+      'calc(-1 * min(var(--_item-inset-inline), var(--container-padding-inline-start, 0px)))',
+    marginInlineEnd:
+      'calc(-1 * min(var(--_item-inset-inline), var(--container-padding-inline-end, 0px)))',
+  },
   withDivider: {
     borderBlockEndWidth: borderVars['--border-width'],
     borderBlockEndStyle: 'solid',
     borderBlockEndColor: colorVars['--color-border'],
+    // A longhand, not the `borderBlockEnd` shorthand: StyleX's default
+    // property-specificity mode drops border shorthands silently, so the
+    // shorthand never reached the shipped CSS and the last item kept its
+    // divider.
     ':last-child': {
-      borderBlockEnd: 'none',
+      borderBlockEndWidth: 0,
     },
   },
 });
@@ -226,6 +248,7 @@ export function ListItem({
   const density = ctx?.density ?? 'balanced';
   const hasDividers = ctx?.hasDividers ?? false;
   const listStyle = ctx?.listStyle ?? 'none';
+  const edgeCompensation = ctx?.edgeCompensation;
   const hasMarkers = listStyle !== 'none';
 
   const marker =
@@ -262,6 +285,7 @@ export function ListItem({
         hasMarkers && styles.withCounter,
         hasDividers && styles.withDivider,
         hasDividers && embeddedStyles.noRadius,
+        edgeCompensation === 'inline' && styles.inlineEdgeCompensation,
         xstyle,
       ]}
       {...mergeProps(themeProps('list-item'), {className, style})}

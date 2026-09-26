@@ -2,7 +2,7 @@
 
 /**
  * @file Colocated types for the `hook` command — source of truth for its JSON
- * responses (mirrored by `../../types/hook.d.ts`).
+ * responses (re-exported by the `./json` barrel at `../json/index.d.ts`).
  *
  * Detail-level contract for list views (brief < compact < full):
  *   --detail brief    Names only. Smallest, most scannable. (DEFAULT for --list)
@@ -11,24 +11,24 @@
  *
  * Invocation                                 -> type discriminator
  * ------------------------------------------------------------------
- * xds --json hook                           -> hook.list (data.detail='names')
- * xds --json hook --list                    -> hook.list (data.detail='names')
- * xds --json hook --category State          -> hook.list (filtered)
- * xds --json hook --list --detail compact   -> hook.list (data.detail='compact')
- * xds --json hook --list --detail full      -> hook.list (data.detail='full')
- * xds --json hook useMediaQuery             -> hook.detail
- * xds --json hook useMediaQuery --params    -> hook.detail.params
- * (not found)                               -> CLIError
+ * astryx --json hook                         -> hook.list (data.detail='names')
+ * astryx --json hook --list                  -> hook.list (data.detail='names')
+ * astryx --json hook --category State        -> hook.list (filtered)
+ * astryx --json hook --list --detail compact -> hook.list (data.detail='compact')
+ * astryx --json hook --list --detail full    -> hook.list (data.detail='full')
+ * astryx --json hook useMediaQuery           -> hook.detail
+ * astryx --json hook useMediaQuery --params  -> hook.detail.params
+ * (not found)                                -> CLIError
  */
 
 // Re-export the authored-doc types from core so the hook leaves reference these
 // colocated aliases here (the leaf @returns reference these rather than reaching
 // into core directly).
-/** @typedef {import('../../../core/src/docs-types').HookDoc} HookDoc */
-/** @typedef {import('../../../core/src/docs-types').HookParamDoc} HookParamDoc */
+/** @typedef {import('@astryxdesign/cli/authoring').HookDoc} HookDoc */
+/** @typedef {import('@astryxdesign/cli/authoring').HookParamDoc} HookParamDoc */
 
 /**
- * xds --json hook [--list] [--category X] [--detail names|compact|full]
+ * astryx --json hook [--list] [--category X] [--detail names|compact|full]
  *
  * The list view emits ONE `hook.list` type across all three detail levels; the
  * depth is carried in `data.detail` and `data.components` holds the grouped map
@@ -56,14 +56,14 @@
  */
 
 /**
- * xds --json hook <name>
+ * astryx --json hook <name>
  * @typedef {object} HookDetailResponse
  * @property {'hook.detail'} type
  * @property {HookDoc} data
  */
 
 /**
- * xds --json hook <name> --params
+ * astryx --json hook <name> --params
  * @typedef {object} HookDetailParamsResponse
  * @property {'hook.detail.params'} type
  * @property {HookParamDoc[]} data

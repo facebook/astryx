@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').HookDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookDoc} */
 export const docs = {
   name: 'useStreamingText',
   displayName: 'useStreamingText',
@@ -55,7 +55,7 @@ export const docs = {
   category: 'streaming',
 };
 
-/** @type {import('../docs-types').HookTranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description:
     'Smooths bursty streamed text into steady character-by-character reveal using requestAnimationFrame. Decouples arrival rate from display rate. Advances on word + syntax boundaries to avoid slicing mid-markdown / mid-word, preventing visual glitches w/ markdown renderers. Animation timing derives from Astryx motion tokens via useTheme when available, w/ sensible fallbacks outside theme provider. Snaps to full text when isStreaming becomes false.',

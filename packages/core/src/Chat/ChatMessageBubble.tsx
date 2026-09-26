@@ -15,6 +15,9 @@
  * - If you use bubbles on one side (e.g. assistant), use them consistently
  *   for all messages on that side. Use `ghost` variant for content that
  *   needs alignment without a visual boundary.
+ * - For custom content (cards, attachments, citations) that should span
+ *   the full message column instead of the default width cap, combine
+ *   `ghost` with `width="100%"` (#2574).
  * - Put `name` on the first bubble in a message, `metadata` on the last.
  * - For unbubbled messages, use ChatMessage's `name` and `metadata`
  *   props instead.
@@ -22,7 +25,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Chat/index.ts (exports)
  * - /apps/storybook/stories/Chat.stories.tsx
- * - /packages/cli/templates/blocks/components/ChatMessageBubble/ (block examples)
+ * - /packages/cli/assets/templates/blocks/components/ChatMessageBubble/ (block examples)
  */
 
 import type {ReactNode} from 'react';
@@ -35,7 +38,8 @@ import {
   typographyVars,
 } from '../theme/tokens.stylex';
 import {useChatMessageContext} from './ChatContext';
-import {mergeProps} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
+import type {SizeValue} from '../utils/types';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 
@@ -60,6 +64,7 @@ export interface ChatMessageBubbleProps extends BaseProps<HTMLDivElement> {
 
   /**
    * Sender name rendered above the bubble, aligned with bubble text padding.
+   * Non-rendering scalar values omit the aligned wrapper; numeric zero remains.
    * Use when the first content in a message is a bubble.
    * If the first content is raw (no bubble), use ChatMessage's `name`
    * prop instead.
@@ -68,6 +73,7 @@ export interface ChatMessageBubbleProps extends BaseProps<HTMLDivElement> {
 
   /**
    * Metadata content rendered below the bubble, aligned with bubble text padding.
+   * Non-rendering scalar values omit the aligned wrapper; numeric zero remains.
    * Use when the last content in a message is a bubble.
    * If the last content is raw (no bubble), use ChatMessage's `metadata`
    * prop instead.
@@ -83,6 +89,15 @@ export interface ChatMessageBubbleProps extends BaseProps<HTMLDivElement> {
    * Leave unset for standalone bubbles (full radius).
    */
   group?: 'first' | 'middle' | 'last';
+
+  /**
+   * Width of the bubble.
+   * Numbers are treated as pixels, strings are used as-is (e.g. "100%").
+   * When set, replaces the default `max(80%, 280px)` width cap; leave unset
+   * to keep the cap. Combine with `variant="ghost"` to let custom content
+   * (an artifact card, attachments) span the full message column.
+   */
+  width?: SizeValue;
 }
 
 // =============================================================================
@@ -189,6 +204,16 @@ const styles = stylex.create({
   },
 });
 
+// Dynamic styles for sizing props
+const dynamicStyles = stylex.create({
+  sizing: (width: SizeValue) => ({
+    width,
+    // An explicit width replaces the default cap — a full-column or
+    // fixed-width bubble shouldn't also be clamped by max(80%, 280px).
+    maxWidth: 'none',
+  }),
+});
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -216,6 +241,7 @@ export function ChatMessageBubble({
   name,
   metadata,
   group,
+  width,
   xstyle,
   className,
   style: styleProp,
@@ -265,9 +291,12 @@ export function ChatMessageBubble({
         ? styles.metadataPaddingSpacious
         : styles.metadataPaddingBalanced;
 
+  const hasName = isRenderable(name);
+  const hasMetadata = isRenderable(metadata);
+
   return (
     <>
-      {name && (
+      {hasName && (
         <div
           data-chat-name
           {...stylex.props(
@@ -292,6 +321,7 @@ export function ChatMessageBubble({
             paddingStyle,
             variant === 'ghost' && styles.paddingBlockNone,
             groupStyle,
+            width != null && dynamicStyles.sizing(width),
             xstyle,
           ),
           className,
@@ -299,7 +329,7 @@ export function ChatMessageBubble({
         )}>
         {children}
       </div>
-      {metadata && (
+      {hasMetadata && (
         <div
           {...stylex.props(
             metadataPaddingStyle,

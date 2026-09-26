@@ -13,7 +13,7 @@
  * - /packages/core/src/TopNav/TopNav.test.tsx
  * - /packages/core/src/TopNav/index.ts
  * - /apps/storybook/stories/TopNav.stories.tsx
- * - /packages/cli/templates/blocks/components/TopNav/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/TopNav/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';
@@ -35,6 +35,8 @@ import {navItemStyles, type NavItemSize} from '../NavItem/navItemStyles.stylex';
 import {mergeProps} from '../utils';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 
 /**
  * NavItem styles with hover/selected states
@@ -52,32 +54,20 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
     textDecoration: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transitionProperty: 'background-color, color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    backgroundColor: {
-      default: 'transparent',
-      ':hover': {
-        '@media (hover: hover)': colorVars['--color-overlay-hover'],
-      },
-      ':active': colorVars['--color-overlay-pressed'],
-    },
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   selected: {
     color: colorVars['--color-text-primary'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     backgroundColor: {
       default: colorVars['--color-neutral'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-neutral'],
       },
       ':active': colorVars['--color-neutral'],
@@ -87,16 +77,6 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-2'],
   },
   // Drawer mode — focus outline (base item + selected come from navItemStyles)
-  drawerFocus: {
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
-  },
 });
 
 export interface TopNavItemProps extends BaseProps<HTMLAnchorElement> {
@@ -246,10 +226,10 @@ export function TopNavItem({
             mode: 'drawer',
             selected: isSelected ? 'selected' : null,
           }),
-          stylex.props(
+          focusOutlineProps.focusVisible(
             navItemStyles.item,
+            interactionOverlayStyles.backgroundColor,
             navItemStyles[size],
-            styles.drawerFocus,
             isSelected && navItemStyles.selected,
             isDisabled && navItemStyles.disabled,
             xstyle,
@@ -283,8 +263,9 @@ export function TopNavItem({
         themeProps('top-nav-item', {
           selected: isSelected ? 'selected' : null,
         }),
-        stylex.props(
+        focusOutlineProps.focusVisible(
           styles.base,
+          interactionOverlayStyles.backgroundColor,
           isSelected && styles.selected,
           isDisabled && navItemStyles.disabled,
           isIconOnly && styles.iconOnly,

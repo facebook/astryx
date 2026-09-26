@@ -11,7 +11,7 @@
  * without revealing what may be written into it. Readers without an IDE —
  * agents especially — then guess: `gap={16}` (pixels, not a scale step),
  * `direction: 'desc'` (the type says `'descending'`). Both fail to compile.
- * `PropDoc.type` in docs-types.ts already asks for inlined unions
+ * `ComponentPropDoc.type` in docs-types.ts already asks for inlined unions
  * (`"'primary' | 'secondary' | 'ghost'"`); this test holds docs to it.
  *
  * Two ways a doc prop can hide values, checked at different strictness:
