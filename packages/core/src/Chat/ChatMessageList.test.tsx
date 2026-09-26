@@ -644,19 +644,31 @@ describe('ChatMessageList — scrollToTopAction', () => {
 
   it('leaves the scroll untouched when the action loads nothing', async () => {
     const container = makeScrollContainer();
+    const ctx = layoutCtx(container);
     let resolveAction!: () => void;
     const action = vi.fn(
       async () => new Promise<void>(resolve => (resolveAction = resolve)),
     );
 
-    render(
-      <ChatLayoutContext value={layoutCtx(container)}>
-        <ChatMessageList scrollToTopAction={action}>
+    const ui = (
+      scrollToTopAction: (() => Promise<void>) | undefined,
+      banner = false,
+    ) => (
+      <ChatLayoutContext value={ctx}>
+        <ChatMessageList scrollToTopAction={scrollToTopAction}>
+          {banner && <div>beginning-of-conversation</div>}
           <div>only-message</div>
         </ChatMessageList>
-      </ChatLayoutContext>,
+      </ChatLayoutContext>
     );
-    stubRect(screen.getByText('only-message'), () => 100);
+
+    const view = render(ui(action));
+    let anchorTop = 100;
+    let anchorReads = 0;
+    stubRect(screen.getByText('only-message'), () => {
+      anchorReads++;
+      return anchorTop;
+    });
 
     fireIntersect();
     await act(async () => resolveAction());
@@ -664,7 +676,62 @@ describe('ChatMessageList — scrollToTopAction', () => {
     expect(container.scrollTop).toBe(0);
     // An empty page must also stop the auto-refill cycle.
     expect(action).toHaveBeenCalledTimes(1);
+
+    // History exhausted — the consumer removes the action. The settled load
+    // disarms the anchor: later commits neither measure nor scroll.
+    view.rerender(ui(undefined));
+    anchorReads = 0;
+    view.rerender(ui(undefined));
+    expect(anchorReads).toBe(0);
+
+    // A banner rendered above the first message stays in view.
+    anchorTop = 140;
+    view.rerender(ui(undefined, true));
+    expect(container.scrollTop).toBe(0);
   });
+
+  it.each(['bottom', 'top'] as const)(
+    'compensates a final page that also removes the action when align="%s"',
+    async align => {
+      const container = makeScrollContainer();
+      container.scrollTop = 37;
+      const ctx = layoutCtx(container);
+      let resolveAction!: () => void;
+      const action = vi.fn(
+        async () => new Promise<void>(resolve => (resolveAction = resolve)),
+      );
+
+      const ui = (
+        messages: string[],
+        scrollToTopAction: (() => Promise<void>) | undefined,
+      ) => (
+        <ChatLayoutContext value={ctx}>
+          <ChatMessageList align={align} scrollToTopAction={scrollToTopAction}>
+            {messages.map(m => (
+              <div key={m}>{m}</div>
+            ))}
+          </ChatMessageList>
+        </ChatLayoutContext>
+      );
+
+      const view = render(ui(['oldest-visible'], action));
+      let anchorTop = 100;
+      stubRect(screen.getByText('oldest-visible'), () => anchorTop);
+
+      fireIntersect();
+      await act(async () => {});
+
+      // The last page of history lands together with the action's removal.
+      view.rerender(
+        ui(['earlier-1', 'earlier-2', 'oldest-visible'], undefined),
+      );
+      anchorTop = 500;
+
+      await act(async () => resolveAction());
+
+      expect(container.scrollTop).toBe(437);
+    },
+  );
 
   it('acts on the latest entry when the observer coalesces notifications', async () => {
     const action = vi.fn(async () => {});

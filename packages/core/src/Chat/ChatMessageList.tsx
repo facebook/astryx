@@ -371,8 +371,9 @@ export function ChatMessageList({
   // cycle settles. Runs per commit; measured, not assumed — if native
   // anchoring already kept the anchor in place, the delta is 0. The anchor
   // disarms only after the prepend actually committed (the action may
-  // resolve before the consumer's state lands) — or when the reader
-  // scrolled away, which hands stability back to native anchoring.
+  // resolve before the consumer's state lands), once a settled load leaves
+  // no action (history exhausted, even by an empty final page) — or when the
+  // reader scrolled away, which hands stability back to native anchoring.
   useIsomorphicLayoutEffect(() => {
     const anchor = prependAnchorRef.current;
     if (!anchor || loadEarlierInFlightRef.current) {
@@ -406,6 +407,8 @@ export function ChatMessageList({
       if (container.scrollTop === 0) {
         beginLoadEarlier(container);
       }
+    } else if (!hasScrollToTopAction && !isLoadingTop) {
+      prependAnchorRef.current = null;
     }
   });
 
