@@ -12,6 +12,7 @@
  */
 
 import {ERROR_CODES} from '../foundation/response/error-codes.mjs';
+import * as path from 'node:path';
 
 export class AstryxError extends Error {
   /** @type {import('../foundation/response/base').Suggestion[] | undefined} */
@@ -35,4 +36,37 @@ export class AstryxError extends Error {
     this.code = code || ERROR_CODES.ERR_UNKNOWN;
     if (Array.isArray(suggestions) && suggestions.length) this.suggestions = suggestions;
   }
+}
+
+/**
+ * The error for a write that failed on the filesystem: no permission, a
+ * read-only mount, a full disk, a path component that is not a directory.
+ *
+ * A raw Node errno error reached the envelope as
+ * `{"error": "EACCES: permission denied, open '/home/you/p/readonly/x.tsx'",
+ * "code": "ERR_UNKNOWN"}` — the wrong code (ERR_WRITE_FAILED is in the frozen
+ * registry for exactly this) and an absolute host path in the message. This
+ * keeps the errno, which is the part that tells you what to fix, and reports
+ * the target the way every other Astryx message does: relative to the project.
+ *
+ * Only for a write that failed outright. A write that half-succeeded is a
+ * different report, and no caller of this has one.
+ *
+ * @param {string} target absolute path the write was aimed at
+ * @param {string} cwd project root, for the relative form
+ * @param {unknown} cause the error the filesystem call threw
+ * @returns {AstryxError}
+ */
+export function writeFailed(target, cwd, cause) {
+  const rel = path.relative(cwd, target) || target;
+  const errno =
+    typeof (/** @type {any} */ (cause)?.code) === 'string'
+      ? /** @type {any} */ (cause).code
+      : null;
+  const why = errno === 'EACCES' || errno === 'EPERM' ? ' (no permission)' : '';
+  return new AstryxError(
+    `Could not write ${rel}${errno ? `: ${errno}` : ''}${why}. Nothing was written.`,
+    undefined,
+    ERROR_CODES.ERR_WRITE_FAILED,
+  );
 }

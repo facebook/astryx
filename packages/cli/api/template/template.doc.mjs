@@ -140,6 +140,10 @@ export const doc = {
       code: 'ERR_FILE_EXISTS',
       when: 'the copy target already exists and overwrite is not set',
     },
+    {
+      code: 'ERR_WRITE_FAILED',
+      when: 'the copy target could not be written (no permission, read-only mount, full disk); nothing is written',
+    },
   ],
   examples: [
     {label: 'List templates', code: 'const {data} = await template();'},
