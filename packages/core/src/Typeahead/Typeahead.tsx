@@ -516,7 +516,9 @@ export function Typeahead<T extends SearchableItem>({
   // focused input (a clear Action not accepted) takes it, since the input is
   // now hidden and out of the Tab order. Transitions only, so a token present
   // on mount leaves autofocus alone; Escape and blur have already moved focus
-  // off the input by the time the token returns.
+  // off the input by the time the token returns. Edit mode focuses the input
+  // itself once the label is in the query; focusing it earlier would open the
+  // entries shown on an empty field.
   const wasTokenShownRef = useRef(showToken);
   useIsomorphicLayoutEffect(() => {
     if (wasTokenShownRef.current === showToken) {
@@ -533,12 +535,13 @@ export function Typeahead<T extends SearchableItem>({
     tokenHadFocusRef.current = false;
     if (
       tokenHadFocus &&
+      !isEditing &&
       (document.activeElement == null ||
         document.activeElement === document.body)
     ) {
       inputRef.current?.focus();
     }
-  }, [showToken]);
+  }, [showToken, isEditing]);
 
   // Enter edit mode: remove token visually, populate input with value label
   const handleEnterEditMode = useCallback(() => {

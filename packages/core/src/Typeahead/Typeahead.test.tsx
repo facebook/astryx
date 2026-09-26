@@ -1353,6 +1353,40 @@ describe('Typeahead collapsed input tab order', () => {
     expect(screen.getByRole('combobox')).toHaveFocus();
   });
 
+  it('leaves focus to edit mode when the focused token is activated', async () => {
+    const bootstrap = vi.fn(() => fruits.slice(0, 3));
+    const onChange = vi.fn();
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={{...fruitSource, bootstrap}}
+        value={fruits[1]}
+        onChange={onChange}
+        hasEntriesOnFocus
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    // Enter or Space on the focused token (or a click, which focuses it
+    // first) enters edit mode, which focuses the input itself once the label
+    // is in the query. Focusing it any earlier would open the entries shown
+    // on an empty field, first one active, under the old label.
+    const tokenButton = screen.getByRole('button', {name: fruits[1].label});
+    tokenButton.focus();
+    fireEvent.click(tokenButton);
+    expect(bootstrap).not.toHaveBeenCalled();
+    expect(input).not.toHaveAttribute('aria-expanded', 'true');
+    // So a second Enter before that frame selects nothing.
+    fireEvent.keyDown(document.activeElement ?? document.body, {key: 'Enter'});
+    expect(onChange).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await new Promise(r => requestAnimationFrame(r));
+    });
+    expect(input).toHaveFocus();
+    expect(input).toHaveValue(fruits[1].label);
+    expect(bootstrap).not.toHaveBeenCalled();
+  });
+
   it('keeps the input in the Tab order when no token is shown', () => {
     render(
       <Typeahead
