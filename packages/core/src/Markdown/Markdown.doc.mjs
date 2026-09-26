@@ -260,6 +260,11 @@ export const docs = {
       {
         guidance: true,
         description:
+          'Add markdownCalloutsPlugin for static :::info, :::success, :::warning, and :::error blocks with optional plain-text titles and rich Markdown children. Callouts are not live alerts.',
+      },
+      {
+        guidance: true,
+        description:
           'Use createMarkdownTextTransform for prose matching; it preserves code, links, images, citations, math, and accepted extension syntax as protected contexts. Provide requiredSubstrings only when they conservatively cover every possible match.',
       },
       {
@@ -344,6 +349,17 @@ import {markdownSoftBreaksPlugin} from '@astryxdesign/core/Markdown/plugins';
 
 <Markdown plugins={[markdownSoftBreaksPlugin]}>
   {'First line\\nSecond line'}
+</Markdown>;
+`,
+    },
+    {
+      label: 'First-party callouts',
+      code: `
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {markdownCalloutsPlugin} from '@astryxdesign/core/Markdown/plugins';
+
+<Markdown plugins={[markdownCalloutsPlugin]}>
+  {':::warning Check first\\nRich **Markdown** belongs here.\\n:::'}
 </Markdown>;
 `,
     },
@@ -736,6 +752,11 @@ export const docsZh = {
       {
         guidance: true,
         description:
+          'Add markdownCalloutsPlugin for static :::info, :::success, :::warning, and :::error blocks with optional plain-text titles and rich Markdown children. Callouts are not live alerts.',
+      },
+      {
+        guidance: true,
+        description:
           'Use createMarkdownTextTransform for prose matching; it preserves code, links, images, citations, math, and accepted extension syntax as protected contexts. Provide requiredSubstrings only when they conservatively cover every possible match.',
       },
       {
@@ -819,6 +840,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Add markdownSoftBreaksPlugin when single line endings are meaningful. It matches remark-breaks for supported Markdown, including multiline link labels, while code and other opaque content stay unchanged.',
+      },
+      {
+        guidance: true,
+        description:
+          'Add markdownCalloutsPlugin for static :::info, :::success, :::warning, and :::error blocks with optional plain-text titles and rich Markdown children. Callouts are not live alerts.',
       },
       {
         guidance: true,

@@ -16,14 +16,18 @@ import {
   createIncrementalState,
   parseInline,
   parseMarkdown,
+  parseMarkdownAst,
   parseMarkdownIncremental,
 } from '../parser';
 import type {InlineNode} from '../parser';
 import {createMarkdownPlugin, isMarkdownExtensionNode} from './protocol';
 import {visitMarkdownNodes} from '../ast';
 import type {
+  MarkdownBlockContainerExtensionNode,
   MarkdownExtensionNode,
+  MarkdownInlineContainerExtensionNode,
   MarkdownSyntaxPluginDefinition,
+  MarkdownTokenizerInput,
   MarkdownTransformPluginDefinition,
 } from './protocol';
 import {parseOutlineFromMarkdown} from '../../Outline/parseOutlineFromMarkdown';
@@ -33,6 +37,12 @@ type MentionNode = MarkdownExtensionNode<
   'mention',
   {readonly label: string},
   'inline'
+>;
+
+type HighlightNode = MarkdownInlineContainerExtensionNode<
+  'highlights',
+  'highlight',
+  Record<string, never>
 >;
 
 type BrokenMentionNode = MarkdownExtensionNode<
@@ -60,11 +70,10 @@ type BadgeNode = MarkdownExtensionNode<
   'inline'
 >;
 
-type CalloutNode = MarkdownExtensionNode<
+type CalloutNode = MarkdownBlockContainerExtensionNode<
   'callouts',
   'callout',
-  {readonly body: string},
-  'block'
+  {readonly label: string}
 >;
 
 const mentionDefinition = {
@@ -108,6 +117,48 @@ const mentionPlugin = createMarkdownPlugin<'mentions', MentionNode>(
   mentionDefinition,
 );
 
+const highlightDefinition = {
+  name: 'highlights',
+  apiVersion: 1,
+  parseKey: 'v1',
+  syntax: {
+    inline: [
+      {
+        startsWith: ['=='],
+        maxSpan: 120,
+        tokenize({source, offset, end, isFinal}) {
+          const close = source.indexOf('==', offset + 2);
+          if (close < 0 || close + 2 > end) {
+            return isFinal ? {status: 'no-match'} : {status: 'defer'};
+          }
+          return {
+            status: 'match',
+            end: close + 2,
+            node: {
+              type: 'extension',
+              plugin: 'highlights',
+              name: 'highlight',
+              display: 'inline',
+              data: {},
+            },
+            children: {start: offset + 2, end: close},
+          };
+        },
+      },
+    ],
+  },
+  renderers: {
+    highlight: {
+      content: 'phrasing',
+      render: ({children}) => <mark data-testid="highlight">{children}</mark>,
+    },
+  },
+} satisfies MarkdownSyntaxPluginDefinition<'highlights', HighlightNode>;
+
+const highlightPlugin = createMarkdownPlugin<'highlights', HighlightNode>(
+  highlightDefinition,
+);
+
 const calloutDefinition = {
   name: 'callouts',
   apiVersion: 1,
@@ -130,8 +181,9 @@ const calloutDefinition = {
               plugin: 'callouts',
               name: 'callout',
               display: 'block',
-              data: {body: source.slice(offset + 7, close).trim()},
+              data: {label: 'Note'},
             },
+            children: {start: offset + 8, end: close},
           };
         },
       },
@@ -139,8 +191,12 @@ const calloutDefinition = {
   },
   renderers: {
     callout: {
-      render: ({node}) => <aside data-testid="callout">{node.data.body}</aside>,
-      toText: node => node.data.body,
+      content: 'flow',
+      render: ({node, children}) => (
+        <aside aria-label={node.data.label} data-testid="callout">
+          {children}
+        </aside>
+      ),
     },
   },
 } satisfies MarkdownSyntaxPluginDefinition<'callouts', CalloutNode>;
@@ -270,14 +326,360 @@ describe('Markdown plugin protocol', () => {
     expect(forgedNode).not.toHaveProperty('position');
   });
 
-  it('renders inline and top-level block extension nodes', () => {
-    render(
-      <Markdown plugins={[mentionPlugin, calloutPlugin]}>
-        {'Hello @{Ada}.\n\n:::note\nRead this\n:::'}
-      </Markdown>,
+  it('parses and renders rich Markdown inside nested extension containers', () => {
+    const source = [
+      'Hello @{Ada}.',
+      '',
+      ':::note',
+      'Read ==**this**== and [the docs](/docs) with @{Grace}.',
+      '',
+      '- First item',
+      '- Second item',
+      ':::',
+    ].join('\n');
+    const plugins = [mentionPlugin, highlightPlugin, calloutPlugin] as const;
+    const blocks = parseMarkdown(source, {plugins});
+
+    expect(blocks[1]).toMatchObject({
+      type: 'extension',
+      plugin: 'callouts',
+      name: 'callout',
+      children: [
+        {
+          type: 'paragraph',
+          children: [
+            {type: 'text', value: 'Read '},
+            {
+              type: 'extension',
+              plugin: 'highlights',
+              name: 'highlight',
+              children: [{type: 'strong'}],
+            },
+            {type: 'text', value: ' and '},
+            {type: 'link', url: '/docs'},
+            {type: 'text', value: ' with '},
+            {type: 'extension', plugin: 'mentions', name: 'mention'},
+            {type: 'text', value: '.'},
+          ],
+        },
+        {type: 'list'},
+      ],
+    });
+
+    const {container} = render(<Markdown plugins={plugins}>{source}</Markdown>);
+    const callout = screen.getByRole('complementary', {name: 'Note'});
+    expect(callout).toContainElement(screen.getByTestId('highlight'));
+    expect(screen.getByText('this').tagName).toBe('STRONG');
+    expect(screen.getByRole('link', {name: 'the docs'})).toHaveAttribute(
+      'href',
+      '/docs',
     );
-    expect(screen.getByTestId('mention')).toHaveTextContent('@Ada');
-    expect(screen.getByTestId('callout')).toHaveTextContent('Read this');
+    expect(callout.querySelectorAll('li')).toHaveLength(2);
+    expect(screen.getAllByTestId('mention')).toHaveLength(2);
+    expect(container.textContent).toContain(
+      'Read this and the docs with @Grace.First itemSecond item',
+    );
+
+    const visited: string[] = [];
+    visitMarkdownNodes(
+      parseMarkdownAst(source, {plugins}),
+      'extension',
+      node => {
+        visited.push(node.name);
+      },
+    );
+    expect(visited).toEqual(['mention', 'callout', 'highlight', 'mention']);
+
+    const serverMarkup = renderToString(
+      <Markdown plugins={plugins}>{source}</Markdown>,
+    );
+    expect(serverMarkup).toContain('<aside');
+    expect(serverMarkup).toContain('<strong');
+    expect(serverMarkup).toContain('href="/docs"');
+  });
+
+  it('keeps the released heading scope while projecting inline container text', () => {
+    const inlineSource = '# Before ==**after**==';
+    const inlinePlugins = [highlightPlugin] as const;
+    expect(
+      parseOutlineFromMarkdown(inlineSource, {plugins: inlinePlugins}),
+    ).toEqual([{id: 'before-after', label: 'Before after', level: 1}]);
+    const inline = render(
+      <Markdown plugins={inlinePlugins}>{inlineSource}</Markdown>,
+    );
+    expect(screen.getByRole('heading', {name: 'Before after'})).toHaveAttribute(
+      'id',
+      'before-after',
+    );
+    inline.unmount();
+
+    const blockSource = '# Top\n\n:::note\n# Nested\n:::\n\n# Tail';
+    const blockPlugins = [calloutPlugin] as const;
+    expect(
+      parseOutlineFromMarkdown(blockSource, {plugins: blockPlugins}),
+    ).toEqual([
+      {id: 'top', label: 'Top', level: 1},
+      {id: 'tail', label: 'Tail', level: 1},
+    ]);
+    render(<Markdown plugins={blockPlugins}>{blockSource}</Markdown>);
+    expect(screen.getByRole('heading', {name: 'Nested'})).not.toHaveAttribute(
+      'id',
+    );
+  });
+
+  it('withholds incomplete containers and converges to the full parse', () => {
+    const source = ':::note\n**Streamed** content\n:::';
+    const plugins = [calloutPlugin] as const;
+    const state = createIncrementalState();
+
+    expect(
+      parseMarkdownIncremental(source.slice(0, -3), state, {plugins}),
+    ).toEqual([]);
+    expect(
+      parseMarkdownIncremental(source, state, {plugins, isFinal: true}),
+    ).toEqual(parseMarkdown(source, {plugins}));
+  });
+
+  it('enforces container placement and declared child shapes', () => {
+    type InvalidInlineNode = MarkdownInlineContainerExtensionNode<
+      'invalid-inline-container',
+      'inline-box',
+      Record<string, never>
+    >;
+    const invalidPlacement = createMarkdownPlugin<
+      'invalid-inline-container',
+      InvalidInlineNode
+    >({
+      name: 'invalid-inline-container',
+      apiVersion: 1,
+      transform(root) {
+        return {
+          ...root,
+          children: [
+            {
+              type: 'extension',
+              plugin: 'invalid-inline-container',
+              name: 'inline-box',
+              display: 'inline',
+              data: {},
+              children: [{type: 'text', value: 'Wrong level'}],
+            },
+          ] as never,
+        };
+      },
+      renderers: {
+        'inline-box': {
+          content: 'phrasing',
+          render: ({children}) => <span>{children}</span>,
+        },
+      },
+    });
+
+    type InvalidFlowNode = MarkdownBlockContainerExtensionNode<
+      'invalid-flow-container',
+      'flow-box',
+      Record<string, never>
+    >;
+    const invalidChildren = createMarkdownPlugin<
+      'invalid-flow-container',
+      InvalidFlowNode
+    >({
+      name: 'invalid-flow-container',
+      apiVersion: 1,
+      transform(root) {
+        return {
+          ...root,
+          children: [
+            {
+              type: 'extension',
+              plugin: 'invalid-flow-container',
+              name: 'flow-box',
+              display: 'block',
+              data: {},
+              children: [{type: 'text', value: 'Not flow content'}],
+            },
+          ] as never,
+        };
+      },
+      renderers: {
+        'flow-box': {
+          content: 'flow',
+          render: ({children}) => <section>{children}</section>,
+        },
+      },
+    });
+
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const baseline = [
+      {type: 'paragraph', children: [{type: 'text', content: 'Safe'}]},
+    ];
+    expect(parseMarkdown('Safe', {plugins: [invalidPlacement]})).toEqual(
+      baseline,
+    );
+    expect(parseMarkdown('Safe', {plugins: [invalidChildren]})).toEqual(
+      baseline,
+    );
+    warning.mockRestore();
+  });
+
+  it('validates narrowing allowlists and cardinality', () => {
+    type ParagraphBoxNode = MarkdownBlockContainerExtensionNode<
+      'paragraph-boxes',
+      'box',
+      Record<string, never>
+    >;
+    const paragraphBox = createMarkdownPlugin<
+      'paragraph-boxes',
+      ParagraphBoxNode
+    >({
+      name: 'paragraph-boxes',
+      apiVersion: 1,
+      transform(root) {
+        return {
+          ...root,
+          children: [
+            {
+              type: 'extension',
+              plugin: 'paragraph-boxes',
+              name: 'box',
+              display: 'block',
+              data: {},
+              children: root.children,
+            },
+          ],
+        };
+      },
+      renderers: {
+        box: {
+          content: {allow: ['paragraph'], min: 1, max: 1},
+          render: ({children}) => (
+            <section data-testid="paragraph-box">{children}</section>
+          ),
+        },
+      },
+    });
+
+    expect(parseMarkdown('One', {plugins: [paragraphBox]})).toMatchObject([
+      {
+        type: 'extension',
+        children: [{type: 'paragraph'}],
+      },
+    ]);
+    expect(
+      parseMarkdown('One\n\n- Two', {plugins: [paragraphBox]}),
+    ).toMatchObject([{type: 'paragraph'}, {type: 'list'}]);
+
+    expect(() =>
+      createMarkdownPlugin({
+        name: 'image-container',
+        apiVersion: 1,
+        transform: (root: never) => root,
+        renderers: {
+          box: {
+            content: {allow: ['image']},
+            render: () => null,
+          },
+        },
+      } as never),
+    ).not.toThrow();
+
+    expect(() =>
+      createMarkdownPlugin({
+        name: 'invalid-content-declaration',
+        apiVersion: 1,
+        transform: (root: never) => root,
+        renderers: {
+          paragraph: {
+            render: () => null,
+            toText: () => '',
+          },
+        },
+      } as never),
+    ).toThrow(/must not collide with a built-in node/);
+    expect(() =>
+      createMarkdownPlugin({
+        name: 'invalid-content-declaration',
+        apiVersion: 1,
+        transform: (root: never) => root,
+        renderers: {
+          box: {
+            content: {allow: ['text', 'paragraph']},
+            render: () => null,
+          },
+        },
+      } as never),
+    ).toThrow(/mixes phrasing and flow nodes/);
+    expect(() =>
+      createMarkdownPlugin({
+        name: 'invalid-content-declaration',
+        apiVersion: 1,
+        transform: (root: never) => root,
+        renderers: {
+          box: {
+            content: {allow: ['foreign-node']},
+            render: () => null,
+          },
+        },
+      } as never),
+    ).toThrow(/built-in or owned extension names/);
+  });
+
+  it('falls back to standard rendered children when a container renderer fails', () => {
+    type BrokenContainerNode = MarkdownBlockContainerExtensionNode<
+      'broken-container',
+      'box',
+      Record<string, never>
+    >;
+    const brokenContainer = createMarkdownPlugin<
+      'broken-container',
+      BrokenContainerNode
+    >({
+      name: 'broken-container',
+      apiVersion: 1,
+      transform(root) {
+        return {
+          ...root,
+          children: [
+            {
+              type: 'extension',
+              plugin: 'broken-container',
+              name: 'box',
+              display: 'block',
+              data: {},
+              children: root.children,
+            },
+          ],
+        };
+      },
+      renderers: {
+        box: {
+          content: 'flow',
+          render() {
+            throw new Error('broken container');
+          },
+        },
+      },
+    });
+    const source = '**Readable** [link](/safe)\n\n- Item';
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const {container} = render(
+      <Markdown plugins={[brokenContainer]}>{source}</Markdown>,
+    );
+    expect(screen.getByText('Readable').tagName).toBe('STRONG');
+    expect(screen.getByRole('link', {name: 'link'})).toHaveAttribute(
+      'href',
+      '/safe',
+    );
+    expect(container.querySelector('li')).toHaveTextContent('Item');
+    expect(container.textContent).not.toContain(':::');
+
+    const serverMarkup = renderToString(
+      <Markdown plugins={[brokenContainer]}>{source}</Markdown>,
+    );
+    expect(serverMarkup).toContain('<strong');
+    expect(serverMarkup).toContain('href="/safe"');
+    warning.mockRestore();
   });
 
   it('isolates a suspending renderer behind its node source', async () => {
@@ -429,6 +831,41 @@ describe('Markdown plugin protocol', () => {
         children: [{type: 'text', content: 'Hello @{Ada}'}],
       },
     ]);
+
+    const malformedNode = createMarkdownPlugin({
+      ...mentionDefinition,
+      name: 'malformed-node',
+      syntax: {
+        inline: [
+          {
+            startsWith: ['@{'],
+            maxSpan: 80,
+            tokenize: ({offset}: {readonly offset: number}) =>
+              ({
+                status: 'match',
+                end: offset + 6,
+                node: {
+                  type: 'extension',
+                  plugin: Symbol('malformed-plugin'),
+                  name: Symbol('malformed-name'),
+                  display: 'inline',
+                  data: {},
+                },
+              }) as never,
+          },
+        ],
+      },
+      renderers: mentionDefinition.renderers,
+    } as never);
+    expect(() =>
+      parseMarkdown('Hello @{Ada}', {plugins: [malformedNode]}),
+    ).not.toThrow();
+    expect(parseMarkdown('Hello @{Ada}', {plugins: [malformedNode]})).toEqual([
+      {
+        type: 'paragraph',
+        children: [{type: 'text', content: 'Hello @{Ada}'}],
+      },
+    ]);
     warning.mockRestore();
   });
 
@@ -456,6 +893,230 @@ describe('Markdown plugin protocol', () => {
     const source = '> :::note\n> quoted\n> :::\n\n- :::note\n  listed\n  :::';
     const blocks = parseMarkdown(source, {plugins: [calloutPlugin]});
     expect(JSON.stringify(blocks)).not.toContain('"type":"extension"');
+  });
+
+  it('keeps link-definition precedence over matching block plugins', () => {
+    const definitionPrefixPlugin = createMarkdownPlugin({
+      name: 'definition-prefix',
+      apiVersion: 1,
+      parseKey: 'v1',
+      syntax: {
+        block: [
+          {
+            startsWith: ['[d]:'],
+            maxSpan: 200,
+            tokenize({source, offset}) {
+              const close = source.indexOf('\n:::', offset);
+              return close < 0
+                ? {status: 'no-match' as const}
+                : {
+                    status: 'match' as const,
+                    end: close + 4,
+                    node: {
+                      type: 'extension' as const,
+                      plugin: 'definition-prefix' as const,
+                      name: 'box' as const,
+                      display: 'block' as const,
+                      data: {},
+                    },
+                    children: {start: offset + 11, end: close},
+                  };
+            },
+          },
+        ],
+      },
+      renderers: {
+        box: {
+          content: 'flow',
+          render: ({children}) => <div>{children}</div>,
+        },
+      },
+    });
+
+    const parsed = parseMarkdown('[d]: /docs\nInside\n:::\n\nUse [d].', {
+      plugins: [definitionPrefixPlugin],
+    });
+    expect(JSON.stringify(parsed)).toContain('"href":"/docs"');
+    expect(JSON.stringify(parsed)).not.toContain('"type":"extension"');
+  });
+
+  it('passes authored container source to discovery tokenizers', () => {
+    const sourceAwarePlugin = createMarkdownPlugin({
+      name: 'source-aware-boxes',
+      apiVersion: 1,
+      parseKey: 'v1',
+      syntax: {
+        block: [
+          {
+            startsWith: [':::box'],
+            maxSpan: 500,
+            tokenize({source, offset}) {
+              const close = source.indexOf('\n:::', offset);
+              if (
+                close < 0 ||
+                !source.slice(offset, close).includes('[local]: /inside')
+              ) {
+                return {status: 'no-match' as const};
+              }
+              return {
+                status: 'match' as const,
+                end: close + 4,
+                node: {
+                  type: 'extension' as const,
+                  plugin: 'source-aware-boxes' as const,
+                  name: 'box' as const,
+                  display: 'block' as const,
+                  data: {},
+                },
+                children: {start: offset + 7, end: close},
+              };
+            },
+          },
+        ],
+      },
+      renderers: {
+        box: {
+          content: 'flow',
+          render: ({children}) => <div>{children}</div>,
+        },
+      },
+    });
+    const parsed = parseMarkdown(
+      ':::box\n[local]: /inside\nUse [local].\n:::\n\nOutside [local].',
+      {plugins: [sourceAwarePlugin]},
+    );
+
+    expect(parsed[0]).toMatchObject({type: 'extension'});
+    expect(parsed.at(-1)).toMatchObject({
+      type: 'paragraph',
+      children: [{type: 'text', content: 'Outside [local].'}],
+    });
+  });
+
+  it('preserves definition fallback when discovered children fail validation', () => {
+    const strictPlugin = createMarkdownPlugin({
+      name: 'strict-boxes',
+      apiVersion: 1,
+      parseKey: 'v1',
+      syntax: {
+        block: [
+          {
+            startsWith: [':::box'],
+            maxSpan: 500,
+            tokenize({source, offset}) {
+              const close = source.indexOf('\n:::', offset);
+              return close < 0
+                ? {status: 'no-match' as const}
+                : {
+                    status: 'match' as const,
+                    end: close + 4,
+                    node: {
+                      type: 'extension' as const,
+                      plugin: 'strict-boxes' as const,
+                      name: 'box' as const,
+                      display: 'block' as const,
+                      data: {},
+                    },
+                    children: {start: offset + 7, end: close},
+                  };
+            },
+          },
+        ],
+      },
+      renderers: {
+        box: {
+          content: {allow: ['paragraph'], min: 3},
+          render: () => null,
+        },
+      },
+    });
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const parsed = parseMarkdown(
+      ':::box\n\n[local]: /inside\n\nOne.\n\nTwo.\n:::\n\nUse [local].',
+      {plugins: [strictPlugin]},
+    );
+
+    expect(JSON.stringify(parsed)).not.toContain('"type":"extension"');
+    expect(JSON.stringify(parsed)).toContain('"href":"/inside"');
+    expect(warning).toHaveBeenCalled();
+    warning.mockRestore();
+  });
+
+  it('keeps nested container discovery linear', () => {
+    const tokenize = vi.fn(
+      ({source, offset, isFinal}: MarkdownTokenizerInput) => {
+        const firstNewline = source.indexOf('\n', offset);
+        if (firstNewline < 0) {
+          return isFinal
+            ? {status: 'no-match' as const}
+            : {status: 'defer' as const};
+        }
+        let depth = 1;
+        let cursor = firstNewline + 1;
+        while (cursor <= source.length) {
+          const newline = source.indexOf('\n', cursor);
+          const lineEnd = newline < 0 ? source.length : newline;
+          const line = source.slice(cursor, lineEnd);
+          if (line === ':::box') {
+            depth++;
+          } else if (line === ':::') {
+            depth--;
+            if (depth === 0) {
+              return {
+                status: 'match' as const,
+                end: lineEnd,
+                node: {
+                  type: 'extension' as const,
+                  plugin: 'linear-boxes' as const,
+                  name: 'box' as const,
+                  display: 'block' as const,
+                  data: {},
+                },
+                children: {start: firstNewline + 1, end: cursor},
+              };
+            }
+          }
+          if (newline < 0) {
+            break;
+          }
+          cursor = newline + 1;
+        }
+        return isFinal
+          ? {status: 'no-match' as const}
+          : {status: 'defer' as const};
+      },
+    );
+    const plugin = createMarkdownPlugin({
+      name: 'linear-boxes',
+      apiVersion: 1,
+      parseKey: 'v1',
+      syntax: {
+        block: [{startsWith: [':::box'], maxSpan: 10_000, tokenize}],
+      },
+      renderers: {
+        box: {
+          content: 'flow',
+          render: ({children}) => <div>{children}</div>,
+        },
+      },
+    });
+    const depth = 20;
+    const source = [
+      ...Array.from({length: depth}, () => ':::box'),
+      '[d]: /docs',
+      'Use [d].',
+      ...Array.from({length: depth}, () => ':::'),
+      '',
+      'Outside [d].',
+    ].join('\n');
+
+    const parsed = parseMarkdown(source, {plugins: [plugin]});
+    expect(parsed).toHaveLength(2);
+    expect(parsed.at(-1)).toMatchObject({
+      type: 'paragraph',
+      children: [{type: 'text', content: 'Outside [d].'}],
+    });
+    expect(tokenize.mock.calls.length).toBeLessThanOrEqual(depth * 2 + 2);
   });
 
   it('runs immutable transforms in plugin order', () => {

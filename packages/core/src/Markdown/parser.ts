@@ -26,14 +26,16 @@ import type {
 import {
   applyMarkdownTransforms,
   freezeMarkdownPluginData,
+  getMarkdownExtensionContent,
   isMarkdownPluginData,
+  MAX_MARKDOWN_CONTAINER_DEPTH,
   prepareMarkdownPlugins,
   reportMarkdownPluginFailure,
+  validateMarkdownExtensionContent,
 } from './plugins/protocol';
 import type {
-  MarkdownExtensionNode,
+  MarkdownAnyExtensionNode,
   MarkdownExtensionsOf,
-  MarkdownPluginData,
   MarkdownPluginEntry,
   PreparedMarkdownPlugins,
   PreparedSyntaxContribution,
@@ -45,7 +47,7 @@ import {isSafeMarkdownParserUrl} from './url';
 // ---------------------------------------------------------------------------
 
 /** Nodes returned by default and legacy parser calls. */
-export type InlineNode<Extension extends MarkdownExtensionNode = never> =
+export type InlineNode<Extension extends MarkdownAnyExtensionNode = never> =
   | {type: 'text'; content: string}
   | {type: 'bold'; children: InlineNode<Extension>[]}
   | {type: 'italic'; children: InlineNode<Extension>[]}
@@ -62,7 +64,7 @@ export type MathInlineNode = {type: 'math'; value: string};
 
 /** Nodes returned by an explicitly math-enabled inline parse. */
 export type InlineNodeWithMath<
-  Extension extends MarkdownExtensionNode = never,
+  Extension extends MarkdownAnyExtensionNode = never,
 > =
   | {type: 'text'; content: string}
   | {type: 'bold'; children: InlineNodeWithMath<Extension>[]}
@@ -84,7 +86,7 @@ type BlockMetadata = {
   range?: SourceRange;
 };
 
-type LegacyBlockNodeKind<Extension extends MarkdownExtensionNode = never> =
+type LegacyBlockNodeKind<Extension extends MarkdownAnyExtensionNode = never> =
   | {
       type: 'heading';
       level: 1 | 2 | 3 | 4 | 5 | 6;
@@ -113,13 +115,15 @@ type LegacyBlockNodeKind<Extension extends MarkdownExtensionNode = never> =
   | Extract<Extension, {display: 'block'}>;
 
 /** Blocks returned by default and legacy parser calls. */
-export type BlockNode<Extension extends MarkdownExtensionNode = never> =
+export type BlockNode<Extension extends MarkdownAnyExtensionNode = never> =
   LegacyBlockNodeKind<Extension> & BlockMetadata;
 
 /** The additional block returned only when parsing with `math: true`. */
 export type MathBlockNode = {type: 'math'; value: string} & BlockMetadata;
 
-type MathEnabledBlockNodeKind<Extension extends MarkdownExtensionNode = never> =
+type MathEnabledBlockNodeKind<
+  Extension extends MarkdownAnyExtensionNode = never,
+> =
   | {
       type: 'heading';
       level: 1 | 2 | 3 | 4 | 5 | 6;
@@ -149,8 +153,9 @@ type MathEnabledBlockNodeKind<Extension extends MarkdownExtensionNode = never> =
   | Extract<Extension, {display: 'block'}>;
 
 /** Blocks returned by an explicitly math-enabled block parse. */
-export type BlockNodeWithMath<Extension extends MarkdownExtensionNode = never> =
-  MathEnabledBlockNodeKind<Extension> & BlockMetadata;
+export type BlockNodeWithMath<
+  Extension extends MarkdownAnyExtensionNode = never,
+> = MathEnabledBlockNodeKind<Extension> & BlockMetadata;
 
 /**
  * Where a block sits in the source string handed to `parseMarkdown`:
@@ -163,25 +168,26 @@ export type BlockNodeWithMath<Extension extends MarkdownExtensionNode = never> =
  */
 export type SourceRange = {readonly start: number; readonly end: number};
 
-export type ListItemNode<Extension extends MarkdownExtensionNode = never> = {
+export type ListItemNode<Extension extends MarkdownAnyExtensionNode = never> = {
   checked?: boolean;
   children: BlockNode<Extension>[];
 };
-type ListItemNodeWithMath<Extension extends MarkdownExtensionNode = never> = {
-  checked?: boolean;
-  children: BlockNodeWithMath<Extension>[];
-};
-export type TableCellNode<Extension extends MarkdownExtensionNode = never> = {
-  children: InlineNode<Extension>[];
-};
-type TableCellNodeWithMath<Extension extends MarkdownExtensionNode = never> = {
-  children: InlineNodeWithMath<Extension>[];
-};
+type ListItemNodeWithMath<Extension extends MarkdownAnyExtensionNode = never> =
+  {
+    checked?: boolean;
+    children: BlockNodeWithMath<Extension>[];
+  };
+export type TableCellNode<Extension extends MarkdownAnyExtensionNode = never> =
+  {
+    children: InlineNode<Extension>[];
+  };
+type TableCellNodeWithMath<Extension extends MarkdownAnyExtensionNode = never> =
+  {
+    children: InlineNodeWithMath<Extension>[];
+  };
 export type TableAlignment = 'left' | 'center' | 'right' | null;
 
-type RuntimeExtensionNode =
-  | MarkdownExtensionNode<string, string, MarkdownPluginData, 'inline'>
-  | MarkdownExtensionNode<string, string, MarkdownPluginData, 'block'>;
+type RuntimeExtensionNode = MarkdownAnyExtensionNode;
 type RuntimeInlineNode = InlineNodeWithMath<RuntimeExtensionNode>;
 type RuntimeBlockNode = BlockNodeWithMath<RuntimeExtensionNode>;
 
@@ -523,6 +529,12 @@ type RuntimeParseOptions = CommonParseOptions<
   isFinal?: boolean;
 };
 
+type MarkdownContainerRange = {readonly start: number; readonly end: number};
+type MarkdownContainerDiscovery = {
+  readonly ranges: MarkdownContainerRange[];
+  deferredStart?: number;
+};
+
 type ResolvedOptions = {
   readonly sourceIds: ReadonlySet<string> | undefined;
   readonly autolink: 'gfm' | undefined;
@@ -539,6 +551,15 @@ type ResolvedOptions = {
   readonly plugins?: PreparedMarkdownPlugins;
   readonly isFinal: boolean;
   readonly allowBlockSyntax?: boolean;
+  readonly containerDepth?: number;
+  /** Internal discovery pass that uses unprotected definition precedence. */
+  readonly skipContainerDefinitionProtection?: boolean;
+  /** Validated container ranges shared by recursive parses. */
+  readonly containerRanges?: ReadonlyArray<MarkdownContainerRange>;
+  /** Collects validated ranges during the structure discovery pass. */
+  readonly containerDiscovery?: MarkdownContainerDiscovery;
+  /** Definition line starts that retain Core precedence during discovery. */
+  readonly discoveryDefinitionStarts?: ReadonlySet<number>;
   /**
    * Offset of this parse's input within the document the ranges are reported
    * against. Internal only — the incremental parser parses slices and needs
@@ -574,6 +595,11 @@ function makeResolvedOptions(
     plugins: fields.plugins,
     isFinal: fields.isFinal,
     allowBlockSyntax: fields.allowBlockSyntax ?? true,
+    containerDepth: fields.containerDepth,
+    skipContainerDefinitionProtection: fields.skipContainerDefinitionProtection,
+    containerRanges: fields.containerRanges,
+    containerDiscovery: fields.containerDiscovery,
+    discoveryDefinitionStarts: fields.discoveryDefinitionStarts,
     baseOffset: fields.baseOffset,
     linkDefs: fields.linkDefs,
   };
@@ -807,28 +833,25 @@ function matchLinkDefinition(
  * definition, or after a self-contained block (heading / thematic break /
  * closed fenced code) — but never inside a fenced code block or as a lazy
  * continuation of a paragraph, honoring CommonMark's rule that a definition
- * cannot interrupt a paragraph. First definition wins, and definitions produce
- * no output so stripping unreferenced ones is correct.
+ * cannot interrupt a paragraph. First definition wins. Definition text is
+ * replaced with same-width spaces so it produces no output while every source
+ * offset remains stable.
  *
- * Scope limit: definitions are collected at the top level only, and a
- * definition directly following a list, blockquote, or table (with no blank
- * line between) is not recognized. A definition nested inside a blockquote or
- * list item resolves within that container (via the recursive parse) but is
- * not exposed to references elsewhere in the document, unlike full CommonMark
- * where every definition is global. Separating a footer definition block with
- * a blank line — the usual form — always works.
+ * Scope limit: definitions are collected at the current parse level only.
+ * Definitions inside extension containers, blockquotes, and list items resolve
+ * within their recursive parse and are not exposed to sibling content.
  */
 function extractLinkDefinitions(
   input: string,
   math = false,
+  protectedRanges: ReadonlyArray<{
+    readonly start: number;
+    readonly end: number;
+  }> = [],
 ): {
   defs: ReadonlyMap<string, string>;
   cleaned: string;
-  /**
-   * For each line of `cleaned`, the line of `input` it came from. Undefined
-   * when nothing was stripped and the two are the same text.
-   */
-  lineMap?: number[];
+  definitionStarts: ReadonlySet<number>;
 } {
   const lines = input.split('\n');
   const defs = new Map<string, string>();
@@ -836,9 +859,35 @@ function extractLinkDefinitions(
   let atBoundary = true;
   let inFence = false;
   let fenceMarker = '';
+  const lineStarts = [0];
+  for (let index = 0; index < input.length; index++) {
+    if (input[index] === '\n') {
+      lineStarts.push(index + 1);
+    }
+  }
+  let protectedIndex = 0;
 
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index];
+    const lineStart = lineStarts[index];
+    const lineEnd = lineStart + line.length;
+    while (
+      protectedIndex < protectedRanges.length &&
+      protectedRanges[protectedIndex].end <= lineStart
+    ) {
+      protectedIndex++;
+    }
+    const protectedRange = protectedRanges[protectedIndex];
+    if (
+      protectedRange != null &&
+      lineStart < protectedRange.end &&
+      lineEnd >= protectedRange.start
+    ) {
+      // A container owns its definitions. Treat the complete container as one
+      // block boundary without exposing its content to the outer definition map.
+      atBoundary = true;
+      continue;
+    }
     if (inFence) {
       if (line.startsWith(fenceMarker)) {
         inFence = false;
@@ -898,16 +947,19 @@ function extractLinkDefinitions(
   }
 
   if (defs.size === 0) {
-    return {defs, cleaned: input};
+    return {defs, cleaned: input, definitionStarts: new Set()};
   }
-  const lineMap: number[] = [];
-  for (let index = 0; index < lines.length; index++) {
-    if (keep[index]) {
-      lineMap.push(index);
-    }
-  }
-  const cleaned = lineMap.map(index => lines[index]).join('\n');
-  return {defs, cleaned, lineMap};
+  const definitionStarts = new Set<number>();
+  const cleaned = lines
+    .map((line, index) => {
+      if (keep[index]) {
+        return line;
+      }
+      definitionStarts.add(lineStarts[index]);
+      return ' '.repeat(line.length);
+    })
+    .join('\n');
+  return {defs, cleaned, definitionStarts};
 }
 
 /** Order-independent signature of a citation-source set, for cache checks. */
@@ -1274,19 +1326,51 @@ function matchExtensionSyntax(
         ? {status: 'defer'}
         : {status: 'none'};
     }
+    const rawNode = (result as {readonly node?: unknown}).node;
+    if (rawNode == null || typeof rawNode !== 'object') {
+      reportMarkdownPluginFailure(
+        candidate.pluginName,
+        'syntax',
+        new TypeError('Tokenizer returned an invalid extension node'),
+      );
+      continue;
+    }
+    const nodeRecord = rawNode as Record<string, unknown>;
+    const content =
+      typeof nodeRecord.plugin === 'string' &&
+      typeof nodeRecord.name === 'string'
+        ? getMarkdownExtensionContent(
+            opts.plugins,
+            nodeRecord as unknown as RuntimeExtensionNode,
+          )
+        : undefined;
+    const childrenRange = (result as {readonly children?: unknown}).children as
+      {readonly start?: unknown; readonly end?: unknown} | undefined;
+    const hasContainerContent = content != null && content !== 'none';
     if (
       result.status !== 'match' ||
       !Number.isInteger(result.end) ||
       result.end <= offset ||
       result.end > end ||
-      result.node.type !== 'extension' ||
-      result.node.plugin !== candidate.pluginName ||
-      result.node.display !== context ||
-      result.node.name.trim() === '' ||
-      !isMarkdownPluginData(result.node.data) ||
-      !opts.plugins?.renderers.has(
-        `${candidate.pluginName}\0${result.node.name}`,
-      )
+      nodeRecord.type !== 'extension' ||
+      nodeRecord.plugin !== candidate.pluginName ||
+      (nodeRecord.display !== 'inline' && nodeRecord.display !== 'block') ||
+      nodeRecord.display !== context ||
+      typeof nodeRecord.name !== 'string' ||
+      nodeRecord.name.trim() === '' ||
+      !isMarkdownPluginData(nodeRecord.data) ||
+      'children' in nodeRecord ||
+      content == null ||
+      (content === 'phrasing' && nodeRecord.display !== 'inline') ||
+      (content === 'flow' && nodeRecord.display !== 'block') ||
+      (hasContainerContent &&
+        (childrenRange == null ||
+          !Number.isInteger(childrenRange.start) ||
+          !Number.isInteger(childrenRange.end) ||
+          (childrenRange.start as number) <= offset ||
+          (childrenRange.end as number) < (childrenRange.start as number) ||
+          (childrenRange.end as number) > result.end)) ||
+      (!hasContainerContent && childrenRange != null)
     ) {
       reportMarkdownPluginFailure(
         candidate.pluginName,
@@ -1295,36 +1379,151 @@ function matchExtensionSyntax(
       );
       continue;
     }
-    const rawNode = result.node as typeof result.node & {
-      readonly source?: unknown;
-      readonly position?: unknown;
-    };
+
+    let children: ReadonlyArray<unknown> | undefined;
+    if (hasContainerContent && childrenRange != null) {
+      const containerDepth = (opts.containerDepth ?? 0) + 1;
+      if (containerDepth > MAX_MARKDOWN_CONTAINER_DEPTH) {
+        reportMarkdownPluginFailure(
+          candidate.pluginName,
+          'syntax',
+          new TypeError('Markdown extension container depth exceeded'),
+        );
+        continue;
+      }
+      const childStart = childrenRange.start as number;
+      const childEnd = childrenRange.end as number;
+      const childOptions: ResolvedOptions = {
+        ...opts,
+        allowBlockSyntax: true,
+        baseOffset: (opts.baseOffset ?? 0) + childStart,
+        containerDepth,
+        isFinal: true,
+      };
+      const childSource = source.slice(childStart, childEnd);
+      children =
+        nodeRecord.display === 'inline'
+          ? parseInlineEntry(childSource, childOptions)
+          : parseMarkdownImpl(childSource, childOptions);
+    }
+
     const {
       source: _ignoredSource,
       position: _ignoredPosition,
+      children: _ignoredChildren,
       ...safeNode
-    } = rawNode;
+    } = nodeRecord;
     const absoluteStart = (opts.baseOffset ?? 0) + offset;
     const absoluteEnd = (opts.baseOffset ?? 0) + result.end;
+    const extensionNode = Object.freeze({
+      ...safeNode,
+      data: freezeMarkdownPluginData(nodeRecord.data),
+      ...(children == null ? null : {children: Object.freeze(children)}),
+      source: source.slice(offset, result.end),
+      ...(opts.sourceRanges && context === 'block'
+        ? {
+            position: Object.freeze({
+              start: Object.freeze({offset: absoluteStart}),
+              end: Object.freeze({offset: absoluteEnd}),
+            }),
+          }
+        : null),
+    }) as RuntimeExtensionNode;
+    if (!validateMarkdownExtensionContent(opts.plugins, extensionNode)) {
+      reportMarkdownPluginFailure(
+        candidate.pluginName,
+        'syntax',
+        new TypeError('Tokenizer returned children outside declared content'),
+      );
+      continue;
+    }
+    if (
+      context === 'block' &&
+      children != null &&
+      opts.containerDiscovery != null
+    ) {
+      opts.containerDiscovery.ranges.push({
+        start: absoluteStart,
+        end: absoluteEnd,
+      });
+    }
     return {
       status: 'match',
       end: result.end,
-      node: Object.freeze({
-        ...safeNode,
-        data: freezeMarkdownPluginData(result.node.data),
-        source: source.slice(offset, result.end),
-        ...(opts.sourceRanges && context === 'block'
-          ? {
-              position: Object.freeze({
-                start: Object.freeze({offset: absoluteStart}),
-                end: Object.freeze({offset: absoluteEnd}),
-              }),
-            }
-          : null),
-      }) as RuntimeExtensionNode,
+      node: extensionNode,
     };
   }
   return {status: 'none'};
+}
+
+/**
+ * Finds block extension containers before document-global link definitions are
+ * collected. Their source is parsed recursively, so definitions they own must
+ * not be stripped from or exposed by the enclosing document.
+ */
+function findBlockExtensionContainerRanges(
+  source: string,
+  opts: ResolvedOptions,
+): ReadonlyArray<MarkdownContainerRange> {
+  const baseOffset = opts.baseOffset ?? 0;
+  if (opts.containerRanges != null) {
+    return opts.containerRanges
+      .filter(
+        range =>
+          range.start >= baseOffset && range.end <= baseOffset + source.length,
+      )
+      .map(range => ({
+        start: range.start - baseOffset,
+        end: range.end - baseOffset,
+      }));
+  }
+  if (
+    opts.skipContainerDefinitionProtection === true ||
+    (opts.plugins?.blockByFirstCharacter.size ?? 0) === 0
+  ) {
+    return [];
+  }
+
+  const definitions = extractLinkDefinitions(source, opts.math);
+  if (definitions.defs.size === 0) {
+    return [];
+  }
+  const discovery: MarkdownContainerDiscovery = {ranges: []};
+  const discoveryDefinitionStarts = new Set(
+    [...definitions.definitionStarts].map(start => baseOffset + start),
+  );
+  parseMarkdownImpl(source, {
+    ...opts,
+    astPositions: false,
+    sourceRanges: false,
+    skipContainerDefinitionProtection: true,
+    containerRanges: undefined,
+    containerDiscovery: discovery,
+    discoveryDefinitionStarts,
+  });
+  if (discovery.deferredStart != null) {
+    discovery.ranges.push({
+      start: discovery.deferredStart,
+      end: baseOffset + source.length,
+    });
+  }
+  return discovery.ranges
+    .sort((left, right) => left.start - right.start || right.end - left.end)
+    .map(range => ({
+      start: range.start - baseOffset,
+      end: range.end - baseOffset,
+    }));
+}
+
+function extractScopedLinkDefinitions(
+  source: string,
+  opts: ResolvedOptions,
+): ReturnType<typeof extractLinkDefinitions> {
+  return extractLinkDefinitions(
+    source,
+    opts.math,
+    findBlockExtensionContainerRanges(source, opts),
+  );
 }
 
 type ParseOptionsWithoutPlugins = Omit<ParseOptions, 'plugins'>;
@@ -2454,8 +2653,41 @@ function parseMarkdownImpl(
   // definitions win on conflict, matching CommonMark's first-definition-wins
   // in document order; locally-nested definitions still resolve within this
   // parse.
-  const {defs, cleaned, lineMap} = extractLinkDefinitions(input, baseOpts.math);
-  const inherited = baseOpts.linkDefs;
+  let workingOpts = baseOpts;
+  let defs: ReadonlyMap<string, string>;
+  let cleaned: string;
+  if (baseOpts.skipContainerDefinitionProtection === true) {
+    const discoveredDefinitions = extractLinkDefinitions(input, baseOpts.math);
+    const baseOffset = baseOpts.baseOffset ?? 0;
+    workingOpts = {
+      ...baseOpts,
+      discoveryDefinitionStarts: new Set(
+        [...discoveredDefinitions.definitionStarts].map(
+          start => baseOffset + start,
+        ),
+      ),
+    };
+    defs = new Map();
+    cleaned = input;
+  } else {
+    const protectedRanges = findBlockExtensionContainerRanges(input, baseOpts);
+    if (baseOpts.containerRanges == null && protectedRanges.length > 0) {
+      const baseOffset = baseOpts.baseOffset ?? 0;
+      workingOpts = {
+        ...baseOpts,
+        containerRanges: protectedRanges.map(range => ({
+          start: baseOffset + range.start,
+          end: baseOffset + range.end,
+        })),
+      };
+    }
+    ({defs, cleaned} = extractLinkDefinitions(
+      input,
+      baseOpts.math,
+      protectedRanges,
+    ));
+  }
+  const inherited = workingOpts.linkDefs;
   let linkDefs: ReadonlyMap<string, string> | undefined;
   if (defs.size === 0) {
     linkDefs = inherited;
@@ -2465,7 +2697,7 @@ function parseMarkdownImpl(
     linkDefs = new Map<string, string>([...defs, ...inherited]);
   }
   const opts: ResolvedOptions =
-    linkDefs != null ? {...baseOpts, linkDefs} : baseOpts;
+    linkDefs != null ? {...workingOpts, linkDefs} : workingOpts;
   const lines = cleaned.split('\n');
   const hasBlockExtensionSyntax =
     opts.allowBlockSyntax !== false &&
@@ -2506,6 +2738,14 @@ function parseMarkdownImpl(
     blockStartLine = index;
     const line = lines[index];
     if (line.trim() === '') {
+      index++;
+      continue;
+    }
+    if (
+      opts.discoveryDefinitionStarts?.has(
+        (opts.baseOffset ?? 0) + lineOffsets[index],
+      ) === true
+    ) {
       index++;
       continue;
     }
@@ -2678,6 +2918,10 @@ function parseMarkdownImpl(
         }
       }
       if (extension.status === 'defer') {
+        if (opts.containerDiscovery != null) {
+          opts.containerDiscovery.deferredStart =
+            (opts.baseOffset ?? 0) + extensionOffset;
+        }
         break;
       }
     }
@@ -2724,7 +2968,6 @@ function parseMarkdownImpl(
       blockStartLines,
       blockEndLines ?? [],
       lines,
-      lineMap,
       input,
       opts,
     );
@@ -2737,16 +2980,14 @@ function parseMarkdownImpl(
  *
  * Blocks are contiguous and in source order, so a block runs from its own
  * first line to the line before the next block starts, minus the blank lines
- * between them. Offsets are computed against the *input*, not the text the
- * block loop saw: link reference definitions are stripped before parsing, and
- * `lineMap` says which input line each surviving line came from.
+ * between them. Definition lines are blanked at the same width before this
+ * pass, so parsed line indices map directly back to the original input.
  */
 function stampSourceRanges(
   blocks: MarkdownAstBlockContent<RuntimeExtensionNode>[],
   blockStartLines: number[],
   blockEndLines: (number | undefined)[],
   lines: string[],
-  lineMap: number[] | undefined,
   input: string,
   opts: ResolvedOptions,
 ): void {
@@ -2758,10 +2999,7 @@ function stampSourceRanges(
       inputLineStarts.push(i + 1);
     }
   }
-  // Stripping removes whole lines and never edits one, so a parsed line's
-  // length is its input line's length.
-  const lineStart = (line: number): number =>
-    base + inputLineStarts[lineMap != null ? lineMap[line] : line];
+  const lineStart = (line: number): number => base + inputLineStarts[line];
 
   for (let i = 0; i < blocks.length; i++) {
     const startLine = blockStartLines[i];
@@ -3590,6 +3828,53 @@ export function parseMarkdownAstIncremental(
   );
 }
 
+function protectBlockExtensionBoundary(
+  source: string,
+  opts: ResolvedOptions,
+  initialBoundary: number,
+): number {
+  if (initialBoundary <= 0 || opts.plugins?.blockByFirstCharacter.size === 0) {
+    return initialBoundary;
+  }
+  let offset = 0;
+  let lineIndex = 0;
+  while (offset < source.length && lineIndex < initialBoundary) {
+    const newline = source.indexOf('\n', offset);
+    const end = newline < 0 ? source.length : newline;
+    const line = source.slice(offset, end).replace(/\r$/, '');
+    const column = blockExtensionColumn(line);
+    if (column != null) {
+      const match = matchExtensionSyntax(
+        source,
+        offset + column,
+        'block',
+        opts,
+      );
+      if (match.status === 'defer') {
+        return lineIndex;
+      }
+      if (match.status === 'match') {
+        const consumed = source.slice(offset, match.end);
+        const consumedLines =
+          consumed.split('\n').length - (consumed.endsWith('\n') ? 1 : 0);
+        const endLine = lineIndex + Math.max(1, consumedLines);
+        if (initialBoundary < endLine) {
+          return lineIndex;
+        }
+        lineIndex = endLine;
+        offset = match.end;
+        continue;
+      }
+    }
+    if (newline < 0) {
+      break;
+    }
+    offset = newline + 1;
+    lineIndex++;
+  }
+  return initialBoundary;
+}
+
 function parseMarkdownIncrementalAstBlocks(
   input: string,
   state: IncrementalState<boolean>,
@@ -3647,10 +3932,13 @@ function parseMarkdownIncrementalAstBlocks(
   const oldSettledEnd = cache.settledEnd;
   const tailRaw = input.slice(oldSettledEnd);
   const tailLines = tailRaw.split('\n');
-  const {boundary, openFence, openMath} = findSettledBoundary(
-    tailLines,
-    opts.math,
+  const settled = findSettledBoundary(tailLines, opts.math);
+  const boundary = protectBlockExtensionBoundary(
+    tailRaw,
+    opts,
+    settled.boundary,
   );
+  const {openFence, openMath} = settled;
   const settledDelta =
     boundary >= 0 ? tailLines.slice(0, boundary).join('\n') : '';
   const nextSettledEnd = oldSettledEnd + settledDelta.length;
@@ -3662,7 +3950,7 @@ function parseMarkdownIncrementalAstBlocks(
   // blocks: document-global references may precede their footer definition.
   let definitionsChanged = false;
   if (settledDelta !== '') {
-    const {defs: deltaDefs} = extractLinkDefinitions(settledDelta, opts.math);
+    const {defs: deltaDefs} = extractScopedLinkDefinitions(settledDelta, opts);
     for (const [label, destination] of deltaDefs) {
       if (!cache.settledLinkDefs.has(label)) {
         cache.settledLinkDefs.set(label, destination);
@@ -3672,9 +3960,9 @@ function parseMarkdownIncrementalAstBlocks(
       }
     }
   }
-  const {defs: tailLinkDefs} = extractLinkDefinitions(
+  const {defs: tailLinkDefs} = extractScopedLinkDefinitions(
     unsettledInput,
-    opts.math,
+    opts,
   );
   if (
     !sameUnsettledDefinitions(

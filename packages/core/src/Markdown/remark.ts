@@ -8,6 +8,7 @@
  */
 
 import type {
+  MarkdownAstAnyExtensionNode,
   MarkdownAstDataValue,
   MarkdownAstExtensionNode,
   MarkdownAstRoot,
@@ -1495,9 +1496,9 @@ export function createMarkdownRemarkTransform(
   };
 
   return (
-    document: MarkdownAstRoot<MarkdownAstExtensionNode>,
+    document: MarkdownAstRoot<MarkdownAstAnyExtensionNode>,
     context: MarkdownTransformContext,
-  ): MarkdownAstRoot<MarkdownAstExtensionNode> => {
+  ): MarkdownAstRoot<MarkdownAstAnyExtensionNode> => {
     if (!attached) {
       attach();
     }

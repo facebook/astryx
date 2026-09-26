@@ -13,7 +13,7 @@ import {
   freezeMarkdownPluginData,
   isMarkdownPluginData,
   markMarkdownTransformTrusted,
-  type MarkdownExtensionNode,
+  type MarkdownAnyExtensionNode,
   type MarkdownPluginData,
   type MarkdownPluginEntry,
   type MarkdownTransform,
@@ -57,7 +57,7 @@ export interface MarkdownFrontmatter<Metadata extends MarkdownPluginData> {
     isFinal?: boolean,
   ): MarkdownFrontmatterParseResult<Metadata>;
   getMetadata(
-    document: MarkdownAstRoot<MarkdownExtensionNode>,
+    document: MarkdownAstRoot<MarkdownAnyExtensionNode>,
   ): Metadata | undefined;
 }
 
@@ -189,7 +189,7 @@ export function createMarkdownFrontmatter<Metadata extends MarkdownPluginData>(
   return Object.freeze({
     plugin,
     parse,
-    getMetadata(document: MarkdownAstRoot<MarkdownExtensionNode>) {
+    getMetadata(document: MarkdownAstRoot<MarkdownAnyExtensionNode>) {
       const data = asDataRecord(document.data);
       return parseEnvelope(data[ENVELOPE_KEY])?.values[name] as
         Metadata | undefined;

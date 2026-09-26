@@ -7,12 +7,15 @@
  * @position Shared profile registry for the Markdown performance sandbox
  */
 
-import {markdownSoftBreaksPlugin} from '@astryxdesign/core/Markdown/plugins';
+import {
+  markdownCalloutsPlugin,
+  markdownSoftBreaksPlugin,
+} from '@astryxdesign/core/Markdown/plugins';
 import type {MarkdownPluginEntry} from '@astryxdesign/core/Markdown/plugins';
 
 export type MarkdownBenchmarkClaimDensity = 'none' | 'sparse' | 'dense';
 export type MarkdownBenchmarkPipeline = 'baseline' | 'plugin';
-export type MarkdownBenchmarkProfileId = 'soft-breaks';
+export type MarkdownBenchmarkProfileId = 'soft-breaks' | 'callouts';
 
 const EMPTY_PLUGINS: ReadonlyArray<MarkdownPluginEntry> = Object.freeze([]);
 
@@ -50,6 +53,24 @@ function addSoftBreakClaims(
     .join('\n');
 }
 
+function addCalloutClaims(
+  source: string,
+  density: MarkdownBenchmarkClaimDensity,
+): string {
+  if (density === 'none') {
+    return source;
+  }
+  return source.replace(
+    /^> Streaming note (\d+): (.+)$/gm,
+    (line, sectionText: string, body: string) => {
+      const section = Number(sectionText);
+      return density === 'dense' || section % 10 === 1
+        ? `:::info Performance note ${section}\n${body}\n:::`
+        : line;
+    },
+  );
+}
+
 export const MARKDOWN_BENCHMARK_PROFILES: ReadonlyArray<MarkdownBenchmarkProfile> =
   [
     {
@@ -57,6 +78,12 @@ export const MARKDOWN_BENCHMARK_PROFILES: ReadonlyArray<MarkdownBenchmarkProfile
       label: 'Soft breaks',
       plugins: [markdownSoftBreaksPlugin],
       prepareSource: addSoftBreakClaims,
+    },
+    {
+      id: 'callouts',
+      label: 'Callouts',
+      plugins: [markdownCalloutsPlugin],
+      prepareSource: addCalloutClaims,
     },
   ];
 

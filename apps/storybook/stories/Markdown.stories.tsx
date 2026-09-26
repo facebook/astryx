@@ -4,7 +4,10 @@ import {useCallback, useEffect, useMemo, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Markdown} from '@astryxdesign/core/Markdown';
 import type {MarkdownComponents} from '@astryxdesign/core/Markdown';
-import {markdownSoftBreaksPlugin} from '@astryxdesign/core/Markdown/plugins';
+import {
+  markdownCalloutsPlugin,
+  markdownSoftBreaksPlugin,
+} from '@astryxdesign/core/Markdown/plugins';
 import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';
 import {Text} from '@astryxdesign/core/Text';
@@ -567,6 +570,57 @@ export const SoftBreaks: Story = {
     await expect(remarkPane.querySelector('code')?.textContent).toBe(
       'fenced\ncode',
     );
+  },
+};
+
+const calloutsSource = [
+  ':::info Read this',
+  'Callouts keep **rich Markdown**, [safe links](/docs), and lists.',
+  '',
+  '- First item',
+  '- Second item',
+  ':::',
+  '',
+  ':::success',
+  'Use an optional title after the status.',
+  ':::',
+  '',
+  ':::warning Check before continuing',
+  'Warnings are static document content, not live alerts.',
+  ':::',
+  '',
+  ':::error',
+  'Error content stays readable and theme-aware.',
+  ':::',
+].join('\n');
+
+export const Callouts: Story = {
+  name: 'First-party callouts',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The first-party plugin parses info, success, warning, and error containers with optional titles and real Markdown children. Static authored content does not create alert or status live regions.',
+      },
+    },
+  },
+  render: () => (
+    <div style={{maxWidth: 680}}>
+      <Markdown plugins={[markdownCalloutsPlugin]}>{calloutsSource}</Markdown>
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const callouts = canvasElement.querySelectorAll('[data-markdown-callout]');
+    await expect(callouts).toHaveLength(4);
+    await expect(
+      within(canvasElement).getByRole('complementary', {
+        name: 'Info: Read this',
+      }),
+    ).toHaveAttribute('data-markdown-callout', 'info');
+    await expect(within(canvasElement).getAllByRole('listitem')).toHaveLength(
+      2,
+    );
+    await expect(canvasElement.querySelector('[role="alert"]')).toBeNull();
   },
 };
 

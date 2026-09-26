@@ -22,7 +22,7 @@ import {
   prepareMarkdownPlugins,
 } from '../Markdown/plugins/protocol';
 import type {
-  MarkdownExtensionNode,
+  MarkdownAnyExtensionNode,
   MarkdownPluginEntry,
 } from '../Markdown/plugins/protocol';
 import type {OutlineItem} from './types';
@@ -36,7 +36,7 @@ import type {OutlineItem} from './types';
  * `id` attributes Markdown renders on its headings.
  */
 export interface ParseOutlineFromMarkdownOptions<
-  Node extends MarkdownExtensionNode = never,
+  Node extends MarkdownAnyExtensionNode = never,
 > {
   readonly plugins?: ReadonlyArray<MarkdownPluginEntry<Node>>;
   /** Match Markdown's transform finality while content is streaming. */
@@ -44,7 +44,7 @@ export interface ParseOutlineFromMarkdownOptions<
 }
 
 export function parseOutlineFromMarkdown<
-  Node extends MarkdownExtensionNode = never,
+  Node extends MarkdownAnyExtensionNode = never,
 >(
   markdown: string,
   options?: ParseOutlineFromMarkdownOptions<Node>,

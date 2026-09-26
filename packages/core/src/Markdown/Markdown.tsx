@@ -72,7 +72,7 @@ import {
 } from './plugins/protocol';
 import {getMarkdownFenceProposal} from './plugins/semanticFence';
 import type {
-  MarkdownExtensionNode,
+  MarkdownAnyExtensionNode,
   MarkdownPluginEntry,
   PreparedMarkdownPlugins,
 } from './plugins/protocol';
@@ -81,7 +81,7 @@ import {themeProps} from '../utils/themeProps';
 import {useTranslator, type TranslatorFn} from '../i18n';
 
 type SyncReactNode = Exclude<React.ReactNode, Promise<unknown>>;
-type RenderExtensionNode = MarkdownExtensionNode;
+type RenderExtensionNode = MarkdownAnyExtensionNode;
 type RenderInlineNode = MarkdownAstPhrasingContent<RenderExtensionNode>;
 type RenderBlockNode = MarkdownAstBlockContent<RenderExtensionNode>;
 type RenderTable = MarkdownAstTable<RenderExtensionNode>;
@@ -540,7 +540,9 @@ function countInlineTextLength(nodes: ReadonlyArray<RenderInlineNode>): number {
         len += 1;
         break;
       case 'extension':
-        len += node.source?.length ?? 0;
+        len += Array.isArray(node.children)
+          ? countInlineTextLength(node.children)
+          : (node.source?.length ?? 0);
         break;
     }
   }
@@ -580,7 +582,9 @@ function countBlockTextLength(nodes: ReadonlyArray<RenderBlockNode>): number {
         }
         break;
       case 'extension':
-        len += node.source?.length ?? 0;
+        len += Array.isArray(node.children)
+          ? countBlockTextLength(node.children)
+          : (node.source?.length ?? 0);
         break;
       case 'thematicBreak':
         break;
@@ -1061,6 +1065,46 @@ function renderInline(
     }
     case 'extension': {
       const renderer = getMarkdownExtensionRenderer(preparedPlugins, node);
+      if (Array.isArray(node.children)) {
+        const renderedChildren = (
+          <>
+            {node.children.map((child, childIndex) =>
+              renderInline(
+                child,
+                childIndex,
+                onLinkClick,
+                cursor,
+                citationCtx,
+                linkComponent,
+                inlinePlugins,
+                components,
+                preparedPlugins,
+              ),
+            )}
+          </>
+        );
+        if (renderer == null) {
+          return <Fragment key={index}>{renderedChildren}</Fragment>;
+        }
+        let rendered: React.ReactNode;
+        try {
+          rendered = renderer.render({node, children: renderedChildren});
+        } catch (error) {
+          reportMarkdownPluginFailure(node.plugin, 'render', error);
+          return <Fragment key={index}>{renderedChildren}</Fragment>;
+        }
+        return (
+          <MarkdownPluginBoundary
+            key={index}
+            pluginName={node.plugin}
+            resetKey={node}
+            resetRenderer={renderer.render}
+            fallback={renderedChildren}>
+            <Suspense fallback={renderedChildren}>{rendered}</Suspense>
+          </MarkdownPluginBoundary>
+        );
+      }
+
       const fallback = wrapTextWithFade(
         node.source ?? markdownExtensionText(preparedPlugins, node),
         cursor,
@@ -1738,26 +1782,78 @@ function renderBlock(
     }
     case 'extension': {
       const renderer = getMarkdownExtensionRenderer(preparedPlugins, node);
-      const fallbackText =
-        node.source ?? markdownExtensionText(preparedPlugins, node);
-      const fallback = wrapTextWithFade(fallbackText, cursor, index);
-      let content: React.ReactNode = fallback;
-      if (renderer != null) {
-        try {
-          const rendered = renderer.render({node});
-          content = (
-            <MarkdownPluginBoundary
-              pluginName={node.plugin}
-              resetKey={node}
-              resetRenderer={renderer.render}
-              fallback={fallback}>
-              <Suspense fallback={fallback}>{rendered}</Suspense>
-            </MarkdownPluginBoundary>
-          );
-        } catch (error) {
-          reportMarkdownPluginFailure(node.plugin, 'render', error);
+      let content: React.ReactNode;
+      let fallback: React.ReactNode;
+
+      const extensionChildren = node.children;
+      if (Array.isArray(extensionChildren)) {
+        const renderedChildren = (
+          <>
+            {extensionChildren.map((child, childIndex) =>
+              renderBlock(
+                child,
+                childIndex,
+                extensionChildren.length,
+                density,
+                headingLevelStart,
+                onLinkClick,
+                cursor,
+                citationCtx,
+                contentWidthValue,
+                contentAlign,
+                linkComponent,
+                inlinePlugins,
+                components,
+                preparedPlugins,
+                t,
+              ),
+            )}
+          </>
+        );
+        fallback = renderedChildren;
+        content = renderedChildren;
+        if (renderer != null) {
+          try {
+            const rendered = renderer.render({
+              node,
+              children: renderedChildren,
+            });
+            content = (
+              <MarkdownPluginBoundary
+                pluginName={node.plugin}
+                resetKey={node}
+                resetRenderer={renderer.render}
+                fallback={fallback}>
+                <Suspense fallback={fallback}>{rendered}</Suspense>
+              </MarkdownPluginBoundary>
+            );
+          } catch (error) {
+            reportMarkdownPluginFailure(node.plugin, 'render', error);
+          }
+        }
+      } else {
+        const fallbackText =
+          node.source ?? markdownExtensionText(preparedPlugins, node);
+        fallback = wrapTextWithFade(fallbackText, cursor, index);
+        content = fallback;
+        if (renderer != null) {
+          try {
+            const rendered = renderer.render({node});
+            content = (
+              <MarkdownPluginBoundary
+                pluginName={node.plugin}
+                resetKey={node}
+                resetRenderer={renderer.render}
+                fallback={fallback}>
+                <Suspense fallback={fallback}>{rendered}</Suspense>
+              </MarkdownPluginBoundary>
+            );
+          } catch (error) {
+            reportMarkdownPluginFailure(node.plugin, 'render', error);
+          }
         }
       }
+
       return (
         <div
           key={index}

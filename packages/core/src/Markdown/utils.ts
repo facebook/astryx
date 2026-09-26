@@ -9,6 +9,9 @@
 export {visitMarkdownNodes} from './ast';
 export type {
   MarkdownAstExtensionNode,
+  MarkdownAstInlineContainerExtensionNode,
+  MarkdownAstBlockContainerExtensionNode,
+  MarkdownAstAnyExtensionNode,
   MarkdownAstPhrasingContent,
   MarkdownAstBlockContent,
   MarkdownAstRoot,

@@ -427,7 +427,7 @@ describe('createMarkdownSourceDecoration', () => {
       transform(root) {
         root.children.forEach(block => {
           const child =
-            'children' in block
+            'children' in block && Array.isArray(block.children)
               ? (block.children[0] as object | undefined)
               : undefined;
           observed.push({

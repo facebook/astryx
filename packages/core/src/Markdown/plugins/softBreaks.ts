@@ -8,8 +8,8 @@
  */
 
 import type {
+  MarkdownAstAnyExtensionNode,
   MarkdownAstBlockContent,
-  MarkdownAstExtensionNode,
   MarkdownAstListItem,
   MarkdownAstPhrasingContent,
   MarkdownAstTableCell,
@@ -17,7 +17,7 @@ import type {
 } from '../ast';
 import {createMarkdownPlugin, type MarkdownTransform} from './protocol';
 
-type Extension = MarkdownAstExtensionNode;
+type Extension = MarkdownAstAnyExtensionNode;
 type Phrasing = MarkdownAstPhrasingContent<Extension>;
 type Block = MarkdownAstBlockContent<Extension>;
 

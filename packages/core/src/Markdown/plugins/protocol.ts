@@ -10,9 +10,13 @@
 import type React from 'react';
 import {devError, warnOnce} from '../../utils/devWarning';
 import {isSafeMarkdownParserUrl} from '../url';
+import {markdownAstBlockText, markdownAstText} from '../ast';
 import type {
+  MarkdownAstAnyExtensionNode,
+  MarkdownAstBlockContainerExtensionNode,
   MarkdownAstDataValue,
   MarkdownAstExtensionNode,
+  MarkdownAstInlineContainerExtensionNode,
   MarkdownAstNodeBase,
   MarkdownAstPosition,
   MarkdownAstRoot,
@@ -20,6 +24,7 @@ import type {
 
 export type MarkdownPluginData = MarkdownAstDataValue;
 
+/** A simple extension leaf. Omitting a renderer content declaration means `none`. */
 export type MarkdownExtensionNode<
   PluginName extends string = string,
   NodeName extends string = string,
@@ -27,17 +32,67 @@ export type MarkdownExtensionNode<
   Display extends 'inline' | 'block' = 'inline' | 'block',
 > = MarkdownAstExtensionNode<PluginName, NodeName, Data, Display>;
 
-export function isMarkdownExtensionNode<Node extends MarkdownExtensionNode>(
+/** An inline extension container with Core-parsed phrasing children. */
+export type MarkdownInlineContainerExtensionNode<
+  PluginName extends string = string,
+  NodeName extends string = string,
+  Data extends MarkdownPluginData = MarkdownPluginData,
+> = MarkdownAstInlineContainerExtensionNode<PluginName, NodeName, Data>;
+
+/** A block extension container with Core-parsed flow children. */
+export type MarkdownBlockContainerExtensionNode<
+  PluginName extends string = string,
+  NodeName extends string = string,
+  Data extends MarkdownPluginData = MarkdownPluginData,
+> = MarkdownAstBlockContainerExtensionNode<PluginName, NodeName, Data>;
+
+export type MarkdownAnyExtensionNode = MarkdownAstAnyExtensionNode;
+
+export function isMarkdownExtensionNode<Node extends MarkdownAnyExtensionNode>(
   node: MarkdownAstNodeBase & {readonly type: string},
   plugin: Node['plugin'],
   name: Node['name'],
 ): node is Node {
   return (
     node.type === 'extension' &&
-    (node as MarkdownExtensionNode).plugin === plugin &&
-    (node as MarkdownExtensionNode).name === name
+    (node as MarkdownAnyExtensionNode).plugin === plugin &&
+    (node as MarkdownAnyExtensionNode).name === name
   );
 }
+
+export type MarkdownPhrasingContentName =
+  | 'text'
+  | 'strong'
+  | 'emphasis'
+  | 'delete'
+  | 'inlineCode'
+  | 'inlineMath'
+  | 'break'
+  | 'link'
+  | 'image'
+  | 'citation';
+
+export type MarkdownFlowContentName =
+  | 'heading'
+  | 'paragraph'
+  | 'code'
+  | 'math'
+  | 'blockquote'
+  | 'list'
+  | 'table'
+  | 'thematicBreak'
+  | 'image';
+
+export interface MarkdownExtensionContentAllowlist<
+  Name extends string = string,
+> {
+  readonly allow: ReadonlyArray<Name>;
+  readonly min?: number;
+  readonly max?: number;
+}
+
+export type MarkdownExtensionContent =
+  'none' | 'phrasing' | 'flow' | MarkdownExtensionContentAllowlist;
 
 export interface MarkdownTokenizerInput {
   readonly source: string;
@@ -51,22 +106,39 @@ export interface MarkdownTokenizerInput {
   readonly column: number;
 }
 
-type ExtensionNodeWithoutProvenance<Node extends MarkdownExtensionNode> = Omit<
-  Node,
-  'source' | 'position'
->;
+type ExtensionNodeWithoutProvenance<Node extends MarkdownAnyExtensionNode> =
+  Node extends MarkdownAnyExtensionNode
+    ? Omit<Node, 'children' | 'source' | 'position'>
+    : never;
 
-export type MarkdownTokenizeResult<Node extends MarkdownExtensionNode> =
+/** UTF-16 source offsets for content Core parses into a container's children. */
+export interface MarkdownExtensionChildrenRange {
+  readonly start: number;
+  readonly end: number;
+}
+
+type MarkdownTokenizeMatch<Node extends MarkdownAnyExtensionNode> =
+  Node extends {readonly children: ReadonlyArray<unknown>}
+    ? {
+        readonly status: 'match';
+        readonly end: number;
+        readonly node: ExtensionNodeWithoutProvenance<Node>;
+        readonly children: MarkdownExtensionChildrenRange;
+      }
+    : {
+        readonly status: 'match';
+        readonly end: number;
+        readonly node: ExtensionNodeWithoutProvenance<Node>;
+        readonly children?: never;
+      };
+
+export type MarkdownTokenizeResult<Node extends MarkdownAnyExtensionNode> =
   | {readonly status: 'no-match'}
   | {readonly status: 'defer'}
-  | {
-      readonly status: 'match';
-      readonly end: number;
-      readonly node: ExtensionNodeWithoutProvenance<Node>;
-    };
+  | MarkdownTokenizeMatch<Node>;
 
 export interface MarkdownSyntaxContribution<
-  Node extends MarkdownExtensionNode = MarkdownExtensionNode,
+  Node extends MarkdownAnyExtensionNode = MarkdownAnyExtensionNode,
 > {
   readonly startsWith: readonly [string, ...string[]];
   /** Maximum UTF-16 span Core exposes from a candidate offset. */
@@ -75,14 +147,12 @@ export interface MarkdownSyntaxContribution<
 }
 
 type ExtensionForDisplay<
-  Node extends MarkdownExtensionNode,
+  Node extends MarkdownAnyExtensionNode,
   Display extends 'inline' | 'block',
-> = Display extends Node['display']
-  ? Node & {readonly display: Display}
-  : never;
+> = Node extends {readonly display: Display} ? Node : never;
 
 export interface MarkdownSyntaxCapability<
-  Node extends MarkdownExtensionNode = MarkdownExtensionNode,
+  Node extends MarkdownAnyExtensionNode = MarkdownAnyExtensionNode,
 > {
   readonly inline?: readonly [
     MarkdownSyntaxContribution<ExtensionForDisplay<Node, 'inline'>>,
@@ -150,11 +220,13 @@ export function getMarkdownHelperOwnership(
 
 declare const markdownTransformNode: unique symbol;
 
-export interface MarkdownTransform<Node extends MarkdownExtensionNode = never> {
+export interface MarkdownTransform<
+  Node extends MarkdownAnyExtensionNode = never,
+> {
   (
-    document: MarkdownAstRoot<MarkdownExtensionNode>,
+    document: MarkdownAstRoot<MarkdownAnyExtensionNode>,
     context: MarkdownTransformContext,
-  ): MarkdownAstRoot<MarkdownExtensionNode>;
+  ): MarkdownAstRoot<MarkdownAnyExtensionNode>;
   readonly [markdownTransformNode]?: Node;
 }
 
@@ -162,7 +234,7 @@ const markdownTransformClaim = Symbol('MarkdownTransformClaim');
 const markdownTransformTrusted = Symbol('MarkdownTransformTrusted');
 
 interface ClaimAwareMarkdownTransform<
-  Node extends MarkdownExtensionNode = MarkdownExtensionNode,
+  Node extends MarkdownAnyExtensionNode = MarkdownAnyExtensionNode,
 > extends MarkdownTransform<Node> {
   readonly [markdownTransformClaim]?: (source: string) => boolean;
 }
@@ -197,7 +269,7 @@ export function markMarkdownTransformTrusted(
 
 /** @internal Registers a cheap source-level claim check for a helper transform. */
 export function markMarkdownTransformClaim<
-  Node extends MarkdownExtensionNode = never,
+  Node extends MarkdownAnyExtensionNode = never,
 >(
   transform: MarkdownTransform<Node>,
   claims: (source: string) => boolean,
@@ -211,16 +283,60 @@ export function markMarkdownTransformClaim<
   return transform;
 }
 
-export interface MarkdownExtensionRenderer<Node extends MarkdownExtensionNode> {
-  /** Pure render callback. Hooks belong in components returned by this callback. */
-  readonly render: (props: {node: Node}) => React.ReactNode;
-  readonly toText: (node: Node) => string;
-}
+type MarkdownExtensionNameForDisplay<
+  Node extends MarkdownAnyExtensionNode,
+  Display extends 'inline' | 'block',
+> = Extract<Node, {readonly display: Display}>['name'];
 
-export type MarkdownExtensionRenderers<Node extends MarkdownExtensionNode> =
+type MarkdownContainerContentDeclaration<
+  Node extends MarkdownAnyExtensionNode,
+  OwnedNode extends MarkdownAnyExtensionNode,
+> = Node['display'] extends 'inline'
+  ? | 'phrasing'
+    | MarkdownExtensionContentAllowlist<
+        | MarkdownPhrasingContentName
+        | MarkdownExtensionNameForDisplay<OwnedNode, 'inline'>
+      >
+  : | 'flow'
+    | MarkdownExtensionContentAllowlist<
+        | MarkdownFlowContentName
+        | MarkdownExtensionNameForDisplay<OwnedNode, 'block'>
+      >;
+
+export type MarkdownExtensionRendererProps<
+  Node extends MarkdownAnyExtensionNode,
+> = Node extends {readonly children: ReadonlyArray<unknown>}
+  ? {readonly node: Node; readonly children: React.ReactNode}
+  : {readonly node: Node};
+
+export type MarkdownExtensionRenderer<
+  Node extends MarkdownAnyExtensionNode,
+  OwnedNode extends MarkdownAnyExtensionNode = Node,
+> = Node extends {readonly children: ReadonlyArray<unknown>}
+  ? {
+      readonly content: MarkdownContainerContentDeclaration<Node, OwnedNode>;
+      /** Pure render callback. Hooks belong in components returned by this callback. */
+      readonly render: (
+        props: MarkdownExtensionRendererProps<Node>,
+      ) => React.ReactNode;
+      /** Defaults to Core's deterministic projection of the rendered children. */
+      readonly toText?: (node: Node, childrenText: string) => string;
+    }
+  : {
+      /** Leaf content is the default, preserving the released renderer shape. */
+      readonly content?: 'none';
+      /** Pure render callback. Hooks belong in components returned by this callback. */
+      readonly render: (
+        props: MarkdownExtensionRendererProps<Node>,
+      ) => React.ReactNode;
+      readonly toText: (node: Node) => string;
+    };
+
+export type MarkdownExtensionRenderers<Node extends MarkdownAnyExtensionNode> =
   Readonly<{
     [NodeName in Node['name']]: MarkdownExtensionRenderer<
-      Extract<Node, {name: NodeName}>
+      Extract<Node, {name: NodeName}>,
+      Node
     >;
   }>;
 
@@ -231,7 +347,7 @@ interface MarkdownPluginDefinitionBase<Name extends string> {
 
 export interface MarkdownSyntaxPluginDefinition<
   Name extends string,
-  Node extends MarkdownExtensionNode<Name>,
+  Node extends MarkdownAnyExtensionNode & {readonly plugin: Name},
 > extends MarkdownPluginDefinitionBase<Name> {
   readonly parseKey: string;
   readonly syntax: MarkdownSyntaxCapability<Node>;
@@ -241,7 +357,7 @@ export interface MarkdownSyntaxPluginDefinition<
 
 export type MarkdownTransformPluginDefinition<
   Name extends string,
-  Node extends MarkdownExtensionNode<Name> = never,
+  Node extends MarkdownAnyExtensionNode & {readonly plugin: Name} = never,
 > = MarkdownPluginDefinitionBase<Name> & {
   readonly transform: MarkdownTransform<Node>;
   readonly parseKey?: never;
@@ -252,7 +368,7 @@ export type MarkdownTransformPluginDefinition<
 
 export type MarkdownPluginDefinition<
   Name extends string,
-  Node extends MarkdownExtensionNode<Name> = never,
+  Node extends MarkdownAnyExtensionNode & {readonly plugin: Name} = never,
 > =
   | MarkdownSyntaxPluginDefinition<Name, Node>
   | MarkdownTransformPluginDefinition<Name, Node>;
@@ -261,7 +377,7 @@ declare const markdownPluginNode: unique symbol;
 
 /** Opaque, covariant entry safe to store in heterogeneous plugin lists. */
 export interface MarkdownPluginEntry<
-  Node extends MarkdownExtensionNode = MarkdownExtensionNode,
+  Node extends MarkdownAnyExtensionNode = MarkdownAnyExtensionNode,
 > {
   readonly name: string;
   readonly apiVersion: 1;
@@ -279,7 +395,7 @@ const MARKDOWN_PLUGIN_BRAND = '@astryxdesign/core/MarkdownPluginEntry';
 const markdownPluginDefinition = Symbol.for(MARKDOWN_PLUGIN_BRAND);
 
 interface MarkdownPluginBrand<
-  Node extends MarkdownExtensionNode = MarkdownExtensionNode,
+  Node extends MarkdownAnyExtensionNode = MarkdownAnyExtensionNode,
 > {
   readonly kind: typeof MARKDOWN_PLUGIN_BRAND;
   readonly apiVersion: 1;
@@ -287,14 +403,14 @@ interface MarkdownPluginBrand<
 }
 
 interface InternalMarkdownPluginEntry<
-  Node extends MarkdownExtensionNode = MarkdownExtensionNode,
+  Node extends MarkdownAnyExtensionNode = MarkdownAnyExtensionNode,
 > extends MarkdownPluginEntry<Node> {
   readonly [markdownPluginDefinition]: MarkdownPluginBrand<Node>;
 }
 
 function getMarkdownPluginDefinition(
   publicEntry: MarkdownPluginEntry,
-): MarkdownPluginDefinition<string, MarkdownExtensionNode> {
+): MarkdownPluginDefinition<string, MarkdownAnyExtensionNode> {
   if (
     publicEntry == null ||
     typeof publicEntry !== 'object' ||
@@ -363,9 +479,178 @@ function validateSyntax(
   }
 }
 
+const PHRASING_CONTENT_NAMES = new Set<MarkdownPhrasingContentName>([
+  'text',
+  'strong',
+  'emphasis',
+  'delete',
+  'inlineCode',
+  'inlineMath',
+  'break',
+  'link',
+  'image',
+  'citation',
+]);
+
+const FLOW_CONTENT_NAMES = new Set<MarkdownFlowContentName>([
+  'heading',
+  'paragraph',
+  'code',
+  'math',
+  'blockquote',
+  'list',
+  'table',
+  'thematicBreak',
+  'image',
+]);
+
+const SUPPORTED_AST_NODE_NAMES = new Set<string>([
+  'root',
+  'listItem',
+  'tableRow',
+  'tableCell',
+  ...PHRASING_CONTENT_NAMES,
+  ...FLOW_CONTENT_NAMES,
+]);
+
+function isContentAllowlist(
+  content: MarkdownExtensionContent,
+): content is MarkdownExtensionContentAllowlist {
+  return typeof content === 'object';
+}
+
+function validateContentBound(
+  pluginName: string,
+  nodeName: string,
+  boundName: 'min' | 'max',
+  value: unknown,
+): void {
+  if (value != null && (!Number.isInteger(value) || (value as number) < 0)) {
+    fail(
+      `"${pluginName}" renderer "${nodeName}" content ${boundName} must be a finite non-negative integer`,
+    );
+  }
+}
+
+function validateRenderers(
+  pluginName: string,
+  renderers: Readonly<Record<string, unknown>>,
+  allowsCodeProposal: boolean,
+): void {
+  const ownNames = new Set(Object.keys(renderers));
+  for (const nodeName of ownNames) {
+    if (
+      nodeName.trim() === '' ||
+      (SUPPORTED_AST_NODE_NAMES.has(nodeName) &&
+        !(allowsCodeProposal && nodeName === 'code'))
+    ) {
+      fail(
+        `"${pluginName}" extension name "${nodeName}" must be non-empty and must not collide with a built-in node`,
+      );
+    }
+  }
+
+  for (const [nodeName, rendererValue] of Object.entries(renderers)) {
+    if (rendererValue == null || typeof rendererValue !== 'object') {
+      fail(`"${pluginName}" renderer "${nodeName}" must be an object`);
+    }
+    const renderer = rendererValue as {
+      readonly content?: unknown;
+      readonly render?: unknown;
+      readonly toText?: unknown;
+    };
+    if (typeof renderer.render !== 'function') {
+      fail(`"${pluginName}" renderer "${nodeName}" must provide render()`);
+    }
+    const content = renderer.content ?? 'none';
+    if (
+      content !== 'none' &&
+      content !== 'phrasing' &&
+      content !== 'flow' &&
+      (content == null || typeof content !== 'object')
+    ) {
+      fail(`"${pluginName}" renderer "${nodeName}" has invalid content`);
+    }
+    if (content === 'none') {
+      if (typeof renderer.toText !== 'function') {
+        fail(
+          `"${pluginName}" leaf renderer "${nodeName}" must provide toText()`,
+        );
+      }
+      continue;
+    }
+    if (renderer.toText != null && typeof renderer.toText !== 'function') {
+      fail(`"${pluginName}" renderer "${nodeName}" toText must be a function`);
+    }
+    if (content === 'phrasing' || content === 'flow') {
+      continue;
+    }
+
+    const allowlist = content as Partial<MarkdownExtensionContentAllowlist>;
+    if (
+      Object.getPrototypeOf(allowlist) !== Object.prototype ||
+      !Array.isArray(allowlist.allow)
+    ) {
+      fail(`"${pluginName}" renderer "${nodeName}" has invalid content`);
+    }
+    validateContentBound(pluginName, nodeName, 'min', allowlist.min);
+    validateContentBound(pluginName, nodeName, 'max', allowlist.max);
+    if (
+      allowlist.min != null &&
+      allowlist.max != null &&
+      allowlist.min > allowlist.max
+    ) {
+      fail(`"${pluginName}" renderer "${nodeName}" content min exceeds max`);
+    }
+    let builtInCategory: 'phrasing' | 'flow' | undefined;
+    const seenNames = new Set<string>();
+    for (const allowedName of allowlist.allow) {
+      if (typeof allowedName !== 'string' || allowedName.trim() === '') {
+        fail(
+          `"${pluginName}" renderer "${nodeName}" has an invalid allowed name`,
+        );
+      }
+      if (seenNames.has(allowedName)) {
+        fail(
+          `"${pluginName}" renderer "${nodeName}" repeats allowed name "${allowedName}"`,
+        );
+      }
+      seenNames.add(allowedName);
+      const isPhrasingName = PHRASING_CONTENT_NAMES.has(
+        allowedName as MarkdownPhrasingContentName,
+      );
+      const isFlowName = FLOW_CONTENT_NAMES.has(
+        allowedName as MarkdownFlowContentName,
+      );
+      if (isPhrasingName || isFlowName) {
+        const category =
+          isPhrasingName === isFlowName
+            ? undefined
+            : isPhrasingName
+              ? 'phrasing'
+              : 'flow';
+        if (
+          category != null &&
+          builtInCategory != null &&
+          builtInCategory !== category
+        ) {
+          fail(
+            `"${pluginName}" renderer "${nodeName}" content allowlist mixes phrasing and flow nodes`,
+          );
+        }
+        builtInCategory ??= category;
+      } else if (!ownNames.has(allowedName)) {
+        fail(
+          `"${pluginName}" renderer "${nodeName}" may allow only built-in or owned extension names`,
+        );
+      }
+    }
+  }
+}
+
 export function createMarkdownPlugin<
   const Name extends string,
-  const Node extends MarkdownExtensionNode<Name>,
+  const Node extends MarkdownAnyExtensionNode & {readonly plugin: Name},
 >(
   definition: MarkdownSyntaxPluginDefinition<Name, Node>,
 ): MarkdownPluginEntry<Node>;
@@ -374,13 +659,13 @@ export function createMarkdownPlugin<const Name extends string>(
 ): MarkdownPluginEntry<never>;
 export function createMarkdownPlugin<
   const Name extends string,
-  const Node extends MarkdownExtensionNode<Name>,
+  const Node extends MarkdownAnyExtensionNode & {readonly plugin: Name},
 >(
   definition: MarkdownTransformPluginDefinition<Name, Node>,
 ): MarkdownPluginEntry<Node>;
 export function createMarkdownPlugin(
   definition:
-    | MarkdownPluginDefinition<string, MarkdownExtensionNode>
+    | MarkdownPluginDefinition<string, MarkdownAnyExtensionNode>
     | MarkdownTransformPluginDefinition<string, never>,
 ): MarkdownPluginEntry {
   if (definition.name.trim() === '') {
@@ -394,6 +679,18 @@ export function createMarkdownPlugin(
     typeof definition.transform !== 'function'
   ) {
     fail(`"${definition.name}" transform must be a function`);
+  }
+  const renderers =
+    'renderers' in definition ? definition.renderers : undefined;
+  if (renderers != null) {
+    validateRenderers(
+      definition.name,
+      renderers,
+      definition.transform != null &&
+        (definition.transform as TrustAwareMarkdownTransform)[
+          markdownTransformTrusted
+        ] === true,
+    );
   }
   if ('syntax' in definition && definition.syntax != null) {
     if (definition.parseKey.trim() === '') {
@@ -428,15 +725,28 @@ export interface PreparedSyntaxContribution {
 
 interface PreparedTransform {
   readonly pluginName: string;
-  readonly transform: MarkdownTransform<MarkdownExtensionNode>;
+  readonly transform: MarkdownTransform<MarkdownAnyExtensionNode>;
   readonly claims?: (source: string) => boolean;
   /** Core-authored helper whose output needs no plugin-output validation. */
   readonly trusted: boolean;
 }
 
+interface RuntimeMarkdownExtensionRenderer {
+  readonly content?: MarkdownExtensionContent;
+  readonly render: (props: {
+    readonly node: MarkdownAnyExtensionNode;
+    readonly children?: React.ReactNode;
+  }) => React.ReactNode;
+  readonly toText?: (
+    node: MarkdownAnyExtensionNode,
+    childrenText?: string,
+  ) => string;
+}
+
 interface PreparedRenderer {
   readonly pluginName: string;
-  readonly renderer: MarkdownExtensionRenderer<MarkdownExtensionNode>;
+  readonly content: MarkdownExtensionContent;
+  readonly renderer: RuntimeMarkdownExtensionRenderer;
 }
 
 export interface PreparedMarkdownPlugins {
@@ -538,9 +848,12 @@ export function prepareMarkdownPlugins(
     }
     if (definition.renderers != null) {
       for (const [nodeName, renderer] of Object.entries(definition.renderers)) {
+        const runtimeRenderer =
+          renderer as unknown as RuntimeMarkdownExtensionRenderer;
         renderers.set(`${definition.name}\0${nodeName}`, {
           pluginName: definition.name,
-          renderer: renderer,
+          content: runtimeRenderer.content ?? 'none',
+          renderer: runtimeRenderer,
         });
       }
     }
@@ -654,7 +967,7 @@ function codeSourceSignature(node: Record<string, unknown>): string {
 }
 
 function collectCodeInternalProperties(
-  root: MarkdownAstRoot<MarkdownExtensionNode>,
+  root: MarkdownAstRoot<MarkdownAnyExtensionNode>,
 ): Map<string, CodeInternalProperties[]> {
   const properties = new Map<string, CodeInternalProperties[]>();
   const visit = (node: MarkdownAstNodeBase & {readonly type: string}): void => {
@@ -688,9 +1001,9 @@ function collectCodeInternalProperties(
 }
 
 function restoreCodeInternalProperties(
-  previous: MarkdownAstRoot<MarkdownExtensionNode>,
-  next: MarkdownAstRoot<MarkdownExtensionNode>,
-): MarkdownAstRoot<MarkdownExtensionNode> {
+  previous: MarkdownAstRoot<MarkdownAnyExtensionNode>,
+  next: MarkdownAstRoot<MarkdownAnyExtensionNode>,
+): MarkdownAstRoot<MarkdownAnyExtensionNode> {
   const properties = collectCodeInternalProperties(previous);
   if (properties.size === 0) {
     return next;
@@ -746,7 +1059,7 @@ function restoreCodeInternalProperties(
     return current;
   };
 
-  return visit(next) as MarkdownAstRoot<MarkdownExtensionNode>;
+  return visit(next) as MarkdownAstRoot<MarkdownAnyExtensionNode>;
 }
 
 interface SourceInvariant {
@@ -761,7 +1074,7 @@ interface SourceInvariant {
 }
 
 function collectSourceInvariants(
-  root: MarkdownAstRoot<MarkdownExtensionNode>,
+  root: MarkdownAstRoot<MarkdownAnyExtensionNode>,
 ): Map<string, SourceInvariant[]> {
   const positions = new Map<string, SourceInvariant[]>();
   const visit = (node: MarkdownAstNodeBase & {readonly type: string}): void => {
@@ -799,6 +1112,7 @@ function extensionSignature(node: Record<string, unknown>): string {
     node.display,
     node.data,
     node.source,
+    node.children,
     positionKey(node.position as MarkdownAstPosition | undefined),
   ]);
 }
@@ -809,7 +1123,7 @@ interface ExistingExtension {
 }
 
 function collectExtensionSignatures(
-  root: MarkdownAstRoot<MarkdownExtensionNode>,
+  root: MarkdownAstRoot<MarkdownAnyExtensionNode>,
 ): Map<string, ExistingExtension> {
   const signatures = new Map<string, ExistingExtension>();
   const visit = (node: MarkdownAstNodeBase & {readonly type: string}): void => {
@@ -842,7 +1156,7 @@ interface SourceHeadingMarker {
 }
 
 function markSourceHeadings(
-  root: MarkdownAstRoot<MarkdownExtensionNode>,
+  root: MarkdownAstRoot<MarkdownAnyExtensionNode>,
 ): Set<SourceHeadingMarker> {
   const markers = new Set<SourceHeadingMarker>();
   const visit = (node: MarkdownAstNodeBase & {readonly type: string}): void => {
@@ -877,29 +1191,85 @@ function markSourceHeadings(
   return markers;
 }
 
-const PHRASING_TYPES = new Set([
-  'text',
-  'strong',
-  'emphasis',
-  'delete',
-  'inlineCode',
-  'inlineMath',
-  'break',
-  'link',
-  'image',
-  'citation',
-]);
-const BLOCK_TYPES = new Set([
-  'heading',
-  'paragraph',
-  'code',
-  'math',
-  'blockquote',
-  'list',
-  'table',
-  'thematicBreak',
-  'image',
-]);
+const PHRASING_TYPES: ReadonlySet<string> = PHRASING_CONTENT_NAMES;
+const BLOCK_TYPES: ReadonlySet<string> = FLOW_CONTENT_NAMES;
+
+export const MAX_MARKDOWN_CONTAINER_DEPTH = 100;
+
+function contentAllowsChildren(
+  node: MarkdownAnyExtensionNode,
+  prepared: PreparedRenderer,
+): boolean {
+  const content = prepared.content;
+  const record = node as unknown as Record<string, unknown>;
+  if (content === 'none') {
+    return !('children' in record);
+  }
+  if (!Array.isArray(record.children)) {
+    return false;
+  }
+  if (content === 'phrasing' && node.display !== 'inline') {
+    return false;
+  }
+  if (content === 'flow' && node.display !== 'block') {
+    return false;
+  }
+  const isPhrasing = node.display === 'inline';
+  for (const childValue of record.children) {
+    if (childValue == null || typeof childValue !== 'object') {
+      return false;
+    }
+    const child = childValue as Record<string, unknown>;
+    const childType = child['type'];
+    if (typeof childType !== 'string') {
+      return false;
+    }
+    const childDisplay = childType === 'extension' ? child.display : undefined;
+    if (
+      (isPhrasing &&
+        !PHRASING_TYPES.has(childType) &&
+        childDisplay !== 'inline') ||
+      (!isPhrasing && !BLOCK_TYPES.has(childType) && childDisplay !== 'block')
+    ) {
+      return false;
+    }
+    if (isContentAllowlist(content)) {
+      const allowedName = childType === 'extension' ? child.name : childType;
+      if (
+        typeof allowedName !== 'string' ||
+        !content.allow.includes(allowedName) ||
+        (childType === 'extension' && child.plugin !== node.plugin)
+      ) {
+        return false;
+      }
+    }
+  }
+  if (isContentAllowlist(content)) {
+    const childCount = record.children.length;
+    if (
+      childCount < (content.min ?? 0) ||
+      (content.max != null && childCount > content.max)
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export function getMarkdownExtensionContent(
+  plugins: PreparedMarkdownPlugins | undefined,
+  node: Pick<MarkdownAnyExtensionNode, 'plugin' | 'name'>,
+): MarkdownExtensionContent | undefined {
+  return plugins?.renderers.get(`${node.plugin}\0${node.name}`)?.content;
+}
+
+export function validateMarkdownExtensionContent(
+  plugins: PreparedMarkdownPlugins | undefined,
+  node: MarkdownAnyExtensionNode,
+): boolean {
+  const prepared = plugins?.renderers.get(`${node.plugin}\0${node.name}`);
+  return prepared != null && contentAllowsChildren(node, prepared);
+}
 const PHRASING_PARENTS = new Set([
   'heading',
   'paragraph',
@@ -921,13 +1291,13 @@ const CHILD_PARENT_TYPES = new Set([
 function validateAst(
   root: unknown,
   pluginNames: ReadonlySet<string>,
-  rendererKeys: ReadonlySet<string>,
+  renderers: ReadonlyMap<string, PreparedRenderer>,
   sourcePositions: Map<string, SourceInvariant[]>,
   sourceHeadingMarkers: ReadonlySet<SourceHeadingMarker>,
   activePluginName: string,
   existingExtensions: Map<string, ExistingExtension>,
   display: 'inline' | 'block',
-): root is MarkdownAstRoot<MarkdownExtensionNode> {
+): root is MarkdownAstRoot<MarkdownAnyExtensionNode> {
   if (root == null || typeof root !== 'object') {
     return false;
   }
@@ -938,6 +1308,7 @@ function validateAst(
     value: unknown,
     parent: string | null,
     insideLink: boolean,
+    containerDepth: number,
   ): boolean => {
     if (value == null || typeof value !== 'object' || seen.has(value)) {
       return false;
@@ -961,8 +1332,10 @@ function validateAst(
         PHRASING_TYPES.has(type) || extensionDisplay === 'inline';
       const block = BLOCK_TYPES.has(type) || extensionDisplay === 'block';
       if (
-        (PHRASING_PARENTS.has(parent) && !phrasing) ||
-        (BLOCK_PARENTS.has(parent) && !block) ||
+        ((PHRASING_PARENTS.has(parent) || parent === 'extension:phrasing') &&
+          !phrasing) ||
+        ((BLOCK_PARENTS.has(parent) || parent === 'extension:flow') &&
+          !block) ||
         (insideLink && type === 'link') ||
         (parent === 'list' && type !== 'listItem') ||
         (parent === 'table' && type !== 'tableRow') ||
@@ -1008,6 +1381,7 @@ function validateAst(
       return false;
     }
 
+    let extensionContent: MarkdownExtensionContent | undefined;
     switch (type) {
       case 'root':
         if (parent != null) {
@@ -1101,16 +1475,25 @@ function validateAst(
         }
         break;
       case 'extension': {
+        const preparedRenderer =
+          typeof node.plugin === 'string' && typeof node.name === 'string'
+            ? renderers.get(`${node.plugin}\0${node.name}`)
+            : undefined;
         if (
           typeof node.plugin !== 'string' ||
           !pluginNames.has(node.plugin) ||
           typeof node.name !== 'string' ||
           (node.display !== 'inline' && node.display !== 'block') ||
           !isMarkdownPluginData(node.data) ||
-          !rendererKeys.has(`${node.plugin}\0${node.name}`)
+          preparedRenderer == null ||
+          !contentAllowsChildren(
+            node as unknown as MarkdownAnyExtensionNode,
+            preparedRenderer,
+          )
         ) {
           return false;
         }
+        extensionContent = preparedRenderer.content;
         const signature = extensionSignature(node);
         const existing = existingExtensions.get(signature);
         if (existing != null && existing.count > 0) {
@@ -1139,12 +1522,29 @@ function validateAst(
         return false;
     }
 
-    if (CHILD_PARENT_TYPES.has(type)) {
+    const hasExtensionChildren =
+      type === 'extension' &&
+      extensionContent != null &&
+      extensionContent !== 'none';
+    if (CHILD_PARENT_TYPES.has(type) || hasExtensionChildren) {
       if (!Array.isArray(node.children)) {
         return false;
       }
+      const nextDepth = hasExtensionChildren
+        ? containerDepth + 1
+        : containerDepth;
+      if (nextDepth > MAX_MARKDOWN_CONTAINER_DEPTH) {
+        return false;
+      }
+      const childParent = hasExtensionChildren
+        ? node.display === 'inline'
+          ? 'extension:phrasing'
+          : 'extension:flow'
+        : type;
       for (const child of node.children) {
-        if (!visit(child, type, insideLink || type === 'link')) {
+        if (
+          !visit(child, childParent, insideLink || type === 'link', nextDepth)
+        ) {
           return false;
         }
       }
@@ -1153,9 +1553,9 @@ function validateAst(
     }
     return true;
   };
-  const candidate = root as MarkdownAstRoot<MarkdownExtensionNode>;
+  const candidate = root as MarkdownAstRoot<MarkdownAnyExtensionNode>;
   return (
-    visit(candidate, null, false) &&
+    visit(candidate, null, false, 0) &&
     candidate.type === 'root' &&
     Array.from(existingExtensions.values()).every(
       extension =>
@@ -1472,7 +1872,7 @@ export function reportMarkdownPluginFailure(
   warnOnce(key, 'Markdown', message, error);
 }
 
-export function applyMarkdownTransforms<Node extends MarkdownExtensionNode>(
+export function applyMarkdownTransforms<Node extends MarkdownAnyExtensionNode>(
   root: MarkdownAstRoot<Node>,
   plugins: PreparedMarkdownPlugins | undefined,
   source: string,
@@ -1483,7 +1883,6 @@ export function applyMarkdownTransforms<Node extends MarkdownExtensionNode>(
     return root;
   }
   let pluginNames: Set<string> | undefined;
-  let rendererKeys: Set<string> | undefined;
   let document: MarkdownAstRoot<Node> = root;
   // Heading identity is stamped on the mutable parser tree, before anything
   // freezes it, and only when a plugin-authored transform will actually be
@@ -1508,7 +1907,6 @@ export function applyMarkdownTransforms<Node extends MarkdownExtensionNode>(
     if (!prepared.trusted) {
       if (!guarded) {
         pluginNames = new Set(plugins.entries.map(entry => entry.name));
-        rendererKeys = new Set(plugins.renderers.keys());
         guarded = true;
       }
       // Deeply freezes the whole tree, including anything a trusted helper
@@ -1564,7 +1962,7 @@ export function applyMarkdownTransforms<Node extends MarkdownExtensionNode>(
         !validateAst(
           next,
           pluginNames as ReadonlySet<string>,
-          rendererKeys as ReadonlySet<string>,
+          plugins.renderers,
           positions,
           sourceHeadingMarkers as ReadonlySet<SourceHeadingMarker>,
           prepared.pluginName,
@@ -1596,23 +1994,49 @@ export function applyMarkdownTransforms<Node extends MarkdownExtensionNode>(
 
 export function getMarkdownExtensionRenderer(
   plugins: PreparedMarkdownPlugins | undefined,
-  node: MarkdownExtensionNode,
-): MarkdownExtensionRenderer<MarkdownExtensionNode> | undefined {
+  node: MarkdownAnyExtensionNode,
+): RuntimeMarkdownExtensionRenderer | undefined {
   return plugins?.renderers.get(`${node.plugin}\0${node.name}`)?.renderer;
+}
+
+function markdownExtensionChildrenText(
+  plugins: PreparedMarkdownPlugins | undefined,
+  node: MarkdownAnyExtensionNode,
+): string | undefined {
+  if (!Array.isArray(node.children)) {
+    return undefined;
+  }
+  return node.display === 'inline'
+    ? markdownAstText(
+        (node as MarkdownAstInlineContainerExtensionNode).children,
+        child => markdownExtensionText(plugins, child),
+      )
+    : markdownAstBlockText(
+        (node as MarkdownAstBlockContainerExtensionNode).children,
+        child => markdownExtensionText(plugins, child),
+      );
 }
 
 export function markdownExtensionText(
   plugins: PreparedMarkdownPlugins | undefined,
-  node: MarkdownExtensionNode,
+  node: MarkdownAnyExtensionNode,
 ): string {
   const renderer = getMarkdownExtensionRenderer(plugins, node);
+  const childrenText = markdownExtensionChildrenText(plugins, node);
   if (renderer == null) {
-    return node.source ?? '';
+    return childrenText ?? node.source ?? '';
   }
   try {
-    return renderer.toText(node);
+    const text =
+      childrenText == null
+        ? renderer.toText?.(node)
+        : (renderer.toText?.(node, childrenText) ?? childrenText);
+    if (typeof text !== 'string') {
+      throw new TypeError('Extension text projection must return a string');
+    }
+    return text;
   } catch (error) {
     reportMarkdownPluginFailure(node.plugin, 'render', error);
-    return node.source ?? '';
+    return childrenText ?? node.source ?? '';
   }
 }
