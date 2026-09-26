@@ -112,3 +112,8 @@ export {BUTTON_PATTERN, type ButtonStateFacts} from './patterns/button';
 export {TABS_PATTERN, type TabsStateFacts} from './patterns/tabs';
 
 export {LISTBOX_PATTERN, type ListboxStateFacts} from './patterns/listbox';
+
+export {
+  SPINBUTTON_PATTERN,
+  type SpinbuttonStateFacts,
+} from './patterns/spinbutton';
