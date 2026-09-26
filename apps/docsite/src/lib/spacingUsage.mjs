@@ -29,15 +29,20 @@
  *     2: {columnGap: spacingVars['--spacing-2']},   // reachable via gap={2}
  *   });
  *
- * That is *reach*, not default usage. So each reference is classified:
+ * That is *reach* through a prop value, not a named style. So each reference
+ * is classified:
  *
- * - `components` — the token is in a fixed style. Change it and this
- *   component moves, with no props involved.
+ * - `components` — the token is in a named style. Change it and this
+ *   component moves wherever that style applies, which may be only for one
+ *   size, variant or state (RadioList's `horizontal` gap).
  * - `viaProps` — the token is one rung of a prop-keyed scale. Change it and
- *   this component moves only where that prop value is actually passed.
+ *   this component moves wherever that prop value is in effect, passed or
+ *   defaulted (OverflowList's `gap` defaults to 2).
  *
  * The discriminator is exact rather than heuristic: scale rungs are keyed by
- * numeric literals (`0`, `0.5`, `2`), fixed styles by names (`base`, `sm`).
+ * numeric literals (`0`, `0.5`, `2`), named styles by names (`base`, `sm`).
+ * Which named style or rung applies by default is decided where the component
+ * renders, which is not traced — so neither bucket claims default use.
  *
  * ## Scope and assumed conventions
  *
@@ -521,7 +526,7 @@ export function deriveSpacingUsage(coreSrcDir) {
     a.localeCompare(b),
   )) {
     const components = [...entry.components].sort();
-    // A component already moved by a fixed style is not conditionally affected.
+    // A component already listed for a named style is not listed twice.
     const viaProps = [...entry.viaProps]
       .filter(name => !entry.components.has(name))
       .sort();
@@ -537,11 +542,12 @@ const MODULE_HEADER = `// Copyright (c) Meta Platforms, Inc. and affiliates.
 /**
  * Which components a spacing token moves.
  *
- * - \`components\` — the token is used in a fixed style. Changing it moves
- *   these components with no props involved.
+ * - \`components\` — the token is used in a named style. Changing it moves
+ *   these components wherever that style applies, possibly only for some
+ *   sizes, variants or states.
  * - \`viaProps\` — the token is one rung of a prop-keyed scale (Stack's
- *   \`gap\`, Card's \`padding\`). Changing it moves these components only where
- *   that prop value is actually passed.
+ *   \`gap\`, Card's \`padding\`). Changing it moves these components wherever
+ *   that prop value is in effect, passed or defaulted.
  */
 export interface SpacingUsage {
   components: string[];

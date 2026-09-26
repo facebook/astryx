@@ -70,9 +70,12 @@ const SUMMARY_LIMIT = 3;
 /**
  * Phrase which components a spacing token moves, for the editor's token rows.
  *
- * `components` are moved by any change to the token; `viaProps` are moved only
- * where a spacing prop selects that rung, so the two are never merged into one
- * count — a token with no default usage at all is a genuinely useful signal.
+ * `components` use the token in their own styles, possibly only for some
+ * sizes, variants or states; `viaProps` have it as one rung of a numeric gap or
+ * padding prop. Neither says whether the token applies by default: that is
+ * decided where the component renders, which the derivation does not trace.
+ * The two are never merged into one count — a token that is only a prop step
+ * is a genuinely useful signal.
  *
  * Data comes from src/generated/spacingUsage.ts, derived from component source
  * at build time (see scripts/generate-spacing-usage.mjs). The parameter is
@@ -100,22 +103,23 @@ export function summarizeSpacingUsage(
   if (components.length === 0) {
     return {
       summary: 'Only via spacing props',
-      detail: [
-        'No component uses this step by default.',
-        `Reachable on ${viaProps.length} ${plural(viaProps.length)} ` +
-          `when a spacing prop selects it: ${viaProps.join(', ')}.`,
-      ].join('\n\n'),
+      detail:
+        'Used only as a step of a numeric spacing prop (gap or padding), ' +
+        `on ${viaProps.length} ${plural(viaProps.length)}: ` +
+        `${viaProps.join(', ')}.`,
     };
   }
 
   const paragraphs = [
-    `Moves ${components.length} ${plural(components.length)} by default: ` +
-      `${components.join(', ')}.`,
+    `Used in the styles of ${components.length} ` +
+      `${plural(components.length)} (possibly only for some sizes, ` +
+      `variants or states): ${components.join(', ')}.`,
   ];
   if (viaProps.length > 0) {
     paragraphs.push(
-      `Reachable on ${viaProps.length} more ${plural(viaProps.length)} ` +
-        `when a spacing prop selects it: ${viaProps.join(', ')}.`,
+      'Also a step of a numeric spacing prop (gap or padding) on ' +
+        `${viaProps.length} more ${plural(viaProps.length)}: ` +
+        `${viaProps.join(', ')}.`,
     );
   }
 

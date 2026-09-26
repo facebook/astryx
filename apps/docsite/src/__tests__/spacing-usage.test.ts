@@ -270,7 +270,8 @@ describe('summarizeSpacingUsage', () => {
 
     expect(result?.summary).toBe('Badge, Banner, Button +2 more');
     expect(result?.detail).toBe(
-      'Moves 5 components by default: Badge, Banner, Button, Chat, Item.',
+      'Used in the styles of 5 components (possibly only for some sizes, ' +
+        'variants or states): Badge, Banner, Button, Chat, Item.',
     );
   });
 
@@ -292,7 +293,7 @@ describe('summarizeSpacingUsage', () => {
     expect(result?.summary).toBe('Badge, Button, Card');
   });
 
-  it('says so when a token has no default usage at all', () => {
+  it('says so when a token is only a spacing-prop step', () => {
     // --spacing-9 and --spacing-10 are reachable only through a numeric
     // spacing prop. Reporting "no components" would be wrong; merging them
     // into one count would be misleading.
@@ -302,23 +303,27 @@ describe('summarizeSpacingUsage', () => {
     });
 
     expect(result?.summary).toBe('Only via spacing props');
-    // The full pin also guards the phrasing: with zero default consumers there
-    // is no "more" for the prop-driven count to be more than.
+    // The full pin also guards the phrasing: with no styles using the step
+    // there is no "more" for the prop-driven count to be more than.
     expect(result?.detail).toBe(
-      'No component uses this step by default.\n\n' +
-        'Reachable on 2 components when a spacing prop selects it: Grid, Stack.',
+      'Used only as a step of a numeric spacing prop (gap or padding), ' +
+        'on 2 components: Grid, Stack.',
     );
   });
 
-  it('keeps prop-driven components out of the default count', () => {
+  it('keeps prop-driven components out of the style count', () => {
     const result = summarizeSpacingUsage({
       components: ['Button'],
       viaProps: ['Grid', 'Stack'],
     });
 
-    expect(result?.detail).toContain('Moves 1 component by default: Button.');
     expect(result?.detail).toContain(
-      'Reachable on 2 more components when a spacing prop selects it: Grid, Stack.',
+      'Used in the styles of 1 component (possibly only for some sizes, ' +
+        'variants or states): Button.',
+    );
+    expect(result?.detail).toContain(
+      'Also a step of a numeric spacing prop (gap or padding) on 2 more ' +
+        'components: Grid, Stack.',
     );
   });
 
@@ -422,6 +427,26 @@ describe('deriveSpacingUsage (against packages/core source)', () => {
     }
   });
 
+  it('lists RadioList under --spacing-5 without saying it moves by default', () => {
+    // RadioList uses --spacing-5 only in its `horizontal` style, and its
+    // orientation defaults to 'vertical'.
+    expect(usage['--spacing-5'].components).toContain('RadioList');
+    expect(summarizeSpacingUsage(usage['--spacing-5'])?.detail).not.toMatch(
+      /by default/,
+    );
+  });
+
+  it('does not make OverflowList wait for a prop its gap defaults to', () => {
+    // OverflowList's gap defaults to 2, so --spacing-2 applies to it with no
+    // prop passed, even though it is a prop-scale rung.
+    expect(usage['--spacing-2'].viaProps).toContain('OverflowList');
+    const paragraph = summarizeSpacingUsage(usage['--spacing-2'])
+      ?.detail.split('\n\n')
+      .find(text => text.includes('OverflowList'));
+    expect(paragraph).toBeDefined();
+    expect(paragraph).not.toMatch(/by default|selects it|only where/);
+  });
+
   it('lists Button as a default consumer of its own padding tokens', () => {
     expect(usage['--spacing-2'].components).toContain('Button');
     expect(usage['--spacing-3'].components).toContain('Button');
@@ -518,8 +543,8 @@ describe('deriveSpacingUsage (against packages/core source)', () => {
   });
 
   it('never lists a component as both a default and a prop-driven consumer', () => {
-    // A component whose fixed styles already use the token is moved by any
-    // change to it; reporting it a second time as conditional is misleading.
+    // A component whose named styles already use the token is listed there;
+    // reporting it a second time as a prop step would double-count it.
     for (const [token, entry] of Object.entries(usage)) {
       const overlap = entry.viaProps.filter(name =>
         entry.components.includes(name),
@@ -609,6 +634,74 @@ describe('deriveSpacingUsage (synthetic fixtures)', () => {
       // Rooty.tsx at the root is a file, not a component dir: no phantom
       // "Rooty.tsx" entry may appear for --spacing-12.
     });
+  });
+});
+
+describe('deriveSpacingUsage (styles whose default is decided in JSX)', () => {
+  // Which named style or scale rung applies by default is decided where the
+  // component renders, which the derivation does not trace. These pin that
+  // the editor wording claims default use in neither direction.
+  let fixtureDir: string;
+
+  beforeAll(() => {
+    fixtureDir = fs.mkdtempSync(path.join(os.tmpdir(), 'spacing-usage-'));
+    for (const [relative, lines] of Object.entries({
+      // RadioList's shape: only the non-default orientation uses the token.
+      'Orient/Orient.tsx': [
+        "import * as stylex from '@stylexjs/stylex';",
+        "import {spacingVars} from '../theme/tokens.stylex';",
+        'const styles = stylex.create({',
+        "  vertical: {flexDirection: 'column'},",
+        "  horizontal: {gap: spacingVars['--spacing-5']},",
+        '});',
+        "export function Orient({orientation = 'vertical'}) {",
+        "  return orientation === 'vertical' ? styles.vertical : styles.horizontal;",
+        '}',
+      ],
+      // OverflowList's shape: the prop's default value selects the rung.
+      'Gapped/Gapped.tsx': [
+        "import * as stylex from '@stylexjs/stylex';",
+        "import {spacingVars} from '../theme/tokens.stylex';",
+        'const gapStyles = stylex.create({',
+        "  2: {gap: spacingVars['--spacing-2']},",
+        '});',
+        'export function Gapped({gap = 2}) {',
+        '  return gapStyles[gap];',
+        '}',
+      ],
+    })) {
+      const full = path.join(fixtureDir, relative);
+      fs.mkdirSync(path.dirname(full), {recursive: true});
+      fs.writeFileSync(full, lines.join('\n'));
+    }
+  });
+
+  afterAll(() => {
+    fs.rmSync(fixtureDir, {recursive: true, force: true});
+  });
+
+  it('lists a style only a non-default prop selects, without saying default', () => {
+    const usage = deriveSpacingUsage(fixtureDir);
+
+    expect(usage['--spacing-5']).toEqual({
+      components: ['Orient'],
+      viaProps: [],
+    });
+    expect(summarizeSpacingUsage(usage['--spacing-5'])?.detail).not.toMatch(
+      /by default/,
+    );
+  });
+
+  it('keeps a rung the prop defaults to prop-driven, without denying it', () => {
+    const usage = deriveSpacingUsage(fixtureDir);
+
+    expect(usage['--spacing-2']).toEqual({
+      components: [],
+      viaProps: ['Gapped'],
+    });
+    expect(summarizeSpacingUsage(usage['--spacing-2'])?.detail).not.toMatch(
+      /by default|selects it|only where/,
+    );
   });
 });
 
