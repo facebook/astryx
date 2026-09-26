@@ -58,11 +58,16 @@ jobs:
             --iterations "${{ github.event.inputs.iterations }}" \
             $PROMPT_ARG
 
+      # The iteration manifests carry each iteration's target, which the axe
+      # scan needs to pick that iteration's own renders out of the shared
+      # previews directory
       - name: Upload preview HTML
         uses: actions/upload-artifact@v7
         with:
           name: preview-html
-          path: internal/vibe-tests/results/*/previews/
+          path: |
+            internal/vibe-tests/results/*/previews/
+            internal/vibe-tests/results/*/manifest.json
           retention-days: 90
 
   screenshot:

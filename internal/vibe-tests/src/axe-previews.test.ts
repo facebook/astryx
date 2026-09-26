@@ -4,7 +4,12 @@ import {describe, it, expect, afterAll} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import {mergeAxeRuns, scanIteration, type RawAxeRun} from './axe-previews.js';
+import {
+  mergeAxeRuns,
+  scanIteration,
+  selectPreviewsForIteration,
+  type RawAxeRun,
+} from './axe-previews.js';
 import {enumeratePreviews} from './utils.js';
 
 const dirs: string[] = [];
@@ -195,6 +200,33 @@ describe('enumeratePreviews', () => {
 });
 
 // ============================================================
+// selectPreviewsForIteration — only this iteration's own renders
+// ============================================================
+
+describe('selectPreviewsForIteration', () => {
+  const previews = [
+    {promptId: 'tc-1', target: 'astryx', path: '/p/tc-1/astryx.html'},
+    {promptId: 'tc-1', target: 'html', path: '/p/tc-1/html.html'},
+    {promptId: 'tc-2', target: 'html', path: '/p/tc-2/html.html'},
+  ];
+
+  it('keeps only previews built from the iteration target', () => {
+    expect(selectPreviewsForIteration(previews, 'html')).toEqual([
+      previews[1],
+      previews[2],
+    ]);
+  });
+
+  it('never substitutes another target when the iteration target is missing', () => {
+    // tc-2 has no astryx build (e.g. it failed to compile); its html render
+    // is another iteration's code and must not be scored as astryx
+    expect(selectPreviewsForIteration(previews, 'astryx')).toEqual([
+      previews[0],
+    ]);
+  });
+});
+
+// ============================================================
 // scanIteration — end-to-end with a real browser (skipped when
 // no local Chromium; CI installs it only in the screenshot job)
 // ============================================================
@@ -255,5 +287,63 @@ describe.skipIf(!hasChromium)('scanIteration (integration)', () => {
     );
     expect(sidecar['tc-1'].violations.length).toBeGreaterThan(0);
     expect(sidecar['tc-1'].passedRules).toContain('html-has-lang');
+  }, 120_000);
+
+  it('writes a sidecar per iteration from the shared previews directory', async () => {
+    // build-previews --iterations iterA,iterB writes both iterations'
+    // previews under iterA/previews; tc-2's astryx build is missing
+    const resultsDir = tmpDir();
+    const page = (title: string) =>
+      `<!doctype html><html lang="en"><head><title>${title}</title></head>` +
+      `<body><main><h1>${title}</h1></main></body></html>`;
+    const previewsDir = path.join(resultsDir, 'iterA', 'previews');
+    const files: Record<string, Record<string, string>> = {
+      'tc-1': {astryx: 'tc-1/astryx.html', html: 'tc-1/html.html'},
+      'tc-2': {html: 'tc-2/html.html'},
+    };
+    const manifest: Record<string, Record<string, string>> = {};
+    for (const [promptId, targets] of Object.entries(files)) {
+      manifest[promptId] = {};
+      for (const [target, rel] of Object.entries(targets)) {
+        fs.mkdirSync(path.join(previewsDir, promptId), {recursive: true});
+        fs.writeFileSync(path.join(previewsDir, rel), page(rel));
+        manifest[promptId][target] = `previews/${rel}`;
+      }
+    }
+    fs.writeFileSync(
+      path.join(previewsDir, 'manifest.json'),
+      JSON.stringify(manifest),
+    );
+    for (const [id, target] of [
+      ['iterA', 'astryx'],
+      ['iterB', 'html'],
+    ]) {
+      fs.mkdirSync(path.join(resultsDir, id), {recursive: true});
+      fs.writeFileSync(
+        path.join(resultsDir, id, 'manifest.json'),
+        JSON.stringify({config: {target}}),
+      );
+    }
+
+    for (const iterationId of ['iterA', 'iterB']) {
+      await scanIteration({
+        resultsDir,
+        iterationId,
+        previewsFrom: 'iterA',
+        themes: ['light'],
+      });
+    }
+
+    const read = (id: string) =>
+      JSON.parse(
+        fs.readFileSync(path.join(resultsDir, id, 'axe-results.json'), 'utf-8'),
+      );
+    const iterA = read('iterA');
+    expect(Object.keys(iterA)).toEqual(['tc-1']);
+    expect(iterA['tc-1'].target).toBe('astryx');
+    const iterB = read('iterB');
+    expect(Object.keys(iterB).sort()).toEqual(['tc-1', 'tc-2']);
+    expect(iterB['tc-1'].target).toBe('html');
+    expect(iterB['tc-2'].target).toBe('html');
   }, 120_000);
 });

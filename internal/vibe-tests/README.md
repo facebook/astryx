@@ -158,6 +158,13 @@ rules run against every target's rendered output:
 pnpm -F @astryxdesign/vibe-tests axe:previews --iterations <id>
 ```
 
+Pass the same `--iterations` list as `build-previews`. It writes every
+iteration's previews under the first iteration, so each iteration is scanned
+from there (`--previews-from <id>` overrides), keeps only the renders of its
+own target, and gets its own sidecar. Iterations that share a target overwrite
+each other's previews, so they are skipped with a warning, and scoring ignores
+any sidecar entry whose target differs from the code being scored.
+
 The CI screenshot workflow (`vibe-screenshots.yml`) runs this automatically
 after capturing screenshots. Re-run `aggregate` afterwards to fold the
 results into `universal.json`.

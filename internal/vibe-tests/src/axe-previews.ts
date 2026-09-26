@@ -15,9 +15,15 @@
  * lets the score see focus, ARIA wiring, and contrast — things the static
  * scan of consumer code structurally cannot.
  *
+ * build-previews writes every listed iteration's previews under the first
+ * iteration's previews/, so each iteration reads them from there (override
+ * with --previews-from), keeps only its own target's renders, and gets its
+ * own sidecar.
+ *
  * Usage:
  *   tsx src/axe-previews.ts --iterations 8734233a,d4ff8c2c
  *   tsx src/axe-previews.ts --iterations 8734233a --prompts tc-4 --themes light
+ *   tsx src/axe-previews.ts --iterations d4ff8c2c --previews-from 8734233a
  */
 
 import * as fs from 'node:fs';
@@ -29,6 +35,7 @@ import {
   writeJson,
   serveStatic,
   enumeratePreviews,
+  type PreviewFile,
 } from './utils.js';
 import type {
   AxeResultForPrompt,
@@ -135,46 +142,62 @@ export function mergeAxeRuns(
 }
 
 /**
+ * Keep only the previews built from the iteration's own target — that's the
+ * code universal-aggregate evaluates. Another target's render of the same
+ * prompt is another iteration's code, so it never stands in for a missing
+ * build.
+ */
+export function selectPreviewsForIteration(
+  previews: PreviewFile[],
+  iterTarget: string,
+): PreviewFile[] {
+  return previews.filter(p => p.target === iterTarget);
+}
+
+/** The iteration's configured target (from its manifest.json). */
+function readIterationTarget(iterDir: string): string {
+  try {
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(iterDir, 'manifest.json'), 'utf-8'),
+    );
+    return manifest?.config?.target ?? 'astryx';
+  } catch {
+    // No iteration manifest — keep the default target
+    return 'astryx';
+  }
+}
+
+/**
  * Axe-scan every preview of one iteration and write the axe-results.json
- * sidecar. Returns the results, or null when the iteration has no previews.
- * When a prompt has previews for several targets, the iteration's configured
- * target wins — that's the code universal-aggregate evaluates.
+ * sidecar into the iteration's directory. Returns the results, or null when
+ * the iteration has no previews for its target.
  */
 export async function scanIteration(opts: {
   resultsDir: string;
   iterationId: string;
+  /**
+   * Iteration whose previews/ holds the built HTML — build-previews writes
+   * every iteration's previews under the first one. Defaults to iterationId.
+   */
+  previewsFrom?: string;
   prompts?: string[];
   themes?: readonly string[];
 }): Promise<AxeResults | null> {
   const {resultsDir, iterationId, prompts} = opts;
   const themes = opts.themes ?? DEFAULT_THEMES;
   const iterDir = path.join(resultsDir, iterationId);
+  const previewsRoot = path.join(resultsDir, opts.previewsFrom ?? iterationId);
+  const iterTarget = readIterationTarget(iterDir);
 
-  const previews = enumeratePreviews(iterDir, prompts);
+  const previews = selectPreviewsForIteration(
+    enumeratePreviews(previewsRoot, prompts),
+    iterTarget,
+  );
   if (previews.length === 0) {
-    console.error(`  ⚠ No preview HTML files found for ${iterationId}`);
-    return null;
-  }
-
-  let iterTarget = 'astryx';
-  try {
-    const manifest = JSON.parse(
-      fs.readFileSync(path.join(iterDir, 'manifest.json'), 'utf-8'),
+    console.error(
+      `  ⚠ No ${iterTarget} preview HTML files found for ${iterationId}`,
     );
-    iterTarget = manifest?.config?.target ?? 'astryx';
-  } catch {
-    // No iteration manifest — keep the default target
-  }
-
-  const byPrompt = new Map<string, (typeof previews)[number]>();
-  for (const p of previews) {
-    const existing = byPrompt.get(p.promptId);
-    if (
-      !existing ||
-      (p.target === iterTarget && existing.target !== iterTarget)
-    ) {
-      byPrompt.set(p.promptId, p);
-    }
+    return null;
   }
 
   let chromium: typeof PlaywrightChromium;
@@ -194,14 +217,14 @@ export async function scanIteration(opts: {
     page: unknown;
   }) => {analyze: () => Promise<RawAxeAnalysis>};
 
-  const server = await serveStatic(iterDir);
+  const server = await serveStatic(previewsRoot);
   const browser = await chromium.launch();
   const results: AxeResults = {};
 
   try {
-    for (const preview of byPrompt.values()) {
+    for (const preview of previews) {
       const relPath = path
-        .relative(iterDir, preview.path)
+        .relative(previewsRoot, preview.path)
         .split(path.sep)
         .join('/');
       const runs: RawAxeRun[] = [];
@@ -274,17 +297,21 @@ interface RawAxeAnalysis {
 
 function parseArgs(): {
   iterations: string[];
+  previewsFrom: string;
   prompts?: string[];
   themes?: string[];
 } {
   const args = process.argv.slice(2);
   let iterations: string[] = [];
+  let previewsFrom = '';
   let prompts: string[] | undefined;
   let themes: string[] | undefined;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--iterations' && args[i + 1]) {
       iterations = args[++i].split(',');
+    } else if (args[i] === '--previews-from' && args[i + 1]) {
+      previewsFrom = args[++i];
     } else if (args[i] === '--prompts' && args[i + 1]) {
       prompts = args[++i].split(',');
     } else if (args[i] === '--themes' && args[i + 1]) {
@@ -294,26 +321,49 @@ function parseArgs(): {
 
   if (iterations.length === 0) {
     console.error(
-      'Usage: tsx src/axe-previews.ts --iterations <id1,id2,...> [--prompts <p1,p2,...>] [--themes light,dark]',
+      'Usage: tsx src/axe-previews.ts --iterations <id1,id2,...> [--previews-from <id>] [--prompts <p1,p2,...>] [--themes light,dark]',
     );
     process.exit(1);
   }
 
-  return {iterations, prompts, themes};
+  // Same default as build-previews' output directory
+  return {
+    iterations,
+    previewsFrom: previewsFrom || iterations[0],
+    prompts,
+    themes,
+  };
 }
 
 async function main() {
-  const {iterations, prompts, themes} = parseArgs();
+  const {iterations, previewsFrom, prompts, themes} = parseArgs();
   const resultsDir = getResultsDir();
+  const targets = new Map(
+    iterations.map(id => [id, readIterationTarget(path.join(resultsDir, id))]),
+  );
 
   let scanned = 0;
   let violationRules = 0;
 
   for (const iterationId of iterations) {
+    // Iterations with the same target overwrite each other's
+    // <promptId>/<target>.html, so no scan can tell whose render it sees
+    const target = targets.get(iterationId);
+    const sharing = iterations.filter(
+      id => id !== iterationId && targets.get(id) === target,
+    );
+    if (sharing.length > 0) {
+      console.error(
+        `\n  ⚠ Skipping ${iterationId}: its ${target} previews collide with ${sharing.join(', ')}`,
+      );
+      continue;
+    }
+
     console.log(`\n♿ Axe-scanning previews for ${iterationId}...\n`);
     const results = await scanIteration({
       resultsDir,
       iterationId,
+      previewsFrom,
       prompts,
       themes,
     });

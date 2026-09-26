@@ -1185,6 +1185,11 @@ export function evaluate(
     const axeResults = loadAxeResults(options.iterDir);
     axeResult = axeResults?.[options.promptId] ?? null;
   }
+  // An entry scanned from another target's preview is not a render of this
+  // code, so it backs nothing
+  if (axeResult && axeResult.target !== target) {
+    axeResult = null;
+  }
 
   return {
     correctness: analyzeCorrectness(code, target, tscResult),

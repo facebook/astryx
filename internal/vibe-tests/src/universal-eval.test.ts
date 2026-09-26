@@ -360,7 +360,7 @@ describe('accessibility runtime fold-in', () => {
 
   it('penalizes an unrecognized axe impact at the moderate rate', () => {
     const axe = {
-      target: 'html',
+      target: 'astryx',
       themesScanned: ['light'],
       passes: 10,
       incomplete: 0,
@@ -380,7 +380,7 @@ describe('accessibility runtime fold-in', () => {
 
   it('floors the score at 0 when axe penalties exceed 100', () => {
     const axe: AxeResultForPrompt = {
-      target: 'html',
+      target: 'astryx',
       themesScanned: ['light'],
       passes: 0,
       incomplete: 0,
@@ -423,6 +423,16 @@ describe('accessibility runtime fold-in', () => {
     expect(accessibility.score).toBe(75);
   });
 
+  it("ignores an axe entry scanned from another target's preview", () => {
+    // Multi-iteration runs keep every target's previews in one directory; an
+    // entry for a different target is not a render of this code
+    const {accessibility} = evaluate(COMPOSED_CODE, 'astryx', {
+      axeResult: {...AXE_FIXTURE, target: 'html'},
+    });
+    expect(accessibility.metrics?.runtime).toBe(false);
+    expect(accessibility.score).toBe(100);
+  });
+
   it('falls back to static-only scoring when no sidecar exists for the prompt', () => {
     const dir = tmpDir();
     const {accessibility} = evaluate(COMPOSED_CODE, 'astryx', {
@@ -442,7 +452,7 @@ describe('accessibility fold-in edge cases', () => {
   it('survives a sidecar entry with no violations array instead of crashing the run', () => {
     // A truncated or hand-edited axe-results.json entry: promptId present,
     // violations missing. Must score as a clean runtime scan, not throw.
-    const malformed = {target: 'html'} as unknown as AxeResultForPrompt;
+    const malformed = {target: 'astryx'} as unknown as AxeResultForPrompt;
     const {accessibility} = evaluate(COMPOSED_CODE, 'astryx', {
       axeResult: malformed,
     });
@@ -487,7 +497,7 @@ describe('accessibility fold-in edge cases', () => {
 
   it('tolerates a violation record with no themes list', () => {
     const axe = {
-      target: 'html',
+      target: 'astryx',
       themesScanned: ['light'],
       passes: 1,
       incomplete: 0,
