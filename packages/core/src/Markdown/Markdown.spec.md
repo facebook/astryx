@@ -9,7 +9,7 @@ superseded_by: null
 approved_by: cixzhang
 approved_at: 2026-09-25
 owners: [cixzhang]
-review_triggers: [api, theming]
+review_triggers: [api, theming, behavior, layout, accessibility]
 verified_by:
   [
     packages/core/src/Markdown/Markdown.test.tsx,
@@ -52,7 +52,9 @@ bounded source syntax, immutable document transformation, typed extension
 rendering, and native typed document-start frontmatter. They may separately opt into dollar-delimited math by supplying one typed
 renderer for both inline and display expressions. The parser accepts matching
 explicit options. Existing parsing, rendering, styling, and streaming behavior
-remain unchanged when plugins and math are absent.
+remain unchanged when plugins and math are absent. A table wider than its
+container declares that it overflows and may offer the whole table in a viewer;
+a consumer does not need a table override to get either.
 
 ## Compatibility and migration
 
@@ -60,7 +62,9 @@ remain unchanged when plugins and math are absent.
 - Compatibility class: additive, opt-in public API; existing parser nodes, DOM,
   styling, targets, dollar-delimited text, `components`, and `inlinePlugins` remain
   unchanged unless the caller supplies `plugins`, supplies `components.math`, or
-  passes the matching explicit parser option.
+  passes the matching explicit parser option. The Table overflow indicator is a
+  default-path addition that renders only while a table overflows; the Table
+  viewer is opt-in through `tableViewer`.
 - Controlled/uncontrolled behavior: not applicable
 - Migration decision: none
 
@@ -75,6 +79,9 @@ Consumer migration instructions belong in consumer docs and release notes.
   Image block presentation and the eight current block targets documented below.
 - Applying block spacing and reflected density (plus Heading level) to those
   targets on the default render path.
+- Declaring Table overflow inside the effective scroll region, the opt-in Table
+  viewer trigger, focus return from a Markdown-owned viewer, and the honest
+  min-content contribution of table cells.
 - Opt-in recognition of `$…$` inline math and `$$…$$` display math, including
   delimiter boundaries, escape behavior, parser nodes, and streaming parity.
 - Passing each recognized expression as inert text to the caller's one math
@@ -97,7 +104,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 - Inline emphasis, link, inline-code, citation, plugin, or math-renderer output as
   additional default block anatomy.
 - Nested anatomy or targets owned by CodeBlock, Blockquote, List, CheckboxList,
-  or Table.
+  or Table, including Table's Scroll region behavior under `spec:AST-025`.
+- A host-supplied Table viewer's surface, dismissal, and focus return; Markdown
+  hands the host the content and a focus-restoration callback.
 - Executing or sanitizing a renderer's math or plugin output, raw HTML parsing,
   mutable or unrestricted AST plugins, package discovery, or new
   list/table/inline-style override slots.
@@ -147,6 +156,19 @@ unions. Enabled calls return the explicit `InlineNodeWithMath` and
 `BlockNodeWithMath` supersets, whose added leaves are `MathInlineNode` and
 `MathBlockNode`. Exact syntax and examples remain in `Markdown.doc.mjs`.
 
+`tableViewer` is one optional prop with the closed values `'none'` and
+`'dialog'` or one host callback. `'none'` is the default: the Table overflow
+indicator renders alone. `'dialog'` opens the same rendered table content in a
+Markdown-owned Dialog. A callback receives one request — the rendered table
+content, the table's accessible label, and a focus-restoration callback — and
+the host supplies its own viewer. The prop is admitted because whether a host
+has a viewer surface of its own, and where it lives in the host's layer stack,
+is host-owned information Markdown cannot derive; the indicator needs no prop
+because Markdown can derive overflow from the scroll region itself. The Table
+overflow clauses (FR26–FR29) follow the same acceptance convention as the plugin
+clauses above: they are the accepted target contract, not a claim that
+`tableViewer` or the `markdown-table-overflow-indicator` target already ships.
+
 ## Behavioral and layout contract
 
 | ID   | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
@@ -176,6 +198,10 @@ unions. Enabled calls return the explicit `InlineNodeWithMath` and
 | FR23 | Markdown owns an explicit supported dialect rather than claiming full CommonMark or GFM conformance. Adjacent compatible ordered or unordered items remain one list regardless of task-marker presence; each item independently preserves its checked state or ordinary list-item semantics, including at nested levels. The default grammar keeps its released task-list and table support, while `autolink: 'gfm'` adds only the documented autolink behavior and does not toggle any other syntax.                                                 |
 | FR24 | `createMarkdownFrontmatter()` recognizes only a leading `---` block of unique `key: value` lines, decodes it through the caller's typed parser, stores finite JSON-like metadata on the canonical document, and removes the syntax from rendered content. An unfinished leading block yields no visible Markdown while streaming; malformed or unfinished final input remains ordinary Markdown. Frontmatter has no renderer and requires no Remark compatibility.                                                                                    |
 | FR25 | The canonical parser and plugin-construction subpaths remain server-safe and can run function-bearing plugins entirely within server or RSC code. The client-owned `Markdown` component supports traditional and streaming SSR, but plugin entries containing functions cannot be serialized from a Server Component into that client boundary; direct RSC rendering requires a future additive server renderer rather than weakening the plugin protocol.                                                                                            |
+| FR26 | While a Table's effective scroll region can scroll on the inline axis, the default render path shows one Table overflow indicator; otherwise none renders. Visibility resolves in CSS from that region's scroll state (`@container scroll-state`, scrollable at either inline edge): no observer, layout read, re-render, or layout shift. The indicator is a descendant of the region, sticks to its inline-start edge while the table scrolls under it and carries `markdown-table-overflow-indicator`. Without scroll-state queries, none renders. |
+| FR27 | The Table viewer is opt-in through `tableViewer`; its default `'none'` renders no viewer control. When enabled, the indicator line holds one plain button as a sibling of the `<table>`, never an interactive ancestor around it. It presents the same React children the block already rendered — not a serialized or re-parsed copy — in a viewer scrolling on both axes, clear of its chrome. `'dialog'` is Markdown-owned and returns focus to the trigger on close; a callback hands the host the content and a focus-restoration callback.      |
+| FR28 | Table cells contribute an honest min-content to automatic table layout: they wrap with `overflow-wrap: break-word` and use neither `overflow-wrap: anywhere` nor its `word-break: break-word` equivalent, so a column holding one long unbroken token does not collapse to one character.                                                                                                                                                                                                                                                             |
+| FR29 | The indicator and viewer trigger add nothing to the `<table>` or its cells: the released `role="group"` scroll wrapper and its label, native table semantics, cell text selection, link activation, and keyboard order are unchanged. The indicator's text is localized through the component's message catalog and is not color-only.                                                                                                                                                                                                                |
 
 FR23 includes table-level escaping inside inline-code spans: `\|` keeps the pipe
 inside its authored cell, contributes only `|` to the code value and rendered
@@ -202,6 +228,11 @@ text. Outside a table cell, inline code retains its authored backslashes.
   opaque plugin entries. Syntax, immutable transform behavior, renderer-owned
   output, and helper implementation may vary while validation, readable fallback,
   Core semantics, and heading identity stay fixed.
+- **AV7 — Table overflow.** The indicator's glyph, wording, and typography may
+  vary; the viewer control may be withheld where the viewport offers a viewer no
+  room beyond the reading column; a host viewer's surface, insets, and dismissal
+  are host-owned. Visibility from scroll state, placement inside the scroll
+  region, the sibling-button rule, and same-children presentation stay fixed.
 
 ### Representative states
 
@@ -220,6 +251,9 @@ text. Outside a table cell, inline code retains its authored backslashes.
 | Plugins omitted        | Released parser unions, AST, DOM, targets, heading IDs, and performance remain unchanged.                                                               | Omitted or empty list; both are one empty transform pipeline.                                   |
 | Plugins enabled        | Fixed syntax → immutable transform → render order, validated roots, readable fallback, and matching Markdown/Outline heading identity remain invariant. | Syntax, transforms, renderers, helper execution plans, plugin order, and live post-parse state. |
 | Native frontmatter     | A complete leading block is absent from rendered content and yields typed metadata; unfinished streaming input is withheld.                             | Metadata schema and values are caller-defined finite data.                                      |
+| Table fits             | Table carries `markdown-table`; no overflow indicator or viewer control renders; the scroll wrapper keeps its released semantics.                       | Column count, alignment, cell content, and density.                                             |
+| Table overflows        | One indicator with `markdown-table-overflow-indicator` renders inside the scroll region and stays at the inline-start edge at every scroll offset.      | Indicator wording and glyph; viewer control present only when `tableViewer` is not `'none'`.    |
+| Table expanded         | The viewer shows the same rendered children and scrolls on both axes; on close, focus returns to the trigger or the host gets the restoration callback. | Dialog or host viewer; viewer insets and chrome.                                                |
 
 ### Transformation and precedence order
 
@@ -254,6 +288,10 @@ text. Outside a table cell, inline code retains its authored backslashes.
   the same legacy or math-enabled node contract as the parser call.
 - Stable and semantically equal plugin lists reuse prepared syntax and transform plans. Only syntax enters parse identity; transform and renderer changes reuse parsed output. Zero-work and representative transforms remain within `spec:AST-036` FR21–FR23 budgets, including the plugin-authored and streaming paths.
 - Remark compatibility adapters, the conformance kit, and optional renderers stay outside Core bundles unless explicitly imported.
+- Table overflow detection is CSS-only: no `ResizeObserver`, scroll listener,
+  measured width, or per-table state exists for the indicator. A document of
+  many tables adds no observers. The Markdown-owned Dialog mounts only while a
+  viewer is open.
 
 ## Accessibility contract
 
@@ -265,27 +303,35 @@ labelled `role="math"` element). Markdown adds no wrapper, ARIA attributes, or
 HTML injection around renderer output. Plugin renderers likewise own their
 complete documented semantic pattern, while Core preserves its own document,
 heading, navigation, image, list, and table semantics. Transforms cannot erase
-required accessible meaning or make meaning color-only.
+required accessible meaning or make meaning color-only. The Table overflow
+indicator is text, not a control; the viewer trigger is one ordinary button in
+the indicator line, so the `<table>` gains no interactive ancestor and keeps its
+table semantics for assistive technology. A Markdown-owned viewer follows
+`component:Dialog` for modal focus and returns focus to the trigger on close.
 
 ## Design relationships
 
-| Anatomy or state | Design requirement                                                                 | Representation authority       | Hierarchy role | Component contract |
-| ---------------- | ---------------------------------------------------------------------------------- | ------------------------------ | -------------- | ------------------ |
-| Document         | Contains block or inline rendered Markdown content.                                | Current source and public docs | Supporting     | FR1, FR5           |
-| Heading          | Presents one parsed heading with its resolved level and optional generated ID.     | Current source and public docs | Prominent      | FR2, FR3, FR5      |
-| Paragraph        | Presents one prose block using the default composition-safe paragraph structure.   | Current source and public docs | Prominent      | FR2, FR3           |
-| List             | Presents ordered, unordered, or task-list items as one block.                      | Current source and public docs | Prominent      | FR2, FR5           |
-| Code block       | Presents fenced code and owns the outer spacing target on the default path.        | Current source and public docs | Prominent      | FR2, FR3, FR4      |
-| Blockquote       | Presents quoted block content on the default path.                                 | Current source and public docs | Prominent      | FR2, FR3           |
-| Table            | Presents parsed rows and columns in a keyboard-scrollable block wrapper.           | Current source and public docs | Prominent      | FR2                |
-| Divider          | Presents a horizontal separation between blocks.                                   | Current source and public docs | Supporting     | FR2, FR3           |
-| Image            | Presents a safe block image or the fallback for a rejected image URL.              | Current source and public docs | Prominent      | FR2, FR3           |
-| Math             | Delegates an explicitly enabled expression to the caller's renderer as inert text. | Component contract             | Supporting     | FR6–FR11           |
+| Anatomy or state         | Design requirement                                                                 | Representation authority       | Hierarchy role | Component contract |
+| ------------------------ | ---------------------------------------------------------------------------------- | ------------------------------ | -------------- | ------------------ |
+| Document                 | Contains block or inline rendered Markdown content.                                | Current source and public docs | Supporting     | FR1, FR5           |
+| Heading                  | Presents one parsed heading with its resolved level and optional generated ID.     | Current source and public docs | Prominent      | FR2, FR3, FR5      |
+| Paragraph                | Presents one prose block using the default composition-safe paragraph structure.   | Current source and public docs | Prominent      | FR2, FR3           |
+| List                     | Presents ordered, unordered, or task-list items as one block.                      | Current source and public docs | Prominent      | FR2, FR5           |
+| Code block               | Presents fenced code and owns the outer spacing target on the default path.        | Current source and public docs | Prominent      | FR2, FR3, FR4      |
+| Blockquote               | Presents quoted block content on the default path.                                 | Current source and public docs | Prominent      | FR2, FR3           |
+| Table                    | Presents parsed rows and columns in a keyboard-scrollable block wrapper.           | Current source and public docs | Prominent      | FR2, FR28, FR29    |
+| Table overflow indicator | Says columns continue past the edge and hosts the opt-in viewer trigger.           | Component contract             | Supporting     | FR26, FR27, FR29   |
+| Table viewer             | Presents the same rendered table whole, scrolling on both axes, when opted in.     | `component:Dialog` or host     | Supporting     | FR27               |
+| Divider                  | Presents a horizontal separation between blocks.                                   | Current source and public docs | Supporting     | FR2, FR3           |
+| Image                    | Presents a safe block image or the fallback for a rejected image URL.              | Current source and public docs | Prominent      | FR2, FR3           |
+| Math                     | Delegates an explicitly enabled expression to the caller's renderer as inert text. | Component contract             | Supporting     | FR6–FR11           |
 
 Custom renderers replace the existing default parts rather than becoming nested
 Markdown anatomy. The opt-in math renderer is also not default anatomy and gets no
 Markdown theme target or wrapper. Lists and Tables have no corresponding custom
-block renderer. The Document remains Markdown-owned in every display mode.
+block renderer; Table overflow is built into the default Table part instead of
+becoming an override slot. The Document remains Markdown-owned in every display
+mode.
 
 ### Theming anatomy
 
@@ -311,6 +357,16 @@ renderer replaces the default part and therefore replaces its local target. The
 `markdown-codeblock` spelling is a released compatibility anomaly: the current
 naming rule would produce `markdown-code-block`, but shipped targets are frozen
 and this change preserves the existing spelling exactly.
+
+The accepted Table overflow indicator target is `markdown-table-overflow-indicator`,
+spelled by the current naming rule. It is not yet in the map above because the
+map is validated against the current `Markdown.doc.mjs` inventory and
+`architecture:component-theming-surface` requires a new `themeProps()` target to
+enter its spec map, doc metadata, discovery, and validation together; the
+implementation PR that adds the `themeProps()` call adds the `Table overflow
+indicator` entry and its target in the same change. The Table viewer's
+Markdown-owned surface delegates to `component:Dialog` targets and gets no
+Markdown target; a host viewer is outside Markdown's theming surface.
 
 ## Family and system relationships
 
@@ -340,6 +396,10 @@ and this change preserves the existing spelling exactly.
   projection.
 - Nested Astryx primitives retain ownership of their own anatomy and targets;
   Markdown owns the outer block targets listed here.
+- `spec:AST-025` and `component:Table/DEC-1` own the Scroll region's effective
+  scroll axis, keyboard reachability, and containment. FR26 reads that region's
+  scroll state and adds no parallel overflow detector. `component:Dialog` owns
+  the modal focus lifecycle a `'dialog'` viewer relies on.
 
 ## Verification map
 
@@ -355,6 +415,7 @@ and this change preserves the existing spelling exactly.
 | FR23                   | parser, incremental, renderer, nesting, and public option tests               | mixed lists; escaped prose/code table cells, nested inline code, full/streaming parity; autolink omitted/enabled                       | A mixed list splits or loses state, an escaped table pipe changes cells or exposes its backslash, or autolink changes other syntax.                   |
 | FR24                   | `plugins/frontmatter.test.tsx`, Storybook, and server rendering               | complete, malformed, non-leading, LF/CRLF, unfinished streaming, full plugin stack                                                     | Metadata syntax renders after completion, unfinished syntax leaks while streaming, typing is lost, or later plugins stop composing.                   |
 | FR25                   | `parser.public.test.ts`, plugin SSR tests, and package export checks          | server/RSC parsing with plugins, synchronous SSR, suspending renderer streaming boundary                                               | A server import gains `use client`, plugin execution needs serialization, SSR loses fallback, or direct RSC rendering is misrepresented as supported. |
+| FR26–FR29              | `Markdown.test.tsx`, browser scroll-state test, Storybook, theme-target tests | Fitting table; overflow at start/middle/end offsets; `'none'`/`'dialog'`/callback viewers; long unbroken token; no scroll-state query  | Indicator shows while fitting or hides at an edge, trigger wraps the table, viewer re-parses, focus is lost, a column collapses, or semantics change. |
 | Public syntax/types    | `Markdown.public.test.ts`, core typecheck, and `Markdown.doc.mjs`             | Legacy exhaustive switches, math opt-ins, inferred extension-node unions                                                               | A released union widens, an enabled union loses nodes, or docs drift from declarations.                                                               |
 | Navigation contract    | `parser.test.ts`, `Markdown.test.tsx`, and `Markdown.renderBoundary.test.tsx` | Parsed and rendered links, including transformed built-in links; accepted ordinary schemes; rejected destinations; links versus images | A blocked destination reaches navigation or a custom link renderer, or resource policy narrows accepted navigation.                                   |
 | Security/accessibility | `parser.test.ts`, `Markdown.test.tsx`, and renderer guidance                  | Inert expression strings and renderer-owned semantics                                                                                  | Astryx executes math as HTML or silently claims renderer-owned accessibility.                                                                         |
@@ -439,10 +500,49 @@ frontmatter format. During streaming, incomplete frontmatter is withheld so raw
 metadata never flashes as content; once closed, later plugins can consume the
 metadata and the remaining document normally.
 
+### DEC-6 — Table overflow is built in, declared from scroll state, and never wraps the table
+
+**Reference:** `component:Markdown/DEC-6`
+**Decider:** `cixzhang`, `2026-09-25`
+
+A table cut at its container's edge looks exactly like a table that ends there:
+overlay scrollbars paint nothing until the reader is already scrolling, so the
+columns past the edge are reachable but unannounced. Markdown owns the fix rather
+than opening a `components.table` slot. A slot would move the whole default Table
+part — semantics, targets, escaping, alignment, streaming parity — to every host
+that only wanted an overflow cue, and the cue is derivable from the scroll region
+itself, so it fails API admission as a caller-owned concept. Overflow is read in
+CSS from the scroll region's scroll state, which is why the indicator lives
+inside that region and sticks to its inline-start edge: the query styles only
+descendants of the scroller, and anything unsticky would slide away with the
+table it describes. Querying either inline edge keeps the indicator up when the
+reader reaches the end, where it is still true.
+
+The way into the whole table is one button in a plain sibling line, not an
+interactive ancestor around `<table>`. A table is text a reader selects cell by
+cell and links they mean to follow, and a clickable wrapper both intercepts
+those and flattens the table for a screen reader; a sibling leaves selection,
+link activation, keyboard order, and table semantics untouched by construction
+rather than by guarding. Only the viewer is opt-in, because whether a host has a
+viewer surface and where it sits in the host's layer stack is host-owned;
+`'dialog'` gives a host without one a Markdown-owned default. Cells keep an
+honest min-content (`overflow-wrap: break-word`, no `anywhere` or
+`word-break: break-word`), because collapsing a long token to a one-character
+column trades one overflow for a worse one.
+
+Rejected: a `components.table` or `components.list` override slot; a
+`ResizeObserver` or measured-width detector; an interactive wrapper or
+whole-canvas click target around the table; a viewer that re-serializes and
+re-parses the table; a viewer control that is on by default.
+
 ## Open questions
 
 - **OQ1 — Which focused tests should pin target absence for the five remaining
   custom block replacement paths?** (`checkable`)
+- **OQ2 — Which element is the effective scroll region for a Markdown table
+  today: Markdown's `markdown-table` wrapper or Table's `table-scroll-wrapper`
+  inside it?** Both carry inline overflow; FR26 binds to whichever actually
+  scrolls, and the implementation must keep exactly one. (`checkable`)
 
 ## Content boundary
 
