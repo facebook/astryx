@@ -3,15 +3,15 @@
   "repository": "facebook/astryx",
   "pullRequest": {
     "number": 6655,
-    "headSha": "9a096f4a9f84312e28cdf3d066b0ff96924ddaac",
+    "headSha": "96113092a9bba8e0858b9426e98849cbbefe7f62",
     "headRef": "night-watch-component-audit/ChatSystemMessage/2026-09-26",
     "headRepository": "facebook/astryx",
     "headRepositoryId": "1131202426"
   },
   "sourceRun": {
-    "id": 36250032452,
+    "id": 36251718216,
     "attempt": 1,
-    "conclusion": "failure"
+    "conclusion": "success"
   },
   "targets": {
     "storybook": {
@@ -20,9 +20,9 @@
       "indexSha256": null
     },
     "sandbox": {
-      "available": false,
+      "available": true,
       "path": "pr/6655/sandbox/",
-      "indexSha256": null
+      "indexSha256": "470b0dc408afc3a0f8f7d864235faced0a236fb5836855e2762e8ece52060e33"
     }
   }
 }
