@@ -58,11 +58,18 @@ jobs:
             --iterations "${{ github.event.inputs.iterations }}" \
             $PROMPT_ARG
 
+      # The iteration manifests carry each iteration's target, which the axe
+      # scan needs to pick that iteration's own renders out of the shared
+      # previews directory; the result code lets it stamp each entry with a
+      # hash of the code it rendered, so scoring can spot a stale sidecar
       - name: Upload preview HTML
         uses: actions/upload-artifact@v7
         with:
           name: preview-html
-          path: internal/vibe-tests/results/*/previews/
+          path: |
+            internal/vibe-tests/results/*/previews/
+            internal/vibe-tests/results/*/manifest.json
+            internal/vibe-tests/results/*/results/*.tsx
           retention-days: 90
 
   screenshot:
@@ -92,6 +99,19 @@ jobs:
           cd internal/vibe-tests
           npx tsx src/screenshot-previews.ts \
             --iterations "${{ github.event.inputs.iterations }}"
+
+      - name: Axe-scan all previews
+        run: |
+          cd internal/vibe-tests
+          npx tsx src/axe-previews.ts \
+            --iterations "${{ github.event.inputs.iterations }}"
+
+      - name: Upload axe results
+        uses: actions/upload-artifact@v7
+        with:
+          name: axe-results
+          path: internal/vibe-tests/results/*/axe-results.json
+          retention-days: 90
 
       - name: Upload screenshots
         uses: actions/upload-artifact@v7
