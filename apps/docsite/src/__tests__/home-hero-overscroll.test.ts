@@ -194,18 +194,51 @@ function simpleSelectors(compound: string): string[] {
 /** `:is(...)` or `:where(...)`, capturing the selector list inside. */
 const WRAPPER = /^:(?:is|where)\((.*)\)$/i;
 
+/** A complex selector's compounds and combinators, alternating, subject first. */
+function chain(selector: string): string[] {
+  return scanTopLevel(selector.trim(), /[\s>+~]/).reverse();
+}
+
+type TopElement = 'html' | 'head' | 'body';
+
 /**
- * Whether a compound selector can match the root element: it names `html` or
- * `:root` (alone, composed as in `html.dark`, or inside `:is()` / `:where()`),
- * or it is a `*`.
+ * The top of every page: html holds head, then body. Each element lists the
+ * simple selectors that name it and where a combinator can walk from it. The
+ * tree is that small, so an ancestor is the parent and an earlier sibling is
+ * the previous one: ` ` walks like `>`, and `~` like `+`.
  */
-function canBeRoot(compound: string): boolean {
-  return simpleSelectors(compound).some(simple => {
+const PAGE_TOP: Record<
+  TopElement,
+  {names: RegExp; parent?: TopElement; previous?: TopElement}
+> = {
+  html: {names: /^(?:html|:root|\*)$/i},
+  head: {names: /^(?:head|\*)$/i, parent: 'html'},
+  body: {names: /^(?:body|\*)$/i, parent: 'html', previous: 'head'},
+};
+
+/**
+ * Whether a complex selector, as `chain` splits it, can match `element`: each
+ * compound names the element it lands on (alone, composed as in `html.dark`,
+ * or inside `:is()` / `:where()`), walking to the parent at ` ` or `>` and
+ * to the previous sibling at `+` or `~`.
+ */
+function reaches(
+  [compound, combinator, ...rest]: string[],
+  element: TopElement,
+): boolean {
+  const named = simpleSelectors(compound).some(simple => {
     const wrapped = WRAPPER.exec(simple);
     return wrapped
-      ? splitTopLevel(wrapped[1], /,/).some(arg => canBeRoot(arg.trim()))
-      : /^(?:html|:root|\*)$/i.test(simple);
+      ? splitTopLevel(wrapped[1], /,/).some(arg => reaches(chain(arg), element))
+      : PAGE_TOP[element].names.test(simple);
   });
+  if (!named || combinator === undefined) {
+    return named;
+  }
+  const next = /[+~]/.test(combinator)
+    ? PAGE_TOP[element].previous
+    : PAGE_TOP[element].parent;
+  return next !== undefined && reaches(rest, next);
 }
 
 /**
@@ -215,31 +248,21 @@ function canBeRoot(compound: string): boolean {
  * propagate when the root's is `auto`. So a selector is page-wide when any
  * simple selector of its subject names one of them (`html[class~='dark']`,
  * `:is(html, body):hover`), or is a `*` that can land on body: on its own,
- * or as a child or descendant of a first compound that can be the root
- * (`html *`, `:root > *`, `* > *`). `.dialog *` only reaches nested
- * elements. `:is()` and `:where()` are looked through; `:not()` and `:has()`
- * only filter, so they are not.
+ * under the root (`html *`, `:root > *`, `* > *`) or after head (`* + *`,
+ * `head ~ *`, `:root > * + *`). `.dialog *` and `.stack > * + *` only reach
+ * nested elements, and html has no siblings. `:is()` and `:where()` are
+ * looked through; `:not()` and `:has()` only filter, so they are not.
  */
 function isPageWide(selectorList: string): boolean {
   return splitTopLevel(selectorList, /,/).some(selector => {
-    // Compounds and combinators alternate, so reversed: subject first.
-    const [subject, combinator, parent, ...ancestors] = scanTopLevel(
-      selector.trim(),
-      /[\s>+~]/,
-    ).reverse();
-    return simpleSelectors(subject).some(simple => {
+    const compounds = chain(selector);
+    return simpleSelectors(compounds[0]).some(simple => {
       const wrapped = WRAPPER.exec(simple);
       if (wrapped) {
         return isPageWide(wrapped[1]);
       }
       if (simple === '*') {
-        // body's only ancestor is the root, which has none of its own.
-        return (
-          parent === undefined ||
-          (ancestors.length === 0 &&
-            /^\s*>?\s*$/.test(combinator) &&
-            canBeRoot(parent))
-        );
+        return reaches(compounds, 'body');
       }
       return /^(?:html|body|:root)$/i.test(simple);
     });
@@ -388,11 +411,26 @@ body .dialog * {
 .dialog * * {
   overscroll-behavior: contain;
 }
+.stack > * + * {
+  overscroll-behavior: contain;
+}
 `;
     expect(pageWideOverscrollSuppressions(css)).toEqual([]);
   });
 
-  it('reports * on its own or directly under the root, where it reaches body', () => {
+  it('allows a * after html, which has no siblings', () => {
+    const css = `
+html ~ * {
+  overscroll-behavior: none;
+}
+html + * {
+  overscroll-behavior: none;
+}
+`;
+    expect(pageWideOverscrollSuppressions(css)).toEqual([]);
+  });
+
+  it('reports a * that reaches body: on its own, under the root or after head', () => {
     const css = `
 * {
   overscroll-behavior: none;
@@ -409,6 +447,18 @@ html * {
 * > * {
   overscroll-behavior: none;
 }
+* + * {
+  overscroll-behavior: none;
+}
+* ~ * {
+  overscroll-behavior: none;
+}
+head + * {
+  overscroll-behavior: none;
+}
+:root > * + * {
+  overscroll-behavior: none;
+}
 `;
     expect(pageWideOverscrollSuppressions(css)).toEqual([
       '* { overscroll-behavior: none }',
@@ -416,6 +466,10 @@ html * {
       'html * { overscroll-behavior: none }',
       ':root > * { overscroll-behavior: none }',
       '* > * { overscroll-behavior: none }',
+      '* + * { overscroll-behavior: none }',
+      '* ~ * { overscroll-behavior: none }',
+      'head + * { overscroll-behavior: none }',
+      ':root > * + * { overscroll-behavior: none }',
     ]);
   });
 
