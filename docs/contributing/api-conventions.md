@@ -201,17 +201,29 @@ state that order in its contract and tests.
 ## DOM props, styling, and refs
 
 Extend [`BaseProps`](../../packages/core/src/BaseProps.ts) only when the component
-owns a stable DOM element. A component that only coordinates children or returns
-multiple unrelated roots should expose the smaller contract it actually owns.
+owns a stable public DOM target. Most components have one contract element. Inputs
+and controls may have two functional targets when they render a complete field
+presentation around a distinct primary semantic control or group.
 
-For a DOM-owning component:
+For a component with one DOM target:
 
 - type `BaseProps` with the contract element and accept `ref` as a React 19 prop;
 - remove native names that collide with component concepts by using `Omit`;
-- forward neutral `data-*`, ARIA, DOM, and event props to the contract element;
+- forward neutral `data-*`, ARIA, DOM, event, and styling props to the contract
+  element;
 - keep component-owned role, accessibility, and behavior props from being
   overwritten; and
 - merge `xstyle`, `className`, and `style` instead of choosing one.
+
+For an input or control with two functional targets:
+
+- route `xstyle`, `className`, `style`, a dedicated `width`, and field-wide
+  structural props (`hidden`, `inert`, `dir`, and `aria-hidden`) to the complete
+  field presentation; a containing layout may still own inline size;
+- route `ref`, `data-testid`, remaining neutral `data-*`, ARIA, DOM, and event props
+  to the primary semantic control or group; and
+- expose a smaller explicit per-target API instead of broad `BaseProps` when the
+  component has multiple peer controls or no stable primary semantic target.
 
 ```tsx
 export interface PanelProps extends BaseProps<HTMLDivElement> {
@@ -243,9 +255,10 @@ export function Panel({
 }
 ```
 
-Destructure styling and owned handlers before spreading `rest`. Use
-`composeEventHandlers` when both sides need the same event. Set component-owned
-contract props after `rest` so spread order cannot change semantics.
+Destructure styling, target-specific props, and owned handlers before spreading
+remaining props onto their documented target. Use `composeEventHandlers` when both
+sides need the same event. Set component-owned contract props after consumer props
+so spread order cannot change semantics.
 
 ## Open visual vocabularies and closed axes
 
@@ -428,10 +441,11 @@ out of architecture records.
 - An eligible theme-extensible visual value is a closed union, an axis opens
   without a safe theme-independent fallback, or a behavioral, structural,
   placement, directional, or state-machine axis is opened to augmentation.
-- `BaseProps` is applied to a component without one stable contract element, or
-  accepted DOM props never reach that element.
-- `xstyle`, `className`, `style`, a ref, or an event handler is dropped or
-  clobbered by spread order.
+- `BaseProps` is applied without a stable target map, accepted props never reach
+  their documented functional target, or a multi-control component routes broad
+  props to an arbitrary wrapper.
+- `xstyle`, `className`, `style`, a ref, test ID, or an event handler is dropped,
+  clobbered, or attached to the wrong target.
 - A parent wraps slot content or mirrors props that belong to the slotted child.
 - A proposal invents a nested `theme.components.button.variants` layer instead of
   using the current component target and style-key contract.

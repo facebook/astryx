@@ -5,7 +5,7 @@
 /**
  * @file RadioList.tsx
  * @input Uses React useId, useCallback, useRef, createContext, ReactNode, Field, InputStatus
- * @output Exports RadioList component, RadioListProps, RadioListContext
+ * @output Exports RadioList component, RadioListProps with owned group focus/disabled semantics, RadioListContext
  * @position Core implementation; consumed by index.ts, tested by RadioList.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -30,7 +30,9 @@ import {Field} from '../Field/Field';
 import type {InputStatus} from '../Field/types';
 import {useTooltip} from '../Tooltip';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
-import {mergeProps} from '../utils';
+import {useMergedRefs} from '../hooks/useMergedRefs';
+import {mergeProps, composeEventHandlers} from '../utils';
+import {joinAriaIDs} from '../utils/inputAria';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
@@ -77,9 +79,12 @@ const styles = stylex.create({
 });
 
 export interface RadioListProps extends Omit<
-  BaseProps<HTMLElement>,
-  'onChange'
+  BaseProps<HTMLDivElement>,
+  'onChange' | 'tabIndex' | 'aria-disabled'
 > {
+  tabIndex?: never;
+  'aria-disabled'?: never;
+  /** Ref forwarded to the semantic radiogroup element. */
   ref?: React.Ref<HTMLDivElement>;
   /**
    * Label text for the radio group (always rendered for accessibility).
@@ -154,8 +159,8 @@ export interface RadioListProps extends Omit<
   size?: RadioListSize;
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
-   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
-   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   * (e.g. `'100%'`). Sizes the whole field so its label, control, and status stay
+   * aligned; use `xstyle`/`className`/`style` for broader presentation changes.
    */
   width?: SizeValue;
   /**
@@ -163,7 +168,7 @@ export interface RadioListProps extends Omit<
    */
   labelTooltip?: string;
   /**
-   * Test ID for the outer container.
+   * Test ID for the radiogroup element.
    */
   'data-testid'?: string;
   /**
@@ -206,9 +211,19 @@ export function RadioList({
   xstyle,
   className,
   style,
+  hidden,
+  inert,
+  dir,
+  'aria-hidden': ariaHidden,
+  tabIndex: _tabIndex,
+  'aria-disabled': _ariaDisabled,
   'data-testid': dataTestId,
   htmlName,
   children,
+  onFocus: onFocusProp,
+  'aria-labelledby': ariaLabelledByProp,
+  'aria-describedby': ariaDescribedByProp,
+  ...restProps
 }: RadioListProps) {
   const autoName = useId();
   const name = htmlName ?? autoName;
@@ -239,6 +254,11 @@ export function RadioList({
     focusTrigger: 'always',
     isEnabled: showsDisabledMessage,
   });
+  const mergedGroupRef = useMergedRefs(
+    ref,
+    groupRef,
+    disabledMessageTooltip.ref,
+  );
 
   const contextValue = useMemo<RadioListContextValue>(
     () => ({
@@ -347,8 +367,6 @@ export function RadioList({
 
   return (
     <Field
-      ref={ref}
-      data-testid={dataTestId}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
@@ -370,30 +388,31 @@ export function RadioList({
       }
       labelTooltip={labelTooltip}
       statusVariant="detached"
+      hidden={hidden}
+      inert={inert}
+      dir={dir}
+      aria-hidden={ariaHidden}
       width={width}
       xstyle={xstyle}
       className={className}
       style={style}>
       <div
-        ref={el => {
-          groupRef.current = el;
-          // Anchor + hover/focus listeners for the disabled-message tooltip.
-          // Handlers are gated internally by isEnabled, so attaching
-          // unconditionally is safe.
-          disabledMessageTooltip.ref(el);
-        }}
+        {...restProps}
+        ref={mergedGroupRef}
+        data-testid={dataTestId}
         role="radiogroup"
-        aria-labelledby={labelID}
-        onFocus={handleFocus}
-        aria-describedby={
-          [
-            description ? descriptionID : null,
-            status?.message ? statusMessageID : null,
-            showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
-          ]
-            .filter(Boolean)
-            .join(' ') || undefined
+        aria-labelledby={
+          // Caller ids are additive, ahead of the component-owned label id.
+          joinAriaIDs(ariaLabelledByProp, labelID)
         }
+        onFocus={composeEventHandlers(handleFocus, onFocusProp)}
+        aria-describedby={joinAriaIDs(
+          // Caller ids are additive, ahead of the component-owned ones.
+          ariaDescribedByProp,
+          description ? descriptionID : null,
+          status?.message ? statusMessageID : null,
+          showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+        )}
         aria-invalid={status?.type === 'error' ? true : undefined}
         aria-required={isEffectivelyRequired || undefined}
         {...mergeProps(

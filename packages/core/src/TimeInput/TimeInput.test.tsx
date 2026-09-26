@@ -10,13 +10,19 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {act, render, screen, fireEvent, waitFor} from '@testing-library/react';
+import * as stylex from '@stylexjs/stylex';
 import userEvent from '@testing-library/user-event';
 import {TimeInput} from './TimeInput';
 import {InputGroup, InputGroupText} from '../InputGroup';
+import {FormLayout} from '../FormLayout';
 import {InternationalizationProvider} from '../i18n';
 import type {ISOTimeString} from '../utils';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+
+const testStyles = stylex.create({
+  field: {paddingTop: 7},
+});
 
 function politeRegion(): HTMLElement | null {
   return document.querySelector('[data-astryx-live-region="polite"]');
@@ -695,5 +701,333 @@ describe('TimeInput disabled theme state', () => {
     const {container} = render(<TimeInput label="Time" onChange={() => {}} />);
     const root = container.querySelector('.astryx-time-input');
     expect(root).not.toHaveAttribute('data-disabled');
+  });
+});
+
+describe('TimeInput pass-through props', () => {
+  it('preserves the typed input role and visible label over runtime collisions', () => {
+    render(
+      <TimeInput
+        label="Time"
+        nativePicker="never"
+        role={'button' as never}
+        aria-label={'Override' as never}
+      />,
+    );
+    const input = screen.getByRole('textbox', {name: 'Time'});
+    expect(input).not.toHaveAttribute('role');
+    expect(input).not.toHaveAttribute('aria-label');
+  });
+
+  it('routes styling exclusively to the painted control in horizontal-label layouts', () => {
+    render(
+      <FormLayout direction="horizontal-labels">
+        <TimeInput
+          label="Time"
+          className="custom-control"
+          style={{marginTop: 4}}
+          xstyle={testStyles.field}
+          hidden
+          data-testid="time-control"
+        />
+      </FormLayout>,
+    );
+    const input = screen.getByTestId('time-control');
+    const control = input.closest('.astryx-time-input')!;
+    const field = input.closest('.astryx-field')!;
+    expect(control).toHaveClass('custom-control');
+    expect(control).toHaveStyle({marginTop: '4px'});
+    expect(getComputedStyle(control).paddingTop).toBe('7px');
+    expect(control).not.toHaveAttribute('hidden');
+    expect(field).not.toHaveClass('custom-control');
+    expect(field).not.toHaveStyle({marginTop: '4px'});
+    expect(getComputedStyle(field).paddingTop).not.toBe('7px');
+    expect(field).toHaveAttribute('hidden');
+  });
+
+  it.each([
+    {hidden: true},
+    {inert: true},
+    {'aria-hidden': true},
+    {'aria-hidden': 'true' as const},
+  ])('suppresses hidden grouped status writes for %j', visibility => {
+    vi.useFakeTimers();
+    try {
+      render(
+        <InputGroup label="Schedule">
+          <TimeInput
+            label="Time"
+            status={{type: 'error', message: 'Required'}}
+            {...visibility}
+          />
+        </InputGroup>,
+      );
+      act(() => {
+        vi.advanceTimersByTime(50);
+      });
+      expect(assertiveRegion()?.textContent ?? '').toBe('');
+      expect(politeRegion()?.textContent ?? '').toBe('');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('announces grouped status with aria-hidden="false"', async () => {
+    render(
+      <InputGroup label="Schedule">
+        <TimeInput
+          label="Time"
+          aria-hidden="false"
+          status={{type: 'warning', message: 'Check time'}}
+        />
+      </InputGroup>,
+    );
+    await waitFor(() => expect(politeRegion()).toHaveTextContent('Check time'));
+  });
+
+  it.each(['error', 'warning'] as const)(
+    'clears queued and current grouped %s status on its last announced channel',
+    type => {
+      vi.useFakeTimers();
+      try {
+        const grouped = (hidden: boolean) => (
+          <InputGroup label="Schedule">
+            <TimeInput
+              label="Other"
+              status={{
+                type: type === 'error' ? 'warning' : 'error',
+                message: 'Other status',
+              }}
+            />
+            <TimeInput
+              label="Time"
+              hidden={hidden}
+              status={{
+                type: hidden ? (type === 'error' ? 'warning' : 'error') : type,
+                message: 'Check time',
+              }}
+            />
+          </InputGroup>
+        );
+        const {rerender} = render(grouped(false));
+        const region = type === 'error' ? assertiveRegion : politeRegion;
+        const otherRegion = type === 'error' ? politeRegion : assertiveRegion;
+        const write = vi.spyOn(region()!, 'textContent', 'set');
+        rerender(grouped(true));
+        act(() => {
+          vi.advanceTimersByTime(50);
+        });
+        expect(region()?.textContent).toBe('');
+        expect(write).not.toHaveBeenCalledWith('Check time');
+        expect(otherRegion()).toHaveTextContent('Other status');
+        rerender(grouped(false));
+        act(() => {
+          vi.advanceTimersByTime(50);
+        });
+        expect(region()).toHaveTextContent('Check time');
+        rerender(grouped(true));
+        expect(region()?.textContent).toBe('');
+        write.mockRestore();
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
+
+  it('forwards pass-through props to the input element', () => {
+    render(
+      <TimeInput
+        label="Time"
+        onChange={() => {}}
+        data-tracking="meeting-time"
+        data-analytics-id="start-time"
+      />,
+    );
+    const input = screen.getByLabelText('Time');
+    expect(input).toHaveAttribute('data-tracking', 'meeting-time');
+    expect(input).toHaveAttribute('data-analytics-id', 'start-time');
+  });
+
+  it('routes semantic props to the input and field-wide props to Field', () => {
+    render(
+      <TimeInput
+        label="Time"
+        onChange={() => {}}
+        className="custom-field"
+        style={{marginTop: 4}}
+        xstyle={testStyles.field}
+        data-testid="time-control"
+        hidden
+        inert
+        dir="rtl"
+        aria-hidden
+      />,
+    );
+
+    const input = screen.getByTestId('time-control');
+    const field = input.closest('.custom-field');
+    expect(field).not.toBeNull();
+    expect(field).toHaveStyle({marginTop: '4px'});
+    expect(getComputedStyle(field!).paddingTop).toBe('7px');
+    expect(field).toHaveAttribute('hidden');
+    expect(field).toHaveAttribute('inert');
+    expect(field).toHaveAttribute('dir', 'rtl');
+    expect(field).toHaveAttribute('aria-hidden', 'true');
+    expect(input).not.toHaveAttribute('hidden');
+    expect(input).not.toHaveAttribute('inert');
+    expect(input).not.toHaveAttribute('dir');
+    expect(input).not.toHaveAttribute('aria-hidden');
+    expect(getComputedStyle(input).paddingTop).not.toBe('7px');
+  });
+
+  it('keeps field-wide props on the control wrapper inside InputGroup', () => {
+    render(
+      <InputGroup label="Schedule">
+        <TimeInput
+          label="Time"
+          onChange={() => {}}
+          className="custom-field"
+          style={{marginTop: 4}}
+          xstyle={testStyles.field}
+          data-testid="time-control"
+          hidden
+          dir="rtl"
+          aria-hidden
+        />
+      </InputGroup>,
+    );
+
+    const input = screen.getByTestId('time-control');
+    const wrapper = input.closest('.custom-field');
+    expect(wrapper).not.toBeNull();
+    expect(wrapper).toHaveStyle({marginTop: '4px'});
+    expect(getComputedStyle(wrapper!).paddingTop).toBe('7px');
+    expect(wrapper).toHaveAttribute('hidden');
+    expect(wrapper).toHaveAttribute('dir', 'rtl');
+    expect(wrapper).toHaveAttribute('aria-hidden', 'true');
+    expect(input).not.toHaveClass('custom-field');
+    expect(getComputedStyle(input).paddingTop).not.toBe('7px');
+  });
+
+  it('runs a consumer onKeyDown for keys the component does not consume', () => {
+    const onKeyDown = vi.fn();
+    render(
+      <TimeInput label="Time" onChange={() => {}} onKeyDown={onKeyDown} />,
+    );
+    fireEvent.keyDown(screen.getByLabelText('Time'), {key: '1'});
+    expect(onKeyDown).toHaveBeenCalledOnce();
+  });
+
+  it('keeps arrow stepping when a consumer onKeyDown cancels', () => {
+    const onChange = vi.fn();
+    const onKeyDown = vi.fn((e: React.KeyboardEvent) => {
+      e.preventDefault();
+    });
+    render(
+      <TimeInput
+        label="Time"
+        value={'14:30' as ISOTimeString}
+        onChange={onChange}
+        onKeyDown={onKeyDown}
+      />,
+    );
+    fireEvent.keyDown(screen.getByLabelText('Time'), {key: 'ArrowUp'});
+    expect(onChange).toHaveBeenCalledWith('14:31');
+    // Stepping consumes the arrow (preventDefault), so the consumer handler
+    // does not observe it — component-first composition by design.
+    expect(onKeyDown).not.toHaveBeenCalled();
+  });
+
+  it('honors a caller id and composes a caller aria-describedby', () => {
+    render(
+      <>
+        <span id="consumer-help">External help</span>
+        <TimeInput
+          label="Time"
+          onChange={() => {}}
+          id="meeting-time"
+          aria-describedby="consumer-help"
+          description="Built-in help"
+        />
+      </>,
+    );
+    const input = screen.getByLabelText('Time');
+    expect(input).toHaveAttribute('id', 'meeting-time');
+    const ids = input.getAttribute('aria-describedby')?.split(/\s+/) ?? [];
+    expect(ids).toContain('consumer-help');
+    expect(ids.length).toBeGreaterThan(1);
+  });
+
+  it('composes a caller aria-labelledby ahead of any owned label ids', () => {
+    render(
+      <>
+        <span id="consumer-label">External label</span>
+        <TimeInput
+          label="Time"
+          onChange={() => {}}
+          aria-labelledby="consumer-label"
+        />
+      </>,
+    );
+    const input = screen.getByRole('textbox');
+    const ids = input.getAttribute('aria-labelledby')?.split(/\s+/) ?? [];
+    expect(ids).toContain('consumer-label');
+    // The visible label stays in the accessible name alongside the caller's.
+    expect(input).toHaveAccessibleName('External label Time');
+  });
+
+  it('keeps blur formatting when a consumer onBlur cancels', () => {
+    const onChange = vi.fn();
+    render(
+      <TimeInput
+        label="Time"
+        onChange={onChange}
+        onBlur={e => e.preventDefault()}
+      />,
+    );
+    const input = screen.getByLabelText('Time');
+    fireEvent.focus(input);
+    fireEvent.change(input, {target: {value: '2:30 PM'}});
+    fireEvent.blur(input);
+    // The owned blur handler still parses and commits despite the cancel.
+    expect(onChange).toHaveBeenCalledWith('14:30');
+  });
+
+  it('composes a caller aria-labelledby with the group label ids in InputGroup', () => {
+    render(
+      <>
+        <span id="consumer-label">External label</span>
+        <InputGroup label="Meeting">
+          <TimeInput
+            label="Time"
+            onChange={() => {}}
+            aria-labelledby="consumer-label"
+          />
+        </InputGroup>
+      </>,
+    );
+    const input = screen.getByRole('textbox');
+    const ids = input.getAttribute('aria-labelledby')?.split(/\s+/) ?? [];
+    expect(ids).toContain('consumer-label');
+    // The owned group + input label ids survive alongside the caller's.
+    expect(ids.length).toBeGreaterThan(1);
+  });
+
+  it('runs a consumer onFocus and onBlur alongside the built-in handlers', () => {
+    const onFocus = vi.fn();
+    const onBlur = vi.fn();
+    render(
+      <TimeInput
+        label="Time"
+        onChange={() => {}}
+        onFocus={onFocus}
+        onBlur={onBlur}
+      />,
+    );
+    const input = screen.getByLabelText('Time');
+    fireEvent.focus(input);
+    expect(onFocus).toHaveBeenCalledOnce();
+    fireEvent.blur(input);
+    expect(onBlur).toHaveBeenCalledOnce();
   });
 });

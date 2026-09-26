@@ -207,7 +207,7 @@ export const docs = {
       name: 'increment',
       type: 'number',
       description:
-        'Number of minutes to add or subtract when the user presses the up or down arrow key.',
+        'Number of minutes to add or subtract when the user presses the up or down arrow key. Stepping consumes the keydown, so a pass-through onKeyDown does not fire for those arrows on the typed surface.',
       default: '1',
     },
     {
@@ -259,7 +259,7 @@ export const docs = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
+        'StyleX styles for the complete standalone field presentation. Inside InputGroup or horizontal-label FormLayout, styles the painted control wrapper because the containing layout owns the surrounding field. Must be a stylex.create() value, not an inline style object like style={{}}.',
     },
   ],
   theming: {
@@ -419,7 +419,7 @@ export const docsZh = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX 样式，用于布局自定义（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
+        '用于完整独立字段呈现的 StyleX 样式。在 InputGroup 或横向标签 FormLayout 中，由于包含布局拥有外围字段，样式应用于可见控件包装器。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
     },
   ],
   theming: {
@@ -592,6 +592,6 @@ export const docsDense = {
       'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     labelTooltip: 'Tooltip as info icon at label row end.',
     xstyle:
-      'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',
+      'Styles complete standalone field; inside InputGroup or horizontal-label FormLayout, styles painted control wrapper. Must be stylex.create() value, not inline style.',
   },
 };

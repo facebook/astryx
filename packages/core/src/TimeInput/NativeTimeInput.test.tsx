@@ -206,6 +206,97 @@ describe('TimeInput nativePicker', () => {
     expect(input.getAttribute('aria-describedby')).toContain(tooltip?.id);
   });
 
+  it('forwards pass-through props and composes handlers on the native input', () => {
+    stubPointer(true);
+    const onFocus = vi.fn();
+    const onBlur = vi.fn();
+    render(
+      <TimeInput
+        label="Start time"
+        onChange={() => {}}
+        data-tracking="meeting-time"
+        onFocus={onFocus}
+        onBlur={onBlur}
+      />,
+    );
+
+    const input = getNativeTimeInput();
+    expect(input).toHaveAttribute('data-tracking', 'meeting-time');
+    fireEvent.focus(input);
+    expect(onFocus).toHaveBeenCalledOnce();
+    fireEvent.blur(input);
+    expect(onBlur).toHaveBeenCalledOnce();
+  });
+
+  it('keeps blur reconciliation when a consumer onBlur cancels', () => {
+    stubPointer(true);
+    const onChange = vi.fn();
+    render(
+      <TimeInput
+        label="Start time"
+        value={'09:00' as ISOTimeString}
+        onChange={onChange}
+        onBlur={e => e.preventDefault()}
+      />,
+    );
+    const input = getNativeTimeInput();
+    // Simulate a DOM edit the synthetic change system missed; the owned blur
+    // handler must still reconcile and commit it despite the consumer cancel.
+    fireEvent.focus(input);
+    input.value = '10:15';
+    fireEvent.blur(input);
+    expect(onChange).toHaveBeenCalledExactlyOnceWith('10:15');
+  });
+
+  it('honors caller id and description while preserving the native role and label', () => {
+    stubPointer(true);
+    render(
+      <>
+        <span id="consumer-help">External help</span>
+        <TimeInput
+          label="Start time"
+          onChange={() => {}}
+          id="meeting-time"
+          aria-describedby="consumer-help"
+          role={'button' as never}
+          aria-label={'Meeting start' as never}
+          description="Built-in help"
+        />
+      </>,
+    );
+    const input = getNativeTimeInput();
+    expect(input).toHaveAttribute('id', 'meeting-time');
+    expect(input).not.toHaveAttribute('role');
+    expect(input).not.toHaveAttribute('aria-label');
+    expect(input).toHaveAccessibleName('Start time');
+    const ids = input.getAttribute('aria-describedby')?.split(/\s+/) ?? [];
+    expect(ids).toContain('consumer-help');
+    expect(ids.length).toBeGreaterThan(1);
+  });
+
+  it('composes a caller aria-labelledby and runs consumer onKeyDown on the native input', () => {
+    stubPointer(true);
+    const onKeyDown = vi.fn();
+    render(
+      <>
+        <span id="consumer-label">External label</span>
+        <TimeInput
+          label="Start time"
+          onChange={() => {}}
+          aria-labelledby="consumer-label"
+          onKeyDown={onKeyDown}
+        />
+      </>,
+    );
+    const input = getNativeTimeInput();
+    const ids = input.getAttribute('aria-labelledby')?.split(/\s+/) ?? [];
+    expect(ids).toContain('consumer-label');
+    // The visible label stays in the accessible name alongside the caller's.
+    expect(input).toHaveAccessibleName('External label Start time');
+    fireEvent.keyDown(input, {key: 'a'});
+    expect(onKeyDown).toHaveBeenCalledOnce();
+  });
+
   it('forwards refs and autofocus to the native input', () => {
     stubPointer(true);
     const ref = vi.fn();
