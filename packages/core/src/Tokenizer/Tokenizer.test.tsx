@@ -1440,6 +1440,181 @@ describe('Tokenizer', () => {
         type: 'remove',
       });
     });
+
+    it('takes the group size over an explicit mismatched size', () => {
+      render(
+        <InputGroup label="Recipients" size="sm">
+          <InputGroupText>To</InputGroupText>
+          <Tokenizer
+            label="People"
+            isLabelHidden
+            size="lg"
+            searchSource={userSource}
+            value={[users[0]]}
+            onChange={() => {}}
+          />
+        </InputGroup>,
+      );
+
+      // The group row has a fixed `sm` height; an `lg` control or token would
+      // escape it, so the group's size governs the whole grouped Tokenizer.
+      expect(screen.getByRole('group', {name: 'People'})).toHaveAttribute(
+        'data-size',
+        'sm',
+      );
+      expect(document.querySelector('.astryx-token')).toHaveAttribute(
+        'data-size',
+        'sm',
+      );
+    });
+
+    it('keeps an explicit size outside a group', () => {
+      render(
+        <Tokenizer
+          label="People"
+          size="lg"
+          searchSource={userSource}
+          value={[users[0]]}
+          onChange={() => {}}
+        />,
+      );
+
+      expect(screen.getByRole('group', {name: 'People'})).toHaveAttribute(
+        'data-size',
+        'lg',
+      );
+      expect(document.querySelector('.astryx-token')).toHaveAttribute(
+        'data-size',
+        'lg',
+      );
+    });
+
+    it.each(['none', 'unfocusedLayer'] as const)(
+      'drops local description and status in favor of the group (tokenOverflowBehavior=%s)',
+      tokenOverflowBehavior => {
+        const renderGrouped = (local: {
+          description?: string;
+          status?: {type: 'warning'; message: string};
+        }) =>
+          render(
+            <InputGroup
+              label="Recipients"
+              description="Who receives the digest"
+              status={{type: 'error', message: 'Pick at least one person'}}>
+              <InputGroupText>To</InputGroupText>
+              <Tokenizer
+                label="People"
+                isLabelHidden
+                searchSource={userSource}
+                value={[users[0]]}
+                onChange={() => {}}
+                tokenOverflowBehavior={tokenOverflowBehavior}
+                {...local}
+              />
+            </InputGroup>,
+          );
+        const tokenizerClasses = () =>
+          Array.from(
+            document.querySelectorAll('.astryx-tokenizer'),
+            el => el.className,
+          );
+
+        const {unmount} = renderGrouped({});
+        const classesWithoutLocal = tokenizerClasses();
+        unmount();
+
+        renderGrouped({
+          description: 'Local help',
+          status: {type: 'warning', message: 'Local warning'},
+        });
+
+        const group = screen.getByRole('group', {name: 'Recipients'});
+        const input = screen.getByRole('combobox', {
+          name: 'Recipients People',
+          hidden: true,
+        });
+        const describedByIDs =
+          input.getAttribute('aria-describedby')?.split(' ') ?? [];
+
+        // No Field renders the local text inside a group, so referencing it
+        // would leave dangling IDs — the group's text is the description.
+        expect(input).toHaveAttribute(
+          'aria-describedby',
+          group.getAttribute('aria-describedby'),
+        );
+        for (const id of describedByIDs) {
+          expect(document.getElementById(id)).not.toBeNull();
+        }
+        expect(screen.queryByText('Local help')).not.toBeInTheDocument();
+        expect(screen.queryByText('Local warning')).not.toBeInTheDocument();
+
+        // The local warning must not paint beside the group's error: every
+        // tokenizer surface (row, layer placeholder, layer content) renders
+        // exactly as it does without a local status.
+        for (const el of document.querySelectorAll('.astryx-tokenizer')) {
+          expect(el).not.toHaveAttribute('data-status');
+        }
+        expect(tokenizerClasses()).toEqual(classesWithoutLocal);
+      },
+    );
+
+    it('keeps the disabled reason while dropping local metadata in a group', () => {
+      render(
+        <InputGroup
+          label="Recipients"
+          description="Who receives the digest"
+          status={{type: 'error', message: 'Pick at least one person'}}>
+          <InputGroupText>To</InputGroupText>
+          <Tokenizer
+            label="People"
+            isLabelHidden
+            description="Local help"
+            status={{type: 'warning', message: 'Local warning'}}
+            searchSource={userSource}
+            value={[]}
+            onChange={() => {}}
+            isDisabled
+            disabledMessage="You need edit access to change recipients"
+          />
+        </InputGroup>,
+      );
+
+      const group = screen.getByRole('group', {name: 'Recipients'});
+      const input = screen.getByRole('combobox', {name: 'Recipients People'});
+      const tooltip = screen.getByRole('tooltip', {hidden: true});
+
+      expect(input.getAttribute('aria-describedby')?.split(' ')).toEqual([
+        ...(group.getAttribute('aria-describedby')?.split(' ') ?? []),
+        tooltip.id,
+      ]);
+    });
+
+    it('keeps the forwarded ref attached across re-renders in a group', () => {
+      const ref = vi.fn();
+      const renderGrouped = () => (
+        <InputGroup label="Recipients">
+          <InputGroupText>To</InputGroupText>
+          <Tokenizer
+            ref={ref}
+            label="People"
+            isLabelHidden
+            searchSource={userSource}
+            value={[users[0]]}
+            onChange={() => {}}
+          />
+        </InputGroup>
+      );
+      const {rerender} = render(renderGrouped());
+      expect(ref).toHaveBeenLastCalledWith(
+        screen.getByRole('group', {name: 'People'}),
+      );
+
+      // A ref merged during render is a new callback every render, so React
+      // detaches and re-attaches it on each update.
+      ref.mockClear();
+      rerender(renderGrouped());
+      expect(ref).not.toHaveBeenCalled();
+    });
   });
 });
 

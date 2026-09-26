@@ -175,7 +175,8 @@ export const docs = {
     {
       name: 'size',
       type: "'sm' | 'md' | 'lg'",
-      description: 'Input and token size.',
+      description:
+        "Input and token size. Inside an InputGroup the group's size applies instead.",
       default: "'md'",
     },
     {
@@ -437,7 +438,7 @@ export const docsZh = {
     {
       name: 'size',
       type: "'sm' | 'md' | 'lg'",
-      description: '\u8f93\u5165\u6846\u548c\u6807\u8bb0\u7684\u5c3a\u5bf8\u3002',
+      description: '\u8f93\u5165\u6846\u548c\u6807\u8bb0\u7684\u5c3a\u5bf8\u3002\u5728 InputGroup \u5185\u5219\u4f7f\u7528\u8be5\u7ec4\u7684\u5c3a\u5bf8\u3002',
       default: "'md'",
     },
     {
@@ -551,7 +552,7 @@ export const docsDense = {
     minQueryLength: 'Min query length before searching. Menu stays closed below it, except the hasCreate entry.',
     emptySearchResultsText: 'Text when search returns no results.',
     hasAutoFocus: 'Auto-focus input on mount.',
-    size: 'Input+token size.',
+    size: 'Input+token size; the group size applies inside InputGroup.',
     debounceMs: 'Search debounce delay ms. 0 for sync sources.',
     onChangeQuery: 'Fired on search query text change.',
     startIcon: 'Icon at input start, before tokens. Icon name, SVG component, or ReactNode.',

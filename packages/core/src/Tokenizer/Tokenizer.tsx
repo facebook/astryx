@@ -7,13 +7,15 @@
  * @input Uses React, BaseTypeahead, Field, Token, InputGroupContext, useAnnounce
  * @output Exports Tokenizer multi-select typeahead component
  * @position Composed component; forwards DOM ref and exposes focus control via
- *   handleRef. Inside an InputGroup it drops its own Field chrome and border
- *   radius so the group provides the shared border.
+ *   handleRef. Inside an InputGroup it takes the group's size and drops its
+ *   own Field chrome, local description/status, and border radius so the
+ *   group provides the shared border.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Tokenizer/index.ts
  * - /apps/storybook/stories/Tokenizer.stories.tsx
- * - /apps/storybook/stories/InputGroup.stories.tsx (WithTokenizer)
+ * - /apps/storybook/stories/InputGroup.stories.tsx (WithTokenizer,
+ *   WithTokenizerOverflow)
  * - /packages/core/src/InputGroup/InputGroup.doc.mjs (compatible controls)
  * - /packages/cli/assets/templates/blocks/components/Tokenizer/ (showcase blocks)
  */
@@ -57,6 +59,7 @@ import {useLayer} from '../Layer/useLayer';
 import {useTooltip} from '../Tooltip';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import {
   colorVars,
   spacingVars,
@@ -66,7 +69,7 @@ import {
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
-import {getInputARIA, mergeProps, mergeRefs} from '../utils';
+import {getInputARIA, mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -207,7 +210,10 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
   endContent?: ReactNode;
   /** Auto-focus on mount. @default false */
   hasAutoFocus?: boolean;
-  /** Input size. @default 'md' */
+  /**
+   * Input size. Inside an InputGroup the group's size applies instead.
+   * @default 'md'
+   */
   size?: TokenizerSize;
   /**
    * Controls how tokens overflow when the container is too narrow.
@@ -499,14 +505,16 @@ export function Tokenizer<T extends SearchableItem>({
   handleRef,
 }: TokenizerProps<T>) {
   const t = useTranslator();
-  const size = useSize(sizeProp, 'md');
+  const inputGroup = useInputGroup();
+  // The group's fixed-height row owns the size: an explicit larger size (and
+  // its tokens) would escape it, so a grouped Tokenizer takes the group's.
+  const size = useSize(inputGroup ? undefined : sizeProp, 'md');
   const inputId = useId();
   const inputLabelId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const inputGroup = useInputGroup();
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the input wrapper and the typeahead input stays
@@ -787,11 +795,16 @@ export function Tokenizer<T extends SearchableItem>({
     }
   }, [isDisabled, isLayerMode, layer]);
 
+  // Inside an InputGroup no Field renders the local description or status —
+  // the group's are the ones shown — so neither is referenced or painted; the
+  // disabled reason is input-local and stays.
+  const localStatus = inputGroup ? undefined : status;
+
   const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
     inputLabelId,
     [
-      description ? descriptionId : null,
-      status?.message ? statusMessageId : null,
+      !inputGroup && description ? descriptionId : null,
+      localStatus?.message ? statusMessageId : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ],
     inputGroup,
@@ -838,16 +851,23 @@ export function Tokenizer<T extends SearchableItem>({
   // popover keeps its standalone radius.
   const isInGroupRow = inputGroup != null && !isLayerMode;
 
+  const wrapperMergedRef = useMergedRefs(
+    wrapperRef,
+    // Anchor + hover/focus listeners for the disabled-message tooltip.
+    // Handlers are gated internally by isEnabled, so attaching
+    // unconditionally is safe.
+    disabledMessageTooltip.ref,
+    isInGroupRow ? ref : undefined,
+  );
+  // Only mounted in layer mode, but merged here so the hook runs every render.
+  const placeholderMergedRef = useMergedRefs(
+    placeholderRef,
+    inputGroup ? ref : undefined,
+  );
+
   const wrapperContent = (
     <div
-      ref={mergeRefs(
-        wrapperRef,
-        // Anchor + hover/focus listeners for the disabled-message tooltip.
-        // Handlers are gated internally by isEnabled, so attaching
-        // unconditionally is safe.
-        disabledMessageTooltip.ref,
-        isInGroupRow ? ref : undefined,
-      )}
+      ref={wrapperMergedRef}
       role="group"
       aria-label={label}
       onClick={handleWrapperClick}
@@ -857,7 +877,7 @@ export function Tokenizer<T extends SearchableItem>({
       {...mergeProps(
         themeProps('tokenizer', {
           size,
-          status: status?.type,
+          status: localStatus?.type,
           disabled: isDisabled ? 'disabled' : null,
         }),
         stylex.props(
@@ -867,9 +887,11 @@ export function Tokenizer<T extends SearchableItem>({
           isTruncated ? truncatedSizeStyles[size] : sizeStyle,
           isTruncated && styles.truncatedWrapper,
           isDisabled && inputWrapperStyles.disabled,
-          status && inputStatusBorderStyles[status.type],
-          status && !isDisabled && inputStatusHoverShadowStyles[status.type],
-          status && inputStatusFocusWithinStyles[status.type],
+          localStatus && inputStatusBorderStyles[localStatus.type],
+          localStatus &&
+            !isDisabled &&
+            inputStatusHoverShadowStyles[localStatus.type],
+          localStatus && inputStatusFocusWithinStyles[localStatus.type],
           isInGroupRow && groupStyles.inGroup,
           isInGroupRow && styles.inGroupWrapper,
           isInGroupRow && xstyle,
@@ -978,12 +1000,12 @@ export function Tokenizer<T extends SearchableItem>({
     tokenizerContent = (
       <>
         <div
-          ref={mergeRefs(placeholderRef, inputGroup ? ref : undefined)}
+          ref={placeholderMergedRef}
           onClick={handleWrapperClick}
           {...mergeProps(
             themeProps('tokenizer', {
               size,
-              status: status?.type,
+              status: localStatus?.type,
               disabled: isDisabled ? 'disabled' : null,
             }),
             stylex.props(
@@ -993,11 +1015,11 @@ export function Tokenizer<T extends SearchableItem>({
               placeholderSizeStyle,
               isTruncated && styles.truncatedWrapper,
               isDisabled && inputWrapperStyles.disabled,
-              status && inputStatusBorderStyles[status.type],
-              status &&
+              localStatus && inputStatusBorderStyles[localStatus.type],
+              localStatus &&
                 !isDisabled &&
-                inputStatusHoverShadowStyles[status.type],
-              status && inputStatusFocusWithinStyles[status.type],
+                inputStatusHoverShadowStyles[localStatus.type],
+              localStatus && inputStatusFocusWithinStyles[localStatus.type],
               // The placeholder is the element in the group's flex row.
               inputGroup && groupStyles.inGroup,
               inputGroup && styles.inGroupWrapper,

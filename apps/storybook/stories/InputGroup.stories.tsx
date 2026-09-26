@@ -192,6 +192,48 @@ export const WithTokenizer: Story = {
   },
 };
 
+export const WithTokenizerOverflow: Story = {
+  render: () => {
+    const [many, setMany] = useState<SearchableItem[]>(fruits.slice(0, 6));
+    const [sized, setSized] = useState<SearchableItem[]>(fruits.slice(0, 2));
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          width: '320px',
+        }}>
+        {/* More tokens than fit: the grouped row stays single-line and scrolls. */}
+        <InputGroup label="Favorite fruits">
+          <InputGroupText>Tags</InputGroupText>
+          <Tokenizer
+            label="Selections"
+            isLabelHidden
+            searchSource={fruitSource}
+            value={many}
+            onChange={setMany}
+            placeholder="Add fruits..."
+          />
+        </InputGroup>
+        {/* An explicit lg Tokenizer takes the sm group's size. */}
+        <InputGroup label="Snack fruits" size="sm">
+          <InputGroupText>Tags</InputGroupText>
+          <Tokenizer
+            label="Selections"
+            isLabelHidden
+            size="lg"
+            searchSource={fruitSource}
+            value={sized}
+            onChange={setSized}
+            placeholder="Add fruits..."
+          />
+        </InputGroup>
+      </div>
+    );
+  },
+};
+
 export const WithNumberInput: Story = {
   render: args => {
     const [value, setValue] = useState<number | undefined>(undefined);
