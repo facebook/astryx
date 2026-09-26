@@ -80,7 +80,7 @@ export const docs = {
         name: 'Time control',
         required: true,
         description:
-          'A real input type=time in native modes, or Astryx\'s editable text field for fine pointers, nativePicker="never", seconds, and custom increments.',
+          'A real input type=time in native modes, or Astryx\'s editable text field for fine pointers, presentation="text-input", seconds, and custom increments.',
       },
       {
         name: 'Clear button',
@@ -211,10 +211,17 @@ export const docs = {
       default: '1',
     },
     {
+      name: 'presentation',
+      type: "'text-input' | 'popover' | 'bottom-sheet' | 'native' | 'adaptive-bottom-sheet' | 'adaptive-native'",
+      description:
+        "Which surface selects the time. 'adaptive-native' (the default) uses Astryx's typed field on a fine pointer and the browser/OS input type=time on a coarse pointer — except hasSeconds or increment other than 1, which retain the typed field because iOS has no seconds wheel and treats step as validation rather than picker cadence; 'native' always uses the browser/OS control with no Astryx fallback; 'adaptive-bottom-sheet' uses the typed field on a fine pointer and Astryx's bottom-sheet time wheels on a coarse pointer; 'bottom-sheet' forces the wheels on every pointer; 'text-input' (like 'popover', which has no distinct TimeInput surface) keeps only the typed field. Native mode forwards min/max and enforces them on commit. hourFormat formats the closed value; the open OS picker follows the device locale.",
+      default: "'adaptive-native'",
+    },
+    {
       name: 'nativePicker',
       type: "'touch' | 'always' | 'never'",
       description:
-        "Which surface selects the time. 'touch' (the default) uses the browser/OS input type=time on a coarse pointer and Astryx's typed field on a fine pointer; 'always' requests the native control on every pointer; 'never' keeps Astryx's typed field everywhere. Native mode forwards min/max and enforces them on commit. hasSeconds or increment other than 1 automatically retains the typed field because iOS has no seconds wheel and treats step as validation rather than picker cadence. hourFormat formats the closed value; the open OS picker follows the device locale.",
+        "Deprecated: use presentation ('touch' = 'adaptive-native', 'always' = 'native', 'never' = 'text-input'). Still works exactly as released; presentation wins when both are set.",
       default: "'touch'",
     },
     {
@@ -378,10 +385,17 @@ export const docsZh = {
       default: '1',
     },
     {
+      name: 'presentation',
+      type: "'text-input' | 'popover' | 'bottom-sheet' | 'native' | 'adaptive-bottom-sheet' | 'adaptive-native'",
+      description:
+        "选择时间所用的界面。'adaptive-native'（默认）在精细指针上使用 Astryx 文本字段、在粗指针上使用浏览器/操作系统 input type=time——但 hasSeconds 或 increment 不为 1 时保留文本字段；'native' 始终使用浏览器/操作系统控件且不回退；'adaptive-bottom-sheet' 在精细指针上用文本字段、在粗指针上用 Astryx 底部滚轮选择器；'bottom-sheet' 在任何指针上强制使用滚轮；'text-input'（与无独立界面的 'popover' 相同）只保留文本字段。原生模式会传递 min/max 并在提交时强制校验。hourFormat 控制关闭状态的显示；打开的系统选择器遵循设备区域设置。",
+      default: "'adaptive-native'",
+    },
+    {
       name: 'nativePicker',
       type: "'touch' | 'always' | 'never'",
       description:
-        "选择时间所用的界面。'touch'（默认）在粗指针设备上使用浏览器/操作系统的 input type=time，在精细指针设备上使用 Astryx 文本字段；'always' 在所有指针类型上请求原生控件；'never' 始终使用 Astryx 文本字段。原生模式会传递 min/max 并在提交时强制校验。hasSeconds 或 increment 不为 1 时会自动保留文本字段，因为 iOS 没有秒滚轮，并且只把 step 当作校验规则而非选择器步进。hourFormat 控制关闭状态的显示；打开的系统选择器遵循设备区域设置。",
+        "已弃用：请使用 presentation（'touch'='adaptive-native'、'always'='native'、'never'='text-input'）。仍按已发布行为工作；同时设置时以 presentation 为准。",
       default: "'touch'",
     },
     {
@@ -487,7 +501,7 @@ export const docsZh = {
         name: 'Time control',
         required: true,
         description:
-          '原生模式下使用真正的 input type=time；精细指针、nativePicker="never"、秒或自定义步进场景使用 Astryx 可编辑文本字段。',
+          '原生模式下使用真正的 input type=time；精细指针、presentation="text-input"、秒或自定义步进场景使用 Astryx 可编辑文本字段。',
       },
       {
         name: 'Clear button',
@@ -583,8 +597,10 @@ export const docsDense = {
     hourFormat:
       "Display format. '12h' shows AM/PM; '24h' uses 24-hour notation.",
     increment: 'Minutes to add/subtract on arrow up/down.',
+    presentation:
+      "picker surface: 'adaptive-native' (default) = typed field fine / browser/OS coarse (hasSeconds or increment!=1 retains typed); 'native' = browser/OS always, no fallback; 'adaptive-bottom-sheet' = typed fine / Astryx wheel sheet coarse; 'bottom-sheet' = sheet always; 'text-input'/'popover' = typed field only.",
     nativePicker:
-      "picker surface: 'touch' (default) = browser/OS on coarse pointer, 'always' = native wherever compatible, 'never' = Astryx typed field. hasSeconds or increment!=1 retains typed field; min/max enforced on commit.",
+      "deprecated, use presentation: 'touch'='adaptive-native', 'always'='native', 'never'='text-input'. still works as released; presentation wins if both set.",
     placeholder: 'Placeholder when empty. Focused+empty shows format hint.',
     size: 'Input element height.',
     status: 'Colored border+icon. Message rendered below input.',
