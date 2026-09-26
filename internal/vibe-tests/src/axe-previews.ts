@@ -7,8 +7,10 @@
  * @output axe-results.json sidecar per iteration (consumed by universal-eval.ts)
  * @position internal/vibe-tests/src/axe-previews.ts
  *
- * Loads each preview in headless Chromium (light + dark), runs axe-core
- * against the live rendered DOM, and writes per-prompt violations keyed by
+ * Loads each preview in headless Chromium (light + dark, requested through
+ * both prefers-color-scheme and ?theme=), records which theme each scan
+ * actually rendered in, runs axe-core against the live rendered DOM, and
+ * writes per-prompt violations keyed by
  * promptId — the same sidecar pattern as build-errors.json. The next
  * universal-aggregate run picks the sidecar up automatically and folds the
  * violations into the accessibility dimension (issue #4145): this is what
@@ -58,7 +60,10 @@ export interface RawAxeViolation {
 
 /** One theme's axe scan of one preview page. */
 export interface RawAxeRun {
+  /** Theme the scan requested */
   theme: string;
+  /** Theme the page actually rendered in (see resolveEffectiveTheme) */
+  effectiveTheme: string;
   violations: RawAxeViolation[];
   passes: number;
   incomplete: number;
@@ -85,10 +90,27 @@ function normalizeImpact(
 }
 
 /**
+ * The theme a scan actually rendered in, from the computed color-scheme of
+ * the page's theme root. A page that pins one scheme (a preview built with
+ * `<Theme mode="light">`) ignores the requested one, so its "dark" scan is a
+ * second light scan; a page that allows both schemes, or declares none,
+ * follows the request.
+ */
+export function resolveEffectiveTheme(
+  requested: string,
+  colorScheme: string,
+): string {
+  const schemes = colorScheme
+    .split(/\s+/)
+    .filter(s => s === 'light' || s === 'dark');
+  return schemes.length === 1 ? schemes[0] : requested;
+}
+
+/**
  * Merge per-theme axe runs into one per-prompt record: violations union by
- * rule id (max nodes, highest impact, themes attributed), passes take the
- * strictest count across themes, incomplete the loosest, and the passed and
- * incomplete rule ids union across themes.
+ * rule id (max nodes, highest impact, attributed to the themes that actually
+ * rendered), passes take the strictest count across themes, incomplete the
+ * loosest, and the passed and incomplete rule ids union across themes.
  */
 export function mergeAxeRuns(
   target: string,
@@ -98,6 +120,7 @@ export function mergeAxeRuns(
     return {
       target,
       themesScanned: [],
+      effectiveThemes: {},
       violations: [],
       passes: 0,
       incomplete: 0,
@@ -117,12 +140,12 @@ export function mergeAxeRuns(
           impact,
           help: v.help,
           nodes: v.nodes,
-          themes: [run.theme],
+          themes: [run.effectiveTheme],
         });
       } else {
         existing.nodes = Math.max(existing.nodes, v.nodes);
-        if (!existing.themes.includes(run.theme)) {
-          existing.themes.push(run.theme);
+        if (!existing.themes.includes(run.effectiveTheme)) {
+          existing.themes.push(run.effectiveTheme);
         }
         if (IMPACT_RANK[impact] > IMPACT_RANK[existing.impact]) {
           existing.impact = impact;
@@ -133,7 +156,10 @@ export function mergeAxeRuns(
 
   return {
     target,
-    themesScanned: runs.map(r => r.theme),
+    themesScanned: [...new Set(runs.map(r => r.effectiveTheme))],
+    effectiveThemes: Object.fromEntries(
+      runs.map(r => [r.theme, r.effectiveTheme]),
+    ),
     violations: [...byId.values()],
     passes: Math.min(...runs.map(r => r.passes)),
     incomplete: Math.max(...runs.map(r => r.incomplete)),
@@ -238,7 +264,8 @@ export async function scanIteration(opts: {
         });
         const page = await context.newPage();
         try {
-          const url = `${server.url}/${relPath}`;
+          // Astryx previews take their mode from ?theme (default light)
+          const url = `${server.url}/${relPath}?theme=${theme}`;
           try {
             await page.goto(url, {waitUntil: 'networkidle', timeout: 30000});
           } catch {
@@ -248,9 +275,19 @@ export async function scanIteration(opts: {
           // Wait for fonts and rendering
           await page.waitForTimeout(1000);
 
+          // A preview that pins its scheme (e.g. built before ?theme was
+          // honoured) never renders the requested theme
+          const colorScheme = await page.evaluate(() => {
+            const root =
+              document.querySelector('[data-astryx-theme]') ??
+              document.documentElement;
+            return getComputedStyle(root).colorScheme;
+          });
+
           const axe = await new AxeBuilder({page}).analyze();
           runs.push({
             theme,
+            effectiveTheme: resolveEffectiveTheme(theme, colorScheme),
             violations: axe.violations.map(v => ({
               id: v.id,
               impact: v.impact ?? null,

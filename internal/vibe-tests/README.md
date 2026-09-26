@@ -151,6 +151,14 @@ The `accessibility` dimension has two bases (see issue #4145):
   attaches handlers synthetically and the rendered DOM carries nothing for
   axe to see.
 
+Each preview is scanned once with light and once with dark requested (both
+`prefers-color-scheme` and `?theme=`; Astryx previews take their `Theme`
+mode from `?theme=`, defaulting to light, so screenshots are unchanged). The
+scan reads the color-scheme the page actually rendered in and records it in
+`effectiveThemes`. A preview that pins light, such as one built before it
+honoured `?theme=`, lists only `light` in `themesScanned` instead of claiming
+a dark pass it never rendered.
+
 Generate the sidecar after building previews — target-neutral, the same axe
 rules run against every target's rendered output:
 

@@ -6,11 +6,12 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import {
   mergeAxeRuns,
+  resolveEffectiveTheme,
   scanIteration,
   selectPreviewsForIteration,
   type RawAxeRun,
 } from './axe-previews.js';
-import {enumeratePreviews, hashContent} from './utils.js';
+import {enumeratePreviews, hashContent, serveStatic} from './utils.js';
 
 const dirs: string[] = [];
 function tmpDir(): string {
@@ -23,6 +24,7 @@ afterAll(() => dirs.forEach(d => fs.rmSync(d, {recursive: true})));
 function run(theme: string, overrides: Partial<RawAxeRun> = {}): RawAxeRun {
   return {
     theme,
+    effectiveTheme: theme,
     violations: [],
     passes: 20,
     incomplete: 0,
@@ -117,11 +119,33 @@ describe('mergeAxeRuns', () => {
     expect(merged.incompleteRules).toEqual(['color-contrast']);
   });
 
+  it('attributes a scan to the theme that actually rendered', () => {
+    // A page pinned to light ignores the dark request: its "dark" scan is a
+    // second light scan and must not claim dark coverage
+    const merged = mergeAxeRuns('astryx', [
+      run('light', {
+        violations: [
+          {id: 'region', impact: 'moderate', help: 'region', nodes: 1},
+        ],
+      }),
+      run('dark', {
+        effectiveTheme: 'light',
+        violations: [
+          {id: 'region', impact: 'moderate', help: 'region', nodes: 1},
+        ],
+      }),
+    ]);
+    expect(merged.themesScanned).toEqual(['light']);
+    expect(merged.effectiveThemes).toEqual({light: 'light', dark: 'light'});
+    expect(merged.violations[0].themes).toEqual(['light']);
+  });
+
   it('returns an empty result for zero runs', () => {
     const merged = mergeAxeRuns('astryx', []);
     expect(merged).toEqual({
       target: 'astryx',
       themesScanned: [],
+      effectiveThemes: {},
       violations: [],
       passes: 0,
       incomplete: 0,
@@ -196,6 +220,42 @@ describe('enumeratePreviews', () => {
     const previews = enumeratePreviews(iterDir, ['tc-2']);
     expect(previews).toHaveLength(1);
     expect(previews[0].promptId).toBe('tc-2');
+  });
+});
+
+// ============================================================
+// resolveEffectiveTheme — which scheme a scan actually rendered in
+// ============================================================
+
+describe('resolveEffectiveTheme', () => {
+  it('reports the pinned scheme when the page ignores the request', () => {
+    expect(resolveEffectiveTheme('dark', 'light')).toBe('light');
+    expect(resolveEffectiveTheme('light', 'only dark')).toBe('dark');
+  });
+
+  it('follows the request when the page allows both schemes or declares none', () => {
+    expect(resolveEffectiveTheme('dark', 'light dark')).toBe('dark');
+    expect(resolveEffectiveTheme('dark', 'normal')).toBe('dark');
+    expect(resolveEffectiveTheme('light', '')).toBe('light');
+  });
+});
+
+// ============================================================
+// serveStatic — shared preview server
+// ============================================================
+
+describe('serveStatic', () => {
+  it('serves a file requested with a query string', async () => {
+    const dir = tmpDir();
+    fs.writeFileSync(path.join(dir, 'page.html'), '<p>hi</p>');
+    const server = await serveStatic(dir);
+    try {
+      const res = await fetch(`${server.url}/page.html?theme=dark`);
+      expect(res.status).toBe(200);
+      expect(await res.text()).toBe('<p>hi</p>');
+    } finally {
+      await server.close();
+    }
   });
 });
 
@@ -350,5 +410,59 @@ describe.skipIf(!hasChromium)('scanIteration (integration)', () => {
     expect(Object.keys(iterB).sort()).toEqual(['tc-1', 'tc-2']);
     expect(iterB['tc-1'].target).toBe('html');
     expect(iterB['tc-2'].target).toBe('html');
+  }, 120_000);
+
+  // Text that passes contrast in light (#000 on #fff) and fails in dark
+  // (#555 on #444) — only a scan that really rendered dark can see it
+  const DARK_ONLY_CONTRAST =
+    '<p style="color: light-dark(#000, #555); background: light-dark(#fff, #444)">' +
+    'Dark-only contrast failure</p>';
+
+  async function scanFixture(head: string, body: string) {
+    const resultsDir = tmpDir();
+    const iterDir = path.join(resultsDir, 'themetest');
+    fs.mkdirSync(path.join(iterDir, 'previews', 'tc-1'), {recursive: true});
+    fs.writeFileSync(
+      path.join(iterDir, 'previews', 'tc-1', 'html.html'),
+      '<!doctype html><html lang="en"><head><title>Fixture</title>' +
+        `${head}</head><body><main><h1>Fixture</h1>${body}</main></body></html>`,
+    );
+    fs.writeFileSync(
+      path.join(iterDir, 'manifest.json'),
+      JSON.stringify({config: {target: 'html'}}),
+    );
+    const results = await scanIteration({resultsDir, iterationId: 'themetest'});
+    return results?.['tc-1'];
+  }
+
+  it('scans dark for real when the preview takes its mode from ?theme', async () => {
+    // Mirrors the Astryx preview entry: mode comes from ?theme, default light
+    const forPrompt = await scanFixture(
+      '<script>document.documentElement.style.colorScheme = ' +
+        "new URLSearchParams(location.search).get('theme') === 'dark' ? 'dark' : 'light';" +
+        '</script>',
+      DARK_ONLY_CONTRAST,
+    );
+    const contrast = forPrompt?.violations.find(v => v.id === 'color-contrast');
+    expect(contrast?.themes).toEqual(['dark']);
+    expect(forPrompt?.themesScanned).toEqual(['light', 'dark']);
+    expect(forPrompt?.effectiveThemes).toEqual({light: 'light', dark: 'dark'});
+  }, 120_000);
+
+  it('does not claim a dark scan for a preview pinned to light', async () => {
+    // A preview built with <Theme mode="light">: the theme root pins light
+    // even though the page itself allows both schemes
+    const forPrompt = await scanFixture(
+      '<style>:root { color-scheme: light dark; }</style>',
+      `<div data-astryx-theme style="color-scheme: light">${DARK_ONLY_CONTRAST}</div>`,
+    );
+    expect(forPrompt?.themesScanned).toEqual(['light']);
+    expect(forPrompt?.effectiveThemes).toEqual({
+      light: 'light',
+      dark: 'light',
+    });
+    expect(forPrompt?.violations.map(v => v.id)).not.toContain(
+      'color-contrast',
+    );
   }, 120_000);
 });

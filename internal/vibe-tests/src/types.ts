@@ -266,7 +266,7 @@ export interface AxeViolationRecord {
   help: string;
   /** Number of affected DOM nodes (max across themes) */
   nodes: number;
-  /** Themes in which the violation appeared ('light' | 'dark') */
+  /** Themes that actually rendered when the violation appeared */
   themes: string[];
 }
 
@@ -277,7 +277,13 @@ export interface AxeViolationRecord {
  */
 export interface AxeResultForPrompt {
   target: string;
+  /** Themes the preview actually rendered in across the scans */
   themesScanned: string[];
+  /**
+   * Requested theme → theme the page actually rendered in. A preview pinned
+   * to light maps dark → light. Absent in older sidecars.
+   */
+  effectiveThemes?: Record<string, string>;
   violations: AxeViolationRecord[];
   /** Count of axe rules that passed */
   passes: number;

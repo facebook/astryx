@@ -210,7 +210,8 @@ export function serveStatic(
 ): Promise<{url: string; close: () => Promise<void>}> {
   return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
-      const urlPath = decodeURIComponent(req.url || '/');
+      // Drop the query (e.g. ?theme=dark) before resolving the file
+      const urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
       const filePath = path.join(dir, urlPath);
 
       if (!fs.existsSync(filePath)) {

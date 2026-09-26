@@ -168,9 +168,14 @@ import {Theme} from '@astryxdesign/core/theme';
 import {neutralTheme} from '@astryxdesign/theme/neutral';
 import Component from '${componentPath.replace(/\\/g, '/')}';
 
+// ?theme=dark renders dark so the axe scan can check both schemes; light
+// stays the default for screenshots and the design judge
+const mode =
+  new URLSearchParams(location.search).get('theme') === 'dark' ? 'dark' : 'light';
+
 function App() {
   return (
-    <Theme theme={neutralTheme} mode="light">
+    <Theme theme={neutralTheme} mode={mode}>
       <Component />
     </Theme>
   );
