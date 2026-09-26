@@ -140,48 +140,109 @@ function enclosingPreludes(css: string, index: number): string[] {
   return stack;
 }
 
-/** Split `text` on `separator` characters that sit outside parentheses. */
-function splitTopLevel(text: string, separator: RegExp): string[] {
-  const parts: string[] = [];
+/**
+ * Split `text` at the runs of `separator` characters that sit outside
+ * parentheses, brackets and quoted strings, keeping each run between the
+ * parts it separates: `[part, run, part, ...]`. So `:is(a, b)`,
+ * `[class~='x']` and `[title='a b']` each stay inside one part.
+ */
+function scanTopLevel(text: string, separator: RegExp): string[] {
+  const tokens = [''];
   let depth = 0;
-  let current = '';
+  let quote = '';
   for (const char of text) {
-    if (char === '(') {
+    const topLevel = depth === 0 && quote === '';
+    if (quote !== '') {
+      quote = char === quote ? '' : quote;
+    } else if (char === "'" || char === '"') {
+      quote = char;
+    } else if (char === '(' || char === '[') {
       depth++;
-    } else if (char === ')') {
+    } else if (char === ')' || char === ']') {
       depth--;
     }
-    if (depth === 0 && separator.test(char)) {
-      if (current) {
-        parts.push(current);
-      }
-      current = '';
-    } else {
-      current += char;
+    // Runs sit at odd indexes: start a new token when the kind flips.
+    const inRun = tokens.length % 2 === 0;
+    if ((topLevel && separator.test(char)) !== inRun) {
+      tokens.push('');
     }
+    tokens[tokens.length - 1] += char;
   }
-  if (current) {
-    parts.push(current);
+  return tokens;
+}
+
+/** The non-empty parts of `text` between top-level `separator` characters. */
+function splitTopLevel(text: string, separator: RegExp): string[] {
+  return scanTopLevel(text, separator).filter(
+    (part, index) => index % 2 === 0 && part !== '',
+  );
+}
+
+/**
+ * A compound selector's simple selectors: `html[class~='x']:is(a, b)` is
+ * `html`, `[class~='x']` and `:is(a, b)`.
+ */
+function simpleSelectors(compound: string): string[] {
+  const [type, ...rest] = scanTopLevel(compound, /[.#[:]/);
+  const simples = type === '' ? [] : [type];
+  for (let i = 0; i < rest.length; i += 2) {
+    simples.push(rest[i] + (rest[i + 1] ?? ''));
   }
-  return parts;
+  return simples;
+}
+
+/** `:is(...)` or `:where(...)`, capturing the selector list inside. */
+const WRAPPER = /^:(?:is|where)\((.*)\)$/i;
+
+/**
+ * Whether a compound selector can match the root element: it names `html` or
+ * `:root` (alone, composed as in `html.dark`, or inside `:is()` / `:where()`),
+ * or it is a `*`.
+ */
+function canBeRoot(compound: string): boolean {
+  return simpleSelectors(compound).some(simple => {
+    const wrapped = WRAPPER.exec(simple);
+    return wrapped
+      ? splitTopLevel(wrapped[1], /,/).some(arg => canBeRoot(arg.trim()))
+      : /^(?:html|:root|\*)$/i.test(simple);
+  });
 }
 
 /**
  * Whether a selector list targets the page itself. `overscroll-behavior`
  * reaches the viewport (pull-to-refresh, the trackpad rubber-band) only from
  * the root element: `html` / `:root`, or `body`, whose value browsers
- * propagate when the root's is `auto`; `*` covers both. `:is()` and
- * `:where()` are looked through.
+ * propagate when the root's is `auto`. So a selector is page-wide when any
+ * simple selector of its subject names one of them (`html[class~='dark']`,
+ * `:is(html, body):hover`), or is a `*` that can land on body: on its own,
+ * or as a child or descendant of a first compound that can be the root
+ * (`html *`, `:root > *`, `* > *`). `.dialog *` only reaches nested
+ * elements. `:is()` and `:where()` are looked through; `:not()` and `:has()`
+ * only filter, so they are not.
  */
 function isPageWide(selectorList: string): boolean {
   return splitTopLevel(selectorList, /,/).some(selector => {
-    const compounds = splitTopLevel(selector.trim(), /[\s>+~]/);
-    const subject = compounds[compounds.length - 1] ?? '';
-    const wrapped = /^:(?:is|where)\((.*)\)$/i.exec(subject);
-    if (wrapped) {
-      return isPageWide(wrapped[1]);
-    }
-    return /^(?:html|body|:root|\*)(?![\w-])/i.test(subject);
+    // Compounds and combinators alternate, so reversed: subject first.
+    const [subject, combinator, parent, ...ancestors] = scanTopLevel(
+      selector.trim(),
+      /[\s>+~]/,
+    ).reverse();
+    return simpleSelectors(subject).some(simple => {
+      const wrapped = WRAPPER.exec(simple);
+      if (wrapped) {
+        return isPageWide(wrapped[1]);
+      }
+      if (simple === '*') {
+        // body's only ancestor is the root, which has none of its own.
+        return (
+          parent === undefined ||
+          (ancestors.length === 0 &&
+            /^\s*>?\s*$/.test(combinator) &&
+            canBeRoot(parent))
+        );
+      }
+      return /^(?:html|body|:root)$/i.test(simple);
+    });
   });
 }
 
@@ -307,6 +368,94 @@ html .sheet {
   overscroll-behavior: contain;
 }
 :where(.sheet) {
+  overscroll-behavior-y: none;
+}
+`;
+    expect(pageWideOverscrollSuppressions(css)).toEqual([]);
+  });
+
+  it('allows contain under a trailing * on a nested scope', () => {
+    const css = `
+.dialog * {
+  overscroll-behavior: contain;
+}
+body .dialog * {
+  overscroll-behavior: contain;
+}
+.sheet > * {
+  overscroll-behavior: contain;
+}
+.dialog * * {
+  overscroll-behavior: contain;
+}
+`;
+    expect(pageWideOverscrollSuppressions(css)).toEqual([]);
+  });
+
+  it('reports * on its own or directly under the root, where it reaches body', () => {
+    const css = `
+* {
+  overscroll-behavior: none;
+}
+*:hover {
+  overscroll-behavior: none;
+}
+html * {
+  overscroll-behavior: none;
+}
+:root > * {
+  overscroll-behavior: none;
+}
+* > * {
+  overscroll-behavior: none;
+}
+`;
+    expect(pageWideOverscrollSuppressions(css)).toEqual([
+      '* { overscroll-behavior: none }',
+      '*:hover { overscroll-behavior: none }',
+      'html * { overscroll-behavior: none }',
+      ':root > * { overscroll-behavior: none }',
+      '* > * { overscroll-behavior: none }',
+    ]);
+  });
+
+  it('reports root selectors composed with class, attribute or pseudo-class parts', () => {
+    const css = `
+:is(html, body).mode {
+  overscroll-behavior-y: none;
+}
+:is(html, body):hover {
+  overscroll-behavior-y: none;
+}
+:where(html)[data-hero-dark] {
+  overscroll-behavior-y: none;
+}
+[data-x]:where(html) {
+  overscroll-behavior-y: none;
+}
+html[class~='dark'] {
+  overscroll-behavior-y: none;
+}
+body[data-mode='a b'] {
+  overscroll-behavior-y: none;
+}
+`;
+    expect(pageWideOverscrollSuppressions(css)).toEqual([
+      ':is(html, body).mode { overscroll-behavior-y: none }',
+      ':is(html, body):hover { overscroll-behavior-y: none }',
+      ':where(html)[data-hero-dark] { overscroll-behavior-y: none }',
+      '[data-x]:where(html) { overscroll-behavior-y: none }',
+      "html[class~='dark'] { overscroll-behavior-y: none }",
+      "body[data-mode='a b'] { overscroll-behavior-y: none }",
+    ]);
+  });
+
+  it('does not look through :not() or :has(), which only filter', () => {
+    const css = `
+.sheet:not(html) {
+  overscroll-behavior-y: none;
+}
+.sheet:has(body) {
   overscroll-behavior-y: none;
 }
 `;
