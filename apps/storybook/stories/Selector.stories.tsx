@@ -68,9 +68,9 @@ const meta: Meta<typeof Selector> = {
     },
     placement: {
       control: 'select',
-      options: ['above', 'below', 'start', 'end'],
+      options: ['overlay', 'offset', 'above', 'below', 'start', 'end'],
       description:
-        'Explicit menu placement. Leave unset for selected-item overlay behavior.',
+        "Where the open menu sits relative to the trigger. 'overlay' (the default) pulls the menu up so the selected option sits over the trigger; 'offset' clears it by the standard menu gap instead (currently the same position as 'below').",
     },
     presentation: {
       control: 'radio',
@@ -920,6 +920,7 @@ export const Placements: Story = {
     const [below, setBelow] = useState('Banana');
     const [start, setStart] = useState('Banana');
     const [end, setEnd] = useState('Banana');
+    const [offset, setOffset] = useState('Banana');
     const options = ['Apple', 'Banana', 'Cherry', 'Date'];
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: 32}}>
@@ -943,6 +944,13 @@ export const Placements: Story = {
           value={end}
           onChange={v => setEnd(v)}
           placement="end"
+        />
+        <Selector
+          label="placement=offset"
+          options={options}
+          value={offset}
+          onChange={v => setOffset(v)}
+          placement="offset"
         />
       </div>
     );

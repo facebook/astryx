@@ -236,6 +236,13 @@ export const docs = {
       default: "'No results found'",
     },
     {
+      name: 'placement',
+      type: "'above' | 'below' | 'start' | 'end' | 'overlay' | 'offset'",
+      description:
+        "Where the open menu sits relative to the trigger. 'overlay' (the default) positions the selected option over the trigger and clamps to the viewport, native-select style; it falls back to 'offset' when hasSearch is set. 'offset' clears the trigger by the standard menu gap instead of overlaying it; it currently uses the same position as 'below', including the usual flips near viewport edges. The four directions opt into explicit layer positioning (e.g. above for bottom-fixed toolbars).",
+      default: "'overlay'",
+    },
+    {
       name: 'placeholder',
       type: 'string',
       description: 'Placeholder text shown when no value is selected.',

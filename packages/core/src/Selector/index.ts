@@ -10,6 +10,7 @@
 
 export {
   Selector,
+  type SelectorPlacement,
   type SelectorProps,
   type SelectorPresentation,
   type SelectorSize,
