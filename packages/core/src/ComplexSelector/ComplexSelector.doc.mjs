@@ -143,6 +143,13 @@ export const docs = {
           description: 'Validation status.',
         },
         {
+          name: 'statusVariant',
+          type: "'attached' | 'detached' | 'tooltip'",
+          description:
+            'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment; detached when variant is ghost); detached floats below as a separate element with spacing; tooltip reveals the message in an info-tip button.',
+          default: "'attached'",
+        },
+        {
           name: 'size',
           type: "'sm' | 'md' | 'lg'",
           description: 'Exact trigger height: sm 28px, md 32px, or lg 36px.',
@@ -323,6 +330,8 @@ export const docsDense = {
     alignment: 'Popup alignment.',
     handleRef: 'Imperative open/close/toggle handle.',
     onOpenChange: 'Notified on every open and close, whatever caused it.',
+    statusVariant:
+      'How status message is placed: attached overlaps below input (detached for ghost); detached floats below w/ spacing; tooltip shows on status icon.',
     accessibility:
       'Custom content must provide its own accessible structure. Use focus hooks and evaluate against WCAG 2.2.',
   },

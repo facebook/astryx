@@ -89,6 +89,7 @@ export interface TypeaheadProps<T extends SearchableItem> extends Omit<
    * How the status message is placed relative to the input.
    * - 'attached': message overlaps directly below the input (bordered treatment)
    * - 'detached': message floats below as a separate element with spacing
+   * - 'tooltip': no message box; the status icon becomes a focusable info-tip button that reveals the message on hover, keyboard focus, or tap
    * @default 'attached'
    */
   statusVariant?: FieldStatusVariant;
