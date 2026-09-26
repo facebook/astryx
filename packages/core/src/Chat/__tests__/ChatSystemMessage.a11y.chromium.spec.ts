@@ -219,7 +219,16 @@ async function openCase(
   page.on('pageerror', error => errors.push(String(error)));
   browserVersion = page.context().browser()?.version() ?? 'unknown';
   await page.goto(storyUrl(auditCase.storyId, mode));
-  await page.locator(`[data-system-message-case="${auditCase.key}"]`).waitFor();
+  const target = page.locator(`[data-system-message-case="${auditCase.key}"]`);
+  await target.waitFor();
+  await page
+    .locator('[data-system-message-case]')
+    .evaluateAll((elements, selectedCase) => {
+      for (const element of elements) {
+        const candidate = element as HTMLElement;
+        candidate.hidden = candidate.dataset.systemMessageCase !== selectedCase;
+      }
+    }, auditCase.key);
   await page.waitForFunction(
     expected =>
       document.documentElement.getAttribute('data-theme') === expected,
@@ -409,7 +418,7 @@ async function capture(
       ratio: contrastRatio(actual.iconColor, actual.surfaceBackground),
       threshold: null,
       exception:
-        'The caller-provided icon reinforces visible text and is not the only source of meaning.',
+        'The caller-provided icon appears with visible text and is not the only source of meaning.',
       passed: true,
     });
   }
@@ -422,7 +431,7 @@ async function capture(
       ratio: contrastRatio(actual.lineColor, actual.surfaceBackground),
       threshold: null,
       exception:
-        'The visible label and named separator expose the section boundary without relying on the painted rule.',
+        'The visible label and labelled separator expose the section boundary without relying on the painted rule.',
       passed: true,
     });
   }
@@ -864,9 +873,9 @@ test.afterAll(async () => {
             'Image',
           ],
           visualEvidence: {
-            requiredPair: false,
+            requiredPair: true,
             reason:
-              'This audit changes documentation and evidence only; runtime pixels are unchanged, so exact-head state evidence replaces a before/after visual pair.',
+              'The production wrapping repair changes long-content pixels. The PR report links the failing-before and fixed-after exact-head artifacts and receipts.',
             subjectiveAcceptanceClaimed: false,
             contactSheet,
           },
@@ -882,25 +891,44 @@ test.afterAll(async () => {
             disabled: 'ChatSystemMessage exposes no disabled state.',
             loading: 'ChatSystemMessage exposes no loading state.',
             selected: 'ChatSystemMessage exposes no selection state.',
-            empty:
-              'children is required and no empty-content behavior is part of the public contract.',
             keyboard: 'ChatSystemMessage owns no keyboard interaction.',
             pointerTarget: 'ChatSystemMessage owns no pointer target.',
           },
+          emptyContentPartitions: {
+            emptyString:
+              'Accepted ReactNode input; the status root remains and visible text is empty in both variants.',
+            numericZero:
+              'Accepted ReactNode input; default renders 0 while delegated Divider currently renders no label.',
+            emptyFragment:
+              'Accepted ReactNode input; the status root remains and visible text is empty in both variants.',
+          },
+          sharedAdvisories: {
+            dividerLongLabelOverflow:
+              'A long divider label can cross the inline edge because Divider owns a non-shrinking label. The long-divider frames record this without assigning the defect to ChatSystemMessage.',
+            dividerForcedColors:
+              'The Divider rule may disappear in forced colors; this audit does not exercise that mode and routes the advisory to component:Divider.',
+          },
           unverified: {
             forcedColors:
-              'Forced-colors rendering was not exercised; this matrix records forcedColors=false and makes no support claim.',
+              'Forced-colors rendering was not exercised. The default row makes no support claim, and the disappearing Divider rule is a shared component:Divider advisory.',
             assistiveTechnology:
               'Browser role exposure is measured, but spoken announcement timing and output were not verified with real assistive technology.',
+            nestedLiveRegions:
+              'The nested-log frame records role=status inside ChatMessageList role=log aria-live=polite, but double-announcement behavior is unverified under spec:AST-009/FR4 and FR10.',
           },
           stateVisualConformance: {
-            default: ['text', 'text-with-icon'],
+            default: ['text', 'text-with-icon', 'wrapped-long-content'],
             divider: [
               'labelled-separator',
               'unresolved-divider-icon-observation',
             ],
+            nestedLiveLog: ['status-inside-polite-log-unverified'],
             colorModes: ['light', 'dark'],
-            narrowCoarsePointer: ['default-with-icon', 'divider'],
+            narrowCoarsePointer: [
+              'default-with-icon',
+              'divider',
+              'wrapped-long-content',
+            ],
           },
           frames: receipts,
           d7ContrastPairs,

@@ -287,7 +287,7 @@
     "evidence": {
       "apps/storybook/stories/ChatSystemMessage.stories.tsx": "sha256:ac979e4e63e32d5f6542f39c9f8cfeeab4636643db2513c987f84746bf79a4ee",
       "apps/storybook/stories/ChatSystemMessageAudit.stories.tsx": "sha256:54e81ad2fb8360c9d30ce8f6f33a8aa4fde8602d2ba2ab8774d03638ee8c0a82",
-      "packages/core/src/Chat/ChatSystemMessage.tsx": "sha256:0c3bf23b4532eae8c34511f793de8d4e843d48ed69212bfaad96610e5a6a3382",
+      "packages/core/src/Chat/ChatSystemMessage.tsx": "sha256:11273238c02e6b48292cb2444b1229e5a06eb08494d32696e88143b5ad2e1ca3",
       "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb",
       "packages/core/src/Divider/Divider.tsx": "sha256:f302b5c9eecde40b486c09d49c71cb7dab158e2fcedcb38c0145671c45d9cf8d"
     }

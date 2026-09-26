@@ -6,7 +6,6 @@ export const docs = {
   name: 'ChatSystemMessage',
   subComponentOf: 'Chat',
   displayName: 'Chat System Message',
-  isHiddenFromOverview: true,
   description:
     'Centered system message for non-sender content like date separators, membership changes, and status notices. It is not a chat bubble; it has no avatar, no alignment, and no sender context. Use the divider variant for temporal breaks and default for inline status updates.',
   props: [
@@ -14,7 +13,7 @@ export const docs = {
       name: 'children',
       type: 'ReactNode',
       description:
-        'System message content: a short, factual string like a date, a join/leave notice, or a status change.',
+        'System message content: factual text or React content such as a date, join/leave notice, or status change. Long default content wraps within the available width.',
       required: true,
     },
     {
@@ -28,7 +27,7 @@ export const docs = {
       name: 'icon',
       type: 'ReactNode',
       description:
-        'Leading icon that reinforces the message type. Wrap in Icon for consistent sizing. Use for membership changes, encryption notices, or AI activity.',
+        'Optional caller-provided icon content associated with the message. Wrap in Icon for consistent sizing.',
       slotElements: [
         {
           __element: 'Icon',
@@ -53,7 +52,7 @@ export const docs = {
   },
   usage: {
     description:
-      'Use ChatSystemMessage for concise, non-sender content inside a chat transcript. Choose the default variant for factual status notices and the divider variant for date or section breaks. The component exposes status semantics and the divider branch includes a named separator.',
+      'Use ChatSystemMessage for concise, non-sender content inside a chat transcript. Choose the default variant for factual status notices and the divider variant for date or section breaks. Long default content wraps within the available width. The component exposes status semantics and the divider branch includes a labelled separator.',
     bestPractices: [
       {
         guidance: true,
@@ -89,10 +88,10 @@ export const docs = {
         description: 'The concise caller-provided message or divider label.',
       },
       {
-        name: 'Leading icon',
+        name: 'Icon content',
         required: false,
         description:
-          'Optional caller-provided content rendered before the message in the default variant.',
+          'Optional caller-provided icon content associated with the message. Variant-specific behavior remains under review.',
       },
       {
         name: 'Divider',
@@ -106,16 +105,15 @@ export const docs = {
 
 export const docsZh = {
   name: 'ChatSystemMessage',
-  isHiddenFromOverview: true,
   displayName: 'Chat System Message',
   description:
     '居中的系统消息，用于日期分隔、成员变更和状态通知等非发送者内容。没有头像、对齐或气泡。使用 divider 变体做时间分隔，default 做内联状态更新。',
   propDescriptions: {
     children:
-      '系统消息内容，简短的事实性文本，如日期、加入/离开通知或状态变更。',
+      '事实性系统消息内容，如日期、加入/离开通知或状态变更；较长的 default 内容会在可用宽度内换行。',
     variant:
       "视觉变体。'default' 渲染居中文本。'divider' 通过 Divider 在两侧添加水平线，用于日期分隔和段落分隔。",
-    icon: '增强消息类型辨识度的前置图标。使用 Icon 包裹以获得一致的尺寸。',
+    icon: '与系统消息关联的可选调用方图标内容。使用 Icon 包裹以获得一致的尺寸。',
     xstyle: '用于布局自定义的 StyleX 样式。',
   },
   theming: {
@@ -127,10 +125,9 @@ export const docsZh = {
 
 export const docsDense = {
   name: 'ChatSystemMessage',
-  isHiddenFromOverview: true,
   displayName: 'Chat System Message',
   description:
-    'centered non-sender msg; divider variant for date breaks, default for status notices; supports leading icon',
+    'centered non-sender msg; divider variant for date breaks, default for status notices; accepts optional icon content',
   usage: {
     description:
       'Use for concise non-sender content in chat. Default is a factual status row; divider is a labelled date/section break.',
@@ -156,10 +153,11 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    children: 'short factual text: date, join/leave, status change',
+    children:
+      'factual React content: date, join/leave, status change; long default content wraps',
     variant:
       'default=centered text, divider=horizontal lines via Divider for date/section breaks',
-    icon: 'leading icon reinforcing msg type; wrap in Icon',
+    icon: 'optional caller-provided icon content; wrap in Icon',
     xstyle: 'additional StyleX layout styles',
   },
 };
