@@ -232,6 +232,15 @@
     }
   },
   {
+    "component": "core/ChatSendButton",
+    "reason": "ChatSendButton composes one centered square Button and adds no inline-axis layout or positioning. Its upward send arrow and stop mark both express block-axis actions and must remain unchanged in RTL; the shared Button uses logical padding and centered icon-only geometry. The component owns no left/right glyph, inline ordering, horizontal scrolling or dragging, side-placed overlay, or directional keyboard behavior.",
+    "evidence": {
+      "apps/storybook/stories/ChatComposer.stories.tsx": "sha256:355778a847934f9af02adf3b42846089ade03ee37d935c2a30d32fba3e3cd291",
+      "packages/core/src/Chat/ChatSendButton.tsx": "sha256:e966e7fe3b0fc24678a0db4f230b903f47f66b133baf9cad8e3d0ccfa9517612",
+      "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb"
+    }
+  },
+  {
     "component": "core/ChatDictationButton",
     "reason": "ChatDictationButton is a symmetric inline-flex icon control. Its microphone glyph and five centered equalizer bars are direction-neutral; the component owns no inline-axis placement, ordering, directional glyph, horizontal scrolling or dragging, overlay placement, or horizontal keyboard behavior.",
     "evidence": {

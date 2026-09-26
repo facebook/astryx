@@ -4,8 +4,8 @@
  * @file ChatSendButton.test.tsx
  * @input Uses vitest, @testing-library/react, the global icon registry
  * @output Unit tests for ChatSendButton
- * @position Colocated unit test; covers the send/stop labels and icons, the
- *   disabled rules, click routing, and the ChatComposer context defaults
+ * @position Colocated unit test; covers labels and icons, disabled rules,
+ *   composed consumer clicks, state-action routing, and ChatComposer defaults
  */
 
 import {describe, it, expect, vi, afterEach} from 'vitest';
@@ -42,6 +42,17 @@ describe('ChatSendButton', () => {
       const onSend = vi.fn();
       render(<ChatSendButton isDisabled={false} onSend={onSend} />);
       fireEvent.click(screen.getByRole('button', {name: 'Send'}));
+      expect(onSend).toHaveBeenCalledTimes(1);
+    });
+
+    it('composes the consumer onClick with onSend', () => {
+      const onClick = vi.fn();
+      const onSend = vi.fn();
+      render(
+        <ChatSendButton isDisabled={false} onClick={onClick} onSend={onSend} />,
+      );
+      fireEvent.click(screen.getByRole('button', {name: 'Send'}));
+      expect(onClick).toHaveBeenCalledTimes(1);
       expect(onSend).toHaveBeenCalledTimes(1);
     });
 
@@ -131,6 +142,15 @@ describe('ChatSendButton', () => {
       fireEvent.click(screen.getByRole('button', {name: 'Stop'}));
       expect(onStop).toHaveBeenCalledTimes(1);
       expect(onSend).not.toHaveBeenCalled();
+    });
+
+    it('composes the consumer onClick with onStop', () => {
+      const onClick = vi.fn();
+      const onStop = vi.fn();
+      render(<ChatSendButton isStopShown onClick={onClick} onStop={onStop} />);
+      fireEvent.click(screen.getByRole('button', {name: 'Stop'}));
+      expect(onClick).toHaveBeenCalledTimes(1);
+      expect(onStop).toHaveBeenCalledTimes(1);
     });
 
     it('resolves its default icon from the registry stop entry', () => {

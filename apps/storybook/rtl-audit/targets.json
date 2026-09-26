@@ -171,6 +171,11 @@
     }
   },
   {
+    "component": "ChatSendButton",
+    "storyId": "core-chatcomposer--with-streaming",
+    "dims": []
+  },
+  {
     "component": "DropdownMenu",
     "storyId": "core-dropdownmenu--alignment-end",
     "dims": ["D4"],
