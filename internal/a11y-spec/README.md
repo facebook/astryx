@@ -48,6 +48,7 @@ src/
     ├── modal-dialog.*       the native modal-dialog pattern, same four files
     ├── status-message.*     live-region and progress status mechanics
     ├── tabs.*               explicit horizontal ARIA Tabs semantics
+    ├── disclosure.*         standalone disclosure state/content semantics
     └── listbox.*            listbox, group, and option semantics
 ```
 
@@ -63,7 +64,15 @@ src/
 | `modal-dialog`   | [APG dialog (modal)](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)                 | Dialog                                                                           |
 | `status-message` | [WCAG 2.2 Status Messages](https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html) | Toast, FieldStatus, Spinner, ChatSystemMessage, ChatTypingIndicator, ProgressBar |
 | `tabs`           | [APG Tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)                                   | Explicit `role="tablist"` TabList, Tab, and caller-authored tabpanels            |
+| `disclosure`     | [APG Disclosure](https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/)                       | Standalone Collapsible triggers and their controlled content                     |
 | `listbox`        | [WAI-ARIA 1.2 Listbox](https://www.w3.org/TR/wai-aria-1.2/#listbox) and WCAG 2.2 semantics   | Selector and MultiSelector popup listbox, group, and option parts                |
+
+The disclosure contract owns only the disclosure-specific state, optional
+trigger-to-content relationship, synchronized visibility, and complete pointer,
+Enter, and Space transitions. Generic role, naming, focus navigation, and
+unavailable-button semantics remain in the existing `button` contract. This first
+migration binds standalone Collapsible states only; CollapsibleGroup coordination
+and Accordion, Table, and SideNav adoption remain outside this contract.
 
 The `listbox` contract is a bounded semantic migration, not blanket APG
 interaction adoption. Its first bindings cover 21 existing scenarios across
