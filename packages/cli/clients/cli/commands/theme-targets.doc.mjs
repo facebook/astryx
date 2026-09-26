@@ -13,7 +13,7 @@ export const doc = {
   type: 'command',
   name: 'theme targets',
   displayName: 'astryx theme targets',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'List the component theming targets a theme can override',
   description:
     'Prints every `defineTheme` components key across the system: the stable class it paints, ' +

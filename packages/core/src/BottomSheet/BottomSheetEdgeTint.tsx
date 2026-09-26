@@ -6,7 +6,7 @@
  * @file BottomSheetEdgeTint.tsx
  * @input Uses StyleX and core color tokens
  * @output Exports BottomSheetEdgeTint, an internal decorative element
- * @position Private helper rendered inside a non-modal BottomSheet dialog
+ * @position Private helper rendered inside every BottomSheet dialog
  *
  * iOS 26 Safari dropped `<meta name="theme-color">` and instead derives the
  * colour it paints behind its translucent toolbars by sampling the page: it
@@ -14,13 +14,10 @@
  * `fixed`/`sticky` ancestor, and extends that element's declared
  * `background-color` into the browser chrome.
  *
- * A modal sheet is served by that heuristic already — WebKit has a dedicated
- * branch for a dialog's `::backdrop`. A non-modal sheet is not: the nearest
- * fixed ancestor of the panel is the sheet's own full-viewport `<dialog>`,
- * which is transparent and viewport-sized, and WebKit answers a viewport-sized
- * candidate by *keeping the colour it already had* — the host page's. The page
- * then shows through behind the address bar while the sheet covers the screen
- * above it.
+ * WebKit may otherwise extend either the dialog backdrop or the host page into
+ * the browser chrome. Which one wins varies with dialog mode and the page's
+ * own fixed or sticky edge content, so relying on the backdrop makes otherwise
+ * identical BottomSheets produce different toolbar colours.
  *
  * This element gives the heuristic something unambiguous to sample: fixed,
  * full width, flush with the bottom edge, taller than WebKit's 10px minimum
@@ -68,8 +65,8 @@ const styles = stylex.create({
 });
 
 /**
- * Colours the iOS Safari toolbar strip below a non-modal sheet. Renders
- * nothing visible; see the file header for why it exists.
+ * Colours the iOS Safari toolbar strip below a sheet. Renders nothing visible;
+ * see the file header for why it exists.
  */
 export function BottomSheetEdgeTint() {
   return (

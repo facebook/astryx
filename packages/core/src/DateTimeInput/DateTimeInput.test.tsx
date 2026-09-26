@@ -12,6 +12,7 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import * as stylex from '@stylexjs/stylex';
 import {getButton, queryButton} from '../__tests__/fastRoleQueries';
 import {DateTimeInput} from './DateTimeInput';
 import type {ISODateTimeString} from './DateTimeInput';
@@ -33,6 +34,32 @@ function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
   return [prose, component].filter(Boolean).join('\n\n');
 }
+
+// jsdom does not perform flex layout, so these probe classes verify the
+// declarations that switch between horizontal and stacked intrinsic layouts.
+const responsiveLayoutProbe = stylex.create({
+  responsiveRow: {
+    flexWrap: 'wrap',
+  },
+  responsiveSegment: {
+    flexBasis: 196,
+    minWidth: 0,
+  },
+});
+
+function expectResponsiveProbeClasses(
+  element: HTMLElement,
+  style: (typeof responsiveLayoutProbe)[keyof typeof responsiveLayoutProbe],
+): void {
+  const classes = (stylex.props(style).className ?? '')
+    .split(' ')
+    .filter(className => className !== '' && !className.includes('__'));
+  expect(classes.length).toBeGreaterThan(0);
+  for (const className of classes) {
+    expect(element).toHaveClass(className);
+  }
+}
+
 describe('DateTimeInput', () => {
   it('renders with label', () => {
     render(<DateTimeInput label="Meeting time" onChange={() => {}} />);
@@ -113,6 +140,37 @@ describe('DateTimeInput', () => {
     render(<DateTimeInput label="Meeting" onChange={() => {}} />);
     expect(screen.getByRole('combobox')).toBeInTheDocument();
     expect(screen.getByLabelText('Meeting time')).toBeInTheDocument();
+  });
+
+  it('allows the date and time segments to wrap when they no longer fit', () => {
+    const {container} = render(
+      <DateTimeInput label="Meeting" onChange={() => {}} />,
+    );
+    const row = container.querySelector(
+      '.astryx-date-time-input',
+    ) as HTMLElement;
+    expect(row).not.toBeNull();
+    expectResponsiveProbeClasses(row, responsiveLayoutProbe.responsiveRow);
+  });
+
+  it('gives both segments the intrinsic wrap threshold and allows them to shrink', () => {
+    const {container} = render(
+      <DateTimeInput label="Meeting" onChange={() => {}} />,
+    );
+    const dateSegment = container.querySelector(
+      '.astryx-date-time-input-date-segment',
+    ) as HTMLElement;
+    const timeSegment = container.querySelector(
+      '.astryx-date-time-input-time-segment',
+    ) as HTMLElement;
+    expectResponsiveProbeClasses(
+      dateSegment,
+      responsiveLayoutProbe.responsiveSegment,
+    );
+    expectResponsiveProbeClasses(
+      timeSegment,
+      responsiveLayoutProbe.responsiveSegment,
+    );
   });
 
   it('does not commit the date on a composing Enter (IME)', () => {
@@ -1329,6 +1387,47 @@ describe('DateTimeInput', () => {
       expect(listbox).toHaveAttribute('aria-label');
     });
 
+    it('highlights on hover without scrolling, keyboard still scrolls (#6077)', () => {
+      // Hover must highlight only: scrollIntoView under a stationary pointer
+      // moves the next option under it, re-highlighting and scrolling again —
+      // a runaway auto-scroll loop with no user input.
+      const scrollIntoView = vi.fn();
+      Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+        configurable: true,
+        value: scrollIntoView,
+      });
+      try {
+        const {container} = render(
+          <DateTimeInput
+            label="Meeting"
+            value={'2026-03-15T14:00' as ISODateTimeString}
+            timeOptionInterval={60}
+            onChange={() => {}}
+          />,
+        );
+
+        const timeInput = screen.getByLabelText('Meeting time');
+        fireEvent.click(timeInput);
+        scrollIntoView.mockClear();
+
+        const options = container
+          .querySelector('[role="listbox"]')!
+          .querySelectorAll('[role="option"]');
+        fireEvent.mouseEnter(options[5]);
+
+        expect(timeInput.getAttribute('aria-activedescendant')).toBe(
+          options[5].id,
+        );
+        expect(scrollIntoView).not.toHaveBeenCalled();
+
+        fireEvent.keyDown(timeInput, {key: 'ArrowDown'});
+        expect(scrollIntoView).toHaveBeenCalledWith({block: 'nearest'});
+      } finally {
+        delete (HTMLElement.prototype as unknown as {scrollIntoView?: unknown})
+          .scrollIntoView;
+      }
+    });
+
     it('does not open the list when disabled', () => {
       render(
         <DateTimeInput
@@ -2146,9 +2245,7 @@ describe('DateTimeInput', () => {
         .closest('.astryx-date-time-input-time-segment');
 
       expect(date).toHaveAttribute('data-size', 'lg');
-      expect(date).toHaveClass('lg');
       expect(time).toHaveAttribute('data-size', 'lg');
-      expect(time).toHaveClass('lg');
     });
 
     it('reflects status on both segments, mirroring the root', () => {
@@ -2197,7 +2294,7 @@ describe('DateTimeInput', () => {
         components: {
           'date-time-input-date-segment': {
             base: {blockSize: 'var(--size-element-lg)'},
-            lg: {paddingInline: 'var(--spacing-4)'},
+            'size:lg': {paddingInline: 'var(--spacing-4)'},
           },
           'date-time-input-time-segment': {
             base: {blockSize: 'var(--size-element-lg)'},
@@ -2207,7 +2304,9 @@ describe('DateTimeInput', () => {
       const css = generateThemeTestCSS(theme);
 
       expect(css).toContain('.astryx-date-time-input-date-segment {');
-      expect(css).toContain('.astryx-date-time-input-date-segment.lg');
+      expect(css).toContain(
+        '.astryx-date-time-input-date-segment[data-size="lg"]',
+      );
       expect(css).toContain('.astryx-date-time-input-time-segment {');
       expect(css).toContain('block-size: var(--size-element-lg)');
       expect(css).toContain('padding-inline: var(--spacing-4)');
@@ -2247,10 +2346,11 @@ describe('DateTimeInput', () => {
     });
 
     it('leaves both leading glyphs byte-identical to a plain secondary/sm icon by default', () => {
-      // The targets are purely additive: the stable target class and its
-      // reflected state add nothing to the render until a theme targets them.
-      // Guard that by diffing each glyph's StyleX classes against a standalone
-      // secondary/sm icon, excluding only the additive target/state classes.
+      // The targets are purely additive: the stable target class, reflected
+      // state, and released bare-state compatibility class add nothing to the
+      // render until a theme or consumer stylesheet targets them. Guard that by
+      // diffing each glyph's StyleX classes against a standalone secondary/sm
+      // icon, excluding only those additive theme metadata classes.
       const {container} = render(
         <DateTimeInput label="Meeting" onChange={() => {}} />,
       );
@@ -2301,7 +2401,9 @@ describe('DateTimeInput', () => {
       const css = generateThemeTestCSS(theme);
 
       expect(css).toContain('.astryx-date-time-input-toggle-icon {');
-      expect(css).toContain('.astryx-date-time-input-toggle-icon.expanded');
+      expect(css).toContain(
+        '.astryx-date-time-input-toggle-icon[data-state="expanded"]',
+      );
       expect(css).toContain('.astryx-date-time-input-clock-icon {');
       expect(css).toContain('width: 14px');
       expect(css).toContain('color: var(--color-icon-primary)');
@@ -2316,7 +2418,6 @@ describe('DateTimeInput disabled theme state', () => {
     );
     const root = container.querySelector('.astryx-date-time-input');
     expect(root).toHaveAttribute('data-disabled', 'disabled');
-    expect(root).toHaveClass('disabled');
   });
 
   it('omits data-disabled when enabled, like status does', () => {

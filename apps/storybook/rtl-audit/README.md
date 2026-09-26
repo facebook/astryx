@@ -9,18 +9,34 @@ differences. It reuses the `@playwright/test` chromium the `pr-a11y` job already
 installs and mirrors that job's build-storybook → serve → drive shape. In CI it
 is the `pr-rtl` job — the RTL sibling of `pr-a11y`.
 
-## Two layers
+## Three layers
 
-### A. Auto-discovery — over every `core-*` and `lab-*` story in scope
+### A. Auto-discovery — over every story prefix in the component-package registry
 
 The point of the audit is to auto-catch **new or changed** components, so the
-auto-discovery layer runs with **zero curated selectors**. There are two
-independent auto passes: **D1 (icon-mirror)** and **D5 (positional-mirror)**.
+auto-discovery layer runs with **zero curated selectors**. There are three
+independent auto passes: **D1 (icon-mirror)**, **D5 (positional-mirror)**, and
+**D6 (directional-decoration)**.
 
 > **Scope in CI.** `pr-rtl` passes `--filter` with the components the PR
-> touched (from `analysis.json`), matching `pr-a11y`. The full unfiltered sweep
-> runs weekly in `.github/workflows/rtl-weekly.yml` — that is what covers a
-> component no PR edited. Omit `--filter` to run it locally.
+> touched (from `analysis.json`), matching `pr-a11y`. Eligibility is classified
+> by the component policy and package registry loaded from the trusted base ref;
+> a missing policy, empty or unmatched path set, unresolved component list, or
+> registry/classifier/workflow mutation runs the full audit rather than accepting
+> an empty scope. CI partitions that full scope into one bounded shard per
+> canonical package, each with four browser workers; the stable `pr-rtl` context
+> succeeds only after all five scope manifests arrive and every applicable
+> package produces a report whose requested package/filter, duplicate-free exact
+> D1/D5/D6 identities, and nonzero planned/completed scans match. When trusted
+> policy requires full scope, every manifest must be runnable with an empty
+> filter and all five package reports must arrive. A planned scan ending in ERROR
+> is incomplete. Missing or malformed analysis/index/manifest input, a noncanonical owner, stale output, a missing or unexpected report, and
+> an all-skipped required matrix all fail closed. An ordinary RTL-harness-only PR runs the fixed `Chart,ChartLegend` routing smoke
+> scope so package discovery and curated aliases cannot skip their own check. The
+> full unfiltered sweep also runs weekly in `.github/workflows/rtl-weekly.yml`.
+> Omit `--filter` to run it locally. The blocking accessibility audit consumes the
+> same package-qualified owner-to-story routes and fails if any selected owner
+> resolves to zero stories.
 
 ### A.1 D1 icon-mirror
 
@@ -69,7 +85,7 @@ because their embedded Calendar chevrons mirror once the popover is open.
 
 ### A.2 D5 positional-mirror
 
-A second auto pass, over **every** core story, that catches a bug class D1 and
+A second auto pass, over **every** audited-package story, that catches a bug class D1 and
 the `@astryx/no-physical-properties` **lint both miss**: an element positioned
 with a **logical anchor** (`insetInlineStart` / `insetInlineEnd`, which _does_
 flip under RTL) paired with an **unflipped physical transform**
@@ -161,7 +177,32 @@ flagged. The bug only exists in the **interaction** of the two at layout time,
 which is visible only by comparing the rendered LTR vs RTL geometry — exactly
 what D5 does.
 
-### B. Curated precision — D2 / D3 / D4
+### A.3 D6 directional-decoration
+
+Text can be directional because of its **role in the UI**, not only because of
+the character itself. `/` in prose is neutral; the same `/` rendered as an
+`aria-hidden` separator between repeated breadcrumb items communicates forward
+progress and must mirror.
+
+D6 runs over every story and auto-discovers only strong decoration contexts:
+
+- the element is `aria-hidden="true"`;
+- its trimmed content is one supported glyph; and
+- it belongs to repeated list items or sits between sibling elements.
+
+That context prevents ordinary prose, dates, fractions, and paths from becoming
+false positives. D6 then applies the glyph's actual bidi contract:
+
+- `/`, `\\`, `→`, `←`, `>`, and `<` require exactly one explicit transform
+  mirror or a left/right glyph swap;
+- `›`, `‹`, `»`, and `«` have Unicode `Bidi_Mirrored=Yes`, so the browser
+  mirrors an unchanged glyph. Swapping or transforming them again is a failure.
+
+D6 returns **N-A** when a story contains no contextual decoration. The
+applicability layer below decides whether that N-A is explained; D6 itself does
+not turn absence into a pass.
+
+### B. Curated precision — D2 / D3 / D4 / D7 / D8 / D9
 
 `targets.json` holds the geometry/behavior dimensions that genuinely need
 hand-written selectors, run **in addition** to auto-discovery:
@@ -171,9 +212,65 @@ hand-written selectors, run **in addition** to auto-discovery:
 - **D3 behavior-flip** — directional behavior inverts, e.g. Carousel's scroll
   axis: "next" makes `scrollLeft` go positive in LTR and negative in RTL.
 - **D4 overlay-side** — a positioned affordance flips side (`boundingBox`).
+- **D7 coarse hit alignment** — each configured native input remains centered
+  under its visible coarse-pointer wrapper and receives a center-point hit.
+- **D8 logical inline-edge mirror** — one configured, visible, non-zero subject
+  carries an intentionally asymmetric logical start/end padding pair whose
+  logical values stay stable while the resolved physical inline-axis sides swap
+  between LTR and RTL: left/right in horizontal writing, top/bottom in vertical
+  or sideways writing. The orthogonal physical edges must remain stable.
+  Missing, duplicate, hidden, zero-size, symmetric, or changing-writing-mode
+  fixtures fail closed because they cannot prove the relationship. Real
+  Chromium startup self-checks prove horizontal and vertical-writing passes plus
+  a hidden-subject failure before any component result is accepted.
+- **D9 logical grouped corners** — configured first/middle/last subjects must
+  tighten the end/both/start corners on one declared logical inline side, keep
+  every opposite-side corner full, and mirror the physical side between LTR and
+  RTL. Missing, hidden, symmetric, inconsistent, or physically pinned groups
+  fail rather than earning coverage for parent alignment.
 
-D1 is intentionally **not** in `targets.json` — auto-discovery covers it
-universally.
+D1, D5, and D6 are intentionally **not** in `targets.json`; auto-discovery covers
+them universally.
+
+### C. Applicability: no unexplained all-N/A components
+
+The report rolls every public component in the canonical component-package
+registry into one of three states. Package roots, layouts, story prefixes, and
+public component names come from `scripts/component-packages.cjs`; Storybook
+titles project onto that canonical roster across Core, Lab, Charts, Rich Text,
+and Vega, including one-to-many grouped titles such as
+`Charts/Chrome/Axes & Grids`. Curated targets remain the exact alias when a title
+cannot name its owner. An entry with an empty `dims` array is route-only: it
+binds a public owner to a story that renders it for universal D1/D5/D6 scanning
+without inventing a curated measurement.
+
+- **measured**: at least one D1/D5/D6 or curated dimension was applicable;
+- **verified N-A**: `verified-not-applicable.json` records a specific reason
+  the component has no direction-sensitive visual, layout, or behavior;
+- **coverage gap**: every dimension returned N-A and no reason is recorded.
+
+Coverage gaps are findings. This rule applies to the existing full-library
+weekly sweep and to every new or changed component in PR CI. A component with no
+story is also a gap when it is named by `--filter`; it cannot disappear from the
+report merely because there was nothing to render.
+
+A verified-N/A declaration is not an allowlist. If an automatic or curated
+dimension later becomes applicable, the declaration is reported as
+**stale-verified-na** and must be removed or replaced with real coverage.
+
+Add a declaration only after reading the component's source and every story:
+
+```json
+[
+  {
+    "component": "core/Text",
+    "reason": "No direction-sensitive visual, positioned element, order, scroll, drag, overlay, or keyboard behavior."
+  }
+]
+```
+
+An all-N/A scorecard without such a checked-in reason means **unmeasured**, not
+RTL-ready.
 
 ## Why relationship-based, not pixel baselines
 
@@ -217,8 +314,10 @@ pnpm rtl:audit -- --auto-only
 pnpm rtl:audit -- --curated-only
 ```
 
-Exit code is non-zero if auto-discovery finds any not-RTL component or a curated
-dim fails — but the CI job is soft (see below), so this never hard-blocks.
+Exit code is non-zero if auto-discovery finds a not-RTL component, a curated
+dimension fails, the applicability registry is invalid, or a full-mode run has
+a coverage gap or stale verified-N/A declaration. CI remains soft-gated (see
+below), so the signal does not hard-block yet.
 
 ## Adding a curated target
 
@@ -226,10 +325,13 @@ Edit `targets.json`. Each entry is:
 
 ```jsonc
 {
-  "component": "MyComponent",
+  "component": "MyComponent", // explicit alias for grouped story titles
   "storyId": "core-mycomponent--some-story", // must exist in dist/index.json
-  "dims": ["D2", "D3"], // D2/D3/D4 only (D1 is auto)
-  "setup": {"click": "img"}, // optional: reveal the target
+  "dims": ["D2", "D3", "D9"], // D2/D3/D4/D7/D8/D9 only (D1/D5/D6 are auto)
+  "setup": {
+    "args": {"position": "start"}, // optional: drive Storybook args
+    "click": "img", // optional: reveal the target after args settle
+  },
   "selectors": {
     "prev": "button[aria-label=\"Prev\"]", // D2
     "next": "button[aria-label=\"Next\"]",
@@ -237,6 +339,16 @@ Edit `targets.json`. Each entry is:
     "nextButton": "button[aria-label=\"Scroll right\"]",
     "overlay": "…",
     "overlayRoot": "…", // D4
+    "groups": [
+      // D9
+      {
+        "name": "primary",
+        "logicalSide": "inline-start",
+        "first": "[data-testid=group-first]",
+        "middle": "[data-testid=group-middle]",
+        "last": "[data-testid=group-last]",
+      },
+    ],
   },
 }
 ```

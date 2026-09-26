@@ -9,6 +9,8 @@
  * @position Core implementation; used inside SideNav children
  *
  * Navigation item with icon, selected state, row-level actions, and nesting.
+ * Collapsed icon-only controls use a meaningful consumer `aria-label` when
+ * provided and fall back to `label` when it is missing or blank.
  *
  * Collapsed items with children open their submenu flyout through
  * `useMenuHover`, the shared hover-intent hook (same one `SideNavHeading` and
@@ -571,6 +573,11 @@ export function SideNavItem({
       ),
     );
 
+    const collapsedAccessibleLabel =
+      rest['aria-label'] != null && rest['aria-label'].trim() !== ''
+        ? rest['aria-label']
+        : label;
+
     // Items with children: popover trigger + popover
     if (hasChildren) {
       return (
@@ -580,7 +587,7 @@ export function SideNavItem({
             type="button"
             {...rest}
             {...hoverTriggerProps}
-            aria-label={label}
+            aria-label={collapsedAccessibleLabel}
             data-testid={testId}
             {...popover.triggerProps}
             {...collapsedItemStyles}>
@@ -607,7 +614,7 @@ export function SideNavItem({
     const collapsedAriaProps = {
       'aria-current': isSelected ? ('page' as const) : undefined,
       'aria-disabled': isDisabled || undefined,
-      'aria-label': label,
+      'aria-label': collapsedAccessibleLabel,
       'data-testid': testId,
     };
 
