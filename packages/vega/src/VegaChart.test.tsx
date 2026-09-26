@@ -279,6 +279,45 @@ describe('VegaChart', () => {
       expect(views).toHaveLength(2);
     });
 
+    // Vega-Lite compiles a fresh merge of the theme and the caller's options,
+    // not the caller's object itself: an equal merge must keep the View, and
+    // an edit to the caller's object has to reach the comparison through it.
+    it('keeps a Vega-Lite View when a re-render passes equal inline compileOptions', () => {
+      const {rerender} = render(
+        <VegaChart
+          spec={VEGA_LITE_SPEC}
+          compileOptions={{config: {background: 'red'}}}
+        />,
+      );
+
+      rerender(
+        <VegaChart
+          spec={VEGA_LITE_SPEC}
+          compileOptions={{config: {background: 'red'}}}
+        />,
+      );
+
+      expect(views).toHaveLength(1);
+      expect(compileMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('rebuilds a Vega-Lite View when compileOptions.config is mutated in place', () => {
+      const compileOptions = {config: {background: 'red'}};
+      const {rerender} = render(
+        <VegaChart spec={VEGA_LITE_SPEC} compileOptions={compileOptions} />,
+      );
+
+      compileOptions.config.background = 'blue';
+      rerender(
+        <VegaChart spec={VEGA_LITE_SPEC} compileOptions={compileOptions} />,
+      );
+
+      expect(views).toHaveLength(2);
+      expect(compileMock).toHaveBeenLastCalledWith(VEGA_LITE_SPEC, {
+        config: {...DEFAULT_THEME_CONFIG, background: 'blue'},
+      });
+    });
+
     it('hands Vega the caller’s own spec object, not a copy', () => {
       render(<VegaChart spec={VEGA_SPEC} />);
 

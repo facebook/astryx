@@ -11,13 +11,7 @@
  * - /packages/vega/README.md
  */
 
-import React, {
-  useEffect,
-  useEffectEvent,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, {useEffect, useEffectEvent, useRef, useState} from 'react';
 import {parse, View} from 'vega';
 import {compile} from 'vega-lite';
 import {useTheme} from '@astryxdesign/core/theme';
@@ -121,15 +115,14 @@ export function VegaChart({
   // own compile options, so a chart is themed out of the box. Native specs
   // never compile, so they get the caller's options untouched: otherwise a
   // theme or mode switch would change their inputs and rebuild the View for
-  // nothing. `token` keeps its identity until the resolved theme changes.
+  // nothing. The merge is redone every render, not memoized on the caller's
+  // object, so an in-place edit to `compileOptions` still reaches the latch.
   const {token} = useTheme();
   const schema = parseSchema(spec.$schema);
   const isVegaLite = schema.ok && schema.library === 'vega-lite';
-  const effectiveCompileOptions = useMemo(
-    () =>
-      isVegaLite ? withAstryxConfig(token, compileOptions) : compileOptions,
-    [isVegaLite, token, compileOptions],
-  );
+  const effectiveCompileOptions = isVegaLite
+    ? withAstryxConfig(token, compileOptions)
+    : compileOptions;
 
   // Rebuild only when a value the runtime is built from actually differs.
   // The latch holds both the props the live View was built from and a copy of
