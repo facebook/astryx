@@ -3,7 +3,7 @@
 /**
  * @file tokenizer.ts
  * @input Code string and language identifier
- * @output Array of per-line token arrays with line-relative offsets
+ * @output Array of per-line token arrays with line-relative offsets and optional trusted presentation
  * @position Shared utility; consumed by CodeBlock and CodeEditor
  *
  * SYNC: When modified, update:
@@ -17,7 +17,28 @@
  */
 declare const scheduler: {yield?: () => Promise<void>} | undefined;
 
-export type SyntaxToken = {type: string; start: number; end: number};
+import type {CSSProperties} from 'react';
+
+/** Inline presentation accepted from trusted custom tokenizers. */
+export type SyntaxTokenStyle = Readonly<
+  Pick<
+    CSSProperties,
+    | 'backgroundColor'
+    | 'color'
+    | 'fontStyle'
+    | 'fontWeight'
+    | 'opacity'
+    | 'textDecorationLine'
+    | 'visibility'
+  >
+>;
+
+export type SyntaxToken = {
+  type: string;
+  start: number;
+  end: number;
+  style?: SyntaxTokenStyle;
+};
 
 /**
  * Per-line token structure. Each line stores its own tokens with
@@ -500,7 +521,7 @@ export async function tokenizeStreaming(
  * tokenizers that return the old format.
  */
 export function flatTokensToLines(
-  tokens: {type: string; start: number; end: number}[],
+  tokens: SyntaxToken[],
   code: string,
 ): TokenLine[] {
   const lineStarts: number[] = [0];
@@ -523,7 +544,7 @@ export function flatTokensToLines(
 
     const lineStart = lineStarts[lineIdx];
     result[lineIdx].push({
-      type: token.type,
+      ...token,
       start: token.start - lineStart,
       end: token.end - lineStart,
     });

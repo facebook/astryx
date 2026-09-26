@@ -5,7 +5,7 @@
 /**
  * @file index.ts
  * @input Imports from CodeBlock.tsx, Code.tsx, tokenizer.ts, highlightRanges.ts, highlightStyles.ts
- * @output Exports CodeBlock, Code components, tokenizer utilities, and highlight APIs
+ * @output Exports CodeBlock, Code, tokenizer utilities, styled-token types, and highlight APIs
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  *
  * SYNC: When modified, update /packages/core/src/CodeBlock/CodeBlock.doc.mjs
@@ -24,7 +24,7 @@ export {
   flatTokensToLines,
   SYNC_TOKENIZE_THRESHOLD,
 } from './tokenizer';
-export type {SyntaxToken, TokenLine} from './tokenizer';
+export type {SyntaxToken, SyntaxTokenStyle, TokenLine} from './tokenizer';
 
 export {
   applyHighlightRangesChunked,
