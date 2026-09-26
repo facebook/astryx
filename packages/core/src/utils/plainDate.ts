@@ -241,11 +241,20 @@ export function plainDateSetEndOfWeekExclusive(
   return plainDateAddDays(plainDateSetStartOfWeek(pd, weekStartsOn), 7);
 }
 
+/**
+ * ISO 8601 week number. A `PlainDate` carries no timezone, so this does all
+ * arithmetic in UTC rather than through `plainDateToDate`'s local `Date` —
+ * a local Date's millisecond distance across a DST boundary is not an exact
+ * multiple of 24h, which corrupted the day-count division below in any zone
+ * that observes DST (e.g. Sydney/Auckland/Santiago, where DST ends after New
+ * Year: every Thursday from a Friday-starting year reports one week high;
+ * see #6364).
+ */
 export function plainDateGetWeekNumber(pd: PlainDate): number {
-  const d = plainDateToDate(pd);
-  const dayNum = d.getDay() || 7;
-  d.setDate(d.getDate() + 4 - dayNum);
-  const yearStart = new Date(d.getFullYear(), 0, 1);
+  const d = new Date(Date.UTC(pd.year, pd.month - 1, pd.day));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 }
 
