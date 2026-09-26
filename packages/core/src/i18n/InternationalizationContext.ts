@@ -23,6 +23,7 @@
  */
 
 import {createContext} from 'react';
+import {getResolve} from './resolve';
 import type {Locale, MessagesByLocale, Overrides} from './types';
 
 export interface InternationalizationContextValue {
@@ -30,6 +31,7 @@ export interface InternationalizationContextValue {
   direction: 'ltr' | 'rtl';
   messages: MessagesByLocale;
   overrides?: Overrides;
+  translate: ReturnType<typeof getResolve>;
 }
 
 /**
@@ -41,5 +43,6 @@ export const InternationalizationContext =
     locale: 'en',
     direction: 'ltr',
     messages: {},
+    translate: getResolve('en', {}),
   });
 InternationalizationContext.displayName = 'InternationalizationContext';

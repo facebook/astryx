@@ -351,7 +351,7 @@ tokens: {
     },
   },
   shortcuts: {
-    'xds-card': 'bg-surface text-primary border border-border rounded-lg p-4',
+    'astryx-card': 'bg-surface text-primary border border-border rounded-lg p-4',
   },
 });`,
         },

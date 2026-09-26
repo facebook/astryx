@@ -18,7 +18,8 @@
  * unless a hotkey opts in via `allowInInputs`.
  *
  * Platform-aware: `mod` maps to metaKey (⌘) on Apple platforms and
- * ctrlKey elsewhere — mirrors the detection used by Kbd.
+ * ctrlKey elsewhere, through the same isApplePlatform util Kbd reads, so
+ * displayed and handled shortcuts cannot disagree.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts
@@ -26,6 +27,7 @@
  */
 
 import {useEffect, useRef} from 'react';
+import {isApplePlatform} from '../utils/isApplePlatform';
 
 /**
  * A single keyboard shortcut registration.
@@ -70,30 +72,6 @@ const KEY_ALIASES: Record<string, string> = {
   return: 'enter',
   plus: '+',
 };
-
-/**
- * Detects whether the current platform is macOS/iOS.
- * Prefers the User-Agent Client Hints API when it names a platform (modern
- * Chrome/Edge), falls back to navigator.platform (deprecated but universally
- * supported) when it is absent or blank.
- * Mirrors the detection used by Kbd so displayed and handled shortcuts agree.
- */
-function isApplePlatform(): boolean {
-  if (typeof navigator === 'undefined') {
-    return false;
-  }
-  const uaData = 'userAgentData' in navigator ? navigator.userAgentData : null;
-  if (uaData && typeof uaData === 'object' && 'platform' in uaData) {
-    const uaPlatform = (uaData as {platform?: unknown}).platform;
-    // A blank platform is no answer, not a negative one. Builds that rewrite
-    // their client-hints identity ship '', so fall through rather than
-    // reading it as "not Apple".
-    if (typeof uaPlatform === 'string' && uaPlatform.trim() !== '') {
-      return /mac/i.test(uaPlatform);
-    }
-  }
-  return /Mac|iPhone|iPad|iPod/.test(navigator.platform ?? '');
-}
 
 /**
  * Whether the event target is a typing surface where global shortcuts

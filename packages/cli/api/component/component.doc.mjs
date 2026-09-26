@@ -12,6 +12,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'component',
+  namespace: 'cli/api',
   displayName: 'component()',
   summary:
     'Resolve a component by name, or list the catalog, with optional focused slices (props, source, showcase, blocks).',
@@ -91,7 +92,8 @@ export const doc = {
     {
       name: 'options.lang',
       type: 'string',
-      description: 'Language code for localized doc content.',
+      description:
+        "Language code for localized doc content: 'en', 'zh', or 'dense'.",
     },
     {
       name: 'options.zh',
@@ -108,12 +110,12 @@ export const doc = {
     {
       type: 'component.list',
       description:
-        "The catalog grouped by category. data.detail is the level ('names' | 'compact' | 'full') and data.components is the grouped map: names+package, brief entries, or full ComponentDoc per entry.",
+        "The catalog grouped by category. data.detail is the level ('names' | 'compact' | 'full') and data.components is the grouped map: names entries with name, package, and an optional canonical import for integration and legacy package components; brief entries; or full ComponentDoc entries.",
     },
     {
       type: 'component.detail',
       description:
-        "One component's authored ComponentDoc plus ownership metadata (owner package, import specifier, whether source is available).",
+        "One component's authored ComponentDoc plus ownership metadata (owner package, import specifier, whether source is available). When the name is a sub-component documented in a parent's doc, the payload is scoped to it and parentDoc names that parent.",
     },
     {
       type: 'component.detail.props',
@@ -135,6 +137,14 @@ export const doc = {
     },
   ],
   throws: [
+    {
+      code: 'ERR_INVALID_DETAIL',
+      when: "options.detail is not 'full', 'compact', or 'brief'",
+    },
+    {
+      code: 'ERR_INVALID_LANG',
+      when: "options.lang is set to anything other than 'en', 'zh', or 'dense'",
+    },
     {
       code: 'ERR_CORE_NOT_FOUND',
       when: '@astryxdesign/core cannot be resolved from cwd',

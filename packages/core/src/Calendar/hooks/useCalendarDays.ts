@@ -4,7 +4,7 @@
 
 /**
  * @file useCalendarDays.ts
- * @input Uses React context via use(), useMemo, PlainDate utilities, generated CLDR weekday data
+ * @input Uses React useMemo, useLocale, PlainDate utilities, generated CLDR weekday data
  * @output Exports useCalendarDays hook for generating calendar day grids
  * @position Calendar-specific hook; used by Calendar
  *
@@ -12,7 +12,7 @@
  * - /packages/core/src/Calendar/hooks/index.ts
  */
 
-import {use, useMemo} from 'react';
+import {useMemo} from 'react';
 import type {DayOfWeek, ISODateString} from '../../utils/dateTypes';
 import {
   type PlainDate,
@@ -21,7 +21,7 @@ import {
   plainDateDayOfWeek,
   plainDateAddDays,
 } from '../../utils/plainDate';
-import {InternationalizationContext} from '../../i18n/InternationalizationContext';
+import {useLocale} from '../../i18n';
 import {getStandaloneShortWeekdayNames} from '../getStandaloneShortWeekdayNames';
 
 /**
@@ -86,7 +86,7 @@ export function useCalendarDays(
   options: UseCalendarDaysOptions,
 ): UseCalendarDaysReturn {
   const {year, month, weekStartsOn = 0, hasVariableRowCount = false} = options;
-  const {locale} = use(InternationalizationContext);
+  const locale = useLocale();
 
   // Calculate grid structure
   const gridInfo = useMemo(() => {

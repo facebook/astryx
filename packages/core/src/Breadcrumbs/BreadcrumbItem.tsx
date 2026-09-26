@@ -5,8 +5,9 @@
 /**
  * @file BreadcrumbItem.tsx
  * @input Uses React use/useRef/useEffect, stylex, theme tokens, BreadcrumbContext,
- *   and (for the menu trigger) usePopover + the shared DropdownMenu item API
- *   (renderDropdownItems, DropdownMenuContext, MENU_ITEM_SELECTOR, useListFocus)
+ *   rtlStyles for the contextual default slash, and (for the menu trigger)
+ *   usePopover + the shared DropdownMenu item API (renderDropdownItems,
+ *   DropdownMenuContext, MENU_ITEM_SELECTOR, useListFocus)
  * @output Exports BreadcrumbItem component and BreadcrumbItemProps
  * @position Individual breadcrumb item; used inside Breadcrumbs
  *
@@ -38,11 +39,12 @@ import {
   spacingVars,
   typeScaleVars,
   radiusVars,
+  fontWeightVars,
 } from '../theme/tokens.stylex';
 import {BreadcrumbContext, type BreadcrumbsVariant} from './Breadcrumbs';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
@@ -64,6 +66,7 @@ import {
 } from '../DropdownMenu/menuItemRoles';
 import type {DropdownMenuOption} from '../DropdownMenu/DropdownMenu';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Props
 // =============================================================================
@@ -93,8 +96,9 @@ export interface BreadcrumbItemProps extends Omit<
   onClick?: (e: MouseEvent<HTMLElement>) => void;
   /**
    * Marks this item as the current page. Renders as a span with aria-current="page".
-   * If not set on any item, the last item is auto-detected as current.
-   * @default false
+   * When omitted, the last item is auto-detected as current if no item is
+   * explicitly current. Pass `false` to opt this item out of auto-detection.
+   * @default undefined
    */
   isCurrent?: boolean;
   /**
@@ -186,7 +190,7 @@ const itemStyles = stylex.create({
     color: colorVars['--color-text-secondary'],
   },
   current: {
-    fontWeight: 'inherit',
+    fontWeight: fontWeightVars['--font-weight-semibold'],
   },
   defaultCurrent: {
     color: colorVars['--color-text-primary'],
@@ -218,6 +222,18 @@ const itemStyles = stylex.create({
     userSelect: 'none',
   },
 });
+
+function BreadcrumbSeparator({separator}: {separator: ReactNode}) {
+  return (
+    <span aria-hidden="true" {...stylex.props(itemStyles.separator)}>
+      {separator === '/' ? (
+        <span {...stylex.props(rtlStyles.mirror)}>/</span>
+      ) : (
+        separator
+      )}
+    </span>
+  );
+}
 
 const menuStyles = stylex.create({
   menu: {
@@ -346,6 +362,8 @@ export function BreadcrumbItem({
     }
   });
 
+  const mergedItemRef = useMergedRefs(ref, liRef);
+
   const content = (
     <>
       {startIcon && <span {...stylex.props(itemStyles.icon)}>{startIcon}</span>}
@@ -356,7 +374,7 @@ export function BreadcrumbItem({
   if (isCurrent) {
     return (
       <li
-        ref={mergeRefs(ref, liRef)}
+        ref={mergedItemRef}
         {...mergeProps(
           themeProps('breadcrumb-item', {variant: ctx.variant}),
           stylex.props(
@@ -369,9 +387,7 @@ export function BreadcrumbItem({
         )}
         data-testid={testId}
         {...rest}>
-        <span aria-hidden="true" {...stylex.props(itemStyles.separator)}>
-          {ctx.separator}
-        </span>
+        <BreadcrumbSeparator separator={ctx.separator} />
         {hasMenu ? (
           // A current crumb can also open a sibling menu — the trigger keeps
           // both aria-current="page" and aria-haspopup="menu".
@@ -380,8 +396,7 @@ export function BreadcrumbItem({
             menu={menu}
             menuSize={resolvedMenuSize}
             variant={ctx.variant}
-            isCurrent
-            label={children}>
+            isCurrent>
             {content}
           </BreadcrumbMenuTrigger>
         ) : (
@@ -405,7 +420,7 @@ export function BreadcrumbItem({
   // The effect handles adding aria-current for auto-last detection.
   return (
     <li
-      ref={mergeRefs(ref, liRef)}
+      ref={mergedItemRef}
       {...mergeProps(
         themeProps('breadcrumb-item', {variant: ctx.variant}),
         stylex.props(
@@ -418,16 +433,13 @@ export function BreadcrumbItem({
       )}
       data-testid={testId}
       {...rest}>
-      <span aria-hidden="true" {...stylex.props(itemStyles.separator)}>
-        {ctx.separator}
-      </span>
+      <BreadcrumbSeparator separator={ctx.separator} />
       {hasMenu ? (
         <BreadcrumbMenuTrigger
           ref={contentRef}
           menu={menu}
           menuSize={resolvedMenuSize}
-          variant={ctx.variant}
-          label={children}>
+          variant={ctx.variant}>
           {content}
         </BreadcrumbMenuTrigger>
       ) : href != null ? (
@@ -480,8 +492,6 @@ interface BreadcrumbMenuTriggerProps {
   ref: React.Ref<HTMLElement>;
   /** The link-styled label content rendered inside the trigger button. */
   children: ReactNode;
-  /** Accessible name for the menu surface (the crumb's label). */
-  label: ReactNode;
   menu: DropdownMenuOption[] | ReactNode;
   menuSize: DropdownMenuSize;
   variant: BreadcrumbsVariant;
@@ -498,20 +508,17 @@ interface BreadcrumbMenuTriggerProps {
 function BreadcrumbMenuTrigger({
   ref,
   children,
-  label,
   menu,
   menuSize,
   variant,
   isCurrent = false,
 }: BreadcrumbMenuTriggerProps) {
   const menuId = useId();
+  const triggerId = useId();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const isSupporting = variant === 'supporting';
 
   const popover = usePopover({
-    onHide: useCallback(() => {
-      buttonRef.current?.focus();
-    }, []),
     hasLightDismiss: true,
     hasCloseButton: false,
     hasAutoFocus: false,
@@ -615,7 +622,7 @@ function BreadcrumbMenuTrigger({
   return (
     <>
       <button
-        ref={mergeRefs(
+        ref={useMergedRefs(
           ref as React.Ref<HTMLButtonElement>,
           buttonRef,
           popover.triggerRef,
@@ -624,6 +631,7 @@ function BreadcrumbMenuTrigger({
         onClick={handleClick}
         onKeyDown={handleKeyDown}
         {...popover.triggerProps}
+        id={triggerId}
         aria-haspopup="menu"
         aria-controls={menuId}
         aria-current={isCurrent ? 'page' : undefined}
@@ -657,7 +665,7 @@ function BreadcrumbMenuTrigger({
           ref={listRef}
           id={menuId}
           role="menu"
-          aria-label={typeof label === 'string' ? label : undefined}
+          aria-labelledby={triggerId}
           onKeyDown={listKeyDown}
           {...mergeProps(
             themeProps('breadcrumb-menu'),

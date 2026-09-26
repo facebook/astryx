@@ -4,7 +4,7 @@
 
 /**
  * @file Drawer.tsx
- * @input Uses React, StyleX, theme tokens, Icon/IconButton, useScrollLock, BaseProps, mergeProps/mergeRefs, themeProps
+ * @input Uses React, StyleX, theme tokens, Icon/IconButton, useScrollLock/useDrawerDialogPresence, BaseProps, mergeProps/mergeRefs, themeProps
  * @output Exports Drawer component and DrawerProps
  * @position Lab implementation; consumed by index.ts, tested by Drawer.test.tsx, demonstrated in Storybook
  *
@@ -26,10 +26,11 @@
  * - `show()` when `hasScrim={false}` — non-modal overlay; the page behind
  *   stays interactive (e.g. master-detail inspectors).
  *
- * Entry animation uses `@starting-style` + `transition-behavior:
- * allow-discrete` (see CLAUDE.md dialog-entry pattern); exit slides out
- * before a delayed `dialog.close()` releases the top layer and restores
- * focus to the element that opened the drawer.
+ * Entry animation uses `@starting-style`; exit slides out before
+ * `dialog.close()` releases the top layer and restores focus to the element
+ * that opened the drawer. React owns `display` for both legs rather than a
+ * discrete `display` transition, so the panel stops painting in the same
+ * commit as `close()` — see the `rendered` style for why that matters.
  *
  * Sibling drawers coordinate through a module-level LIFO registry: Escape
  * closes only the top (last-opened) drawer, and non-modal drawers stack
@@ -70,6 +71,7 @@ import {
   themeProps,
 } from '@astryxdesign/core/utils';
 import {overlayPaddingReset} from '@astryxdesign/core/Layout';
+import {useDrawerDialogPresence} from './useDrawerDialogPresence';
 
 // =============================================================================
 // LIFO stacking registry (internal)
@@ -149,22 +151,30 @@ const styles = stylex.create({
     insetBlockStart: 0,
     insetBlockEnd: 0,
     height: '100dvh',
-    // Closed state. `display` participates in the transition with
-    // allow-discrete so it flips to none only after the slide-out finishes
-    // (@starting-style covers the none -> flex entry).
+    // Closed state. `display` is owned by React (see `rendered`), not by a
+    // discrete `display` transition, so only `transform` animates here.
     display: 'none',
-    transitionProperty: 'transform, display',
+    transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-medium'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    transitionBehavior: 'allow-discrete',
     '@media (prefers-reduced-motion: reduce)': {
       transitionDuration: '0.01s',
     },
   },
-  // Open state applied via isOpen prop, not :where([open]) — attribute
+  // Rendered while the drawer is open AND while it slides out. Applied from
+  // React state, not from a discrete `display` transition: `close()` drops the
+  // dialog out of the top layer, and any ancestor that establishes a
+  // containing block for fixed positioning (transform, filter, container-type,
+  // contain) then becomes the origin for the panel's `position: fixed`. A
+  // panel still painting after `close()` therefore snaps back INTO the layout
+  // and covers the page for the rest of the hold. Owning `display` lets the
+  // hide land in the same commit as `close()`, so no frame is ever painted
+  // outside the top layer.
+  //
+  // Applied via the isOpen/exit state, not :where([open]) — attribute
   // selectors have zero specificity and can lose to default styles
   // depending on CSS source order (same rationale as Dialog/MobileNav).
-  open: {
+  rendered: {
     display: 'flex',
   },
   // start/end transforms flip under RTL so the panel always slides in from
@@ -406,9 +416,6 @@ export function Drawer({
   ...props
 }: DrawerProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
-  // Element focused when the drawer opened — restored on close.
-  const triggerElementRef = useRef<HTMLElement | null>(null);
   // Registry identity + latest onOpenChange (stable across re-renders so the
   // registration effect doesn't churn on every onOpenChange identity change).
   const drawerId = useId();
@@ -418,78 +425,22 @@ export function Drawer({
   }, [onOpenChange]);
   // z-index assigned by the registry on open (non-modal stacking only).
   const [stackZ, setStackZ] = useState(NON_MODAL_BASE_Z);
+  // Whether the panel paints: true while open and for the whole slide-out.
+  const [isRendered, setIsRendered] = useState(isOpen);
 
-  // Open/close the native dialog. close() is delayed so the slide-out
-  // transition can play; focus restore happens after close() because a
-  // modal dialog makes the rest of the document inert (focus() on the
-  // trigger would silently fail while the dialog is still open).
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) {
-      return;
-    }
+  // Adjusted during render, not in an effect: the panel has to be rendered in
+  // the same commit that targets the open transform, or @starting-style has
+  // nothing to animate from.
+  if (isOpen && !isRendered) {
+    setIsRendered(true);
+  }
 
-    if (closeTimeoutRef.current) {
-      clearTimeout(closeTimeoutRef.current);
-      closeTimeoutRef.current = null;
-    }
-
-    if (isOpen) {
-      if (!dialog.open) {
-        triggerElementRef.current =
-          document.activeElement as HTMLElement | null;
-        if (hasScrim) {
-          dialog.showModal();
-        } else {
-          dialog.show();
-        }
-        // React's autoFocus calls .focus() during commit, before the dialog
-        // is shown, so it silently fails — honor data-autofocus instead
-        // (same contract as Dialog).
-        const autofocusTarget =
-          dialog.querySelector<HTMLElement>('[data-autofocus]');
-        if (autofocusTarget) {
-          autofocusTarget.focus();
-        }
-      }
-    } else if (dialog.open) {
-      const duration = window.matchMedia('(prefers-reduced-motion: reduce)')
-        .matches
-        ? 10
-        : 250;
-      closeTimeoutRef.current = setTimeout(() => {
-        dialog.close();
-        // Return focus to the element that opened the drawer.
-        triggerElementRef.current?.focus();
-        triggerElementRef.current = null;
-      }, duration);
-    }
-
-    return () => {
-      if (closeTimeoutRef.current) {
-        clearTimeout(closeTimeoutRef.current);
-        closeTimeoutRef.current = null;
-      }
-    };
-  }, [isOpen, hasScrim]);
-
-  // Close the native dialog on unmount if it's still open. When the drawer
-  // is mounted inside an <Activity> that flips to mode="hidden", React runs
-  // effect cleanups (with a stale isOpen) instead of re-running the effect
-  // with isOpen=false — leaving the <dialog> `open` would skip showModal()
-  // on the next open and the drawer could never be re-opened (see
-  // MobileNavReopen.test.tsx for the original repro). This must be a
-  // separate unmount-only effect: putting it in the open/close effect above
-  // would close the dialog on every isOpen flip and cut off the delayed
-  // slide-out close.
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    return () => {
-      if (dialog?.open) {
-        dialog.close();
-      }
-    };
-  }, []);
+  useDrawerDialogPresence({
+    dialogRef,
+    isOpen,
+    isModal: hasScrim,
+    setIsRendered,
+  });
 
   // LIFO registry membership: register on open, unregister on close or
   // unmount. The returned z-index stacks non-modal siblings in open order.
@@ -551,8 +502,21 @@ export function Drawer({
     ? MOBILE_WIDTH_FULL
     : `min(${widthValue}, calc(100dvw - ${MOBILE_PAGE_REVEAL}px))`;
 
-  const sideStyle = side === 'start' ? styles.start : styles.end;
-  const sideOpenStyle = side === 'start' ? styles.startOpen : styles.endOpen;
+  // The side the panel is ANCHORED to, which is the side it must slide back
+  // out to. Latched at open, because a consumer commonly derives `side` from
+  // the same state that drives `isOpen` (`side={selected?.side ?? 'end'}`):
+  // that state clears on close, so the live prop flips mid-exit and the panel
+  // teleports to the other edge and slides out the wrong way. Children stay
+  // mounted for the exit for the same reason; so does the anchor.
+  const exitSideRef = useRef(side);
+  if (isOpen) {
+    exitSideRef.current = side;
+  }
+  const anchoredSide = isOpen ? side : exitSideRef.current;
+
+  const sideStyle = anchoredSide === 'start' ? styles.start : styles.end;
+  const sideOpenStyle =
+    anchoredSide === 'start' ? styles.startOpen : styles.endOpen;
 
   // Filter out native `open` to prevent InvalidStateError when passed
   const {open: _open, ...safeProps} = props as Record<string, unknown>;
@@ -561,13 +525,13 @@ export function Drawer({
     <dialog
       ref={mergeRefs(ref, dialogRef)}
       {...mergeProps(
-        themeProps('drawer', {side}),
+        themeProps('drawer', {side: anchoredSide}),
         stylex.props(
           styles.dialog,
           overlayPaddingReset.reset,
           sideStyle,
           dynamicStyles.inlineSize(widthValue, mobileWidth),
-          isOpen && styles.open,
+          isRendered && styles.rendered,
           isOpen && sideOpenStyle,
           hasScrim ? styles.scrim : dynamicStyles.stackZ(stackZ),
           hasScrim && isOpen && styles.scrimOpen,

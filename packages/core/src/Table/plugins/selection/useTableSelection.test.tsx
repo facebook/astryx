@@ -285,6 +285,68 @@ describe('useTableSelection', () => {
         'aria-selected',
       );
     });
+
+    // A pinned cell paints over the row, then replays whatever the row
+    // published as --table-row-overlay. Without the variable the wash simply
+    // stops at the freeze line, so it has to track the background exactly.
+    describe('--table-row-overlay', () => {
+      const readOverlay = (row: HTMLElement) =>
+        row.style.getPropertyValue('--table-row-overlay');
+
+      it('publishes the wash so pinned cells can replay it', async () => {
+        const user = userEvent.setup();
+        render(<SelectionTable />);
+
+        await user.click(screen.getAllByLabelText('Select row')[0]);
+
+        expect(readOverlay(screen.getAllByRole('row')[1])).toBe(
+          selectedBgColor,
+        );
+      });
+
+      it('publishes nothing when the row is not painted', async () => {
+        const user = userEvent.setup();
+        render(<SelectionTable hasRowHighlight={false} />);
+
+        await user.click(screen.getAllByLabelText('Select row')[0]);
+
+        expect(readOverlay(screen.getAllByRole('row')[1])).toBe('');
+      });
+
+      it('withdraws the variable when a row is unchecked', async () => {
+        const user = userEvent.setup();
+        render(<SelectionTable />);
+
+        const checkbox = screen.getAllByLabelText('Select row')[0];
+        await user.click(checkbox);
+        await user.click(checkbox);
+
+        expect(readOverlay(screen.getAllByRole('row')[1])).toBe('');
+      });
+
+      it('tracks the background when the flag flips', async () => {
+        const user = userEvent.setup();
+        const {rerender} = render(<SelectionTable />);
+
+        await user.click(screen.getAllByLabelText('Select row')[0]);
+        rerender(<SelectionTable hasRowHighlight={false} />);
+        expect(readOverlay(screen.getAllByRole('row')[1])).toBe('');
+
+        rerender(<SelectionTable hasRowHighlight />);
+        expect(readOverlay(screen.getAllByRole('row')[1])).toBe(
+          selectedBgColor,
+        );
+      });
+
+      it('leaves unchecked rows without the variable', async () => {
+        const user = userEvent.setup();
+        render(<SelectionTable />);
+
+        await user.click(screen.getAllByLabelText('Select row')[0]);
+
+        expect(readOverlay(screen.getAllByRole('row')[2])).toBe('');
+      });
+    });
   });
 
   it('unsubscribes detached row refs instead of accumulating listeners', () => {

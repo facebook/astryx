@@ -1,0 +1,11 @@
+{
+  "apiVersion": 1,
+  "type": "template.show",
+  "data": {
+    "template": "hero",
+    "description": "A zorblax hero block.",
+    "type": "block",
+    "components": [],
+    "source": "export default function Hero() { return <section>zorblax</section>; }\n"
+  }
+}

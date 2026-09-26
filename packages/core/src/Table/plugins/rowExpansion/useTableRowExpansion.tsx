@@ -21,6 +21,7 @@ import {useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars, colorVars, radiusVars} from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
+import {VisuallyHidden} from '../../../VisuallyHidden';
 import {resolveContextActions} from '../../tableContextMenu';
 import {useTranslator} from '../../../i18n';
 import {rtlStyles} from '../../../utils';
@@ -207,7 +208,13 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
   const expansionColumn = useMemo(
     (): TableColumn<T> => ({
       key: '__expansion',
-      header: '',
+      // A `<th>` with no discernible text is announced as an unlabelled
+      // column; the label is hidden because the column shows only chevrons.
+      header: (
+        <VisuallyHidden>
+          {t('@astryx.tableRowExpansion.columnHeader')}
+        </VisuallyHidden>
+      ),
       width: EXPANSION_COLUMN_WIDTH,
       resizable: false,
       renderCell: (item: T) => {
@@ -226,7 +233,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
         );
       },
     }),
-    [expandedKeys, onToggle, getRowKey, getIsItemExpandable],
+    [expandedKeys, onToggle, getRowKey, getIsItemExpandable, t],
   );
 
   return useMemo(

@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {act, render, screen} from '@testing-library/react';
 import * as stylex from '@stylexjs/stylex';
 import {BaseTable} from './BaseTable';
 import {Table} from './Table';
@@ -369,9 +369,11 @@ describe('BaseTable', () => {
   it('renders children mode instead of data', () => {
     render(
       <BaseTable>
-        <tr>
-          <td>Manual cell</td>
-        </tr>
+        <tbody>
+          <tr>
+            <td>Manual cell</td>
+          </tr>
+        </tbody>
       </BaseTable>,
     );
     expect(screen.getByText('Manual cell')).toBeInTheDocument();
@@ -380,9 +382,11 @@ describe('BaseTable', () => {
   it('does not render thead in children mode without columns', () => {
     const {container} = render(
       <BaseTable>
-        <tr>
-          <td>Content</td>
-        </tr>
+        <tbody>
+          <tr>
+            <td>Content</td>
+          </tr>
+        </tbody>
       </BaseTable>,
     );
     expect(container.querySelector('thead')).toBeNull();
@@ -833,22 +837,95 @@ describe('Table', () => {
     expect(screen.getAllByRole('row')).toHaveLength(4);
   });
 
-  it('wraps table in a scroll container', () => {
+  it('wraps the table in an observed scroll content box', () => {
     render(<Table data={users} columns={columns} />);
     const table = screen.getByRole('table');
-    const wrapper = table.parentElement;
+    const content = table.parentElement;
+    const wrapper = content?.parentElement;
+    expect(content).toHaveAttribute('data-scroll-content');
     expect(wrapper).toBeTruthy();
     expect(wrapper!.className).toContain('astryx-table-scroll-wrapper');
   });
 
-  it('makes the scroll container keyboard-focusable', () => {
+  it('keeps a fitting scroll container out of the keyboard order', () => {
     render(<Table data={users} columns={columns} />);
-    const table = screen.getByRole('table');
-    const wrapper = table.parentElement;
-    expect(wrapper).toBeTruthy();
-    expect(wrapper!).toHaveAttribute('tabindex', '0');
-    expect(wrapper!).toHaveAttribute('role', 'group');
-    expect(wrapper!).toHaveAttribute('aria-label', 'Table');
+    const wrapper = screen.getByRole('group', {name: 'Table'});
+    expect(wrapper).not.toHaveAttribute('tabindex');
+    expect(wrapper.style.overscrollBehaviorX).toBe('auto');
+  });
+
+  it('preserves scroll-wrapper HTML attributes from plugins', () => {
+    const plugin: TablePlugin<User> = {
+      transformScrollWrapper: props => ({
+        ...props,
+        htmlProps: {
+          ...props.htmlProps,
+          role: 'region',
+          'aria-label': 'Orders',
+          tabIndex: 2,
+        },
+      }),
+    };
+    render(<Table data={users} columns={columns} plugins={{custom: plugin}} />);
+    const wrapper = screen.getByRole('region', {name: 'Orders'});
+    expect(wrapper).toHaveAttribute('tabindex', '2');
+  });
+
+  it('contains overscroll only while the table scrolls', () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn((callback: FrameRequestCallback) => {
+        frames.push(callback);
+        return frames.length;
+      }),
+    );
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+
+    try {
+      render(<Table data={users} columns={columns} />);
+      const wrapper = screen.getByRole('group', {name: 'Table'});
+      Object.assign(wrapper.style, {overflowX: 'auto'});
+      for (const [key, value] of Object.entries({
+        clientWidth: 100,
+        clientHeight: 100,
+        scrollWidth: 180,
+        scrollHeight: 100,
+        scrollLeft: 0,
+        scrollTop: 0,
+      })) {
+        Object.defineProperty(wrapper, key, {
+          configurable: true,
+          value,
+          writable: true,
+        });
+      }
+
+      act(() => {
+        wrapper.dispatchEvent(new Event('scroll'));
+        frames.splice(0).forEach(callback => callback(performance.now()));
+      });
+
+      expect(wrapper).toHaveAttribute('tabindex', '0');
+      expect(wrapper).toHaveAttribute('data-scrollable-inline', 'true');
+      expect(wrapper.style.overscrollBehaviorX).toBe('contain');
+
+      Object.defineProperty(wrapper, 'scrollWidth', {
+        configurable: true,
+        value: 100,
+        writable: true,
+      });
+      act(() => {
+        wrapper.dispatchEvent(new Event('scroll'));
+        frames.splice(0).forEach(callback => callback(performance.now()));
+      });
+
+      expect(wrapper).not.toHaveAttribute('tabindex');
+      expect(wrapper).not.toHaveAttribute('data-scrollable-inline');
+      expect(wrapper.style.overscrollBehaviorX).toBe('auto');
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('uses table-layout: auto in children mode', () => {
@@ -1023,20 +1100,99 @@ describe('Table', () => {
   it('renders children mode with TableRow and TableCell', () => {
     render(
       <Table density="balanced" dividers="rows">
-        <TableRow>
-          <TableCell>Streamed A</TableCell>
-          <TableCell>Streamed B</TableCell>
-        </TableRow>
-        <TableRow>
-          <TableCell>Streamed C</TableCell>
-          <TableCell>Streamed D</TableCell>
-        </TableRow>
+        <TableBody>
+          <TableRow>
+            <TableCell>Streamed A</TableCell>
+            <TableCell>Streamed B</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell>Streamed C</TableCell>
+            <TableCell>Streamed D</TableCell>
+          </TableRow>
+        </TableBody>
       </Table>,
     );
     expect(screen.getByText('Streamed A')).toBeInTheDocument();
     expect(screen.getByText('Streamed D')).toBeInTheDocument();
     expect(screen.getAllByRole('row')).toHaveLength(2);
     expect(screen.getAllByRole('cell')).toHaveLength(4);
+  });
+
+  // Children mode hands the children straight to <table> — it does not wrap
+  // them the way the data-driven path does. That is deliberate (it is what
+  // makes the section components composable), but it was never written down,
+  // and a caller who skipped the section shipped `<table><tr>` (#5277).
+  it("children mode renders no tbody of its own — the section is the caller's", () => {
+    const {container} = render(
+      <Table density="balanced">
+        {/* The unwrapped shape is the subject of this test, not a mistake. */}
+        {/* eslint-disable-next-line @astryx/require-table-section */}
+        <TableRow>
+          <TableCell>Unwrapped</TableCell>
+        </TableRow>
+      </Table>,
+    );
+    const table = container.querySelector('table');
+    expect(table?.querySelector('tbody')).toBeNull();
+    expect(Array.from(table?.children ?? []).map(el => el.tagName)).toContain(
+      'TR',
+    );
+  });
+
+  // Columns do not bring a thead with them in children mode — BaseTable's
+  // `children ? children : <>...</>` short-circuits the whole data-driven
+  // branch, header included. The header is TableHeader's job here.
+  it('children mode renders no thead even when columns are supplied', () => {
+    const {container} = render(
+      <Table columns={columns}>
+        <TableBody>
+          <TableRow>
+            <TableCell>Only body</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    );
+    expect(container.querySelector('thead')).toBeNull();
+    expect(container.querySelector('tbody > tr')).not.toBeNull();
+  });
+
+  it('children mode renders the thead TableHeader supplies', () => {
+    const {container} = render(
+      <Table columns={columns}>
+        <TableHeader>
+          <TableRow isHeaderRow>
+            <TableCell>H</TableCell>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow>
+            <TableCell>B</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    );
+    const table = container.querySelector('table');
+    expect(Array.from(table?.children ?? []).map(el => el.tagName)).toEqual([
+      'THEAD',
+      'TBODY',
+    ]);
+  });
+
+  it('children mode puts the rows in the tbody TableBody renders', () => {
+    const {container} = render(
+      <Table density="balanced">
+        <TableBody>
+          <TableRow>
+            <TableCell>Wrapped</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    );
+    const table = container.querySelector('table');
+    expect(
+      Array.from(table?.children ?? []).map(el => el.tagName),
+    ).not.toContain('TR');
+    expect(table?.querySelector('tbody > tr')).not.toBeNull();
   });
 
   it('passes through idKey string to base table', () => {

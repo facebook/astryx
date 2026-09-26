@@ -35,6 +35,7 @@ import type {BaseProps} from '../BaseProps';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 
 // =============================================================================
 // Styles
@@ -57,13 +58,6 @@ const styles = stylex.create({
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    backgroundColor: {
-      default: 'transparent',
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': colorVars['--color-overlay-hover'],
-      },
-      ':active': colorVars['--color-overlay-pressed'],
-    },
     border: 'none',
     color: 'inherit',
     fontFamily: 'inherit',
@@ -218,7 +212,11 @@ export function TopNavMegaMenuItem({
         {...elementProps}
         {...mergeProps(
           themeProps('top-nav-mega-menu-item', {mode: 'drawer'}),
-          focusOutlineProps.focusVisible(navItemStyles.item, styles.drawerItem),
+          focusOutlineProps.focusVisible(
+            navItemStyles.item,
+            interactionOverlayStyles.backgroundColor,
+            styles.drawerItem,
+          ),
         )}>
         {icon && <div {...stylex.props(styles.drawerItemIcon)}>{icon}</div>}
         <div {...stylex.props(styles.drawerItemContent)}>
@@ -245,7 +243,10 @@ export function TopNavMegaMenuItem({
       tabIndex={tabIndex}
       {...mergeProps(
         themeProps('top-nav-mega-menu-item'),
-        focusOutlineProps.focusVisible(styles.desktop),
+        focusOutlineProps.focusVisible(
+          styles.desktop,
+          interactionOverlayStyles.backgroundColor,
+        ),
       )}>
       {icon && <div {...stylex.props(styles.desktopIcon)}>{icon}</div>}
       <div {...stylex.props(styles.desktopContent)}>

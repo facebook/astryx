@@ -39,14 +39,14 @@
  * that use it, not public API.
  */
 
-import {useCallback, useEffect, useState, type Ref} from 'react';
+import {useCallback, useState, type Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Icon} from '../Icon';
 import {InputClearButton} from './InputClearButton';
 import {mergeProps} from '../utils';
 import {
   getInteractionModality,
-  trackInteractionModality,
+  useInteractionModalityTracking,
 } from '../utils/interactionModality';
 import {
   colorVars,
@@ -119,10 +119,13 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     fontFamily: typographyVars['--font-family-body'],
     // Matches the option rows below it, so the query reads as the first line of
-    // the list. The coarse-pointer floor keeps iOS from zooming on focus.
+    // the list. The floor keeps iOS from zooming on focus — keyed to iOS
+    // alone, since only iOS WebKit implements -webkit-touch-callout.
     fontSize: {
       default: typeScaleVars['--text-label-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-label-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-label-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-label-leading'],
     // The field draws the focus ring (see `field`), so the bare input must not
@@ -207,9 +210,7 @@ export function PanelSearchInput({
   // stays `:focus-visible`, this only narrows it.
   const [isKeyboardFocus, setIsKeyboardFocus] = useState(false);
 
-  useEffect(() => {
-    trackInteractionModality();
-  }, []);
+  useInteractionModalityTracking();
 
   const handleFocus = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
@@ -227,14 +228,27 @@ export function PanelSearchInput({
     [onBlur],
   );
 
-  const handleClear = useCallback(() => {
-    onValueChange('');
-    // Clearing puts the caret back where the user was typing, matching
-    // TextInput's built-in clear.
-    if (typeof ref === 'object' && ref?.current) {
-      ref.current.focus();
-    }
-  }, [onValueChange, ref]);
+  const handleClear = useCallback(
+    (e?: React.MouseEvent<HTMLButtonElement>) => {
+      onValueChange('');
+      // Clearing puts the caret back where the user was typing, matching
+      // TextInput's built-in clear. Defer focus restoration past the button's
+      // unmount task so touch browsers don't jump page scroll on tap, while
+      // preserving synchronous focus for keyboard users.
+      if (!e || e.detail === 0) {
+        if (typeof ref === 'object' && ref?.current) {
+          ref.current.focus();
+        }
+      } else {
+        requestAnimationFrame(() => {
+          if (typeof ref === 'object' && ref?.current) {
+            ref.current.focus({preventScroll: true});
+          }
+        });
+      }
+    },
+    [onValueChange, ref],
+  );
 
   return (
     <div

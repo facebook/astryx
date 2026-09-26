@@ -6,6 +6,7 @@ import {useState} from 'react';
 import {useContainerReveal} from '@astryxdesign/core/hooks';
 import {Button} from '@astryxdesign/core/Button';
 import {mergeProps} from '@astryxdesign/core/utils';
+import {colorVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {TrashIcon, PencilIcon} from '@heroicons/react/24/outline';
 
 const styles = stylex.create({
@@ -32,7 +33,11 @@ const styles = stylex.create({
   },
   label: {fontSize: 14},
   actions: {display: 'flex', gap: 4},
-  hint: {fontSize: 12, color: '#888', marginBottom: 8},
+  hint: {
+    fontSize: 12,
+    color: colorVars['--color-text-secondary'],
+    marginBottom: 8,
+  },
   toggle: {marginBottom: 8},
   nested: {
     marginTop: 8,
@@ -73,7 +78,7 @@ function RevealRow({label}: {label: string}) {
 }
 
 const meta: Meta = {
-  title: 'Hooks/useContainerReveal',
+  title: 'Core/Hooks/useContainerReveal',
 };
 export default meta;
 type Story = StoryObj;

@@ -1,11 +1,50 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Field',
+    required: true,
+    description: 'Container arranging the switch, label, and feedback.',
+  },
+  {
+    name: 'Track',
+    required: true,
+    description: 'Pill-shaped surface that shows the off or on state.',
+  },
+  {
+    name: 'Thumb',
+    required: true,
+    description: 'Indicator that moves across the track when state changes.',
+  },
+  {
+    name: 'Label',
+    required: true,
+    description: 'Text identifying the setting controlled by the switch.',
+  },
+  {
+    name: 'Description',
+    required: false,
+    description: 'Helper text below the label.',
+  },
+  {
+    name: 'Spinner',
+    required: false,
+    description: 'Loading indicator shown inside the thumb while busy.',
+  },
+  {
+    name: 'Status message',
+    required: false,
+    description: 'Error, warning, or success message below the switch.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Switch',
   displayName: 'Switch',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: [
     'switch',
     'toggle',
@@ -167,9 +206,22 @@ export const docs = {
         className: 'astryx-switch-field',
         visualProps: ['labelPosition', 'labelSpacing'],
       },
+      {className: 'astryx-switch-label'},
     ],
   },
   usage: {
+    accessibility: [
+      {
+        name: 'Track and thumb',
+        category: 'Color contrast',
+        criterion: '1.4.11 Non-text Contrast',
+        requirement: '3:1',
+        states: ['Rest', 'Hover', 'Pointer down'],
+        description:
+          'The on and off tracks must each have at least 3:1 contrast with the surface behind them, and the thumb with its track. For Hover and Pointer down, measure the final colors after the tint and the pressed overlay are applied.',
+      },
+    ],
+    anatomy,
     description:
       'A toggle control for on/off states that take effect immediately. Supports labels, descriptions, loading states, and validation. Use it for settings or preferences that apply instantly. For changes requiring a form submission, use a checkbox instead.',
     bestPractices: [
@@ -338,6 +390,7 @@ export const docsZh = {
         className: 'astryx-switch-field',
         visualProps: ['labelPosition', 'labelSpacing'],
       },
+      {className: 'astryx-switch-label'},
     ],
   },
   usage: {

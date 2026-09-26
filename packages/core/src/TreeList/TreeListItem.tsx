@@ -25,6 +25,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {Icon} from '../Icon';
 import {mergeProps} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
@@ -102,13 +103,6 @@ const styles = stylex.create({
     transitionProperty: 'background-image',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    backgroundImage: {
-      default: null,
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
   },
   disabled: {
     cursor: 'default',
@@ -298,6 +292,10 @@ export interface TreeListItemInternalProps {
   target?: string;
   isDisabled?: boolean;
   isSelected?: boolean;
+  /** Consumer styles for the row element. See `TreeListItemData`. */
+  xstyle?: stylex.StyleXStyles;
+  className?: string;
+  style?: React.CSSProperties;
   hasChildren: boolean;
   /**
    * Whether the tree contains at least one expandable item anywhere (i.e. a
@@ -345,6 +343,9 @@ export function TreeListItem({
   description,
   startContent,
   endContent,
+  xstyle,
+  className,
+  style,
   onClick,
   href,
   target,
@@ -592,17 +593,25 @@ export function TreeListItem({
                   styles.contentWrapper,
                   densityStyles[density],
                   styles.interactive,
+                  interactionOverlayStyles.backgroundImage,
                   isDisabled && styles.disabled,
                   isSelected && styles.selected,
+                  xstyle,
                 )
               : stylex.props(
                   styles.contentWrapper,
                   densityStyles[density],
                   isDisabled && styles.disabled,
                   isSelected && styles.selected,
+                  xstyle,
                 ),
+            // Consumer row props are merged last so useContainerReveal can
+            // publish both its classes and inline custom properties. Seed the
+            // private indent first, then preserve the standard inline-style
+            // precedence promised by the TreeList contract.
+            className,
+            {...indentStyle, ...style},
           )}
-          style={indentStyle}
           onClick={handleClick}>
           {innerContent}
         </div>

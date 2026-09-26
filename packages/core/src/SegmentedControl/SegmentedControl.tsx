@@ -26,11 +26,12 @@ import type {
   SegmentedControlSize,
   SegmentedControlLayout,
 } from './SegmentedControlContext';
-import {mergeProps, mergeRefs, composeEventHandlers} from '../utils';
+import {mergeProps, composeEventHandlers} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 export interface SegmentedControlProps extends Omit<
   BaseProps<HTMLDivElement>,
   'onChange'
@@ -55,7 +56,7 @@ export interface SegmentedControlProps extends Omit<
   size?: SegmentedControlSize;
   /**
    * Layout mode for segment sizing.
-   * - `'hug'` (default): each segment hugs its content width.
+   * - `'hug'` (default): the control and each segment hug their content width.
    * - `'fill'`: segments stretch equally to fill the container width.
    * @default 'hug'
    */
@@ -90,6 +91,7 @@ const styles = stylex.create({
   container: {
     display: 'inline-flex',
     alignItems: 'center',
+    width: 'fit-content',
     gap: spacingVars['--spacing-0-5'],
     '--_segmented-control-padding': spacingVars['--spacing-0-5'],
     padding: 'var(--_segmented-control-padding)',
@@ -258,7 +260,7 @@ export function SegmentedControl({
   return (
     <SegmentedControlContext value={contextValue}>
       <div
-        ref={mergeRefs(ref, listRef, disabledMessageTooltip.ref)}
+        ref={useMergedRefs(ref, listRef, disabledMessageTooltip.ref)}
         {...rest}
         role="radiogroup"
         aria-label={label}

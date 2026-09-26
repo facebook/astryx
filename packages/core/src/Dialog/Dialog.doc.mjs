@@ -30,6 +30,11 @@ export const docs = {
     container: true,
     targets: [
       {className: 'astryx-dialog', visualProps: ['variant']},
+      {className: 'astryx-dialog-header'},
+      {className: 'astryx-dialog-header-start-content'},
+      {className: 'astryx-dialog-header-title-block'},
+      {className: 'astryx-dialog-header-end-content'},
+      {className: 'astryx-dialog-header-close-icon'},
     ],
     vars: [
       {name: '--_dialog-radius', description: 'Border radius of the dialog', default: 'var(--radius-container)', private: true},
@@ -89,6 +94,11 @@ export const docs = {
       type: "'required' | 'form' | 'info'",
       description: 'Controls dismissal behavior: required disables Escape and backdrop click; form disables backdrop click after interaction; info allows both.',
       default: "'info'",
+    },
+    {
+      name: 'padding',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: 'Internal padding of the dialog using the spacing scale step.',
     },
     {
       name: 'isInline',

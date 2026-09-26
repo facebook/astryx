@@ -11,6 +11,12 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { execSync } = require('node:child_process');
+const {
+  COMPONENT_PACKAGES,
+  documentedComponentNames,
+  flatPackageComponentNames,
+  nestedPackageComponentNames,
+} = require('../../scripts/component-packages.cjs');
 
 const args = process.argv.slice(2);
 const getArg = (name) => {
@@ -24,51 +30,39 @@ const outputFile = getArg('output') || 'analysis.json';
 
 const STORYBOOK_STORIES = 'apps/storybook/stories';
 
-// The publishable component packages the report covers. Each PR is attributed
-// to the package(s) it actually touches — the report is no longer hardcoded to
-// `core` (which silently mislabelled every lab/charts PR).
-//
-// layout:
-//   'nested' — components live in per-component dirs: src/<Name>/... (core, lab)
-//   'flat'   — components live as single files:       src/<Name>.tsx (charts,
-//              richtext). The score-ledger's canonical predicate narrows a flat
-//              package to its documented component(s) downstream, so listing
-//              the internal helpers here is harmless — they get filtered out.
-const PACKAGES = [
-  { name: '@astryxdesign/core', dir: 'packages/core', layout: 'nested' },
-  { name: '@astryxdesign/lab', dir: 'packages/lab', layout: 'nested' },
-  { name: '@astryxdesign/charts', dir: 'packages/charts', layout: 'flat' },
-  { name: '@astryxdesign/richtext', dir: 'packages/richtext', layout: 'flat' },
-];
+// Project the canonical component-package registry into the analyzer's existing
+// shape. Package participation and layouts have one checked-in owner; this file
+// only adds the published package name and derives its package directory.
+const PACKAGES = COMPONENT_PACKAGES.map(pkg => ({
+  ...pkg,
+  packageName: pkg.name,
+  name: `@astryxdesign/${pkg.name}`,
+  dir: path.dirname(pkg.src),
+}));
 
-const pkgSrc = (pkg) => `${pkg.dir}/src`;
+const pkgSrc = (pkg) => pkg.src;
 const pkgDist = (pkg) => `${pkg.dir}/dist`;
 
-// Directories under a package's src that are not components.
-const EXCLUDED_DIRS = ['hooks', 'theme', 'utils', 'i18n', '__tests__'];
-
-// Get list of component names for a package, honoring its src layout.
+// Get canonical direct public component names for a package. Nested family,
+// context, and shared directories deliberately stay unresolved so audits widen.
 function getComponentNames(pkg) {
-  const srcPath = path.join(process.cwd(), pkgSrc(pkg));
+  if (pkg.layout === 'flat') {
+    return flatPackageComponentNames(process.cwd(), pkg);
+  }
+  const canonical = new Set(nestedPackageComponentNames(process.cwd(), pkg));
+  const sourceDir = path.join(process.cwd(), pkgSrc(pkg));
   try {
-    const entries = fs.readdirSync(srcPath, { withFileTypes: true });
-    if (pkg.layout === 'flat') {
-      // Flat: each PascalCase *.tsx (not a test/story/context) is a component.
-      return entries
-        .filter(
-          (e) =>
-            e.isFile() &&
-            /^[A-Z]\w+\.tsx$/.test(e.name) &&
-            !e.name.includes('.test.') &&
-            !e.name.includes('.stories.') &&
-            !e.name.endsWith('Context.tsx'),
-        )
-        .map((e) => e.name.replace(/\.tsx$/, ''));
-    }
-    // Nested: each non-excluded directory is a component.
-    return entries
-      .filter((e) => e.isDirectory() && !EXCLUDED_DIRS.includes(e.name))
-      .map((e) => e.name);
+    return fs
+      .readdirSync(sourceDir, {withFileTypes: true})
+      .filter(entry => entry.isDirectory())
+      .filter(entry => {
+        const names = documentedComponentNames(
+          path.join(sourceDir, entry.name),
+        ).filter(name => canonical.has(name));
+        return names.length === 1 && names[0] === entry.name;
+      })
+      .map(entry => entry.name)
+      .sort();
   } catch {
     return [];
   }
@@ -88,22 +82,87 @@ function componentIndexRef(pkg, componentName) {
     : `${pkgSrc(pkg)}/${componentName}/index.ts`;
 }
 
-// Get changed files between base and head
+// Get changed files between base and head.
+//
+// Prefers a three-dot diff (base...head), which only reports files changed on
+// the PR branch and excludes commits already merged to base. But a three-dot
+// diff needs a merge base, which a shallow clone (fetch-depth: 50) may not
+// have once the PR has been open long enough for base to advance past that
+// window — the diff then fails with "no merge base" and the whole job dies.
+//
+// On that failure we first try to deepen the shallow clone and retry the
+// three-dot diff — the real fix for "base advanced past the fetch window" is
+// to fetch more history, not to degrade. Only if that still cannot find a
+// merge base do we fall back to a two-dot diff (base..head), which needs no
+// merge base and never hard-fails the CI.
+//
+// The two-dot fallback is inherently lossy: it compares two trees, so a file
+// whose change also exists on base (a cherry-picked/duplicated fix, or the
+// same codegen output landing from another PR) vanishes from the diff
+// entirely. That means two-dot can UNDER-report a PR's own changes, not just
+// over-report base churn. Because downstream gates (pr-a11y) derive their
+// component list from this file list, under-reporting silently skips the
+// audit for a component the PR did change. The caller records the diff mode
+// in the analysis output so consumers know when the file list is approximate.
+// Returns { files, diffMode: 'three-dot' | 'two-dot' }.
 function getChangedFiles() {
-  try {
-    const output = execSync(
-      `git diff --name-only ${baseBranch}...${headRef}`,
-      { encoding: 'utf8' }
-    );
+  const threeDot = `${baseBranch}...${headRef}`;
+  const tryThreeDot = () => {
+    const output = execSync(`git diff --name-only ${threeDot}`, { encoding: 'utf8' });
     return output.trim().split('\n').filter(Boolean);
+  };
+  try {
+    return { files: tryThreeDot(), diffMode: 'three-dot' };
   } catch (e) {
-    // A failed diff (e.g. no merge base on a too-shallow clone) is not the
+    console.warn(
+      `::warning::three-dot diff ${threeDot} failed - attempting to deepen the clone and retry`
+    );
+    console.warn(diffErrorDetail(e));
+  }
+
+  // The three-dot diff failed, almost certainly because the shallow clone is
+  // too shallow to contain the merge base. Deepen before giving up on the
+  // accurate path; a deepened clone makes three-dot correct again. The base
+  // arg arrives as "origin/main" (see ci.yml) but the fetch refspec needs the
+  // bare branch name and must update the origin/<base> ref explicitly —
+  // `--deepen` alone only updates FETCH_HEAD, which the three-dot ref
+  // (origin/main...HEAD) needs to actually exist.
+  try {
+    const baseName = baseBranch.replace(/^origin\//, '');
+    execSync(
+      `git fetch --deepen=200 origin ${baseName}:refs/remotes/origin/${baseName}`,
+      { encoding: 'utf8', stdio: 'pipe' },
+    );
+    return { files: tryThreeDot(), diffMode: 'three-dot' };
+  } catch (e) {
+    console.warn(
+      `::warning::deepen failed (${diffErrorDetail(e)}) - falling back to two-dot diff`
+    );
+  }
+
+  // Last resort: a two-dot diff needs no merge base. Its file list is
+  // approximate (may over-report base churn and, worse, under-report the PR's
+  // own changes when they also exist on base), so the caller marks the output
+  // with diffMode: 'two-dot' for any consumer to caveat.
+  const twoDot = `${baseBranch}..${headRef}`;
+  try {
+    const output = execSync(`git diff --name-only ${twoDot}`, { encoding: 'utf8' });
+    return { files: output.trim().split('\n').filter(Boolean), diffMode: 'two-dot' };
+  } catch (e) {
+    // A failed diff (e.g. base ref missing on a too-shallow clone) is not the
     // same as "no changes" — fail loudly instead of publishing an empty
     // analysis report that looks legitimate.
-    console.error(`::error::git diff ${baseBranch}...${headRef} failed: ${e.message}`);
-    console.error('The clone is likely too shallow to contain the merge base (see fetch-depth in ci.yml).');
+    console.error(`::error::git diff ${twoDot} failed: ${e.message}`);
+    console.error('The clone is likely too shallow to contain the base ref (see fetch-depth in ci.yml).');
     process.exit(1);
   }
+}
+
+// Human-readable reason for a failed diff/deepen, preferring the fatal stderr
+// line (e.g. "fatal: origin/main...HEAD: no merge base") over execSync's
+// boilerplate "Command failed: ..." first line.
+function diffErrorDetail(e) {
+  return (e.stderr && e.stderr.toString().trim()) || e.message.split('\n')[0];
 }
 
 // Check if a component exists in the base branch.
@@ -454,13 +513,35 @@ function getPackageBundleStats(pkg) {
 // Main analysis
 function analyze() {
   console.log(`Analyzing changes from ${baseBranch} to ${headRef}...`);
-  const changedFiles = getChangedFiles();
-  console.log(`Found ${changedFiles.length} changed files`);
+  const { files: changedFiles, diffMode } = getChangedFiles();
+  console.log(`Found ${changedFiles.length} changed files (diff mode: ${diffMode})`);
+  if (diffMode === 'two-dot') {
+    console.warn(
+      '::warning::using approximate two-dot diff - the file list may include base-only churn and may miss the PR\'s own changes when they also exist on base'
+    );
+  }
 
   const newComponents = [];
   const modifiedComponents = [];
+  const newComponentOwners = [];
+  const modifiedComponentOwners = [];
+  const unresolvedComponentSources = [];
   const componentStats = {};
   const changedPackages = new Set();
+
+  // Stable theme packages are a visual surface of their own. They do not own
+  // component source dirs, so the component loop below cannot discover them;
+  // without this, changing a published theme silently skips pr-visual.
+  const changedStableThemes = [...new Set(
+    changedFiles.flatMap((file) => {
+      const match = file.match(/^packages\/themes\/([^/]+)\/src\//);
+      if (!match) return [];
+      const manifest = path.join(process.cwd(), 'packages', 'themes', match[1], 'package.json');
+      if (!fs.existsSync(manifest)) return [];
+      const pkg = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+      return pkg.private === true || pkg.astryx?.canaryOnly === true ? [] : [match[1]];
+    }),
+  )].sort();
 
   for (const pkg of PACKAGES) {
     const allComponents = getComponentNames(pkg);
@@ -476,13 +557,27 @@ function analyze() {
           ? relativePath.replace(/\.tsx?$/, '').split('/')[0]
           : relativePath.split('/')[0];
 
-      if (!allComponents.includes(componentName)) continue;
+      if (!allComponents.includes(componentName)) {
+        const source = `${pkg.packageName}/${componentName}`;
+        if (!unresolvedComponentSources.includes(source)) {
+          unresolvedComponentSources.push(source);
+        }
+        continue;
+      }
+      const existsInBase = componentExistsInBase(pkg, componentName);
+      const owner = `${pkg.packageName}/${componentName}`;
+      const owners = existsInBase ? modifiedComponentOwners : newComponentOwners;
+      if (!owners.includes(owner)) owners.push(owner);
+
+      // Keep the legacy bare-name shape for existing report consumers. The
+      // package-qualified owner arrays below are the routing identity used by
+      // browser audits and cannot collide across packages.
       const key = componentName;
       if (componentStats[key]) continue;
 
       const stats = getComponentStats(pkg, componentName);
       componentStats[key] = stats;
-      if (componentExistsInBase(pkg, componentName)) {
+      if (existsInBase) {
         modifiedComponents.push(key);
       } else {
         newComponents.push(key);
@@ -493,6 +588,9 @@ function analyze() {
   console.log(`Changed packages: ${[...changedPackages].join(', ') || 'none'}`);
   console.log(`New components: ${newComponents.join(', ') || 'none'}`);
   console.log(`Modified components: ${modifiedComponents.join(', ') || 'none'}`);
+  console.log(
+    `Component owners: ${[...newComponentOwners, ...modifiedComponentOwners].join(', ') || 'none'}`,
+  );
 
   // Detect new exports in modified components (a dir may be "modified" yet add
   // brand-new exports alongside existing ones).
@@ -518,9 +616,18 @@ function analyze() {
   const result = {
     newComponents,
     modifiedComponents,
+    newComponentOwners,
+    modifiedComponentOwners,
+    unresolvedComponentSources,
+    forceFullComponentAudits: unresolvedComponentSources.length > 0,
     newExports,
     componentStats,
     changedPackages: [...changedPackages],
+    changedStableThemes,
+    // Records whether the file list is exact (three-dot) or approximate
+    // (two-dot fallback). Consumers that gate on the component list (pr-a11y)
+    // or render it in the report should caveat when this is 'two-dot'.
+    diffMode,
     bundlePackages,
     // Back-compat: keep totalBundle pointed at core when core changed, so any
     // older consumer of this field still resolves.

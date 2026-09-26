@@ -30,7 +30,7 @@ export const doc = {
       name: 'name',
       type: 'string',
       description:
-        "Directory name without the Astryx prefix, PascalCase. e.g. 'Button', 'TextInput', 'AppShell'.",
+        "Stable machine identity and directory name without the Astryx prefix, PascalCase. e.g. 'Button', 'TextInput', 'AppShell'. Change `displayName`, not `name`, to edit the visible label; registry URLs derive from this identity by default.",
       required: true,
     },
     {
@@ -41,10 +41,22 @@ export const doc = {
       required: true,
     },
     {
+      name: 'registry',
+      type: 'RegistryDocIdentity',
+      description:
+        'Optional public registry identity. The converter derives a stable kebab-case slug from `name`; set `slug` only to override it, and keep prior relative paths in `aliases` after a published rename.',
+    },
+    {
+      name: 'import',
+      type: 'string',
+      description:
+        'Exact public package specifier consumers use to import an integration-owned component. The packed-package gate resolves this specifier and verifies it exports the component name.',
+    },
+    {
       name: 'keywords',
       type: 'string[]',
       description:
-        'Search keywords for CLI discovery: synonyms and related UI concepts from other design systems (MUI, Chakra, Radix, shadcn). Lowercase. Used by `astryx component <term>` fuzzy matching.',
+        'Search keywords for CLI discovery: synonyms and related UI concepts from other design systems (MUI, Chakra, Radix, and others). Lowercase. Used by `astryx component <term>` fuzzy matching.',
     },
     {
       name: 'hiddenComponents',
@@ -66,9 +78,9 @@ export const doc = {
     },
     {
       name: 'category',
-      type: "'Action' | 'Chat' | 'Container' | 'Content' | 'Data Input' | 'Data Visualization' | 'Feedback & Status' | 'Layout' | 'Navigation' | 'Overlay' | 'Table & List' | 'Utility'",
+      type: "'Action' | 'Chat' | 'Container' | 'Content' | 'Form Controls' | 'Data Input' | 'Data Visualization' | 'Feedback & Status' | 'Layout' | 'Navigation' | 'Overlay' | 'Table & List' | 'Utility'",
       description:
-        "Overview-gallery category representing the component's functional role. Independent of `group` (which is for the sidebar).",
+        "Overview-gallery category representing the component's functional role. Independent of `group` (which is for the sidebar). `Data Input` is a deprecated compatibility alias for `Form Controls`.",
     },
     {
       name: 'isHiddenFromOverview',
@@ -112,8 +124,7 @@ export const doc = {
       name: 'usage',
       type: 'UsageDoc',
       description:
-        'Component usage documentation: concise summary, best practices, and optional visual anatomy. (Optional on SubComponentDoc, where the sub-component description is used instead.)',
-      required: true,
+        'Component usage documentation: concise summary, best practices, component-specific accessibility requirements, and optional visual anatomy. Required on a component doc; optional on a sub-component doc (`subComponentOf`), which uses its description instead.',
       fields: [
         {
           name: 'usage.description',
@@ -127,6 +138,18 @@ export const doc = {
           type: 'ComponentBestPractice[]',
           description:
             "3-4 do/don't design-guidance items ({guidance: boolean, description: string}). Never start the description with 'Do' or 'Don't'.",
+        },
+        {
+          name: 'usage.accessibility',
+          type: 'ComponentAccessibilityRequirement[]',
+          description:
+            'Component-specific requirements rendered in the shared Accessibility tab. Write at about a grade-7 reading level with short sentences, common words, and active voice. For color contrast, put the ratio in `requirement`; name the exact foreground, background, state, and any overlay in `description`; explain exceptions in plain language; and give a human or agent enough detail to reproduce the check. Keep repository audit procedures in the wiki rubric.',
+        },
+        {
+          name: 'usage.accessibilityThemeCoverage',
+          type: 'ComponentAccessibilityThemeCoverage[]',
+          description:
+            'Verified per-theme accessibility measurements rendered in the shared Accessibility tab. Record light and dark mode separately, include rendered color pairs, and mark failed measurements. Put visuals excluded from the audit in `notMeasured` with a short reason; do not add them as table measurements. Each theme declares `applicability` for measured values, informed by the component contract and never inferred from the ratio: `Conditional` is required only in some contexts, `Supplemental` adds another meaningful cue, and `Decorative` has no required meaning. These values do not change row status. Provide a complete breakdown when one cell summarizes multiple combinations, and protect derived values with an automated audit.',
         },
         {
           name: 'usage.anatomy',
@@ -180,7 +203,7 @@ export const doc = {
 export const docs = {
   name: 'Switch',
   displayName: 'Switch',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: ['toggle', 'switch', 'on off'],
   usage: {
     description:
@@ -218,6 +241,10 @@ export const docs = {
     },
   ],
   notes: [
+    {
+      type: 'prose',
+      text: "When it loads, a stamped component doc is checked as loosely as an unstamped one, so adding `type: 'component'` to an existing doc never breaks it: `displayName` may be missing, `category` may be any string, and `usage`, `theming`, `playground` and `examples` are not checked. Each entry in a group doc's `components` must have a `name`. Write to the type anyway; it is the contract.",
+    },
     {
       type: 'prose',
       text: 'ComponentDoc is a discriminated union of three shapes that all extend ComponentBaseDoc. Pick the variant by which key you set: `props` (single), `components` (multi), or `subComponentOf` (sub).',

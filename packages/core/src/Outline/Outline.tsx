@@ -37,14 +37,16 @@ import {
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {useListFocus} from '../hooks/useListFocus';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {useScrollSpy} from './useScrollSpy';
 import type {OutlineItem} from './types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 export type {OutlineItem} from './types';
 
 export interface OutlineProps extends BaseProps<HTMLElement> {
@@ -208,12 +210,8 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-body-leading'],
     ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
       '@media (hover: hover)': {
-        backgroundColor: colorVars['--color-overlay-hover'],
         color: colorVars['--color-text-primary'],
       },
-    },
-    ':active': {
-      backgroundColor: colorVars['--color-overlay-pressed'],
     },
   },
   activeLink: {
@@ -443,7 +441,7 @@ export function Outline({
   return (
     <nav
       {...props}
-      ref={mergeRefs(rootRef, ref)}
+      ref={useMergedRefs(rootRef, ref)}
       aria-label={label}
       data-testid={testId}
       {...mergeProps(
@@ -475,6 +473,7 @@ export function Outline({
                   }),
                   focusOutlineProps.focusVisible(
                     styles.link,
+                    interactionOverlayStyles.backgroundColor,
                     densityStyles[density],
                     getIndentStyle(item.level),
                     isActive && styles.activeLink,

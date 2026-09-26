@@ -50,6 +50,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'edgeCompensation',
+      type: "'inline'",
+      description:
+        "Compensate for item content inset on each inline edge by cancelling the smaller of each item's built-in horizontal inset and the container's published inline padding. The margin reads the same variable the items derive their inline padding from, so it tracks density and theme padding overrides automatically without pulling rows outside zero-padding or full-bleed surfaces. Use under a section heading to bring row text toward the heading text. Content aligns when container padding is at least the item inset; smaller padding leaves some inset uncompensated. Omit to leave item positions unchanged.",
+    },
+    {
       name: 'header',
       type: 'ReactNode',
       description: 'Header content, associated with the list via aria-labelledby.',

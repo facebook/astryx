@@ -14,14 +14,6 @@
 export {hasActiveFocusTrapEscape, useFocusTrap} from './useFocusTrap';
 export type {UseFocusTrapOptions, UseFocusTrapReturn} from './useFocusTrap';
 
-/**
- * @deprecated Import from `@astryxdesign/core/utils` instead — this is a pure
- * predicate, not a hook, and the `hooks` barrel is a `'use client'` boundary.
- * Re-exported here for one release so consumers can move; will be removed in
- * an upcoming major.
- */
-export {isImeKeyEvent} from '../utils/ime';
-
 export {useAnnounce} from './useAnnounce';
 export type {AnnounceFn, AnnouncePoliteness} from './useAnnounce';
 
@@ -56,11 +48,26 @@ export type {UseTypeaheadOptions, UseTypeaheadReturn} from './useTypeahead';
 
 export {useMediaQuery} from './useMediaQuery';
 
+export {useMergedRefs} from './useMergedRefs';
+
 export {useOverflow} from './useOverflow';
 export type {UseOverflowOptions, UseOverflowReturn} from './useOverflow';
 
 export {useScrollOverflow} from './useScrollOverflow';
 export type {ScrollOverflowState} from './useScrollOverflow';
+
+export {useScrollableArea} from './useScrollableArea';
+export type {
+  ScrollAxis,
+  ScrollAxisState,
+  ScrollOverscroll,
+  ScrollStickyContainment,
+  ScrollKeyboardAccess,
+  ScrollableAreaState,
+  ScrollableElementProps,
+  UseScrollableAreaOptions,
+  UseScrollableAreaResult,
+} from './useScrollableArea';
 
 export {useScrollLock} from './useScrollLock';
 

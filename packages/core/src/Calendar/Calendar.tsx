@@ -11,6 +11,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Calendar/Calendar.doc.mjs (props table, features, implementation notes)
+ * - /packages/core/src/Calendar/getInitialFocusDate.ts (which month the calendar opens on)
  * - /packages/core/src/Calendar/Calendar.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Calendar/index.ts (exports if types change)
  * - /apps/storybook/stories/Calendar.stories.tsx (storybook stories)
@@ -18,7 +19,6 @@
  */
 
 import {
-  use,
   useState,
   useMemo,
   useCallback,
@@ -60,6 +60,8 @@ import {
 } from '../utils/plainDate';
 import {mergeProps, composeEventHandlers, rtlStyles} from '../utils';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {getInitialFocusDate} from './getInitialFocusDate';
 import {
   computeDayCellState,
   computeRangeRounding,
@@ -87,7 +89,7 @@ import type {
 } from '../utils/dateTypes';
 import {normalizeDayOfWeek} from '../utils/dateTypes';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator, InternationalizationContext} from '../i18n';
+import {useLocale, useTranslator} from '../i18n';
 
 /** Imperative handle for Calendar handleRef */
 
@@ -135,14 +137,18 @@ interface CalendarBaseProps extends Omit<
    * Range mode only. Minimum number of days a selected range must span,
    * counting both endpoints — `minRangeSpan={2}` forbids a single-day range.
    * Once a start date is picked, days closer than this to it are disabled —
-   * except the start itself, which stays selectable as the active anchor.
-   * Defaults to 1 (a same-day start and end is allowed).
+   * except the start itself, which stays selectable. Clicking the start again
+   * commits a one-day range when the minimum allows it; otherwise it cancels
+   * the in-progress selection so the start can be moved. Defaults to 1 (a
+   * same-day start and end is allowed).
    */
   minRangeSpan?: number;
 
   /**
    * Controlled focus date (which month is visible).
-   * If not provided, defaults to selected date or today.
+   * If not provided, defaults to the selected date, else today clamped into
+   * the `min`/`max` window (so a window that excludes today opens on the
+   * bound nearest to it, not on an all-disabled month).
    */
   focusDate?: ISODateString;
 
@@ -221,7 +227,7 @@ export type CalendarProps = CalendarSingleProps | CalendarRangeProps;
  */
 export function Calendar({ref, ...props}: CalendarProps) {
   const t = useTranslator();
-  const {locale} = use(InternationalizationContext);
+  const locale = useLocale();
   const {
     handleRef,
     mode = 'single',
@@ -277,20 +283,19 @@ export function Calendar({ref, ...props}: CalendarProps) {
   // Determine effective value
   const effectiveValue = value !== undefined ? value : internalValue;
 
-  // Focus date state (which month is visible)
-  const [internalFocusDate, setInternalFocusDate] = useState<PlainDate>(() => {
-    if (focusDateProp) {
-      return plainDateFromISO(focusDateProp);
-    }
-    if (effectiveValue) {
-      if (typeof effectiveValue === 'string') {
-        return plainDateFromISO(effectiveValue);
-      } else {
-        return plainDateFromISO(effectiveValue.start);
-      }
-    }
-    return plainDateToday();
-  });
+  // Focus date state (which month is visible). Falls back to today, clamped
+  // into the min/max window so a window that doesn't contain today doesn't
+  // open on an all-disabled month.
+  const [internalFocusDate, setInternalFocusDate] = useState<PlainDate>(() =>
+    getInitialFocusDate({
+      focusDate: focusDateProp,
+      value: effectiveValue,
+      min,
+      max,
+      numberOfMonths,
+      today,
+    }),
+  );
 
   // Use controlled focusDate if callback is provided, otherwise use internal state
   const isControlledFocus =
@@ -449,17 +454,16 @@ export function Calendar({ref, ...props}: CalendarProps) {
           // Second click - complete the range
           const startPd = plainDateFromISO(rangeSelectionStart);
 
-          // Clicking the anchor again clears the in-progress start rather than
-          // committing a zero-length range. This is also the escape hatch when
-          // `minRangeSpan` disables the days around the anchor: without it the
-          // anchor would be the only clickable day left and the start could
-          // never be moved. `minRangeSpan` leaves the anchor itself enabled
-          // precisely so this toggle stays reachable.
-          if (plainDateIsEqual(date, startPd)) {
+          // Clicking the anchor again commits a one-day range when the minimum
+          // span allows it. For longer minimum spans, the repeated click clears
+          // the in-progress start instead: the anchor is the only nearby day
+          // that remains enabled, so this preserves an escape hatch for moving
+          // the start without violating the configured minimum.
+          if (plainDateIsEqual(date, startPd) && (minRangeSpan ?? 1) > 1) {
             setRangeSelectionStart(null);
             announce(
               t('@astryx.calendar.rangeClearedAnnounce', {
-                date: plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY),
+                date: plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY, locale),
               }),
             );
             return;
@@ -500,7 +504,7 @@ export function Calendar({ref, ...props}: CalendarProps) {
         }
       }
     },
-    [mode, onChange, rangeSelectionStart, announce, t, locale],
+    [mode, onChange, rangeSelectionStart, minRangeSpan, announce, t, locale],
   );
 
   return (
@@ -649,7 +653,7 @@ function MonthGrid({
   pendingFocus,
   onPendingFocusHandled,
 }: MonthGridProps) {
-  const {locale} = use(InternationalizationContext);
+  const locale = useLocale();
   const year = month.year;
 
   // Use hooks for days generation and constraints
@@ -1030,7 +1034,7 @@ function DayCell({
   onDayHover,
 }: DayCellProps) {
   const t = useTranslator();
-  const {locale} = use(InternationalizationContext);
+  const locale = useLocale();
   const {date, isOutside, dayNumber} = day;
 
   if (isOutside && !hasOutsideDays) {
@@ -1175,6 +1179,7 @@ function DayCell({
           focusOutlineProps.focusVisible(
             dayCellStyles.day,
             dayCellTheme.day,
+            interactionOverlayStyles.backgroundImage,
             isOutside && dayCellStyles.dayOutside,
             isOutside && dayCellTheme.dayOutside,
             showsTodayRing && dayCellStyles.dayToday,

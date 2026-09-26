@@ -33,7 +33,7 @@ import {type ReactNode, useMemo, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {useChatStreamScroll} from './useChatStreamScroll';
 import {useChatNewMessages} from './useChatNewMessages';
 import {ChatLayoutScrollButton} from './ChatLayoutScrollButton';
@@ -41,6 +41,7 @@ import {ChatLayoutContext} from './ChatContext';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Types
 // =============================================================================
@@ -267,6 +268,25 @@ function hasVisibleContent(children: ReactNode): boolean {
 // Component
 // =============================================================================
 
+/**
+ * Layout shell for a full chat interface: messages in page flow, composer
+ * docked to the bottom behind a frosted glass layer, with auto-scroll and a
+ * scroll-to-bottom button wired in.
+ *
+ * @example
+ * ```
+ * <ChatLayout
+ *   density="spacious"
+ *   composer={<ChatComposer onSubmit={send} />}
+ *   emptyState={<EmptyState title="No messages yet" />}>
+ *   <ChatMessageList>
+ *     <ChatMessage sender="assistant">
+ *       <ChatMessageBubble>How can I help?</ChatMessageBubble>
+ *     </ChatMessage>
+ *   </ChatMessageList>
+ * </ChatLayout>
+ * ```
+ */
 export function ChatLayout({
   children,
   composer,
@@ -343,7 +363,7 @@ export function ChatLayout({
     <ChatLayoutContext value={layoutContext}>
       <div
         {...rest}
-        ref={mergeRefs(ref, rootRef)}
+        ref={useMergedRefs(ref, rootRef)}
         data-testid={testId}
         {...mergeProps(
           themeProps('chat-layout', {density}),

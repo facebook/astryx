@@ -3,10 +3,11 @@
 /**
  * @file generate-score-ledger.mjs
  * @description Generates apps/sandbox/src/generated/componentScores.ts — the
- *   ROSTER of components (read from the ledger packages — core, lab and
- *   richtext — by the canonical predicate in scripts/score-ledger.mjs) plus a
- *   build-time SNAPSHOT of the audit ledger fetched from the wiki.
- * @input packages/{core,lab,richtext}/src, and the wiki ledger over the network.
+ *   ROSTER of public components (read from every component-bearing package in
+ *   scripts/component-packages.cjs by the canonical predicate in
+ *   scripts/score-ledger.mjs) plus a build-time SNAPSHOT of the wiki ledger.
+ * @input Registered component-package source roots and the wiki ledger over the
+ *   network.
  * @output src/generated/componentScores.ts
  * @position Sandbox build step, run by `pnpm generate`.
  *
@@ -102,9 +103,46 @@ const ENTRY_KEY_SHAPES = {
   },
 };
 
+/**
+ * The fields `LedgerSection` declares. `pruneEntry` guards the TOP level of an
+ * entry, but a section object is inlined whole, so an undeclared key one level
+ * down reds every build exactly as `regression` did at the top level — a
+ * `changedFrom` note recorded on 2026-08-23 did precisely that. Prune here too.
+ */
+const KNOWN_SECTION_KEYS = new Set([
+  'score',
+  'weight',
+  'state',
+  'note',
+  'blocks',
+  'changedFrom',
+]);
+
 /** Drop keys `LedgerEntry` doesn't declare, or whose shape it rejects. */
 const droppedKeys = new Set();
 const malformedKeys = new Set();
+
+/** Prune each section object to the keys `LedgerSection` declares. */
+function pruneSections(sections) {
+  if (sections == null || typeof sections !== 'object' || Array.isArray(sections)) {
+    return sections;
+  }
+  const kept = {};
+  for (const [id, section] of Object.entries(sections)) {
+    if (section == null || typeof section !== 'object' || Array.isArray(section)) {
+      kept[id] = section;
+      continue;
+    }
+    const kept_section = {};
+    for (const [k, v] of Object.entries(section)) {
+      if (KNOWN_SECTION_KEYS.has(k)) kept_section[k] = v;
+      else droppedKeys.add(`sections.*.${k}`);
+    }
+    kept[id] = kept_section;
+  }
+  return kept;
+}
+
 function pruneEntry(entry) {
   const kept = {};
   for (const [k, v] of Object.entries(entry)) {
@@ -118,7 +156,7 @@ function pruneEntry(entry) {
       if (shape.repair) kept[k] = shape.repair(v);
       continue;
     }
-    kept[k] = v;
+    kept[k] = k === 'sections' ? pruneSections(v) : v;
   }
   return kept;
 }
@@ -157,7 +195,7 @@ if (droppedKeys.size > 0) {
   console.warn(
     `componentScores: the wiki ledger carries ${droppedKeys.size} field(s) LedgerEntry does not declare ` +
       `(${[...droppedKeys].sort().join(', ')}) — dropped from the snapshot. ` +
-      `Add them to LedgerEntry and KNOWN_ENTRY_KEYS to surface them.`,
+      `Add them to LedgerEntry/LedgerSection and the matching KNOWN_*_KEYS set to surface them.`,
   );
 }
 
@@ -175,8 +213,9 @@ const banner = `// Copyright (c) Meta Platforms, Inc. and affiliates.
  * GENERATED FILE — do not edit.
  * Regenerate: node apps/sandbox/scripts/generate-score-ledger.mjs
  *
- * \`roster\` is read from packages/{core,lab,richtext}/src by the canonical component
- * predicate. \`snapshot\` is a build-time copy of the wiki ledger, used only
+ * \`roster\` is read from every component-bearing package registered in
+ * scripts/component-packages.cjs. \`snapshot\` is a build-time copy of the wiki
+ * ledger, used only
  * until the page's runtime fetch of LEDGER_URL resolves.
  */
 `;
@@ -197,6 +236,8 @@ export interface LedgerSection {
   weight: number;
   state: 'scored' | 'limited' | 'not_measured' | 'na' | 'unpublished';
   note?: string | null;
+  /** Why this section's score changed from an earlier draft of the same audit. */
+  changedFrom?: string | null;
   blocks?: LedgerBlock[];
 }
 
@@ -273,7 +314,7 @@ export const SECTION_TITLES: Record<string, string> = ${JSON.stringify(SECTION_T
 
 export const SECTION_WEIGHTS: Record<string, number> = ${JSON.stringify(SECTION_WEIGHTS, null, 2)};
 
-/** Every component in packages/{core,lab,richtext}/src, by the canonical predicate. */
+/** Every component in the registered component-package source roots. */
 export const roster: RosterEntry[] = ${JSON.stringify(roster, null, 2)};
 
 /**

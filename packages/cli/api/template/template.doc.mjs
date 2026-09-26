@@ -11,6 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'template',
+  namespace: 'cli/api',
   displayName: 'template()',
   summary: 'List, inspect, or scaffold page and block templates.',
   description:
@@ -75,7 +76,8 @@ export const doc = {
       name: 'options.targetPath',
       type: 'string',
       description:
-        'Destination (relative to cwd) to scaffold the template into. Its presence switches a named lookup into a copy.',
+        'Destination (relative to cwd) to scaffold the template into. Its presence switches a named lookup into a copy. ' +
+        'A path that ends in .tsx, .ts, .jsx, .js, .mjs, .cjs, .css, .scss, .json, .md or .html is the file to write; any other path is a directory, which receives page.tsx for a page template or the block\'s own file name for a block.',
     },
     {
       name: 'options.overwrite',
@@ -104,7 +106,7 @@ export const doc = {
     {
       type: 'template.skeleton',
       description:
-        "A layout skeleton — structural tags with spatial annotations — plus the template's description and the components it composes.",
+        "A layout skeleton (structural tags with spatial annotations) plus the template's description and the components it composes.",
     },
     {
       type: 'template.copy',
@@ -114,7 +116,7 @@ export const doc = {
     {
       type: 'template.cdn',
       description:
-        'A write receipt for the CDN starter page: the path (relative to cwd), the Astryx version every CDN URL was pinned to, whether it was written, and the reason it was not — `exists` when a file was already there, which is a success.',
+        'A write receipt for the CDN starter page: the path (relative to cwd), the Astryx version every CDN URL was pinned to, whether it was written, and the reason it was not. `exists` when a file was already there, which is a success.',
     },
   ],
   throws: [

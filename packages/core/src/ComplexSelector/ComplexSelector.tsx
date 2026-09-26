@@ -50,6 +50,7 @@ import {
 import {isRenderable, mergeProps} from '../utils';
 import {composeEventHandlers} from '../utils/composeEventHandlers';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 
@@ -64,9 +65,14 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-3'],
     fontFamily: typographyVars['--font-family-body'],
+    // The 16px floor is iOS-only: iOS Safari zooms the page when a focused
+    // control sits under 16px, and only iOS WebKit implements
+    // -webkit-touch-callout to key the coarse-pointer floor to it.
     fontSize: {
       default: typeScaleVars['--text-label-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-label-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-label-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-label-leading'],
     color: colorVars['--color-text-primary'],
@@ -115,13 +121,6 @@ const styles = stylex.create({
     width: 'auto',
     borderWidth: 0,
     backgroundColor: 'transparent',
-    backgroundImage: {
-      default: null,
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
-    },
     boxShadow: {
       default: 'none',
       ':hover:not(:focus-within):where(:not(:disabled,[aria-disabled="true"]))':
@@ -209,7 +208,8 @@ export interface ComplexSelectorRenderState {
  * they respect focus restoration, light dismiss, and Escape. Prefer these
  * callbacks over mirroring open state in the parent — the selector owns its
  * visibility, and imperative calls avoid the focus-management pitfalls of
- * syncing an external `isOpen` prop.
+ * syncing an external `isOpen` prop. Pair with `onOpenChange` to observe every
+ * open and close, including the ones the selector performs itself.
  */
 export interface ComplexSelectorHandle {
   /** Open the selector surface. No-op when disabled or already open. */
@@ -286,6 +286,13 @@ export interface ComplexSelectorProps<Value> extends Omit<
    * state in the parent — the selector owns its visibility.
    */
   handleRef?: React.Ref<ComplexSelectorHandle>;
+  /**
+   * Called whenever the selector surface opens or closes, however it happened
+   * — the trigger, the keyboard, a light dismiss, Escape, content that calls
+   * `close()`, or the imperative handle. Pair it with `handleRef` to drive the
+   * surface from outside without mirroring its state.
+   */
+  onOpenChange?: (isOpen: boolean) => void;
   /** StyleX styles for the popup content container. */
   contentXstyle?: StyleXStyles;
   /** Test ID for the trigger container. */
@@ -343,6 +350,7 @@ export function ComplexSelector<Value>({
   placement = 'below',
   alignment = 'start',
   handleRef,
+  onOpenChange,
   contentXstyle,
   xstyle,
   className,
@@ -373,29 +381,35 @@ export function ComplexSelector<Value>({
       .join(' ') || undefined;
 
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const lastHideTimeRef = useRef(0);
 
   const [isPending, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || isPending;
 
+  const handlePopoverShow = useCallback(() => {
+    onOpenChange?.(true);
+  }, [onOpenChange]);
+
   const handlePopoverHide = useCallback(() => {
-    lastHideTimeRef.current = Date.now();
+    // Focus is restored first so a consumer that moves focus elsewhere from
+    // the callback wins, instead of being overwritten a line later.
     triggerRef.current?.focus();
-  }, []);
+    onOpenChange?.(false);
+  }, [onOpenChange]);
 
   const popover = usePopover({
     dialogLabel: label,
     hasCloseButton: false,
     hasAutoFocus: true,
     surfaceTarget: 'complex-selector-popup',
+    onShow: handlePopoverShow,
     onHide: handlePopoverHide,
   });
 
   const isOpen = popover.isOpen;
 
   const handleTriggerClick = useCallback(() => {
-    if (isDisabled || Date.now() - lastHideTimeRef.current < 50) {
+    if (isDisabled) {
       return;
     }
     if (popover.isOpen) {
@@ -487,6 +501,7 @@ export function ComplexSelector<Value>({
             // pointer users too. `focusWithin` here is `:has(:focus-visible)`.
             focusOutlineStyles.focusWithin,
             variant === 'ghost' && styles.triggerGhost,
+            variant === 'ghost' && interactionOverlayStyles.backgroundImage,
             isDisabled && inputWrapperStyles.disabled,
             variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
             isDisabled && styles.disabled,

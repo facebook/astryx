@@ -5,7 +5,7 @@
 export const docs = {
   name: 'RichTextEditor',
   displayName: 'Rich Text Editor',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: [
     'richtext',
     'rich text',

@@ -46,7 +46,7 @@ import {
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useInputContainer} from '../hooks/useInputContainer';
@@ -58,6 +58,7 @@ import {themeProps} from '../utils/themeProps';
 import {characterCount} from '../utils/characters';
 import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const COUNTER_WARNING_THRESHOLD = 0.8;
 
 const styles = stylex.create({
@@ -94,9 +95,14 @@ const styles = stylex.create({
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: 'var(--_textarea-inline-padding)',
     fontFamily: typographyVars['--font-family-body'],
+    // The 16px floor is iOS-only: iOS Safari zooms the page when a focused
+    // control sits under 16px, and only iOS WebKit implements
+    // -webkit-touch-callout to key the coarse-pointer floor to it.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-primary'],
@@ -348,6 +354,13 @@ export interface TextAreaProps extends Omit<
    * Callback fired when the textarea loses focus.
    */
   onBlur?: (e: FocusEvent<HTMLTextAreaElement>) => void;
+  /**
+   * The native `autocomplete` attribute, forwarded to the textarea unchanged.
+   * The value stays React-controlled regardless — this only hints the
+   * browser/password manager's suggestion behavior (e.g. `'off'` for a
+   * session-scoped field that must not reuse a prior value).
+   */
+  autoComplete?: React.TextareaHTMLAttributes<HTMLTextAreaElement>['autoComplete'];
 }
 
 /**
@@ -555,12 +568,18 @@ export function TextArea({
         onClick={handleWrapperClick}
         onMouseUp={handleWrapperMouseUp}
         {...mergeProps(
-          themeProps('textarea', {
-            size,
-            status: status?.type ?? null,
-            disabled: isDisabled ? 'disabled' : null,
-            readonly: isReadOnly ? 'readonly' : null,
-          }),
+          themeProps(
+            'text-area',
+            {
+              size,
+              status: status?.type ?? null,
+              disabled: isDisabled ? 'disabled' : null,
+              readonly: isReadOnly ? 'readonly' : null,
+            },
+            // `textarea` ran the compound name together; keep it emitted so
+            // existing themes continue to work.
+            {legacyNames: ['textarea']},
+          ),
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,
@@ -580,7 +599,7 @@ export function TextArea({
         )}
         <textarea
           {...rest}
-          ref={mergeRefs(ref, textareaRef)}
+          ref={useMergedRefs(ref, textareaRef)}
           id={id}
           name={isDisabled ? undefined : htmlName}
           value={optimisticValue}
@@ -608,19 +627,22 @@ export function TextArea({
               : undefined
           }
           aria-busy={isBusy || undefined}
-          {...stylex.props(
-            styles.textarea,
-            textareaSizeStyles[size],
-            isDisabled && styles.textareaDisabled,
-            Boolean(startIcon) && styles.textareaWithStartIcon,
-            // Reserve trailing space only when the end slot actually renders
-            // something (spinner or on-field status icon). The `detached`
-            // status variant suppresses the on-field icon — its glyph lives in
-            // the message box below — so reserving here would inset the text
-            // for an icon that never appears.
-            (isBusy || statusIcon != null) && styles.textareaWithStatus,
-            isBusy && statusIcon != null && styles.textareaWithBusyStatus,
-            maxLength != null && styles.textareaWithCounter,
+          {...mergeProps(
+            themeProps('text-area-control'),
+            stylex.props(
+              styles.textarea,
+              textareaSizeStyles[size],
+              isDisabled && styles.textareaDisabled,
+              Boolean(startIcon) && styles.textareaWithStartIcon,
+              // Reserve trailing space only when the end slot actually renders
+              // something (spinner or on-field status icon). The `detached`
+              // status variant suppresses the on-field icon — its glyph lives
+              // in the message box below — so reserving here would inset the
+              // text for an icon that never appears.
+              (isBusy || statusIcon != null) && styles.textareaWithStatus,
+              isBusy && statusIcon != null && styles.textareaWithBusyStatus,
+              maxLength != null && styles.textareaWithCounter,
+            ),
           )}
         />
         {(isBusy || statusIcon) && (
@@ -632,9 +654,12 @@ export function TextArea({
         {maxLength != null && (
           <div
             id={counterID}
-            {...stylex.props(
-              styles.counter,
-              valueLength > maxLength && styles.counterError,
+            {...mergeProps(
+              themeProps('text-area-counter'),
+              stylex.props(
+                styles.counter,
+                valueLength > maxLength && styles.counterError,
+              ),
             )}>
             {valueLength > maxLength && (
               // Non-color cue so the over-limit state isn't conveyed by the red

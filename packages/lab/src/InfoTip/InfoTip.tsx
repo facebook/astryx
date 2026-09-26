@@ -14,7 +14,7 @@
  * - /packages/lab/src/InfoTip/index.ts (exports if types change)
  */
 
-import {useCallback, useRef, useState, type ReactNode} from 'react';
+import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
 import {Icon, type IconSize} from '@astryxdesign/core/Icon';
@@ -103,33 +103,10 @@ export function InfoTip({
   label = 'More information',
   size = 'sm',
 }: InfoTipProps): ReactNode {
-  // Escape dismissal: `true` force-hides the tooltip (Tooltip isOpen={false});
-  // `false` returns control to Tooltip's own hover/focus triggers (isOpen
-  // undefined). Reset when the pointer or focus leaves the trigger so the
-  // tooltip can re-open on the next hover/focus.
-  const [isDismissed, setIsDismissed] = useState(false);
-  const isOpenRef = useRef(false);
-
-  const handleOpenChange = useCallback((isOpen: boolean) => {
-    isOpenRef.current = isOpen;
-  }, []);
-
-  const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLButtonElement>) => {
-      if (event.key === 'Escape' && isOpenRef.current) {
-        // Only swallow Escape when it actually dismissed the tooltip, so an
-        // enclosing dialog still closes on the next press.
-        event.stopPropagation();
-        setIsDismissed(true);
-      }
-    },
-    [],
-  );
-
-  const handleReset = useCallback(() => {
-    setIsDismissed(false);
-  }, []);
-
+  // No local Escape handler: the trigger used to stopPropagation the press,
+  // which hid the tip but left the browser's close watcher to fire `cancel` on
+  // an enclosing Dialog, so one press took both (#5168). Tooltip's own entry in
+  // the shared dismissal stack takes it instead.
   return (
     <Tooltip
       content={content}
@@ -137,15 +114,10 @@ export function InfoTip({
       // give the tap to the control and suppress the tooltip. Here the tooltip
       // IS the control's only purpose, so the tap has to open it — otherwise
       // an InfoTip's content is unreachable on a phone.
-      touchTrigger="tap"
-      isOpen={isDismissed ? false : undefined}
-      onOpenChange={handleOpenChange}>
+      touchTrigger="tap">
       <button
         type="button"
         aria-label={label}
-        onKeyDown={handleKeyDown}
-        onBlur={handleReset}
-        onMouseLeave={handleReset}
         {...stylex.props(focusOutlineStyles.focusVisible, styles.trigger)}>
         <Icon icon="info" size={size} />
       </button>

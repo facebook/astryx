@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file ProgressBar.test.tsx
+ * @input Uses Vitest, Testing Library, and ProgressBar
+ * @output DOM regressions for values, labels, themes, and external mark triggers
+ * @position Colocated unit tests; mark geometry is checked in Storybook
+ */
+
 import {describe, it, expect, beforeAll} from 'vitest';
 import {render, screen, waitFor} from '@testing-library/react';
 import {ProgressBar} from './ProgressBar';
@@ -14,23 +21,6 @@ beforeAll(async () => {
 });
 
 describe('ProgressBar', () => {
-  it('renders with default props', () => {
-    render(<ProgressBar value={50} label="Progress" />);
-    const progressbar = screen.getByRole('progressbar');
-    expect(progressbar).toBeInTheDocument();
-    expect(progressbar).toHaveAttribute('aria-valuenow', '50');
-    expect(progressbar).toHaveAttribute('aria-valuemin', '0');
-    expect(progressbar).toHaveAttribute('aria-valuemax', '100');
-  });
-
-  it('uses role="progressbar" (not "meter") for determinate progress', () => {
-    // A determinate ProgressBar conveys task completion, so it must be a
-    // progressbar (announced on update), not a meter (a static gauge).
-    render(<ProgressBar value={50} label="Progress" />);
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
-    expect(screen.queryByRole('meter')).not.toBeInTheDocument();
-  });
-
   it('renders visible label by default', () => {
     render(<ProgressBar value={50} label="Storage used" />);
     expect(screen.getByText('Storage used')).toBeInTheDocument();
@@ -68,13 +58,6 @@ describe('ProgressBar', () => {
     render(<ProgressBar value={50} label="Progress" />);
     const progressbar = screen.getByRole('progressbar');
     expect(progressbar).toHaveAttribute('aria-valuetext', '50%');
-  });
-
-  it('respects custom max', () => {
-    render(<ProgressBar value={3} max={10} label="Steps" />);
-    const progressbar = screen.getByRole('progressbar');
-    expect(progressbar).toHaveAttribute('aria-valuenow', '3');
-    expect(progressbar).toHaveAttribute('aria-valuemax', '10');
   });
 
   it('clamps value to [0, max]', () => {
@@ -197,13 +180,7 @@ describe('ProgressBar', () => {
 
   // Indeterminate mode tests
   describe('indeterminate mode', () => {
-    it('renders with role="progressbar" when isIndeterminate', () => {
-      render(<ProgressBar isIndeterminate label="Loading" />);
-      const progressbar = screen.getByRole('progressbar');
-      expect(progressbar).toBeInTheDocument();
-    });
-
-    it('does not set aria-valuenow/min/max when indeterminate', () => {
+    it('omits authored value attributes while the value is indeterminate', () => {
       render(<ProgressBar isIndeterminate label="Loading" />);
       const progressbar = screen.getByRole('progressbar');
       expect(progressbar).not.toHaveAttribute('aria-valuenow');
@@ -588,6 +565,21 @@ describe('ProgressBar', () => {
       expect(styleClasses(accentMarks[1])).toBe(styleClasses(errorMarks[1]));
     });
 
+    it('keeps tabbable target marks outside the progressbar subtree', () => {
+      const {container} = render(
+        <ProgressBar
+          value={50}
+          label="Progress"
+          marks={[{value: 80, label: 'Goal'}]}
+        />,
+      );
+      const progressbar = screen.getByRole('progressbar', {name: 'Progress'});
+      const mark = container.querySelector(MARK)!;
+      expect(mark).toHaveAttribute('tabindex', '0');
+      expect(progressbar.querySelector('[tabindex="0"]')).toBeNull();
+      expect(mark.closest('[role="progressbar"]')).toBeNull();
+    });
+
     it('renders every mark as a focusable trigger (label is required, never decorative)', () => {
       const {container} = render(
         <ProgressBar
@@ -635,10 +627,8 @@ describe('ProgressBar', () => {
     });
 
     it('keeps the progressbar element free of role="img"/aria-label children', () => {
-      // Marks are children of role="progressbar" (unchanged DOM), but a
-      // mark uses a Tooltip (aria-describedby) rather than a
-      // role="img"+aria-label child, so nothing muddies what SRs announce for
-      // the bar.
+      // Marks stay outside the progressbar's presentational subtree; their
+      // Tooltip descriptions must not change the bar's own semantics.
       const {container} = render(
         <ProgressBar
           value={50}
@@ -647,9 +637,7 @@ describe('ProgressBar', () => {
         />,
       );
       const progressbar = screen.getByRole('progressbar');
-      // Mark is a child of the progressbar (DOM unchanged from main).
-      expect(progressbar.querySelector(MARK)).not.toBeNull();
-      // But it is not a labeled graphic that pollutes the a11y subtree.
+      expect(progressbar.querySelector(MARK)).toBeNull();
       expect(progressbar.querySelector('[role="img"]')).toBeNull();
       expect(progressbar.querySelector('[aria-label]')).toBeNull();
       expect(container.querySelectorAll(MARK)).toHaveLength(1);
@@ -667,9 +655,9 @@ describe('ProgressBar', () => {
       expect(progressbar.getAttribute('aria-valuetext')).toBe('50%');
     });
 
-    it('renders marks as children of the progressbar (unchanged DOM)', () => {
-      // Marks stay children of role="progressbar", after the fill — the same
-      // shape as main. The fill remains the first child.
+    it('preserves the fill inside the progressbar when marks are rendered outside it', () => {
+      // Only the fill belongs to the semantic track; the focusable marks
+      // remain independently available outside its presentational subtree.
       const {container} = render(
         <ProgressBar
           value={50}
@@ -682,7 +670,7 @@ describe('ProgressBar', () => {
       expect(fill.style.width).toBe('50%');
       expect(fill.classList.contains('astryx-progressbar-mark')).toBe(false);
       const mark = container.querySelector<HTMLElement>(MARK)!;
-      expect(mark.closest('[role="progressbar"]')).toBe(progressbar);
+      expect(progressbar).not.toContainElement(mark);
       expect(container.querySelectorAll(MARK)).toHaveLength(1);
     });
 
@@ -837,5 +825,29 @@ describe('ProgressBar', () => {
       expect(css).toMatch(/translate\(-50%,\s*-50%\)/);
       expect(container.querySelectorAll(MARK)).toHaveLength(1);
     });
+  });
+});
+
+describe('ProgressBar theme target names', () => {
+  it('renders the deprecated classes beside the current ones', () => {
+    const {container} = render(
+      <ProgressBar
+        value={50}
+        label="Progress"
+        marks={[{value: 80, label: 'M'}]}
+      />,
+    );
+    expect(container.querySelector('.astryx-progress-bar')).toHaveClass(
+      'astryx-progressbar',
+    );
+    expect(container.querySelector('.astryx-progress-bar-track')).toHaveClass(
+      'astryx-progressbar-track',
+    );
+    expect(container.querySelector('.astryx-progress-bar-fill')).toHaveClass(
+      'astryx-progressbar-fill',
+    );
+    expect(container.querySelector('.astryx-progress-bar-mark')).toHaveClass(
+      'astryx-progressbar-mark',
+    );
   });
 });

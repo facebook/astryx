@@ -1,10 +1,16 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect, vi} from 'vitest';
-import {render, fireEvent} from '@testing-library/react';
+import {beforeEach, describe, it, expect, vi} from 'vitest';
+import {act, render, fireEvent} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {useEffect, useRef} from 'react';
 import {ChatComposer} from './ChatComposer';
 import {useChatComposerContext} from './ChatContext';
+import {__resetInteractionModalityForTest} from '../utils/interactionModality';
+
+beforeEach(() => {
+  __resetInteractionModalityForTest();
+});
 
 // The composer body — the elevated surface — is the div that wraps the input
 // area (styles.body). A custom `input` slot renders inside the inputArea div,
@@ -33,6 +39,113 @@ describe('ChatComposer elevation', () => {
 
   it("defaults to 'low' (preserves the raised look)", () => {
     expect(renderBodyClass(undefined)).toBe(renderBodyClass('low'));
+  });
+});
+
+describe('ChatComposer focus indication', () => {
+  function renderComposer() {
+    const result = render(
+      <ChatComposer onSubmit={() => {}} value="Ready to send" />,
+    );
+    const editor = result.container.querySelector<HTMLElement>(
+      '[contenteditable="true"]',
+    )!;
+    const body = editor.parentElement!.parentElement!.parentElement!;
+    const sendButton =
+      result.container.querySelector<HTMLButtonElement>('button')!;
+    return {...result, body, editor, sendButton};
+  }
+
+  it('adds the composer ring when keyboard focus enters the editor', () => {
+    const {body, editor} = renderComposer();
+    const restingClass = body.className;
+
+    fireEvent.keyDown(document, {key: 'Tab'});
+    fireEvent.focus(editor);
+
+    expect(body.className).not.toBe(restingClass);
+  });
+
+  it('does not add the composer ring when pointer focus enters the editor', () => {
+    const {body, editor} = renderComposer();
+    const restingClass = body.className;
+
+    fireEvent.pointerDown(editor);
+    fireEvent.focus(editor);
+
+    expect(body.className).toBe(restingClass);
+  });
+
+  it('shows the composer ring for programmatic editor focus after keyboard input', () => {
+    const {body, editor} = renderComposer();
+    const restingClass = body.className;
+
+    fireEvent.keyDown(document, {key: 'Tab'});
+    act(() => editor.focus());
+
+    expect(body.className).not.toBe(restingClass);
+  });
+
+  it('hides the composer ring for programmatic editor focus after pointer input', () => {
+    const {body, editor} = renderComposer();
+    const restingClass = body.className;
+
+    fireEvent.pointerDown(document.body);
+    act(() => editor.focus());
+
+    expect(body.className).toBe(restingClass);
+  });
+
+  it('removes the composer ring when the focused editor receives a pointer press', () => {
+    const {body, editor} = renderComposer();
+    const restingClass = body.className;
+
+    fireEvent.keyDown(document, {key: 'Tab'});
+    fireEvent.focus(editor);
+    expect(body.className).not.toBe(restingClass);
+
+    fireEvent.pointerDown(editor);
+    expect(body.className).toBe(restingClass);
+  });
+
+  it('leaves focus indication on an internal button instead of the composer', () => {
+    const {body, sendButton} = renderComposer();
+    const restingClass = body.className;
+
+    fireEvent.keyDown(document, {key: 'Tab'});
+    fireEvent.focus(sendButton);
+
+    expect(body.className).toBe(restingClass);
+  });
+});
+
+describe('ChatComposer disabled contract', () => {
+  it('exposes disabled state on the default textbox and clears it when enabled', () => {
+    const {getByRole, rerender} = render(
+      <ChatComposer onSubmit={() => {}} isDisabled />,
+    );
+
+    expect(getByRole('textbox')).toHaveAttribute('aria-disabled', 'true');
+
+    rerender(<ChatComposer onSubmit={() => {}} />);
+    expect(getByRole('textbox')).not.toHaveAttribute('aria-disabled');
+  });
+
+  it('keeps the Stop action pointer-operable while editing is disabled', async () => {
+    const user = userEvent.setup();
+    const onStop = vi.fn();
+    const {getByRole} = render(
+      <ChatComposer
+        onSubmit={() => {}}
+        onStop={onStop}
+        isDisabled
+        isStopShown
+      />,
+    );
+
+    await user.click(getByRole('button', {name: 'Stop'}));
+
+    expect(onStop).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -69,7 +182,33 @@ function CustomContextInput({focusSpy}: {focusSpy: () => void}) {
   );
 }
 
+function ContextSubmitButton() {
+  const ctx = useChatComposerContext();
+  return (
+    <button
+      type="button"
+      onClick={() => ctx?.onSubmit('  custom input draft  ')}>
+      Submit custom input
+    </button>
+  );
+}
+
 describe('ChatComposer input composition contract', () => {
+  it('submits the value supplied through the public context operation', () => {
+    const onSubmit = vi.fn();
+    const {getByRole} = render(
+      <ChatComposer
+        onSubmit={onSubmit}
+        value="captured composer draft"
+        input={<ContextSubmitButton />}
+      />,
+    );
+
+    fireEvent.click(getByRole('button', {name: 'Submit custom input'}));
+
+    expect(onSubmit).toHaveBeenCalledWith('custom input draft');
+  });
+
   it('exposes value/onChange/placeholder/isDisabled to a custom input via context', () => {
     const {getByTestId} = render(
       <ChatComposer

@@ -5,7 +5,7 @@
 /**
  * @file useTheme.ts
  * @input ThemeContext provided by Theme
- * @output Exports useTheme and useThemeName hooks for programmatic theme access
+ * @output Exports useTheme, useThemeName, and internal theme-object access
  * @position Theme hook; used by data viz, canvas, and non-CSS consumers
  *
  * Provides synchronous access to theme token values resolved for the
@@ -21,7 +21,13 @@
  * - /packages/core/src/theme/index.ts
  */
 
-import {createContext, use, useMemo, useSyncExternalStore} from 'react';
+import {
+  createContext,
+  use,
+  useCallback,
+  useMemo,
+  useSyncExternalStore,
+} from 'react';
 import type {ThemeMode} from './types';
 import type {DefinedTheme} from './defineTheme';
 import {resolveThemeTokens} from './tokens';
@@ -232,6 +238,18 @@ export function useThemeName(): string | null {
 }
 
 /**
+ * Return the nearest theme object, falling back to the registered root theme
+ * only when no provider context is available.
+ * @internal
+ */
+export function useThemeDefinition(): DefinedTheme | undefined {
+  const ctx = use(ThemeContext);
+  const hasCtx = ctx != null;
+  const rootThemeName = useRootThemeNameAttr(hasCtx);
+  return ctx?.theme ?? getRegisteredTheme(rootThemeName) ?? undefined;
+}
+
+/**
  * Access the current Astryx theme's token values, resolved for the active color mode.
  *
  * Returns raw CSS values (hex colors, px values, etc.) suitable for
@@ -281,14 +299,14 @@ export function useTheme(): UseThemeReturn {
     [theme, effectiveMode],
   );
 
-  const token = (name: string): string => {
-    return tokens[name] ?? '';
-  };
+  const token = useCallback(
+    (name: string): string => tokens[name] ?? '',
+    [tokens],
+  );
+  const name = theme?.name ?? 'default';
 
-  return {
-    name: theme?.name ?? 'default',
-    mode: effectiveMode,
-    token,
-    tokens,
-  };
+  return useMemo(
+    () => ({name, mode: effectiveMode, token, tokens}),
+    [name, effectiveMode, token, tokens],
+  );
 }

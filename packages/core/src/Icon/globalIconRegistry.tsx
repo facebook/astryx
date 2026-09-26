@@ -58,6 +58,20 @@ export type IconName =
   | 'microphone';
 
 /**
+ * A namespaced extension key, `'<namespace>:<name>'`.
+ *
+ * This is the tier for a glyph that belongs to one component or library rather
+ * than to the system: `'richtext:bold'`, `'numberInput:stepperDown'`. A theme
+ * overrides it by key through `registerIcons` or `defineTheme({icons})`,
+ * exactly as it overrides a built-in name, and the core {@link IconName} union
+ * stays reserved for glyphs the whole system shares.
+ *
+ * Accepted anywhere a built-in name is, including `<Icon icon>` — which is
+ * what lets a namespaced glyph keep `size`, `color` and `xstyle`.
+ */
+export type NamespacedIconName = `${string}:${string}`;
+
+/**
  * A semantic icon name — either one of the built-in {@link IconName}s or an
  * arbitrary string key contributed by a library/app.
  *
@@ -81,9 +95,19 @@ export type IconRegistrySource = DefinedTheme | string | null | undefined;
 
 let globalRegistry: Record<string, ReactNode> = {};
 
+/**
+ * A key is namespaced when it carries a `<namespace>:` prefix — the runtime
+ * form of {@link NamespacedIconName}, which is how the typed
+ * {@link getIconRegistry} snapshot tells a built-in name from a component- or
+ * library-owned one.
+ */
+function isNamespacedKey(name: string): boolean {
+  return name.includes(':');
+}
+
 function getThemeIconOverrides(
   source: IconRegistrySource,
-): Partial<IconRegistry> | null {
+): Partial<Record<IconName | NamespacedIconName, ReactNode>> | null {
   if (source == null) {
     return null;
   }
@@ -140,23 +164,30 @@ export function registerIcons(
 export function getIconRegistry(
   source?: IconRegistrySource,
 ): Readonly<IconRegistry> {
-  const registry = {...defaultIcons};
+  const registry: Record<string, ReactNode> = {};
 
-  // Only surface built-in IconName keys here — extension keys registered by
-  // libraries are resolved via getIcon/getExtendedIcon and intentionally kept
-  // out of the typed IconRegistry snapshot.
+  // Only surface built-in IconName keys here — namespaced keys, whether
+  // contributed by a library or shipped as a component's own default, are
+  // resolved via getIcon/getExtendedIcon and intentionally kept out of the
+  // typed IconRegistry snapshot.
   for (const name of Object.keys(defaultIcons) as IconName[]) {
+    if (isNamespacedKey(name)) {
+      continue;
+    }
     registry[name] = globalRegistry[name] ?? defaultIcons[name];
   }
 
   const themeIcons = getThemeIconOverrides(source);
   if (themeIcons != null) {
     for (const name of Object.keys(themeIcons) as IconName[]) {
+      if (isNamespacedKey(name)) {
+        continue;
+      }
       registry[name] = themeIcons[name] ?? registry[name];
     }
   }
 
-  return registry;
+  return registry as IconRegistry;
 }
 
 /**

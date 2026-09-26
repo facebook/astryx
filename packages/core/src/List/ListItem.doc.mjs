@@ -71,7 +71,7 @@ export const docs = {
     {
       name: 'href',
       type: 'string',
-      description: 'Link URL; enables the invisible anchor pattern.',
+      description: 'Link URL; enables the invisible anchor pattern. The destination follows the shared navigation rule described on the Link `href` prop.',
     },
     {
       name: 'target',
@@ -178,7 +178,7 @@ export const docsDense = {
     onClick: 'Click handler; enables invisible button pattern.',
     interactiveRef:
       'Ref to a nested control that owns the item\'s keyboard access/action; row delegates surface clicks to it (useClickableContainer), no invisible button/anchor, no second tab stop (WCAG 4.1.2). Mutually exclusive with onClick/href.',
-    href: 'Link URL; enables invisible anchor pattern.',
+    href: 'Link URL; enables invisible anchor pattern. Follows the shared navigation rule (see Link href).',
     target: 'Link target attribute, only when href provided. target="_blank" auto-adds noopener noreferrer.',
     rel: 'Link relationship tokens. noopener noreferrer are merged for target="_blank".',
     isDisabled: 'Disabled state; sets aria-disabled.',

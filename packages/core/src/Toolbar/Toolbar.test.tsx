@@ -142,22 +142,22 @@ describe('Toolbar', () => {
     );
   });
 
-  it('applies size class', () => {
+  it('reflects the size', () => {
     render(<Toolbar label="Actions" size="sm" />);
     const toolbar = screen.getByRole('toolbar');
-    expect(toolbar.className).toContain('sm');
+    expect(toolbar).toHaveAttribute('data-size', 'sm');
   });
 
   it('defaults to md size', () => {
     render(<Toolbar label="Actions" />);
     const toolbar = screen.getByRole('toolbar');
-    expect(toolbar.className).toContain('md');
+    expect(toolbar).toHaveAttribute('data-size', 'md');
   });
 
-  it('applies lg size class', () => {
+  it('reflects lg size', () => {
     render(<Toolbar label="Actions" size="lg" />);
     const toolbar = screen.getByRole('toolbar');
-    expect(toolbar.className).toContain('lg');
+    expect(toolbar).toHaveAttribute('data-size', 'lg');
   });
 
   it('forwards ref to root element', () => {
@@ -171,14 +171,14 @@ describe('Toolbar', () => {
     // Section renders with astryx-section class containing the variant
     const sectionInner = container.querySelector('.astryx-section');
     expect(sectionInner).toBeInTheDocument();
-    expect(sectionInner?.className).toContain('muted');
+    expect(sectionInner).toHaveAttribute('data-variant', 'muted');
   });
 
   it('defaults to transparent variant', () => {
     const {container} = render(<Toolbar label="Actions" />);
     const sectionInner = container.querySelector('.astryx-section');
     expect(sectionInner).toBeInTheDocument();
-    expect(sectionInner?.className).toContain('transparent');
+    expect(sectionInner).toHaveAttribute('data-variant', 'transparent');
   });
 
   it('navigates with ArrowRight/ArrowLeft in horizontal orientation', async () => {

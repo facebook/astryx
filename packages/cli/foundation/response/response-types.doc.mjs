@@ -13,20 +13,30 @@ export const doc = {
   type: 'enum',
   name: 'response-types',
   displayName: 'Response Types',
-  namespace: 'cli',
+  namespace: 'cli/api',
   description:
     'The `type` discriminant present on every --json success envelope. Consumers switch on it to narrow `data`.',
   members: [
+    {
+      value: 'init.run',
+      description:
+        'The install receipt: the `mode` (`default` | `features`), the features run, agent-doc files written, any soft `docsError`, whether theme guidance was emitted, the template outcome (`workflow` | `created` | `skipped`) plus its path, and whether the next-steps were emitted.',
+    },
+    {
+      value: 'init.remove',
+      description:
+        'Confirmation that the managed agent-docs block was removed (`data.removed: true`) — returned when --remove-agents is set.',
+    },
     // component
     {
       value: 'component.list',
       description:
-        'The component catalog grouped by category: `detail` (the level: names | compact | full) and `components`, the grouped map of names+package, brief entries, or a full ComponentDoc per entry.',
+        'The component catalog grouped by category: `detail` (the level: names | compact | full) and `components`, the grouped map of names entries ({name, package, and optional canonical import for integrations}), brief entries, or a full ComponentDoc per entry.',
     },
     {
       value: 'component.detail',
       description:
-        "One component's authored ComponentDoc plus ownership metadata (owner package, import specifier, and whether source is available).",
+        "One component's authored ComponentDoc plus ownership fields (package, the owner; import, the specifier; sourceAvailable, whether source exists) and parentDoc (present when the component is documented inside another component's doc, naming that doc).",
     },
     {
       value: 'component.detail.props',
@@ -59,9 +69,14 @@ export const doc = {
         "One topic's full ReferenceDoc, with token-ref blocks inlined.",
     },
     {
+      value: 'docs.index',
+      description:
+        "One topic's section index (--index): the topic's name, title, and description, plus sections, each {id, title, summary} (pass the id as the section argument; summary is the section's one-line summary).",
+    },
+    {
       value: 'docs.detail.section',
       description:
-        'A single ReferenceSection of a topic: the first whose title contains the section query.',
+        'One ReferenceSection of a topic, found by key or title, with token-ref blocks inlined.',
     },
 
     // blog (read from the published RSS feed)
@@ -101,19 +116,19 @@ export const doc = {
     {
       value: 'search',
       description:
-        'The echoed query plus a ranked SearchResultEntry[] (domain, name, score, reason, description, follow-up command, and import path where relevant).',
+        'The echoed query, `matchCount` (total matches, before `limit`), and results, a ranked SearchResultEntry[] bounded by `limit`: each {domain, name, score, reason, description, command}, plus import (components, hooks), title (docs), or displayName and kind (templates).',
     },
 
     // build
     {
       value: 'build.help',
       description:
-        'A marker (`playbook: true`) that the renderer expands into the how-to-build-a-page workflow; emitted when no query is given.',
+        'The how-to-build-a-page playbook, emitted when no query is given: `playbook: true`, a title, the ordered steps (title, commands, optional returns), the on-system rules, and related lookups. Commands are bare subcommands for the caller to render with its own invocation.',
     },
     {
       value: 'build.kit',
       description:
-        'The grouped composition kit: echoed query, hasResults/directMatch flags, the closest page templates, drop-in block patterns, idea-specific components/hooks, and the always-on frame + foundation component-name arrays.',
+        'The composition kit: echoed query, hasResults, matchCount (total matched, never a cap), directMatch, pages (closest templates), blocks (drop-in patterns) and domain (idea components/hooks) as SearchResultEntry[], frame and foundation name arrays, and hint {reason, commands} when thin.',
     },
 
     // swizzle
@@ -126,6 +141,17 @@ export const doc = {
       value: 'swizzle.copy',
       description:
         'An eject receipt: component name, owning package, output directory, files-copied count, the written file names, whether any file uses StyleX, and an optional maintainer note.',
+    },
+
+    // gap reports
+    {
+      value: 'gap-report.categories',
+      description: 'The fixed gap category values and human-readable labels.',
+    },
+    {
+      value: 'gap-report.file',
+      description:
+        'An aggregate receipt: overall status, the selected package, issuesUrl (or null), deliveries in handler order, each {handlerType: project | integration | fallback, handler, audience, status, url, message}, and filedCount/routedOnlyCount totals.',
     },
 
     // template
@@ -153,7 +179,7 @@ export const doc = {
     {
       value: 'template.cdn',
       description:
-        'A write receipt for the no-build-step CDN starter page: the path (relative to cwd), the Astryx version every CDN URL was pinned to, whether it was written, and the reason it was not — `exists` when a file was already there, which is a success.',
+        'A write receipt for the no-build-step CDN starter page: the path (relative to cwd), the Astryx version every CDN URL was pinned to, whether it was written, and the reason it was not. `exists` when a file was already there, which is a success.',
     },
 
     // hook
@@ -172,7 +198,7 @@ export const doc = {
     {
       value: 'theme.build',
       description:
-        'A theme build receipt: name, token- and component-override counts, output size, the written outputs {css, js, dts, and variantsDts when applicable}, and any validation warnings.',
+        'A theme build receipt: name, tokenCount and componentCount (override counts), sizeKB, the written outputs {css, js, dts, and variantsDts when applicable}, warnings (defects to fix), and notices (advisories about a correct theme, such as a named font it does not load).',
     },
     {
       value: 'theme.build.check',
@@ -182,22 +208,32 @@ export const doc = {
     {
       value: 'theme.build.batch',
       description:
-        'Several themes built in one invocation: `count` plus one {file, receipt} per theme in argument order, where receipt is that theme\'s theme.build (or theme.build.check) envelope, or null when it produced no CSS.',
+        "Several themes built in one invocation: `count` plus one {file, receipt} per theme in argument order, where receipt is that theme's theme.build (or theme.build.check) envelope, or null when it produced no CSS.",
     },
     {
       value: 'theme.list',
       description:
-        'Every bundled theme as a ThemeListEntry[]: each with slug, displayName, description, and a maintained flag.',
+        'Every bundled or installed integration theme as a ThemeListEntry[]: each with slug, displayName, description, maintained flag, and owner package.',
     },
     {
       value: 'theme.add',
       description:
-        'A scaffold receipt: resolved slug, displayName, maintained flag, outputDir (relative to cwd), the theme entry file, its exportName, and the files written.',
+        'A scaffold receipt: resolved slug, displayName, maintained flag, owner package, outputDir (relative to cwd), the theme entry file, its exportName, and the files written.',
     },
     {
       value: 'theme.template',
       description:
-        'A write receipt for the annotated theme template: the path (relative to cwd), whether it was written, and the reason it was not — `exists` when a file was already there, which is a success.',
+        'A write receipt for the annotated theme template: the path (relative to cwd), whether it was written, and the reason it was not. `exists` when a file was already there, which is a success.',
+    },
+    {
+      value: 'theme.targets',
+      description:
+        'The whole themeable surface: the echoed filter, componentCount, and targets, one per theming target — {key, className, component, props, states, deprecatedFor?}, where props and states are its legal override keys and deprecatedFor names the canonical replacement key.',
+    },
+    {
+      value: 'theme.palette.generate',
+      description:
+        'An author-reviewable OKLCH palette candidate, its reproducibility receipt, summary counts, and optional candidate/receipt file-write result.',
     },
 
     // upgrade
@@ -221,7 +257,7 @@ export const doc = {
     {
       value: 'manifest',
       description:
-        'The self-describing CLI capability manifest: name, version, apiVersion, global options, the command tree (args, options, json flag, response types, examples), the jsonSupported allowlist, and the flat responseTypes index.',
+        'The CLI capability manifest: name, version, apiVersion, description, globalOptions, commands (each name, description, arguments, options, json, aliases?, responseTypes?, examples?, exitCodes? as [{code, when}], subcommands?), jsonSupported, and the flat responseTypes index.',
     },
 
     // doctor
@@ -231,11 +267,36 @@ export const doc = {
         'The health-check report: `checks` (each with id, label, status: pass | warn | fail | info, a message, and a fix when not passing) plus a `summary` of counts per status.',
     },
 
-    // validate-integration
+    // integration authoring
+    {
+      value: 'integration.add',
+      description:
+        'A contribution-writer receipt: kind, name, optional root {path, created}, integration-manifest path, every affected project-relative path, written, and dryRun.',
+    },
+    {
+      value: 'integration.pack-check',
+      description:
+        'The packed-package check: name, version, packable, tarball {filename, fileCount, size, unpackedSize} or null, inventory {manifest, roots [{kind, path, expectedFiles, missingFiles, complete}], expectedFiles, packedFiles}, contributions {local, packed}, each null or {themes [{slug, exportName}], components, templates [{id, type, name}], codemods [{version, id}], docs, agentDocsAppend}, and issues [{code, severity, message}].',
+    },
     {
       value: 'integration.validate',
       description:
         'The validation result: the package name and version (both null when no local manifest is found) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning | error, message}.',
+    },
+    {
+      value: 'integration.template-conflicts',
+      description:
+        'The integration identity, structural issues, and non-blocking conflicts where an integration template id is also owned by Core; each conflict includes the exact package-qualified command.',
+    },
+    {
+      value: 'integration.component-conflicts',
+      description:
+        'The integration identity, structural issues, and non-blocking conflicts where an integration component name is also owned by Core; each conflict includes the exact package-qualified command.',
+    },
+    {
+      value: 'integration.doc-conflicts',
+      description:
+        'The integration identity, structural issues, and Core doc overlaps classified as intentional replacements, intentional extensions, or accidental same-name conflicts.',
     },
 
     // layout (XLE/XLO)

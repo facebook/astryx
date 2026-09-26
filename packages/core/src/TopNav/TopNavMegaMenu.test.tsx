@@ -860,3 +860,107 @@ describe('TopNavMegaMenu — drawer focus ring', () => {
     expectSharedFocusRing(screen.getByRole('link', {name: /Analytics/}));
   });
 });
+
+describe('TopNavMegaMenu pass-through props', () => {
+  it('forwards pass-through props to the trigger button', () => {
+    render(
+      <TopNavMegaMenu
+        label="Products"
+        aria-label="Products mega menu"
+        id="mega-trigger"
+        data-source="nav"
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Products mega menu'});
+    expect(trigger).toHaveAttribute('id', 'mega-trigger');
+    expect(trigger).toHaveAttribute('data-source', 'nav');
+  });
+
+  it('forwards pass-through props to the drawer trigger', () => {
+    render(
+      <TopNavRenderContext value="drawer">
+        <TopNavMegaMenu label="Products" id="mega-drawer" data-source="nav" />
+      </TopNavRenderContext>,
+    );
+    const trigger = screen.getByRole('button', {name: /Products/});
+    expect(trigger).toHaveAttribute('id', 'mega-drawer');
+    expect(trigger).toHaveAttribute('data-source', 'nav');
+  });
+});
+
+describe('TopNavMegaMenu — owned handlers on the trigger', () => {
+  beforeAll(installPopoverApiMock);
+  afterAll(restorePopoverApiMock);
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("composes a caller's onClick with the trigger's own open behavior", async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+    render(
+      <TopNavMegaMenu
+        label="Products"
+        items={<TopNavMegaMenuItem title="Analytics" href="/analytics" />}
+        onClick={handleClick}
+      />,
+    );
+
+    const trigger = screen.getByRole('button', {name: 'Products'});
+    await user.click(trigger);
+
+    expect(handleClick).toHaveBeenCalledOnce();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it("composes a caller's hover handlers with the trigger's hover-open behavior", async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    const handleMouseEnter = vi.fn();
+    const handleMouseLeave = vi.fn();
+    render(
+      <TopNavMegaMenu
+        label="Products"
+        items={<TopNavMegaMenuItem title="Analytics" href="/analytics" />}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      />,
+    );
+
+    const trigger = screen.getByRole('button', {name: 'Products'});
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    expect(handleMouseEnter).toHaveBeenCalledOnce();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    await user.unhover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
+    expect(handleMouseLeave).toHaveBeenCalledOnce();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it("composes a caller's onClick with the drawer section toggle", async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+    render(
+      <TopNavRenderContext value="drawer">
+        <TopNavMegaMenu
+          label="Products"
+          items={<TopNavMegaMenuItem title="Analytics" href="/analytics" />}
+          onClick={handleClick}
+        />
+      </TopNavRenderContext>,
+    );
+
+    const trigger = screen.getByRole('button', {name: /Products/});
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(trigger);
+    expect(handleClick).toHaveBeenCalledOnce();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+});

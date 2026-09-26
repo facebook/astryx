@@ -11,6 +11,7 @@ import {
   linkifyPRs,
   linkifyContributors,
   linkifyComponents,
+  addEmptyReleasePlaceholders,
   stripTitle,
 } from '../components/changelogLinkify';
 
@@ -127,6 +128,64 @@ describe('linkifyComponents', () => {
     expect(linkifyComponents('Use Button', names)).toBe(
       'Use [Button](/components/Button)',
     );
+  });
+});
+
+describe('addEmptyReleasePlaceholders', () => {
+  it('labels an empty release without hiding populated releases', () => {
+    const input = [
+      '# 0.4.5',
+      '',
+      '---',
+      '',
+      '# 0.4.4',
+      '',
+      '#### Fixes',
+      '',
+      '- Fixed the CLI.',
+    ].join('\n');
+
+    expect(addEmptyReleasePlaceholders(input)).toBe(
+      [
+        '# 0.4.5',
+        '',
+        '_No changes in this release._',
+        '',
+        '---',
+        '',
+        '# 0.4.4',
+        '',
+        '#### Fixes',
+        '',
+        '- Fixed the CLI.',
+      ].join('\n'),
+    );
+  });
+
+  it('fills the final empty release when there is no trailing separator', () => {
+    expect(addEmptyReleasePlaceholders('# 0.4.2')).toBe(
+      '# 0.4.2\n\n_No changes in this release._',
+    );
+  });
+
+  it('leaves a populated release unchanged', () => {
+    const input = [
+      '# 0.4.3',
+      '',
+      '#### Fixes',
+      '',
+      '- A real fix.',
+      '',
+      '---',
+      '',
+      '# 0.4.2',
+      '',
+      '#### Fixes',
+      '',
+      '- Another real fix.',
+    ].join('\n');
+
+    expect(addEmptyReleasePlaceholders(input)).toBe(input);
   });
 });
 

@@ -5,7 +5,7 @@
 export const docs = {
   name: 'NumberInput',
   displayName: 'Number Input',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: [
     'numberinput',
     'numberfield',
@@ -35,7 +35,7 @@ export const docs = {
       name: 'onChange',
       type: '(value: number) => void',
       description:
-        'Callback fired when input value changes (only on valid input).',
+        'Callback fired when a valid text edit commits on blur or Enter, or when a step or clear control changes the value.',
       required: true,
     },
     {
@@ -60,6 +60,11 @@ export const docs = {
       type: 'boolean',
       description:
         'Whether the field is optional (mutually exclusive with isRequired).',
+    },
+    {
+      name: 'onKeyDown',
+      type: '(e: KeyboardEvent<HTMLInputElement>) => void',
+      description: 'Callback fired on keydown events on the input.',
     },
     {
       name: 'isRequired',
@@ -123,12 +128,14 @@ export const docs = {
     {
       name: 'min',
       type: 'number | null',
-      description: 'Minimum value allowed.',
+      description:
+        'Minimum value allowed. A smaller entry commits at this value on blur or Enter.',
     },
     {
       name: 'max',
       type: 'number | null',
-      description: 'Maximum value allowed.',
+      description:
+        'Maximum value allowed. A larger entry commits at this value on blur or Enter.',
     },
     {
       name: 'step',
@@ -240,6 +247,11 @@ export const docs = {
       {
         guidance: true,
         description:
+          "Let people paste formatted numbers: a pasted 1,234,234,234 is read under the field's locale and commits as 1234234234 on blur. Typing is never intercepted.",
+      },
+      {
+        guidance: true,
+        description:
           'Set min, max, and step to guide users toward valid values.',
       },
       {
@@ -318,7 +330,8 @@ export const docsZh = {
     {
       name: 'onChange',
       type: '(value: number) => void',
-      description: '输入值变化时触发的回调（仅在输入有效时触发）。',
+      description:
+        '有效文本编辑在失焦或按 Enter 时提交；步进或清除控件更改值时也会触发回调。',
       required: true,
     },
     {
@@ -400,12 +413,12 @@ export const docsZh = {
     {
       name: 'min',
       type: 'number | null',
-      description: '允许的最小值。',
+      description: '允许的最小值。更小的输入会在失焦或按 Enter 时提交为该值。',
     },
     {
       name: 'max',
       type: 'number | null',
-      description: '允许的最大值。',
+      description: '允许的最大值。更大的输入会在失焦或按 Enter 时提交为该值。',
     },
     {
       name: 'step',
@@ -507,6 +520,11 @@ export const docsZh = {
       {
         guidance: true,
         description:
+          '可以直接粘贴带格式的数字：粘贴 1,234,234,234 会按字段所在区域设置解析，失去焦点时提交为 1234234234。输入过程中不会拦截按键。',
+      },
+      {
+        guidance: true,
+        description:
           'Set min, max, and step to guide users toward valid values.',
       },
       {
@@ -576,6 +594,11 @@ export const docsDense = {
       {
         guidance: true,
         description:
+          "Pasted formatted numbers parse: 1,234,234,234 commits as 1234234234 under the field's locale. Typing is never intercepted.",
+      },
+      {
+        guidance: true,
+        description:
           'Set min, max, and step to guide users toward valid values.',
       },
       {
@@ -635,7 +658,8 @@ export const docsDense = {
   propDescriptions: {
     label: 'Label text (always rendered for accessibility).',
     value: 'Current input value.',
-    onChange: 'Callback on valid input change.',
+    onChange:
+      'Callback when a valid text edit commits on blur/Enter, or a step/clear control changes the value.',
     size: 'Size variant.',
     isLabelHidden: 'Visually hide label (still accessible to screen readers).',
     description: 'Text between label + input.',
