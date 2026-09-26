@@ -252,7 +252,7 @@ export const docs = {
         name: 'Trigger button',
         required: true,
         description:
-          'A button showing the formatted range or placeholder. Clicking opens the popover.',
+          'A button showing the formatted range or placeholder. Click, Enter/Space or Down Arrow opens the popover and moves focus into it. Exposed to assistive technology as a select-only combobox (role="combobox"), matching DateInput and DateTimeInput.',
       },
       {
         name: 'Calendar icon',
