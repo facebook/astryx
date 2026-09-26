@@ -10,6 +10,8 @@
 import {render, screen} from '@testing-library/react';
 import {renderToString} from 'react-dom/server';
 import {describe, expect, expectTypeOf, it, vi} from 'vitest';
+import {declaredValue} from '../../__tests__/stylexDeclarations';
+import {spacingVars} from '../../theme/tokens.stylex';
 import {Markdown} from '../Markdown';
 import type {MarkdownAstRoot} from '../ast';
 import {parseMarkdown, parseMarkdownAst} from '../parser';
@@ -284,9 +286,12 @@ describe('createMarkdownFenceTransform', () => {
       </Markdown>,
     );
 
-    expect(
-      screen.getByRole('figure', {name: 'diagram: title="Flow"'}),
-    ).toHaveTextContent('start --> finish');
+    const figure = screen.getByRole('figure', {
+      name: 'diagram: title="Flow"',
+    });
+    expect(figure).toHaveTextContent('start --> finish');
+    expect(figure.parentElement).not.toHaveClass('astryx-markdown-codeblock');
+    expect(figure.parentElement).not.toHaveAttribute('data-density');
     expect(renderFence).toHaveBeenCalledOnce();
     expect(renderFence.mock.calls[0]?.[0].node.data).toEqual({
       code: 'start --> finish',
@@ -294,6 +299,78 @@ describe('createMarkdownFenceTransform', () => {
       meta: 'title="Flow"',
     });
   });
+
+  it.each([
+    ['default', spacingVars['--spacing-4']],
+    ['compact', spacingVars['--spacing-2']],
+  ] as const)(
+    'applies neutral %s layout spacing while targeting only readable fallback',
+    (density, expectedSpacing) => {
+      const source =
+        '```diagram\nfirst\n```\n\nBetween\n\n```diagram\nlast\n```';
+      const renderFence = ({
+        node,
+      }: {
+        node: DiagramNode<'spacing-diagram-fences'>;
+      }) => <figure data-testid={`fence-${node.data.code}`} />;
+      const plugin = createFencePlugin('spacing-diagram-fences', renderFence);
+      const expectEdgeSpacing = (first: Element, last: Element) => {
+        expect(declaredValue(first, 'margin-top')).toBe('0px');
+        expect(declaredValue(first, 'margin-bottom')).toBe(expectedSpacing);
+        expect(declaredValue(last, 'margin-top')).toBe(expectedSpacing);
+        expect(declaredValue(last, 'margin-bottom')).toBe('0px');
+      };
+
+      const {rerender} = render(
+        <Markdown plugins={[plugin]} density={density}>
+          {source}
+        </Markdown>,
+      );
+
+      const firstWrapper = screen.getByTestId('fence-first').parentElement;
+      const lastWrapper = screen.getByTestId('fence-last').parentElement;
+      expect(firstWrapper).toBeInstanceOf(HTMLElement);
+      expect(lastWrapper).toBeInstanceOf(HTMLElement);
+      if (firstWrapper == null || lastWrapper == null) {
+        throw new Error('Semantic fence output must have a Markdown wrapper.');
+      }
+
+      expect(firstWrapper).not.toHaveClass('astryx-markdown-codeblock');
+      expect(firstWrapper).not.toHaveAttribute('data-density');
+      expect(lastWrapper).not.toHaveClass('astryx-markdown-codeblock');
+      expect(lastWrapper).not.toHaveAttribute('data-density');
+      expectEdgeSpacing(firstWrapper, lastWrapper);
+
+      rerender(<Markdown density={density}>{source}</Markdown>);
+      const [firstFallbackTarget, lastFallbackTarget] = Array.from(
+        document.querySelectorAll('.astryx-markdown-codeblock'),
+      );
+      expect(firstFallbackTarget).toBeInstanceOf(HTMLElement);
+      expect(lastFallbackTarget).toBeInstanceOf(HTMLElement);
+      if (firstFallbackTarget == null || lastFallbackTarget == null) {
+        throw new Error('CodeBlock fallback must retain its Markdown target.');
+      }
+      expect(firstFallbackTarget).toHaveAttribute('data-density', density);
+      expect(lastFallbackTarget).toHaveAttribute('data-density', density);
+      expect(declaredValue(firstFallbackTarget, 'margin-top')).toBeNull();
+      expect(declaredValue(firstFallbackTarget, 'margin-bottom')).toBeNull();
+      expect(declaredValue(lastFallbackTarget, 'margin-top')).toBeNull();
+      expect(declaredValue(lastFallbackTarget, 'margin-bottom')).toBeNull();
+
+      const firstFallbackWrapper = firstFallbackTarget.parentElement;
+      const lastFallbackWrapper = lastFallbackTarget.parentElement;
+      expect(firstFallbackWrapper).toBeInstanceOf(HTMLElement);
+      expect(lastFallbackWrapper).toBeInstanceOf(HTMLElement);
+      if (firstFallbackWrapper == null || lastFallbackWrapper == null) {
+        throw new Error('CodeBlock fallback must have a Markdown wrapper.');
+      }
+      expect(firstFallbackWrapper).not.toHaveClass('astryx-markdown-codeblock');
+      expect(firstFallbackWrapper).not.toHaveAttribute('data-density');
+      expect(lastFallbackWrapper).not.toHaveClass('astryx-markdown-codeblock');
+      expect(lastFallbackWrapper).not.toHaveAttribute('data-density');
+      expectEdgeSpacing(firstFallbackWrapper, lastFallbackWrapper);
+    },
+  );
 
   it('lets components.code win without invoking the proposal renderer', () => {
     const renderFence = vi.fn(() => <div>Semantic</div>);
@@ -455,6 +532,9 @@ describe('createMarkdownFenceTransform', () => {
 
     expect(screen.getByText('Before.')).toBeInTheDocument();
     expect(document.querySelector('pre')).toHaveTextContent('start --> finish');
+    expect(
+      document.querySelector('.astryx-markdown-codeblock'),
+    ).toHaveAttribute('data-density', 'default');
     expect(screen.getByText('After.')).toBeInTheDocument();
     warning.mockRestore();
   });
@@ -467,11 +547,17 @@ describe('createMarkdownFenceTransform', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     const source = '```diagram\nstart --> finish\n```';
 
-    expect(
-      renderToString(<Markdown plugins={[plugin]}>{source}</Markdown>),
-    ).toContain('start --&gt; finish');
+    const serverMarkup = renderToString(
+      <Markdown plugins={[plugin]}>{source}</Markdown>,
+    );
+    expect(serverMarkup).toContain('start --&gt; finish');
+    expect(serverMarkup).toContain('astryx-markdown-codeblock');
+    expect(serverMarkup).toContain('data-density="default"');
     render(<Markdown plugins={[plugin]}>{source}</Markdown>);
     expect(document.querySelector('pre')).toHaveTextContent('start --> finish');
+    expect(
+      document.querySelector('.astryx-markdown-codeblock'),
+    ).toHaveAttribute('data-density', 'default');
 
     warning.mockRestore();
     error.mockRestore();
