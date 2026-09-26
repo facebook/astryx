@@ -456,7 +456,7 @@ describe('a viewport-rendered card reflects the Theme at the viewport (#5503)', 
 });
 
 describe('the reflected state is a defineTheme target (#5503)', () => {
-  it('compiles toast["themeMode:*"] — alone and compounded with type — to the classes the card renders', () => {
+  it('compiles toast["themeMode:*"] — alone and compounded with type — to the attributes the card renders', () => {
     const theme = defineTheme({
       name: 'toast-theme-mode-target',
       tokens: {},
@@ -469,15 +469,20 @@ describe('the reflected state is a defineTheme target (#5503)', () => {
     });
 
     const {component} = generateThemeCSS(theme);
-    expect(component).toContain('.astryx-toast.dark {');
-    expect(component).toContain('.astryx-toast.error.light {');
+    expect(component).toContain('.astryx-toast[data-theme-mode="dark"] {');
+    expect(component).toContain(
+      '.astryx-toast[data-type="error"][data-theme-mode="light"] {',
+    );
 
     render(
       <Theme theme={theme} mode="light">
         <InlineToast type="error" body="Failed" />
       </Theme>,
     );
-    expect(card('Failed')).toHaveClass('astryx-toast', 'error', 'light');
+    const el = card('Failed');
+    expect(el).toHaveClass('astryx-toast');
+    expect(el).toHaveAttribute('data-type', 'error');
+    expect(el).toHaveAttribute('data-theme-mode', 'light');
   });
 
   it('carries theme-owned custom properties through the mode rules for a Button rule to read', () => {
@@ -515,13 +520,13 @@ describe('the reflected state is a defineTheme target (#5503)', () => {
 
     const {component} = generateThemeCSS(theme);
     expect(component).toContain(
-      '.astryx-toast.light {\n    --ink-secondary-bg: rgb(255 255 255 / 0.16);\n    --ink-secondary-ring: transparent;',
+      '.astryx-toast[data-theme-mode="light"] {\n    --ink-secondary-bg: rgb(255 255 255 / 0.16);\n    --ink-secondary-ring: transparent;',
     );
     expect(component).toContain(
-      '.astryx-toast.dark {\n    --ink-secondary-bg: transparent;\n    --ink-secondary-ring: rgb(255 255 255 / 0.24);',
+      '.astryx-toast[data-theme-mode="dark"] {\n    --ink-secondary-bg: transparent;\n    --ink-secondary-ring: rgb(255 255 255 / 0.24);',
     );
     expect(component).toContain(
-      '.astryx-button.secondary {\n    background-color: var(--ink-secondary-bg, light-dark(rgb(27 29 34 / 0.08), transparent));\n    box-shadow: inset 0 0 0 1px var(--ink-secondary-ring, light-dark(transparent, rgb(255 255 255 / 0.24)));',
+      '.astryx-button[data-variant="secondary"] {\n    background-color: var(--ink-secondary-bg, light-dark(rgb(27 29 34 / 0.08), transparent));\n    box-shadow: inset 0 0 0 1px var(--ink-secondary-ring, light-dark(transparent, rgb(255 255 255 / 0.24)));',
     );
   });
 });
