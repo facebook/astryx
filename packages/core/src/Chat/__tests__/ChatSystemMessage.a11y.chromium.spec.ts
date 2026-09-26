@@ -36,6 +36,8 @@ interface AuditCase {
   variant: 'default' | 'divider';
   expectedIconCount: number | null;
   narrow: boolean;
+  expectWrap?: boolean;
+  nestedInLiveLog?: boolean;
 }
 
 interface ContrastPair {
@@ -94,6 +96,15 @@ const CASES: AuditCase[] = [
     narrow: false,
   },
   {
+    key: 'nested-log',
+    storyId: STATES_STORY,
+    text: 'Conversation archived',
+    variant: 'default',
+    expectedIconCount: 0,
+    narrow: false,
+    nestedInLiveLog: true,
+  },
+  {
     key: 'narrow-default',
     storyId: NARROW_STORY,
     text: 'Conversation marked as resolved',
@@ -108,6 +119,15 @@ const CASES: AuditCase[] = [
     variant: 'divider',
     expectedIconCount: 0,
     narrow: true,
+  },
+  {
+    key: 'long-default',
+    storyId: NARROW_STORY,
+    text: 'Messages are end-to-end encrypted for everyone in this conversation and on every signed-in device.',
+    variant: 'default',
+    expectedIconCount: 1,
+    narrow: true,
+    expectWrap: true,
   },
 ];
 
@@ -231,10 +251,13 @@ async function capture(
     const labelId = separator?.getAttribute('aria-labelledby');
     const label = labelId ? document.getElementById(labelId) : null;
     const textElement = label ?? root;
+    const content = root.firstElementChild as HTMLElement | null;
     const textStyle = getComputedStyle(textElement);
     const line = separator?.firstElementChild as HTMLElement | null;
     const lineStyle = line ? getComputedStyle(line) : null;
     const rect = root.getBoundingClientRect();
+    const contentRect = content?.getBoundingClientRect() ?? null;
+    const liveLog = root.closest<HTMLElement>('[role="log"]');
     const parse = (value: string) => {
       const channels = value.match(/[\d.]+/g)?.map(Number) ?? [];
       return channels.length >= 3
@@ -283,7 +306,8 @@ async function capture(
       variant: root.getAttribute('data-variant'),
       separatorCount: root.querySelectorAll('[role="separator"]').length,
       separatorOrientation: separator?.getAttribute('aria-orientation') ?? null,
-      separatorName: label?.textContent?.replace(/\s+/g, ' ').trim() ?? null,
+      separatorLabelledTargetText:
+        label?.textContent?.replace(/\s+/g, ' ').trim() ?? null,
       iconCount: root.querySelectorAll('svg, [data-slot="icon"]').length,
       interactiveCount: root.querySelectorAll(
         'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
@@ -299,6 +323,29 @@ async function capture(
       lineColor: lineStyle?.backgroundColor ?? null,
       fontSize: textStyle.fontSize,
       geometry: {x: rect.x, y: rect.y, width: rect.width, height: rect.height},
+      contentGeometry:
+        contentRect == null
+          ? null
+          : {
+              x: contentRect.x,
+              y: contentRect.y,
+              width: contentRect.width,
+              height: contentRect.height,
+            },
+      contentStartsWithinRoot:
+        contentRect == null || contentRect.left >= rect.left - 1,
+      contentEndsWithinRoot:
+        contentRect == null || contentRect.right <= rect.right + 1,
+      contentWraps:
+        contentRect != null &&
+        contentRect.height > Number.parseFloat(textStyle.lineHeight) * 1.4,
+      liveLog:
+        liveLog == null
+          ? null
+          : {
+              role: liveLog.getAttribute('role'),
+              ariaLive: liveLog.getAttribute('aria-live'),
+            },
       overflowFree:
         root.scrollWidth <= root.clientWidth + 1 &&
         document.documentElement.scrollWidth <= innerWidth + 1,
@@ -396,9 +443,14 @@ async function capture(
     text: auditCase.text,
     separatorCount: auditCase.variant === 'divider' ? 1 : 0,
     separatorOrientation: auditCase.variant === 'divider' ? 'horizontal' : null,
-    separatorName: auditCase.variant === 'divider' ? auditCase.text : null,
+    separatorLabelledTargetText:
+      auditCase.variant === 'divider' ? auditCase.text : null,
     iconCount: auditCase.expectedIconCount,
     interactiveCount: 0,
+    expectWrap: auditCase.expectWrap ?? false,
+    liveLog: auditCase.nestedInLiveLog
+      ? {role: 'log', ariaLive: 'polite'}
+      : null,
   };
   const failures: string[] = [];
   const check = (condition: boolean, message: string) => {
@@ -422,8 +474,8 @@ async function capture(
     'separator orientation drifted',
   );
   check(
-    actual.separatorName === expected.separatorName,
-    'separator accessible name drifted',
+    actual.separatorLabelledTargetText === expected.separatorLabelledTargetText,
+    'separator labelled target text drifted',
   );
   if (expected.iconCount != null) {
     check(actual.iconCount === expected.iconCount, 'icon presence drifted');
@@ -434,6 +486,21 @@ async function capture(
   );
   check(actual.direction === expected.direction, 'computed direction drifted');
   check(actual.overflowFree, 'component or page has horizontal overflow');
+  if (expected.expectWrap) {
+    check(
+      actual.contentStartsWithinRoot,
+      'long content crosses the root start edge',
+    );
+    check(
+      actual.contentEndsWithinRoot,
+      'long content crosses the root end edge',
+    );
+    check(actual.contentWraps, 'long content does not wrap');
+  }
+  check(
+    JSON.stringify(actual.liveLog) === JSON.stringify(expected.liveLog),
+    'live-log composition drifted',
+  );
   check(actual.theme === expected.theme, 'neutral theme did not settle');
   check(actual.mode === expected.mode, 'color mode did not settle');
   check(actual.colorScheme.includes(mode), 'computed color-scheme drifted');
@@ -535,9 +602,10 @@ async function capture(
         text: expected.text,
         separatorCount: expected.separatorCount,
         separatorOrientation: expected.separatorOrientation,
-        separatorName: expected.separatorName,
+        separatorLabelledTargetText: expected.separatorLabelledTargetText,
         iconCount: expected.iconCount,
         interactiveCount: 0,
+        liveLog: expected.liveLog,
       },
       observed: {
         role: actual.role,
@@ -545,9 +613,10 @@ async function capture(
         text: actual.text,
         separatorCount: actual.separatorCount,
         separatorOrientation: actual.separatorOrientation,
-        separatorName: actual.separatorName,
+        separatorLabelledTargetText: actual.separatorLabelledTargetText,
         iconCount: actual.iconCount,
         interactiveCount: actual.interactiveCount,
+        liveLog: actual.liveLog,
         dividerIconContract:
           auditCase.key === 'divider-icon' ? 'unresolved' : null,
         contrastPairs,
@@ -558,20 +627,39 @@ async function capture(
         actual.text === expected.text &&
         actual.separatorCount === expected.separatorCount &&
         actual.separatorOrientation === expected.separatorOrientation &&
-        actual.separatorName === expected.separatorName &&
+        actual.separatorLabelledTargetText ===
+          expected.separatorLabelledTargetText &&
         (expected.iconCount == null ||
           actual.iconCount === expected.iconCount) &&
         actual.interactiveCount === 0 &&
+        JSON.stringify(actual.liveLog) === JSON.stringify(expected.liveLog) &&
         contrastPairs.every(pair => pair.passed),
     },
     'Subject geometry': {
-      expected: {visible: true, overflowFree: true, nonZero: true},
-      observed: {...actual.geometry, overflowFree: actual.overflowFree},
+      expected: {
+        visible: true,
+        overflowFree: true,
+        nonZero: true,
+        wraps: expected.expectWrap,
+        insideInlineEdges: expected.expectWrap,
+      },
+      observed: {
+        ...actual.geometry,
+        contentGeometry: actual.contentGeometry,
+        contentStartsWithinRoot: actual.contentStartsWithinRoot,
+        contentEndsWithinRoot: actual.contentEndsWithinRoot,
+        contentWraps: actual.contentWraps,
+        overflowFree: actual.overflowFree,
+      },
       passed:
         actual.visible &&
         actual.geometry.width > 0 &&
         actual.geometry.height > 0 &&
-        actual.overflowFree,
+        actual.overflowFree &&
+        (!expected.expectWrap ||
+          (actual.contentStartsWithinRoot &&
+            actual.contentEndsWithinRoot &&
+            actual.contentWraps)),
     },
     'Settled render': {
       expected: {fontsReady: true, pageErrors: 0, storyError: false},
@@ -858,9 +946,9 @@ test('captures 320px coarse-pointer reflow and the contact sheet', async ({
         );
       }
     }
-    expect(failures).toEqual([]);
     const contactSheet = await writeContactSheet(mobile.page);
     expect(contactSheet.nonBlank).toBe(true);
+    expect(failures).toEqual([]);
   } finally {
     await mobile.close();
   }

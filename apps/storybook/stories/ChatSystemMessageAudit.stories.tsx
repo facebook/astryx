@@ -8,8 +8,11 @@
  */
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {ChatSystemMessage} from '@astryxdesign/core/Chat';
+import {ChatMessageList, ChatSystemMessage} from '@astryxdesign/core/Chat';
 import {Icon} from '@astryxdesign/core/Icon';
+
+const LONG_SYSTEM_MESSAGE =
+  'Messages are end-to-end encrypted for everyone in this conversation and on every signed-in device.';
 
 const meta = {
   title: 'a11y/ChatSystemMessage audit',
@@ -49,6 +52,11 @@ export const States: Story = {
         variant="divider">
         March 15, 2026
       </ChatSystemMessage>
+      <ChatMessageList align="top">
+        <ChatSystemMessage data-system-message-case="nested-log">
+          Conversation archived
+        </ChatSystemMessage>
+      </ChatMessageList>
     </div>
   ),
 };
@@ -65,6 +73,11 @@ export const Narrow: Story = {
         data-system-message-case="narrow-divider"
         variant="divider">
         March 15, 2026
+      </ChatSystemMessage>
+      <ChatSystemMessage
+        data-system-message-case="long-default"
+        icon={<Icon icon="info" size="sm" />}>
+        {LONG_SYSTEM_MESSAGE}
       </ChatSystemMessage>
     </div>
   ),

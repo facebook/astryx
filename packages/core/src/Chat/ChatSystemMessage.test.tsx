@@ -1,8 +1,24 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect} from 'vitest';
+import {createRef, Fragment} from 'react';
+import {describe, expect, it} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import * as stylex from '@stylexjs/stylex';
 import {ChatSystemMessage} from './ChatSystemMessage';
+
+const xstyleProbe = stylex.create({
+  root: {marginBlockStart: '13px'},
+});
+
+function expectProbeClasses(element: HTMLElement): void {
+  const classes = (stylex.props(xstyleProbe.root).className ?? '')
+    .split(' ')
+    .filter(className => className !== '' && !className.includes('__'));
+  expect(classes.length).toBeGreaterThan(0);
+  for (const className of classes) {
+    expect(element).toHaveClass(className);
+  }
+}
 
 describe('ChatSystemMessage', () => {
   it('renders children', () => {
@@ -12,7 +28,6 @@ describe('ChatSystemMessage', () => {
 
   it('renders default variant without divider lines', () => {
     const {container} = render(<ChatSystemMessage>Hello</ChatSystemMessage>);
-    // Divider lines have aria-hidden, so check there are none
     const hiddenElements = container.querySelectorAll('[aria-hidden]');
     expect(hiddenElements.length).toBe(0);
   });
@@ -27,7 +42,7 @@ describe('ChatSystemMessage', () => {
     expect(screen.getByRole('separator')).toHaveAccessibleName('Today');
   });
 
-  it('renders icon', () => {
+  it('renders icon in the default variant', () => {
     render(
       <ChatSystemMessage icon={<span data-testid="icon">*</span>}>
         Notice
@@ -36,40 +51,102 @@ describe('ChatSystemMessage', () => {
     expect(screen.getByTestId('icon')).toBeTruthy();
   });
 
+  it('records the current divider and icon behavior without settling it', () => {
+    render(
+      <ChatSystemMessage
+        icon={<span data-testid="divider-icon">*</span>}
+        variant="divider">
+        Today
+      </ChatSystemMessage>,
+    );
+    expect(screen.queryByTestId('divider-icon')).not.toBeInTheDocument();
+  });
+
   it('applies variant class', () => {
     render(
       <ChatSystemMessage variant="divider" data-testid="sys">
         Today
       </ChatSystemMessage>,
     );
-    const el = screen.getByTestId('sys');
-    expect(el).toHaveAttribute('data-variant', 'divider');
+    expect(screen.getByTestId('sys')).toHaveAttribute(
+      'data-variant',
+      'divider',
+    );
   });
 
-  it('applies data-testid', () => {
-    render(<ChatSystemMessage data-testid="my-sys">Hello</ChatSystemMessage>);
-    expect(screen.getByTestId('my-sys')).toBeTruthy();
-  });
+  it.each(['default', 'divider'] as const)(
+    'preserves the complete root passthrough seam for %s',
+    variant => {
+      const ref = createRef<HTMLDivElement>();
+      render(
+        <ChatSystemMessage
+          ref={ref}
+          variant={variant}
+          data-testid={`sys-${variant}`}
+          aria-label={`${variant} system message`}
+          role="note"
+          className="consumer-system-message"
+          style={{outlineOffset: '3px'}}
+          xstyle={xstyleProbe.root}>
+          {variant === 'divider' ? 'Today' : 'Conversation started'}
+        </ChatSystemMessage>,
+      );
 
-  it('forwards rest props (data-*, id)', () => {
+      const root = screen.getByTestId(`sys-${variant}`);
+      expect(ref.current).toBe(root);
+      expect(root).toHaveClass('consumer-system-message');
+      expect(root).toHaveStyle({outlineOffset: '3px'});
+      expectProbeClasses(root);
+      expect(root).toHaveAttribute('aria-label', `${variant} system message`);
+      expect(root).toHaveAttribute('role', 'status');
+      expect(root).toHaveAttribute('data-variant', variant);
+    },
+  );
+
+  it.each([
+    {name: 'empty string', value: '', text: ''},
+    {name: 'numeric zero', value: 0, text: '0'},
+    {
+      name: 'empty fragment',
+      value: (
+        <Fragment>
+          {null}
+          {null}
+        </Fragment>
+      ),
+      text: '',
+    },
+  ])('keeps the default root for $name children', ({value, text}) => {
     render(
-      <ChatSystemMessage data-testid="sys" data-custom="x" id="sys-1">
-        Hello
+      <ChatSystemMessage data-testid="empty-partition">
+        {value}
       </ChatSystemMessage>,
     );
-    const el = screen.getByTestId('sys');
-    expect(el).toHaveAttribute('data-custom', 'x');
-    expect(el).toHaveAttribute('id', 'sys-1');
+    const root = screen.getByTestId('empty-partition');
+    expect(root).toHaveAttribute('role', 'status');
+    expect(root).toHaveTextContent(text);
   });
 
-  it('forwards rest props in the divider variant', () => {
+  it.each([
+    {name: 'empty string', value: ''},
+    {name: 'numeric zero', value: 0},
+    {
+      name: 'empty fragment',
+      value: (
+        <Fragment>
+          {null}
+          {null}
+        </Fragment>
+      ),
+    },
+  ])('keeps the divider root for $name children', ({value}) => {
     render(
-      <ChatSystemMessage variant="divider" data-testid="sys" data-custom="x">
-        Today
+      <ChatSystemMessage variant="divider" data-testid="empty-partition">
+        {value}
       </ChatSystemMessage>,
     );
-    const el = screen.getByTestId('sys');
-    expect(el).toHaveAttribute('data-custom', 'x');
-    expect(el).toHaveAttribute('role', 'status');
+    const root = screen.getByTestId('empty-partition');
+    expect(root).toHaveAttribute('role', 'status');
+    expect(root).toContainElement(screen.getByRole('separator'));
   });
 });
