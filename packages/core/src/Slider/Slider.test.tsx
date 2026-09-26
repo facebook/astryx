@@ -510,6 +510,76 @@ describe('Slider', () => {
     expect(handleChangeEnd).toHaveBeenCalledWith([0.2, 0.7]);
   });
 
+  it('keeps mantissa digits for steps written in exponent notation', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    function Controlled() {
+      const [value, setValue] = useState(0);
+      return (
+        <Slider
+          label="Tiny"
+          value={value}
+          min={0}
+          max={1e-6}
+          step={1.23e-7}
+          onChange={(v: number) => {
+            handleChange(v);
+            setValue(v);
+          }}
+        />
+      );
+    }
+    render(<Controlled />);
+    const slider = screen.getByRole('slider');
+    act(() => {
+      slider.focus();
+    });
+    await user.keyboard('{ArrowRight}{ArrowRight}');
+    // String(1.23e-7) is '1.23e-7': counting only the exponent rounds to 7
+    // places and drops the mantissa (2e-7 instead of 2.46e-7).
+    expect(handleChange.mock.calls).toEqual([[1.23e-7], [2.46e-7]]);
+    expect(slider).toHaveAttribute('aria-valuenow', '2.46e-7');
+  });
+
+  it('emits exact decimal values for fractional steps from pointer positions', () => {
+    const handleChange = vi.fn();
+    render(
+      <Slider
+        label="Opacity"
+        value={0.5}
+        min={0}
+        max={1}
+        step={0.1}
+        valueDisplay="none"
+        onChange={handleChange}
+      />,
+    );
+    // With valueDisplay="none" there is no tooltip wrapper, so the thumb's
+    // parent is the track container whose rect drives position math.
+    const slider = screen.getByRole('slider');
+    const trackContainer = slider.parentElement!;
+    trackContainer.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      right: 200,
+      bottom: 20,
+      width: 200,
+      height: 20,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    });
+
+    // (141 - 10) / (200 - 20) ≈ 0.728 along the inset travel snaps to
+    // 7 * 0.1, which is 0.7000000000000001 without rounding.
+    fireEvent.pointerDown(trackContainer, {
+      clientX: 141,
+      clientY: 10,
+      pointerId: 1,
+    });
+    expect(handleChange).toHaveBeenCalledWith(0.7);
+  });
+
   it('fires onChangeEnd on keyboard Home/End with correct value', async () => {
     const user = userEvent.setup();
     const handleChangeEnd = vi.fn();
@@ -1018,6 +1088,155 @@ describe('Slider', () => {
       expect([
         ...new FormData(container.querySelector('form')!).keys(),
       ]).toEqual([]);
+    });
+  });
+
+  describe('text value display width stability', () => {
+    // jsdom has no layout, so these check what the browser is given to size
+    // each value: its visible text stacked on an inert sizer that lists the
+    // labels the slider can show.
+    function getTextDisplay(): HTMLElement {
+      // The text display is the only sibling of the track container inside the
+      // slider row.
+      const track = screen.getAllByRole('slider')[0].parentElement!;
+      const span = track.nextElementSibling;
+      expect(span).not.toBeNull();
+      return span as HTMLElement;
+    }
+
+    function getSizerLabels(): string[][] {
+      return Array.from(
+        getTextDisplay().querySelectorAll('[aria-hidden="true"]'),
+        sizer => sizer.textContent.split('\n'),
+      );
+    }
+
+    function getVisibleText(): string {
+      const display = getTextDisplay().cloneNode(true) as HTMLElement;
+      display
+        .querySelectorAll('[aria-hidden="true"]')
+        .forEach(sizer => sizer.remove());
+      return display.textContent;
+    }
+
+    const percentLabels = Array.from({length: 101}, (_, i) => String(i));
+
+    it('reserves every reachable label whatever the current value', () => {
+      const {rerender} = render(
+        <Slider
+          label="Volume"
+          value={5}
+          min={0}
+          max={100}
+          valueDisplay="text"
+        />,
+      );
+      expect(getSizerLabels()).toEqual([percentLabels]);
+      expect(getVisibleText()).toBe('5');
+
+      rerender(
+        <Slider
+          label="Volume"
+          value={100}
+          min={0}
+          max={100}
+          valueDisplay="text"
+        />,
+      );
+      expect(getSizerLabels()).toEqual([percentLabels]);
+      expect(getVisibleText()).toBe('100');
+    });
+
+    it('reserves a formatted label that is widest mid-range', () => {
+      const levels = ['Off', 'Low', 'Medium', 'High', 'Max'];
+      render(
+        <Slider
+          label="Level"
+          value={0}
+          min={0}
+          max={4}
+          valueDisplay="text"
+          formatValue={v => levels[v]}
+        />,
+      );
+      expect(getSizerLabels()).toEqual([levels]);
+      expect(getVisibleText()).toBe('Off');
+    });
+
+    it('lets layout measure formatted labels instead of counting characters', () => {
+      render(
+        <Slider
+          label="Volume"
+          value={5}
+          min={0}
+          max={100}
+          valueDisplay="text"
+          formatValue={v => `${v}%`}
+        />,
+      );
+      // A `%` is wider than the `0` a `ch` unit measures, so reserving
+      // characters would still let "100%" outgrow "99%".
+      expect(getSizerLabels()).toEqual([percentLabels.map(v => `${v}%`)]);
+      expect(getTextDisplay()).not.toHaveAttribute('style');
+    });
+
+    it('sizes each value in range mode on its own', () => {
+      render(
+        <Slider
+          label="Price"
+          value={[20, 80] as [number, number]}
+          min={0}
+          max={100}
+          valueDisplay="text"
+        />,
+      );
+      expect(getSizerLabels()).toEqual([percentLabels, percentLabels]);
+      expect(getVisibleText()).toBe('20 – 80');
+    });
+
+    it('reserves snapped labels for decimal steps', () => {
+      render(
+        <Slider
+          label="Opacity"
+          value={0.5}
+          min={0}
+          max={1}
+          step={0.1}
+          valueDisplay="text"
+        />,
+      );
+      expect(getSizerLabels()).toEqual([
+        [
+          '0',
+          '0.1',
+          '0.2',
+          '0.3',
+          '0.4',
+          '0.5',
+          '0.6',
+          '0.7',
+          '0.8',
+          '0.9',
+          '1',
+        ],
+      ]);
+    });
+
+    it('samples long ranges instead of formatting every step', () => {
+      render(
+        <Slider
+          label="Distance"
+          value={5}
+          min={0}
+          max={10000}
+          valueDisplay="text"
+        />,
+      );
+      const [labels] = getSizerLabels();
+      expect(labels.length).toBeLessThanOrEqual(203);
+      expect(labels).toEqual(
+        expect.arrayContaining(['0', '1', '5000', '9999', '10000']),
+      );
     });
   });
 
