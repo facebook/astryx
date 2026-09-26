@@ -33,7 +33,7 @@ import {fileURLToPath} from 'node:url';
 import {spawn} from 'node:child_process';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {emit, section, text, list, code} from '../formatters/index.mjs';
+import {emit, section, text, list, records, code} from '../formatters/index.mjs';
 import {logger} from '../../../api/logger.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
@@ -227,47 +227,6 @@ function printThemeList(themes) {
       `Usage:\n  ${run} theme add <slug> [target-path]   Scaffold a theme file you own`,
     ),
   );
-}
-
-/**
- * Render the targets as one greppable line each, under an aligned header. A
- * `records()` block would be five lines per target — over a thousand for the
- * full surface, which is the view this command exists to make readable.
- * @param {import('../../../api/theme/theme.type.mjs').ThemeTargetEntry[]} targets
- * @returns {string}
- */
-function formatTargetsTable(targets) {
-  const rows = targets.map(t => ({
-    key: t.deprecatedFor
-      ? `${t.key} [deprecated; use ${t.deprecatedFor}]`
-      : t.key,
-    component: t.component,
-    props: t.props.join(', ') || '-',
-    states: t.states.join(', ') || '-',
-  }));
-  const head = {
-    key: 'key',
-    component: 'component',
-    props: 'props',
-    states: 'states',
-  };
-  const width = (/** @type {'key'|'component'|'props'} */ field) =>
-    [head, ...rows].reduce((max, r) => Math.max(max, r[field].length), 0);
-  const w = {
-    key: width('key'),
-    component: width('component'),
-    props: width('props'),
-  };
-  const line = (/** @type {typeof head} */ r) =>
-    [
-      r.key.padEnd(w.key),
-      r.component.padEnd(w.component),
-      r.props.padEnd(w.props),
-      r.states,
-    ]
-      .join('  ')
-      .trimEnd();
-  return [line(head), ...rows.map(line)].join('\n');
 }
 
 /**
@@ -811,9 +770,16 @@ export function registerTheme(program) {
       emit(
         section(
           'Theming targets',
-          `${targets.length} across ${componentCount} component${componentCount === 1 ? '' : 's'}`,
+          `${targets.length} across ${componentCount} component${componentCount === 1 ? '' : 's'}\n(key - component - props - states - className - deprecatedFor)`,
         ),
-        text(formatTargetsTable(targets)),
+        records(targets, {
+          fields: ['key', 'component', 'props', 'states', 'className', 'deprecatedFor'],
+          layout: 'inline',
+          format: {
+            deprecatedFor: (/** @type {string|null} */ v) =>
+              v ? `deprecated; use ${v}` : '',
+          },
+        }),
         text(
           [
             `Each key goes under \`components\` in defineTheme; it paints \`.astryx-<key>\`.`,
