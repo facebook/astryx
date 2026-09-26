@@ -816,7 +816,6 @@ export function SideNav({
       role="navigation"
       aria-label={t('@astryx.sideNav.label')}
       data-testid={testId}
-      inert={(isFullyHidden && isInertApplied) || undefined}
       {...mergeProps(
         themeProps('side-nav'),
         stylex.props(
@@ -828,7 +827,10 @@ export function SideNav({
         className,
         navStyle,
       )}
-      {...props}>
+      {...props}
+      // After the spread: a consumer `inert` may add inertness but never lift
+      // it from a fully hidden nav, which would leave invisible links focusable.
+      inert={(isFullyHidden && isInertApplied) || props.inert || undefined}>
       {isSlideAnimated ? (
         // The slab the slide moves; see `slideLayer`.
         <div

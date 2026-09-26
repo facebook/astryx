@@ -3499,6 +3499,42 @@ describe('SideNav collapsedWidth (#2331)', () => {
     expect(screen.getByRole('navigation')).not.toHaveAttribute('inert');
   });
 
+  it('keeps a fully hidden nav inert when the caller passes inert={false}', () => {
+    // The nav is invisible either way; a consumer `inert` must not leave its
+    // links focusable.
+    render(
+      <SideNav
+        inert={false}
+        collapsible={{
+          isCollapsed: true,
+          onCollapsedChange: () => {},
+          collapsedWidth: 0,
+        }}>
+        <SideNavItem label="Home" href="/" data-testid="item" />
+      </SideNav>,
+    );
+    expect(screen.getByRole('navigation', {hidden: true})).toHaveAttribute(
+      'inert',
+    );
+  });
+
+  it('still honors a consumer inert on an expanded nav', () => {
+    render(
+      <SideNav
+        inert
+        collapsible={{
+          isCollapsed: false,
+          onCollapsedChange: () => {},
+          collapsedWidth: 0,
+        }}>
+        <SideNavItem label="Home" href="/" data-testid="item" />
+      </SideNav>,
+    );
+    expect(screen.getByRole('navigation', {hidden: true})).toHaveAttribute(
+      'inert',
+    );
+  });
+
   it('collapsedWidth wins over the resizable width when collapsed', () => {
     // SideNav drops the resizable width on collapse so the rail can win; the
     // explicit collapsedWidth must beat both.
@@ -3902,9 +3938,11 @@ describe('SideNav focus on fully-hidden collapse (#2331)', () => {
   function Harness({
     isCollapsed,
     hasToggle = false,
+    inert,
   }: {
     isCollapsed: boolean;
     hasToggle?: boolean;
+    inert?: boolean;
   }) {
     // The documented outside-toggle wiring: one controlled config handed to
     // both the button and the nav.
@@ -3914,6 +3952,7 @@ describe('SideNav focus on fully-hidden collapse (#2331)', () => {
         {hasToggle && <SideNavCollapseButton collapsible={collapsible} />}
         <input data-testid="outside" />
         <SideNav
+          inert={inert}
           collapsible={{
             ...collapsible,
             hasButton: false,
@@ -3955,6 +3994,22 @@ describe('SideNav focus on fully-hidden collapse (#2331)', () => {
     const inertAtFocus = watchInertAtFocus(toggle, nav);
 
     rerender(<Harness isCollapsed hasToggle />);
+
+    expect(toggle).toHaveFocus();
+    expect(inertAtFocus()).toBe(false);
+    expect(nav).toHaveAttribute('inert');
+  });
+
+  it('still parks focus, then goes inert, when the caller passes inert={false}', () => {
+    const {rerender} = render(
+      <Harness isCollapsed={false} hasToggle inert={false} />,
+    );
+    const nav = screen.getByRole('navigation');
+    const toggle = screen.getByRole('button', {name: 'Collapse sidebar'});
+    act(() => screen.getByRole('link', {name: 'Home'}).focus());
+    const inertAtFocus = watchInertAtFocus(toggle, nav);
+
+    rerender(<Harness isCollapsed hasToggle inert={false} />);
 
     expect(toggle).toHaveFocus();
     expect(inertAtFocus()).toBe(false);
