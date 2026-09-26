@@ -78,6 +78,8 @@ describe('a11y story identity migration', () => {
       ],
       ['a11y-button-pattern--chat-send', 'core/ChatSendButton'],
       ['a11y-chatsendbutton-audit--chat-send-small', 'core/ChatSendButton'],
+      ['a11y-chatsystemmessage-audit--states', 'core/ChatSystemMessage'],
+      ['a11y-chatsystemmessage-audit--narrow', 'core/ChatSystemMessage'],
       [
         'a11y-chatsendbutton-audit--chat-send-stop-small',
         'core/ChatSendButton',

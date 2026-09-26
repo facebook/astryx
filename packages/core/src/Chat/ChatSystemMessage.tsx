@@ -6,7 +6,7 @@
  * @file ChatSystemMessage.tsx
  * @input Uses React, StyleX, theme tokens
  * @output Exports ChatSystemMessage component and ChatSystemMessageProps
- * @position Centered system/notice message in a chat thread
+ * @position Centered, wrapping system/notice message in a chat thread
  *
  * Renders centered, muted system messages like "conversation started",
  * date separators, or status updates. Not a sender message — no avatar,
@@ -53,8 +53,8 @@ export interface ChatSystemMessageProps extends BaseProps<HTMLDivElement> {
   variant?: ChatSystemMessageVariant;
 
   /**
-   * Optional icon rendered before the text.
-   * Accepts any ReactNode — typically an Icon.
+   * Optional caller-provided icon content associated with the message.
+   * Accepts any ReactNode, typically an Icon.
    */
   icon?: ReactNode;
 }
@@ -85,13 +85,11 @@ const styles = stylex.create({
     alignItems: 'center',
     flexShrink: 0,
   },
-  // Content wrapper (to keep text + icon together)
+  // Content wrapper
   content: {
     display: 'inline-flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1-5'],
-    flexShrink: 0,
-    whiteSpace: 'nowrap',
   },
 });
 
