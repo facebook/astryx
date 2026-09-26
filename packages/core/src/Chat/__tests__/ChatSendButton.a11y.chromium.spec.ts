@@ -164,6 +164,7 @@ interface Receipt {
     color: string;
     backgroundColor: string;
     backgroundImage: string;
+    opacity: string;
     transform: string;
     outlineColor: string;
     outlineOffset: string;
@@ -294,6 +295,27 @@ function sameColor(first: Rgba | null, second: Rgba | null): boolean {
     Math.abs(first.b - second.b) < 0.01 &&
     Math.abs(first.a - second.a) < 0.001
   );
+}
+
+function isIdentityTransform(transform: string): boolean {
+  if (transform === 'none') {
+    return true;
+  }
+  const values = transform
+    .slice(transform.indexOf('(') + 1, transform.lastIndexOf(')'))
+    .match(/-?[\d.]+/g)
+    ?.map(Number);
+  const close = (actual: number, expected: number) =>
+    Math.abs(actual - expected) < 0.001;
+  if (transform.startsWith('matrix3d(') && values?.length === 16) {
+    const expected = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+    return values.every((value, index) => close(value, expected[index]));
+  }
+  if (transform.startsWith('matrix(') && values?.length === 6) {
+    const expected = [1, 0, 0, 1, 0, 0];
+    return values.every((value, index) => close(value, expected[index]));
+  }
+  return false;
 }
 
 function isScale098(transform: string): boolean {
@@ -529,6 +551,7 @@ async function readSensors(page: Page, interaction: Interaction) {
       backgroundImage: style?.backgroundImage ?? '',
       hoverOverlayToken: resolveColorToken('--color-overlay-hover'),
       pressedOverlayToken: resolveColorToken('--color-overlay-pressed'),
+      opacity: style?.opacity ?? '',
       transform: style?.transform ?? '',
       outlineColor: style?.outlineColor ?? '',
       outlineOffset: style?.outlineOffset ?? '',
@@ -575,7 +598,7 @@ async function screenshotTarget(page: Page, frame: string): Promise<Shot> {
   if (box == null) {
     throw new Error(`${frame}: ChatSendButton has no layout box`);
   }
-  const padding = 12;
+  const padding = 8;
   const viewport = page.viewportSize();
   const clip = {
     x: Math.max(0, box.x - padding),
@@ -703,8 +726,9 @@ async function capture(
   const tokenSignaturePresent = fixture.disabled
     ? actual.disabled &&
       actual.cursor === 'default' &&
+      Number.parseFloat(actual.opacity) < 1 &&
       actual.backgroundImage === 'none' &&
-      actual.transform === 'none'
+      isIdentityTransform(actual.transform)
     : interaction === 'hover'
       ? overlayIsAlpha && hoverOverlayMatches
       : interaction === 'focus-visible'
@@ -807,7 +831,11 @@ async function capture(
       actual.backgroundImage === 'none',
       'disabled state paints a hover image',
     );
-    check(actual.transform === 'none', 'disabled state paints a transform');
+    check(Number.parseFloat(actual.opacity) < 1, 'disabled state is not muted');
+    check(
+      isIdentityTransform(actual.transform),
+      'disabled state paints a non-identity transform',
+    );
   }
 
   const receipt: Receipt = {
@@ -857,6 +885,7 @@ async function capture(
       color: actual.color,
       backgroundColor: actual.backgroundColor,
       backgroundImage: actual.backgroundImage,
+      opacity: actual.opacity,
       transform: actual.transform,
       outlineColor: actual.outlineColor,
       outlineOffset: actual.outlineOffset,
