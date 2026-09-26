@@ -510,6 +510,37 @@ describe('Slider', () => {
     expect(handleChangeEnd).toHaveBeenCalledWith([0.2, 0.7]);
   });
 
+  it('keeps mantissa digits for steps written in exponent notation', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    function Controlled() {
+      const [value, setValue] = useState(0);
+      return (
+        <Slider
+          label="Tiny"
+          value={value}
+          min={0}
+          max={1e-6}
+          step={1.23e-7}
+          onChange={(v: number) => {
+            handleChange(v);
+            setValue(v);
+          }}
+        />
+      );
+    }
+    render(<Controlled />);
+    const slider = screen.getByRole('slider');
+    act(() => {
+      slider.focus();
+    });
+    await user.keyboard('{ArrowRight}{ArrowRight}');
+    // String(1.23e-7) is '1.23e-7': counting only the exponent rounds to 7
+    // places and drops the mantissa (2e-7 instead of 2.46e-7).
+    expect(handleChange.mock.calls).toEqual([[1.23e-7], [2.46e-7]]);
+    expect(slider).toHaveAttribute('aria-valuenow', '2.46e-7');
+  });
+
   it('emits exact decimal values for fractional steps from pointer positions', () => {
     const handleChange = vi.fn();
     render(
@@ -1061,16 +1092,36 @@ describe('Slider', () => {
   });
 
   describe('text value display width stability', () => {
-    function getTextSpan(): HTMLElement {
+    // jsdom has no layout, so these check what the browser is given to size
+    // each value: its visible text stacked on an inert sizer that lists the
+    // labels the slider can show.
+    function getTextDisplay(): HTMLElement {
       // The text display is the only sibling of the track container inside the
       // slider row.
-      const track = screen.getByRole('slider').parentElement!;
+      const track = screen.getAllByRole('slider')[0].parentElement!;
       const span = track.nextElementSibling;
       expect(span).not.toBeNull();
       return span as HTMLElement;
     }
 
-    it('reserves width for the widest value so the track does not resize', () => {
+    function getSizerLabels(): string[][] {
+      return Array.from(
+        getTextDisplay().querySelectorAll('[aria-hidden="true"]'),
+        sizer => sizer.textContent.split('\n'),
+      );
+    }
+
+    function getVisibleText(): string {
+      const display = getTextDisplay().cloneNode(true) as HTMLElement;
+      display
+        .querySelectorAll('[aria-hidden="true"]')
+        .forEach(sizer => sizer.remove());
+      return display.textContent;
+    }
+
+    const percentLabels = Array.from({length: 101}, (_, i) => String(i));
+
+    it('reserves every reachable label whatever the current value', () => {
       const {rerender} = render(
         <Slider
           label="Volume"
@@ -1080,11 +1131,9 @@ describe('Slider', () => {
           valueDisplay="text"
         />,
       );
-      const span = getTextSpan();
-      // Widest candidate is "100" -> 3ch reserved regardless of current value.
-      expect(span.getAttribute('style') ?? '').toContain('3ch');
+      expect(getSizerLabels()).toEqual([percentLabels]);
+      expect(getVisibleText()).toBe('5');
 
-      const styleAtNarrowValue = span.getAttribute('style');
       rerender(
         <Slider
           label="Volume"
@@ -1094,10 +1143,27 @@ describe('Slider', () => {
           valueDisplay="text"
         />,
       );
-      expect(getTextSpan().getAttribute('style')).toBe(styleAtNarrowValue);
+      expect(getSizerLabels()).toEqual([percentLabels]);
+      expect(getVisibleText()).toBe('100');
     });
 
-    it('reserves width from formatted values when formatValue is set', () => {
+    it('reserves a formatted label that is widest mid-range', () => {
+      const levels = ['Off', 'Low', 'Medium', 'High', 'Max'];
+      render(
+        <Slider
+          label="Level"
+          value={0}
+          min={0}
+          max={4}
+          valueDisplay="text"
+          formatValue={v => levels[v]}
+        />,
+      );
+      expect(getSizerLabels()).toEqual([levels]);
+      expect(getVisibleText()).toBe('Off');
+    });
+
+    it('lets layout measure formatted labels instead of counting characters', () => {
       render(
         <Slider
           label="Volume"
@@ -1108,11 +1174,13 @@ describe('Slider', () => {
           formatValue={v => `${v}%`}
         />,
       );
-      // Widest candidate is "100%" -> 4ch.
-      expect(getTextSpan().getAttribute('style') ?? '').toContain('4ch');
+      // A `%` is wider than the `0` a `ch` unit measures, so reserving
+      // characters would still let "100%" outgrow "99%".
+      expect(getSizerLabels()).toEqual([percentLabels.map(v => `${v}%`)]);
+      expect(getTextDisplay()).not.toHaveAttribute('style');
     });
 
-    it('reserves width for both values plus separator in range mode', () => {
+    it('sizes each value in range mode on its own', () => {
       render(
         <Slider
           label="Price"
@@ -1122,14 +1190,11 @@ describe('Slider', () => {
           valueDisplay="text"
         />,
       );
-      // "100" (3) + " – " (3) + "100" (3) -> 9ch.
-      const track = screen.getAllByRole('slider')[0]
-        .parentElement as HTMLElement;
-      const span = track.nextElementSibling as HTMLElement;
-      expect(span.getAttribute('style') ?? '').toContain('9ch');
+      expect(getSizerLabels()).toEqual([percentLabels, percentLabels]);
+      expect(getVisibleText()).toBe('20 – 80');
     });
 
-    it('accounts for decimal steps when reserving width', () => {
+    it('reserves snapped labels for decimal steps', () => {
       render(
         <Slider
           label="Opacity"
@@ -1140,8 +1205,38 @@ describe('Slider', () => {
           valueDisplay="text"
         />,
       );
-      // Widest candidate is "0.9" -> 3ch (not "1" -> 1ch).
-      expect(getTextSpan().getAttribute('style') ?? '').toContain('3ch');
+      expect(getSizerLabels()).toEqual([
+        [
+          '0',
+          '0.1',
+          '0.2',
+          '0.3',
+          '0.4',
+          '0.5',
+          '0.6',
+          '0.7',
+          '0.8',
+          '0.9',
+          '1',
+        ],
+      ]);
+    });
+
+    it('samples long ranges instead of formatting every step', () => {
+      render(
+        <Slider
+          label="Distance"
+          value={5}
+          min={0}
+          max={10000}
+          valueDisplay="text"
+        />,
+      );
+      const [labels] = getSizerLabels();
+      expect(labels.length).toBeLessThanOrEqual(203);
+      expect(labels).toEqual(
+        expect.arrayContaining(['0', '1', '5000', '9999', '10000']),
+      );
     });
   });
 
