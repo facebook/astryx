@@ -915,11 +915,11 @@ test.afterAll(async () => {
           },
           emptyContentPartitions: {
             emptyString:
-              'Focused unit evidence: the status root and separator remain; no visible label or accessible name is produced.',
+              'Focused unit evidence: the default variant keeps role=status and renders the content unchanged (empty). In the divider variant, the status root and separator remain; no visible label or accessible name is produced.',
             numericZero:
-              'Focused unit evidence: the status root and separator remain; Divider paints two zero text nodes (textContent="00") with no accessible name.',
+              'Focused unit evidence: the default variant keeps role=status and renders the content unchanged as one 0. In the divider variant, the status root and separator remain; Divider paints two zero text nodes (textContent="00") with no accessible name.',
             emptyFragment:
-              'Focused unit evidence: the status root and separator remain; no visible label or accessible name is produced.',
+              'Focused unit evidence: the default variant keeps role=status and renders the content unchanged (empty). In the divider variant, the status root and separator remain; no visible label or accessible name is produced.',
           },
           sharedAdvisories: {
             dividerFalseyLabel:

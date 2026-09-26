@@ -112,10 +112,13 @@ observable public surface without deciding the unresolved divider/icon contract.
 
 - **AV1 - Caller content.** Text and other React content may vary while remaining
   self-contained. Empty strings, numeric zero, and empty Fragments are reachable
-  `ReactNode` partitions and retain the status root and separator. Empty string and
-  empty Fragment content produce no visible label or accessible name; numeric zero
-  paints stray `00` text with no accessible name. The falsey-label behavior is a
-  shared `spec:AST-002/FR15` advisory routed to `component:Divider`.
+  `ReactNode` partitions. The default variant keeps `role="status"` and renders the
+  content unchanged: empty string and empty Fragment content remain empty, while
+  numeric zero renders one `0`. In the divider variant, the status root and separator
+  remain; empty string and empty Fragment content produce no visible label or
+  accessible name, while numeric zero paints stray `00` text with no accessible name.
+  The divider's falsey-label behavior is a shared `spec:AST-002/FR15` advisory routed
+  to `component:Divider`.
 - **AV2 - Caller styling.** Supported root styling inputs may extend the component
   without replacing owned status semantics or variant reflection.
 - **AV3 - Delegated Divider paint.** Divider owns its rule and label paint and may
@@ -123,15 +126,15 @@ observable public surface without deciding the unresolved divider/icon contract.
 
 ### Representative states
 
-| State                 | Required invariant                                                                                                          | Allowed variation                           |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| Default               | Centered status content is present.                                                                                         | Content, theme, and root styling.           |
-| Default with icon     | Optional icon content and visible content render together.                                                                  | Caller-provided artwork and content.        |
-| Default long content  | Content wraps without crossing either inline edge or creating page overflow.                                                | Theme and localized content.                |
-| Divider               | A labelled horizontal separator presents the supplied content.                                                              | Label content, theme, and root styling.     |
-| Divider with icon     | Current output is measured without deciding the ignored-input contract.                                                     | No behavior change until OQ1 is resolved.   |
-| Empty ReactNode       | The status root and separator remain; empty content has no label/name, while numeric zero paints stray `00` without a name. | Empty string, numeric zero, empty Fragment. |
-| Narrow/coarse pointer | The noninteractive row remains visible without horizontal page overflow.                                                    | Theme and supported content.                |
+| State                 | Required invariant                                                                                                                                                                                                                              | Allowed variation                           |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| Default               | Centered status content is present.                                                                                                                                                                                                             | Content, theme, and root styling.           |
+| Default with icon     | Optional icon content and visible content render together.                                                                                                                                                                                      | Caller-provided artwork and content.        |
+| Default long content  | Content wraps without crossing either inline edge or creating page overflow.                                                                                                                                                                    | Theme and localized content.                |
+| Divider               | A labelled horizontal separator presents the supplied content.                                                                                                                                                                                  | Label content, theme, and root styling.     |
+| Divider with icon     | Current output is measured without deciding the ignored-input contract.                                                                                                                                                                         | No behavior change until OQ1 is resolved.   |
+| Empty ReactNode       | The default variant keeps `role="status"` and renders content unchanged (empty or one `0`). In the divider variant, the status root and separator remain; empty content has no label/name, while numeric zero paints stray `00` without a name. | Empty string, numeric zero, empty Fragment. |
+| Narrow/coarse pointer | The noninteractive row remains visible without horizontal page overflow.                                                                                                                                                                        | Theme and supported content.                |
 
 ### Transformation and precedence order
 
