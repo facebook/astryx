@@ -19,6 +19,7 @@ import {
   createSetupProvenance,
   expandSetupMatrix,
   fixtureManifestSha256,
+  setupEnvironmentHash,
   sha256Text,
   taskContractText,
   validatePromptContracts,
@@ -74,6 +75,23 @@ const write = (file, content) => {
 };
 const run = (command, commandArgs, cwd) =>
   execFileSync(command, commandArgs, {cwd, stdio: 'pipe', encoding: 'utf8'});
+// pnpm is a .cmd (batch) file on Windows. execFileSync, like spawnSync, can
+// only run a batch file through a shell — a bare 'pnpm' fails with ENOENT
+// and an explicit 'pnpm.cmd' still fails with EINVAL (batch files need a
+// shell even named exactly). Shelling out through cmd.exe /c directly,
+// rather than execFileSync's shell:true, avoids Node's
+// shell-argument-escaping deprecation warning (DEP0190) — every argument
+// here is a hardcoded literal, never user input, so we build the argv
+// ourselves instead of asking execFileSync to build a shell string. See
+// internal/vibe-tests/src/fixture-suite.mjs for the same pattern.
+const runPnpm = (pnpmArgs, cwd) =>
+  process.platform === 'win32'
+    ? execFileSync('cmd.exe', ['/d', '/s', '/c', 'pnpm', ...pnpmArgs], {
+        cwd,
+        stdio: 'pipe',
+        encoding: 'utf8',
+      })
+    : execFileSync('pnpm', pnpmArgs, {cwd, stdio: 'pipe', encoding: 'utf8'});
 
 function copyDirectory(source, destination) {
   ensureDir(destination);
@@ -93,7 +111,7 @@ function prepareDependencies(fixtureId) {
   for (const file of ['package.json', 'pnpm-lock.yaml']) {
     fs.copyFileSync(path.join(fixtureRoot, file), path.join(depsDir, file));
   }
-  run('pnpm', ['install', '--frozen-lockfile', '--ignore-scripts'], depsDir);
+  runPnpm(['install', '--frozen-lockfile', '--ignore-scripts'], depsDir);
   return depsDir;
 }
 
@@ -132,7 +150,7 @@ function createSandbox(fixtureId, sandboxDir, depsDir) {
   copyFixture(fixtureId, sandboxDir);
   linkDependencies(depsDir, sandboxDir);
   installLoggingShim(sandboxDir);
-  run('pnpm', ['build'], sandboxDir);
+  runPnpm(['build'], sandboxDir);
 }
 
 function appendGuidance(sandboxDir, guidanceFile) {
@@ -144,12 +162,26 @@ function appendGuidance(sandboxDir, guidanceFile) {
   );
 }
 
-const PATCHES = {
-  'patch:pointer': sandboxDir => appendGuidance(sandboxDir, 'pointer.md'),
-  'patch:existing-app': sandboxDir =>
-    appendGuidance(sandboxDir, 'existing-app.md'),
-  'patch:directed': sandboxDir => appendGuidance(sandboxDir, 'directed.md'),
+const PATCH_FILES = {
+  'patch:pointer': 'pointer.md',
+  'patch:existing-app': 'existing-app.md',
+  'patch:directed': 'directed.md',
+  'patch:host-aligned': 'host-aligned.md',
+  'patch:guest-contained': 'guest-contained.md',
 };
+
+function guidanceFileFor(patch) {
+  const file = PATCH_FILES[patch];
+  if (!file) throw new Error(`unknown patch: ${patch}`);
+  return file;
+}
+
+const PATCHES = Object.fromEntries(
+  Object.entries(PATCH_FILES).map(([patch, file]) => [
+    patch,
+    sandboxDir => appendGuidance(sandboxDir, file),
+  ]),
+);
 
 function taskPrompt(prompt, fixtureId) {
   return `You are working in an existing application.
@@ -273,25 +305,14 @@ for (const entry of entries) {
   const task = taskPrompt(prompt, entry.fixture);
   const recipe = readRecipe(entry.fixture);
   const fixtureSha256 = fixtureManifestSha256(recipe);
-  const guidanceHash = sha256Text(
-    JSON.stringify({
-      fixtureSha256,
-      condition: entry.condition,
-      patches: (condition.patches ?? []).map(patch => [
-        patch,
-        read(
-          path.join(
-            GUIDANCE,
-            patch === 'patch:pointer'
-              ? 'pointer.md'
-              : patch === 'patch:existing-app'
-                ? 'existing-app.md'
-                : 'directed.md',
-          ),
-        ),
-      ]),
-    }),
-  );
+  const guidanceHash = setupEnvironmentHash({
+    fixtureSha256,
+    condition: entry.condition,
+    patches: (condition.patches ?? []).map(patch => [
+      patch,
+      read(path.join(GUIDANCE, guidanceFileFor(patch))),
+    ]),
+  });
   const provenance = createSetupProvenance({
     entry,
     taskSha256: sha256Text(task),

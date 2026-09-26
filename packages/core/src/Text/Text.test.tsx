@@ -145,7 +145,6 @@ describe('Text', () => {
       );
       const element = screen.getByText('Tiny code');
       expect(element).toHaveAttribute('data-size', '2xs');
-      expect(element.className).toContain('size-2xs');
     });
 
     it('accepts display prop', () => {
@@ -225,11 +224,11 @@ describe('Text', () => {
     });
   });
 
-  it('renders astryx-* class names for theme targeting', () => {
+  it('renders the stable target and type data attribute for theme targeting', () => {
     render(<Text type="body">Themed Text</Text>);
     const element = screen.getByText('Themed Text');
     expect(element.className).toContain('astryx-text');
-    expect(element.className).toContain('body');
+    expect(element).toHaveAttribute('data-type', 'body');
   });
 });
 
@@ -239,12 +238,15 @@ describe('Text custom types', () => {
     const el = screen.getByText('Custom');
     expect(el).toBeInTheDocument();
     expect(el.className).toContain('astryx-text');
-    expect(el.className).toContain('hero');
+    expect(el).toHaveAttribute('data-type', 'hero');
   });
 
   it('applies primary color to custom types by default', () => {
     render(<Text type={'caption' as TextType}>Caption</Text>);
-    expect(screen.getByText('Caption').className).toContain('primary');
+    expect(screen.getByText('Caption')).toHaveAttribute(
+      'data-color',
+      'primary',
+    );
   });
 
   it('allows color override on custom types', () => {
@@ -253,20 +255,23 @@ describe('Text custom types', () => {
         Muted
       </Text>,
     );
-    expect(screen.getByText('Muted').className).toContain('secondary');
+    expect(screen.getByText('Muted')).toHaveAttribute(
+      'data-color',
+      'secondary',
+    );
   });
 });
 
 describe('Text custom colors', () => {
-  it('renders a custom color as a stable class for theme CSS to target', () => {
-    // A theme adds a custom color (e.g. via TextColorMap augmentation +
-    // defineTheme). The rendered element carries the color as a class
-    // (astryx-text.<color>) so `.astryx-text.brand { color: ... }` from the
-    // theme applies — mirroring how custom `type`s work.
+  it('reflects a custom color for theme CSS to target', () => {
+    // A theme adds a custom color through TextColorMap augmentation and
+    // defineTheme. The rendered element keeps the stable Text target and
+    // reflects the custom value as data-color so the generated theme selector
+    // can reach it without a collision-prone bare class.
     render(<Text color={'brand' as TextColor}>Branded</Text>);
     const el = screen.getByText('Branded');
     expect(el.className).toContain('astryx-text');
-    expect(el.className).toContain('brand');
+    expect(el).toHaveAttribute('data-color', 'brand');
   });
 
   it('does not crash on a custom color (falls back to the primary StyleX baseline)', () => {
@@ -282,7 +287,7 @@ describe('Text custom colors', () => {
     const custom = screen.getByText('Custom');
     const builtin = screen.getByText('Builtin');
     // Neither throws, and the custom color reuses primary's baseline StyleX
-    // class (the real color comes from theme CSS via the `brand` class).
+    // class (the real color comes from theme CSS via `data-color="brand"`).
     const primaryAtomic = builtin.className
       .split(/\s+/)
       .filter(c => c.startsWith('x'));
@@ -294,7 +299,7 @@ describe('Text custom colors', () => {
 
   it('still applies built-in colors directly', () => {
     render(<Text color="accent">Accent</Text>);
-    expect(screen.getByText('Accent').className).toContain('accent');
+    expect(screen.getByText('Accent')).toHaveAttribute('data-color', 'accent');
   });
 });
 

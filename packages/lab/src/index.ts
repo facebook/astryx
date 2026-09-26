@@ -253,6 +253,15 @@ export {
   type LogStreamLevel,
 } from './LogStream';
 
+// MobileTokenizer — Lab prototype (stack layer 1) of the touch Tokenizer
+// flow: summary trigger + stacked manage/add BottomSheets. Graduates to
+// Core Tokenizer presentation="bottom-sheet" (stack layer 2).
+export {
+  MobileTokenizer,
+  type MobileTokenizerProps,
+  type MobileTokenizerChange,
+} from './MobileTokenizer';
+
 // RichTextEditor (RFC facebook/astryx#3899) has graduated out of @astryxdesign/lab
 // into its own canary-only package, @astryxdesign/richtext, so it can be canaried
 // independently (e.g. into EPS/Nest). Import it from there:

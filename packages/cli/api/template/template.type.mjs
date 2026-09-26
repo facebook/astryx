@@ -6,18 +6,18 @@
  *
  * Each template is exactly two files: page.tsx (code) + template.doc.mjs (metadata).
  *
- * Invocation                                 -> type discriminator
+ * Invocation                               -> type discriminator
  * ------------------------------------------------------------------
- * xds --json template [--list]              -> template.list
- * xds --json template <name>               -> template.show
- * xds --json template <name> --skeleton    -> template.skeleton
- * xds --json template <name> [path]        -> template.copy
- * xds --json template --cdn [path]         -> template.cdn
- * (unknown template)                        -> CLIError
+ * astryx --json template [--list]          -> template.list
+ * astryx --json template <name>            -> template.show
+ * astryx --json template <name> --skeleton -> template.skeleton
+ * astryx --json template <name> [path]     -> template.copy
+ * astryx --json template --cdn [path]      -> template.cdn
+ * (unknown template)                       -> CLIError
  */
 
 /**
- * xds --json template [--list]
+ * astryx --json template [--list]
  * @typedef {object} TemplateListResponse
  * @property {'template.list'} type
  * @property {TemplateListEntry[]} data
@@ -27,17 +27,23 @@
  * @typedef {object} TemplateListEntry
  * @property {string} id - Stable template id (relative path under the templates root, minus the .doc.* suffix).
  * @property {string} name
+ * @property {string} [displayName]
  * @property {string} description
  * @property {'page' | 'block'} type
  * @property {string} package - Owning package; core (built-in) templates report '@astryxdesign/core'.
  * @property {string} [category] - Optional grouping/category label.
  * @property {string[]} [componentsUsed] - Component display names the template composes.
+ * @property {number} [aspectRatio] - Block preview width/height ratio.
+ * @property {string} [exampleFor] - Component documented by a block.
+ * @property {string[]} [alsoExampleFor] - Additional component pages that receive this example.
+ * @property {string[]} [alsoShowcaseFor] - Additional component pages that reuse this showcase.
+ * @property {boolean} [isShowcase] - Whether a block is the component's primary showcase.
  * @property {boolean} isReady
  * @property {boolean} [scaffold]
  */
 
 /**
- * xds --json template <name>
+ * astryx --json template <name>
  * @typedef {object} TemplateShowResponse
  * @property {'template.show'} type
  * @property {object} data
@@ -49,7 +55,7 @@
  */
 
 /**
- * xds --json template <name> --skeleton
+ * astryx --json template <name> --skeleton
  * @typedef {object} TemplateSkeletonResponse
  * @property {'template.skeleton'} type
  * @property {object} data
@@ -60,7 +66,7 @@
  */
 
 /**
- * xds --json template <name> [path]
+ * astryx --json template <name> [path]
  * @typedef {object} TemplateCopyResponse
  * @property {'template.copy'} type
  * @property {object} data
@@ -71,7 +77,7 @@
  */
 
 /**
- * xds --json template --cdn [path]
+ * astryx --json template --cdn [path]
  * `written: false` with `reason: 'exists'` is a success: the command is safe to
  * re-run, and an edited page is the consumer's file to keep. `version` is the
  * Astryx version every CDN URL in the file was pinned to.

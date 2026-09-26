@@ -12,8 +12,7 @@ const {inline, num, safeUrl} = require('./report-text');
  *
  * The section has to survive four states, and the awkward one is `skipped`:
  * a check that quietly vanishes on the PRs most likely to break something
- * visually is worse than no check, so a skip states its reason and points at
- * the daily gate.
+ * visually is worse than no check, so a skip states its reason explicitly.
  *
  * @param {object|null} verdict - the gate's verdict.json, or null when the job did not run
  * @param {string} [reportUrl] - immutable published report for this run
@@ -29,10 +28,6 @@ function buildVisualSection(verdict, reportUrl, imageUrl) {
   const link = safeReportUrl
     ? ` <a href="${safeReportUrl}" target="_blank" rel="noopener noreferrer">View the report</a>`
     : '';
-  const acceptanceCommand =
-    verdict.context?.runId && verdict.context?.runAttempt
-      ? `\n\nTo accept these exact frames: \`/accept-visual ${num(verdict.context.runId)}/${num(verdict.context.runAttempt)} <reason>\``
-      : '';
   const reportBase = safeReportUrl
     ? `${safeReportUrl.replace(/\/+$/, '')}/`
     : null;
@@ -53,16 +48,20 @@ function buildVisualSection(verdict, reportUrl, imageUrl) {
   if (!verdict.changes || verdict.changes.length === 0) {
     if (added.length > 0 || removed.length > 0) {
       const frames = imageBase
-        ? [...added.map(key => ({key, kind: 'after'})), ...removed.map(key => ({key, kind: 'before'}))]
+        ? [
+            ...added.map(key => ({key, kind: 'after'})),
+            ...removed.map(key => ({key, kind: 'before'})),
+          ]
             .slice(0, 3)
             .map(({key, kind}) => {
               const safeKey = encodeURIComponent(String(key));
-              const label = kind === 'after' ? 'Added — After' : 'Removed — Before';
+              const label =
+                kind === 'after' ? 'Added — After' : 'Removed — Before';
               return `<p><b>${label}</b><br><img src="${imageBase}${kind}/${safeKey}.png" width="300" alt="${label} visual regression frame"></p>`;
             })
             .join('\n')
         : '';
-      return `### Visual Regression\n\n**${added.length} added · ${removed.length} removed.**${link}${acceptanceCommand}\n\n${frames}\n\n`;
+      return `### Visual Regression\n\n**${added.length} added · ${removed.length} removed.**${link}\n\n${frames}\n\n`;
     }
     const compared = num(verdict.counts?.total);
     return `### Visual Regression\n\n**Status:** No visual change across ${compared} compared shot(s).\n\n`;
@@ -111,11 +110,11 @@ function buildVisualSection(verdict, reportUrl, imageUrl) {
 
   return `### Visual Regression
 
-**${verdict.changes.length} of ${num(verdict.counts?.total)} shot(s) changed.**${link}${acceptanceCommand}
+**${verdict.changes.length} of ${num(verdict.counts?.total)} shot(s) changed.**${link}
 
 A change here is a question, not a failure: check whether the *after* is the
-picture you intended. If it is, say so in the PR — the release gate's baseline
-is updated deliberately, and this check never rewrites it.
+picture you intended. Record that review on the PR. Baseline maintenance is an
+explicit dispatch of CI; this report never rewrites the baseline or adds a release gate.
 
 | component | story | theme | mode | pixels |
 |---|---|---|---|---|

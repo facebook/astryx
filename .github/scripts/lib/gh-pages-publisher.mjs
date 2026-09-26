@@ -1,11 +1,25 @@
 #!/usr/bin/env node
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file Shared gh-pages publication queue and scoped publishers.
+ * @input Repository/run/scope identity, Git remote, and publication payloads.
+ * @output Serialized publications and cleanup after wait or publish failures.
+ * @position Common publication lifetime for the repository's Pages writers.
+ */
+
 import {spawnSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+
+import {
+  createPreviewPublicationManifest,
+  createPublishedDeploymentResult,
+  writeDeploymentResult,
+} from './pr-preview.mjs';
 
 const PAGES_BRANCH = 'gh-pages';
 const QUEUE_REL = path.join('.astryx-gh-pages', 'publication-queue');
@@ -1241,226 +1255,6 @@ export async function publishImmutablePath({
   refuse(`could not publish ${destinationRel} after ${maxAttempts} attempts`);
 }
 
-export async function publishVisualAcceptanceRecord({
-  repository,
-  token,
-  tempRoot,
-  remoteURL,
-  pr,
-  head,
-  acceptedRunId,
-  acceptedRunAttempt,
-  approver,
-  approverId,
-  permission,
-  effectivePermission,
-  roleName,
-  commentId,
-  reason,
-  maxAttempts = 5,
-  beforePush,
-}) {
-  const destinationRel = safeRelativePath(
-    `visual-gate/acceptances/${pr}/${head}`,
-    'acceptance destination',
-  );
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    const checkout = checkoutPages({
-      repository,
-      token,
-      tempRoot,
-      remoteURL,
-      sparsePaths: [
-        'visual-gate/baseline',
-        `pr/${pr}/visual/${head}/${acceptedRunId}/${acceptedRunAttempt}`,
-        destinationRel,
-      ],
-      prefix: 'gh-pages-acceptance-',
-    });
-    try {
-      runNodeScript(
-        ['visual-gate', 'visual-acceptance.mjs'],
-        [
-          'accept',
-          '--pages',
-          checkout,
-          '--pr',
-          String(pr),
-          '--head',
-          String(head),
-          '--run-id',
-          String(acceptedRunId),
-          '--run-attempt',
-          String(acceptedRunAttempt),
-          '--approver',
-          String(approver),
-          '--approver-id',
-          String(approverId),
-          '--permission',
-          String(permission),
-          '--effective-permission',
-          String(effectivePermission),
-          '--role-name',
-          String(roleName ?? ''),
-          '--comment-id',
-          String(commentId),
-          '--reason',
-          String(reason),
-        ],
-      );
-      const commit = commitIfNeeded(
-        checkout,
-        `visual acceptance: PR #${pr} at ${head}`,
-        [destinationRel],
-      );
-      if (commit === null) {
-        process.stdout.write(
-          'The current visual bundle was already accepted.\n',
-        );
-        return {published: false};
-      }
-      await beforePush?.({attempt, checkout, commit});
-      const pushed = tryRun('git', [
-        '-C',
-        checkout,
-        'push',
-        'origin',
-        PAGES_BRANCH,
-      ]);
-      if (pushOrRetry(pushed)) return {published: true, commit};
-    } finally {
-      fs.rmSync(checkout, {recursive: true, force: true});
-    }
-    process.stdout.write(
-      `Push rejected; retrying acceptance publish (${attempt}/${maxAttempts}).\n`,
-    );
-    await sleep(attempt * 2000);
-  }
-  refuse(`could not archive visual acceptance after ${maxAttempts} attempts`);
-}
-
-export async function publishAcceptedVisualBaseline({
-  repository,
-  runId,
-  token,
-  tempRoot,
-  remoteURL,
-  pr,
-  head,
-  mergeSha,
-  expectedRecordRel,
-  capture,
-  maxAttempts = 5,
-  beforePush,
-}) {
-  const scope = 'visual-gate/baseline';
-  assertHoldingPublicationTurn({
-    repository,
-    runId,
-    scope,
-    token,
-    tempRoot,
-    remoteURL,
-  });
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    const checkout = checkoutPages({
-      repository,
-      token,
-      tempRoot,
-      remoteURL,
-      sparsePaths: [
-        'visual-gate/baseline',
-        `visual-gate/acceptances/${pr}/${head}`,
-      ],
-      prefix: 'gh-pages-baseline-',
-    });
-    try {
-      const resolved = JSON.parse(
-        runNodeScript(
-          ['visual-gate', 'lib', 'promotion-identity.mjs'],
-          [
-            'resolve-acceptance',
-            '--pages',
-            checkout,
-            '--pr',
-            String(pr),
-            '--head',
-            String(head),
-            '--missing-ok',
-            'false',
-            '--expected-record-rel',
-            String(expectedRecordRel),
-          ],
-        ),
-      );
-      if (resolved.ok !== true) {
-        output('failure_description', resolved.description);
-        refuse(
-          resolved.message ??
-            resolved.description ??
-            'acceptance validation failed',
-        );
-      }
-      if (resolved.deferred === true) {
-        output('deferred', 'true');
-        output('deferred_description', resolved.deferredDescription);
-        return {deferred: true};
-      }
-      runNodeScript(
-        ['visual-gate', 'visual-acceptance.mjs'],
-        [
-          'promote',
-          '--pages',
-          checkout,
-          '--acceptance',
-          resolved.recordPath,
-          '--capture',
-          path.resolve(capture),
-          '--merge-sha',
-          String(mergeSha),
-        ],
-      );
-      const commit = commitIfNeeded(
-        checkout,
-        `visual baseline: accepted PR #${pr}`,
-        ['-A', 'visual-gate/baseline'],
-      );
-      if (commit === null) {
-        process.stdout.write(
-          'Baseline already contains the accepted pixels.\n',
-        );
-        output('publication_confirmed', 'true');
-        return {published: false};
-      }
-      await beforePush?.({attempt, checkout, commit});
-      const pushed = tryRun('git', [
-        '-C',
-        checkout,
-        'push',
-        'origin',
-        PAGES_BRANCH,
-      ]);
-      if (pushOrRetry(pushed)) {
-        output('publication_confirmed', 'true');
-        return {published: true, commit};
-      }
-    } finally {
-      fs.rmSync(checkout, {recursive: true, force: true});
-    }
-    process.stdout.write(
-      `Push rejected; retrying accepted baseline publish (${attempt}/${maxAttempts}).\n`,
-    );
-    await sleep(attempt * 2000);
-  }
-  output(
-    'failure_description',
-    'Merged pixels did not promote to the visual baseline.',
-  );
-  refuse(
-    `could not promote the accepted baseline after ${maxAttempts} attempts`,
-  );
-}
-
 export async function publishManualVisualBaseline({
   repository,
   runId,
@@ -1541,9 +1335,32 @@ export async function publishManualVisualBaseline({
   refuse(`could not push the updated baseline after ${maxAttempts} attempts`);
 }
 
-function removeContents(destination) {
-  fs.rmSync(destination, {recursive: true, force: true});
+const PREVIEW_MANIFEST = '.astryx-preview.json';
+
+function previewDirectory(value, name) {
+  if (!value) return null;
+  const directory = path.resolve(value);
+  if (!fs.existsSync(directory) || !fs.statSync(directory).isDirectory()) {
+    refuse(`${name} must be a directory`);
+  }
+  const index = path.join(directory, 'index.html');
+  if (!fs.existsSync(index) || !fs.statSync(index).isFile()) {
+    refuse(`${name} must contain index.html`);
+  }
+  return directory;
+}
+
+function sha256(file) {
+  return createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+}
+
+function clearPreviewContents(destination) {
   fs.mkdirSync(destination, {recursive: true});
+  // Sandbox remains on Pages until its own migration. Keep Storybook and the
+  // immutable visual evidence untouched when replacing Sandbox for this PR.
+  for (const name of ['sandbox', PREVIEW_MANIFEST]) {
+    fs.rmSync(path.join(destination, name), {recursive: true, force: true});
+  }
 }
 
 export async function publishPrPreview({
@@ -1552,8 +1369,17 @@ export async function publishPrPreview({
   tempRoot,
   remoteURL,
   pr,
+  head,
+  headRepo,
+  headRepoId,
+  headRef,
+  baseRepo,
+  sourceRunId,
+  sourceRunAttempt,
+  sourceConclusion,
   storybook,
   sandbox,
+  resultFile,
   maxAttempts = 5,
   beforePush,
 }) {
@@ -1561,16 +1387,35 @@ export async function publishPrPreview({
   if (!Number.isSafeInteger(prNumber) || prNumber <= 0) {
     refuse('PR number is invalid');
   }
-  const storybookDir = path.resolve(storybook);
-  const sandboxDir = path.resolve(sandbox);
-  for (const [name, dir] of [
-    ['--storybook', storybookDir],
-    ['--sandbox', sandboxDir],
-  ]) {
-    if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
-      refuse(`${name} must be a directory`);
-    }
+  if (baseRepo !== repository) {
+    refuse('preview base repository does not match publisher repository');
   }
+  if (storybook) {
+    refuse('Storybook previews are hosted on Vercel, not gh-pages');
+  }
+  const sandboxDir = previewDirectory(sandbox, '--sandbox');
+  if (sourceConclusion !== 'success' && sandboxDir) {
+    refuse('failed source CI cannot publish preview targets');
+  }
+  const identity = {
+    prNumber,
+    headSha: head,
+    headRepository: headRepo,
+    headRepositoryId: headRepoId,
+    headRef,
+    baseRepository: baseRepo,
+    sourceRunId,
+    sourceRunAttempt,
+    sourceConclusion,
+  };
+  const storybookIndexSha256 = null;
+  const sandboxIndexSha256 = sandboxDir
+    ? sha256(path.join(sandboxDir, 'index.html'))
+    : null;
+  const manifest = createPreviewPublicationManifest(identity, {
+    storybookIndexSha256,
+    sandboxIndexSha256,
+  });
   const destinationRel = `pr/${prNumber}`;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     const checkout = checkoutPages({
@@ -1583,45 +1428,65 @@ export async function publishPrPreview({
     });
     try {
       const destination = path.join(checkout, destinationRel);
-      removeContents(destination);
-      copyContents(storybookDir, destination);
-      fs.mkdirSync(path.join(destination, 'sandbox'), {recursive: true});
-      for (const entry of fs.readdirSync(sandboxDir, {withFileTypes: true})) {
-        if (entry.name === 'template-assets') continue;
-        fs.cpSync(
-          path.join(sandboxDir, entry.name),
-          path.join(destination, 'sandbox', entry.name),
-          {recursive: true, force: true},
-        );
+      clearPreviewContents(destination);
+      if (sandboxDir) {
+        const sandboxDestination = path.join(destination, 'sandbox');
+        fs.mkdirSync(sandboxDestination, {recursive: true});
+        for (const entry of fs.readdirSync(sandboxDir, {withFileTypes: true})) {
+          if (entry.name === 'template-assets') continue;
+          fs.cpSync(
+            path.join(sandboxDir, entry.name),
+            path.join(sandboxDestination, entry.name),
+            {recursive: true, force: true},
+          );
+        }
       }
-      const commit = commitIfNeeded(
-        checkout,
-        `Deploy PR #${prNumber} preview`,
-        ['-A', destinationRel],
+      if (
+        sandboxDir &&
+        sha256(path.join(destination, 'sandbox', 'index.html')) !==
+          sandboxIndexSha256
+      ) {
+        refuse('published Sandbox index does not match its source artifact');
+      }
+      fs.writeFileSync(
+        path.join(destination, PREVIEW_MANIFEST),
+        `${JSON.stringify(manifest, null, 2)}\n`,
       );
-      if (commit === null) {
-        process.stdout.write('Nothing to publish.\n');
-        return {published: false};
-      }
-      await beforePush?.({attempt, checkout, commit});
-      const pushed = tryRun('git', [
-        '-C',
-        checkout,
-        'push',
-        'origin',
-        PAGES_BRANCH,
+      let commit = commitIfNeeded(checkout, `Deploy PR #${prNumber} preview`, [
+        '-A',
+        destinationRel,
       ]);
-      if (pushOrRetry(pushed)) {
-        process.stdout.write(`Deployed PR #${prNumber} preview.\n`);
-        return {published: true, commit};
+      if (commit !== null) {
+        await beforePush?.({attempt, checkout, commit});
+        const pushed = tryRun('git', [
+          '-C',
+          checkout,
+          'push',
+          'origin',
+          PAGES_BRANCH,
+        ]);
+        if (!pushOrRetry(pushed)) {
+          process.stdout.write(
+            `Push rejected; retrying PR preview publish (${attempt}/${maxAttempts}).\n`,
+          );
+          await sleep(attempt * 2000);
+          continue;
+        }
+      } else {
+        commit = git(checkout, 'rev-parse', 'HEAD');
       }
+
+      const result = createPublishedDeploymentResult(identity, {
+        storybookIndexSha256,
+        sandboxIndexSha256,
+        pagesCommit: commit,
+      });
+      if (resultFile) writeDeploymentResult(resultFile, result);
+      process.stdout.write(`Reconciled PR #${prNumber} preview.\n`);
+      return result;
     } finally {
       fs.rmSync(checkout, {recursive: true, force: true});
     }
-    process.stdout.write(
-      `Push rejected; retrying PR preview publish (${attempt}/${maxAttempts}).\n`,
-    );
-    await sleep(attempt * 2000);
   }
   refuse(
     `could not publish PR #${prNumber} preview after ${maxAttempts} attempts`,
@@ -2196,84 +2061,6 @@ export async function compactGhPages({
   refuse(`could not compact ${PAGES_BRANCH} after ${maxAttempts} attempts`);
 }
 
-export async function publishReleaseGateReport({
-  repository,
-  token,
-  tempRoot,
-  remoteURL,
-  source,
-  runId,
-  maxAttempts = 5,
-  beforePush,
-}) {
-  const sourceDir = path.resolve(source);
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    const checkout = checkoutPages({
-      repository,
-      token,
-      tempRoot,
-      remoteURL,
-      sparsePaths: [path.join('visual-gate')],
-      prefix: 'gh-pages-release-gate-',
-    });
-    try {
-      const runDir = path.join(checkout, 'visual-gate', String(runId));
-      const latestDir = path.join(checkout, 'visual-gate', 'latest');
-      fs.rmSync(runDir, {recursive: true, force: true});
-      fs.rmSync(latestDir, {recursive: true, force: true});
-      copyContents(sourceDir, runDir);
-      copyContents(sourceDir, latestDir);
-      pruneReleaseGateRuns(path.join(checkout, 'visual-gate'));
-      const commit = commitIfNeeded(checkout, `release gate: ${runId}`, [
-        '-A',
-        'visual-gate',
-      ]);
-      if (commit === null) {
-        process.stdout.write('Nothing to publish.\n');
-        return {published: false};
-      }
-      await beforePush?.({attempt, checkout, commit});
-      const pushed = tryRun('git', [
-        '-C',
-        checkout,
-        'push',
-        'origin',
-        PAGES_BRANCH,
-      ]);
-      if (pushOrRetry(pushed)) {
-        process.stdout.write(
-          `Published https://facebook.github.io/astryx/visual-gate/${runId}/\n`,
-        );
-        return {published: true, commit};
-      }
-    } finally {
-      fs.rmSync(checkout, {recursive: true, force: true});
-    }
-    process.stdout.write(
-      `Push rejected; retrying release-gate publish (${attempt}/${maxAttempts}).\n`,
-    );
-    await sleep(attempt * 2000);
-  }
-  refuse(
-    `could not publish the release-gate report after ${maxAttempts} attempts`,
-  );
-}
-
-function pruneReleaseGateRuns(visualGateRoot) {
-  if (!fs.existsSync(visualGateRoot)) return;
-  const runs = fs
-    .readdirSync(visualGateRoot, {withFileTypes: true})
-    .filter(entry => entry.isDirectory() && RUN_ID.test(entry.name))
-    .map(entry => Number(entry.name))
-    .sort((a, b) => a - b);
-  for (const runId of runs.slice(0, Math.max(0, runs.length - 20))) {
-    fs.rmSync(path.join(visualGateRoot, String(runId)), {
-      recursive: true,
-      force: true,
-    });
-  }
-}
-
 export async function publishStableSite({
   repository,
   token,
@@ -2364,6 +2151,8 @@ export async function withPublicationTurn({
   token,
   tempRoot,
   remoteURL,
+  timeoutMs,
+  beforeClaimPush,
   publish,
 }) {
   validateIdentity(repository, runId, scope);
@@ -2375,15 +2164,19 @@ export async function withPublicationTurn({
     tempRoot,
     remoteURL,
   });
-  await waitForPublicationTurn({
-    repository,
-    runId,
-    scope,
-    token,
-    tempRoot,
-    remoteURL,
-  });
+  // Enqueue refusal must not release another scope's ticket. Once enqueued,
+  // waiting owns queue state too, even before either holder is acquired.
   try {
+    await waitForPublicationTurn({
+      repository,
+      runId,
+      scope,
+      token,
+      tempRoot,
+      remoteURL,
+      timeoutMs,
+      beforeClaimPush,
+    });
     return await publish();
   } finally {
     await releasePublication({
@@ -2441,14 +2234,6 @@ export async function main(argv = process.argv.slice(2)) {
       scope: 'whole-tree',
       publish: () => publishStableSite({...context, source, sha}),
     });
-  } else if (command === 'release-gate') {
-    const source = flag(argv, '--source');
-    if (!source) refuse('--source is required');
-    await withPublicationTurn({
-      ...context,
-      scope: 'visual-gate/reports',
-      publish: () => publishReleaseGateReport({...context, source}),
-    });
   } else if (command === 'immutable-path') {
     const source = flag(argv, '--source');
     const destination = flag(argv, '--destination');
@@ -2466,35 +2251,6 @@ export async function main(argv = process.argv.slice(2)) {
           destination,
           message: flag(argv, '--message'),
         }),
-    });
-  } else if (command === 'visual-acceptance-record') {
-    await withPublicationTurn({
-      ...context,
-      scope: 'visual-gate/acceptances',
-      publish: () =>
-        publishVisualAcceptanceRecord({
-          ...context,
-          pr: flag(argv, '--pr'),
-          head: flag(argv, '--head'),
-          acceptedRunId: flag(argv, '--accepted-run-id'),
-          acceptedRunAttempt: flag(argv, '--accepted-run-attempt'),
-          approver: flag(argv, '--approver'),
-          approverId: flag(argv, '--approver-id'),
-          permission: flag(argv, '--permission'),
-          effectivePermission: flag(argv, '--effective-permission'),
-          roleName: flag(argv, '--role-name', ''),
-          commentId: flag(argv, '--comment-id'),
-          reason: flag(argv, '--reason'),
-        }),
-    });
-  } else if (command === 'visual-baseline-accepted') {
-    await publishAcceptedVisualBaseline({
-      ...context,
-      pr: flag(argv, '--pr'),
-      head: flag(argv, '--head'),
-      mergeSha: flag(argv, '--merge-sha'),
-      expectedRecordRel: flag(argv, '--expected-record-rel'),
-      capture: flag(argv, '--capture'),
     });
   } else if (command === 'visual-baseline-manual') {
     await publishManualVisualBaseline({
@@ -2514,8 +2270,17 @@ export async function main(argv = process.argv.slice(2)) {
         publishPrPreview({
           ...context,
           pr,
+          head: flag(argv, '--head'),
+          headRepo: flag(argv, '--head-repo'),
+          headRepoId: flag(argv, '--head-repo-id'),
+          headRef: flag(argv, '--head-ref'),
+          baseRepo: flag(argv, '--base-repo'),
+          sourceRunId: flag(argv, '--source-run-id'),
+          sourceRunAttempt: flag(argv, '--source-run-attempt'),
+          sourceConclusion: flag(argv, '--source-conclusion'),
           storybook: flag(argv, '--storybook'),
           sandbox: flag(argv, '--sandbox'),
+          resultFile: flag(argv, '--result'),
         }),
     });
   } else if (command === 'cleanup-previews') {
@@ -2565,7 +2330,7 @@ export async function main(argv = process.argv.slice(2)) {
     }
   } else {
     refuse(
-      'usage: gh-pages-publisher.mjs <enqueue|wait|release|stable-site|release-gate|immutable-path|visual-acceptance-record|visual-baseline-accepted|visual-baseline-manual|pr-preview|cleanup-previews|vibe-report|vibe-screenshots|compact>',
+      'usage: gh-pages-publisher.mjs <enqueue|wait|release|stable-site|immutable-path|visual-baseline-manual|pr-preview|cleanup-previews|vibe-report|vibe-screenshots|compact>',
     );
   }
 }

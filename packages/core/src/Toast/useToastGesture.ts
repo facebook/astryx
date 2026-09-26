@@ -25,12 +25,14 @@ const SWIPE_ACTIVE_SCALE_MAX = 0.02;
 export type ToastGestureDirection = 1 | -1;
 
 interface GesturePoint {
+  source: 'touch' | 'pen';
   pointerId: number;
   clientX: number;
   clientY: number;
 }
 
 interface GestureState {
+  source: GesturePoint['source'];
   pointerId: number;
   startX: number;
   startY: number;
@@ -126,6 +128,7 @@ export function useToastGesture({
       }
       const surfaceSize = Math.max(root.getBoundingClientRect().height, 1);
       gestureRef.current = {
+        source: point.source,
         pointerId: point.pointerId,
         startX: point.clientX,
         startY: point.clientY,
@@ -159,7 +162,12 @@ export function useToastGesture({
     ) => {
       const state = gestureRef.current;
       const root = rootRef.current;
-      if (!state || !root || point.pointerId !== state.pointerId) {
+      if (
+        !state ||
+        !root ||
+        point.source !== state.source ||
+        point.pointerId !== state.pointerId
+      ) {
         return;
       }
       const deltaX = point.clientX - state.startX;
@@ -209,7 +217,12 @@ export function useToastGesture({
     (point: GesturePoint) => {
       const state = gestureRef.current;
       const root = rootRef.current;
-      if (!state || !root || point.pointerId !== state.pointerId) {
+      if (
+        !state ||
+        !root ||
+        point.source !== state.source ||
+        point.pointerId !== state.pointerId
+      ) {
         return;
       }
       const travel = Math.max(
@@ -225,6 +238,10 @@ export function useToastGesture({
       gestureRef.current = null;
       root.style.removeProperty('transition-duration');
       if (isDismissed) {
+        // The exit animation owns the final translation. Clear the live-drag
+        // transform/fade/scale first so a standalone Toast does not remain
+        // partially translated or faded after its dismiss callback fires.
+        clearTransientStyles(root);
         root.style.setProperty(
           '--_toast-swipe-exit-y',
           state.direction === 1
@@ -247,7 +264,15 @@ export function useToastGesture({
       if (
         event.pointerType === 'pen' &&
         (event.button == null || event.button === 0) &&
-        beginGesture(event, event.target)
+        beginGesture(
+          {
+            source: 'pen',
+            pointerId: event.pointerId,
+            clientX: event.clientX,
+            clientY: event.clientY,
+          },
+          event.target,
+        )
       ) {
         rootRef.current?.setPointerCapture?.(event.pointerId);
       }
@@ -261,7 +286,12 @@ export function useToastGesture({
         return;
       }
       moveGesture(
-        event,
+        {
+          source: 'pen',
+          pointerId: event.pointerId,
+          clientX: event.clientX,
+          clientY: event.clientY,
+        },
         () => event.preventDefault(),
         () => rootRef.current?.releasePointerCapture?.(event.pointerId),
       );
@@ -275,7 +305,12 @@ export function useToastGesture({
         return;
       }
       rootRef.current?.releasePointerCapture?.(event.pointerId);
-      endGesture(event);
+      endGesture({
+        source: 'pen',
+        pointerId: event.pointerId,
+        clientX: event.clientX,
+        clientY: event.clientY,
+      });
     },
     [endGesture],
   );
@@ -284,6 +319,7 @@ export function useToastGesture({
     (event: ReactPointerEvent<HTMLDivElement>) => {
       if (
         event.pointerType === 'pen' &&
+        gestureRef.current?.source === 'pen' &&
         gestureRef.current?.pointerId === event.pointerId
       ) {
         resetGesture(true);
@@ -298,12 +334,14 @@ export function useToastGesture({
       return;
     }
     const point = (touch: Touch): GesturePoint => ({
+      source: 'touch',
       pointerId: touch.identifier,
       clientX: touch.clientX,
       clientY: touch.clientY,
     });
     const changedTouch = (event: TouchEvent) => {
-      const pointerId = gestureRef.current?.pointerId;
+      const state = gestureRef.current;
+      const pointerId = state?.source === 'touch' ? state.pointerId : null;
       return pointerId == null
         ? undefined
         : [...event.changedTouches].find(
@@ -311,12 +349,23 @@ export function useToastGesture({
           );
     };
     const handleTouchStart = (event: TouchEvent) => {
-      const touch = event.touches.length === 1 ? event.changedTouches[0] : null;
-      if (touch) {
+      if (event.touches?.length !== 1) {
+        // A second contact means the browser may be handling pinch zoom or
+        // two-finger scrolling. Abandon any accepted one-finger swipe before
+        // touchmove can suppress that native gesture.
+        resetGesture(true);
+        return;
+      }
+      const touch = event.changedTouches[0];
+      if (touch != null) {
         beginGesture(point(touch), event.target);
       }
     };
     const handleTouchMove = (event: TouchEvent) => {
+      if (event.touches?.length !== 1) {
+        resetGesture(true);
+        return;
+      }
       const touch = changedTouch(event);
       if (touch) {
         moveGesture(point(touch), () => {
@@ -327,6 +376,10 @@ export function useToastGesture({
       }
     };
     const handleTouchEnd = (event: TouchEvent) => {
+      if (event.touches.length > 0) {
+        resetGesture(true);
+        return;
+      }
       const touch = changedTouch(event);
       if (touch) {
         endGesture(point(touch));

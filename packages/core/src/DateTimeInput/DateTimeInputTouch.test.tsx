@@ -6,6 +6,10 @@
  * @output Focused coverage for DateTimeInput's coarse-pointer bottom-sheet picker
  * @position Test file for /packages/core/src/DateTimeInput/
  *
+ * Every test renders through a wrapper that passes `nativePicker="never"`, so
+ * this suite continues to exercise Astryx's coarse-pointer bottom sheet now
+ * that DateTimeInput defaults to the platform date picker on touch.
+ *
  * The touch surface reuses DateInput's sheet/calendar primitives, so this file
  * keeps coverage at the DateTimeInput integration seams: surface selection,
  * segmented switching, date/time combination, constraints, and field parity.
@@ -25,8 +29,12 @@ import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {readFileSync} from 'node:fs';
 import {render, screen, fireEvent, within} from '@testing-library/react';
-import {DateTimeInput} from './DateTimeInput';
-import type {ISODateTimeString} from './DateTimeInput';
+import {DateTimeInput as CoreDateTimeInput} from './DateTimeInput';
+import type {DateTimeInputProps, ISODateTimeString} from './DateTimeInput';
+
+function DateTimeInput(props: DateTimeInputProps) {
+  return <CoreDateTimeInput {...props} nativePicker="never" />;
+}
 
 class MockResizeObserver {
   observe() {}

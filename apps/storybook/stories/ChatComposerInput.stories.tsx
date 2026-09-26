@@ -4,13 +4,15 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {
   ChatComposer,
   ChatComposerInput,
+  type ChatComposerInputHandle,
   type ChatComposerTrigger,
 } from '@astryxdesign/core/Chat';
 import {createStaticSource} from '@astryxdesign/core/Typeahead';
 import {Badge} from '@astryxdesign/core/Badge';
 import {TypeaheadItem} from '@astryxdesign/core/Typeahead';
 import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
-import {useState} from 'react';
+import {expect, fireEvent, userEvent, within} from 'storybook/test';
+import {useRef, useState} from 'react';
 
 const meta: Meta = {
   title: 'Core/ChatComposerInput',
@@ -216,6 +218,91 @@ export const FilePaste: Story = {
         )}
       </div>
     );
+  },
+};
+
+/** Programmatic text follows the same observable draft path as typing. */
+export const ImperativeInsertion: Story = {
+  render: () => {
+    const inputRef = useRef<ChatComposerInputHandle>(null);
+    const [value, setValue] = useState('');
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+        <ChatComposer
+          value={value}
+          onChange={setValue}
+          onSubmit={() => {}}
+          input={
+            <ChatComposerInput
+              handleRef={inputRef}
+              placeholder="Waiting for dictated text"
+            />
+          }
+        />
+        <button
+          type="button"
+          onClick={() => {
+            inputRef.current?.focus();
+            inputRef.current?.insertText('Dictated text');
+          }}>
+          Insert dictated text
+        </button>
+        <output aria-label="Serialized draft">{value || 'Empty'}</output>
+      </div>
+    );
+  },
+  play: async ({canvasElement}) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole('button', {name: 'Insert dictated text'}),
+    );
+    await expect(canvas.getByRole('textbox')).toHaveTextContent(
+      'Dictated text',
+    );
+    await expect(
+      canvas.getByRole('status', {name: 'Serialized draft'}),
+    ).toHaveTextContent('Dictated text');
+    await expect(
+      canvas.queryByText('Waiting for dictated text'),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/** Dropped files reach the same attachment callback as pasted files. */
+export const FileDrop: Story = {
+  render: () => {
+    const [files, setFiles] = useState<string[]>([]);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+        <ChatComposer
+          onSubmit={() => {}}
+          input={
+            <ChatComposerInput
+              onFiles={next => setFiles(next.map(file => file.name))}
+              placeholder="Drop a file here"
+            />
+          }
+        />
+        <output aria-label="Received files">
+          {files.length === 0 ? 'No files' : files.join(', ')}
+        </output>
+      </div>
+    );
+  },
+  play: async ({canvasElement}) => {
+    const canvas = within(canvasElement);
+    const textbox = canvas.getByRole('textbox');
+    const transfer = new DataTransfer();
+    transfer.items.add(
+      new File(['audit'], 'dropped.txt', {type: 'text/plain'}),
+    );
+
+    fireEvent.dragOver(textbox, {dataTransfer: transfer});
+    fireEvent.drop(textbox, {dataTransfer: transfer});
+
+    await expect(
+      canvas.getByRole('status', {name: 'Received files'}),
+    ).toHaveTextContent('dropped.txt');
   },
 };
 

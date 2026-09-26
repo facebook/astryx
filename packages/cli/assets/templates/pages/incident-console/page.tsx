@@ -471,8 +471,8 @@ export default function IncidentConsolePage() {
 
   const inspectorPanel = useResizable({
     defaultSize: 380,
-    minSizePx: 320,
-    maxSizePx: 480,
+    minSize: 320,
+    maxSize: 480,
   });
 
   const visible = useMemo(() => {
