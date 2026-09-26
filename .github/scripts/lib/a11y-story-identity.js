@@ -16,6 +16,7 @@ const A11Y_STORY_OWNER_PREFIXES = Object.freeze([
   ['a11y-button-pattern--sidenav-collapse-', 'core/SideNavCollapseButton'],
   ['a11y-button-pattern--chat-send', 'core/ChatSendButton'],
   ['a11y-chatsendbutton-audit--', 'core/ChatSendButton'],
+  ['a11y-chatsystemmessage-audit--', 'core/ChatSystemMessage'],
   ['a11y-button-pattern--button-', 'core/Button'],
   ['a11y-checkbox-pattern--list-item-', 'core/CheckboxListItem'],
   ['a11y-checkbox-pattern--menu-item-', 'core/DropdownMenuCheckboxItem'],

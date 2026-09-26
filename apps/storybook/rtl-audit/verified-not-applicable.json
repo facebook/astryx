@@ -280,5 +280,16 @@
   {
     "component": "core/ChatMessageMetadata",
     "reason": "The metadata row owns no directional glyph, contextual directional separator, physical inline positioning, prev/next control order, horizontal scrolling, dragging, overlay, or arrow-key behavior. Sender-dependent row reversal uses CSS flex direction relative to the surrounding writing direction and is verified separately by matched LTR/RTL Chromium receipts. The RTL audit's D1, D2, D3, D5, and D6 detectors therefore have no applicable target for this component."
+  },
+  {
+    "component": "core/ChatSystemMessage",
+    "reason": "ChatSystemMessage uses centered flex layout and logical block spacing only. Its default content follows normal document direction; optional icon artwork is caller-owned. The divider branch delegates a symmetric horizontal rule and centered label to Divider. The component owns no left/right glyph, physical inline positioning, directional order, horizontal scrolling or dragging, side-placed overlay, or horizontal keyboard behavior. Its dedicated audit fixtures cover both variants, optional default-branch icon content, and narrow layout without adding a component-owned RTL dimension.",
+    "evidence": {
+      "apps/storybook/stories/ChatSystemMessage.stories.tsx": "sha256:dde3dc8f014b3c6165601f5297ca1537473c8b1850dd24f9e8216d265c050b28",
+      "apps/storybook/stories/ChatSystemMessageAudit.stories.tsx": "sha256:4a1458342469e75a4b9e40f1a25ca49580abb7d9ba13e731ffed3ecfbc6d2fde",
+      "packages/core/src/Chat/ChatSystemMessage.tsx": "sha256:0c3bf23b4532eae8c34511f793de8d4e843d48ed69212bfaad96610e5a6a3382",
+      "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb",
+      "packages/core/src/Divider/Divider.tsx": "sha256:f302b5c9eecde40b486c09d49c71cb7dab158e2fcedcb38c0145671c45d9cf8d"
+    }
   }
 ]

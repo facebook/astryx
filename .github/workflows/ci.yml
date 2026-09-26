@@ -1073,6 +1073,35 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # ChatSystemMessage is noninteractive, but its status/separator semantics,
+      # delegated paint, contrast, and narrow reflow still require exact-head
+      # browser receipts rather than source-only claims.
+      - name: Run ChatSystemMessage audit browser evidence
+        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ChatSystemMessage:')
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output chat-system-message-a11y-report.json \
+            --components ChatSystemMessage \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new
+          pnpm exec playwright test \
+            packages/core/src/Chat/__tests__/ChatSystemMessage.a11y.chromium.spec.ts \
+            --project chromium
+
+      - name: Upload ChatSystemMessage audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ChatSystemMessage:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: chat-system-message-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            chat-system-message-a11y-report.json
+            test-results/chat-system-message-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # Run the exhaustive contract/fixture matrix at release time. PRs retain
       # scoped axe validation and the fast interaction guards above; they must
       # not pay for every component's browser bindings on every change.
