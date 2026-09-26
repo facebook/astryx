@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../../../core/src/docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'CircularProgress',
@@ -117,7 +117,7 @@ export const docs = {
   ],
 };
 
-/** @type {import('../../../core/src/docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'CircularProgress',
   displayName: 'Circular Progress',
@@ -212,7 +212,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../../../core/src/docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Circular/radial progress indicator showing completion as a ring arc.',

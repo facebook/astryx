@@ -31,6 +31,10 @@ const storyStyles = stylex.create({
     margin: `0 0 ${spacingVars['--spacing-2']} 0`,
     fontFamily: typographyVars['--font-family-body'],
   },
+  wrapped: {
+    flexWrap: 'wrap',
+    rowGap: spacingVars['--spacing-2'],
+  },
 });
 
 const meta: Meta<typeof AvatarGroup> = {
@@ -41,7 +45,17 @@ const meta: Meta<typeof AvatarGroup> = {
     size: {
       control: 'select',
       options: ['xsm', 'sm', 'md', 'lg', 'xl'],
-      description: 'Size applied to all child avatars',
+      description:
+        "Size applied to all child avatars. Wins over each child's own size.",
+    },
+    xstyle: {
+      control: false,
+      description: 'stylex.create() value for layout customization.',
+    },
+    ref: {control: false, description: 'Ref forwarded to the root element.'},
+    'data-testid': {
+      control: false,
+      description: 'Test selector for automated testing frameworks.',
     },
   },
 };
@@ -249,4 +263,99 @@ export const ManyAvatars: Story = {
       </AvatarGroup>
     );
   },
+};
+
+/**
+ * Interactive avatars — a mix of links (`href`) and buttons (`onClick`) plus an
+ * interactive overflow. The whole group is a single Tab stop: Tab into it once,
+ * then use ArrowLeft/ArrowRight to move focus between avatars and the overflow
+ * button. Screen readers hear a keyboard hint from the group.
+ */
+export const Interactive: Story = {
+  render: () => (
+    <AvatarGroup size="lg" aria-label="Project team">
+      <Avatar
+        src={USERS[0].src}
+        name={USERS[0].name}
+        href="https://example.com/users/alice"
+      />
+      <Avatar
+        src={USERS[1].src}
+        name={USERS[1].name}
+        href="https://example.com/users/bob"
+      />
+      <Avatar
+        src={USERS[2].src}
+        name={USERS[2].name}
+        onClick={() => alert(`Open ${USERS[2].name}`)}
+      />
+      <AvatarGroupOverflow
+        count={USERS.length - 3}
+        onClick={() => alert('Show all members')}
+      />
+    </AvatarGroup>
+  ),
+};
+
+/**
+ * Static facepile (no href/onClick) — unchanged behavior. Not focusable, no Tab
+ * stop, no keyboard hint. Shown here alongside the interactive variant for
+ * contrast.
+ */
+export const StaticFacepile: Story = {
+  render: () => (
+    <AvatarGroup size="lg">
+      {USERS.slice(0, 4).map(u => (
+        <Avatar key={u.key} src={u.src} name={u.name} />
+      ))}
+      <AvatarGroupOverflow count={USERS.length - 4} />
+    </AvatarGroup>
+  ),
+};
+
+/**
+ * Right-to-left. The overlap is an inline-margin effect, so it mirrors: the
+ * stack builds from the right and each avatar overlaps the one before it by
+ * the same amount.
+ */
+export const RightToLeft: Story = {
+  globals: {direction: 'rtl'},
+  render: () => (
+    <AvatarGroup size="lg" data-testid="avatar-group-rtl">
+      {USERS.slice(0, 3).map(u => (
+        <Avatar key={u.key} src={u.src} name={u.name} />
+      ))}
+      <AvatarGroupOverflow count={USERS.length - 3} />
+    </AvatarGroup>
+  ),
+};
+
+/**
+ * The overflow indicator on its own, outside any AvatarGroup. It falls back to
+ * the `md` avatar size and stays a circle rather than stretching to its
+ * container.
+ */
+export const StandaloneOverflow: Story = {
+  render: () => <AvatarGroupOverflow count={12} />,
+};
+
+/**
+ * `xstyle` customizes the group's own layout. Here the row wraps instead of
+ * running off the side of a narrow container.
+ */
+export const WrappingLayout: Story = {
+  render: () => (
+    <div style={{width: 220, border: '1px dashed grey', padding: 8}}>
+      <AvatarGroup size="md" xstyle={storyStyles.wrapped}>
+        {Array.from({length: 8}, (_, i) => (
+          <Avatar
+            key={i}
+            name={`User ${i + 1}`}
+            src={`https://i.pravatar.cc/150?img=${i + 1}`}
+          />
+        ))}
+        <AvatarGroupOverflow count={14} />
+      </AvatarGroup>
+    </div>
+  ),
 };

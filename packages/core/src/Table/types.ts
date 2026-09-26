@@ -290,6 +290,12 @@ export interface BodyRowRenderProps {
   children: ReactNode;
   /** Ref for the `<tr>` element. Plugins can set this to access the row DOM node. */
   ref?: Ref<HTMLTableRowElement>;
+  /**
+   * Extra content rendered as a sibling immediately after this row's `<tr>`.
+   * Plugins use it to append a full-width detail-panel `<tr>` (e.g. row
+   * expansion). Multiple plugins compose by wrapping the previous `afterRow`.
+   */
+  afterRow?: ReactNode;
 }
 
 /** Props passed through the plugin pipeline for each body `<td>` */
@@ -316,6 +322,19 @@ export interface BodyCellRenderProps {
    * sticky offsets. Optional for backward compatibility.
    */
   columns?: ReadonlyArray<TableColumn<Record<string, unknown>>>;
+  /**
+   * When true, the cell renders empty: BaseTable calls neither the column's
+   * `renderCell` nor the default renderer. Set it for a row whose cells a
+   * plugin is going to replace wholesale in `transformBodyRow` (a grouped-rows
+   * section header, a summary row) — the row is not one the consumer supplied,
+   * so their renderer can only misread it or throw, and its output is
+   * discarded moments later anyway.
+   *
+   * Applies to this cell only, and is decided per render against the final
+   * column list, so it covers columns other plugins contributed regardless of
+   * where in the pipeline this plugin sits.
+   */
+  isContentSuppressed?: boolean;
 }
 
 /**
@@ -379,6 +398,11 @@ export interface TableContextAction {
   group?: string;
   /** When true, the item renders as checked (e.g. the active sort direction). */
   checked?: boolean;
+  /**
+   * Visual variant. `'destructive'` renders the action in the error color for
+   * dangerous operations (e.g. Delete row). @default 'default'
+   */
+  variant?: 'default' | 'destructive';
 }
 
 /**
@@ -403,12 +427,17 @@ export type TableContextActions =
  *
  * 1. `transformColumns` — filter, reorder, or inject columns before rendering
  * 2. `transformTable` — transform the root `<table>` element props
- * 3. `transformHeaderRow` — transform the header `<tr>` props
- * 4. `transformHeaderCell` — transform each `<th>` props
- * 5. `transformBodyRow` — transform each body `<tr>` props
- * 6. `transformBodyCell` — transform each body `<td>` props
+ * 3. `transformHeaderCell` — transform each `<th>` props
+ * 4. `transformHeaderRow` — transform the header `<tr>` props
+ * 5. `transformBodyCell` — transform each body `<td>` props
+ * 6. `transformBodyRow` — transform each body `<tr>` props
  * 7. `transformScrollWrapper` — transform the scroll-container wrapper around the table
  * 8. `transformTableContext` — wrap the table output in context providers
+ *
+ * A row's cells are built before its row transform runs, and reach it as
+ * `children`: the cell hook is the earliest per-cell interception point, and a
+ * row transform can discard cells but cannot stop them being built (see
+ * `isContentSuppressed` on `BodyCellRenderProps` for that).
  *
  * Plugins may also contribute right-click menu actions by appending to
  * `contextMenuActions` in `transformHeaderCell` / `transformBodyCell`
@@ -540,17 +569,41 @@ export interface BaseTableProps<
   /** Plugins to transform render props at each level */
   plugins?: TablePlugin<T>[];
 
+  /**
+   * ARIA row index (1-based) assigned to the **first** rendered body row.
+   *
+   * The row ordinal is an accessibility concern independent of any visible
+   * index column: `aria-rowindex` on each `<tr>` should reflect the row's
+   * position in the **full** dataset, not just the current page. For a
+   * paginated / windowed view, pass the offset of the first visible row,
+   * e.g. `(page - 1) * pageSize + 1`.
+   *
+   * Setting this (or {@link rowCount}) opts the table into emitting
+   * `aria-rowindex` on body rows and `aria-rowcount` on the `<table>`. Data
+   * rows are numbered from this value; the header row keeps native table
+   * semantics and is not assigned an ARIA row index (so the visible
+   * `useTableRowIndex` numbering and `aria-rowindex` stay in agreement).
+   *
+   * Applies to data-driven mode only (ignored in children mode).
+   *
+   * @default 1
+   */
+  rowIndexStart?: number;
+  /**
+   * Total number of body rows across **all** pages/windows, used for
+   * `aria-rowcount` on the `<table>`. Provide this for paginated data so
+   * assistive tech can announce "row X of Y" against the full dataset.
+   *
+   * When omitted but {@link rowIndexStart} is set (a windowed view with an
+   * unknown total, e.g. cursor pagination), `aria-rowcount` is set to `-1`
+   * per the ARIA convention for an unknown row count.
+   *
+   * Applies to data-driven mode only (ignored in children mode).
+   */
+  rowCount?: number;
+
   /** Children mode — render `<tr>`/`<td>` directly instead of data-driven */
   children?: ReactNode;
-  /**
-   * Additional HTML attributes for the `<table>` element.
-   *
-   * @deprecated Pass `className`, `style`, `xstyle`, and other HTML
-   * attributes directly on the component instead — they now reach the root
-   * `<table>` and win over `tableProps` on conflicts. Migrate with
-   * `npx astryx upgrade --codemod migrate-table-tableprops-to-direct-props`.
-   */
-  tableProps?: HTMLAttributes<HTMLTableElement>;
   /**
    * Optional wrapper rendered around the `<table>` element, inside the
    * plugin `transformTableContext` layer. Used by `Table` to add a

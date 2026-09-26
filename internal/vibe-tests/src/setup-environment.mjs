@@ -78,7 +78,7 @@ export function createAgentProject(target, iterDir, promptId) {
     // Symlink node_modules/.bin/astryx → cli bin so npx astryx works
     const binDir = path.join(projectDir, 'node_modules', '.bin');
     ensureDir(binDir);
-    fs.symlinkSync(path.join(REPO_ROOT, 'packages', 'cli', 'bin', 'astryx.mjs'), path.join(binDir, 'astryx'), 'file');
+    fs.symlinkSync(path.join(REPO_ROOT, 'packages', 'cli', 'clients', 'cli', 'bin', 'astryx.mjs'), path.join(binDir, 'astryx'), 'file');
   }
 
   if (target === 'baseline') {

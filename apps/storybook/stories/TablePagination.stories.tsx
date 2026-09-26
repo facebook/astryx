@@ -51,10 +51,12 @@ function PaginatedDemo({
   variant = 'pages',
   position = 'below',
   align = 'start',
+  label,
 }: {
   variant?: Variant;
   position?: Position;
   align?: Align;
+  label?: string;
 }) {
   const [page, setPage] = useState(1);
   const pageSize = 10;
@@ -67,6 +69,7 @@ function PaginatedDemo({
     variant,
     position,
     align,
+    label,
   });
 
   return (
@@ -132,7 +135,12 @@ export const ServerSide: Story = {
 
     return (
       <div style={{maxWidth: 600}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+        <p
+          style={{
+            marginBottom: 8,
+            fontSize: 14,
+            color: 'var(--color-text-secondary)',
+          }}>
           Server-side: data is pre-sliced, no paginatedData() needed.
         </p>
         <Table
@@ -189,7 +197,12 @@ export const CursorBased: Story = {
 
     return (
       <div style={{maxWidth: 600}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+        <p
+          style={{
+            marginBottom: 8,
+            fontSize: 14,
+            color: 'var(--color-text-secondary)',
+          }}>
           Cursor-based: total unknown, only hasMore={String(hasMore)}.
         </p>
         <Table
@@ -280,7 +293,12 @@ export const WithSelection: Story = {
 
     return (
       <div style={{maxWidth: 600}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+        <p
+          style={{
+            marginBottom: 8,
+            fontSize: 14,
+            color: 'var(--color-text-secondary)',
+          }}>
           Pagination + Selection composed. Selected: {selectedKeys.size}
         </p>
         <Table
@@ -394,6 +412,7 @@ export const OptionsMatrix: Story = {
                 variant={variant}
                 position={position}
                 align={align}
+                label={`Table pagination (${variant}, ${position}, ${align})`}
               />
             </div>
           )),

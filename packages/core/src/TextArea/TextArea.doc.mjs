@@ -1,18 +1,95 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Label',
+    required: true,
+    description: 'Text identifying the multi-line field.',
+  },
+  {
+    name: 'Description',
+    required: false,
+    description: 'Helper text between the label and the input.',
+  },
+  {
+    name: 'Input container',
+    required: true,
+    description: 'Painted boundary containing the text area and its overlays.',
+  },
+  {
+    name: 'Text area',
+    required: true,
+    description: 'Multi-line control that displays and edits the value.',
+  },
+  {
+    name: 'Placeholder',
+    required: false,
+    description: 'Hint text shown inside the empty text area.',
+  },
+  {
+    name: 'Start icon',
+    required: false,
+    description:
+      'Astryx Icon rendered at the start when startIcon is a semantic name or icon component.',
+  },
+  {
+    name: 'Custom start content',
+    required: false,
+    description:
+      'Caller-provided ReactNode rendered at the start instead of an Astryx Icon.',
+  },
+  {
+    name: 'Spinner',
+    required: false,
+    description: 'Loading indicator shown at the end of the input container.',
+  },
+  {
+    name: 'Status icon',
+    required: false,
+    description: 'Error, warning, or success icon shown inside the input.',
+  },
+  {
+    name: 'Character counter',
+    required: false,
+    description:
+      'Current and maximum character counts shown inside the input container.',
+  },
+  {
+    name: 'Field status message',
+    required: false,
+    description:
+      'Attached or detached error, warning, or success message associated with the field.',
+  },
+  {
+    name: 'Tooltip status message',
+    required: false,
+    description:
+      'Tooltip surface presenting the status message for the tooltip variant.',
+  },
+];
+
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'TextArea',
   displayName: 'Text Area',
-  category: 'Data Input',
-  keywords: ["textarea","textfield","multiline","comment","message","autoresize","autosize","charlimit"],
+  category: 'Form Controls',
+  keywords: [
+    'textarea',
+    'textfield',
+    'multiline',
+    'comment',
+    'message',
+    'autoresize',
+    'autosize',
+    'charlimit',
+  ],
   props: [
     {
       name: 'ref',
       type: 'React.Ref<HTMLTextAreaElement>',
-      description:
-        'Ref forwarded to the underlying <textarea> element.',
+      description: 'Ref forwarded to the underlying <textarea> element.',
     },
     {
       name: 'label',
@@ -71,6 +148,13 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'isReadOnly',
+      type: 'boolean',
+      description:
+        'Makes the textarea read-only: the value is shown at full opacity and still submits with the form, but cannot be edited. Unlike isDisabled, a read-only textarea is not dimmed and stays in the tab order. isDisabled takes precedence when both are set.',
+      default: 'false',
+    },
+    {
       name: 'disabledMessage',
       type: 'string',
       description:
@@ -98,13 +182,20 @@ export const docs = {
       name: 'maxLength',
       type: 'number',
       description:
-        'Maximum number of characters allowed. When set, a character counter (current/max) is displayed below the textarea. Does not enforce the limit natively; the counter shows error styling when exceeded.',
+        'Maximum number of characters allowed, counted as user-perceived characters: an emoji or flag sequence counts as one. When set, a character counter (current/max) is displayed inside the input container, anchored to the bottom-right beneath the text. Does not enforce the limit natively; when exceeded the counter turns red and shows a warning icon (a non-color cue), and screen-reader users hear the remaining/over-limit count announced. Consumers validating the limit should count with characterCount (exported from the package) so enforcement matches the displayed count.',
     },
     {
       name: 'status',
       type: "{ type: 'warning' | 'error' | 'success'; message?: string }",
       description:
         'Status indicator that applies a colored border and icon. An optional message is displayed in a floating box below the textarea.',
+    },
+    {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing; tooltip hides the message box and surfaces it in a tooltip on the status icon.',
+      default: "'attached'",
     },
     {
       name: 'labelTooltip',
@@ -133,7 +224,8 @@ export const docs = {
     {
       name: 'size',
       type: "'sm' | 'md' | 'lg'",
-      description: 'Size of the textarea, affecting internal padding. Height is controlled by rows, not size.',
+      description:
+        'Size of the textarea, affecting internal padding. Height is controlled by rows, not size.',
       default: "'md'",
     },
     {
@@ -148,6 +240,12 @@ export const docs = {
         'HTML name attribute for the textarea element, useful for form submissions.',
     },
     {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
+    {
       name: 'onFocus',
       type: '(e: FocusEvent<HTMLTextAreaElement>) => void',
       description: 'Callback fired when the textarea receives focus.',
@@ -158,6 +256,12 @@ export const docs = {
       description: 'Callback fired when the textarea loses focus.',
     },
     {
+      name: 'autoComplete',
+      type: 'string',
+      description:
+        'The native autocomplete attribute, forwarded to the textarea unchanged. Does not affect the controlled value.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -166,26 +270,89 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-textarea', visualProps: ['size', 'status']},
+      {
+        className: 'astryx-text-area',
+        visualProps: ['size', 'status'],
+        states: ['disabled', 'readonly'],
+      },
+      {className: 'astryx-text-area-control'},
+      {className: 'astryx-text-area-counter'},
+      // Retained beside the canonical names for backwards compatibility.
+      // New themes use the canonical targets above.
+      {
+        className: 'astryx-textarea',
+        visualProps: ['size', 'status'],
+        states: ['disabled', 'readonly'],
+        deprecatedFor: 'text-area',
+      },
+    ],
+    vars: [
+      {
+        name: '--_textarea-inline-padding',
+        description:
+          "Inline padding of the textarea's text. The wrapper stays flush (padding: 0) so the native resize grip sits in the true corner; this var carries the inset on the inner <textarea>, and the start icon, status/spinner, and character counter align to it.",
+        default: 'var(--spacing-2)',
+        private: true,
+      },
+    ],
+    derived: [
+      {
+        property: 'paddingInline',
+        vars: ['--_textarea-inline-padding'],
+        replaces: true,
+      },
     ],
   },
   usage: {
+    anatomy,
     description:
       'TextArea is a multi-line text input for collecting longer-form content like comments, descriptions, or messages. Use it when the expected input spans multiple lines. For shorter, single-line values, use TextInput.',
     bestPractices: [
-      { guidance: true, description: 'Provide a visible label so users know what to enter. If the label must be hidden, set isLabelHidden with a descriptive label for screen readers.' },
-      { guidance: true, description: 'Set maxLength with a character counter when there is a defined limit; it helps users stay within bounds before they submit.' },
-      { guidance: true, description: 'Use the status prop to surface validation feedback inline: show success when input is valid, warning for soft limits, and error for hard failures.' },
-      { guidance: true, description: 'Add a description or placeholder to clarify expected content, like "Describe the issue in detail," but never rely on placeholder alone as the only label.' },
-      { guidance: false, description: 'Avoid using TextArea for short, single-line values like names or emails; use TextInput instead.' },
-      { guidance: false, description: 'Don\'t rely solely on placeholder text to communicate the purpose of the field; placeholders disappear on focus and are not accessible labels.' },
-      { guidance: false, description: 'Don\'t show a status message without also setting the status type; the colored border and icon are what draw the user\'s attention to the message.' },
-      { guidance: false, description: 'Don\'t wrap a disabled TextArea in Tooltip to explain why it\'s disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
+      {
+        guidance: true,
+        description:
+          'Provide a visible label so users know what to enter. If the label must be hidden, set isLabelHidden with a descriptive label for screen readers.',
+      },
+      {
+        guidance: true,
+        description:
+          'Set maxLength with a character counter when there is a defined limit; it helps users stay within bounds before they submit.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use the status prop to surface validation feedback inline: show success when input is valid, warning for soft limits, and error for hard failures.',
+      },
+      {
+        guidance: true,
+        description:
+          'Add a description or placeholder to clarify expected content, like "Describe the issue in detail," but never rely on placeholder alone as the only label.',
+      },
+      {
+        guidance: false,
+        description:
+          'Avoid using TextArea for short, single-line values like names or emails; use TextInput instead.',
+      },
+      {
+        guidance: false,
+        description:
+          "Don't rely solely on placeholder text to communicate the purpose of the field; placeholders disappear on focus and are not accessible labels.",
+      },
+      {
+        guidance: false,
+        description:
+          "Don't show a status message without also setting the status type; the colored border and icon are what draw the user's attention to the message.",
+      },
+      {
+        guidance: false,
+        description:
+          "Don't wrap a disabled TextArea in Tooltip to explain why it's disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.",
+      },
     ],
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'TextArea',
   displayName: 'Text Area',
@@ -215,7 +382,8 @@ export const docsZh = {
     {
       name: 'changeAction',
       type: '(value: string, e: ChangeEvent<HTMLTextAreaElement>) => void | Promise<void>',
-      description: '在 React transition 内于 onChange 之后触发的异步操作。通过 useOptimistic 启用乐观更新。',
+      description:
+        '在 React transition 内于 onChange 之后触发的异步操作。通过 useOptimistic 启用乐观更新。',
     },
     {
       name: 'isLabelHidden',
@@ -237,13 +405,21 @@ export const docsZh = {
     {
       name: 'isRequired',
       type: 'boolean',
-      description: '在标签旁显示"必填"指示器并设置 aria-required。与 isOptional 互斥。',
+      description:
+        '在标签旁显示"必填"指示器并设置 aria-required。与 isOptional 互斥。',
       default: 'false',
     },
     {
       name: 'isDisabled',
       type: 'boolean',
       description: '禁用文本域，阻止交互。',
+      default: 'false',
+    },
+    {
+      name: 'isReadOnly',
+      type: 'boolean',
+      description:
+        '将文本域设为只读：值以完整不透明度显示并仍随表单提交，但无法编辑。与 isDisabled 不同，只读文本域不会变暗，并保留在 Tab 顺序中。同时设置时 isDisabled 优先。',
       default: 'false',
     },
     {
@@ -272,12 +448,21 @@ export const docsZh = {
     {
       name: 'maxLength',
       type: 'number',
-      description: '允许的最大字符数。设置后，在文本域下方显示字符计数器（当前/最大）。不原生强制限制：超出时计数器显示错误样式。',
+      description:
+        '允许的最大字符数。设置后，在文本域下方显示字符计数器（当前/最大）。不原生强制限制：超出时计数器显示错误样式。',
     },
     {
       name: 'status',
       type: "{ type: 'warning' | 'error' | 'success'; message?: string }",
-      description: '应用彩色边框和图标的状态指示器。可选消息显示在文本域下方的浮动框中。',
+      description:
+        '应用彩色边框和图标的状态指示器。可选消息显示在文本域下方的浮动框中。',
+    },
+    {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距；tooltip 隐藏消息框，并在状态图标上以提示气泡形式显示。',
+      default: "'attached'",
     },
     {
       name: 'labelTooltip',
@@ -328,47 +513,145 @@ export const docsZh = {
       description: '文本域失去焦点时触发的回调。',
     },
     {
+      name: 'autoComplete',
+      type: 'string',
+      description: '原生 autocomplete 属性，原样转发给文本域。不影响受控的值。',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX 样式，用于布局自定义（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象。',
+      description:
+        'StyleX 样式，用于布局自定义（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象。',
     },
   ],
   theming: {
     targets: [
-      {className: 'astryx-textarea', visualProps: ['size', 'status']},
+      {
+        className: 'astryx-text-area',
+        visualProps: ['size', 'status'],
+        states: ['disabled', 'readonly'],
+      },
+      {className: 'astryx-text-area-control'},
+      {className: 'astryx-text-area-counter'},
+      // Retained beside the canonical names for backwards compatibility.
+      // New themes use the canonical targets above.
+      {
+        className: 'astryx-textarea',
+        visualProps: ['size', 'status'],
+        states: ['disabled', 'readonly'],
+        deprecatedFor: 'text-area',
+      },
+    ],
+    vars: [
+      {
+        name: '--_textarea-inline-padding',
+        description:
+          '文本域文本的行内内边距。外层容器保持无内边距（padding: 0），使原生缩放手柄位于真正的角落；该变量在内部 <textarea> 上承载内边距，起始图标、状态/加载指示器和字符计数器都与之对齐。',
+        default: 'var(--spacing-2)',
+        private: true,
+      },
+    ],
+    derived: [
+      {
+        property: 'paddingInline',
+        vars: ['--_textarea-inline-padding'],
+        replaces: true,
+      },
     ],
   },
   usage: {
     description:
       'TextArea is a multi-line text input for collecting longer-form content like comments, descriptions, or messages. Use it when the expected input spans multiple lines. For shorter, single-line values, use TextInput.',
     bestPractices: [
-      { guidance: true, description: 'Provide a visible label so users know what to enter. If the label must be hidden, set isLabelHidden with a descriptive label for screen readers.' },
-      { guidance: true, description: 'Set maxLength with a character counter when there is a defined limit; it helps users stay within bounds before they submit.' },
-      { guidance: true, description: 'Use the status prop to surface validation feedback inline: show success when input is valid, warning for soft limits, and error for hard failures.' },
-      { guidance: true, description: 'Add a description or placeholder to clarify expected content, like "Describe the issue in detail," but never rely on placeholder alone as the only label.' },
-      { guidance: false, description: 'Avoid using TextArea for short, single-line values like names or emails; use TextInput instead.' },
-      { guidance: false, description: 'Don\'t rely solely on placeholder text to communicate the purpose of the field; placeholders disappear on focus and are not accessible labels.' },
-      { guidance: false, description: 'Don\'t show a status message without also setting the status type; the colored border and icon are what draw the user\'s attention to the message.' },
-      { guidance: false, description: 'Don\'t wrap a disabled TextArea in Tooltip to explain why it\'s disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
+      {
+        guidance: true,
+        description:
+          'Provide a visible label so users know what to enter. If the label must be hidden, set isLabelHidden with a descriptive label for screen readers.',
+      },
+      {
+        guidance: true,
+        description:
+          'Set maxLength with a character counter when there is a defined limit; it helps users stay within bounds before they submit.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use the status prop to surface validation feedback inline: show success when input is valid, warning for soft limits, and error for hard failures.',
+      },
+      {
+        guidance: true,
+        description:
+          'Add a description or placeholder to clarify expected content, like "Describe the issue in detail," but never rely on placeholder alone as the only label.',
+      },
+      {
+        guidance: false,
+        description:
+          'Avoid using TextArea for short, single-line values like names or emails; use TextInput instead.',
+      },
+      {
+        guidance: false,
+        description:
+          "Don't rely solely on placeholder text to communicate the purpose of the field; placeholders disappear on focus and are not accessible labels.",
+      },
+      {
+        guidance: false,
+        description:
+          "Don't show a status message without also setting the status type; the colored border and icon are what draw the user's attention to the message.",
+      },
+      {
+        guidance: false,
+        description:
+          "Don't wrap a disabled TextArea in Tooltip to explain why it's disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.",
+      },
     ],
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Multi-line text input for collecting longer user input.',
   usage: {
     description:
       'Multi-line input for comments, descriptions, messages. Use when input spans multiple lines; use TextInput for single-line.',
     bestPractices: [
-      { guidance: true, description: 'Visible label or isLabelHidden with descriptive label for screen readers.' },
-      { guidance: true, description: 'Set maxLength for character counter when a limit exists.' },
-      { guidance: true, description: 'Use status prop for inline validation: success, warning, error.' },
-      { guidance: true, description: 'Add description or placeholder for context; never placeholder alone as label.' },
-      { guidance: false, description: 'Avoid TextArea for single-line values; use TextInput.' },
-      { guidance: false, description: 'Don\'t use placeholder as only label; disappears on focus, not accessible.' },
-      { guidance: false, description: 'Don\'t show status message without status type; border and icon draw attention.' },
-      { guidance: false, description: 'Don\'t wrap a disabled TextArea in Tooltip to explain the disabled state; use the disabledMessage prop instead.' },
+      {
+        guidance: true,
+        description:
+          'Visible label or isLabelHidden with descriptive label for screen readers.',
+      },
+      {
+        guidance: true,
+        description: 'Set maxLength for character counter when a limit exists.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use status prop for inline validation: success, warning, error.',
+      },
+      {
+        guidance: true,
+        description:
+          'Add description or placeholder for context; never placeholder alone as label.',
+      },
+      {
+        guidance: false,
+        description: 'Avoid TextArea for single-line values; use TextInput.',
+      },
+      {
+        guidance: false,
+        description:
+          "Don't use placeholder as only label; disappears on focus, not accessible.",
+      },
+      {
+        guidance: false,
+        description:
+          "Don't show status message without status type; border and icon draw attention.",
+      },
+      {
+        guidance: false,
+        description:
+          "Don't wrap a disabled TextArea in Tooltip to explain the disabled state; use the disabledMessage prop instead.",
+      },
     ],
   },
   propDescriptions: {
@@ -376,19 +659,27 @@ export const docsDense = {
     label: 'Label text for textarea; always rendered for a11y.',
     value: 'Current textarea value.',
     onChange: 'Fired on textarea value change.',
-    changeAction: 'Async action after onChange in React transition. Enables useOptimistic.',
+    changeAction:
+      'Async action after onChange in React transition. Enables useOptimistic.',
     isLabelHidden: 'Visually hides label; keeps screen reader access.',
     description: 'Helper text between label+textarea.',
     isOptional: 'Shows "Optional" indicator. Mutually exclusive w/ isRequired.',
-    isRequired: 'Shows "Required" indicator+sets aria-required. Mutually exclusive w/ isOptional.',
+    isRequired:
+      'Shows "Required" indicator+sets aria-required. Mutually exclusive w/ isOptional.',
     isDisabled: 'Disables textarea, prevents interaction.',
+    isReadOnly:
+      'Read-only: value visible + still submits, but not editable. Unlike isDisabled: not dimmed, stays in tab order.',
     disabledMessage:
       'Explains why textarea is disabled. With isDisabled, shows tooltip on hover/focus + keeps textarea focusable via aria-disabled (field becomes read-only). Use instead of wrapping a disabled TextArea in Tooltip.',
     isLoading: 'Loading state w/ spinner inside input.',
     placeholder: 'Placeholder when textarea empty.',
     rows: 'Visible text rows.',
-    maxLength: 'Max chars allowed. Shows counter (current/max) below textarea. No native enforcement.',
-    status: 'Colored border+icon status. Optional floating message below textarea.',
+    maxLength:
+      'Max chars allowed. Shows counter (current/max) inside the container, bottom-right beneath the text. No native enforcement; over-limit shows red + a warning icon and is announced to screen readers.',
+    status:
+      'Colored border+icon status. Optional floating message below textarea.',
+    statusVariant:
+      'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     labelTooltip: 'Tooltip in info icon at label end.',
     startIcon: 'Icon inside leading edge of textarea wrapper.',
     hasSpellCheck: 'Enables/disables browser spell checking.',
@@ -398,6 +689,8 @@ export const docsDense = {
     htmlName: 'HTML name attr for form submissions.',
     onFocus: 'Callback on focus.',
     onBlur: 'Callback on blur.',
-    xstyle: 'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',
+    autoComplete: 'Native autocomplete attr, forwarded unchanged. Does not affect the controlled value.',
+    xstyle:
+      'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',
   },
 };

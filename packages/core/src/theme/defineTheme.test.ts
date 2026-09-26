@@ -2,13 +2,14 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import type {IconRegistry} from '../Icon/globalIconRegistry';
-import {
-  defineTheme,
-  generateThemeCSS,
-  generateThemeCSSFlat,
-  isDefinedTheme,
-} from './defineTheme';
+import type {DefinedTheme} from './defineTheme';
+import {defineTheme, generateThemeCSS, isDefinedTheme} from './defineTheme';
+import {resolveThemeToken} from './tokens';
 
+function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
+  const {prose, component} = generateThemeCSS(theme);
+  return [prose, component].filter(Boolean).join('\n\n');
+}
 describe('defineTheme', () => {
   it('creates a theme with name', () => {
     const theme = defineTheme({name: 'test'});
@@ -79,6 +80,134 @@ describe('defineTheme', () => {
     warn.mockRestore();
   });
 
+  it.each([
+    ['ocean-theme', '--ac-selection-ink'],
+    ['Theme.Owner', '--'],
+    ['ocean-theme', '--astryx-theme-ocean-theme-color-status-fill-accent'],
+  ])(
+    'accepts valid local token name %s / %s and preserves its exact bytes',
+    (themeName, token) => {
+      const theme = defineTheme({
+        name: themeName,
+        localTokens: {[token]: ['#0077b6', '#48cae4']},
+        components: {
+          badge: {
+            'variant:info': {backgroundColor: `var(${token})`},
+          },
+        },
+      });
+
+      expect(theme.tokens).not.toHaveProperty(token);
+      expect(theme.localTokens).toEqual({
+        [token]: 'light-dark(#0077b6, #48cae4)',
+      });
+      expect(theme.__localTokenOwners).toEqual({[token]: themeName});
+      expect(theme.__localTokenLineage).toEqual([themeName]);
+      expect(generateThemeTestCSS(theme)).toContain(
+        `${token}: light-dark(#0077b6, #48cae4);`,
+      );
+    },
+  );
+
+  it('rejects a name declared in both tokens and localTokens before CSS and token helpers can disagree', () => {
+    const token = '--astryx-theme-ocean-theme-color-status-fill-accent';
+    const legacyTheme = defineTheme({
+      name: 'ocean-theme',
+      tokens: {
+        // @ts-expect-error legacy tokens remain permissive at runtime
+        [token]: '#0077b6',
+      },
+    });
+
+    expect(generateThemeTestCSS(legacyTheme)).toContain(`${token}: #0077b6;`);
+    expect(resolveThemeToken(legacyTheme, token, {mode: 'light'})).toBe(
+      '#0077b6',
+    );
+
+    expect(() =>
+      defineTheme({
+        name: 'ocean-theme',
+        tokens: {
+          // @ts-expect-error legacy tokens remain permissive at runtime
+          [token]: '#0077b6',
+        },
+        localTokens: {
+          [token]: '#48cae4',
+        },
+      }),
+    ).toThrow(/both tokens and localTokens/);
+
+    expect(() =>
+      defineTheme({
+        name: 'ocean-theme',
+        localTokens: {'--color-accent': '#48cae4'},
+      }),
+    ).toThrow(/both tokens and localTokens/);
+  });
+
+  it('does not reinterpret unenrolled custom-property references', () => {
+    const theme = defineTheme({
+      name: 'legacy',
+      tokens: {
+        // @ts-expect-error legacy permissive token input remains unchanged
+        '--astryx-theme-legacy-color-old': '#123456',
+      },
+      components: {
+        badge: {
+          base: {color: 'var(--astryx-theme-missing-color-old)'},
+        },
+      },
+    });
+
+    expect(theme.tokens['--astryx-theme-legacy-color-old']).toBe('#123456');
+    expect(theme).not.toHaveProperty('localTokens');
+    expect(theme).not.toHaveProperty('__localTokenOwners');
+    expect(theme).not.toHaveProperty('__localTokenLineage');
+  });
+
+  it('rejects an invalid CSS custom-property name', () => {
+    expect(() =>
+      defineTheme({
+        name: 'ocean',
+        localTokens: {'selection-ink': '#123456'},
+      }),
+    ).toThrow(/valid CSS custom-property name/);
+  });
+
+  it('treats case-only and unrelated custom-property references as external', () => {
+    expect(() =>
+      defineTheme({
+        name: 'ocean',
+        localTokens: {'--Selection-Ink': '#123456'},
+        components: {
+          button: {
+            base: {
+              color: 'var(--selection-ink)',
+              backgroundColor: 'var(--product-surface)',
+            },
+          },
+        },
+      }),
+    ).not.toThrow();
+  });
+
+  it.each(['VAR', 'vAr'])(
+    'rejects cycles between local tokens using %s()',
+    functionName => {
+      const escaped = '--\\66 oo';
+      const other = '--astryx-theme-cycle-color-b';
+      expect(() =>
+        defineTheme({
+          name: 'cycle',
+          localTokens: {
+            [escaped]: `${functionName}(${other})`,
+            [other]: `${functionName}(${escaped})`,
+          },
+        }),
+      ).toThrow(/cycle detected/);
+    },
+  );
+
   it('includes icons in the theme', () => {
     const icons = {close: 'X'} as Partial<IconRegistry>;
     const theme = defineTheme({name: 'icons', icons});
@@ -100,7 +229,7 @@ describe('generateThemeCSS', () => {
         '--radius-container': '16px',
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('@scope');
     expect(css).toContain('--color-accent: light-dark(#0077B6, #48CAE4)');
     expect(css).toContain('--radius-container: 16px');
@@ -110,10 +239,33 @@ describe('generateThemeCSS', () => {
 
   it('includes prose rules even with no overrides', () => {
     const theme = defineTheme({name: 'empty'});
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('@scope');
     expect(css).toContain(':where(h1, h2, h3, h4, h5, h6)');
     expect(css).toContain('font-family: var(--font-family-heading)');
+  });
+
+  it('keeps the data palette out of a theme that never mentions it', () => {
+    // That the palette IS declared is covered by `seeds the whole palette
+    // once, at :root` in generateThemeRules.test.ts. It is theme-independent,
+    // so there is nothing about it a theme can be used to assert.
+    const {component} = generateThemeCSS(defineTheme({name: 'chartless'}));
+    expect(component).not.toContain('--color-data-');
+  });
+
+  it('puts only the named data token in the theme block, not its siblings', () => {
+    const theme = defineTheme({
+      name: 'brand-charts',
+      tokens: {'--color-data-categorical-blue': '#00A3FF'},
+    });
+    const {component} = generateThemeCSS(theme);
+    expect(component).toContain('--color-data-categorical-blue: #00A3FF;');
+    // Leaving the siblings out of the theme's own block is what lets a nested
+    // theme inherit a parent's override instead of shadowing it.
+    expect(component).not.toContain('--color-data-categorical-orange');
+    // Defaults reach the stylesheet without entering the theme's own tokens,
+    // which are what `astryx theme build` reports as overrides.
+    expect(theme.tokens['--color-data-categorical-orange']).toBeUndefined();
   });
 
   it('splits prose into reset layer and components into astryx-theme', () => {
@@ -192,7 +344,7 @@ describe('generateThemeCSS with components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-card {');
     expect(css).toContain('border-width: 2px');
     expect(css).toContain('border-color: var(--color-accent)');
@@ -211,8 +363,8 @@ describe('generateThemeCSS with components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
-    expect(css).toContain('.astryx-button.secondary');
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('.astryx-button[data-variant="secondary"]');
     expect(css).toContain('background-color: rgba(0,0,0,0.06)');
   });
 
@@ -227,8 +379,10 @@ describe('generateThemeCSS with components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
-    expect(css).toContain('.astryx-button.destructive.sm');
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain(
+      '.astryx-button[data-variant="destructive"][data-size="sm"]',
+    );
     expect(css).toContain('padding: 2px 6px');
   });
 
@@ -241,7 +395,7 @@ describe('generateThemeCSS with components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('font-family: "Playfair Display", serif');
     expect(css).not.toContain('fontFamily');
   });
@@ -254,7 +408,7 @@ describe('generateThemeCSS with components', () => {
         card: {base: {borderWidth: '1px'}},
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('@scope');
     expect(css).toContain('--radius-container: 20px');
     expect(css).toContain('.astryx-card {');
@@ -488,9 +642,9 @@ describe('custom status via components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
-    // parseStyleKey('status:neutral') → '.neutral', so CSS should have .astryx-banner.neutral
-    expect(css).toContain('.astryx-banner.neutral');
+    const css = generateThemeTestCSS(theme);
+    // The status axis remains explicit in the generated data-attribute selector.
+    expect(css).toContain('.astryx-banner[data-status="neutral"]');
     expect(css).toContain('background-color: var(--color-background-muted)');
   });
 
@@ -521,8 +675,8 @@ describe('custom status via components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
-    expect(css).toContain('.astryx-button.primary-muted');
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('.astryx-button[data-variant="primary-muted"]');
     expect(css).toContain('background-color: #ECF5FF');
   });
 
@@ -733,12 +887,14 @@ describe('pseudo-class overrides in components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     // Base rule
     expect(css).toContain('.astryx-radio {');
     expect(css).toContain('border-color: #8F9296');
     // Pseudo rule — separate selector
-    expect(css).toContain('.astryx-radio:hover {');
+    expect(css).toContain(
+      '.astryx-radio:hover:where(:not(:disabled,[aria-disabled="true"])) {',
+    );
     expect(css).toContain(
       'border-color: color-mix(in srgb, #8F9296, black 20%)',
     );
@@ -761,12 +917,16 @@ describe('pseudo-class overrides in components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
-    expect(css).toContain('.astryx-button.primary-muted {');
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('.astryx-button[data-variant="primary-muted"] {');
     expect(css).toContain('background-color: #ECF5FF');
-    expect(css).toContain('.astryx-button.primary-muted:hover {');
+    expect(css).toContain(
+      '.astryx-button[data-variant="primary-muted"]:hover:where(:not(:disabled,[aria-disabled="true"])) {',
+    );
     expect(css).toContain('background-color: #D6EBFF');
-    expect(css).toContain('.astryx-button.primary-muted:focus-visible {');
+    expect(css).toContain(
+      '.astryx-button[data-variant="primary-muted"]:focus-visible {',
+    );
     expect(css).toContain('outline: 2px solid var(--color-accent)');
   });
 
@@ -783,11 +943,13 @@ describe('pseudo-class overrides in components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     // Should NOT emit an empty base rule
     expect(css).not.toMatch(/\.astryx-switch\s*\{\s*\}/);
     // Should emit the pseudo rule
-    expect(css).toContain('.astryx-switch:hover {');
+    expect(css).toContain(
+      '.astryx-switch:hover:where(:not(:disabled,[aria-disabled="true"])) {',
+    );
   });
 
   it('keeps non-pseudo string values as regular properties', () => {
@@ -802,7 +964,7 @@ describe('pseudo-class overrides in components', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('.astryx-card {');
     expect(css).toContain('border-width: 2px');
     expect(css).toContain('border-color: var(--color-accent)');
@@ -821,7 +983,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     // Should NOT emit raw padding property (only the scoped token)
     expect(css).not.toMatch(/[^-]padding: 20px/);
     // Should emit component-scoped shorthand token
@@ -840,7 +1002,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('--astryx-card-padding-inline: 20px');
     expect(css).toContain('--astryx-card-padding-block-start: 16px');
     expect(css).toContain('--astryx-card-padding-block-end: 16px');
@@ -857,7 +1019,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('--astryx-card-padding-inline: 16px');
     expect(css).toContain('--astryx-card-padding-block-start: 24px');
     expect(css).toContain('--astryx-card-padding-block-end: 24px');
@@ -875,7 +1037,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     // Section — uniform → shorthand
     expect(css).toContain('--astryx-section-padding: 12px');
     // Dialog — asymmetric → directional
@@ -892,7 +1054,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     // Button is not a container — padding passes through as-is
     expect(css).toContain('padding: 8px 16px');
     expect(css).not.toContain('--astryx-button-padding');
@@ -911,7 +1073,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     // Non-padding props pass through
     expect(css).toContain('--_card-radius: 16px');
     expect(css).toContain('background-color: white');
@@ -929,7 +1091,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('--astryx-card-padding-block-start: 16px');
     expect(css).toContain('--astryx-card-padding-block-end: 12px');
     expect(css).toContain('--astryx-card-padding-inline: 20px');
@@ -944,7 +1106,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('--astryx-card-padding-block-start: 16px');
     expect(css).toContain('--astryx-card-padding-block-end: 24px');
   });
@@ -958,7 +1120,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('--astryx-card-padding-inline-start: 12px');
     expect(css).toContain('--astryx-card-padding-inline-end: 20px');
   });
@@ -972,7 +1134,7 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('--astryx-card-padding-block-start: 32px');
     expect(css).not.toContain('--astryx-card-padding-block-end');
     expect(css).not.toContain('--astryx-card-padding-inline');
@@ -987,13 +1149,71 @@ describe('container padding mapping', () => {
         },
       },
     });
-    const css = generateThemeCSSFlat(theme);
+    const css = generateThemeTestCSS(theme);
     expect(css).toContain('--astryx-card-padding-inline-start: 8px');
     expect(css).toContain('--astryx-card-padding-inline-end: 24px');
   });
 });
 
 describe('defineTheme extends', () => {
+  it('inherits enrollment, allows exact replacement, and owns new child names', () => {
+    const inherited = '--astryx-theme-base-theme-color-status-fill';
+    const childOwned = '--child-surface-raised';
+    const base = defineTheme({
+      name: 'base-theme',
+      localTokens: {[inherited]: '#123456'},
+    });
+    const child = defineTheme({
+      name: 'child-theme',
+      extends: base,
+      localTokens: {
+        [inherited]: '#654321',
+        [childOwned]: '#abcdef',
+      },
+    });
+
+    expect(child.localTokens).toEqual({
+      [inherited]: '#654321',
+      [childOwned]: '#abcdef',
+    });
+    expect(child.__localTokenOwners).toEqual({
+      [inherited]: 'base-theme',
+      [childOwned]: 'child-theme',
+    });
+    expect(child.__localTokenLineage).toEqual(['base-theme', 'child-theme']);
+  });
+
+  it('inherits enrollment when the child declares no local tokens', () => {
+    const base = defineTheme({name: 'base-theme', localTokens: {}});
+    const child = defineTheme({name: 'child-theme', extends: base});
+
+    expect(child.localTokens).toEqual({});
+    expect(child.__localTokenLineage).toEqual(['base-theme', 'child-theme']);
+  });
+
+  it('preserves legacy descendant names when they only inherit enrollment', () => {
+    const base = defineTheme({
+      name: 'base-theme',
+      localTokens: {
+        '--astryx-theme-base-theme-color-status-fill': '#123456',
+      },
+    });
+    const legacyChild = defineTheme({name: 'Legacy.Theme', extends: base});
+    const grandchild = defineTheme({name: 'grandchild', extends: legacyChild});
+
+    expect(legacyChild.localTokens).toEqual(base.localTokens);
+    expect(legacyChild.__localTokenLineage).toEqual([
+      'base-theme',
+      'Legacy.Theme',
+    ]);
+    expect(grandchild.localTokens).toEqual(base.localTokens);
+    expect(grandchild.__localTokenLineage).toEqual([
+      'base-theme',
+      'Legacy.Theme',
+      'grandchild',
+    ]);
+  });
+
   it('inherits tokens from base theme', () => {
     const base = defineTheme({
       name: 'base',
@@ -1126,5 +1346,131 @@ describe('defineTheme extends', () => {
     expect(child.tokens['--font-size-base']).not.toBe(
       base.tokens['--font-size-base'],
     );
+  });
+
+  it('inherits indicators when the child has none', () => {
+    const indicator = (() => null) as unknown as NonNullable<
+      DefinedTheme['indicators']
+    >['check'];
+    const base = defineTheme({name: 'base', indicators: {check: indicator}});
+    const child = defineTheme({name: 'child', extends: base});
+    expect(child.indicators?.check).toBe(indicator);
+  });
+
+  it('inherits onDark token overrides from base theme', () => {
+    const base = defineTheme({
+      name: 'base',
+      onDark: {tokens: {'--color-border': '#ffffff'}},
+    });
+    const child = defineTheme({name: 'child', extends: base});
+    expect(child.__onDark?.tokens['--color-border']).toBe('#ffffff');
+  });
+
+  it('inherits onLight token overrides from base theme', () => {
+    const base = defineTheme({
+      name: 'base',
+      onLight: {tokens: {'--color-border': '#000000'}},
+    });
+    const child = defineTheme({name: 'child', extends: base});
+    expect(child.__onLight?.tokens['--color-border']).toBe('#000000');
+  });
+
+  it('lets the child override an inherited onDark token', () => {
+    const base = defineTheme({
+      name: 'base',
+      onDark: {tokens: {'--color-border': '#ffffff', '--color-track': '#eee'}},
+    });
+    const child = defineTheme({
+      name: 'child',
+      extends: base,
+      onDark: {tokens: {'--color-border': '#cccccc'}},
+    });
+    expect(child.__onDark?.tokens['--color-border']).toBe('#cccccc');
+    expect(child.__onDark?.tokens['--color-track']).toBe('#eee');
+  });
+
+  it('inherits and deep-merges onDark component overrides', () => {
+    const base = defineTheme({
+      name: 'base',
+      onDark: {
+        components: {
+          card: {base: {borderColor: '#fff', backgroundColor: '#111'}},
+          badge: {base: {color: '#fff'}},
+        },
+      },
+    });
+    const child = defineTheme({
+      name: 'child',
+      extends: base,
+      onDark: {components: {card: {base: {borderColor: '#ccc'}}}},
+    });
+    expect(child.__onDark?.components?.card?.base).toEqual({
+      borderColor: '#ccc',
+      backgroundColor: '#111',
+    });
+    expect(child.__onDark?.components?.badge?.base).toEqual({color: '#fff'});
+  });
+
+  it('inherits __inputTokens so inherited [light, dark] tuples survive', () => {
+    const base = defineTheme({
+      name: 'base',
+      tokens: {'--color-accent': ['#111111', '#eeeeee']},
+    });
+    const child = defineTheme({
+      name: 'child',
+      extends: base,
+      tokens: {'--color-border': '#cccccc'},
+    });
+    expect(child.__inputTokens?.['--color-accent']).toEqual([
+      '#111111',
+      '#eeeeee',
+    ]);
+    expect(child.__inputTokens?.['--color-border']).toBe('#cccccc');
+  });
+
+  it('__inputTokens from the child win over the base', () => {
+    const base = defineTheme({
+      name: 'base',
+      tokens: {'--color-accent': ['#111111', '#eeeeee']},
+    });
+    const child = defineTheme({
+      name: 'child',
+      extends: base,
+      tokens: {'--color-accent': '#ff0000'},
+    });
+    expect(child.__inputTokens?.['--color-accent']).toBe('#ff0000');
+  });
+
+  // The failure that motivated these: `extends` resolving to `undefined` (a
+  // named import that silently missed — see the theme-build resolution tests)
+  // used to inherit nothing and build a stylesheet that looked fine.
+  it('throws when extends is present but undefined', () => {
+    expect(() =>
+      defineTheme({
+        name: 'child',
+        extends: undefined,
+        tokens: {'--color-accent': '#ff0000'},
+      }),
+    ).toThrow(/extends/);
+  });
+
+  it('throws when extends is not a theme', () => {
+    expect(() =>
+      defineTheme({
+        name: 'child',
+        // A module namespace object is the shape a bad import hands over.
+        extends: {foo: 'bar'} as unknown as DefinedTheme,
+      }),
+    ).toThrow(/extends/);
+  });
+
+  it('accepts a pre-built theme module as a base', () => {
+    const built = {
+      name: 'built-base',
+      __built: true,
+      tokens: {'--color-accent': '#111111'},
+    } as DefinedTheme;
+    const child = defineTheme({name: 'child', extends: built});
+    expect(child.tokens['--color-accent']).toBe('#111111');
   });
 });

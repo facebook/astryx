@@ -14,11 +14,17 @@ import {render, screen, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Button} from './Button';
 import {Badge} from '../Badge/Badge';
+import {InternationalizationProvider} from '../i18n';
 
 describe('Button', () => {
+  // Retained, narrowed: the shared contract proves the ROLE and the accessible
+  // NAME in a real engine (button.role.exposed, button.name.exposed), which is
+  // strictly stronger than asserting them here. What stays is the part it does
+  // not own — that Button renders `label` as text a person can read, rather
+  // than only as an accessible name.
   it('renders label as visible text', () => {
     render(<Button label="Click me" />);
-    expect(screen.getByRole('button', {name: 'Click me'})).toBeInTheDocument();
+    expect(screen.getByRole('button')).toHaveTextContent('Click me');
   });
 
   it('renders children instead of label when provided', () => {
@@ -41,7 +47,11 @@ describe('Button', () => {
     expect(screen.getByRole('button')).toBeInTheDocument();
   });
 
-  it('renders icon-only button with aria-label', () => {
+  // Retained, narrowed: the shared contract proves an icon-only button HAS an
+  // accessible name, computed by a real engine. What stays is Button's own
+  // mapping — `isIconOnly` routes `label` to `aria-label` instead of to text,
+  // and the icon is still rendered.
+  it('maps label to aria-label and keeps the icon when icon-only', () => {
     render(
       <Button
         label="Settings"
@@ -49,8 +59,9 @@ describe('Button', () => {
         isIconOnly
       />,
     );
-    const button = screen.getByRole('button', {name: 'Settings'});
+    const button = screen.getByRole('button');
     expect(button).toHaveAttribute('aria-label', 'Settings');
+    expect(button).not.toHaveTextContent('Settings');
     expect(screen.getByTestId('icon')).toBeInTheDocument();
   });
 
@@ -69,6 +80,16 @@ describe('Button', () => {
     const button = screen.getByRole('button');
     // Button should be disabled when loading
     expect(button).toBeDisabled();
+    expect(button.className).toContain('styles.inactive');
+    expect(button.className).not.toContain('styles.disabled');
+  });
+
+  it('keeps the dimmed treatment for explicitly disabled buttons', () => {
+    render(<Button label="Submit" isDisabled />);
+    const button = screen.getByRole('button');
+    expect(button).toBeDisabled();
+    expect(button.className).toContain('styles.inactive');
+    expect(button.className).toContain('styles.disabled');
   });
 
   it('sets aria-busy synchronously while clickAction is pending', async () => {
@@ -148,6 +169,19 @@ describe('Button', () => {
     const ref = vi.fn();
     render(<Button label="Test" ref={ref} />);
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLButtonElement));
+  });
+
+  it('keeps its merged ref attached across unrelated rerenders', () => {
+    const ref = vi.fn();
+    const {rerender} = render(<Button label="Test" ref={ref} />);
+    const button = screen.getByRole('button');
+    expect(ref).toHaveBeenLastCalledWith(button);
+    ref.mockClear();
+
+    rerender(<Button label="Test" variant="primary" ref={ref} />);
+
+    expect(ref).not.toHaveBeenCalled();
+    expect(screen.getByRole('button')).toBe(button);
   });
 
   // endContent tests
@@ -237,8 +271,6 @@ describe('Button', () => {
     render(<Button label="Test" variant="secondary" size="sm" />);
     const button = screen.getByRole('button');
     expect(button.className).toContain('astryx-button');
-    expect(button.className).toContain('secondary');
-    expect(button.className).toContain('sm');
     expect(button).toHaveAttribute('data-variant', 'secondary');
     expect(button).toHaveAttribute('data-size', 'sm');
   });
@@ -444,5 +476,84 @@ describe('Button', () => {
 
     rerender(<Button label="Submit" isLoading />);
     expect(liveRegion).toHaveTextContent('Loading');
+  });
+
+  it('localizes the loading announcement through the i18n catalog', () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{fr: {'@astryx.button.loading': 'Chargement'}}}>
+        <Button label="Submit" isLoading />
+      </InternationalizationProvider>,
+    );
+    const button = screen.getByRole('button');
+    // The Spinner also has role="status", so grab the live region explicitly.
+    const regions = button.querySelectorAll('[role="status"]');
+    const liveRegion = regions[regions.length - 1];
+    expect(liveRegion).toHaveTextContent('Chargement');
+  });
+
+  describe('elevation', () => {
+    it('reflects each elevation level as a theme attribute', () => {
+      const attrFor = (elevation: 'none' | 'low' | 'med' | 'high') => {
+        const {container} = render(
+          <Button label="Save" elevation={elevation} />,
+        );
+        return container
+          .querySelector('button')!
+          .getAttribute('data-elevation');
+      };
+      expect(attrFor('none')).toBe('none');
+      expect(attrFor('low')).toBe('low');
+      expect(attrFor('med')).toBe('med');
+      expect(attrFor('high')).toBe('high');
+    });
+
+    it('renders a distinct class for each elevation level', () => {
+      const classFor = (elevation: 'none' | 'low' | 'med' | 'high') => {
+        const {container} = render(
+          <Button label="Save" elevation={elevation} />,
+        );
+        return container.querySelector('button')!.className;
+      };
+      const classes = new Set([
+        classFor('none'),
+        classFor('low'),
+        classFor('med'),
+        classFor('high'),
+      ]);
+      expect(classes.size).toBe(4);
+    });
+
+    it('defaults to flat (elevation none)', () => {
+      const {container} = render(<Button label="Save" />);
+      const button = container.querySelector('button')!;
+      expect(button).toHaveAttribute('data-elevation', 'none');
+      const {container: none} = render(
+        <Button label="Save" elevation="none" />,
+      );
+      expect(button.className).toBe(none.querySelector('button')!.className);
+    });
+  });
+
+  it('exposes aria-busy on the link-rendered button while loading', () => {
+    // Non-interruptible loading disables the button, which falls back to
+    // <button> rendering — so an anchor only shows loading when interruptible.
+    render(
+      <Button
+        label="Docs"
+        href="https://example.com"
+        isLoading
+        isInterruptible
+      />,
+    );
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('does not set aria-busy on the link-rendered button when not loading', () => {
+    render(<Button label="Docs" href="https://example.com" />);
+    const link = screen.getByRole('link');
+    expect(link).not.toHaveAttribute('aria-busy');
   });
 });

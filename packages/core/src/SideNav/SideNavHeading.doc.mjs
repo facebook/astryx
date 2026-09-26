@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'SideNavHeading',
@@ -8,6 +8,9 @@ export const docs = {
   displayName: 'Side Nav Heading',
   isHiddenFromOverview: true,
   description: 'Product/suite/account heading with smart interaction boundary logic for links and a menu popover.',
+  playground: {
+    defaults: {heading: 'Acme Console', subheading: 'Production'},
+  },
   props: [
     {
       name: 'heading',

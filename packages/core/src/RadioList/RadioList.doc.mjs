@@ -1,19 +1,21 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'RadioList',
   displayName: 'Radio List',
   group: 'Radio',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: ["radiolist","radio","radiogroup","radiobutton","optionlist","singlechoice","choicelist"],
   theming: {
     targets: [
       {className: 'astryx-radio-list', visualProps: ['orientation', 'size']},
-      {className: 'astryx-radio-list-item'},
-      {className: 'astryx-radio', visualProps: ['size'], states: ['checked', 'disabled']},
-      {className: 'astryx-radio-dot', visualProps: ['size']},
+      {className: 'astryx-radio-list-item', visualProps: ['size'], states: ['selected', 'disabled']},
+      {className: 'astryx-radio-indicator', visualProps: ['size'], states: ['checked', 'disabled']},
+      {className: 'astryx-radio-indicator-dot', visualProps: ['size']},
+      {className: 'astryx-radio', visualProps: ['size'], states: ['checked', 'disabled'], deprecatedFor: 'radio-indicator'},
+      {className: 'astryx-radio-dot', visualProps: ['size'], deprecatedFor: 'radio-indicator-dot'},
     ],
   },
   description: 'Radio group container with field integration for label, description, and status.',
@@ -115,6 +117,12 @@ export const docs = {
       description: 'Tooltip text for an info icon next to the label.',
     },
     {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
@@ -124,6 +132,17 @@ export const docs = {
     {name: 'RadioListItem'},
   ],
   usage: {
+    accessibility: [
+      {
+        name: 'Radio circle',
+        category: 'Color contrast',
+        criterion: '1.4.11 Non-text Contrast',
+        requirement: '3:1',
+        states: ['Rest', 'Hover', 'Pointer down', 'Selected'],
+        description:
+          'The circle edge (unselected) and fill (selected) must have at least 3:1 contrast with the surface behind them. For Hover and Pointer down, measure the final colors after the tint and the pressed overlay are applied.',
+      },
+    ],
     description:
       'A group of options where only one can be selected at a time. All options are visible at once, making it easy to compare choices. Use it when users need to pick one option from a small set.',
     bestPractices: [
@@ -143,7 +162,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description:
@@ -165,7 +184,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Radio group component for single-value selection from list of options.',

@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file Searchable home catalog for the Astryx sandbox.
+ * @input The central sandbox category registry and shared project cards.
+ * @output A searchable, category-filtered catalog of non-template pages.
+ * @position Root page for discovering sandbox projects and tools.
+ */
+
 'use client';
 
 import {useState, useMemo} from 'react';
@@ -16,9 +23,13 @@ import {categories} from '../sandboxPages';
 import {ProjectCard} from '../ProjectCard';
 import {SearchIcon} from '../icons';
 
-const CATEGORY_FILTERS = ['All', ...categories.map(c => c.label)];
+const homeCategories = categories.filter(
+  category => category.slug !== 'templates',
+);
 
-const allPages = categories.flatMap(c =>
+const CATEGORY_FILTERS = ['All', ...homeCategories.map(c => c.label)];
+
+const allPages = homeCategories.flatMap(c =>
   c.pages.map(p => ({...p, category: c.label})),
 );
 
@@ -74,7 +85,7 @@ export default function Home() {
       }
       items.push(page);
     }
-    return categories
+    return homeCategories
       .filter(c => map.has(c.label))
       .map(c => ({category: c.label, pages: map.get(c.label) ?? []}));
   }, [activeTab, filtered]);
@@ -104,12 +115,7 @@ export default function Home() {
                 value={activeTab}
                 onChange={v => setActiveTab(v ?? 'All')}>
                 {CATEGORY_FILTERS.map(cat => (
-                  <ToggleButton
-                    key={cat}
-                    label={cat}
-                    value={cat}
-                    size="lg"
-                  />
+                  <ToggleButton key={cat} label={cat} value={cat} size="lg" />
                 ))}
               </ToggleButtonGroup>
             </VStack>

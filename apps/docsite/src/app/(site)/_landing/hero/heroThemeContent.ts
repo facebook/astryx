@@ -21,11 +21,6 @@ import {BRAND_BLUE} from '@/constants';
 // Sentinel for the docsite's local brand theme (not an @astryxdesign/theme-* package).
 const ASTRYX = 'astryx';
 
-// Shared Astryx asset CDN. The per-theme reel cards pull the same product photos
-// the /themes showcase uses (see themeShowcaseContent.ts) so the hero and the
-// gallery stay in sync.
-const IMAGE_CDN = 'https://lookaside.facebook.com/assets/astryx';
-
 export interface HeroThemeContent {
   /** Product card (image + title/description + price). */
   product: {
@@ -158,18 +153,18 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
   },
   '@astryxdesign/theme-butter': {
     product: {
-      image: `${IMAGE_CDN}/Butter-Croissant.png`,
+      image: '/images/butter/preview-watch.png',
       title: 'Butter croissant',
       description: 'Flaky, laminated layers baked golden each morning.',
       price: '$6',
     },
     feature: {
-      image: `${IMAGE_CDN}/Butter-Waffle.png`,
+      image: '/images/butter/preview-backpack.png',
       title: 'Belgian waffle',
       price: '$8',
     },
     mini: {
-      image: `${IMAGE_CDN}/Butter-Pancake.png`,
+      image: '/images/butter/preview-headphones.png',
       title: 'Pancakes',
       description: 'Stacked tall with melting butter.',
     },
@@ -179,18 +174,18 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
   },
   '@astryxdesign/theme-matcha': {
     product: {
-      image: `${IMAGE_CDN}/matcha-product-1.png`,
+      image: '/images/matcha/preview-watch.png',
       title: 'Matcha',
       description: 'Stone-ground ceremonial matcha over cold milk.',
       price: '$6',
     },
     feature: {
-      image: `${IMAGE_CDN}/matcha-product-2.png`,
+      image: '/images/matcha/preview-headphones.png',
       title: 'Strawberry matcha',
       price: '$7',
     },
     mini: {
-      image: `${IMAGE_CDN}/matcha-product-4.png`,
+      image: '/images/matcha/preview-tumbler.png',
       title: 'Ube matcha',
       description: 'Ube and cream matcha.',
     },
@@ -205,18 +200,18 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
   },
   '@astryxdesign/theme-gothic': {
     product: {
-      image: `${IMAGE_CDN}/Gothic-1.png`,
+      image: '/images/gothic/preview-watch.png',
       title: 'Sea holly',
       description: 'A single preserved thistle stem with a steely bloom.',
       price: '$24',
     },
     feature: {
-      image: `${IMAGE_CDN}/Gothic-2.png`,
+      image: '/images/gothic/preview-headphones.png',
       title: 'Garden rose',
       price: '$18',
     },
     mini: {
-      image: `${IMAGE_CDN}/Gothic-3.png`,
+      image: '/images/gothic/preview-backpack.png',
       title: 'Ranunculus',
       description: 'Layered petals in a soft mauve.',
     },
@@ -226,18 +221,18 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
   },
   '@astryxdesign/theme-y2k': {
     product: {
-      image: `${IMAGE_CDN}/Y2K-Phone.png`,
+      image: '/images/y2k/preview-watch.png',
       title: 'Phone',
       description: 'Iridescent clamshell with a rainbow screen.',
       price: '$18',
     },
     feature: {
-      image: `${IMAGE_CDN}/Y2K-Star.png`,
+      image: '/images/y2k/preview-headphones.png',
       title: 'Glow star set',
       price: '$12',
     },
     mini: {
-      image: `${IMAGE_CDN}/Y2K-Butterfly.png`,
+      image: '/images/y2k/preview-backpack.png',
       title: 'Butterfly',
       description: 'Sparkly stick-on in pastel chrome.',
     },

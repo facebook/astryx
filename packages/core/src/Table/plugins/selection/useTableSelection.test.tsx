@@ -7,13 +7,14 @@
  * @position Test file; validates selection behavior (checkboxes, aria, select-all)
  */
 
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, vi} from 'vitest';
 import {useState} from 'react';
-import {render, screen, within} from '@testing-library/react';
+import {act, render, renderHook, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Table} from '../../Table';
 import {useTableSelection} from './useTableSelection';
-import type {TableColumn} from '../../types';
+import {colorVars} from '../../../theme/tokens.stylex';
+import type {BodyRowRenderProps, TableColumn} from '../../types';
 
 // =============================================================================
 // Test Data
@@ -40,9 +41,13 @@ const selectableColumns: TableColumn<SelectableUser>[] = [
 function SelectionTable({
   getIsItemSelectable,
   getIsItemEnabled,
+  getRowLabel,
+  hasRowHighlight,
 }: {
   getIsItemSelectable?: (item: SelectableUser) => boolean;
   getIsItemEnabled?: (item: SelectableUser) => boolean;
+  getRowLabel?: (item: SelectableUser) => string;
+  hasRowHighlight?: boolean;
 }) {
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
@@ -75,6 +80,8 @@ function SelectionTable({
     },
     getIsItemSelectable,
     getIsItemEnabled,
+    getRowLabel,
+    hasRowHighlight,
   });
 
   return (
@@ -107,6 +114,19 @@ describe('useTableSelection', () => {
     render(<SelectionTable />);
     const rowCheckboxes = screen.getAllByLabelText('Select row');
     expect(rowCheckboxes).toHaveLength(3);
+  });
+
+  it('derives per-row accessible names from getRowLabel', () => {
+    render(<SelectionTable getRowLabel={item => item.name} />);
+    expect(screen.getByLabelText('Select Alice')).toBeInTheDocument();
+    expect(screen.getByLabelText('Select Bob')).toBeInTheDocument();
+    expect(screen.getByLabelText('Select Charlie')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Select row')).not.toBeInTheDocument();
+  });
+
+  it('keeps the "Select all rows" header label when getRowLabel is provided', () => {
+    render(<SelectionTable getRowLabel={item => item.name} />);
+    expect(screen.getByLabelText('Select all rows')).toBeInTheDocument();
   });
 
   it('toggles individual row selection on click', async () => {
@@ -193,5 +213,197 @@ describe('useTableSelection', () => {
     const headerRow = screen.getAllByRole('row')[0];
     const headers = within(headerRow).getAllByRole('columnheader');
     expect(headers).toHaveLength(3);
+  });
+
+  describe('hasRowHighlight', () => {
+    const selectedBgColor = colorVars['--color-accent-muted'];
+
+    it('paints a checked row with the accent wash by default', async () => {
+      const user = userEvent.setup();
+      render(<SelectionTable />);
+
+      await user.click(screen.getAllByLabelText('Select row')[0]);
+
+      const row = screen.getAllByRole('row')[1];
+      expect(row.style.backgroundColor).toBe(selectedBgColor);
+      expect(row).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('leaves the row background alone when hasRowHighlight is false', async () => {
+      const user = userEvent.setup();
+      render(<SelectionTable hasRowHighlight={false} />);
+
+      await user.click(screen.getAllByLabelText('Select row')[0]);
+
+      const row = screen.getAllByRole('row')[1];
+      expect(row.style.backgroundColor).toBe('');
+      // The wash is opt-out; the semantics are not.
+      expect(row).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('clears an already-painted row when the flag flips to false', async () => {
+      const user = userEvent.setup();
+      const {rerender} = render(<SelectionTable />);
+
+      await user.click(screen.getAllByLabelText('Select row')[0]);
+      expect(screen.getAllByRole('row')[1].style.backgroundColor).toBe(
+        selectedBgColor,
+      );
+
+      rerender(<SelectionTable hasRowHighlight={false} />);
+
+      const row = screen.getAllByRole('row')[1];
+      expect(row.style.backgroundColor).toBe('');
+      expect(row).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('repaints an already-checked row when the flag flips back to true', async () => {
+      const user = userEvent.setup();
+      const {rerender} = render(<SelectionTable hasRowHighlight={false} />);
+
+      await user.click(screen.getAllByLabelText('Select row')[0]);
+      rerender(<SelectionTable hasRowHighlight />);
+
+      expect(screen.getAllByRole('row')[1].style.backgroundColor).toBe(
+        selectedBgColor,
+      );
+    });
+
+    it('never paints unchecked rows in either mode', async () => {
+      const user = userEvent.setup();
+      const {rerender} = render(<SelectionTable />);
+
+      await user.click(screen.getAllByLabelText('Select row')[0]);
+      expect(screen.getAllByRole('row')[2].style.backgroundColor).toBe('');
+      expect(screen.getAllByRole('row')[2]).not.toHaveAttribute(
+        'aria-selected',
+      );
+
+      rerender(<SelectionTable hasRowHighlight={false} />);
+      expect(screen.getAllByRole('row')[2].style.backgroundColor).toBe('');
+      expect(screen.getAllByRole('row')[2]).not.toHaveAttribute(
+        'aria-selected',
+      );
+    });
+
+    // A pinned cell paints over the row, then replays whatever the row
+    // published as --table-row-overlay. Without the variable the wash simply
+    // stops at the freeze line, so it has to track the background exactly.
+    describe('--table-row-overlay', () => {
+      const readOverlay = (row: HTMLElement) =>
+        row.style.getPropertyValue('--table-row-overlay');
+
+      it('publishes the wash so pinned cells can replay it', async () => {
+        const user = userEvent.setup();
+        render(<SelectionTable />);
+
+        await user.click(screen.getAllByLabelText('Select row')[0]);
+
+        expect(readOverlay(screen.getAllByRole('row')[1])).toBe(
+          selectedBgColor,
+        );
+      });
+
+      it('publishes nothing when the row is not painted', async () => {
+        const user = userEvent.setup();
+        render(<SelectionTable hasRowHighlight={false} />);
+
+        await user.click(screen.getAllByLabelText('Select row')[0]);
+
+        expect(readOverlay(screen.getAllByRole('row')[1])).toBe('');
+      });
+
+      it('withdraws the variable when a row is unchecked', async () => {
+        const user = userEvent.setup();
+        render(<SelectionTable />);
+
+        const checkbox = screen.getAllByLabelText('Select row')[0];
+        await user.click(checkbox);
+        await user.click(checkbox);
+
+        expect(readOverlay(screen.getAllByRole('row')[1])).toBe('');
+      });
+
+      it('tracks the background when the flag flips', async () => {
+        const user = userEvent.setup();
+        const {rerender} = render(<SelectionTable />);
+
+        await user.click(screen.getAllByLabelText('Select row')[0]);
+        rerender(<SelectionTable hasRowHighlight={false} />);
+        expect(readOverlay(screen.getAllByRole('row')[1])).toBe('');
+
+        rerender(<SelectionTable hasRowHighlight />);
+        expect(readOverlay(screen.getAllByRole('row')[1])).toBe(
+          selectedBgColor,
+        );
+      });
+
+      it('leaves unchecked rows without the variable', async () => {
+        const user = userEvent.setup();
+        render(<SelectionTable />);
+
+        await user.click(screen.getAllByLabelText('Select row')[0]);
+
+        expect(readOverlay(screen.getAllByRole('row')[2])).toBe('');
+      });
+    });
+  });
+
+  it('unsubscribes detached row refs instead of accumulating listeners', () => {
+    const getIsItemSelected = vi.fn(() => false);
+    const {result, rerender} = renderHook(() =>
+      useTableSelection<SelectableUser>({
+        getIsItemSelected,
+        onSelectItem: vi.fn(),
+        onSelectAll: vi.fn(),
+        getIsAllSelected: () => false,
+      }),
+    );
+
+    const initialProps: BodyRowRenderProps = {
+      htmlProps: {},
+      xstyle: [],
+      children: null,
+    };
+    const row = document.createElement('tr');
+    document.body.append(row);
+
+    let detach: (() => void) | undefined;
+
+    // Simulate React replacing the callback ref as this row re-renders.
+    // Each detach must unsubscribe the previous ref before the next attaches.
+    for (let i = 0; i < 3; i++) {
+      act(() => {
+        detach?.();
+      });
+
+      const transformed = result.current.transformBodyRow?.(
+        initialProps,
+        selectableUsers[0],
+        0,
+      );
+      expect(transformed?.ref).toBeTypeOf('function');
+
+      act(() => {
+        const cleanup = (
+          transformed?.ref as React.RefCallback<HTMLTableRowElement>
+        )(row);
+        expect(cleanup).toBeTypeOf('function');
+        detach = cleanup as () => void;
+      });
+    }
+
+    getIsItemSelected.mockClear();
+    rerender();
+    expect(getIsItemSelected).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      detach?.();
+    });
+    getIsItemSelected.mockClear();
+    rerender();
+    expect(getIsItemSelected).not.toHaveBeenCalled();
+
+    row.remove();
   });
 });

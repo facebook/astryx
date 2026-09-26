@@ -336,25 +336,108 @@ export interface UniversalScore {
   design?: DimensionScore<DesignMetrics> | null;
 }
 
+export type MetricQuality =
+  'measured' | 'derived' | 'estimated' | 'unavailable';
+
+export interface DurationMetric {
+  valueMs: number | null;
+  source:
+    | 'provenance'
+    | 'provenance-timestamps'
+    | 'result-metadata'
+    | 'filesystem'
+    | 'unavailable';
+  quality: MetricQuality;
+}
+
+export interface TokenMetric {
+  inputTokens: number | null;
+  outputTokens: number | null;
+  source: string;
+  quality: 'complete' | 'incomplete' | 'estimated';
+  complete: boolean;
+}
+
+export interface ExecutionProvenanceFilter {
+  harness?: string;
+  model?: string;
+  fixture?: string;
+  condition?: string;
+}
+
+export interface UniversalRunSummary {
+  promptId: string;
+  taskId: string;
+  harness: string;
+  model: string;
+  effort?: string;
+  fixture?: string;
+  condition?: string;
+  rep?: number;
+  executionStatus?: string;
+  score: UniversalScore;
+  duration: DurationMetric;
+  usage: TokenMetric;
+}
+
+export interface ExecutionGroupSummary {
+  dimensions: {
+    harness?: string;
+    model?: string;
+    fixture?: string;
+    condition?: string;
+  };
+  runCount: number;
+  averageScore: number;
+  averageDurationMs: number | null;
+  usage: {
+    complete: boolean;
+    completeRuns: number;
+    incompleteRuns: number;
+    inputTokens: number | null;
+    outputTokens: number | null;
+  };
+}
+
+export interface ExecutionBreakdown {
+  runs: UniversalRunSummary[];
+  byHarnessModel: ExecutionGroupSummary[];
+  byFixture: ExecutionGroupSummary[];
+  byCondition: ExecutionGroupSummary[];
+}
+
+export interface PromptCostMetrics {
+  durationMs: number;
+  durationSource: DurationMetric['source'];
+  durationQuality: MetricQuality;
+  outputChars: number;
+  outputLines: number;
+  docsRead: string[];
+  inputTokens: number | null;
+  outputTokens: number | null;
+  tokenSource: string;
+  tokenQuality: TokenMetric['quality'];
+  usageComplete: boolean;
+  /** Legacy estimates retained independently of selected provenance usage. */
+  estimatedInputTokens: number;
+  estimatedOutputTokens: number;
+}
+
 export interface CostMetrics {
   totalDurationMs: number;
   avgDurationMs: number;
   avgOutputChars: number;
   avgOutputLines: number;
   avgDocsRead: number;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  usageComplete: boolean;
+  completeUsageRuns: number;
+  incompleteUsageRuns: number;
+  durationSources: Record<string, number>;
   estimatedInputTokens: number;
   estimatedOutputTokens: number;
-  byPrompt: Record<
-    string,
-    {
-      durationMs: number;
-      outputChars: number;
-      outputLines: number;
-      docsRead: string[];
-      estimatedInputTokens: number;
-      estimatedOutputTokens: number;
-    }
-  >;
+  byPrompt: Record<string, PromptCostMetrics>;
 }
 
 export interface UniversalAggregate {
@@ -364,6 +447,7 @@ export interface UniversalAggregate {
   byCategory: Record<string, Record<UniversalDimension, number>>;
   darkModeRate: number;
   cost?: CostMetrics;
+  execution?: ExecutionBreakdown;
 }
 
 export type TargetName = 'astryx' | 'astryx-tailwind' | 'baseline' | 'html';

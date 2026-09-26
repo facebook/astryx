@@ -16,6 +16,7 @@
 import {useRef, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, radiusVars} from '../../../theme/tokens.stylex';
+import {focusOutlineProps} from '../../../utils/focusOutline.stylex';
 import {Icon} from '../../../Icon';
 import {resolveContextActions} from '../../tableContextMenu';
 import {useTranslator, type TranslatorFn} from '../../../i18n';
@@ -124,18 +125,26 @@ const sortStyles = stylex.create({
     border: 'none',
     padding: 0,
     margin: 0,
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     font: 'inherit',
     color: 'inherit',
     width: '100%',
     height: '100%',
     textAlign: 'inherit',
-    outline: {
-      default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: '2px',
     borderRadius: radiusVars['--radius-inner'],
+  },
+  // The button is a full-width flex container, so the `textAlign` a column's
+  // `align` puts on the <th> cannot position its contents. Mirror the column
+  // alignment onto the main axis, or an `align: 'end'` numeric column ends up
+  // with a left-hugging header over right-aligned figures.
+  buttonAlignCenter: {
+    justifyContent: 'center',
+  },
+  buttonAlignEnd: {
+    justifyContent: 'flex-end',
   },
   iconWrapperUnsorted: {
     display: 'inline-flex',
@@ -307,7 +316,14 @@ function SortHeaderButton<T extends Record<string, unknown>>({
   return (
     <button
       type="button"
-      {...stylex.props(sortStyles.button)}
+      {...focusOutlineProps.focusVisible(
+        sortStyles.button,
+        column.align === 'end'
+          ? sortStyles.buttonAlignEnd
+          : column.align === 'center'
+            ? sortStyles.buttonAlignCenter
+            : null,
+      )}
       aria-label={ariaLabel}
       onClick={handleClick}>
       <span>{children}</span>

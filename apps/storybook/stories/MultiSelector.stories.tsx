@@ -2,7 +2,9 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
+import {Button} from '@astryxdesign/core/Button';
 import {MultiSelector} from '@astryxdesign/core/MultiSelector';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
 
 const meta: Meta<typeof MultiSelector> = {
   title: 'Core/MultiSelector',
@@ -24,11 +26,17 @@ const meta: Meta<typeof MultiSelector> = {
     description: {control: 'text'},
     placeholder: {control: 'text'},
     size: {control: 'radio', options: ['sm', 'md', 'lg']},
+    variant: {control: 'radio', options: ['input', 'ghost']},
+    presentation: {
+      control: 'radio',
+      options: ['popover', 'bottom-sheet', 'adaptive'],
+    },
     triggerDisplay: {
       control: 'radio',
       options: ['count', 'labels', 'badges'],
     },
     isDisabled: {control: 'boolean'},
+    isReadOnly: {control: 'boolean'},
     disabledMessage: {control: 'text'},
     isOptional: {control: 'boolean'},
     isRequired: {control: 'boolean'},
@@ -59,6 +67,36 @@ export const Default: Story = {
   },
 };
 
+export const ReadOnly: Story = {
+  args: {
+    label: 'Assigned teams',
+    options: ['Design', 'Engineering', 'Marketing'],
+    value: ['Design', 'Engineering'],
+    onChange: () => {},
+    hasClear: true,
+    hasSearch: true,
+    htmlName: 'teams',
+    triggerDisplay: 'labels',
+    isReadOnly: true,
+  },
+};
+
+export const BottomSheetPresentation: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>([]);
+    return (
+      <MultiSelector
+        label="Teams"
+        options={['Design', 'Engineering', 'Marketing', 'Operations']}
+        value={value}
+        onChange={setValue}
+        hasSelectAll
+        presentation="bottom-sheet"
+      />
+    );
+  },
+};
+
 // With sections
 export const Sections: Story = {
   render: () => {
@@ -66,6 +104,42 @@ export const Sections: Story = {
     return (
       <MultiSelector
         label="Permissions"
+        options={[
+          {
+            type: 'section',
+            title: 'Read',
+            options: [
+              {value: 'read_posts', label: 'Read posts'},
+              {value: 'read_comments', label: 'Read comments'},
+              {value: 'read_users', label: 'Read users'},
+            ],
+          },
+          {
+            type: 'section',
+            title: 'Write',
+            options: [
+              {value: 'write_posts', label: 'Write posts'},
+              {value: 'write_comments', label: 'Write comments'},
+            ],
+          },
+        ]}
+        value={value}
+        onChange={setValue}
+        placeholder="Select permissions..."
+      />
+    );
+  },
+  decorators: [Story => <Story />],
+};
+
+// Searchable with sections: filtering keeps group headers and drops empty groups
+export const SearchableSections: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>([]);
+    return (
+      <MultiSelector
+        label="Permissions"
+        hasSearch
         options={[
           {
             type: 'section',
@@ -112,7 +186,8 @@ export const SelectAll: Story = {
   decorators: [Story => <Story />],
 };
 
-// Searchable
+// Searchable: the dropdown search field has a built-in leading magnifier icon
+// and a trailing clear (✕) button that appears once a query is typed.
 export const Searchable: Story = {
   render: () => {
     const [value, setValue] = useState<string[]>([]);
@@ -137,6 +212,50 @@ export const Searchable: Story = {
         hasSelectAll
         placeholder="Select countries..."
       />
+    );
+  },
+  decorators: [Story => <Story />],
+};
+
+// Empty states
+export const EmptyStates: Story = {
+  render: () => {
+    const [a, setA] = useState<string[]>([]);
+    const [b, setB] = useState<string[]>([]);
+    const [c, setC] = useState<string[]>([]);
+    const [d, setD] = useState<string[]>([]);
+    return (
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 16, width: 300}}>
+        <MultiSelector
+          label="No options (default)"
+          options={[]}
+          value={a}
+          onChange={setA}
+        />
+        <MultiSelector
+          label="No options (custom)"
+          options={[]}
+          value={b}
+          onChange={setB}
+          emptyText="No countries loaded yet"
+        />
+        <MultiSelector
+          label="Search for xyz (custom)"
+          options={['Canada', 'France', 'Japan']}
+          value={c}
+          onChange={setC}
+          hasSearch
+          emptySearchText="Nothing matches that country"
+        />
+        <MultiSelector
+          label="Loading (no message)"
+          options={[]}
+          value={d}
+          onChange={setD}
+          isLoading
+        />
+      </div>
     );
   },
   decorators: [Story => <Story />],
@@ -226,6 +345,51 @@ export const DisabledWithMessage: Story = {
         disabledMessage="Select a table before choosing columns"
         placeholder="Select columns..."
       />
+    );
+  },
+  decorators: [Story => <Story />],
+};
+
+// Ghost variant for toolbar composition
+export const GhostVariant: Story = {
+  render: () => {
+    const [columns, setColumns] = useState<string[]>(['Name', 'Email']);
+    const [filters, setFilters] = useState<string[]>(['Active']);
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          width: 'max-content',
+        }}>
+        <Button label="Refresh" variant="ghost" />
+        <MultiSelector
+          label="Columns"
+          isLabelHidden
+          variant="ghost"
+          size="md"
+          options={['Name', 'Email', 'Role', 'Status', 'Created']}
+          value={columns}
+          onChange={setColumns}
+          triggerDisplay="labels"
+          placeholder="Columns"
+        />
+        <MultiSelector
+          label="Status"
+          isLabelHidden
+          variant="ghost"
+          size="md"
+          options={['Active', 'Inactive', 'Pending', 'Archived']}
+          value={filters}
+          onChange={setFilters}
+          triggerDisplay="labels"
+          placeholder="Status"
+          status={{type: 'warning', message: 'Some filters hide archived rows'}}
+          statusVariant="tooltip"
+        />
+        <Button label="Export" variant="ghost" />
+      </div>
     );
   },
   decorators: [Story => <Story />],
@@ -403,5 +567,115 @@ export const Clearable: Story = {
   args: {
     label: 'Technologies',
     placeholder: 'Select technologies...',
+  },
+};
+
+export const StatusVariantComparison: Story = {
+  render: () => {
+    const [a, setA] = useState<string[]>([]);
+    const [b, setB] = useState<string[]>([]);
+    return (
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 24, width: 300}}>
+        <MultiSelector
+          label="Attached (default)"
+          options={['Name', 'Email', 'Role']}
+          value={a}
+          onChange={setA}
+          status={{type: 'error', message: 'Select at least one column'}}
+          placeholder="Select..."
+        />
+        <MultiSelector
+          label="Detached"
+          options={['Name', 'Email', 'Role']}
+          value={b}
+          onChange={setB}
+          status={{type: 'error', message: 'Select at least one column'}}
+          statusVariant="detached"
+          placeholder="Select..."
+        />
+      </div>
+    );
+  },
+  decorators: [Story => <Story />],
+};
+
+/**
+ * Theme the clear and chevron glyphs precisely via `defineTheme`.
+ *
+ * - `components['input-clear-icon'].base` scopes overrides to the
+ *   clear icon itself (via the `astryx-input-clear-icon` target), so a
+ *   theme can recolor it, morph its color on hover, and resize it — without a
+ *   fragile descendant selector or raw CSS.
+ * - `components['multi-selector-indicator-icon']` scopes overrides to the
+ *   chevron, and its `state:expanded` restyles the open state, which the icon
+ *   reflects as a `data-state` attribute.
+ *
+ * Same-element rules in `@layer astryx-theme` win over each icon's own base
+ * color/size.
+ */
+const iconTheme = defineTheme({
+  name: 'multi-selector-icon-demo',
+  components: {
+    'input-clear-icon': {
+      base: {
+        width: '12px',
+        height: '12px',
+        fontSize: '12px',
+        color: 'var(--color-icon-secondary)',
+        ':hover': {color: 'var(--color-accent)'},
+      },
+    },
+    'multi-selector-indicator-icon': {
+      base: {
+        width: '14px',
+        height: '14px',
+        fontSize: '14px',
+        color: 'var(--color-icon-secondary)',
+      },
+      'state:expanded': {
+        color: 'var(--color-accent)',
+      },
+    },
+  },
+});
+
+export const ThemedIcons: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>(['Apple', 'Banana']);
+    return (
+      <Theme theme={iconTheme} mode="light">
+        <MultiSelector
+          label="Icons themed (accent on hover/open)"
+          options={['Apple', 'Banana', 'Orange']}
+          value={value}
+          onChange={setValue}
+          hasClear
+        />
+      </Theme>
+    );
+  },
+};
+
+/**
+ * `indicatorPosition="end"` moves the checkbox to the trailing edge of each
+ * row. The default is `start`, where the checkbox leads the label as it does in
+ * CheckboxList.
+ */
+export const EndIndicatorPosition: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>(['Name', 'Email']);
+    return (
+      // No hasSelectAll: its divider is an unallowed listbox child and fails
+      // the a11y audit as soon as a story opens the popup (#4994).
+      <MultiSelector
+        label="Columns"
+        options={['Name', 'Email', 'Role', 'Status']}
+        value={value}
+        onChange={setValue}
+        indicatorPosition="end"
+        isDefaultOpen
+      />
+    );
   },
 };

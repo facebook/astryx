@@ -28,9 +28,9 @@ re-test a wording:
 
 - Path: `"$TMPDIR/astryx-purity/_loop/iterations-log.json"` (outside the repo, like all
   runtime artifacts). Create it on the first tick if absent: `{ "tick": 0, "champion":
-  "B-selfcheck", "history": [] }`.
+"B-selfcheck", "history": [] }`.
 - Each `history[]` entry: `{ tick, expId, ranConditions, variantHashes, rates: { <cond>:
-  { veeredUncaught, caughtGivenVeered, finalPurityMean, n } }, note }`.
+{ veeredUncaught, caughtGivenVeered, finalPurityMean, n } }, note }`.
 - "champion" = the best variant found so far (lowest `veeredUncaught`, tie-broken by
   higher `finalPurityMean`). Seed champion = `B-selfcheck`.
 
@@ -41,12 +41,14 @@ re-test a wording:
 ## One tick
 
 ### 1. Read where we are
+
 - Read `iterations-log.json`. Identify the current `champion`.
 - If `history` is empty, this is the seed tick: run `A-control`, `B-selfcheck`,
   `C-strong` together (exploration settings below) to establish the baseline and pick
   the first champion. Skip step 2 on the seed tick.
 
 ### 2. Author ONE new challenger (skip on the seed tick)
+
 - Based on the last run's per-run detail in `purity-summary.json` (which markers survived
   in `veeredUncaught` runs, whether `ranDocRetrieval` was low, whether catches happened
   late), write ONE new variant wording that targets the observed failure mode. Ideas to
@@ -59,10 +61,11 @@ re-test a wording:
 - Write it to a NEW file `variants/g<NN>-<slug>.md` (never overwrite A/B/C or a prior
   generation — history must stay reproducible). Add a matching entry to
   `conditions.json` `conditions[]`: `{ "id": "g<NN>-<slug>", "role": "candidate",
-  "variant": "g<NN>-<slug>" }`.
+"variant": "g<NN>-<slug>" }`.
 - Do NOT test a wording whose text hash already appears in `history`.
 
 ### 3. Run (exploration = cheap, fast)
+
 - Compare exactly THREE conditions so runs stay focused: control, champion, challenger.
 - Explore settings: `--prompts dd-1,tc-6 --reps 3`.
 - Start it in the BACKGROUND and arm the completion wake (dynamic `/loop`). Generate an
@@ -76,11 +79,12 @@ EXP=$(node -e "console.log(require('crypto').randomBytes(4).toString('hex'))")
   echo "AGENT_LOOP_WAKE_purity {\"expId\":\"$EXP\",\"phase\":\"explore\"}" ) 2>&1
 ```
 
-  Launch via the Shell tool with `block_until_ms: 0` and `notify_on_output` on
-  `^AGENT_LOOP_WAKE_purity`. Also arm ONE long fallback heartbeat (e.g. `sleep 1800`)
-  per the loop skill. Then END THE TURN — do not block.
+Launch via the Shell tool with `block_until_ms: 0` and `notify_on_output` on
+`^AGENT_LOOP_WAKE_purity`. Also arm ONE long fallback heartbeat (e.g. `sleep 1800`)
+per the loop skill. Then END THE TURN — do not block.
 
 ### 4. On wake — evaluate
+
 - Read `"$TMPDIR/astryx-purity/$EXP/purity-summary.json"`.
 - Append a `history` entry (rates for each condition + variant hashes).
 - Compare challenger vs champion: challenger becomes the new champion if its
@@ -89,6 +93,7 @@ EXP=$(node -e "console.log(require('crypto').randomBytes(4).toString('hex'))")
   `veeredUncaught`, `caughtGivenVeered`, purity — and whether the champion changed.
 
 ### 5. Decide: confirm, continue, or stop
+
 - **Promote to confirmation** when the champion beats `A-control` in exploration
   (`veeredUncaught` lower AND purity higher). Run a CONFIRMATION:
   `--conditions A-control,<champion> --prompts dd-1,dd-5,wd-1,wd-4,tc-6,ps-1 --reps 7`

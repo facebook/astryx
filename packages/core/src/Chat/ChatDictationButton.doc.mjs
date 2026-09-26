@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'ChatDictationButton',
@@ -47,7 +47,7 @@ export const docs = {
       name: 'isHiddenWhenUnsupported',
       type: 'boolean',
       description:
-        'When true, renders nothing if the browser does not support SpeechRecognition.',
+        'When true, renders nothing if the browser does not support SpeechRecognition. When false, keeps the button visible but disabled.',
       default: 'true',
     },
     {
@@ -65,7 +65,7 @@ export const docs = {
 
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description:
@@ -81,13 +81,13 @@ export const docsZh = {
   propDescriptions: {
     dictation: 'The return value from useChatDictation or useSpeechRecognition. Controls all button state.',
     size: 'Button size.',
-    isHiddenWhenUnsupported: 'When true, renders nothing if SpeechRecognition is unsupported.',
+    isHiddenWhenUnsupported: 'When true, hides unsupported dictation; when false, keeps a disabled button visible.',
     label: 'Accessible label override.',
     xstyle: 'Additional StyleX styles.',
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'mic toggle btn for voice input in chat composer; idle=mic icon, listening=freq bars; pairs w/ useChatDictation',
   usage: {
@@ -104,7 +104,7 @@ export const docsDense = {
   propDescriptions: {
     dictation: 'return from useChatDictation/useSpeechRecognition; controls state',
     size: 'btn size',
-    isHiddenWhenUnsupported: 'hide when SpeechRecognition unsupported',
+    isHiddenWhenUnsupported: 'hide unsupported dictation; false keeps disabled btn visible',
     label: 'a11y label override',
     xstyle: 'extra StyleX styles',
   },

@@ -3,7 +3,10 @@
 /**
  * @file DropdownMenuSelectable.test.tsx
  * @input vitest, @testing-library/react, DropdownMenu + selectable items
- * @output Unit tests for DropdownMenuCheckboxItem / RadioGroup / RadioItem (#3829)
+ * @output Component-local callback, composition, and marker styling tests for
+ *   DropdownMenuCheckboxItem / RadioGroup / RadioItem (#3829)
+ * @position Shared checkbox and radio-group role, name, state, and interaction
+ *   outcomes live in their reusable contracts; Menu retains navigation.
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
@@ -40,22 +43,6 @@ beforeEach(() => {
 });
 
 describe('DropdownMenuCheckboxItem', () => {
-  it('renders role menuitemcheckbox and reflects checked state', async () => {
-    const user = userEvent.setup();
-    render(
-      <DropdownMenu button={{label: 'View'}}>
-        <DropdownMenuCheckboxItem label="Show archived" value={true} />
-      </DropdownMenu>,
-    );
-    await user.click(screen.getByRole('button', {name: /View/}));
-    expect(
-      screen.getByRole('menuitemcheckbox', {
-        name: /Show archived/,
-        hidden: true,
-      }),
-    ).toHaveAttribute('aria-checked', 'true');
-  });
-
   it('calls onChange with the toggled value on click', async () => {
     const user = userEvent.setup();
     const onChangeSpy = vi.fn();
@@ -76,6 +63,36 @@ describe('DropdownMenuCheckboxItem', () => {
       }),
     );
     expect(onChangeSpy).toHaveBeenCalledWith(true);
+  });
+
+  it('keeps the checkbox indicator decorative (row is the only announced control)', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'View'}}>
+        <DropdownMenuCheckboxItem label="Show archived" value={true} />
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /View/}));
+
+    // The row owns role="menuitemcheckbox" — it is the single such control.
+    expect(
+      screen.getAllByRole('menuitemcheckbox', {hidden: true}),
+    ).toHaveLength(1);
+
+    // The visual is the shared checkbox indicator: aria-hidden, with no nested
+    // native <input>, so the row is the only announced/focusable control.
+    const row = screen.getByRole('menuitemcheckbox', {
+      name: /Show archived/,
+      hidden: true,
+    });
+    expect(row.querySelector('input[type="checkbox"]')).toBeNull();
+    // The shared checkbox target, directly on the row — no wrapper, and no
+    // menu-specific target added for it (main reached this element through
+    // `astryx-checkbox` too).
+    const marker = row.querySelector('.astryx-checkbox');
+    expect(marker).toBeInTheDocument();
+    expect(marker).toHaveAttribute('aria-hidden', 'true');
+    expect(marker).toHaveAttribute('data-checked', 'checked');
   });
 
   it('does not toggle when disabled', async () => {
@@ -103,29 +120,44 @@ describe('DropdownMenuCheckboxItem', () => {
 });
 
 describe('DropdownMenuRadioGroup / RadioItem', () => {
-  it('renders a named group with radios reflecting the selected value', async () => {
+  it('renders the shared radio indicator in the menu marker', async () => {
     const user = userEvent.setup();
     render(
       <DropdownMenu button={{label: 'Sort'}}>
         <DropdownMenuRadioGroup
           value="newest"
           onChange={() => {}}
-          aria-label="Sort by">
+          label="Sort by">
           <DropdownMenuRadioItem value="newest" label="Newest" />
           <DropdownMenuRadioItem value="oldest" label="Oldest" />
         </DropdownMenuRadioGroup>
       </DropdownMenu>,
     );
     await user.click(screen.getByRole('button', {name: /Sort/}));
+    const checked = screen.getByRole('menuitemradio', {
+      name: 'Newest',
+      hidden: true,
+    });
+    // The menu's target and the shared radio target land on the SAME painted
+    // circle, so menu radios and RadioList radios theme together and a theme
+    // never has to reach through a wrapper.
+    const box = checked.querySelector('.astryx-dropdown-menu-radio');
+    expect(box).toHaveClass('astryx-radio');
+    expect(box).toHaveAttribute('data-size', 'md');
+    expect(box).toHaveAttribute('data-checked', 'checked');
+    expect(box?.querySelector('.astryx-radio-dot')).toBeInTheDocument();
+
+    // The unchecked radio still draws its circle, without the dot.
+    const unchecked = screen.getByRole('menuitemradio', {
+      name: 'Oldest',
+      hidden: true,
+    });
+    const uncheckedIndicator = unchecked.querySelector('.astryx-radio');
+    expect(uncheckedIndicator).toBeInTheDocument();
+    expect(uncheckedIndicator).not.toHaveAttribute('data-checked');
     expect(
-      screen.getByRole('menuitemradio', {name: 'Newest', hidden: true}),
-    ).toHaveAttribute('aria-checked', 'true');
-    expect(
-      screen.getByRole('menuitemradio', {name: 'Oldest', hidden: true}),
-    ).toHaveAttribute('aria-checked', 'false');
-    expect(
-      screen.getByRole('group', {name: 'Sort by', hidden: true}),
-    ).toBeInTheDocument();
+      uncheckedIndicator?.querySelector('.astryx-radio-dot'),
+    ).not.toBeInTheDocument();
   });
 
   it('calls onChange with the selected value', async () => {
@@ -136,7 +168,7 @@ describe('DropdownMenuRadioGroup / RadioItem', () => {
         <DropdownMenuRadioGroup
           value="newest"
           onChange={onChange}
-          aria-label="Sort by">
+          label="Sort by">
           <DropdownMenuRadioItem value="newest" label="Newest" />
           <DropdownMenuRadioItem value="oldest" label="Oldest" />
         </DropdownMenuRadioGroup>

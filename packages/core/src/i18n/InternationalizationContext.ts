@@ -15,16 +15,23 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/i18n/InternationalizationProvider.tsx
  * - /packages/core/src/i18n/t.client.ts
+ * - /packages/core/src/i18n/useDirection.ts
+ * - /packages/core/src/i18n/useLocale.ts
+ * - /packages/core/src/i18n/useCollator.ts
+ * - /packages/core/src/i18n/getLocaleDirection.ts
  * - /packages/core/src/i18n/index.ts
  */
 
 import {createContext} from 'react';
+import {getResolve} from './resolve';
 import type {Locale, MessagesByLocale, Overrides} from './types';
 
 export interface InternationalizationContextValue {
   locale: Locale;
+  direction: 'ltr' | 'rtl';
   messages: MessagesByLocale;
   overrides?: Overrides;
+  translate: ReturnType<typeof getResolve>;
 }
 
 /**
@@ -34,6 +41,8 @@ export interface InternationalizationContextValue {
 export const InternationalizationContext =
   createContext<InternationalizationContextValue>({
     locale: 'en',
+    direction: 'ltr',
     messages: {},
+    translate: getResolve('en', {}),
   });
 InternationalizationContext.displayName = 'InternationalizationContext';

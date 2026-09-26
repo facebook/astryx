@@ -5,7 +5,6 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {NavHeadingMenu} from './NavHeadingMenu';
 import {NavHeadingMenuItem} from './NavHeadingMenuItem';
-import {NavMenuItem} from './NavMenuItem';
 import {NavHeadingCloseContext} from './NavMenuContext';
 
 describe('NavHeadingMenu', () => {
@@ -323,17 +322,32 @@ describe('context forwarding', () => {
   });
 });
 
-describe('NavMenuItem backward compat', () => {
-  it('is the same component as NavHeadingMenuItem', () => {
-    expect(NavMenuItem).toBe(NavHeadingMenuItem);
-  });
-
-  it('renders correctly when used as NavMenuItem', () => {
+describe('NavHeadingMenu pass-through props', () => {
+  it('forwards pass-through props to the menu element', () => {
     render(
-      <NavHeadingMenu>
-        <NavMenuItem label="Legacy" />
+      <NavHeadingMenu aria-label="Products" id="products" data-source="nav">
+        <NavHeadingMenuItem label="First" />
       </NavHeadingMenu>,
     );
-    expect(screen.getByRole('menuitem')).toHaveTextContent('Legacy');
+    const menu = screen.getByRole('menu');
+    expect(menu).toHaveAttribute('aria-label', 'Products');
+    expect(menu).toHaveAttribute('id', 'products');
+    expect(menu).toHaveAttribute('data-source', 'nav');
+  });
+
+  it('runs a caller onKeyDown alongside the menu keyboard model', async () => {
+    const user = userEvent.setup();
+    const onKeyDown = vi.fn();
+    render(
+      <NavHeadingMenu onKeyDown={onKeyDown}>
+        <NavHeadingMenuItem label="First" />
+        <NavHeadingMenuItem label="Second" />
+      </NavHeadingMenu>,
+    );
+    const items = screen.getAllByRole('menuitem');
+    items[0].focus();
+    await user.keyboard('{ArrowDown}');
+    expect(onKeyDown).toHaveBeenCalled();
+    expect(items[1]).toHaveFocus();
   });
 });

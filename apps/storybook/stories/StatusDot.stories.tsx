@@ -93,3 +93,46 @@ export const WithTooltip: Story = {
     </div>
   ),
 };
+
+/**
+ * A simple custom mark, painted from `currentColor` so it inherits the dot's
+ * ink and stays legible on the variant plate.
+ */
+function DiamondIcon() {
+  return (
+    <svg viewBox="0 0 8 8" width={8} height={8} aria-hidden="true">
+      <rect
+        x={2.4}
+        y={2.4}
+        width={3.2}
+        height={3.2}
+        fill="currentColor"
+        transform="rotate(45 4 4)"
+      />
+    </svg>
+  );
+}
+
+/**
+ * The `icon` prop gives the status a non-colour mark. The dot itself is a
+ * colour-only signal by default, so when a dot must stand on its own without
+ * adjacent text, pass a different icon per status (see the usage guidance in
+ * the component docs).
+ */
+export const WithIcon: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A custom `icon` rendered centered in the dot, painted from `currentColor`. Use a different icon per status so meaning does not rely on colour alone.',
+      },
+    },
+  },
+  render: () => (
+    <div style={{display: 'flex', gap: '24px', alignItems: 'center'}}>
+      <StatusDot variant="success" label="Verified" icon={<DiamondIcon />} />
+      <StatusDot variant="accent" label="Featured" icon={<DiamondIcon />} />
+      <span style={{fontSize: '11px'}}>icon carries the status as a shape</span>
+    </div>
+  ),
+};

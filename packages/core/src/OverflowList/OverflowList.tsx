@@ -9,29 +9,47 @@
  * @position Core implementation; consumed by index.ts
  *
  * Renders a horizontal list of items, hiding those that don't fit in the
- * available width and optionally showing an overflow indicator.
- * Uses a hidden measurement container to avoid flickering.
+ * available width and optionally showing an overflow indicator. Supports an
+ * optional item cap (`maxVisibleItems`) and bounded multi-row wrapping
+ * (`maxRows`). Uses a hidden measurement container to avoid flickering.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/OverflowList/index.ts (exports if types change)
- * - /packages/cli/templates/blocks/components/OverflowList/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/OverflowList/ (showcase blocks)
  */
 
-import {type ReactNode, type ReactElement, Children} from 'react';
+import {
+  type ReactNode,
+  type ReactElement,
+  Children,
+  useCallback,
+  useRef,
+  useState,
+} from 'react';
 import type {BaseProps} from '../BaseProps';
 import type {SpacingStep} from '../utils/types';
 import * as stylex from '@stylexjs/stylex';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
 import {useOverflow} from '../hooks/useOverflow';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {spacingVars} from '../theme/tokens.stylex';
 import {themeProps} from '../utils/themeProps';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const styles = stylex.create({
   container: {
     display: 'flex',
     alignItems: 'center',
     overflow: 'hidden',
     whiteSpace: 'nowrap',
+    minWidth: 0,
+  },
+  containerMultiRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignContent: 'flex-start',
+    overflow: 'hidden',
+    whiteSpace: 'normal',
     minWidth: 0,
   },
   fillParent: {
@@ -50,6 +68,12 @@ const styles = stylex.create({
   measureIndicator: {
     display: 'inline-flex',
   },
+});
+
+const multiRowHeight = stylex.create({
+  height: (maxRows: number, rowHeight: number, gapPx: number) => ({
+    maxHeight: `calc(${rowHeight}px * ${maxRows} + ${gapPx}px * ${maxRows - 1})`,
+  }),
 });
 
 const gapStyles = stylex.create({
@@ -113,6 +137,24 @@ export interface OverflowListProps extends BaseProps<HTMLDivElement> {
   minVisibleItems?: number;
 
   /**
+   * Maximum number of items to ever show, even when they all fit. The ceiling
+   * partner to `minVisibleItems`; extra items collapse into the overflow
+   * indicator. Leave undefined for no cap. If it is less than
+   * `minVisibleItems`, the floor wins (and a dev-only warning is logged).
+   * @default undefined
+   */
+  maxVisibleItems?: number;
+
+  /**
+   * Wrap items across up to this many rows before collapsing the remainder
+   * into the overflow indicator. Leave undefined (or set `1`) for the default
+   * single-line behavior. A number, not a boolean — unbounded wrapping is a
+   * plain flex-wrap layout, not overflow collapse. Assumes uniform row height.
+   * @default undefined
+   */
+  maxRows?: number;
+
+  /**
    * Which end to collapse items from.
    * @default 'end'
    */
@@ -153,6 +195,47 @@ export interface OverflowListProps extends BaseProps<HTMLDivElement> {
    * ```
    */
   overflowRenderer?: (overflowItems: OverflowItem[]) => ReactNode;
+
+  /**
+   * Called with the items that are currently collapsed, whenever that set
+   * changes.
+   *
+   * Use it when the collapsed items belong in a menu the surrounding UI
+   * already renders (a row that already has its own "…" button), so the list
+   * does not grow a second anchor beside it. `overflowRenderer` cannot serve
+   * that case: it is only rendered while items overflow, and its measurement
+   * copy always receives every item.
+   *
+   * The contract:
+   * - It fires once measurement has collapsed something, and again with an
+   *   empty array once the row widens back out and everything fits.
+   * - It is **silent while nothing overflows** — including on mount, so a list
+   *   that fits from the start never calls it. There is no report of the
+   *   pre-measurement state, which would always be an empty set whether or not
+   *   the row actually overflows. Hold the collapsed set in state initialised
+   *   to `[]` and it is correct at every moment; if you remount the list while
+   *   keeping that state, reset it yourself.
+   * - Reports are keyed on the collapsed items' original indices and React
+   *   keys. Membership and order changes report even when the count stays the
+   *   same; unrelated re-renders and callback identity changes do not.
+   *
+   * Give dynamic children stable React keys. Items include their current
+   * original `index`; use it to look up your own data rather than storing
+   * `child`.
+   *
+   * @example
+   * ```
+   * const [hidden, setHidden] = useState<OverflowItem[]>([]);
+   * <>
+   *   <OverflowList onOverflowChange={setHidden}>{items}</OverflowList>
+   *   <DropdownMenu
+   *     button={{label: 'More', variant: 'ghost'}}
+   *     items={[...alwaysThere, ...hidden.map(({index}) => actions[index])]}
+   *   />
+   * </>
+   * ```
+   */
+  onOverflowChange?: (overflowItems: OverflowItem[]) => void;
 }
 
 /**
@@ -180,9 +263,12 @@ export function OverflowList({
   children,
   gap = 2,
   minVisibleItems = 0,
+  maxVisibleItems,
+  maxRows,
   collapseFrom = 'end',
   behavior = 'observeSelf',
   overflowRenderer,
+  onOverflowChange,
   xstyle,
   className,
   style,
@@ -195,16 +281,17 @@ export function OverflowList({
   const gapPx = spacingToPx[gap];
 
   const observeParent = behavior === 'observeParent';
+  const isMultiRow = maxRows != null && maxRows > 1;
 
-  const {containerRef, measureRef, visibleCount, hasOverflow} = useOverflow(
-    itemCount,
-    {
+  const {containerRef, measureRef, visibleCount, hasOverflow, rowHeight} =
+    useOverflow(itemCount, {
       gap: gapPx,
       minVisibleItems,
+      maxVisibleItems,
+      maxRows,
       collapseFrom,
       behavior,
-    },
-  );
+    });
 
   const allItems: OverflowItem[] = childArray.map((child, index) => ({
     child,
@@ -226,11 +313,59 @@ export function OverflowList({
   // so the indicator renders at its maximum possible width.
   const measureIndicator = overflowRenderer?.(allItems);
 
+  // Re-run measurement when keyed children change without resizing the row.
+  // The measured key delays reporting until that measurement has committed.
+  // Lists without the callback skip all identity work.
+  const measurementKey = onOverflowChange
+    ? JSON.stringify({
+        children: childArray.map((child, index) => [index, child.key]),
+        gap,
+        minVisibleItems,
+        maxVisibleItems,
+        maxRows,
+        collapseFrom,
+        behavior,
+      })
+    : '';
+  const [measuredKey, setMeasuredKey] = useState(measurementKey);
+  const reportMeasureRef = useCallback(
+    (element: HTMLElement | null) => {
+      measureRef(element);
+      if (element) {
+        setMeasuredKey(measurementKey);
+      }
+    },
+    [measureRef, measurementKey],
+  );
+
+  // Report after measurement, before paint, so a standing menu updates in the
+  // same frame as the visible row. Keys distinguish membership and order while
+  // suppressing callback-only or unrelated re-renders. The initial empty key
+  // suppresses the optimistic pre-measurement render.
+  const overflowKey = onOverflowChange
+    ? JSON.stringify(overflowItems.map(({child, index}) => [index, child.key]))
+    : '[]';
+  const reportedKeyRef = useRef('[]');
+  const overflowItemsRef = useRef(overflowItems);
+  overflowItemsRef.current = overflowItems;
+
+  useIsomorphicLayoutEffect(() => {
+    if (
+      !onOverflowChange ||
+      measuredKey !== measurementKey ||
+      reportedKeyRef.current === overflowKey
+    ) {
+      return;
+    }
+    reportedKeyRef.current = overflowKey;
+    onOverflowChange(overflowItemsRef.current);
+  }, [measuredKey, measurementKey, overflowKey, onOverflowChange]);
+
   return (
     <>
       {/* Hidden measurement container */}
       <div
-        ref={measureRef}
+        ref={reportMeasureRef}
         aria-hidden="true"
         inert
         {...stylex.props(styles.measureContainer, gapStyles[gap])}>
@@ -244,12 +379,16 @@ export function OverflowList({
 
       {/* Visible container */}
       <div
-        ref={mergeRefs(ref, containerRef)}
+        ref={useMergedRefs(ref, containerRef)}
         {...mergeProps(
           themeProps('overflow-list'),
           stylex.props(
-            styles.container,
+            isMultiRow ? styles.containerMultiRow : styles.container,
             gapStyles[gap],
+            isMultiRow &&
+              rowHeight > 0 &&
+              maxRows != null &&
+              multiRowHeight.height(maxRows, rowHeight, gapPx),
             observeParent && hasOverflow && styles.fillParent,
             xstyle,
           ),

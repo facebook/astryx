@@ -108,6 +108,24 @@ function BlogSection({children}: {children: ReactNode}) {
 }
 
 export function BlogShowcase() {
+  // The registry can be empty when a deployment has no published posts yet.
+  // Omit the entire section rather than passing an undefined post to a card.
+  if (blogPosts.length === 0) {
+    return null;
+  }
+
+  // A single post gets the same full-width feature treatment as the two-post
+  // layout, without rendering an empty secondary column.
+  if (blogPosts.length === 1) {
+    return (
+      <BlogSection>
+        <div {...stylex.props(styles.twoUpGrid)}>
+          <BlogCard post={blogPosts[0]} feature hideDescription />
+        </div>
+      </BlogSection>
+    );
+  }
+
   // Exactly two posts → balanced 50/50 grid of two equal feature cards. This
   // reads as intentional, whereas the featured split would leave a lonely blank
   // placeholder in the right column.

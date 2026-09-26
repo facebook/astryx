@@ -12,6 +12,7 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {hasPressedArm} from '../__tests__/pressState';
 import {Collapsible} from './Collapsible';
 import {CollapsibleGroup} from './CollapsibleGroup';
 
@@ -70,6 +71,13 @@ describe('Collapsible', () => {
         </Collapsible>,
       );
       expect(screen.getByTestId('root')).toHaveClass('astryx-collapsible');
+    });
+
+    it('renders the stable astryx-collapsible-trigger class on the trigger button', () => {
+      render(<Collapsible trigger="T">c</Collapsible>);
+      expect(screen.getByRole('button')).toHaveClass(
+        'astryx-collapsible-trigger',
+      );
     });
 
     it('renders the stable astryx-collapsible-content class on the content area', () => {
@@ -479,5 +487,152 @@ describe('Collapsible', () => {
       const item = screen.getByTestId('item');
       expect(item).not.toHaveAttribute('data-density');
     });
+  });
+
+  describe('chevron position', () => {
+    /**
+     * Placement is a DOM order question. Both the label and the chevron render
+     * as spans, so they are told apart by what they hold — the chevron is the
+     * one carrying the svg — and compared by position rather than tag.
+     */
+    function triggerParts(testId: string) {
+      const button = within(screen.getByTestId(testId)).getByRole('button');
+      const children = [...button.children];
+      return {
+        chevronIndex: children.findIndex(el => el.querySelector('svg')),
+        labelIndex: children.findIndex(el => el.textContent?.trim() !== ''),
+        glyph: button.querySelector('svg')?.innerHTML,
+      };
+    }
+
+    it('puts the chevron after the label by default', () => {
+      render(
+        <Collapsible trigger="A" data-testid="item">
+          Body
+        </Collapsible>,
+      );
+      const {chevronIndex, labelIndex} = triggerParts('item');
+      expect(chevronIndex).toBeGreaterThan(labelIndex);
+    });
+
+    it('puts the chevron before the label when position is start', () => {
+      render(
+        <Collapsible trigger="A" chevronPosition="start" data-testid="item">
+          Body
+        </Collapsible>,
+      );
+      const {chevronIndex, labelIndex} = triggerParts('item');
+      expect(chevronIndex).toBeLessThan(labelIndex);
+    });
+
+    it('swaps the glyph with the side, not just the position', () => {
+      // A leading arrow points into the row and turns down; a trailing one
+      // points down and flips up. Reusing one glyph for both would leave a
+      // closed leading chevron pointing the wrong way, so the two positions
+      // must not render the same art.
+      render(
+        <>
+          <Collapsible trigger="A" data-testid="at-end">
+            Body
+          </Collapsible>
+          <Collapsible
+            trigger="A"
+            chevronPosition="start"
+            data-testid="at-start">
+            Body
+          </Collapsible>
+        </>,
+      );
+      const endGlyph = triggerParts('at-end').glyph;
+      const startGlyph = triggerParts('at-start').glyph;
+      expect(endGlyph).toBeTruthy();
+      expect(startGlyph).toBeTruthy();
+      expect(startGlyph).not.toBe(endGlyph);
+    });
+
+    it('takes the position from the surrounding group', () => {
+      render(
+        <CollapsibleGroup type="single" chevronPosition="start">
+          <Collapsible trigger="A" value="a" data-testid="item">
+            Body
+          </Collapsible>
+        </CollapsibleGroup>,
+      );
+      const {chevronIndex, labelIndex} = triggerParts('item');
+      expect(chevronIndex).toBeLessThan(labelIndex);
+    });
+
+    it('lets an item override the group position', () => {
+      render(
+        <CollapsibleGroup type="single" chevronPosition="start">
+          <Collapsible
+            trigger="A"
+            value="a"
+            chevronPosition="end"
+            data-testid="item">
+            Body
+          </Collapsible>
+        </CollapsibleGroup>,
+      );
+      const {chevronIndex, labelIndex} = triggerParts('item');
+      expect(chevronIndex).toBeGreaterThan(labelIndex);
+    });
+
+    it('gives the label the rest of the row when the chevron leads', () => {
+      // The trigger is `space-between`. With the chevron trailing that is what
+      // separates the two, but with it leading there is nothing to absorb the
+      // free space, so an unfilled label would be thrown to the far edge with
+      // a gap behind the arrow. It also has to grow for a trigger that spreads
+      // its own contents to have a row to spread across.
+      render(
+        <Collapsible trigger="A" chevronPosition="start" data-testid="item">
+          Body
+        </Collapsible>,
+      );
+      const button = within(screen.getByTestId('item')).getByRole('button');
+      const label = [...button.children].find(
+        el => el.textContent?.trim() !== '',
+      );
+      expect(label).toHaveStyle({flexGrow: 1});
+    });
+
+    it('does not leak the group position into a nested collapsible', () => {
+      // Collapsible resets the presentation context around its children, so a
+      // collapsible nested in an item's body keeps its own default.
+      render(
+        <CollapsibleGroup
+          type="single"
+          defaultValue="a"
+          chevronPosition="start">
+          <Collapsible trigger="A" value="a" data-testid="outer">
+            <Collapsible trigger="B" data-testid="inner">
+              Body
+            </Collapsible>
+          </Collapsible>
+        </CollapsibleGroup>,
+      );
+      const {chevronIndex, labelIndex} = triggerParts('inner');
+      expect(chevronIndex).toBeGreaterThan(labelIndex);
+    });
+  });
+});
+
+describe('pressed state', () => {
+  it('paints the pressed overlay on the trigger row while it is pressed', () => {
+    render(
+      <Collapsible trigger="Details">
+        <p>Body</p>
+      </Collapsible>,
+    );
+    expect(hasPressedArm(screen.getByRole('button'))).toBe(true);
+  });
+
+  it('does not press a disabled trigger', () => {
+    render(
+      <Collapsible trigger="Details" isDisabled>
+        <p>Body</p>
+      </Collapsible>,
+    );
+    expect(hasPressedArm(screen.getByRole('button'))).toBe(false);
   });
 });

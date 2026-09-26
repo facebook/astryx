@@ -13,6 +13,20 @@
 export type SizeValue = number | string;
 
 /**
+ * Resting elevation level for configurable surfaces.
+ *
+ * Maps to the shadow token scale:
+ * - `none` = flat (`box-shadow: none`)
+ * - `low`  = `--shadow-low`
+ * - `med`  = `--shadow-med`
+ * - `high` = `--shadow-high`
+ *
+ * Components narrow this union to the steps they actually need — e.g. Card
+ * exposes all four, while ChatComposer exposes only `'none' | 'low'`.
+ */
+export type Elevation = 'none' | 'low' | 'med' | 'high';
+
+/**
  * Numeric spacing step from the Astryx spacing scale.
  *
  * Maps to CSS spacing tokens:

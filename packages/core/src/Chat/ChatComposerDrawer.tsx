@@ -7,15 +7,21 @@
  * @input Uses React, StyleX, theme tokens
  * @output Exports ChatComposerDrawer component
  * @position Collapsible drawer panel for ChatComposer.
- *   Supports expanded (full content) and collapsed (count + label) states
- *   with fade animation and grid-template-rows height transition.
+ *   Supports expanded (full content) and collapsed (default or caller-composed
+ *   summary) states with fade animation and grid-template-rows height transition.
+ *   The collapse toggle exposes aria-expanded + aria-controls linking it to
+ *   the content region (disclosure pattern).
  *
  * SYNC: When modified, update:
+ * - /packages/core/src/Chat/ChatComposerDrawer.test.tsx
+ * - /packages/core/src/Chat/ChatComposerDrawer.doc.mjs
+ * - /packages/core/src/Chat/ChatComposerDrawer.spec.md
+ * - /apps/storybook/stories/ChatComposerDrawer.stories.tsx
  * - /packages/core/src/Chat/index.ts (exports)
- * - /packages/cli/templates/blocks/components/ChatComposerDrawer/ (block examples)
+ * - /packages/cli/assets/templates/blocks/components/ChatComposerDrawer/ (block examples)
  */
 
-import {useState, type ReactNode} from 'react';
+import {useId, useState, type ReactNode} from 'react';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -30,6 +36,7 @@ import {Badge} from '../Badge';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useTranslator} from '../i18n';
 
 export interface ChatComposerDrawerProps extends BaseProps<HTMLDivElement> {
@@ -44,10 +51,18 @@ export interface ChatComposerDrawerProps extends BaseProps<HTMLDivElement> {
    */
   count?: number;
   /**
-   * Label shown next to the count in collapsed state.
+   * Label shown next to the count in the default collapsed summary and used to
+   * name the expand/collapse action.
    * @default 'Items'
    */
   label?: string;
+  /**
+   * Visual content for the canonical Collapsed summary anatomy part. Replaces
+   * the complete default Badge and label when count enables collapse. The
+   * component keeps this content presentation-only and owns disclosure
+   * semantics and accessible naming.
+   */
+  collapsedSummary?: ReactNode;
   /**
    * Whether the drawer is collapsed.
    * Uncontrolled by default (internal toggle).
@@ -70,7 +85,9 @@ export interface ChatComposerDrawerProps extends BaseProps<HTMLDivElement> {
    * @example
    * ```
    * const styles = stylex.create({ wrapper: { marginTop: 8 } });
-   * <ChatComposerDrawer xstyle={styles.wrapper} />
+   * <ChatComposerDrawer xstyle={styles.wrapper}>
+   *   <AttachmentThumbnail />
+   * </ChatComposerDrawer>
    * ```
    */
   xstyle?: StyleXStyles;
@@ -102,12 +119,12 @@ const styles = stylex.create({
     // opaque or translucent.
     backgroundColor: colorVars['--color-background-surface'],
     backgroundImage: `linear-gradient(${colorVars['--color-background-muted']}, ${colorVars['--color-background-muted']})`,
-    borderTopLeftRadius: radiusVars['--radius-chat'],
-    borderTopRightRadius: radiusVars['--radius-chat'],
+    borderStartStartRadius: radiusVars['--radius-chat'],
+    borderStartEndRadius: radiusVars['--radius-chat'],
   },
 
-  // Toggle row — both the bar handle and badge+label live in the
-  // same grid cell so they crossfade without layout shift.
+  // Toggle row — both the collapsed summary and bar handle live in the same
+  // grid cell so they crossfade without layout shift.
   toggleRow: {
     display: 'grid',
     gridTemplateColumns: '1fr',
@@ -115,7 +132,10 @@ const styles = stylex.create({
     height: spacingVars['--spacing-5'],
     paddingInline: spacingVars['--spacing-4'],
     marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     userSelect: 'none',
   },
   toggleCollapsed: {},
@@ -125,6 +145,7 @@ const styles = stylex.create({
     justifySelf: 'start',
     display: 'inline-flex',
     alignItems: 'center',
+    pointerEvents: 'none',
     height: spacingVars['--spacing-5'],
     gap: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-full'],
@@ -155,8 +176,8 @@ const styles = stylex.create({
     gridColumn: 1,
     justifySelf: 'center',
     alignSelf: 'start',
-    width: '20px',
-    height: '2px',
+    width: spacingVars['--spacing-5'],
+    height: spacingVars['--spacing-0-5'],
     borderRadius: radiusVars['--radius-full'],
     backgroundColor: {
       default: colorVars['--color-icon-secondary'],
@@ -222,6 +243,7 @@ export function ChatComposerDrawer({
   children,
   count,
   label: labelFromProps,
+  collapsedSummary,
   isCollapsed: controlledCollapsed,
   defaultIsCollapsed = false,
   onCollapsedChange,
@@ -239,6 +261,12 @@ export function ChatComposerDrawer({
   const isCollapsed = isControlled ? controlledCollapsed : internalCollapsed;
 
   const canCollapse = count != null;
+
+  // Links the toggle to the region it shows/hides so assistive tech can move
+  // from the button to its controlled content (disclosure pattern). The
+  // content stays mounted while collapsed (hidden via the grid-row collapse),
+  // so the reference always resolves.
+  const contentId = useId();
 
   const toggle = () => {
     const next = !isCollapsed;
@@ -263,7 +291,7 @@ export function ChatComposerDrawer({
       {...htmlProps}>
       {canCollapse && (
         <div
-          {...stylex.props(
+          {...focusOutlineProps.focusVisible(
             styles.toggleRow,
             isCollapsed && styles.toggleCollapsed,
             stylex.defaultMarker(),
@@ -271,6 +299,7 @@ export function ChatComposerDrawer({
           role="button"
           tabIndex={0}
           aria-expanded={!isCollapsed}
+          aria-controls={contentId}
           aria-label={
             isCollapsed
               ? t('@astryx.chatComposerDrawer.expand', {label})
@@ -284,12 +313,20 @@ export function ChatComposerDrawer({
             }
           }}>
           <div
+            aria-hidden="true"
+            inert
             {...stylex.props(
               styles.toggleContent,
               !isCollapsed && styles.toggleContentHidden,
             )}>
-            <Badge variant="neutral" label={count} />
-            <span {...stylex.props(styles.collapseLabel)}>{label}</span>
+            {collapsedSummary === undefined ? (
+              <>
+                <Badge variant="neutral" label={count} />
+                <span {...stylex.props(styles.collapseLabel)}>{label}</span>
+              </>
+            ) : (
+              collapsedSummary
+            )}
           </div>
           <div
             {...stylex.props(
@@ -301,6 +338,11 @@ export function ChatComposerDrawer({
       )}
 
       <div
+        id={contentId}
+        // The 0fr row keeps the collapse animation in place. `inert` also
+        // removes visually hidden descendants from keyboard and assistive-
+        // technology navigation until the drawer expands again.
+        inert={canCollapse && isCollapsed ? true : undefined}
         {...stylex.props(
           styles.contentGrid,
           canCollapse && isCollapsed && styles.contentGridCollapsed,

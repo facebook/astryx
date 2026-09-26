@@ -106,4 +106,154 @@ describe('useTypeahead', () => {
     expect(api.onKeyDown(key(' '))).toBe(false);
     expect(onMatch).not.toHaveBeenCalled();
   });
+
+  it('extends a live buffer with a space', () => {
+    const onMatch = vi.fn();
+    const {result} = renderHook(() =>
+      useTypeahead({
+        getItemLabels: () => ['Newark', 'New York'],
+        onMatch,
+      }),
+    );
+    for (const k of 'new ') {
+      result.current.onKeyDown(key(k));
+    }
+    result.current.onKeyDown(key('y'));
+    // "new y" reaches New York; a space that ended the buffer instead would
+    // leave "newy", which matches nothing.
+    expect(onMatch).toHaveBeenLastCalledWith(1);
+  });
+
+  it('ignores a Space chorded with ctrl or meta even mid-buffer', () => {
+    const onMatch = vi.fn();
+    const {result} = renderHook(() =>
+      useTypeahead({
+        getItemLabels: () => ['Melon', 'New York'],
+        onMatch,
+      }),
+    );
+    expect(result.current.onKeyDown(key('n'))).toBe(true);
+    expect(onMatch).toHaveBeenLastCalledWith(1);
+
+    // A chord is not typing. Consuming it would append a raw space and leave
+    // the buffer as "n ", poisoning every keystroke until the reset window.
+    expect(
+      result.current.onKeyDown(
+        new KeyboardEvent('keydown', {key: ' ', ctrlKey: true}),
+      ),
+    ).toBe(false);
+    expect(
+      result.current.onKeyDown(
+        new KeyboardEvent('keydown', {key: ' ', metaKey: true}),
+      ),
+    ).toBe(false);
+
+    result.current.onKeyDown(key('e'));
+    expect(onMatch).toHaveBeenCalledTimes(2);
+    expect(onMatch).toHaveBeenLastCalledWith(1);
+  });
+
+  it('starts a fresh single-character search after the current item', () => {
+    const {onMatch, api} = setup({current: 0}); // Apple is current
+    api.onKeyDown(key('a'));
+    // A single-character search begins at current + 1, so pressing the current
+    // item's own initial advances instead of re-matching it into a dead key.
+    expect(onMatch).toHaveBeenCalledWith(1); // Apricot
+  });
+
+  it('searches from the top when there is no current item', () => {
+    // The last item also matches, so this distinguishes "from the top" from
+    // wrapping backwards off -1 and hitting the bottom of the list first.
+    const onMatch = vi.fn();
+    const {result} = renderHook(() =>
+      useTypeahead({
+        getItemLabels: () => ['Apple', 'Berry', 'Avocado'],
+        onMatch,
+        getCurrentIndex: () => -1,
+      }),
+    );
+    result.current.onKeyDown(key('a'));
+    expect(onMatch).toHaveBeenCalledWith(0); // Apple, not Avocado
+  });
+
+  it('keeps the current item in range once the buffer is multi-character', () => {
+    const {onMatch, api} = setup({current: 0});
+    api.onKeyDown(key('a')); // single char: advances to Apricot
+    expect(onMatch).toHaveBeenLastCalledWith(1);
+    api.onKeyDown(key('p')); // "ap" refines, so Apple is a candidate again
+    expect(onMatch).toHaveBeenLastCalledWith(0);
+  });
+
+  it('skips unmatchable label slots without shifting the reported index', () => {
+    // Callers may pass null/empty entries to keep the index mapping 1:1 with
+    // their own items — menus pass el.textContent, which can be null.
+    const onMatch = vi.fn();
+    const {result} = renderHook(() =>
+      useTypeahead({
+        getItemLabels: () => [null, '', '   ', undefined, 'Apple'],
+        onMatch,
+      }),
+    );
+    result.current.onKeyDown(key('a'));
+    expect(onMatch).toHaveBeenCalledWith(4);
+  });
+
+  it('treats any negative or stale current index safely', () => {
+    // A sentinel other than -1, and an index left over from a longer list:
+    // neither may search backwards or report an index outside the list.
+    const fromBelowZero = vi.fn();
+    const {result: below} = renderHook(() =>
+      useTypeahead({
+        getItemLabels: () => LABELS,
+        onMatch: fromBelowZero,
+        getCurrentIndex: () => -5,
+      }),
+    );
+    below.current.onKeyDown(key('a'));
+    expect(fromBelowZero).toHaveBeenCalledWith(0); // Apple, from the top
+
+    const fromStale = vi.fn();
+    const {result: stale} = renderHook(() =>
+      useTypeahead({
+        getItemLabels: () => LABELS,
+        onMatch: fromStale,
+        getCurrentIndex: () => 7,
+      }),
+    );
+    stale.current.onKeyDown(key('b'));
+    expect(fromStale).toHaveBeenCalledWith(2); // Banana, in range
+  });
+
+  it('wraps onto the only item when the list has one entry', () => {
+    // "Advance past the current item" is about cycling; with one item the
+    // cycle is itself. The caller decides whether that is a no-op.
+    const onMatch = vi.fn();
+    const {result} = renderHook(() =>
+      useTypeahead({
+        getItemLabels: () => ['Apple'],
+        onMatch,
+        getCurrentIndex: () => 0,
+      }),
+    );
+    expect(result.current.onKeyDown(key('a'))).toBe(true);
+    expect(onMatch).toHaveBeenCalledWith(0);
+  });
+
+  it('matches characters composed with Option/Alt', () => {
+    const onMatch = vi.fn();
+    const {result} = renderHook(() =>
+      useTypeahead({
+        getItemLabels: () => ['Ångström', 'Berlin'],
+        onMatch,
+        getCurrentIndex: () => -1,
+      }),
+    );
+    // Option+a on macOS emits a printable 'å' with altKey set. Excluding it
+    // makes accented labels untypeable; real chords still carry ctrl/meta.
+    const handled = result.current.onKeyDown(
+      new KeyboardEvent('keydown', {key: 'å', altKey: true}),
+    );
+    expect(handled).toBe(true);
+    expect(onMatch).toHaveBeenCalledWith(0);
+  });
 });

@@ -116,6 +116,33 @@ describe('Table header context menu', () => {
       screen.queryByRole('menuitem', {hidden: true}),
     ).not.toBeInTheDocument();
   });
+
+  it('forwards a destructive action variant to the menu item', () => {
+    const plugin: TablePlugin<Row> = {
+      transformHeaderCell: props => ({
+        ...props,
+        contextMenuActions: [
+          {
+            id: 'delete',
+            label: 'Delete column',
+            variant: 'destructive',
+            onSelect: () => {},
+          },
+          {id: 'pin', label: 'Pin column', onSelect: () => {}},
+        ],
+      }),
+    };
+    render(
+      <Table data={data} columns={columns} idKey="id" plugins={{plugin}} />,
+    );
+    fireEvent.contextMenu(screen.getByText('Name'));
+    expect(
+      screen.getAllByRole('menuitem', {name: 'Delete column', hidden: true})[0],
+    ).toHaveAttribute('data-variant', 'destructive');
+    expect(
+      screen.getAllByRole('menuitem', {name: 'Pin column', hidden: true})[0],
+    ).not.toHaveAttribute('data-variant');
+  });
 });
 
 // =============================================================================

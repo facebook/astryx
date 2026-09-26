@@ -86,7 +86,7 @@ describe('Outline', () => {
     render(<Outline items={items} activeId="install" />);
     expect(screen.getByRole('link', {name: 'Installation'})).toHaveAttribute(
       'aria-current',
-      'true',
+      'location',
     );
     expect(
       screen.getByRole('link', {name: 'Introduction'}),
@@ -111,7 +111,7 @@ describe('Outline', () => {
     // so it has not moved to the clicked item yet.
     expect(
       screen.getByRole('link', {name: 'Installation'}),
-    ).not.toHaveAttribute('aria-current', 'true');
+    ).not.toHaveAttribute('aria-current', 'location');
 
     // When the scroll settles, the indicator lands on the clicked item.
     act(() => {
@@ -120,7 +120,7 @@ describe('Outline', () => {
     expect(onActiveIdChange).toHaveBeenCalledWith('install');
     expect(screen.getByRole('link', {name: 'Installation'})).toHaveAttribute(
       'aria-current',
-      'true',
+      'location',
     );
 
     document.body.removeChild(target);
@@ -162,8 +162,9 @@ describe('Outline', () => {
     expect(screen.getByRole('link', {name: 'API'}).className).toContain(
       'active',
     );
-    expect(screen.getByRole('link', {name: 'API'}).className).toContain(
-      'level-3',
+    expect(screen.getByRole('link', {name: 'API'})).toHaveAttribute(
+      'data-level',
+      '3',
     );
   });
 
@@ -171,14 +172,16 @@ describe('Outline', () => {
     render(
       <Outline items={items} density="compact" data-testid="outline-compact" />,
     );
-    expect(screen.getByTestId('outline-compact').className).toContain(
+    expect(screen.getByTestId('outline-compact')).toHaveAttribute(
+      'data-density',
       'compact',
     );
   });
 
   it('renders with density="default" by default', () => {
     render(<Outline items={items} data-testid="outline-default" />);
-    expect(screen.getByTestId('outline-default').className).toContain(
+    expect(screen.getByTestId('outline-default')).toHaveAttribute(
+      'data-density',
       'default',
     );
   });
@@ -224,7 +227,7 @@ describe('Outline', () => {
 
     expect(screen.getByRole('link', {name: 'Introduction'})).toHaveAttribute(
       'aria-current',
-      'true',
+      'location',
     );
 
     // Controlled active id is driven entirely by the prop.
@@ -237,7 +240,7 @@ describe('Outline', () => {
     );
     expect(screen.getByRole('link', {name: 'API'})).toHaveAttribute(
       'aria-current',
-      'true',
+      'location',
     );
     expect(
       screen.getByRole('link', {name: 'Introduction'}),
@@ -277,7 +280,7 @@ describe('Outline', () => {
 
     expect(screen.getByRole('link', {name: 'Installation'})).toHaveAttribute(
       'aria-current',
-      'true',
+      'location',
     );
     expect(onActiveIdChange).toHaveBeenCalledWith('install');
 
@@ -493,7 +496,7 @@ describe('Outline keyboard navigation', () => {
     expect(onNavigateEnd).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('link', {name: 'Installation'})).toHaveAttribute(
       'aria-current',
-      'true',
+      'location',
     );
 
     cleanup();
@@ -764,7 +767,7 @@ describe('Outline scroll scoping', () => {
     expect(onNavigateEnd).toHaveBeenCalledWith('install');
     expect(screen.getByRole('link', {name: 'Installation'})).toHaveAttribute(
       'aria-current',
-      'true',
+      'location',
     );
 
     cleanup();
@@ -797,7 +800,7 @@ describe('Outline scroll scoping', () => {
     // has not reached it, so `intro` stays active.
     expect(screen.getByRole('link', {name: 'Introduction'})).toHaveAttribute(
       'aria-current',
-      'true',
+      'location',
     );
 
     rerender(<Outline items={items} offset={64} />);
@@ -806,7 +809,7 @@ describe('Outline scroll scoping', () => {
     });
     expect(screen.getByRole('link', {name: 'Installation'})).toHaveAttribute(
       'aria-current',
-      'true',
+      'location',
     );
 
     cleanup();
@@ -930,7 +933,7 @@ describe('Outline scroll scoping', () => {
 
     expect(screen.getByRole('link', {name: 'Installation'})).toHaveAttribute(
       'aria-current',
-      'true',
+      'location',
     );
     expect(screen.getByRole('link', {name: 'API'})).not.toHaveAttribute(
       'aria-current',
@@ -981,7 +984,7 @@ describe('Outline scroll scoping', () => {
 
     expect(screen.getByRole('link', {name: 'Installation'})).toHaveAttribute(
       'aria-current',
-      'true',
+      'location',
     );
 
     pane.remove();
