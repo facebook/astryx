@@ -148,7 +148,8 @@ export interface MarkdownComponents {
      * useOutlineFromMarkdown / parseOutlineFromMarkdown. Render it as the
      * element's `id` to keep Outline hash navigation working. Undefined for
      * headings nested inside blockquotes or list items (the outline only
-     * lists top-level headings).
+     * lists top-level headings). Custom headings own their presentation,
+     * including document-variant scroll clearance.
      */
     id?: string;
   }>;
@@ -157,6 +158,8 @@ export interface MarkdownComponents {
   blockquote?: React.ComponentType<{children: React.ReactNode}>;
   hr?: React.ComponentType<object>;
 }
+
+export type MarkdownVariant = 'default' | 'document';
 
 export interface MarkdownProps<
   Plugins extends ReadonlyArray<MarkdownPluginEntry> = readonly [],
@@ -171,6 +174,13 @@ export interface MarkdownProps<
    * @default 'block'
    */
   display?: TextDisplay;
+  /**
+   * Presentation preset for the Markdown document.
+   * `document` uses reading-focused typography, centered prose, heading scroll
+   * clearance, and stronger table dividers. It does not enable syntax or links.
+   * @default 'default'
+   */
+  variant?: MarkdownVariant;
   density?: 'default' | 'compact';
   /**
    * The HTML heading level that markdown `#` maps to.
@@ -294,6 +304,13 @@ const cellAlignStyles = stylex.create({
   end: {textAlign: 'end'},
 });
 
+const documentTypographyTheme = stylex.createTheme(typeScaleVars, {
+  // @ts-expect-error -- token defaults retain literal types, but themes accept CSS-compatible overrides
+  '--text-body-size': '1rem',
+  // @ts-expect-error -- token defaults retain literal types, but themes accept CSS-compatible overrides
+  '--text-body-leading': '1.7',
+});
+
 const styles = stylex.create({
   root: {
     fontFamily: typographyVars['--font-family-body'],
@@ -318,6 +335,10 @@ const styles = stylex.create({
   headingBase: {
     fontFamily: typographyVars['--font-family-heading'],
     color: colorVars['--color-text-primary'],
+  },
+  documentHeading: {
+    // Local document-navigation geometry: no shared spacing role represents it.
+    scrollMarginBlockStart: '64px',
   },
   h1: {
     fontSize: typeScaleVars['--text-heading-1-size'],
@@ -1226,6 +1247,7 @@ function renderBlock(
   index: number,
   blockCount: number,
   density: 'default' | 'compact',
+  variant: MarkdownVariant,
   headingLevelStart: 1 | 2 | 3 | 4 | 5 | 6,
   onLinkClick: MarkdownProps['onLinkClick'] | undefined,
   cursor: StreamingCursor,
@@ -1288,6 +1310,7 @@ function renderBlock(
             stylex.props(
               styles.headingBase,
               headingStyles[level],
+              variant === 'document' && styles.documentHeading,
               spacing,
               contentWidthValue != null
                 ? dynamicStyles.proseWidth(contentWidthValue)
@@ -1439,6 +1462,7 @@ function renderBlock(
             i,
             node.children.length,
             density,
+            variant,
             headingLevelStart,
             onLinkClick,
             cursor,
@@ -1475,6 +1499,7 @@ function renderBlock(
               i,
               node.children.length,
               density,
+              variant,
               headingLevelStart,
               onLinkClick,
               cursor,
@@ -1558,6 +1583,7 @@ function renderBlock(
                         j,
                         item.children.length,
                         density,
+                        variant,
                         headingLevelStart,
                         onLinkClick,
                         cursor,
@@ -1642,6 +1668,7 @@ function renderBlock(
                       j,
                       item.children.length,
                       density,
+                      variant,
                       headingLevelStart,
                       onLinkClick,
                       cursor,
@@ -1692,7 +1719,9 @@ function renderBlock(
               isLast && styles.noMarginBlockEnd,
             ),
           )}>
-          <Table dividers="rows" textOverflow="wrap">
+          <Table
+            dividers={variant === 'document' ? 'grid' : 'rows'}
+            textOverflow="wrap">
             <TableHeader>
               <TableRow>
                 {header?.children.map((h, i) => (
@@ -1894,6 +1923,7 @@ export function Markdown<
   children: sourceChildren,
   document,
   display = 'block',
+  variant = 'default',
   density = 'default',
   headingLevelStart = 1,
   isStreaming = false,
@@ -1901,7 +1931,7 @@ export function Markdown<
   sources,
   citationStyle = 'label',
   contentWidth = 680,
-  contentAlign = 'start',
+  contentAlign: contentAlignProp,
   components,
   plugins,
   inlinePlugins,
@@ -1924,6 +1954,13 @@ export function Markdown<
       'Markdown document supports only non-streaming block rendering.',
     );
   }
+  if (variant === 'document' && display !== 'block') {
+    throw new Error('Markdown variant="document" supports only block display.');
+  }
+  const contentAlign =
+    contentAlignProp ?? (variant === 'document' ? 'center' : 'start');
+  const contentWidthValue =
+    typeof contentWidth === 'number' ? `${contentWidth}px` : contentWidth;
   const children = document?.source ?? sourceChildren;
   if (children == null) {
     throw new Error('Markdown requires children or a prepared document.');
@@ -2210,8 +2247,15 @@ export function Markdown<
       role="document"
       data-testid={testId}
       {...mergeProps(
-        themeProps('markdown', {density}),
-        stylex.props(styles.root, xstyle),
+        themeProps('markdown', {
+          density,
+          ...(variant === 'document' ? {variant} : null),
+        }),
+        stylex.props(
+          styles.root,
+          variant === 'document' && documentTypographyTheme,
+          xstyle,
+        ),
         className,
         style,
       )}>
@@ -2221,15 +2265,12 @@ export function Markdown<
           i,
           blocks.length,
           density,
+          variant,
           headingLevelStart,
           onLinkClick,
           cursor,
           citationCtx,
-          contentWidth
-            ? typeof contentWidth === 'number'
-              ? `${contentWidth}px`
-              : contentWidth
-            : null,
+          contentWidthValue,
           contentAlign,
           LinkComponent,
           inlinePlugins,
