@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Thumbnail} from './Thumbnail';
 
@@ -21,16 +21,19 @@ describe('Thumbnail', () => {
   });
 
   it('shows skeleton when isLoading with no src', () => {
-    const {container} = render(
-      <Thumbnail isLoading data-testid="thumb" />,
-    );
+    const {container} = render(<Thumbnail isLoading data-testid="thumb" />);
     expect(container.querySelector('.astryx-skeleton')).toBeInTheDocument();
     expect(screen.queryByRole('img')).toBeNull();
   });
 
   it('shows image with upload overlay when isLoading with src', () => {
     render(
-      <Thumbnail src="/local.jpg" alt="Uploading" isLoading data-testid="thumb" />,
+      <Thumbnail
+        src="/local.jpg"
+        alt="Uploading"
+        isLoading
+        data-testid="thumb"
+      />,
     );
     const img = screen.getByRole('img');
     expect(img).toHaveAttribute('src', '/local.jpg');
@@ -75,6 +78,40 @@ describe('Thumbnail', () => {
     ).toBeInTheDocument();
   });
 
+  it('marks the image as explicitly decorative when no alt is provided', () => {
+    render(
+      <Thumbnail src="/photo.jpg" label="photo.png" data-testid="thumb" />,
+    );
+    const img = screen.getByTestId('thumb').querySelector('img');
+    expect(img).toHaveAttribute('alt', '');
+    expect(img).toHaveAttribute('role', 'presentation');
+    expect(img).toHaveAttribute('aria-hidden', 'true');
+    // The image must not be exposed to assistive technology as a nameless img.
+    expect(screen.queryByRole('img')).toBeNull();
+  });
+
+  it('exposes the image with normal img semantics when alt is provided', () => {
+    render(<Thumbnail src="/photo.jpg" alt="Vacation photo" />);
+    const img = screen.getByRole('img', {name: 'Vacation photo'});
+    expect(img).not.toHaveAttribute('role');
+    expect(img).not.toHaveAttribute('aria-hidden');
+  });
+
+  it('warns once when src is set with no alt and no label', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(<Thumbnail src="/photo.jpg" />);
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy.mock.calls[0][0]).toContain('Thumbnail');
+    warnSpy.mockRestore();
+  });
+
+  it('does not warn when the thumbnail is named via label or alt', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(<Thumbnail src="/a.jpg" label="a.png" />);
+    render(<Thumbnail src="/b.jpg" alt="Photo b" />);
+    expect(warnSpy).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
 
   it('label is shown via tooltip, not as inline text', () => {
     render(<Thumbnail label="photo.png" data-testid="thumb" />);
@@ -117,9 +154,7 @@ describe('Thumbnail', () => {
 
   it('is not interactive when isLoading', () => {
     const onClick = vi.fn();
-    render(
-      <Thumbnail src="/img.jpg" alt="Test" onClick={onClick} isLoading />,
-    );
+    render(<Thumbnail src="/img.jpg" alt="Test" onClick={onClick} isLoading />);
     expect(screen.queryByRole('button')).toBeNull();
   });
 
@@ -127,5 +162,84 @@ describe('Thumbnail', () => {
     const ref = vi.fn();
     render(<Thumbnail ref={ref} data-testid="thumb" />);
     expect(ref).toHaveBeenCalled();
+  });
+
+  describe('showRemoveOn', () => {
+    // The reveal style lives on the slot <div> that wraps the remove button
+    // (ancestor-marker styles can't ride on a child component's xstyle prop),
+    // so assert on the button's parent element.
+    const removeSlotClass = (
+      showRemoveOn?: 'always' | 'hover',
+    ): {className: string; unmount: () => void} => {
+      const view = render(
+        <Thumbnail
+          label="file.png"
+          onRemove={vi.fn()}
+          showRemoveOn={showRemoveOn}
+        />,
+      );
+      const slot = screen.getByRole('button', {
+        name: 'Remove file.png',
+      }).parentElement!;
+      return {className: slot.className, unmount: view.unmount};
+    };
+
+    it('renders the remove button in the DOM even when showRemoveOn="hover"', () => {
+      // Hover reveal is CSS-only (opacity) — the button must stay mounted so
+      // it remains reachable by keyboard and assistive tech.
+      render(
+        <Thumbnail label="file.png" onRemove={vi.fn()} showRemoveOn="hover" />,
+      );
+      expect(
+        screen.getByRole('button', {name: 'Remove file.png'}),
+      ).toBeInTheDocument();
+    });
+
+    it('applies a distinct slot class when showRemoveOn="hover" vs "always"', () => {
+      const always = removeSlotClass('always');
+      always.unmount();
+      const hover = removeSlotClass('hover');
+      expect(hover.className).not.toBe(always.className);
+    });
+
+    it('defaults to "hover" (same slot class as an explicit hover)', () => {
+      const def = removeSlotClass(undefined);
+      def.unmount();
+      const hover = removeSlotClass('hover');
+      expect(def.className).toBe(hover.className);
+    });
+
+    it('still fires onRemove when revealed on hover', async () => {
+      const user = userEvent.setup();
+      const onRemove = vi.fn();
+      render(
+        <Thumbnail label="file.png" onRemove={onRemove} showRemoveOn="hover" />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Remove file.png'}));
+      expect(onRemove).toHaveBeenCalledOnce();
+    });
+  });
+
+  it('shows the placeholder when the image fails to load', () => {
+    render(<Thumbnail src="/broken.jpg" alt="Broken" data-testid="thumb" />);
+
+    fireEvent.error(screen.getByRole('img'));
+
+    expect(screen.queryByRole('img')).toBeNull();
+    const root = screen.getByTestId('thumb');
+    expect(root.querySelector('svg')).toBeInTheDocument();
+  });
+
+  it('retries a changed src after a load error', () => {
+    const {rerender} = render(
+      <Thumbnail src="/broken.jpg" alt="Photo" data-testid="thumb" />,
+    );
+    fireEvent.error(screen.getByRole('img'));
+    expect(screen.queryByRole('img')).toBeNull();
+
+    rerender(<Thumbnail src="/fixed.jpg" alt="Photo" data-testid="thumb" />);
+
+    const img = screen.getByRole('img');
+    expect(img).toHaveAttribute('src', '/fixed.jpg');
   });
 });

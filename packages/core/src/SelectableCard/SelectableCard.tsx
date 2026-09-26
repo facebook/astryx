@@ -12,8 +12,9 @@
  * - /packages/core/src/SelectableCard/SelectableCard.doc.mjs (props table, features)
  * - /packages/core/src/SelectableCard/index.ts (exports if types change)
  * - /apps/storybook/stories/SelectableCard.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Card/SelectableCardShowcase.tsx (showcase block)
- * - /packages/cli/templates/blocks/components/Card/SelectableCardMulti.tsx (block)
+ * - /packages/cli/assets/templates/blocks/components/Card/SelectableCardShowcase.tsx (showcase block)
+ * - /packages/cli/assets/templates/blocks/components/Card/SelectableCardMulti.tsx (block)
+ * - /packages/cli/assets/templates/blocks/components/Card/SelectableCardElevated.tsx (block)
  *
  * Composes Card for all visual styling. Adds selection state with
  * an inset box-shadow (zero layout jitter) and useClickableContainer
@@ -21,6 +22,7 @@
  *
  * A hidden <input type="checkbox"> inside the card provides the accessible
  * role, label, and checked state — the card surface itself has no role/tabIndex.
+ * Space toggles it natively; Enter is wired up as an additional toggle key.
  *
  * For static display, use Card.
  * For navigation or action cards, use ClickableCard.
@@ -29,6 +31,7 @@
 import {
   type ReactNode,
   type MouseEvent,
+  type KeyboardEvent,
   useRef,
   useCallback,
   type Ref,
@@ -36,32 +39,34 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
-import type {SizeValue, SpacingStep} from '../utils/types';
-import {mergeProps, mergeRefs} from '../utils';
+import type {Elevation, SizeValue, SpacingStep} from '../utils/types';
+import {mergeProps} from '../utils';
 import {Card} from '../Card/Card';
 import type {CardVariant} from '../Card/Card';
 import {useClickableContainer} from '../hooks/useClickableContainer';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 // Styles — selection + interaction; Card handles the rest
 // =============================================================================
 
 const styles = stylex.create({
   interactive: {
+    // Declared here, on the element that carries the `astryx-selectable-card`
+    // target, so a theme has something to override — the ring for a variant
+    // only the theme knows about reads it (see selectedUnknown).
+    '--selectable-card-ring-color': colorVars['--color-accent'],
     position: 'relative',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transitionProperty: 'box-shadow, border-color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    outlineOffset: '2px',
-  },
-  focusWithin: {
-    ':has(:focus-visible)': {
-      outline: `2px solid ${colorVars['--color-accent']}`,
-      outlineOffset: '2px',
-    },
   },
   // Hover overlay — guarded by @media (hover: hover) so touch devices
   // don't show a stuck hover state. Active/pressed state works everywhere.
@@ -78,18 +83,18 @@ const styles = stylex.create({
       backgroundColor: 'transparent',
     },
     ':active::after': {
-      backgroundColor: 'color-mix(in srgb, currentColor 10%, transparent)',
+      backgroundColor: colorVars['--color-overlay-pressed'],
     },
   },
   hoverOnPointer: {
     '@media (hover: hover)': {
-      ':hover::after': {
-        backgroundColor: 'color-mix(in srgb, currentColor 5%, transparent)',
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))::after': {
+        backgroundColor: colorVars['--color-overlay-hover'],
       },
     },
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
   },
   srOnly: {
@@ -103,51 +108,62 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     borderWidth: 0,
   },
-  // Selection indicator — inset box-shadow for the thick inner ring (zero layout
-  // jitter) plus borderColor change on the card's own border for a cohesive look.
+  // Selection indicator — an inset ring drawn via the card's --_card-ring
+  // shadow slot (zero layout jitter) plus a borderColor change on the card's
+  // own border for a cohesive look. Routing the ring through --_card-ring
+  // (rather than box-shadow directly) lets it compose with the card's
+  // elevation instead of clobbering it.
   selected: {
     borderColor: colorVars['--color-accent'],
-    boxShadow: `inset 0 0 0 2px ${colorVars['--color-accent']}`,
+    '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-accent']}`,
   },
   selectedBlue: {
     borderColor: colorVars['--color-border-blue'],
-    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-blue']}`,
+    '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-border-blue']}`,
   },
   selectedCyan: {
     borderColor: colorVars['--color-border-cyan'],
-    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-cyan']}`,
+    '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-border-cyan']}`,
   },
   selectedGray: {
     borderColor: colorVars['--color-border-gray'],
-    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-gray']}`,
+    '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-border-gray']}`,
   },
   selectedGreen: {
     borderColor: colorVars['--color-border-green'],
-    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-green']}`,
+    '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-border-green']}`,
   },
   selectedOrange: {
     borderColor: colorVars['--color-border-orange'],
-    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-orange']}`,
+    '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-border-orange']}`,
   },
   selectedPink: {
     borderColor: colorVars['--color-border-pink'],
-    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-pink']}`,
+    '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-border-pink']}`,
   },
   selectedPurple: {
     borderColor: colorVars['--color-border-purple'],
-    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-purple']}`,
+    '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-border-purple']}`,
   },
   selectedRed: {
     borderColor: colorVars['--color-border-red'],
-    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-red']}`,
+    '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-border-red']}`,
   },
   selectedTeal: {
     borderColor: colorVars['--color-border-teal'],
-    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-teal']}`,
+    '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-border-teal']}`,
   },
   selectedYellow: {
     borderColor: colorVars['--color-border-yellow'],
-    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-yellow']}`,
+    '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-border-yellow']}`,
+  },
+  // A theme-added variant paints with colours the component cannot know, so no
+  // token is guaranteed to contrast with it — an accent ring disappears against
+  // an accent fill, and an outset one is no better. The theme that supplied the
+  // fill is the only thing that can pick a ring, so it gets a lever beside it;
+  // the var defaults to the accent, keeping every built-in unchanged.
+  selectedUnknown: {
+    '--_card-ring': 'inset 0 0 0 2px var(--selectable-card-ring-color)',
   },
 });
 
@@ -177,6 +193,10 @@ const selectedStyleForVariant = (variant: CardVariant) => {
       return styles.selectedTeal;
     case 'yellow':
       return styles.selectedYellow;
+    // CardVariant is open — a theme can add a variant this switch has never
+    // seen, and it still has to look selected.
+    default:
+      return styles.selectedUnknown;
   }
 };
 
@@ -228,6 +248,13 @@ export interface SelectableCardProps extends Omit<BaseProps, 'onChange'> {
    */
   variant?: CardVariant;
 
+  /**
+   * Resting elevation — the shadow depth the card sits at.
+   * The selection ring composes on top, so a selected card keeps its shadow.
+   * @default 'none'
+   */
+  elevation?: Elevation;
+
   /** Width of the card. */
   width?: SizeValue;
 
@@ -278,6 +305,7 @@ export function SelectableCard({
   children,
   padding,
   variant = 'default',
+  elevation = 'none',
   width,
   height,
   maxWidth,
@@ -293,6 +321,19 @@ export function SelectableCard({
   const handleClick = useCallback(
     (_event: MouseEvent<HTMLElement>) => {
       if (!isDisabled) {
+        onChange(!isSelected);
+      }
+    },
+    [isDisabled, isSelected, onChange],
+  );
+
+  // The focusable control is a native checkbox, which toggles on Space but
+  // ignores Enter. Add Enter as an extra toggle key; Space keeps its native
+  // handling, so we deliberately do not toggle on Space here (would double).
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLInputElement>) => {
+      if (!isDisabled && event.key === 'Enter') {
+        event.preventDefault();
         onChange(!isSelected);
       }
     },
@@ -322,23 +363,25 @@ export function SelectableCard({
 
   return (
     <Card
-      ref={mergeRefs(ref, containerRef)}
+      ref={useMergedRefs(ref, containerRef)}
       width={width}
       height={height}
       maxWidth={maxWidth}
       padding={padding}
       variant={variant}
+      elevation={elevation}
       {...mergeProps(
         themeProps('selectable-card', {
           variant,
           selected: isSelected ? 'true' : 'false',
         }),
-        {className: classNameProp, style},
+        focusOutlineProps.focusWithin(),
+        classNameProp,
+        style,
       )}
       xstyle={
         [
           styles.interactive,
-          styles.focusWithin,
           isSelected && selectedStyleForVariant(variant),
           !isDisabled && styles.overlay,
           !isDisabled && styles.hoverOnPointer,
@@ -356,6 +399,7 @@ export function SelectableCard({
         aria-label={label}
         disabled={isDisabled}
         onChange={() => onChange(!isSelected)}
+        onKeyDown={handleKeyDown}
         {...stylex.props(styles.srOnly)}
       />
       {children}

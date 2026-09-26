@@ -20,8 +20,10 @@ import {ClickableCard} from '@astryxdesign/core/ClickableCard';
 import {typeScaleVars} from '@astryxdesign/core/theme/tokens.stylex';
 import type {BlogPost} from '../../lib/blog/schema';
 import {POST_TYPE_LABELS} from '../../lib/blog/schema';
+import {MarkdownText} from '../MarkdownText';
 import {AuthorByline} from './AuthorByline';
 import {ReleaseCoverArt} from './ReleaseCoverArt';
+import {MarkdownImage} from './ThemedImage';
 import {parseReleaseVersion} from '../../lib/blog/release';
 import {layout} from '../../layout.stylex';
 
@@ -76,9 +78,9 @@ export function BlogArticle({post}: BlogArticleProps) {
           <Heading level={1} type="display-1">
             {post.title}
           </Heading>
-          <Text type="large" weight="normal" color="secondary">
-            {post.description}
-          </Text>
+          <MarkdownText type="large" weight="normal" color="secondary">
+            {post.dek ?? post.description}
+          </MarkdownText>
           <AuthorByline
             authors={post.authors}
             date={post.date}
@@ -106,7 +108,10 @@ export function BlogArticle({post}: BlogArticleProps) {
           </AspectRatio>
         ) : null}
 
-        <Markdown headingLevelStart={2} contentWidth="100%">
+        <Markdown
+          headingLevelStart={2}
+          contentWidth="100%"
+          components={{image: MarkdownImage}}>
           {post.body}
         </Markdown>
 

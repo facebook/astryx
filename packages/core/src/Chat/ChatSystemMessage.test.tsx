@@ -10,12 +10,6 @@ describe('ChatSystemMessage', () => {
     expect(screen.getByText('Conversation started')).toBeTruthy();
   });
 
-  it('has role="status"', () => {
-    render(<ChatSystemMessage data-testid="sys">Notice</ChatSystemMessage>);
-    const el = screen.getByTestId('sys');
-    expect(el.getAttribute('role')).toBe('status');
-  });
-
   it('renders default variant without divider lines', () => {
     const {container} = render(<ChatSystemMessage>Hello</ChatSystemMessage>);
     // Divider lines have aria-hidden, so check there are none
@@ -26,6 +20,11 @@ describe('ChatSystemMessage', () => {
   it('renders divider variant with Divider', () => {
     render(<ChatSystemMessage variant="divider">Today</ChatSystemMessage>);
     expect(screen.getByText('Today')).toBeTruthy();
+  });
+
+  it('exposes the divider variant label as the separator accessible name', () => {
+    render(<ChatSystemMessage variant="divider">Today</ChatSystemMessage>);
+    expect(screen.getByRole('separator')).toHaveAccessibleName('Today');
   });
 
   it('renders icon', () => {
@@ -44,7 +43,7 @@ describe('ChatSystemMessage', () => {
       </ChatSystemMessage>,
     );
     const el = screen.getByTestId('sys');
-    expect(el.className).toContain('divider');
+    expect(el).toHaveAttribute('data-variant', 'divider');
   });
 
   it('applies data-testid', () => {
@@ -52,7 +51,7 @@ describe('ChatSystemMessage', () => {
     expect(screen.getByTestId('my-sys')).toBeTruthy();
   });
 
-  it('forwards rest props (data-*, id) while keeping its own role', () => {
+  it('forwards rest props (data-*, id)', () => {
     render(
       <ChatSystemMessage data-testid="sys" data-custom="x" id="sys-1">
         Hello
@@ -61,7 +60,6 @@ describe('ChatSystemMessage', () => {
     const el = screen.getByTestId('sys');
     expect(el).toHaveAttribute('data-custom', 'x');
     expect(el).toHaveAttribute('id', 'sys-1');
-    expect(el.getAttribute('role')).toBe('status');
   });
 
   it('forwards rest props in the divider variant', () => {
@@ -72,6 +70,6 @@ describe('ChatSystemMessage', () => {
     );
     const el = screen.getByTestId('sys');
     expect(el).toHaveAttribute('data-custom', 'x');
-    expect(el.getAttribute('role')).toBe('status');
+    expect(el).toHaveAttribute('role', 'status');
   });
 });

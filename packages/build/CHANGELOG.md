@@ -1,4 +1,149 @@
-# @xds/build
+# @astryxdesign/build
+
+# 0.6.3
+
+---
+
+# 0.6.2
+
+---
+
+# 0.6.1
+
+---
+
+# 0.6.0
+
+#### Fixes
+
+- `withAstryx()` refuses a Turbopack config instead of building an unstyled app. Every alias the helper installs lives in `nextConfig.webpack`, which Turbopack never calls, so the app resolved `@astryxdesign/*` to dist while PostCSS compiled the library from source — disjoint class names, an exit code of 0, and an unstyled page. It now throws, naming both ways out: `--webpack`, or drop the helper and consume the pre-built package. Also warns when the merged alias map claims none of the packages, which reaches the same unstyled state by another route. (#6109)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @joaodotwork
+
+---
+
+# 0.5.4
+
+---
+
+# 0.5.3
+
+#### Fixes
+
+- `withAstryx()` now resolves an app's own `@astryxdesign/*` imports to the packages' `source` entries. The scoped webpack rule only governs requests issued from inside `node_modules`, so app code resolved the library through `default` to `dist` while PostCSS compiled it from source — the two emit disjoint class names and the app rendered unstyled without erroring. (#5932)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @PRIEYAN
+
+---
+
+# 0.5.2
+
+---
+
+# 0.5.1
+
+#### Fixes
+
+- Vite build: Astryx and product styles are split into their own cascade layers, so a theme's component overrides apply in a production build (#5410)
+  StyleX emits every rule it collects into one top-level `@layer priority1…priorityN`. The dev server re-served those partitioned by source file — Astryx's own styles into `astryx-base`, the app's into `product` — but a build did neither, so the priority layers landed outside the `@layer reset, astryx-base, astryx-theme, product` order and outranked all of it. Every `components: {…}` override a theme set — a colour, a radius, a public custom property — was silently dropped in the built app while working in dev.
+
+  The build now runs the same partition the dev server does, from the same helper, so the promised order holds in both: Astryx's styles are overridable by a theme, and an app's own styles still outrank everything.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+
+---
+
+# 0.5.0
+
+---
+
+# 0.4.7
+
+---
+
+# 0.4.6
+
+---
+
+# 0.4.5
+
+---
+
+# 0.4.4
+
+---
+
+# 0.4.3
+
+---
+
+# 0.4.2
+
+---
+
+# 0.4.1
+
+---
+
+# 0.4.0
+
+#### Fixes
+
+- build: import `node:fs` statically so the Vite plugin's package discovery survives the ESM build (#4972)
+  `astryxStylex()`'s config plugin discovered installed `@astryxdesign/*` packages with `require('node:fs')`. The `./vite` export ships only an ESM bundle (`dist/vite.mjs`, esbuild `format: 'esm'`), where esbuild lowers `require` to a shim that throws `Dynamic require of "node:fs" is not supported` — always, since native `require` never exists under ESM. The surrounding `try/catch` swallowed the throw, so `optimizeDeps.exclude` silently fell back to `['@astryxdesign/core']` and every other installed Astryx package stayed eligible for Vite pre-bundling, which strips `stylex.create`/`defineVars` calls and causes runtime errors.
+
+  The discovery now uses a static `import fs from 'node:fs'`, which esbuild preserves as a real ESM import. A regression test compiles `vite.ts` with the same esbuild options as `build.mjs` and runs the discovery in a child `node` process, since in-process test runners provide a `require` shim that masks the bug.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @is-jain
+
+---
+
+# 0.3.0
+
+---
+
+# 0.2.0
+
+---
+
+# 0.1.9
+
+#### Fixes
+
+- Scope the `source` resolve condition to @astryxdesign packages in withAstryx
+  `withAstryx` set webpack's `conditionNames` to `['source', …]` globally, which resolved _any_ dependency shipping a `source` export to its raw TypeScript — not just Astryx packages. Third-party deps that ship a `source` export (e.g. `lexical`, pulled in by the new RichTextEditor lab component) were then fed untranspiled `.ts` through Next's babel and failed on syntax like `declare` class fields.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @potatowagon
+
+---
+
+# 0.1.8
+
+---
+
+# 0.1.7
+
+---
 
 # 0.1.6
 

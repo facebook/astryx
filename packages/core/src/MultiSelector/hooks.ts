@@ -13,6 +13,7 @@
  */
 
 import {useCallback, useRef, useState} from 'react';
+import {useHighlightedOptionScroll} from '../hooks/useHighlightedOptionScroll';
 import type {MultiSelectorOptionData} from './types';
 
 interface UseMultiComboboxOptions {
@@ -20,7 +21,7 @@ interface UseMultiComboboxOptions {
   isDisabled?: boolean;
   isOpen: boolean;
   hasSearch?: boolean;
-  onOpen: () => void;
+  onOpen: () => unknown;
   onClose: () => void;
   onToggle: (itemValue: string) => void;
   /**
@@ -93,20 +94,29 @@ export function useMultiCombobox({
     if (isOpen) {
       closeAndReset();
     } else {
-      onOpen();
-      if (!hasSearch) {
+      const didOpen = onOpen() !== false;
+      if (didOpen && !hasSearch) {
         setHighlightedIndex(0);
       }
     }
   }, [isDisabled, isOpen, onOpen, closeAndReset, hasSearch]);
 
+  // The scroll effect lives here, the highlight owner, so the hover/keyboard
+  // split is shared instead of re-implemented in MultiSelector.tsx (#6077).
+  const highlightOnHover = useHighlightedOptionScroll({
+    isOpen,
+    highlightedIndex,
+    setHighlightedIndex,
+    getOptionId: getItemId,
+  });
+
   const onItemMouseEnter = useCallback(
     (item: MultiSelectorOptionData, index: number) => {
       if (!item.disabled) {
-        setHighlightedIndex(index);
+        highlightOnHover(index);
       }
     },
-    [],
+    [highlightOnHover],
   );
 
   const onKeyDown = useCallback(
@@ -121,8 +131,9 @@ export function useMultiCombobox({
         case 'ArrowDown':
           e.preventDefault();
           if (!isOpen) {
-            onOpen();
-            setHighlightedIndex(0);
+            if (onOpen() !== false) {
+              setHighlightedIndex(0);
+            }
           } else {
             const currentEnabledPos = enabledIndices.indexOf(highlightedIndex);
             const nextPos = Math.min(
@@ -136,8 +147,9 @@ export function useMultiCombobox({
         case 'ArrowUp':
           e.preventDefault();
           if (!isOpen) {
-            onOpen();
-            setHighlightedIndex(selectableItems.length - 1);
+            if (onOpen() !== false) {
+              setHighlightedIndex(selectableItems.length - 1);
+            }
           } else {
             const currentEnabledPos = enabledIndices.indexOf(highlightedIndex);
             const prevPos = Math.max(currentEnabledPos - 1, 0);
@@ -158,8 +170,8 @@ export function useMultiCombobox({
               onToggle(item.value);
             }
           } else if (!isOpen) {
-            onOpen();
-            if (!hasSearch) {
+            const didOpen = onOpen() !== false;
+            if (didOpen && !hasSearch) {
               setHighlightedIndex(0);
             }
           }
@@ -192,6 +204,23 @@ export function useMultiCombobox({
           }
           break;
 
+        // PageUp/PageDown mirror Home/End. In search mode Home/End stay on
+        // the input for caret movement (APG editable combobox), so these are
+        // the sanctioned substitute for jumping to the first/last option.
+        case 'PageUp':
+          e.preventDefault();
+          if (isOpen && enabledIndices.length > 0) {
+            setHighlightedIndex(enabledIndices[0]);
+          }
+          break;
+
+        case 'PageDown':
+          e.preventDefault();
+          if (isOpen && enabledIndices.length > 0) {
+            setHighlightedIndex(enabledIndices[enabledIndices.length - 1]);
+          }
+          break;
+
         case 'Delete':
         case 'Backspace':
           // Keyboard equivalent of the clear button (comboboxes-2): clear all
@@ -208,25 +237,23 @@ export function useMultiCombobox({
           // Typeahead only when search is not present
           if (!hasSearch && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
             const newTypeahead = typeahead + e.key.toLowerCase();
-            setTypeahead(newTypeahead);
-
-            if (typeaheadTimeoutRef.current) {
-              clearTimeout(typeaheadTimeoutRef.current);
-            }
-            typeaheadTimeoutRef.current = setTimeout(() => {
-              setTypeahead('');
-            }, 500);
-
             const matchIndex = selectableItems.findIndex(
               item =>
                 !item.disabled &&
                 item.label?.toLowerCase().startsWith(newTypeahead),
             );
-            if (matchIndex >= 0) {
-              if (!isOpen) {
-                onOpen();
+            const didOpen = isOpen || matchIndex < 0 || onOpen() !== false;
+            if (didOpen) {
+              setTypeahead(newTypeahead);
+              if (typeaheadTimeoutRef.current) {
+                clearTimeout(typeaheadTimeoutRef.current);
               }
-              setHighlightedIndex(matchIndex);
+              typeaheadTimeoutRef.current = setTimeout(() => {
+                setTypeahead('');
+              }, 500);
+              if (matchIndex >= 0) {
+                setHighlightedIndex(matchIndex);
+              }
             }
           }
           break;

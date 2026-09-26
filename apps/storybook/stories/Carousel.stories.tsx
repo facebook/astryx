@@ -1,11 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {Carousel} from '@astryxdesign/core/Carousel';
+import type {CarouselHandle} from '@astryxdesign/core/Carousel';
 import {Thumbnail} from '@astryxdesign/core/Thumbnail';
 import {Card} from '@astryxdesign/core/Card';
+import {Button} from '@astryxdesign/core/Button';
 import {
   colorVars,
   spacingVars,
@@ -21,6 +23,9 @@ const styles = stylex.create({
   },
   constrainedWidth: {
     maxWidth: 400,
+  },
+  narrowWidth: {
+    maxWidth: 240,
   },
   card: {
     width: 160,
@@ -79,7 +84,20 @@ const meta: Meta<typeof Carousel> = {
     },
     hasButtons: {
       control: 'boolean',
-      description: 'Show navigation buttons on hover',
+      description: 'Show navigation buttons when the content can scroll',
+    },
+    padding: {
+      control: {type: 'select'},
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description: 'Inline padding inside the scroll container',
+    },
+    hasEdgeFade: {
+      control: 'boolean',
+      description: 'Show gradient edge-fade mask on overflow',
+    },
+    hasLoop: {
+      control: 'boolean',
+      description: 'Wrap-around scrolling (next at end → start)',
     },
     hasSnap: {
       control: 'boolean',
@@ -284,4 +302,169 @@ export const ColorSwatches: Story = {
       </div>
     );
   },
+};
+
+export const Loop: Story = {
+  name: 'Loop (Wrap-Around)',
+  render: () => (
+    <div {...stylex.props(styles.constrainedWidth)}>
+      <p {...stylex.props(styles.label)}>
+        Next at the end wraps to the start — buttons stay active at both edges
+      </p>
+      <Carousel gap={1} hasLoop hasSnap aria-label="Looping gallery">
+        {IMAGES.map(img => (
+          <Thumbnail
+            key={img.id}
+            src={img.src}
+            alt={img.label}
+            label={img.label}
+          />
+        ))}
+      </Carousel>
+    </div>
+  ),
+};
+
+export const ImperativeControl: Story = {
+  name: 'Imperative Control (handleRef)',
+  render: function ImperativeControlStory() {
+    const carouselRef = useRef<CarouselHandle>(null);
+    return (
+      <div {...stylex.props(styles.constrainedWidth)}>
+        <p {...stylex.props(styles.label)}>
+          External buttons driving the carousel through handleRef
+        </p>
+        <Carousel
+          handleRef={carouselRef}
+          gap={1}
+          hasSnap
+          hasButtons={false}
+          aria-label="Externally controlled gallery">
+          {IMAGES.map(img => (
+            <Thumbnail
+              key={img.id}
+              src={img.src}
+              alt={img.label}
+              label={img.label}
+            />
+          ))}
+        </Carousel>
+        <div style={{display: 'flex', gap: 8, marginTop: 12}}>
+          <Button
+            label="Previous"
+            variant="secondary"
+            size="sm"
+            onClick={() => carouselRef.current?.scrollPrev()}
+          />
+          <Button
+            label="Next"
+            variant="secondary"
+            size="sm"
+            onClick={() => carouselRef.current?.scrollNext()}
+          />
+          <Button
+            label="Jump to first"
+            variant="ghost"
+            size="sm"
+            onClick={() => carouselRef.current?.scrollTo(0)}
+          />
+        </div>
+      </div>
+    );
+  },
+};
+
+export const WithPadding: Story = {
+  name: 'Inline Padding',
+  render: () => (
+    <div {...stylex.props(styles.constrainedWidth)}>
+      <p {...stylex.props(styles.label)}>
+        padding=3 puts the gutter inside the scroll area, and scroll-padding
+        keeps snap points on the content edge
+      </p>
+      <Carousel gap={1} padding={3} hasSnap aria-label="Padded gallery">
+        {IMAGES.map(img => (
+          <Thumbnail
+            key={img.id}
+            src={img.src}
+            alt={img.label}
+            label={img.label}
+          />
+        ))}
+      </Carousel>
+    </div>
+  ),
+};
+
+export const NarrowContainer: Story = {
+  name: 'Narrow Container',
+  render: () => (
+    <div {...stylex.props(styles.narrowWidth)}>
+      <p {...stylex.props(styles.label)}>240px container</p>
+      <Carousel gap={1} aria-label="Narrow gallery">
+        {IMAGES.map(img => (
+          <Thumbnail
+            key={img.id}
+            src={img.src}
+            alt={img.label}
+            label={img.label}
+          />
+        ))}
+      </Carousel>
+    </div>
+  ),
+};
+
+export const LongTextItems: Story = {
+  name: 'Long Text Items',
+  render: () => (
+    <div {...stylex.props(styles.constrainedWidth)}>
+      <p {...stylex.props(styles.label)}>
+        One very long item among short ones, and a word with no break
+        opportunity
+      </p>
+      <Carousel gap={2} aria-label="Text items">
+        <Card xstyle={styles.card}>
+          <div {...stylex.props(styles.cardInner)}>
+            <p {...stylex.props(styles.cardDesc)}>Short</p>
+          </div>
+        </Card>
+        <Card xstyle={styles.card}>
+          <div {...stylex.props(styles.cardInner)}>
+            <p {...stylex.props(styles.cardDesc)}>
+              A much longer description that runs well past the width of its
+              neighbours and has to wrap inside a fixed-width card without
+              pushing the row out of shape.
+            </p>
+          </div>
+        </Card>
+        <Card xstyle={styles.card}>
+          <div {...stylex.props(styles.cardInner)}>
+            <p {...stylex.props(styles.cardDesc)}>
+              Unbreakable:
+              Donaudampfschiffahrtselektrizitaetenhauptbetriebswerkbauunterbeamtengesellschaft
+            </p>
+          </div>
+        </Card>
+      </Carousel>
+    </div>
+  ),
+};
+
+export const SingleItem: Story = {
+  name: 'Single Item',
+  render: () => (
+    <div {...stylex.props(styles.constrainedWidth)}>
+      <p {...stylex.props(styles.label)}>
+        One child: no overflow, no fade, no buttons
+      </p>
+      <Carousel gap={1} aria-label="Single item">
+        <Thumbnail
+          src={IMAGES[0].src}
+          alt={IMAGES[0].label}
+          label={IMAGES[0].label}
+        />
+      </Carousel>
+    </div>
+  ),
 };

@@ -2,10 +2,9 @@
 
 /**
  * @file babel.test.mjs
- * @description Verifies that the XDS babel wrapper applies the configured
- *   library StyleX class-name prefix to XDS library files. Part of the
- *   the library atom prefix defaults to `astryx` and is configurable
- *   before the final cutover.
+ * @description Verifies that the Astryx babel wrapper applies the configured
+ *   library StyleX class-name prefix to Astryx library files. The prefix
+ *   defaults to `astryx` and remains configurable.
  */
 
 import {describe, it, expect} from 'vitest';
@@ -23,15 +22,15 @@ export const styles = stylex.create({
 `;
 
 /**
- * Transform a StyleX source through the XDS babel wrapper as if it were a
- * library file, returning the emitted code. `libraryPrefix` controls the
+ * Transform a StyleX source through the Astryx babel wrapper as if it were an
+ * Astryx library file, returning the emitted code. `libraryPrefix` controls the
  * atomic class-name prefix for library files.
  */
 function transformLibraryFile(libraryPrefix) {
   const result = babel.transformSync(SOURCE, {
     // A path matching one of the library patterns so the wrapper routes it
     // through the library plugin instance.
-    filename: 'node_modules/@astryxdesign/core/src/Box/XDSBox.tsx',
+    filename: 'node_modules/@astryxdesign/core/src/Box/AstryxBox.tsx',
     babelrc: false,
     configFile: false,
     plugins: [
@@ -53,7 +52,7 @@ function atomicClasses(code) {
   return code.match(/\b(?:xds|astryx|lib)[a-z0-9]{4,}\b/g) ?? [];
 }
 
-describe('xds babel wrapper -- library StyleX prefix', () => {
+describe('Astryx babel wrapper -- library StyleX prefix', () => {
   it('defaults library atoms to the `astryx` prefix', () => {
     const code = transformLibraryFile(undefined);
     const atoms = atomicClasses(code);

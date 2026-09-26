@@ -32,8 +32,9 @@ export interface UseTypeaheadOptions {
 
   /**
    * The index to start searching from — typically the currently focused item,
-   * so repeated presses of the same letter cycle through matches. Defaults to
-   * -1 (search from the top).
+   * so repeated presses of the same letter cycle through matches. Any negative
+   * value (the default) means nothing is current: the search runs from the top
+   * and never skips the first item.
    */
   getCurrentIndex?: () => number;
 
@@ -67,9 +68,12 @@ export interface UseTypeaheadReturn {
 function isPrintableCharacter(e: React.KeyboardEvent | KeyboardEvent): boolean {
   return (
     e.key.length === 1 &&
+    // Alt alone is not excluded: Option+letter on macOS composes a printable
+    // character (Option+a → "å"), and dropping those makes accented labels
+    // untypeable. Real chords still carry ctrl or meta — including AltGr,
+    // which sets ctrlKey on Windows and Linux.
     !e.ctrlKey &&
     !e.metaKey &&
-    !e.altKey &&
     // A lone space is used for activation in menus, not typeahead-from-empty.
     e.key !== ' '
   );
@@ -133,8 +137,14 @@ export function useTypeahead(options: UseTypeaheadOptions): UseTypeaheadReturn {
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent | KeyboardEvent): boolean => {
       // A bare Space with no active buffer is not typeahead (menus activate on
-      // Space); once the user is mid-typing, Space extends the query.
-      const isSpaceMidType = e.key === ' ' && bufferRef.current.length > 0;
+      // Space); once the user is mid-typing, Space extends the query. Chorded
+      // with ctrl or meta it is neither — that is an OS or IME shortcut, and
+      // consuming it would append a raw space that poisons the whole buffer.
+      const isSpaceMidType =
+        e.key === ' ' &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        bufferRef.current.length > 0;
       if (!isPrintableCharacter(e) && !isSpaceMidType) {
         return false;
       }
@@ -154,11 +164,16 @@ export function useTypeahead(options: UseTypeaheadOptions): UseTypeaheadReturn {
       bufferRef.current = nextBuffer;
       scheduleReset();
 
-      const start = getCurrentIndex?.() ?? -1;
+      const current = getCurrentIndex?.() ?? -1;
       const count = labels.length;
-      // When repeating a single char, start the search AFTER the current item
-      // so we advance; otherwise include the current item.
-      const offset = isRepeatSameChar ? 1 : 0;
+      const hasCurrent = current >= 0;
+      const start = hasCurrent ? current : 0;
+      // A single-character search starts AFTER the current item, so pressing a
+      // letter walks to the next item beginning with it instead of re-matching
+      // the one already selected (native <select> and APG getIndexByLetter).
+      // Once the buffer is longer it is refining a match, so the current item
+      // stays in range. With nothing current there is nothing to advance past.
+      const offset = hasCurrent && nextBuffer.length === 1 ? 1 : 0;
 
       for (let i = 0; i < count; i++) {
         const index = (start + offset + i + count) % count;

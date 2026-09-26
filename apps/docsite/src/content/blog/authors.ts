@@ -3,8 +3,8 @@
 /**
  * @file authors.ts
  *
- * Shared author registry for the blog. Posts reference authors by key in their
- * frontmatter (`authors: ["team"]`) so profile metadata is defined once.
+ * Shared author registry for the blog. Posts reference team or individual
+ * authors by key in their frontmatter so profile metadata is defined once.
  *
  * For GitHub-backed authors, set `github` and the site derives a stable avatar
  * and profile link from github.com without fetching profile data at build time.
@@ -61,6 +61,19 @@ export const authors = {
   josephfarina: {
     name: 'Joey',
     github: 'josephfarina',
+    role: 'Engineering',
+  },
+  liya: {
+    name: 'Liya',
+    github: 'liyalabubu',
+  },
+  ernest: {
+    name: 'Ernest',
+    github: 'ernestt',
+  },
+  nynexman4464: {
+    name: 'Alex',
+    github: 'nynexman4464',
     role: 'Engineering',
   },
 } as const satisfies Record<string, AuthorProfile>;

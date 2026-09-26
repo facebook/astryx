@@ -37,7 +37,7 @@ const EXP_DIR = __dirname; // internal/vibe-tests/cli-discovery-test
 const VIBE_DIR = path.resolve(EXP_DIR, '..'); // internal/vibe-tests
 const REPO_ROOT = path.resolve(VIBE_DIR, '../..');
 const RESULTS_DIR = path.join(VIBE_DIR, 'results');
-const REAL_CLI_BIN = path.join(REPO_ROOT, 'packages', 'cli', 'bin', 'astryx.mjs');
+const REAL_CLI_BIN = path.join(REPO_ROOT, 'packages', 'cli', 'clients', 'cli', 'bin', 'astryx.mjs');
 
 // ── Helpers ──────────────────────────────────────────────────────────
 

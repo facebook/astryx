@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'BreadcrumbItem',
@@ -8,6 +8,10 @@ export const docs = {
   displayName: 'Breadcrumb Item',
   isHiddenFromOverview: true,
   description: 'Individual breadcrumb item that renders as a link when href is provided, or as plain text for the current page.',
+  usage: {
+    description:
+      'BreadcrumbItem represents one destination, action, current location, or sibling-menu trigger inside a Breadcrumbs trail.',
+  },
   props: [
     {
       name: 'children',
@@ -28,8 +32,8 @@ export const docs = {
     {
       name: 'isCurrent',
       type: 'boolean',
-      description: 'Marks this item as the current page, applying aria-current="page".',
-      default: 'false',
+      description:
+        'Marks this item as the current page, applying aria-current="page". When omitted, the last item is auto-detected if no item is explicitly current; pass false to opt out.',
     },
     {
       name: 'startIcon',
@@ -44,6 +48,18 @@ export const docs = {
           },
         },
       ],
+    },
+    {
+      name: 'menu',
+      type: 'DropdownMenuOption[] | ReactNode',
+      description:
+        'Menu opened when the item is activated, using the same item API as DropdownMenu/MoreMenu/ContextMenu (a DropdownMenuOption[] array or composed DropdownMenuItem children). Renders a link-styled menu trigger with a chevron and aria-haspopup="menu". Takes precedence over href/onClick.',
+    },
+    {
+      name: 'menuSize',
+      type: "'sm' | 'md' | 'lg'",
+      description:
+        "Size passed to the menu items. Defaults from the breadcrumb variant ('supporting' → 'sm', otherwise 'md').",
     },
     {
       name: 'as',
@@ -78,13 +94,25 @@ export const docsZh = {
     {
       name: 'isCurrent',
       type: 'boolean',
-      description: '将此项标记为当前页面，应用 aria-current="page"。',
-      default: 'false',
+      description:
+        '将此项标记为当前页面，应用 aria-current="page"。省略时，如果没有显式的当前项，则自动将最后一项标记为当前项；传入 false 可退出自动检测。',
     },
     {
       name: 'startIcon',
       type: 'ReactNode',
       description: '在项目标签前渲染的图标。',
+    },
+    {
+      name: 'menu',
+      type: 'DropdownMenuOption[] | ReactNode',
+      description:
+        '激活项目时打开的菜单，使用与 DropdownMenu/MoreMenu/ContextMenu 相同的项目 API（DropdownMenuOption[] 数组或组合的 DropdownMenuItem 子元素）。渲染为带 chevron 和 aria-haspopup="menu" 的链接样式触发器。优先于 href/onClick。',
+    },
+    {
+      name: 'menuSize',
+      type: "'sm' | 'md' | 'lg'",
+      description:
+        "传递给菜单项的尺寸。默认根据面包屑变体推断（'supporting' → 'sm'，否则 'md'）。",
     },
     {
       name: 'as',
@@ -103,8 +131,11 @@ export const docsDense = {
     children: 'label content',
     href: 'link URL; omit for non-navigable items',
     onClick: 'click handler',
-    isCurrent: 'marks current page w/ aria-current="page"',
+    isCurrent:
+      'marks current page w/ aria-current="page"; omitted auto-detects the last item; false opts out',
     startIcon: 'icon before label',
+    menu: 'DropdownMenuOption[] | children; opens a menu trigger (aria-haspopup="menu"); reuses the DropdownMenu item API',
+    menuSize: "menu item size; defaults from variant (supporting→sm, else md)",
     as: 'custom link component; overrides LinkProvider default',
   },
 };

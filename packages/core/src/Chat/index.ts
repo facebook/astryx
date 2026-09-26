@@ -25,6 +25,7 @@ export {ChatComposerInput, ChatComposerTokenElement} from './ChatComposerInput';
 export type {
   ChatComposerInputProps,
   ChatComposerInputHandle,
+  ChatComposerTokenElementProps,
   ChatComposerToken,
   ChatComposerTrigger,
   ChatComposerTriggerItem,
@@ -59,6 +60,7 @@ export type {
 
 export {useChatStreamScroll} from './useChatStreamScroll';
 export type {
+  ChatScrollToBottomOptions,
   UseChatStreamScrollOptions,
   UseChatStreamScrollReturn,
 } from './useChatStreamScroll';
@@ -80,7 +82,11 @@ export type {
   TokenPortal,
 } from './useChatComposerTokens';
 export type {ChatMessageSender, ChatDensity} from './ChatContext';
-export {useChatLayoutContext} from './ChatContext';
+export {useChatLayoutContext, useChatComposerContext} from './ChatContext';
+export type {
+  ChatComposerContextValue,
+  ChatComposerInputControl,
+} from './ChatContext';
 
 export {ChatToolCalls} from './ChatToolCalls';
 export type {

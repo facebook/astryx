@@ -207,7 +207,7 @@ export function parseYamlFrontmatter(text) {
  * @returns {{data: Record<string, unknown>, body: string}}
  */
 export function parseFrontmatter(raw) {
-  const normalized = raw.replace(/^\uFEFF/, '');
+  const normalized = raw.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
   const match = normalized.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
   if (!match) {
     return {data: {}, body: normalized.trim()};
@@ -293,6 +293,13 @@ export function validatePostFrontmatter(slug, data) {
     err(`"updatedAt" must be an ISO date (YYYY-MM-DD), got "${data.updatedAt}"`);
   }
 
+  if (
+    data.dek != null &&
+    (typeof data.dek !== 'string' || data.dek.trim() === '')
+  ) {
+    err('"dek" must be a non-empty string when provided');
+  }
+
   if (data.draft != null && typeof data.draft !== 'boolean') {
     err('"draft" must be a boolean when provided');
   }
@@ -317,6 +324,7 @@ export function validatePostFrontmatter(slug, data) {
   return {
     title: data.title,
     description: data.description,
+    dek: data.dek ?? null,
     date: data.date,
     type: data.type,
     authors: data.authors,

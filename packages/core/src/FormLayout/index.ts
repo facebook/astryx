@@ -13,5 +13,5 @@
 
 export {FormLayout} from './FormLayout';
 export type {FormLayoutProps} from './FormLayout';
-export type {FormLayoutDirection} from './FormLayoutContext';
+export type {FormLayoutDirection, FormOptionality} from './FormLayoutContext';
 export {FormLayoutContext} from './FormLayoutContext';

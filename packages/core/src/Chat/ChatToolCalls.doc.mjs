@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'ChatToolCalls',
@@ -23,7 +23,7 @@ export const docs = {
       {guidance: false, description: "Don't use custom wrappers around individual calls; the component handles single vs. grouped layout automatically based on the array length."},
     ],
     anatomy: [
-      {name: 'Status icon', required: true, description: 'A colored circle with a check, cross, or spinner indicating whether the call is pending, running, complete, or errored.'},
+      {name: 'Status icon', required: true, description: 'A themed semantic success/error icon, or a spinner while the call is pending or running.'},
       {name: 'Tool name', required: true, description: 'The function or tool name displayed in monospace: bash, edit, read, web_search, etc.'},
       {name: 'Node badge', required: false, description: 'A neutral pill badge showing which sandbox or environment ran the tool, like cli:remote-server or workspace.'},
       {name: 'Target label', required: false, description: 'The target of the action (a file path, command, or search query) shown after the tool name.'},
@@ -33,12 +33,21 @@ export const docs = {
     ],
   },
 
+  playground: {
+    defaults: {
+      calls: [
+        {name: 'read_file', status: 'complete', target: 'Button.tsx', duration: '120ms'},
+        {name: 'run_tests', status: 'complete', target: 'yarn test', duration: '1.2s', additions: 12, deletions: 3},
+      ],
+    },
+  },
+
   props: [
     {
       name: 'calls',
       type: 'ChatToolCallItem[]',
       description:
-        'Array of tool call data. Each item has name, status, target, duration, node, additions, deletions, stats, errorMessage, resultDetail, key, and data.',
+        "Array of tool call data. Each item has name, status, target, duration, node, additions, deletions, stats, errorMessage, resultDetail, key, and data. status is one of 'pending', 'running', 'complete', or 'error' (defaults to 'complete').",
       required: true,
     },
     {
@@ -73,7 +82,7 @@ export const docs = {
   ],
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description:
@@ -97,7 +106,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'tool/function call display from LLM response; single=inline, multiple=collapsible summary w/ latest at surface',
   usage: {

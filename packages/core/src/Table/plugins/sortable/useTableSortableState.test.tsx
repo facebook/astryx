@@ -17,6 +17,7 @@ import {useTableSortable} from './useTableSortable';
 import type {TableSortState} from './useTableSortable';
 import {useTableSortableState} from './useTableSortableState';
 import type {UseTableSortableStateConfig} from './useTableSortableState';
+import {InternationalizationProvider} from '../../../i18n';
 
 // =============================================================================
 // Test Data
@@ -117,6 +118,39 @@ describe('useTableSortableState', () => {
         'Charlie',
         'Diana',
       ]);
+    });
+
+    it('re-sorts strings when the provider locale changes', () => {
+      const localeData: Employee[] = [
+        {
+          id: '1',
+          name: 'z',
+          age: 1,
+          department: 'Test',
+          salary: 1,
+        },
+        {
+          id: '2',
+          name: 'ä',
+          age: 2,
+          department: 'Test',
+          salary: 2,
+        },
+      ];
+      const table = (locale: string) => (
+        <InternationalizationProvider locale={locale}>
+          <SortableStateTable
+            data={localeData}
+            defaultSort={[{sortKey: 'name', direction: 'ascending'}]}
+          />
+        </InternationalizationProvider>
+      );
+
+      const {rerender} = render(table('sv-SE'));
+      expect(getNameColumnValues()).toEqual(['z', 'ä']);
+
+      rerender(table('de-DE'));
+      expect(getNameColumnValues()).toEqual(['ä', 'z']);
     });
 
     it('renders unsorted when no defaultSort', () => {

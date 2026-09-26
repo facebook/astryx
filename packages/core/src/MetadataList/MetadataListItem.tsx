@@ -13,7 +13,7 @@
  * - /packages/core/src/MetadataList/MetadataList.test.tsx
  * - /packages/core/src/MetadataList/index.ts
  * - /apps/storybook/stories/MetadataList.stories.tsx
- * - /packages/cli/templates/blocks/components/MetadataList/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/MetadataList/ (showcase blocks)
  */
 
 import {use, type ReactNode} from 'react';
@@ -144,6 +144,7 @@ export function MetadataListItem({
   style,
   'data-testid': testId,
   ref,
+  ...rest
 }: MetadataListItemProps) {
   const ctx = use(MetadataListContext);
   const labelPosition = ctx?.labelConfig.position ?? 'start';
@@ -170,7 +171,8 @@ export function MetadataListItem({
           stylex.props(styles.stackedWrapper, xstyle),
           className,
           style,
-        )}>
+        )}
+        {...rest}>
         <dt {...stylex.props(styles.stackedLabel)}>{labelContent}</dt>
         <dd {...stylex.props(styles.stackedValue)}>{children}</dd>
       </div>
@@ -188,7 +190,8 @@ export function MetadataListItem({
           stylex.props(styles.label, xstyle),
           className,
           style,
-        )}>
+        )}
+        {...rest}>
         {labelContent}
       </dt>
       <dd

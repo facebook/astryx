@@ -35,6 +35,36 @@ const FOCUS_INPUT_TYPES = new Set([
   'week',
 ]);
 
+/**
+ * `aria-haspopup` values that advertise a control opens a popup on activation.
+ * https://www.w3.org/TR/wai-aria-1.2/#aria-haspopup
+ */
+const HASPOPUP_VALUES = new Set([
+  'true',
+  'menu',
+  'listbox',
+  'tree',
+  'grid',
+  'dialog',
+]);
+
+/**
+ * Whether an element is a popup trigger — a combobox or any control that
+ * advertises `aria-haspopup`. Such controls activate their popup on *click*
+ * (e.g. DateInput's `<input type="text" role="combobox" aria-haspopup="dialog">`
+ * opens its calendar via `onClick`, with no `onFocus` opener). Forwarding a
+ * container click to `.focus()` would focus the control but leave the popup
+ * closed — so we `.click()` these instead. Plain text inputs (no popup) are
+ * unaffected and keep `.focus()`.
+ */
+function isPopupTrigger(el: HTMLElement): boolean {
+  if (el.getAttribute('role') === 'combobox') {
+    return true;
+  }
+  const haspopup = el.getAttribute('aria-haspopup');
+  return haspopup != null && HASPOPUP_VALUES.has(haspopup);
+}
+
 export interface UseInputContainerOptions {
   /** Ref to the outer container/wrapper element */
   containerRef: RefObject<HTMLElement | null>;
@@ -83,7 +113,12 @@ export function useInputContainer({
     if (input == null) {
       return;
     }
-    if (
+    // Popup triggers (combobox / aria-haspopup) activate their popup on
+    // *click*, not focus — so check this BEFORE the type check, otherwise a
+    // `type="text"` combobox (DateInput) would `.focus()` and never open.
+    if (input instanceof HTMLElement && isPopupTrigger(input)) {
+      input.click();
+    } else if (
       input instanceof HTMLInputElement &&
       FOCUS_INPUT_TYPES.has(input.type)
     ) {

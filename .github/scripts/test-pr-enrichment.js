@@ -46,12 +46,24 @@ const mockAnalysis = {
       hasStories: true,
     },
     TextInput: {
+      package: '@astryxdesign/core',
       esmSize: '3.0KB',
       esmBytes: 3100,
       cjsSize: '3.4KB',
       cjsBytes: 3500,
       exports: ['XDSTextInput'],
       propsCount: 20,
+      hasTests: true,
+      hasStories: true,
+    },
+    RichTextEditor: {
+      package: '@astryxdesign/lab',
+      esmSize: null,
+      esmBytes: null,
+      cjsSize: '6.1KB',
+      cjsBytes: 6250,
+      exports: ['RichTextEditor', 'RichTextEditorProps'],
+      propsCount: 9,
       hasTests: true,
       hasStories: true,
     },
@@ -66,13 +78,27 @@ const mockAnalysis = {
       esmBytes: 2970,
     },
   },
-  totalBundle: {
-    esmSize: '45.2KB',
-    esmBytes: 46280,
-    cjsSize: '52.1KB',
-    cjsBytes: 53350,
-    gzipSize: '12.4KB',
-  },
+  // Multi-package bundle summary — one entry per package the PR touched. Note
+  // lab ships CJS-only today (esm null), which must render as N/A, not 0B.
+  bundlePackages: [
+    {
+      package: '@astryxdesign/core',
+      esmSize: null,
+      esmBytes: null,
+      cjsSize: '52.1KB',
+      cjsBytes: 53350,
+      gzipSize: '12.4KB',
+    },
+    {
+      package: '@astryxdesign/lab',
+      esmSize: null,
+      esmBytes: null,
+      cjsSize: '18.3KB',
+      cjsBytes: 18740,
+      gzipSize: '5.2KB',
+    },
+  ],
+  changedPackages: ['@astryxdesign/core', '@astryxdesign/lab'],
   bundleDelta: 850,
   analyzedAt: new Date().toISOString(),
 };
@@ -215,11 +241,25 @@ if (analysis.modifiedComponents && analysis.modifiedComponents.length > 0) {
 // Build accessibility section using shared module
 const a11ySection = buildA11ySection(a11yReport);
 
-// Build bundle size section
+// Build bundle size section — one row per package the PR touched.
 let bundleSection = '### Bundle Size Summary\n\n';
-bundleSection += `| Package | Size (ESM) | Size (CJS) | Gzipped |\n`;
-bundleSection += `|---------|------------|------------|----------|\n`;
-bundleSection += `| @astryxdesign/core | ${analysis.totalBundle?.esmSize || 'N/A'} | ${analysis.totalBundle?.cjsSize || 'N/A'} | ${analysis.totalBundle?.gzipSize || 'N/A'} |\n\n`;
+const bundlePackages =
+  analysis.bundlePackages && analysis.bundlePackages.length > 0
+    ? analysis.bundlePackages
+    : analysis.totalBundle
+      ? [{ package: '@astryxdesign/core', ...analysis.totalBundle }]
+      : [];
+
+if (bundlePackages.length > 0) {
+  bundleSection += `| Package | Size (ESM) | Size (CJS) | Gzipped |\n`;
+  bundleSection += `|---------|------------|------------|----------|\n`;
+  for (const b of bundlePackages) {
+    bundleSection += `| ${b.package} | ${b.esmSize || 'N/A'} | ${b.cjsSize || 'N/A'} | ${b.gzipSize || 'N/A'} |\n`;
+  }
+  bundleSection += `\n`;
+} else {
+  bundleSection += '_No component packages changed._\n\n';
+}
 
 if (analysis.bundleDelta) {
   const delta = analysis.bundleDelta;

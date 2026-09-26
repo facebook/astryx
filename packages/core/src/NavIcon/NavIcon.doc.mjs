@@ -1,6 +1,20 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Container',
+    required: true,
+    description: 'Circular painted container for the supplied icon.',
+  },
+  {
+    name: 'Icon',
+    required: true,
+    description: 'Caller-supplied visual content rendered inside the container.',
+  },
+];
+
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'NavIcon',
@@ -22,10 +36,14 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-navicon'},
+      {className: 'astryx-nav-icon'},
+      // Retained beside the canonical names for backwards compatibility.
+      // New themes use the canonical targets above.
+      {className: 'astryx-navicon', deprecatedFor: 'nav-icon'},
     ],
   },
   usage: {
+    anatomy,
     description:
       'NavIcon is a circular icon container with an accent-colored background. Use it in navigation headers such as TopNavHeading and PageNavHeader to visually identify a section or application.',
     bestPractices: [
@@ -36,7 +54,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'NavIcon',
   displayName: 'Nav Icon',
@@ -51,10 +69,14 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-navicon'},
+      {className: 'astryx-nav-icon'},
+      // Retained beside the canonical names for backwards compatibility.
+      // New themes use the canonical targets above.
+      {className: 'astryx-navicon', deprecatedFor: 'nav-icon'},
     ],
   },
   usage: {
+    anatomy,
     description:
       'NavIcon is a circular icon container with an accent-colored background. Use it in navigation headers such as TopNavHeading and PageNavHeader to visually identify a section or application.',
     bestPractices: [
@@ -65,11 +87,12 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Circular icon container w/ accent background for navigation headers.',
   usage: {
+    anatomy,
     description:
       'NavIcon is a circular icon container with an accent-colored background. Use it in navigation headers such as TopNavHeading and PageNavHeader to visually identify a section or application.',
     bestPractices: [

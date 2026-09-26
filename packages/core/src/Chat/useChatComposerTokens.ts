@@ -120,7 +120,7 @@ export function useChatComposerTokens({
       span.setAttribute('data-astryx-token-id', id);
       span.contentEditable = 'false';
       span.style.display = 'inline-flex';
-      span.style.verticalAlign = 'baseline';
+      span.style.verticalAlign = 'middle';
 
       range.deleteContents();
       range.insertNode(span);

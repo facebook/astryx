@@ -7,6 +7,7 @@ import {
   SegmentedControlItem,
 } from '@astryxdesign/core/SegmentedControl';
 import {Icon} from '@astryxdesign/core/Icon';
+import {VStack} from '@astryxdesign/core/Stack';
 import {
   Squares2X2Icon,
   ListBulletIcon,
@@ -56,6 +57,26 @@ export const Default: Story = {
         <SegmentedControlItem value="list" label="List" />
         <SegmentedControlItem value="table" label="Table" />
       </SegmentedControl>
+    );
+  },
+};
+
+export const InVerticalStack: Story = {
+  name: 'Inside a vertical stack',
+  render: () => {
+    const [value, setValue] = useState('viewer');
+    return (
+      <VStack width="100%">
+        <SegmentedControl
+          value={value}
+          onChange={setValue}
+          label="Access level"
+          layout="hug">
+          <SegmentedControlItem value="viewer" label="Viewer" />
+          <SegmentedControlItem value="operator" label="Operator" />
+          <SegmentedControlItem value="owner" label="Owner" />
+        </SegmentedControl>
+      </VStack>
     );
   },
 };
@@ -127,7 +148,12 @@ export const SizeVariants: Story = {
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: '24px'}}>
         <div>
-          <div style={{marginBottom: '8px', fontSize: '12px', color: '#666'}}>
+          <div
+            style={{
+              marginBottom: '8px',
+              fontSize: '12px',
+              color: 'var(--color-text-secondary)',
+            }}>
             Small
           </div>
           <SegmentedControl
@@ -141,7 +167,12 @@ export const SizeVariants: Story = {
           </SegmentedControl>
         </div>
         <div>
-          <div style={{marginBottom: '8px', fontSize: '12px', color: '#666'}}>
+          <div
+            style={{
+              marginBottom: '8px',
+              fontSize: '12px',
+              color: 'var(--color-text-secondary)',
+            }}>
             Medium (default)
           </div>
           <SegmentedControl
@@ -155,7 +186,12 @@ export const SizeVariants: Story = {
           </SegmentedControl>
         </div>
         <div>
-          <div style={{marginBottom: '8px', fontSize: '12px', color: '#666'}}>
+          <div
+            style={{
+              marginBottom: '8px',
+              fontSize: '12px',
+              color: 'var(--color-text-secondary)',
+            }}>
             Large
           </div>
           <SegmentedControl
@@ -225,6 +261,33 @@ export const DisabledWithMessage: Story = {
         <SegmentedControlItem value="all" label="All" />
         <SegmentedControlItem value="active" label="Active" />
         <SegmentedControlItem value="completed" label="Completed" />
+      </SegmentedControl>
+    );
+  },
+};
+
+export const PressedState: Story = {
+  name: 'Pressed state',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Press and hold an unselected item to see the system's `--color-overlay-pressed` layer. The selected item keeps its raised surface, and the disabled item remains visually unchanged and cannot be selected.",
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState('grid');
+    return (
+      <SegmentedControl value={value} onChange={setValue} label="View mode">
+        <SegmentedControlItem value="grid" label="Grid — selected" />
+        <SegmentedControlItem value="list" label="List — press and hold" />
+        <SegmentedControlItem value="board" label="Board" />
+        <SegmentedControlItem
+          value="unavailable"
+          label="Unavailable — no pressed state"
+          isDisabled
+        />
       </SegmentedControl>
     );
   },
