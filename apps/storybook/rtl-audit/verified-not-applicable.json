@@ -227,7 +227,7 @@
       "apps/storybook/stories/ChatComposer.stories.tsx": "sha256:355778a847934f9af02adf3b42846089ade03ee37d935c2a30d32fba3e3cd291",
       "packages/core/src/Chat/ChatComposer.tsx": "sha256:aa955ff0f59901285eadf7de209f78530d0f8deb0ef162f6baa4e9faa3661880",
       "packages/core/src/Chat/ChatComposerInput.tsx": "sha256:19a9ed5be57e083a270f20d0348d2719c493d94fc270169ce91b43fe0bab13d4",
-      "packages/core/src/Chat/ChatSendButton.tsx": "sha256:0e4948ab7b94b456da37d04cefc2473f893b79d12cde954a7b8923085923a2be",
+      "packages/core/src/Chat/ChatSendButton.tsx": "sha256:e966e7fe3b0fc24678a0db4f230b903f47f66b133baf9cad8e3d0ccfa9517612",
       "packages/core/src/Chat/index.ts": "sha256:1e1883f9baa0b9661fefe855a7df6db2a0d0e69118734b3d309543a6c5518b46"
     }
   },

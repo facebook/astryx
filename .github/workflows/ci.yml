@@ -1044,6 +1044,35 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
+      # ChatSendButton's component audit grades real interaction paint, disabled
+      # stability, both sizes, and narrow coarse-pointer geometry. Keep those
+      # receipts exact-head and bounded to its audit PR title.
+      - name: Run ChatSendButton audit browser evidence
+        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ChatSendButton:')
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output chat-send-button-a11y-report.json \
+            --components ChatSendButton \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new
+          pnpm exec playwright test \
+            packages/core/src/Chat/__tests__/ChatSendButton.a11y.chromium.spec.ts \
+            --project chromium
+
+      - name: Upload ChatSendButton audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ChatSendButton:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: chat-send-button-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            chat-send-button-a11y-report.json
+            test-results/chat-send-button-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # Run the exhaustive contract/fixture matrix at release time. PRs retain
       # scoped axe validation and the fast interaction guards above; they must
       # not pay for every component's browser bindings on every change.
