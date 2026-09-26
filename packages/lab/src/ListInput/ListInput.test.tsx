@@ -1161,7 +1161,15 @@ describe('ListInput', () => {
     for (const field of screen.getAllByRole('textbox')) {
       expect(field).toBeDisabled();
     }
-    expect(screen.getByRole('button', {name: /add guest/i})).toBeDisabled();
+    // The add button receives isLoading directly (unlike remove/reorder
+    // below, which map ListInput's own loading state onto their isDisabled
+    // prop), so it stays focusable while busy per Button's "Disabled vs
+    // Busy" contract: aria-disabled, not native disabled, so a keyboard
+    // user isn't dropped from the list mid-load.
+    const addButton = screen.getByRole('button', {name: /add guest/i});
+    expect(addButton).not.toBeDisabled();
+    expect(addButton).toHaveAttribute('aria-disabled', 'true');
+    expect(addButton).toHaveAttribute('aria-busy', 'true');
     expect(
       screen.getByRole('button', {name: 'Reorder guest 1'}),
     ).toBeDisabled();
