@@ -63,7 +63,14 @@ export const States: Story = {
 
 export const Narrow: Story = {
   render: () => (
-    <div style={{display: 'grid', gap: 24, width: 280, maxWidth: '100%'}}>
+    <div
+      style={{
+        display: 'grid',
+        gap: 24,
+        gridTemplateColumns: 'minmax(0, 1fr)',
+        width: 280,
+        maxWidth: '100%',
+      }}>
       <ChatSystemMessage
         data-system-message-case="narrow-default"
         icon={<Icon icon="info" size="sm" />}>

@@ -338,7 +338,7 @@ async function capture(
         contentRect == null || contentRect.right <= rect.right + 1,
       contentWraps:
         contentRect != null &&
-        contentRect.height > Number.parseFloat(textStyle.lineHeight) * 1.4,
+        contentRect.height > Number.parseFloat(textStyle.fontSize) * 1.5,
       liveLog:
         liveLog == null
           ? null
