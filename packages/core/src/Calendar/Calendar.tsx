@@ -653,7 +653,11 @@ export function Calendar({ref, ...props}: CalendarProps) {
                 onto its trigger container but spreads data-* onto the inner
                 combobox button, which would scatter the theme target across
                 two elements. The wrapper keeps class + data-picker together
-                on one stable node. */}
+                on one stable node and owns the text color and weight, which
+                the trigger inherits (pickerTrigger), so a theme's color or
+                fontWeight on the target reaches the label. Surface styles
+                (background, padding, radius) paint the wrapper, not the
+                trigger's hover surface. */}
             <span
               {...mergeProps(
                 themeProps('calendar-picker', {picker: 'month'}),
@@ -668,6 +672,7 @@ export function Calendar({ref, ...props}: CalendarProps) {
                 options={monthPickerOptions}
                 value={String(baseMonth.month)}
                 onChange={value => jumpToMonth(baseMonth.year, Number(value))}
+                xstyle={calendarStyles.pickerTrigger}
               />
             </span>
             <span
@@ -684,6 +689,7 @@ export function Calendar({ref, ...props}: CalendarProps) {
                 options={yearPickerOptions}
                 value={String(baseMonth.year)}
                 onChange={value => jumpToMonth(Number(value), baseMonth.month)}
+                xstyle={calendarStyles.pickerTrigger}
               />
             </span>
           </div>

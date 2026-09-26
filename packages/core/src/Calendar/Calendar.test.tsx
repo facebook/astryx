@@ -1884,6 +1884,27 @@ describe('Calendar', () => {
       expect(year).not.toBeNull();
     });
 
+    it('lets a color themed on calendar-picker reach the visible picker label', () => {
+      // The target sits on a wrapper span, so a themed color only reaches the
+      // label if the Selector trigger inherits it instead of setting its own.
+      // jsdom cannot resolve the @layer cascade a real theme wins by, so the
+      // injected rule outranks the wrapper's own class through specificity.
+      const style = document.createElement('style');
+      style.textContent =
+        '.astryx-calendar-picker[data-picker="month"] { color: rgb(255, 0, 0); }';
+      document.head.appendChild(style);
+      try {
+        render(<Calendar hasMonthYearPickers focusDate="2026-03-15" />);
+
+        const label = screen.getByText('March', {
+          selector: '.astryx-calendar-picker[data-picker="month"] button span',
+        });
+        expect(getComputedStyle(label).color).toBe('rgb(255, 0, 0)');
+      } finally {
+        style.remove();
+      }
+    });
+
     it('exposes calendar-picker as a themeable defineTheme target', () => {
       const theme = defineTheme({
         name: 'calendar-picker-test',
