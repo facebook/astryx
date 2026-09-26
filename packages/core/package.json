@@ -644,6 +644,11 @@
       "types": "./dist/Markdown/mermaid/index.d.ts",
       "default": "./dist/Markdown/mermaid/index.js"
     },
+    "./Markdown/shiki": {
+      "source": "./src/Markdown/shiki/index.ts",
+      "types": "./dist/Markdown/shiki/index.d.ts",
+      "default": "./dist/Markdown/shiki/index.js"
+    },
     "./Markdown/plugins": {
       "source": "./src/Markdown/plugins/index.ts",
       "types": "./dist/Markdown/plugins/index.d.ts",
@@ -725,13 +730,17 @@
     "katex": "^0.18.0",
     "mermaid": "^11.12.0 || ^12.0.0",
     "react": ">=19.0.0",
-    "react-dom": ">=19.0.0"
+    "react-dom": ">=19.0.0",
+    "shiki": "^4.4.0"
   },
   "peerDependenciesMeta": {
     "katex": {
       "optional": true
     },
     "mermaid": {
+      "optional": true
+    },
+    "shiki": {
       "optional": true
     }
   },
@@ -749,7 +758,8 @@
     "@testing-library/react": "catalog:",
     "@types/babel__core": "^7.20.5",
     "katex": "0.18.7",
-    "mermaid": "12.0.0"
+    "mermaid": "12.0.0",
+    "shiki": "4.4.3"
   },
   "dependencies": {
     "intl-messageformat": "^11.2.9"
