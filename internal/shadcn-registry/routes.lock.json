@@ -2201,6 +2201,11 @@
       "aliases": []
     },
     {
+      "name": "example-item-document-tabs",
+      "path": "examples/item/document-tabs",
+      "aliases": []
+    },
+    {
       "name": "example-item-metadata",
       "path": "examples/item/metadata",
       "aliases": []
