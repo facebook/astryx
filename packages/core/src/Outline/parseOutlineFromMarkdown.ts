@@ -32,6 +32,8 @@ export interface ParseOutlineFromMarkdownOptions<
   readonly sourceIds?: ReadonlySet<string>;
   readonly autolink?: 'gfm';
   readonly math?: boolean;
+  /** Match Markdown's Core footnote grammar when headings contain references. */
+  readonly footnotes?: 'github';
   readonly plugins?: ReadonlyArray<MarkdownPluginEntry<Node>>;
   /** Match Markdown's transform finality while content is streaming. */
   readonly isFinal?: boolean;
@@ -53,6 +55,7 @@ export function parseOutlineFromMarkdown<
       sourceIds: options?.sourceIds,
       autolink: options?.autolink,
       math: options?.math,
+      footnotes: options?.footnotes,
       plugins: options?.plugins,
     },
     options?.isFinal ?? true,

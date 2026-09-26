@@ -110,7 +110,8 @@ function transformBlocks(children: ReadonlyArray<Block>): ReadonlyArray<Block> {
         }
         break;
       }
-      case 'blockquote': {
+      case 'blockquote':
+      case 'footnoteDefinition': {
         const nested = transformBlocks(node.children);
         if (nested !== node.children) {
           transformed = {...node, children: nested};

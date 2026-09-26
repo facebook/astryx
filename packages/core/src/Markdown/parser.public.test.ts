@@ -24,7 +24,10 @@ import {
 } from '@astryxdesign/core/Markdown/parser';
 import type {
   BlockNode,
+  BlockNodeWithFootnotes,
   InlineNode,
+  MarkdownAstFootnoteDefinition,
+  MarkdownAstFootnoteReference,
   MarkdownAstPhrasingContent,
   MarkdownAstRoot,
 } from '@astryxdesign/core/Markdown/parser';
@@ -77,6 +80,31 @@ describe('@astryxdesign/core/Markdown/parser', () => {
     expect(canonicalInlineAst).toBe(inlineAst);
     expectTypeOf(parseMarkdown(source)).toEqualTypeOf<BlockNode[]>();
     expectTypeOf(parseInline('text')).toEqualTypeOf<InlineNode[]>();
+  });
+
+  it('exposes explicit footnote results and canonical footnote node types', () => {
+    const source = 'Body[^note].\n\n[^note]: Definition.';
+    const released = parseMarkdown(source, {footnotes: 'github'});
+    const canonical = parseMarkdownAst(source, {footnotes: 'github'});
+    const reference =
+      canonical.children[0]?.type === 'paragraph'
+        ? canonical.children[0].children.find(
+            node => node.type === 'footnoteReference',
+          )
+        : undefined;
+    const definition = canonical.children.find(
+      node => node.type === 'footnoteDefinition',
+    );
+
+    expectTypeOf(released).toEqualTypeOf<BlockNodeWithFootnotes[]>();
+    expectTypeOf(reference).toEqualTypeOf<
+      MarkdownAstFootnoteReference | undefined
+    >();
+    expectTypeOf(definition).toEqualTypeOf<
+      MarkdownAstFootnoteDefinition | undefined
+    >();
+    expect(reference).toMatchObject({identifier: 'note', label: 'note'});
+    expect(definition).toMatchObject({identifier: 'note', label: 'note'});
   });
 
   it('runs typed plugins through the server-safe parser boundary', () => {

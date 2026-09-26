@@ -98,6 +98,34 @@ describe('createMarkdownTextTransform', () => {
     expect(JSON.stringify(blocks)).toContain('"type":"code","content":"TODO"');
   });
 
+  it('transforms definition prose without replacing footnote references', () => {
+    const parents: string[] = [];
+    const plugin = todoPlugin(context => parents.push(context.parentType));
+    const blocks = parseMarkdown('Body[^note].\n\n[^note]: TODO details.', {
+      footnotes: 'github',
+      plugins: [plugin],
+    });
+
+    expect(extensionCount(blocks)).toBe(1);
+    expect(parents).toEqual(['paragraph']);
+    expect(blocks[0]?.type).toBe('paragraph');
+    if (blocks[0]?.type !== 'paragraph') {
+      throw new Error('Expected a paragraph with the source reference');
+    }
+    expect(blocks[0].children).toContainEqual(
+      expect.objectContaining({type: 'footnoteReference'}),
+    );
+    expect(blocks[1]).toMatchObject({
+      type: 'footnoteDefinition',
+      children: [
+        {
+          type: 'paragraph',
+          children: [{type: 'extension'}, {type: 'text', content: ' details.'}],
+        },
+      ],
+    });
+  });
+
   it('runs helpers in plugin order and supports removal', () => {
     const replace = (name: string, pattern: RegExp, value: string) =>
       createMarkdownPlugin({

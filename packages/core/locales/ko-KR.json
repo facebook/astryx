@@ -1482,5 +1482,17 @@
   "@astryx.transferListSelector.triggerLabel": {
     "defaultMessage": "{count, number}개 선택됨",
     "description": "Default summary on the closed trigger of a lab TransferListSelector, stating how many options are currently chosen. Consumers usually override this with a domain phrase (e.g. \"7 columns\")."
+  },
+  "@astryx.markdown.footnotes": {
+    "defaultMessage": "각주",
+    "description": "Accessible name for the generated section containing resolved Markdown footnotes."
+  },
+  "@astryx.markdown.footnoteReference": {
+    "defaultMessage": "각주 {number}(으)로 이동",
+    "description": "Accessible name for a generated Markdown footnote reference link. `{number}` is the displayed footnote number."
+  },
+  "@astryx.markdown.footnoteBacklink": {
+    "defaultMessage": "각주 {number}의 참조 {reference}(으)로 돌아가기",
+    "description": "Accessible name for a generated Markdown footnote backlink. `{number}` is the footnote number and `{reference}` is this occurrence among repeated references."
   }
 }

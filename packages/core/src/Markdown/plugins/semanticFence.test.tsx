@@ -168,6 +168,31 @@ describe('createMarkdownFenceTransform', () => {
     expect(Object.isFrozen(proposal?.node.data)).toBe(true);
   });
 
+  it('annotates eligible fences inside enabled footnote definitions', () => {
+    const plugin = createFencePlugin('footnote-fences', () => null);
+    const root = parseMarkdownAst(
+      'Body[^note].\n\n[^note]:\n  ```diagram title="Flow"\n  start --> finish\n  ```',
+      {footnotes: 'github', plugins: [plugin]},
+    );
+    const definition = root.children.find(
+      node => node.type === 'footnoteDefinition',
+    );
+    const code = definition?.children.find(node => node.type === 'code');
+
+    expect(code).toMatchObject({
+      type: 'code',
+      lang: 'diagram',
+      value: 'start --> finish',
+    });
+    expect(
+      code?.type === 'code' ? getMarkdownFenceProposal(code)?.node : null,
+    ).toMatchObject({
+      type: 'extension',
+      plugin: 'footnote-fences',
+      data: {code: 'start --> finish', language: 'diagram'},
+    });
+  });
+
   it('preserves fence metadata in the canonical tree without changing legacy output', () => {
     const source = '```diagram title="Flow"\nstart --> finish\n```';
     expect(parseMarkdownAst(source).children[0]).toMatchObject({

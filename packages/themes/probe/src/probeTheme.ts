@@ -6,7 +6,7 @@
 // test fixture. Regenerate with: pnpm visual:probe-theme
 //
 // defineTheme takes six things and this covers all six:
-//   components  288 targets, 923 selectors (generated from the docs)
+//   components  289 targets, 928 selectors (generated from the docs)
 //   tokens      custom properties, read back off the themed element
 //   icons       every registry entry swapped for a marked glyph
 //   indicators  check / radio / checkbox swapped — the swap that reaches furthest
@@ -2973,6 +2973,18 @@ export const probeTheme = defineTheme({
         borderColor: 'hsl(0.1 73% 25%)',
         outlineColor: 'hsl(162.4 73% 25%)',
       },
+      'variant:default': {
+        backgroundColor: 'hsl(99.2 72% 59%)',
+        color: 'hsl(294.3 70% 12%)',
+        borderColor: 'hsl(188.6 78% 25%)',
+        outlineColor: 'hsl(93.5 80% 25%)',
+      },
+      'variant:document': {
+        backgroundColor: 'hsl(62.1 72% 59%)',
+        color: 'hsl(237.2 89% 12%)',
+        borderColor: 'hsl(289.7 92% 25%)',
+        outlineColor: 'hsl(159.5 79% 25%)',
+      },
     },
     'markdown-blockquote': {
       base: {
@@ -3012,6 +3024,26 @@ export const probeTheme = defineTheme({
         color: 'hsl(333.8 80% 12%)',
         borderColor: 'hsl(261.7 87% 25%)',
         outlineColor: 'hsl(339.0 81% 25%)',
+      },
+    },
+    'markdown-footnotes': {
+      base: {
+        backgroundColor: 'hsl(232.7 73% 52%)',
+        color: 'hsl(332.3 90% 12%)',
+        borderColor: 'hsl(276.8 83% 25%)',
+        outlineColor: 'hsl(222.2 78% 25%)',
+      },
+      'density:default': {
+        backgroundColor: 'hsl(145.2 79% 51%)',
+        color: 'hsl(37.7 94% 12%)',
+        borderColor: 'hsl(246.3 80% 25%)',
+        outlineColor: 'hsl(87.5 75% 25%)',
+      },
+      'density:compact': {
+        backgroundColor: 'hsl(258.9 91% 62%)',
+        color: 'hsl(7.4 78% 12%)',
+        borderColor: 'hsl(24.9 89% 25%)',
+        outlineColor: 'hsl(61.2 71% 25%)',
       },
     },
     'markdown-heading': {

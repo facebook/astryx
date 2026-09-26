@@ -9,7 +9,7 @@
  * @position Core implementation; renders markdown as Astryx components
  */
 
-import {Component, Suspense, useMemo, useRef} from 'react';
+import {Component, Suspense, useId, useMemo, useRef} from 'react';
 import type React from 'react';
 import {Fragment} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -19,6 +19,7 @@ import {
   spacingVars,
   radiusVars,
   typeScaleVars,
+  textSizeVars,
   typographyVars,
   fontWeightVars,
   borderVars,
@@ -48,6 +49,7 @@ import {Citation} from '../Citation/Citation';
 import type {CitationSource} from '../Citation/Citation';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
+import {VisuallyHidden} from '../VisuallyHidden/VisuallyHidden';
 import {
   parseInlineAst,
   parseMarkdownAst,
@@ -55,7 +57,13 @@ import {
   createIncrementalState,
   trimStreamingArtifacts,
 } from './parser';
-import type {IncrementalState, MathParseOptions, ParseOptions} from './parser';
+import type {
+  FootnoteParseOptions,
+  IncrementalState,
+  MathFootnoteParseOptions,
+  MathParseOptions,
+  ParseOptions,
+} from './parser';
 import {getMarkdownAstLegacyCodeLanguage} from './ast';
 import type {
   MarkdownAstBlockContent,
@@ -70,6 +78,10 @@ import {
   reportMarkdownPluginFailure,
 } from './plugins/protocol';
 import {getMarkdownFenceProposal} from './plugins/semanticFence';
+import {
+  projectMarkdownFootnotes,
+  type MarkdownFootnoteProjection,
+} from './footnoteProjection';
 import {projectMarkdownHeadings} from './headingProjection';
 import type {MarkdownHeadingProjection} from './headingProjection';
 import {getPreparedMarkdownDocumentDefinition} from './preparedDocument';
@@ -88,6 +100,22 @@ type RenderExtensionNode = MarkdownExtensionNode;
 type RenderInlineNode = MarkdownAstPhrasingContent<RenderExtensionNode>;
 type RenderBlockNode = MarkdownAstBlockContent<RenderExtensionNode>;
 type RenderTable = MarkdownAstTable<RenderExtensionNode>;
+
+interface MarkdownFootnoteRenderContext {
+  readonly projection: MarkdownFootnoteProjection;
+  /** Per-component prefix that keeps native fragment targets page-unique. */
+  readonly idPrefix: string;
+  readonly t: TranslatorFn;
+}
+
+function footnoteFragmentId(
+  context: MarkdownFootnoteRenderContext,
+  requestedId: string,
+): string {
+  // `:` cannot be emitted by heading slugification, so the scoped footnote
+  // graph cannot collide with a top-level Markdown heading.
+  return `${context.idPrefix}:${requestedId}`;
+}
 
 interface MarkdownHeadingRenderContext {
   readonly projection: MarkdownHeadingProjection;
@@ -176,11 +204,18 @@ export interface MarkdownProps<
   /** Prepared documents use the separate `MarkdownDocumentProps` branch. */
   document?: never;
   /**
-   * Display type. Markdown defaults to block.
-   * Use 'inline' for markdown spans embedded inside surrounding text.
+   * Display type. Markdown defaults to block. Footnotes are rejected at
+   * runtime when this is `inline` because definitions require a document root.
    * @default 'block'
    */
   display?: TextDisplay;
+  /**
+   * Enables Core-owned GitHub-style footnote references and definitions.
+   * Resolved references use native fragment links to one localized end section;
+   * unresolved references and duplicate definitions stay literal. Independent
+   * from `variant` and supported only with block display.
+   */
+  footnotes?: 'github';
   /**
    * Presentation preset for the Markdown document.
    * `document` uses reading-focused typography, centered prose, heading scroll
@@ -271,7 +306,13 @@ export interface MarkdownProps<
 /** Props for rendering a finished document prepared by Core exactly once. */
 export type MarkdownDocumentProps = Omit<
   MarkdownProps<readonly []>,
-  'children' | 'document' | 'display' | 'isStreaming' | 'plugins' | 'autolink'
+  | 'children'
+  | 'document'
+  | 'display'
+  | 'isStreaming'
+  | 'plugins'
+  | 'autolink'
+  | 'footnotes'
 > & {
   readonly document: PreparedMarkdownDocument<MarkdownExtensionNode>;
   readonly children?: never;
@@ -279,6 +320,7 @@ export type MarkdownDocumentProps = Omit<
   readonly isStreaming?: false;
   readonly plugins?: never;
   readonly autolink?: never;
+  readonly footnotes?: never;
 };
 
 // ---------------------------------------------------------------------------
@@ -509,6 +551,47 @@ const styles = stylex.create({
     maxWidth: '100%',
     borderRadius: radiusVars['--radius-element'],
   },
+  // Footnotes
+  footnoteSection: {
+    borderTopColor: colorVars['--color-border'],
+    borderTopStyle: 'solid',
+    borderTopWidth: borderVars['--border-width'],
+    color: colorVars['--color-text-secondary'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    marginBlockStart: spacingVars['--spacing-6'],
+    paddingBlockStart: spacingVars['--spacing-4'],
+  },
+  footnoteList: {
+    marginBlock: 0,
+    paddingInlineStart: spacingVars['--spacing-6'],
+  },
+  footnoteItem: {
+    paddingInlineStart: spacingVars['--spacing-1'],
+    scrollMarginBlockStart: '64px',
+  },
+  footnoteBody: {
+    display: 'contents',
+  },
+  footnoteBacklinks: {
+    display: 'inline-flex',
+    gap: spacingVars['--spacing-1'],
+    marginInlineStart: spacingVars['--spacing-1'],
+  },
+  footnoteBacklink: {
+    textDecoration: 'none',
+  },
+  footnoteReference: {
+    fontSize: textSizeVars['--font-size-xs'],
+    lineHeight: 0,
+    marginInlineStart: '0.125em',
+    scrollMarginBlockStart: '64px',
+    verticalAlign: 'super',
+  },
+  footnoteReferenceLink: {
+    fontVariantNumeric: 'tabular-nums',
+    textDecoration: 'none',
+  },
   // Inline
   bold: {
     fontWeight: fontWeightVars['--font-weight-semibold'],
@@ -608,6 +691,9 @@ function countInlineTextLength(nodes: ReadonlyArray<RenderInlineNode>): number {
       case 'citation':
         len += 1;
         break;
+      case 'footnoteReference':
+        len += node.label.length + 3;
+        break;
       case 'extension':
         len += node.source?.length ?? 0;
         break;
@@ -652,6 +738,7 @@ function countBlockTextLength(nodes: ReadonlyArray<RenderBlockNode>): number {
         len += node.source?.length ?? 0;
         break;
       case 'thematicBreak':
+      case 'footnoteDefinition':
         break;
       case 'image':
         len += node.alt.length;
@@ -927,6 +1014,7 @@ function renderInline(
   inlinePlugins?: MarkdownInlinePlugin[],
   components?: Partial<MarkdownComponents>,
   preparedPlugins?: PreparedMarkdownPlugins,
+  footnoteContext?: MarkdownFootnoteRenderContext,
 ): SyncReactNode {
   switch (node.type) {
     case 'text': {
@@ -970,6 +1058,7 @@ function renderInline(
               inlinePlugins,
               components,
               preparedPlugins,
+              footnoteContext,
             ),
           )}
         </strong>
@@ -988,6 +1077,7 @@ function renderInline(
               inlinePlugins,
               components,
               preparedPlugins,
+              footnoteContext,
             ),
           )}
         </em>
@@ -1006,6 +1096,7 @@ function renderInline(
               inlinePlugins,
               components,
               preparedPlugins,
+              footnoteContext,
             ),
           )}
         </del>
@@ -1029,6 +1120,47 @@ function renderInline(
       cursor.offset += node.value.length;
       return <MathComp key={index} value={node.value} display="inline" />;
     }
+    case 'footnoteReference': {
+      const source = `[^${node.label}]`;
+      const projected = footnoteContext?.projection.references.get(node);
+      if (footnoteContext == null || projected == null) {
+        return wrapTextWithFade(source, cursor, index);
+      }
+      cursor.offset += source.length;
+      const href = `#${footnoteFragmentId(
+        footnoteContext,
+        projected.definitionId,
+      )}`;
+      return (
+        <sup
+          key={index}
+          id={footnoteFragmentId(footnoteContext, projected.id)}
+          {...stylex.props(styles.footnoteReference)}>
+          <Link
+            href={href}
+            label={footnoteContext.t('@astryx.markdown.footnoteReference', {
+              number: projected.number,
+            })}
+            onClick={
+              onLinkClick == null
+                ? undefined
+                : event => {
+                    const result = onLinkClick(
+                      href,
+                      event as React.MouseEvent<HTMLAnchorElement>,
+                    );
+                    if (result === false) {
+                      event.preventDefault();
+                    }
+                  }
+            }
+            type="inherit"
+            xstyle={styles.footnoteReferenceLink}>
+            {projected.number}
+          </Link>
+        </sup>
+      );
+    }
     case 'link': {
       const safeHref = sanitizeMarkdownLinkUrl(node.url);
       if (safeHref == null) {
@@ -1046,6 +1178,7 @@ function renderInline(
                 inlinePlugins,
                 components,
                 preparedPlugins,
+                footnoteContext,
               ),
             )}
           </span>
@@ -1066,6 +1199,7 @@ function renderInline(
                 inlinePlugins,
                 components,
                 preparedPlugins,
+                footnoteContext,
               ),
             )}
           </LinkComp>
@@ -1105,6 +1239,7 @@ function renderInline(
               inlinePlugins,
               components,
               preparedPlugins,
+              footnoteContext,
             ),
           )}
         </LinkTag>
@@ -1220,6 +1355,7 @@ function getElementSpacing(
           ? styles.spacingHeadingMinorCompact
           : styles.spacingHeadingMinorDefault;
     case 'paragraph':
+    case 'footnoteDefinition':
       return compact
         ? styles.spacingParagraphCompact
         : styles.spacingParagraphDefault;
@@ -1293,6 +1429,7 @@ function renderBlock(
   preparedPlugins: PreparedMarkdownPlugins | undefined,
   t: TranslatorFn,
   headingContext?: MarkdownHeadingRenderContext,
+  footnoteContext?: MarkdownFootnoteRenderContext,
 ): SyncReactNode {
   const blockAlignMargin = BLOCK_ALIGN_MARGIN[contentAlign];
   const blockAlignStyle =
@@ -1318,6 +1455,7 @@ function renderBlock(
           inlinePlugins,
           components,
           preparedPlugins,
+          footnoteContext,
         ),
       );
       // Only top-level headings get an id: the map is built from the same
@@ -1421,6 +1559,7 @@ function renderBlock(
           inlinePlugins,
           components,
           preparedPlugins,
+          footnoteContext,
         ),
       );
       const ParagraphComp = components?.paragraph;
@@ -1536,6 +1675,8 @@ function renderBlock(
       }
       return <MathComp key={index} value={node.value} display="block" />;
     }
+    case 'footnoteDefinition':
+      return null;
     case 'blockquote': {
       const BlockquoteComp = components?.blockquote;
       if (BlockquoteComp) {
@@ -1557,6 +1698,8 @@ function renderBlock(
             components,
             preparedPlugins,
             t,
+            undefined,
+            footnoteContext,
           ),
         );
         return <BlockquoteComp key={index}>{bqC}</BlockquoteComp>;
@@ -1594,6 +1737,8 @@ function renderBlock(
               components,
               preparedPlugins,
               t,
+              undefined,
+              footnoteContext,
             ),
           )}
         </Blockquote>
@@ -1655,6 +1800,7 @@ function renderBlock(
                         inlinePlugins,
                         components,
                         preparedPlugins,
+                        footnoteContext,
                       ),
                     )}
                   </>
@@ -1678,6 +1824,8 @@ function renderBlock(
                         components,
                         preparedPlugins,
                         t,
+                        undefined,
+                        footnoteContext,
                       ),
                     )}
                   </>
@@ -1740,6 +1888,7 @@ function renderBlock(
                       inlinePlugins,
                       components,
                       preparedPlugins,
+                      footnoteContext,
                     ),
                   )}
                 </>
@@ -1763,6 +1912,8 @@ function renderBlock(
                       components,
                       preparedPlugins,
                       t,
+                      undefined,
+                      footnoteContext,
                     ),
                   )}
                 </>
@@ -1827,6 +1978,7 @@ function renderBlock(
                         inlinePlugins,
                         components,
                         preparedPlugins,
+                        footnoteContext,
                       ),
                     )}
                   </TableHeaderCell>
@@ -1854,6 +2006,7 @@ function renderBlock(
                         inlinePlugins,
                         components,
                         preparedPlugins,
+                        footnoteContext,
                       ),
                     )}
                   </TableCell>
@@ -1984,6 +2137,110 @@ function renderBlock(
   }
 }
 
+function renderFootnoteSection(
+  footnoteContext: MarkdownFootnoteRenderContext,
+  density: 'default' | 'compact',
+  variant: MarkdownVariant,
+  headingLevelStart: 1 | 2 | 3 | 4 | 5 | 6,
+  onLinkClick: MarkdownProps['onLinkClick'] | undefined,
+  cursor: StreamingCursor,
+  citationCtx: CitationContext | null,
+  contentWidthValue: string | null,
+  contentAlign: 'start' | 'center',
+  linkComponent: LinkComponentType,
+  inlinePlugins: MarkdownInlinePlugin[] | undefined,
+  components: Partial<MarkdownComponents> | undefined,
+  preparedPlugins: PreparedMarkdownPlugins | undefined,
+): SyncReactNode {
+  const {projection, t} = footnoteContext;
+  if (projection.orderedDefinitions.length === 0) {
+    return null;
+  }
+  const hrefClick = (href: string) =>
+    onLinkClick == null
+      ? undefined
+      : (event: React.MouseEvent<HTMLAnchorElement>) => {
+          const result = onLinkClick(href, event);
+          if (result === false) {
+            event.preventDefault();
+          }
+        };
+
+  return (
+    <section
+      {...mergeProps(
+        themeProps('markdown-footnotes', {density}),
+        stylex.props(
+          styles.footnoteSection,
+          contentWidthValue != null
+            ? dynamicStyles.proseWidth(contentWidthValue)
+            : null,
+          contentAlign !== 'start'
+            ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
+            : null,
+        ),
+      )}>
+      <VisuallyHidden as="h2">{t('@astryx.markdown.footnotes')}</VisuallyHidden>
+      <ol {...stylex.props(styles.footnoteList)}>
+        {projection.orderedDefinitions.map(definition => (
+          <li
+            key={definition.id}
+            id={footnoteFragmentId(footnoteContext, definition.id)}
+            {...stylex.props(styles.footnoteItem)}>
+            <div {...stylex.props(styles.footnoteBody)}>
+              {definition.node.children.map((block, index) =>
+                renderBlock(
+                  block,
+                  index,
+                  definition.node.children.length,
+                  density,
+                  variant,
+                  headingLevelStart,
+                  onLinkClick,
+                  cursor,
+                  citationCtx,
+                  null,
+                  'start',
+                  linkComponent,
+                  inlinePlugins,
+                  components,
+                  preparedPlugins,
+                  t,
+                  undefined,
+                  footnoteContext,
+                ),
+              )}
+            </div>
+            <span {...stylex.props(styles.footnoteBacklinks)}>
+              {definition.references.map((reference, index) => {
+                const href = `#${footnoteFragmentId(
+                  footnoteContext,
+                  reference.id,
+                )}`;
+                return (
+                  <Link
+                    key={reference.id}
+                    href={href}
+                    label={t('@astryx.markdown.footnoteBacklink', {
+                      number: definition.number,
+                      reference: index + 1,
+                    })}
+                    onClick={hrefClick(href)}
+                    type="inherit"
+                    color="secondary"
+                    xstyle={styles.footnoteBacklink}>
+                    ↩
+                  </Link>
+                );
+              })}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -2020,12 +2277,18 @@ export function Markdown<
   plugins,
   inlinePlugins,
   autolink,
+  footnotes,
   xstyle,
   className,
   style,
   'data-testid': testId,
   ...props
 }: MarkdownProps<Plugins> | MarkdownDocumentProps): React.ReactElement {
+  const generatedFragmentScope = useId();
+  const footnoteIdPrefix =
+    typeof props.id === 'string' && props.id !== ''
+      ? props.id
+      : `markdown${generatedFragmentScope}`;
   const preparedDefinition =
     document == null ? null : getPreparedMarkdownDocumentDefinition(document);
   if (document != null && preparedDefinition == null) {
@@ -2040,6 +2303,9 @@ export function Markdown<
   }
   if (variant === 'document' && display !== 'block') {
     throw new Error('Markdown variant="document" supports only block display.');
+  }
+  if (footnotes != null && display !== 'block') {
+    throw new Error('Markdown footnotes support only block display.');
   }
   const contentAlign =
     contentAlignProp ?? (variant === 'document' ? 'center' : 'start');
@@ -2085,25 +2351,59 @@ export function Markdown<
     () => ({sourceIds, autolink, math: true, plugins: syntaxPlugins}),
     [sourceIds, autolink, syntaxPlugins],
   );
+  const footnoteParseOptions = useMemo<
+    FootnoteParseOptions<ReadonlyArray<MarkdownPluginEntry>>
+  >(
+    () => ({
+      sourceIds,
+      autolink,
+      footnotes: 'github',
+      plugins: syntaxPlugins,
+    }),
+    [sourceIds, autolink, syntaxPlugins],
+  );
+  const mathFootnoteParseOptions = useMemo<
+    MathFootnoteParseOptions<ReadonlyArray<MarkdownPluginEntry>>
+  >(
+    () => ({
+      sourceIds,
+      autolink,
+      math: true,
+      footnotes: 'github',
+      plugins: syntaxPlugins,
+    }),
+    [sourceIds, autolink, syntaxPlugins],
+  );
+  const blockParseOptions =
+    footnotes === 'github'
+      ? hasMathRenderer
+        ? mathFootnoteParseOptions
+        : footnoteParseOptions
+      : hasMathRenderer
+        ? mathParseOptions
+        : legacyParseOptions;
 
   // Smooth bursty streamed chunks into a steady character-by-character reveal.
   // When not streaming, the hook returns children unchanged (no-op).
   const smoothedText = useStreamingText(children, isStreaming);
 
-  const incrementalStateRef = useRef<IncrementalState<boolean>>(
-    createIncrementalState<boolean>(),
+  const incrementalStateRef = useRef<IncrementalState<boolean, boolean>>(
+    createIncrementalState<boolean, boolean>(),
   );
   // Reset incremental cache when parser-affecting component options toggle —
   // cached settled blocks were parsed with the previous setting.
   const prevAutolinkRef = useRef(autolink);
   const prevMathRef = useRef(hasMathRenderer);
+  const prevFootnotesRef = useRef(footnotes);
   if (
     prevAutolinkRef.current !== autolink ||
-    prevMathRef.current !== hasMathRenderer
+    prevMathRef.current !== hasMathRenderer ||
+    prevFootnotesRef.current !== footnotes
   ) {
-    incrementalStateRef.current = createIncrementalState<boolean>();
+    incrementalStateRef.current = createIncrementalState<boolean, boolean>();
     prevAutolinkRef.current = autolink;
     prevMathRef.current = hasMathRenderer;
+    prevFootnotesRef.current = footnotes;
   }
 
   const parsedBlocks = useMemo(() => {
@@ -2115,46 +2415,31 @@ export function Markdown<
     }
     if (isStreaming) {
       if (smoothedText === '') {
-        incrementalStateRef.current = createIncrementalState<boolean>();
+        incrementalStateRef.current = createIncrementalState<
+          boolean,
+          boolean
+        >();
         return [];
       }
-      const options = hasMathRenderer ? mathParseOptions : legacyParseOptions;
-      const input = trimStreamingArtifacts(smoothedText, options);
-      return (
-        hasMathRenderer
-          ? parseMarkdownAstIncremental(
-              input,
-              incrementalStateRef.current,
-              mathParseOptions,
-            )
-          : parseMarkdownAstIncremental(
-              input,
-              incrementalStateRef.current,
-              legacyParseOptions,
-            )
+      const input = trimStreamingArtifacts(smoothedText, blockParseOptions);
+      return parseMarkdownAstIncremental(
+        input,
+        incrementalStateRef.current,
+        blockParseOptions,
       ).children;
     }
-    return (
-      hasMathRenderer
-        ? parseMarkdownAst(children, mathParseOptions)
-        : parseMarkdownAst(children, legacyParseOptions)
-    ).children;
+    return parseMarkdownAst(children, blockParseOptions).children;
   }, [
     preparedDefinition,
     display,
     smoothedText,
     children,
     isStreaming,
-    hasMathRenderer,
-    mathParseOptions,
-    legacyParseOptions,
+    blockParseOptions,
   ]);
 
   const transformSource = isStreaming
-    ? trimStreamingArtifacts(
-        smoothedText,
-        hasMathRenderer ? mathParseOptions : legacyParseOptions,
-      )
+    ? trimStreamingArtifacts(smoothedText, blockParseOptions)
     : children;
   const blocks = useMemo(
     () =>
@@ -2194,6 +2479,37 @@ export function Markdown<
     headingProjection == null
       ? undefined
       : {projection: headingProjection, hasPermalinks: hasHeadingPermalinks};
+  const footnoteProjection = useMemo<
+    MarkdownFootnoteProjection | undefined
+  >(() => {
+    if (preparedDefinition != null) {
+      return preparedDefinition.footnoteProjection;
+    }
+    return display === 'block' && footnotes === 'github'
+      ? projectMarkdownFootnotes(blocks, headingProjection)
+      : undefined;
+  }, [preparedDefinition, display, footnotes, blocks, headingProjection]);
+
+  const footnoteContext = useMemo<MarkdownFootnoteRenderContext | undefined>(
+    () =>
+      footnoteProjection == null
+        ? undefined
+        : {projection: footnoteProjection, idPrefix: footnoteIdPrefix, t},
+    [footnoteProjection, footnoteIdPrefix, t],
+  );
+  const visibleBlocks = useMemo(
+    () => blocks.filter(block => block.type !== 'footnoteDefinition'),
+    [blocks],
+  );
+  const renderedBlocksForStreaming = useMemo<ReadonlyArray<RenderBlockNode>>(
+    () => [
+      ...visibleBlocks,
+      ...(footnoteProjection?.orderedDefinitions.flatMap(
+        definition => definition.node.children,
+      ) ?? []),
+    ],
+    [visibleBlocks, footnoteProjection],
+  );
 
   const parsedInlineNodes = useMemo(() => {
     if (display !== 'inline') {
@@ -2346,11 +2662,11 @@ export function Markdown<
         className,
         style,
       )}>
-      {blocks.map((block, i) =>
+      {visibleBlocks.map((block, i) =>
         renderBlock(
           block,
           i,
-          blocks.length,
+          visibleBlocks.length,
           density,
           variant,
           headingLevelStart,
@@ -2365,15 +2681,33 @@ export function Markdown<
           preparedPlugins,
           t,
           headingContext,
+          footnoteContext,
         ),
       )}
+      {footnoteContext == null
+        ? null
+        : renderFootnoteSection(
+            footnoteContext,
+            density,
+            variant,
+            headingLevelStart,
+            onLinkClick,
+            cursor,
+            citationCtx,
+            contentWidthValue,
+            contentAlign,
+            LinkComponent,
+            inlinePlugins,
+            components,
+            preparedPlugins,
+          )}
     </div>
   );
 
   // Store current blocks for next render's boundary calculation.
   // This ref write is safe under StrictMode: both invocations produce the same
   // blocks (same smoothedText → same useMemo result), so both write the same value.
-  prevBlocksRef.current = blocks;
+  prevBlocksRef.current = renderedBlocksForStreaming;
   prevInlineNodesRef.current = [];
 
   return rendered;
