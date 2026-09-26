@@ -180,6 +180,11 @@ What that costs differs between the two:
 Everything the copy did reach is compared by value either way, so a mutation
 elsewhere in the spec is picked up even when part of it is opaque.
 
+A theme or color-mode change rebuilds a **Vega-Lite** View, dropping its zoom,
+hover, and signal state, because the [theme config](#theming) is compiled into
+the spec. It never rebuilds a **native Vega** View, which does not use that
+config.
+
 Everything else is inert to the lifecycle: `data`, `className`, `style`,
 `onReady`, and `onError` never rebuild the View.
 

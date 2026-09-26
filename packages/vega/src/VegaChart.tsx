@@ -65,6 +65,9 @@ import type {VegaChartProps, VegaSpec, VegaLiteSpec} from './types';
  * (and its zoom, hover, and signal state), while a spec mutated in place is
  * still picked up. Nothing needs to be memoized for either to hold.
  *
+ * A theme or color-mode change re-creates a Vega-Lite View, because the theme
+ * config is compiled into the spec. It never re-creates a native Vega View.
+ *
  * Callbacks (`onReady`, `onError`) are non-reactive Effect Events -- they
  * always see the latest props and never re-run the View lifecycle, so you
  * don't need to memoize them.
@@ -115,13 +118,17 @@ export function VegaChart({
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Vega-Lite specs are compiled with the Astryx theme underneath the caller's
-  // own compile options, so a chart is themed out of the box. Depend on the
-  // memoized `tokens` map rather than `token` (a fresh closure every render),
-  // which would rebuild the config — and tear down the View — on every render.
-  const {tokens} = useTheme();
-  const themedCompileOptions = useMemo(
-    () => withAstryxConfig(name => tokens[name] ?? '', compileOptions),
-    [tokens, compileOptions],
+  // own compile options, so a chart is themed out of the box. Native specs
+  // never compile, so they get the caller's options untouched: otherwise a
+  // theme or mode switch would change their inputs and rebuild the View for
+  // nothing. `token` keeps its identity until the resolved theme changes.
+  const {token} = useTheme();
+  const schema = parseSchema(spec.$schema);
+  const isVegaLite = schema.ok && schema.library === 'vega-lite';
+  const effectiveCompileOptions = useMemo(
+    () =>
+      isVegaLite ? withAstryxConfig(token, compileOptions) : compileOptions,
+    [isVegaLite, token, compileOptions],
   );
 
   // Rebuild only when a value the runtime is built from actually differs.
@@ -133,7 +140,7 @@ export function VegaChart({
   // settles in one extra pass.
   const inputs: ViewInputs = {
     spec,
-    compileOptions: themedCompileOptions,
+    compileOptions: effectiveCompileOptions,
     parseConfig,
     parseOptions,
     viewOptions,

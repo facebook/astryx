@@ -2,7 +2,7 @@
 
 /**
  * @file VegaChart.test.tsx
- * @input Uses vitest, @testing-library/react, VegaChart, mocked vega + vega-lite
+ * @input Uses vitest, @testing-library/react, VegaChart, core's Theme, mocked vega + vega-lite
  * @output Functional tests for the VegaChart View lifecycle and error contract
  * @position Colocated test for VegaChart.tsx (issue #4295 vega coverage)
  */
@@ -11,7 +11,7 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, act} from '@testing-library/react';
 import React from 'react';
 import type * as Vega from 'vega';
-import {resolveThemeTokens} from '@astryxdesign/core/theme';
+import {defineTheme, resolveThemeTokens, Theme} from '@astryxdesign/core/theme';
 import {VegaChart} from './VegaChart';
 import {buildVegaLiteConfig} from './vegaLiteConfig';
 import type {AnySpec} from './types';
@@ -283,6 +283,47 @@ describe('VegaChart', () => {
       render(<VegaChart spec={VEGA_SPEC} />);
 
       expect(parseMock.mock.calls[0][0]).toBe(VEGA_SPEC);
+    });
+
+    // A theme or color-mode switch changes the Astryx config a Vega-Lite spec
+    // is compiled with, so that View is rebuilt. A native Vega spec never
+    // reads that config, so its View -- and its live state -- is kept.
+    describe('theme changes', () => {
+      const theme = defineTheme({name: 'vega-theme-change'});
+
+      function renderInLightMode(spec: AnySpec) {
+        const ui = (mode: 'light' | 'dark') => (
+          <Theme theme={theme} mode={mode}>
+            <VegaChart spec={spec} />
+          </Theme>
+        );
+        const {rerender} = render(ui('light'));
+        return {switchToDark: () => rerender(ui('dark'))};
+      }
+
+      it('keeps a native Vega View when the color mode changes', () => {
+        const {switchToDark} = renderInLightMode(VEGA_SPEC);
+        expect(views).toHaveLength(1);
+
+        switchToDark();
+
+        expect(views).toHaveLength(1);
+        expect(views[0].finalize).not.toHaveBeenCalled();
+      });
+
+      it('rebuilds a Vega-Lite View with the new mode’s theme config', () => {
+        const {switchToDark} = renderInLightMode(VEGA_LITE_SPEC);
+        expect(views).toHaveLength(1);
+
+        switchToDark();
+
+        expect(views).toHaveLength(2);
+        expect(views[0].finalize).toHaveBeenCalledTimes(1);
+        const dark = resolveThemeTokens(theme, {mode: 'dark'});
+        expect(compileMock).toHaveBeenLastCalledWith(VEGA_LITE_SPEC, {
+          config: buildVegaLiteConfig(name => dark[name] ?? ''),
+        });
+      });
     });
 
     // A spec the comparison cannot copy — a reference cycle, or nesting past
