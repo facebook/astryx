@@ -4,10 +4,12 @@ import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
+  collectIdentities,
   computeRequiredFiles,
   compareIdentities,
   findSourceOnlyCandidates,
 } from './contribution-inventory.mjs';
+import {integrationPackCheck} from '../../api/integration/pack-check.mjs';
 
 let tmpDir;
 
@@ -397,5 +399,153 @@ describe('findSourceOnlyCandidates', () => {
     fs.mkdirSync(path.join(root, 'sub'), {recursive: true});
     fs.writeFileSync(path.join(root, 'sub', 'Deep.tsx'), '// nested\n');
     expect(findSourceOnlyCandidates(root, [])).toEqual([]);
+  });
+});
+
+describe('theme identity across the tarball', () => {
+  /**
+   * Write a catalog root whose every listed module exports `oceanTheme`, so
+   * discovery accepts any of them as the entry.
+   * @param {string} dir
+   * @param {{entry?: string, files?: string[]}} [catalog]
+   */
+  function writeOceanCatalog(
+    dir,
+    {entry = 'oceanTheme.ts', files = ['oceanTheme.ts', 'altTheme.ts']} = {},
+  ) {
+    const root = path.join(dir, 'themes');
+    for (const file of new Set([entry, ...files])) {
+      const target = path.join(root, 'ocean', file);
+      fs.mkdirSync(path.dirname(target), {recursive: true});
+      fs.writeFileSync(
+        target,
+        `export const oceanTheme = {file: '${file}'};\n`,
+      );
+    }
+    fs.writeFileSync(
+      path.join(root, 'manifest.json'),
+      JSON.stringify({
+        version: 1,
+        themes: [
+          {
+            slug: 'ocean',
+            displayName: 'Ocean',
+            description: 'Ocean theme.',
+            maintained: true,
+            entry,
+            exportName: 'oceanTheme',
+            files,
+          },
+        ],
+      }),
+    );
+    return root;
+  }
+
+  /** @param {{entry?: string, files?: string[]}} [catalog] @param {string} [dir] */
+  async function identitiesOf(catalog, dir = 'local') {
+    const {identities, errors} = await collectIdentities({
+      name: '@acme/widgets',
+      themes: writeOceanCatalog(path.join(tmpDir, dir), catalog),
+    });
+    expect(errors).toEqual([]);
+    return identities;
+  }
+
+  it('errors when the packed catalog points the entry at another listed file', async () => {
+    const issues = compareIdentities(
+      await identitiesOf(),
+      await identitiesOf({entry: 'altTheme.ts'}, 'packed'),
+    );
+    expect(issues).toEqual([
+      expect.objectContaining({
+        code: 'identity_mismatch',
+        severity: 'error',
+        message: expect.stringContaining(
+          'its entry is "oceanTheme.ts" locally but "altTheme.ts" in the tarball',
+        ),
+      }),
+    ]);
+  });
+
+  it('errors when the packed catalog lists a different set of files', async () => {
+    const issues = compareIdentities(
+      await identitiesOf(),
+      await identitiesOf(
+        {files: ['oceanTheme.ts', 'tokens/ocean.ts']},
+        'packed',
+      ),
+    );
+    expect(issues).toEqual([
+      expect.objectContaining({
+        code: 'identity_mismatch',
+        severity: 'error',
+        message: expect.stringContaining(
+          'its files are altTheme.ts, oceanTheme.ts locally but oceanTheme.ts, tokens/ocean.ts in the tarball',
+        ),
+      }),
+    ]);
+  });
+
+  it('accepts the same files listed in another order', async () => {
+    const issues = compareIdentities(
+      await identitiesOf(),
+      await identitiesOf({files: ['altTheme.ts', 'oceanTheme.ts']}, 'packed'),
+    );
+    expect(issues).toEqual([]);
+  });
+
+  it('errors when a theme identity carries no collected catalog source', async () => {
+    const packed = await identitiesOf(undefined, 'packed');
+    const issues = compareIdentities(await identitiesOf(), {
+      ...packed,
+      themes: [{slug: 'ocean', exportName: 'oceanTheme'}],
+    });
+    expect(issues).toEqual([
+      expect.objectContaining({
+        code: 'identity_mismatch',
+        message: expect.stringContaining('could not be compared'),
+      }),
+    ]);
+  });
+
+  it('keeps each reported theme identity to its slug and export name', async () => {
+    expect((await identitiesOf()).themes).toEqual([
+      {slug: 'ocean', exportName: 'oceanTheme'},
+    ]);
+  });
+
+  it('fails pack --check when a lifecycle script repoints the entry', async () => {
+    writeOceanCatalog(tmpDir);
+    const script = [
+      "const fs=require('fs')",
+      "const p='themes/manifest.json'",
+      'const x=JSON.parse(fs.readFileSync(p))',
+      "x.themes[0].entry='altTheme.ts'",
+      'fs.writeFileSync(p,JSON.stringify(x))',
+    ].join(';');
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({
+        name: '@acme/widgets',
+        version: '1.0.0',
+        files: ['astryx.integration.mjs', 'themes'],
+        scripts: {prepack: `node -e "${script}"`},
+      }),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      "export default {themes: './themes'};\n",
+    );
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    expect(result.data.packable).toBe(false);
+    expect(result.data.issues).toEqual([
+      expect.objectContaining({
+        code: 'identity_mismatch',
+        message: expect.stringContaining('altTheme.ts'),
+      }),
+    ]);
   });
 });
