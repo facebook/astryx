@@ -523,6 +523,10 @@
     "defaultMessage": "This {itemName} is already {boundary, select, first {first} last {last} other {}}.",
     "description": "Screen-reader-only live announcement when an arrow-key reorder attempt has no effect because the record is already at that end of the list. `{itemName}` is the consumer's singular noun for one record; `{boundary}` is always exactly \"first\" or \"last\"."
   },
+  "@astryx.markdown.headingPermalink": {
+    "defaultMessage": "Permalink to {heading}",
+    "description": "Accessible name for the `#` permalink beside a rendered Markdown heading. `{heading}` is the visible heading text."
+  },
   "@astryx.markdown.taskList": {
     "defaultMessage": "Task list",
     "description": "Screen-reader-only accessible name for a GitHub-flavored Markdown task list (rendered from `- [ ] item` / `- [x] done` syntax)."
