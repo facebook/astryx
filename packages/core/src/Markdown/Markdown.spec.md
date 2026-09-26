@@ -25,7 +25,12 @@ verified_by:
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
-modules: [module:Markdown/remark, module:Markdown/softBreaks]
+modules:
+  [
+    module:Markdown/footnotes,
+    module:Markdown/remark,
+    module:Markdown/softBreaks,
+  ]
 families: [family:navigation-destinations]
 design_specs: []
 architecture:
