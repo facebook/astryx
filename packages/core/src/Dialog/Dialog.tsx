@@ -27,6 +27,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   type ReactNode,
@@ -459,8 +460,8 @@ export function Dialog({
   const titleId = useId();
 
   const dialogContextValue = useMemo(
-    () => ({isInline, titleId}),
-    [isInline, titleId],
+    () => ({isInline, titleId, isOpen}),
+    [isInline, titleId, isOpen],
   );
 
   // Consumer-provided labels always win over the DialogHeader default.
@@ -491,9 +492,23 @@ export function Dialog({
 
   const mergedDialogRef = useMergedRefs(ref, attachDialog);
 
-  // Capture the element that was focused when the dialog opened,
-  // for directional animation origin and focus restoration on close.
+  // Capture the element that was focused when the dialog opened, for
+  // directional animation origin and focus restoration on close.
   const triggerElementRef = useRef<HTMLElement | null>(null);
+
+  // This runs in a layout effect so the capture lands before any descendant's
+  // passive mount effect: all layout effects run before any passive effect,
+  // while a child's passive effect runs before this parent's passive effect.
+  // Content that mounts in the open commit — e.g. a DialogHeader focusing its
+  // own title on mount — would otherwise move document.activeElement inside
+  // the dialog before the capture ran, and closing would then restore focus
+  // to a detached node, stranding the user's focus on <body>.
+  useLayoutEffect(() => {
+    if (isInline || !isOpen) {
+      return;
+    }
+    triggerElementRef.current = document.activeElement as HTMLElement | null;
+  }, [isOpen, isInline]);
 
   // Derive dismissal behavior from purpose
   const allowEscape = purpose !== 'required';
@@ -510,11 +525,9 @@ export function Dialog({
     }
 
     if (isOpen) {
-      // Capture the currently focused element as the trigger — used for
-      // directional animation origin and focus restoration on close.
-      triggerElementRef.current = document.activeElement as HTMLElement | null;
-
-      // Set directional CSS custom properties before opening
+      // Set directional CSS custom properties before opening. The trigger was
+      // captured by the layout effect above, before any descendant effect
+      // could move focus.
       const trigger = triggerElementRef.current;
       if (trigger && trigger !== document.body) {
         const dir = getDialogDirection(trigger);

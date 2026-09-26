@@ -155,7 +155,12 @@ export function DialogHeader({
   const t = useTranslator();
   const titleRef = useRef<HTMLHeadingElement>(null);
   const dialogContext = useDialogContext();
-  const shouldAutoFocus = dialogContext?.isInline !== true;
+  // A header mounted while its parent Dialog is closed must not focus: the
+  // dialog surface is hidden, so the focus steal would only strand the
+  // user's caret on an invisible element. The effect below re-runs when this
+  // flips, so the title still receives focus when the dialog opens.
+  const shouldAutoFocus =
+    dialogContext?.isInline !== true && dialogContext?.isOpen !== false;
   const titleId = dialogContext?.titleId;
   const shouldCompensateEndBlock =
     endContentEdgeCompensation == null
@@ -170,7 +175,9 @@ export function DialogHeader({
 
   // Auto-focus the title when mounted for screen reader accessibility.
   // Inline dialogs are documentation/showcase previews, so suppress focus to
-  // avoid stealing scroll position from the surrounding page.
+  // avoid stealing scroll position from the surrounding page, and a header
+  // mounted under a closed dialog waits until the dialog opens (its
+  // `shouldAutoFocus` flips when the context's isOpen does).
   // The parent Dialog detects this title (by `titleId`) via a callback ref to
   // set its default aria-labelledby — no registration handshake needed here.
   useEffect(() => {

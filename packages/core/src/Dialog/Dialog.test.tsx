@@ -108,6 +108,62 @@ beforeEach(() => {
 });
 
 describe('Dialog', () => {
+  it('restores focus to the opener when content mounts in the open commit', () => {
+    function Harness({
+      open,
+      onOpenChange,
+    }: {
+      open: boolean;
+      onOpenChange: (v: boolean) => void;
+    }) {
+      return (
+        <>
+          <button type="button" onClick={() => onOpenChange(true)}>
+            Open
+          </button>
+          <Dialog isOpen={open} onOpenChange={onOpenChange}>
+            {open ? (
+              <div>
+                <DialogHeader title="Review" />
+                <p>Body</p>
+              </div>
+            ) : null}
+          </Dialog>
+        </>
+      );
+    }
+
+    let open = false;
+    const setOpen = (v: boolean) => {
+      open = v;
+    };
+    const harness = render(<Harness open={open} onOpenChange={setOpen} />);
+    const opener = screen.getByRole('button', {name: 'Open'});
+    opener.focus();
+
+    fireEvent.click(opener);
+    harness.rerender(<Harness open={open} onOpenChange={setOpen} />);
+
+    // The freshly mounted header title is the focused screen reader anchor
+    // while the dialog is open...
+    expect(document.activeElement).toBe(screen.getByText('Review'));
+
+    // ...but closing restores the element that opened the dialog, not the
+    // (now unmounted) title.
+    harness.rerender(<Harness open={false} onOpenChange={setOpen} />);
+    expect(document.activeElement).toBe(opener);
+  });
+
+  it('does not steal focus from the page when mounted under a closed dialog', () => {
+    render(
+      <Dialog isOpen={false} onOpenChange={() => {}}>
+        <DialogHeader title="Review" />
+      </Dialog>,
+    );
+
+    expect(document.activeElement).toBe(document.body);
+  });
+
   it('renders when isOpen is true', () => {
     render(
       <Dialog isOpen={true} onOpenChange={() => {}}>
