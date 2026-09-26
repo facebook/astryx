@@ -3,13 +3,13 @@
   "repository": "facebook/astryx",
   "pullRequest": {
     "number": 6603,
-    "headSha": "458a0241d5ac9a18d748752ab68c0d7aa6748e5f",
+    "headSha": "f82de3a4fea7edf6453ce74a2851fbd7067c6e6a",
     "headRef": "docs/v0.7.0-release-blog",
     "headRepository": "facebook/astryx",
     "headRepositoryId": "1131202426"
   },
   "sourceRun": {
-    "id": 36154088224,
+    "id": 36250606393,
     "attempt": 1,
     "conclusion": "success"
   },
