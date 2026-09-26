@@ -501,6 +501,25 @@ describe('Markdown', () => {
     expect(code).toHaveClass('astryx-code');
   });
 
+  it('keeps a long header on one line up to the cap, then wraps instead of truncating', () => {
+    render(
+      <Markdown>
+        {
+          '| Component name | Accessibility status and remediation owner | X |\n| --- | --- | --- |\n| Button | Pass | 1 |'
+        }
+      </Markdown>,
+    );
+    const ths = Array.from(document.querySelectorAll('th'));
+    // 14 chars: header floor (14ch) beats the body floor (ceil(14/2) = 7ch).
+    expect(ths[0].getAttribute('style')).toMatch(/\b14ch\b/);
+    // 42 chars: header floor is capped at 20ch; body floor ceil(42/2) = 21ch wins.
+    expect(ths[1].getAttribute('style')).toMatch(/\b21ch\b/);
+    // Header cells never truncate: no nowrap or ellipsis class reaches them.
+    for (const th of ths) {
+      expect(th.className).not.toMatch(/nowrap|ellipsis/);
+    }
+  });
+
   it('lets a supplied inlineCode renderer own code inside table cells', () => {
     const components: Partial<MarkdownComponents> = {
       inlineCode: ({children}) => <kbd data-custom>{children}</kbd>,

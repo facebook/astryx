@@ -260,7 +260,7 @@ export const TableInNarrowColumn: Story = {
     docs: {
       description: {
         story:
-          'Columns keep a content-derived floor (component:Markdown FR26): the longest unbreakable token never splits, prose wraps to a few lines rather than one word per line, headers wrap instead of truncating, and a table wider than the column scrolls instead of squashing. Fixed 60/80/120px buckets used to shred `D116586407` into `D116586 / 407`.',
+          'Columns keep a content-derived floor (component:Markdown FR26): the longest unbreakable token never splits, prose wraps to a few lines rather than one word per line, a header stays on one line up to a cap and then wraps instead of truncating, and a table wider than the column scrolls instead of squashing. Fixed 60/80/120px buckets used to shred `D116586407` into `D116586 / 407`.',
       },
     },
   },
@@ -277,6 +277,11 @@ export const TableInNarrowColumn: Story = {
           '|---|---|---|---|',
           '| D116586407 | cixzhang | Accepted | https://example.com/diff/D116586407/very/long/path |',
           '| D116586999 | someone | `needs_revision_before_landing_v2` | https://example.com/x |',
+          '',
+          '| Component name | Accessibility status and remediation owner | Last audited |',
+          '|---|---|---|',
+          '| Button | Pass | May |',
+          '| Markdown | Review | June |',
           '',
           '| Q1 | Q2 | Q3 | Q4 | Q5 | Q6 | Q7 | Q8 |',
           '|---|---|---|---|---|---|---|---|',

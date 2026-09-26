@@ -1225,12 +1225,19 @@ function getElementSpacing(
  * so six prose columns in a narrow container would wrap one word per line. The
  * readable floor lets the column's longest cell wrap to about two lines
  * instead, scaled by that cell's own length and bounded so a table of short
- * columns still fits its container. The larger of the two floors wins in CSS.
+ * columns still fits its container. A header label adds its own floor so it
+ * reads on one line up to a cap and wraps past it, never truncates. The
+ * largest floor wins in CSS.
  * Exact tuning lives here, not in the spec (component:Markdown FR26).
  */
 const TABLE_COLUMN_MIN_CH = 4;
 const TABLE_COLUMN_MAX_CH = 24;
 const TABLE_COLUMN_TARGET_LINES = 2;
+/**
+ * A header label stays on one line up to this width; past it the header wraps
+ * to a few lines instead of forcing the column wide or being cut.
+ */
+const TABLE_HEADER_ONE_LINE_MAX_CH = 20;
 
 function computeTableColumnMinWidths(node: RenderTable): number[] {
   const [header, ...rows] = node.children;
@@ -1238,7 +1245,8 @@ function computeTableColumnMinWidths(node: RenderTable): number[] {
     return [];
   }
   return header.children.map((cell, colIdx) => {
-    let maxLen = countInlineTextLength(cell.children);
+    const headerLen = countInlineTextLength(cell.children);
+    let maxLen = headerLen;
     for (const row of rows) {
       const rowCell = row.children[colIdx];
       if (rowCell != null) {
@@ -1248,12 +1256,14 @@ function computeTableColumnMinWidths(node: RenderTable): number[] {
         }
       }
     }
+    // Body floor: the longest cell wraps to about TARGET_LINES lines.
+    const bodyFloor = Math.ceil(maxLen / TABLE_COLUMN_TARGET_LINES);
+    // Header floor: the label reads on one line up to the one-line cap; a
+    // longer label wraps rather than widening the column further.
+    const headerFloor = Math.min(headerLen, TABLE_HEADER_ONE_LINE_MAX_CH);
     return Math.min(
       TABLE_COLUMN_MAX_CH,
-      Math.max(
-        TABLE_COLUMN_MIN_CH,
-        Math.ceil(maxLen / TABLE_COLUMN_TARGET_LINES),
-      ),
+      Math.max(TABLE_COLUMN_MIN_CH, bodyFloor, headerFloor),
     );
   });
 }
