@@ -13,6 +13,7 @@ import {
   parseInline,
   parseMarkdown,
   parseMarkdownIncremental,
+  prepareMarkdownDocument,
   visitMarkdownNodes,
 } from './index';
 import {
@@ -35,7 +36,11 @@ import type {
   InlineNode,
   InlineNodeWithMath,
   MarkdownAstImage,
+  MarkdownDocumentProps,
+  MarkdownProps,
   ParseOptions,
+  PreparedMarkdownDocument,
+  PreparedMarkdownOutlineItem,
 } from './index';
 
 function assertNever(value: never): never {
@@ -128,6 +133,27 @@ describe('Markdown public parser types', () => {
     expectTypeOf(legacyBlockText).returns.toBeString();
   });
 
+  it('keeps source and prepared document props mutually exclusive', () => {
+    const document = prepareMarkdownDocument('# Prepared');
+    const sourceProps: MarkdownProps = {children: '# Source'};
+    const documentProps: MarkdownDocumentProps = {document};
+
+    function compileOnlyDocumentGuards() {
+      // @ts-expect-error source props cannot also carry a prepared document
+      const mixedSource: MarkdownProps = {children: '# Source', document};
+      const mixedDocument: MarkdownDocumentProps = {
+        document,
+        // @ts-expect-error document props replace string children
+        children: '# Source',
+      };
+      return {mixedSource, mixedDocument};
+    }
+
+    expectTypeOf(sourceProps.children).toBeString();
+    expectTypeOf(documentProps.document.source).toBeString();
+    expectTypeOf(compileOnlyDocumentGuards).toBeFunction();
+  });
+
   it('rejects ambiguous math options and structurally forged state', () => {
     function compileOnlyGuards() {
       const dynamicOptions: {math: boolean} = {math: true};
@@ -203,8 +229,17 @@ describe('Markdown public parser types', () => {
     } satisfies MarkdownSyntaxPluginDefinition<'public-demo', PublicNode>;
     const plugin = createMarkdownPlugin<'public-demo', PublicNode>(definition);
     const nodes = parseInline('plain', {plugins: [plugin] as const});
+    const document = prepareMarkdownDocument('# Public', {
+      plugins: [plugin] as const,
+    });
 
     expectTypeOf(nodes).toEqualTypeOf<InlineNode<PublicNode>[]>();
+    expectTypeOf(document).toEqualTypeOf<
+      PreparedMarkdownDocument<PublicNode>
+    >();
+    expectTypeOf(document.outline).toEqualTypeOf<
+      ReadonlyArray<PreparedMarkdownOutlineItem>
+    >();
     expectTypeOf(visitMarkdownNodes).toBeFunction();
     expectTypeOf(createMarkdownTextTransform).toBeFunction();
     expectTypeOf(markdownSoftBreaksPlugin).toEqualTypeOf<

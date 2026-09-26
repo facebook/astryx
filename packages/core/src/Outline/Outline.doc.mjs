@@ -75,7 +75,7 @@ export const docs = {
       props: [
         {
           name: 'items',
-          type: 'OutlineItem[]',
+          type: 'ReadonlyArray<OutlineItem>',
           description:
             'Ordered heading items. Each item has id, label, and level (1-6). The id should match the target heading element id.',
           required: true,
@@ -194,26 +194,22 @@ function ControlledOutline() {
         {
           label: 'Generate items from markdown',
           code: `
-import {Outline, useOutlineFromMarkdown} from '@astryxdesign/core/Outline';
+import {useMemo} from 'react';
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {prepareMarkdownDocument} from '@astryxdesign/core/Markdown/document';
+import {Outline} from '@astryxdesign/core/Outline';
 
-function MarkdownOutline({
-  markdown,
-  sourceIds,
-  autolink,
-  math,
-  plugins,
-  isStreaming,
-}) {
-  // Pass every parser-affecting option to both surfaces so heading text and ids
-  // stay identical while content streams.
-  const items = useOutlineFromMarkdown(markdown, {
-    sourceIds,
-    autolink,
-    math,
-    plugins,
-    isFinal: !isStreaming,
-  });
-  return <Outline items={items} />;
+function MarkdownWithOutline({markdown, parseOptions}) {
+  const document = useMemo(
+    () => prepareMarkdownDocument(markdown, parseOptions),
+    [markdown, parseOptions],
+  );
+  return (
+    <>
+      <Outline items={document.outline} />
+      <Markdown document={document} />
+    </>
+  );
 }
 `,
         },
@@ -273,7 +269,7 @@ function FlashOnArrival() {
       {guidance: true, description: 'Pass a flat ordered list of headings and let level control indentation.'},
       {guidance: true, description: 'Use activeId when custom scroll logic owns the active section.'},
       {guidance: true, description: 'Use density="compact" in dense sidebars where vertical space is tight.'},
-      {guidance: true, description: 'Pass the same sourceIds, autolink, math, plugins, and finality to Markdown-derived Outline helpers.'},
+      {guidance: true, description: 'Use a prepared Markdown document and its outline for one-pass finished content; use useOutlineFromMarkdown for live streaming.'},
       {guidance: true, description: 'Pass scrollContainerRef when the content scrolls in a split pane, modal, or panel instead of the viewport.'},
       {guidance: true, description: 'Set offset to the height of a fixed header that overlays the content, so headings land below it instead of underneath it.'},
       {guidance: false, description: 'Use Outline for application navigation - use SideNav or TopNav for routes.'},
@@ -304,7 +300,7 @@ export const docsZh = {
       props: [
         {
           name: 'items',
-          type: 'OutlineItem[]',
+          type: 'ReadonlyArray<OutlineItem>',
           description:
             '有序标题项。每项包含 id、label 和 level (1-6)。id 应匹配目标标题元素的 id。',
           required: true,
@@ -375,7 +371,7 @@ export const docsZh = {
       {guidance: true, description: 'Pass a flat ordered list of headings and let level control indentation.'},
       {guidance: true, description: 'Use activeId when custom scroll logic owns the active section.'},
       {guidance: true, description: 'Use density="compact" in dense sidebars where vertical space is tight.'},
-      {guidance: true, description: 'Pass the same sourceIds, autolink, math, plugins, and finality to Markdown-derived Outline helpers.'},
+      {guidance: true, description: 'Use a prepared Markdown document and its outline for one-pass finished content; use useOutlineFromMarkdown for live streaming.'},
       {guidance: false, description: 'Use Outline for application navigation - use SideNav or TopNav for routes.'},
       {guidance: false, description: 'Use Outline for expandable hierarchy - use TreeList when nodes need expand and collapse.'},
     ],
@@ -394,7 +390,7 @@ export const docsDense = {
       {guidance: true, description: 'Pass a flat ordered list of headings and let level control indentation.'},
       {guidance: true, description: 'Use activeId when custom scroll logic owns the active section.'},
       {guidance: true, description: 'Use density="compact" in dense sidebars where vertical space is tight.'},
-      {guidance: true, description: 'Pass the same sourceIds, autolink, math, plugins, and finality to Markdown-derived Outline helpers.'},
+      {guidance: true, description: 'Use a prepared Markdown document and its outline for one-pass finished content; use useOutlineFromMarkdown for live streaming.'},
       {guidance: true, description: 'Pass scrollContainerRef when the content scrolls in a split pane, modal, or panel instead of the viewport.'},
       {guidance: true, description: 'Set offset to the height of a fixed header that overlays the content, so headings land below it instead of underneath it.'},
       {guidance: false, description: 'Use Outline for application navigation - use SideNav or TopNav for routes.'},
@@ -403,7 +399,7 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    items: 'Ordered OutlineItem[]: {id,label,level}. id should match target heading DOM id.',
+    items: 'ReadonlyArray<OutlineItem>: {id,label,level}. id should match target heading DOM id.',
     activeId: 'Controlled active heading id. Disables built-in scroll-spy.',
     onActiveIdChange: 'Called when active id changes from scroll-spy or click.',
     label: "Accessible nav label. Default: 'Table of contents'.",
@@ -422,7 +418,7 @@ export const docsDense = {
       description:
         'Document outline nav with sliding indicator. Renders heading anchors with a density variant, roving-tabindex keyboard nav, navigate callbacks, and scroll-spy active state when uncontrolled.',
       propDescriptions: {
-        items: 'Ordered OutlineItem[]: {id,label,level}. id should match target heading DOM id.',
+        items: 'ReadonlyArray<OutlineItem>: {id,label,level}. id should match target heading DOM id.',
         activeId: 'Controlled active heading id. Disables built-in scroll-spy.',
         onActiveIdChange: 'Called when active id changes from scroll-spy or click.',
         label: "Accessible nav label. Default: 'Table of contents'.",

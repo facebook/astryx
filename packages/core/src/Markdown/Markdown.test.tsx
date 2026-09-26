@@ -12,6 +12,7 @@ import {
 import {render, screen, fireEvent} from '@testing-library/react';
 import type {ComponentProps, ReactNode} from 'react';
 import {Markdown} from './Markdown';
+import {prepareMarkdownDocument} from './preparedDocument';
 import type {MarkdownComponents, MarkdownInlinePlugin} from './Markdown';
 import type {ParseOptions} from './index';
 import {stubMatchMedia} from '../__tests__/stubMatchMedia';
@@ -21,6 +22,38 @@ describe('Markdown', () => {
   it('renders with role="document"', () => {
     render(<Markdown>Hello</Markdown>);
     expect(screen.getByRole('document')).toBeInTheDocument();
+  });
+
+  it('rejects structurally forged prepared documents', () => {
+    const source = '# Forged';
+    const forged = {
+      source,
+      root: {type: 'root', children: []},
+      outline: [],
+    } as never;
+
+    expect(() => render(<Markdown document={forged} />)).toThrow(
+      'must come from prepareMarkdownDocument',
+    );
+  });
+
+  it('rejects incompatible prepared-document modes', () => {
+    const document = prepareMarkdownDocument('# Prepared');
+    const inlineProps = {
+      document,
+      display: 'inline',
+    } as unknown as ComponentProps<typeof Markdown>;
+    const streamingProps = {
+      document,
+      isStreaming: true,
+    } as unknown as ComponentProps<typeof Markdown>;
+
+    expect(() => render(<Markdown {...inlineProps} />)).toThrow(
+      'only non-streaming block rendering',
+    );
+    expect(() => render(<Markdown {...streamingProps} />)).toThrow(
+      'only non-streaming block rendering',
+    );
   });
 
   it('renders astryx-markdown class name', () => {
@@ -125,6 +158,27 @@ describe('Markdown', () => {
 
       expect(item.id).toBe('before-x-y');
       expect(screen.getByRole('heading')).toHaveAttribute('id', item.id);
+    });
+
+    it('reuses prepared parser options for rendering and outline identity', () => {
+      const source = '# Before [cite] $x + y$';
+      const document = prepareMarkdownDocument(source, {
+        sourceIds: new Set(['cite']),
+        math: true,
+      });
+      render(
+        <Markdown
+          document={document}
+          sources={{cite: {title: 'Citation'}}}
+          components={{math: ({value}) => <span>{value}</span>}}
+        />,
+      );
+
+      expect(document.outline[0].id).toBe('before-x-y');
+      expect(screen.getByRole('heading')).toHaveAttribute(
+        'id',
+        document.outline[0].id,
+      );
     });
 
     it('passes the generated id to a custom heading component', () => {
