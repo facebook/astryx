@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {useCallback, useEffect, useState, useRef, type ReactNode} from 'react';
+import {useState, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Toast, useToast, ToastViewport} from '@astryxdesign/core/Toast';
 import type {
@@ -99,9 +99,8 @@ const styles = stylex.create({
     gap: 'var(--spacing-2)',
   },
   // One app page per colour mode, side by side (ThemedToastAction). The
-  // frame paints the mode's own page background, and its transform makes it
-  // the containing block for the fixed-position ToastViewport inside, so each
-  // page keeps its own toast corner.
+  // frame paints the mode's own page background and positions the page's
+  // inline toast in its bottom-end corner, where a viewport would put it.
   appPages: {
     display: 'flex',
     flexWrap: 'wrap',
@@ -126,7 +125,13 @@ const styles = stylex.create({
     borderColor: 'var(--color-border)',
     borderRadius: 'var(--radius-container)',
     backgroundColor: 'var(--color-background-body)',
-    transform: 'translateZ(0)',
+  },
+  appPageToast: {
+    position: 'absolute',
+    insetBlockEnd: 'var(--spacing-4)',
+    insetInlineEnd: 'var(--spacing-4)',
+    inlineSize: 400,
+    maxInlineSize: 'calc(100% - 2 * var(--spacing-4))',
   },
   inboxHeader: {
     display: 'flex',
@@ -1011,10 +1016,13 @@ const inboxColumns = [
   {key: 'time', header: 'Time', width: pixel(96)},
 ];
 
-function InkMailTopNav() {
+type InkMailMode = 'light' | 'dark';
+
+// Both pages share one canvas, so each names its landmarks after its mode.
+function InkMailTopNav({mode}: {mode: InkMailMode}) {
   return (
     <TopNav
-      label="Ink Mail"
+      label={`Ink Mail, ${mode} app`}
       heading={
         <TopNavHeading
           heading="Ink Mail"
@@ -1042,9 +1050,10 @@ function InkMailTopNav() {
   );
 }
 
-function InkMailSideNav() {
+function InkMailSideNav({mode}: {mode: InkMailMode}) {
   return (
     <SideNav
+      aria-label={`Mailboxes, ${mode} app`}
       topContent={<Button label="Compose" variant="primary" width="100%" />}>
       <SideNavSection title="Mailboxes" isHeaderHidden>
         <SideNavItem
@@ -1085,82 +1094,74 @@ function InkMailSideNav() {
 }
 
 /**
- * Fires the archive toast when the page mounts, so both pages show it, and
- * again from the toolbar. The action is a plain `variant="secondary"` Button;
- * the theme decides how it reads on each page.
+ * One inbox page. The archive toast is an inline `Toast` in the frame's
+ * bottom-end corner rather than a fired one, so both pages show it at once
+ * (two live viewports on one canvas would be two identical "Notifications"
+ * landmarks); Archive brings it back after a dismiss. The action is a plain
+ * `variant="secondary"` Button; the theme decides how it reads on each page.
  */
-function ArchiveButton({type}: {type: ToastType}) {
-  const toast = useToast();
-  const show = useCallback(() => {
-    const isError = type === 'error';
-    toast({
-      uniqueID: 'ink-mail-archive',
-      type,
-      body: isError
-        ? 'Could not archive the conversation.'
-        : 'Conversation archived.',
-      isAutoHide: false,
-      endContent: (
-        <Button
-          label={isError ? 'Retry' : 'Undo'}
-          variant="secondary"
-          size="sm"
-        />
-      ),
-    });
-  }, [toast, type]);
-  useEffect(() => {
-    show();
-  }, [show]);
-  return (
-    <Button label="Archive" variant="secondary" size="sm" onClick={show} />
-  );
-}
-
-/**
- * One inbox page. The frame paints the mode's page background and, through
- * its transform, contains the fixed-position viewport, so each page keeps its
- * own toast corner.
- */
-function InkMailPage({type}: {type: ToastType}) {
+function InkMailPage({mode, type}: {mode: InkMailMode; type: ToastType}) {
+  const [isToastShown, setIsToastShown] = useState(true);
+  const isError = type === 'error';
   return (
     <div {...stylex.props(styles.appPage)}>
-      <ToastViewport position="bottomEnd" isTopLayer={false} maxVisible={1}>
-        <Layout
-          height="fill"
-          header={<InkMailTopNav />}
-          start={
-            <LayoutPanel hasDivider padding={0} width={260}>
-              <InkMailSideNav />
-            </LayoutPanel>
-          }
-          content={
-            <LayoutContent padding={6}>
-              <Stack direction="vertical" gap={4}>
-                <div {...stylex.props(styles.inboxHeader)}>
-                  <Heading level={2}>Inbox</Heading>
-                  <div {...stylex.props(styles.inboxActions)}>
-                    <ArchiveButton type={type} />
-                    <Button
-                      label="Mark all read"
-                      variant="secondary"
-                      size="sm"
-                    />
-                  </div>
+      <Layout
+        height="fill"
+        header={<InkMailTopNav mode={mode} />}
+        start={
+          <LayoutPanel hasDivider padding={0} width={260}>
+            <InkMailSideNav mode={mode} />
+          </LayoutPanel>
+        }
+        content={
+          <LayoutContent padding={6}>
+            <Stack direction="vertical" gap={4}>
+              <div {...stylex.props(styles.inboxHeader)}>
+                <Heading level={2}>Inbox</Heading>
+                <div {...stylex.props(styles.inboxActions)}>
+                  <Button
+                    label="Archive"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setIsToastShown(true)}
+                  />
+                  <Button label="Mark all read" variant="secondary" size="sm" />
                 </div>
-                {/* Last child of the padded content: the rows bleed to its
-                    edges, the way Table is built to sit in a frame. */}
-                <Table
-                  data={inboxRows}
-                  columns={inboxColumns}
-                  idKey="id"
-                  hasHover
-                />
-              </Stack>
-            </LayoutContent>
-          }
-        />
-      </ToastViewport>
+              </div>
+              {/* Last child of the padded content: the rows bleed to its
+                  edges, the way Table is built to sit in a frame. */}
+              <Table
+                data={inboxRows}
+                columns={inboxColumns}
+                idKey="id"
+                hasHover
+              />
+            </Stack>
+          </LayoutContent>
+        }
+      />
+      {isToastShown && (
+        <div {...stylex.props(styles.appPageToast)}>
+          <Toast
+            type={type}
+            body={
+              isError
+                ? 'Could not archive the conversation.'
+                : 'Conversation archived.'
+            }
+            endContent={
+              <Button
+                label={isError ? 'Retry' : 'Undo'}
+                variant="secondary"
+                size="sm"
+              />
+            }
+            isAutoHide={false}
+            autoHideDuration={5000}
+            onDismiss={() => setIsToastShown(false)}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -1201,7 +1202,7 @@ export const ThemedToastAction: StoryObj<ThemedToastActionArgs> = {
               {mode === 'light' ? 'Light app' : 'Dark app'}
             </Text>
             <Theme theme={theme} mode={mode}>
-              <InkMailPage type={type} />
+              <InkMailPage mode={mode} type={type} />
             </Theme>
           </div>
         ))}
