@@ -249,11 +249,20 @@ function applyShimRecursively(cmd) {
   });
   cmd.configureOutput({
     writeOut: (str) => process.stdout.write(str),
+    // Commander's own "error: ..." line never reaches the user. Under --json a
+    // consumer parsing both streams must not see it alongside the envelope;
+    // in text mode it is Commander's format, not Astryx's, so an invalid
+    // global option (`--lang zh-Hans`) printed `error: option '--lang
+    // <locale>' argument 'zh-Hans' is invalid…` where every other CLI error
+    // prints `Error: …`. handleCommanderError writes the Astryx line below,
+    // for both modes, from the same message.
+    //
+    // ONLY that line. Commander also writes HELP through this channel when it
+    // shows help because the invocation failed (a command group with no
+    // subcommand), and that output is still wanted in text mode.
     writeErr: (str) => {
-      // Suppress Commander's "error: ..." stderr line when --json is
-      // active, so a JSON consumer parsing both streams doesn't see
-      // it alongside the envelope. Non-JSON callers are unaffected.
       if (jsonActive()) return;
+      if (/^error:\s/i.test(str)) return;
       process.stderr.write(str);
     },
   });
@@ -432,16 +441,15 @@ export function handleCommanderError(err) {
     code: commanderCodeToErrorCode(code, message),
   });
 
-  // Real error paths.
+  // Real error paths. Strip Commander's "error: " prefix once: in the envelope
+  // the key is already `error`, and in text mode the Astryx prefix replaces it.
+  const cleaned = message.replace(/^error:\s*/i, '');
   if (jsonActive()) {
-    // Strip Commander's "error: " prefix — the envelope key is `error`
-    // already, doubled "error" is noise.
-    const cleaned = message.replace(/^error:\s*/i, '');
     emitJsonError(cleaned, undefined, commanderCodeToErrorCode(code, cleaned));
   } else {
-    // Non-JSON mode: Commander already wrote the "error: ..." line
-    // to stderr via configureOutput.writeErr before throwing the
-    // CommanderError. Nothing to do — exit with the original code.
+    // Commander's own line was suppressed above, so a parse failure reads the
+    // same as every other CLI error — the `Error: …` line cliError prints.
+    process.stderr.write(`Error: ${cleaned}\n`);
   }
   process.exit(exitCode || 1);
 }
