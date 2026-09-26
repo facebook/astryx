@@ -160,7 +160,7 @@ describe('validate-integration API', () => {
     fs.mkdirSync(componentsDir);
     fs.writeFileSync(
       path.join(componentsDir, 'Widget.doc.mjs'),
-      `export default {name: 'Widget'};\n`,
+      `export default {name: 'Widget', props: []};\n`,
     );
     fs.writeFileSync(
       path.join(componentsDir, 'Widget.tsx'),
@@ -485,7 +485,7 @@ export default {type: 'theme', name: 'ocean', displayName: 'Ocean', description:
     fs.mkdirSync(cDir, {recursive: true});
     fs.writeFileSync(
       path.join(cDir, 'Widget.doc.mjs'),
-      `export default { name: 'Widget' };\n`,
+      `export default { type: 'component', name: 'Widget', props: [] };\n`,
     );
     fs.writeFileSync(
       path.join(cDir, 'Widget.tsx'),
@@ -507,7 +507,7 @@ export default {type: 'theme', name: 'ocean', displayName: 'Ocean', description:
     // Doc with no sibling Widget.tsx.
     fs.writeFileSync(
       path.join(cDir, 'Widget.doc.mjs'),
-      `export default { name: 'Widget' };\n`,
+      `export default { type: 'component', name: 'Widget', props: [] };\n`,
     );
 
     const result = await validateLocalIntegration(pkgDir);

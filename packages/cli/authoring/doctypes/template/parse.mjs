@@ -51,6 +51,10 @@ const baseTemplateFields = {
   scaffold: z.boolean().optional(),
   isHiddenFromOverview: z.boolean().optional(),
   registry: registryIdentitySchema.optional(),
+  replaces: z
+    .string()
+    .min(1, 'replaces must name a Core template id')
+    .optional(),
 };
 
 const pageTemplateSchema = z

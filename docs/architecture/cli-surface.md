@@ -80,11 +80,15 @@ goes through the `Project` seam in `foundation/config`, which resolves the
 integrations named in `astryx.config` and then autolinks any DECLARED dependency
 that ships a root `astryx.integration.*` manifest — a config entry is how a
 project pins an integration, not how the CLI finds one. Each integration is
-loaded independently, so one broken package degrades that package's
-contribution and never fails the run.
+loaded independently. A manifest load failure withdraws that package. An error
+in one contribution kind does not hide other valid kinds, and invalid template
+or component files do not hide valid siblings.
 
 AST-017 DEC-4 owns stable response-entry fields and requires their complete type,
-test, applicable text, and consumer-documentation projections.
+test, applicable text, and consumer-documentation projections. A `template.list`
+entry can carry optional `replaces`, naming the Core id that a winning
+integration template supersedes; the Core entry is omitted from the default list
+and remains available through explicit Core package selection.
 
 ## Boundaries and invariants
 
@@ -162,11 +166,13 @@ test, applicable text, and consumer-documentation projections.
   resolver, and fails when the packed artifact has no usable public export. This
   contract does not require project-local TypeScript or promise validation under
   TypeScript's Node16 or bundler resolution modes.
-- **INV18 — Integration diagnostics are read-only and package-specific.** Doctor
-  validation reports malformed or unreachable roots and contribution conflicts
-  without rewriting the package. Everyday discovery skips a broken integration
-  and records its issue; a package-scoped theme lookup surfaces that package's
-  blocking catalog error instead of misreporting the theme as unknown.
+- **INV18 — Integration diagnostics are read-only and contribution-specific.**
+  Doctor reports malformed or unreachable roots and contribution conflicts
+  without rewriting the package. A manifest load failure withdraws the package.
+  A contribution-kind error remains visible without hiding other valid kinds.
+  Invalid template and component files do not hide valid siblings. A
+  package-scoped theme lookup still surfaces that package's blocking catalog
+  error instead of misreporting the theme as unknown.
 - **INV19 — Integration themes are packaged editable source.** The manifest's
   `themes` root contains one directory per slug. Every theme source has a mandatory
   same-stem, strongly typed `ThemeDoc`; there is no root item catalog. Discovery

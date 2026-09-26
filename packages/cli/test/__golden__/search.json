@@ -31,7 +31,7 @@
         "description": "A zorblax hero block.",
         "displayName": "Zorblax hero",
         "kind": "block",
-        "command": "astryx template hero"
+        "command": "astryx template hero --type block"
       }
     ]
   }

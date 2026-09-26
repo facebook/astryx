@@ -11,11 +11,12 @@ export const doc = {
   name: 'integrationTemplateConflicts',
   namespace: 'cli/api',
   displayName: 'integrationTemplateConflicts()',
-  summary: 'Find integration template ids that also exist in Core.',
+  summary: 'Validate integration template replacements and Core id overlaps.',
   description:
-    'Loads one local or installed integration, compares its template ids with the ' +
-    'built-in Core page and block templates, and returns non-blocking conflicts with ' +
-    'the exact package-qualified CLI command required to keep an intentional overlap.',
+    'Loads one local or installed integration, validates its template replacement ' +
+    'declarations against the built-in Core page and block templates, and reports ' +
+    'intentional replacements, missing targets, ambiguous declarations, type ' +
+    'mismatches, and undeclared same-id conflicts.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'integrationTemplateConflicts(pkg?: string, options?: IntegrationAuthoringOptions): Promise<IntegrationTemplateConflictResponse>',
@@ -38,7 +39,7 @@ export const doc = {
     {
       type: 'integration.template-conflicts',
       description:
-        'The integration identity, structural issues, and every Core template-id conflict with a package-qualified command.',
+        'The integration identity, structural and replacement-declaration issues, intentional Core replacements, and undeclared same-id conflicts.',
     },
   ],
   examples: [

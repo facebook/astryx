@@ -125,14 +125,18 @@ function printTemplateConflicts(data) {
     ),
     ...issueBlocks(data.issues),
   ];
-  if (data.conflicts.length === 0) {
-    output.push(text('[ok] No template ids conflict with Core.'));
-  } else {
+  if (data.conflicts.length === 0 && data.issues.length === 0) {
+    output.push(
+      text('[ok] No template replacements or id conflicts with Core.'),
+    );
+  } else if (data.conflicts.length > 0) {
     output.push(
       records(data.conflicts, {
         fields: [
           'severity',
+          'relationship',
           'id',
+          'replaces',
           'integrationPackage',
           'integrationType',
           'integrationName',
@@ -141,10 +145,7 @@ function printTemplateConflicts(data) {
         ],
         format: {severity: statusToken},
       }),
-      text(
-        `${data.conflicts.length} Core template conflict(s). ` +
-          'Renaming is recommended but optional; keep the package-qualified command if the overlap is intentional.',
-      ),
+      text(`${data.conflicts.length} Core template relationship(s).`),
     );
   }
   emit(...output);
@@ -165,7 +166,13 @@ function printComponentConflicts(data) {
   } else {
     output.push(
       records(data.conflicts, {
-        fields: ['severity', 'name', 'integrationPackage', 'message', 'command'],
+        fields: [
+          'severity',
+          'name',
+          'integrationPackage',
+          'message',
+          'command',
+        ],
         format: {severity: statusToken},
       }),
       text(
@@ -272,7 +279,8 @@ async function runAuthoringCheck(program, pkg, kind) {
   const structuralErrors = summarizeIssues(result.data.issues).errors;
   const docErrors =
     result.type === 'integration.doc-conflicts'
-      ? result.data.findings.filter(finding => finding.severity === 'error').length
+      ? result.data.findings.filter(finding => finding.severity === 'error')
+          .length
       : 0;
   if (structuralErrors > 0 || docErrors > 0) process.exitCode = 1;
   return NO_RESULT_SET;

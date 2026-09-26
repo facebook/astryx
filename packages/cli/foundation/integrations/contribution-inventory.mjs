@@ -189,7 +189,7 @@ export function computeRequiredFiles(loaded) {
  * @typedef {object} ContributionIdentities
  * @property {{slug: string, exportName: string}[]} themes
  * @property {string[]} components
- * @property {{id: string, type: string, name: string}[]} templates
+ * @property {{id: string, type: string, name: string, replaces?: string}[]} templates
  * @property {{version: string, id: string}[]} codemods
  * @property {string[]} docs
  * @property {string[]} agentDocsAppend
@@ -278,7 +278,12 @@ export async function collectIdentities(loaded) {
         errors.push({kind: 'templates', message: templateError.message});
       }
       identities.templates = templates
-        .map(t => ({id: t.dirName, type: t.type, name: t.name}))
+        .map(t => ({
+          id: t.dirName,
+          type: t.type,
+          name: t.name,
+          ...(t.replaces == null ? {} : {replaces: t.replaces}),
+        }))
         .sort((a, b) => a.id.localeCompare(b.id));
     } catch (err) {
       errors.push({
