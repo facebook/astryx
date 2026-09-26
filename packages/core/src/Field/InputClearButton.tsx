@@ -4,8 +4,9 @@
 
 /**
  * @file InputClearButton.tsx
- * @input Uses React, Button, Icon
- * @output Exports the public InputClearButton and an internal popup-aware variant.
+ * @input Uses React, Button, and Icon
+ * @output Exports the public InputClearButton and an internal popup-aware variant,
+ *   both with a contextual tooltip matching their required label.
  * @position Shared primitive. Every input that renders a clear affordance —
  *   TextInput, NumberInput, TimeInput, DateInput, DateTimeInput,
  *   DateRangeInput, Selector, MultiSelector, Typeahead, Tokenizer, FileInput —
@@ -66,6 +67,7 @@ const styles = stylex.create({
 });
 
 export interface InputClearButtonProps {
+  /** Contextual accessible name for the button, such as "Clear Search". */
   label: string;
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
   xstyle?: stylex.StyleXStyles;
@@ -73,8 +75,8 @@ export interface InputClearButtonProps {
    * Extra class(es) for the clear glyph itself, merged onto the shared
    * `astryx-input-clear-icon` target. Used by inputs that shipped a
    * component-specific clear-icon target before the family converged here
-   * (e.g. `astryx-date-input-clear-icon`) to keep emitting it for a
-   * deprecation window; new callers don't need it.
+   * (e.g. `astryx-date-input-clear-icon`) to keep emitting it for backwards
+   * compatibility; new callers don't need it.
    */
   iconClassName?: string;
 }
@@ -104,6 +106,7 @@ function renderInputClearButton({
       variant="ghost"
       size="sm"
       label={label}
+      tooltip={label}
       className={buttonTargetClassName}
       icon={
         <Icon
@@ -117,8 +120,12 @@ function renderInputClearButton({
           }
         />
       }
+      onPointerDown={e => {
+        e.preventDefault();
+        onPointerDown?.(e);
+      }}
+      onMouseDown={e => e.preventDefault()}
       onClick={onClick}
-      onPointerDown={onPointerDown}
       onClickCapture={onClickCapture}
       isIconOnly
       xstyle={[styles.button, xstyle]}

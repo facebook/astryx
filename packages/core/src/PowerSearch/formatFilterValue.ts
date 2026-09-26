@@ -44,6 +44,7 @@ export function formatDateAbsolute(
     hour: 'numeric',
     minute: '2-digit',
     ...(timezoneID ? {timeZone: timezoneID} : {}),
+    calendar: 'gregory',
   };
   return new Intl.DateTimeFormat(locale, options).format(unixSeconds * 1000);
 }
@@ -63,6 +64,7 @@ export function formatDateAbsoluteCompact(
     year: 'numeric',
     month: 'short',
     day: 'numeric',
+    calendar: 'gregory',
   }).format(unixSeconds * 1000);
 }
 

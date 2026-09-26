@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {act, render, screen} from '@testing-library/react';
 import * as stylex from '@stylexjs/stylex';
 import {BaseTable} from './BaseTable';
 import {Table} from './Table';
@@ -856,22 +856,95 @@ describe('Table', () => {
     expect(screen.getAllByRole('row')).toHaveLength(4);
   });
 
-  it('wraps table in a scroll container', () => {
+  it('wraps the table in an observed scroll content box', () => {
     render(<Table data={users} columns={columns} />);
     const table = screen.getByRole('table');
-    const wrapper = table.parentElement;
+    const content = table.parentElement;
+    const wrapper = content?.parentElement;
+    expect(content).toHaveAttribute('data-scroll-content');
     expect(wrapper).toBeTruthy();
     expect(wrapper!.className).toContain('astryx-table-scroll-wrapper');
   });
 
-  it('makes the scroll container keyboard-focusable', () => {
+  it('keeps a fitting scroll container out of the keyboard order', () => {
     render(<Table data={users} columns={columns} />);
-    const table = screen.getByRole('table');
-    const wrapper = table.parentElement;
-    expect(wrapper).toBeTruthy();
-    expect(wrapper!).toHaveAttribute('tabindex', '0');
-    expect(wrapper!).toHaveAttribute('role', 'group');
-    expect(wrapper!).toHaveAttribute('aria-label', 'Table');
+    const wrapper = screen.getByRole('group', {name: 'Table'});
+    expect(wrapper).not.toHaveAttribute('tabindex');
+    expect(wrapper.style.overscrollBehaviorX).toBe('auto');
+  });
+
+  it('preserves scroll-wrapper HTML attributes from plugins', () => {
+    const plugin: TablePlugin<User> = {
+      transformScrollWrapper: props => ({
+        ...props,
+        htmlProps: {
+          ...props.htmlProps,
+          role: 'region',
+          'aria-label': 'Orders',
+          tabIndex: 2,
+        },
+      }),
+    };
+    render(<Table data={users} columns={columns} plugins={{custom: plugin}} />);
+    const wrapper = screen.getByRole('region', {name: 'Orders'});
+    expect(wrapper).toHaveAttribute('tabindex', '2');
+  });
+
+  it('contains overscroll only while the table scrolls', () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn((callback: FrameRequestCallback) => {
+        frames.push(callback);
+        return frames.length;
+      }),
+    );
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+
+    try {
+      render(<Table data={users} columns={columns} />);
+      const wrapper = screen.getByRole('group', {name: 'Table'});
+      Object.assign(wrapper.style, {overflowX: 'auto'});
+      for (const [key, value] of Object.entries({
+        clientWidth: 100,
+        clientHeight: 100,
+        scrollWidth: 180,
+        scrollHeight: 100,
+        scrollLeft: 0,
+        scrollTop: 0,
+      })) {
+        Object.defineProperty(wrapper, key, {
+          configurable: true,
+          value,
+          writable: true,
+        });
+      }
+
+      act(() => {
+        wrapper.dispatchEvent(new Event('scroll'));
+        frames.splice(0).forEach(callback => callback(performance.now()));
+      });
+
+      expect(wrapper).toHaveAttribute('tabindex', '0');
+      expect(wrapper).toHaveAttribute('data-scrollable-inline', 'true');
+      expect(wrapper.style.overscrollBehaviorX).toBe('contain');
+
+      Object.defineProperty(wrapper, 'scrollWidth', {
+        configurable: true,
+        value: 100,
+        writable: true,
+      });
+      act(() => {
+        wrapper.dispatchEvent(new Event('scroll'));
+        frames.splice(0).forEach(callback => callback(performance.now()));
+      });
+
+      expect(wrapper).not.toHaveAttribute('tabindex');
+      expect(wrapper).not.toHaveAttribute('data-scrollable-inline');
+      expect(wrapper.style.overscrollBehaviorX).toBe('auto');
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('uses table-layout: auto in children mode', () => {

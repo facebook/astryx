@@ -62,8 +62,17 @@ export function themeTemplate(options = {}) {
 
   // Our repo header has no business in someone else's source tree.
   const contents = stripCopyrightHeader(fs.readFileSync(THEME_TEMPLATE_SRC, 'utf-8'));
-  fs.mkdirSync(path.dirname(resolved), {recursive: true});
-  fs.writeFileSync(resolved, contents);
+  try {
+    fs.mkdirSync(path.dirname(resolved), {recursive: true});
+    fs.writeFileSync(resolved, contents);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new AstryxError(
+      `Failed to write the theme template to ${relative}: ${message}`,
+      undefined,
+      ERROR_CODES.ERR_WRITE_FAILED,
+    );
+  }
 
   return {type: 'theme.template', data: {path: relative, written: true, reason: null}};
 }

@@ -38,6 +38,8 @@ import {
 } from '../theme/tokens.stylex';
 import {Spinner} from '../Spinner';
 import {VisuallyHidden} from '../VisuallyHidden';
+import {IconDefaultSizeProvider} from '../Icon/IconDefaultSizeContext';
+import {iconBoxSizeStyles, type IconSize} from '../Icon/IconSize.stylex';
 
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {useSize} from '../SizeContext/SizeContext';
@@ -99,17 +101,19 @@ const styles = stylex.create({
   pressable: {
     transform: {
       default: 'scale(1)',
-      ':active': 'scale(0.98)',
+      ':active:where(:not(:disabled,[aria-disabled="true"]))': 'scale(0.98)',
     },
   },
-  disabled: {
+  inactive: {
     cursor: 'default',
-    opacity: 0.5,
     backgroundImage: 'none',
     transform: {
       default: 'none',
       ':active': 'none',
     },
+  },
+  disabled: {
+    opacity: 0.5,
   },
   ariaDisabled: {
     // The variants' hover treatment already steps aside for
@@ -169,17 +173,6 @@ const sizeStyles = stylex.create({
 });
 
 /**
- * Icon size per button size.
- * Matches Icon sizing: sm/md=16px, lg=20px.
- * fontSize is set so emoji and text-based icons scale correctly.
- */
-const iconSizeStyles = stylex.create({
-  sm: {width: 16, height: 16, fontSize: 16},
-  md: {width: 16, height: 16, fontSize: 16},
-  lg: {width: 20, height: 20, fontSize: 20},
-});
-
-/**
  * Resting elevation for floating buttons (e.g. a FAB). `none` is the default
  * flat button; `low`/`med`/`high` map to the shadow token scale. 'none' stays
  * a literal so it never conflicts with a variant's background layering.
@@ -231,6 +224,12 @@ export type ButtonVariant = keyof ButtonVariantMap;
  */
 export type ButtonSize = keyof typeof sizeStyles;
 
+const iconSizeByButtonSize = {
+  sm: 'sm',
+  md: 'sm',
+  lg: 'md',
+} satisfies Record<ButtonSize, IconSize>;
+
 export interface ButtonProps extends BaseProps<HTMLButtonElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLButtonElement>;
@@ -270,7 +269,8 @@ export interface ButtonProps extends BaseProps<HTMLButtonElement> {
    */
   isDisabled?: boolean;
   /**
-   * Whether the button is in a loading state.
+   * Whether the button is in a loading state. Loading prevents interaction
+   * without dimming the spinner; explicit disabled states remain dimmed.
    * @default false
    */
   isLoading?: boolean;
@@ -573,6 +573,10 @@ export function Button({
   // not disabled, so clicks keep landing and can interrupt the in-flight action.
   const buttonDisabled =
     isDisabled || groupDisabled || (isLoadingState && !isInterruptible);
+  // A loading button remains non-interactive, but its spinner communicates an
+  // active state and must retain contrast. Only explicitly disabled controls
+  // receive the visually dimmed treatment.
+  const visuallyDisabled = isDisabled || groupDisabled;
   // isIconOnly prop is the source of truth for icon-only rendering.
   // When false (default), label is always rendered as visible text.
 
@@ -639,7 +643,8 @@ export function Button({
     sizeStyles[size],
     isIconOnly && styles.iconOnly,
     interactionOverlayStyles.backgroundImage,
-    buttonDisabled && styles.disabled,
+    buttonDisabled && styles.inactive,
+    visuallyDisabled && styles.disabled,
     useAriaDisabled && styles.ariaDisabled,
     renderAsLink && styles.link,
     !buttonGroup && styles.pressable,
@@ -675,6 +680,8 @@ export function Button({
     style,
   );
 
+  const iconSize = iconSizeByButtonSize[size];
+
   const buttonContent = (
     <>
       {isLoadingState && (
@@ -697,8 +704,11 @@ export function Button({
         )}
         aria-hidden={isLoadingState || undefined}>
         {icon && (
-          <span {...stylex.props(styles.iconWrapper, iconSizeStyles[size])}>
-            {icon}
+          <span
+            {...stylex.props(styles.iconWrapper, iconBoxSizeStyles[iconSize])}>
+            <IconDefaultSizeProvider value={iconSize}>
+              {icon}
+            </IconDefaultSizeProvider>
           </span>
         )}
         {isIconOnly ? null : (

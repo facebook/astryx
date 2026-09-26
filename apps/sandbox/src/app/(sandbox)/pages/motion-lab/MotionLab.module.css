@@ -51,13 +51,20 @@
    stays in CSS, because `animation: none !important` does outrank the
    element's own animation shorthand. */
 
-/* Continuous loops stop under either policy. Criterion 10 is explicit that
-   they stop rather than slow down, which is the finding against Spinner and
-   ProgressBar today. */
-.scope[data-reduced-motion='degrade'] .loop,
-.scope[data-reduced-motion='delete'] .loop {
-  animation: none !important;
-}
+/* NOTE: there is no `.loop` rule here on purpose. One used to stop continuous
+   loops under the reduced-motion policies and it never fired — nothing applies
+   the class, and LoopRig sets `animation: none` inline, which would outrank it
+   anyway. That is the same trap as the duration aliases above. The policy lives
+   in the rig; do not add a stylesheet rule back and assume it works.
+
+   Containment lives on each loop's own class below (`contain: paint`), because
+   the classes are what the demos actually apply. Three of those loops animate a
+   paint-only or layout property deliberately — they are the demonstration of
+   what criterion 13 forbids — and without containment the demonstration would
+   repaint the whole lab around itself at 60fps, which is the kt-fr88 bug being
+   committed by the page that documents it. The layer, where one is warranted,
+   is gated on no-preference so a reduced-motion reader is not charged layer
+   memory for a mark that has been stilled. */
 
 /* ---------------------------------------------------------------- stage --- */
 
@@ -641,6 +648,7 @@
 /* ---------------------------------------------------------------- loops --- */
 
 .spinner {
+  contain: paint;
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -656,6 +664,7 @@
 }
 
 .pulseDot {
+  contain: paint;
   width: 11px;
   height: 11px;
   border-radius: 50%;
@@ -674,6 +683,7 @@
 }
 
 .shimmer {
+  contain: paint;
   height: 11px;
   border-radius: 6px;
   background: linear-gradient(
@@ -704,6 +714,7 @@
 }
 
 .progressFillWidth {
+  contain: paint;
   position: absolute;
   inset-block: 0;
   inset-inline-start: 0;
@@ -714,6 +725,7 @@
 }
 
 .progressFillTransform {
+  contain: paint;
   position: absolute;
   inset-block: 0;
   inset-inline-start: 0;
@@ -721,7 +733,6 @@
   border-radius: 4px;
   background: var(--color-brand);
   animation: progressTransform var(--loop-duration, 1.4s) linear infinite;
-  will-change: transform;
 }
 
 @keyframes progressWidth {
@@ -889,10 +900,6 @@
   transition: transform var(--lab-duration-enter) var(--ease-entry);
 }
 
-.checkHard .checkTick {
-  stroke-dashoffset: 0;
-}
-
 /* -------------------------------------------------------------- misc ------ */
 
 .curveCanvas {
@@ -911,4 +918,16 @@
   gap: var(--space-2, 8px);
   align-items: center;
   flex-wrap: wrap;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .spinner {
+    will-change: transform;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .progressFillTransform {
+    will-change: transform;
+  }
 }

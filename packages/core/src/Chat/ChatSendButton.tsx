@@ -95,7 +95,7 @@ export function ChatSendButton(props: ChatSendButtonProps): ReactNode {
     ...rest
   } = props;
 
-  const handleSend = onSend ?? (() => context?.onSubmit(''));
+  const handleSend = onSend ?? (() => context?.onSubmit(context.value));
   const defaultStopIcon = useIcon('stop');
   const defaultSendIcon = useIcon('arrowUp');
 

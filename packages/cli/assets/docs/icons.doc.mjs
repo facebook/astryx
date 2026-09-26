@@ -108,7 +108,7 @@ export const brandTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: 'A glyph that belongs to one component or library gets a namespaced key (`numberInput:stepperDown`, `richtext:bold`) instead of a new semantic name. It resolves through the same registry and a theme overrides it the same way, but the shared IconName list stays reserved for glyphs the whole system uses — so adding one does not make every downstream icon registry grow a key.',
+          text: 'A glyph that belongs to one component or library gets a namespaced key (`numberInput:stepperDown`, `richtext:bold`) instead of a new semantic name. It resolves through the same registry and a theme overrides it the same way, but the shared IconName list stays reserved for glyphs the whole system uses, so adding one does not make every downstream icon registry grow a key.',
         },
         {
           type: 'code',
@@ -138,7 +138,7 @@ export const brandTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: 'To add a new semantic icon name to the design system — only for a glyph the whole system shares; a component-owned one takes a namespaced key instead:',
+          text: 'To add a new semantic icon name to the design system, only for a glyph the whole system shares; a component-owned one takes a namespaced key instead:',
         },
         {
           type: 'list',

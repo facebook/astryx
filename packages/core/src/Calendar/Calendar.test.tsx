@@ -165,6 +165,27 @@ describe('Calendar', () => {
     ).toEqual([...localizedNames.slice(1), localizedNames[0]]);
   });
 
+  it('updates the month header and subsequent navigation with provider locale', async () => {
+    const user = userEvent.setup();
+    const renderCalendar = (locale: 'en-US' | 'es-ES') => (
+      <InternationalizationProvider locale={locale}>
+        <Calendar focusDate="2026-01-01" />
+      </InternationalizationProvider>
+    );
+    const {rerender} = render(renderCalendar('en-US'));
+
+    expect(screen.getByText('January 2026')).toBeInTheDocument();
+
+    rerender(renderCalendar('es-ES'));
+    expect(screen.getByText('enero de 2026')).toBeInTheDocument();
+
+    const nextButton =
+      document.querySelector<HTMLButtonElement>('[data-nav="next"]');
+    expect(nextButton).not.toBeNull();
+    await user.click(nextButton!);
+    expect(screen.getByText('febrero de 2026')).toBeInTheDocument();
+  });
+
   it('displays correct number of day cells', () => {
     render(<Calendar />);
 
@@ -1413,8 +1434,10 @@ describe('Calendar', () => {
         },
       });
       const css = generateThemeTestCSS(theme);
-      expect(css).toContain('.astryx-calendar-day.today-only');
-      expect(css).toContain('.astryx-calendar-day.today-in-range');
+      expect(css).toContain('.astryx-calendar-day[data-marker="today-only"]');
+      expect(css).toContain(
+        '.astryx-calendar-day[data-marker="today-in-range"]',
+      );
       expect(css).toContain('box-shadow: inset 0 0 0 2px var(--color-accent)');
       expect(css).toContain(
         'box-shadow: inset 0 0 0 2px var(--color-text-primary)',
@@ -1460,7 +1483,7 @@ describe('Calendar', () => {
       // classes, so default appearance is preserved.
       const prev = getButton('Previous month');
       expect(prev).toHaveClass('astryx-button');
-      expect(prev).toHaveClass('ghost');
+      expect(prev).toHaveAttribute('data-variant', 'ghost');
       expect(prev.tagName).toBe('BUTTON');
     });
 
@@ -1496,7 +1519,7 @@ describe('Calendar', () => {
       const css = generateThemeTestCSS(theme);
       expect(css).toContain('.astryx-calendar-nav {');
       expect(css).toContain('color: var(--color-accent)');
-      expect(css).toContain('.astryx-calendar-nav.next');
+      expect(css).toContain('.astryx-calendar-nav[data-nav="next"]');
       expect(css).toContain('background-color: var(--color-accent-muted)');
     });
   });

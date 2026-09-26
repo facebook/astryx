@@ -145,6 +145,17 @@ export const Disabled: Story = {
   },
 };
 
+export const DisabledWithTextValue: Story = {
+  tags: ['visual-theme-matrix'],
+  render: args => <Slider {...(args as any)} />,
+  args: {
+    label: 'Volume',
+    value: 50,
+    valueDisplay: 'text',
+    isDisabled: true,
+  },
+};
+
 export const VerticalOrientation: Story = {
   render: args => {
     const [value, setValue] = useState(50);
@@ -257,5 +268,41 @@ export const DisabledWithMessage: Story = {
     value: 50,
     isDisabled: true,
     disabledMessage: 'Volume is locked while sharing your screen',
+  },
+};
+
+export const PressedState: Story = {
+  name: 'Pressed state',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Press and drag to paint the system's `--color-overlay-pressed` layer on only the thumb being dragged. The disabled example remains visually unchanged and its value cannot move.",
+      },
+    },
+  },
+  render: () => {
+    const [value, setValue] = useState(40);
+    const [range, setRange] = useState<[number, number]>([20, 80]);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 24}}>
+        <Slider
+          label="Volume — press and drag"
+          value={value}
+          onChange={setValue}
+        />
+        <Slider
+          label="Price range — only the dragged thumb presses"
+          value={range}
+          onChange={setRange}
+        />
+        <Slider
+          label="Unavailable — no pressed state"
+          value={60}
+          onChange={() => {}}
+          isDisabled
+        />
+      </div>
+    );
   },
 };

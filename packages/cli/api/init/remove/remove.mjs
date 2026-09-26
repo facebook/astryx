@@ -24,6 +24,6 @@ import {logger} from '../../logger.mjs';
  */
 export async function remove({cwd = process.cwd()} = {}) {
   removeAgentDocs(cwd);
-  logger.log('✓ AI agent docs removed.');
+  logger.log('[ok] AI agent docs removed.');
   return {type: 'init.remove', data: {removed: true}};
 }

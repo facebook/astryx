@@ -19,10 +19,7 @@ import type {ScaleLinear} from 'd3-scale';
 
 /** Toolbar position relative to the chart */
 export type ZoomToolbarPosition =
-  | 'top-right'
-  | 'top-left'
-  | 'bottom-right'
-  | 'bottom-left';
+  'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
 
 export interface ChartZoomProps {
   onXDomainChange?: (domain: [number, number]) => void;
