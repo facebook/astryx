@@ -41,13 +41,15 @@ import type {IconType} from '../Icon';
 import type {InputStatus} from '../Field/types';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import {switchScope} from './switch.markers.stylex';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {VisuallyHidden} from '../VisuallyHidden';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const wrapperSizeStyles = stylex.create({
   sm: {
     width: 32,
@@ -120,6 +122,15 @@ const thumbOnSizeStyles = stylex.create({
   },
 });
 
+// The pressed overlay, painted as a gradient layer OVER the track's and
+// thumb's own fills so it composes with the on/off colors and the hover tint
+// instead of replacing them. Same token Button's overlay paints with. The
+// switch is a two-part control whose focusable input sits beside the track,
+// so the press is read off the shared scope marker (the row), the way the
+// hover tint already is: pressing the input, the track or the label all
+// activate the row.
+const pressedImage = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
+
 const labelWrapperSizeStyles = stylex.create({
   sm: {
     minHeight: 20,
@@ -134,6 +145,12 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
+  },
+  // A hidden label is sr-only, so its wrapper is a zero-width flex item — the
+  // row gap would still be painted beside the track, making the field box
+  // wider than the control it contains. Matches CheckboxInput.
+  containerLabelHidden: {
+    gap: 0,
   },
   containerSpread: {
     justifyContent: 'space-between',
@@ -151,14 +168,24 @@ const styles = stylex.create({
   },
   input: {
     position: 'absolute',
+    top: '50%',
     margin: 0,
     padding: 0,
     opacity: 0,
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     zIndex: 1,
   },
+  inputCoarse: {
+    '@media (pointer: coarse)': {
+      minInlineSize: 24,
+      minBlockSize: 24,
+    },
+  },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   inputBusy: {
     pointerEvents: 'none',
@@ -188,6 +215,15 @@ const styles = stylex.create({
     borderColor: {
       default: null,
       '@media (forced-colors: active)': 'CanvasText',
+    },
+    // Pressed: the overlay rides on top of the on/off fill. Gated like the
+    // hover tint so forced colors keeps its system-color track.
+    backgroundImage: {
+      default: null,
+      [stylex.when.ancestor(':active', switchScope)]: {
+        default: null,
+        '@media (forced-colors: none)': pressedImage,
+      },
     },
   },
   // The one ring in the system not drawn by focusOutlineStyles. The focusable
@@ -260,6 +296,16 @@ const styles = stylex.create({
       '@media (prefers-reduced-motion: reduce)': '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
+    // Pressed: the same overlay as the track, so the whole control darkens
+    // under the finger rather than the thumb standing out against a darker
+    // track.
+    backgroundImage: {
+      default: null,
+      [stylex.when.ancestor(':active', switchScope)]: {
+        default: null,
+        '@media (forced-colors: none)': pressedImage,
+      },
+    },
   },
   // The thumb fill lives on the on/off styles (not the shared thumb style)
   // because forced colors needs a per-state system color: CanvasText on the
@@ -280,7 +326,6 @@ const styles = stylex.create({
   labelWrapper: {
     display: 'flex',
     flexDirection: 'column',
-    gap: spacingVars['--spacing-0-5'],
     justifyContent: 'center',
   },
   description: {
@@ -477,6 +522,10 @@ export function Switch({
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
+  // Announce the effective required state (form default included) while the
+  // native `required` stays bound to the explicit `isRequired` so a layout
+  // default never switches on browser validation.
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -517,7 +566,7 @@ export function Switch({
   const switchElement = (
     <div {...stylex.props(styles.switchWrapper, wrapperSizeStyles[size])}>
       <input
-        ref={mergeRefs(ref, disabledMessageTooltip.positionRef)}
+        ref={useMergedRefs(ref, disabledMessageTooltip.positionRef)}
         id={id}
         type="checkbox"
         role="switch"
@@ -533,6 +582,7 @@ export function Switch({
         aria-disabled={showsDisabledMessage ? 'true' : undefined}
         form={showsDisabledMessage ? '' : undefined}
         required={isRequired}
+        aria-required={isEffectivelyRequired ? 'true' : undefined}
         onChange={e => {
           if (isDisabled || isBusy) {
             return;
@@ -553,6 +603,8 @@ export function Switch({
         aria-busy={isBusy || undefined}
         {...stylex.props(
           styles.input,
+          rtlStyles.centerInline('-50%'),
+          styles.inputCoarse,
           inputSizeStyles[size],
           isDisabled && styles.inputDisabled,
           isBusy && styles.inputBusy,
@@ -597,6 +649,9 @@ export function Switch({
   const labelElement = (
     <div {...stylex.props(styles.labelWrapper, labelWrapperSizeStyles[size])}>
       <FieldLabel
+        // See CheckboxInput: the control names its own label target rather
+        // than the label guessing at its placement.
+        {...themeProps('switch-label')}
         label={label}
         inputID={id}
         isLabelHidden={isLabelHidden}
@@ -635,6 +690,7 @@ export function Switch({
         }}
         {...stylex.props(
           styles.container,
+          isLabelHidden && styles.containerLabelHidden,
           labelSpacing === 'spread' && styles.containerSpread,
           !isDisabled && switchScope,
         )}>

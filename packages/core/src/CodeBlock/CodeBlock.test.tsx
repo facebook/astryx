@@ -396,3 +396,40 @@ describe('CodeBlock', () => {
     });
   });
 });
+
+describe('CodeBlock theme target names', () => {
+  it('renders the deprecated classes beside the current ones', () => {
+    const {container} = render(
+      <CodeBlock
+        code="const x = 1;"
+        language="javascript"
+        title="example.js"
+      />,
+    );
+    expect(container.querySelector('.astryx-code-block')).toHaveClass(
+      'astryx-codeblock',
+    );
+    expect(container.querySelector('.astryx-code-block-header')).toHaveClass(
+      'astryx-codeblock-header',
+    );
+    expect(container.querySelector('.astryx-code-block-title')).toHaveClass(
+      'astryx-codeblock-title',
+    );
+    expect(screen.getByRole('button', {name: 'Copy code'})).toHaveClass(
+      'astryx-code-block-copy-button',
+    );
+  });
+
+  it('reaches the header and title through the current defineTheme keys', () => {
+    const theme = defineTheme({
+      name: 'code-block-header-target-test',
+      components: {
+        'code-block-header': {base: {paddingBlock: 'var(--spacing-1)'}},
+        'code-block-title': {base: {fontSize: 'var(--text-body-size)'}},
+      },
+    });
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('.astryx-code-block-header');
+    expect(css).toContain('.astryx-code-block-title');
+  });
+});

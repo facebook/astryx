@@ -4,6 +4,7 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {Lightbox} from './Lightbox';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+import {InternationalizationProvider} from '../i18n';
 
 // Mock showModal/close for jsdom
 beforeEach(() => {
@@ -26,6 +27,17 @@ afterEach(() => {
 function politeRegion(): HTMLElement | null {
   return document.querySelector('[data-astryx-live-region="polite"]');
 }
+
+// Both position messages, supplied by the test. Overriding the pair means an
+// assertion also proves which of the two keys the component reached for.
+const POSITION_MESSAGES = {
+  fr: {
+    '@astryx.lightbox.mediaPosition':
+      '{alt}, vue {index, number} sur {total, number}',
+    '@astryx.lightbox.imagePosition':
+      'Photo {index, number} sur {total, number}',
+  },
+};
 
 describe('Lightbox', () => {
   it('renders as a dialog element', () => {
@@ -320,47 +332,53 @@ describe('Lightbox', () => {
 
     it('announces the new image and position when navigating next via button', async () => {
       render(
-        <Lightbox
-          isOpen={true}
-          onOpenChange={() => {}}
-          media={media}
-          defaultIndex={0}
-        />,
+        <InternationalizationProvider locale="fr" overrides={POSITION_MESSAGES}>
+          <Lightbox
+            isOpen={true}
+            onOpenChange={() => {}}
+            media={media}
+            defaultIndex={0}
+          />
+        </InternationalizationProvider>,
       );
       fireEvent.click(screen.getByLabelText('Next'));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Image B, 2 of 3');
+        expect(politeRegion()?.textContent).toBe('Image B, vue 2 sur 3');
       });
     });
 
     it('announces the new image and position when navigating via arrow keys', async () => {
       render(
-        <Lightbox
-          isOpen={true}
-          onOpenChange={() => {}}
-          media={media}
-          defaultIndex={1}
-        />,
+        <InternationalizationProvider locale="fr" overrides={POSITION_MESSAGES}>
+          <Lightbox
+            isOpen={true}
+            onOpenChange={() => {}}
+            media={media}
+            defaultIndex={1}
+          />
+        </InternationalizationProvider>,
       );
       const dialog = document.querySelector('dialog')!;
       fireEvent.keyDown(dialog, {key: 'ArrowRight'});
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Image C, 3 of 3');
+        expect(politeRegion()?.textContent).toBe('Image C, vue 3 sur 3');
       });
     });
 
     it('announces the new image and position when navigating prev', async () => {
       render(
-        <Lightbox
-          isOpen={true}
-          onOpenChange={() => {}}
-          media={media}
-          defaultIndex={2}
-        />,
+        <InternationalizationProvider locale="fr" overrides={POSITION_MESSAGES}>
+          <Lightbox
+            isOpen={true}
+            onOpenChange={() => {}}
+            media={media}
+            defaultIndex={2}
+          />
+        </InternationalizationProvider>,
       );
       fireEvent.click(screen.getByLabelText('Previous'));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Image B, 2 of 3');
+        expect(politeRegion()?.textContent).toBe('Image B, vue 2 sur 3');
       });
     });
 
@@ -370,16 +388,19 @@ describe('Lightbox', () => {
         {src: '/b.jpg', alt: ''},
       ];
       render(
-        <Lightbox
-          isOpen={true}
-          onOpenChange={() => {}}
-          media={unlabeled}
-          defaultIndex={0}
-        />,
+        <InternationalizationProvider locale="fr" overrides={POSITION_MESSAGES}>
+          <Lightbox
+            isOpen={true}
+            onOpenChange={() => {}}
+            media={unlabeled}
+            defaultIndex={0}
+          />
+        </InternationalizationProvider>,
       );
       fireEvent.click(screen.getByLabelText('Next'));
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('Image 2 of 2');
+        // imagePosition, not a mediaPosition with an empty {alt}.
+        expect(politeRegion()?.textContent).toBe('Photo 2 sur 2');
       });
     });
 

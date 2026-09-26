@@ -12,6 +12,7 @@
 import {describe, it, expect, vi} from 'vitest';
 import {fireEvent, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {hasPressedArm} from '../__tests__/pressState';
 import {Link} from './Link';
 import {LinkProvider} from './LinkProvider';
 
@@ -122,7 +123,8 @@ describe('Link', () => {
 
   it('defaults the inner text type to body', () => {
     render(<Link href="/test">Body link</Link>);
-    expect(screen.getByText('Body link')).toHaveClass('astryx-text', 'body');
+    expect(screen.getByText('Body link')).toHaveClass('astryx-text');
+    expect(screen.getByText('Body link')).toHaveAttribute('data-type', 'body');
   });
 
   it('forwards type="inherit" so the link adopts the surrounding text type', () => {
@@ -134,8 +136,9 @@ describe('Link', () => {
     // The inner Text renders with the `inherit` type, so font-size/line-height
     // inherit from the surrounding text rather than imposing the body type.
     const text = screen.getByText('Inline link');
-    expect(text).toHaveClass('astryx-text', 'inherit');
-    expect(text).not.toHaveClass('body');
+    expect(text).toHaveClass('astryx-text');
+    expect(text).toHaveAttribute('data-type', 'inherit');
+    expect(text).not.toHaveAttribute('data-type', 'body');
   });
 
   it('applies hasUnderline style when true', () => {
@@ -412,6 +415,29 @@ describe('Link', () => {
     );
     const link = screen.getByRole('link', {name: 'Themed Link'});
     expect(link.className).toContain('astryx-link');
-    expect(link.className).toContain('secondary');
+    expect(link).toHaveAttribute('data-color', 'secondary');
+  });
+});
+
+describe('pressed state', () => {
+  it('paints the pressed overlay behind a link while it is pressed', () => {
+    render(<Link href="/docs">Docs</Link>);
+    expect(hasPressedArm(screen.getByRole('link', {name: 'Docs'}))).toBe(true);
+  });
+
+  it('paints it on the button form too', () => {
+    render(<Link onClick={() => {}}>Open</Link>);
+    expect(hasPressedArm(screen.getByRole('button', {name: 'Open'}))).toBe(
+      true,
+    );
+  });
+
+  it('does not press a disabled link', () => {
+    render(
+      <Link href="/docs" isDisabled>
+        Docs
+      </Link>,
+    );
+    expect(hasPressedArm(screen.getByText('Docs').closest('a')!)).toBe(false);
   });
 });

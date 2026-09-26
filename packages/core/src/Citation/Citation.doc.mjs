@@ -71,7 +71,7 @@ export const docs = {
       name: 'source',
       type: 'CitationSource',
       description:
-        'The citation source object containing title, url, an optional image src, and an optional icon node.',
+        'The citation source object containing title, url, an optional image src, and an optional icon node. The url follows the shared navigation rule described on the Link `href` prop; rejected destinations leave the citation visible without navigation. Image src uses separate resource handling.',
       required: true,
     },
     {
@@ -122,7 +122,7 @@ export const docsDense = {
   },
   propDescriptions: {
     source:
-      'citation source object with title, url, optional image src, and optional icon node.',
+      'citation source with title, url, optional image src, and optional icon. url follows the Link href navigation rule; rejected destinations stay visible without navigation. Image src handling is separate.',
     number: 'display index for this citation.',
     variant: 'display style: label chip with source title or compact numbered badge.',
   },

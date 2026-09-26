@@ -27,10 +27,11 @@
 
 import type {ReactNode, CSSProperties, Ref, HTMLAttributes} from 'react';
 import {useRef} from 'react';
-import {mergeRefs} from '../utils';
 import {useClickableContainer} from '../hooks/useClickableContainer';
 import type {LinkComponentType} from '../Link/types';
+import {composeEventHandlers} from '../utils';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 export interface TokenLinkProps extends HTMLAttributes<HTMLElement> {
   /** Ref forwarded to the container element. */
   ref?: Ref<HTMLElement>;
@@ -72,6 +73,8 @@ export function TokenLink({
   icon,
   endContent,
   removeButton,
+  onClick: onClickProp,
+  onMouseUp: onMouseUpProp,
   ...containerProps
 }: TokenLinkProps) {
   const containerRef = useRef<HTMLElement | null>(null);
@@ -86,10 +89,16 @@ export function TokenLink({
 
   return (
     <span
-      ref={mergeRefs(ref, containerRef)}
-      onClick={isDisabled ? undefined : onClick}
-      onMouseUp={isDisabled ? undefined : onMouseUp}
-      {...containerProps}>
+      ref={useMergedRefs(ref, containerRef)}
+      {...containerProps}
+      onClick={
+        isDisabled ? onClickProp : composeEventHandlers(onClickProp, onClick)
+      }
+      onMouseUp={
+        isDisabled
+          ? onMouseUpProp
+          : composeEventHandlers(onMouseUpProp, onMouseUp)
+      }>
       {icon}
       <LinkComponent
         ref={linkRef as Ref<HTMLAnchorElement>}

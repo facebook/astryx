@@ -12,26 +12,36 @@ export const doc = {
   type: 'command',
   name: 'docs',
   displayName: 'astryx docs',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Print reference docs',
   description:
     'Reads the reference docs: with no topic it lists every topic; a topic prints that ' +
-    'full doc; a topic plus a section returns the first section whose title contains the ' +
-    '(case-insensitive) query.',
+    'full doc; `--index` lists its sections instead, each with the key to read it by; a ' +
+    'topic plus a section prints that section (by key, exact title, or a unique part of ' +
+    'a title).',
   fn: 'docs',
   args: [
     {name: 'topic', param: 'topic', required: false},
     {name: 'section', param: 'section', required: false},
   ],
+  options: [
+    {
+      flag: '--index',
+      param: 'options.index',
+      description: "List the topic's sections and their keys instead of printing the whole topic",
+    },
+  ],
   examples: [
     {label: 'List topics', cli: 'astryx docs'},
     {label: 'One topic as JSON', cli: 'astryx docs spacing --json'},
+    {label: "A topic's sections", cli: 'astryx docs theme --index'},
+    {label: 'One section', cli: 'astryx docs theme quick-start'},
   ],
   exitCodes: [
     {code: 0, when: 'success'},
     {
       code: 1,
-      when: 'unknown topic, or a section that matches no title in the topic',
+      when: 'unknown topic, or a section that matches no section or more than one',
     },
   ],
   related: ['search', 'component', 'hook', 'template'],

@@ -22,7 +22,7 @@ export const docs = {
   props: [
     {name: 'label', type: 'string', description: 'Accessibility label.', required: true},
     {name: 'onClick', type: '(event: MouseEvent) => void', description: 'Click handler: fires on card surface only.'},
-    {name: 'href', type: 'string', description: 'Navigation URL.'},
+    {name: 'href', type: 'string', description: 'Navigation URL. Plain, new-tab, Cmd/Ctrl-click, and middle-click activation all follow the shared navigation rule described on the Link `href` prop.'},
     {name: 'target', type: 'string', description: 'Link target.', default: "'_self'"},
     {name: 'isDisabled', type: 'boolean', description: 'Disables the card.', default: 'false'},
     {name: 'children', type: 'ReactNode', description: 'Card content.'},
@@ -69,7 +69,7 @@ export const docsDense = {
   propDescriptions: {
     label: 'accessibility label',
     onClick: 'click handler: fires on card surface only',
-    href: 'navigation URL',
+    href: 'navigation URL; every activation follows the shared navigation rule (see Link href)',
     target: 'link target',
     isDisabled: 'disables card',
     padding: 'inner padding',

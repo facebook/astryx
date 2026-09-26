@@ -44,13 +44,15 @@ import type {IconType} from '../Icon';
 import type {InputStatus} from '../Field/types';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, rtlStyles} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
+import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useIndicator} from '../Indicator';
 import {themeProps} from '../utils/themeProps';
 import {CheckboxListContext} from '../CheckboxList/CheckboxListContext';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const styles = stylex.create({
   container: {
     display: 'flex',
@@ -68,6 +70,22 @@ const styles = stylex.create({
     flexShrink: 0,
     isolation: 'isolate',
   },
+  // The owner paints this layer over the resolved indicator, so a theme
+  // replacement cannot accidentally drop the component's pressed contract.
+  indicatorPressOverlay: {
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      borderRadius: radiusVars['--radius-inner'],
+      pointerEvents: 'none',
+      backgroundColor: {
+        default: 'transparent',
+        [stylex.when.ancestor(':active', indicatorScope)]:
+          colorVars['--color-overlay-pressed'],
+      },
+    },
+  },
   // Holds only the indicator, so the focus ring has one unambiguous target.
   // `display: contents` adds no box of its own — the indicator keeps whatever
   // layout relationship it already had with the wrapper.
@@ -76,19 +94,28 @@ const styles = stylex.create({
   },
   input: {
     position: 'absolute',
+    top: '50%',
     margin: 0,
     padding: 0,
     opacity: 0,
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     zIndex: 1,
   },
+  inputCoarse: {
+    '@media (pointer: coarse)': {
+      minInlineSize: 24,
+      minBlockSize: 24,
+    },
+  },
   inputDisabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   labelWrapper: {
     display: 'flex',
     flexDirection: 'column',
-    gap: spacingVars['--spacing-0-5'],
   },
   description: {
     fontFamily: typographyVars['--font-family-body'],
@@ -276,11 +303,16 @@ export function CheckboxInput({
   className,
   style,
   ref,
+  'aria-describedby': ariaDescribedByProp,
   ...rest
 }: CheckboxInputProps) {
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
+  // Announce the effective required state (form default included) while the
+  // native `required` stays bound to the explicit `isRequired` so a layout
+  // default never switches on browser validation.
+  const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -338,7 +370,13 @@ export function CheckboxInput({
   // Only include descriptionID when the element actually renders.
   // FieldLabel renders the description (with descriptionID) even when the
   // label is visually hidden — it's sr-only, so keep it linked.
+  // A consumer's own `aria-describedby` (CheckboxListItem points the control
+  // at its visible row description) comes first, then the input's own ids —
+  // the explicit attribute below would otherwise replace it via `...rest`.
   const describedByParts: string[] = [];
+  if (ariaDescribedByProp) {
+    describedByParts.push(ariaDescribedByProp);
+  }
   if (description) {
     describedByParts.push(descriptionID);
   }
@@ -377,11 +415,15 @@ export function CheckboxInput({
           !isDisabled && indicatorScope,
         )}>
         <div
-          {...stylex.props(styles.checkboxWrapper, wrapperSizeStyles[size])}
+          {...stylex.props(
+            styles.checkboxWrapper,
+            wrapperSizeStyles[size],
+            !isDisabled && styles.indicatorPressOverlay,
+          )}
           {...focusProps}>
           <input
             {...rest}
-            ref={mergeRefs(
+            ref={useMergedRefs(
               ref,
               indeterminateRef,
               disabledMessageTooltip.positionRef,
@@ -401,6 +443,7 @@ export function CheckboxInput({
             form={isFocusableDisabled ? '' : undefined}
             readOnly={isReadOnly}
             required={isRequired}
+            aria-required={isEffectivelyRequired ? 'true' : undefined}
             onChange={e => {
               if (isDisabled || isBusy || isReadOnly) {
                 return;
@@ -422,6 +465,8 @@ export function CheckboxInput({
             aria-busy={isBusy || undefined}
             {...stylex.props(
               styles.input,
+              rtlStyles.centerInline('-50%'),
+              styles.inputCoarse,
               wrapperSizeStyles[size],
               isDisabled && styles.inputDisabled,
             )}
@@ -448,6 +493,11 @@ export function CheckboxInput({
         </div>
         <div {...stylex.props(styles.labelWrapper)}>
           <FieldLabel
+            // A checkbox's label shares a row with its control, unlike a form
+            // field's label above its input. Naming the label rather than the
+            // arrangement means a theme asks for the thing it wants, and the
+            // component that actually knows what this is says so.
+            {...themeProps('checkbox-label')}
             label={label}
             inputID={id}
             isLabelHidden={isLabelHidden}

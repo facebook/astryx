@@ -20,7 +20,12 @@ const probe = stylex.create({
   secondaryText: {color: colorVars['--color-text-secondary']},
   accentText: {color: colorVars['--color-text-accent']},
   badgeBackground: {backgroundColor: colorVars['--color-accent-muted']},
-  pointerCursor: {cursor: 'pointer'},
+  pointerCursor: {
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
+  },
 });
 
 function atomicClasses(style: (typeof probe)[keyof typeof probe]): string[] {
@@ -30,6 +35,23 @@ function atomicClasses(style: (typeof probe)[keyof typeof probe]): string[] {
 
 describe('Citation', () => {
   const source = {title: 'Example Source', url: 'https://example.com'};
+
+  it.each([
+    'javascript:alert(1)',
+    'vbscript:MsgBox(1)',
+    'data:text/html,<b>x</b>',
+    'java\nscript:alert(1)',
+  ])('renders rejected citation URL %s without navigation', url => {
+    const {container} = render(
+      <>
+        <Citation source={{title: 'Source', url}} number={1} />
+        <Citation source={{title: 'Source', url}} number={1} variant="number" />
+      </>,
+    );
+    expect(container.querySelector('a')).toBeNull();
+    expect(container.querySelector('[href]')).toBeNull();
+    expect(container.textContent).toBe('Source1');
+  });
 
   it('renders the source title as a link in the label variant', () => {
     render(<Citation source={source} number={1} data-testid="citation" />);

@@ -3,8 +3,11 @@
 /**
  * @file CheckboxInput.test.tsx
  * @input Uses vitest, @testing-library/react, CheckboxInput component
- * @output Unit tests for CheckboxInput component behavior
- * @position Testing; validates CheckboxInput.tsx implementation
+ * @output Unit tests for CheckboxInput-specific API, callback, form,
+ *   composition, and styling behavior. Shared checkbox semantics live in
+ *   __tests__/Checkbox.a11y.test.tsx and its Chromium twin.
+ * @position Component-owned regression tests; validates CheckboxInput.tsx without
+ *   duplicating outcomes owned by the reusable checkbox contract.
  *
  * SYNC: When CheckboxInput.tsx changes, update tests to match new behavior
  */
@@ -12,12 +15,37 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {hasPressedArm} from '../__tests__/pressState';
 import {CheckboxInput} from './CheckboxInput';
 import {Theme} from '../theme/Theme';
 import {defineTheme} from '../theme/defineTheme';
 import {getForcedColorsRules} from '../__tests__/forcedColors';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {FOCUS_OUTLINE_PARTS} from '../utils/focusOutline.stylex';
+
+interface InjectedRule {
+  selector: string;
+  text: string;
+  media: string | null;
+}
+
+function injectedRules(): InjectedRule[] {
+  const walk = (rules: CSSRuleList, condition: string | null): InjectedRule[] =>
+    [...rules].flatMap((rule): InjectedRule[] => {
+      const {selectorText} = rule as CSSStyleRule;
+      if (typeof selectorText === 'string') {
+        return [{selector: selectorText, text: rule.cssText, media: condition}];
+      }
+      const nested = (rule as CSSGroupingRule).cssRules;
+      if (nested == null) {
+        return [];
+      }
+      const own = (rule as CSSMediaRule).media?.mediaText;
+      return walk(nested, own != null && own !== '' ? own : condition);
+    });
+
+  return [...document.styleSheets].flatMap(sheet => walk(sheet.cssRules, null));
+}
 
 afterEach(() => {
   __resetLiveRegionsForTest();
@@ -51,27 +79,6 @@ beforeEach(() => {
 });
 
 describe('CheckboxInput', () => {
-  it('renders with label', () => {
-    render(
-      <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
-    );
-    expect(screen.getByLabelText('Accept terms')).toBeInTheDocument();
-  });
-
-  it('renders as unchecked by default', () => {
-    render(
-      <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
-    );
-    expect(screen.getByRole('checkbox')).not.toBeChecked();
-  });
-
-  it('renders as checked when value prop is true', () => {
-    render(
-      <CheckboxInput label="Accept terms" value={true} onChange={() => {}} />,
-    );
-    expect(screen.getByRole('checkbox')).toBeChecked();
-  });
-
   it('calls onChange with new checked state when clicked', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
@@ -133,20 +140,6 @@ describe('CheckboxInput', () => {
     expect(screen.getByText('Receive weekly updates')).toBeInTheDocument();
   });
 
-  it('associates description with checkbox via aria-describedby', () => {
-    render(
-      <CheckboxInput
-        label="Subscribe"
-        description="Receive weekly updates"
-        value={false}
-        onChange={() => {}}
-      />,
-    );
-    const checkbox = screen.getByRole('checkbox');
-    const description = screen.getByText('Receive weekly updates');
-    expect(checkbox).toHaveAttribute('aria-describedby', description.id);
-  });
-
   it('toggles when clicking on the description', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
@@ -160,36 +153,6 @@ describe('CheckboxInput', () => {
     );
     await user.click(screen.getByText('Receive weekly updates'));
     expect(handleChange).toHaveBeenCalledWith(true, expect.any(Object));
-  });
-
-  it('does not fold the description into the checkbox accessible name', () => {
-    // The description stays a sibling of the <label>, so it must NOT become
-    // part of the checkbox's accessible name (which is computed from the
-    // associated label). It belongs in the accessible DESCRIPTION only
-    // (via aria-describedby) — otherwise screen readers announce it twice.
-    render(
-      <CheckboxInput
-        label="Email notifications"
-        description="We'll send weekly digests"
-        value={false}
-        onChange={() => {}}
-      />,
-    );
-    const checkbox = screen.getByRole('checkbox');
-    expect(checkbox).toHaveAccessibleName('Email notifications');
-    expect(checkbox).toHaveAccessibleDescription("We'll send weekly digests");
-  });
-
-  it('is disabled when isDisabled prop is true', () => {
-    render(
-      <CheckboxInput
-        label="Accept terms"
-        value={false}
-        onChange={() => {}}
-        isDisabled
-      />,
-    );
-    expect(screen.getByRole('checkbox')).toBeDisabled();
   });
 
   it('does not call onChange when isDisabled', async () => {
@@ -306,6 +269,27 @@ describe('CheckboxInput', () => {
     expect(checkbox.getAttribute('aria-describedby')).toContain(description.id);
   });
 
+  it('merges a consumer aria-describedby with its own description id', () => {
+    render(
+      <>
+        <span id="row-hint">Hint from the row</span>
+        <CheckboxInput
+          label="Select row"
+          isLabelHidden
+          description="Selects this row for bulk actions"
+          aria-describedby="row-hint"
+          value={false}
+          onChange={() => {}}
+        />
+      </>,
+    );
+    const checkbox = screen.getByRole('checkbox');
+    const description = screen.getByText('Selects this row for bulk actions');
+    const ids = checkbox.getAttribute('aria-describedby')!.split(' ');
+    expect(ids).toContain('row-hint');
+    expect(ids).toContain(description.id);
+  });
+
   it('shows label visually by default', () => {
     render(
       <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
@@ -359,7 +343,7 @@ describe('CheckboxInput', () => {
     expect(container.querySelector('.astryx-icon')).toBeInTheDocument();
   });
 
-  it('renders status message and sets aria-invalid for error', () => {
+  it('renders the status message for an error', () => {
     render(
       <CheckboxInput
         label="Accept terms"
@@ -369,10 +353,6 @@ describe('CheckboxInput', () => {
       />,
     );
     expect(screen.getByText('Required field')).toBeInTheDocument();
-    expect(screen.getByRole('checkbox')).toHaveAttribute(
-      'aria-invalid',
-      'true',
-    );
   });
 
   // Regression: the status is conditionally mounted, so it must be announced
@@ -455,6 +435,27 @@ describe('CheckboxInput', () => {
         />,
       );
       expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('keeps a consumer aria-describedby alongside the reason tooltip', () => {
+      render(
+        <>
+          <span id="terms-hint">Required before checkout</span>
+          <CheckboxInput
+            label="Accept terms"
+            value={false}
+            onChange={() => {}}
+            isDisabled
+            disabledMessage="Terms are managed by your administrator"
+            aria-describedby="terms-hint"
+          />
+        </>,
+      );
+      const checkbox = screen.getByRole('checkbox');
+      const tooltip = screen.getByRole('tooltip', h);
+      const ids = checkbox.getAttribute('aria-describedby')!.split(' ');
+      expect(ids).toContain('terms-hint');
+      expect(ids).toContain(tooltip.id);
     });
 
     it('does not render a tooltip when disabled without a reason', () => {
@@ -611,6 +612,35 @@ describe('CheckboxInput', () => {
       ]).toEqual([]);
     });
   });
+
+  describe('coarse pointer and RTL hit-target positioning', () => {
+    it.each([
+      ['sm', 'ltr'],
+      ['sm', 'rtl'],
+      ['md', 'ltr'],
+      ['md', 'rtl'],
+    ] as const)(
+      'applies centerInline styling to native input (size: %s, dir: %s)',
+      (size, dir) => {
+        const {container} = render(
+          <div dir={dir}>
+            <CheckboxInput
+              label="Option"
+              size={size}
+              value={false}
+              onChange={() => {}}
+            />
+          </div>,
+        );
+
+        const input = container.querySelector(
+          'input[type="checkbox"]',
+        ) as HTMLInputElement;
+        expect(input).toBeInTheDocument();
+        expect(input.className).toContain('centerInline');
+      },
+    );
+  });
 });
 
 // jsdom cannot emulate forced-colors rendering, so this asserts that the
@@ -717,5 +747,53 @@ describe('focus ring ownership (WCAG 2.4.7)', () => {
     );
     fireEvent.blur(input);
     expect(indicatorOf(container).style.outlineStyle).toBe('');
+  });
+});
+
+describe('label theme target', () => {
+  it('names its own label so a theme can style it apart from a field label', () => {
+    // The control knows this label shares a row with it; the label does not.
+    // Both classes land on the one element, so a theme reaches every label
+    // through `astryx-field-label` and only this kind through
+    // `astryx-checkbox-label`.
+    render(
+      <CheckboxInput label="Notify me" value={false} onChange={() => {}} />,
+    );
+    const label = screen.getByText('Notify me').closest('label');
+    expect(label).toHaveClass('astryx-field-label');
+    expect(label).toHaveClass('astryx-checkbox-label');
+  });
+});
+
+describe('pressed state', () => {
+  it('paints the pressed overlay over the indicator while the row is pressed', () => {
+    const {container} = render(
+      <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
+    );
+    const box = container.querySelector('.astryx-checkbox-indicator');
+    const wrapper = box?.parentElement?.parentElement;
+    if (wrapper == null) {
+      throw new Error('the checkbox has no indicator wrapper to press');
+    }
+    // The owner paints over the resolved indicator, so the treatment survives a
+    // theme replacement that does not forward style props.
+    expect(hasPressedArm(wrapper)).toBe(true);
+  });
+
+  it('does not expose a pressed arm on a disabled checkbox', () => {
+    const {container} = render(
+      <CheckboxInput
+        label="Unavailable"
+        value={false}
+        onChange={() => {}}
+        isDisabled
+      />,
+    );
+    const box = container.querySelector('.astryx-checkbox-indicator');
+    const wrapper = box?.parentElement?.parentElement;
+    if (wrapper == null) {
+      throw new Error('the checkbox has no indicator wrapper');
+    }
+    expect(hasPressedArm(wrapper)).toBe(false);
   });
 });

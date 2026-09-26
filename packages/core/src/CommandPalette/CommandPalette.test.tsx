@@ -9,6 +9,7 @@
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor, fireEvent, act} from '@testing-library/react';
+import {useState} from 'react';
 import {CommandPalette} from './CommandPalette';
 import {createStaticSource} from '@astryxdesign/core/Typeahead';
 import type {SearchSource, SearchableItem} from '@astryxdesign/core/Typeahead';
@@ -274,6 +275,59 @@ describe('CommandPalette', () => {
     );
   });
 
+  it('discards a search response that resolves after the palette closed', async () => {
+    // A source whose search resolves only when released, and no cancel()
+    // implementation — closing the palette must invalidate the request itself.
+    const resolvers: ((items: SearchableItem[]) => void)[] = [];
+    const source: SearchSource = {
+      bootstrap: () => [],
+      async search(): Promise<SearchableItem[]> {
+        return new Promise<SearchableItem[]>(resolve => {
+          resolvers.push(resolve);
+        });
+      },
+    };
+
+    function Harness() {
+      const [isOpen, setIsOpen] = useState(true);
+      return (
+        <CommandPalette
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          searchSource={source}
+        />
+      );
+    }
+    render(<Harness />);
+
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: 'a'}});
+    await waitFor(() => expect(resolvers).toHaveLength(1));
+
+    // Close while the search is still in flight.
+    const dialog = screen.getByRole('dialog');
+    const escapeEvent = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true,
+    });
+    dialog.dispatchEvent(escapeEvent);
+    await waitFor(() =>
+      expect(screen.getByRole('dialog', {hidden: true})).not.toHaveAttribute(
+        'open',
+      ),
+    );
+
+    // The stale response arrives after close — it must not re-commit the
+    // abandoned query/results into the closed palette.
+    await act(async () => {
+      resolvers[0]([{id: 'stale', label: 'Stale item'}]);
+    });
+
+    expect(screen.getByRole('combobox', {hidden: true})).toHaveValue('');
+    expect(screen.queryByText('Stale item')).not.toBeInTheDocument();
+  });
+
   it('does not move the highlight while typing in the search input', async () => {
     // The palette's input already filters; letting the shared combobox
     // typeahead also chase prefixes would drag the highlight — and Enter —
@@ -301,6 +355,66 @@ describe('CommandPalette', () => {
     fireEvent.keyDown(input, {key: 't'});
 
     expect(input).not.toHaveAttribute('aria-activedescendant');
+  });
+
+  it('highlights on hover without scrolling and scrolls once per key (#6077)', async () => {
+    // Hover must be handled by the root's delegated list handler (routed to
+    // useCombobox's hover-aware path), and the shared useHighlightedOptionScroll effect
+    // must be the single keyboard scroll owner. Calling the raw setter on
+    // hover kept the stationary-pointer runaway path alive, and the item's
+    // own scrollIntoView effect doubled every scroll call.
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoView,
+    });
+    try {
+      render(
+        <CommandPalette
+          isOpen={true}
+          onOpenChange={() => {}}
+          searchSource={simpleSource}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      await waitFor(() => expect(screen.getByText('Home')).toBeInTheDocument());
+      const home = screen.getByText('Home');
+      const settings = screen.getByText('Settings');
+
+      fireEvent.mouseOver(home);
+      expect(scrollIntoView).not.toHaveBeenCalled();
+      expect(input.getAttribute('aria-activedescendant')).toBe(
+        home.closest('[role="option"]')?.id,
+      );
+
+      // Moving between siblings does not re-enter the list container. Include
+      // relatedTarget so the test exercises actual within-list transitions.
+      fireEvent.mouseOut(home, {relatedTarget: settings});
+      fireEvent.mouseOver(settings, {relatedTarget: home});
+      expect(input.getAttribute('aria-activedescendant')).toBe(
+        settings.closest('[role="option"]')?.id,
+      );
+      expect(scrollIntoView).not.toHaveBeenCalled();
+
+      fireEvent.mouseOut(settings, {relatedTarget: home});
+      fireEvent.mouseOver(home, {relatedTarget: settings});
+      expect(input.getAttribute('aria-activedescendant')).toBe(
+        home.closest('[role="option"]')?.id,
+      );
+      expect(scrollIntoView).not.toHaveBeenCalled();
+
+      fireEvent.keyDown(input, {key: 'ArrowDown'});
+      await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(1));
+      expect(input.getAttribute('aria-activedescendant')).toBe(
+        settings.closest('[role="option"]')?.id,
+      );
+
+      fireEvent.keyDown(input, {key: 'ArrowUp'});
+      await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(2));
+    } finally {
+      delete (HTMLElement.prototype as unknown as {scrollIntoView?: unknown})
+        .scrollIntoView;
+    }
   });
 
   describe('screen reader announcements', () => {

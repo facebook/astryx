@@ -1,5 +1,24 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Stack container',
+    required: true,
+    description: 'Layout container that arranges content along one flex axis.',
+  },
+  {
+    name: 'Item',
+    required: false,
+    description: 'Optional StackItem wrapper that controls one item in the stack.',
+  },
+  {
+    name: 'Content',
+    required: false,
+    description: 'Caller-supplied content rendered by a Stack or StackItem.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -20,6 +39,17 @@ export const docs = {
       displayName: 'Stack',
       description:
         'Unified stack layout component with a direction prop. Use direction="horizontal" for left-to-right flow or direction="vertical" (default) for top-to-bottom. For convenience, HStack and VStack are pre-configured wrappers.',
+      playground: {
+        defaults: {
+          direction: 'horizontal',
+          gap: 2,
+          children: [
+            {__element: 'Card', props: {padding: 3}, children: 'Item 1'},
+            {__element: 'Card', props: {padding: 3}, children: 'Item 2'},
+            {__element: 'Card', props: {padding: 3}, children: 'Item 3'},
+          ],
+        },
+      },
       props: [
         {
           name: 'direction',
@@ -47,10 +77,34 @@ export const docs = {
             'Inline (horizontal) padding. Overrides padding on the inline axis when both are set.',
         },
         {
+          name: 'paddingInlineStart',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Inline-start padding, using the spacing scale (left in LTR, right in RTL). Overrides paddingInline and padding on that edge only.',
+        },
+        {
+          name: 'paddingInlineEnd',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Inline-end padding, using the spacing scale (right in LTR, left in RTL). Overrides paddingInline and padding on that edge only.',
+        },
+        {
           name: 'paddingBlock',
           type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             'Block (vertical) padding. Overrides padding on the block axis when both are set.',
+        },
+        {
+          name: 'paddingBlockStart',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Block-start (top) padding, using the spacing scale. Overrides paddingBlock and padding on that edge only.',
+        },
+        {
+          name: 'paddingBlockEnd',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Block-end (bottom) padding, using the spacing scale. Overrides paddingBlock and padding on that edge only.',
         },
         {
           name: 'isScrollable',
@@ -131,6 +185,16 @@ export const docs = {
       displayName: 'H Stack',
       description:
         'Horizontal stack for arranging items left-to-right. Supports polymorphic rendering.',
+      playground: {
+        defaults: {
+          gap: 2,
+          children: [
+            {__element: 'Card', props: {padding: 3}, children: 'Item 1'},
+            {__element: 'Card', props: {padding: 3}, children: 'Item 2'},
+            {__element: 'Card', props: {padding: 3}, children: 'Item 3'},
+          ],
+        },
+      },
       props: [
         {
           name: 'gap',
@@ -151,10 +215,34 @@ export const docs = {
             'Inline (horizontal) padding, using the spacing scale. Overrides padding on the inline axis when both are set.',
         },
         {
+          name: 'paddingInlineStart',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Inline-start padding, using the spacing scale (left in LTR, right in RTL). Overrides paddingInline and padding on that edge only.',
+        },
+        {
+          name: 'paddingInlineEnd',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Inline-end padding, using the spacing scale (right in LTR, left in RTL). Overrides paddingInline and padding on that edge only.',
+        },
+        {
           name: 'paddingBlock',
           type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             'Block (vertical) padding, using the spacing scale. Overrides padding on the block axis when both are set.',
+        },
+        {
+          name: 'paddingBlockStart',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Block-start (top) padding, using the spacing scale. Overrides paddingBlock and padding on that edge only.',
+        },
+        {
+          name: 'paddingBlockEnd',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Block-end (bottom) padding, using the spacing scale. Overrides paddingBlock and padding on that edge only.',
         },
         {
           name: 'isScrollable',
@@ -234,6 +322,16 @@ export const docs = {
       displayName: 'V Stack',
       description:
         'Vertical stack for arranging items top-to-bottom. Supports polymorphic rendering.',
+      playground: {
+        defaults: {
+          gap: 2,
+          children: [
+            {__element: 'Card', props: {padding: 3}, children: 'Item 1'},
+            {__element: 'Card', props: {padding: 3}, children: 'Item 2'},
+            {__element: 'Card', props: {padding: 3}, children: 'Item 3'},
+          ],
+        },
+      },
       props: [
         {
           name: 'gap',
@@ -254,10 +352,34 @@ export const docs = {
             'Inline (horizontal) padding, using the spacing scale. Overrides padding on the inline axis when both are set.',
         },
         {
+          name: 'paddingInlineStart',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Inline-start padding, using the spacing scale (left in LTR, right in RTL). Overrides paddingInline and padding on that edge only.',
+        },
+        {
+          name: 'paddingInlineEnd',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Inline-end padding, using the spacing scale (right in LTR, left in RTL). Overrides paddingInline and padding on that edge only.',
+        },
+        {
           name: 'paddingBlock',
           type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             'Block (vertical) padding, using the spacing scale. Overrides padding on the block axis when both are set.',
+        },
+        {
+          name: 'paddingBlockStart',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Block-start (top) padding, using the spacing scale. Overrides paddingBlock and padding on that edge only.',
+        },
+        {
+          name: 'paddingBlockEnd',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Block-end (bottom) padding, using the spacing scale. Overrides paddingBlock and padding on that edge only.',
         },
         {
           name: 'isScrollable',
@@ -332,6 +454,13 @@ export const docs = {
       displayName: 'Stack Item',
       description:
         'Stack item for controlling individual item behavior within a stack. Supports polymorphic rendering.',
+      playground: {
+        wrapper: {component: 'HStack', props: {gap: 2, width: 300}},
+        defaults: {
+          size: 'fill',
+          children: {__element: 'Card', props: {padding: 3}, children: 'Fills the row'},
+        },
+      },
       props: [
         {
           name: 'size',
@@ -368,6 +497,7 @@ export const docs = {
     },
   ],
   usage: {
+    anatomy,
     description:
       'Stack arranges items in a row or column with consistent spacing. Use the gap prop to control the space between items.',
     bestPractices: [
@@ -557,6 +687,7 @@ export const docsZh = {
     },
   ],
   usage: {
+    anatomy,
     description:
       'Stack arranges items in a row or column with consistent spacing. Use the gap prop to control the space between items.',
     bestPractices: [
@@ -571,6 +702,7 @@ export const docsZh = {
 export const docsDense = {
   description: 'Stack layout primitives for horizontal/vertical sequences using flexbox w/ themed spacing tokens.',
   usage: {
+    anatomy,
     description:
       'Stack arranges items in a row or column with consistent spacing. Use the gap prop to control the space between items.',
     bestPractices: [

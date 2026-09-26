@@ -6,7 +6,7 @@ export const docs = {
   name: 'DateRangeInput',
   displayName: 'Date Range Input',
   group: 'DateInput',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: [
     'daterangepicker',
     'daterange',
@@ -99,10 +99,22 @@ export const docs = {
       description: 'Custom constraint functions to disable specific dates.',
     },
     {
+      name: 'maxRangeSpan',
+      type: 'number',
+      description:
+        'Maximum days a selected range may span, counting both endpoints (`7` = a 7-day window, start + 6). Once a start is picked, days beyond this distance are disabled so the range cannot stretch past the cap. Rolling window relative to the start; for fixed calendar bounds use `min`/`max`. Constrains selection only; it never rewrites a `value` already wider than the cap (flag that with `status`).',
+    },
+    {
+      name: 'minRangeSpan',
+      type: 'number',
+      description:
+        'Minimum days a selected range must span, counting both endpoints (`2` forbids a single-day range). Once a start is picked, days closer than this are disabled. Clicking the start again commits a one-day range when allowed, or cancels the in-progress selection when the minimum is longer. Defaults to 1 (same-day start and end allowed).',
+    },
+    {
       name: 'presets',
       type: 'Array<DateRangePreset>',
       description:
-        'Preset ranges shown as quick-select options beside the calendar.',
+        'Preset ranges shown as quick-select options beside the calendar. A preset is disabled when either endpoint violates min, max, or dateConstraints, or when its span violates minRangeSpan or maxRangeSpan.',
     },
     {
       name: 'hasClear',
@@ -166,9 +178,21 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-date-range-input', visualProps: ['size', 'status'], states: ['disabled']},
+      {
+        className: 'astryx-date-range-input',
+        visualProps: ['size', 'status'],
+        states: ['disabled'],
+      },
       {className: 'astryx-date-range-input-toggle-icon', states: ['state']},
-      {className: 'astryx-date-range-input-clear-icon', deprecatedFor: 'input-clear-icon'},
+      {
+        className: 'astryx-date-range-input-clear-icon',
+        deprecatedFor: 'input-clear-icon',
+      },
+      {className: 'astryx-date-range-input-presets'},
+      {
+        className: 'astryx-date-range-input-preset',
+        states: ['selected', 'disabled'],
+      },
     ],
   },
   usage: {
@@ -219,6 +243,12 @@ export const docs = {
           'Text above the trigger describing what date range is expected.',
       },
       {
+        name: 'Field surface',
+        required: true,
+        description:
+          'Bordered control containing the calendar toggle, range trigger, and end affordances.',
+      },
+      {
         name: 'Trigger button',
         required: true,
         description:
@@ -239,6 +269,12 @@ export const docs = {
         name: 'Preset sidebar',
         required: false,
         description: 'A list of preset range options beside the calendar.',
+      },
+      {
+        name: 'Preset button',
+        required: false,
+        description:
+          'A quick-select action for one preset range, reflecting current and disabled states.',
       },
       {
         name: 'Clear button',
@@ -308,20 +344,28 @@ export const docsDense = {
     isDisabled: 'disable trigger+picker',
     disabledMessage:
       'reason shown in a tooltip on hover/focus when disabled; keeps trigger focusable via aria-disabled',
-    value: 'selected range {start, end} or null; import DateRange type from @astryxdesign/core/DateRangeInput (do not redeclare)',
+    value:
+      'selected range {start, end} or null; import DateRange type from @astryxdesign/core/DateRangeInput (do not redeclare)',
     onChange: 'callback on range change; null on clear',
     min: 'min selectable date: ISODateString template literal type (YYYY-MM-DD); use string literal or cast `as ISODateString`',
     max: 'max selectable date: ISODateString template literal type (YYYY-MM-DD); use string literal or cast `as ISODateString`',
     dateConstraints: 'custom constraint fns to disable dates',
-    presets: 'preset ranges as quick-select options',
+    maxRangeSpan:
+      'max days a range may span, both endpoints counted (7 = a 7-day window); caps the window from the picked start. Selection-only; does not rewrite an over-wide value',
+    minRangeSpan:
+      'min days a range must span, both endpoints counted (2 forbids a single-day range); repeated start click commits one day when allowed, otherwise cancels; default 1',
+    presets:
+      'preset ranges as quick-select options; disabled when an endpoint or span violates the corresponding constraints',
     hasClear: 'clear button when range is set (default true)',
     placeholder: 'placeholder when empty',
     size: 'trigger size',
     status: 'error/warning/success status',
-    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
+    statusVariant:
+      'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     labelTooltip: 'tooltip via info icon at label end',
     numberOfMonths: 'months in calendar (default 2)',
-    weekStartsOn: 'first day of week in calendar (0=Sunday, or name e.g. "mon")',
+    weekStartsOn:
+      'first day of week in calendar (0=Sunday, or name e.g. "mon")',
     changeAction:
       'async action fired after onChange; drives optimistic UI updates via useTransition',
     isLoading: 'loading state; disables interaction + shows a spinner',

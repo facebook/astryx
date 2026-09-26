@@ -52,15 +52,20 @@ const menuItemStyles = stylex.create({
     backgroundColor: {
       default: 'transparent',
       ':focus': colorVars['--color-overlay-hover'],
+      ':active:where(:not(:disabled,[aria-disabled="true"]))':
+        colorVars['--color-overlay-pressed'],
     },
     border: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     textAlign: 'start',
     outline: 'none',
   },
   disabled: {
     opacity: 0.5,
-    cursor: 'not-allowed',
+    cursor: 'default',
   },
   destructive: {
     // Only recolor the text/icon; the hover / focus background stays the shared

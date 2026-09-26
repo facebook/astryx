@@ -36,6 +36,7 @@ import {mergeProps} from '../utils';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 
 /**
  * NavItem styles with hover/selected states
@@ -53,24 +54,20 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
     textDecoration: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transitionProperty: 'background-color, color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    backgroundColor: {
-      default: 'transparent',
-      ':hover': {
-        '@media (hover: hover)': colorVars['--color-overlay-hover'],
-      },
-      ':active': colorVars['--color-overlay-pressed'],
-    },
   },
   selected: {
     color: colorVars['--color-text-primary'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     backgroundColor: {
       default: colorVars['--color-neutral'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-neutral'],
       },
       ':active': colorVars['--color-neutral'],
@@ -231,6 +228,7 @@ export function TopNavItem({
           }),
           focusOutlineProps.focusVisible(
             navItemStyles.item,
+            interactionOverlayStyles.backgroundColor,
             navItemStyles[size],
             isSelected && navItemStyles.selected,
             isDisabled && navItemStyles.disabled,
@@ -267,6 +265,7 @@ export function TopNavItem({
         }),
         focusOutlineProps.focusVisible(
           styles.base,
+          interactionOverlayStyles.backgroundColor,
           isSelected && styles.selected,
           isDisabled && navItemStyles.disabled,
           isIconOnly && styles.iconOnly,

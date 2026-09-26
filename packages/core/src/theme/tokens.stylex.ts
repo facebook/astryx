@@ -8,7 +8,9 @@
  * - *Vars: CSS custom properties that themes can override via createTheme
  *
  * SYNC: When modified, run `node scripts/generate-token-docs.mjs` to update docs.
- * CI checks for drift via --check flag.
+ * CI checks for drift via --check flag. Adding or removing a token FAMILY (a
+ * whole `*Defaults` group) also means updating:
+ * - /packages/cli/assets/theme.template.ts (its inventory of what exists)
  *
  * Domain tokens (syntax highlighting, data visualization) live separately in
  * /packages/core/src/theme/domainTokens/ — they're tree-shaken from core components.

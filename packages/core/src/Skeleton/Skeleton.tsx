@@ -1,7 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-'use client';
-
 /**
  * @file Skeleton.tsx
  * @input Uses React, StyleX keyframes and tokens

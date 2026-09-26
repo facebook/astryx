@@ -3,6 +3,8 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {ChatTokenizedText} from '@astryxdesign/core/Chat';
 import {ChatMessage, ChatMessageBubble} from '@astryxdesign/core/Chat';
+import {Icon} from '@astryxdesign/core/Icon';
+import {UserCircleIcon} from '@heroicons/react/24/solid';
 
 const meta: Meta<typeof ChatTokenizedText> = {
   title: 'Core/ChatTokenizedText',
@@ -91,6 +93,46 @@ export const TokensAtEdges: Story = {
       <ChatMessageBubble>
         <ChatTokenizedText tokens={mentionTokens}>
           @cindy this is for @navi
+        </ChatTokenizedText>
+      </ChatMessageBubble>
+    </ChatMessage>
+  ),
+};
+
+/** Tokens carrying an icon, and a fully custom token — both sit on the line */
+export const IconAndCustomTokens: Story = {
+  render: () => (
+    <ChatMessage sender="user">
+      <ChatMessageBubble>
+        <ChatTokenizedText
+          tokens={[
+            {
+              value: '@cindy',
+              label: '@Cindy Zhang',
+              variant: 'blue',
+              icon: <Icon icon={UserCircleIcon} size="sm" />,
+            },
+            {
+              value: '@navi',
+              render: () => (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    height: 20,
+                    padding: '0 8px',
+                    borderRadius: 999,
+                    background: '#e8def8',
+                    fontSize: 12,
+                  }}>
+                  <span aria-hidden>★</span>
+                  @Navi
+                </span>
+              ),
+            },
+          ]}>
+          Hey @cindy and @navi can you take a look?
         </ChatTokenizedText>
       </ChatMessageBubble>
     </ChatMessage>

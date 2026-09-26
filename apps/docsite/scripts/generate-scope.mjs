@@ -28,15 +28,32 @@ const HEADER = `// Copyright (c) Meta Platforms, Inc. and affiliates.
 const corePkg = JSON.parse(readFileSync(CORE_PKG, 'utf-8'));
 const exportKeys = Object.keys(corePkg.exports ?? {});
 
-const SKIP = /\.(css|stylex)$|\/utils$|^\.\/theme|^\.\/hooks|^\.\/utils|^\.\/syntax|^\.\/docs|^\.\/groups|^\.$|^\.\/reset/;
+const SKIP =
+  /\.(css|stylex)$|\/utils$|^\.\/theme|^\.\/hooks|^\.\/utils|^\.\/syntax|^\.\/docs|^\.\/groups|^\.$|^\.\/reset/;
+
+const COMPONENT_NAME = /^[A-Z][A-Za-z0-9]*$/;
+const NESTED_MODULE_NAME = /^[A-Z][A-Za-z0-9]*(?:\/[A-Za-z0-9][A-Za-z0-9-]*)+$/;
 
 const components = exportKeys
-  .filter((k) => {
+  .filter(k => {
     if (SKIP.test(k)) return false;
     const name = k.replace('./', '');
-    return /^[A-Z]/.test(name);
+    return COMPONENT_NAME.test(name);
   })
-  .map((k) => k.replace('./', ''));
+  .map(k => k.replace('./', ''));
+
+const nestedModules = exportKeys
+  .filter(k => {
+    if (SKIP.test(k)) return false;
+    return NESTED_MODULE_NAME.test(k.replace('./', ''));
+  })
+  .map(k => {
+    const specifier = k.replace('./', '');
+    return {
+      specifier,
+      identifier: `Core_${specifier.replace(/[^A-Za-z0-9_$]/g, '_')}`,
+    };
+  });
 
 // Themes — add new themes here as they become available
 const SCOPE_THEMES = [
@@ -55,12 +72,13 @@ const HEROICON_VARIANTS = [
   {path: '24/solid', alias: 'Heroicons24Solid'},
 ];
 
-
 // Build output — matches the structure of the previously committed scope.ts
 const lines = [HEADER, ''];
 
 // ── React ──────────────────────────────────────────────────────────────
-lines.push("import React, {useState, useCallback, useMemo, useEffect, useRef} from 'react';");
+lines.push(
+  "import React, {useState, useCallback, useMemo, useEffect, useRef} from 'react';",
+);
 lines.push('');
 
 // ── StyleX mock ────────────────────────────────────────────────────────
@@ -118,7 +136,7 @@ const pgClassForProp = (prop: string, value: PGStyleValue): string => {
   if (value != null && typeof value === 'object') {
     for (const [cond, condVal] of Object.entries(value)) {
       if (condVal == null) continue;
-      const decl = '.' + cls + pgPseudoSuffix(cond) + '{' + pgKebab(prop) + ':' + pgCssValue(prop, condVal) + '}';
+      const decl = pgSelector(cls, cond) + '{' + pgKebab(prop) + ':' + pgCssValue(prop, condVal) + '}';
       pgInject(pgWrapAtRule(cond, decl));
     }
   } else {
@@ -129,6 +147,27 @@ const pgClassForProp = (prop: string, value: PGStyleValue): string => {
 
 const pgPseudoSuffix = (cond: string): string =>
   cond === 'default' || cond.startsWith('@') ? '' : cond;
+
+// A marker rides along as a class so an ancestor can be named in a selector.
+// Tagged with a prop key rather than a bare string because \`props\` only keeps
+// string values, and this way one shows up in className like any other class.
+const PG_MARKER_PROP = '--pg-marker';
+const PG_DEFAULT_MARKER = 'pgmarkdefault';
+let pgMarkerSeq = 0;
+const pgMarker = (cls: string): Record<string, unknown> => ({
+  $$css: true,
+  [PG_MARKER_PROP]: cls,
+});
+
+// Every other condition narrows the element's own selector, so it appends.
+// \`when.ancestor\` instead qualifies a *parent*, which has to prepend — hence a
+// tag the rule builder can spot rather than another pseudo suffix.
+const PG_ANCESTOR_TAG = '%pg-ancestor%';
+
+const pgSelector = (cls: string, cond: string): string =>
+  cond.startsWith(PG_ANCESTOR_TAG)
+    ? cond.slice(PG_ANCESTOR_TAG.length) + ' .' + cls
+    : '.' + cls + pgPseudoSuffix(cond);
 
 const pgWrapAtRule = (cond: string, decl: string): string =>
   cond.startsWith('@') ? cond + '{' + decl + '}' : decl;
@@ -173,6 +212,15 @@ const stylexMock = {
   },
   defineVars: <T extends Record<string, unknown>>(tokens: T): T => tokens,
   keyframes: (kf: Record<string, Record<string, string>>) => kf,
+  defaultMarker: () => pgMarker(PG_DEFAULT_MARKER),
+  defineMarker: () => pgMarker('pgmark' + pgMarkerSeq++),
+  when: {
+    ancestor: (cond: string, marker?: Record<string, unknown>) =>
+      PG_ANCESTOR_TAG +
+      '.' +
+      ((marker?.[PG_MARKER_PROP] as string) ?? PG_DEFAULT_MARKER) +
+      cond,
+  },
   types: {
     angle: (v: string) => v,
     color: (v: string) => v,
@@ -191,9 +239,14 @@ const stylexMock = {
 };`);
 lines.push('');
 
-// ── Component imports ──────────────────────────────────────────────────
+// ── Component and nested-module imports ───────────────────────────────
 for (const name of components) {
   lines.push(`import * as ${name} from '@astryxdesign/core/${name}';`);
+}
+for (const {specifier, identifier} of nestedModules) {
+  lines.push(
+    `import * as ${identifier} from '@astryxdesign/core/${specifier}';`,
+  );
 }
 lines.push('');
 
@@ -204,10 +257,14 @@ for (const t of SCOPE_THEMES) {
 lines.push('');
 
 // ── Theme + tokens ──────────────────────────────────────────────────
-lines.push("import {Theme} from '@astryxdesign/core/theme';");
+lines.push("import {Theme, defineTheme} from '@astryxdesign/core/theme';");
 lines.push("import type {DefinedTheme} from '@astryxdesign/core/theme';");
-lines.push("import {createElement, type ComponentProps} from 'react';");
-lines.push("import * as astryxTokens from '@astryxdesign/core/theme/tokens.stylex';");
+lines.push(
+  "import {createContext, createElement, useContext, type ComponentProps} from 'react';",
+);
+lines.push(
+  "import * as astryxTokens from '@astryxdesign/core/theme/tokens.stylex';",
+);
 lines.push('');
 
 // ── Hooks ──────────────────────────────────────────────────────────────
@@ -216,11 +273,16 @@ lines.push('');
 lines.push("import * as Hooks from '@astryxdesign/core/hooks';");
 lines.push('');
 
-// ── Icon libraries ─────────────────────────────────────────────────────
+// ── Icon and chart libraries ───────────────────────────────────────────
 lines.push("import * as LucideIcons from 'lucide-react';");
-lines.push('// Heroicons kept available in the playground scope alongside Lucide');
-lines.push("// so template / example code that still imports from");
-lines.push("// '@heroicons/react/*' continues to render. New docsite code authors");
+lines.push("import * as Recharts from 'recharts';");
+lines.push(
+  '// Heroicons kept available in the playground scope alongside Lucide',
+);
+lines.push('// so template / example code that still imports from');
+lines.push(
+  "// '@heroicons/react/*' continues to render. New docsite code authors",
+);
 lines.push('// against Lucide; these entries are purely for backwards compat.');
 for (const h of HEROICON_VARIANTS) {
   lines.push(`import * as ${h.alias} from '@heroicons/react/${h.path}';`);
@@ -229,14 +291,24 @@ lines.push('');
 
 // ── ControlledTheme wrapper ─────────────────────────────────────────
 const themeEntries = SCOPE_THEMES.map(
-  (t) => `  ${t.name.replace('Theme', '').toLowerCase()}: ${t.name},`,
+  t => `  ${t.name.replace('Theme', '').toLowerCase()}: ${t.name},`,
 ).join('\n');
 
 lines.push(`const SCOPE_THEMES: Record<string, DefinedTheme> = {
 ${themeEntries}
 };
 
+const IsNestedTheme = createContext(false);
+
 const ControlledTheme = (props: ComponentProps<typeof Theme>) => {
+  const isNested = useContext(IsNestedTheme);
+  // A nested Theme is part of what the code being previewed is showing — a
+  // poster's display face, a slider track painted as a spectrum — so it keeps
+  // the theme and mode it asked for. Only the outermost one answers to the
+  // playground's theme and mode pickers.
+  if (isNested) {
+    return createElement(Theme, props);
+  }
   const win =
     typeof window !== 'undefined'
       ? (window as unknown as Record<string, unknown>)
@@ -245,7 +317,11 @@ const ControlledTheme = (props: ComponentProps<typeof Theme>) => {
     (win?.__xds_preview_mode__ as 'light' | 'dark' | 'system') || 'system';
   const themeName = (win?.__xds_preview_theme__ as string) || 'default';
   const theme = SCOPE_THEMES[themeName] ?? ${SCOPE_THEMES[0].name};
-  return createElement(Theme, {...props, theme, mode});
+  return createElement(
+    IsNestedTheme.Provider,
+    {value: true},
+    createElement(Theme, {...props, theme, mode}),
+  );
 };`);
 lines.push('');
 
@@ -265,7 +341,10 @@ lines.push(`  react: {
 
 // stylex
 lines.push("  '@stylexjs/stylex': {default: stylexMock, ...stylexMock},");
-lines.push("  stylex: {default: stylexMock, ...stylexMock},");
+lines.push('  stylex: {default: stylexMock, ...stylexMock},');
+
+// Recharts comes before Astryx so Astryx components win global name collisions.
+lines.push('  recharts: Recharts,');
 
 // themes
 for (const t of SCOPE_THEMES) {
@@ -274,7 +353,9 @@ for (const t of SCOPE_THEMES) {
 }
 
 // Theme (controlled wrapper)
-lines.push("  '@astryxdesign/core/theme': {Theme: ControlledTheme},");
+lines.push(
+  "  '@astryxdesign/core/theme': {Theme: ControlledTheme, defineTheme},",
+);
 
 // tokens.stylex
 lines.push("  '@astryxdesign/core/theme/tokens.stylex': astryxTokens,");
@@ -282,13 +363,16 @@ lines.push("  '@astryxdesign/core/theme/tokens.stylex': astryxTokens,");
 // hooks (useMediaQuery, etc.)
 lines.push("  '@astryxdesign/core/hooks': Hooks,");
 
-// Per-component subpath entries
+// Per-component and nested-module subpath entries
 for (const name of components) {
   lines.push(`  '@astryxdesign/core/${name}': ${name},`);
 }
+for (const {specifier, identifier} of nestedModules) {
+  lines.push(`  '@astryxdesign/core/${specifier}': ${identifier},`);
+}
 
 // Barrel export — all components spread
-const spreads = components.map((n) => `    ...${n},`).join('\n');
+const spreads = components.map(n => `    ...${n},`).join('\n');
 lines.push(`  '@astryxdesign/core': {
 ${spreads}
   },`);
@@ -313,5 +397,9 @@ mkdirSync(dirname(OUT), {recursive: true});
 writeFileSync(OUT, lines.join('\n'));
 console.log(`✓ Generated ${OUT}`);
 console.log(`  ${components.length} components`);
+console.log(`  ${nestedModules.length} nested modules`);
 console.log(`  ${SCOPE_THEMES.length} themes`);
-console.log(`  lucide-react icons + ${HEROICON_VARIANTS.length} heroicon variants`);
+console.log(
+  `  lucide-react icons + ${HEROICON_VARIANTS.length} heroicon variants`,
+);
+console.log('  recharts');

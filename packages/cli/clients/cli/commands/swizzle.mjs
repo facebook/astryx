@@ -18,6 +18,7 @@ import {swizzle as swizzleApi} from '../../../api/swizzle/swizzle.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {doc as swizzleCommand} from './swizzle.doc.mjs';
 import {doc as swizzleFn} from '../../../api/swizzle/swizzle.doc.mjs';
+import {NO_RESULT_SET, resultSet} from '../../../foundation/debug/index.mjs';
 
 /**
  * @param {import('commander').Command} program
@@ -41,11 +42,20 @@ export function registerSwizzle(program) {
         });
       } catch (e) {
         const err = /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
-        cliError(err.message, {suggestions: err.suggestions, code: err.code});
-        return;
+        return cliError(err.message, {suggestions: err.suggestions, code: err.code});
       }
 
-      if (json) return jsonOut(result);
+      // `--list` answers with the components you could eject; ejecting one is
+      // a copy into the project, which is an effect with nothing to count.
+      const answered =
+        result.type === 'swizzle.list'
+          ? resultSet({count: result.data.length, resultKind: 'component'})
+          : NO_RESULT_SET;
+
+      if (json) {
+        jsonOut(result);
+        return answered;
+      }
 
       if (result.type === 'swizzle.list') {
         const components = result.data;
@@ -60,7 +70,7 @@ export function registerSwizzle(program) {
             ].join('\n'),
           ),
         );
-        return;
+        return answered;
       }
 
       const {package: ownerPackage, outputDir, filesCopied, usesStyleX, feedback} =
@@ -107,6 +117,7 @@ export function registerSwizzle(program) {
       }
 
       emit(...out);
+      return answered;
     },
   });
 }

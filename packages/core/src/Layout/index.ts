@@ -19,6 +19,10 @@ export type {
   SpacingToken,
 } from './container.stylex';
 
+// Overlay padding-variable reset (applied on overlay roots so the container
+// padding system does not cross a fixed/top-layer boundary)
+export {overlayPaddingReset} from './padding.stylex';
+
 // Edge compensation utility
 export {edgeCompSlot, EDGE_COMP_ATTR} from './edgeCompensation.stylex';
 

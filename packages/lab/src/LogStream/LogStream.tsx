@@ -190,16 +190,23 @@ const styles = stylex.create({
     borderInlineWidth: 0,
     fontFamily: typographyVars['--font-family-code'],
     fontSize: textSizeVars['--font-size-sm'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     backgroundColor: {
       default: 'transparent',
-      ':hover': {[HOVER]: colorVars['--color-overlay-hover']},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        [HOVER]: colorVars['--color-overlay-hover'],
+      },
     },
   },
   rowButtonTerminal: {
     backgroundColor: {
       default: 'transparent',
-      ':hover': {[HOVER]: TERM.surfaceRaised},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        [HOVER]: TERM.surfaceRaised,
+      },
     },
   },
   // Level tints: faint full-row wash for error/warn (color-mix keeps the
@@ -284,20 +291,27 @@ const styles = stylex.create({
     borderColor: colorVars['--color-border-emphasized'],
     backgroundColor: {
       default: colorVars['--color-background-surface'],
-      ':hover': {[HOVER]: colorVars['--color-background-muted']},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        [HOVER]: colorVars['--color-background-muted'],
+      },
     },
     color: colorVars['--color-text-primary'],
     fontFamily: typographyVars['--font-family-code'],
     fontSize: textSizeVars['--font-size-sm'],
     fontWeight: fontWeightVars['--font-weight-medium'],
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     boxShadow: shadowVars['--shadow-med'],
   },
   jumpToLatestTerminal: {
     borderColor: TERM.border,
     backgroundColor: {
       default: TERM.surfaceRaised,
-      ':hover': {[HOVER]: '#1d1d21'},
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        [HOVER]: '#1d1d21',
+      },
     },
     color: TERM.textBright,
   },

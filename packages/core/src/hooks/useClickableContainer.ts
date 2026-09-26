@@ -11,11 +11,17 @@
  * Solves the "nested interactive elements" problem: when a card is clickable
  * but contains buttons/links, clicking those should NOT trigger the card's action.
  *
+ * Every navigation exit here (window.open, location.href, and the delegated
+ * click on the interactive ref) runs after the shared navigation-destination
+ * rule in utils/safeUrl.ts; a blocked href does not navigate by any
+ * activation method.
+ *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts (export)
  */
 
 import {useCallback, useEffect, type RefObject, type MouseEvent} from 'react';
+import {isSafeUrl} from '../utils/safeUrl';
 
 /**
  * Canonical list of interactive element selectors — native controls plus
@@ -89,7 +95,11 @@ export interface UseClickableContainerOptions {
   interactiveRef?: RefObject<HTMLElement | null>;
   /** Click handler */
   onClick?: (event: MouseEvent<HTMLElement>) => void;
-  /** Navigation URL — when provided, clicking the container navigates */
+  /**
+   * Navigation URL — when provided, clicking the container navigates. Checked
+   * with the shared navigation rule (utils/safeUrl.ts) before any activation
+   * method (plain, new-tab, Cmd/Ctrl-click, middle-click, delegated click).
+   */
   href?: string;
   /** Link target */
   target?: string;
@@ -180,8 +190,12 @@ export function useClickableContainer({
         return;
       }
 
-      // Navigate if href is provided
-      if (href != null) {
+      // Navigate if href is provided. React DOM vets the hrefs it writes as
+      // attributes; nothing below passes through React, so the shared
+      // navigation rule decides once, before target, modifier key, or the
+      // delegated anchor can select a sink. A blocked href simply does not
+      // navigate — the click handler above still ran.
+      if (href != null && isSafeUrl(href)) {
         const shouldOpenNewTab =
           target === '_blank' || event.ctrlKey || event.metaKey;
         if (shouldOpenNewTab) {
@@ -230,11 +244,13 @@ export function useClickableContainer({
         return;
       }
 
-      // Middle-click on href opens in new tab
+      // Middle-click on href opens in new tab (same scheme rule as onClick —
+      // this navigation never passes through React either).
       const isMiddleClick = event.button === 1;
       if (
         isMiddleClick &&
         href != null &&
+        isSafeUrl(href) &&
         (eventTarget === event.currentTarget ||
           !hasInteractiveAncestor(eventTarget, containerEl))
       ) {

@@ -143,7 +143,7 @@ describe('theme build emits a live TextInput selector (#4109)', () => {
     expect(result.stderr).not.toContain('Unknown component');
     expect(css).toContain('.astryx-side-nav-item');
     expect(css).toContain('.astryx-chat-composer');
-    expect(css).toContain('.astryx-chat-message-bubble.ghost');
+    expect(css).toContain('.astryx-chat-message-bubble[data-variant="ghost"]');
   });
 
   it('emits .astryx-text-input (the rendered class), not the dead .astryx-textinput', async () => {

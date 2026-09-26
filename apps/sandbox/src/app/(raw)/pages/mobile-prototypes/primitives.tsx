@@ -4,7 +4,7 @@
  * @file primitives.tsx
  * @position Prototype-only building blocks for the Mobile Interaction Prototypes
  *   gallery. These are NOT shipping components — they exist purely to communicate
- *   the *expected* mobile interactions (bottom sheet, action sheet, edge drawer)
+ *   the *expected* mobile interactions (bottom sheet, edge drawer)
  *   to engineering before the real primitives land in @astryxdesign/core.
  * @input open/onClose state, height mode, children
  * @output Animated mobile surfaces scoped to a PhoneFrame screen
@@ -34,8 +34,8 @@ import {VStack} from '@astryxdesign/core/Stack';
 import {Field, inputWrapperStyles} from '@astryxdesign/core/Field';
 const proto = stylex.create({
   fullBtn: {width: '100%'},
-  // Pull the action list out by the Item's spacious inline padding (12px) so the
-  // command labels optically align with the sheet title / description.
+  // Pull the command list out by the Item's spacious inline padding (12px) so
+  // the command labels optically align with the sheet title / description.
   actionList: {
     marginInline: 'calc(-1 * var(--spacing-3))',
   },
@@ -193,7 +193,9 @@ function useBackToDismiss(open: boolean, onClose: () => void) {
   const cb = useRef(onClose);
   cb.current = onClose;
   useEffect(() => {
-    if (!open) {return undefined;}
+    if (!open) {
+      return undefined;
+    }
     window.history.pushState({__xdsSheet: true}, '');
     const onPop = () => cb.current();
     window.addEventListener('popstate', onPop);
@@ -221,17 +223,26 @@ function useBackToDismiss(open: boolean, onClose: () => void) {
 const SLOP = 5; // px before a pointerdown becomes a drag
 const PROJECT_MS = 300; // momentum window used to project the release position
 
-// Optional multi-detent config. `snaps` are ascending fractions of the screen
-// (e.g. [0.5, 0.92]); `index` is the current resting detent. Detents are
-// modelled by animating the sheet's *height* (not by translating an oversized
-// sheet), so the scroll viewport and safe-area always match the visible area.
-// On release we velocity-project the height and snap to the nearest detent —
-// or dismiss when fully-collapsed is closest.
+// Optional multi-detent config. Each snap is either a fraction of the screen
+// (0 < v <= 1, e.g. 0.92) or a fixed pixel height (v > 1, e.g. 316 for exactly
+// one month). Pixel snaps stay a constant physical size across device heights —
+// a fraction would drift and cut content differently on a taller phone. `index`
+// is the current resting detent. Detents are modelled by animating the sheet's
+// *height* (not by translating an oversized sheet), so the scroll viewport and
+// safe-area always match the visible area. On release we velocity-project the
+// height and snap to the nearest detent — or dismiss when fully-collapsed is
+// closest.
 type DetentConfig = {
   snaps: number[];
   index: number;
   onSettle: (index: number) => void;
 };
+
+// A snap > 1 is an absolute pixel height; <= 1 is a fraction of the container.
+// Pixel heights are clamped so they can never exceed the container.
+function resolveSnap(value: number, containerH: number): number {
+  return value > 1 ? Math.min(value, containerH) : value * containerH;
+}
 
 function useSheetDrag(
   onClose: () => void,
@@ -258,8 +269,12 @@ function useSheetDrag(
   });
 
   const begin = (fromGrabber: boolean) => (e: ReactPointerEvent) => {
-    if (e.button != null && e.button > 0) {return;}
-    if (!fromGrabber && (scrollRef.current?.scrollTop ?? 0) > 0) {return;}
+    if (e.button != null && e.button > 0) {
+      return;
+    }
+    if (!fromGrabber && (scrollRef.current?.scrollTop ?? 0) > 0) {
+      return;
+    }
     d.current.pending = true;
     d.current.active = false;
     d.current.fromGrabber = fromGrabber;
@@ -270,14 +285,16 @@ function useSheetDrag(
     if (detent) {
       const containerH = sheetRef.current?.parentElement?.clientHeight ?? 0;
       d.current.containerH = containerH;
-      d.current.baseH = detent.snaps[detent.index] * containerH;
+      d.current.baseH = resolveSnap(detent.snaps[detent.index], containerH);
       d.current.dragH = d.current.baseH;
     }
   };
 
   const move = (e: ReactPointerEvent) => {
     const s = d.current;
-    if (!s.pending && !s.active) {return;}
+    if (!s.pending && !s.active) {
+      return;
+    }
     const dy = e.clientY - s.startY;
 
     if (!s.active) {
@@ -288,7 +305,9 @@ function useSheetDrag(
           return;
         }
       }
-      if (Math.abs(dy) < SLOP) {return;}
+      if (Math.abs(dy) < SLOP) {
+        return;
+      }
       s.active = true;
       setDragging(true);
       (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
@@ -296,7 +315,9 @@ function useSheetDrag(
 
     const now = performance.now();
     const dt = now - s.lastT;
-    if (dt > 0) {s.v = (e.clientY - s.lastY) / dt;} // px/ms, + = downward
+    if (dt > 0) {
+      s.v = (e.clientY - s.lastY) / dt;
+    } // px/ms, + = downward
     s.lastY = e.clientY;
     s.lastT = now;
     if (detent) {
@@ -304,8 +325,11 @@ function useSheetDrag(
       // it. Height is clamped to the top detent; the bottom is pinned so the
       // scroll viewport always fits on-screen. When non-dismissible the
       // smallest detent is a hard min-height floor (a persistent peek).
-      const maxH = detent.snaps[detent.snaps.length - 1] * s.containerH;
-      const minH = dismissible ? 0 : detent.snaps[0] * s.containerH;
+      const maxH = resolveSnap(
+        detent.snaps[detent.snaps.length - 1],
+        s.containerH,
+      );
+      const minH = dismissible ? 0 : resolveSnap(detent.snaps[0], s.containerH);
       s.dragH = Math.max(minH, Math.min(maxH, s.baseH - dy));
       setDragHeight(s.dragH);
     } else {
@@ -332,7 +356,7 @@ function useSheetDrag(
       let bestI = 0;
       let bestDist = Infinity;
       detent.snaps.forEach((f, i) => {
-        const dist = Math.abs(projected - f * s.containerH);
+        const dist = Math.abs(projected - resolveSnap(f, s.containerH));
         if (dist < bestDist) {
           bestDist = dist;
           bestI = i;
@@ -513,18 +537,26 @@ export function BottomSheet({
 
   // Reset to the default detent each time the sheet opens.
   useEffect(() => {
-    if (open && detentMode) {setSnapIndex(defaultSnap);}
+    if (open && detentMode) {
+      setSnapIndex(defaultSnap);
+    }
   }, [open]);
 
   // Measure the screen so detent heights resolve to px (smooth height
   // transitions and a viewport that never runs off-screen).
   useLayoutEffect(() => {
-    if (!detentMode || !mounted) {return;}
+    if (!detentMode || !mounted) {
+      return;
+    }
     const el = sheetRef.current?.parentElement;
-    if (el) {setContainerH(el.clientHeight);}
+    if (el) {
+      setContainerH(el.clientHeight);
+    }
   }, [detentMode, mounted, sheetRef]);
 
-  if (!mounted) {return null;}
+  if (!mounted) {
+    return null;
+  }
 
   // A non-dismissible detent sheet is a persistent "peek" (Maps/Music). It only
   // makes sense when the app behind stays usable, so it's always non-modal —
@@ -534,13 +566,24 @@ export function BottomSheet({
 
   const maxSnap = detentMode ? snapPoints![snapPoints!.length - 1] : 0;
   // Detent height: exactly the current detent (or the live drag height), so the
-  // sheet is only ever as tall as what's visible on screen.
+  // sheet is only ever as tall as what's visible on screen. A snap > 1 resolves
+  // to a fixed pixel height (device-independent); <= 1 to a fraction.
+  // Detent height: exactly the current detent (or the live drag height), so the
+  // sheet is only ever as tall as what's visible on screen. A snap > 1 resolves
+  // to a fixed pixel height (device-independent); <= 1 to a fraction. A pixel
+  // snap is emitted as px on the very first paint — it needs no measurement — so
+  // the sheet opens at its final height instead of animating down from the
+  // fraction fallback (which read as an oversized %, clamped to max, then
+  // shrank: a visible bounce).
+  const currentSnap = detentMode ? snapPoints![snapIndex] : 0;
   const detentHeight = detentMode
     ? dragHeight != null
       ? `${dragHeight}px`
-      : containerH
-        ? `${snapPoints![snapIndex] * containerH}px`
-        : `${snapPoints![snapIndex] * 100}%`
+      : currentSnap > 1
+        ? `${currentSnap}px`
+        : containerH
+          ? `${resolveSnap(currentSnap, containerH)}px`
+          : `${currentSnap * 100}%`
     : undefined;
 
   const sheetStyle: CSSProperties = {
@@ -564,7 +607,9 @@ export function BottomSheet({
       ? 'none'
       : 'transform 0.32s cubic-bezier(0.32, 0.72, 0, 1), height 0.32s cubic-bezier(0.32, 0.72, 0, 1)',
     maxHeight: detentMode
-      ? `${maxSnap * 100}%`
+      ? maxSnap > 1
+        ? `${maxSnap}px`
+        : `${maxSnap * 100}%`
       : height === 'tall'
         ? '92%'
         : height === 'capped'
@@ -661,7 +706,7 @@ function SafeAreaBar() {
 }
 
 // =============================================================================
-// ActionSheet — iOS style grouped action list
+// BottomSheetMenu — a hug-height bottom sheet holding a grouped command list
 // =============================================================================
 
 export type SheetAction = {
@@ -671,7 +716,7 @@ export type SheetAction = {
   onClick?: () => void;
 };
 
-export function ActionSheet({
+export function BottomSheetMenu({
   open,
   onClose,
   title,
@@ -686,10 +731,11 @@ export function ActionSheet({
   actions: SheetAction[];
   cancelLabel?: string;
 }) {
-  // An action sheet is just a hug-height BottomSheet with a list of commands —
-  // so it reuses the sheet's gesture / scrim / safe-area / Back system rather
-  // than re-implementing a parallel surface. The Cancel lives in the pinned
-  // footer; drag / scrim-tap / Back dismiss it too.
+  // A command menu is just a hug-height BottomSheet with a list of commands, so
+  // it reuses the sheet's gesture / scrim / safe-area / Back system rather than
+  // introducing a separate surface. The Cancel lives in the pinned footer;
+  // drag / scrim-tap / Back dismiss it too.
+
   return (
     <BottomSheet
       open={open}
@@ -773,7 +819,9 @@ function useDrawerDrag(onClose: () => void, side: 'start' | 'end') {
   const outward = side === 'start' ? -1 : 1; // dismiss direction
 
   const onPointerDown = (e: ReactPointerEvent) => {
-    if (e.button != null && e.button > 0) {return;}
+    if (e.button != null && e.button > 0) {
+      return;
+    }
     d.current.pending = true;
     d.current.active = false;
     d.current.startX = e.clientX;
@@ -785,12 +833,16 @@ function useDrawerDrag(onClose: () => void, side: 'start' | 'end') {
 
   const onPointerMove = (e: ReactPointerEvent) => {
     const s = d.current;
-    if (!s.pending && !s.active) {return;}
+    if (!s.pending && !s.active) {
+      return;
+    }
     const dx = e.clientX - s.startX;
     const dy = e.clientY - s.startY;
 
     if (!s.active) {
-      if (Math.abs(dx) < SLOP && Math.abs(dy) < SLOP) {return;}
+      if (Math.abs(dx) < SLOP && Math.abs(dy) < SLOP) {
+        return;
+      }
       // Claim only primarily-horizontal gestures; vertical → native scroll.
       if (Math.abs(dy) > Math.abs(dx)) {
         s.pending = false;
@@ -803,7 +855,9 @@ function useDrawerDrag(onClose: () => void, side: 'start' | 'end') {
 
     const now = performance.now();
     const dt = now - s.lastT;
-    if (dt > 0) {s.v = (e.clientX - s.lastX) / dt;} // px/ms, signed
+    if (dt > 0) {
+      s.v = (e.clientX - s.lastX) / dt;
+    } // px/ms, signed
     s.lastX = e.clientX;
     s.lastT = now;
     // Only outward (toward the edge) travel; inward is pinned at the open rest.
@@ -862,7 +916,9 @@ export function DrawerEdgeGrip({
         st.current.active = true;
       }}
       onPointerMove={e => {
-        if (!st.current.active) {return;}
+        if (!st.current.active) {
+          return;
+        }
         const dx = e.clientX - st.current.x;
         if ((isStart && dx > 12) || (!isStart && dx < -12)) {
           st.current.active = false;
@@ -930,7 +986,9 @@ export function SideDrawer({
   const {mounted, shown, onExited} = useSheetPresence(open);
   const {dragX, dragging, panelRef, handlers} = useDrawerDrag(onClose, side);
   useBackToDismiss(open, onClose);
-  if (!mounted) {return null;}
+  if (!mounted) {
+    return null;
+  }
   const isStart = side === 'start';
   const hidden = isStart ? 'translateX(-100%)' : 'translateX(100%)';
   const panelWidth = Math.min(width, 320);
@@ -1125,12 +1183,20 @@ export function PhoneFrame({children}: {children: ReactNode}) {
 }
 
 // TabletFrame — wider device shell to show the sheet's max-width cap / centering.
-export function TabletFrame({children}: {children: ReactNode}) {
+export function TabletFrame({
+  children,
+  tall = false,
+}: {
+  children: ReactNode;
+  /** Taller aspect ratio for demos whose sheet needs more vertical room
+      (e.g. DateTimeInput fitting two months beside the time grid). */
+  tall?: boolean;
+}) {
   return (
     <div
       style={{
         width: 'min(900px, 100%)',
-        aspectRatio: '1.4 / 1',
+        aspectRatio: tall ? '1.05 / 1' : '1.4 / 1',
         padding: 16,
         borderRadius: 34,
         background: 'linear-gradient(160deg, #2a2a2e, #0c0c0e)',
@@ -1300,11 +1366,35 @@ export function AnchoredPopover({
   // Clamp against the actual host container (phone or tablet frame) rather than a
   // hardcoded phone width, so the popover stays anchored in either preview.
   const overlayRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const [containerW, setContainerW] = useState(390);
+  // Flip above the anchor when there isn't room below it (the iOS / Android
+  // contextual-popover behavior), so a mention near the bottom edge isn't
+  // clipped. Measured after mount from the card's own height.
+  const [placement, setPlacement] = useState<'below' | 'above'>('below');
   useLayoutEffect(() => {
-    if (mounted) {setContainerW(overlayRef.current?.offsetWidth ?? 390);}
-  }, [mounted]);
-  if (!mounted || !anchorRect) {return null;}
+    if (!mounted || !anchorRect) {
+      return;
+    }
+    const host = overlayRef.current;
+    setContainerW(host?.offsetWidth ?? 390);
+    const containerH = host?.offsetHeight ?? 0;
+    const cardH = cardRef.current?.offsetHeight ?? 0;
+    const belowTop = anchorRect.top + anchorRect.height + 8;
+    const roomBelow = containerH - belowTop;
+    const roomAbove = anchorRect.top - 8;
+    // Prefer below; flip only if it would overflow and above has more room.
+    setPlacement(
+      roomBelow < cardH && roomAbove > roomBelow ? 'above' : 'below',
+    );
+  }, [mounted, anchorRect]);
+  if (!mounted || !anchorRect) {
+    return null;
+  }
+  const top =
+    placement === 'above'
+      ? Math.max(8, anchorRect.top - (cardRef.current?.offsetHeight ?? 0) - 8)
+      : anchorRect.top + anchorRect.height + 8;
   return (
     <>
       <div
@@ -1318,11 +1408,12 @@ export function AnchoredPopover({
         }}
       />
       <div
+        ref={cardRef}
         onTransitionEnd={onExited}
         style={{
           position: 'absolute',
           zIndex: 11,
-          top: anchorRect.top + anchorRect.height + 8,
+          top,
           left: Math.max(8, Math.min(anchorRect.left, containerW - width - 16)),
           width,
           background: 'var(--color-background-popover)',
@@ -1333,8 +1424,8 @@ export function AnchoredPopover({
           opacity: shown ? 1 : 0,
           transform: shown
             ? 'translateY(0) scale(1)'
-            : 'translateY(-4px) scale(0.98)',
-          transformOrigin: 'top left',
+            : `translateY(${placement === 'above' ? 4 : -4}px) scale(0.98)`,
+          transformOrigin: placement === 'above' ? 'bottom left' : 'top left',
           transition: 'opacity 0.16s ease, transform 0.16s ease',
         }}>
         {children}

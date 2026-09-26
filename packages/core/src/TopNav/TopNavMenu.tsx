@@ -5,7 +5,7 @@
 /**
  * @file TopNavMenu.tsx
  * @input Uses React, StyleX, usePopover, useMenuHover, useListFocus,
- *   useTypeahead, TopNavItem tokens
+ *   useTypeahead, TopNavItem tokens, and the shared navigation policy
  * @output Exports TopNavMenu component and related types
  * @position Navigation item with hover-triggered overflow menu for TopNav
  *
@@ -29,15 +29,18 @@ import {useMenuHover} from '../hooks/useMenuHover';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {Icon} from '../Icon';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, composeEventHandlers} from '../utils';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {BaseProps} from '../BaseProps';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useTopNavSlot} from './TopNavContext';
 import {useTopNavRenderMode} from './TopNavRenderContext';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {useLinkComponent} from '../Link/useLinkComponent';
+import {isSafeUrl} from '../utils/safeUrl';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {
   colorVars,
   spacingVars,
@@ -65,13 +68,16 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
     textDecoration: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transitionProperty: 'background-color, color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     backgroundColor: {
       default: 'transparent',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
@@ -115,13 +121,16 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-3'],
     borderRadius: radiusVars['--radius-element'],
     textDecoration: 'none',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     backgroundColor: {
       default: 'transparent',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
@@ -325,6 +334,13 @@ export function TopNavMenu({
   items,
   delay = 150,
   hideDelay = 200,
+  xstyle,
+  className,
+  style,
+  onClick: onClickProp,
+  onMouseEnter: onMouseEnterProp,
+  onMouseLeave: onMouseLeaveProp,
+  ...rest
 }: TopNavMenuProps) {
   const renderMode = useTopNavRenderMode();
   const {closeMobileNav} = useAppShellMobile();
@@ -342,7 +358,7 @@ export function TopNavMenu({
     role: 'none',
   });
 
-  const {triggerProps, contentProps, menuRef, setTriggerEl} =
+  const {triggerProps, contentProps, menuRef, setTriggerEl, close} =
     useMenuHover<HTMLDivElement>({
       show: popover.show,
       hide: popover.hide,
@@ -350,9 +366,12 @@ export function TopNavMenu({
       isEnabled: true,
       showDelay: delay,
       hideDelay,
+      // Trigger sits outside an auto popover; the invoker relationship exempts
+      // it from light dismiss.
+      popoverId: popover.id,
     });
 
-  const setTriggerRef = mergeRefs<HTMLButtonElement>(
+  const setTriggerRef = useMergedRefs<HTMLButtonElement>(
     triggerButtonRef,
     popover.triggerRef,
     setTriggerEl,
@@ -368,7 +387,8 @@ export function TopNavMenu({
     useListFocus<HTMLDivElement>({
       itemSelector: '[role="menuitem"]',
       hasRovingTabIndex: true,
-      onEscape: popover.hide,
+      // Not popover.hide: Escape must also restore focus to the trigger.
+      onEscape: close,
     });
 
   // First-character typeahead over the menu items (menus-11).
@@ -416,7 +436,7 @@ export function TopNavMenu({
 
   // Menu container carries both the hover hook's ref (for its open/close
   // focus management) and the list-focus ref (for roving tabindex/typeahead).
-  const setMenuRef = mergeRefs<HTMLDivElement>(menuRef, listRef);
+  const setMenuRef = useMergedRefs<HTMLDivElement>(menuRef, listRef);
 
   // Mobile bar: hide menus entirely
   if (renderMode === 'mobile-bar') {
@@ -429,10 +449,24 @@ export function TopNavMenu({
       <div {...stylex.props(drawerStyles.section)}>
         <button
           type="button"
-          onClick={() => setDrawerExpanded(v => !v)}
+          {...rest}
+          onMouseEnter={onMouseEnterProp}
+          onMouseLeave={onMouseLeaveProp}
+          onClick={composeEventHandlers(onClickProp, () =>
+            setDrawerExpanded(v => !v),
+          )}
           aria-expanded={drawerExpanded}
           aria-controls={`${menuId}-items`}
-          {...stylex.props(navItemStyles.item, drawerStyles.header)}>
+          {...mergeProps(
+            focusOutlineProps.focusVisible(
+              navItemStyles.item,
+              interactionOverlayStyles.backgroundColor,
+              drawerStyles.header,
+              xstyle,
+            ),
+            className,
+            style,
+          )}>
           {label}
           <Icon
             icon="chevronDown"
@@ -459,7 +493,11 @@ export function TopNavMenu({
                   item.onClick?.();
                   closeMobileNav();
                 }}
-                {...stylex.props(navItemStyles.item, drawerStyles.item)}>
+                {...focusOutlineProps.focusVisible(
+                  navItemStyles.item,
+                  interactionOverlayStyles.backgroundColor,
+                  drawerStyles.item,
+                )}>
                 {item.icon && (
                   <span {...stylex.props(drawerStyles.itemIcon)}>
                     {item.icon}
@@ -487,14 +525,27 @@ export function TopNavMenu({
       <button
         ref={setTriggerRef}
         type="button"
+        {...rest}
         {...popover.triggerProps}
         {...triggerProps}
+        onClick={composeEventHandlers(onClickProp, triggerProps.onClick)}
+        onMouseEnter={composeEventHandlers(
+          onMouseEnterProp,
+          triggerProps.onMouseEnter,
+        )}
+        onMouseLeave={composeEventHandlers(
+          onMouseLeaveProp,
+          triggerProps.onMouseLeave,
+        )}
         {...mergeProps(
           themeProps('top-nav-menu'),
           focusOutlineProps.focusVisible(
             styles.trigger,
             popover.isOpen && styles.triggerOpen,
+            xstyle,
           ),
+          className,
+          style,
         )}>
         {label}
         <Icon
@@ -525,7 +576,11 @@ export function TopNavMenu({
                 // Single tab stop: useListFocus owns the roving tabindex and
                 // promotes exactly one item to 0.
                 tabIndex={-1}
-                href={item.href}
+                href={
+                  item.href != null && isSafeUrl(item.href)
+                    ? item.href
+                    : undefined
+                }
                 onClick={item.onClick}
                 {...focusOutlineProps.focusVisible(styles.menuItem)}>
                 <div {...stylex.props(styles.menuItemIcon)}>{item.icon}</div>

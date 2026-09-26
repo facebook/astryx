@@ -52,12 +52,18 @@ export interface ScheduleListViewOptions {
 function ScheduleListView(
   _props: ScheduleViewComponentProps<ScheduleListViewOptions>,
 ) {
-  const {events, timezoneID, range, isLoading, headingLevel} = useScheduleContext();
+  const {events, timezoneID, locale, range, isLoading, headingLevel} =
+    useScheduleContext();
   const days = enumerateDates(range.startDate, range.endDate);
   const currentTime = useCurrentTime();
   const currentPlainDate = plainDateFromInstant(currentTime, timezoneID);
   const endDate = plainDateAddDays(range.endDate, -1);
-  const titleLabel = formatWeekTitle(range.startDate, endDate, timezoneID);
+  const titleLabel = formatWeekTitle(
+    range.startDate,
+    endDate,
+    timezoneID,
+    locale,
+  );
   const visibleDays = days
     .map(day => {
       const isCurrentDay = plainDateIsEqual(day, currentPlainDate);
@@ -125,12 +131,13 @@ function ListDayHeading({
   timezoneID: string;
   headingLevel: 2 | 3 | 4 | 5 | 6;
 }) {
+  const {locale} = useScheduleContext();
   return (
     <Heading
       level={headingLevel}
       color="secondary"
       display="block"
-      aria-label={formatFullDate(day, timezoneID)}
+      aria-label={formatFullDate(day, timezoneID, locale)}
       aria-current={isCurrentDay ? 'date' : undefined}
       xstyle={styles.listDayHeading}>
       <span
@@ -139,10 +146,10 @@ function ListDayHeading({
           isCurrentDay && styles.listDayNumberCurrent,
         )}>
         <span {...stylex.props(styles.listDayNumberText)}>
-          {formatDayNumber(day, timezoneID)}
+          {formatDayNumber(day, timezoneID, locale)}
         </span>
       </span>
-      {formatWeekday(day, timezoneID, 'short')}
+      {formatWeekday(day, timezoneID, 'short', locale)}
     </Heading>
   );
 }

@@ -29,6 +29,8 @@ export type {SideNavCollapseButtonProps} from './SideNavCollapseButton';
 export {useSideNavCollapse} from './SideNavCollapseContext';
 export type {
   SideNavCollapseState,
+  SideNavCollapsibleConfig,
+  SideNavControlledCollapsible,
   SideNavImperativeCollapseHandle,
 } from './SideNavCollapseContext';
 
