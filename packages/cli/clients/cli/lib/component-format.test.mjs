@@ -131,37 +131,6 @@ describe('formatFull theming override keys', () => {
   });
 });
 
-describe('deprecated theming target guidance', () => {
-  const docs = {
-    name: 'Example',
-    description: 'An example.',
-    theming: {
-      targets: [
-        {className: 'astryx-old-target', deprecatedFor: 'new-target'},
-        {className: 'astryx-new-target'},
-      ],
-    },
-  };
-
-  it('names the canonical replacement in full component docs', () => {
-    expect(formatFull(docs)).toContain(
-      '`astryx-old-target` _(deprecated; use `new-target`)_',
-    );
-  });
-
-  it('excludes deprecated targets from copyable defineTheme examples', () => {
-    const out = formatFull(docs);
-    expect(out).not.toContain("'old-target': {");
-    expect(out).toContain("'new-target': {");
-  });
-
-  it('keeps the replacement in brief agent guidance', () => {
-    expect(formatBrief(docs, 'Example')).toContain(
-      'astryx-old-target deprecated->new-target',
-    );
-  });
-});
-
 /** Pipes that actually separate cells — a `\|` is content, not a separator. */
 function cellPipes(row) {
   return (row.match(/(?<!\\)\|/g) || []).length;

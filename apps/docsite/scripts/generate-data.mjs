@@ -1054,8 +1054,6 @@ export interface ThemingTarget {
   className: string;
   visualProps?: string[];
   states?: string[];
-  /** Old name of a renamed target; the class superseding it. */
-  deprecatedFor?: string;
 }
 
 export interface ComponentVar {

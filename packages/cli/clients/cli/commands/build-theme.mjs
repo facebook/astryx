@@ -238,9 +238,7 @@ function printThemeList(themes) {
  */
 function formatTargetsTable(targets) {
   const rows = targets.map(t => ({
-    key: t.deprecatedFor
-      ? `${t.key} [deprecated; use ${t.deprecatedFor}]`
-      : t.key,
+    key: t.key,
     component: t.component,
     props: t.props.join(', ') || '-',
     states: t.states.join(', ') || '-',

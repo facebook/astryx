@@ -2387,9 +2387,9 @@
     },
     {
       "kind": "section",
-      "id": "styling#deprecated-bare-prop-and-state-classes",
-      "oldCliRoute": "astryx docs styling deprecated-bare-prop-and-state-classes",
-      "oldDocsiteUrl": "/docs/styling#deprecated-bare-prop-and-state-classes",
+      "id": "styling#migrating-removed-theme-compatibility-selectors",
+      "oldCliRoute": "astryx docs styling migrating-removed-theme-compatibility-selectors",
+      "oldDocsiteUrl": "/docs/styling#migrating-removed-theme-compatibility-selectors",
       "placement": "keep-flat",
       "aliasNeeded": false,
       "rationale": "Stays a section of styling under the same key.",

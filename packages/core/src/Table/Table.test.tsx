@@ -458,11 +458,11 @@ describe('BaseTable', () => {
       expect(screen.getByRole('table').style.minWidth).toBe('10px');
     });
 
-    it('keeps the astryx theme classes alongside a consumer className', () => {
+    it('keeps the canonical theme class alongside a consumer className', () => {
       render(<Table data={users} columns={columns} className="custom-table" />);
       const table = screen.getByRole('table');
-      expect(table.className).toContain('astryx-base-table');
       expect(table.className).toContain('astryx-table');
+      expect(table.className).not.toContain('astryx-base-table');
       expect(table.className).toContain('custom-table');
     });
 

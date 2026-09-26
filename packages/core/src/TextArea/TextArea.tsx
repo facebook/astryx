@@ -568,18 +568,12 @@ export function TextArea({
         onClick={handleWrapperClick}
         onMouseUp={handleWrapperMouseUp}
         {...mergeProps(
-          themeProps(
-            'text-area',
-            {
-              size,
-              status: status?.type ?? null,
-              disabled: isDisabled ? 'disabled' : null,
-              readonly: isReadOnly ? 'readonly' : null,
-            },
-            // `textarea` ran the compound name together; keep it emitted so
-            // existing themes continue to work.
-            {legacyNames: ['textarea']},
-          ),
+          themeProps('text-area', {
+            size,
+            status: status?.type ?? null,
+            disabled: isDisabled ? 'disabled' : null,
+            readonly: isReadOnly ? 'readonly' : null,
+          }),
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,

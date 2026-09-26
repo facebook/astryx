@@ -516,26 +516,17 @@ describe('themeBuild() — component override validation', () => {
     ]);
   });
 
-  it('warns with the exact replacement for deprecated root and media targets', () => {
+  it('deduplicates removed aliases as unknown across root and conditional layers', () => {
     const registry = {
-      propsByKey: {
-        'old-target': ['variant'],
-        'new-target': ['variant'],
-      },
-      deprecatedByKey: {'old-target': 'new-target'},
+      propsByKey: {'new-target': ['variant']},
     };
 
     expect(
       validateComponentOverridesAgainstRegistry(
         {
-          components: {
-            'old-target': {base: {color: 'red'}},
-            'new-target': {base: {color: 'blue'}},
-          },
+          components: {'old-target': {base: {color: 'red'}}},
           onDark: {
-            components: {
-              'old-target': {'variant:quiet': {color: 'pink'}},
-            },
+            components: {'old-target': {'variant:quiet': {color: 'pink'}}},
           },
           adaptations: {
             rules: [
@@ -552,31 +543,27 @@ describe('themeBuild() — component override validation', () => {
         },
         registry,
       ),
-    ).toEqual([
-      'Deprecated component target "old-target". Use "new-target" instead.',
-      'Deprecated component target "old-target" in onDark. Use "new-target" instead.',
-      'Deprecated component target "old-target" in adaptation rule 1. Use "new-target" instead.',
-    ]);
+    ).toEqual(['Unknown component "old-target".']);
   });
 
-  it('warns with the exact replacement for a supported deprecated target', async () => {
-    const themeFile = path.join(tmpDir, 'deprecated-target.mjs');
+  it('reports a removed target alias as an unknown component key', async () => {
+    const themeFile = path.join(tmpDir, 'removed-target.mjs');
     fs.writeFileSync(
       themeFile,
       `export default {
-        name: 'deprecated-target',
+        name: 'removed-target',
         tokens: {},
         components: {progressbar: {base: {color: 'red'}}},
       };\n`,
     );
 
-    const result = await themeBuild('deprecated-target.mjs', {}, {cwd: tmpDir});
+    const result = await themeBuild('removed-target.mjs', {}, {cwd: tmpDir});
 
     expect(result?.data.warnings).toContain(
-      'Deprecated component target "progressbar". Use "progress-bar" instead.',
+      'Unknown component "progressbar". Did you mean: progress-bar?',
     );
     expect(
-      fs.readFileSync(path.join(tmpDir, 'deprecated-target.css'), 'utf8'),
+      fs.readFileSync(path.join(tmpDir, 'removed-target.css'), 'utf8'),
     ).toContain('.astryx-progressbar');
   });
 });

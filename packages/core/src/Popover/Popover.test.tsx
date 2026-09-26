@@ -85,7 +85,7 @@ describe('usePopover public return type', () => {
     expect(hasInternalFocusTarget).toBe(false);
   });
 
-  it('emits canonical and deprecated surface targets for direct hook consumers', () => {
+  it('emits only the canonical surface target for direct hook consumers', () => {
     function HeadlessPopover() {
       const popover = usePopover({dialogLabel: 'Headless popover'});
       return (
@@ -110,7 +110,7 @@ describe('usePopover public return type', () => {
       hidden: true,
     });
     expect(surface).toHaveClass('astryx-popover');
-    expect(surface).toHaveClass('astryx-popover-surface');
+    expect(surface).not.toHaveClass('astryx-popover-surface');
   });
 });
 
@@ -975,7 +975,8 @@ describe('Popover', () => {
     expect(target).not.toBeNull();
     // The surface paints background, radius and elevation; a target on the
     // content box inside it would style a box that paints nothing.
-    expect(target).toHaveClass('astryx-popover-surface');
+    expect(target).toHaveClass('astryx-popover');
+    expect(target).not.toHaveClass('astryx-popover-surface');
     expect(target).toHaveClass('consumer-popover');
     expect(target).toHaveStyle({padding: '0'});
     expect(target).toContainElement(screen.getByTestId('content'));

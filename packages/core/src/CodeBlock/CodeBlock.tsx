@@ -307,7 +307,7 @@ const styles = stylex.create({
     // The copy control is a ghost IconButton (Button owns its own padding,
     // radius, and hover surface); this only tints the resting glyph to the
     // muted syntax-comment colour so it blends into the header/corner. A theme
-    // reaches it via the `codeblock-copy-button` target on the Button.
+    // reaches it via the `code-block-copy-button` target on the Button.
     color: 'var(--color-syntax-comment)',
   },
   copyButtonAbsolute: {
@@ -810,20 +810,14 @@ export function CodeBlock({
         void handleCopy();
       }}
       xstyle={[styles.copyButton, !showHeader && styles.copyButtonAbsolute]}
-      {...themeProps('code-block-copy-button', undefined, {
-        legacyNames: ['codeblock-copy-button'],
-      })}
+      {...themeProps('code-block-copy-button')}
     />
   ) : null;
 
   const headerEl = showHeader ? (
     <div
       {...mergeProps(
-        themeProps(
-          'code-block-header',
-          {size, language, container},
-          {legacyNames: ['codeblock-header']},
-        ),
+        themeProps('code-block-header', {size, language, container}),
         stylex.props(
           styles.headerRow,
           hasLineNumbers ? styles.headerWithDivider : styles.headerCompact,
@@ -851,11 +845,7 @@ export function CodeBlock({
         )}>
         <span
           {...mergeProps(
-            themeProps(
-              'code-block-title',
-              {size, language},
-              {legacyNames: ['codeblock-title']},
-            ),
+            themeProps('code-block-title', {size, language}),
             stylex.props(styles.headerTitle),
           )}>
           {canCollapse && (
@@ -927,13 +917,7 @@ export function CodeBlock({
     <pre
       ref={ref}
       {...mergeProps(
-        themeProps(
-          'code-block',
-          {size, language, container},
-          // `codeblock` ran the compound name together; keep it emitted so
-          // existing themes continue to work.
-          {legacyNames: ['codeblock']},
-        ),
+        themeProps('code-block', {size, language, container}),
         stylex.props(
           styles.root,
           dynamicStyles.width(widthProp),

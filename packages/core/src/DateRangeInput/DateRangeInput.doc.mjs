@@ -184,10 +184,6 @@ export const docs = {
         states: ['disabled'],
       },
       {className: 'astryx-date-range-input-toggle-icon', states: ['state']},
-      {
-        className: 'astryx-date-range-input-clear-icon',
-        deprecatedFor: 'input-clear-icon',
-      },
       {className: 'astryx-date-range-input-presets'},
       {
         className: 'astryx-date-range-input-preset',

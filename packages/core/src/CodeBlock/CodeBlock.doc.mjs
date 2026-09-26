@@ -151,12 +151,6 @@ export const docs = {
       {className: 'astryx-code-block-header', visualProps: ['size', 'language', 'container']},
       {className: 'astryx-code-block-title', visualProps: ['size', 'language']},
       {className: 'astryx-code-block-copy-button'},
-      // Retained beside the canonical names for backwards compatibility.
-      // New themes use the canonical targets above.
-      {className: 'astryx-codeblock', visualProps: ['size', 'language', 'container'], deprecatedFor: 'code-block'},
-      {className: 'astryx-codeblock-header', visualProps: ['size', 'language', 'container'], deprecatedFor: 'code-block-header'},
-      {className: 'astryx-codeblock-title', visualProps: ['size', 'language'], deprecatedFor: 'code-block-title'},
-      {className: 'astryx-codeblock-copy-button', deprecatedFor: 'code-block-copy-button'},
     ],
     vars: [
       {name: '--_codeblock-gutter-width', description: 'Width of the line-number gutter, computed from the digit count of the last line so the code column starts at a stable offset.', default: '2ch', private: true},

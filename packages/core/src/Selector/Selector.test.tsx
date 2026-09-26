@@ -423,12 +423,12 @@ describe('Selector', () => {
 
     // Every row has a radio, selected or not.
     for (const option of options) {
-      expect(option.querySelector('.astryx-radio')).not.toBeNull();
+      expect(option.querySelector('.astryx-radio-indicator')).not.toBeNull();
     }
 
     // And exactly the selected one is filled.
     const filled = options.filter(
-      o => o.querySelector('.astryx-radio-dot') != null,
+      o => o.querySelector('.astryx-radio-indicator-dot') != null,
     );
     expect(filled).toHaveLength(1);
     expect(filled[0]).toHaveTextContent('Banana');
@@ -3019,7 +3019,7 @@ describe('Selector clear icon theme target', () => {
     return icon as HTMLElement;
   };
 
-  it('renders the astryx-input-clear-icon target (plus the legacy alias) on the clear glyph', () => {
+  it('renders only the astryx-input-clear-icon target on the clear glyph', () => {
     render(
       <Selector
         label="Fruit"
@@ -3032,11 +3032,10 @@ describe('Selector clear icon theme target', () => {
     // The canonical target lands on the icon element itself (not the button),
     // so a theme can restyle just this glyph (color, size, hover) via
     // `defineTheme` — a button-level target could not reach the icon's own
-    // color/size. The original per-component name remains as a compatibility
-    // alias.
+    // color/size.
     const icon = getClearIcon();
     expect(icon).toHaveClass('astryx-input-clear-icon');
-    expect(icon).toHaveClass('astryx-selector-clear-icon');
+    expect(icon).not.toHaveClass('astryx-selector-clear-icon');
     expect(icon).toHaveClass('astryx-icon');
   });
 
@@ -3057,13 +3056,12 @@ describe('Selector clear icon theme target', () => {
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
-  it('routes the clear glyph through the shared clear button, keeping the legacy target', () => {
-    // The clear affordance now composes the shared InputClearButton (a ghost
-    // Button with a secondary/sm glyph), so the icon carries the canonical
-    // `astryx-input-clear-icon` target plus the supported compatibility alias
-    // `astryx-selector-clear-icon`. Aside from those target classes
-    // it matches the shared button's own `close`/`sm`/`secondary` glyph
-    // exactly, so the default look is defined in one place.
+  it('routes the clear glyph through the shared clear button', () => {
+    // The clear affordance composes the shared InputClearButton (a ghost Button
+    // with a secondary/sm glyph), so the icon carries the canonical
+    // `astryx-input-clear-icon` target. Aside from that target class it matches
+    // the shared button's own `close`/`sm`/`secondary` glyph exactly, so the
+    // default look is defined in one place.
     render(
       <Selector
         label="Fruit"
@@ -3075,7 +3073,7 @@ describe('Selector clear icon theme target', () => {
     );
     const icon = getClearIcon();
     expect(icon).toHaveClass('astryx-input-clear-icon');
-    expect(icon).toHaveClass('astryx-selector-clear-icon');
+    expect(icon).not.toHaveClass('astryx-selector-clear-icon');
 
     const {container: refContainer} = render(
       <Icon icon="close" size="sm" color="secondary" />,
@@ -3085,26 +3083,22 @@ describe('Selector clear icon theme target', () => {
     const styleClasses = (el: HTMLElement) =>
       el.className
         .split(' ')
-        .filter(
-          c =>
-            c !== 'astryx-input-clear-icon' &&
-            c !== 'astryx-selector-clear-icon',
-        )
+        .filter(c => c !== 'astryx-input-clear-icon')
         .sort();
 
     expect(styleClasses(icon)).toEqual(styleClasses(refIcon));
   });
 
-  it('exposes selector-clear-icon so a theme reaches the icon color, size, and hover', () => {
+  it('uses input-clear-icon so a theme reaches the icon color, size, and hover', () => {
     // jsdom cannot resolve the @layer cascade, so the DOM-class assertion above
     // (target lands on the icon element) plus this generation assertion (the
     // theme emits same-element icon rules in @layer astryx-theme) together
     // prove the seam: a same-element theme rule wins over the icon's own
     // base-layer color/size.
     const theme = defineTheme({
-      name: 'selector-clear-icon-test',
+      name: 'selector-shared-clear-icon-test',
       components: {
-        'selector-clear-icon': {
+        'input-clear-icon': {
           base: {
             width: '12px',
             height: '12px',
@@ -3116,10 +3110,10 @@ describe('Selector clear icon theme target', () => {
       },
     });
     const css = generateThemeTestCSS(theme);
-    expect(css).toContain('.astryx-selector-clear-icon {');
+    expect(css).toContain('.astryx-input-clear-icon {');
     expect(css).toContain('width: 12px');
     expect(css).toContain('height: 12px');
-    expect(css).toContain('.astryx-selector-clear-icon:hover');
+    expect(css).toContain('.astryx-input-clear-icon:hover');
     expect(css).toContain('color: var(--color-icon-primary)');
   });
 });
@@ -3781,7 +3775,7 @@ describe('Selector indicatorPosition', () => {
           indicatorPosition === 'start'
             ? row.firstElementChild
             : row.lastElementChild;
-        const radio = row.querySelector('.astryx-radio');
+        const radio = row.querySelector('.astryx-radio-indicator');
         const content = row.querySelector('.astryx-selector-option');
         expect(markColumn).toHaveStyle({display: 'inline-flex'});
         expect(radio).not.toBeNull();
@@ -3828,7 +3822,7 @@ describe('Selector popup theme target', () => {
 
       const popup = document.querySelector('.astryx-selector-popup');
       expect(popup).not.toBeNull();
-      expect(popup).toHaveClass('astryx-popover-surface');
+      expect(popup).toHaveClass('astryx-popover');
       expect(popup?.querySelector('[role="listbox"]')).not.toBeNull();
     },
   );

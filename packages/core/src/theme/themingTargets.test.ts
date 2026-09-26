@@ -213,32 +213,32 @@ function extractThemeTargets(
 
 describe('extractThemeTargets', () => {
   it('reads a bare call with no props', () => {
-    expect(extractThemeTargets(`themeProps('progressbar-track')`)).toEqual([
-      {className: 'astryx-progressbar-track', propKeys: [], isOpaque: false},
+    expect(extractThemeTargets(`themeProps('progress-bar-track')`)).toEqual([
+      {className: 'astryx-progress-bar-track', propKeys: [], isOpaque: false},
     ]);
   });
 
   it('reads shorthand props', () => {
-    expect(extractThemeTargets(`themeProps('progressbar', {variant})`)).toEqual(
-      [
-        {
-          className: 'astryx-progressbar',
-          propKeys: ['variant'],
-          isOpaque: false,
-        },
-      ],
-    );
+    expect(
+      extractThemeTargets(`themeProps('progress-bar', {variant})`),
+    ).toEqual([
+      {
+        className: 'astryx-progress-bar',
+        propKeys: ['variant'],
+        isOpaque: false,
+      },
+    ]);
   });
 
   it('records the KEY, not the value, when a prop is renamed', () => {
     // The trap a regex falls into: `fillVariant` is a local, not a prop.
     expect(
       extractThemeTargets(
-        `themeProps('progressbar-fill', {variant: fillVariant})`,
+        `themeProps('progress-bar-fill', {variant: fillVariant})`,
       ),
     ).toEqual([
       {
-        className: 'astryx-progressbar-fill',
+        className: 'astryx-progress-bar-fill',
         propKeys: ['variant'],
         isOpaque: false,
       },

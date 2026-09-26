@@ -65,7 +65,6 @@ import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
-import {stableClassName} from '../naming';
 import {useLocale, useTranslator} from '../i18n';
 import type {Locale} from '../i18n/types';
 
@@ -707,7 +706,6 @@ export function DateRangeInput({
           <InputClearButton
             label={t('@astryx.dateInput.clear', {label})}
             onClick={handleClear}
-            iconClassName={stableClassName('date-range-input-clear-icon')}
           />
         )}
         {isBusy && <Spinner size="sm" />}

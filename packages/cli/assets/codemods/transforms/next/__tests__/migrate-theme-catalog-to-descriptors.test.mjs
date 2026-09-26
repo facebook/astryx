@@ -69,17 +69,29 @@ const catalog = () => path.join(root, 'themes', 'manifest.json');
 
 /** @param {boolean} apply @param {string} [srcPath] */
 const run = (apply, srcPath = root) =>
-  runCodemods([{version: 'next', transforms: manifest}], {
-    apply,
-    path: srcPath,
-    codemod: undefined,
-    silent: true,
-    root,
-  });
+  runCodemods(
+    [
+      {
+        version: 'next',
+        transforms: manifest.filter(
+          transform =>
+            transform.name === 'migrate-theme-catalog-to-descriptors',
+        ),
+      },
+    ],
+    {
+      apply,
+      path: srcPath,
+      codemod: undefined,
+      silent: true,
+      root,
+    },
+  );
 
 describe('migrate-theme-catalog-to-descriptors', () => {
   it('is staged for the next release as a project codemod', () => {
     expect(manifest.map(t => [t.name, t.meta.codemodType])).toEqual([
+      ['migrate-deprecated-theme-surface', undefined],
       ['migrate-theme-catalog-to-descriptors', 'project'],
     ]);
   });

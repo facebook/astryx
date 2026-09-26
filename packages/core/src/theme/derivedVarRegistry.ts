@@ -92,33 +92,11 @@ export const derivedVarRegistry: Record<string, DerivedVarEntry[]> = {
   ],
 };
 
-/**
- * Deprecated component keys → the key that superseded them.
- *
- * A renamed target keeps emitting its old class, so a theme written against
- * the old key still selects the element. Without this the rule would land but
- * its derived vars would not expand, and the half that travels through a var
- * (a hover card's radius, a text area's inline padding) would silently do
- * nothing. Keep these aliases aligned with the emitted compatibility classes.
- */
-const DEPRECATED_REGISTRY_KEYS: Record<string, string> = {
-  hovercard: 'hover-card',
-  'progressbar-mark': 'progress-bar-mark',
-  textarea: 'text-area',
-};
-
-/**
- * Look up derived var entries for a component + CSS property.
- * Returns matching entries in priority order, or empty array if none.
- */
 export function getDerivedVars(
   component: string,
   property: string,
 ): DerivedVarEntry[] {
-  const renamedTo = DEPRECATED_REGISTRY_KEYS[component];
-  const entries =
-    derivedVarRegistry[component] ??
-    (renamedTo ? derivedVarRegistry[renamedTo] : undefined);
+  const entries = derivedVarRegistry[component];
   if (!entries) {
     return [];
   }

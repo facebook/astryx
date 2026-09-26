@@ -56,6 +56,11 @@ connection between the closed trigger and its selection surface.
   value, focus, and form participation while removing selection-surface and
   editing affordances. `isDisabled` takes precedence when both are set.
 - `spec:AST-004/DEC-1` governs the state-derived indicator-space behavior in FR3.
+- 0.7.0 removes the `selector-clear-icon` alias; the shared clear glyph remains
+  available through `input-clear-icon`.
+- Migration decision: replace the removed theme key and CSS class with
+  `input-clear-icon` and `.astryx-input-clear-icon`, or run
+  `astryx upgrade --from 0.6.3 --apply --path .`.
 
 ## Ownership boundary
 
@@ -253,8 +258,7 @@ Icon-rendered start content delegates to Icon; arbitrary `ReactNode` start conte
 is caller-owned. The default renderer and custom `renderOption` functions that
 return `SelectorOption` retain its target; only bare caller-rendered option
 content stays outside that target, while the targeted option row remains.
-`selector-clear-icon` remains a deprecated compatibility alias and does not own a
-current anatomy row.
+`input-clear-icon` is the shared canonical target for the clear glyph.
 
 This map records only shipped reachability. It does not treat the accepted,
 unimplemented option-source behavior in `spec:AST-001` as current runtime behavior.

@@ -53,10 +53,12 @@ generated anatomy, accessibility, migration, and evidence belong to each listed
 - Released default preserved: `no`; a fitting Table scroll region now passes
   scrolling to its ancestor and stays out of the keyboard order, while an
   overflowing region keeps its existing native scrolling path.
-- Compatibility class: standards-conformance bug fix; no public prop, target,
-  alias, or semantic Table element changes.
+- Compatibility class: the standards-conformance scrolling fix remains, and 0.7.0
+  removes the deprecated `base-table` target alias while preserving `table`
 - Controlled/uncontrolled behavior: unchanged
-- Migration decision: `spec:AST-025` FR12, FR14, FR19, FR21, and DEC-1
+- Migration decision: `spec:AST-025` FR12, FR14, FR19, FR21, and DEC-1; replace
+  `base-table` theme keys and `.astryx-base-table` selectors with `table` and
+  `.astryx-table`, or run `astryx upgrade --from 0.6.3 --apply --path .`
 
 Consumer migration instructions belong in consumer docs and release notes.
 
@@ -275,17 +277,16 @@ by its transforms; the shared pipeline does not confer correctness on module out
 }
 ```
 
-The exact map records all eight current non-deprecated Table targets once. The
-legacy `base-table` alias is compatibility, not anatomy. TableHeader, TableBody,
-TableFooter, TableRow, TableCell, and TableHeaderCell retain direct docs linked by
-`subComponentOf: 'Table'`; they do not need independent component specs for this
-aggregate ownership.
+The exact map records all eight canonical Table targets once. TableHeader,
+TableBody, TableFooter, TableRow, TableCell, and TableHeaderCell retain direct docs
+linked by `subComponentOf: 'Table'`; they do not need independent component specs
+for this aggregate ownership.
 
 ## Family and system relationships
 
 - `architecture:component-theming-surface` owns anatomy qualification, exact
   target mapping, delegation, inheritance, factual `none` classifications, and
-  the rule that deprecated aliases do not count as anatomy.
+  canonical target naming.
 - `architecture:container-padding` owns the inherited inset protocol consumed by
   the Scroll region and Cell edge compensation. This container-system
   participation does not make Table a structural member of
@@ -312,7 +313,7 @@ aggregate ownership.
 | FR9-FR11            | `Table.test.tsx`, `types.ts`, `BaseTable.tsx`, and `useBaseTablePlugins.ts`                                 | Built-in plus known and custom named plugins; every transform phase                     | Sequential composition, base-before-user behavior, transform application, and slot output have focused coverage; complete known-name sorting, phase order, exception continuation, and context nesting remain source-inspected.                                           | `audit:Table/plugins`     |
 | FR12, PR1           | `Table.perf.test.tsx` plus `useBaseTablePlugins.ts` source inspection                                       | Same plugin references, recreated record, and changed plugin value                      | Unchanged plugin values must preserve the resolved array and representative no-op row-update budgets; focused named-record identity coverage remains partial.                                                                                                             | `audit:Table/performance` |
 | Module backlink     | `scripts/check-knowledge.mjs`                                                                               | Active parent and colocated module record                                               | A missing, duplicate, mis-parented, wrong-kind, misnamed, or undiscovered module record fails knowledge validation.                                                                                                                                                       | `audit:Table/modules`     |
-| Theming anatomy map | `scripts/check-knowledge.mjs`, `themingTargets.test.ts`, and CLI parent-aware target discovery tests        | Canonical anatomy, eight current targets, legacy alias                                  | Missing, extra, duplicated, prefixed, stale, alias-backed, or independently owned member mappings fail repository validation or discovery coverage.                                                                                                                       | `audit:Table/theming`     |
+| Theming anatomy map | `scripts/check-knowledge.mjs`, `themingTargets.test.ts`, and CLI parent-aware target discovery tests        | Canonical anatomy and eight current targets                                             | Missing, extra, duplicated, prefixed, stale, or independently owned member mappings fail repository validation or discovery coverage.                                                                                                                                     | `audit:Table/theming`     |
 
 ## Decision log
 

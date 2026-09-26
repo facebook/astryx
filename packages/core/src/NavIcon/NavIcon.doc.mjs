@@ -37,9 +37,6 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-nav-icon'},
-      // Retained beside the canonical names for backwards compatibility.
-      // New themes use the canonical targets above.
-      {className: 'astryx-navicon', deprecatedFor: 'nav-icon'},
     ],
   },
   usage: {
@@ -70,9 +67,6 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'astryx-nav-icon'},
-      // Retained beside the canonical names for backwards compatibility.
-      // New themes use the canonical targets above.
-      {className: 'astryx-navicon', deprecatedFor: 'nav-icon'},
     ],
   },
   usage: {

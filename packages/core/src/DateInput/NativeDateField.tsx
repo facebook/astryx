@@ -46,7 +46,6 @@ import {Icon} from '../Icon';
 import {useLocale, useTranslator} from '../i18n';
 import {useInputGroup} from '../InputGroup';
 import {groupStyles} from '../InputGroup/groupStyles';
-import {stableClassName} from '../naming';
 import {useSize} from '../SizeContext';
 import {Spinner} from '../Spinner';
 import {
@@ -613,7 +612,6 @@ export function NativeDateField({
         <InputClearButton
           label={t('@astryx.dateInput.clear', {label})}
           onClick={handleClear}
-          iconClassName={stableClassName('date-input-clear-icon')}
         />
       )}
       {isLoading && <Spinner size="sm" />}

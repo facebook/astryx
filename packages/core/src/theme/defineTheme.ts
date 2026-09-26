@@ -168,7 +168,7 @@ export type StyleOverrides = Record<string, string | Record<string, string>>;
  *   badge: {
  *     'variant:ghost': { border: '1px solid var(--color-border)' },
  *   },
- *   radio: {
+ *   'radio-indicator': {
  *     base: {
  *       borderColor: '#8F9296',
  *       ':hover': { borderColor: 'color-mix(in srgb, #8F9296, black 20%)' },

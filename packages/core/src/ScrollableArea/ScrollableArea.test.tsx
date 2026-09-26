@@ -155,7 +155,7 @@ describe('ScrollableArea', () => {
     );
     const viewport = screen.getByTestId('viewport');
     const content = viewport.firstElementChild as HTMLElement;
-    const inlineViewportClass = viewport.className;
+    expect(viewport).toHaveAttribute('data-axis', 'inline');
     expect(viewport.style.overflowInline).toBe('');
     expect(viewport.style.overflowBlock).toBe('');
     const inlineContentClass = content.className;
@@ -167,7 +167,7 @@ describe('ScrollableArea', () => {
         Timeline
       </ScrollableArea>,
     );
-    expect(viewport.className).not.toBe(inlineViewportClass);
+    expect(viewport).toHaveAttribute('data-axis', 'block');
     expect(viewport.style.overflowInline).toBe('');
     expect(viewport.style.overflowBlock).toBe('');
     expect(content.className).not.toBe(inlineContentClass);

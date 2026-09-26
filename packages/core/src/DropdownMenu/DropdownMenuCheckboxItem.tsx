@@ -186,8 +186,8 @@ export function DropdownMenuCheckboxItem({
       onPointerMove={handlePointerMove}
       marker={
         // No wrapper, and no menu-specific theme target: the shared
-        // `astryx-checkbox` target is already on this element (main reached
-        // the menu checkbox through it too), so the menu adds only its own
+        // `astryx-checkbox-indicator` target is already on this element (main
+        // reached the menu checkbox through it too), so the menu adds only its own
         // placement rules. A wrapper here would have duplicated the
         // indicator's control size and moved nothing themeable.
         <CheckboxControl

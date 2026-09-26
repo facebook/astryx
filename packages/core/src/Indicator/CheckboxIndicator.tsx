@@ -163,7 +163,7 @@ const indeterminateSizeStyles = stylex.create({
  * (see CheckboxInput), so a theme that replaces this component keeps a visible
  * focus indicator for free. Themes replace it wholesale through
  * `defineTheme({indicators: {checkbox: MyCheckbox}})`, or restyle it through
- * the `checkbox` theme target like any other component.
+ * the canonical `checkbox-indicator` theme target like any other component.
  *
  * @example
  * ```
@@ -195,21 +195,15 @@ export function CheckboxIndicator({
       ref={ref}
       aria-hidden="true"
       {...mergeProps(
-        themeProps(
-          'checkbox-indicator',
-          {
-            size,
-            checked: isChecked
-              ? 'checked'
-              : isIndeterminate
-                ? 'indeterminate'
-                : null,
-            disabled: isDisabled ? 'disabled' : null,
-          },
-          // `checkbox` was the target before indicators existed; keep it
-          // emitted so existing themes continue to work.
-          {legacyNames: ['checkbox']},
-        ),
+        themeProps('checkbox-indicator', {
+          size,
+          checked: isChecked
+            ? 'checked'
+            : isIndeterminate
+              ? 'indeterminate'
+              : null,
+          disabled: isDisabled ? 'disabled' : null,
+        }),
         stylex.props(
           styles.box,
           boxSizeStyles[size],

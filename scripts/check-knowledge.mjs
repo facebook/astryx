@@ -1206,9 +1206,11 @@ function loadComponentContract(root, specPath, componentName) {
         problem: `${path.relative(root, docPath)}: ${componentName} has no canonical English usage.anatomy.`,
       };
     }
-    const targets = (candidate.theming?.targets ?? doc.theming?.targets ?? [])
-      .filter(target => target.deprecatedFor == null)
-      .map(target => target.className.replace(/^astryx-/, ''));
+    const targets = (
+      candidate.theming?.targets ??
+      doc.theming?.targets ??
+      []
+    ).map(target => target.className.replace(/^astryx-/, ''));
     return {
       contract: {
         anatomy: anatomy.map(part => part.name),
@@ -1275,9 +1277,9 @@ function loadModuleContract(root, specPath, moduleName) {
       problem: `${path.relative(root, docPath)}: ${moduleName} has no canonical English usage.anatomy; module records never inherit parent aggregate anatomy.`,
     };
   }
-  const targets = (doc.theming?.targets ?? [])
-    .filter(target => target.deprecatedFor == null)
-    .map(target => target.className.replace(/^astryx-/, ''));
+  const targets = (doc.theming?.targets ?? []).map(target =>
+    target.className.replace(/^astryx-/, ''),
+  );
   return {
     contract: {
       anatomy: doc.usage.anatomy.map(part => part.name),
@@ -1771,7 +1773,6 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
 
     const canonicalTargets = await collectThemingTargets(
       path.join(root, 'packages/core/src'),
-      {includeDeprecated: false},
     );
     problems.push(
       ...validateDelegations(delegations, canonicalTargets, activeFamilies),

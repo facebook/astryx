@@ -169,20 +169,17 @@ describe('InputClearButton', () => {
     expect(screen.getByRole('button')).toHaveAccessibleName('Clear');
   });
 
-  it('merges an extra iconClassName beside the canonical target', () => {
-    // Consumers that shipped a component-specific target before the family
-    // converged pass it through here to keep emitting it for a deprecation
-    // window.
+  it('merges a consumer iconClassName beside the canonical target', () => {
     render(
       <InputClearButton
         label="Clear"
         onClick={() => {}}
-        iconClassName="astryx-date-input-clear-icon"
+        iconClassName="consumer-clear-icon"
       />,
     );
     const glyph = getGlyph();
     expect(glyph).toHaveClass('astryx-input-clear-icon');
-    expect(glyph).toHaveClass('astryx-date-input-clear-icon');
+    expect(glyph).toHaveClass('consumer-clear-icon');
   });
 
   it('exposes input-clear-icon so a theme reaches the glyph color, size, and hover', () => {

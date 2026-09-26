@@ -256,7 +256,7 @@ describe('HoverCard', () => {
     const innerTheme = defineTheme({
       name: 'hovercard-inner-test',
       components: {
-        hovercard: {base: {borderWidth: '7px'}},
+        'hover-card': {base: {borderWidth: '7px'}},
         button: {base: {fontWeight: '700'}},
       },
     });
@@ -1129,7 +1129,7 @@ describe('HoverCard', () => {
 });
 
 describe('HoverCard theme target names', () => {
-  it('renders the deprecated class beside the current one on the card surface', async () => {
+  it('renders only the canonical target class on the card surface', async () => {
     render(
       <HoverCard content={<span>Card content</span>} delay={0}>
         <button type="button">Trigger</button>
@@ -1140,7 +1140,7 @@ describe('HoverCard theme target names', () => {
     await waitFor(() => {
       const layer = screen.getByText('Card content').closest('[popover]');
       expect(layer).toHaveClass('astryx-hover-card');
-      expect(layer).toHaveClass('astryx-hovercard');
+      expect(layer).not.toHaveClass('astryx-hovercard');
     });
   });
 });

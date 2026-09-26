@@ -22,14 +22,12 @@ describe('astryx theme targets', () => {
     expect(stdout).toMatch(/4 across 1 component/);
   });
 
-  it('labels deprecated targets with their exact canonical replacement', async () => {
+  it('omits removed aliases from the target list', async () => {
     const {status, stdout} = await runCli(['theme', 'targets', 'Popover']);
 
     expect(status).toBe(0);
     expect(stdout).toMatch(/^popover\s{2,}Popover/m);
-    expect(stdout).toMatch(
-      /^popover-surface \[deprecated; use popover\]\s{2,}Popover/m,
-    );
+    expect(stdout).not.toContain('popover-surface');
   });
 
   it('lists the whole surface when unfiltered', async () => {

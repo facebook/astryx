@@ -76,7 +76,7 @@ describe('CodeBlock', () => {
     const copyButton = screen.getByRole('button', {name: 'Copy code'});
     // Theme seam: a design system can restyle the copy control via this class
     // without turning the button off and re-implementing it.
-    expect(copyButton).toHaveClass('astryx-codeblock-copy-button');
+    expect(copyButton).toHaveClass('astryx-code-block-copy-button');
     // The button carries a visible "Copy code" hover/focus hint (tooltip),
     // wired through aria-describedby — a bare <button> could not.
     expect(copyButton).toHaveAttribute('aria-describedby');
@@ -337,7 +337,7 @@ describe('CodeBlock', () => {
   });
 
   describe('header theming targets', () => {
-    it('puts astryx-codeblock-header on the header row when a header shows', () => {
+    it('puts astryx-code-block-header on the header row when a header shows', () => {
       const {container} = render(
         <CodeBlock
           code="const x = 1;"
@@ -346,11 +346,11 @@ describe('CodeBlock', () => {
         />,
       );
       expect(
-        container.querySelector('.astryx-codeblock-header'),
+        container.querySelector('.astryx-code-block-header'),
       ).not.toBeNull();
     });
 
-    it('puts astryx-codeblock-title on the header title element', () => {
+    it('puts astryx-code-block-title on the header title element', () => {
       const {container} = render(
         <CodeBlock
           code="const x = 1;"
@@ -358,7 +358,7 @@ describe('CodeBlock', () => {
           title="example.js"
         />,
       );
-      const titleEl = container.querySelector('.astryx-codeblock-title');
+      const titleEl = container.querySelector('.astryx-code-block-title');
       expect(titleEl).not.toBeNull();
       // The language label + title text live in this element.
       expect(titleEl).toHaveTextContent('example.js');
@@ -370,8 +370,8 @@ describe('CodeBlock', () => {
       const {container} = render(
         <CodeBlock code="const x = 1;" language="plaintext" />,
       );
-      expect(container.querySelector('.astryx-codeblock-header')).toBeNull();
-      expect(container.querySelector('.astryx-codeblock-title')).toBeNull();
+      expect(container.querySelector('.astryx-code-block-header')).toBeNull();
+      expect(container.querySelector('.astryx-code-block-title')).toBeNull();
     });
 
     it('exposes the header and title as themeable defineTheme targets', () => {
@@ -382,23 +382,23 @@ describe('CodeBlock', () => {
       const theme = defineTheme({
         name: 'codeblock-header-target-test',
         components: {
-          'codeblock-header': {
+          'code-block-header': {
             base: {paddingBlock: 'var(--spacing-1)'},
           },
-          'codeblock-title': {
+          'code-block-title': {
             base: {fontSize: 'var(--text-body-size)'},
           },
         },
       });
       const css = generateThemeTestCSS(theme);
-      expect(css).toContain('.astryx-codeblock-header');
-      expect(css).toContain('.astryx-codeblock-title');
+      expect(css).toContain('.astryx-code-block-header');
+      expect(css).toContain('.astryx-code-block-title');
     });
   });
 });
 
 describe('CodeBlock theme target names', () => {
-  it('renders the deprecated classes beside the current ones', () => {
+  it('renders only the canonical target classes', () => {
     const {container} = render(
       <CodeBlock
         code="const x = 1;"
@@ -407,17 +407,21 @@ describe('CodeBlock theme target names', () => {
       />,
     );
     expect(container.querySelector('.astryx-code-block')).toHaveClass(
-      'astryx-codeblock',
+      'astryx-code-block',
     );
     expect(container.querySelector('.astryx-code-block-header')).toHaveClass(
-      'astryx-codeblock-header',
+      'astryx-code-block-header',
     );
     expect(container.querySelector('.astryx-code-block-title')).toHaveClass(
-      'astryx-codeblock-title',
+      'astryx-code-block-title',
     );
     expect(screen.getByRole('button', {name: 'Copy code'})).toHaveClass(
       'astryx-code-block-copy-button',
     );
+    expect(container.querySelector('.astryx-codeblock')).toBeNull();
+    expect(container.querySelector('.astryx-codeblock-header')).toBeNull();
+    expect(container.querySelector('.astryx-codeblock-title')).toBeNull();
+    expect(container.querySelector('.astryx-codeblock-copy-button')).toBeNull();
   });
 
   it('reaches the header and title through the current defineTheme keys', () => {
