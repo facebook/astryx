@@ -3,12 +3,12 @@ schema_version: 4
 template_version: 1
 kind: system-spec
 id: spec:AST-038
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
-phase: proposed
+approved_by: cixzhang
+approved_at: 2026-09-26
+phase: accepted
 owners: [cixzhang]
 affects_architecture: [architecture:layer-runtime]
 affects_families: []
@@ -34,7 +34,7 @@ contexts and explicitly authored props and accessibility semantics are preserved
 
 The original contract was **approved by `cixzhang` on 2026-09-23** (DEC-1–DEC-3).
 On the same date, `cixzhang` corrected its scope to **text/layout/visual isolation
-only** (DEC-4). Proposed DEC-5 removes the requirement to separate visual fields:
+only** (DEC-4). Approved DEC-5 removes the requirement to separate visual fields:
 surface/group membership stops as a whole under FR7/FR8. Unrelated ARIA, focus,
 keyboard ownership, dismissal, semantic/data/interaction contexts, and authored
 DOM/accessibility-tree semantics remain unchanged. `cixzhang` approved DEC-4 and
@@ -450,14 +450,14 @@ ownership. FR9's preservation of non-equivalent local styling still applies.
 **Decider:** `cixzhang`, `2026-09-23`
 **Status:** Approved by `cixzhang` on 2026-09-23, with authorization to merge
 this spec correction only. That approval covered DEC-1–DEC-4; the historical
-mixed-provider rule below is amended by proposed DEC-5.
+mixed-provider rule below is amended by approved DEC-5.
 
 Corrected the scope: **VISUAL RESET ONLY**. Preserve ARIA, focus, selection,
 disabled/read-only state, callbacks, keyboard ownership, dismissal,
 semantic/data/interaction contexts, and DOM/AX semantics exactly. The visual
 boundary isolates text, size, density, visual grouping, borders/radii/separators,
 and scoped layout properties only. Its requirement to separate visual ownership
-from mixed providers is superseded by proposed DEC-5.
+from mixed providers is superseded by approved DEC-5.
 
 This supersedes any semantic-reset interpretation of DEC-2/DEC-3 and the earlier
 FR7/FR8 evidence ledger. `aria-disabled` neutralization, new AX-disabled isolation
@@ -475,17 +475,17 @@ changing focus or keyboard ownership because a surface is visually independent.
 
 **Reference:** `spec:AST-038/DEC-5`
 **Decider:** `cixzhang`, `2026-09-24`
-**Status:** Proposed amendment; approval pending.
+**Status:** Approved by `cixzhang` on 2026-09-26.
 
 When FR7 applies to surface/group membership carried by one context, that
 existing whole value stops; visual fields are not separated. Membership-owned
 state, including disabled/read-only state, stops with it.
 Unrelated contexts and explicitly authored props remain unchanged.
-Upon approval, this supersedes conflicting separation and membership-preservation
+This supersedes conflicting separation and membership-preservation
 clauses in DEC-1–DEC-4; all other scope and the FR1 baseline remain unchanged.
 
 ## Open questions
 
-None. OQ1–OQ3 remain historical decisions. Proposed DEC-5 amends the requirement
+None. OQ1–OQ3 remain historical decisions. Approved DEC-5 amends the requirement
 to separate visual context; neither spec approval nor validation authorizes
 implementation merge.
