@@ -1,7 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-'use client';
-
 /**
  * @file index.ts
  * @input Imports from AspectRatio.tsx
@@ -12,4 +10,8 @@
  */
 
 export {AspectRatio} from './AspectRatio';
-export type {AspectRatioProps, AspectRatioShape} from './AspectRatio';
+export type {
+  AspectRatioProps,
+  AspectRatioShape,
+  AspectRatioFit,
+} from './AspectRatio';

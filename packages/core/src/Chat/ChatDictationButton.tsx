@@ -11,11 +11,12 @@
  * A toggle button that connects to useChatDictation. Shows a microphone
  * icon when idle. When listening, replaces the icon with volume-reactive
  * frequency bars (equalizer style) that respond to real mic input.
- * Bars use the accent color and hue-shift when volume clips past 10%.
+ * Bars use the accent color and blend toward the semantic error color when
+ * volume clips past 20%.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts (exports)
- * - /packages/cli/templates/blocks/components/ChatDictationButton/ (block examples)
+ * - /packages/cli/assets/templates/blocks/components/ChatDictationButton/ (block examples)
  */
 
 import React from 'react';
@@ -26,6 +27,8 @@ import {Button} from '../Button';
 import {Icon} from '../Icon';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
+import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Types
@@ -37,7 +40,7 @@ export interface ChatDictationButtonProps extends BaseProps<HTMLSpanElement> {
   dictation: UseSpeechRecognitionReturn;
   /** Button size. @default "md" */
   size?: 'sm' | 'md';
-  /** Hide the button when SpeechRecognition is not supported. @default true */
+  /** Hide the button when SpeechRecognition is unsupported. When false, the unsupported button remains visible but disabled. @default true */
   isHiddenWhenUnsupported?: boolean;
   /** Accessible label override. */
   label?: string;
@@ -66,7 +69,10 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-full'],
     transformOrigin: 'center',
     transitionProperty: 'transform, background-color',
-    transitionDuration: '0.06s',
+    transitionDuration: {
+      default: '0.06s',
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: 'ease-out',
   },
 });
@@ -105,32 +111,44 @@ export function ChatDictationButton({
   xstyle,
   className,
   style,
+  ...rest
 }: ChatDictationButtonProps) {
+  const t = useTranslator();
+
   if (isHiddenWhenUnsupported && !dictation.isSupported) {
     return null;
   }
 
   const {isListening, bands, volume: rawVolume} = dictation;
   const accessibleLabel =
-    label ?? (isListening ? 'Stop dictation' : 'Start dictation');
+    label ??
+    (isListening
+      ? t('@astryx.chatDictationButton.stopDictation')
+      : t('@astryx.chatDictationButton.startDictation'));
 
   // Boost each band for visibility — quiet speech (0-10%) maps to full visual range
   const boostedBands = bands.map(b => Math.min(Math.pow(b / 0.2, 0.5), 1));
 
-  // Hue shift from accent color when volume clips past 10%
+  // Blend toward the theme's semantic error color as clipping increases.
   const isClipping = rawVolume >= 0.2;
-  const hueShift = isClipping ? Math.min((rawVolume - 0.2) / 0.1, 1) * 60 : 0;
+  const clippingStrength = Math.min((rawVolume - 0.2) / 0.1, 1) * 100;
 
   const barColor = isClipping
-    ? `hsl(calc(var(--accent-hue, 210) + ${hueShift}), 80%, 50%)`
-    : `var(--color-accent, ${colorVars['--color-accent']})`;
+    ? `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-error']} ${clippingStrength}%)`
+    : colorVars['--color-accent'];
 
   const {barWidth, barGap, barMaxHeight} = SIZE_CONFIG[size];
 
   return (
     <span
       ref={ref}
-      {...mergeProps(stylex.props(styles.wrapper, xstyle), className, style)}>
+      {...mergeProps(
+        themeProps('chat-dictation-button'),
+        stylex.props(styles.wrapper, xstyle),
+        className,
+        style,
+      )}
+      {...rest}>
       {isListening && (
         <span
           aria-hidden
@@ -161,10 +179,9 @@ export function ChatDictationButton({
         aria-label={accessibleLabel}
         variant="ghost"
         size={size}
-        icon={
-          isListening ? undefined : <Icon icon="microphone" size={size} />
-        }
+        icon={isListening ? undefined : <Icon icon="microphone" size={size} />}
         isIconOnly
+        isDisabled={!dictation.isSupported}
         onClick={dictation.toggle}
       />
     </span>

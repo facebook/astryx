@@ -11,13 +11,13 @@
 
 import {useMemo} from 'react';
 import type {
-  DateTimeRangePart,
   EnumItem,
   PowerSearchConfig,
   PowerSearchField,
   PowerSearchFilter,
   PowerSearchOperator,
 } from './types';
+import {resolveDateTimeRangePart} from './resolveDateTimeRangePart';
 
 // =============================================================================
 // Public Types
@@ -119,30 +119,46 @@ function stringOperators(): {
   return {
     defaultOperator: StringOps.CONTAINS,
     operators: [
-      {key: StringOps.CONTAINS, label: 'contains', value: {type: 'string'}},
+      {
+        key: StringOps.CONTAINS,
+        i18nKey: '@astryx.powersearch.operator.contains',
+        value: {type: 'string'},
+      },
       {
         key: StringOps.NOT_CONTAINS,
-        label: 'does not contain',
+        i18nKey: '@astryx.powersearch.operator.notContains',
         value: {type: 'string'},
       },
       {
         key: StringOps.STARTS_WITH,
-        label: 'starts with',
+        i18nKey: '@astryx.powersearch.operator.startsWith',
         value: {type: 'string'},
       },
       {
         key: StringOps.NOT_STARTS_WITH,
-        label: 'does not start with',
+        i18nKey: '@astryx.powersearch.operator.notStartsWith',
         value: {type: 'string'},
       },
-      {key: StringOps.ENDS_WITH, label: 'ends with', value: {type: 'string'}},
+      {
+        key: StringOps.ENDS_WITH,
+        i18nKey: '@astryx.powersearch.operator.endsWith',
+        value: {type: 'string'},
+      },
       {
         key: StringOps.NOT_ENDS_WITH,
-        label: 'does not end with',
+        i18nKey: '@astryx.powersearch.operator.notEndsWith',
         value: {type: 'string'},
       },
-      {key: StringOps.IS, label: 'is', value: {type: 'string'}},
-      {key: StringOps.IS_NOT, label: 'is not', value: {type: 'string'}},
+      {
+        key: StringOps.IS,
+        i18nKey: '@astryx.powersearch.operator.is',
+        value: {type: 'string'},
+      },
+      {
+        key: StringOps.IS_NOT,
+        i18nKey: '@astryx.powersearch.operator.isNot',
+        value: {type: 'string'},
+      },
     ],
   };
 }
@@ -156,32 +172,32 @@ function numberOperators(): {
     operators: [
       {
         key: NumberOps.EQUALS,
-        label: 'is',
+        i18nKey: '@astryx.powersearch.operator.equals',
         value: {type: 'float'},
       },
       {
         key: NumberOps.NOT_EQUALS,
-        label: 'is not',
+        i18nKey: '@astryx.powersearch.operator.notEquals',
         value: {type: 'float'},
       },
       {
         key: NumberOps.GREATER_THAN,
-        label: 'is greater than',
+        i18nKey: '@astryx.powersearch.operator.greaterThan',
         value: {type: 'float'},
       },
       {
         key: NumberOps.LESS_THAN,
-        label: 'is less than',
+        i18nKey: '@astryx.powersearch.operator.lessThan',
         value: {type: 'float'},
       },
       {
         key: NumberOps.GREATER_THAN_OR_EQUAL,
-        label: 'is greater than or equal to',
+        i18nKey: '@astryx.powersearch.operator.greaterThanOrEqual',
         value: {type: 'float'},
       },
       {
         key: NumberOps.LESS_THAN_OR_EQUAL,
-        label: 'is less than or equal to',
+        i18nKey: '@astryx.powersearch.operator.lessThanOrEqual',
         value: {type: 'float'},
       },
     ],
@@ -197,17 +213,17 @@ function dateOperators(): {
     operators: [
       {
         key: DateOps.BEFORE,
-        label: 'is before',
+        i18nKey: '@astryx.powersearch.operator.before',
         value: {type: 'date_absolute'},
       },
       {
         key: DateOps.AFTER,
-        label: 'is after',
+        i18nKey: '@astryx.powersearch.operator.after',
         value: {type: 'date_absolute'},
       },
       {
         key: DateOps.BETWEEN,
-        label: 'is between',
+        i18nKey: '@astryx.powersearch.operator.between',
         value: {type: 'date_range'},
       },
     ],
@@ -221,8 +237,16 @@ function booleanOperators(): {
   return {
     defaultOperator: BooleanOps.IS_TRUE,
     operators: [
-      {key: BooleanOps.IS_TRUE, label: 'is true', value: {type: 'empty'}},
-      {key: BooleanOps.IS_FALSE, label: 'is false', value: {type: 'empty'}},
+      {
+        key: BooleanOps.IS_TRUE,
+        i18nKey: '@astryx.powersearch.operator.isTrue',
+        value: {type: 'empty'},
+      },
+      {
+        key: BooleanOps.IS_FALSE,
+        i18nKey: '@astryx.powersearch.operator.isFalse',
+        value: {type: 'empty'},
+      },
     ],
   };
 }
@@ -234,16 +258,24 @@ function enumOperators(values: ReadonlyArray<EnumItem>): {
   return {
     defaultOperator: EnumOps.IS,
     operators: [
-      {key: EnumOps.IS, label: 'is', value: {type: 'enum', values}},
-      {key: EnumOps.IS_NOT, label: 'is not', value: {type: 'enum', values}},
+      {
+        key: EnumOps.IS,
+        i18nKey: '@astryx.powersearch.operator.is',
+        value: {type: 'enum', values},
+      },
+      {
+        key: EnumOps.IS_NOT,
+        i18nKey: '@astryx.powersearch.operator.isNot',
+        value: {type: 'enum', values},
+      },
       {
         key: EnumListOps.IS_ANY_OF,
-        label: 'is any of',
+        i18nKey: '@astryx.powersearch.operator.isAnyOf',
         value: {type: 'enum_list', values},
       },
       {
         key: EnumListOps.IS_NONE_OF,
-        label: 'is none of',
+        i18nKey: '@astryx.powersearch.operator.isNoneOf',
         value: {type: 'enum_list', values},
       },
     ],
@@ -259,12 +291,12 @@ function enumListOperators(values: ReadonlyArray<EnumItem>): {
     operators: [
       {
         key: EnumListOps.IS_ANY_OF,
-        label: 'is any of',
+        i18nKey: '@astryx.powersearch.operator.isAnyOf',
         value: {type: 'enum_list', values},
       },
       {
         key: EnumListOps.IS_NONE_OF,
-        label: 'is none of',
+        i18nKey: '@astryx.powersearch.operator.isNoneOf',
         value: {type: 'enum_list', values},
       },
     ],
@@ -280,12 +312,12 @@ function stringListOperators(): {
     operators: [
       {
         key: StringListOps.IS_ANY_OF,
-        label: 'is any of',
+        i18nKey: '@astryx.powersearch.operator.isAnyOf',
         value: {type: 'string_list'},
       },
       {
         key: StringListOps.IS_NONE_OF,
-        label: 'is none of',
+        i18nKey: '@astryx.powersearch.operator.isNoneOf',
         value: {type: 'string_list'},
       },
     ],
@@ -358,28 +390,6 @@ function toStringValues(value: unknown): string[] | null {
   return null;
 }
 
-function resolveRangePart(part: DateTimeRangePart): number {
-  switch (part.type) {
-    case 'NOW':
-      return Math.floor(Date.now() / 1000);
-    case 'ABSOLUTE':
-      return part.unixSeconds;
-    case 'RELATIVE': {
-      const now = Date.now() / 1000;
-      const multipliers: Record<string, number> = {
-        second: 1,
-        minute: 60,
-        hour: 3600,
-        day: 86400,
-        week: 604800,
-        month: 2592000,
-        year: 31536000,
-      };
-      return Math.floor(now - part.backValue * (multipliers[part.unit] ?? 0));
-    }
-  }
-}
-
 function matchesFilter(
   row: Record<string, unknown>,
   filter: PowerSearchFilter,
@@ -449,8 +459,12 @@ function matchesFilter(
       }
       const ts = toUnixSeconds(fieldValue);
       if (operator === DateOps.BETWEEN) {
-        const start = resolveRangePart(filterValue.value.start);
-        const end = resolveRangePart(filterValue.value.end);
+        const nowSeconds = Date.now() / 1000;
+        const start = resolveDateTimeRangePart(
+          filterValue.value.start,
+          nowSeconds,
+        );
+        const end = resolveDateTimeRangePart(filterValue.value.end, nowSeconds);
         return ts >= start && ts <= end;
       }
       return true;

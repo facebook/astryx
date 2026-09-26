@@ -2,14 +2,25 @@
 
 /**
  * @file PlaygroundClient.tsx
- * @input URL hash (shared code), user edits, knob edits
- * @output Full-page two-panel playground (editor + live preview)
+ * @input URL hash or template query, user edits, and knob edits
+ * @output Full-page two-panel playground (editor + live preview), with a
+ *   production-only notice explaining the ephemeral preview's restrictions and
+ *   a retryable terminal error when the isolated preview cannot start
  * @position app/playground — the interactive Astryx code playground.
  *
  * AppShell: side-nav-only shell; desktop nav is controlled collapsed to
  * an icon rail while AppShell owns the mobile top bar and drawer.
- * Left panel: Monaco editor (Code) or knobs (Properties).
+ * Left panel: header row (Format code · Themes · Templates) over the Monaco
+ *   editor (Code) or knobs (Properties). On mobile the row narrows to just
+ *   "Format code" over the Code view — there is no keyboard, so the button is
+ *   the only way to reach the formatter.
  *   - Code: Monaco editor (controlled) with real Astryx .d.ts typedefs.
+ *     "Format code" runs the repo's Prettier config over the buffer — the button
+ *     drives Monaco's own editor.action.formatDocument, so it shares a code path
+ *     with the built-in shortcut (Shift+Alt+F, Ctrl+Shift+I on Linux — the
+ *     tooltip names whichever one Monaco actually bound; see ./formatCode). If
+ *     Prettier fails to LOAD, the action would otherwise be silently dead, so
+ *     the failure is surfaced as an error toast.
  *   - Property: component selector + instance picker + knobs that edit the code.
  * Right panel: toolbar (dark mode · target element · viewport
  *   segmented control · share · expand) over a responsive
@@ -28,6 +39,8 @@ import dynamic from 'next/dynamic';
 import * as stylex from '@stylexjs/stylex';
 import {AppShell} from '@astryxdesign/core/AppShell';
 import {compressCode, decompressCode} from '../../lib/compress';
+import {createPreviewConnector, previewSrc} from './previewChannel';
+import type {PreviewConnector} from './previewChannel';
 import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
@@ -54,6 +67,7 @@ import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
 import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {useResizable, ResizeHandle} from '@astryxdesign/core/Resizable';
 import {ToggleButton} from '@astryxdesign/core/ToggleButton';
+import {useToast} from '@astryxdesign/core/Toast';
 import {
   Check,
   Code2,
@@ -68,6 +82,7 @@ import {
   Maximize2,
   RotateCw,
   Crosshair,
+  WandSparkles,
 } from 'lucide-react';
 import githubLight from './codeEditorThemes/github-light.json';
 import githubDark from './codeEditorThemes/github-dark.json';
@@ -88,6 +103,11 @@ import {generateThemeCode} from './themeEditor/helpers';
 import {DEFAULT_CODE} from './defaultCode';
 import {stripCodeExampleCopyrightHeader} from '../../lib/codeExamples';
 import {configureMonaco, type MonacoInstance} from './monacoSetup';
+import {
+  formatButtonTooltip,
+  formatShortcutHint,
+  runFormatAction,
+} from './formatCode';
 
 import type * as MonacoTypes from 'monaco-editor';
 import type {DefinedTheme} from '@astryxdesign/core/theme';
@@ -111,31 +131,50 @@ function getInitialCode(): string {
   if (typeof window === 'undefined') {
     return DEFAULT_CODE;
   }
-  const hash = window.location.hash.slice(1);
-  if (!hash) {
-    return DEFAULT_CODE;
+
+  const hashParams = new URLSearchParams(window.location.hash.slice(1));
+  const compressed = hashParams.get('code');
+  if (compressed) {
+    try {
+      return decompressCode(compressed) || DEFAULT_CODE;
+    } catch {
+      return DEFAULT_CODE;
+    }
   }
-  const params = new URLSearchParams(hash);
-  const compressed = params.get('code');
-  if (!compressed) {
-    return DEFAULT_CODE;
-  }
-  try {
-    return decompressCode(compressed) || DEFAULT_CODE;
-  } catch {
-    return DEFAULT_CODE;
-  }
+
+  const templateSlug = new URLSearchParams(window.location.search).get(
+    'template',
+  );
+  const templateSource = templates.find(
+    template => template.slug === templateSlug,
+  )?.source;
+  return templateSource
+    ? stripCodeExampleCopyrightHeader(templateSource)
+    : DEFAULT_CODE;
 }
 
 function updateURL(code: string) {
   const compressed = compressCode(code);
-  window.history.replaceState(null, '', `#code=${compressed}`);
+  const canonicalURL = new URL(window.location.href);
+  canonicalURL.searchParams.delete('template');
+  canonicalURL.hash = `code=${compressed}`;
+  window.history.replaceState(
+    null,
+    '',
+    `${canonicalURL.pathname}${canonicalURL.search}${canonicalURL.hash}`,
+  );
 }
 
 type LeftView = 'code' | 'theme';
 type MobileTopTab = 'preview' | 'code' | 'theme';
 type BuildStatus = 'idle' | 'building' | 'finished' | 'error';
 const MOBILE_BREAKPOINT_QUERY = '(max-width: 768px)';
+// A preview that never boots cannot report its own failure. End the indefinite
+// "Building…" state and let Rebuild mount a fresh isolated document. Once the
+// document attests, restart the deadline for the self-hosted compiler's 9 MB
+// download.
+const PREVIEW_DOCUMENT_STARTUP_TIMEOUT_MS = 30_000;
+const PREVIEW_COMPILER_STARTUP_TIMEOUT_MS = 30_000;
 
 const BUILD_STATUS_META: Record<
   Exclude<BuildStatus, 'idle'>,
@@ -201,6 +240,11 @@ const s = stylex.create({
     overflow: 'hidden',
     backgroundColor: 'var(--color-background-muted)',
   },
+  previewNotice: {
+    flexShrink: 0,
+    paddingInline: 'var(--spacing-4)',
+    paddingBlockEnd: 'var(--spacing-2)',
+  },
   buildStatus: {
     transitionProperty: 'opacity',
     transitionDuration: '0.5s',
@@ -225,11 +269,18 @@ const s = stylex.create({
 
 export function PlaygroundClient() {
   const isMobile = useMediaQuery(MOBILE_BREAKPOINT_QUERY);
+  const toast = useToast();
   // The editor chrome follows the docsite's own light/dark mode, not the OS
   // (operator) color-scheme preference.
   const {mode: siteMode} = useThemeMode();
   const editorTheme = siteMode === 'dark' ? 'github-dark' : 'github-light';
   const [code, setCode] = useState(getInitialCode);
+  // Mirror of `code` for event handlers with stable identities (the frame
+  // load handler resends the current code after a preview reload).
+  const codeRef = useRef(code);
+  useEffect(() => {
+    codeRef.current = code;
+  }, [code]);
   const [mode, setMode] = useState<'light' | 'dark'>('light');
   // A ?theme=<value> query param (e.g. from the themes gallery's "Open in
   // Playground") seeds the Theme view and preview. useSearchParams reads it
@@ -237,7 +288,11 @@ export function PlaygroundClient() {
   const searchParams = useSearchParams();
   const rawThemeParam = searchParams.get('theme');
   const themeParam =
-    rawThemeParam && rawThemeParam in themeByValue ? rawThemeParam : null;
+    // Object.hasOwn (not `in`): the param must match a real playground theme,
+    // not an inherited Object.prototype key like "constructor".
+    rawThemeParam && Object.hasOwn(themeByValue, rawThemeParam)
+      ? rawThemeParam
+      : null;
   const theme = themeParam ?? DEFAULT_PLAYGROUND_THEME;
   // The theme that seeds the Theme editor: the ?theme= theme on first load, then
   // whichever theme the user picks from "Themes". Changing it remounts the
@@ -271,9 +326,23 @@ export function PlaygroundClient() {
     string | null
   >(null);
 
-  const iframeRef = useRef<HTMLIFrameElement>(null);
   const readyRef = useRef(false);
   const pendingRef = useRef<string | null>(null);
+  const previewStartupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const restartPreviewRef = useRef<() => void>(() => {});
+  // The preview frame generation: a fresh iframe element (key) navigated to
+  // the preview URL with a fresh nonce (src). Issued on the client only, and
+  // re-issued whenever the attested preview document is replaced — see
+  // previewChannel.ts for the trust model.
+  const [frame, setFrame] = useState<{key: number; src: string} | null>(null);
+  const frameGenerationRef = useRef(0);
+  // The channel's trust state machine (see previewChannel.ts) and the current
+  // port message handler — refs so the connector's port always dispatches
+  // into the latest closure.
+  const connectorRef = useRef<PreviewConnector | null>(null);
+  const portHandlerRef = useRef<((e: MessageEvent) => void) | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const editorRef = useRef<MonacoTypes.editor.IStandaloneCodeEditor | null>(
     null,
@@ -290,8 +359,8 @@ export function PlaygroundClient() {
 
   const editorPanel = useResizable({
     defaultSize: 440,
-    minSizePx: 340,
-    maxSizePx: 760,
+    minSize: 340,
+    maxSize: 760,
     autoSaveId: 'astryx-playground-left-width',
   });
 
@@ -336,12 +405,9 @@ export function PlaygroundClient() {
     }
   }, [themeParam]);
 
-  // Single channel to the preview iframe; no-ops until the iframe exists.
+  // Single channel to the preview iframe; no-ops until the handshake lands.
   const postToPreview = useCallback((message: unknown) => {
-    iframeRef.current?.contentWindow?.postMessage(
-      message,
-      window.location.origin,
-    );
+    connectorRef.current?.post(message);
   }, []);
 
   const send = useCallback(
@@ -388,13 +454,16 @@ export function PlaygroundClient() {
     [postToPreview],
   );
 
+  // Messages from the preview arrive only on the port the handshake below
+  // transfers — the window listener hears nothing but the hello.
   useEffect(() => {
     const handler = (e: MessageEvent) => {
-      if (e.source !== iframeRef.current?.contentWindow) {
-        return;
-      }
       if (e.data?.type === 'preview-ready') {
         readyRef.current = true;
+        if (previewStartupTimerRef.current != null) {
+          clearTimeout(previewStartupTimerRef.current);
+          previewStartupTimerRef.current = null;
+        }
         setPreviewReady(true);
         if (pendingRef.current != null) {
           postCode(pendingRef.current);
@@ -424,20 +493,85 @@ export function PlaygroundClient() {
         setIsTargeting(false);
       }
     };
-    window.addEventListener('message', handler);
-    return () => window.removeEventListener('message', handler);
+    portHandlerRef.current = handler;
+    return () => {
+      portHandlerRef.current = null;
+    };
   }, [postCode, postToPreview]);
 
+  // Handshake (previewChannel.ts): mount a fresh iframe navigated to the
+  // preview URL with a nonce only this page knows; the preview document echoes
+  // it from its own URL, and the connector answers that one hello with a port.
+  // The window listener goes up BEFORE the frame is issued so the hello cannot
+  // arrive unheard.
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (readyRef.current) {
-        clearInterval(interval);
-        return;
+    const clearStartupTimer = () => {
+      if (previewStartupTimerRef.current != null) {
+        clearTimeout(previewStartupTimerRef.current);
+        previewStartupTimerRef.current = null;
       }
-      postToPreview({type: 'preview-ping'});
-    }, 300);
-    return () => clearInterval(interval);
-  }, [postToPreview]);
+    };
+    const armStartupTimer = (timeout: number) => {
+      clearStartupTimer();
+      previewStartupTimerRef.current = setTimeout(() => {
+        if (!readyRef.current) {
+          setBuildStatus('error');
+        }
+      }, timeout);
+    };
+    const issueFrame = () => {
+      frameGenerationRef.current += 1;
+      setFrame({
+        key: frameGenerationRef.current,
+        src: previewSrc(connector.issue()),
+      });
+      armStartupTimer(PREVIEW_DOCUMENT_STARTUP_TIMEOUT_MS);
+    };
+    const connector = createPreviewConnector({
+      onMessage: e => portHandlerRef.current?.(e),
+      onAttested: () => armStartupTimer(PREVIEW_COMPILER_STARTUP_TIMEOUT_MS),
+      // The attested preview document is gone (previewed code navigated or
+      // reloaded its frame). Its port and nonce are already discarded; start
+      // a new generation and queue the current code so the fresh document
+      // picks up exactly where the old one was — the preview-ready handler
+      // flushes it and the theme effect re-sends on the previewReady flip.
+      onReplaced: () => restartPreviewRef.current(),
+    });
+    restartPreviewRef.current = () => {
+      readyRef.current = false;
+      setPreviewReady(false);
+      pendingRef.current = codeRef.current;
+      issueFrame();
+    };
+    connectorRef.current = connector;
+    const onWindowMessage = (e: MessageEvent) =>
+      connector.handleWindowMessage(e);
+    window.addEventListener('message', onWindowMessage);
+    issueFrame();
+    return () => {
+      clearStartupTimer();
+      restartPreviewRef.current = () => {};
+      window.removeEventListener('message', onWindowMessage);
+      connector.stop();
+      connectorRef.current = null;
+    };
+  }, []);
+
+  // The iframe element of the current generation, once React has mounted it:
+  // only its window can earn a port. React clears the old element's ref before
+  // attaching the new one's, and the connector forgets its window on every
+  // issue() anyway, so the null on unmount carries nothing it needs.
+  const attachFrame = useCallback((element: HTMLIFrameElement | null) => {
+    if (element?.contentWindow) {
+      connectorRef.current?.attachFrame(element.contentWindow);
+    }
+  }, []);
+
+  // Every load of the iframe goes to the connector: the first in a generation
+  // is the document we navigated to arriving, any later one is a replacement.
+  const handleFrameLoad = useCallback(() => {
+    connectorRef.current?.handleFrameLoad();
+  }, []);
 
   // Debounced push of code → preview + URL hash
   useEffect(() => {
@@ -446,7 +580,9 @@ export function PlaygroundClient() {
     }
     debounceRef.current = setTimeout(() => {
       if (code) {
-        setBuildStatus('building');
+        setBuildStatus(status =>
+          status === 'error' && !readyRef.current ? status : 'building',
+        );
       }
       if (!readyRef.current) {
         pendingRef.current = code;
@@ -522,8 +658,47 @@ export function PlaygroundClient() {
       postCode(code);
     } else {
       pendingRef.current = code;
+      restartPreviewRef.current();
     }
   }, [postCode, code]);
+
+  // "Format code" — delegate to Monaco's own format-document action rather than
+  // rewriting `code` state directly: the action is what Shift+Alt+F is bound to,
+  // it routes through the registered Prettier provider (see ./formatCode), and
+  // going through the model keeps the edit on Monaco's undo stack. The resulting
+  // model change flows back into `code` via the editor's onChange.
+  //
+  // Returned, not fired-and-forgotten, so Button's `clickAction` can hold a
+  // spinner until the format lands: the first one downloads Prettier's ~1MB
+  // TypeScript parser, and Monaco silently cancels a format in flight the moment
+  // the cursor moves — so a user with no feedback clicks into the editor to see
+  // if it worked and cancels the very thing they are waiting for.
+  const handleFormatCode = useCallback(
+    () => runFormatAction(editorRef.current),
+    [],
+  );
+
+  // Prettier failing to LOAD (offline, CSP, a stale chunk hash after a deploy)
+  // leaves the button silently dead — the user clicks and nothing happens, with
+  // no way to tell that from "my code was already tidy". Say so. A broken-syntax
+  // buffer never lands here; Monaco's squiggles already cover that case.
+  const handleFormatFailure = useCallback(() => {
+    toast({
+      body: 'Could not format — the code formatter failed to load. Check your connection and try again.',
+      type: 'error',
+      uniqueID: 'playground-format-failed',
+    });
+  }, [toast]);
+
+  // Monaco binds Format Document to Ctrl+Shift+I on Linux and Shift+Alt+F
+  // elsewhere. The platform is only knowable from `navigator`, which does not
+  // exist during SSR — so start with no chord and fill it in after mount, where
+  // an effect cannot cause a hydration mismatch.
+  const [formatShortcut, setFormatShortcut] = useState<string | null>(null);
+  useEffect(() => {
+    setFormatShortcut(formatShortcutHint(navigator.userAgent));
+  }, []);
+  const formatTooltip = formatButtonTooltip(formatShortcut);
 
   const handleShare = useCallback(() => {
     navigator.clipboard.writeText(window.location.href).then(() => {
@@ -562,13 +737,22 @@ export function PlaygroundClient() {
     monaco.editor.defineTheme('github-dark', githubDark);
   }, []);
 
+  // Mirror the failure handler in a ref so the stable onMount callback below can
+  // reach the latest one without taking it as a dependency (same reason as
+  // activeViewRef): the formatter is registered once, at mount, for the life of
+  // the page.
+  const handleFormatFailureRef = useRef(handleFormatFailure);
+  handleFormatFailureRef.current = handleFormatFailure;
+
   const handleMonacoMount = useCallback(
     (
       editor: MonacoTypes.editor.IStandaloneCodeEditor,
       monaco: MonacoInstance,
     ) => {
       editorRef.current = editor;
-      configureMonaco(monaco);
+      configureMonaco(monaco, {
+        onFormatFailure: () => handleFormatFailureRef.current(),
+      });
       // Focus on initial mount if the Code view is the active one.
       if (activeViewRef.current === 'code') {
         editor.focus();
@@ -785,28 +969,50 @@ export function PlaygroundClient() {
         <VStack
           xstyle={[s.leftPanel, !showEditorPanel && s.hidden]}
           width={isMobile ? '100%' : editorPanel.size || 440}>
-          {!isMobile && (
-            <HStack justify="between" align="center" xstyle={s.leftPanelHeader}>
-              <Heading level={3}>Playground</Heading>
+          {/* Header row. Desktop gets the full toolbar; mobile gets the format
+              action alone, and only over the Code view — TopNav already owns the
+              branding and tab switching there, and a phone has no keyboard, so
+              the button is the ONLY way a mobile user can reach the formatter.
+              (Themes/Templates stay desktop-only, as they were.) */}
+          {(!isMobile || activeView === 'code') && (
+            <HStack
+              justify={isMobile ? 'end' : 'between'}
+              align="center"
+              xstyle={s.leftPanelHeader}>
+              {!isMobile && <Heading level={3}>Playground</Heading>}
               <HStack gap={2} align="center">
-                <DropdownMenu
-                  button={{
-                    label: 'Themes',
-                    variant: 'secondary',
-                    size: 'md',
-                  }}
-                  hasChevron
-                  items={themeMenuItems}
+                <Button
+                  label="Format code"
+                  tooltip={formatTooltip}
+                  variant="secondary"
+                  size="md"
+                  isIconOnly
+                  icon={<WandSparkles size={16} />}
+                  isDisabled={activeView !== 'code'}
+                  clickAction={handleFormatCode}
                 />
-                <DropdownMenu
-                  button={{
-                    label: 'Templates',
-                    variant: 'secondary',
-                    size: 'md',
-                  }}
-                  hasChevron
-                  items={templateMenuItems}
-                />
+                {!isMobile && (
+                  <DropdownMenu
+                    button={{
+                      label: 'Themes',
+                      variant: 'secondary',
+                      size: 'md',
+                    }}
+                    hasChevron
+                    items={themeMenuItems}
+                  />
+                )}
+                {!isMobile && (
+                  <DropdownMenu
+                    button={{
+                      label: 'Templates',
+                      variant: 'secondary',
+                      size: 'md',
+                    }}
+                    hasChevron
+                    items={templateMenuItems}
+                  />
+                )}
               </HStack>
             </HStack>
           )}
@@ -1043,11 +1249,20 @@ export function PlaygroundClient() {
               }
             />
           )}
+          {process.env.NODE_ENV !== 'development' && (
+            <Text type="supporting" color="secondary" xstyle={s.previewNotice}>
+              Ephemeral preview: no local storage or parent-page access.
+              Reloading or navigating the preview resets runtime state, then
+              restores your code and theme.
+            </Text>
+          )}
           <PreviewStage
             viewport={isMobile ? 'phone' : viewport}
             isFullscreen={isFullscreen}
             onExitFullscreen={() => setIsFullscreen(false)}
-            iframeRef={iframeRef}
+            frameRef={attachFrame}
+            frame={frame}
+            onFrameLoad={handleFrameLoad}
             isInteractionDisabled={isResizing}
             isFullBleed={isMobile}
           />

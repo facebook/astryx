@@ -1,0 +1,94 @@
+{
+  "name": "cli-discovery",
+  "description": "Cold-start discovery experiment: which passive channel makes an agent discover + use the astryx CLI when no one ran `astryx init`. Each condition = the bare base project + zero or more channel patches. Only the channel varies.",
+  "base": {
+    "template": "bare",
+    "notes": "package.json + symlinked @astryxdesign/core & theme-neutral + logging astryx bin shim. NO README CLI hint, NO AGENTS.md. This is the realistic `npm install @astryxdesign/core` state."
+  },
+  "conditions": [
+    {
+      "id": "c0-bare",
+      "label": "Bare install (control)",
+      "role": "control",
+      "patches": [],
+      "reaches": {"humans": false, "agents": false},
+      "harnessDependent": false,
+      "hypothesis": "Agents rarely discover the CLI; they guess APIs and hallucinate props/tokens."
+    },
+    {
+      "id": "c1-readme",
+      "label": "README top callout",
+      "role": "candidate",
+      "patches": ["patch:readme-callout"],
+      "reaches": {"humans": true, "agents": "sometimes"},
+      "harnessDependent": false,
+      "hypothesis": "Moderate lift; depends on the agent opening node_modules/@astryxdesign/core/README.md."
+    },
+    {
+      "id": "c2-types",
+      "label": "Type/JSDoc @see banner",
+      "role": "candidate",
+      "patches": ["patch:type-banner"],
+      "reaches": {"humans": true, "agents": "usually"},
+      "harnessDependent": false,
+      "hypothesis": "High + consistent; agents read .d.ts/hover reflexively and it survives pnpm script-blocking."
+    },
+    {
+      "id": "c3-postinstall",
+      "label": "Postinstall banner (probe)",
+      "role": "candidate-probe",
+      "patches": ["patch:postinstall-banner"],
+      "reaches": {"humans": true, "agents": "rarely"},
+      "harnessDependent": false,
+      "hypothesis": "Low/unreliable; only seen if the agent runs install itself and reads stdout. pnpm 10 skips dep scripts. Run separately; see PLAN.md §9."
+    },
+    {
+      "id": "c4-firstrun",
+      "label": "CLI first-run nudge",
+      "role": "candidate",
+      "patches": ["patch:first-run-nudge"],
+      "reaches": {"humans": true, "agents": "conditional"},
+      "harnessDependent": false,
+      "hypothesis": "Converts awareness -> init, but only fires once the agent already runs `astryx`."
+    },
+    {
+      "id": "c5-agents-md",
+      "label": "AGENTS.md present (ceiling)",
+      "role": "ceiling",
+      "patches": ["patch:agents-md"],
+      "reaches": {"humans": true, "agents": true},
+      "harnessDependent": true,
+      "hypothesis": "Near-100%; the known-good state `astryx init` produces. Upper bound, not a shippable default."
+    },
+    {
+      "id": "c6-readme+types",
+      "label": "README + type banner",
+      "role": "candidate-combo",
+      "patches": ["patch:readme-callout", "patch:type-banner"],
+      "reaches": {"humans": true, "agents": "usually"},
+      "harnessDependent": false,
+      "hypothesis": "The two agent-native passive channels together approach the ceiling."
+    },
+    {
+      "id": "c7-all-passive",
+      "label": "All shippable passive channels",
+      "role": "candidate-combo",
+      "patches": ["patch:readme-callout", "patch:type-banner", "patch:first-run-nudge"],
+      "reaches": {"humans": true, "agents": "usually"},
+      "harnessDependent": false,
+      "hypothesis": "Everything shippable without user action; the realistic `we foolproofed it but nobody ran init` state."
+    }
+  ],
+  "patches": {
+    "patch:readme-callout": "Prepend an 'Using an AI agent? run `npx astryx init`' callout to the project's copy of core README.md.",
+    "patch:type-banner": "Copy (not symlink) core; inject a standard `@see npx astryx component <Name>` + `npx astryx init` banner into each component public .d.ts.",
+    "patch:agents-md": "Run real `npx astryx init --features agents --agent-docs-path AGENTS.md` (reuses installAgentsDocs from interactive.ts).",
+    "patch:first-run-nudge": "Replace the astryx bin shim with one that also prints the 'run init' nudge on first invocation.",
+    "patch:postinstall-banner": "Simulate an install-time banner. See PLAN.md §9 for realism caveats; low priority."
+  },
+  "measurement": {
+    "groundTruth": "projects/<promptId>/.astryx-invocations.log (bin shim, objective)",
+    "selfReport": "results/<promptId>.json -> discovery block (secondary, cross-checked)",
+    "quality": "reuse universal-eval.ts (correctness, accessibility, codeQuality, efficiency, maintainability) + evaluator.md escape-hatch/hallucination rate"
+  }
+}

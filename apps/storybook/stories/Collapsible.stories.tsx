@@ -38,10 +38,9 @@ const meta: Meta<typeof CollapsibleGroup> = {
   component: CollapsibleGroup,
   tags: ['autodocs'],
   argTypes: {
-    dividers: {
-      control: 'select',
-      options: ['between', 'all', 'none'],
-      description: "Divider style around the group's items",
+    hasDividers: {
+      control: 'boolean',
+      description: "Draw hairline dividers between the group's items",
     },
     density: {
       control: 'select',
@@ -62,9 +61,12 @@ export default meta;
 type Story = StoryObj<typeof CollapsibleGroup>;
 
 export const SingleMode: Story = {
-  name: 'Single Mode (default)',
+  name: 'Single Mode — Leading Chevron',
   render: () => (
-    <CollapsibleGroup type="single" defaultValue="general">
+    <CollapsibleGroup
+      type="single"
+      defaultValue="general"
+      chevronPosition="start">
       <VStack gap={2}>
         <Card>
           <Collapsible trigger="General Settings" value="general">
@@ -181,6 +183,34 @@ export const StandaloneCollapsible: Story = {
   ),
 };
 
+export const Disabled: Story = {
+  name: 'Disabled item',
+  render: () => (
+    <VStack gap={2}>
+      <Card>
+        <Collapsible trigger="Enabled — click to toggle">
+          <p {...stylex.props(styles.text)}>This section can be toggled.</p>
+        </Collapsible>
+      </Card>
+      <Card>
+        <Collapsible trigger="Disabled — can't be toggled" isDisabled>
+          <p {...stylex.props(styles.text)}>
+            The trigger is non-interactive and dimmed.
+          </p>
+        </Collapsible>
+      </Card>
+      <Card>
+        <Collapsible trigger="Disabled but open" isDisabled defaultIsOpen>
+          <p {...stylex.props(styles.text)}>
+            Disabling doesn't collapse an already-open item; the content stays
+            visible.
+          </p>
+        </Collapsible>
+      </Card>
+    </VStack>
+  ),
+};
+
 export const WithoutCard: Story = {
   name: 'Without Card (standalone)',
   render: () => (
@@ -197,9 +227,9 @@ export const WithoutCard: Story = {
   ),
 };
 
-export const DividersBetween: Story = {
-  name: 'Dividers — Between',
-  args: {type: 'single', dividers: 'between', defaultValue: 'q1'},
+export const Dividers: Story = {
+  name: 'Dividers',
+  args: {type: 'single', hasDividers: true, defaultValue: 'q1'},
   render: args => (
     <div {...stylex.props(styles.dividedContainer)}>
       <CollapsibleGroup {...args}>
@@ -226,9 +256,9 @@ export const DividersBetween: Story = {
   ),
 };
 
-export const DividersAll: Story = {
-  name: 'Dividers — All',
-  args: {type: 'multiple', dividers: 'all', defaultValue: ['a']},
+export const DividersMultiple: Story = {
+  name: 'Dividers — Multiple',
+  args: {type: 'multiple', hasDividers: true, defaultValue: ['a']},
   render: args => (
     <div {...stylex.props(styles.dividedContainer)}>
       <CollapsibleGroup {...args}>
@@ -258,7 +288,7 @@ export const DividersDensity: Story = {
         <CollapsibleGroup
           key={density}
           type="multiple"
-          dividers="between"
+          hasDividers
           density={density}
           defaultValue={['one']}>
           <Collapsible trigger={`First section (${density})`} value="one">
@@ -313,5 +343,33 @@ export const FAQ: Story = {
         </Card>
       </VStack>
     </CollapsibleGroup>
+  ),
+};
+
+export const PressedState: Story = {
+  name: 'Pressed state',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Press and hold the enabled trigger to paint the system's `--color-overlay-pressed` layer across its row. The disabled trigger remains visually unchanged and cannot expand or collapse.",
+      },
+    },
+  },
+  render: () => (
+    <VStack gap={2}>
+      <Card>
+        <Collapsible trigger="Details — press and hold">
+          <p {...stylex.props(styles.text)}>
+            The pressed overlay covers the trigger row.
+          </p>
+        </Collapsible>
+      </Card>
+      <Card>
+        <Collapsible trigger="Unavailable — no pressed state" isDisabled>
+          <p {...stylex.props(styles.text)}>Never opens.</p>
+        </Collapsible>
+      </Card>
+    </VStack>
   ),
 };

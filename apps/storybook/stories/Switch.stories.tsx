@@ -56,7 +56,7 @@ const meta: Meta<typeof Switch> = {
     },
     labelSpacing: {
       control: 'select',
-      options: ['default', 'spread'],
+      options: ['hug', 'spread'],
       description: 'Spacing behavior between label and switch',
     },
   },
@@ -566,5 +566,85 @@ export const DisabledWithMessage: Story = {
     label: 'Enable notifications',
     isDisabled: true,
     disabledMessage: 'Notifications are turned off org-wide',
+  },
+};
+
+// The owner changes the value, not the user. A settings page does this when a
+// saved value arrives, or when another control implies this one. The switch
+// still reports the new state, and is still operable afterwards.
+export const ControlledUpdate: Story = {
+  render: args => {
+    const [value, setValue] = useState(false);
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          gap: '12px',
+        }}>
+        <Switch
+          {...restArgs}
+          value={value}
+          onChange={checked => setValue(checked)}
+        />
+        <button type="button" onClick={() => setValue(true)}>
+          Turn on remotely
+        </button>
+      </div>
+    );
+  },
+  args: {
+    label: 'Sync photos',
+  },
+};
+
+// Waiting on the change it just started. The switch stays focusable and reports
+// itself busy, and activation is blocked until the change settles, so a second
+// press cannot queue a second change.
+export const Loading: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? false);
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
+    return (
+      <Switch
+        {...restArgs}
+        value={value}
+        onChange={checked => setValue(checked)}
+      />
+    );
+  },
+  args: {
+    label: 'Sync photos',
+    isLoading: true,
+  },
+};
+
+export const PressedState: Story = {
+  name: 'Pressed state',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Press and hold an enabled switch to paint the system's `--color-overlay-pressed` layer on its track and thumb together. The disabled example remains visually unchanged and cannot toggle.",
+      },
+    },
+  },
+  render: () => {
+    const [off, setOff] = useState(false);
+    const [on, setOn] = useState(true);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+        <Switch label="Off — press and hold" value={off} onChange={setOff} />
+        <Switch label="On — press and hold" value={on} onChange={setOn} />
+        <Switch
+          label="Disabled — no pressed state"
+          value={false}
+          onChange={() => {}}
+          isDisabled
+        />
+      </div>
+    );
   },
 };

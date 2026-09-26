@@ -17,12 +17,26 @@
  * Pill placement uses a single stylex dynamic style that accepts a direction
  * multiplier (-1 or 1). The pill element has its own themeProps
  * ('resize-handle-pill') so themes can target size/shape directly.
+ *
+ * While the panel is collapsed, aria-valuenow is clamped to aria-valuemin
+ * (a value below the minimum is invalid per WCAG 4.1.2) and a localized
+ * "Collapsed" aria-valuetext announces the real state.
+ *
+ * Dragging takes pointer capture on the grab zone, so the rest of the gesture
+ * is delivered to that element instead of being hit-tested against whatever
+ * the cursor happens to be over. A resizable region that contains an embedded
+ * frame otherwise loses the drag the moment the cursor crosses the frame: the
+ * events go to the guest document, and a listener on the host window never
+ * hears them again. Captured events are delivered to the capturing element,
+ * so the move/up/cancel handlers live on the grab zone (as in Slider), not on
+ * window.
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
+import {devWarn} from '../utils/devWarning';
 import {
   colorVars,
   durationVars,
@@ -30,10 +44,13 @@ import {
   radiusVars,
   spacingVars,
 } from '../theme/tokens.stylex';
-import {mergeProps, mergeRefs} from '../utils';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {mergeProps, rtlStyles} from '../utils';
 import type {ResizableProps} from './useResizable';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
+import {useMergedRefs} from '../hooks/useMergedRefs';
 const KEYBOARD_STEP = 10;
 const KEYBOARD_LARGE_STEP = 50;
 
@@ -55,14 +72,42 @@ function resolveEffectiveSide(
 }
 
 /**
- * Hit area bias percentage. When the pill is off-center, the grab zone
- * shifts ~2:1 toward the pill so users can reach the visible grip easily.
+ * Hit-area inline bias, expressed as a fraction of the pill's per-side offset.
+ *
+ * The visible pill is placed by `pillOffsetX`/`pillOffsetY`: anchored at the
+ * divider's inline-start edge and pushed one grip-width-plus-gap toward the
+ * panel side via a PHYSICAL translate (dir −1 = start, +1 = end). Because that
+ * offset is physical, the pill sits on the same physical side of the divider in
+ * both LTR and RTL. The grab zone must sit OVER that pill, so it has to use the
+ * exact same anchor + physical-offset construction as the pill (just wider) —
+ * anchoring the hit area at the divider centre (`insetInlineStart: 50%`) and
+ * biasing with a percentage translate mixes a logical anchor (which flips under
+ * RTL) with a physical translate (which doesn't), leaving the grab zone stranded
+ * to one side under RTL. Returning the pill's `dir` here lets the hit area reuse
+ * `pillOffsetX`/`pillOffsetY` so the two elements are positioned identically.
  */
-function hitAreaBias(effectiveSide: 'start' | 'end' | 'center'): string {
+function hitAreaBiasDir(
+  effectiveSide: 'start' | 'end' | 'center',
+): number | null {
   if (effectiveSide === 'center') {
-    return '50%';
+    return null;
   }
-  return effectiveSide === 'start' ? '66.67%' : '33.33%';
+  return effectiveSide === 'start' ? -1 : 1;
+}
+
+/**
+ * Drag feedback lives on `<body>`, not on the handle: the pointer spends the
+ * drag off the handle, over whatever the panels contain, and the resize cursor
+ * has to hold there. Module scope so the writes stay outside the component.
+ */
+function applyBodyDragStyles(isHorizontal: boolean): void {
+  document.body.style.cursor = isHorizontal ? 'col-resize' : 'row-resize';
+  document.body.style.userSelect = 'none';
+}
+
+function clearBodyDragStyles(): void {
+  document.body.style.cursor = '';
+  document.body.style.userSelect = '';
 }
 
 const styles = stylex.create({
@@ -76,14 +121,6 @@ const styles = stylex.create({
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    outline: {
-      default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: null,
-      ':focus-visible': spacingVars['--spacing-0-5'],
-    },
   },
   // Overlay mode — absolutely positioned inside the parent panel
   // instead of being a sibling in flex flow. Used when the handle
@@ -101,19 +138,25 @@ const styles = stylex.create({
   },
   overlayVertical: {
     insetBlockEnd: 0,
-    left: 0,
-    right: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
     height: 'var(--resize-handle-hit-area, 16px)',
   },
   horizontal: {
     width: 1,
     height: '100%',
-    cursor: 'col-resize',
+    cursor: {
+      default: 'col-resize',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   vertical: {
     height: 1,
     width: '100%',
-    cursor: 'row-resize',
+    cursor: {
+      default: 'row-resize',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   noDividerHorizontal: {
     backgroundColor: 'transparent',
@@ -144,15 +187,26 @@ const styles = stylex.create({
     width: spacingVars['--spacing-4'],
     top: 0,
     bottom: 0,
-    left: '50%',
-    cursor: 'col-resize',
+    cursor: {
+      default: 'col-resize',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   hitAreaVertical: {
     height: spacingVars['--spacing-4'],
-    left: 0,
-    right: 0,
-    top: '50%',
-    cursor: 'row-resize',
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
+    cursor: {
+      default: 'row-resize',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
+  },
+  // Centered grab zone (pillPlacement 'center' / no bias): sit the hit area on
+  // the divider itself. Inline centering comes from rtlStyles.centerInline at
+  // the call site (correct in LTR and RTL); this block owns only the block axis.
+  hitAreaCenteredY: {
+    insetBlockStart: '50%',
+    transform: 'translateY(-50%)',
   },
 
   // Pill base — themes target .astryx-resize-handle-pill for size/shape.
@@ -166,8 +220,6 @@ const styles = stylex.create({
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
   },
   pillHorizontal: {
     width: 3,
@@ -192,14 +244,38 @@ const styles = stylex.create({
 // Dynamic styles — avoids inline style overrides.
 // Each axis gets its own function since StyleX requires static structure.
 const dynamicStyles = stylex.create({
-  hitAreaBiasX: (pct: string) => ({
-    transform: `translateX(-${pct})`,
+  // Hit-area inline offset — mirrors the pill's `pillOffsetX`/`pillOffsetY`
+  // construction so the grab zone sits centred on the visible pill in BOTH
+  // directions. Both anchor at the divider's inline-start edge
+  // (`insetInlineStart: 0`) and travel toward the panel side with the SAME
+  // physical translate `dir * (gripWidth + gap)`, so they share the pill's
+  // near edge. The hit area is wider, so it also shifts by half the width
+  // difference `(16px − 3px) / 2 = 6.5px` to align the two CENTRES. That
+  // centring shift is along the inline axis (a box grows from its inline-start
+  // edge toward inline-end), so it must flip physical sign under RTL — unlike
+  // the `dir * (...)` travel, which is physical and identical in both
+  // directions because the pill's own offset is physical. Mixing the previous
+  // divider-relative `50%` anchor with a percentage translate stranded the grab
+  // zone to one side under RTL; this construction keeps it on the pill.
+  //
+  // Only the offset axis is translated. Unlike the pill — a small box anchored
+  // at the divider's midpoint, so it needs a −50% self-shift to centre — the
+  // grab zone is STRETCHED along the handle by hitAreaHorizontal/Vertical's
+  // 0/0 insets, so it is already in place on that axis. A percentage there
+  // would displace it by half the handle's own length, growing with the panel.
+  hitAreaOffsetX: (dir: number) => ({
+    insetInlineStart: 0,
+    transform: {
+      default: `translateX(calc(${dir} * (3px + ${spacingVars['--spacing-1']}) - 6.5px))`,
+      ':is([dir="rtl"] *)': `translateX(calc(${dir} * (3px + ${spacingVars['--spacing-1']}) + 6.5px))`,
+    },
   }),
-  hitAreaBiasY: (pct: string) => ({
-    transform: `translateY(-${pct})`,
+  hitAreaOffsetY: (dir: number) => ({
+    insetBlockStart: 0,
+    transform: `translateY(calc(${dir} * (3px + ${spacingVars['--spacing-1']}) - 6.5px))`,
   }),
   pillOffsetX: (dir: number) => ({
-    left: 0,
+    insetInlineStart: 0,
     transform: `translate(calc(${dir} * (100% + ${spacingVars['--spacing-1']})), -50%)`,
   }),
   // Vertical offset: no rotation — use explicit landscape dimensions.
@@ -307,7 +383,7 @@ export function ResizeHandle({
   hasDivider = false,
   isAlwaysVisible = true,
   pillPlacement = 'auto',
-  label = 'Resize handle',
+  label: labelFromProps,
   resizable,
   children,
   xstyle,
@@ -315,10 +391,17 @@ export function ResizeHandle({
   ref,
   ...props
 }: ResizeHandleProps) {
+  const t = useTranslator();
+  const label = labelFromProps ?? t('@astryx.resizable.handle.label');
   const handleRef = useRef<HTMLDivElement>(null);
-  // Removes the in-flight drag's window listeners (and resets body styles).
-  // Held in a ref so unmount can tear down a drag that never got a pointerup.
-  const dragCleanupRef = useRef<(() => void) | null>(null);
+  // The pointer that owns the in-flight drag, plus the values its deltas are
+  // measured against. A ref so moves don't re-render, and so unmount can tell
+  // a live drag from a finished one.
+  const dragRef = useRef<{
+    pointerId: number;
+    startPos: number;
+    rtl: number;
+  } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -330,6 +413,9 @@ export function ResizeHandle({
     isReversed,
     resizable?._isCollapsed ?? false,
   );
+  // Physical offset direction shared by the pill and the grab zone (null =
+  // centered / no bias). Keeps the two positioned identically in LTR and RTL.
+  const hitBiasDir = hitAreaBiasDir(effectiveSide);
 
   const getRTLMultiplier = useCallback((): number => {
     const el = handleRef.current;
@@ -341,51 +427,96 @@ export function ResizeHandle({
 
   const isInteracting = isHovered || isFocused;
 
+  // A handle whose axis disagrees with its hook drags along one axis while the
+  // hook measures percentage bounds on the other. `ResizableProps` is exported,
+  // so `_direction` is optional for old hand-built objects; absent means there
+  // is no hook axis to compare, not that the hook is horizontal.
+  const didWarnAxisRef = useRef(false);
+  useEffect(() => {
+    const hookDirection = resizable?._direction;
+    if (
+      hookDirection != null &&
+      hookDirection !== direction &&
+      !didWarnAxisRef.current
+    ) {
+      didWarnAxisRef.current = true;
+      devWarn(
+        'ResizeHandle',
+        `direction="${direction}" but its useResizable region is ` +
+          `"${hookDirection}". They must match: the hook measures one axis ` +
+          'and the handle drags the other.',
+      );
+    }
+  }, [direction, resizable]);
+
   // --- Pointer drag ---
+  const clearDrag = useCallback(() => {
+    dragRef.current = null;
+    setIsDragging(false);
+    clearBodyDragStyles();
+  }, []);
+
   const handlePointerDown = useCallback(
-    (e: React.PointerEvent) => {
-      if (isDisabled || !resizable) {
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (isDisabled || !resizable || dragRef.current) {
         return;
       }
       e.preventDefault();
       e.stopPropagation();
+      // Take the pointer for the whole gesture. Without capture the browser
+      // re-hit-tests every move, so a frame anywhere under the drag path
+      // swallows the rest of it into the guest document.
+      e.currentTarget.setPointerCapture?.(e.pointerId);
+      dragRef.current = {
+        pointerId: e.pointerId,
+        startPos: isHorizontal ? e.clientX : e.clientY,
+        rtl: isHorizontal ? getRTLMultiplier() : 1,
+      };
       setIsDragging(true);
       resizable._onResizeStart();
-      const startPos = isHorizontal ? e.clientX : e.clientY;
-      const rtl = isHorizontal ? getRTLMultiplier() : 1;
-      document.body.style.cursor = isHorizontal ? 'col-resize' : 'row-resize';
-      document.body.style.userSelect = 'none';
-
-      const onMove = (ev: PointerEvent) => {
-        const currentPos = isHorizontal ? ev.clientX : ev.clientY;
-        const delta = (currentPos - startPos) * rtl * sign;
-        resizable._onResizeMove(delta);
-      };
-      const onUp = () => {
-        cleanup();
-        setIsDragging(false);
-        resizable._onResizeEnd();
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
-      };
-      const onCancel = () => {
-        cleanup();
-        setIsDragging(false);
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
-      };
-      function cleanup() {
-        window.removeEventListener('pointermove', onMove);
-        window.removeEventListener('pointerup', onUp);
-        window.removeEventListener('pointercancel', onCancel);
-        dragCleanupRef.current = null;
-      }
-      window.addEventListener('pointermove', onMove);
-      window.addEventListener('pointerup', onUp);
-      window.addEventListener('pointercancel', onCancel);
-      dragCleanupRef.current = cleanup;
+      applyBodyDragStyles(isHorizontal);
     },
-    [isDisabled, resizable, isHorizontal, getRTLMultiplier, sign],
+    [isDisabled, resizable, isHorizontal, getRTLMultiplier],
+  );
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      const drag = dragRef.current;
+      if (!drag || drag.pointerId !== e.pointerId || !resizable) {
+        return;
+      }
+      const currentPos = isHorizontal ? e.clientX : e.clientY;
+      resizable._onResizeMove((currentPos - drag.startPos) * drag.rtl * sign);
+    },
+    [resizable, isHorizontal, sign],
+  );
+
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (dragRef.current?.pointerId !== e.pointerId) {
+        return;
+      }
+      clearDrag();
+      resizable?._onResizeEnd();
+    },
+    [clearDrag, resizable],
+  );
+
+  // Serves pointercancel and lostpointercapture alike: an interrupted drag
+  // ends without signalling a resize end. lostpointercapture also fires on the
+  // implicit release after every pointerup/pointercancel, by which point the
+  // drag is already cleared and this is a no-op.
+  const cancelDrag = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (dragRef.current?.pointerId !== e.pointerId) {
+        return;
+      }
+      clearDrag();
+      // Not a resize end, but still the end of the gesture: the region froze
+      // state for the duration of the drag and has to be told it is over.
+      resizable?._onResizeCancel?.();
+    },
+    [clearDrag, resizable],
   );
 
   // --- Keyboard ---
@@ -459,36 +590,52 @@ export function ResizeHandle({
   }, [isDisabled, resizable]);
 
   // --- Cleanup on unmount ---
-  // A drag in flight when the handle unmounts never gets its pointerup, so
-  // tear down the window listeners here too — otherwise every pointermove
-  // keeps driving the (still-mounted) region's resize state after the handle
-  // is gone, and the body cursor/user-select overrides stick.
+  // Removing the grab zone implicitly releases its captured pointer and takes
+  // its listeners with it, so an in-flight drag stops driving the region on
+  // its own. The body cursor/user-select overrides are not on the element,
+  // though, so they have to be released here or they stick after the handle
+  // is gone — and the region, which outlives this handle, still has to hear
+  // that its gesture is over.
+  const cancelOnUnmountRef = useRef<(() => void) | undefined>(undefined);
+  cancelOnUnmountRef.current = resizable?._onResizeCancel;
   useEffect(() => {
     return () => {
-      if (dragCleanupRef.current) {
-        dragCleanupRef.current();
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
+      if (dragRef.current) {
+        dragRef.current = null;
+        clearBodyDragStyles();
+        cancelOnUnmountRef.current?.();
       }
     };
   }, []);
 
   // --- ARIA ---
-  const ariaValueNow = resizable ? resizable._size : undefined;
+  // When collapsed the panel's real size (0) sits below aria-valuemin, which
+  // is invalid per WCAG 4.1.2. Clamp aria-valuenow to the minimum and announce
+  // the true state via aria-valuetext instead; the valuetext is removed as
+  // soon as the panel expands so the numeric value reads again.
+  const isCollapsed = resizable?._isCollapsed ?? false;
+  const ariaValueNow = resizable
+    ? isCollapsed
+      ? Math.max(resizable._size, resizable._minSizePx)
+      : resizable._size
+    : undefined;
   const ariaValueMin = resizable ? resizable._minSizePx : undefined;
   const ariaValueMax =
     resizable && resizable._maxSizePx !== Infinity
       ? resizable._maxSizePx
       : undefined;
+  const ariaValueText =
+    resizable && isCollapsed ? t('@astryx.resizable.collapsed') : undefined;
 
   return (
     <div
-      ref={mergeRefs(ref, handleRef)}
+      ref={useMergedRefs(ref, handleRef)}
       role="separator"
       aria-orientation={isHorizontal ? 'vertical' : 'horizontal'}
       aria-valuenow={ariaValueNow}
       aria-valuemin={ariaValueMin}
       aria-valuemax={ariaValueMax}
+      aria-valuetext={ariaValueText}
       aria-label={label}
       aria-disabled={isDisabled || undefined}
       tabIndex={isDisabled ? -1 : 0}
@@ -498,7 +645,7 @@ export function ResizeHandle({
       data-resizing={isDragging || undefined}
       {...mergeProps(
         themeProps('resize-handle'),
-        stylex.props(
+        focusOutlineProps.focusVisible(
           styles.handle,
           isOverlay && styles.overlay,
           isOverlay &&
@@ -535,12 +682,24 @@ export function ResizeHandle({
         {...stylex.props(
           styles.hitArea,
           isHorizontal ? styles.hitAreaHorizontal : styles.hitAreaVertical,
-          isHorizontal
-            ? dynamicStyles.hitAreaBiasX(hitAreaBias(effectiveSide))
-            : dynamicStyles.hitAreaBiasY(hitAreaBias(effectiveSide)),
+          // Bias the grab zone to sit over the visible pill. When the pill is
+          // centered (no bias) just center the hit area on the divider; when
+          // it's offset to a panel side, reuse the pill's physical-offset
+          // construction so the two stay aligned in LTR and RTL alike.
+          hitBiasDir == null
+            ? isHorizontal
+              ? rtlStyles.centerInline('0px')
+              : styles.hitAreaCenteredY
+            : isHorizontal
+              ? dynamicStyles.hitAreaOffsetX(hitBiasDir)
+              : dynamicStyles.hitAreaOffsetY(hitBiasDir),
           isDisabled && styles.disabled,
         )}
         onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={cancelDrag}
+        onLostPointerCapture={cancelDrag}
         onPointerEnter={() => setIsHovered(true)}
         onPointerLeave={() => {
           if (!isDragging) {
@@ -556,14 +715,15 @@ export function ResizeHandle({
             stylex.props(
               styles.pill,
               isHorizontal ? styles.pillHorizontal : styles.pillVertical,
-              effectiveSide !== 'center' &&
-                (isHorizontal
+              effectiveSide === 'center'
+                ? rtlStyles.centerInline('-50%')
+                : isHorizontal
                   ? dynamicStyles.pillOffsetX(
                       effectiveSide === 'start' ? -1 : 1,
                     )
                   : dynamicStyles.pillOffsetY(
                       effectiveSide === 'start' ? -1 : 1,
-                    )),
+                    ),
               isAlwaysVisible ? styles.pillVisible : styles.pillHidden,
               isInteracting && !isDragging && styles.pillHover,
               isDragging && styles.pillActive,

@@ -1,6 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 import type {Meta, StoryObj} from '@storybook/react';
-import {ContextMenu, ContextMenuItem} from '@astryxdesign/core/ContextMenu';
+import {useState} from 'react';
+import {
+  ContextMenu,
+  ContextMenuItem,
+  ContextMenuCheckboxItem,
+  ContextMenuRadioGroup,
+  ContextMenuRadioItem,
+} from '@astryxdesign/core/ContextMenu';
 import {Divider} from '@astryxdesign/core/Divider';
 import {
   PencilIcon,
@@ -51,6 +58,12 @@ const meta: Meta<typeof ContextMenu> = {
       control: 'boolean',
       description: 'Disable custom context menu',
     },
+    presentation: {
+      control: 'select',
+      options: ['popover', 'bottom-sheet', 'adaptive'],
+      description:
+        'Cursor popover, BottomSheet, or adaptive compact-touch presentation',
+    },
     'data-testid': {
       control: 'text',
       description: 'Test ID for testing frameworks',
@@ -97,6 +110,30 @@ export const WithIcons: Story = {
         {
           label: 'Delete',
           icon: TrashIcon,
+          onClick: () => console.log('Delete'),
+        },
+      ]}>
+      <div {...stylex.props(triggerStyles.area)}>Right-click for actions</div>
+    </ContextMenu>
+  ),
+};
+
+export const DestructiveItem: Story = {
+  name: 'Destructive item',
+  render: () => (
+    <ContextMenu
+      items={[
+        {label: 'Rename', onClick: () => console.log('Rename')},
+        {
+          label: 'Duplicate',
+          icon: ClipboardDocumentIcon,
+          onClick: () => console.log('Duplicate'),
+        },
+        {type: 'divider'},
+        {
+          label: 'Delete',
+          icon: TrashIcon,
+          variant: 'destructive',
           onClick: () => console.log('Delete'),
         },
       ]}>
@@ -301,5 +338,143 @@ export const CompoundWithDescriptions: Story = {
         Right-click for detailed menu
       </div>
     </ContextMenu>
+  ),
+};
+
+export const WithSelectableItems: Story = {
+  render: function WithSelectableItemsStory() {
+    const [sort, setSort] = useState('name');
+    const [showHidden, setShowHidden] = useState(false);
+    const [showPreview, setShowPreview] = useState(true);
+    return (
+      <ContextMenu
+        menuWidth={220}
+        menuContent={
+          <>
+            <ContextMenuItem
+              icon={PencilIcon}
+              label="Rename"
+              onClick={() => console.log('Rename')}
+            />
+            <Divider />
+            <ContextMenuRadioGroup
+              value={sort}
+              onChange={setSort}
+              label="Sort by">
+              <ContextMenuRadioItem value="name" label="Sort by name" />
+              <ContextMenuRadioItem value="date" label="Sort by date" />
+              <ContextMenuRadioItem value="size" label="Sort by size" />
+            </ContextMenuRadioGroup>
+            <Divider />
+            <ContextMenuCheckboxItem
+              label="Show hidden files"
+              value={showHidden}
+              onChange={setShowHidden}
+            />
+            <ContextMenuCheckboxItem
+              label="Show preview pane"
+              value={showPreview}
+              onChange={setShowPreview}
+            />
+          </>
+        }>
+        <div {...stylex.props(triggerStyles.area)}>
+          Right-click for selectable items
+        </div>
+      </ContextMenu>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Checkbox and radio menu items compose inside a ContextMenu just like in a DropdownMenu. The radio group is a single-select set (menuitemradio) that closes the menu on selection; the checkbox items are independent toggles (menuitemcheckbox) that keep the menu open so several can be flipped. Arrow keys, typeahead, and Enter/Space traverse and activate all three row types alongside plain items.',
+      },
+    },
+  },
+};
+
+export const BottomSheetPresentation: Story = {
+  name: 'Presentation / BottomSheet',
+  parameters: {
+    layout: 'fullscreen',
+    viewport: {defaultViewport: 'mobile1'},
+    docs: {
+      story: {inline: false, height: '560px'},
+      description: {
+        story:
+          'The real ContextMenu component forced to BottomSheet presentation. Long-press opens this surface on touch; this story opens it with a contextmenu event so the sheet is directly reviewable.',
+      },
+    },
+  },
+  render: () => (
+    <div style={{padding: 16}}>
+      <ContextMenu
+        data-testid="bottom-sheet-context-menu"
+        presentation="bottom-sheet"
+        label="Document actions"
+        items={[
+          {label: 'Edit', icon: PencilIcon, onClick: () => {}},
+          {
+            label: 'Duplicate',
+            icon: DocumentDuplicateIcon,
+            onClick: () => {},
+          },
+          {label: 'Share', icon: ShareIcon, onClick: () => {}},
+          {
+            label: 'Delete',
+            icon: TrashIcon,
+            variant: 'destructive',
+            onClick: () => {},
+          },
+        ]}>
+        <div {...stylex.props(triggerStyles.area)}>
+          Long-press or right-click for document actions
+        </div>
+      </ContextMenu>
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const trigger = canvasElement.querySelector(
+      '[data-testid="bottom-sheet-context-menu"]',
+    );
+    trigger?.dispatchEvent(
+      new MouseEvent('contextmenu', {bubbles: true, clientX: 40, clientY: 40}),
+    );
+  },
+};
+
+export const AdaptivePresentation: Story = {
+  name: 'Presentation / adaptive',
+  parameters: {
+    layout: 'fullscreen',
+    viewport: {defaultViewport: 'mobile1'},
+    docs: {
+      description: {
+        story:
+          'Uses the built-in adaptive policy: BottomSheet at 768px and below with a coarse primary pointer, cursor-positioned popover otherwise. Important actions still need a visible MoreMenu or equivalent entry point.',
+      },
+    },
+  },
+  render: () => (
+    <div style={{padding: 16}}>
+      <ContextMenu
+        presentation="adaptive"
+        label="Document actions"
+        items={[
+          {label: 'Edit', icon: PencilIcon, onClick: () => {}},
+          {label: 'Share', icon: ShareIcon, onClick: () => {}},
+          {
+            label: 'Delete',
+            icon: TrashIcon,
+            variant: 'destructive',
+            onClick: () => {},
+          },
+        ]}>
+        <div {...stylex.props(triggerStyles.area)}>
+          Long-press or right-click for document actions
+        </div>
+      </ContextMenu>
+    </div>
   ),
 };

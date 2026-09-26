@@ -2,6 +2,7 @@
 
 /**
  * @file ChartAxis.tsx (v2)
+ * @input Chart context scales, axis presentation props, and grapheme-safe text utilities
  * @output Renders an axis (top, right, bottom, left) using the chart's scales
  * @position Child of Chart v2; reads scales from chart context
  *
@@ -19,6 +20,7 @@
 
 import {useCallback, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {characterCount, truncateCharacters} from '@astryxdesign/core/utils';
 import {colorVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {useChart} from './ChartContext';
 import {isBandScale} from './utils';
@@ -33,7 +35,7 @@ export interface ChartAxisProps {
   maxTicks?: number;
   /** Custom tick formatter */
   tickFormat?: (value: unknown) => string;
-  /** Truncate labels to this many characters (appends "\u2026"). */
+  /** Truncate labels to this many user-perceived characters (appends "\u2026"). */
   truncate?: number;
   /** Enable smooth transitions for streaming (default: true) */
   animated?: boolean;
@@ -85,10 +87,24 @@ export function ChartAxis({
   // Tick marks need an axis line to anchor against; force it on when ticks
   // are enabled so the two visuals stay coherent.
   const renderAxisLine = showAxisLine || showTicks;
-  const {width, height, xScale, yScale} = useChart();
+  const {width, height, xScale, yScale, yBandScale} = useChart();
 
   const isHorizontal = position === 'top' || position === 'bottom';
-  const scale = isHorizontal ? xScale : yScale;
+  // A categorical y-axis (e.g. heatmap rows) is exposed as `yBandScale`; prefer
+  // it over the linear `yScale` so a left/right axis renders the row categories
+  // (days) aligned to each band instead of meaningless value ticks.
+  const scale = isHorizontal ? xScale : (yBandScale ?? yScale);
+
+  // Sanitize the tick count before it reaches d3. `.ticks()` targets ~N ticks
+  // and allocates an array that large, so a huge N throws `RangeError: Invalid
+  // array length` and crashes the render; a non-finite or negative N would
+  // otherwise blank the axis. Clamp to a sane integer (0 still means "no
+  // ticks") and fall back to the default for invalid input. Shared by tick
+  // generation and the auto formatter so the two stay in sync.
+  const safeTickCount =
+    Number.isFinite(tickCount) && tickCount >= 0
+      ? Math.min(Math.floor(tickCount), 1000)
+      : 5;
 
   // Default label formatter. For continuous (linear/time) scales, use d3's own
   // tick formatter so numbers get sensible precision (no floating-point dust
@@ -100,33 +116,39 @@ export function ChartAxis({
     }
     const continuous = scale as
       ScaleLinear<number, number> | ScaleTime<number, number>;
-    const fmt = continuous.tickFormat(tickCount);
+    const fmt = continuous.tickFormat(safeTickCount);
     return (v: unknown) => fmt(v as number & Date);
-  }, [tickFormat, scale, tickCount]);
+  }, [tickFormat, scale, safeTickCount]);
 
   const format = useCallback(
     (value: unknown): string => {
       const str = (tickFormat ?? autoFormat ?? String)(value);
-      return truncate && str.length > truncate
-        ? str.slice(0, truncate) + '\u2026'
-        : str;
+      if (!truncate) {
+        return str;
+      }
+      const shortened = truncateCharacters(str, truncate, '');
+      return shortened === str ? str : shortened + '\u2026';
     },
     [tickFormat, autoFormat, truncate],
   );
 
   const ticks = useMemo(() => {
-    let allTicks: {value: unknown; offset: number}[];
+    // Format each generated tick once so density and rendering share the same
+    // grapheme-safe label instead of repeating consumer formatting/segmentation.
+    let allTicks: {value: unknown; offset: number; label: string}[];
     if (isBandScale(scale)) {
       allTicks = scale.domain().map(d => ({
         value: d,
         offset: (scale(d) ?? 0) + scale.bandwidth() / 2,
+        label: format(d),
       }));
     } else {
       const linearScale = scale as
         ScaleLinear<number, number> | ScaleTime<number, number>;
-      allTicks = linearScale.ticks(tickCount).map(d => ({
+      allTicks = linearScale.ticks(safeTickCount).map(d => ({
         value: d,
         offset: linearScale(d as number & Date),
+        label: format(d),
       }));
     }
 
@@ -140,7 +162,7 @@ export function ChartAxis({
     if (cap == null && allTicks.length > 1) {
       if (isHorizontal && width > 0) {
         const widestChars = allTicks.reduce(
-          (m, t) => Math.max(m, format(t.value).length),
+          (m, tick) => Math.max(m, characterCount(tick.label)),
           1,
         );
         const approxLabelPx = widestChars * 7 + 16;
@@ -156,7 +178,7 @@ export function ChartAxis({
     }
 
     return allTicks;
-  }, [scale, tickCount, maxTicks, isHorizontal, width, height, format]);
+  }, [scale, safeTickCount, maxTicks, isHorizontal, width, height, format]);
 
   const transform =
     position === 'bottom'
@@ -168,7 +190,10 @@ export function ChartAxis({
   // For the bottom axis, draw the axis line at y=0 when the domain spans
   // negative values (so the axis line still represents zero, not the chart edge).
   const axisLineY = (() => {
-    if (position !== 'bottom') {
+    // Categorical y (e.g. heatmap rows): there is no meaningful zero, and the
+    // linear yScale is degenerate — anchor the bottom edge line to the plot edge
+    // so it frames the grid instead of cutting across the cells.
+    if (position !== 'bottom' || yBandScale) {
       return 0;
     }
     const domain = yScale.domain();
@@ -193,8 +218,7 @@ export function ChartAxis({
           {...stylex.props(styles.axisLine)}
         />
       )}
-      {ticks.map(({value, offset}) => {
-        const label = format(value);
+      {ticks.map(({value, offset, label}) => {
         // Key off the raw tick value, not the formatted label: distinct ticks
         // can format (or truncate) to the same string and would collide as keys.
         const key = String(value);

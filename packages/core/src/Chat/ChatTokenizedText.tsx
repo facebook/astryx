@@ -14,7 +14,9 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts
- * - /packages/cli/templates/blocks/components/ChatTokenizedText/ (block examples)
+ * - /packages/core/src/Chat/ChatComposerInput.tsx (token alignment must match,
+ *   or a token moves when the message is sent)
+ * - /packages/cli/assets/templates/blocks/components/ChatTokenizedText/ (block examples)
  */
 
 import React, {type ReactNode} from 'react';
@@ -32,6 +34,10 @@ import {themeProps} from '../utils/themeProps';
 const styles = stylex.create({
   root: {
     display: 'inline',
+  },
+  token: {
+    display: 'inline-flex',
+    verticalAlign: 'middle',
   },
 });
 
@@ -74,7 +80,7 @@ function isCustomToken(
 }
 
 function escapeRegExp(str: string): string {
-  return str.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 // =============================================================================
@@ -91,6 +97,10 @@ export function ChatTokenizedText({
   ref,
   children,
   tokens,
+  xstyle,
+  className,
+  style,
+  ...rest
 }: ChatTokenizedTextProps) {
   if (!children || !tokens || tokens.length === 0) {
     return (
@@ -98,8 +108,11 @@ export function ChatTokenizedText({
         ref={ref}
         {...mergeProps(
           themeProps('chat-tokenized-text'),
-          stylex.props(styles.root),
-        )}>
+          stylex.props(styles.root, xstyle),
+          className,
+          style,
+        )}
+        {...rest}>
         {children ?? ''}
       </span>
     );
@@ -111,8 +124,11 @@ export function ChatTokenizedText({
       ref={ref}
       {...mergeProps(
         themeProps('chat-tokenized-text'),
-        stylex.props(styles.root),
-      )}>
+        stylex.props(styles.root, xstyle),
+        className,
+        style,
+      )}
+      {...rest}>
       {parts}
     </span>
   );
@@ -124,10 +140,7 @@ ChatTokenizedText.displayName = 'ChatTokenizedText';
 // Render
 // =============================================================================
 
-function renderTokens(
-  text: string,
-  tokens: ChatComposerToken[],
-): ReactNode[] {
+function renderTokens(text: string, tokens: ChatComposerToken[]): ReactNode[] {
   const pattern = tokens.map(t => escapeRegExp(t.value)).join('|');
   const regex = new RegExp(`(${pattern})`, 'g');
 
@@ -149,16 +162,17 @@ function renderTokens(
     const token = tokenMap.get(matched);
     if (token) {
       parts.push(
-        isCustomToken(token) ? (
-          <span key={`${matched}-${match.index}`}>{token.render()}</span>
-        ) : (
-          <Badge
-            key={`${matched}-${match.index}`}
-            label={token.label}
-            variant={token.variant}
-            icon={token.icon}
-          />
-        ),
+        <span key={`${matched}-${match.index}`} {...stylex.props(styles.token)}>
+          {isCustomToken(token) ? (
+            token.render()
+          ) : (
+            <Badge
+              label={token.label}
+              variant={token.variant}
+              icon={token.icon}
+            />
+          )}
+        </span>,
       );
     }
 

@@ -9,12 +9,63 @@
  * SYNC: When Field.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {describe, it, expect, vi, afterEach} from 'vitest';
+import {render, screen, waitFor} from '@testing-library/react';
 import {Field} from './Field';
 import {FormLayoutContext} from '../FormLayout/FormLayoutContext';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+
+function politeRegion(): HTMLElement | null {
+  return document.querySelector('[data-astryx-live-region="polite"]');
+}
+function assertiveRegion(): HTMLElement | null {
+  return document.querySelector('[data-astryx-live-region="assertive"]');
+}
+
+afterEach(() => {
+  __resetLiveRegionsForTest();
+});
 
 describe('Field', () => {
+  it.each(['sm', 'md', 'lg'] as const)(
+    'provides a half-height overlap for an attached %s control',
+    size => {
+      render(
+        <Field
+          label="Username"
+          inputID="username"
+          status={{type: 'warning', message: 'This username may be taken'}}>
+          <div data-size={size}>Control</div>
+        </Field>,
+      );
+
+      const status = screen.getByText('This username may be taken');
+      expect(
+        getComputedStyle(status.parentElement!).getPropertyValue(
+          '--_field-status-overlap',
+        ),
+      ).toBe(`calc(var(--size-element-${size}) / 2)`);
+    },
+  );
+
+  it('layers an attached status behind a custom control', () => {
+    render(
+      <Field
+        label="Username"
+        inputID="username"
+        status={{type: 'warning', message: 'This username may be taken'}}>
+        <input id="username" />
+      </Field>,
+    );
+
+    const status = screen.getByText('This username may be taken');
+    const wrapper = status.parentElement!;
+
+    expect(getComputedStyle(wrapper).isolation).toBe('isolate');
+    expect(getComputedStyle(status).position).toBe('relative');
+    expect(getComputedStyle(status).zIndex).toBe('-1');
+  });
+
   it('renders with label', () => {
     render(
       <Field label="Email" inputID="email-input">
@@ -137,10 +188,7 @@ describe('Field', () => {
 
   it('renders description without ID attribute when descriptionID is not provided', () => {
     render(
-      <Field
-        label="Email"
-        inputID="email-input"
-        description="Description text">
+      <Field label="Email" inputID="email-input" description="Description text">
         <input id="email-input" />
       </Field>,
     );
@@ -231,7 +279,11 @@ describe('Field', () => {
     expect(document.querySelector('svg')).not.toBeInTheDocument();
   });
 
-  it('status has role="alert" and aria-live="assertive" for error type', () => {
+  // The status message is announced through the persistent useAnnounce live
+  // regions rather than role/aria-live on the (conditionally mounted)
+  // FieldStatus element itself — regions born with their content are not
+  // reliably announced by assistive technology.
+  it('announces error status assertively via the persistent live region', async () => {
     render(
       <Field
         label="Email"
@@ -240,12 +292,13 @@ describe('Field', () => {
         <input id="email-input" />
       </Field>,
     );
-    const status = screen.getByRole('alert');
-    expect(status).toHaveTextContent('Invalid email');
-    expect(status).toHaveAttribute('aria-live', 'assertive');
+    expect(screen.getByText('Invalid email')).not.toHaveAttribute('role');
+    await waitFor(() => {
+      expect(assertiveRegion()).toHaveTextContent('Invalid email');
+    });
   });
 
-  it('status has role="status" and aria-live="polite" for warning type', () => {
+  it('announces warning status politely via the persistent live region', async () => {
     render(
       <Field
         label="Email"
@@ -254,9 +307,34 @@ describe('Field', () => {
         <input id="email-input" />
       </Field>,
     );
-    const status = screen.getByRole('status');
-    expect(status).toHaveTextContent('Check this');
-    expect(status).toHaveAttribute('aria-live', 'polite');
+    expect(screen.getByText('Check this')).not.toHaveAttribute('aria-live');
+    await waitFor(() => {
+      expect(politeRegion()).toHaveTextContent('Check this');
+    });
+  });
+
+  // Regression: the status live region must NOT be born together with its
+  // content. A message that appears after mount (the common validation flow)
+  // has to land in the persistent announce region.
+  it('announces a status message that appears after mount', async () => {
+    const {rerender} = render(
+      <Field label="Email" inputID="email-input">
+        <input id="email-input" />
+      </Field>,
+    );
+    expect(assertiveRegion()).toBeNull();
+
+    rerender(
+      <Field
+        label="Email"
+        inputID="email-input"
+        status={{type: 'error', message: 'Email is required'}}>
+        <input id="email-input" />
+      </Field>,
+    );
+    await waitFor(() => {
+      expect(assertiveRegion()).toHaveTextContent('Email is required');
+    });
   });
 
   it('auto-generates description ID as {inputID}-desc when descriptionID is not provided', () => {
@@ -280,7 +358,10 @@ describe('Field', () => {
         <input id="my-input" />
       </Field>,
     );
-    expect(screen.getByRole('alert')).toHaveAttribute('id', 'my-input-status');
+    expect(screen.getByText('Required')).toHaveAttribute(
+      'id',
+      'my-input-status',
+    );
   });
 
   it('warns when isOptional and isRequired are both set', () => {
@@ -424,7 +505,7 @@ describe('Field', () => {
         </Field>,
         {wrapper: horizontalLabelsWrapper},
       );
-      const statusEl = screen.getByRole('alert');
+      const statusEl = screen.getByText('Required');
       const inputEl = screen.getByTestId('email');
       // Both status and input should be inside the same wrapper div (column 2)
       expect(statusEl.parentElement).toBe(inputEl.parentElement);
@@ -455,6 +536,48 @@ describe('Field', () => {
       expect(labelWrapper.className).toContain('horizontalLabelAlign');
       // Label should be inside
       expect(labelWrapper.querySelector('label')).not.toBeNull();
+    });
+  });
+
+  describe('local stacking ownership', () => {
+    // Input wrappers paint their surface above the attached status message
+    // box through a local z-index, so that layer must be contained by a
+    // Field-owned isolation boundary. Otherwise a detached or tooltip field
+    // — whose input wrapper renders outside the attached-status wrapper —
+    // competes with page-level stacking (AppShell sticky header, later
+    // siblings) and can paint over unrelated chrome (#5689).
+    it.each(['attached', 'detached', 'tooltip'] as const)(
+      'isolates the field surface for the %s status variant',
+      variant => {
+        render(
+          <Field
+            label="Name"
+            inputID="name-input"
+            status={{type: 'error', message: 'Required'}}
+            statusVariant={variant}
+            data-testid="field">
+            <input id="name-input" data-testid="control" />
+          </Field>,
+        );
+        const field = screen.getByTestId('field');
+        // The Field root is the isolation owner: it stays at its normal
+        // parent paint level (it carries no positioning or z-index of its
+        // own) while containing every local layer — the input wrapper's 1
+        // and the attached status -1.
+        expect(getComputedStyle(field).isolation).toBe('isolate');
+        // Unpositioned and unranked — the owner never competes itself.
+        expect(getComputedStyle(field).zIndex).toBe('');
+      },
+    );
+
+    it('keeps a custom control without status isolated too', () => {
+      render(
+        <Field label="Name" inputID="name-input" data-testid="field">
+          <input id="name-input" data-testid="control" />
+        </Field>,
+      );
+      const field = screen.getByTestId('field');
+      expect(getComputedStyle(field).isolation).toBe('isolate');
     });
   });
 });

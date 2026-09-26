@@ -1,0 +1,125 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+# Crowdin translations validation — Crowdin's native GitHub integration now
+# commits translated locale files directly and keeps its own PR up to date,
+# so this workflow no longer downloads translations or opens one itself.
+#
+# What it still needs to gate, because nothing else in CI does:
+#   - A malformed or non-JSON-object export should fail loudly.
+#   - `skip_untranslated_strings` strips untranslated keys from within a
+#     file, but a locale with zero translated keys still comes back as an
+#     empty `{}` file rather than being omitted.
+#   - Crowdin's raw export isn't run through Prettier, so translated locale
+#     JSON can drift from the repo's formatting. Crowdin's export differs
+#     from this repo's Prettier output only by an extra trailing blank
+#     line, so that harmless difference is normalized away before checking
+#     — only substantive formatting drift fails.
+# Only locale files this PR actually changed are checked, so a PR that
+# doesn't touch a given locale file isn't penalized for its pre-existing
+# state.
+# (CLDR weekday freshness and catalog/ICU correctness are already covered by
+# `pnpm check:repo` in the Lint workflow.)
+name: Crowdin Translations Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/core/locales/*.json'
+
+permissions: {}
+
+concurrency:
+  group: crowdin-validate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: 4-core-ubuntu
+    permissions:
+      contents: read
+    steps:
+      # Full history so base.sha and head.sha are both guaranteed to be
+      # present locally for the diff below, regardless of how far apart
+      # they are or how many commits the PR has picked up.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
+
+      - name: Determine locale files changed by this PR
+        id: changed
+        run: |
+          set -euo pipefail
+          git diff --name-only --diff-filter=ACMR \
+            "${{ github.event.pull_request.base.sha }}" \
+            "${{ github.event.pull_request.head.sha }}" \
+            -- 'packages/core/locales/*.json' > changed-locales.txt
+          cat changed-locales.txt
+          if [ -s changed-locales.txt ]; then
+            echo "any=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "any=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate changed locale JSON
+        if: steps.changed.outputs.any == 'true'
+        run: |
+          set -euo pipefail
+          workdir=$(mktemp -d "$PWD/.crowdin-validate.XXXXXX")
+          trap 'rm -rf "$workdir"' EXIT
+
+          malformed=()
+          empty=()
+          to_format_check=()
+
+          while IFS= read -r f; do
+            [ -n "$f" ] || continue
+            # Deleted by this PR — nothing left to validate.
+            [ -f "$f" ] || continue
+
+            if ! jq -e 'type == "object"' "$f" >/dev/null 2>&1; then
+              malformed+=("$f")
+              continue
+            fi
+
+            case "$f" in
+              packages/core/locales/en.json|packages/core/locales/pseudo.json) ;;
+              *)
+                if [ "$(jq -r 'length' "$f")" = "0" ]; then
+                  empty+=("$f")
+                fi
+                ;;
+            esac
+
+            to_format_check+=("$f")
+          done < changed-locales.txt
+
+          if [ "${#malformed[@]}" -gt 0 ]; then
+            echo "::error::Malformed locale JSON, not a JSON object: ${malformed[*]}"
+          fi
+          if [ "${#empty[@]}" -gt 0 ]; then
+            echo "::error::Empty locale catalog(s) with zero translated keys — delete before merging: ${empty[*]}"
+          fi
+
+          format_failed=0
+          if [ "${#to_format_check[@]}" -gt 0 ]; then
+            for f in "${to_format_check[@]}"; do
+              dest="$workdir/$(basename "$f")"
+              # Crowdin's export differs from this repo's Prettier output
+              # only by an extra trailing blank line. Collapsing all
+              # trailing newlines down to exactly one before checking
+              # means that harmless difference can't fail the check, while
+              # any other formatting drift still does.
+              printf '%s\n' "$(cat "$f")" > "$dest"
+            done
+            if ! pnpm exec prettier --check "$workdir"/*.json; then
+              echo "::error::Locale JSON is not Prettier-formatted (checked after normalizing the trailing newline): ${to_format_check[*]}"
+              format_failed=1
+            fi
+          fi
+
+          if [ "${#malformed[@]}" -gt 0 ] || [ "${#empty[@]}" -gt 0 ] || [ "$format_failed" = "1" ]; then
+            exit 1
+          fi

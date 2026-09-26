@@ -81,6 +81,24 @@ describe('useLongPress', () => {
     expect(onLongPress).not.toHaveBeenCalled();
   });
 
+  it('cancels when a second finger touches down mid-press', () => {
+    const onLongPress = vi.fn();
+    const {result} = renderHook(() => useLongPress({onLongPress}));
+
+    act(() => {
+      result.current.onTouchStart(touchEvent([{clientX: 0, clientY: 0}]));
+      // A second finger joins before the press fires (e.g. pinch-to-zoom).
+      result.current.onTouchStart(
+        touchEvent([
+          {clientX: 0, clientY: 0},
+          {clientX: 50, clientY: 50},
+        ]),
+      );
+      vi.advanceTimersByTime(500);
+    });
+    expect(onLongPress).not.toHaveBeenCalled();
+  });
+
   it('cancels when the finger moves past the threshold', () => {
     const onLongPress = vi.fn();
     const {result} = renderHook(() => useLongPress({onLongPress}));

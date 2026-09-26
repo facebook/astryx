@@ -1,6 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useState} from 'react';
+/**
+ * @file List.stories.tsx
+ * @input List, ListItem, and Storybook args
+ * @output List examples, including bounded inline edge compensation
+ * @position Storybook demonstrations for List consumers
+ */
+
+import {useState, type CSSProperties} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {List, ListItem} from '@astryxdesign/core/List';
 import {Avatar} from '@astryxdesign/core/Avatar';
@@ -31,6 +38,13 @@ const meta: Meta<typeof List> = {
     hasDividers: {
       control: 'boolean',
       description: 'Whether to show dividers between items',
+    },
+    edgeCompensation: {
+      control: 'select',
+      options: [undefined, 'inline'],
+      description:
+        "Cancel each item's inset up to the padded container edge so row " +
+        'text moves toward sibling content',
     },
     listStyle: {
       control: 'select',
@@ -110,6 +124,57 @@ export const Spacious: Story = {
       />
     </List>
   ),
+};
+
+const inlineEdgeCompensationContainerStyle: CSSProperties & {
+  '--container-padding-inline-start': string;
+  '--container-padding-inline-end': string;
+} = {
+  paddingInline: 16,
+  '--container-padding-inline-start': '16px',
+  '--container-padding-inline-end': '16px',
+};
+
+export const InlineEdgeCompensation: Story = {
+  args: {edgeCompensation: 'inline'},
+  render: args => (
+    <div style={inlineEdgeCompensationContainerStyle}>
+      <Text type="label" size="lg">
+        Order items
+      </Text>
+      <List {...args}>
+        <ListItem
+          label="Solstice Mug"
+          description="Ceramic, 12 oz"
+          onClick={() => {}}
+        />
+        <ListItem
+          label="Meridian Notebook"
+          description="Dot grid, A5"
+          onClick={() => {}}
+        />
+        <ListItem
+          label="Field Pen"
+          description="0.5 mm, black ink"
+          onClick={() => {}}
+        />
+      </List>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'edgeCompensation="inline" cancels the smaller of each item\'s inline inset ' +
+          'and its container padding on each edge. The 16px container padding ' +
+          'here is sufficient to align row text with the heading; smaller ' +
+          'padding leaves some inset uncompensated. The cancelling margin reads the ' +
+          'same variable the items derive their inline padding from, so it ' +
+          'tracks density and theme padding overrides automatically while ' +
+          'zero-padding containers stay unchanged.',
+      },
+    },
+  },
 };
 
 export const Interactive: Story = {

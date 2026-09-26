@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-"use strict";
+'use strict';
 
 /**
  * @astryxdesign/postcss-plugin
@@ -12,12 +12,12 @@
  *   reset < astryx-base (library, prefix: 'astryx') < astryx-theme < product (prefix: 'x')
  *
  * The separate prefixes ensure atomic classes don't collide between
- * layers, which would break theme overrides.
+ * layers, which would break theme overrides. Generated replacement CSS is
+ * parsed by the host PostCSS instance so consumers do not load a second copy.
  */
 
 const path = require('node:path');
 const fs = require('node:fs');
-const postcss = require('postcss');
 const babel = require('@babel/core');
 const stylexBabelPlugin = require('@stylexjs/babel-plugin');
 const {globSync} = require('fast-glob');
@@ -27,7 +27,11 @@ const globParent = require('glob-parent');
 const PLUGIN_NAME = '@astryxdesign/postcss-plugin';
 
 const LIBRARY_GLOB = 'node_modules/@astryxdesign/**/*.{ts,tsx}';
-const LIBRARY_PATTERNS = ['node_modules/@astryxdesign/', 'packages/core/', 'packages/themes/'];
+const LIBRARY_PATTERNS = [
+  'node_modules/@astryxdesign/',
+  'packages/core/',
+  'packages/themes/',
+];
 const STYLEX_IMPORT_SOURCE = '@stylexjs/stylex';
 
 function parseDependency(fileOrGlob, cwd) {
@@ -117,7 +121,7 @@ function createPlugin() {
           const fileName = result.opts.from;
 
           let styleXAtRule = null;
-          root.walkAtRules((atRule) => {
+          root.walkAtRules(atRule => {
             if (atRule.name === 'stylex' && !atRule.params) {
               styleXAtRule = atRule;
             }
@@ -193,7 +197,7 @@ function createPlugin() {
                     rulesMap.set(filePath, stylex);
                   }
                 })
-                .catch((error) => {
+                .catch(error => {
                   if (shouldSkipTransformError) {
                     console.warn(
                       `[${PLUGIN_NAME}] Failed to transform "${filePath}": ${error.message}`,
@@ -231,9 +235,9 @@ function createPlugin() {
             parts.push(`@layer ${layers.product} {\n${productCss}\n}`);
           }
 
-          const finalCss = parts.join('\n\n');
-          const parsed = await postcss.parse(finalCss, {from: fileName});
-          styleXAtRule.replaceWith(parsed);
+          // Let the host PostCSS instance parse the replacement so this plugin
+          // does not need or load a second copy of PostCSS.
+          styleXAtRule.replaceWith(parts.join('\n\n'));
           result.root = root;
 
           if (!shouldSkipTransformError) {

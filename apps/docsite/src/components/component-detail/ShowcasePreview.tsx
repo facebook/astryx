@@ -64,7 +64,11 @@ export function ShowcasePreview({name}: ShowcasePreviewProps) {
           minHeight: 160,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
+          // `safe center` centers the preview when it fits but falls back to
+          // start alignment when it overflows the frame, so a showcase wider
+          // than the viewport isn't pushed into the unscrollable negative
+          // gutter and clipped at its leading edge.
+          justifyContent: 'safe center',
         }}
         {...previewNavigationProps}>
         <div style={{minWidth: 'fit-content'}}>
@@ -82,7 +86,9 @@ export function ShowcasePreview({name}: ShowcasePreviewProps) {
         overflow: 'auto',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
+        // See the small-viewport branch above: `safe center` keeps the leading
+        // edge reachable when a preview overflows instead of clipping it.
+        justifyContent: 'safe center',
       }}
       {...previewNavigationProps}>
       <Component />

@@ -279,6 +279,86 @@ export const NestedPaddingInheritance: Story = {
   ),
 };
 
+export const AsymmetricPadding: Story = {
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>padding=6 (all edges 24px)</h4>
+        <Section variant="muted" width={350} padding={6}>
+          <p {...stylex.props(styles.text)}>
+            The baseline: every edge takes the same spacing step.
+          </p>
+        </Section>
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>
+          padding=6 + paddingBlockStart=2 (tight above)
+        </h4>
+        <Section variant="muted" width={350} padding={6} paddingBlockStart={2}>
+          <p {...stylex.props(styles.text)}>
+            Only the top edge moves to 8px. Both inline edges and the bottom
+            edge stay at 24px — the shape you want under a sticky header.
+          </p>
+        </Section>
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>
+          padding=6 + paddingBlockEnd=0 (flush bottom)
+        </h4>
+        <Section variant="muted" width={350} padding={6} paddingBlockEnd={0}>
+          <p {...stylex.props(styles.text)}>
+            The bottom edge goes to 0 so content can sit flush against a
+            following section, with the inline inset preserved.
+          </p>
+        </Section>
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>
+          paddingBlock=6 + paddingBlockEnd=1 (edge beats axis)
+        </h4>
+        <Section
+          variant="muted"
+          width={350}
+          paddingBlock={6}
+          paddingBlockEnd={1}>
+          <p {...stylex.props(styles.text)}>
+            paddingBlockEnd wins over paddingBlock on its own edge: 24px top,
+            4px bottom, inline padding from the theme default.
+          </p>
+        </Section>
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>
+          padding=6 + paddingInlineStart=2 (tight leading edge)
+        </h4>
+        <Section variant="muted" width={350} padding={6} paddingInlineStart={2}>
+          <p {...stylex.props(styles.text)}>
+            Only the inline-start edge moves to 8px — the left edge in LTR, the
+            right edge in RTL. The other three stay at 24px.
+          </p>
+        </Section>
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>
+          one prop per edge (1 / 2 / 3 / 4)
+        </h4>
+        <Section
+          variant="muted"
+          width={350}
+          paddingInlineStart={1}
+          paddingInlineEnd={2}
+          paddingBlockStart={3}
+          paddingBlockEnd={4}>
+          <p {...stylex.props(styles.text)}>
+            All four edges resolved independently: 4px leading, 8px trailing,
+            12px top, 16px bottom.
+          </p>
+        </Section>
+      </div>
+    </div>
+  ),
+};
+
 // ============================================================================
 // Scrollable — isScrollable / overflow (issue #2623)
 // ============================================================================

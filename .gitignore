@@ -11,6 +11,9 @@ storybook-static/
 # Test coverage
 coverage/
 
+# RTL audit generated scorecard (relationship-based; never committed as a baseline)
+rtl-audit-report.json
+
 # IDE
 .idea/
 .vscode/
@@ -44,15 +47,23 @@ e2e/playwright/.cache/
 
 # Vibe tests (large generated files)
 internal/vibe-tests/results/
+internal/vibe-tests/.fixture-runs/
 
-# Astryx agent docs (generated)
-.astryx-docs/
+# Astryx agent docs and test scratch directories (generated)
+.astryx-*/
 apps/sandbox/.next/
 apps/sandbox/out/
 apps/sandbox/next-env.d.ts
 apps/example-nextjs-tailwind/.next
 .parity-test-results.json
 .worktree-parity-test
+
+# Scratch git worktrees. These live inside the repo for convenience, so without
+# an ignore a `git add -A` in the main tree sweeps an entire second checkout
+# into the commit.
+.worktrees/
+worktrees/
+
 # Patch files
 *.patch
 *.rej
@@ -68,3 +79,17 @@ yarn.lock
 .node-version
 .tool-versions
 mise.toml
+
+# Generated shadcn Registry output (rebuilt by the docsite generate step)
+apps/docsite/public/shadcn/
+
+# Generated i18n artifacts (rebuilt from en.json)
+packages/core/locales/pseudo.json
+
+# Generated lab readiness report (rebuild with `pnpm lab:readiness`).
+# Deliberately not committed: a checked-in snapshot goes stale the moment the
+# source tree moves, and a stale score read as current is what this tooling
+# exists to prevent. CI runs `pnpm lab:readiness:check` instead, which fails
+# when the manifest's claims no longer match the repo.
+apps/storybook/.lab-readiness/
+apps/storybook/.storybook/lab-readiness/

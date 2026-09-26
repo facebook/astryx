@@ -32,7 +32,7 @@ export async function generateMetadata({
   // (images are not inherited), so the fallback must be explicit here.
   const ogImage =
     post.coverImage ??
-    'https://lookaside.facebook.com/assets/astryx/Astryx-Banner.png';
+    '/images/Astryx-Banner.png';
   const ogAlt = post.coverImage ? (post.coverAlt ?? post.title) : post.title;
 
   return {

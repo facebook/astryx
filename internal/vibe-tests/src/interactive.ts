@@ -546,7 +546,7 @@ import {
 ## Subcomponents
 - \`DropdownMenuCheckboxItem\`: Checkable item
 - \`DropdownMenuRadioGroup\` / \`DropdownMenuRadioItem\`: Radio items
-- \`DropdownMenuSub\` / \`DropdownMenuSubTrigger\` / \`DropdownMenuSubContent\`: Nested menus
+- \`DropdownMenuSubMenu\`: A menu row that reveals a nested flyout of its own children/items
 `,
     Command: `# Command
 

@@ -55,7 +55,7 @@ export interface RadialTooltipProps {
  * using polar coordinate math and renders a tooltip in the top layer.
  *
  * @example
- * ```tsx
+ * ```
  * <RadialChart data={data} valueKey="revenue" labelKey="region" height={400}>
  *   <RadialSlice colors={colors} />
  *   <RadialTooltip />

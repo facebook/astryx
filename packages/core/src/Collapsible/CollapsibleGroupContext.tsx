@@ -7,13 +7,13 @@
  * @input Uses React createContext
  * @output Exports CollapsibleGroupContext, CollapsibleGroupContextValue,
  *   CollapsibleGroupPresentationContext, CollapsibleGroupPresentationValue,
- *   CollapsibleGroupDividers, and CollapsibleGroupDensity types
+ *   CollapsibleGroupDensity, and CollapsibleChevronPosition types
  * @position Context definitions for collapsible group coordination and presentation
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Collapsible/CollapsibleGroup.tsx (provider)
  * - /packages/core/src/Collapsible/Collapsible.doc.mjs
- * - /packages/cli/templates/blocks/components/Collapsible/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Collapsible/ (showcase blocks)
  */
 
 import {createContext} from 'react';
@@ -37,14 +37,6 @@ export const CollapsibleGroupContext =
 CollapsibleGroupContext.displayName = 'CollapsibleGroupContext';
 
 /**
- * Divider style rendered around the items of a CollapsibleGroup.
- * - 'between': hairlines between adjacent items only.
- * - 'all': hairlines between items plus the group's top and bottom edges.
- * - 'none': no dividers (default).
- */
-export type CollapsibleGroupDividers = 'between' | 'all' | 'none';
-
-/**
  * Row density for the items of a CollapsibleGroup, controlling trigger and
  * content block padding. Shares the repo-wide density vocabulary
  * (Table, List, Item).
@@ -52,15 +44,31 @@ export type CollapsibleGroupDividers = 'between' | 'all' | 'none';
 export type CollapsibleGroupDensity = 'compact' | 'balanced' | 'spacious';
 
 /**
+ * Logical position of Collapsible's disclosure chevron.
+ *
+ * `end` is the default trailing indicator: down when collapsed, up when
+ * expanded. `start` is the leading disclosure pattern: inward toward content
+ * when collapsed (mirrored under RTL), down when expanded.
+ */
+export type CollapsibleChevronPosition = 'start' | 'end';
+
+/**
  * Presentation value provided by CollapsibleGroup so each Collapsible can
  * draw its own group chrome (StyleX has no child selectors, so the group
  * cannot style items from the outside).
  */
 export interface CollapsibleGroupPresentationValue {
-  /** Resolved divider style for the group's items. */
-  dividers: CollapsibleGroupDividers;
+  /** Whether the group's items draw hairline dividers between one another. */
+  hasDividers: boolean;
   /** Resolved row density, or null to keep the default (unpadded) look. */
   density: CollapsibleGroupDensity | null;
+  /**
+   * Chevron position for the group's direct items, or null to leave each item on
+   * its own default. An item's own `chevronPosition` still wins, but mixing
+   * positions within one group reads as a mistake, so the group is the usual
+   * place to set it.
+   */
+  chevronPosition: CollapsibleChevronPosition | null;
 }
 
 /**

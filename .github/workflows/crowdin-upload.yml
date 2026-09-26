@@ -1,0 +1,61 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+# Crowdin file context — Crowdin's native GitHub integration now syncs
+# packages/core/locales/en.json to Crowdin on every push to main, so this
+# workflow no longer uploads sources itself (that would just duplicate the
+# native sync). It only keeps the source file's Crowdin context note current,
+# which the native integration has no setting for.
+name: Crowdin Upload
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/core/locales/en.json'
+      - '.github/workflows/crowdin-upload.yml'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  upload:
+    runs-on: 4-core-ubuntu
+    permissions: {}
+    steps:
+      # File-level context is a field on the Crowdin file record, and a
+      # crowdin.yml `files:` entry has no key for it, so nothing that syncs
+      # the source file — native or CLI — can carry it. Tone and terminology
+      # belong in the Crowdin style guide, not here.
+      - name: Set file-level context
+        env:
+          CROWDIN_PROJECT_ID: ${{ vars.CROWDIN_PROJECT_ID }}
+          CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
+          SOURCE_PATH: /packages/core/locales/en.json
+          CONTEXT: >-
+            English source strings for Astryx's reusable React UI components.
+            They appear in product-neutral controls across many host
+            applications, including compact visible controls and screen-reader
+            labels. Use the key's component segment, per-string description,
+            and tagged screenshots to identify each surface. Preserve ICU
+            placeholders and rich-text tags exactly.
+        run: |
+          set -euo pipefail
+          api="https://api.crowdin.com/api/v2/projects/$CROWDIN_PROJECT_ID/files"
+          auth="Authorization: Bearer $CROWDIN_PERSONAL_TOKEN"
+          files=$(curl --fail-with-body -sS -H "$auth" "$api?limit=500") ||
+            { echo "::error::$files"; exit 1; }
+          file=$(jq --arg p "$SOURCE_PATH" '[.data[].data | select(.path == $p)][0]' <<<"$files")
+          id=$(jq -r '.id // empty' <<<"$file")
+          if [ -z "$id" ]; then
+            echo "::error::no file at $SOURCE_PATH — upload sources first"
+            exit 1
+          fi
+          if [ "$(jq -r '.context // ""' <<<"$file")" = "$CONTEXT" ]; then
+            echo "file $id already carries this context"
+            exit 0
+          fi
+          patch=$(jq -n --arg c "$CONTEXT" '[{op: "replace", path: "/context", value: $c}]')
+          out=$(curl --fail-with-body -sS -X PATCH "$api/$id" \
+            -H "$auth" -H 'Content-Type: application/json' --data "$patch") ||
+            { echo "::error::$out"; exit 1; }
+          echo "set context on file $id"

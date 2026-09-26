@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'CollapsibleGroup',
@@ -31,15 +31,21 @@ export const docs = {
       description: 'Callback invoked when the set of open items changes.',
     },
     {
-      name: 'dividers',
-      type: "'between' | 'all' | 'none'",
-      description: "Divider style rendered around the group's items. 'between' draws hairlines between adjacent items; 'all' adds the group's top and bottom edges. When enabled, the group renders a wrapper div and items default to 'balanced' density. Pair with bare Collapsible children; Card-wrapped items provide their own separation.",
-      default: "'none'",
+      name: 'hasDividers',
+      type: 'boolean',
+      description: "Whether to draw hairline dividers between the group's items. When set, the group renders a wrapper div and items default to 'balanced' density. Pair with bare Collapsible children; Card-wrapped items provide their own separation.",
+      default: 'false',
     },
     {
       name: 'density',
       type: "'compact' | 'balanced' | 'spacious'",
       description: "Row density controlling trigger and content block padding on the group's items. Defaults to 'balanced' when dividers are shown; otherwise items keep their default unpadded look.",
+    },
+    {
+      name: 'chevronPosition',
+      type: "'start' | 'end'",
+      description: "Logical position shared by the group's direct Collapsible items. `end` is the default trailing indicator; `start` is a leading disclosure arrow that points inward when collapsed (mirrored under RTL) and down when expanded. An individual Collapsible can still override it.",
+      default: "'end'",
     },
     {
       name: 'children',
@@ -87,15 +93,21 @@ export const docsZh = {
       description: '展开项目集合变更时调用的回调。',
     },
     {
-      name: 'dividers',
-      type: "'between' | 'all' | 'none'",
-      description: "渲染在组项目周围的分隔线样式。'between' 仅在相邻项目之间绘制细线；'all' 额外绘制组的顶部和底部边缘。启用后组会渲染一个包裹 div，且项目默认使用 'balanced' 密度。适合搭配裸 Collapsible 子项使用；用 Card 包裹的项目自带视觉分隔。",
-      default: "'none'",
+      name: 'hasDividers',
+      type: 'boolean',
+      description: "是否在组项目之间绘制细线分隔线。启用后组会渲染一个包裹 div，且项目默认使用 'balanced' 密度。适合搭配裸 Collapsible 子项使用；用 Card 包裹的项目自带视觉分隔。",
+      default: 'false',
     },
     {
       name: 'density',
       type: "'compact' | 'balanced' | 'spacious'",
       description: "控制组内项目触发器和内容块内边距的行密度。显示分隔线时默认为 'balanced'；否则项目保持默认的无内边距外观。",
+    },
+    {
+      name: 'chevronPosition',
+      type: "'start' | 'end'",
+      description: "组内直接 Collapsible 项目的逻辑箭头位置。`end` 是默认的尾随指示器；`start` 是前置展开箭头，折叠时指向内容（RTL 下镜像），展开时向下。单个 Collapsible 仍可覆盖此设置。",
+      default: "'end'",
     },
     {
       name: 'children',
@@ -116,8 +128,9 @@ export const docsDense = {
     defaultValue: 'default open item(s) (uncontrolled); string for single, array for multiple',
     value: 'controlled open item(s)',
     onChange: 'callback on open items change',
-    dividers: "row hairlines: 'between' items only, 'all' adds outer edges, 'none' (default); enables wrapper div + 'balanced' density; use bare Collapsible children",
+    hasDividers: "draw hairline dividers between items; enables wrapper div + 'balanced' density; use bare Collapsible children",
     density: "row padding 'compact' | 'balanced' | 'spacious'; defaults 'balanced' with dividers, else unpadded",
+    chevronPosition: "logical chevron position for direct items: 'end' (default trailing, down/up) | 'start' (leading, inward/down with RTL mirroring); per-item prop wins",
     children: 'Collapsible instances to coordinate',
   },
 };

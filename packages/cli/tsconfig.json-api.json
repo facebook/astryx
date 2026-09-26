@@ -5,14 +5,17 @@
     "allowJs": true,
     "checkJs": true,
     "noEmit": true,
-    "types": ["node"]
+    "types": ["node"],
+    "customConditions": ["source"]
   },
   "include": [
-    "src/types/**/*.d.ts",
-    "src/lib/json.mjs",
-    "src/lib/manifest.mjs",
-    "src/lib/parse.mjs",
-    "src/config.mjs",
-    "../core/src/docs-types.ts"
+    "api/json/index.ts",
+    "foundation/response/base.d.ts",
+    "foundation/response/error-codes.d.ts",
+    "clients/cli/lib/manifest.d.ts",
+    "foundation/response/json.mjs",
+    "clients/cli/lib/manifest.mjs",
+    "api/json/parse.mjs",
+    "authoring/config/parse.mjs"
   ]
 }

@@ -62,6 +62,12 @@ export interface SeriesContext {
   xKey: string;
   xScale: ChartScale;
   yScale: ScaleLinear<number, number>;
+  /**
+   * Categorical y band scale for row-based marks (e.g. heatmap). Present only
+   * when a series declares `layout.yBandKey`; in that case the y-axis is
+   * categorical and the linear `yScale` is unused/degenerate.
+   */
+  yBandScale?: ScaleBand<string>;
   /** Width of the plot area */
   width: number;
   /** Height of the plot area */
@@ -116,6 +122,15 @@ export interface SeriesDef {
     group?: string;
     /** Whether this series contributes to y-domain zero inclusion */
     includeZero?: boolean;
+    /**
+     * When set, the chart's y-axis is a band scale built from this data key's
+     * unique values (categorical rows, e.g. a heatmap's days) rather than a
+     * linear value scale. The layout pass exposes it to marks and the axis as
+     * `yBandScale`, so a left `<ChartAxis>` renders the categories aligned to
+     * each row. A heatmap should also declare `dataKeys: []` so it doesn't feed
+     * the (now unused) linear y-domain.
+     */
+    yBandKey?: string;
   };
   /**
    * Resolve pixel positions for each data point.
@@ -155,6 +170,12 @@ export interface ChartContext {
   xKey: string;
   xScale: ChartScale;
   yScale: ScaleLinear<number, number>;
+  /**
+   * Categorical y band scale (e.g. heatmap rows), present when a series declares
+   * `layout.yBandKey`. Chrome that renders the y-axis (`ChartAxis`) should
+   * prefer this over the linear `yScale` when it exists.
+   */
+  yBandScale?: ScaleBand<string>;
   resolved: Map<string, ResolvedPoint[]>;
   onPointer: (handler: (e: ChartPointerEvent) => void) => () => void;
   svgRef: React.RefObject<SVGSVGElement | null>;

@@ -1,24 +1,25 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'useTableRowExpansion',
   subComponentOf: 'Table',
   displayName: 'useTableRowExpansion',
   description:
-    'Hook that returns a TablePlugin implementing expandable rows with inherited columns. Child rows use the same columns as their parents, indented by depth. Clicking the chevron (or right-click context menu) toggles expansion. Pair with useTableRowExpansionState, which flattens the tree and derives this config (expand/collapse handlers + expand-all state) from a single expandedKeys set.',
+    'Hook that returns a TablePlugin which expands a full-width detail panel below a row, rendered by the consumer via renderExpanded(item). Adds a leading chevron column and a right-click "Expand/Collapse row" action; the consumer owns the expandedKeys set. Use it for master-detail rows (order details, forms, charts, nested tables). For hierarchical data where child rows reuse the parent columns, use useTableTreeData + useTableTreeState instead.',
   props: [
     {
       name: 'expandedKeys',
       type: 'Set<string>',
-      description: 'Set of currently-expanded row keys.',
+      description: 'Set of currently-expanded row keys. Consumer-owned.',
       required: true,
     },
     {
       name: 'onToggle',
       type: '(key: string) => void',
-      description: 'Called when a row expansion is toggled.',
+      description:
+        'Called with a row key when its expansion is toggled (chevron click or context-menu action).',
       required: true,
     },
     {
@@ -28,53 +29,82 @@ export const docs = {
       required: true,
     },
     {
-      name: 'getChildren',
-      type: '(item: T) => T[]',
-      description: 'Return the children of a row (determines expandability).',
+      name: 'renderExpanded',
+      type: '(item: T) => ReactNode',
+      description:
+        'Render the detail content shown in a full-width panel below the row when it is expanded. Receives the row item.',
       required: true,
-    },
-    {
-      name: 'getDepth',
-      type: '(item: T) => number',
-      description: 'Return the depth of a row in the hierarchy (0 = top-level). Used for indentation.',
     },
     {
       name: 'getIsItemExpandable',
       type: '(item: T) => boolean',
-      description: 'Control which rows are expandable. Defaults to checking getChildren length.',
+      description:
+        'Control which rows are expandable. Non-expandable rows show no chevron, no context-menu action, and never render a panel. Defaults to all rows expandable.',
+    },
+  ],
+  examples: [
+    {
+      label: 'Master-detail order rows',
+      code: `const [expandedKeys, setExpandedKeys] = useState(new Set());
+const expansion = useTableRowExpansion({
+  expandedKeys,
+  onToggle: key =>
+    setExpandedKeys(prev => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    }),
+  getRowKey: item => item.id,
+  renderExpanded: item => <OrderDetails order={item} />,
+});
+
+<Table data={orders} columns={columns} idKey="id" plugins={{expansion}} />;`,
     },
     {
-      name: 'hasRowClickExpansion',
-      type: 'boolean',
-      description: 'When true, clicking anywhere on the row toggles expansion.',
-      default: 'false',
-    },
-    {
-      name: 'isAllExpanded',
-      type: "boolean | 'indeterminate'",
-      description: 'State of the expand-all toggle in the header. Enables the header toggle button.',
-    },
-    {
-      name: 'onToggleExpandAll',
-      type: '(expand: boolean) => void',
-      description: 'Callback when the expand-all header toggle is clicked.',
+      label: 'Migrating from tree rows to the tree plugin',
+      code: `// useTableRowExpansion is now for DETAIL PANELS, not tree rows. If you used
+// it to render nested child rows that reuse the parent columns, move to
+// useTableTreeData + useTableTreeState.
+
+// BEFORE (tree rows via useTableRowExpansion + useTableRowExpansionState):
+const {data, expansionConfig} = useTableRowExpansionState({
+  baseData: tree,
+  getChildren: item => item.children ?? [],
+  getRowKey: item => item.id,
+  expandedKeys,
+  setExpandedKeys,
+});
+const expansion = useTableRowExpansion(expansionConfig);
+<Table data={data} columns={columns} idKey="id" plugins={{expansion}} />;
+
+// AFTER (tree rows via the tree plugin):
+const {visibleData, treeConfig} = useTableTreeState({
+  data: tree,                   // nested data
+  idKey: 'id',                  // or a function: idKey={item => item.id}
+  childrenKey: 'children',      // replaces getChildren
+  defaultExpandedIds: ['root'], // or controlled: expandedIds + onExpandedIdsChange
+});
+const tree = useTableTreeData({
+  ...treeConfig,
+  hasExpandAllControl: true,    // was isAllExpanded + onToggleExpandAll
+  hasRowClickExpansion: true,   // same prop name
+});
+<Table data={visibleData} columns={columns} idKey="id" plugins={{tree}} />;`,
     },
   ],
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'Returns a TablePlugin for expandable rows w/ inherited columns. Child rows reuse parent columns, indented by depth. Chevron click (or right-click menu) toggles expansion. Pair w/ useTableRowExpansionState, which flattens the tree + derives this config from one expandedKeys set.',
+    'Returns a TablePlugin that expands a full-width detail panel below a row via renderExpanded(item). Adds a chevron column + right-click expand/collapse action; consumer owns expandedKeys. For nested child rows that reuse parent columns, use useTableTreeData + useTableTreeState instead.',
   propDescriptions: {
-    expandedKeys: 'Set of currently-expanded row keys.',
-    onToggle: 'Called when a row expansion is toggled.',
+    expandedKeys: 'Set of currently-expanded row keys. Consumer-owned.',
+    onToggle: 'Called with a row key when its expansion is toggled.',
     getRowKey: 'Derive a stable unique key from a row item.',
-    getChildren: 'Return children of a row; determines expandability.',
-    getDepth: 'Return depth of a row (0 = top-level). Used for indentation.',
-    getIsItemExpandable: 'Control which rows are expandable. Defaults to checking getChildren length.',
-    hasRowClickExpansion: 'If true, clicking anywhere on the row toggles expansion. Default false.',
-    isAllExpanded: 'State of the expand-all header toggle. Enables the header toggle button.',
-    onToggleExpandAll: 'Callback when the expand-all header toggle is clicked.',
+    renderExpanded:
+      'Render the full-width detail panel below an expanded row. Receives the row item.',
+    getIsItemExpandable:
+      'Control which rows are expandable. Defaults to all rows expandable.',
   },
 };

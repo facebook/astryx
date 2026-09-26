@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'SelectorOption',
@@ -20,12 +20,19 @@ export const docs = {
       name: 'icon',
       type: 'IconType',
       description:
-        'Icon displayed before the label. See `npx astryx docs icons` for valid semantic names.',
+        'Icon displayed before the label. See `astryx docs icons` for valid semantic names.',
     },
     {
       name: 'description',
       type: 'ReactNode',
       description: 'Secondary description text displayed below the label.',
+    },
+    {
+      name: 'layout',
+      type: "'stacked' | 'inline'",
+      description:
+        "How the label and description sit together. 'stacked' puts the description on its own line; 'inline' keeps both on one line so the row fits a fixed-height host. Inside a Selector trigger the trigger's padding sizes itself to whichever layout you pick, so both land on the 4px rhythm; an InputGroup pins the row height and forces 'inline'.",
+      default: "'stacked'",
     },
     {
       name: 'endContent',

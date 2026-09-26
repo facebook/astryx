@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Collapsible',
@@ -16,8 +16,10 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-collapsible', visualProps: ['dividers', 'density']},
-      {className: 'astryx-collapsible-group', visualProps: ['dividers', 'density']},
+      {className: 'astryx-collapsible', visualProps: ['density']},
+      {className: 'astryx-collapsible-trigger', visualProps: ['density']},
+      {className: 'astryx-collapsible-content', visualProps: ['density']},
+      {className: 'astryx-collapsible-group', visualProps: ['density']},
     ],
   },
   description: 'A primitive that makes any content collapsible: a trigger button toggles visibility of the content area, managing its own state or deferring to a parent CollapsibleGroup.',
@@ -54,9 +56,21 @@ export const docs = {
       description: 'Controlled open state.',
     },
     {
+      name: 'isDisabled',
+      type: 'boolean',
+      description: "Disable the item so its trigger can't be toggled (dimmed, aria-disabled, and out of the tab order). Doesn't collapse an already-open item.",
+      default: 'false',
+    },
+    {
       name: 'onOpenChange',
       type: '(isOpen: boolean) => void',
       description: 'Callback invoked when the open state changes.',
+    },
+    {
+      name: 'chevronPosition',
+      type: "'start' | 'end'",
+      description: 'Logical position of Collapsible\'s disclosure chevron. `end` (default) follows the label, pointing down when collapsed and up when expanded. `start` precedes the label, pointing inward toward content when collapsed (mirrored under RTL) and down when expanded. Inside a CollapsibleGroup this defaults to the group\'s chevronPosition.',
+      default: "'end'",
     },
     {
       name: 'value',
@@ -68,10 +82,21 @@ export const docs = {
     {name: 'CollapsibleGroup'},
   ],
   usage: {
+    accessibility: [
+      {
+        name: 'Trigger label',
+        category: 'Color contrast',
+        criterion: '1.4.3 Contrast (Minimum)',
+        requirement: '4.5:1',
+        states: ['Rest', 'Pointer down'],
+        description:
+          'The trigger text must have at least 4.5:1 contrast with the surface behind it. For Pointer down, measure against the pressed overlay the trigger row paints while it is pressed.',
+      },
+    ],
     description: 'Collapsible hides and reveals content behind a trigger button. Use it in settings panels, FAQ pages, or detail views to keep the page scannable while letting users drill into sections they care about. Wrap multiple collapsibles in CollapsibleGroup for accordion behavior. For custom collapsible components, use the `useCollapsible` hook directly (`astryx hook useCollapsible`).',
     bestPractices: [
-      { guidance: true, description: 'Use dividers="between" on CollapsibleGroup for FAQ-style lists: built-in row hairlines with themed border tokens, no hand-rolled borders.' },
-      { guidance: true, description: 'Wrap each Collapsible in an Card for visual separation in accordion layouts, or use CollapsibleGroup dividers for flat lists; don\'t combine both.' },
+      { guidance: true, description: 'Use hasDividers on CollapsibleGroup for FAQ-style lists: built-in row hairlines with themed border tokens, no hand-rolled borders.' },
+      { guidance: true, description: 'Wrap each Collapsible in an Card for visual separation in accordion layouts, or use CollapsibleGroup\'s hasDividers for flat lists; don\'t combine both.' },
       { guidance: true, description: 'Use CollapsibleGroup with type="single" for settings or FAQ pages where only one section should be open at a time.' },
       { guidance: true, description: 'Use type="multiple" when users need to compare content across sections, like feature lists or pricing tiers.' },
       { guidance: true, description: 'Start sections open (defaultIsOpen) when the content is likely needed on first view; don\'t make users click to see essential info.' },
@@ -81,19 +106,19 @@ export const docs = {
     ],
     anatomy: [
       { name: 'Trigger', required: true, description: 'The always-visible button that toggles the content. Shows a label and a chevron indicator.' },
-      { name: 'Chevron', required: false, description: 'Animated arrow that rotates to show open or closed state.' },
+      { name: 'Chevron', required: false, description: 'Animated disclosure arrow. It follows the label by default; chevronPosition="start" moves it ahead of the label, points inward when collapsed (mirrored under RTL), and turns down when expanded.' },
       { name: 'Content', required: false, description: 'The area that hides or reveals when the trigger is clicked.' },
     ],
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
     description: 'Collapsible hides and reveals content behind a trigger button. Use it in settings panels, FAQ pages, or detail views to keep the page scannable while letting users drill into sections they care about. Wrap multiple collapsibles in CollapsibleGroup for accordion behavior.',
     bestPractices: [
-      { guidance: true, description: 'Use dividers="between" on CollapsibleGroup for FAQ-style lists: built-in row hairlines with themed border tokens, no hand-rolled borders.' },
-      { guidance: true, description: 'Wrap each Collapsible in an Card for visual separation in accordion layouts, or use CollapsibleGroup dividers for flat lists; don\'t combine both.' },
+      { guidance: true, description: 'Use hasDividers on CollapsibleGroup for FAQ-style lists: built-in row hairlines with themed border tokens, no hand-rolled borders.' },
+      { guidance: true, description: 'Wrap each Collapsible in an Card for visual separation in accordion layouts, or use CollapsibleGroup\'s hasDividers for flat lists; don\'t combine both.' },
       { guidance: true, description: 'Use CollapsibleGroup with type="single" for settings or FAQ pages where only one section should be open at a time.' },
       { guidance: true, description: 'Use type="multiple" when users need to compare content across sections, like feature lists or pricing tiers.' },
       { guidance: true, description: 'Start sections open (defaultIsOpen) when the content is likely needed on first view; don\'t make users click to see essential info.' },
@@ -104,14 +129,14 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'hide/reveal content behind a trigger; group for accordion behavior',
   usage: {
     description: 'Collapsible hides and reveals content behind a trigger button. Use in settings, FAQs, or detail views. Wrap in CollapsibleGroup for accordion behavior.',
     bestPractices: [
-      { guidance: true, description: 'Use dividers="between" on CollapsibleGroup for FAQ-style lists: built-in row hairlines, no hand-rolled borders.' },
-      { guidance: true, description: 'Wrap each Collapsible in an Card for visual separation, or use CollapsibleGroup dividers for flat lists; not both.' },
+      { guidance: true, description: 'Use hasDividers on CollapsibleGroup for FAQ-style lists: built-in row hairlines, no hand-rolled borders.' },
+      { guidance: true, description: 'Wrap each Collapsible in an Card for visual separation, or use CollapsibleGroup\'s hasDividers for flat lists; not both.' },
       { guidance: true, description: 'Use CollapsibleGroup with type="single" for settings or FAQ pages where only one section should be open at a time.' },
       { guidance: true, description: 'Use type="multiple" when users need to compare across sections.' },
       { guidance: true, description: 'Start sections open (defaultIsOpen) when content is needed on first view.' },

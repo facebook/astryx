@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'ListItem',
@@ -60,9 +60,14 @@ export const docs = {
       description: 'Click handler; enables the invisible button pattern.',
     },
     {
+      name: 'interactiveRef',
+      type: 'RefObject<HTMLElement | null>',
+      description: 'Ref to a nested control (e.g. a checkbox in startContent) that owns the item\'s keyboard access and action. The row becomes an enlarged click/tap target that delegates surface clicks to it (useClickableContainer) and renders no invisible button/anchor, so the row adds no second tab stop (WCAG 4.1.2). Mutually exclusive with onClick/href; those are ignored when set.',
+    },
+    {
       name: 'href',
       type: 'string',
-      description: 'Link URL; enables the invisible anchor pattern.',
+      description: 'Link URL; enables the invisible anchor pattern. The destination follows the shared navigation rule described on the Link `href` prop.',
     },
     {
       name: 'target',
@@ -122,6 +127,11 @@ export const docsZh = {
       description: '点击处理函数；启用隐形按钮模式。',
     },
     {
+      name: 'interactiveRef',
+      type: 'RefObject<HTMLElement | null>',
+      description: '指向嵌套控件（如 startContent 中的复选框）的 ref，该控件承载项目的键盘访问和操作。行成为更大的点击/触摸目标，将表面点击委托给该控件（useClickableContainer），且不渲染不可见按钮/锚点，因此行不会增加第二个 Tab 停留点（WCAG 4.1.2）。与 onClick/href 互斥——设置后二者将被忽略。',
+    },
+    {
       name: 'href',
       type: 'string',
       description: '链接 URL；启用隐形锚点模式。',
@@ -162,7 +172,9 @@ export const docsDense = {
     startContent: 'Content before label area (e.g. icon, avatar).',
     endContent: 'Content after label area (e.g. badge, chevron).',
     onClick: 'Click handler; enables invisible button pattern.',
-    href: 'Link URL; enables invisible anchor pattern.',
+    interactiveRef:
+      'Ref to a nested control that owns the item\'s keyboard access/action; row delegates surface clicks to it (useClickableContainer), no invisible button/anchor, no second tab stop (WCAG 4.1.2). Mutually exclusive with onClick/href.',
+    href: 'Link URL; enables invisible anchor pattern. Follows the shared navigation rule (see Link href).',
     target: 'Link target attribute, only when href provided. target="_blank" auto-adds noopener noreferrer.',
     rel: 'Link relationship tokens. noopener noreferrer are merged for target="_blank".',
     isDisabled: 'Disabled state; sets aria-disabled.',

@@ -13,7 +13,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts (exports)
- * - /packages/cli/templates/blocks/components/ChatLayoutScrollButton/ (block examples)
+ * - /packages/cli/assets/templates/blocks/components/ChatLayoutScrollButton/ (block examples)
  */
 
 import React from 'react';
@@ -23,6 +23,7 @@ import {
   spacingVars,
   radiusVars,
   shadowVars,
+  sizeVars,
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
@@ -30,6 +31,8 @@ import {Icon} from '../Icon';
 import {Button} from '../Button';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
+import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Types
@@ -65,22 +68,36 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-full'],
     backgroundColor: colorVars['--color-background-popover'],
     boxShadow: shadowVars['--shadow-med'],
-    height: '32px',
-    transitionProperty: 'opacity, transform, max-width',
+    // The pill clips its own content, so it must track the height of the
+    // md Button it wraps. A literal would clip that Button under any theme
+    // that retunes the element scale.
+    height: sizeVars['--size-element-md'],
+    // `visibility` rides the same transition so the fade-out still plays:
+    // it flips to `visible` immediately on the way in and only at the end
+    // of the duration on the way out.
+    transitionProperty: 'opacity, transform, max-width, visibility',
     transitionTimingFunction: easeVars['--ease-standard'],
-    transitionDuration: durationVars['--duration-fast-max'],
+    transitionDuration: {
+      default: durationVars['--duration-fast-max'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
   },
   hidden: {
     opacity: 0,
     pointerEvents: 'none',
-    maxWidth: '32px',
+    // The hidden pill paints nothing, so focus landing on it would have no
+    // visible indicator (WCAG 2.2 SC 2.4.7). `opacity` and `pointer-events`
+    // leave the button in sequential focus navigation; `visibility` removes it.
+    visibility: 'hidden',
+    maxWidth: sizeVars['--size-element-md'],
   },
   visible: {
     opacity: 1,
     pointerEvents: 'auto',
+    visibility: 'visible',
   },
   collapsed: {
-    maxWidth: '32px',
+    maxWidth: sizeVars['--size-element-md'],
   },
   expanded: {
     maxWidth: '200px',
@@ -118,23 +135,39 @@ export function ChatLayoutScrollButton({
   xstyle,
   className,
   style,
+  ...rest
 }: ChatLayoutScrollButtonProps) {
+  const t = useTranslator();
   return (
+    // Two elements, two responsibilities. The outer one centres the pill and
+    // holds the gap above the composer — spacing outside the pill's border
+    // box, which the pill cannot own itself. The inner one is the pill: it is
+    // what a reader sees, so it carries the painted surface AND the public
+    // theming target. Keeping the target on the outer element would satisfy
+    // every automated check while leaving a theme styling an invisible
+    // full-width row (architecture:component-theming-surface INV4).
     <div
       ref={ref}
-      {...mergeProps(stylex.props(styles.wrapper, xstyle), className, style)}>
+      {...mergeProps(stylex.props(styles.wrapper, xstyle), className, style)}
+      {...rest}>
       <div
-        {...stylex.props(
-          styles.container,
-          isVisible ? styles.visible : styles.hidden,
-          label ? styles.expanded : styles.collapsed,
+        {...mergeProps(
+          themeProps('chat-layout-scroll-button'),
+          stylex.props(
+            styles.container,
+            isVisible ? styles.visible : styles.hidden,
+            label ? styles.expanded : styles.collapsed,
+          ),
         )}>
         <Button
-          label={label ?? 'Scroll to bottom'}
-          aria-label={label ?? 'Scroll to bottom'}
+          label={label ?? t('@astryx.chatLayoutScrollButton.scrollToBottom')}
+          aria-label={
+            label ?? t('@astryx.chatLayoutScrollButton.scrollToBottom')
+          }
           icon={<Icon icon="chevronDown" size="md" />}
           variant="ghost"
           size="md"
+          isIconOnly={!label}
           onClick={onClick}
           xstyle={[styles.button, label ? styles.buttonWithLabel : null]}>
           {label ?? undefined}

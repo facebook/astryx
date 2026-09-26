@@ -620,7 +620,7 @@ export default function ExampleCardsPage() {
                 <div key={i}>
                   <div {...stylex.props(styles.row)}>
                     <HStack gap={3} vAlign="center">
-                      <Avatar name={txn.initials} size="small" />
+                      <Avatar name={txn.initials} size="md" />
                       <VStack gap={0}>
                         <Text type="body" weight="bold">
                           {txn.name}
@@ -1339,7 +1339,7 @@ export default function ExampleCardsPage() {
                 <div key={i}>
                   <div {...stylex.props(styles.row)}>
                     <HStack gap={3} vAlign="center">
-                      <Avatar name={s.ticker} size="small" />
+                      <Avatar name={s.ticker} size="md" />
                       <VStack gap={0}>
                         <Text type="body" weight="bold">
                           {s.name}

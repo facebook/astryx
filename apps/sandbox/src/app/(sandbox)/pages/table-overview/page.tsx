@@ -236,11 +236,7 @@ const columns: TableColumn<ReviewRow>[] = [
     width: proportional(4),
     renderCell: (item: ReviewRow) => (
       <HStack gap={3} vAlign="center">
-        <Avatar
-          src={item.authorAvatar}
-          name={item.authorName}
-          size="small"
-        />
+        <Avatar src={item.authorAvatar} name={item.authorName} size="md" />
         <div {...stylex.props(styles.authorInfo)}>
           <VStack gap={1}>
             <span {...stylex.props(styles.titleLink)}>{item.title}</span>
@@ -268,7 +264,7 @@ const columns: TableColumn<ReviewRow>[] = [
               marginLeft: i > 0 ? -8 : 0,
               zIndex: item.reviewerAvatars.length - i,
             }}>
-            <Avatar src={src} name={`Reviewer ${i + 1}`} size="xsmall" />
+            <Avatar src={src} name={`Reviewer ${i + 1}`} size="sm" />
           </div>
         ))}
       </div>
@@ -458,8 +454,8 @@ export default function TableOverviewPage() {
         <VStack gap={2}>
           <Heading level={1}>Table Overview</Heading>
           <Text type="body" color="secondary">
-            A code review dashboard demonstrating Table with selection,
-            badges, avatars, and collapsible sections.
+            A code review dashboard demonstrating Table with selection, badges,
+            avatars, and collapsible sections.
           </Text>
         </VStack>
 

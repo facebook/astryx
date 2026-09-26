@@ -12,14 +12,14 @@
  * had no props for them. This test pins the behavior those raw styles used to
  * provide, now that they are expressed as props.
  *
- * SYNC: When /packages/cli/templates/pages/file-explorer/page.tsx changes,
+ * SYNC: When /packages/cli/assets/templates/pages/file-explorer/page.tsx changes,
  * update this test to match.
  */
 
 import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import FileExplorerPage from '../../packages/cli/templates/pages/file-explorer/page';
-import pageSource from '../../packages/cli/templates/pages/file-explorer/page.tsx?raw';
+import FileExplorerPage from '../../packages/cli/assets/templates/pages/file-explorer/page';
+import pageSource from '../../packages/cli/assets/templates/pages/file-explorer/page.tsx?raw';
 
 /** The horizontally scrolling strip of Miller columns. */
 function getColumnStrip(container: HTMLElement): HTMLElement {

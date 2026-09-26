@@ -8,7 +8,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/CommandPalette/index.ts
- * - /packages/cli/templates/blocks/components/CommandPalette/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/CommandPalette/ (showcase blocks)
  */
 
 'use client';
@@ -20,6 +20,7 @@ import {mergeProps} from '../utils';
 import {spacingVars} from '../theme/tokens.stylex';
 import {useCommandPaletteContext} from './CommandPaletteContext';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 const styles = stylex.create({
   list: {
@@ -72,18 +73,21 @@ export interface CommandPaletteListProps extends BaseProps<HTMLDivElement> {
  */
 export function CommandPaletteList({
   children,
-  label = 'Commands',
+  label: labelFromProps,
   ref,
   xstyle,
   className,
   style,
   ...props
 }: CommandPaletteListProps) {
+  const t = useTranslator();
+  const label = labelFromProps ?? t('@astryx.commandPalette.list.label');
   const ctx = useCommandPaletteContext();
 
   return (
     <div
       ref={ref}
+      {...props}
       id={ctx?.listId}
       role="listbox"
       aria-label={label}
@@ -92,8 +96,7 @@ export function CommandPaletteList({
         stylex.props(styles.list, xstyle),
         className,
         style,
-      )}
-      {...props}>
+      )}>
       {children}
     </div>
   );

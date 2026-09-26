@@ -5,11 +5,12 @@
 import {useMemo, useCallback} from 'react';
 import {useRouter} from 'next/navigation';
 import {CommandPalette} from '@astryxdesign/core/CommandPalette';
+import {Text} from '@astryxdesign/core/Text';
 import {createStaticSource} from '@astryxdesign/core/Typeahead';
-import type {ComponentEntry} from '../generated/componentRegistry';
-import type {PackageMeta} from '../generated/packageRegistry';
-import type {DocTopic} from '../generated/docsRegistry';
-import type {TemplateEntry} from '../generated/templateRegistry';
+import {components} from '../generated/componentRegistry';
+import {packages} from '../generated/packageRegistry';
+import {docTopics} from '../generated/docsRegistry';
+import {templateMetadata} from '../generated/templateMetadataRegistry';
 import {trackSearch} from '../lib/analytics';
 import {
   buildSearchPaletteItems,
@@ -19,20 +20,9 @@ import {
 interface SearchPaletteProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  components: Record<string, ComponentEntry[]>;
-  packages: PackageMeta[];
-  docTopics: DocTopic[];
-  templates: TemplateEntry[];
 }
 
-export function SearchPalette({
-  isOpen,
-  onOpenChange,
-  components,
-  packages,
-  docTopics,
-  templates,
-}: SearchPaletteProps) {
+export function SearchPalette({isOpen, onOpenChange}: SearchPaletteProps) {
   const router = useRouter();
 
   // Component items come from the same grouped registry as the sidebar so
@@ -42,13 +32,13 @@ export function SearchPalette({
       components,
       packages,
       docTopics,
-      templates,
+      templates: templateMetadata,
     });
 
     return createStaticSource(items, {
       keywords: getSearchItemKeywords,
     });
-  }, [components, packages, docTopics, templates]);
+  }, []);
 
   const handleValueChange = useCallback(
     (value: string) => {
@@ -77,6 +67,7 @@ export function SearchPalette({
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       searchSource={searchSource}
+      renderItem={item => <Text type="inherit">{item.label}</Text>}
       label="Search docs, components, and templates"
       value=""
       onValueChange={handleValueChange}

@@ -9,9 +9,23 @@
  * SYNC: When AspectRatio.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi} from 'vitest';
+import {describe, it, expect, vi, beforeAll} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {AspectRatio} from './AspectRatio';
+
+/**
+ * The ratio compiles to a class-level `aspect-ratio: var(--x-aspectRatio)`
+ * declaration with the value carried by a CSS variable (so xstyle/@media
+ * and unlayered consumer CSS overrides can win). `--x-aspectRatio` is the
+ * debug-mode variable name emitted for the `aspectRatio` property.
+ */
+function ratioVar(el: HTMLElement): string {
+  return el.style.getPropertyValue('--x-aspectRatio');
+}
+
+function ratioValue(ratio: number): string {
+  return String(ratio);
+}
 
 describe('AspectRatio', () => {
   it('renders with correct aspect ratio', () => {
@@ -22,7 +36,7 @@ describe('AspectRatio', () => {
     );
     const element = screen.getByTestId('aspect-ratio');
     expect(element).toBeInTheDocument();
-    expect(element.style.aspectRatio).toBe(String(16 / 9));
+    expect(ratioVar(element)).toBe(ratioValue(16 / 9));
   });
 
   it('children fill the container', () => {
@@ -47,7 +61,7 @@ describe('AspectRatio', () => {
       </AspectRatio>,
     );
     const element = screen.getByTestId('aspect-ratio');
-    expect(element.style.aspectRatio).toBe(String(ratio));
+    expect(ratioVar(element)).toBe(ratioValue(ratio));
   });
 
   it('renders with 4:3 ratio', () => {
@@ -58,7 +72,7 @@ describe('AspectRatio', () => {
       </AspectRatio>,
     );
     const element = screen.getByTestId('aspect-ratio');
-    expect(element.style.aspectRatio).toBe(String(ratio));
+    expect(ratioVar(element)).toBe(ratioValue(ratio));
   });
 
   it('renders with 1:1 square ratio', () => {
@@ -68,7 +82,7 @@ describe('AspectRatio', () => {
       </AspectRatio>,
     );
     const element = screen.getByTestId('aspect-ratio');
-    expect(element.style.aspectRatio).toBe('1');
+    expect(ratioVar(element)).toBe(ratioValue(1));
   });
 
   it('renders with 21:9 ultrawide ratio', () => {
@@ -79,7 +93,7 @@ describe('AspectRatio', () => {
       </AspectRatio>,
     );
     const element = screen.getByTestId('aspect-ratio');
-    expect(element.style.aspectRatio).toBe(String(ratio));
+    expect(ratioVar(element)).toBe(ratioValue(ratio));
   });
 
   it('renders an ellipse that respects the ratio (circle at 1:1)', () => {
@@ -89,8 +103,8 @@ describe('AspectRatio', () => {
       </AspectRatio>,
     );
     const element = screen.getByTestId('aspect-ratio');
-    expect(element.style.aspectRatio).toBe('1');
-    expect(element.className).toContain('ellipse');
+    expect(ratioVar(element)).toBe(ratioValue(1));
+    expect(element).toHaveAttribute('data-shape', 'ellipse');
   });
 
   it('ellipse respects a non-square ratio (oval)', () => {
@@ -101,8 +115,8 @@ describe('AspectRatio', () => {
     );
     const element = screen.getByTestId('aspect-ratio');
     // Ratio is preserved — the ellipse does not force 1:1.
-    expect(element.style.aspectRatio).toBe(String(16 / 9));
-    expect(element.className).toContain('ellipse');
+    expect(ratioVar(element)).toBe(ratioValue(16 / 9));
+    expect(element).toHaveAttribute('data-shape', 'ellipse');
   });
 
   it('defaults to the rectangle shape', () => {
@@ -112,8 +126,8 @@ describe('AspectRatio', () => {
       </AspectRatio>,
     );
     const element = screen.getByTestId('aspect-ratio');
-    expect(element.style.aspectRatio).toBe('1');
-    expect(element.className).toContain('rectangle');
+    expect(ratioVar(element)).toBe(ratioValue(1));
+    expect(element).toHaveAttribute('data-shape', 'rectangle');
     // No ellipse border-radius when shape is the default rectangle
     expect(element.style.borderRadius).toBe('');
   });
@@ -175,5 +189,209 @@ describe('AspectRatio', () => {
     );
     const video = screen.getByTestId('video');
     expect(video).toBeInTheDocument();
+  });
+
+  describe('responsive ratio', () => {
+    it('emits the ratio as a class-level declaration, not an inline style', () => {
+      render(
+        <AspectRatio ratio={3 / 1} data-testid="aspect-ratio">
+          <div>Hero</div>
+        </AspectRatio>,
+      );
+      const element = screen.getByTestId('aspect-ratio');
+      // No inline aspect-ratio — the declaration lives in a class reading a
+      // CSS variable, so @media/@container rules (via xstyle, or via
+      // unlayered consumer CSS beating the astryx-base layer) can override
+      // it.
+      expect(element.style.aspectRatio).toBe('');
+      expect(ratioVar(element)).toBe(ratioValue(3 / 1));
+    });
+
+    it('lets a consumer inline style win over the class-level ratio', () => {
+      render(
+        <AspectRatio
+          ratio={3 / 1}
+          style={{aspectRatio: '3 / 2'}}
+          data-testid="aspect-ratio">
+          <div>Hero</div>
+        </AspectRatio>,
+      );
+      const element = screen.getByTestId('aspect-ratio');
+      // The consumer's style prop passes through untouched (it is no longer
+      // merged with a component-owned inline aspect-ratio).
+      expect(element.style.aspectRatio).toBe('3 / 2');
+    });
+  });
+
+  describe('fit', () => {
+    it('marks the child\'s direct parent with data-astryx-aspect-ratio-override for fit="cover"', () => {
+      render(
+        <AspectRatio ratio={16 / 9} fit="cover">
+          <img src="test.jpg" alt="Test" data-testid="image" />
+        </AspectRatio>,
+      );
+      // The marker sits on the child's actual parent, so the reset.css
+      // sizing rules are direct-child selectors with no dependence on
+      // AspectRatio's internal structure.
+      const wrapper = screen.getByTestId('image').parentElement;
+      expect(wrapper).toHaveAttribute(
+        'data-astryx-aspect-ratio-override',
+        'cover',
+      );
+    });
+
+    it('marks the child\'s direct parent with data-astryx-aspect-ratio-override for fit="contain"', () => {
+      render(
+        <AspectRatio ratio={16 / 9} fit="contain">
+          <img src="test.jpg" alt="Test" data-testid="image" />
+        </AspectRatio>,
+      );
+      const wrapper = screen.getByTestId('image').parentElement;
+      expect(wrapper).toHaveAttribute(
+        'data-astryx-aspect-ratio-override',
+        'contain',
+      );
+    });
+
+    it('does not expose fit on the theming surface', () => {
+      render(
+        <AspectRatio ratio={16 / 9} fit="cover" data-testid="aspect-ratio">
+          <img src="test.jpg" alt="Test" />
+        </AspectRatio>,
+      );
+      const element = screen.getByTestId('aspect-ratio');
+      // fit is structural, not visual — no data-fit attribute or class
+      // token on the themeable root (only shape is a theming target).
+      expect(element).not.toHaveAttribute('data-fit');
+      expect(element.className).not.toContain('cover');
+    });
+
+    it('emits no marker when fit is omitted (back-compat)', () => {
+      render(
+        <AspectRatio ratio={16 / 9} data-testid="aspect-ratio">
+          <img src="test.jpg" alt="Test" data-testid="image" />
+        </AspectRatio>,
+      );
+      const wrapper = screen.getByTestId('image').parentElement;
+      expect(wrapper).not.toHaveAttribute('data-astryx-aspect-ratio-override');
+      // Without the marker, none of the reset.css fit rules can match, so
+      // existing self-styled children render exactly as before.
+      expect(screen.getByTestId('image')).not.toHaveAttribute('class');
+    });
+
+    it('never touches the child element props', () => {
+      render(
+        <AspectRatio ratio={16 / 9} fit="cover">
+          <img
+            src="test.jpg"
+            alt="Test"
+            data-testid="image"
+            className="consumer-class"
+            style={{objectFit: 'contain'}}
+          />
+        </AspectRatio>,
+      );
+      const image = screen.getByTestId('image');
+      // Fit styling is pure CSS (zero-specificity reset rules); the child's
+      // own className/style pass through untouched and always win, so
+      // children that already size themselves keep their behavior.
+      expect(image.className).toBe('consumer-class');
+      expect(image.style.objectFit).toBe('contain');
+    });
+
+    it('centers the child via the wrapper with fit="center"', () => {
+      render(
+        <AspectRatio ratio={16 / 9} fit="center">
+          <img src="test.jpg" alt="Test" data-testid="image" />
+        </AspectRatio>,
+      );
+      const image = screen.getByTestId('image');
+      expect(image).not.toHaveAttribute('class');
+      const wrapper = image.parentElement;
+      expect(wrapper?.className).toContain('childCenter');
+    });
+
+    it('does not center the wrapper for other fit values', () => {
+      render(
+        <AspectRatio ratio={16 / 9} fit="cover">
+          <img src="test.jpg" alt="Test" data-testid="image" />
+        </AspectRatio>,
+      );
+      const wrapper = screen.getByTestId('image').parentElement;
+      expect(wrapper?.className).not.toContain('childCenter');
+    });
+  });
+
+  describe('style merging', () => {
+    it('keeps the consumer style and lets an inline ratio win', () => {
+      render(
+        <AspectRatio
+          ratio={16 / 9}
+          data-testid="aspect-ratio"
+          style={{opacity: 0.5, aspectRatio: '3 / 1'}}>
+          <div>Content</div>
+        </AspectRatio>,
+      );
+      const element = screen.getByTestId('aspect-ratio');
+      expect(element.style.opacity).toBe('0.5');
+      expect(element.style.aspectRatio).toBe('3 / 1');
+      expect(ratioVar(element)).toBe(ratioValue(16 / 9));
+    });
+
+    it('keeps a consumer className beside the theme target', () => {
+      render(
+        <AspectRatio
+          ratio={1}
+          data-testid="aspect-ratio"
+          className="consumer-class">
+          <div>Content</div>
+        </AspectRatio>,
+      );
+      const element = screen.getByTestId('aspect-ratio');
+      expect(element).toHaveClass('consumer-class');
+      expect(element).toHaveClass('astryx-aspect-ratio');
+    });
+  });
+
+  describe('reset.css fit baseline rules', () => {
+    // The cover/contain child sizing ships as zero-specificity baseline
+    // rules in reset.css keyed on the data-astryx-aspect-ratio-override
+    // marker the component sets on the child's direct parent. These
+    // assertions keep the stylesheet in sync with the component contract.
+    let resetCSS: string;
+
+    beforeAll(async () => {
+      const fs = await import('fs');
+      const path = await import('path');
+      resetCSS = fs.readFileSync(
+        path.resolve(__dirname, '../reset.css'),
+        'utf-8',
+      );
+    });
+
+    it('sizes the child to fill the box for cover and contain', () => {
+      const fillMatch = resetCSS.match(
+        /:where\(\[data-astryx-aspect-ratio-override="cover"\], \[data-astryx-aspect-ratio-override="contain"\]\)\s*>\s*:where\(\*\)\s*\{([^}]+)\}/,
+      );
+      expect(fillMatch).not.toBeNull();
+      expect(fillMatch![1]).toContain('width: 100%');
+      expect(fillMatch![1]).toContain('height: 100%');
+    });
+
+    it('crops media with object-fit: cover for fit="cover"', () => {
+      const coverMatch = resetCSS.match(
+        /:where\(\[data-astryx-aspect-ratio-override="cover"\]\)\s*>\s*:where\(img, video\)\s*\{([^}]+)\}/,
+      );
+      expect(coverMatch).not.toBeNull();
+      expect(coverMatch![1]).toContain('object-fit: cover');
+    });
+
+    it('letterboxes media with object-fit: contain for fit="contain"', () => {
+      const containMatch = resetCSS.match(
+        /:where\(\[data-astryx-aspect-ratio-override="contain"\]\)\s*>\s*:where\(img, video\)\s*\{([^}]+)\}/,
+      );
+      expect(containMatch).not.toBeNull();
+      expect(containMatch![1]).toContain('object-fit: contain');
+    });
   });
 });

@@ -9,7 +9,7 @@
  * single source of truth.
  *
  * SYNC: when a page template is added under
- * packages/cli/templates/pages/<slug>/, add a matching entry here.
+ * packages/cli/assets/templates/pages/<slug>/, add a matching entry here.
  */
 
 import {lazy} from 'react';
@@ -20,136 +20,207 @@ export const TEMPLATE_COMPONENTS: Record<
   React.LazyExoticComponent<React.ComponentType>
 > = {
   'ai-chat': lazy(
-    () => import('../../../../packages/cli/templates/pages/ai-chat/page'),
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/ai-chat/page'),
   ),
   'ai-chat-landing': lazy(
     () =>
-      import('../../../../packages/cli/templates/pages/ai-chat-landing/page'),
+      import('../../../../packages/cli/assets/templates/pages/ai-chat-landing/page'),
   ),
   blank: lazy(
-    () => import('../../../../packages/cli/templates/pages/blank/page'),
+    () => import('../../../../packages/cli/assets/templates/pages/blank/page'),
+  ),
+  'canvas-editor': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/canvas-editor/page'),
   ),
   'centered-hero': lazy(
-    () => import('../../../../packages/cli/templates/pages/centered-hero/page'),
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/centered-hero/page'),
+  ),
+  'checkout-wizard': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/checkout-wizard/page'),
   ),
   'classic-gallery': lazy(
     () =>
-      import('../../../../packages/cli/templates/pages/classic-gallery/page'),
+      import('../../../../packages/cli/assets/templates/pages/classic-gallery/page'),
   ),
   'contact-form': lazy(
-    () => import('../../../../packages/cli/templates/pages/contact-form/page'),
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/contact-form/page'),
   ),
   dashboard: lazy(
-    () => import('../../../../packages/cli/templates/pages/dashboard/page'),
-  ),
-  'dashboard-portfolio': lazy(
     () =>
-      import('../../../../packages/cli/templates/pages/dashboard-portfolio/page'),
+      import('../../../../packages/cli/assets/templates/pages/dashboard/page'),
+  ),
+  'dashboard-alert-rail': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/dashboard-alert-rail/page'),
+  ),
+  'dashboard-cohort-funnel': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/dashboard-cohort-funnel/page'),
+  ),
+  'dashboard-comparison': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/dashboard-comparison/page'),
+  ),
+  'dashboard-composition': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/dashboard-composition/page'),
+  ),
+  'dashboard-progress': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/dashboard-progress/page'),
+  ),
+  'dashboard-scorecard': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/dashboard-scorecard/page'),
   ),
   'detail-page': lazy(
-    () => import('../../../../packages/cli/templates/pages/detail-page/page'),
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/detail-page/page'),
   ),
   documentation: lazy(
-    () => import('../../../../packages/cli/templates/pages/documentation/page'),
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/documentation/page'),
   ),
   'documentation-design': lazy(
     () =>
-      import('../../../../packages/cli/templates/pages/documentation-design/page'),
+      import('../../../../packages/cli/assets/templates/pages/documentation-design/page'),
   ),
   'documentation-technical': lazy(
     () =>
-      import('../../../../packages/cli/templates/pages/documentation-technical/page'),
+      import('../../../../packages/cli/assets/templates/pages/documentation-technical/page'),
   ),
   editor: lazy(
-    () => import('../../../../packages/cli/templates/pages/editor/page'),
+    () => import('../../../../packages/cli/assets/templates/pages/editor/page'),
   ),
   'file-explorer': lazy(
-    () => import('../../../../packages/cli/templates/pages/file-explorer/page'),
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/file-explorer/page'),
   ),
   'form-two-column': lazy(
     () =>
-      import('../../../../packages/cli/templates/pages/form-two-column/page'),
+      import('../../../../packages/cli/assets/templates/pages/form-two-column/page'),
+  ),
+  'form-wizard': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/form-wizard/page'),
+  ),
+  'form-wizard-dialog': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/form-wizard-dialog/page'),
+  ),
+  'form-wizard-inline': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/form-wizard-inline/page'),
+  ),
+  'form-wizard-vertical': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/form-wizard-vertical/page'),
   ),
   'gallery-hero': lazy(
-    () => import('../../../../packages/cli/templates/pages/gallery-hero/page'),
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/gallery-hero/page'),
   ),
-  ide: lazy(() => import('../../../../packages/cli/templates/pages/ide/page')),
+  ide: lazy(
+    () => import('../../../../packages/cli/assets/templates/pages/ide/page'),
+  ),
   'kanban-board': lazy(
-    () => import('../../../../packages/cli/templates/pages/kanban-board/page'),
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/kanban-board/page'),
   ),
   library: lazy(
-    () => import('../../../../packages/cli/templates/pages/library/page'),
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/library/page'),
   ),
   login: lazy(
-    () => import('../../../../packages/cli/templates/pages/login/page'),
+    () => import('../../../../packages/cli/assets/templates/pages/login/page'),
   ),
   'login-card': lazy(
-    () => import('../../../../packages/cli/templates/pages/login-card/page'),
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/login-card/page'),
   ),
   'login-split': lazy(
-    () => import('../../../../packages/cli/templates/pages/login-split/page'),
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/login-split/page'),
   ),
   'login-sso': lazy(
-    () => import('../../../../packages/cli/templates/pages/login-sso/page'),
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/login-sso/page'),
   ),
   'mixed-gallery': lazy(
-    () => import('../../../../packages/cli/templates/pages/mixed-gallery/page'),
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/mixed-gallery/page'),
   ),
   'payment-form': lazy(
-    () => import('../../../../packages/cli/templates/pages/payment-form/page'),
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/payment-form/page'),
   ),
   'product-detail': lazy(
     () =>
-      import('../../../../packages/cli/templates/pages/product-detail/page'),
+      import('../../../../packages/cli/assets/templates/pages/product-detail/page'),
   ),
   'product-gallery': lazy(
     () =>
-      import('../../../../packages/cli/templates/pages/product-gallery/page'),
+      import('../../../../packages/cli/assets/templates/pages/product-gallery/page'),
   ),
   settings: lazy(
-    () => import('../../../../packages/cli/templates/pages/settings/page'),
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/settings/page'),
   ),
   'settings-dialog': lazy(
     () =>
-      import('../../../../packages/cli/templates/pages/settings-dialog/page'),
+      import('../../../../packages/cli/assets/templates/pages/settings-dialog/page'),
   ),
   'settings-sidebar': lazy(
     () =>
-      import('../../../../packages/cli/templates/pages/settings-sidebar/page'),
+      import('../../../../packages/cli/assets/templates/pages/settings-sidebar/page'),
   ),
   'side-gallery': lazy(
-    () => import('../../../../packages/cli/templates/pages/side-gallery/page'),
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/side-gallery/page'),
   ),
   'shell-nav': lazy(
-    () => import('../../../../packages/cli/templates/pages/shell-nav/page'),
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/shell-nav/page'),
   ),
   'shell-side-nav': lazy(
     () =>
-      import('../../../../packages/cli/templates/pages/shell-side-nav/page'),
+      import('../../../../packages/cli/assets/templates/pages/shell-side-nav/page'),
   ),
   'shell-top-nav': lazy(
-    () => import('../../../../packages/cli/templates/pages/shell-top-nav/page'),
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/shell-top-nav/page'),
   ),
   table: lazy(
-    () => import('../../../../packages/cli/templates/pages/table/page'),
+    () => import('../../../../packages/cli/assets/templates/pages/table/page'),
+  ),
+  'table-filter': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/table-filter/page'),
   ),
   'table-grouped': lazy(
-    () => import('../../../../packages/cli/templates/pages/table-grouped/page'),
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/table-grouped/page'),
+  ),
+  'table-inbox': lazy(
+    () =>
+      import('../../../../packages/cli/assets/templates/pages/table-inbox/page'),
   ),
   'table-page': lazy(
-    () => import('../../../../packages/cli/templates/pages/table-page/page'),
-  ),
-  'table-page-chart': lazy(
     () =>
-      import('../../../../packages/cli/templates/pages/table-page-chart/page'),
+      import('../../../../packages/cli/assets/templates/pages/table-page/page'),
   ),
-  'table-page-heatmap-status': lazy(
+  'table-tree': lazy(
     () =>
-      import('../../../../packages/cli/templates/pages/table-page-heatmap-status/page'),
+      import('../../../../packages/cli/assets/templates/pages/table-tree/page'),
   ),
-  'table-page-shoe-store-heatmap': lazy(
+  'work-item-detail': lazy(
     () =>
-      import('../../../../packages/cli/templates/pages/table-page-shoe-store-heatmap/page'),
+      import('../../../../packages/cli/assets/templates/pages/work-item-detail/page'),
   ),
 };
 

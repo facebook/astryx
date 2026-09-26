@@ -1,5 +1,135 @@
 # @xds/theme-matcha
 
+# 0.6.3
+
+---
+
+# 0.6.2
+
+---
+
+# 0.6.1
+
+---
+
+# 0.6.0
+
+#### Breaking Changes
+
+- Requires `@astryxdesign/core@0.6.0` as part of the coordinated stable release. Upgrade Core and this theme together.
+
+---
+
+# 0.5.4
+
+---
+
+# 0.5.3
+
+#### Fixes
+
+- Rename built-in syntax theme identifiers. (#5847)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @rubyycheung
+
+---
+
+# 0.5.2
+
+---
+
+# 0.5.1
+
+#### Fixes
+
+- Theme packages no longer ship an unused CommonJS `icons.js` artifact. Their root entry keeps its advertised CommonJS and ESM outputs, while the standalone icon companion used by `/built` is emitted only as `icons.mjs`. (#5512)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @jiunshinn
+
+---
+
+# 0.5.0
+
+---
+
+# 0.4.7
+
+---
+
+# 0.4.6
+
+---
+
+# 0.4.5
+
+---
+
+# 0.4.4
+
+---
+
+# 0.4.3
+
+#### Fixes
+
+- The `/built` entry now loads under Node ESM and externalized SSR (Vite `--ssr`, Remix / React Router v7): it imports `./icons.mjs` instead of the extensionless `./icons` Node cannot resolve.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @AKnassa
+
+---
+
+# 0.4.2
+
+---
+
+# 0.4.1
+
+---
+
+# 0.4.0
+
+---
+
+# 0.3.0
+
+---
+
+# 0.2.0
+
+---
+
+# 0.1.9
+
+---
+
+# 0.1.8
+
+---
+
+# 0.1.7
+
+---
+
+# 0.1.6
+
+---
+
+# 0.1.5
+
+---
+
 # 0.1.4
 
 ---

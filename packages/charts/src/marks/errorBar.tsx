@@ -8,7 +8,7 @@
  */
 
 import type {SeriesDef, ResolvedPoint} from '../types';
-import type {ScaleBand} from 'd3-scale';
+import {xPixel} from '../utils';
 
 export interface ErrorBarOptions {
   /** Data key for the upper bound */
@@ -48,27 +48,28 @@ export function errorBar(options: ErrorBarOptions): SeriesDef {
       const points: ResolvedPoint[] = [];
       for (let i = 0; i < data.length; i++) {
         const d = data[i];
-        let px: number;
-        if ('bandwidth' in xScale) {
-          px =
-            ((xScale as ScaleBand<string>)(String(d[xKey])) ?? 0) +
-            (xScale as ScaleBand<string>).bandwidth() / 2;
-        } else {
-          px = xScale(d[xKey] as number);
-        }
         // NaN for a missing bound so render() skips the whole whisker instead
         // of anchoring a cap at the axis (a misleading zero-height error bar).
         const hiVal = d[high];
         const loVal = d[low];
-        const upper = Number.isFinite(hiVal) ? (hiVal as number) : NaN;
-        const lower = Number.isFinite(loVal) ? (loVal as number) : NaN;
-        points.push({px, py: yScale(upper), py0: yScale(lower), dataIndex: i});
+        const upper =
+          typeof hiVal === 'number' && Number.isFinite(hiVal) ? hiVal : NaN;
+        const lower =
+          typeof loVal === 'number' && Number.isFinite(loVal) ? loVal : NaN;
+        points.push({
+          px: xPixel(d, xKey, xScale),
+          py: yScale(upper),
+          py0: yScale(lower),
+          dataIndex: i,
+        });
       }
       return points;
     },
 
     render(resolved) {
-      const half = Math.max(0, capWidth) / 2;
+      // Non-finite capWidth (NaN/±Infinity) would leak into the cap x-coords;
+      // treat it like a non-positive width — draw the stem, drop the caps.
+      const half = Number.isFinite(capWidth) ? Math.max(0, capWidth) / 2 : 0;
       return (
         <g>
           {resolved.map(p => {

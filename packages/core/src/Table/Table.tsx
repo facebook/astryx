@@ -11,9 +11,10 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Table/Table.doc.mjs (props table, features, usage examples)
  * - /packages/core/src/Table/Table.test.tsx (tests for new/changed behavior)
+ * - /packages/core/src/Table/__tests__/TableScroll.a11y.chromium.spec.ts (browser scroll behavior)
  * - /packages/core/src/Table/index.ts (exports if types change)
  * - /apps/storybook/stories/Table.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Table/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Table/ (showcase blocks)
  */
 
 import {useMemo, type ReactElement, type Ref} from 'react';
@@ -22,6 +23,7 @@ import {colorVars} from '../theme/tokens.stylex';
 import {BaseTable} from './BaseTable';
 import {TableContext} from './TableContext';
 import {useBaseTablePlugins} from './useBaseTablePlugins';
+import {useScrollableArea} from '../hooks/useScrollableArea';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import type {
@@ -31,6 +33,7 @@ import type {
   TableRenderProps,
 } from './types';
 import type {StyleXStyles} from '../theme/types';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Table Types
@@ -135,7 +138,7 @@ const scrollWrapperStyles = stylex.create({
 function TableScrollWrapper({
   children,
   htmlProps,
-  styles: pluginStyles,
+  xstyle: pluginStyles,
   beforeTable,
   afterTable,
 }: {
@@ -143,34 +146,41 @@ function TableScrollWrapper({
   htmlProps?: React.HTMLAttributes<HTMLDivElement> & {
     ref?: React.Ref<HTMLDivElement>;
   };
-  styles?: StyleXStyles[];
+  xstyle?: StyleXStyles[];
   beforeTable?: React.ReactNode;
   afterTable?: React.ReactNode;
 }) {
+  const t = useTranslator();
+  const label = t('@astryx.table.label');
+  const {getViewportProps, getContentProps, state} = useScrollableArea({
+    axis: 'inline',
+    keyboardAccess: {owner: 'content'},
+    overscroll: 'contain',
+  });
   const {ref, ...restHtmlProps} = htmlProps ?? {};
+  const viewportProps = getViewportProps<HTMLDivElement>({
+    role: 'group',
+    'aria-label': label,
+    ...(state.inline.isScrollable ? {tabIndex: 0} : {}),
+    ...restHtmlProps,
+    ref,
+    ...mergeProps(
+      themeProps('table-scroll-wrapper'),
+      stylex.props(
+        scrollWrapperStyles.base,
+        scrollWrapperStyles.containerBleed,
+        ...(pluginStyles ?? []),
+      ),
+    ),
+  });
+
   return (
-    <div
-      ref={ref}
-      // Keyboard-focusable so keyboard users can scroll a horizontally
-      // overflowing table. Uses role="group" (not "region") so multiple
-      // tables on a page don't create duplicate same-named landmarks
-      // (axe: landmark-unique). Callers may override role/aria-label via
-      // htmlProps.
-      tabIndex={0}
-      role="group"
-      aria-label="Table"
-      {...restHtmlProps}
-      {...mergeProps(
-        themeProps('table-scroll-wrapper'),
-        stylex.props(
-          scrollWrapperStyles.base,
-          scrollWrapperStyles.containerBleed,
-          ...(pluginStyles ?? []),
-        ),
-      )}>
-      {beforeTable}
-      {children}
-      {afterTable}
+    <div {...viewportProps}>
+      <div {...getContentProps<HTMLDivElement>()}>
+        {beforeTable}
+        {children}
+        {afterTable}
+      </div>
     </div>
   );
 }
@@ -184,17 +194,12 @@ function buildTableStylePlugin<
 >(): TablePlugin<T> {
   return {
     transformTable(props: TableRenderProps): TableRenderProps {
-      const existingClass = props.htmlProps.className ?? '';
-      const tableClass = themeProps('table').className;
+      // The `astryx-table` class itself comes from BaseTable, which renders
+      // the <table> element and now names it `table` (with `base-table` as its
+      // legacy name). Adding it here too would put the token on twice.
       return {
         ...props,
-        htmlProps: {
-          ...props.htmlProps,
-          className: existingClass
-            ? `${existingClass} ${tableClass}`
-            : tableClass,
-        },
-        styles: [...props.styles, tableStyles.base],
+        xstyle: [...props.xstyle, tableStyles.base],
       };
     },
   };
@@ -273,7 +278,7 @@ function TableInner<T extends Record<string, unknown>>({
  *   columns={[
  *     { key: 'name', header: 'Name', width: proportional(1), renderCell: (u) => (
  *       <HStack gap={2} align="center">
- *         <Avatar name={u.name} size="small" />
+ *         <Avatar name={u.name} size="md" />
  *         <Text weight="semibold">{u.name}</Text>
  *       </HStack>
  *     )},

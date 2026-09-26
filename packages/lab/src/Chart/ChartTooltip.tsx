@@ -96,17 +96,10 @@ export interface ChartTooltipProps {
  * in the top layer (via Popover API, portaled outside the SVG).
  *
  * @example
- * ```tsx
- * // Default: vertical crosshair + tooltip card
+ * ```
  * <ChartTooltip />
- *
- * // Both axes, with labels
  * <ChartTooltip crosshair="xy" crosshairLabels />
- *
- * // Tooltip only, no crosshair lines
  * <ChartTooltip crosshair={false} />
- *
- * // Custom render
  * <ChartTooltip render={(d) => <span>{d.month}: ${d.revenue}</span>} />
  * ```
  */

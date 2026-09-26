@@ -1,6 +1,22 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Grid container',
+    required: true,
+    description:
+      'Two-dimensional layout container that arranges caller-supplied items in rows and columns.',
+  },
+  {
+    name: 'Spanning item',
+    required: false,
+    description:
+      "Optional GridSpan wrapper that changes one item's column or row participation.",
+  },
+];
+
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'Grid',
@@ -9,6 +25,7 @@ export const docs = {
   category: 'Layout',
   keywords: ["grid","columns","responsive","auto-fill","auto-fit","masonry","tiles","row","col","simplegrid","responsive grid","card grid"],
   usage: {
+    anatomy,
     description:
       'A CSS grid layout container for arranging children in rows and columns. Use Grid for card galleries, dashboards, and any multi-column layout. Supports fixed column counts and responsive columns that reflow based on available width.',
     bestPractices: [
@@ -26,17 +43,23 @@ export const docs = {
       {className: 'astryx-grid-span'},
     ],
   },
+  playground: {
+    defaults: {
+      columns: 3,
+      gap: 2,
+      children: [
+        {__element: 'Card', props: {padding: 4}, children: 'Item 1'},
+        {__element: 'Card', props: {padding: 4}, children: 'Item 2'},
+        {__element: 'Card', props: {padding: 4}, children: 'Item 3'},
+      ],
+    },
+  },
   description: 'Grid container with fixed or responsive columns.',
   props: [
     {
       name: 'columns',
       type: "number | {minWidth: number, max?: number, repeat?: 'fill' | 'fit'}",
       description: 'Column configuration. Use a number for fixed columns (e.g. `columns={3}`). Use an object for responsive columns: `minWidth` sets the minimum column width in px, `repeat` controls track behavior (`"fill"` preserves empty tracks for consistent widths, `"fit"` collapses empty tracks so items stretch; defaults to `"fill"`), and `max` caps the maximum number of columns.',
-    },
-    {
-      name: 'minChildWidth',
-      type: 'number',
-      description: 'Deprecated: use `columns={{minWidth: 280}}` instead. Minimum item width in px; enables responsive auto-fit.',
     },
     {
       name: 'width',
@@ -60,28 +83,28 @@ export const docs = {
     },
     {
       name: 'gap',
-      type: 'SpacingStep',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description: 'Spacing between all items.',
     },
     {
       name: 'rowGap',
-      type: 'SpacingStep',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description: 'Row spacing; overrides `gap` for the row axis.',
     },
     {
       name: 'columnGap',
-      type: 'SpacingStep',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description: 'Column spacing; overrides `gap` for the column axis.',
     },
     {
       name: 'align',
-      type: 'GridAlignment',
+      type: "'start' | 'center' | 'end' | 'stretch'",
       description: 'Vertical alignment of items.',
       default: "'stretch'",
     },
     {
       name: 'justify',
-      type: 'GridAlignment',
+      type: "'start' | 'center' | 'end' | 'stretch'",
       description: 'Horizontal alignment of items.',
       default: "'stretch'",
     },
@@ -101,9 +124,10 @@ export const docs = {
   ],
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
+    anatomy,
     description:
       'A CSS grid layout container for arranging children in rows and columns. Use Grid for card galleries, dashboards, and any multi-column layout. Supports fixed column counts and responsive columns that reflow based on available width.',
     bestPractices: [
@@ -117,10 +141,11 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'CSS Grid-based layout w/ responsive column support.',
   usage: {
+    anatomy,
     description: 'A CSS grid layout container for arranging children in rows and columns. Use Grid for card galleries, dashboards, and any multi-column layout. Supports fixed column counts and responsive columns that reflow based on available width.',
     bestPractices: [
       { guidance: true, description: 'Use responsive columns for layouts that should adapt to screen size: columns={{minWidth: 280}}.' },

@@ -46,6 +46,8 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createRequire} from 'node:module';
 
+import {expandWorkspaceDirs} from './lib/workspace-globs.mjs';
+
 const require = createRequire(import.meta.url);
 const {
   CATEGORIES,
@@ -57,47 +59,54 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CHECK = process.argv.includes('--check');
 
 function discoverChangelogs() {
-  const ws = fs.readFileSync(path.join(ROOT, 'pnpm-workspace.yaml'), 'utf8');
-  const globs = [...ws.matchAll(/^\s*-\s*["']?([^"'\n]+)["']?/gm)].map(m =>
-    m[1].trim(),
-  );
   const files = [];
-  for (const g of globs) {
-    const base = g.replace(/\/\*+$/, '');
-    const abs = path.join(ROOT, base);
-    if (!fs.existsSync(abs)) continue;
-    const dirs = g.endsWith('*')
-      ? fs
-          .readdirSync(abs, {withFileTypes: true})
-          .filter(d => d.isDirectory())
-          .map(d => path.join(abs, d.name))
-      : [abs];
-    for (const dir of dirs) {
-      const cl = path.join(dir, 'CHANGELOG.md');
-      if (fs.existsSync(cl)) files.push(cl);
-    }
+  for (const dir of expandWorkspaceDirs(ROOT)) {
+    const cl = path.join(dir, 'CHANGELOG.md');
+    if (fs.existsSync(cl)) files.push(cl);
   }
   return files;
 }
 
 // A bullet may span multiple lines (continuation lines are indented).
+//
+// A blank line ends the bullet only when what follows is not more of it. An
+// entry whose body has several paragraphs renders as `- head`, prose, blank
+// line, indented prose — so treating every blank line as a terminator dropped
+// each paragraph after the first, silently, on its way into the changelog.
 function splitBullets(body) {
   const lines = body.split('\n');
   const bullets = [];
   let cur = null;
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     if (/^\s*-\s+/.test(line)) {
       if (cur) bullets.push(cur);
       cur = line;
     } else if (cur && line.trim() !== '') {
       cur += '\n' + line;
     } else if (cur && line.trim() === '') {
-      bullets.push(cur);
-      cur = null;
+      if (continuesAfterBlank(lines, i)) {
+        cur += '\n';
+      } else {
+        bullets.push(cur);
+        cur = null;
+      }
     }
   }
   if (cur) bullets.push(cur);
   return bullets;
+}
+
+// Does the blank line at `i` sit inside a bullet? Only if the next non-blank
+// line is an indented continuation — an unindented line (the next bullet, a
+// `####` section, a `---` divider) closes it.
+function continuesAfterBlank(lines, i) {
+  for (let j = i + 1; j < lines.length; j++) {
+    const next = lines[j];
+    if (next.trim() === '') continue;
+    return /^ {2,}\S/.test(next);
+  }
+  return false;
 }
 
 // Reflow a bullet's continuation body into consistent line wrapping.

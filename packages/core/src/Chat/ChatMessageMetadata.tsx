@@ -4,12 +4,12 @@
 
 /**
  * @file ChatMessageMetadata.tsx
- * @input Uses React, StyleX, ChatContext, Icon, theme tokens
+ * @input Uses React, StyleX, ChatContext, Icon, theme tokens, and isRenderable
  * @output Exports ChatMessageMetadata component
  * @position Shared metadata row used by composing inside ChatMessage
  *
- * Renders: <timestamp> · <footer> · <status>
- * Direction reverses for user sender.
+ * Renders timestamp, footer, and status values with separators determined by
+ * scalar presence. Direction reverses for user sender.
  */
 
 import React, {type ReactNode} from 'react';
@@ -23,26 +23,23 @@ import {
 import {useChatMessageContext} from './ChatContext';
 import {Icon} from '../Icon';
 import type {IconName} from '../Icon/globalIconRegistry';
-import {mergeProps} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 export type ChatMessageStatus =
-  | 'sending'
-  | 'sent'
-  | 'delivered'
-  | 'read'
-  | 'error';
+  'sending' | 'sent' | 'delivered' | 'read' | 'error';
 
 const STATUS_CONFIG: Record<
   ChatMessageStatus,
-  {icon: IconName; label: string}
+  {icon: IconName; i18nKey: string}
 > = {
-  sending: {icon: 'clock', label: 'Sending'},
-  sent: {icon: 'check', label: 'Sent'},
-  delivered: {icon: 'checkDouble', label: 'Delivered'},
-  read: {icon: 'checkDouble', label: 'Read'},
-  error: {icon: 'error', label: 'Failed'},
+  sending: {icon: 'clock', i18nKey: '@astryx.chat.status.sending'},
+  sent: {icon: 'check', i18nKey: '@astryx.chat.status.sent'},
+  delivered: {icon: 'checkDouble', i18nKey: '@astryx.chat.status.delivered'},
+  read: {icon: 'checkDouble', i18nKey: '@astryx.chat.status.read'},
+  error: {icon: 'error', i18nKey: '@astryx.chat.status.failed'},
 };
 
 const pulseKeyframes = stylex.keyframes({
@@ -100,7 +97,8 @@ export interface ChatMessageMetadataProps extends BaseProps<HTMLDivElement> {
  * Composable metadata row for chat messages.
  *
  * Renders: timestamp · footer · status
- * Renders nothing if all props are null/undefined.
+ * Renders nothing when neither slot passes the scalar-presence check and no
+ * status is set. Composite React nodes remain caller-owned.
  *
  * @example
  * ```
@@ -118,14 +116,18 @@ export function ChatMessageMetadata({
   xstyle,
   className,
   style,
+  ...rest
 }: ChatMessageMetadataProps) {
+  const t = useTranslator();
   const msgContext = useChatMessageContext();
   const sender = msgContext?.sender ?? 'assistant';
 
   const statusConfig = status != null ? STATUS_CONFIG[status] : null;
+  const statusLabel = statusConfig != null ? t(statusConfig.i18nKey) : '';
 
-  const hasContent =
-    timestamp != null || footer != null || statusConfig != null;
+  const hasTimestamp = isRenderable(timestamp);
+  const hasFooter = isRenderable(footer);
+  const hasContent = hasTimestamp || hasFooter || statusConfig != null;
   if (!hasContent) {
     return null;
   }
@@ -142,24 +144,25 @@ export function ChatMessageMetadata({
         ),
         className,
         style,
-      )}>
-      {timestamp != null && <span>{timestamp}</span>}
-      {timestamp != null && (footer != null || statusConfig != null) && (
-        <span>·</span>
       )}
-      {footer != null && footer}
-      {footer != null && statusConfig != null && <span>·</span>}
+      {...rest}>
+      {hasTimestamp && <span>{timestamp}</span>}
+      {hasTimestamp && (hasFooter || statusConfig != null) && <span>·</span>}
+      {hasFooter && footer}
+      {hasFooter && statusConfig != null && <span>·</span>}
       {statusConfig != null && (
         <span
-          title={statusConfig.label}
-          aria-label={'Message ' + statusConfig.label.toLowerCase()}
+          title={statusLabel}
+          aria-label={t('@astryx.chat.messageAriaLabel', {
+            status: statusLabel.toLowerCase(),
+          })}
           {...stylex.props(
             styles.statusRow,
             status === 'error' && styles.statusError,
             status === 'sending' && styles.statusPulse,
           )}>
           <Icon icon={statusConfig.icon} size="xsm" color="inherit" />
-          <span>{statusConfig.label}</span>
+          <span>{statusLabel}</span>
         </span>
       )}
     </div>
