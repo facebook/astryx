@@ -6,7 +6,7 @@
 // test fixture. Regenerate with: pnpm visual:probe-theme
 //
 // defineTheme takes six things and this covers all six:
-//   components  289 targets, 928 selectors (generated from the docs)
+//   components  290 targets, 931 selectors (generated from the docs)
 //   tokens      custom properties, read back off the themed element
 //   icons       every registry entry swapped for a marked glyph
 //   indicators  check / radio / checkbox swapped — the swap that reaches furthest
@@ -3104,6 +3104,26 @@ export const probeTheme = defineTheme({
         color: 'hsl(7.7 71% 12%)',
         borderColor: 'hsl(179.0 84% 25%)',
         outlineColor: 'hsl(197.1 88% 25%)',
+      },
+    },
+    'markdown-katex': {
+      base: {
+        backgroundColor: 'hsl(242.6 84% 57%)',
+        color: 'hsl(37.5 84% 12%)',
+        borderColor: 'hsl(213.8 92% 25%)',
+        outlineColor: 'hsl(330.2 92% 25%)',
+      },
+      'display:block': {
+        backgroundColor: 'hsl(48.8 77% 52%)',
+        color: 'hsl(208.4 86% 12%)',
+        borderColor: 'hsl(140.6 84% 25%)',
+        outlineColor: 'hsl(134.9 72% 25%)',
+      },
+      'display:inline': {
+        backgroundColor: 'hsl(220.8 75% 61%)',
+        color: 'hsl(156.7 86% 12%)',
+        borderColor: 'hsl(216.8 93% 25%)',
+        outlineColor: 'hsl(258.3 83% 25%)',
       },
     },
     'markdown-list': {
