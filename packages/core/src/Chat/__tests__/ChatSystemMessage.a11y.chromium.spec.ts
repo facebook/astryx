@@ -222,6 +222,7 @@ async function capture(
   } = {},
 ): Promise<string[]> {
   const viewport = options.viewport ?? {width: 1024, height: 768};
+  await page.setViewportSize(viewport);
   const target = page.locator(`[data-system-message-case="${auditCase.key}"]`);
   const actual = await target.evaluate(element => {
     const root = element as HTMLElement;
