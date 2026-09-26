@@ -904,7 +904,7 @@ test.afterAll(async () => {
           },
           sharedAdvisories: {
             dividerLongLabelOverflow:
-              'A long divider label can cross the inline edge because Divider owns a non-shrinking label. The long-divider frames record this without assigning the defect to ChatSystemMessage.',
+              'Source inspection shows that a long divider label can cross the inline edge because Divider owns a non-shrinking label. This is routed to component:Divider without assigning the defect to ChatSystemMessage.',
             dividerForcedColors:
               'The Divider rule may disappear in forced colors; this audit does not exercise that mode and routes the advisory to component:Divider.',
           },
