@@ -154,12 +154,103 @@ describe('CheckboxList', () => {
       </CheckboxList>,
     );
 
-    // Click the interactive row (invisible-button pattern), which is where the
-    // composed onClick lives — not the inner checkbox.
-    await user.click(screen.getByRole('button', {name: 'Option B'}));
+    // The row is a pointer-only click surface (no invisible row button — the
+    // checkbox is the option's only tab stop). Click the row's label area,
+    // where the composed onClick fires — not the inner checkbox.
+    expect(
+      screen.queryByRole('button', {name: 'Option B'}),
+    ).not.toBeInTheDocument();
+    // The text also exists in the checkbox's visually hidden <label>; target
+    // the row's label <span> to click the row surface.
+    await user.click(screen.getByText('Option B', {selector: 'span'}));
 
     expect(handleClick).toHaveBeenCalledTimes(1);
     expect(handleChange).toHaveBeenCalledWith(['a', 'b']);
+  });
+
+  describe('single tab stop per option (WCAG 4.1.2 / APG checkbox pattern)', () => {
+    it('renders exactly one focusable control per option — the checkbox, no row button', () => {
+      render(
+        <CheckboxList label="Preferences" value={['a']} onChange={() => {}}>
+          <CheckboxListItem label="Option A" value="a" />
+          <CheckboxListItem label="Option B" value="b" />
+        </CheckboxList>,
+      );
+      // No invisible whole-row button duplicating the checkbox's action.
+      expect(screen.queryByRole('button')).not.toBeInTheDocument();
+      for (const item of screen.getAllByRole('listitem')) {
+        const focusables = item.querySelectorAll(
+          'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        );
+        expect(focusables).toHaveLength(1);
+        expect(focusables[0]).toBe(within(item).getByRole('checkbox'));
+      }
+    });
+
+    it('Tab moves directly from one option checkbox to the next', async () => {
+      const user = userEvent.setup();
+      render(
+        <CheckboxList label="Preferences" value={[]} onChange={() => {}}>
+          <CheckboxListItem label="Option A" value="a" />
+          <CheckboxListItem label="Option B" value="b" />
+        </CheckboxList>,
+      );
+      await user.tab();
+      expect(screen.getByRole('checkbox', {name: 'Option A'})).toHaveFocus();
+      await user.tab();
+      expect(screen.getByRole('checkbox', {name: 'Option B'})).toHaveFocus();
+      // No further tab stop inside the list (the row itself is not focusable).
+      await user.tab();
+      expect(document.body).toHaveFocus();
+    });
+
+    it('clicking the row surface (outside the checkbox) still toggles', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <CheckboxList label="Preferences" value={['a']} onChange={handleChange}>
+          <CheckboxListItem label="Option A" value="a" />
+          <CheckboxListItem label="Option B" value="b" />
+        </CheckboxList>,
+      );
+      // The text also exists in the checkbox's visually hidden <label>;
+      // target the row's label <span> to click the row surface.
+      await user.click(screen.getByText('Option B', {selector: 'span'}));
+      expect(handleChange).toHaveBeenCalledTimes(1);
+      expect(handleChange).toHaveBeenCalledWith(['a', 'b']);
+    });
+
+    it('toggles with Space on the focused checkbox, which reports checked state', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <CheckboxList label="Preferences" value={['a']} onChange={handleChange}>
+          <CheckboxListItem label="Option A" value="a" />
+          <CheckboxListItem label="Option B" value="b" />
+        </CheckboxList>,
+      );
+      await user.tab();
+      // The focused control is the checkbox itself, so its accessible name
+      // and checked state are what assistive tech announces on focus.
+      const checkboxA = screen.getByRole('checkbox', {name: 'Option A'});
+      expect(checkboxA).toHaveFocus();
+      expect(checkboxA).toBeChecked();
+      await user.keyboard(' ');
+      expect(handleChange).toHaveBeenCalledTimes(1);
+      expect(handleChange).toHaveBeenCalledWith([]);
+    });
+
+    it('the row itself is not focusable', () => {
+      render(
+        <CheckboxList label="Preferences" value={[]} onChange={() => {}}>
+          <CheckboxListItem label="Option A" value="a" />
+        </CheckboxList>,
+      );
+      const item = screen.getByRole('listitem');
+      expect(item).not.toHaveAttribute('tabindex');
+      item.focus();
+      expect(item).not.toHaveFocus();
+    });
   });
 
   it('disables all checkboxes when group isDisabled is true', () => {
@@ -248,6 +339,104 @@ describe('CheckboxList', () => {
     expect(screen.getByText('This is option A')).toBeInTheDocument();
   });
 
+  it('renders a ReactNode description on items', () => {
+    render(
+      <CheckboxList label="Plans" value={[]} onChange={() => {}}>
+        <CheckboxListItem
+          label="Pro plan"
+          value="pro"
+          description={
+            <span>
+              See the <a href="#pricing">pricing page</a>
+            </span>
+          }
+        />
+      </CheckboxList>,
+    );
+    expect(
+      screen.getByRole('link', {name: 'pricing page'}),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps a link in a ReactNode label independent from selection', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <CheckboxList label="Plans" value={[]} onChange={onChange}>
+        <CheckboxListItem
+          label={
+            <>
+              Pro plan <a href="#pricing">pricing details</a>
+            </>
+          }
+          aria-label="Pro plan pricing details"
+          value="pro"
+        />
+      </CheckboxList>,
+    );
+    const checkbox = screen.getByRole('checkbox', {
+      name: 'Pro plan pricing details',
+    });
+    const link = screen.getByRole('link', {name: 'pricing details'});
+    await user.tab();
+    expect(checkbox).toHaveFocus();
+    await user.tab();
+    expect(link).toHaveFocus();
+    await user.click(link);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('exposes a string description to the checkbox via aria-describedby', () => {
+    render(
+      <List>
+        <CheckboxListItem
+          label="Email"
+          description="Receive notifications by email"
+        />
+      </List>,
+    );
+    const checkbox = screen.getByRole('checkbox', {name: 'Email'});
+    const ids = checkbox.getAttribute('aria-describedby');
+    expect(ids).not.toBeNull();
+    const target = document.getElementById(ids!);
+    expect(target).toHaveTextContent('Receive notifications by email');
+  });
+
+  it('exposes a ReactNode description to the checkbox via aria-describedby', () => {
+    render(
+      <List>
+        <CheckboxListItem
+          label="Pro plan"
+          description={
+            <span>
+              See the <a href="#pricing">pricing page</a>
+            </span>
+          }
+        />
+      </List>,
+    );
+    const checkbox = screen.getByRole('checkbox', {name: 'Pro plan'});
+    const target = document.getElementById(
+      checkbox.getAttribute('aria-describedby')!,
+    );
+    expect(target).toHaveTextContent('See the pricing page');
+  });
+
+  it('adds no aria-describedby when the description is absent or empty', () => {
+    render(
+      <List>
+        <CheckboxListItem label="Plain" />
+        <CheckboxListItem label="Empty" description="" />
+        <CheckboxListItem label="False" description={false} />
+      </List>,
+    );
+    for (const name of ['Plain', 'Empty', 'False']) {
+      expect(screen.getByRole('checkbox', {name})).not.toHaveAttribute(
+        'aria-describedby',
+      );
+    }
+  });
+
   it('renders description on the checkbox list group', () => {
     render(
       <CheckboxList
@@ -284,7 +473,10 @@ describe('CheckboxList', () => {
         <CheckboxListItem label="Option A" value="a" />
       </CheckboxList>,
     );
-    expect(screen.getByRole('listitem').className).toContain('spacious');
+    expect(screen.getByRole('listitem')).toHaveAttribute(
+      'data-density',
+      'spacious',
+    );
   });
 
   it('supports data-testid on CheckboxListItem', () => {
@@ -457,8 +649,7 @@ describe('CheckboxListItem accessible name', () => {
     ).toBeInTheDocument();
   });
 
-  it('names the checkbox from aria-label when the label is a ReactNode', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it('names the checkbox from a conforming aria-label when the label is a ReactNode', () => {
     render(
       <CheckboxList label="Plans" value={[]} onChange={() => {}}>
         <CheckboxListItem
@@ -467,46 +658,49 @@ describe('CheckboxListItem accessible name', () => {
               Pro plan <em>(recommended)</em>
             </span>
           }
-          aria-label="Pro plan"
+          aria-label="Pro plan (recommended) option"
           value="pro"
         />
       </CheckboxList>,
     );
     expect(
-      screen.getByRole('checkbox', {name: 'Pro plan'}),
+      screen.getByRole('checkbox', {name: 'Pro plan (recommended) option'}),
     ).toBeInTheDocument();
-    // A named checkbox needs no dev guidance.
-    expect(warnSpy).not.toHaveBeenCalled();
-    warnSpy.mockRestore();
   });
 
-  it('warns once when a ReactNode label has no aria-label', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const richLabel = (
-      <span>
-        Pro plan <em>(recommended)</em>
-      </span>
-    );
-    const {rerender} = render(
+  it('links a ReactNode label to the checkbox control', () => {
+    render(
       <CheckboxList label="Plans" value={[]} onChange={() => {}}>
-        <CheckboxListItem label={richLabel} value="pro" />
+        <CheckboxListItem
+          label={
+            <span>
+              Pro plan <em>(recommended)</em>
+            </span>
+          }
+          value="pro"
+        />
       </CheckboxList>,
     );
-    // Falls back to the generic name, and tells the developer how to fix it.
-    expect(
-      screen.getByRole('checkbox', {name: 'Checkbox'}),
-    ).toBeInTheDocument();
-    expect(warnSpy).toHaveBeenCalledTimes(1);
-    expect(String(warnSpy.mock.calls[0]?.[0])).toContain('aria-label');
+    const checkbox = screen.getByRole('checkbox');
+    const labelledBy = checkbox.getAttribute('aria-labelledby');
+    expect(labelledBy).toBeTruthy();
+    expect(document.getElementById(labelledBy!)).toHaveTextContent(
+      'Pro plan (recommended)',
+    );
+  });
 
-    // Warn once per item instance — re-renders don't repeat it.
-    rerender(
-      <CheckboxList label="Plans" value={['pro']} onChange={() => {}}>
-        <CheckboxListItem label={richLabel} value="pro" />
+  it('does not reference the visible label when a conforming aria-label is given', () => {
+    render(
+      <CheckboxList label="Plans" value={[]} onChange={() => {}}>
+        <CheckboxListItem
+          label={<span>Pro plan</span>}
+          aria-label="Pro plan option"
+          value="pro"
+        />
       </CheckboxList>,
     );
-    expect(warnSpy).toHaveBeenCalledTimes(1);
-    warnSpy.mockRestore();
+    const checkbox = screen.getByRole('checkbox', {name: 'Pro plan option'});
+    expect(checkbox).not.toHaveAttribute('aria-labelledby');
   });
 });
 
@@ -646,7 +840,7 @@ describe('CheckboxListItem ARIA props', () => {
         <CheckboxListItem
           label="Custom aria"
           aria-describedby="help-text"
-          aria-label="custom label"
+          aria-label="Custom aria label"
         />
       </List>,
     );
@@ -656,7 +850,7 @@ describe('CheckboxListItem ARIA props', () => {
     // ...but aria-label names the checkbox control, not the row.
     expect(item).not.toHaveAttribute('aria-label');
     expect(
-      screen.getByRole('checkbox', {name: 'custom label'}),
+      screen.getByRole('checkbox', {name: 'Custom aria label'}),
     ).toBeInTheDocument();
   });
 

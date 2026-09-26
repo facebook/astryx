@@ -19,17 +19,26 @@
  * - /packages/core/src/Icon/Icon.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Icon/index.ts (exports if types change)
  * - /apps/storybook/stories/Icon.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Icon/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Icon/ (showcase blocks)
  */
 
 import React, {type ComponentType, type SVGProps} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
+import {useThemeName} from '../theme/useTheme';
 import {getIcon} from './globalIconRegistry';
-import type {IconName} from './globalIconRegistry';
+import type {IconName, NamespacedIconName} from './globalIconRegistry';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import {useIconSize} from './IconDefaultSizeContext';
+import {
+  iconBoxSizeStyles,
+  iconSizeStyles,
+  type IconSize,
+} from './IconSize.stylex';
+
+export type {IconSize} from './IconSize.stylex';
 
 // =============================================================================
 // Styles
@@ -109,75 +118,11 @@ const colorStyles = stylex.create({
   },
 });
 
-/**
- * Size styles for direct SVG icon components.
- * Uses width/height only — SVG components handle their own viewBox scaling.
- *
- * Sizes are expressed in `rem` (relative to the root font-size) so icons scale
- * in step with text when the document font-size changes, matching the rest of
- * the design system's rem-based type scale. Values are the px-equivalents at a
- * 16px root: 12px → 0.75rem, 16px → 1rem, 20px → 1.25rem, 24px → 1.5rem.
- */
-const sizeStyles = stylex.create({
-  xsm: {
-    width: '0.75rem',
-    height: '0.75rem',
-  },
-  sm: {
-    width: '1rem',
-    height: '1rem',
-  },
-  md: {
-    width: '1.25rem',
-    height: '1.25rem',
-  },
-  lg: {
-    width: '1.5rem',
-    height: '1.5rem',
-  },
-});
-
-/**
- * Size styles for string-based (registry) icons.
- * Includes fontSize so that 1em-based icons from the registry scale correctly.
- *
- * Expressed in `rem` for the same reason as {@link sizeStyles} — icons track the
- * root font-size instead of being locked to absolute pixels.
- */
-const spanSizeStyles = stylex.create({
-  /* eslint-disable @astryx/no-hardcoded-styles -- fontSize here sizes 1em-based
-     registry SVGs to the icon box; icons use their own 12/16/20/24 scale, not
-     the 14px-anchored textSizeVars type scale. Values are rem so icons track
-     the root font-size. */
-  xsm: {
-    width: '0.75rem',
-    height: '0.75rem',
-    fontSize: '0.75rem',
-  },
-  sm: {
-    width: '1rem',
-    height: '1rem',
-    fontSize: '1rem',
-  },
-  md: {
-    width: '1.25rem',
-    height: '1.25rem',
-    fontSize: '1.25rem',
-  },
-  lg: {
-    width: '1.5rem',
-    height: '1.5rem',
-    fontSize: '1.5rem',
-  },
-  /* eslint-enable @astryx/no-hardcoded-styles */
-});
-
 // =============================================================================
 // Types
 // =============================================================================
 
 export type IconColor = keyof typeof colorStyles;
-export type IconSize = keyof typeof sizeStyles;
 
 /**
  * Type for icon components that can be passed to Icon.
@@ -198,9 +143,11 @@ export interface IconProps extends Omit<
   /**
    * Icon to render. Can be:
    * - A semantic name string (e.g. 'close', 'chevronDown') — resolved from theme or built-in fallback
+   * - A namespaced extension key (e.g. 'richtext:bold') for a glyph owned by
+   *   one component or library — resolved the same way, themeable by key
    * - An SVG icon component (e.g. from @heroicons/react) — rendered directly
    */
-  icon: IconType | IconName;
+  icon: IconType | IconName | NamespacedIconName;
   /**
    * The color variant of the icon.
    * @default 'inherit'
@@ -212,7 +159,9 @@ export interface IconProps extends Omit<
    * - 'sm': 1rem (16px at a 16px root)
    * - 'md': 1.25rem (20px at a 16px root)
    * - 'lg': 1.5rem (24px at a 16px root)
-   * @default 'md'
+   *
+   * An explicit value wins. When omitted, Icon uses the nearest default supplied
+   * by an owning Astryx component for its icon slot, then falls back to 'md'.
    */
   size?: IconSize;
   /**
@@ -294,7 +243,7 @@ function getIconA11yProps(
 export function Icon({
   icon,
   color = 'inherit',
-  size = 'md',
+  size: sizeProp,
   label,
   ref,
   className,
@@ -302,6 +251,7 @@ export function Icon({
   xstyle,
   ...props
 }: IconProps) {
+  const size = useIconSize(sizeProp);
   // Derive ARIA from `label`: decorative (aria-hidden) by default, or a
   // meaningful image (role="img" + aria-label) when `label` is non-empty.
   const a11yProps = getIconA11yProps(label);
@@ -338,7 +288,12 @@ export function Icon({
       // precedence as escape hatches.
       {...mergeProps(
         themeProps('icon', {size, color}),
-        stylex.props(styles.root, colorStyles[color], sizeStyles[size], xstyle),
+        stylex.props(
+          styles.root,
+          colorStyles[color],
+          iconSizeStyles[size],
+          xstyle,
+        ),
         className ?? undefined,
         style,
       )}
@@ -370,7 +325,7 @@ function IconFromRegistry({
   xstyle,
   spanProps,
 }: {
-  name: IconName;
+  name: IconName | NamespacedIconName;
   color: IconColor;
   size: IconSize;
   a11yProps: {role: 'img'; 'aria-label': string} | {'aria-hidden': 'true'};
@@ -379,7 +334,8 @@ function IconFromRegistry({
   xstyle?: StyleXStyles;
   spanProps?: Omit<SVGProps<SVGSVGElement>, 'ref' | 'color'>;
 }) {
-  const resolvedIcon = getIcon(name);
+  const themeName = useThemeName();
+  const resolvedIcon = getIcon(name, themeName);
 
   if (resolvedIcon == null) {
     return null;
@@ -406,7 +362,7 @@ function IconFromRegistry({
         stylex.props(
           styles.span,
           colorStyles[color],
-          spanSizeStyles[size],
+          iconBoxSizeStyles[size],
           xstyle,
         ),
         className ?? undefined,

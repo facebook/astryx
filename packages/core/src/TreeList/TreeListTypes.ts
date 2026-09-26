@@ -11,28 +11,12 @@
  * - /packages/core/src/TreeList/index.ts
  */
 
-import type {ReactNode} from 'react';
+import type {CSSProperties, ReactNode} from 'react';
+import type {StyleXStyles} from '@stylexjs/stylex';
+import type {TreeListVariantMap} from './index';
 
 /** Spacing density for tree list items. */
 export type TreeListDensity = 'compact' | 'balanced' | 'spacious';
-
-/**
- * Extensible variant map for TreeList.
- *
- * Theme packages can add custom variants via TypeScript module augmentation:
- * @example
- * ```
- * declare module '@astryxdesign/core/TreeList' {
- *   interface TreeListVariantMap {
- *     'dotted': true;
- *   }
- * }
- * ```
- */
-export interface TreeListVariantMap {
-  lineGuides: true;
-  noGuides: true;
-}
 
 /**
  * Visual treatment of the hierarchy guide (connector) lines. Extensible via
@@ -79,4 +63,13 @@ export interface TreeListItemData {
 
   /** Whether the item is initially expanded. Only meaningful for items with children. */
   isExpanded?: boolean;
+
+  /** StyleX styles applied to the item's row element. */
+  xstyle?: StyleXStyles;
+
+  /** Class applied to the item's row element. */
+  className?: string;
+
+  /** Inline styles applied to the item's row element. */
+  style?: CSSProperties;
 }

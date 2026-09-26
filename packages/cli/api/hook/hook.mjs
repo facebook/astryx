@@ -17,6 +17,8 @@
 import {list} from './list/list.mjs';
 import {detail as detailLeaf} from './detail/detail.mjs';
 import {params as paramsLeaf} from './detail/params/params.mjs';
+import {AstryxError} from '../error.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
 /**
  * @param {string} [name]
@@ -48,12 +50,35 @@ export async function hook(name, options = {}) {
   const isListView = listFlag || category != null || !name;
   const detail = detailOption ?? (isListView ? 'brief' : 'full');
 
+  // A public API caller could pass a non-string category; the list leaf does
+  // `category.toLowerCase()`, so guard it up front (same class as the name
+  // guard below) instead of throwing a raw TypeError with no `.code`.
+  if (category != null && typeof category !== 'string') {
+    throw new AstryxError(
+      `Unknown category "${String(category)}"`,
+      undefined,
+      ERROR_CODES.ERR_UNKNOWN_CATEGORY,
+    );
+  }
+
   // ── List mode ──────────────────────────────────────────────────
   if (category || listFlag || !name) {
     return list({cwd, category, detail, zh, lang});
   }
 
   // ── Single hook ────────────────────────────────────────────────
+  // A public API caller could pass a non-string name (the CLI only ever passes
+  // string|undefined). Guard it up front so the leaves' `name.replace(...)` /
+  // `name.toLowerCase()` don't throw a raw TypeError with no `.code` (which the
+  // CLI would downgrade to ERR_UNKNOWN). Mirrors the component() dispatcher.
+  if (typeof name !== 'string') {
+    throw new AstryxError(
+      `No hook named "${String(name)}"`,
+      undefined,
+      ERROR_CODES.ERR_UNKNOWN_HOOK,
+    );
+  }
+
   if (paramsFlag) {
     return paramsLeaf(name, {cwd, zh, lang});
   }

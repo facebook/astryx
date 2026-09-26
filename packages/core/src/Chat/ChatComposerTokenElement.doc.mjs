@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'ChatComposerTokenElement',
@@ -8,6 +8,11 @@ export const docs = {
   displayName: 'Chat Composer Token Element',
   isHiddenFromOverview: true,
   description: 'Renders a single token chip outside the contentEditable input. Wraps a badge config or custom render function in the correct data-astryx-token span so the token serializes properly and stays visually consistent with tokens inside the composer.',
+  playground: {
+    defaults: {
+      token: {value: '@astryx', label: '@astryx', variant: 'blue'},
+    },
+  },
   props: [
     {
       name: 'token',

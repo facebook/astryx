@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('./src/docs-types').GroupDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentGroupDoc} */
 
 /**
  * @file Group metadata for component categories that are not themselves components.
@@ -16,7 +16,7 @@
  * Or dynamically: `const {GROUP_DOCS} = await import('@astryxdesign/core/groups.doc.mjs')`
  */
 
-/** @type {Record<string, import('./src/docs-types').GroupDoc>} */
+/** @type {Record<string, import('@astryxdesign/cli/authoring').ComponentGroupDoc>} */
 export const GROUP_DOCS = {
   Chat: {
     name: 'Chat',

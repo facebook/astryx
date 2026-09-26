@@ -1,17 +1,37 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Message box',
+    required: true,
+    description: 'Painted container for the validation feedback.',
+  },
+  {
+    name: 'Detached icon',
+    required: false,
+    description: 'Leading status glyph shown only by the detached variant.',
+  },
+  {
+    name: 'Message text',
+    required: true,
+    description: 'Text describing the validation status.',
+  },
+];
+
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docs = {
   name: 'FieldStatus',
   displayName: 'Field Status',
   group: 'Field',
-  category: 'Data Input',
+  category: 'Form Controls',
   isHiddenFromOverview: true,
   description:
     'Status message component for form field validation feedback. Messages are announced to screen readers through persistent live regions (assertive for errors, polite otherwise), so conditional mounting is safe.',
   theming: {
     targets: [
       {className: 'astryx-field-status', visualProps: ['type', 'variant']},
+      {className: 'astryx-field-status-icon', visualProps: ['type']},
     ],
   },
   props: [
@@ -60,10 +80,11 @@ export const docs = {
           'Use FieldStatus for general alerts or page-level notices; use Banner or Toast instead.',
       },
     ],
+    anatomy,
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'Validation feedback message for fields/custom controls. Supports error, warning, success and attached/detached variants. Announced via persistent live regions (assertive for errors, polite otherwise).',
@@ -85,6 +106,7 @@ export const docsDense = {
           'Use FieldStatus for general alerts or page-level notices; use Banner or Toast instead.',
       },
     ],
+    anatomy,
   },
   propDescriptions: {
     type: 'error/warning/success status tone',

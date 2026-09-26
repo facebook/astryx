@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'SideNavSection',
@@ -8,6 +8,16 @@ export const docs = {
   displayName: 'Side Nav Section',
   isHiddenFromOverview: true,
   description: 'Section grouping with an optional title, subtitle, and end content.',
+  playground: {
+    defaults: {
+      title: 'Workspace',
+      children: [
+        {__element: 'SideNavItem', props: {label: 'Dashboard', isSelected: true}},
+        {__element: 'SideNavItem', props: {label: 'Projects'}},
+        {__element: 'SideNavItem', props: {label: 'Settings'}},
+      ],
+    },
+  },
   props: [
     {
       name: 'title',

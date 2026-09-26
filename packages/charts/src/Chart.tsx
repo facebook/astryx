@@ -2,6 +2,7 @@
 
 /**
  * @file Chart.tsx (v2)
+ * @input Data, scale configuration, series definitions, optional chrome, and root DOM props
  * @output Root chart — coordinates layout, rendering, and events
  * @position Top-level; delegates everything to series configs and interaction slots
  *
@@ -9,12 +10,17 @@
  *   1. Runs the layout engine (scales + stacking + grouping)
  *   2. Calls each series' resolve() and render() methods
  *   3. Provides a single event layer for interaction children
+ *
+ * Accessibility: the svg is exposed as a named image (role="img"; `title` or a
+ * derived default as aria-label), and small datasets are mirrored in a
+ * visually hidden data table for screen reader users.
  */
 
 'use client';
 
 import {
   type ReactNode,
+  type Ref,
   useId,
   useMemo,
   useRef,
@@ -26,22 +32,40 @@ import type {SeriesDef, YBaseline} from './types';
 import type {ChartContext, ChartMargin, ChartPointerEvent} from './types';
 import {computeLayout} from './layout';
 import {ChartProvider} from './ChartContext';
-import {Text} from '@astryxdesign/core';
-import {VStack, HStack} from '@astryxdesign/core';
+import {
+  Text,
+  VStack,
+  HStack,
+  VisuallyHidden,
+  useLocale,
+  useTranslator,
+  type BaseProps,
+} from '@astryxdesign/core';
+import {useMergedRefs} from '@astryxdesign/core/hooks';
+import {mergeProps} from '@astryxdesign/core/utils';
+import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import * as stylex from '@stylexjs/stylex';
 import {ChartLegend, type ChartLegendProps} from './ChartLegend';
 import {deriveLegendItems} from './legend';
 import {ChartTooltip, type ChartTooltipProps} from './ChartTooltip';
 import {useChartColors} from './useChartColors';
+import {formatList} from './formatters';
 import {isUtilityMarkType} from './types';
 
-export interface ChartProps {
+export interface ChartProps extends BaseProps<HTMLDivElement> {
+  /** Ref forwarded to the root chart container. */
+  ref?: Ref<HTMLDivElement>;
+  /** Rows to visualize. Each row may contain the x field and one or more series fields. */
   data: Record<string, unknown>[];
+  /** Field name read from each data row for the shared x scale. */
   xKey: string;
+  /** Mark definitions rendered against the chart's shared scales. */
   series: SeriesDef[];
+  /** Chart height in CSS pixels. Non-finite and negative values resolve to 0. @default 300 */
   height?: number;
+  /** Partial plot inset override in CSS pixels. */
   margin?: Partial<ChartMargin>;
-  /** How the y-domain is derived when `yDomain` is not set. Default `'auto'`. */
+  /** How the y-domain is derived when `yDomain` is not set. @default 'auto' */
   yBaseline?: YBaseline;
   /** Explicit y-domain [min, max]. Authoritative — disables baseline/headroom. */
   yDomain?: [number, number];
@@ -50,32 +74,69 @@ export interface ChartProps {
    * is empty (stable streaming window). Ignored for categorical (band) scales.
    */
   xDomain?: [number, number];
+  /** Grid content rendered behind the series, normally `ChartGrid`. */
   grid?: ReactNode;
+  /** Axis content rendered after the series, normally one or more `ChartAxis` elements. */
   axes?: ReactNode;
+  /** Show the derived legend, or configure its items and layout. @default false */
   legend?: boolean | ChartLegendProps;
+  /** Show the grouped pointer tooltip, or configure its presentation. @default false */
   tooltip?: boolean | Omit<ChartTooltipProps, 'series'>;
+  /** Interaction overlays rendered above the pointer-capture layer. */
   interactions?: ReactNode;
+  /** Additional SVG content rendered after the built-in tooltip. */
   children?: ReactNode;
+  /** Visible chart heading and accessible name for the SVG image. */
   title?: string;
+  /** Visible supporting text and accessible description for the SVG image. */
   subtitle?: string;
 }
 
 const DEFAULT_MARGIN: ChartMargin = {top: 24, right: 24, bottom: 32, left: 48};
+
+/**
+ * Maximum number of data points (rows × data keys) for which the visually
+ * hidden data-table fallback is rendered. Beyond this a table is more noise
+ * than signal for screen reader users, so larger charts are name-only.
+ */
+const MAX_TABLE_POINTS = 100;
+
+/** Stringify a cell value for the hidden data table. */
+function tableCell(value: unknown): string {
+  return value == null ? '' : String(value);
+}
 
 const styles = stylex.create({
   container: {
     width: '100%',
   },
   title: {
-    marginBottom: 16,
+    marginBlockEnd: spacingVars['--spacing-4'],
   },
   chartArea: {
     flex: 1,
     minWidth: 0,
-    overflow: 'hidden',
+    overflow: 'clip',
   },
 });
 
+/**
+ * Renders several series against one responsive x/y coordinate system.
+ *
+ * @example
+ * ```
+ * <Chart
+ *   data={monthlyRevenue}
+ *   xKey="month"
+ *   series={[bar('revenue'), line('trend')]}
+ *   title="Monthly revenue"
+ *   grid={<ChartGrid horizontal />}
+ *   axes={<><ChartAxis position="bottom" /><ChartAxis position="left" /></>}
+ *   legend
+ *   tooltip
+ * />
+ * ```
+ */
 export function Chart({
   data,
   xKey,
@@ -93,13 +154,21 @@ export function Chart({
   children,
   title,
   subtitle,
+  ref,
+  xstyle,
+  className,
+  style,
+  ...rest
 }: ChartProps) {
   const chartId = useId();
   const descId = `${chartId}-desc`;
   // useId() can contain ':' which is invalid in an SVG url(#id) reference.
   const clipId = `plot-${chartId.replace(/:/g, '')}`;
   const containerRef = useRef<HTMLDivElement>(null);
+  const mergedContainerRef = useMergedRefs(containerRef, ref);
   const svgRef = useRef<SVGSVGElement>(null);
+  const t = useTranslator();
+  const locale = useLocale();
   const [containerWidth, setContainerWidth] = useState(0);
   const pointerHandlers = useRef<Set<(e: ChartPointerEvent) => void>>(
     new Set(),
@@ -250,6 +319,27 @@ export function Chart({
     [innerWidth, innerHeight, margin, data, xKey, layout, onPointer],
   );
 
+  // ─── Accessibility ─────────────────────────────────────────────────────
+  // The svg is exposed as a named image. `title` (when given) is the name;
+  // otherwise a localized default is derived from the primary series + x key.
+  const primarySeries = series.filter(s => !isUtilityMarkType(s.type));
+  const accessibleLabel =
+    title ??
+    (primarySeries.length > 0
+      ? t('@astryx.chart.labelWithSeries', {
+          series: formatList(
+            primarySeries.map(s => s.label ?? s.key),
+            locale,
+          ),
+          xKey,
+        })
+      : t('@astryx.chart.label'));
+  const tableKeys = Array.from(new Set(primarySeries.flatMap(s => s.dataKeys)));
+  const showDataTable =
+    data.length > 0 &&
+    tableKeys.length > 0 &&
+    data.length * tableKeys.length <= MAX_TABLE_POINTS;
+
   // ─── Legend ────────────────────────────────────────────────────────────
   const legendConfig = legend === true ? {} : legend || null;
 
@@ -269,15 +359,23 @@ export function Chart({
   if (containerWidth === 0) {
     return (
       <div
-        ref={containerRef}
-        {...stylex.props(styles.container)}
-        style={{height: safeHeight}}
+        ref={mergedContainerRef}
+        {...mergeProps(
+          stylex.props(styles.container, xstyle),
+          {style: {height: safeHeight}},
+          className,
+          style,
+        )}
+        {...rest}
       />
     );
   }
 
   return (
-    <div ref={containerRef} {...stylex.props(styles.container)}>
+    <div
+      ref={mergedContainerRef}
+      {...mergeProps(stylex.props(styles.container, xstyle), className, style)}
+      {...rest}>
       {(title || subtitle) && (
         <div {...stylex.props(styles.title)}>
           {title && (
@@ -309,6 +407,7 @@ export function Chart({
           </VStack>
         )}
       </ChartProvider>
+      {renderDataTable()}
     </div>
   );
 
@@ -316,9 +415,10 @@ export function Chart({
     return (
       <svg
         ref={svgRef}
+        role="img"
         width="100%"
         height={safeHeight}
-        aria-label={title ?? undefined}
+        aria-label={accessibleLabel}
         aria-describedby={subtitle ? descId : undefined}>
         {title && <title>{title}</title>}
         {subtitle && <desc id={descId}>{subtitle}</desc>}
@@ -373,4 +473,41 @@ export function Chart({
       </svg>
     );
   }
+
+  function renderDataTable() {
+    if (!showDataTable) {
+      return null;
+    }
+    return (
+      <VisuallyHidden as="div">
+        <table>
+          <caption>
+            {t('@astryx.chart.dataTableCaption', {label: accessibleLabel})}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">{xKey}</th>
+              {tableKeys.map(key => (
+                <th key={key} scope="col">
+                  {key}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((d, i) => (
+              <tr key={i}>
+                <th scope="row">{tableCell(d[xKey])}</th>
+                {tableKeys.map(key => (
+                  <td key={key}>{tableCell(d[key])}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </VisuallyHidden>
+    );
+  }
 }
+
+Chart.displayName = 'Chart';

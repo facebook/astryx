@@ -40,7 +40,9 @@ import type {FieldStatusVariant} from '../FieldStatus/FieldStatus';
 import type {InputStatus, InputStatusType} from '../Field/types';
 import {useTooltip} from '../Tooltip';
 import {useTranslator} from '../i18n';
-import {colorVars, radiusVars} from '../theme/tokens.stylex';
+import {radiusVars} from '../theme/tokens.stylex';
+import {themeProps} from '../utils/themeProps';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 
 /**
  * Maps each status type to its glyph. Shared so every input shows the same icon
@@ -79,14 +81,20 @@ const styles = stylex.create({
     border: 'none',
     background: 'none',
     color: 'inherit',
-    cursor: 'pointer',
-    borderRadius: radiusVars['--radius-full'],
-    outlineWidth: {default: null, ':focus-visible': '2px'},
-    outlineStyle: {default: null, ':focus-visible': 'solid'},
-    outlineColor: {
-      default: null,
-      ':focus-visible': colorVars['--color-accent'],
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
     },
+    // Own the interactivity so the tooltip opens on hover even when the field
+    // renders this affordance inside a non-interactive trailing slot. TextArea
+    // positions its end slot as an absolute overlay with `pointer-events: none`
+    // (right for the decorative spinner/icon it was built for), which otherwise
+    // swallows this button's hover — keyboard focus still worked, pointer did
+    // not.
+    pointerEvents: 'auto',
+    borderRadius: radiusVars['--radius-full'],
+    // Not the shared offset: this button sits inside the field, and measured at
+    // the standard 3px its ring crosses the field border.
     outlineOffset: {default: null, ':focus-visible': '2px'},
   },
 });
@@ -194,7 +202,17 @@ export function useInputStatusIcon({
   }
 
   const icon = (
-    <Icon icon={STATUS_ICON[status.type]} size={size} color={status.type} />
+    <Icon
+      icon={STATUS_ICON[status.type]}
+      size={size}
+      color={status.type}
+      // Stable theme target on the status glyph itself, so a theme can restyle
+      // just this icon (color, size) — and each status — via `defineTheme`.
+      // Same-element rules in @layer astryx-theme win over the icon's own base
+      // width/height/fontSize, which a field-level target could not reach.
+      // Shared by the attached and tooltip variants across all bordered inputs.
+      {...themeProps('input-status-icon', {size, status: status.type})}
+    />
   );
 
   // Attached (and tooltip-without-message) variants: plain, non-interactive
@@ -213,7 +231,10 @@ export function useInputStatusIcon({
           aria-describedby={tooltip.describedBy}
           onClick={handleButtonClick}
           onBlur={handleButtonBlur}
-          {...stylex.props(styles.statusButton)}>
+          {...stylex.props(
+            focusOutlineStyles.focusVisible,
+            styles.statusButton,
+          )}>
           {icon}
         </button>
         {tooltip.renderTooltip(status.message)}

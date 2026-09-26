@@ -23,7 +23,11 @@ import {describe, test, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import React, {useMemo} from 'react';
 import {PowerSearch, usePowerSearchConfig} from '../../PowerSearch';
-import type {FieldDefinition, PowerSearchFilter} from '../../PowerSearch';
+import type {
+  FieldDefinition,
+  PowerSearchConfig,
+  PowerSearchFilter,
+} from '../../PowerSearch';
 import {InternationalizationProvider} from '../InternationalizationProvider';
 import pseudoCatalog from '../../../locales/pseudo.json';
 
@@ -110,6 +114,38 @@ describe('PowerSearch × i18n — end to end', () => {
     );
 
     expect(screen.getByText(/Name: contient/)).toBeInTheDocument();
+  });
+
+  test('date tokens update when the provider locale changes', () => {
+    const config: PowerSearchConfig = {
+      name: 'Dates',
+      fields: [
+        {
+          key: 'created',
+          label: 'Created',
+          defaultOperator: 'is',
+          operators: [{key: 'is', label: 'is', value: {type: 'date_absolute'}}],
+        },
+      ],
+    };
+    const filters: PowerSearchFilter[] = [
+      {
+        field: 'created',
+        operator: 'is',
+        value: {type: 'date_absolute', unixSeconds: 1769342400},
+      },
+    ];
+    const search = (locale: string) => (
+      <InternationalizationProvider locale={locale}>
+        <PowerSearch config={config} filters={filters} onChange={() => {}} />
+      </InternationalizationProvider>
+    );
+
+    const {rerender} = render(search('en-US'));
+    expect(screen.getByText('Jan 25, 2026')).toBeInTheDocument();
+
+    rerender(search('de-DE'));
+    expect(screen.getByText('25. Jan. 2026')).toBeInTheDocument();
   });
 
   test('resultCount ICU plural swaps under provider overrides', () => {

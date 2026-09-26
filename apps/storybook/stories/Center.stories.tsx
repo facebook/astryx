@@ -37,6 +37,16 @@ const styles = stylex.create({
     padding: spacingVars['--spacing-2'],
     borderRadius: radiusVars['--radius-element'],
   },
+  paddingOutline: {
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colorVars['--color-border-gray'],
+    borderRadius: radiusVars['--radius-element'],
+  },
+  fillArea: {
+    width: '100%',
+    height: '100%',
+  },
 });
 
 // Demo box component for visibility
@@ -52,7 +62,8 @@ const meta: Meta<typeof Center> = {
     axis: {
       control: 'select',
       options: ['both', 'horizontal', 'vertical'],
-      description: 'Which direction(s) to center',
+      description:
+        'Center mode. In horizontal writing, the names match physical axes; in vertical writing, current single-axis behavior follows flex main/cross axes.',
     },
     width: {
       control: 'text',
@@ -67,6 +78,46 @@ const meta: Meta<typeof Center> = {
     isInline: {
       control: 'boolean',
       description: 'Whether to render as inline-flex',
+    },
+    padding: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description: 'Inner padding on all sides (spacing step)',
+    },
+    paddingInline: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description:
+        'Logical inline-axis padding; overrides padding on that axis',
+    },
+    paddingInlineStart: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description:
+        'Logical inline-start padding; physical edge depends on writing mode and direction',
+    },
+    paddingInlineEnd: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description:
+        'Logical inline-end padding; physical edge depends on writing mode and direction',
+    },
+    paddingBlock: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description: 'Logical block-axis padding; overrides padding on that axis',
+    },
+    paddingBlockStart: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description:
+        'Logical block-start padding; physical edge depends on writing mode',
+    },
+    paddingBlockEnd: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description:
+        'Logical block-end padding; physical edge depends on writing mode',
     },
   },
 };
@@ -187,6 +238,50 @@ export const InsideACard: Story = {
           <Box>Centered in Card</Box>
         </Center>
       </Card>
+    </Section>
+  ),
+};
+
+// ============================================================================
+// Padding — inner padding via the spacing scale (no inline styles needed)
+// ============================================================================
+
+export const Padding: Story = {
+  args: {
+    axis: 'both',
+    width: '100%',
+    height: 200,
+    padding: 4,
+    children: null,
+  },
+  render: args => (
+    <Section variant="muted" width="100%">
+      <Center {...args} xstyle={styles.paddingOutline}>
+        <div {...stylex.props(styles.fillArea)}>
+          <Box>Inset by padding on the spacing scale</Box>
+        </div>
+      </Center>
+    </Section>
+  ),
+};
+
+export const PaddingPerEdge: Story = {
+  args: {
+    axis: 'both',
+    width: '100%',
+    height: 200,
+    padding: 6,
+    paddingBlockEnd: 0,
+    paddingInlineStart: 2,
+    children: null,
+  },
+  render: args => (
+    <Section variant="muted" width="100%">
+      <Center {...args} xstyle={styles.paddingOutline}>
+        <div {...stylex.props(styles.fillArea)}>
+          <Box>Roomy above, flush below — only the block-end edge moved</Box>
+        </div>
+      </Center>
     </Section>
   ),
 };

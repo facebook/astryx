@@ -17,18 +17,43 @@ import {
   discoverExternalComponentsGrouped,
   discoverIntegrationComponents,
   findComponentReadme,
+  findExternalComponentDoc,
   resolveImportPath,
-} from '../../../lib/component-discovery.mjs';
-import {discoverExternalPackages} from '../../../utils/paths.mjs';
-import {ERROR_CODES} from '../../../lib/error-codes.mjs';
+  resolveIntegrationImportPath,
+} from '../../../foundation/discovery/component-discovery.mjs';
+import {discoverExternalPackages} from '../../../foundation/fs/paths.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../../error.mjs';
-import {loadComponentDoc, loadIntegrationsSafely} from '../_adapter.mjs';
+import {loadComponentDoc, loadIntegrationsSafely, withOwnership} from '../_adapter.mjs';
 
 /**
- * @typedef {import('../../../types/component').ComponentListResponse} ComponentListResponse
- * @typedef {import('../../../types/component').ComponentListEntry} ComponentListEntry
- * @typedef {import('../../../types/component').ComponentBriefEntry} ComponentBriefEntry
+ * @typedef {import('../component.type.mjs').ComponentListResponse} ComponentListResponse
+ * @typedef {import('../component.type.mjs').ComponentListEntry} ComponentListEntry
+ * @typedef {import('../component.type.mjs').ComponentBriefEntry} ComponentBriefEntry
  */
+
+/**
+ * The import a legacy `pkg.astryx.docs` component's detail reports, derived the
+ * same way (`withOwnership`) so list and detail agree.
+ * @param {{name: string, docsDir: string}} ext
+ * @param {string} name
+ * @param {string} coreDir
+ * @param {{zh: boolean, lang: string|null}} docOpts
+ * @returns {Promise<string>}
+ */
+async function legacyImport(ext, name, coreDir, docOpts) {
+  const docPath = findExternalComponentDoc(ext.docsDir, name);
+  /** @type {import('../_adapter.mjs').LoadedComponentDoc} */
+  let docs = {};
+  if (docPath && docPath.endsWith('.doc.mjs')) {
+    try {
+      docs = await loadComponentDoc(docPath, docOpts);
+    } catch {
+      // Keep list resilient; validation owns malformed docs.
+    }
+  }
+  return withOwnership(docs, {package: ext.name, sourcePath: null}, name, coreDir).import;
+}
 
 /**
  * Build the `component.list` envelope. The list taxonomy is collapsed: all
@@ -44,7 +69,10 @@ import {loadComponentDoc, loadIntegrationsSafely} from '../_adapter.mjs';
  * @param {string|null} opts.lang
  * @returns {Promise<ComponentListResponse>}
  */
-export async function componentList(coreDir, {cwd, category, detail, zh, dense, lang}) {
+export async function componentList(
+  coreDir,
+  {cwd, category, detail, zh, dense, lang},
+) {
   const components = discoverComponents(coreDir);
 
   if (category) {
@@ -67,15 +95,30 @@ export async function componentList(coreDir, {cwd, category, detail, zh, dense, 
         if (readme && readme.endsWith('.doc.mjs')) {
           try {
             const docs = await loadComponentDoc(readme, {zh, lang});
-            entries.push({name: comp, description: docs.usage?.description || docs.description || '', import: resolveImportPath(coreDir, comp)});
+            entries.push({
+              name: comp,
+              description: docs.usage?.description || docs.description || '',
+              import: resolveImportPath(coreDir, comp),
+            });
           } catch {
-            entries.push({name: comp, description: '', import: resolveImportPath(coreDir, comp)});
+            entries.push({
+              name: comp,
+              description: '',
+              import: resolveImportPath(coreDir, comp),
+            });
           }
         } else {
-          entries.push({name: comp, description: '', import: resolveImportPath(coreDir, comp)});
+          entries.push({
+            name: comp,
+            description: '',
+            import: resolveImportPath(coreDir, comp),
+          });
         }
       }
-      return {type: 'component.list', data: {detail: 'compact', components: {[match[0]]: entries}}};
+      return {
+        type: 'component.list',
+        data: {detail: 'compact', components: {[match[0]]: entries}},
+      };
     }
 
     if (detail === 'full') {
@@ -93,7 +136,10 @@ export async function componentList(coreDir, {cwd, category, detail, zh, dense, 
           entries.push({name: `XDS${comp}`, description: ''});
         }
       }
-      return {type: 'component.list', data: {detail: 'full', components: {[match[0]]: entries}}};
+      return {
+        type: 'component.list',
+        data: {detail: 'full', components: {[match[0]]: entries}},
+      };
     }
 
     // Default: brief — package-qualified object list for the category.
@@ -101,7 +147,12 @@ export async function componentList(coreDir, {cwd, category, detail, zh, dense, 
     // strings, so consumers can disambiguate ownership.
     return {
       type: 'component.list',
-      data: {detail: 'names', components: {[match[0]]: match[1].map(n => ({name: n, package: CORE_PACKAGE}))}},
+      data: {
+        detail: 'names',
+        components: {
+          [match[0]]: match[1].map(n => ({name: n, package: CORE_PACKAGE})),
+        },
+      },
     };
   }
 
@@ -116,16 +167,31 @@ export async function componentList(coreDir, {cwd, category, detail, zh, dense, 
         if (readme && readme.endsWith('.doc.mjs')) {
           try {
             const docs = await loadComponentDoc(readme, {zh, lang});
-            result[cat].push({name: comp, description: docs.usage?.description || docs.description || '', import: resolveImportPath(coreDir, comp)});
+            result[cat].push({
+              name: comp,
+              description: docs.usage?.description || docs.description || '',
+              import: resolveImportPath(coreDir, comp),
+            });
           } catch {
-            result[cat].push({name: comp, description: '', import: resolveImportPath(coreDir, comp)});
+            result[cat].push({
+              name: comp,
+              description: '',
+              import: resolveImportPath(coreDir, comp),
+            });
           }
         } else {
-          result[cat].push({name: comp, description: '', import: resolveImportPath(coreDir, comp)});
+          result[cat].push({
+            name: comp,
+            description: '',
+            import: resolveImportPath(coreDir, comp),
+          });
         }
       }
     }
-    return {type: 'component.list', data: {detail: 'compact', components: result}};
+    return {
+      type: 'component.list',
+      data: {detail: 'compact', components: result},
+    };
   }
 
   if (detail === 'full') {
@@ -151,7 +217,7 @@ export async function componentList(coreDir, {cwd, category, detail, zh, dense, 
 
   // Default: brief — package-qualified object list (core + integrations).
   // Pre-1.0 JSON contract: each group's members are {name, package} objects.
-  /** @type {Record<string, Array<{name: string, package: string}>>} */
+  /** @type {Record<string, ComponentListEntry[]>} */
   const listData = {};
   for (const [cat, comps] of Object.entries(components)) {
     listData[cat] = comps.map(n => ({name: n, package: CORE_PACKAGE}));
@@ -166,13 +232,44 @@ export async function componentList(coreDir, {cwd, category, detail, zh, dense, 
     // Group integration components by their doc `group`, falling back to the
     // package name. Keys are package-qualified so they never collide with
     // core groups or each other.
-    /** @type {Map<string, Array<{name: string, package: string}>>} */
+    /** @type {Map<string, Array<{name: string, package: string, import?: string}>>} */
     const byGroup = new Map();
     for (const rec of owned) {
       const groupLabel = rec.group ?? integration.name;
       const key = `${groupLabel} (${integration.name})`;
       if (!byGroup.has(key)) byGroup.set(key, []);
-      byGroup.get(key)?.push({name: rec.name, package: integration.name});
+      // Use the doc-authored import when present; otherwise resolve the package
+      // export so list, detail, search, JSON, and human output all agree.
+      const fallbackImport = resolveIntegrationImportPath(
+        {
+          exportsMap: integration.__packageExports,
+          packageDir: integration.__packageDir,
+          docPath: rec.docPath,
+          packageName: integration.name,
+        },
+        rec.name,
+      );
+      let importPath = fallbackImport;
+      try {
+        const docs = await loadComponentDoc(rec.docPath, {zh, lang});
+        importPath = resolveIntegrationImportPath(
+          {
+            exportsMap: integration.__packageExports,
+            packageDir: integration.__packageDir,
+            docPath: rec.docPath,
+            packageName: integration.name,
+          },
+          rec.name,
+          docs.import,
+        );
+      } catch {
+        // Keep list resilient; validation owns malformed integration docs.
+      }
+      byGroup.get(key)?.push({
+        name: rec.name,
+        package: integration.name,
+        import: importPath,
+      });
     }
     for (const [key, members] of byGroup) {
       members.sort((a, b) => a.name.localeCompare(b.name));
@@ -194,22 +291,29 @@ export async function componentList(coreDir, {cwd, category, detail, zh, dense, 
       k => grouped[k].length > 1 || grouped[k][0] !== k,
     );
 
-    if (hasGroups) {
-      for (const [group, members] of Object.entries(grouped)) {
-        listData[`${group} (${ext.name})`] = members.map(n => ({
+    /** @param {string[]} names */
+    const entriesFor = names =>
+      Promise.all(
+        names.map(async n => ({
           name: n,
           package: ext.name,
-        }));
+          import: await legacyImport(ext, n, coreDir, {zh, lang}),
+        })),
+      );
+
+    if (hasGroups) {
+      for (const [group, members] of Object.entries(grouped)) {
+        listData[`${group} (${ext.name})`] = await entriesFor(members);
       }
     } else {
       const allComps = Object.values(grouped).flat().sort();
       if (allComps.length > 0) {
-        listData[`${ext.category} (${ext.name})`] = allComps.map(n => ({
-          name: n,
-          package: ext.name,
-        }));
+        listData[`${ext.category} (${ext.name})`] = await entriesFor(allComps);
       }
     }
   }
-  return {type: 'component.list', data: {detail: 'names', components: listData}};
+  return {
+    type: 'component.list',
+    data: {detail: 'names', components: listData},
+  };
 }

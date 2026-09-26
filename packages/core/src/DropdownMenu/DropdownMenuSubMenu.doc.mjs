@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'DropdownMenuSubMenu',
@@ -33,7 +33,7 @@ export const docs = {
       name: 'children',
       type: 'ReactNode',
       description:
-        'The flyout menu items — the same components used at the top level (DropdownMenuItem, nested DropdownMenuSubMenu, selectable items).',
+        'The flyout menu items: the same components used at the top level (DropdownMenuItem, nested DropdownMenuSubMenu, selectable items).',
     },
     {
       name: 'isDisabled',
@@ -47,12 +47,13 @@ export const docs = {
       type: 'boolean',
       default: 'false',
       description:
-        'Show a spinner in place of the caret, e.g. while a lazy submenu’s children are loading.',
+        'Show a spinner in place of the caret, e.g. while a lazy submenu\'s children are loading.',
     },
     {
       name: 'menuWidth',
       type: 'number | string',
-      description: 'Fixed flyout width. Defaults to sizing to its content (min 160px).',
+      description:
+        'Minimum flyout width. The flyout may grow for its content, but it is capped to the available viewport space. Defaults to intrinsic sizing (min 160px).',
     },
     {
       name: 'onOpenChange',
@@ -81,7 +82,8 @@ export const docsDense = {
     children: 'flyout menu items (same components as top level)',
     isDisabled: 'renders trigger but never opens',
     hasSpinner: 'spinner instead of caret for async children',
-    menuWidth: 'fixed flyout width (default: content, min 160px)',
+    menuWidth:
+      'minimum flyout width, capped to the viewport (default: content, min 160px)',
     onOpenChange: 'called when flyout opens/closes',
     xstyle: 'StyleX styles for the trigger row',
   },

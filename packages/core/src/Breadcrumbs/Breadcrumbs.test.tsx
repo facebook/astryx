@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor, fireEvent} from '@testing-library/react';
+import {render, screen, waitFor, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Breadcrumbs} from './Breadcrumbs';
 import {BreadcrumbItem} from './BreadcrumbItem';
@@ -72,6 +72,18 @@ describe('Breadcrumbs', () => {
     const separators = container.querySelectorAll('span[aria-hidden="true"]');
     expect(separators).toHaveLength(3);
     expect(separators[0].textContent).toBe('/');
+  });
+
+  it('wraps the contextual default slash in the RTL mirror style', () => {
+    const {container} = render(
+      <Breadcrumbs>
+        <BreadcrumbItem href="/">Home</BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Page</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+    const separators = container.querySelectorAll('span[aria-hidden="true"]');
+    expect(separators[1].firstElementChild).toHaveTextContent('/');
+    expect(separators[1].firstElementChild).toHaveAttribute('class');
   });
 
   it('supports custom separator', () => {
@@ -415,6 +427,24 @@ describe('BreadcrumbItem menu', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
+  it('labels the menu from non-string trigger content', async () => {
+    const user = userEvent.setup();
+    render(
+      <Breadcrumbs>
+        <BreadcrumbItem menu={items}>
+          <span>Teams</span>
+        </BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Overview</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Teams'}));
+
+    expect(screen.getByRole('menu', {hidden: true})).toHaveAccessibleName(
+      'Teams',
+    );
+  });
+
   it('portability: a DropdownMenuOption[] renders its items on open', async () => {
     const user = userEvent.setup();
     render(
@@ -425,7 +455,7 @@ describe('BreadcrumbItem menu', () => {
     );
     await user.click(screen.getByRole('button', {name: 'Teams'}));
     const menu = screen.getByRole('menu', {hidden: true});
-    expect(menu).toHaveAttribute('aria-label', 'Teams');
+    expect(menu).toHaveAccessibleName('Teams');
     expect(
       screen.getByRole('menuitem', {name: 'Design', hidden: true}),
     ).toBeInTheDocument();
@@ -519,7 +549,7 @@ describe('BreadcrumbItem menu', () => {
         <BreadcrumbItem
           menu={
             <BreadcrumbMenuRadioGroup
-              aria-label="Sort by"
+              label="Sort by"
               value="name"
               onChange={onChange}>
               <BreadcrumbMenuRadioItem value="name" label="Name" />
@@ -564,6 +594,35 @@ describe('BreadcrumbItem menu', () => {
     expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
     await waitFor(() => {
       expect(trigger).toHaveFocus();
+    });
+  });
+
+  it('preserves outside focus after a browser light dismiss', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <Breadcrumbs>
+          <BreadcrumbItem menu={items}>Teams</BreadcrumbItem>
+          <BreadcrumbItem isCurrent>Overview</BreadcrumbItem>
+        </Breadcrumbs>
+        <button type="button">Outside action</button>
+      </>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Teams'});
+    await user.click(trigger);
+    const menu = screen.getByRole('menu', {hidden: true});
+    const outside = screen.getByRole('button', {name: 'Outside action'});
+
+    outside.focus();
+    expect(outside).toHaveFocus();
+    const popover = menu.closest('[popover]');
+    expect(popover).not.toBeNull();
+    await act(async () => {
+      (popover as HTMLElement).hidePopover();
+    });
+
+    await waitFor(() => {
+      expect(outside).toHaveFocus();
     });
   });
 
@@ -674,6 +733,37 @@ describe('BreadcrumbItem menu', () => {
       expect.stringContaining('`menu` and `href` are mutually exclusive'),
     );
     warn.mockRestore();
+  });
+
+  it('reflects the variant on the item and menu-trigger theme targets', () => {
+    const {container} = render(
+      <Breadcrumbs variant="supporting">
+        <BreadcrumbItem href="/">Home</BreadcrumbItem>
+        <BreadcrumbItem menu={items}>Teams</BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Overview</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+    // The variant selects between style objects on both elements, so a theme
+    // needs it as a data attribute on both targets to reach them.
+    for (const item of container.querySelectorAll('.astryx-breadcrumb-item')) {
+      expect(item).toHaveAttribute('data-variant', 'supporting');
+    }
+    expect(
+      container.querySelector('.astryx-breadcrumb-item-menu-trigger'),
+    ).toHaveAttribute('data-variant', 'supporting');
+  });
+
+  it('defaults the item theme target to the default variant', () => {
+    const {container} = render(
+      <Breadcrumbs>
+        <BreadcrumbItem href="/">Home</BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Overview</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+    expect(container.querySelector('.astryx-breadcrumb-item')).toHaveAttribute(
+      'data-variant',
+      'default',
+    );
   });
 
   it('keeps mid-trail separators intact around a menu crumb', () => {

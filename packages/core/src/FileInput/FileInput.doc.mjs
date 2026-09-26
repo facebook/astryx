@@ -1,11 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'FileInput',
   displayName: 'File Input',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: ["fileinput","file","upload","drag","drop","dropzone","attachment","browse"],
   props: [
     {
@@ -142,6 +142,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-file-input', visualProps: ['mode', 'status']},
+      {className: 'astryx-file-input-icon', visualProps: ['mode']},
     ],
   },
   usage: {
@@ -170,7 +171,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'FileInput',
   displayName: 'File Input',
@@ -270,6 +271,7 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'astryx-file-input', visualProps: ['mode', 'status']},
+      {className: 'astryx-file-input-icon', visualProps: ['mode']},
     ],
   },
   usage: {
@@ -293,7 +295,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'File input w/ input/dropzone modes, validation, label, description, status.',
   usage: {

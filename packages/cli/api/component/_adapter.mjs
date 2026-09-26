@@ -18,8 +18,11 @@
  * deduped, so each leaf stays a thin projection.
  */
 
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
-import {findCoreDir, discoverExternalPackages} from '../../utils/paths.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
+import {
+  findCoreDir,
+  discoverExternalPackages,
+} from '../../foundation/fs/paths.mjs';
 import {
   CORE_PACKAGE,
   discoverComponents,
@@ -29,10 +32,11 @@ import {
   findIntegrationComponentDoc,
   findIntegrationComponentSource,
   resolveImportPath,
-} from '../../lib/component-discovery.mjs';
-import {Project} from '../../lib/project.mjs';
-import {loadDocs} from '../../lib/component-loader.mjs';
-import {searchComponents} from '../../lib/string-utils.mjs';
+  resolveIntegrationImportPath as resolveIntegrationImport,
+} from '../../foundation/discovery/component-discovery.mjs';
+import {Project} from '../../foundation/config/project.mjs';
+import {loadDocs} from '../../foundation/discovery/component-loader.mjs';
+import {searchComponents} from '../../foundation/text/string-utils.mjs';
 import {AstryxError} from '../error.mjs';
 
 export {CORE_PACKAGE};
@@ -48,6 +52,7 @@ export {CORE_PACKAGE};
  * @property {any[]} [components]
  * @property {{description?: string}} [usage]
  * @property {any} [theming]
+ * @property {string} [import] set when the doc states its own import specifier
  */
 
 /**
@@ -65,7 +70,14 @@ export {CORE_PACKAGE};
  * @property {string} docPath
  * @property {string|null} sourcePath
  * @property {string|undefined} issuesUrl
- * @property {import('../../lib/integrations.mjs').LoadedIntegration|null} integration
+ * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration|null} integration
+ */
+
+/**
+ * What ownership shaping needs from an owner. The core and legacy-external
+ * paths synthesize a bare `{package, sourcePath}` rather than resolving a full
+ * {@link ComponentOwner}, so everything past those two is optional here.
+ * @typedef {Partial<ComponentOwner> & {package: string, sourcePath: string|null}} OwnershipSubject
  */
 
 /**
@@ -100,7 +112,11 @@ export {CORE_PACKAGE};
 export function requireCoreDir(cwd) {
   const coreDir = findCoreDir(cwd);
   if (!coreDir) {
-    throw new AstryxError('Could not find @astryxdesign/core package', undefined, ERROR_CODES.ERR_CORE_NOT_FOUND);
+    throw new AstryxError(
+      'Could not find @astryxdesign/core package',
+      undefined,
+      ERROR_CODES.ERR_CORE_NOT_FOUND,
+    );
   }
   return coreDir;
 }
@@ -110,12 +126,12 @@ export function requireCoreDir(cwd) {
  * component discovery never hard-fails on a malformed/absent integration. An
  * empty list means "core only".
  * @param {string} cwd
- * @returns {Promise<import('../../lib/integrations.mjs').LoadedIntegration[]>}
+ * @returns {Promise<import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]>}
  */
 export async function loadIntegrationsSafely(cwd) {
   try {
     const project = await Project.load(cwd);
-    return /** @type {import('../../lib/integrations.mjs').LoadedIntegration[]} */ (
+    return /** @type {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} */ (
       project.loadedIntegrations
     );
   } catch {
@@ -125,9 +141,9 @@ export async function loadIntegrationsSafely(cwd) {
 
 /**
  * Resolve a loaded integration by package name.
- * @param {import('../../lib/integrations.mjs').LoadedIntegration[]} loadedIntegrations
+ * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} loadedIntegrations
  * @param {string} packageName
- * @returns {import('../../lib/integrations.mjs').LoadedIntegration|null}
+ * @returns {import('../../foundation/integrations/integrations.mjs').LoadedIntegration|null}
  */
 function findLoadedIntegration(loadedIntegrations, packageName) {
   return loadedIntegrations.find(i => i.name === packageName) ?? null;
@@ -150,7 +166,7 @@ function resolveExternalPackage(packageName, cwd) {
  * disambiguate by package and expose the owner's source + issuesUrl.
  * @param {string} coreDir
  * @param {string} dirName - bare component name (no `XDS` prefix)
- * @param {import('../../lib/integrations.mjs').LoadedIntegration[]} loadedIntegrations
+ * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} loadedIntegrations
  * @returns {ComponentOwner[]}
  */
 export function resolveOwners(coreDir, dirName, loadedIntegrations) {
@@ -185,15 +201,22 @@ export function resolveOwners(coreDir, dirName, loadedIntegrations) {
  * component that exists in both core and an external package (e.g. AppShell,
  * Button, SideNav) resolves to the package the caller asked for.
  * @param {string} packageScope
- * @param {{owners: ComponentOwner[], loadedIntegrations: import('../../lib/integrations.mjs').LoadedIntegration[], cwd: string, name: string}} ctx
+ * @param {{owners: ComponentOwner[], loadedIntegrations: import('../../foundation/integrations/integrations.mjs').LoadedIntegration[], cwd: string, name: string}} ctx
  * @returns {ScopeResolution}
  */
-export function classifyScope(packageScope, {owners, loadedIntegrations, cwd, name}) {
+export function classifyScope(
+  packageScope,
+  {owners, loadedIntegrations, cwd, name},
+) {
   // Core scope: resolve from core directly.
   if (packageScope === CORE_PACKAGE) {
     const owner = owners.find(o => o.package === CORE_PACKAGE);
     if (!owner) {
-      throw new AstryxError(`No component "${name}" in package "${packageScope}"`, undefined, ERROR_CODES.ERR_UNKNOWN_COMPONENT);
+      throw new AstryxError(
+        `No component "${name}" in package "${packageScope}"`,
+        undefined,
+        ERROR_CODES.ERR_UNKNOWN_COMPONENT,
+      );
     }
     return {kind: 'core', owner};
   }
@@ -203,7 +226,11 @@ export function classifyScope(packageScope, {owners, loadedIntegrations, cwd, na
   if (integration) {
     const owner = owners.find(o => o.package === packageScope);
     if (!owner) {
-      throw new AstryxError(`No component "${name}" in package "${packageScope}"`, undefined, ERROR_CODES.ERR_UNKNOWN_COMPONENT);
+      throw new AstryxError(
+        `No component "${name}" in package "${packageScope}"`,
+        undefined,
+        ERROR_CODES.ERR_UNKNOWN_COMPONENT,
+      );
     }
     return {kind: 'integration', owner};
   }
@@ -211,7 +238,11 @@ export function classifyScope(packageScope, {owners, loadedIntegrations, cwd, na
   // Legacy fallback: node_modules `pkg.astryx.docs` external package.
   const ext = resolveExternalPackage(packageScope, cwd);
   if (!ext) {
-    throw new AstryxError(`External package "${packageScope}" not found`, undefined, ERROR_CODES.ERR_UNKNOWN_PACKAGE);
+    throw new AstryxError(
+      `External package "${packageScope}" not found`,
+      undefined,
+      ERROR_CODES.ERR_UNKNOWN_PACKAGE,
+    );
   }
   return {kind: 'legacy', ext};
 }
@@ -270,8 +301,13 @@ export async function resolveUnscopedDoc(dirName, {coreDir, cwd, name}) {
   let resolvedName = dirName;
   // Track the resolving owner so the detail payload can carry ownership info.
   // Defaults to core; the legacy-external fallback below may reassign it.
+  // Annotated because CORE_PACKAGE's generated declaration carries the literal
+  // type, which (unlike a fresh literal) does not widen on assignment.
+  /** @type {string} */
   let resolvedOwnerPackage = CORE_PACKAGE;
-  let resolvedSourcePath = readmePath ? findComponentSource(coreDir, dirName) : null;
+  let resolvedSourcePath = readmePath
+    ? findComponentSource(coreDir, dirName)
+    : null;
 
   if (!readmePath) {
     const externals = discoverExternalPackages(cwd);
@@ -293,7 +329,8 @@ export async function resolveUnscopedDoc(dirName, {coreDir, cwd, name}) {
     if (results.length > 0) {
       const topScore = results[0].score;
       const topTied = results.filter(r => r.score === topScore);
-      const secondScore = results.length > topTied.length ? results[topTied.length].score : 0;
+      const secondScore =
+        results.length > topTied.length ? results[topTied.length].score : 0;
       const gap = topScore - secondScore;
 
       if (topScore >= 90 && topTied.length === 1 && gap >= 20) {
@@ -303,8 +340,11 @@ export async function resolveUnscopedDoc(dirName, {coreDir, cwd, name}) {
         resolvedSourcePath = findComponentSource(coreDir, resolvedName);
       } else {
         const threshold = Math.max(topScore - 20, 1);
-        const candidates = results.filter(r => r.score >= threshold).slice(0, 5);
-        if (candidates.length < 2) candidates.push(...results.slice(candidates.length, 2));
+        const candidates = results
+          .filter(r => r.score >= threshold)
+          .slice(0, 5);
+        if (candidates.length < 2)
+          candidates.push(...results.slice(candidates.length, 2));
         throw new AstryxError(
           `No component named "${name}"`,
           candidates.map(c => ({name: c.name, reason: c.reason})),
@@ -312,12 +352,20 @@ export async function resolveUnscopedDoc(dirName, {coreDir, cwd, name}) {
         );
       }
     } else {
-      throw new AstryxError(`No component named "${name}"`, undefined, ERROR_CODES.ERR_UNKNOWN_COMPONENT);
+      throw new AstryxError(
+        `No component named "${name}"`,
+        undefined,
+        ERROR_CODES.ERR_UNKNOWN_COMPONENT,
+      );
     }
   }
 
   if (!readmePath || !readmePath.endsWith('.doc.mjs')) {
-    throw new AstryxError(`No .doc.mjs found for "${resolvedName}". The component needs a typed doc file.`, undefined, ERROR_CODES.ERR_NO_DOC);
+    throw new AstryxError(
+      `No .doc.mjs found for "${resolvedName}". The component needs a typed doc file.`,
+      undefined,
+      ERROR_CODES.ERR_NO_DOC,
+    );
   }
 
   return {readmePath, resolvedName, resolvedOwnerPackage, resolvedSourcePath};
@@ -345,7 +393,10 @@ export async function loadComponentDoc(docPath, opts = {}) {
  * @returns {any[]}
  */
 export function extractProps(docs) {
-  return docs.props || (docs.components ? docs.components.flatMap(c => c.props || []) : []);
+  return (
+    docs.props ||
+    (docs.components ? docs.components.flatMap(c => c.props || []) : [])
+  );
 }
 
 /**
@@ -354,22 +405,47 @@ export function extractProps(docs) {
  * swizzleable source file exists for the owner). Existing doc fields (name,
  * usage, props, …) are preserved.
  * @param {LoadedComponentDoc} docs
- * @param {{package: string, sourcePath: string|null}} owner
+ * @param {OwnershipSubject} owner
  * @param {string} componentName
  * @param {string} coreDir
- * @returns {import('../../types/component').ComponentDetailResponse['data']}
+ * @returns {import('./component.type.mjs').ComponentDetailResponse['data']}
  */
 export function withOwnership(docs, owner, componentName, coreDir) {
   const importSpec =
     owner.package === CORE_PACKAGE
-      ? resolveImportPath(coreDir, componentName)
-      : `${owner.package}/${componentName}`;
+      ? (docs.import ?? resolveImportPath(coreDir, componentName))
+      : resolveIntegrationImportPath(owner, componentName, docs.import);
   return /** @type {any} */ ({
     ...docs,
     package: owner.package,
     import: importSpec,
     sourceAvailable: owner.sourcePath != null,
   });
+}
+
+/**
+ * Resolve the specifier an integration component is imported from.
+ *
+ * Thin adapter over the shared resolver in foundation, which `search` also
+ * uses; the two surfaces have to report the same specifier for the same
+ * component.
+ *
+ * @param {OwnershipSubject} owner
+ * @param {string} componentName
+ * @param {string|null} [authoredImport]
+ * @returns {string}
+ */
+function resolveIntegrationImportPath(owner, componentName, authoredImport) {
+  return resolveIntegrationImport(
+    {
+      exportsMap: owner.integration?.__packageExports,
+      packageDir: owner.integration?.__packageDir,
+      docPath: owner.docPath,
+      packageName: owner.package,
+    },
+    componentName,
+    authoredImport,
+  );
 }
 
 /**
@@ -384,10 +460,12 @@ export function withOwnership(docs, owner, componentName, coreDir) {
  */
 export function scopeSubComponent(docs, dirName, coreDir) {
   const requestedXDS = `XDS${dirName}`;
-  const isParentDoc = docs.name && docs.name.toLowerCase() !== dirName.toLowerCase();
-  const matchingComponent = isParentDoc && docs.components
-    ? docs.components.find(c => c.name === requestedXDS || c.name === dirName)
-    : null;
+  const isParentDoc =
+    docs.name && docs.name.toLowerCase() !== dirName.toLowerCase();
+  const matchingComponent =
+    isParentDoc && docs.components
+      ? docs.components.find(c => c.name === requestedXDS || c.name === dirName)
+      : null;
 
   if (!matchingComponent) return null;
 

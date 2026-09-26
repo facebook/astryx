@@ -4,7 +4,7 @@
 
 /**
  * @file Citation.tsx
- * @input Uses React, StyleX, theme tokens
+ * @input Uses React, StyleX, theme tokens, and the shared navigation policy
  * @output Exports Citation component for inline citation references
  * @position Core implementation; consumed by index.ts
  *
@@ -13,7 +13,7 @@
  * - /packages/core/src/Citation/Citation.doc.mjs (props table, features)
  * - /packages/core/src/Citation/Citation.test.tsx (tests for new/changed behavior)
  * - /apps/storybook/stories/Citation.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Citation/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Citation/ (showcase blocks)
  */
 
 import type React from 'react';
@@ -30,6 +30,7 @@ import {
   easeVars,
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
+import {isSafeUrl} from '../utils/safeUrl';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -99,11 +100,14 @@ const styles = stylex.create({
     minWidth: 0,
   },
   labelInteractive: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   labelHover: {
     backgroundColor: {
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
@@ -112,7 +116,7 @@ const styles = stylex.create({
       // the base secondary color from `label` (last-wins property merge),
       // leaving linked citations to inherit the surrounding text color.
       default: colorVars['--color-text-secondary'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-text-primary'],
       },
     },
@@ -137,7 +141,10 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   numberInteractive: {
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   numberHover: {
     backgroundColor: {
@@ -145,7 +152,7 @@ const styles = stylex.create({
       // hover-only conditional replaces the base accent-muted pill from
       // `number` on merge, leaving linked badges transparent.
       default: colorVars['--color-accent-muted'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
@@ -183,7 +190,8 @@ export function Citation({
 }: CitationProps): React.ReactElement {
   const t = useTranslator();
   const title = source.title ?? String(number);
-  const href = source.url;
+  const href =
+    source.url != null && isSafeUrl(source.url) ? source.url : undefined;
 
   // Resolve the source icon. A non-string `icon` node renders as-is (an Astryx
   // <Icon>, SVG, avatar, etc.). Otherwise fall back to an image URL: `src`, or

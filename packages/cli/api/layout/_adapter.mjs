@@ -15,12 +15,12 @@
  */
 
 import {AstryxError} from '../error.mjs';
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
-import {parse, XLEParseError} from '../../lib/xle/parse.mjs';
-import {validate} from '../../lib/xle/validate.mjs';
-import {buildRegistry} from '../../lib/xle/registry.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
+import {parse, XLEParseError} from '../../foundation/xle/parse.mjs';
+import {validate} from '../../foundation/xle/validate.mjs';
+import {buildRegistry} from '../../foundation/xle/registry.mjs';
 import {discoverTemplates} from '../template/template.mjs';
-import {Project} from '../../lib/project.mjs';
+import {Project} from '../../foundation/config/project.mjs';
 
 /**
  * @typedef {object} LayoutBlock
@@ -78,7 +78,7 @@ async function loadBlocks(cwd) {
   return blocks;
 }
 
-/** @param {import('../../lib/xle/xle-ast').RawIssue} issue */
+/** @param {import('../../foundation/xle/xle-ast').RawIssue} issue */
 export function formatIssue(issue) {
   const where = issue.line != null ? `line ${issue.line}: ` : '';
   return `${where}${issue.message}`;
@@ -92,12 +92,28 @@ export function formatIssue(issue) {
  * @param {{form?: 'compact'|'outline'|'auto', loose?: boolean, cwd?: string}} [options]
  */
 export async function analyze(expression, {form = 'auto', loose = false, cwd = process.cwd()} = {}) {
-  const registry = /** @type {import('../../lib/xle/xle-ast').Registry} */ (
+  // Validate inputs in the API (not just the CLI): an empty expression or an
+  // unknown --form must error, not silently parse as an empty/compact layout.
+  if (typeof expression !== 'string' || expression.trim() === '') {
+    throw new AstryxError(
+      'Layout expression is empty.',
+      undefined,
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
+  if (form !== 'compact' && form !== 'outline' && form !== 'auto') {
+    throw new AstryxError(
+      `Invalid form "${form}". Must be one of: compact, outline, auto.`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_OPTION,
+    );
+  }
+  const registry = /** @type {import('../../foundation/xle/xle-ast').Registry} */ (
     /** @type {unknown} */ (await buildRegistry({cwd}))
   );
   const blocks = await loadBlocks(cwd);
 
-  /** @type {import('../../lib/xle/xle-ast').XLEDoc} */
+  /** @type {import('../../foundation/xle/xle-ast').XLEDoc} */
   let doc;
   try {
     doc = parse(expression, {form});

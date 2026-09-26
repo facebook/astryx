@@ -9,23 +9,28 @@
  * starter template — with NO prompts, so it behaves identically for humans,
  * agents, CI, and piped I/O. It performs the side effects and returns an
  * `init.run` receipt. Hard errors (unknown feature/template) throw AstryxError
- * with a stable code. Human output is emitted through the injected `logger`
+ * with a stable code. Human output is emitted through the shared `logger`
  * (silent by default) so the CLI keeps its exact plain output and a
  * programmatic caller stays quiet.
  */
 
 import * as path from 'node:path';
 import * as fs from 'node:fs';
-import {CLI_ROOT} from '../../../utils/paths.mjs';
-import {PathSafetyError} from '../../../utils/path-safety.mjs';
-import {getCliInvocation} from '../../../utils/package-manager.mjs';
-import {installAgentDocs} from '../../../lib/agent-docs/agent-docs.mjs';
+import {CLI_ROOT} from '../../../foundation/fs/paths.mjs';
+import {PathSafetyError, assertWithin} from '../../../foundation/fs/path-safety.mjs';
+import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
+import {
+  installAgentDocs,
+  renderAgentDocsBlock,
+} from '../../../foundation/agent-docs/agent-docs.mjs';
+import {themeTemplate} from '../../theme/template/template.mjs';
 import {listTemplates} from '../../template/template.mjs';
 import {AstryxError} from '../../error.mjs';
-import {ERROR_CODES} from '../../../lib/error-codes.mjs';
-import {noopInitLogger} from '../_adapter.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
+import {logger} from '../../logger.mjs';
 
 const VALID_FEATURES = ['agents', 'theme', 'template'];
+const VALID_AGENTS = ['claude', 'cursor', 'codex', 'hermes', 'muse', 'all'];
 
 /**
  * Build the "Next steps" lines printed at the end of `astryx init`.
@@ -43,15 +48,17 @@ export function getNextSteps(invocation) {
   return [
     '',
     '  Next steps:',
-    "    1. Import base styles: import '@astryxdesign/core/reset.css'",
+    '    1. Ensure the @stylexjs/stylex peer dependency is met',
+    `       (run \`${invocation} doctor\` to verify)`,
+    "    2. Import base styles: import '@astryxdesign/core/reset.css'",
     "       and import '@astryxdesign/core/astryx.css'",
-    "    2. Import components: import { Button } from '@astryxdesign/core'",
-    '    3. Optionally add a theme (use the pre-built path for performance):',
+    "    3. Import components: import { Button } from '@astryxdesign/core'",
+    '    4. Optionally add a theme (use the pre-built path for performance):',
     "       import { neutralTheme } from '@astryxdesign/theme-neutral/built'",
     "       import '@astryxdesign/theme-neutral/theme.css'",
     '       <Theme theme={neutralTheme}>...</Theme>',
     `       For custom themes, run \`${invocation} theme build <file>\` to generate the built artifacts.`,
-    `    4. ${invocation} --help for all commands`,
+    `    5. ${invocation} --help for all commands`,
     '',
   ];
 }
@@ -63,21 +70,35 @@ export function getNextSteps(invocation) {
  * generic retry hint and continues without changing the exit code.
  *
  * @param {string} cwd
- * @param {import('../../../types/api').InitOptions} options
+ * @param {import('../init.type.mjs').InitOptions} options
  * @param {string} invocation
- * @param {import('../_adapter.mjs').InitLogger} logger
- * @param {import('../../../types/init').InitRunData} data
+ * @param {import('../init.type.mjs').InitRunData} data
  */
-function applyAgents(cwd, options, invocation, logger, data) {
+async function applyAgents(cwd, options, invocation, data) {
+  // Validate --agent up front (a hard error, not a swallowed install failure).
+  // ERR_UNKNOWN_AGENT was defined but never wired — a typo like `--agent claud`
+  // otherwise silently fell back to writing AGENTS.md. Mirrors --features.
+  if (options.agent && !VALID_AGENTS.includes(options.agent)) {
+    throw new AstryxError(
+      `Unknown agent "${options.agent}". Valid agents: ${VALID_AGENTS.join(', ')}`,
+      undefined,
+      ERROR_CODES.ERR_UNKNOWN_AGENT,
+    );
+  }
   try {
     const paths = options.agentDocsPath
       ? Array.isArray(options.agentDocsPath)
         ? options.agentDocsPath
         : [options.agentDocsPath]
       : undefined;
-    const written = installAgentDocs(cwd, {agent: options.agent, paths});
+    const renderedBlock = await renderAgentDocsBlock(cwd);
+    const written = installAgentDocs(cwd, {
+      agent: options.agent,
+      paths,
+      renderedBlock,
+    });
     data.docsWritten = written;
-    logger.log(`✓ AI agent docs installed → ${written.join(', ')}`);
+    logger.log(`[ok] AI agent docs installed -> ${written.join(', ')}`);
   } catch (err) {
     // PathSafetyError carries a precise, user-actionable message — surface it
     // (and flag exit 1) instead of the generic "could not install" warning so
@@ -95,6 +116,36 @@ function applyAgents(cwd, options, invocation, logger, data) {
 }
 
 /**
+ * Write the annotated theme template, via the same leaf `astryx theme template`
+ * uses — init is a convenience wrapper over the theme command, not a second
+ * implementation of it.
+ *
+ * @param {string} cwd
+ * @param {string} invocation
+ * @param {import('../init.type.mjs').InitRunData} data
+ */
+function applyTheme(cwd, invocation, data) {
+  data.theme = true;
+  try {
+    const {path: written, written: didWrite} = themeTemplate({cwd}).data;
+    data.themeTemplate = didWrite ? 'created' : 'skipped';
+    data.themeTemplatePath = didWrite ? written : null;
+    logger.log(
+      didWrite
+        ? `[ok] Theme template written -> ${written}`
+        : `- ${written} already exists - left as is.`,
+    );
+  } catch {
+    // Soft failure, like agent docs: the guidance below is still useful.
+    data.themeTemplate = 'failed';
+    logger.error('Could not write the theme template.');
+  }
+  logger.log(
+    `  Copy it to your theme file and edit, or run \`${invocation} theme add <slug>\` to start from a shipped theme (\`${invocation} theme list\` to browse).`,
+  );
+}
+
+/**
  * Emit the template guidance, or (programmatic-only) scaffold a named template.
  * The CLI never passes `templateName`, so from the CLI this always emits the
  * build-workflow prose (or nothing when no templates are bundled).
@@ -102,10 +153,9 @@ function applyAgents(cwd, options, invocation, logger, data) {
  * @param {string} cwd
  * @param {{templateName?: string}} opts
  * @param {string} invocation
- * @param {import('../_adapter.mjs').InitLogger} logger
- * @param {import('../../../types/init').InitRunData} data
+ * @param {import('../init.type.mjs').InitRunData} data
  */
-function applyTemplate(cwd, {templateName}, invocation, logger, data) {
+function applyTemplate(cwd, {templateName}, invocation, data) {
   const templates = listTemplates();
   if (templates.length === 0) {
     data.template = 'skipped';
@@ -116,16 +166,16 @@ function applyTemplate(cwd, {templateName}, invocation, logger, data) {
     // Point agents at the build workflow rather than dumping page-template
     // names — `build` surfaces pages AND blocks AND components for an idea,
     // and `build` with no args is the full how-to-build playbook.
-    logger.log('✓ To build UI, use these commands:');
+    logger.log('[ok] To build UI, use these commands:');
     logger.log('');
     logger.log(
-      `    ${invocation} build "<what you're building>"   build a page — kit: closest template + blocks + components`,
+      `    ${invocation} build "<what you're building>"   build a page - kit: closest template + blocks + components`,
     );
     logger.log(
       `    ${invocation} build                            the how-to-build workflow (read this first)`,
     );
     logger.log(
-      `    ${invocation} search <query>                   find anything — components, docs, templates, blocks`,
+      `    ${invocation} search <query>                   find anything - components, docs, templates, blocks`,
     );
     logger.log('');
     data.template = 'workflow';
@@ -140,12 +190,33 @@ function applyTemplate(cwd, {templateName}, invocation, logger, data) {
     );
   }
 
-  const outputDir = path.resolve(cwd, `./src/pages/${templateName}`);
-  const srcPath = path.join(CLI_ROOT, 'templates', 'pages', templateName, 'page.tsx');
+  let destFile;
+  try {
+    destFile = assertWithin(path.join('src', 'pages', templateName, 'page.tsx'), cwd, {
+      label: 'template output path',
+    });
+  } catch (err) {
+    if (err instanceof PathSafetyError) {
+      throw new AstryxError(err.message, undefined, ERROR_CODES.ERR_PATH_TRAVERSAL);
+    }
+    throw err;
+  }
+  const outputDir = path.dirname(destFile);
+  const srcPath = path.join(CLI_ROOT, 'assets', 'templates', 'pages', templateName, 'page.tsx');
+  // Don't clobber a user's existing page — same guard the peer template/copy and
+  // theme/add write-leaves apply (init is a public API surface too).
+  if (fs.existsSync(destFile)) {
+    const relDest = path.relative(cwd, destFile) || destFile;
+    throw new AstryxError(
+      `Refusing to overwrite existing file ${relDest}.`,
+      undefined,
+      ERROR_CODES.ERR_FILE_EXISTS,
+    );
+  }
   fs.mkdirSync(outputDir, {recursive: true});
-  fs.copyFileSync(srcPath, path.join(outputDir, 'page.tsx'));
+  fs.copyFileSync(srcPath, destFile);
   const rel = path.relative(cwd, outputDir);
-  logger.log(`✓ Template created at ${rel}/page.tsx`);
+  logger.log(`[ok] Template created at ${rel}/page.tsx`);
   data.template = 'created';
   data.templatePath = rel;
 }
@@ -157,11 +228,11 @@ function applyTemplate(cwd, {templateName}, invocation, logger, data) {
  * emitted through `logger` (silent by default); unknown feature or template
  * names throw AstryxError with a stable code.
  *
- * @param {import('../../../types/api').InitOptions} [options]
- * @param {{cwd?: string, logger?: import('../_adapter.mjs').InitLogger}} [ctx]
- * @returns {Promise<import('../../../types/init').InitRunResponse>}
+ * @param {import('../init.type.mjs').InitOptions} [options]
+ * @param {{cwd?: string}} [ctx]
+ * @returns {Promise<import('../init.type.mjs').InitRunResponse>}
  */
-export async function run(options = {}, {cwd = process.cwd(), logger = noopInitLogger} = {}) {
+export async function run(options = {}, {cwd = process.cwd()} = {}) {
   const invocation = getCliInvocation();
 
   // Non-interactive feature install: --features or --all.
@@ -181,27 +252,24 @@ export async function run(options = {}, {cwd = process.cwd(), logger = noopInitL
       );
     }
 
-    /** @type {import('../../../types/init').InitRunData} */
+    /** @type {import('../init.type.mjs').InitRunData} */
     const data = {
       mode: 'features',
       features,
       docsWritten: [],
       docsError: null,
       theme: false,
+      themeTemplate: null,
+      themeTemplatePath: null,
       template: null,
       templatePath: null,
       nextSteps: false,
     };
     for (const feature of features) {
-      if (feature === 'agents') applyAgents(cwd, options, invocation, logger, data);
-      if (feature === 'theme') {
-        logger.log(
-          `✓ For a custom theme, run \`${invocation} theme\` (browse) or \`${invocation} theme add <slug>\` (scaffold).`,
-        );
-        data.theme = true;
-      }
+      if (feature === 'agents') await applyAgents(cwd, options, invocation, data);
+      if (feature === 'theme') applyTheme(cwd, invocation, data);
       if (feature === 'template') {
-        applyTemplate(cwd, {templateName: options.templateName}, invocation, logger, data);
+        applyTemplate(cwd, {templateName: options.templateName}, invocation, data);
       }
     }
     return {type: 'init.run', data};
@@ -209,18 +277,20 @@ export async function run(options = {}, {cwd = process.cwd(), logger = noopInitL
 
   // No flags: TTY-free default — install the AI agent cheat sheet with NO
   // prompts, then print the getting-started guidance.
-  /** @type {import('../../../types/init').InitRunData} */
+  /** @type {import('../init.type.mjs').InitRunData} */
   const data = {
     mode: 'default',
     features: ['agents'],
     docsWritten: [],
     docsError: null,
     theme: false,
+    themeTemplate: null,
+    themeTemplatePath: null,
     template: null,
     templatePath: null,
     nextSteps: true,
   };
-  applyAgents(cwd, options, invocation, logger, data);
+  await applyAgents(cwd, options, invocation, data);
   logger.log('');
   logger.log(
     `  Tip: \`${invocation} init --all\` also points you to the theme and page-building workflows.`,

@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docs = {
   name: 'SelectableCard',
   displayName: 'Selectable Card',
@@ -12,6 +12,7 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Use for plan pickers, filter chips, or option grids.'},
       {guidance: true, description: 'For single-select track one ID; for multi-select use a Set.'},
+      {guidance: true, description: 'When focused, toggle selection with Space or Enter.'},
       {guidance: false, description: 'Use for navigation; use ClickableCard for that.'},
     ],
     anatomy: [
@@ -36,6 +37,9 @@ export const docs = {
   theming: {
     container: true,
     targets: [{className: 'astryx-selectable-card', visualProps: ['selected', 'variant']}],
+    vars: [
+      {name: '--selectable-card-ring-color', description: 'Colour of the selection ring drawn for a variant a theme added. The built-in variants each ring in their own border token and ignore this; a theme that adds a variant sets it in the same rule as that variant\'s `backgroundColor`, because no token the component could pick is guaranteed to contrast with a fill it cannot know.', default: 'var(--color-accent)'},
+    ],
   },
   playground: {
     defaults: {
@@ -54,7 +58,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'Card toggling between selected/unselected states w/ accent border. For navigation use ClickableCard instead.',
   usage: {
@@ -62,6 +66,7 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Use for plan pickers, filter chips, option grids.'},
       {guidance: true, description: 'For single-select track one ID; for multi-select use a Set.'},
+      {guidance: true, description: 'When focused, toggle selection with Space or Enter.'},
       {guidance: false, description: 'Use for navigation; use ClickableCard instead.'},
     ],
   },

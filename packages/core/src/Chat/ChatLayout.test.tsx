@@ -2,6 +2,7 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {act, render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {ChatLayout} from './ChatLayout';
 import {ChatMessageList} from './ChatMessageList';
 import {ChatMessage} from './ChatMessage';
@@ -59,7 +60,7 @@ describe('ChatLayout', () => {
       </ChatLayout>,
     );
     const root = screen.getByTestId('layout');
-    expect(root.className).toContain('compact');
+    expect(root).toHaveAttribute('data-density', 'compact');
 
     rerender(
       <ChatLayout
@@ -69,7 +70,7 @@ describe('ChatLayout', () => {
         <div>msg</div>
       </ChatLayout>,
     );
-    expect(root.className).toContain('spacious');
+    expect(root).toHaveAttribute('data-density', 'spacious');
   });
 
   it('defaults density to balanced', () => {
@@ -79,7 +80,7 @@ describe('ChatLayout', () => {
       </ChatLayout>,
     );
     const root = screen.getByTestId('layout');
-    expect(root.className).toContain('balanced');
+    expect(root).toHaveAttribute('data-density', 'balanced');
   });
 
   it('renders custom scrollButton slot', () => {
@@ -100,6 +101,90 @@ describe('ChatLayout', () => {
       </ChatLayout>,
     );
     expect(screen.queryByRole('button')).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Keyboard reachability of the default scroll-to-bottom button
+//
+// At rest the layout is neither scrolled up nor holding new messages, so the
+// default ChatLayoutScrollButton renders in its hidden state. It is still in
+// the DOM, and it is the first control in the dock — ahead of the composer.
+// A control nobody can see must not be a tab stop: WCAG 2.2 SC 2.4.7 requires
+// a visible focus indicator wherever focus can land, and the hidden pill paints
+// nothing. `opacity: 0` and `pointer-events: none` do not remove an element
+// from sequential focus navigation; only visibility/display/inert do.
+// ---------------------------------------------------------------------------
+
+describe('ChatLayout — default scroll button keyboard reachability', () => {
+  it('does not make the resting scroll-to-bottom button the first tab stop', async () => {
+    const user = userEvent.setup();
+    render(
+      <ChatLayout composer={<button type="button">Send</button>}>
+        <div>msg</div>
+      </ChatLayout>,
+    );
+
+    await user.tab();
+
+    expect(screen.getByRole('button', {name: 'Send'})).toHaveFocus();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Self-scroll layout contract (#2573)
+//
+// jsdom has no layout, so these assert the class-level CSS intent: the root
+// must be a flex column whose message area flexes (grow, no shrink) instead
+// of forcing minHeight: 100%. With minHeight: 100% the in-flow sticky dock
+// added its full height on top of the message area, so the root always
+// overflowed by exactly the dock height (phantom scrollbar). Real-layout
+// geometry was verified in a browser; see the PR for measurements.
+// ---------------------------------------------------------------------------
+
+describe('ChatLayout — self-scroll layout contract (#2573)', () => {
+  it('root is a flex column so the dock height is part of the 100%', () => {
+    render(
+      <ChatLayout composer={<div>composer</div>} data-testid="layout">
+        <div>msg</div>
+      </ChatLayout>,
+    );
+    const root = screen.getByTestId('layout');
+    expect(root).toHaveStyle({display: 'flex', flexDirection: 'column'});
+  });
+
+  it('message area flexes to fill leftover space instead of minHeight: 100%', () => {
+    render(
+      <ChatLayout composer={<div>composer</div>} data-testid="layout">
+        <div>msg</div>
+      </ChatLayout>,
+    );
+    const messageArea = screen.getByTestId('layout')
+      .firstElementChild as HTMLElement;
+    expect(messageArea).toHaveStyle({flexGrow: '1', flexShrink: '0'});
+    // minHeight: 100% is the phantom-scrollbar bug — it must not come back.
+    expect(getComputedStyle(messageArea).minHeight).not.toBe('100%');
+  });
+
+  it('dock is sticky in self-scroll mode and fixed with an external scrollRef', () => {
+    const {rerender} = render(
+      <ChatLayout composer={<div>composer</div>} data-testid="layout">
+        <div>msg</div>
+      </ChatLayout>,
+    );
+    const dock = screen.getByTestId('layout').lastElementChild as HTMLElement;
+    expect(dock).toHaveStyle({position: 'sticky'});
+
+    const scrollRef = {current: document.documentElement};
+    rerender(
+      <ChatLayout
+        composer={<div>composer</div>}
+        data-testid="layout"
+        scrollRef={scrollRef}>
+        <div>msg</div>
+      </ChatLayout>,
+    );
+    expect(dock).toHaveStyle({position: 'fixed'});
   });
 });
 

@@ -10,7 +10,7 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {detail} from './detail.mjs';
 import {AstryxError} from '../../error.mjs';
-import {SITE_URL} from '../../../lib/site.mjs';
+import {SITE_URL} from '../_site.mjs';
 
 const FEED = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
@@ -65,6 +65,23 @@ describe('blog.detail leaf', () => {
   it('is case-insensitive on the slug', async () => {
     const res = await detail('How-Astryx-Works');
     expect(res.data.slug).toBe('how-astryx-works');
+  });
+
+  it('throws a coded error (not a raw TypeError) for a non-string slug', async () => {
+    // The dispatcher routes any truthy value into detail(); a public API
+    // caller could pass a non-string. It must surface a coded AstryxError,
+    // not a raw TypeError that the CLI downgrades to ERR_UNKNOWN — and it must
+    // fail fast, before any network fetch.
+    for (const bad of [null, 42, {}, [1]]) {
+      await expect(detail(/** @type {any} */ (bad))).rejects.toBeInstanceOf(
+        AstryxError,
+      );
+      await expect(detail(/** @type {any} */ (bad))).rejects.toMatchObject({
+        code: 'ERR_INVALID_ARGUMENT',
+      });
+    }
+    // No feed fetch should have happened for the invalid inputs.
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it('throws ERR_UNKNOWN_POST with suggestions for a bad slug', async () => {

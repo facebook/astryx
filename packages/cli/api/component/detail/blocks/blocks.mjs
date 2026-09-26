@@ -3,7 +3,7 @@
 /**
  * @file `component.detail.blocks` leaf — a component's example/related blocks.
  *
- * @input  a component name
+ * @input  a component name + the project cwd
  * @output the `component.detail.blocks` envelope (showcase, examples, related)
  * @position api/component/detail/blocks (projection leaf; routed by component.mjs)
  */
@@ -16,10 +16,11 @@ import {findRelatedBlocks} from '../../../template/template.mjs';
  * envelope, splitting them into the hero showcase, component-specific examples,
  * and broader related blocks.
  * @param {string} componentName
- * @returns {Promise<import('../../../../types/component').ComponentDetailBlocksResponse>}
+ * @param {string} cwd - project to discover blocks from; never the process cwd
+ * @returns {Promise<import('../../component.type.mjs').ComponentDetailBlocksResponse>}
  */
-export async function componentDetailBlocks(componentName) {
-  const allBlocks = await findRelatedBlocks(componentName);
+export async function componentDetailBlocks(componentName, cwd) {
+  const allBlocks = await findRelatedBlocks(componentName, cwd);
   const toEntry = (/** @type {any} */ b) => ({
     name: b.dirName,
     displayName: b.name,

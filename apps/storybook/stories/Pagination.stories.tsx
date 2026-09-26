@@ -16,8 +16,21 @@ const meta: Meta<typeof Pagination> = {
     },
     variant: {
       control: 'select',
-      options: ['pages', 'count', 'compact', 'dots', 'none'],
+      options: ['pages', 'count', 'compact', 'dots', 'input', 'none'],
       description: 'Visual variant',
+    },
+    pageLabel: {
+      control: 'text',
+      description:
+        "input variant: noun before the editable box (e.g. 'Page' or 'Row')",
+    },
+    hasFirstLast: {
+      control: 'boolean',
+      description: 'input variant: show first/last («/») buttons',
+    },
+    step: {
+      control: 'number',
+      description: 'pages the prev/next buttons advance per click',
     },
     size: {
       control: 'select',
@@ -99,6 +112,57 @@ export const NoneVariant: Story = {
   render: () => <PaginationDemo page={1} totalPages={5} variant="none" />,
 };
 
+export const InputVariant: Story = {
+  name: 'Variant: Input',
+  render: () => (
+    // The editable box: « ‹ Page [ n ] / N › »
+    <PaginationDemo page={3} totalItems={200} pageSize={20} variant="input" />
+  ),
+};
+
+export const InputVariantCustomLabel: Story = {
+  name: 'Variant: Input (custom pageLabel)',
+  render: () => (
+    // A "Row" label relabels the same page-navigated box: « ‹ Row [ n ] / N › »
+    <PaginationDemo
+      page={3}
+      totalItems={200}
+      pageSize={10}
+      variant="input"
+      pageLabel="Row"
+    />
+  ),
+};
+
+export const InputVariantNoFirstLast: Story = {
+  name: 'Variant: Input (no first/last)',
+  render: () => (
+    // Just ‹ Page [ n ] / N › — first/last buttons hidden.
+    <PaginationDemo
+      page={3}
+      totalItems={200}
+      pageSize={10}
+      variant="input"
+      hasFirstLast={false}
+    />
+  ),
+};
+
+export const InputVariantStep: Story = {
+  name: 'Variant: Input (step by 5)',
+  render: () => (
+    // ‹/› advance 5 pages per click (clamped to 1..N). 500 items at 25/page =
+    // 20 pages, so from page 6 next jumps to 11, prev back to 1.
+    <PaginationDemo
+      page={6}
+      totalItems={500}
+      pageSize={25}
+      variant="input"
+      step={5}
+    />
+  ),
+};
+
 export const WithPageSizeSelector: Story = {
   name: 'With Page Size Selector',
   render: () => (
@@ -156,6 +220,7 @@ export const AllVariants: Story = {
           totalItems={100}
           pageSize={10}
           variant="pages"
+          label="Pages variant"
         />
       </div>
       <div>
@@ -165,19 +230,45 @@ export const AllVariants: Story = {
           totalItems={100}
           pageSize={10}
           variant="count"
+          label="Count variant"
         />
       </div>
       <div>
         <p style={{marginBottom: 8, fontWeight: 500}}>compact</p>
-        <PaginationDemo page={3} totalPages={10} variant="compact" />
+        <PaginationDemo
+          page={3}
+          totalPages={10}
+          variant="compact"
+          label="Compact variant"
+        />
       </div>
       <div>
         <p style={{marginBottom: 8, fontWeight: 500}}>dots</p>
-        <PaginationDemo page={3} totalPages={8} variant="dots" />
+        <PaginationDemo
+          page={3}
+          totalPages={8}
+          variant="dots"
+          label="Dots variant"
+        />
+      </div>
+      <div>
+        <p style={{marginBottom: 8, fontWeight: 500}}>input</p>
+        <PaginationDemo
+          page={3}
+          totalItems={100}
+          pageSize={10}
+          variant="input"
+          label="Input variant"
+        />
       </div>
       <div>
         <p style={{marginBottom: 8, fontWeight: 500}}>none</p>
-        <PaginationDemo page={3} totalPages={10} variant="none" />
+        <PaginationDemo
+          page={3}
+          totalPages={10}
+          variant="none"
+          label="None variant"
+        />
       </div>
     </div>
   ),

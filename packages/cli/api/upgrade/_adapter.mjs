@@ -10,7 +10,7 @@
  * codemod runners. Leaves call these helpers and PROJECT the results into their
  * one response type; the dispatcher (`upgrade.mjs`) routes.
  *
- * Progress is emitted through an injected `logger` (silent by default), so the
+ * Progress is emitted through the shared `logger` (silent by default), so the
  * CLI keeps its exact output while a programmatic caller stays quiet.
  */
 
@@ -18,27 +18,39 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
-import {ensureJscodeshift} from '../../codemods/ensure-jscodeshift.mjs';
-import {getTransformsBetween, latestVersion} from '../../codemods/registry.mjs';
-import {runCodemods} from '../../codemods/runner.mjs';
+import {ensureJscodeshift} from '../../assets/codemods/ensure-jscodeshift.mjs';
+import {
+  getTransformsBetween,
+  latestVersion,
+} from '../../assets/codemods/registry.mjs';
+import {runCodemods} from '../../assets/codemods/runner.mjs';
 import {
   discoverIntegrationCodemods,
   selectIntegrationCodemods,
-} from '../../codemods/integration-discovery.mjs';
-import {runIntegrationCodemods} from '../../codemods/integration-runner.mjs';
-import {installAgentDocs, inspectAgentDocs} from '../../lib/agent-docs/agent-docs.mjs';
-import {formatCliCommand} from '../../utils/package-manager.mjs';
-import {Project} from '../../lib/project.mjs';
-import {loadIntegrations} from '../../lib/integrations.mjs';
-import {warnOnIntegrationIssues} from '../../lib/integration-warnings.mjs';
-import {noopLogger} from '../../lib/term-log.mjs';
+} from '../../assets/codemods/integration-discovery.mjs';
+import {runIntegrationCodemods} from '../../assets/codemods/integration-runner.mjs';
+import {
+  installAgentDocs,
+  inspectAgentDocs,
+  renderAgentDocsBlock,
+} from '../../foundation/agent-docs/agent-docs.mjs';
+import {formatCliCommand} from '../../foundation/env/package-manager.mjs';
+import {Project, providerLedgerOf} from '../../foundation/config/project.mjs';
+import {loadIntegrations} from '../../foundation/integrations/integrations.mjs';
+import {resolveProviders} from '../../foundation/integrations/provider-resolution.mjs';
+import {warnOnIntegrationIssues} from '../../foundation/integrations/integration-warnings.mjs';
+import {logger} from '../logger.mjs';
+
+// Re-exported for the run leaf's lightweight agent-docs inspection path
+// (config_fixable short-circuit, where the full render cannot load config).
+export {inspectAgentDocs};
 
 const execFileAsync = promisify(execFile);
 
 /**
  * @typedef {object} CoreTransformEntry
  * @property {string} name
- * @property {import('../../types/codemod').CodemodTransform} transform
+ * @property {import('../../authoring/codemod/type').CodemodTransform} transform
  * @property {{title: string, description?: string, pr?: string, codemodType?: string}} meta
  * @property {boolean} [optional]
  */
@@ -55,6 +67,7 @@ const execFileAsync = promisify(execFile);
  * @property {string[]} [integration]
  * @property {string} [path]
  * @property {boolean} [installDeps]
+ * @property {boolean} [registry]
  */
 
 /**
@@ -93,13 +106,33 @@ export function uniqueFiles(files) {
 }
 
 /**
+ * Run app code with its stdout writes sent to stderr. Stdout carries only the
+ * command's own output, so a hook that prints cannot corrupt `--json`.
+ * @template T
+ * @param {() => T | Promise<T>} fn
+ * @returns {Promise<T>}
+ */
+async function withStdoutOnStderr(fn) {
+  const realWrite = process.stdout.write;
+  process.stdout.write = /** @type {any} */ (
+    function (/** @type {any} */ chunk, /** @type {any[]} */ ...rest) {
+      return process.stderr.write(chunk, ...rest);
+    }
+  );
+  try {
+    return await fn();
+  } finally {
+    process.stdout.write = realWrite;
+  }
+}
+
+/**
  * Run the app config's post-codemod hooks (config.hooks.postCodemod).
  * Dry-run PREVIEWS (buildCommand still called, so a throw fails); apply executes.
- * @param {import('../../types/config').PostCodemodHook[]} hooks
+ * @param {import('../../authoring/config/type').PostCodemodHook[]} hooks
  * @param {{packageDir: string, files: string[], apply: boolean}} context
- * @param {import('../../lib/term-log.mjs').CliLogger} logger
  */
-export async function runPostCodemodHooks(hooks, context, logger) {
+export async function runPostCodemodHooks(hooks, context) {
   if (!hooks || hooks.length === 0) return;
   const {packageDir, files, apply} = context;
 
@@ -112,15 +145,17 @@ export async function runPostCodemodHooks(hooks, context, logger) {
       );
     }
 
-    const cmd = await hook.buildCommand({packageDir, files});
+    const cmd = await withStdoutOnStderr(() =>
+      hook.buildCommand({packageDir, files}),
+    );
     if (!cmd) {
-      logger.info(`Post-codemod hook ${label} produced no command; skipping.`);
+      logger.log(`Post-codemod hook ${label} produced no command; skipping.`);
       continue;
     }
 
     if (!apply) {
       const preview = [cmd.command, ...(cmd.args ?? [])].join(' ');
-      logger.info(`Post-codemod hook ${label} (dry run): ${preview}`);
+      logger.log(`Post-codemod hook ${label} (dry run): ${preview}`);
       continue;
     }
 
@@ -136,73 +171,108 @@ export async function runPostCodemodHooks(hooks, context, logger) {
         env: {...process.env, ...(cmd.options?.env ?? {})},
       }),
     );
-    logger.success(`Post-codemod hook ${label} completed.`);
+    logger.log(`[ok] Post-codemod hook ${label} completed.`);
   }
 }
 
 /**
- * Refresh (or, in dry-run, report) the managed agent-docs block after a version
- * bump. The block documents the INSTALLED library, so it must be re-synced on
- * EVERY upgrade path, including the no-codemods short-circuits (#4168).
- *
- * @param {{cwd: string, installedVersion: string, apply: boolean, logger?: import('../../lib/term-log.mjs').CliLogger}} ctx
- * @returns {import('../../types/upgrade').AgentDocsSummary}
+ * @typedef {object} AgentDocsRefreshPlan
+ * @property {string} cwd
+ * @property {string|null} renderedBlock
+ * @property {import('./upgrade.type.mjs').AgentDocsSummary} summary
  */
-export function refreshAgentDocs({cwd, installedVersion, apply, logger = noopLogger}) {
-  const inspection = inspectAgentDocs(cwd, installedVersion);
-  /** @type {import('../../types/upgrade').AgentDocsSummary} */
+
+/**
+ * Compute the expected managed block and report staleness without writing.
+ * Apply-mode callers commit the prepared bytes only after codemods and hooks
+ * succeed.
+ *
+ * @param {{cwd: string, installedVersion: string, apply: boolean, fresh?: boolean}} ctx
+ * @returns {Promise<AgentDocsRefreshPlan>}
+ */
+export async function prepareAgentDocsRefresh({
+  cwd,
+  installedVersion,
+  apply,
+  fresh = false,
+}) {
+  const initial = inspectAgentDocs(cwd, installedVersion);
+  /** @type {import('./upgrade.type.mjs').AgentDocsSummary} */
   const summary = {
-    status: inspection.status,
+    status: initial.status,
     installedVersion,
-    fromVersions: inspection.blockVersions,
+    fromVersions: initial.blockVersions,
     files: [],
     refreshed: false,
     action: 'none',
   };
 
-  // Never initialized — don't silently create docs during an upgrade; nudge.
-  if (inspection.status === 'missing') {
+  if (initial.status === 'missing') {
     summary.action = 'nudge-init';
     logger.warn(
-      `No Astryx agent-docs block found — AI agents have no component index. Run \`${formatCliCommand('astryx init --features agents')}\` to install it.`,
+      `No Astryx agent-docs block found - AI agents have no component index. Run \`${formatCliCommand('astryx init --features agents')}\` to install it.`,
     );
-    return summary;
+    return {cwd, renderedBlock: null, summary};
   }
 
-  if (inspection.status === 'current') return summary;
-
-  // Stale.
-  summary.files = inspection.staleFiles;
-  const fromLabel = summary.fromVersions.length
-    ? `v${summary.fromVersions.join(', v')}`
-    : 'an unknown version';
-
-  if (!apply) {
-    summary.action = 'would-refresh';
-    logger.warn(
-      `Agent docs are stale: block is at ${fromLabel}, installed is v${installedVersion}. Re-run with --apply to refresh (${summary.files.join(', ')}).`,
-    );
-    return summary;
-  }
-
-  // Apply: rewrite only files that already carry a marker (onlyReplace).
+  let renderedBlock;
   try {
-    const written = installAgentDocs(cwd, {onlyReplace: true});
+    renderedBlock = await renderAgentDocsBlock(cwd, {
+      installedVersion,
+      fresh,
+    });
+  } catch {
+    summary.action = 'error';
+    summary.files = initial.files.map(file => file.path);
+    logger.warn(
+      `Could not render the expected agent docs. Run \`${formatCliCommand('astryx init --features agents')}\` to update them manually.`,
+    );
+    return {cwd, renderedBlock: null, summary};
+  }
+
+  const inspection = inspectAgentDocs(cwd, installedVersion, renderedBlock);
+  summary.status = inspection.status;
+  summary.fromVersions = inspection.blockVersions;
+  summary.files = inspection.staleFiles;
+  if (inspection.status === 'current') return {cwd, renderedBlock, summary};
+
+  summary.action = 'would-refresh';
+  if (!apply) {
+    logger.warn(
+      `Agent docs differ from the installed Astryx and integration configuration. Re-run with --apply to refresh (${summary.files.join(', ')}).`,
+    );
+  }
+  return {cwd, renderedBlock, summary};
+}
+
+/**
+ * Commit a prepared agent-doc refresh.
+ * @param {AgentDocsRefreshPlan} plan
+ * @returns {import('./upgrade.type.mjs').AgentDocsSummary}
+ */
+export function applyAgentDocsRefresh(plan) {
+  const {cwd, renderedBlock, summary} = plan;
+  if (summary.action !== 'would-refresh' || renderedBlock == null)
+    return summary;
+
+  try {
+    const written = installAgentDocs(cwd, {
+      onlyReplace: true,
+      renderedBlock,
+    });
     summary.refreshed = written.length > 0;
     summary.files = written;
+    summary.action = summary.refreshed ? 'refreshed' : 'error';
     if (summary.refreshed) {
-      summary.action = 'refreshed';
-      logger.success(
-        `Agent docs refreshed → v${installedVersion} (from ${fromLabel}): ${written.join(', ')}`,
-      );
+      logger.log(`[ok] Agent docs refreshed -> ${written.join(', ')}`);
     } else {
-      summary.action = 'error';
       logger.warn(
-        `Agent docs look stale but couldn't be refreshed — the <!-- ASTRYX:START -->/<!-- ASTRYX:END --> markers may be malformed. Run \`${formatCliCommand('astryx init --features agents')}\` to reinstall the block.`,
+        `Agent docs look stale but couldn't be refreshed. Run \`${formatCliCommand('astryx init --features agents')}\` to reinstall the block.`,
       );
     }
   } catch {
     summary.action = 'error';
+    summary.refreshed = false;
     logger.warn(
       `Could not refresh agent docs. Run \`${formatCliCommand('astryx init --features agents')}\` to update them manually.`,
     );
@@ -222,7 +292,13 @@ export async function collectAllCodemods() {
   );
   for (const {version, transforms} of manifests) {
     for (const {name, meta, optional} of transforms) {
-      codemods.push({name, title: meta.title, version, pr: meta.pr, optional: !!optional});
+      codemods.push({
+        name,
+        title: meta.title,
+        version,
+        pr: meta.pr,
+        optional: !!optional,
+      });
     }
   }
   return codemods;
@@ -242,58 +318,125 @@ export async function getCoreVersionManifests(from, to) {
 
 /**
  * Ensure jscodeshift is available before running codemods.
- * @param {{installDeps?: boolean, logger?: import('../../lib/term-log.mjs').CliLogger}} [options]
+ * @param {{installDeps?: boolean}} [options]
  * @returns {Promise<boolean>}
  */
-export async function ensureCodemodDeps({installDeps, logger = noopLogger} = {}) {
-  return ensureJscodeshift({installDeps, silent: logger === noopLogger});
+export async function ensureCodemodDeps({installDeps} = {}) {
+  return ensureJscodeshift({installDeps, silent: logger.silent});
 }
 
 /**
  * Run the CORE registry codemods. Runs BEFORE the config is loaded so a core
  * CONFIG codemod can repair a config the strict loader would otherwise reject.
  * @param {CoreVersionManifest[]} versionManifests
- * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>, logger?: import('../../lib/term-log.mjs').CliLogger}} options
+ * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>, root?: string}} options
  */
-export async function runCoreCodemods(versionManifests, {apply, path: srcPath, codemod, skipCodemods, logger = noopLogger}) {
+export async function runCoreCodemods(
+  versionManifests,
+  {apply, path: srcPath, codemod, skipCodemods, root},
+) {
   return runCodemods(versionManifests, {
     apply,
     path: srcPath,
     codemod,
     skipCodemods,
-    silent: logger === noopLogger,
+    silent: logger.silent,
+    root,
   });
 }
 
 /**
  * Load the consumer project's config + integrations. Throws on invalid config;
  * the run leaf decides between the config_fixable preview and a hard abort.
+ *
+ * Provider identity is resolved by the same resolver Project uses, on top of
+ * Project's ledger, under the codemod policy: a package that lists itself runs
+ * its installed copy's released codemods, never the work in progress being
+ * authored, and autolinked and local packages claim provider IDs without
+ * running codemods.
+ *
  * @param {string} cwd
  * @param {string[]} [extraIntegrationSpecs] explicit `--integration` specs
- * @returns {Promise<{postCodemodHooks: import('../../types/config').PostCodemodHook[], integrations: import('../../lib/integrations.mjs').LoadedIntegration[]}>}
+ * @returns {Promise<{postCodemodHooks: import('../../authoring/config/type').PostCodemodHook[], integrations: import('../../foundation/integrations/integrations.mjs').LoadedIntegration[], ledger: import('../../foundation/integrations/provider-resolution.mjs').ProviderLedger}>}
  */
 export async function loadProjectContext(cwd, extraIntegrationSpecs = []) {
-  const project = await Project.load(cwd);
+  // The CLI debug preflight may already have imported this config before core
+  // CONFIG codemods run. Upgrade needs the bytes now on disk, not that module
+  // cache entry; ordinary Project discovery remains cached by default.
+  const project = await Project.load(cwd, {fresh: true});
   const postCodemodHooks = project.config.hooks?.postCodemod ?? [];
-  const integrationSpecs = uniqueFiles([
-    ...(project.integrations ?? []),
-    ...(extraIntegrationSpecs ?? []),
-  ]);
-  const integrations = await loadIntegrations(integrationSpecs);
-  return {postCodemodHooks, integrations};
+  const configuredSpecs = new Set(project.integrations ?? []);
+  // Configured packages come from Project, which has already resolved provider
+  // identity over configured, autolinked, and local packages. Loading them
+  // again here would let upgrade run codemods from a package Project set aside.
+  // Autolinked packages and the package being authored join only as claimants:
+  // every other command uses them for their provider IDs, but upgrade has
+  // never run their codemods.
+  const candidates = project.loadedIntegrations.flatMap(integration => {
+    const source =
+      !integration.__autolinked && configuredSpecs.has(integration.__spec)
+        ? /** @type {const} */ ('configured')
+        : integration.__autolinked
+          ? /** @type {const} */ ('autolinked')
+          : integration.__local
+            ? /** @type {const} */ ('local')
+            : null;
+    return source == null
+      ? []
+      : [{source, integration, spec: integration.__spec}];
+  });
+  // A package that lists itself runs its installed copy's released codemods,
+  // never the work in progress being authored; the resolver puts that copy in
+  // its place. Naming the package being authored with --integration asks for
+  // the installed copy too.
+  const local = project.loadedIntegrations.find(
+    integration => integration.__local,
+  );
+  const selfListed =
+    local != null && !local.__autolinked && configuredSpecs.has(local.__spec);
+  const installed =
+    local != null && selfListed && project.configPath
+      ? await loadIntegrations([local.__spec], {
+          cwd: path.dirname(project.configPath),
+          resolveProviders: false,
+        })
+      : [];
+  const extraSpecs = uniqueFiles(extraIntegrationSpecs ?? []).filter(
+    spec => !configuredSpecs.has(spec),
+  );
+  const extras =
+    extraSpecs.length === 0
+      ? []
+      : await loadIntegrations(extraSpecs, {resolveProviders: false});
+  const {integrations, ledger} = resolveProviders(
+    [
+      ...candidates,
+      ...installed.map(integration => ({
+        source: /** @type {const} */ ('installed'),
+        integration,
+        spec: integration.__spec,
+      })),
+      ...extras.map(integration => ({
+        source: /** @type {const} */ ('extra'),
+        integration,
+        spec: integration.__spec,
+      })),
+    ],
+    {codemods: true, prior: providerLedgerOf(project)},
+  );
+  return {postCodemodHooks, integrations, ledger};
 }
 
 /**
  * Non-blocking nudge for integration validation issues. Never throws (a broken
  * nudge must not fail the upgrade) and is suppressed for --json/programmatic
  * callers (the silent logger).
- * @param {Array<import('../../lib/integrations.mjs').LoadedIntegration>} integrations
- * @param {import('../../lib/term-log.mjs').CliLogger} [logger]
+ * @param {Array<import('../../foundation/integrations/integrations.mjs').LoadedIntegration>} integrations
  * @returns {Promise<void>}
  */
-export async function warnIntegrationIssues(integrations, logger = noopLogger) {
+export async function warnIntegrationIssues(integrations) {
   try {
-    await warnOnIntegrationIssues(integrations, {json: logger === noopLogger});
+    await warnOnIntegrationIssues(integrations, {json: logger.silent});
   } catch {
     // Never let the nudge break the upgrade.
   }
@@ -303,20 +446,23 @@ export async function warnIntegrationIssues(integrations, logger = noopLogger) {
  * Discover + select the integration codemods that apply in the (from, to]
  * range. An integration whose codemods fail to load is SKIPPED (a definition
  * error is surfaced by the nudge, not a hard failure of the upgrade).
- * @param {Array<import('../../lib/integrations.mjs').LoadedIntegration>} integrations
+ * @param {Array<import('../../foundation/integrations/integrations.mjs').LoadedIntegration>} integrations
  * @param {string} from
  * @param {string} to
- * @returns {Promise<Array<{version: string, codemods: import('../../types/codemod').CodemodEntry[]}>>}
+ * @returns {Promise<Array<{version: string, codemods: import('../../authoring/codemod/type').CodemodEntry[]}>>}
  */
 export async function selectIntegrationCodemodsFor(integrations, from, to) {
-  /** @type {Map<string, Array<import('../../types/codemod').CodemodEntry>>} */
+  /** @type {Map<string, Array<import('../../authoring/codemod/type').CodemodEntry>>} */
   const integrationCodemodsByVersion = new Map();
   for (const integration of integrations) {
     if (!integration?.codemods) continue;
     try {
       const byVersion = await discoverIntegrationCodemods([integration]);
       for (const [version, rawList] of byVersion) {
-        const list = /** @type {Array<import('../../types/codemod').CodemodEntry>} */ (/** @type {unknown} */ (rawList));
+        const list =
+          /** @type {Array<import('../../authoring/codemod/type').CodemodEntry>} */ (
+            /** @type {unknown} */ (rawList)
+          );
         const existing = integrationCodemodsByVersion.get(version);
         if (existing) existing.push(...list);
         else integrationCodemodsByVersion.set(version, [...list]);
@@ -325,17 +471,20 @@ export async function selectIntegrationCodemodsFor(integrations, from, to) {
       // Skip this integration's codemods (definition error); nudge above surfaces it.
     }
   }
-  return /** @type {Array<{version: string, codemods: import('../../types/codemod').CodemodEntry[]}>} */ (
+  return /** @type {Array<{version: string, codemods: import('../../authoring/codemod/type').CodemodEntry[]}>} */ (
     selectIntegrationCodemods(integrationCodemodsByVersion, from, to)
   );
 }
 
 /**
  * Run the file-based INTEGRATION codemods (config codemods first, then code).
- * @param {Array<{version: string, codemods: import('../../types/codemod').CodemodEntry[]}>} versionGroups
- * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>, logger?: import('../../lib/term-log.mjs').CliLogger}} options
+ * @param {Array<{version: string, codemods: import('../../authoring/codemod/type').CodemodEntry[]}>} versionGroups
+ * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>}} options
  */
-export async function runIntegrationCodemodsStep(versionGroups, {apply, path: srcPath, codemod, skipCodemods, logger = noopLogger}) {
+export async function runIntegrationCodemodsStep(
+  versionGroups,
+  {apply, path: srcPath, codemod, skipCodemods},
+) {
   const jscodeshift = (await import('jscodeshift')).default;
   return runIntegrationCodemods(versionGroups, {
     apply,
@@ -343,6 +492,6 @@ export async function runIntegrationCodemodsStep(versionGroups, {apply, path: sr
     codemod,
     skipCodemods,
     jscodeshift,
-    silent: logger === noopLogger,
+    silent: logger.silent,
   });
 }

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Thumbnail} from './Thumbnail';
 
@@ -218,5 +218,28 @@ describe('Thumbnail', () => {
       await user.click(screen.getByRole('button', {name: 'Remove file.png'}));
       expect(onRemove).toHaveBeenCalledOnce();
     });
+  });
+
+  it('shows the placeholder when the image fails to load', () => {
+    render(<Thumbnail src="/broken.jpg" alt="Broken" data-testid="thumb" />);
+
+    fireEvent.error(screen.getByRole('img'));
+
+    expect(screen.queryByRole('img')).toBeNull();
+    const root = screen.getByTestId('thumb');
+    expect(root.querySelector('svg')).toBeInTheDocument();
+  });
+
+  it('retries a changed src after a load error', () => {
+    const {rerender} = render(
+      <Thumbnail src="/broken.jpg" alt="Photo" data-testid="thumb" />,
+    );
+    fireEvent.error(screen.getByRole('img'));
+    expect(screen.queryByRole('img')).toBeNull();
+
+    rerender(<Thumbnail src="/fixed.jpg" alt="Photo" data-testid="thumb" />);
+
+    const img = screen.getByRole('img');
+    expect(img).toHaveAttribute('src', '/fixed.jpg');
   });
 });

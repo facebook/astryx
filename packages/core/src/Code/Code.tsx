@@ -1,7 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-'use client';
-
 /**
  * @file Code.tsx
  * @input Uses React, StyleX, theme tokens
@@ -10,8 +8,8 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/CodeBlock/index.ts (exports if types change)
- * - /packages/cli/templates/blocks/components/Code/ (showcase blocks)
- * - /packages/cli/templates/blocks/components/CodeBlock/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Code/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/CodeBlock/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';

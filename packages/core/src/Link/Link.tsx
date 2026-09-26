@@ -13,7 +13,7 @@
  * - /packages/core/src/Link/Link.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Link/index.ts (exports if types change)
  * - /apps/storybook/stories/Link.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Link/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Link/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';
@@ -44,6 +44,8 @@ import {mergeProps} from '../utils';
 import {computeTargetAndRel} from './computeTargetAndRel';
 import {useInteractiveRole} from '../hooks/useInteractiveRole';
 import {themeProps} from '../utils/themeProps';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useTranslator} from '../i18n';
 
 /**
@@ -60,22 +62,17 @@ const styles = stylex.create({
     fontWeight: 'inherit',
     textDecoration: {
       default: 'none',
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': 'underline',
       },
     },
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
     transitionProperty: 'color, text-decoration',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    outline: {
-      default: null,
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': '2px',
-    },
   },
   /**
    * Reset styles for rendering as a <button> when href is undefined.
@@ -92,7 +89,7 @@ const styles = stylex.create({
     textDecoration: 'underline',
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
     pointerEvents: 'none',
   },
@@ -110,7 +107,7 @@ const linkColorStyles = stylex.create({
   primary: {
     color: {
       default: colorVars['--color-text-primary'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-text-primary']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
     },
@@ -118,7 +115,7 @@ const linkColorStyles = stylex.create({
   secondary: {
     color: {
       default: colorVars['--color-text-secondary'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-text-secondary']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
     },
@@ -132,7 +129,7 @@ const linkColorStyles = stylex.create({
   accent: {
     color: {
       default: colorVars['--color-text-accent'],
-      ':hover': {
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-text-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
     },
@@ -368,10 +365,13 @@ export function Link({
         disabled={isDisabled}
         {...mergeProps(
           themeProps('link', {color}),
-          stylex.props(
+          focusOutlineProps.focusVisible(
             styles.base,
             styles.buttonReset,
             linkColorStyles[color],
+            // The system's pressed overlay behind the text; the hover stays the
+            // colour change above, so a press is the one background it paints.
+            !isDisabled && interactionOverlayStyles.pressedBackgroundColor,
             hasUnderline && styles.hasUnderline,
             isStandalone && styles.standalone,
             isDisabled && styles.disabled,
@@ -400,7 +400,7 @@ export function Link({
         tabIndex={-1}
         {...mergeProps(
           themeProps('link', {color}),
-          stylex.props(
+          focusOutlineProps.focusVisible(
             styles.base,
             linkColorStyles[color],
             hasUnderline && styles.hasUnderline,
@@ -428,9 +428,10 @@ export function Link({
         tabIndex={isDisabled ? -1 : undefined}
         {...mergeProps(
           themeProps('link', {color}),
-          stylex.props(
+          focusOutlineProps.focusVisible(
             styles.base,
             linkColorStyles[color],
+            !isDisabled && interactionOverlayStyles.pressedBackgroundColor,
             hasUnderline && styles.hasUnderline,
             isStandalone && styles.standalone,
             isDisabled && styles.disabled,

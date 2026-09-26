@@ -9,6 +9,7 @@
 import {render} from '@testing-library/react';
 import {describe, expect, it} from 'vitest';
 import {useKeyboardHint, type KeyboardHintOrientation} from './useKeyboardHint';
+import {InternationalizationProvider} from '../i18n';
 
 function TestHint({orientation}: {orientation?: KeyboardHintOrientation}) {
   const {hintElement} = useKeyboardHint({orientation});
@@ -66,5 +67,26 @@ describe('useKeyboardHint', () => {
     const hint = container.querySelector('[popover="manual"]') as HTMLElement;
 
     expect(hint.className).toContain('useKeyboardHint__styles.hint');
+  });
+
+  it('renders the "to navigate" label from the i18n catalog', () => {
+    const {container} = render(<TestHint />);
+    const hint = container.querySelector('[popover="manual"]') as HTMLElement;
+
+    expect(hint.textContent).toContain('to navigate');
+  });
+
+  it('localizes the "to navigate" label through the i18n catalog', () => {
+    const {container} = render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{fr: {'@astryx.keyboardHint.toNavigate': 'pour naviguer'}}}>
+        <TestHint />
+      </InternationalizationProvider>,
+    );
+    const hint = container.querySelector('[popover="manual"]') as HTMLElement;
+
+    expect(hint.textContent).toContain('pour naviguer');
+    expect(hint.textContent).not.toContain('to navigate');
   });
 });

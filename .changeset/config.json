@@ -20,5 +20,6 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@astryxdesign/storybook", "@astryxdesign/sandbox"]
+  "ignore": ["@astryxdesign/storybook", "@astryxdesign/sandbox"],
+  "bumpVersionsWithWorkspaceProtocolOnly": true
 }

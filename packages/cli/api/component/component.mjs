@@ -12,7 +12,7 @@
  * Every leaf is also re-exported for direct scripting use.
  */
 
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../error.mjs';
 import {
   CORE_PACKAGE,
@@ -34,14 +34,10 @@ import {componentDetailSource} from './detail/source/source.mjs';
 import {componentDetailShowcase} from './detail/showcase/showcase.mjs';
 import {componentDetailBlocks} from './detail/blocks/blocks.mjs';
 
-export {
-  componentList,
-  componentDetail,
-  componentDetailProps,
-  componentDetailSource,
-  componentDetailShowcase,
-  componentDetailBlocks,
-};
+/** @type {ReadonlyArray<string>} */
+const DETAIL_LEVELS = ['full', 'compact', 'brief'];
+/** @type {ReadonlyArray<string>} */
+const LANGS = ['en', 'zh', 'dense'];
 
 /**
  * @param {string} [name]
@@ -59,12 +55,12 @@ export {
  * @param {boolean} [options.zh]
  * @param {boolean} [options.dense]
  * @returns {Promise<(
- *   import('../../types/component').ComponentListResponse
- *   | import('../../types/component').ComponentDetailResponse
- *   | import('../../types/component').ComponentDetailPropsResponse
- *   | import('../../types/component').ComponentDetailSourceResponse
- *   | import('../../types/component').ComponentDetailShowcaseResponse
- *   | import('../../types/component').ComponentDetailBlocksResponse
+ *   import('./component.type.mjs').ComponentListResponse
+ *   | import('./component.type.mjs').ComponentDetailResponse
+ *   | import('./component.type.mjs').ComponentDetailPropsResponse
+ *   | import('./component.type.mjs').ComponentDetailSourceResponse
+ *   | import('./component.type.mjs').ComponentDetailShowcaseResponse
+ *   | import('./component.type.mjs').ComponentDetailBlocksResponse
  * )>}
  */
 export async function component(name, options = {}) {
@@ -90,7 +86,35 @@ export async function component(name, options = {}) {
   const isListView = list || category != null || !name;
   const detail = detailOption ?? (isListView ? 'brief' : 'full');
 
+  // Same accepted values and codes as the CLI's --detail and --lang, checked
+  // first as the CLI parser does.
+  if (!DETAIL_LEVELS.includes(detail)) {
+    throw new AstryxError(
+      `Invalid detail "${String(detail)}". Valid levels: ${DETAIL_LEVELS.join(', ')}`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_DETAIL,
+    );
+  }
+  if (lang != null && !LANGS.includes(lang)) {
+    throw new AstryxError(
+      `Invalid lang "${String(lang)}". Valid values: ${LANGS.join(', ')}`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_LANG,
+    );
+  }
+
   const coreDir = requireCoreDir(cwd);
+
+  // A public API caller could pass a non-string category; the list leaf does
+  // `category.toLowerCase()`, so guard it up front (same class as the name
+  // guard below) instead of throwing a raw TypeError with no `.code`.
+  if (category != null && typeof category !== 'string') {
+    throw new AstryxError(
+      `Unknown category "${String(category)}"`,
+      undefined,
+      ERROR_CODES.ERR_UNKNOWN_CATEGORY,
+    );
+  }
 
   // ── List mode ──────────────────────────────────────────────────
   if (category || list || !name) {
@@ -129,6 +153,20 @@ export async function component(name, options = {}) {
           notFoundInPackage: scoped.kind === 'integration' ? packageScope : null,
         });
       }
+      // showcase/blocks were previously dropped on the scoped path — a
+      // `--package ... --showcase`/`--blocks` request silently fell through to
+      // component.detail. Route them to the same leaves the no-scope path uses.
+      // Core showcases carry no `package` field, so a core scope must NOT pass
+      // packageScope (findShowcase filters those out); integrations never carry
+      // a showcase, so skip discovery entirely.
+      if (showcase) {
+        return scoped.kind === 'core'
+          ? componentDetailShowcase(dirName, {cwd, name})
+          : componentDetailShowcase(dirName, {cwd, name, resolve: false});
+      }
+      if (blocks) {
+        return componentDetailBlocks(dirName, cwd);
+      }
       const docs = await loadComponentDoc(owner.docPath, docOpts);
       if (props) return componentDetailProps(docs);
       return componentDetail(docs, owner, dirName, coreDir);
@@ -140,6 +178,13 @@ export async function component(name, options = {}) {
     }
     const extDocPath = resolveLegacyExternalDoc(scoped.ext, dirName);
     if (extDocPath) {
+      // Legacy packages ship docs, never source.
+      if (source) {
+        return componentDetailSource(dirName, null, {name, notFoundInPackage: packageScope});
+      }
+      if (blocks) {
+        return componentDetailBlocks(dirName, cwd);
+      }
       const docs = await loadComponentDoc(extDocPath, docOpts);
       if (props) return componentDetailProps(docs);
       return componentDetail(docs, {package: scoped.ext.name, sourcePath: null}, dirName, coreDir);
@@ -179,7 +224,7 @@ export async function component(name, options = {}) {
 
   // ── Blocks mode ──────────────────────────────────────────────
   if (blocks) {
-    return componentDetailBlocks(dirName);
+    return componentDetailBlocks(dirName, cwd);
   }
 
   // ── Sub-component scoping ────────────────────────────────────

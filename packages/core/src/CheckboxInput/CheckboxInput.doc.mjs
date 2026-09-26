@@ -1,12 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'CheckboxInput',
   displayName: 'Checkbox Input',
   group: 'Checkbox',
-  category: 'Data Input',
+  category: 'Form Controls',
   keywords: ["checkbox","check","toggle","tick","indeterminate","boolean","tristate"],
   props: [
     {
@@ -131,10 +131,23 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-checkbox-input', visualProps: ['size']},
-      {className: 'astryx-checkbox', visualProps: ['size'], states: ['checked', 'disabled']},
+      {className: 'astryx-checkbox-indicator', visualProps: ['size'], states: ['checked', 'disabled']},
+      {className: 'astryx-checkbox', visualProps: ['size'], states: ['checked', 'disabled'], deprecatedFor: 'checkbox-indicator'},
+      {className: 'astryx-checkbox-label'},
     ],
   },
   usage: {
+    accessibility: [
+      {
+        name: 'Checkbox box',
+        category: 'Color contrast',
+        criterion: '1.4.11 Non-text Contrast',
+        requirement: '3:1',
+        states: ['Rest', 'Hover', 'Pointer down', 'Checked'],
+        description:
+          'The box edge (unchecked) and fill (checked) must have at least 3:1 contrast with the surface behind them. For Hover and Pointer down, measure the final colors after the tint and the pressed overlay are applied.',
+      },
+    ],
     description: 'CheckboxInput toggles a single on/off value. Use it for settings like "Enable notifications", terms acceptance, or opt-in choices. For multiple checkboxes in a group, use CheckboxList instead.',
     bestPractices: [
       { guidance: true, description: 'Always provide a visible label so the user knows what they are toggling. Use isLabelHidden only when surrounding context makes it obvious.' },
@@ -153,7 +166,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'CheckboxInput',
   displayName: 'Checkbox Input',
@@ -206,12 +219,14 @@ export const docsZh = {
           'size',
         ],
       },
-      {className: 'astryx-checkbox', visualProps: ['size'], states: ['checked', 'disabled']},
+      {className: 'astryx-checkbox-indicator', visualProps: ['size'], states: ['checked', 'disabled']},
+      {className: 'astryx-checkbox', visualProps: ['size'], states: ['checked', 'disabled'], deprecatedFor: 'checkbox-indicator'},
+      {className: 'astryx-checkbox-label'},
     ],
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description: 'single on/off toggle for settings, terms, and opt-in choices',
   usage: {

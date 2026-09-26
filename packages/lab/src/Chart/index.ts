@@ -68,7 +68,6 @@ export {
   sizeCanvas,
   mountCanvasOverSVG,
   compileShader,
-  createProgram as createGLProgram,
   CIRCLE_FRAG_BODY,
   POINT_SIZE_COMPENSATION,
 } from './webgl';
