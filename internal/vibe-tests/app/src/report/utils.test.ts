@@ -1,8 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect} from 'vitest';
-import type {UniversalScore} from './types';
-import {a11yCoverage, dimensionLabel} from './utils';
+import type {
+  UniversalAggregate,
+  UniversalComparison,
+  UniversalScore,
+} from './types';
+import {a11yCoverage, a11yCoverageVsBaseline, dimensionLabel} from './utils';
 
 function score(accessibility: UniversalScore['accessibility']): UniversalScore {
   const dim = {score: 100};
@@ -65,6 +69,35 @@ describe('a11yCoverage', () => {
 
   it('handles an empty prompt map', () => {
     expect(a11yCoverage({}).basis).toBe('static');
+  });
+});
+
+describe('a11yCoverageVsBaseline', () => {
+  const runtimeOnly = {
+    byPrompt: {'tc-1': RUNTIME, 'tc-2': RUNTIME},
+  } as unknown as UniversalAggregate;
+
+  it('counts the baseline a score card shows its delta against', () => {
+    // A fully runtime-backed report compared with a hygiene-only baseline is
+    // the mixed comparison CompareView labels; the card must not read runtime
+    const comparison = {
+      baseline: {
+        byPrompt: {'tc-1': score({score: 100}), 'tc-2': score({score: 100})},
+      },
+    } as unknown as UniversalComparison;
+    const coverage = a11yCoverageVsBaseline(runtimeOnly, comparison);
+    expect(coverage).toEqual({basis: 'mixed', runtime: 2, total: 4});
+    expect(dimensionLabel('accessibility', coverage)).toBe(
+      'Accessibility (mixed: 2/4 runtime)',
+    );
+  });
+
+  it('uses only the report itself when there is no comparison', () => {
+    expect(a11yCoverageVsBaseline(runtimeOnly, undefined)).toEqual({
+      basis: 'runtime',
+      runtime: 2,
+      total: 2,
+    });
   });
 });
 

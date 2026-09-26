@@ -12,7 +12,7 @@ import {Card} from '@astryxdesign/core/Card';
 import {Button} from '@astryxdesign/core/Button';
 import {neutralTheme} from '@astryxdesign/theme-neutral';
 import type {ReportData} from './types';
-import {ALL_DIMENSIONS, a11yCoverage, dimensionLabel} from './utils';
+import {ALL_DIMENSIONS, a11yCoverageVsBaseline, dimensionLabel} from './utils';
 import {ScoreCard} from './ScoreCard';
 import {DimensionTable} from './DimensionTable';
 import {PromptDetailCard} from './PromptDetailCard';
@@ -276,7 +276,7 @@ export function Report() {
                           key={dim}
                           label={dimensionLabel(
                             dim,
-                            a11yCoverage(universal.byPrompt),
+                            a11yCoverageVsBaseline(universal, comparison),
                           )}
                           score={universal.averages[dim]}
                           compareScore={comparison?.baseline.averages[dim]}

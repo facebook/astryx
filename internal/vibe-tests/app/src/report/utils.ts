@@ -1,6 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import type {A11yCoverage, UniversalDimension, UniversalScore} from './types';
+import type {
+  A11yCoverage,
+  UniversalAggregate,
+  UniversalComparison,
+  UniversalDimension,
+  UniversalScore,
+} from './types';
 
 /** The 5 code-analysis dimensions (always present). */
 export const CODE_DIMENSIONS: UniversalDimension[] = [
@@ -41,6 +47,18 @@ export function a11yCoverage(
   const basis =
     runtime === 0 ? 'static' : runtime === scores.length ? 'runtime' : 'mixed';
   return {basis, runtime, total: scores.length};
+}
+
+/**
+ * Coverage behind a dimension score card, which shows its delta against the
+ * baseline: the baseline's prompts count too, so a runtime-backed score
+ * compared with a hygiene-only baseline reads as mixed, as in CompareView.
+ */
+export function a11yCoverageVsBaseline(
+  universal: UniversalAggregate,
+  comparison: UniversalComparison | undefined,
+): A11yCoverage {
+  return a11yCoverage(universal.byPrompt, comparison?.baseline.byPrompt);
 }
 
 /**
