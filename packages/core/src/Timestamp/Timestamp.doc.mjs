@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file Timestamp.doc.mjs
+ * @input Timestamp public props, theming targets, and usage patterns
+ * @output Consumer documentation for formatted times and hover/focus details
+ * @position Timestamp documentation consumed by the CLI and doc site
+ */
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -42,7 +49,7 @@ export const docs = {
       name: 'hasTooltip',
       type: 'boolean',
       description:
-        'Whether to show a copyable hover card with the full date/time on hover. Applies to relative timestamps and to any format once tooltipEntries is configured.',
+        'Whether to show a copyable hover card with the full date/time on hover or keyboard focus. Applies to relative timestamps and to any format once tooltipEntries is configured.',
       default: 'true',
     },
     {
@@ -188,7 +195,7 @@ export const docsDense = {
     value: 'date/time as unix seconds or ISO string',
     format: "display mode: 'relative' (locale-native long wording), 'relative_short' (locale-native narrow wording), 'auto', 'date', 'date_long', 'date_weekday', 'date_time', 'time', 'system_date', 'system_date_time', 'system_time', 'unix_seconds'",
     autoThreshold: 'seconds threshold for auto relative\u2192date_time switch',
-    hasTooltip: 'show copyable full-time hover card on hover (relative mode, or any format with tooltipEntries)',
+    hasTooltip: 'show copyable full-time hover card on hover or keyboard focus (relative mode, or any format with tooltipEntries)',
     tooltipEntries:
       "hover rows across zones/formats: [{timezoneID?, format?, label?}]; timezoneID omitted or 'local' = viewer zone, format defaults to 'full'; the hover surface is always a copy-to-clipboard card, these customize its rows (default: a single full-time row), and configuring entries enables the card on absolute formats",
     isTimezoneShown:
