@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 4690,
+    "headSha": "7448da8209900385bb3308d2dc0ec03431f18c25",
+    "headRef": "rocky/issue-4681-aria-conditional-attr",
+    "headRepository": "AKnassa/astryx",
+    "headRepositoryId": "1286656571"
+  },
+  "sourceRun": {
+    "id": 36217735811,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/4690/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/4690/sandbox/",
+      "indexSha256": "ebb30163ce08dcb6c89362290527eab54dcc980f8dac81105f48cf5011231723"
+    }
+  }
+}

@@ -1,0 +1,71 @@
+import{J as e,Z as t,q as n}from"./padding.stylex-C-GcuG1E.js";import{t as r}from"./Text-B0tRU2oR.js";import{t as i}from"./Heading-CuSv_ps9.js";import{t as a}from"./Card-BT-dRL-n.js";import{N as o,a as s,d as c,f as l,i as u,k as d,p as f,u as p,zt as m}from"./index-DBo6fwPY.js";import{t as h}from"./Banner-CxVDb-1t.js";import{t as g}from"./Badge-C0AePQeD.js";import{t as _}from"./Grid-Shu_Dh30.js";import{a as v,i as y,n as b,r as x,s as S,t as C}from"./Table-BRPr1DD3.js";import{t as w}from"./PageFrame-GNhvJ10Q.js";import{a as T,i as E,t as D}from"./spring-DdZwaVal.js";import{a as O,i as k,l as A,n as j}from"./LabPrimitives-UHYmz1OK.js";import{d as M,n as N}from"./motionAudit-BDzrwoZn.js";var P=t(e()),F=n(),I=132,L=[[.42,.66,.28,.81,.55,.35,.72],[.68,.31,.74,.44,.86,.52,.29],[.24,.58,.9,.36,.61,.79,.47]];function R(e,t){let n=e=>e.replace(/^--(duration|ease|stagger)-/,``),r=t=>Number((u(e(t))/1e3).toFixed(3)),i=t=>{let n=e(t);return E(n)?JSON.stringify(n):`[${T(n).join(`, `)}]`};return`// @generated from the Astryx theme by scripts/generate-motion-mirror.mjs.
+// Seconds and numbers, because that is what animation libraries, the Web
+// Animations API and canvas take. Regenerate when the theme changes.
+
+/** Seconds. Motion, WAAPI and canvas all want a number here. */
+export const duration = {
+${p.map(e=>`  ${n(e.name)}: ${r(e.name)},`).join(`
+`)}
+} as const;
+
+/** Four control points, or the CSS keyword when the curve is a keyword. */
+export const ease = {
+${c.map(e=>`  ${n(e.name)}: ${i(e.name)},`).join(`
+`)}
+} as const;
+
+/** Seconds between items in a group entrance. */
+export const stagger = {
+${f.map(([e])=>`  ${n(e)}: ${r(e)},`).join(`
+`)}
+} as const;
+
+/** No CSS form at all, so these are defined here rather than mirrored. */
+export const spring = {
+${l.map(e=>`  ${e.name}: {duration: ${t[e.name].duration}, bounce: ${t[e.name].bounce}},`).join(`
+`)}
+} as const;`}var z=`// MobileNav/MobileNav.tsx:294-311
+function resolveCloseDelay(dialog: HTMLDialogElement): number {
+  const cap = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ? 0
+    : MAX_CLOSE_DELAY_MS;
+
+  const hold = parseShortestDurationMs(
+    window.getComputedStyle(dialog).transitionDuration,
+  );
+
+  // The hold is unreadable — an unresolved var()
+  // outside a real browser.
+  if (hold === null) {
+    return cap;
+  }
+
+  return hold <= 0 ? 0 : Math.min(cap, hold * CLOSE_WITHIN_HOLD);
+}
+
+// plus parseShortestDurationMs at :265 — 25 lines
+// that exist only to turn "0.41s, 0.12s" back into
+// a number, exported so it can be unit tested.`,B=`import {duration} from '@astryxdesign/core/motion';
+
+function resolveCloseDelay(prefersReducedMotion: boolean): number {
+  const cap = prefersReducedMotion ? 0 : MAX_CLOSE_DELAY_MS;
+  // The same value the stylesheet uses, theme-resolved,
+  // and readable in jsdom.
+  const hold = duration.overlay * 1000;
+  return Math.min(cap, hold * CLOSE_WITHIN_HOLD);
+}`,V=`import {durationVars, easeVars} from '@astryxdesign/core/theme/tokens.stylex';
+
+durationVars['--duration-medium']; // "var(--x1kg2b7)" — a reference
+easeVars['--ease-standard'];       // "var(--x9f0d3a)" — same
+
+// Correct in StyleX:
+stylex.create({panel: {transitionDuration: durationVars['--duration-medium']}});
+
+// Useless anywhere else:
+animate(el, {opacity: 1}, {duration: durationVars['--duration-medium']}); // NaN
+ctx.globalAlpha = progress(durationVars['--duration-medium']);            // NaN`;function H({mode:e}){let{rawToken:t,reducedMotion:n,scaledMs:r}=s(),i=(0,P.useRef)(null),a=(0,P.useRef)(L[0]),o=(0,P.useRef)(1),c=(0,P.useRef)(0),l=(0,P.useCallback)(e=>{let t=i.current;if(t==null)return;let n=window.devicePixelRatio||1,r=t.clientWidth||280,a=Math.round(r*n),o=Math.round(I*n);(t.width!==a||t.height!==o)&&(t.width=a,t.height=o);let s=t.getContext(`2d`);if(s==null)return;s.setTransform(n,0,0,n,0,0),s.clearRect(0,0,r,I),s.fillStyle=window.getComputedStyle(t).color;let c=(r-8*(e.length-1))/e.length;e.forEach((e,t)=>{let n=Math.max(2,e*(I-6));s.fillRect(t*(c+8),I-n,c,n)})},[]);return A((0,P.useCallback)(()=>{let i=L[o.current%L.length];o.current+=1;let s=a.current;if(e===`before`||n!==`off`){a.current=i,l(i);return}let u=Math.max(1,r(`--duration-reveal`)),d=T(t(`--ease-move`)),f=performance.now();window.cancelAnimationFrame(c.current);let p=e=>{let t=Math.min(1,(e-f)/u),n=D(d,t);l(i.map((e,t)=>s[t]+(e-s[t])*n)),t<1?c.current=window.requestAnimationFrame(p):a.current=i};c.current=window.requestAnimationFrame(p)},[l,e,t,n,r]),r(`--duration-reveal`)+1300),(0,P.useEffect)(()=>()=>window.cancelAnimationFrame(c.current),[]),(0,F.jsx)(`canvas`,{ref:i,role:`img`,"aria-label":e===`before`?`Bar chart whose values change instantly`:`Bar chart whose values interpolate over the reveal duration`,className:`p1lliihq ph8yej3 p1h5wmu3 pjpyupi`})}function U(){let{rawToken:e,springs:t,scaledMs:n}=s(),c=M[0];return(0,F.jsxs)(w,{title:`JS token mirror`,intro:`CSS custom properties are unreadable to every animation library, to the Web Animations API, and to canvas and chart code. Motion takes seconds as a number and easing as a four-number array; it cannot resolve var(--duration-fast). The mirror emits the same values the stylesheets use, in the shape those consumers already expect.`,decides:`What the mirror has to expose for charts, canvas and motion libraries.`,badges:(0,F.jsx)(g,{variant:`info`,label:`emitted live from this session`}),children:[(0,F.jsxs)(O,{title:`The read that should not have to exist`,question:`${N.getComputedStyleReads} getComputedStyle reads across core. Two of them read motion values back out of CSS because there is no other way to get them.`,badges:(0,F.jsx)(g,{variant:`warning`,label:`MobileNav/MobileNav.tsx:303`}),children:[(0,F.jsx)(j,{panes:[{tone:`before`,label:`Today — parse the number back out of the stylesheet`,content:(0,F.jsx)(o,{language:`ts`,code:z,maxHeight:340,isWrapped:!0,hasCopyButton:!1})},{tone:`after`,label:`With the mirror`,content:(0,F.jsx)(o,{language:`ts`,code:B,maxHeight:340,isWrapped:!0,hasCopyButton:!1})}]}),(0,F.jsxs)(k,{children:[(0,F.jsxs)(r,{color:`secondary`,className:`p1ewvobj`,children:[`MobileNav is doing the right thing for the right reason. Its own comment says so: the hold is `,(0,F.jsx)(`code`,{children:`--duration-medium`}),`,`,` `,(0,F.jsx)(`q`,{children:`which themes rewrite — the shipped y2k theme sets it to exactly 250ms — so read the hold in effect rather than assuming it`}),`. Getting that value costs a computed-style read, a 25-line time parser exported for its own unit test (`,(0,F.jsx)(`code`,{children:`MobileNav/MobileNav.tsx:265`}),`), and a null branch for the case where the read comes back as an unresolved `,(0,F.jsx)(`code`,{children:`var()`}),` `,`outside a real browser. That is exactly right, and exactly what nobody should have to write by hand.`]}),(0,F.jsxs)(r,{color:`secondary`,className:`p1ewvobj`,children:[`The opposite failure — a hardcoded unmount timer drifting away from the transition it is supposed to outlast — is the one the brief warns about, and the audit does not find it.`,` `,(0,F.jsx)(`code`,{children:`TIMEOUT_LITERALS`}),` holds exactly`,` `,M.length,` entry:`,` `,(0,F.jsxs)(`code`,{children:[c.file,`:`,c.line]}),` `,`(`,c.ms,`ms), and it is a typeahead buffer reset, not motion at all. So core is currently on the safe side of that trade and paying for it in ceremony. The mirror does not fix a bug here; it removes the ceremony, and it makes the same number available to code that has no stylesheet to read.`]}),(0,F.jsx)(a,{padding:0,children:(0,F.jsxs)(C,{density:`compact`,children:[(0,F.jsx)(x,{children:(0,F.jsxs)(S,{children:[(0,F.jsx)(y,{children:`Read`}),(0,F.jsx)(y,{children:`What it wants`}),(0,F.jsx)(y,{children:`Mirror replaces it?`})]})}),(0,F.jsxs)(b,{children:[(0,F.jsxs)(S,{children:[(0,F.jsx)(v,{children:(0,F.jsx)(r,{className:`p9m5x89`,children:`MobileNav/MobileNav.tsx:303`})}),(0,F.jsx)(v,{children:(0,F.jsxs)(r,{color:`secondary`,children:[(0,F.jsx)(`code`,{children:`transitionDuration`}),`, to time the dialog close inside the hold`]})}),(0,F.jsx)(v,{children:(0,F.jsx)(g,{variant:`success`,label:`yes`})})]}),(0,F.jsxs)(S,{children:[(0,F.jsx)(v,{children:(0,F.jsx)(r,{className:`p9m5x89`,children:`BottomSheet/BottomSheetPanel.tsx:326`})}),(0,F.jsx)(v,{children:(0,F.jsxs)(r,{color:`secondary`,children:[(0,F.jsx)(`code`,{children:`transitionProperty`}),`,`,` `,(0,F.jsx)(`code`,{children:`transitionDuration`}),` and`,` `,(0,F.jsx)(`code`,{children:`transitionDelay`}),`, to know whether a`,` `,(0,F.jsx)(`code`,{children:`transitionend`}),` will arrive`]})}),(0,F.jsx)(v,{children:(0,F.jsx)(g,{variant:`warning`,label:`partly`})})]}),(0,F.jsxs)(S,{children:[(0,F.jsx)(v,{children:(0,F.jsxs)(r,{className:`p9m5x89`,children:[`the other `,N.getComputedStyleReads-2]})}),(0,F.jsx)(v,{children:(0,F.jsx)(r,{color:`secondary`,children:`direction, writing mode, padding, border radius, scroll margin — layout, not motion`})}),(0,F.jsx)(v,{children:(0,F.jsx)(g,{label:`not its job`})})]})]})]})}),(0,F.jsxs)(r,{type:`supporting`,color:`secondary`,children:[`Worth saying plainly: `,N.getComputedStyleReads,` is the whole computed-style caseload, not the motion one. The motion argument rests on two sites and on everything that cannot read a stylesheet at all — which is the next card.`]})]})]}),(0,F.jsxs)(O,{title:`Charts are outside the token system entirely`,question:`Canvas cannot resolve a custom property. Chart, Radial, Sankey and Schedule therefore animate on whatever numbers their author typed, or they do not animate.`,badges:(0,F.jsx)(g,{variant:`neutral`,label:`live, on a loop`}),children:[(0,F.jsx)(j,{panes:[{tone:`before`,label:`Today — data replaces itself`,content:(0,F.jsxs)(d,{gap:2,className:`ph8yej3`,children:[(0,F.jsx)(H,{mode:`before`}),(0,F.jsx)(r,{type:`supporting`,color:`secondary`,children:`No token is reachable from here, so the honest default is no animation at all. The chart jumps and the eye loses which bar was which.`})]})},{tone:`after`,label:`With the mirror — interpolated on the reveal token`,content:(0,F.jsxs)(d,{gap:2,className:`ph8yej3`,children:[(0,F.jsx)(H,{mode:`after`}),(0,F.jsxs)(r,{type:`supporting`,color:`secondary`,children:[(0,F.jsx)(`code`,{children:`scaledMs('--duration-reveal')`}),` and`,` `,(0,F.jsx)(`code`,{children:`bezierAt(parseBezier(rawToken('--ease-move')), k)`}),` `,`— the same duration and the same curve the CSS uses, applied per frame.`]})]})}]}),(0,F.jsx)(k,{children:(0,F.jsxs)(r,{type:`supporting`,color:`secondary`,children:[`Currently `,Math.round(n(`--duration-reveal`)),`ms at the rail’s speed, on `,(0,F.jsx)(`code`,{children:e(`--ease-move`)}),`. Change either on the tokens page and both this chart and every CSS demo in the lab move together — which is the whole claim: one value, two consumers.`]})})]}),(0,F.jsxs)(d,{gap:3,children:[(0,F.jsx)(i,{level:2,children:`The module, as it stands right now`}),(0,F.jsx)(r,{color:`secondary`,className:`p1ewvobj`,children:`Emitted from whatever this session has tuned, including springs from the springs page. Copy it and it is a working module.`}),(0,F.jsx)(o,{language:`ts`,title:`@astryxdesign/core/motion — generated`,hasCopyButton:!0,maxHeight:760,code:R(e,t)})]}),(0,F.jsxs)(_,{columns:{minWidth:460},gap:4,children:[(0,F.jsx)(O,{title:`Why the defaults are not hardcoded in JS`,question:`Because a theme retunes the whole scale, and a constants file would quietly stop agreeing with the stylesheet.`,children:(0,F.jsxs)(k,{children:[(0,F.jsxs)(r,{color:`secondary`,className:`p1ewvobj`,children:[`A theme sets three numbers —`,` `,(0,F.jsx)(`code`,{children:`{fast, medium, ratio}`}),` — and`,` `,(0,F.jsx)(`code`,{children:`expandMotionScale`}),` derives the whole duration scale from them; the shipped y2k theme lands`,` `,(0,F.jsx)(`code`,{children:`--duration-medium`}),` on 250ms rather than 410ms. A mirror written as literals would be right for the default theme and wrong for every other one, which is the failure mode MobileNav is already defending against by reading the computed value.`]}),(0,F.jsxs)(r,{color:`secondary`,className:`p1ewvobj`,children:[`So the mirror parses the same token values the stylesheets use, through the resolver core already has:`,` `,(0,F.jsxs)(`code`,{children:[`resolveThemeTokens(theme, `,`{mode}`,`)`]}),` returns concrete strings with `,(0,F.jsx)(`code`,{children:`var()`}),` references already followed, and needs no React context and no browser. Springs are the exception and are defined in the mirror natively, because they have no CSS form to parse.`]}),(0,F.jsx)(o,{language:`ts`,title:`How the emitter gets its numbers`,isWrapped:!0,code:`import {resolveThemeTokens} from '@astryxdesign/core/theme/tokens';
+
+const tokens = resolveThemeTokens(theme, {mode: 'light'});
+duration.overlay = parseMs(tokens['--duration-overlay']) / 1000;
+ease.move = parseBezier(tokens['--ease-move']);
+// spring.* has no token to read — it is authored here.`})]})}),(0,F.jsx)(O,{title:`StyleX vars are not the mirror`,question:`Core already exports durationVars and easeVars. They are the right thing for StyleX and useless everywhere else.`,children:(0,F.jsxs)(k,{children:[(0,F.jsx)(o,{language:`ts`,code:V,isWrapped:!0,maxHeight:300}),(0,F.jsxs)(r,{color:`secondary`,className:`p1ewvobj`,children:[(0,F.jsx)(`code`,{children:`stylex.defineVars`}),` hands back opaque`,` `,(0,F.jsx)(`code`,{children:`var(...)`}),` strings. That is the correct contract for a stylesheet and it is precisely the gap: the value never becomes a number on the JS side. The mirror is the second half of the same token, not a competing source of truth.`]})]})})]}),(0,F.jsx)(h,{status:`info`,title:`What the mirror does not solve`,description:(0,F.jsxs)(r,{children:[`A second artefact is a second thing to keep in sync. It only stays honest if it is generated from the theme in the same build step that emits the CSS, and if the lint rule treats a hardcoded number in JS the same way it treats one in a stylesheet. Both of those are on`,` `,(0,F.jsx)(m,{href:`/pages/motion-lab/export/`,children:`Export tuning`}),`.`]})})]})}export{U as default};

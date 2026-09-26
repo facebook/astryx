@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 4259,
+    "headSha": "b33b4c195346c472bfbe02dc25940a1e62da99bb",
+    "headRef": "feat/lab-line-clamp",
+    "headRepository": "HelloOjasMutreja/astryx",
+    "headRepositoryId": "1309798825"
+  },
+  "sourceRun": {
+    "id": 36062416028,
+    "attempt": 1,
+    "conclusion": "failure"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/4259/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": false,
+      "path": "pr/4259/sandbox/",
+      "indexSha256": null
+    }
+  }
+}

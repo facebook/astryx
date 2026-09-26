@@ -1,0 +1,5636 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5627,
+  "headSha": "c223457b59de739cc9d939ab18d0b005d4faaa42",
+  "testedSha": "c223457b59de739cc9d939ab18d0b005d4faaa42",
+  "baseSha": "88fde9103f89a87b9709781123f21c43830a54ea",
+  "run": {
+    "id": 33215493576,
+    "attempt": 2
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "baseline": {
+    "ghPagesCommit": "311bdbb292afd97e44e52b02473c074b71ae217e",
+    "manifestDigest": "36a1eff3ef14218f478814d7e8f7236534b0ab91840a14119a73ed22ffd81259"
+  },
+  "keys": [
+    {
+      "key": "core-button--all-variants__y2k-dark",
+      "kind": "changed",
+      "beforeSha256": "57aca26d307ed6c2a8abd3428ccccd7476ff0368e414726f43d29d3b509b30e4",
+      "afterSha256": "6053d85b4d435b5ff483cb8210f33939f1ad081bb3e6db2a77524e51a3652f80",
+      "shot": {
+        "sha256": "6053d85b4d435b5ff483cb8210f33939f1ad081bb3e6db2a77524e51a3652f80",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--all-variants",
+        "title": "Core/Button",
+        "name": "All Variants",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--all-variants__y2k-light",
+      "kind": "changed",
+      "beforeSha256": "f95600c0b226bce735efd4718d548dc5eab88c4259ae90e6b7b4d5b4b01bdfad",
+      "afterSha256": "7606b5d28ef45059f05b8471d3a782ae673643cce6c96777ccf551eba1c4b165",
+      "shot": {
+        "sha256": "7606b5d28ef45059f05b8471d3a782ae673643cce6c96777ccf551eba1c4b165",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--all-variants",
+        "title": "Core/Button",
+        "name": "All Variants",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--all-variants__butter-dark",
+      "kind": "changed",
+      "beforeSha256": "2254f677a8af31aa0aebdc6b193c7f395c0ee579c7bfb59adf142c646be00358",
+      "afterSha256": "cd879ec0082e5dd51d7092ce15b070a950023f8f5cd7b0a99977cb71a524efb9",
+      "shot": {
+        "sha256": "cd879ec0082e5dd51d7092ce15b070a950023f8f5cd7b0a99977cb71a524efb9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--all-variants",
+        "title": "Core/Button",
+        "name": "All Variants",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--all-variants__gothic-light",
+      "kind": "changed",
+      "beforeSha256": "6b8a71f041cca5290cb777a369b7ae9e2f86ffb1234459df21923b03dddaca76",
+      "afterSha256": "3753c7ec6f16d2ddfd010f72c7bfd332c773e4d7963e6441f8a8679a012ac12b",
+      "shot": {
+        "sha256": "3753c7ec6f16d2ddfd010f72c7bfd332c773e4d7963e6441f8a8679a012ac12b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--all-variants",
+        "title": "Core/Button",
+        "name": "All Variants",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--all-variants__gothic-dark",
+      "kind": "changed",
+      "beforeSha256": "5a6526ea97c3ecc15b4214b5a9d8f61f4ccd8d789c5695e2c6208b3c2e23deba",
+      "afterSha256": "b02aa5f84854083f39564a7d9f0f9793033e4d6690b9dc753e93338f123995b9",
+      "shot": {
+        "sha256": "b02aa5f84854083f39564a7d9f0f9793033e4d6690b9dc753e93338f123995b9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--all-variants",
+        "title": "Core/Button",
+        "name": "All Variants",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--all-variants__butter-light",
+      "kind": "changed",
+      "beforeSha256": "38bb66ae251bfb628d3883ca5478370b95e33694b5f54bea677ed847779fbc6f",
+      "afterSha256": "737c24dc88764bc7db8473cc8ee39504351ddd75ec595ba581c9d84a3c9cf96b",
+      "shot": {
+        "sha256": "737c24dc88764bc7db8473cc8ee39504351ddd75ec595ba581c9d84a3c9cf96b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--all-variants",
+        "title": "Core/Button",
+        "name": "All Variants",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--primary__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "85567a14b4e5d677949070853ee2536ac5d2f8b3ef91a05dab0a6c177b2de55b",
+      "shot": {
+        "sha256": "85567a14b4e5d677949070853ee2536ac5d2f8b3ef91a05dab0a6c177b2de55b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--primary",
+        "title": "Core/Button",
+        "name": "Primary",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--primary__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fac031f5bfda7c22edf51bfd91fd120103460605eed5d0d3a0b17deb7ed0f7e9",
+      "shot": {
+        "sha256": "fac031f5bfda7c22edf51bfd91fd120103460605eed5d0d3a0b17deb7ed0f7e9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--primary",
+        "title": "Core/Button",
+        "name": "Primary",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--primary__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bd2d2bac316e1a5c5e2c00ca8f927bbe5f987a2bbdddf8738588d8512e58b59f",
+      "shot": {
+        "sha256": "bd2d2bac316e1a5c5e2c00ca8f927bbe5f987a2bbdddf8738588d8512e58b59f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--primary",
+        "title": "Core/Button",
+        "name": "Primary",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--primary__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5237086452993844bc7888eb85dff2897b9786586eb1e2da9855c70cebf5c73f",
+      "shot": {
+        "sha256": "5237086452993844bc7888eb85dff2897b9786586eb1e2da9855c70cebf5c73f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--primary",
+        "title": "Core/Button",
+        "name": "Primary",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--primary__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "704739db42ed618060d0df1d9e54e857ccaf903b64ab3ba4852e8a2c010a6beb",
+      "shot": {
+        "sha256": "704739db42ed618060d0df1d9e54e857ccaf903b64ab3ba4852e8a2c010a6beb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--primary",
+        "title": "Core/Button",
+        "name": "Primary",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--primary__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1485a4ecdc5c3f94f25ac88ceec272278bd0b069a418fa2ca7172301cc005f4a",
+      "shot": {
+        "sha256": "1485a4ecdc5c3f94f25ac88ceec272278bd0b069a418fa2ca7172301cc005f4a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--primary",
+        "title": "Core/Button",
+        "name": "Primary",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--primary__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bdb2daf4d68f73d46a55463eff357e2e7c573f7cbc19b2cf99bc8eaddc34d2d8",
+      "shot": {
+        "sha256": "bdb2daf4d68f73d46a55463eff357e2e7c573f7cbc19b2cf99bc8eaddc34d2d8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--primary",
+        "title": "Core/Button",
+        "name": "Primary",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--primary__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3f2c16a548687acbb66f0e052d8224e75d931d16afe684c5a343a32b920cdb38",
+      "shot": {
+        "sha256": "3f2c16a548687acbb66f0e052d8224e75d931d16afe684c5a343a32b920cdb38",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--primary",
+        "title": "Core/Button",
+        "name": "Primary",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--primary__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a5c2f174dd27761e60e5f8be752f4f5bdcca239c035518aa518793d438fc68a5",
+      "shot": {
+        "sha256": "a5c2f174dd27761e60e5f8be752f4f5bdcca239c035518aa518793d438fc68a5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--primary",
+        "title": "Core/Button",
+        "name": "Primary",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--primary__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "207ebebf7aee0b5971ff8ddda71768d98b5f43244986d749e65ade38dbc1383d",
+      "shot": {
+        "sha256": "207ebebf7aee0b5971ff8ddda71768d98b5f43244986d749e65ade38dbc1383d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--primary",
+        "title": "Core/Button",
+        "name": "Primary",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--secondary__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fe6004efa9098c122830db0b9ef130910674a8841642573e33460c8c27e7f4eb",
+      "shot": {
+        "sha256": "fe6004efa9098c122830db0b9ef130910674a8841642573e33460c8c27e7f4eb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--secondary",
+        "title": "Core/Button",
+        "name": "Secondary",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--secondary__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "28cf180c8f342f58d6e5af719bb5545738b933f6d75d598d501aa850e150f244",
+      "shot": {
+        "sha256": "28cf180c8f342f58d6e5af719bb5545738b933f6d75d598d501aa850e150f244",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--secondary",
+        "title": "Core/Button",
+        "name": "Secondary",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--secondary__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3183e0db586ea1c91c348eb8518d0055777b660e138de4abae8f91ffc6d7cf11",
+      "shot": {
+        "sha256": "3183e0db586ea1c91c348eb8518d0055777b660e138de4abae8f91ffc6d7cf11",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--secondary",
+        "title": "Core/Button",
+        "name": "Secondary",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--secondary__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e0a718e419b55c2b482fdb407b09f59d366f5203d4e7795adaf68e55ab643c16",
+      "shot": {
+        "sha256": "e0a718e419b55c2b482fdb407b09f59d366f5203d4e7795adaf68e55ab643c16",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--secondary",
+        "title": "Core/Button",
+        "name": "Secondary",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--secondary__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "10698e5e444af627ba05c1edb3566f3b6a0dffc3d232b73accb1b8118c39a202",
+      "shot": {
+        "sha256": "10698e5e444af627ba05c1edb3566f3b6a0dffc3d232b73accb1b8118c39a202",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--secondary",
+        "title": "Core/Button",
+        "name": "Secondary",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--secondary__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3e794947641be4f44eaec40dc1ab8e3b9c13c5e54f7cbe655b13a0ddb25b2739",
+      "shot": {
+        "sha256": "3e794947641be4f44eaec40dc1ab8e3b9c13c5e54f7cbe655b13a0ddb25b2739",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--secondary",
+        "title": "Core/Button",
+        "name": "Secondary",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--secondary__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ed71ad390faf92c9bc103f009703839357884638a01955e455514ed993337526",
+      "shot": {
+        "sha256": "ed71ad390faf92c9bc103f009703839357884638a01955e455514ed993337526",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--secondary",
+        "title": "Core/Button",
+        "name": "Secondary",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--secondary__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b7638f36e11a8953d7566183d85a3726032cb34d884a77c2a28ab2c442d64c59",
+      "shot": {
+        "sha256": "b7638f36e11a8953d7566183d85a3726032cb34d884a77c2a28ab2c442d64c59",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--secondary",
+        "title": "Core/Button",
+        "name": "Secondary",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--secondary__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c02dcfd6c3802ea2c37f08408362e9710c67f79a76af34cf5eca2a78e15f46ae",
+      "shot": {
+        "sha256": "c02dcfd6c3802ea2c37f08408362e9710c67f79a76af34cf5eca2a78e15f46ae",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--secondary",
+        "title": "Core/Button",
+        "name": "Secondary",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--secondary__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bb7a33a0afc1e611150e0a090a3b8477bc99682869aa2148ea2075dc46d48470",
+      "shot": {
+        "sha256": "bb7a33a0afc1e611150e0a090a3b8477bc99682869aa2148ea2075dc46d48470",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--secondary",
+        "title": "Core/Button",
+        "name": "Secondary",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--secondary__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d43918d87e469ac4765043ea6c7092b87168e3cbd872e5c5a601c7a79c69afc1",
+      "shot": {
+        "sha256": "d43918d87e469ac4765043ea6c7092b87168e3cbd872e5c5a601c7a79c69afc1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--secondary",
+        "title": "Core/Button",
+        "name": "Secondary",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--secondary__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1cd75728fc99fd3eb5bf76496b4f1f7efc14596fd44be887d37ea011ea48b14e",
+      "shot": {
+        "sha256": "1cd75728fc99fd3eb5bf76496b4f1f7efc14596fd44be887d37ea011ea48b14e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--secondary",
+        "title": "Core/Button",
+        "name": "Secondary",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--ghost__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "62d7f1e894b3d3cb69f82382acbce583acc30df07d148acc8c9b671186e12c3b",
+      "shot": {
+        "sha256": "62d7f1e894b3d3cb69f82382acbce583acc30df07d148acc8c9b671186e12c3b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--ghost",
+        "title": "Core/Button",
+        "name": "Ghost",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--ghost__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b67638c7c7c7ae87863fbd117ac581e3437cfb88ce1d89a376b34b78cc850e73",
+      "shot": {
+        "sha256": "b67638c7c7c7ae87863fbd117ac581e3437cfb88ce1d89a376b34b78cc850e73",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--ghost",
+        "title": "Core/Button",
+        "name": "Ghost",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--ghost__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "111acb97bdfc3ac4de55af251063ff4ded6fb64bbbe12227b09c2abddf4cdccd",
+      "shot": {
+        "sha256": "111acb97bdfc3ac4de55af251063ff4ded6fb64bbbe12227b09c2abddf4cdccd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--ghost",
+        "title": "Core/Button",
+        "name": "Ghost",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--ghost__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "74fe8397dada58c3b24fe5126315edbeb0cf7e3611b7e9ee8aa200a847fb0365",
+      "shot": {
+        "sha256": "74fe8397dada58c3b24fe5126315edbeb0cf7e3611b7e9ee8aa200a847fb0365",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--ghost",
+        "title": "Core/Button",
+        "name": "Ghost",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--ghost__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7cc720505ae7d3a7426900321e7ae43db42d027a5c0e201a7593ae4fcbab3043",
+      "shot": {
+        "sha256": "7cc720505ae7d3a7426900321e7ae43db42d027a5c0e201a7593ae4fcbab3043",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--ghost",
+        "title": "Core/Button",
+        "name": "Ghost",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--ghost__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1ca0d5c0ceb910f186d09fe713e5cc9dd6a6d5906715d40473e3e14004ed3836",
+      "shot": {
+        "sha256": "1ca0d5c0ceb910f186d09fe713e5cc9dd6a6d5906715d40473e3e14004ed3836",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--ghost",
+        "title": "Core/Button",
+        "name": "Ghost",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--ghost__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c85ff26fd8226e15a94acf2fe11b582204cbcffbfed349a80c2445e912ced539",
+      "shot": {
+        "sha256": "c85ff26fd8226e15a94acf2fe11b582204cbcffbfed349a80c2445e912ced539",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--ghost",
+        "title": "Core/Button",
+        "name": "Ghost",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--ghost__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cdac5416c4134e81f65b0548ed09b48ad344b09b28b1313fe0c9bc1d8481d7a4",
+      "shot": {
+        "sha256": "cdac5416c4134e81f65b0548ed09b48ad344b09b28b1313fe0c9bc1d8481d7a4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--ghost",
+        "title": "Core/Button",
+        "name": "Ghost",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--ghost__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9486f2e5d27cdde56d1cbcd4b9c8abbe6b8dcca2352fef5284229705fdeac0ed",
+      "shot": {
+        "sha256": "9486f2e5d27cdde56d1cbcd4b9c8abbe6b8dcca2352fef5284229705fdeac0ed",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--ghost",
+        "title": "Core/Button",
+        "name": "Ghost",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--ghost__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6469e22c2a7cfba9262b755c02aa0a3f318875934b80edfd97a17729f662789b",
+      "shot": {
+        "sha256": "6469e22c2a7cfba9262b755c02aa0a3f318875934b80edfd97a17729f662789b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--ghost",
+        "title": "Core/Button",
+        "name": "Ghost",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--ghost__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "49923275c0624ecfa21b581435600b0cacc9914c3c046745e2f7e7dfc8d96e74",
+      "shot": {
+        "sha256": "49923275c0624ecfa21b581435600b0cacc9914c3c046745e2f7e7dfc8d96e74",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--ghost",
+        "title": "Core/Button",
+        "name": "Ghost",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--ghost__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b40f91ca0d5b331dc88688bb0faf9dfdf19ae964d1253e35e57bd50b583b1dda",
+      "shot": {
+        "sha256": "b40f91ca0d5b331dc88688bb0faf9dfdf19ae964d1253e35e57bd50b583b1dda",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--ghost",
+        "title": "Core/Button",
+        "name": "Ghost",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--ghost__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4084131ce7ce561b8bebc07afeaf119bbf3c67c1384db430b0704fe9cb1eda26",
+      "shot": {
+        "sha256": "4084131ce7ce561b8bebc07afeaf119bbf3c67c1384db430b0704fe9cb1eda26",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--ghost",
+        "title": "Core/Button",
+        "name": "Ghost",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--ghost__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8e982165842a3fb49ff52011167f37b211a903b9ff191e06084371c869d87300",
+      "shot": {
+        "sha256": "8e982165842a3fb49ff52011167f37b211a903b9ff191e06084371c869d87300",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--ghost",
+        "title": "Core/Button",
+        "name": "Ghost",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--destructive__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6a2dbd964e9185f9cdcde77cdb2cea1d21a7fc480a79be86a563f81535a3ce56",
+      "shot": {
+        "sha256": "6a2dbd964e9185f9cdcde77cdb2cea1d21a7fc480a79be86a563f81535a3ce56",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--destructive",
+        "title": "Core/Button",
+        "name": "Destructive",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--destructive__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c0bf39d7eaf47c234d2d4b178ca45a7c762af42614569444916ca0b795efbf18",
+      "shot": {
+        "sha256": "c0bf39d7eaf47c234d2d4b178ca45a7c762af42614569444916ca0b795efbf18",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--destructive",
+        "title": "Core/Button",
+        "name": "Destructive",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--destructive__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6ef74b7c8026d240a1cb848b09947b8dc8af10005e1319995f63db80e3f85f28",
+      "shot": {
+        "sha256": "6ef74b7c8026d240a1cb848b09947b8dc8af10005e1319995f63db80e3f85f28",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--destructive",
+        "title": "Core/Button",
+        "name": "Destructive",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--destructive__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ccaefbb895b5f1e51f3d3bd464ee90c14390c3c375a0cf07a27bb122bd084181",
+      "shot": {
+        "sha256": "ccaefbb895b5f1e51f3d3bd464ee90c14390c3c375a0cf07a27bb122bd084181",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--destructive",
+        "title": "Core/Button",
+        "name": "Destructive",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--destructive__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9962225fd9a50d6a8c860c3303d4287745ea731fe8ae0cc328535825d569570c",
+      "shot": {
+        "sha256": "9962225fd9a50d6a8c860c3303d4287745ea731fe8ae0cc328535825d569570c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--destructive",
+        "title": "Core/Button",
+        "name": "Destructive",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--destructive__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a6e0b33108818375cc6d930e75fe0044040b7953b80a5319538ac50b02981d9b",
+      "shot": {
+        "sha256": "a6e0b33108818375cc6d930e75fe0044040b7953b80a5319538ac50b02981d9b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--destructive",
+        "title": "Core/Button",
+        "name": "Destructive",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--destructive__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8def73a7ec95957965f551023f19d519464c130c6a03123d79ea0bc0246c8d2b",
+      "shot": {
+        "sha256": "8def73a7ec95957965f551023f19d519464c130c6a03123d79ea0bc0246c8d2b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--destructive",
+        "title": "Core/Button",
+        "name": "Destructive",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--destructive__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "048e5a78d21bee0b4744104b6ea47b6f6bc3f8b3aeab442428c2390b4cf9d573",
+      "shot": {
+        "sha256": "048e5a78d21bee0b4744104b6ea47b6f6bc3f8b3aeab442428c2390b4cf9d573",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--destructive",
+        "title": "Core/Button",
+        "name": "Destructive",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--destructive__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "87bc711e598cffb71fa3fd0a54a7a3424c8163c303abb90e06b86190870012f2",
+      "shot": {
+        "sha256": "87bc711e598cffb71fa3fd0a54a7a3424c8163c303abb90e06b86190870012f2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--destructive",
+        "title": "Core/Button",
+        "name": "Destructive",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--destructive__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "84355373cfd20943733c2b9cfc3dad9be0dc24e82a1756c500b74303b6b79a9a",
+      "shot": {
+        "sha256": "84355373cfd20943733c2b9cfc3dad9be0dc24e82a1756c500b74303b6b79a9a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--destructive",
+        "title": "Core/Button",
+        "name": "Destructive",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--destructive__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c7c9c8cff85290daaa090c4e6a8f825846944ba1747e1bbda4f26fe6094acf7f",
+      "shot": {
+        "sha256": "c7c9c8cff85290daaa090c4e6a8f825846944ba1747e1bbda4f26fe6094acf7f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--destructive",
+        "title": "Core/Button",
+        "name": "Destructive",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--destructive__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8116dda9fe45de02f7fdd1ce51eef9bdd2fc2dbcf2100aed7f0e1545ed7c3907",
+      "shot": {
+        "sha256": "8116dda9fe45de02f7fdd1ce51eef9bdd2fc2dbcf2100aed7f0e1545ed7c3907",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--destructive",
+        "title": "Core/Button",
+        "name": "Destructive",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--loading__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ac27ce674fd945f085b749b7b53c749310375398de879a6924061451c8335ac2",
+      "shot": {
+        "sha256": "ac27ce674fd945f085b749b7b53c749310375398de879a6924061451c8335ac2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--loading",
+        "title": "Core/Button",
+        "name": "Loading",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--loading__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c6e2005d2bdf70f43d5c283bf90e38b9c11741549faa075cc4e7d86d0b60db5e",
+      "shot": {
+        "sha256": "c6e2005d2bdf70f43d5c283bf90e38b9c11741549faa075cc4e7d86d0b60db5e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--loading",
+        "title": "Core/Button",
+        "name": "Loading",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--loading__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1e6e62eac4a1dc2d7cc25e048ff56e882f1ed4fb4c63e4b6c1db483cbaaae537",
+      "shot": {
+        "sha256": "1e6e62eac4a1dc2d7cc25e048ff56e882f1ed4fb4c63e4b6c1db483cbaaae537",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--loading",
+        "title": "Core/Button",
+        "name": "Loading",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--loading__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a36f9e02b83d2c19d47d418cf26ebd6c028163122bf03aad138dd4cd74706106",
+      "shot": {
+        "sha256": "a36f9e02b83d2c19d47d418cf26ebd6c028163122bf03aad138dd4cd74706106",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--loading",
+        "title": "Core/Button",
+        "name": "Loading",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--loading__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ce0d19892a5c18df86312b2debc2ea7bc29cd08cf3ae3f8810b484d103f6567e",
+      "shot": {
+        "sha256": "ce0d19892a5c18df86312b2debc2ea7bc29cd08cf3ae3f8810b484d103f6567e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--loading",
+        "title": "Core/Button",
+        "name": "Loading",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--loading__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a007a56fdf85b89d79123483f6e82661cb6ad8793c6ecb830418a7249e12d618",
+      "shot": {
+        "sha256": "a007a56fdf85b89d79123483f6e82661cb6ad8793c6ecb830418a7249e12d618",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--loading",
+        "title": "Core/Button",
+        "name": "Loading",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--loading__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c84d9be25336bc6c495394efe28216a726c0232676a37781f1b5403befa76d0c",
+      "shot": {
+        "sha256": "c84d9be25336bc6c495394efe28216a726c0232676a37781f1b5403befa76d0c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--loading",
+        "title": "Core/Button",
+        "name": "Loading",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--loading__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0700d7083466b1bf61b8de2ef716d1c50f690f94631d4c47de93d3ace75478c4",
+      "shot": {
+        "sha256": "0700d7083466b1bf61b8de2ef716d1c50f690f94631d4c47de93d3ace75478c4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--loading",
+        "title": "Core/Button",
+        "name": "Loading",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--loading__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2434d36cc2f0cebef7b8e60a533a8bf9b2c3544234a4d7aff48a613e9272d80d",
+      "shot": {
+        "sha256": "2434d36cc2f0cebef7b8e60a533a8bf9b2c3544234a4d7aff48a613e9272d80d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--loading",
+        "title": "Core/Button",
+        "name": "Loading",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--loading__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4975d082f094f430d9052ea33140a7aa58f1e5514252c5b6714bb74b488bc1c9",
+      "shot": {
+        "sha256": "4975d082f094f430d9052ea33140a7aa58f1e5514252c5b6714bb74b488bc1c9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--loading",
+        "title": "Core/Button",
+        "name": "Loading",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--loading__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "598293b3c249e9198fb48e7dfb0a64888d1e2c995a4f705c670dd6b921b9cf5a",
+      "shot": {
+        "sha256": "598293b3c249e9198fb48e7dfb0a64888d1e2c995a4f705c670dd6b921b9cf5a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--loading",
+        "title": "Core/Button",
+        "name": "Loading",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--loading__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5bfdef3c9edfd6b80a8b6f232c01bd8fbcefc6569d41504c3f11aeaee253ef13",
+      "shot": {
+        "sha256": "5bfdef3c9edfd6b80a8b6f232c01bd8fbcefc6569d41504c3f11aeaee253ef13",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--loading",
+        "title": "Core/Button",
+        "name": "Loading",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--loading__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6a4bb99ca9b658d840f3515863a56f1c93089ac943603dd21a5731c17b83e86c",
+      "shot": {
+        "sha256": "6a4bb99ca9b658d840f3515863a56f1c93089ac943603dd21a5731c17b83e86c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--loading",
+        "title": "Core/Button",
+        "name": "Loading",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--loading__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "88000f915f9ade0c994cd5fe7f700b878a3672ca401a9cdb1e8a7a09e81de841",
+      "shot": {
+        "sha256": "88000f915f9ade0c994cd5fe7f700b878a3672ca401a9cdb1e8a7a09e81de841",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--loading",
+        "title": "Core/Button",
+        "name": "Loading",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--disabled__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "58707a6051766ace95fe16c1fb60790aedecfae551301206ee81ed19708cb43f",
+      "shot": {
+        "sha256": "58707a6051766ace95fe16c1fb60790aedecfae551301206ee81ed19708cb43f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--disabled",
+        "title": "Core/Button",
+        "name": "Disabled",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--disabled__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ee70ba0de763bccd92f7109458cff3d944119a0742db2886fe8ca574527c4667",
+      "shot": {
+        "sha256": "ee70ba0de763bccd92f7109458cff3d944119a0742db2886fe8ca574527c4667",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--disabled",
+        "title": "Core/Button",
+        "name": "Disabled",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--disabled__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "47e74b88214f3057f650a4bd78e0afb1ecf0b6ce62cbe88b08a4f8fda3d2d7ac",
+      "shot": {
+        "sha256": "47e74b88214f3057f650a4bd78e0afb1ecf0b6ce62cbe88b08a4f8fda3d2d7ac",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--disabled",
+        "title": "Core/Button",
+        "name": "Disabled",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--disabled__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "48a79a84be6549530f3dc28adf28434639fb546fdac94b98761c6e2b700cdff6",
+      "shot": {
+        "sha256": "48a79a84be6549530f3dc28adf28434639fb546fdac94b98761c6e2b700cdff6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--disabled",
+        "title": "Core/Button",
+        "name": "Disabled",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--disabled__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ecd90b75b823f7197c9ac9eaa8fabf1c913cd6ac8465019287c651502b025231",
+      "shot": {
+        "sha256": "ecd90b75b823f7197c9ac9eaa8fabf1c913cd6ac8465019287c651502b025231",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--disabled",
+        "title": "Core/Button",
+        "name": "Disabled",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--disabled__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "68839d7d1657a2c8a08a9302ef6086241991253de82c5ab2f360df0a9af419ea",
+      "shot": {
+        "sha256": "68839d7d1657a2c8a08a9302ef6086241991253de82c5ab2f360df0a9af419ea",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--disabled",
+        "title": "Core/Button",
+        "name": "Disabled",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--disabled__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "70ac4c00c406703a70622b7c497135b349fee19ca1640fab60931e9b3da20038",
+      "shot": {
+        "sha256": "70ac4c00c406703a70622b7c497135b349fee19ca1640fab60931e9b3da20038",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--disabled",
+        "title": "Core/Button",
+        "name": "Disabled",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--disabled__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9f629db554c00523d549a024b8d645e717120573a3cbe658fc5f39fe1f984b3a",
+      "shot": {
+        "sha256": "9f629db554c00523d549a024b8d645e717120573a3cbe658fc5f39fe1f984b3a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--disabled",
+        "title": "Core/Button",
+        "name": "Disabled",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--disabled__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "320fbd6c5f6ecb55f07fab41878b122ec042a56d3fbd7293b325be911e7919da",
+      "shot": {
+        "sha256": "320fbd6c5f6ecb55f07fab41878b122ec042a56d3fbd7293b325be911e7919da",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--disabled",
+        "title": "Core/Button",
+        "name": "Disabled",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--disabled__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "48d422cb4c6734a5923b36fe546f4f54b71733091562a4443f4b54bb8c784e1a",
+      "shot": {
+        "sha256": "48d422cb4c6734a5923b36fe546f4f54b71733091562a4443f4b54bb8c784e1a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--disabled",
+        "title": "Core/Button",
+        "name": "Disabled",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--disabled__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1b3a415b60281614b79280f01c7cd4b2a8bc2d290b156df5ee0f522528595827",
+      "shot": {
+        "sha256": "1b3a415b60281614b79280f01c7cd4b2a8bc2d290b156df5ee0f522528595827",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--disabled",
+        "title": "Core/Button",
+        "name": "Disabled",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--disabled__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "faf73cbea6ac1d50d4cc8bbc84361bb8b2ca3c237abe419a9434b179afb9be91",
+      "shot": {
+        "sha256": "faf73cbea6ac1d50d4cc8bbc84361bb8b2ca3c237abe419a9434b179afb9be91",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--disabled",
+        "title": "Core/Button",
+        "name": "Disabled",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--disabled__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f129a0247c6c96a810d420d69623888bc8df93da8f3ae9276034002f7170f471",
+      "shot": {
+        "sha256": "f129a0247c6c96a810d420d69623888bc8df93da8f3ae9276034002f7170f471",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--disabled",
+        "title": "Core/Button",
+        "name": "Disabled",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--disabled__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "acbe73d045e641d27fb85b0f990585535582110d4ff9b5e3c76edaf587c038c0",
+      "shot": {
+        "sha256": "acbe73d045e641d27fb85b0f990585535582110d4ff9b5e3c76edaf587c038c0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--disabled",
+        "title": "Core/Button",
+        "name": "Disabled",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--size-variants__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "52a4d6e80f30eec261a63b8e3a99590f55127bba96054fc7b4d824445e6cc0d7",
+      "shot": {
+        "sha256": "52a4d6e80f30eec261a63b8e3a99590f55127bba96054fc7b4d824445e6cc0d7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--size-variants",
+        "title": "Core/Button",
+        "name": "Size Variants",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--size-variants__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4a6feb61ff70b6ca400e76d1a3a052c52a7d4fad54ed325abbec33c817df5c5e",
+      "shot": {
+        "sha256": "4a6feb61ff70b6ca400e76d1a3a052c52a7d4fad54ed325abbec33c817df5c5e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--size-variants",
+        "title": "Core/Button",
+        "name": "Size Variants",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--size-variants__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "aa7bec371f76d490ef7d412ccb1a01b4c5eb88e59fb4b923eccd390d35cd81c7",
+      "shot": {
+        "sha256": "aa7bec371f76d490ef7d412ccb1a01b4c5eb88e59fb4b923eccd390d35cd81c7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--size-variants",
+        "title": "Core/Button",
+        "name": "Size Variants",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--size-variants__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "37c98730e5902916b07039d7c22b099c3018113ff049077949bac154f2bbc948",
+      "shot": {
+        "sha256": "37c98730e5902916b07039d7c22b099c3018113ff049077949bac154f2bbc948",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--size-variants",
+        "title": "Core/Button",
+        "name": "Size Variants",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--size-variants__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cc1ccd9ef5ebe210cfd2e2edaca924fd21832bcddb3b8ccac029cf0b7713cc4b",
+      "shot": {
+        "sha256": "cc1ccd9ef5ebe210cfd2e2edaca924fd21832bcddb3b8ccac029cf0b7713cc4b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--size-variants",
+        "title": "Core/Button",
+        "name": "Size Variants",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--size-variants__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4d49bc3ba804b3a6ab2f1bf2a6e86fa37700029b6733ba748943648b5ab276f6",
+      "shot": {
+        "sha256": "4d49bc3ba804b3a6ab2f1bf2a6e86fa37700029b6733ba748943648b5ab276f6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--size-variants",
+        "title": "Core/Button",
+        "name": "Size Variants",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--size-variants__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0709214bff62c7257295b5c4384af2dd215a62387af7f79200eb3884a36dacb6",
+      "shot": {
+        "sha256": "0709214bff62c7257295b5c4384af2dd215a62387af7f79200eb3884a36dacb6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--size-variants",
+        "title": "Core/Button",
+        "name": "Size Variants",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--size-variants__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "257699d49b9a67764e257499986a12ed604526d5449af054fdc093932d092c16",
+      "shot": {
+        "sha256": "257699d49b9a67764e257499986a12ed604526d5449af054fdc093932d092c16",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--size-variants",
+        "title": "Core/Button",
+        "name": "Size Variants",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--size-variants__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "50e95453230860622246174339b8ee9182265866d24389f4e046c499dc0e802f",
+      "shot": {
+        "sha256": "50e95453230860622246174339b8ee9182265866d24389f4e046c499dc0e802f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--size-variants",
+        "title": "Core/Button",
+        "name": "Size Variants",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--size-variants__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7dc240eb011de302a2576a134a2242efe65fe5b463707b663d56b4ff5a74286f",
+      "shot": {
+        "sha256": "7dc240eb011de302a2576a134a2242efe65fe5b463707b663d56b4ff5a74286f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--size-variants",
+        "title": "Core/Button",
+        "name": "Size Variants",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--size-variants__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bb6aa44ecde1a3c70ffaf05212973b9ce9bf8496d3e241468e6bde1c694d86e7",
+      "shot": {
+        "sha256": "bb6aa44ecde1a3c70ffaf05212973b9ce9bf8496d3e241468e6bde1c694d86e7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--size-variants",
+        "title": "Core/Button",
+        "name": "Size Variants",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--size-variants__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0c6a47210dd8c7dd0f7f26069565e0bdf3590d7c534e964a17eca45631351be9",
+      "shot": {
+        "sha256": "0c6a47210dd8c7dd0f7f26069565e0bdf3590d7c534e964a17eca45631351be9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--size-variants",
+        "title": "Core/Button",
+        "name": "Size Variants",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--size-variants__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5f1b61d96fa189632f038faf2777d99e96bf08aea461c6d48a38a338158505ad",
+      "shot": {
+        "sha256": "5f1b61d96fa189632f038faf2777d99e96bf08aea461c6d48a38a338158505ad",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--size-variants",
+        "title": "Core/Button",
+        "name": "Size Variants",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--size-variants__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8ba9164f7e84cab3116259dcde39e08f051396d764860a16ab5d5611d44ab68d",
+      "shot": {
+        "sha256": "8ba9164f7e84cab3116259dcde39e08f051396d764860a16ab5d5611d44ab68d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--size-variants",
+        "title": "Core/Button",
+        "name": "Size Variants",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-only__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "564b590131dd2b6b1fd3fb196e2bc2893d43909ba0da80fb29430928ce86133a",
+      "shot": {
+        "sha256": "564b590131dd2b6b1fd3fb196e2bc2893d43909ba0da80fb29430928ce86133a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-only",
+        "title": "Core/Button",
+        "name": "Icon Only",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-only__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e79b2e9e1664519e74687d8bcc89b88ca65ff6af09b4d8b6a617c5766580e475",
+      "shot": {
+        "sha256": "e79b2e9e1664519e74687d8bcc89b88ca65ff6af09b4d8b6a617c5766580e475",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-only",
+        "title": "Core/Button",
+        "name": "Icon Only",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-only__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b86c09f30d629126d683caceccdebc7c236db80be7f73607f810496a6c8fcae0",
+      "shot": {
+        "sha256": "b86c09f30d629126d683caceccdebc7c236db80be7f73607f810496a6c8fcae0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-only",
+        "title": "Core/Button",
+        "name": "Icon Only",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-only__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "78139929e838b421ee8c3b794e1839a511db7c1a111fc513b6d5814da8c67358",
+      "shot": {
+        "sha256": "78139929e838b421ee8c3b794e1839a511db7c1a111fc513b6d5814da8c67358",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-only",
+        "title": "Core/Button",
+        "name": "Icon Only",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-only__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "26d91c6bcead0f624d0971f02ef1ad33a37d8120da4df15ba36428b9781d3d74",
+      "shot": {
+        "sha256": "26d91c6bcead0f624d0971f02ef1ad33a37d8120da4df15ba36428b9781d3d74",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-only",
+        "title": "Core/Button",
+        "name": "Icon Only",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-only__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "72019468402ecd639929f5046a834c2f7cddfe8f27590973bccdafa3d7f14f71",
+      "shot": {
+        "sha256": "72019468402ecd639929f5046a834c2f7cddfe8f27590973bccdafa3d7f14f71",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-only",
+        "title": "Core/Button",
+        "name": "Icon Only",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-only__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a642ce8edf46174d8b75cde6a9d4ce70b66e034aff03e0c4fe6a2c9d05d4e623",
+      "shot": {
+        "sha256": "a642ce8edf46174d8b75cde6a9d4ce70b66e034aff03e0c4fe6a2c9d05d4e623",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-only",
+        "title": "Core/Button",
+        "name": "Icon Only",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-only__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d3f9d569cce7f51eff7dc8394d17d1600ba55b6dc10bf1db70de7b1d839ffb40",
+      "shot": {
+        "sha256": "d3f9d569cce7f51eff7dc8394d17d1600ba55b6dc10bf1db70de7b1d839ffb40",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-only",
+        "title": "Core/Button",
+        "name": "Icon Only",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-only__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5204e42da138b2231d488852fdbbfd0a1640bde0df293631468ac73048a7e8e3",
+      "shot": {
+        "sha256": "5204e42da138b2231d488852fdbbfd0a1640bde0df293631468ac73048a7e8e3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-only",
+        "title": "Core/Button",
+        "name": "Icon Only",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-only__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2653fd5bb7b6420c48983ce9c6df765f0a7eefba956f847194872e6f9f07a45b",
+      "shot": {
+        "sha256": "2653fd5bb7b6420c48983ce9c6df765f0a7eefba956f847194872e6f9f07a45b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-only",
+        "title": "Core/Button",
+        "name": "Icon Only",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-only__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e7cc70d52bd586609fcd7ddf093a05b515b90e06c2260474a596de57cbfc9f7c",
+      "shot": {
+        "sha256": "e7cc70d52bd586609fcd7ddf093a05b515b90e06c2260474a596de57cbfc9f7c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-only",
+        "title": "Core/Button",
+        "name": "Icon Only",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-only__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6e074ad5ae02bd62e02f691e48becbb04b3966e9ab1ea16e313adfd2ac088929",
+      "shot": {
+        "sha256": "6e074ad5ae02bd62e02f691e48becbb04b3966e9ab1ea16e313adfd2ac088929",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-only",
+        "title": "Core/Button",
+        "name": "Icon Only",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-only__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "312bfcaea6977f1bccbcee7b251ee284e4ff88e0e9608ca123e803f307bd2958",
+      "shot": {
+        "sha256": "312bfcaea6977f1bccbcee7b251ee284e4ff88e0e9608ca123e803f307bd2958",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-only",
+        "title": "Core/Button",
+        "name": "Icon Only",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-only__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ec7acbf74718a72002ed921b66c536f945088d8174f96bc44f612b703c1736ff",
+      "shot": {
+        "sha256": "ec7acbf74718a72002ed921b66c536f945088d8174f96bc44f612b703c1736ff",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-only",
+        "title": "Core/Button",
+        "name": "Icon Only",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-with-text__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bb85813c6a9e5c04bd8c3822a7fd66364e346c9cf13c11468b42cc1deaa1dfbf",
+      "shot": {
+        "sha256": "bb85813c6a9e5c04bd8c3822a7fd66364e346c9cf13c11468b42cc1deaa1dfbf",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-with-text",
+        "title": "Core/Button",
+        "name": "Icon With Text",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-with-text__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4e07dd879c3722d707442595850f8fcab20b418ba13e05913be246d7f172d9ca",
+      "shot": {
+        "sha256": "4e07dd879c3722d707442595850f8fcab20b418ba13e05913be246d7f172d9ca",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-with-text",
+        "title": "Core/Button",
+        "name": "Icon With Text",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-with-text__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c2a6f81b8bf2c0f749108098e65c4adb0b7f3e8ab31b4edcc63bc6fe21a24a6a",
+      "shot": {
+        "sha256": "c2a6f81b8bf2c0f749108098e65c4adb0b7f3e8ab31b4edcc63bc6fe21a24a6a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-with-text",
+        "title": "Core/Button",
+        "name": "Icon With Text",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-with-text__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b5a7aa06793a657bee4f16470b265eec6fe3b6affd1c5b59145ca09f93e0405b",
+      "shot": {
+        "sha256": "b5a7aa06793a657bee4f16470b265eec6fe3b6affd1c5b59145ca09f93e0405b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-with-text",
+        "title": "Core/Button",
+        "name": "Icon With Text",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-with-text__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "874cdcc3553d9d9bd934a4b69afcf6678d75f4fde2a8b3c1f8431082cf1dc6e5",
+      "shot": {
+        "sha256": "874cdcc3553d9d9bd934a4b69afcf6678d75f4fde2a8b3c1f8431082cf1dc6e5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-with-text",
+        "title": "Core/Button",
+        "name": "Icon With Text",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-with-text__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2260f5340e090f38d2899f99e90adfb0f1fdf26b12c06482ec1f5842a0ccd765",
+      "shot": {
+        "sha256": "2260f5340e090f38d2899f99e90adfb0f1fdf26b12c06482ec1f5842a0ccd765",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-with-text",
+        "title": "Core/Button",
+        "name": "Icon With Text",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-with-text__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8ae7ba369c44654cd8e82e5181c161038be42b811cc3b7304950a6523ad2affa",
+      "shot": {
+        "sha256": "8ae7ba369c44654cd8e82e5181c161038be42b811cc3b7304950a6523ad2affa",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-with-text",
+        "title": "Core/Button",
+        "name": "Icon With Text",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-with-text__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "303777dbd133244b8eb098436c07105a5fe987581bb4785c96c92d0aa4208f1d",
+      "shot": {
+        "sha256": "303777dbd133244b8eb098436c07105a5fe987581bb4785c96c92d0aa4208f1d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-with-text",
+        "title": "Core/Button",
+        "name": "Icon With Text",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-with-text__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9bf0a67d773b867e15379144869459e17fe73922095eb1da877bf00afa7798e9",
+      "shot": {
+        "sha256": "9bf0a67d773b867e15379144869459e17fe73922095eb1da877bf00afa7798e9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-with-text",
+        "title": "Core/Button",
+        "name": "Icon With Text",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-with-text__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a02b9c76d9b7e9ac856ac19b0e2a549cac8e8f85e8121566c48e2862d2ef9f8a",
+      "shot": {
+        "sha256": "a02b9c76d9b7e9ac856ac19b0e2a549cac8e8f85e8121566c48e2862d2ef9f8a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-with-text",
+        "title": "Core/Button",
+        "name": "Icon With Text",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-with-text__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "27193029a4d179f52ed2a4c8aa703679d06f2272ed5dbd0bbe27cdac9da639e3",
+      "shot": {
+        "sha256": "27193029a4d179f52ed2a4c8aa703679d06f2272ed5dbd0bbe27cdac9da639e3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-with-text",
+        "title": "Core/Button",
+        "name": "Icon With Text",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-with-text__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a35bdad7e2523dab6f05375bd8b6175f848952ab427938091db37b4bbdcb3af5",
+      "shot": {
+        "sha256": "a35bdad7e2523dab6f05375bd8b6175f848952ab427938091db37b4bbdcb3af5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-with-text",
+        "title": "Core/Button",
+        "name": "Icon With Text",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--with-end-slot__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ce9858475d8f8fbae1f9df4082c5b9cb55f7ad2e661b136133328194b91ca22d",
+      "shot": {
+        "sha256": "ce9858475d8f8fbae1f9df4082c5b9cb55f7ad2e661b136133328194b91ca22d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--with-end-slot",
+        "title": "Core/Button",
+        "name": "With End Slot",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--with-end-slot__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9705c035f39ac87f47f1063a31f187a536518d9c257022669d82fe6d23ba62d9",
+      "shot": {
+        "sha256": "9705c035f39ac87f47f1063a31f187a536518d9c257022669d82fe6d23ba62d9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--with-end-slot",
+        "title": "Core/Button",
+        "name": "With End Slot",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--with-end-slot__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f0e3c36ad948b596cd5e8c96b4dcbfaa0ad3ae48f7f6f2e265c5f85d9e74366e",
+      "shot": {
+        "sha256": "f0e3c36ad948b596cd5e8c96b4dcbfaa0ad3ae48f7f6f2e265c5f85d9e74366e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--with-end-slot",
+        "title": "Core/Button",
+        "name": "With End Slot",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--with-end-slot__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "88f59931184fa25b7573dd6ca2ccd238a05b71f1845051b92c36bc71abbe820d",
+      "shot": {
+        "sha256": "88f59931184fa25b7573dd6ca2ccd238a05b71f1845051b92c36bc71abbe820d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--with-end-slot",
+        "title": "Core/Button",
+        "name": "With End Slot",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--with-end-slot__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0e504c0f29b82c47e6b3c147fd4655e644ef8d6678e14efcc4a2e441f77cccc9",
+      "shot": {
+        "sha256": "0e504c0f29b82c47e6b3c147fd4655e644ef8d6678e14efcc4a2e441f77cccc9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--with-end-slot",
+        "title": "Core/Button",
+        "name": "With End Slot",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--with-end-slot__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0be205146d98392411c6a70a533536c8094be4ad484d2ae1c71ad49a73990e14",
+      "shot": {
+        "sha256": "0be205146d98392411c6a70a533536c8094be4ad484d2ae1c71ad49a73990e14",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--with-end-slot",
+        "title": "Core/Button",
+        "name": "With End Slot",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--with-end-slot__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c84644fd3479d10ec78430c0bbca0e0f2bfeff992aac07a962fbd21df4614e3d",
+      "shot": {
+        "sha256": "c84644fd3479d10ec78430c0bbca0e0f2bfeff992aac07a962fbd21df4614e3d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--with-end-slot",
+        "title": "Core/Button",
+        "name": "With End Slot",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--with-end-slot__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fcb057e87f0533ba16006c6ceed1247e7e3235330b7d91cbc059ca4351213f33",
+      "shot": {
+        "sha256": "fcb057e87f0533ba16006c6ceed1247e7e3235330b7d91cbc059ca4351213f33",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--with-end-slot",
+        "title": "Core/Button",
+        "name": "With End Slot",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--with-end-slot__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "20b61a2132dc8f49f3b657ba7c7963bded45310e5bcf78281a8a143256400ae1",
+      "shot": {
+        "sha256": "20b61a2132dc8f49f3b657ba7c7963bded45310e5bcf78281a8a143256400ae1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--with-end-slot",
+        "title": "Core/Button",
+        "name": "With End Slot",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--with-end-slot__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "21f5861ff397e0fec6cf74ee8e55d7c07faa93e5d9925e4a57ed3d7375afa3d9",
+      "shot": {
+        "sha256": "21f5861ff397e0fec6cf74ee8e55d7c07faa93e5d9925e4a57ed3d7375afa3d9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--with-end-slot",
+        "title": "Core/Button",
+        "name": "With End Slot",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--with-end-slot__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0b98c6c0888fc7aee088a1af445a2ece974af21dbaab84fff43b5f2734e7c361",
+      "shot": {
+        "sha256": "0b98c6c0888fc7aee088a1af445a2ece974af21dbaab84fff43b5f2734e7c361",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--with-end-slot",
+        "title": "Core/Button",
+        "name": "With End Slot",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--with-end-slot__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "48696207927676829edb492181aca9e49654dfddbf34bd259499b55d9efabf1c",
+      "shot": {
+        "sha256": "48696207927676829edb492181aca9e49654dfddbf34bd259499b55d9efabf1c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--with-end-slot",
+        "title": "Core/Button",
+        "name": "With End Slot",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--with-end-slot__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e261eab34ab7376b5e68c817de111dce0bd7dcae6ed53422c76cb309c4f9dd55",
+      "shot": {
+        "sha256": "e261eab34ab7376b5e68c817de111dce0bd7dcae6ed53422c76cb309c4f9dd55",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--with-end-slot",
+        "title": "Core/Button",
+        "name": "With End Slot",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--with-end-slot__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ae2af7216dfc4103ba73beb76f9143c93a56ea0ec87928d0e253d4941ad2b1fa",
+      "shot": {
+        "sha256": "ae2af7216dfc4103ba73beb76f9143c93a56ea0ec87928d0e253d4941ad2b1fa",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--with-end-slot",
+        "title": "Core/Button",
+        "name": "With End Slot",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-and-end-slot__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7fa3a0e7c7846fab1f6bf2911b233b29a39759b1a35ba0b4020f94944b83e96d",
+      "shot": {
+        "sha256": "7fa3a0e7c7846fab1f6bf2911b233b29a39759b1a35ba0b4020f94944b83e96d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-and-end-slot",
+        "title": "Core/Button",
+        "name": "Icon And End Slot",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-and-end-slot__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "35784ea3a1e60be00b0c7e146ec16cb85eaa06672ff2ebcc8992d9c70d65051f",
+      "shot": {
+        "sha256": "35784ea3a1e60be00b0c7e146ec16cb85eaa06672ff2ebcc8992d9c70d65051f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-and-end-slot",
+        "title": "Core/Button",
+        "name": "Icon And End Slot",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-and-end-slot__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6aa823de85610be48b333c6dcb0e9814ab0d663fcb310abef356be2ab0b3511c",
+      "shot": {
+        "sha256": "6aa823de85610be48b333c6dcb0e9814ab0d663fcb310abef356be2ab0b3511c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-and-end-slot",
+        "title": "Core/Button",
+        "name": "Icon And End Slot",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-and-end-slot__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bd92591c6e4a82fa34061b7a4b46dcee7ab6bf5b10661382587cba3cf885e161",
+      "shot": {
+        "sha256": "bd92591c6e4a82fa34061b7a4b46dcee7ab6bf5b10661382587cba3cf885e161",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-and-end-slot",
+        "title": "Core/Button",
+        "name": "Icon And End Slot",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-and-end-slot__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c2bafa1d96805e925331af4f22cafbb637debc33dc758e1eec1f2c4c424cbd33",
+      "shot": {
+        "sha256": "c2bafa1d96805e925331af4f22cafbb637debc33dc758e1eec1f2c4c424cbd33",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-and-end-slot",
+        "title": "Core/Button",
+        "name": "Icon And End Slot",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-and-end-slot__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f8197fd4e1494281f41502ca2695600ed99fa706c5833ad4ca411727133b76d8",
+      "shot": {
+        "sha256": "f8197fd4e1494281f41502ca2695600ed99fa706c5833ad4ca411727133b76d8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-and-end-slot",
+        "title": "Core/Button",
+        "name": "Icon And End Slot",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-and-end-slot__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1f460050787b365c0fb86a0df78fde1635516c9cc409ec795fe26a434afd7973",
+      "shot": {
+        "sha256": "1f460050787b365c0fb86a0df78fde1635516c9cc409ec795fe26a434afd7973",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-and-end-slot",
+        "title": "Core/Button",
+        "name": "Icon And End Slot",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-and-end-slot__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4dd5d277789127e9e2fc4169812c0add413fee5ae68ac328c717c20b4366177e",
+      "shot": {
+        "sha256": "4dd5d277789127e9e2fc4169812c0add413fee5ae68ac328c717c20b4366177e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-and-end-slot",
+        "title": "Core/Button",
+        "name": "Icon And End Slot",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-and-end-slot__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b659082aa43a4e4d9020f9b69073954680e042a56c2bd8791cb43422f31d2534",
+      "shot": {
+        "sha256": "b659082aa43a4e4d9020f9b69073954680e042a56c2bd8791cb43422f31d2534",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-and-end-slot",
+        "title": "Core/Button",
+        "name": "Icon And End Slot",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-and-end-slot__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b718b42582165a5e4e7cb6b4976290461b50c2d757134b8d17d456f5469b5eae",
+      "shot": {
+        "sha256": "b718b42582165a5e4e7cb6b4976290461b50c2d757134b8d17d456f5469b5eae",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-and-end-slot",
+        "title": "Core/Button",
+        "name": "Icon And End Slot",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-and-end-slot__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3c8029f42e320a23d271c63eebcb6cec950b0df4c96241285cd7dafe154edc51",
+      "shot": {
+        "sha256": "3c8029f42e320a23d271c63eebcb6cec950b0df4c96241285cd7dafe154edc51",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-and-end-slot",
+        "title": "Core/Button",
+        "name": "Icon And End Slot",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-and-end-slot__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "866afc720bfd39d86b8a2cde8a18b75b8101e3f07ede6114b44a8af843a3ad74",
+      "shot": {
+        "sha256": "866afc720bfd39d86b8a2cde8a18b75b8101e3f07ede6114b44a8af843a3ad74",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-and-end-slot",
+        "title": "Core/Button",
+        "name": "Icon And End Slot",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-and-end-slot__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a60c3b4ee3a4bdbeefd1ad9da3b5e3e286ae9a81432859bfc58e845c82d35356",
+      "shot": {
+        "sha256": "a60c3b4ee3a4bdbeefd1ad9da3b5e3e286ae9a81432859bfc58e845c82d35356",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-and-end-slot",
+        "title": "Core/Button",
+        "name": "Icon And End Slot",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--icon-and-end-slot__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "27437da731f760798eeaa98b3e8710a30ef0c32d4c539a1612a9919bf3ff89b5",
+      "shot": {
+        "sha256": "27437da731f760798eeaa98b3e8710a30ef0c32d4c539a1612a9919bf3ff89b5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--icon-and-end-slot",
+        "title": "Core/Button",
+        "name": "Icon And End Slot",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--all-variants__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e069beb2bf1019588a1d5d31f9a2330fb84db98c668effcf914cc632acae401c",
+      "shot": {
+        "sha256": "e069beb2bf1019588a1d5d31f9a2330fb84db98c668effcf914cc632acae401c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--all-variants",
+        "title": "Core/Button",
+        "name": "All Variants",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--all-variants__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "638f536e4e217f7cf68bbf18578dfe5d08d9f1943eaaf3a8e454839391d190ce",
+      "shot": {
+        "sha256": "638f536e4e217f7cf68bbf18578dfe5d08d9f1943eaaf3a8e454839391d190ce",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--all-variants",
+        "title": "Core/Button",
+        "name": "All Variants",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--all-variants__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9bf3ce0ed133f3c9aedc992a1b77bb6715b8f97fff7c1e4ab4dc634ff06aeecb",
+      "shot": {
+        "sha256": "9bf3ce0ed133f3c9aedc992a1b77bb6715b8f97fff7c1e4ab4dc634ff06aeecb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--all-variants",
+        "title": "Core/Button",
+        "name": "All Variants",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--all-variants__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "26d7267802fde284c62114b7135c799ea92035d512fcd7ea39c0bab458696c58",
+      "shot": {
+        "sha256": "26d7267802fde284c62114b7135c799ea92035d512fcd7ea39c0bab458696c58",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--all-variants",
+        "title": "Core/Button",
+        "name": "All Variants",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--all-variants__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d43e2c50ad8de0a639e03ea099c93623e4f83d49c6b07f5ef88290722ebe5c52",
+      "shot": {
+        "sha256": "d43e2c50ad8de0a639e03ea099c93623e4f83d49c6b07f5ef88290722ebe5c52",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--all-variants",
+        "title": "Core/Button",
+        "name": "All Variants",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--all-variants__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a27aa255dd600f717f3b1441d6f9cd13777dc6bf2b23b27bf4881121b9b433ee",
+      "shot": {
+        "sha256": "a27aa255dd600f717f3b1441d6f9cd13777dc6bf2b23b27bf4881121b9b433ee",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--all-variants",
+        "title": "Core/Button",
+        "name": "All Variants",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--all-variants__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1bfa81d2587c5e443b1f13aed3874796feb0cff39be8ba66dd2c8a3a01e09fd8",
+      "shot": {
+        "sha256": "1bfa81d2587c5e443b1f13aed3874796feb0cff39be8ba66dd2c8a3a01e09fd8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--all-variants",
+        "title": "Core/Button",
+        "name": "All Variants",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--all-variants__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fcb7edd65cf6b827546bb98ba5dc11e3ea9ace042b2162ebef4824edfb51fe6d",
+      "shot": {
+        "sha256": "fcb7edd65cf6b827546bb98ba5dc11e3ea9ace042b2162ebef4824edfb51fe6d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--all-variants",
+        "title": "Core/Button",
+        "name": "All Variants",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--link-button__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "409b4af1dc206acf777916a1451dbbb9a6d89a0e8d9446086c3027b0529d0a34",
+      "shot": {
+        "sha256": "409b4af1dc206acf777916a1451dbbb9a6d89a0e8d9446086c3027b0529d0a34",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--link-button",
+        "title": "Core/Button",
+        "name": "Link Button",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--link-button__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "66415046b2c103f899e3a6f4a6dadfb1f17d624a5e19441eaea20ffe494db82b",
+      "shot": {
+        "sha256": "66415046b2c103f899e3a6f4a6dadfb1f17d624a5e19441eaea20ffe494db82b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--link-button",
+        "title": "Core/Button",
+        "name": "Link Button",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--link-button__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6b0e502f2a9d6ec983e9d1e52cc54c831ed5cd37fa8cfa57ca7ab67429ee8d80",
+      "shot": {
+        "sha256": "6b0e502f2a9d6ec983e9d1e52cc54c831ed5cd37fa8cfa57ca7ab67429ee8d80",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--link-button",
+        "title": "Core/Button",
+        "name": "Link Button",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--link-button__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "acf45bf4cf83fdb229fda1306cac1792c0e3408afe5014df123bc74d9fc6021b",
+      "shot": {
+        "sha256": "acf45bf4cf83fdb229fda1306cac1792c0e3408afe5014df123bc74d9fc6021b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--link-button",
+        "title": "Core/Button",
+        "name": "Link Button",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--link-button__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "945d798fe78c6731ae4926a3e5859c32f48643707394bc70571569b474966f17",
+      "shot": {
+        "sha256": "945d798fe78c6731ae4926a3e5859c32f48643707394bc70571569b474966f17",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--link-button",
+        "title": "Core/Button",
+        "name": "Link Button",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--link-button__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0bb449b39f8f0d33874233ef513d7db761ae060ab6a3288e4d63bb1797a318dc",
+      "shot": {
+        "sha256": "0bb449b39f8f0d33874233ef513d7db761ae060ab6a3288e4d63bb1797a318dc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--link-button",
+        "title": "Core/Button",
+        "name": "Link Button",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--link-button__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7d4669d141cab99f62c074388a90ba2fec891b1310d2deef17a7dc899e2b20b5",
+      "shot": {
+        "sha256": "7d4669d141cab99f62c074388a90ba2fec891b1310d2deef17a7dc899e2b20b5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--link-button",
+        "title": "Core/Button",
+        "name": "Link Button",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--link-button__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d1dd0bc643c81ef90445e3d3f8caa29f1c5ff9a9c243f776a6db871d372f8c0e",
+      "shot": {
+        "sha256": "d1dd0bc643c81ef90445e3d3f8caa29f1c5ff9a9c243f776a6db871d372f8c0e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--link-button",
+        "title": "Core/Button",
+        "name": "Link Button",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--link-button__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d8f0a1e4c7289f99ad9c56aca8fddc1a71267064716d9c7969f4a66ae00f7763",
+      "shot": {
+        "sha256": "d8f0a1e4c7289f99ad9c56aca8fddc1a71267064716d9c7969f4a66ae00f7763",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--link-button",
+        "title": "Core/Button",
+        "name": "Link Button",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--link-button__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "189234c44884cbfad357f7f00d2cacb1b562bcdadaaa5e08e246ffcdb10b1879",
+      "shot": {
+        "sha256": "189234c44884cbfad357f7f00d2cacb1b562bcdadaaa5e08e246ffcdb10b1879",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--link-button",
+        "title": "Core/Button",
+        "name": "Link Button",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--link-button__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ee8c9f4c1899a08c4bf84a1fef502b13222136feac94fbbe010b63b689b472e6",
+      "shot": {
+        "sha256": "ee8c9f4c1899a08c4bf84a1fef502b13222136feac94fbbe010b63b689b472e6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--link-button",
+        "title": "Core/Button",
+        "name": "Link Button",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--link-button__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cd74f20b61ea01ecbb40e02c6a8cca311f14d86071a53972066e3238eedffb81",
+      "shot": {
+        "sha256": "cd74f20b61ea01ecbb40e02c6a8cca311f14d86071a53972066e3238eedffb81",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--link-button",
+        "title": "Core/Button",
+        "name": "Link Button",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--link-button__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "af60ce95303610b76f6f287ef1dc94c3eb107d983b0ddc5f63320cc96bd35666",
+      "shot": {
+        "sha256": "af60ce95303610b76f6f287ef1dc94c3eb107d983b0ddc5f63320cc96bd35666",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--link-button",
+        "title": "Core/Button",
+        "name": "Link Button",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--link-button__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "eb495ea7f5d6ef96e1c41682eb7ac893ace330b73981387f3ec0606cd33a672c",
+      "shot": {
+        "sha256": "eb495ea7f5d6ef96e1c41682eb7ac893ace330b73981387f3ec0606cd33a672c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--link-button",
+        "title": "Core/Button",
+        "name": "Link Button",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--truncation__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "86eaf20a2e5b81840e0f4e195e7e458b5e2464f3d8afd6059ef896d54ca0142c",
+      "shot": {
+        "sha256": "86eaf20a2e5b81840e0f4e195e7e458b5e2464f3d8afd6059ef896d54ca0142c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--truncation",
+        "title": "Core/Button",
+        "name": "Truncation",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--truncation__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9cefeeacc5a3598e50c022261583b7b1ab6d85b396d49e03b26d51f9f294a7c7",
+      "shot": {
+        "sha256": "9cefeeacc5a3598e50c022261583b7b1ab6d85b396d49e03b26d51f9f294a7c7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--truncation",
+        "title": "Core/Button",
+        "name": "Truncation",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--truncation__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a4a0bbeaf5451f0859a5cf89211b748a7804a5aa175654b5d175d6596efcd41d",
+      "shot": {
+        "sha256": "a4a0bbeaf5451f0859a5cf89211b748a7804a5aa175654b5d175d6596efcd41d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--truncation",
+        "title": "Core/Button",
+        "name": "Truncation",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--truncation__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c9206595b6b2468264a99f60778bdc40f47a69d77948e2e6746e0aa36ffac404",
+      "shot": {
+        "sha256": "c9206595b6b2468264a99f60778bdc40f47a69d77948e2e6746e0aa36ffac404",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--truncation",
+        "title": "Core/Button",
+        "name": "Truncation",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--truncation__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "09e5dccc847da87ef1ca12a35047515b1e8b7911827ddda00ec1c7cc97a93f8f",
+      "shot": {
+        "sha256": "09e5dccc847da87ef1ca12a35047515b1e8b7911827ddda00ec1c7cc97a93f8f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--truncation",
+        "title": "Core/Button",
+        "name": "Truncation",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--truncation__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4c61376dc7cabec5cb9a27f1500a71ce9acae3d0dfa9bd01e36933a523527df3",
+      "shot": {
+        "sha256": "4c61376dc7cabec5cb9a27f1500a71ce9acae3d0dfa9bd01e36933a523527df3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--truncation",
+        "title": "Core/Button",
+        "name": "Truncation",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--truncation__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bc7d47359a9bc8ad1ddf68ceb181a282da1f4d905701d38e526f3fd6b774f461",
+      "shot": {
+        "sha256": "bc7d47359a9bc8ad1ddf68ceb181a282da1f4d905701d38e526f3fd6b774f461",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--truncation",
+        "title": "Core/Button",
+        "name": "Truncation",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--truncation__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7365f93ef8a7e2eb42b2322b64994de1d08acd732c8c96f5c2282fe2a942cd93",
+      "shot": {
+        "sha256": "7365f93ef8a7e2eb42b2322b64994de1d08acd732c8c96f5c2282fe2a942cd93",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--truncation",
+        "title": "Core/Button",
+        "name": "Truncation",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--truncation__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d179016bd6caab3cff8d7283f6b0c2df99a72d66955de56eb15c8e40e14111b1",
+      "shot": {
+        "sha256": "d179016bd6caab3cff8d7283f6b0c2df99a72d66955de56eb15c8e40e14111b1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--truncation",
+        "title": "Core/Button",
+        "name": "Truncation",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--truncation__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4fc994b0906163ce9f1457bbf1e16f5dc4173501d0f175273e96520a4fd843f7",
+      "shot": {
+        "sha256": "4fc994b0906163ce9f1457bbf1e16f5dc4173501d0f175273e96520a4fd843f7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--truncation",
+        "title": "Core/Button",
+        "name": "Truncation",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--truncation__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b4dca6f0102b3660f89bfc4b064572a378ff6c24124ac898603be13c985f7b1d",
+      "shot": {
+        "sha256": "b4dca6f0102b3660f89bfc4b064572a378ff6c24124ac898603be13c985f7b1d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--truncation",
+        "title": "Core/Button",
+        "name": "Truncation",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--truncation__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "388f853bef882c90c8306aeb001a07da7746653ce29647762a643da4e80c57a2",
+      "shot": {
+        "sha256": "388f853bef882c90c8306aeb001a07da7746653ce29647762a643da4e80c57a2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--truncation",
+        "title": "Core/Button",
+        "name": "Truncation",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--truncation__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "764f38d9c0292b4d366ace2be1179983ec310f2b63f576c750f3e601a1ada97c",
+      "shot": {
+        "sha256": "764f38d9c0292b4d366ace2be1179983ec310f2b63f576c750f3e601a1ada97c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--truncation",
+        "title": "Core/Button",
+        "name": "Truncation",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--truncation__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e0d9d506ac27342c1d6554fa02eddbfbfa547c556e0a59f691cfb129ec76727e",
+      "shot": {
+        "sha256": "e0d9d506ac27342c1d6554fa02eddbfbfa547c556e0a59f691cfb129ec76727e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--truncation",
+        "title": "Core/Button",
+        "name": "Truncation",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--elevations__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a4fabfd1163e13521fc47875a3b786edef1c01ea69b9b5886388c7b4bb36e534",
+      "shot": {
+        "sha256": "a4fabfd1163e13521fc47875a3b786edef1c01ea69b9b5886388c7b4bb36e534",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--elevations",
+        "title": "Core/Button",
+        "name": "Elevations",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--elevations__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c2043c60a8ed25e0a4e5aaa6e978dde5dae92a8e2dee13096760fff0bef3c8f7",
+      "shot": {
+        "sha256": "c2043c60a8ed25e0a4e5aaa6e978dde5dae92a8e2dee13096760fff0bef3c8f7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--elevations",
+        "title": "Core/Button",
+        "name": "Elevations",
+        "component": "Button",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--elevations__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7c2dd4de3f8def012616e5534c8e8cbec7e3c419ae67b668b1a8ec4e4892d1b2",
+      "shot": {
+        "sha256": "7c2dd4de3f8def012616e5534c8e8cbec7e3c419ae67b668b1a8ec4e4892d1b2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--elevations",
+        "title": "Core/Button",
+        "name": "Elevations",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--elevations__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f6254dfd41c5b09ecaef1ed04bdd8116594afba71d204c595c9708fc649b7cbc",
+      "shot": {
+        "sha256": "f6254dfd41c5b09ecaef1ed04bdd8116594afba71d204c595c9708fc649b7cbc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--elevations",
+        "title": "Core/Button",
+        "name": "Elevations",
+        "component": "Button",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--elevations__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "04c14cd426f3ab9089eca58c82fbfb48b8869fdb8429313767ec91a9015226ad",
+      "shot": {
+        "sha256": "04c14cd426f3ab9089eca58c82fbfb48b8869fdb8429313767ec91a9015226ad",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--elevations",
+        "title": "Core/Button",
+        "name": "Elevations",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--elevations__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "858154f88528db1849c7e33bfa4d5930594c06bda388b20d71f40a2bb1b2f0b9",
+      "shot": {
+        "sha256": "858154f88528db1849c7e33bfa4d5930594c06bda388b20d71f40a2bb1b2f0b9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--elevations",
+        "title": "Core/Button",
+        "name": "Elevations",
+        "component": "Button",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--elevations__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a1fdf0ad05d0858e994d79ee8bd466d5f7373368ef6f8afe634a6d928a5a93b4",
+      "shot": {
+        "sha256": "a1fdf0ad05d0858e994d79ee8bd466d5f7373368ef6f8afe634a6d928a5a93b4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--elevations",
+        "title": "Core/Button",
+        "name": "Elevations",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--elevations__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f77e919ddc87d1ee88dc1028a252ebd14e8aca7eab5b3fd2146fe7802e49c96a",
+      "shot": {
+        "sha256": "f77e919ddc87d1ee88dc1028a252ebd14e8aca7eab5b3fd2146fe7802e49c96a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--elevations",
+        "title": "Core/Button",
+        "name": "Elevations",
+        "component": "Button",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--elevations__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "44bd4e99780a78a0a4dd1885c88ea170622a83a4bf0966cebe9a6d01a6b7fa73",
+      "shot": {
+        "sha256": "44bd4e99780a78a0a4dd1885c88ea170622a83a4bf0966cebe9a6d01a6b7fa73",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--elevations",
+        "title": "Core/Button",
+        "name": "Elevations",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--elevations__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6356d2dd993f6a820da3a7b354b2d27a0d67e9d29c1134eb5f85c73b81112ac8",
+      "shot": {
+        "sha256": "6356d2dd993f6a820da3a7b354b2d27a0d67e9d29c1134eb5f85c73b81112ac8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--elevations",
+        "title": "Core/Button",
+        "name": "Elevations",
+        "component": "Button",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--elevations__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b55515639e7486e372cd52dc14030170d059d56d03dc5af68135a59e6a5530c1",
+      "shot": {
+        "sha256": "b55515639e7486e372cd52dc14030170d059d56d03dc5af68135a59e6a5530c1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--elevations",
+        "title": "Core/Button",
+        "name": "Elevations",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--elevations__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0ddfc3683b51b22b12eb5ffb4a9f327164c07d1ec1c105be7f524f298db94535",
+      "shot": {
+        "sha256": "0ddfc3683b51b22b12eb5ffb4a9f327164c07d1ec1c105be7f524f298db94535",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--elevations",
+        "title": "Core/Button",
+        "name": "Elevations",
+        "component": "Button",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--elevations__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9b74111a1f34b4b6697895be413d28fa1c48862ae7195aca731ac300779405f2",
+      "shot": {
+        "sha256": "9b74111a1f34b4b6697895be413d28fa1c48862ae7195aca731ac300779405f2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--elevations",
+        "title": "Core/Button",
+        "name": "Elevations",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-button--elevations__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9b65e7bb412c96e9f822174087cff2e3d90a7db47d19c2400d9a3daff47665b0",
+      "shot": {
+        "sha256": "9b65e7bb412c96e9f822174087cff2e3d90a7db47d19c2400d9a3daff47665b0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-button--elevations",
+        "title": "Core/Button",
+        "name": "Elevations",
+        "component": "Button",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    }
+  ],
+  "decision": {
+    "approver": "rubyycheung",
+    "approverId": 254546175,
+    "permission": "write",
+    "effectivePermission": "maintain",
+    "roleName": "Repo Owner",
+    "reason": "Loading buttons intentionally retain full visual contrast while remaining non-interactive; explicitly disabled buttons stay dimmed across all themes.",
+    "commentId": 5470732254,
+    "at": "2026-08-30T19:21:04.424Z"
+  }
+}

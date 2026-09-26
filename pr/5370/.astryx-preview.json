@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 5370,
+    "headSha": "a573007da41ec1cfbe4a62bcdea40c8a57e61fec",
+    "headRef": "docs/lint-assets-docs-our-process-words",
+    "headRepository": "HelloOjasMutreja/astryx",
+    "headRepositoryId": "1309798825"
+  },
+  "sourceRun": {
+    "id": 36248073095,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/5370/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/5370/sandbox/",
+      "indexSha256": "423f4ec02a37789747796af2d08e62a8b147f3d2cf7e73d073db963b63ae940a"
+    }
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-21T13:56:43.551Z",
+  "context": {
+    "sha": "416583d2b19840ced486f7b869826a966b8d7c75",
+    "runId": "35599906535",
+    "runAttempt": "1",
+    "headSha": "416583d2b19840ced486f7b869826a966b8d7c75",
+    "baseSha": "20777236fb41228ea370c3af52c11167ea1433f3",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Chat"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Chat/ChatComposerInput.tsx",
+        "packages/core/src/Chat/ChatTokenizedText.tsx",
+        "packages/core/src/Chat/useChatComposerTokens.ts"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-12T01:13:50.430Z",
+    "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 2,
+    "unchanged": 2,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

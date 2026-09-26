@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6517,
+    "headSha": "2c8abfc41b7721f6990cd33ed3d479cda8f16450",
+    "headRef": "cli-spec/doctor-gap/doctor-help-exit-codes",
+    "headRepository": "facebook/astryx",
+    "headRepositoryId": "1131202426"
+  },
+  "sourceRun": {
+    "id": 35967978383,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/6517/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": false,
+      "path": "pr/6517/sandbox/",
+      "indexSha256": null
+    }
+  }
+}

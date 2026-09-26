@@ -1,0 +1,62 @@
+{
+  "cwm-3": {
+    "astryx": "previews/cwm-3/astryx.html",
+    "baseline": "previews/cwm-3/baseline.html",
+    "html": "previews/cwm-3/html.html",
+    "astryx-tailwind": "previews/cwm-3/astryx-tailwind.html"
+  },
+  "dd-1": {
+    "astryx": "previews/dd-1/astryx.html",
+    "baseline": "previews/dd-1/baseline.html",
+    "html": "previews/dd-1/html.html",
+    "astryx-tailwind": "previews/dd-1/astryx-tailwind.html"
+  },
+  "fwc-3": {
+    "astryx": "previews/fwc-3/astryx.html",
+    "baseline": "previews/fwc-3/baseline.html",
+    "html": "previews/fwc-3/html.html",
+    "astryx-tailwind": "previews/fwc-3/astryx-tailwind.html"
+  },
+  "io-4": {
+    "astryx": "previews/io-4/astryx.html",
+    "baseline": "previews/io-4/baseline.html",
+    "html": "previews/io-4/html.html",
+    "astryx-tailwind": "previews/io-4/astryx-tailwind.html"
+  },
+  "ps-1": {
+    "astryx": "previews/ps-1/astryx.html",
+    "baseline": "previews/ps-1/baseline.html",
+    "html": "previews/ps-1/html.html",
+    "astryx-tailwind": "previews/ps-1/astryx-tailwind.html"
+  },
+  "rc-3": {
+    "astryx": "previews/rc-3/astryx.html",
+    "baseline": "previews/rc-3/baseline.html",
+    "html": "previews/rc-3/html.html",
+    "astryx-tailwind": "previews/rc-3/astryx-tailwind.html"
+  },
+  "sd-4": {
+    "astryx": "previews/sd-4/astryx.html",
+    "baseline": "previews/sd-4/baseline.html",
+    "html": "previews/sd-4/html.html",
+    "astryx-tailwind": "previews/sd-4/astryx-tailwind.html"
+  },
+  "tc-6": {
+    "astryx": "previews/tc-6/astryx.html",
+    "baseline": "previews/tc-6/baseline.html",
+    "html": "previews/tc-6/html.html",
+    "astryx-tailwind": "previews/tc-6/astryx-tailwind.html"
+  },
+  "ty-4": {
+    "astryx": "previews/ty-4/astryx.html",
+    "baseline": "previews/ty-4/baseline.html",
+    "html": "previews/ty-4/html.html",
+    "astryx-tailwind": "previews/ty-4/astryx-tailwind.html"
+  },
+  "wd-3": {
+    "astryx": "previews/wd-3/astryx.html",
+    "baseline": "previews/wd-3/baseline.html",
+    "html": "previews/wd-3/html.html",
+    "astryx-tailwind": "previews/wd-3/astryx-tailwind.html"
+  }
+}

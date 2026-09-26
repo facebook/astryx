@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-20T05:46:05.833Z",
+  "context": {
+    "sha": "2647823379c58914b584700533216b9303f579fd",
+    "runId": "35489166371",
+    "runAttempt": "1",
+    "headSha": "2647823379c58914b584700533216b9303f579fd",
+    "baseSha": "b09d120ab04530dc0f03b5e0a594751ad8595369",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "MultiSelector"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/MultiSelector/MultiSelector.tsx",
+        "packages/core/src/MultiSelector/__tests__/MultiSelector.a11y.chromium.spec.ts"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-12T01:13:50.430Z",
+    "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 2,
+    "unchanged": 2,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

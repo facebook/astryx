@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 4121,
+    "headSha": "aa7f7a1755e8e07176e1186612417192a282956b",
+    "headRef": "ak-4102-chat-windowing",
+    "headRepository": "AKnassa/astryx",
+    "headRepositoryId": "1286656571"
+  },
+  "sourceRun": {
+    "id": 36217678180,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/4121/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/4121/sandbox/",
+      "indexSha256": "98f2df4ca77373b8bfc0a6ff0b5fa2048eab1907894b8124153933dc6ab66d36"
+    }
+  }
+}

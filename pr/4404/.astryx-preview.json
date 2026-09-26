@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 4404,
+    "headSha": "5f2d7b6ad0a345026be04cc4355077427f27c97a",
+    "headRef": "ak-4029-i18n-translator-adapter",
+    "headRepository": "AKnassa/astryx",
+    "headRepositoryId": "1286656571"
+  },
+  "sourceRun": {
+    "id": 36217753523,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/4404/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/4404/sandbox/",
+      "indexSha256": "f77da18104e26228bbd8cbe9f426fc737cfc847a5bcf76a6c58597078870ff25"
+    }
+  }
+}

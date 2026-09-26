@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-23T22:56:22.723Z",
+  "context": {
+    "sha": "025edd05be1123d613513d81e23a9727477444f3",
+    "runId": "35923607373",
+    "runAttempt": "1",
+    "headSha": "025edd05be1123d613513d81e23a9727477444f3",
+    "baseSha": "158512f79464dd7b87e08337b84698267e327571",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "BottomSheet",
+        "Dialog",
+        "Layer",
+        "Lightbox",
+        "MobileNav",
+        "Toast"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/BottomSheet/BottomSheetPanel.tsx",
+        "packages/core/src/Dialog/Dialog.tsx",
+        "packages/core/src/Layer/layerTextReset.stylex.ts",
+        "packages/core/src/Layer/useLayer.tsx",
+        "packages/core/src/Lightbox/Lightbox.tsx",
+        "packages/core/src/MobileNav/MobileNav.tsx",
+        "packages/core/src/Toast/ToastViewport.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": [
+        "@astryxdesign/lab"
+      ]
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-23T17:22:32.329Z",
+    "sha": "6edfa8c14d7cf0464a3a0bd6ff191a491c0b432e",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 10,
+    "unchanged": 10,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

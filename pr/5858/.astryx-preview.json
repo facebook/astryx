@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 5858,
+    "headSha": "0e925045a40ff3168fc0425de8fd8ebc1998d4df",
+    "headRef": "nynexman4464/fix/rtl-audit-svgicon-registry",
+    "headRepository": "facebook/astryx",
+    "headRepositoryId": "1131202426"
+  },
+  "sourceRun": {
+    "id": 33905612511,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/5858/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/5858/sandbox/",
+      "indexSha256": "af64ee5ac62d7a61086983629997ea4f372a9ddcabf32537eac72f86f7119a92"
+    }
+  }
+}

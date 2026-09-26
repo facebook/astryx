@@ -1,0 +1,1 @@
+import{J as e,Z as t}from"./padding.stylex-Dhh1fYrP.js";import"./devWarning-DxuplmRl.js";var n=t(e(),1);function r(e,t,r=!0){let i=(0,n.useRef)(!1);(0,n.useEffect)(()=>{r&&!i.current&&(i.current=!0)},[e,t,r])}export{r as t};

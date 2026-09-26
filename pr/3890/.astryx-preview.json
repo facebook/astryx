@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 3890,
+    "headSha": "b35d6d009d2bbca9da7e713da412b3c62b6c31fe",
+    "headRef": "feat/2331-sidenav-collapsed-width",
+    "headRepository": "AKnassa/astryx",
+    "headRepositoryId": "1286656571"
+  },
+  "sourceRun": {
+    "id": 36217699558,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/3890/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/3890/sandbox/",
+      "indexSha256": "c4c4baa4e310b75b62f0d38357ae8eb18f19a0a2db91e20e3d0ad08deac23489"
+    }
+  }
+}

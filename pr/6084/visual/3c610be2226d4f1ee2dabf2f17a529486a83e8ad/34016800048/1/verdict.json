@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-06T06:56:32.598Z",
+  "context": {
+    "sha": "3c610be2226d4f1ee2dabf2f17a529486a83e8ad",
+    "runId": "34016800048",
+    "runAttempt": "1",
+    "headSha": "3c610be2226d4f1ee2dabf2f17a529486a83e8ad",
+    "baseSha": "bea53b23fa40ae6b1716cc2b099359e0674007be",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "SegmentedControl"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/SegmentedControl/SegmentedControlItem.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-05T07:37:37.596Z",
+    "sha": "18eec1821479f873ff26acc25793186285f85aa0",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 4,
+    "unchanged": 4,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

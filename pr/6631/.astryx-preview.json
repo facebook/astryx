@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6631,
+    "headSha": "378e8b08ce5562fa50388fcd9b939af5b1eb8217",
+    "headRef": "fix/avatar-initials-type-scale",
+    "headRepository": "HelloOjasMutreja/astryx",
+    "headRepositoryId": "1309798825"
+  },
+  "sourceRun": {
+    "id": 36104258359,
+    "attempt": 2,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/6631/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": false,
+      "path": "pr/6631/sandbox/",
+      "indexSha256": null
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "generatedAt": "2026-09-15T13:41:40Z",
+  "sha": "c87f73fb0cedc16c78b60bcbb43e11a8d23af12e",
+  "runId": "34972476739",
+  "runUrl": "https://github.com/facebook/astryx/actions/runs/34972476739",
+  "reportUrl": "https://facebook.github.io/astryx/visual-gate/34972476739/",
+  "visual": {"status": "changed"},
+  "a11y": {"status": "violations", "violations": 103}
+}

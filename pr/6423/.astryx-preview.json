@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6423,
+    "headSha": "cbffd5b1eaad640b93bd8bc433ab04b01018d3f9",
+    "headRef": "fix/chat-composer-ime-caret-anchor",
+    "headRepository": "ManoharPaturi/astryx",
+    "headRepositoryId": "1357470661"
+  },
+  "sourceRun": {
+    "id": 35636388059,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/6423/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6423/sandbox/",
+      "indexSha256": "7fdef09a5a2334beefd24327f28167d957744c27f6b52255f3194f463dc8a93a"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 4415,
+    "headSha": "70f1b003dcf5cae4c16da5c2ed467465af4b080d",
+    "headRef": "ak-808-spacing-usage",
+    "headRepository": "AKnassa/astryx",
+    "headRepositoryId": "1286656571"
+  },
+  "sourceRun": {
+    "id": 36217761859,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/4415/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": false,
+      "path": "pr/4415/sandbox/",
+      "indexSha256": null
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6607,
+    "headSha": "a5ea03b3aed12e7e6b12647ce20b4cdcc0568761",
+    "headRef": "fix/dialog-trigger-capture-on-mount",
+    "headRepository": "ManoharPaturi/astryx",
+    "headRepositoryId": "1357470661"
+  },
+  "sourceRun": {
+    "id": 36045320996,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/6607/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6607/sandbox/",
+      "indexSha256": "6f656bba8f30b869e557d79602f3ffc7c4cf1476f8a20cc93f04127e81609c42"
+    }
+  }
+}

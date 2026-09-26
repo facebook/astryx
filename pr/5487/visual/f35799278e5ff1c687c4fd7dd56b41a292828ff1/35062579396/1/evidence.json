@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5487,
+  "headSha": "f35799278e5ff1c687c4fd7dd56b41a292828ff1",
+  "testedSha": "f35799278e5ff1c687c4fd7dd56b41a292828ff1",
+  "baseSha": "bfee8a4a306cb98eb98a6c3967117efc8d798caf",
+  "run": {
+    "id": 35062579396,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-16T07:35:19.527Z",
+    "context": {
+      "sha": "f35799278e5ff1c687c4fd7dd56b41a292828ff1",
+      "runId": "35062579396",
+      "runAttempt": "1",
+      "headSha": "f35799278e5ff1c687c4fd7dd56b41a292828ff1",
+      "baseSha": "bfee8a4a306cb98eb98a6c3967117efc8d798caf",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "ClickableCard",
+          "SelectableCard",
+          "Thumbnail"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/ClickableCard/ClickableCard.tsx",
+          "packages/core/src/SelectableCard/SelectableCard.tsx",
+          "packages/core/src/Thumbnail/Thumbnail.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-12T01:13:50.430Z",
+      "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 6,
+      "unchanged": 6,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

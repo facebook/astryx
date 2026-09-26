@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6595,
+    "headSha": "aca91247a881c31b5d591af76626060bf0490a15",
+    "headRef": "cli-spec/integrations-discovery/pack-check-theme-identity",
+    "headRepository": "facebook/astryx",
+    "headRepositoryId": "1131202426"
+  },
+  "sourceRun": {
+    "id": 35981981651,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/6595/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": false,
+      "path": "pr/6595/sandbox/",
+      "indexSha256": null
+    }
+  }
+}

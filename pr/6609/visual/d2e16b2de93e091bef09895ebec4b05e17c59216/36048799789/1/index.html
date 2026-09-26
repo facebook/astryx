@@ -1,0 +1,1031 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visual gate — changed</title>
+<style>
+  :root { color-scheme: light dark; --line: color-mix(in oklab, currentColor 15%, transparent); }
+  body { font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 24px; max-width: 1200px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 32px 0 4px; }
+  h3 { font-size: 14px; margin: 0; }
+  .muted { opacity: .6; }
+  .ok { color: #1a7f37; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+  .status { display: inline-block; padding: 2px 10px; border-radius: 999px; font-weight: 600; }
+  .status.pass { background: #1a7f3722; color: #1a7f37; }
+  .status.changed { background: #9a670022; color: #9a6700; }
+  .status.failed { background: #cf222e22; color: #cf222e; }
+  .summary { display: flex; gap: 16px; flex-wrap: wrap; margin: 12px 0 8px; }
+  .summary div { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; min-width: 84px; }
+  .summary b { display: block; font-size: 18px; }
+  .howto { border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; margin: 16px 0; }
+  .change { border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin: 16px 0; }
+  .change header { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: baseline; }
+  .meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .chip, .tag { border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; font-size: 12px; }
+  .tag { opacity: .7; }
+  .chip.warn { border-color: #9a6700; color: #9a6700; }
+  .tabs { display: flex; gap: 4px; margin: 12px 0 8px; }
+  .tabs button { font: inherit; font-size: 12px; padding: 3px 10px; border-radius: 6px; border: 1px solid var(--line); background: transparent; cursor: pointer; }
+  .tabs button.active { background: color-mix(in oklab, currentColor 12%, transparent); font-weight: 600; }
+  .stage img { max-width: 100%; display: block; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+  .stage > div { display: none; }
+  .stage[data-view="wipe"] .wipe, .stage[data-view="before"] .single.before,
+  .stage[data-view="after"] .single.after, .stage[data-view="diff"] .single.diff,
+  .stage[data-view="side"] .side { display: block; }
+  .side { display: none; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .stage[data-view="side"] .side { display: grid; }
+  .side figure { margin: 0; }
+  .side figcaption { font-size: 12px; opacity: .6; margin-bottom: 4px; }
+  .wipe { position: relative; }
+  .wipe .before-clip { position: absolute; inset: 0; overflow: hidden; width: 50%; }
+  .wipe .before-clip img { max-width: none; }
+  .wipe input { position: absolute; left: 0; right: 0; bottom: -6px; width: 100%; }
+  .list ul { margin: 4px 0; padding-left: 20px; }
+  footer code { opacity: .5; }
+</style>
+<h1>Visual gate <span class="status changed">changed</span></h1>
+<p class="muted">
+  85e2fbc528bc31db435163d846e23409e6e5f66c on linux-arm64
+  · baseline 6edfa8c14d7cf0464a3a0bd6ff191a491c0b432e
+  · 2026-09-24T19:57:14.206Z
+</p>
+<div class="summary">
+  <div><b>420</b>shots</div>
+  <div><b>25</b>changed</div>
+  <div><b>50</b>added</div>
+  <div><b>20</b>removed</div>
+  <div><b>0</b>failed</div>
+</div>
+<div class="howto">
+  <b>Changed is not the same as broken.</b> For each change below, decide whether the <em>after</em> is the picture you want.
+  If it is, promote it — that is a valid, recorded outcome:
+  <p><code>Record the visual review on the pull request. Baseline maintenance is an explicit CI dispatch, not a release gate.</code></p>
+  If it is not, the change is a regression: fix it before the release goes out.
+</div>
+
+<h2>Changed (25)</h2>
+
+<section class="change" id="core-chatlayout--full-ai-chat__probe-light">
+  <header>
+    <h3>Chat <span class="muted">·</span> Full AI Chat</h3>
+    <div class="meta">
+      <span class="chip">probe</span>
+      <span class="chip">light</span>
+      <span class="muted">42,708 px (5.213%)</span>
+      
+      <span class="tag">probe</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-chatlayout--full-ai-chat__probe-light">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-chatlayout--full-ai-chat__probe-light.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-chatlayout--full-ai-chat__probe-light.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-chatlayout--full-ai-chat__probe-light.png" alt="before"></div>
+      <div class="single after"><img src="after/core-chatlayout--full-ai-chat__probe-light.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-chatlayout--full-ai-chat__probe-light.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-chatlayout--full-ai-chat__probe-light.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-chatlayout--full-ai-chat__probe-light.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-chatlayout--full-ai-chat__probe-light.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-chatlayout--full-ai-chat__probe-light</code></footer>
+</section>
+<section class="change" id="core-chatlayout--with-empty-state__probe-light">
+  <header>
+    <h3>Chat <span class="muted">·</span> Empty State</h3>
+    <div class="meta">
+      <span class="chip">probe</span>
+      <span class="chip">light</span>
+      <span class="muted">42,708 px (5.213%)</span>
+      
+      <span class="tag">probe</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-chatlayout--with-empty-state__probe-light">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-chatlayout--with-empty-state__probe-light.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-chatlayout--with-empty-state__probe-light.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-chatlayout--with-empty-state__probe-light.png" alt="before"></div>
+      <div class="single after"><img src="after/core-chatlayout--with-empty-state__probe-light.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-chatlayout--with-empty-state__probe-light.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-chatlayout--with-empty-state__probe-light.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-chatlayout--with-empty-state__probe-light.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-chatlayout--with-empty-state__probe-light.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-chatlayout--with-empty-state__probe-light</code></footer>
+</section>
+<section class="change" id="core-chatlayout--full-ai-chat__probe-dark">
+  <header>
+    <h3>Chat <span class="muted">·</span> Full AI Chat</h3>
+    <div class="meta">
+      <span class="chip">probe</span>
+      <span class="chip">dark</span>
+      <span class="muted">41,786 px (5.101%)</span>
+      
+      <span class="tag">probe</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-chatlayout--full-ai-chat__probe-dark">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-chatlayout--full-ai-chat__probe-dark.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-chatlayout--full-ai-chat__probe-dark.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-chatlayout--full-ai-chat__probe-dark.png" alt="before"></div>
+      <div class="single after"><img src="after/core-chatlayout--full-ai-chat__probe-dark.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-chatlayout--full-ai-chat__probe-dark.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-chatlayout--full-ai-chat__probe-dark.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-chatlayout--full-ai-chat__probe-dark.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-chatlayout--full-ai-chat__probe-dark.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-chatlayout--full-ai-chat__probe-dark</code></footer>
+</section>
+<section class="change" id="core-chatlayout--with-empty-state__probe-dark">
+  <header>
+    <h3>Chat <span class="muted">·</span> Empty State</h3>
+    <div class="meta">
+      <span class="chip">probe</span>
+      <span class="chip">dark</span>
+      <span class="muted">41,786 px (5.101%)</span>
+      
+      <span class="tag">probe</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-chatlayout--with-empty-state__probe-dark">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-chatlayout--with-empty-state__probe-dark.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-chatlayout--with-empty-state__probe-dark.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-chatlayout--with-empty-state__probe-dark.png" alt="before"></div>
+      <div class="single after"><img src="after/core-chatlayout--with-empty-state__probe-dark.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-chatlayout--with-empty-state__probe-dark.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-chatlayout--with-empty-state__probe-dark.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-chatlayout--with-empty-state__probe-dark.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-chatlayout--with-empty-state__probe-dark.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-chatlayout--with-empty-state__probe-dark</code></footer>
+</section>
+<section class="change" id="core-slider--default__probe-light">
+  <header>
+    <h3>Slider <span class="muted">·</span> Default</h3>
+    <div class="meta">
+      <span class="chip">probe</span>
+      <span class="chip">light</span>
+      <span class="muted">15,617 px (1.986%)</span>
+      
+      <span class="tag">probe</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-slider--default__probe-light">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-slider--default__probe-light.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-slider--default__probe-light.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-slider--default__probe-light.png" alt="before"></div>
+      <div class="single after"><img src="after/core-slider--default__probe-light.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-slider--default__probe-light.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-slider--default__probe-light.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-slider--default__probe-light.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-slider--default__probe-light.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-slider--default__probe-light</code></footer>
+</section>
+<section class="change" id="core-slider--default__probe-dark">
+  <header>
+    <h3>Slider <span class="muted">·</span> Default</h3>
+    <div class="meta">
+      <span class="chip">probe</span>
+      <span class="chip">dark</span>
+      <span class="muted">15,615 px (1.986%)</span>
+      
+      <span class="tag">probe</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-slider--default__probe-dark">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-slider--default__probe-dark.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-slider--default__probe-dark.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-slider--default__probe-dark.png" alt="before"></div>
+      <div class="single after"><img src="after/core-slider--default__probe-dark.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-slider--default__probe-dark.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-slider--default__probe-dark.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-slider--default__probe-dark.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-slider--default__probe-dark.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-slider--default__probe-dark</code></footer>
+</section>
+<section class="change" id="core-chatcomposer--with-attachments__probe-light">
+  <header>
+    <h3>Chat <span class="muted">·</span> With Attachments</h3>
+    <div class="meta">
+      <span class="chip">probe</span>
+      <span class="chip">light</span>
+      <span class="muted">12,964 px (1.648%)</span>
+      
+      <span class="tag">probe</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-chatcomposer--with-attachments__probe-light">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-chatcomposer--with-attachments__probe-light.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-chatcomposer--with-attachments__probe-light.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-chatcomposer--with-attachments__probe-light.png" alt="before"></div>
+      <div class="single after"><img src="after/core-chatcomposer--with-attachments__probe-light.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-chatcomposer--with-attachments__probe-light.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-chatcomposer--with-attachments__probe-light.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-chatcomposer--with-attachments__probe-light.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-chatcomposer--with-attachments__probe-light.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-chatcomposer--with-attachments__probe-light</code></footer>
+</section>
+<section class="change" id="core-chatcomposer--with-attachments__probe-dark">
+  <header>
+    <h3>Chat <span class="muted">·</span> With Attachments</h3>
+    <div class="meta">
+      <span class="chip">probe</span>
+      <span class="chip">dark</span>
+      <span class="muted">12,114 px (1.540%)</span>
+      
+      <span class="tag">probe</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-chatcomposer--with-attachments__probe-dark">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-chatcomposer--with-attachments__probe-dark.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-chatcomposer--with-attachments__probe-dark.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-chatcomposer--with-attachments__probe-dark.png" alt="before"></div>
+      <div class="single after"><img src="after/core-chatcomposer--with-attachments__probe-dark.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-chatcomposer--with-attachments__probe-dark.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-chatcomposer--with-attachments__probe-dark.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-chatcomposer--with-attachments__probe-dark.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-chatcomposer--with-attachments__probe-dark.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-chatcomposer--with-attachments__probe-dark</code></footer>
+</section>
+<section class="change" id="core-inputgroup--with-typeahead__probe-light">
+  <header>
+    <h3>InputGroup <span class="muted">·</span> With Typeahead</h3>
+    <div class="meta">
+      <span class="chip">probe</span>
+      <span class="chip">light</span>
+      <span class="muted">11,012 px (1.400%)</span>
+      
+      <span class="tag">probe</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-inputgroup--with-typeahead__probe-light">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-inputgroup--with-typeahead__probe-light.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-inputgroup--with-typeahead__probe-light.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-inputgroup--with-typeahead__probe-light.png" alt="before"></div>
+      <div class="single after"><img src="after/core-inputgroup--with-typeahead__probe-light.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-inputgroup--with-typeahead__probe-light.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-inputgroup--with-typeahead__probe-light.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-inputgroup--with-typeahead__probe-light.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-inputgroup--with-typeahead__probe-light.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-inputgroup--with-typeahead__probe-light</code></footer>
+</section>
+<section class="change" id="core-inputgroup--with-typeahead__probe-dark">
+  <header>
+    <h3>InputGroup <span class="muted">·</span> With Typeahead</h3>
+    <div class="meta">
+      <span class="chip">probe</span>
+      <span class="chip">dark</span>
+      <span class="muted">9,189 px (1.168%)</span>
+      
+      <span class="tag">probe</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-inputgroup--with-typeahead__probe-dark">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-inputgroup--with-typeahead__probe-dark.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-inputgroup--with-typeahead__probe-dark.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-inputgroup--with-typeahead__probe-dark.png" alt="before"></div>
+      <div class="single after"><img src="after/core-inputgroup--with-typeahead__probe-dark.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-inputgroup--with-typeahead__probe-dark.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-inputgroup--with-typeahead__probe-dark.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-inputgroup--with-typeahead__probe-dark.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-inputgroup--with-typeahead__probe-dark.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-inputgroup--with-typeahead__probe-dark</code></footer>
+</section>
+<section class="change" id="core-complexselector--tree-list-with-search__probe-light">
+  <header>
+    <h3>ComplexSelector <span class="muted">·</span> Tree list with search</h3>
+    <div class="meta">
+      <span class="chip">probe</span>
+      <span class="chip">light</span>
+      <span class="muted">6,245 px (0.794%)</span>
+      
+      <span class="tag">probe</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-complexselector--tree-list-with-search__probe-light">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-complexselector--tree-list-with-search__probe-light.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-complexselector--tree-list-with-search__probe-light.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-complexselector--tree-list-with-search__probe-light.png" alt="before"></div>
+      <div class="single after"><img src="after/core-complexselector--tree-list-with-search__probe-light.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-complexselector--tree-list-with-search__probe-light.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-complexselector--tree-list-with-search__probe-light.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-complexselector--tree-list-with-search__probe-light.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-complexselector--tree-list-with-search__probe-light.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-complexselector--tree-list-with-search__probe-light</code></footer>
+</section>
+<section class="change" id="core-textarea--vertical-form-alignment__probe-light">
+  <header>
+    <h3>TextArea <span class="muted">·</span> Vertical Form Alignment</h3>
+    <div class="meta">
+      <span class="chip">probe</span>
+      <span class="chip">light</span>
+      <span class="muted">5,634 px (0.716%)</span>
+      
+      <span class="tag">probe</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-textarea--vertical-form-alignment__probe-light">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-textarea--vertical-form-alignment__probe-light.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-textarea--vertical-form-alignment__probe-light.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-textarea--vertical-form-alignment__probe-light.png" alt="before"></div>
+      <div class="single after"><img src="after/core-textarea--vertical-form-alignment__probe-light.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-textarea--vertical-form-alignment__probe-light.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-textarea--vertical-form-alignment__probe-light.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-textarea--vertical-form-alignment__probe-light.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-textarea--vertical-form-alignment__probe-light.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-textarea--vertical-form-alignment__probe-light</code></footer>
+</section>
+<section class="change" id="core-complexselector--tree-list-with-search__probe-dark">
+  <header>
+    <h3>ComplexSelector <span class="muted">·</span> Tree list with search</h3>
+    <div class="meta">
+      <span class="chip">probe</span>
+      <span class="chip">dark</span>
+      <span class="muted">5,602 px (0.712%)</span>
+      
+      <span class="tag">probe</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-complexselector--tree-list-with-search__probe-dark">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-complexselector--tree-list-with-search__probe-dark.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-complexselector--tree-list-with-search__probe-dark.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-complexselector--tree-list-with-search__probe-dark.png" alt="before"></div>
+      <div class="single after"><img src="after/core-complexselector--tree-list-with-search__probe-dark.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-complexselector--tree-list-with-search__probe-dark.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-complexselector--tree-list-with-search__probe-dark.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-complexselector--tree-list-with-search__probe-dark.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-complexselector--tree-list-with-search__probe-dark.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-complexselector--tree-list-with-search__probe-dark</code></footer>
+</section>
+<section class="change" id="core-textarea--vertical-form-alignment__probe-dark">
+  <header>
+    <h3>TextArea <span class="muted">·</span> Vertical Form Alignment</h3>
+    <div class="meta">
+      <span class="chip">probe</span>
+      <span class="chip">dark</span>
+      <span class="muted">5,047 px (0.642%)</span>
+      
+      <span class="tag">probe</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-textarea--vertical-form-alignment__probe-dark">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-textarea--vertical-form-alignment__probe-dark.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-textarea--vertical-form-alignment__probe-dark.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-textarea--vertical-form-alignment__probe-dark.png" alt="before"></div>
+      <div class="single after"><img src="after/core-textarea--vertical-form-alignment__probe-dark.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-textarea--vertical-form-alignment__probe-dark.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-textarea--vertical-form-alignment__probe-dark.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-textarea--vertical-form-alignment__probe-dark.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-textarea--vertical-form-alignment__probe-dark.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-textarea--vertical-form-alignment__probe-dark</code></footer>
+</section>
+<section class="change" id="core-complexselector--fruit-ripeness-grid__neutral-light">
+  <header>
+    <h3>ComplexSelector <span class="muted">·</span> Fruit ripeness selector</h3>
+    <div class="meta">
+      <span class="chip">neutral</span>
+      <span class="chip">light</span>
+      <span class="muted">4,007 px (0.509%)</span>
+      
+      <span class="tag">surface</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-complexselector--fruit-ripeness-grid__neutral-light">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-complexselector--fruit-ripeness-grid__neutral-light.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-complexselector--fruit-ripeness-grid__neutral-light.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-complexselector--fruit-ripeness-grid__neutral-light.png" alt="before"></div>
+      <div class="single after"><img src="after/core-complexselector--fruit-ripeness-grid__neutral-light.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-complexselector--fruit-ripeness-grid__neutral-light.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-complexselector--fruit-ripeness-grid__neutral-light.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-complexselector--fruit-ripeness-grid__neutral-light.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-complexselector--fruit-ripeness-grid__neutral-light.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-complexselector--fruit-ripeness-grid__neutral-light</code></footer>
+</section>
+<section class="change" id="core-complexselector--fruit-ripeness-grid__neutral-dark">
+  <header>
+    <h3>ComplexSelector <span class="muted">·</span> Fruit ripeness selector</h3>
+    <div class="meta">
+      <span class="chip">neutral</span>
+      <span class="chip">dark</span>
+      <span class="muted">3,825 px (0.486%)</span>
+      
+      <span class="tag">surface</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-complexselector--fruit-ripeness-grid__neutral-dark">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-complexselector--fruit-ripeness-grid__neutral-dark.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-complexselector--fruit-ripeness-grid__neutral-dark.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-complexselector--fruit-ripeness-grid__neutral-dark.png" alt="before"></div>
+      <div class="single after"><img src="after/core-complexselector--fruit-ripeness-grid__neutral-dark.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-complexselector--fruit-ripeness-grid__neutral-dark.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-complexselector--fruit-ripeness-grid__neutral-dark.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-complexselector--fruit-ripeness-grid__neutral-dark.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-complexselector--fruit-ripeness-grid__neutral-dark.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-complexselector--fruit-ripeness-grid__neutral-dark</code></footer>
+</section>
+<section class="change" id="core-togglebutton--group-single__probe-dark">
+  <header>
+    <h3>ToggleButton <span class="muted">·</span> Group Single</h3>
+    <div class="meta">
+      <span class="chip">probe</span>
+      <span class="chip">dark</span>
+      <span class="muted">1,538 px (0.196%)</span>
+      
+      <span class="tag">probe</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-togglebutton--group-single__probe-dark">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-togglebutton--group-single__probe-dark.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-togglebutton--group-single__probe-dark.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-togglebutton--group-single__probe-dark.png" alt="before"></div>
+      <div class="single after"><img src="after/core-togglebutton--group-single__probe-dark.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-togglebutton--group-single__probe-dark.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-togglebutton--group-single__probe-dark.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-togglebutton--group-single__probe-dark.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-togglebutton--group-single__probe-dark.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-togglebutton--group-single__probe-dark</code></footer>
+</section>
+<section class="change" id="core-togglebutton--group-single__probe-light">
+  <header>
+    <h3>ToggleButton <span class="muted">·</span> Group Single</h3>
+    <div class="meta">
+      <span class="chip">probe</span>
+      <span class="chip">light</span>
+      <span class="muted">1,538 px (0.196%)</span>
+      
+      <span class="tag">probe</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-togglebutton--group-single__probe-light">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-togglebutton--group-single__probe-light.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-togglebutton--group-single__probe-light.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-togglebutton--group-single__probe-light.png" alt="before"></div>
+      <div class="single after"><img src="after/core-togglebutton--group-single__probe-light.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-togglebutton--group-single__probe-light.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-togglebutton--group-single__probe-light.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-togglebutton--group-single__probe-light.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-togglebutton--group-single__probe-light.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-togglebutton--group-single__probe-light</code></footer>
+</section>
+<section class="change" id="core-themes-mediatheme--on-dark__neutral-dark">
+  <header>
+    <h3>MediaTheme <span class="muted">·</span> On Dark</h3>
+    <div class="meta">
+      <span class="chip">neutral</span>
+      <span class="chip">dark</span>
+      <span class="muted">838 px (0.107%)</span>
+      
+      <span class="tag">surface</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-themes-mediatheme--on-dark__neutral-dark">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-themes-mediatheme--on-dark__neutral-dark.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-themes-mediatheme--on-dark__neutral-dark.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-themes-mediatheme--on-dark__neutral-dark.png" alt="before"></div>
+      <div class="single after"><img src="after/core-themes-mediatheme--on-dark__neutral-dark.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-themes-mediatheme--on-dark__neutral-dark.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-themes-mediatheme--on-dark__neutral-dark.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-themes-mediatheme--on-dark__neutral-dark.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-themes-mediatheme--on-dark__neutral-dark.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-themes-mediatheme--on-dark__neutral-dark</code></footer>
+</section>
+<section class="change" id="core-banner--collapsible-content-expanded__probe-dark">
+  <header>
+    <h3>Banner <span class="muted">·</span> Collapsible Content (Expanded)</h3>
+    <div class="meta">
+      <span class="chip">probe</span>
+      <span class="chip">dark</span>
+      <span class="muted">92 px (0.012%)</span>
+      
+      <span class="tag">probe</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-banner--collapsible-content-expanded__probe-dark">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-banner--collapsible-content-expanded__probe-dark.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-banner--collapsible-content-expanded__probe-dark.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-banner--collapsible-content-expanded__probe-dark.png" alt="before"></div>
+      <div class="single after"><img src="after/core-banner--collapsible-content-expanded__probe-dark.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-banner--collapsible-content-expanded__probe-dark.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-banner--collapsible-content-expanded__probe-dark.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-banner--collapsible-content-expanded__probe-dark.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-banner--collapsible-content-expanded__probe-dark.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-banner--collapsible-content-expanded__probe-dark</code></footer>
+</section>
+<section class="change" id="core-banner--collapsible-content-expanded__probe-light">
+  <header>
+    <h3>Banner <span class="muted">·</span> Collapsible Content (Expanded)</h3>
+    <div class="meta">
+      <span class="chip">probe</span>
+      <span class="chip">light</span>
+      <span class="muted">90 px (0.011%)</span>
+      
+      <span class="tag">probe</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-banner--collapsible-content-expanded__probe-light">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-banner--collapsible-content-expanded__probe-light.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-banner--collapsible-content-expanded__probe-light.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-banner--collapsible-content-expanded__probe-light.png" alt="before"></div>
+      <div class="single after"><img src="after/core-banner--collapsible-content-expanded__probe-light.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-banner--collapsible-content-expanded__probe-light.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-banner--collapsible-content-expanded__probe-light.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-banner--collapsible-content-expanded__probe-light.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-banner--collapsible-content-expanded__probe-light.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-banner--collapsible-content-expanded__probe-light</code></footer>
+</section>
+<section class="change" id="core-alertdialog--delete__neutral-light">
+  <header>
+    <h3>AlertDialog <span class="muted">·</span> Delete</h3>
+    <div class="meta">
+      <span class="chip">neutral</span>
+      <span class="chip">light</span>
+      <span class="muted">71 px (0.009%)</span>
+      
+      <span class="tag">surface</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-alertdialog--delete__neutral-light">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-alertdialog--delete__neutral-light.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-alertdialog--delete__neutral-light.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-alertdialog--delete__neutral-light.png" alt="before"></div>
+      <div class="single after"><img src="after/core-alertdialog--delete__neutral-light.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-alertdialog--delete__neutral-light.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-alertdialog--delete__neutral-light.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-alertdialog--delete__neutral-light.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-alertdialog--delete__neutral-light.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-alertdialog--delete__neutral-light</code></footer>
+</section>
+<section class="change" id="core-mobilenav--default__neutral-dark">
+  <header>
+    <h3>MobileNav <span class="muted">·</span> Default</h3>
+    <div class="meta">
+      <span class="chip">neutral</span>
+      <span class="chip">dark</span>
+      <span class="muted">47 px (0.006%)</span>
+      
+      <span class="tag">surface</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-mobilenav--default__neutral-dark">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-mobilenav--default__neutral-dark.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-mobilenav--default__neutral-dark.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-mobilenav--default__neutral-dark.png" alt="before"></div>
+      <div class="single after"><img src="after/core-mobilenav--default__neutral-dark.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-mobilenav--default__neutral-dark.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-mobilenav--default__neutral-dark.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-mobilenav--default__neutral-dark.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-mobilenav--default__neutral-dark.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-mobilenav--default__neutral-dark</code></footer>
+</section>
+<section class="change" id="core-mobilenav--default__neutral-light">
+  <header>
+    <h3>MobileNav <span class="muted">·</span> Default</h3>
+    <div class="meta">
+      <span class="chip">neutral</span>
+      <span class="chip">light</span>
+      <span class="muted">47 px (0.006%)</span>
+      
+      <span class="tag">surface</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-mobilenav--default__neutral-light">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-mobilenav--default__neutral-light.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-mobilenav--default__neutral-light.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-mobilenav--default__neutral-light.png" alt="before"></div>
+      <div class="single after"><img src="after/core-mobilenav--default__neutral-light.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-mobilenav--default__neutral-light.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-mobilenav--default__neutral-light.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-mobilenav--default__neutral-light.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-mobilenav--default__neutral-light.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-mobilenav--default__neutral-light</code></footer>
+</section>
+<section class="change" id="core-tablerowstatus--default__neutral-light">
+  <header>
+    <h3>TableRowStatus <span class="muted">·</span> Default</h3>
+    <div class="meta">
+      <span class="chip">neutral</span>
+      <span class="chip">light</span>
+      <span class="muted">23 px (0.003%)</span>
+      
+      <span class="tag">surface</span>
+    </div>
+  </header>
+  <div class="views" data-key="core-tablerowstatus--default__neutral-light">
+    <div class="tabs">
+      <button data-view="wipe" class="active">Wipe</button>
+      <button data-view="before">Before</button>
+      <button data-view="after">After</button>
+      <button data-view="diff">Diff</button>
+      <button data-view="side">Side by side</button>
+    </div>
+    <div class="stage" data-view="wipe">
+      <div class="wipe">
+        <img class="after" src="after/core-tablerowstatus--default__neutral-light.png" alt="after">
+        <div class="before-clip"><img class="before" src="before/core-tablerowstatus--default__neutral-light.png" alt="before"></div>
+        <input type="range" min="0" max="100" value="50" aria-label="wipe between before and after">
+      </div>
+      <div class="single before"><img src="before/core-tablerowstatus--default__neutral-light.png" alt="before"></div>
+      <div class="single after"><img src="after/core-tablerowstatus--default__neutral-light.png" alt="after"></div>
+      <div class="single diff"><img src="diff/core-tablerowstatus--default__neutral-light.png" alt="diff"></div>
+      <div class="side">
+        <figure><figcaption>Before</figcaption><img src="before/core-tablerowstatus--default__neutral-light.png" alt="before"></figure>
+        <figure><figcaption>After</figcaption><img src="after/core-tablerowstatus--default__neutral-light.png" alt="after"></figure>
+        <figure><figcaption>Diff</figcaption><img src="diff/core-tablerowstatus--default__neutral-light.png" alt="diff"></figure>
+      </div>
+    </div>
+  </div>
+  <footer><code>core-tablerowstatus--default__neutral-light</code></footer>
+</section>
+
+<h2>Added (50)</h2>
+<section class="change"><h3><code>core-basetypeahead--default__neutral-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-basetypeahead--default__neutral-dark.png" alt="after"></div></section><section class="change"><h3><code>core-basetypeahead--default__neutral-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-basetypeahead--default__neutral-light.png" alt="after"></div></section><section class="change"><h3><code>core-basetypeahead--loading__probe-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-basetypeahead--loading__probe-dark.png" alt="after"></div></section><section class="change"><h3><code>core-basetypeahead--loading__probe-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-basetypeahead--loading__probe-light.png" alt="after"></div></section><section class="change"><h3><code>core-bottomsheet--text-only__neutral-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-bottomsheet--text-only__neutral-dark.png" alt="after"></div></section><section class="change"><h3><code>core-bottomsheet--text-only__neutral-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-bottomsheet--text-only__neutral-light.png" alt="after"></div></section><section class="change"><h3><code>core-chatcomposerdrawer--custom-collapsed-summary__neutral-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-chatcomposerdrawer--custom-collapsed-summary__neutral-dark.png" alt="after"></div></section><section class="change"><h3><code>core-chatcomposerdrawer--custom-collapsed-summary__neutral-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-chatcomposerdrawer--custom-collapsed-summary__neutral-light.png" alt="after"></div></section><section class="change"><h3><code>core-chatdictationbutton--clipping__neutral-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-chatdictationbutton--clipping__neutral-dark.png" alt="after"></div></section><section class="change"><h3><code>core-chatdictationbutton--clipping__neutral-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-chatdictationbutton--clipping__neutral-light.png" alt="after"></div></section><section class="change"><h3><code>core-chatdictationbutton--idle__probe-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-chatdictationbutton--idle__probe-dark.png" alt="after"></div></section><section class="change"><h3><code>core-chatdictationbutton--idle__probe-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-chatdictationbutton--idle__probe-light.png" alt="after"></div></section><section class="change"><h3><code>core-chatdictationbutton--unsupported-visible__neutral-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-chatdictationbutton--unsupported-visible__neutral-dark.png" alt="after"></div></section><section class="change"><h3><code>core-chatdictationbutton--unsupported-visible__neutral-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-chatdictationbutton--unsupported-visible__neutral-light.png" alt="after"></div></section><section class="change"><h3><code>core-codeblock--default__neutral-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-codeblock--default__neutral-dark.png" alt="after"></div></section><section class="change"><h3><code>core-codeblock--default__neutral-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-codeblock--default__neutral-light.png" alt="after"></div></section><section class="change"><h3><code>core-daterangeinput--all-variations__probe-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-daterangeinput--all-variations__probe-dark.png" alt="after"></div></section><section class="change"><h3><code>core-daterangeinput--all-variations__probe-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-daterangeinput--all-variations__probe-light.png" alt="after"></div></section><section class="change"><h3><code>core-dialog--mobile-presentation-fullscreen-dialog__probe-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-dialog--mobile-presentation-fullscreen-dialog__probe-dark.png" alt="after"></div></section><section class="change"><h3><code>core-dialog--mobile-presentation-fullscreen-dialog__probe-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-dialog--mobile-presentation-fullscreen-dialog__probe-light.png" alt="after"></div></section><section class="change"><h3><code>core-fieldstatus--variants__neutral-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-fieldstatus--variants__neutral-dark.png" alt="after"></div></section><section class="change"><h3><code>core-fieldstatus--variants__neutral-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-fieldstatus--variants__neutral-light.png" alt="after"></div></section><section class="change"><h3><code>core-layout--content-width-scrollbar-placement__neutral-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-layout--content-width-scrollbar-placement__neutral-dark.png" alt="after"></div></section><section class="change"><h3><code>core-layout--content-width-scrollbar-placement__neutral-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-layout--content-width-scrollbar-placement__neutral-light.png" alt="after"></div></section><section class="change"><h3><code>core-link-navigation--destinations__neutral-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-link-navigation--destinations__neutral-dark.png" alt="after"></div></section><section class="change"><h3><code>core-link-navigation--destinations__neutral-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-link-navigation--destinations__neutral-light.png" alt="after"></div></section><section class="change"><h3><code>core-link-navigation--destinations__probe-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-link-navigation--destinations__probe-dark.png" alt="after"></div></section><section class="change"><h3><code>core-link-navigation--destinations__probe-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-link-navigation--destinations__probe-light.png" alt="after"></div></section><section class="change"><h3><code>core-selector--indicator-space-bottom-sheet-narrow-end-rtl__neutral-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-selector--indicator-space-bottom-sheet-narrow-end-rtl__neutral-dark.png" alt="after"></div></section><section class="change"><h3><code>core-selector--indicator-space-bottom-sheet-narrow-end-rtl__neutral-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-selector--indicator-space-bottom-sheet-narrow-end-rtl__neutral-light.png" alt="after"></div></section><section class="change"><h3><code>core-selector--indicator-space-bottom-sheet-wide-start__neutral-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-selector--indicator-space-bottom-sheet-wide-start__neutral-dark.png" alt="after"></div></section><section class="change"><h3><code>core-selector--indicator-space-bottom-sheet-wide-start__neutral-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-selector--indicator-space-bottom-sheet-wide-start__neutral-light.png" alt="after"></div></section><section class="change"><h3><code>core-selector--indicator-space-popover-narrow-start__neutral-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-selector--indicator-space-popover-narrow-start__neutral-dark.png" alt="after"></div></section><section class="change"><h3><code>core-selector--indicator-space-popover-narrow-start__neutral-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-selector--indicator-space-popover-narrow-start__neutral-light.png" alt="after"></div></section><section class="change"><h3><code>core-selector--indicator-space-popover-wide-end-rtl__neutral-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-selector--indicator-space-popover-wide-end-rtl__neutral-dark.png" alt="after"></div></section><section class="change"><h3><code>core-selector--indicator-space-popover-wide-end-rtl__neutral-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-selector--indicator-space-popover-wide-end-rtl__neutral-light.png" alt="after"></div></section><section class="change"><h3><code>core-sidenav--resizable-in-app-shell__probe-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-sidenav--resizable-in-app-shell__probe-dark.png" alt="after"></div></section><section class="change"><h3><code>core-sidenav--resizable-in-app-shell__probe-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-sidenav--resizable-in-app-shell__probe-light.png" alt="after"></div></section><section class="change"><h3><code>core-slider--disabled-with-text-value__neutral-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-slider--disabled-with-text-value__neutral-dark.png" alt="after"></div></section><section class="change"><h3><code>core-slider--disabled-with-text-value__neutral-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-slider--disabled-with-text-value__neutral-light.png" alt="after"></div></section><section class="change"><h3><code>core-slider--disabled-with-text-value__probe-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-slider--disabled-with-text-value__probe-dark.png" alt="after"></div></section><section class="change"><h3><code>core-slider--disabled-with-text-value__probe-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-slider--disabled-with-text-value__probe-light.png" alt="after"></div></section><section class="change"><h3><code>core-stepper--default__probe-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-stepper--default__probe-dark.png" alt="after"></div></section><section class="change"><h3><code>core-stepper--default__probe-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-stepper--default__probe-light.png" alt="after"></div></section><section class="change"><h3><code>core-stepper--step-advance__probe-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-stepper--step-advance__probe-dark.png" alt="after"></div></section><section class="change"><h3><code>core-stepper--step-advance__probe-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-stepper--step-advance__probe-light.png" alt="after"></div></section><section class="change"><h3><code>core-tablist--full-bleed-geometry__probe-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-tablist--full-bleed-geometry__probe-dark.png" alt="after"></div></section><section class="change"><h3><code>core-tablist--full-bleed-geometry__probe-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-tablist--full-bleed-geometry__probe-light.png" alt="after"></div></section><section class="change"><h3><code>core-text--body__neutral-dark</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-text--body__neutral-dark.png" alt="after"></div></section><section class="change"><h3><code>core-text--body__neutral-light</code></h3><p class="muted">after</p><div class="stage"><img src="after/core-text--body__neutral-light.png" alt="after"></div></section>
+
+<h2>Removed (20)</h2>
+<section class="change"><h3><code>core-bottomsheet--showcase__neutral-dark</code></h3><p class="muted">before</p><div class="stage"><img src="before/core-bottomsheet--showcase__neutral-dark.png" alt="before"></div></section><section class="change"><h3><code>core-bottomsheet--showcase__neutral-light</code></h3><p class="muted">before</p><div class="stage"><img src="before/core-bottomsheet--showcase__neutral-light.png" alt="before"></div></section><section class="change"><h3><code>core-chat--custom-content__probe-dark</code></h3><p class="muted">before</p><div class="stage"><img src="before/core-chat--custom-content__probe-dark.png" alt="before"></div></section><section class="change"><h3><code>core-chat--custom-content__probe-light</code></h3><p class="muted">before</p><div class="stage"><img src="before/core-chat--custom-content__probe-light.png" alt="before"></div></section><section class="change"><h3><code>core-chatdictation--idle__probe-dark</code></h3><p class="muted">before</p><div class="stage"><img src="before/core-chatdictation--idle__probe-dark.png" alt="before"></div></section><section class="change"><h3><code>core-chatdictation--idle__probe-light</code></h3><p class="muted">before</p><div class="stage"><img src="before/core-chatdictation--idle__probe-light.png" alt="before"></div></section><section class="change"><h3><code>core-citation--label__probe-dark</code></h3><p class="muted">before</p><div class="stage"><img src="before/core-citation--label__probe-dark.png" alt="before"></div></section><section class="change"><h3><code>core-citation--label__probe-light</code></h3><p class="muted">before</p><div class="stage"><img src="before/core-citation--label__probe-light.png" alt="before"></div></section><section class="change"><h3><code>core-daterangeinput--with-warning-status__probe-dark</code></h3><p class="muted">before</p><div class="stage"><img src="before/core-daterangeinput--with-warning-status__probe-dark.png" alt="before"></div></section><section class="change"><h3><code>core-daterangeinput--with-warning-status__probe-light</code></h3><p class="muted">before</p><div class="stage"><img src="before/core-daterangeinput--with-warning-status__probe-light.png" alt="before"></div></section><section class="change"><h3><code>core-popover--link-trigger__probe-dark</code></h3><p class="muted">before</p><div class="stage"><img src="before/core-popover--link-trigger__probe-dark.png" alt="before"></div></section><section class="change"><h3><code>core-popover--link-trigger__probe-light</code></h3><p class="muted">before</p><div class="stage"><img src="before/core-popover--link-trigger__probe-light.png" alt="before"></div></section><section class="change"><h3><code>core-sidenav-collapse-ownership--acceptance__probe-dark</code></h3><p class="muted">before</p><div class="stage"><img src="before/core-sidenav-collapse-ownership--acceptance__probe-dark.png" alt="before"></div></section><section class="change"><h3><code>core-sidenav-collapse-ownership--acceptance__probe-light</code></h3><p class="muted">before</p><div class="stage"><img src="before/core-sidenav-collapse-ownership--acceptance__probe-light.png" alt="before"></div></section><section class="change"><h3><code>core-stack--stack-item-fill-size__probe-dark</code></h3><p class="muted">before</p><div class="stage"><img src="before/core-stack--stack-item-fill-size__probe-dark.png" alt="before"></div></section><section class="change"><h3><code>core-stack--stack-item-fill-size__probe-light</code></h3><p class="muted">before</p><div class="stage"><img src="before/core-stack--stack-item-fill-size__probe-light.png" alt="before"></div></section><section class="change"><h3><code>core-stepper--content-slot-alignment__probe-dark</code></h3><p class="muted">before</p><div class="stage"><img src="before/core-stepper--content-slot-alignment__probe-dark.png" alt="before"></div></section><section class="change"><h3><code>core-stepper--content-slot-alignment__probe-light</code></h3><p class="muted">before</p><div class="stage"><img src="before/core-stepper--content-slot-alignment__probe-light.png" alt="before"></div></section><section class="change"><h3><code>core-tablist--with-menu__probe-dark</code></h3><p class="muted">before</p><div class="stage"><img src="before/core-tablist--with-menu__probe-dark.png" alt="before"></div></section><section class="change"><h3><code>core-tablist--with-menu__probe-light</code></h3><p class="muted">before</p><div class="stage"><img src="before/core-tablist--with-menu__probe-light.png" alt="before"></div></section>
+
+<section class="list">
+  <h2>Theme overrides that bound to nothing <span class="muted">(194)</span></h2>
+  <p class="muted">A theme styles this target, but no shot in this run rendered it. Either the plan cannot reach it, or the component stopped rendering the target the theme aims at.</p>
+  <ul><li><code>butter → heading (level:6)</code></li><li><code>butter → heading (type:display-1)</code></li><li><code>butter → heading (type:display-2)</code></li><li><code>butter → heading (type:display-3)</code></li><li><code>butter → text (type:code)</code></li><li><code>butter → text (type:display-1)</code></li><li><code>butter → text (type:display-2)</code></li><li><code>butter → text (type:display-3)</code></li><li><code>butter → top-nav-item (selected)</code></li><li><code>butter → badge (variant:success)</code></li><li><code>butter → badge (variant:warning)</code></li><li><code>butter → badge (variant:error)</code></li><li><code>butter → banner (status:success)</code></li><li><code>butter → banner (status:warning)</code></li><li><code>butter → banner (status:error)</code></li><li><code>butter → card (variant:info)</code></li><li><code>butter → card (variant:success)</code></li><li><code>butter → card (variant:warning)</code></li><li><code>butter → card (variant:error)</code></li><li><code>butter → card (variant:blue)</code></li><li><code>butter → card (variant:cyan)</code></li><li><code>butter → card (variant:gray)</code></li><li><code>butter → card (variant:green)</code></li><li><code>butter → card (variant:orange)</code></li><li><code>butter → card (variant:pink)</code></li><li><code>butter → card (variant:purple)</code></li><li><code>butter → card (variant:red)</code></li><li><code>butter → card (variant:teal)</code></li><li><code>butter → card (variant:yellow)</code></li><li><code>butter → card (variant:muted)</code></li><li><code>butter → progress-bar-fill (variant:success)</code></li><li><code>butter → progress-bar-fill (variant:warning)</code></li><li><code>butter → progress-bar-fill (variant:error)</code></li><li><code>butter → text-input (status:success)</code></li><li><code>butter → text-input (status:warning)</code></li><li><code>butter → text-input (status:error)</code></li><li><code>butter → text-area (status:success)</code></li><li><code>butter → text-area (status:warning)</code></li><li><code>butter → text-area (status:error)</code></li><li><code>butter → number-input (status:success)</code></li><li><code>butter → number-input (status:warning)</code></li><li><code>butter → number-input (status:error)</code></li><li><code>butter → date-input (status:success)</code></li><li><code>butter → date-input (status:warning)</code></li><li><code>butter → date-input (status:error)</code></li><li><code>butter → time-input (status:success)</code></li><li><code>butter → time-input (status:warning)</code></li><li><code>butter → time-input (status:error)</code></li><li><code>butter → selector (status:success)</code></li><li><code>butter → selector (status:warning)</code></li><li><code>butter → selector (status:error)</code></li><li><code>butter → multi-selector (status:success)</code></li><li><code>butter → multi-selector (status:warning)</code></li><li><code>butter → multi-selector (status:error)</code></li><li><code>butter → typeahead (status:success)</code></li><li><code>butter → typeahead (status:warning)</code></li><li><code>butter → typeahead (status:error)</code></li><li><code>butter → tokenizer (status:success)</code></li><li><code>butter → tokenizer (status:warning)</code></li><li><code>butter → tokenizer (status:error)</code></li><li><code>chocolate → heading (level:6)</code></li><li><code>chocolate → heading (type:display-1)</code></li><li><code>chocolate → heading (type:display-2)</code></li><li><code>chocolate → heading (type:display-3)</code></li><li><code>chocolate → text (type:code)</code></li><li><code>chocolate → text (type:display-1)</code></li><li><code>chocolate → text (type:display-2)</code></li><li><code>chocolate → text (type:display-3)</code></li><li><code>gothic → heading (level:6)</code></li><li><code>gothic → heading (type:display-1)</code></li><li><code>gothic → heading (type:display-2)</code></li><li><code>gothic → heading (type:display-3)</code></li><li><code>gothic → text (type:code)</code></li><li><code>gothic → text (type:display-1)</code></li><li><code>gothic → text (type:display-2)</code></li><li><code>gothic → text (type:display-3)</code></li><li><code>gothic → badge (variant:success)</code></li><li><code>gothic → badge (variant:warning)</code></li><li><code>gothic → badge (variant:error)</code></li><li><code>gothic → banner (status:success)</code></li><li><code>gothic → banner (status:warning)</code></li><li><code>gothic → banner (status:error)</code></li><li><code>gothic → card (variant:blue)</code></li><li><code>gothic → card (variant:cyan)</code></li><li><code>gothic → card (variant:gray)</code></li><li><code>gothic → card (variant:green)</code></li><li><code>gothic → card (variant:orange)</code></li><li><code>gothic → card (variant:pink)</code></li><li><code>gothic → card (variant:purple)</code></li><li><code>gothic → card (variant:red)</code></li><li><code>gothic → card (variant:teal)</code></li><li><code>gothic → card (variant:yellow)</code></li><li><code>matcha → heading (level:6)</code></li><li><code>matcha → heading (type:display-1)</code></li><li><code>matcha → heading (type:display-2)</code></li><li><code>matcha → heading (type:display-3)</code></li><li><code>matcha → text (type:code)</code></li><li><code>matcha → text (type:display-1)</code></li><li><code>matcha → text (type:display-2)</code></li><li><code>matcha → text (type:display-3)</code></li><li><code>neutral → heading (level:6)</code></li><li><code>neutral → heading (type:display-1)</code></li><li><code>neutral → heading (type:display-2)</code></li><li><code>neutral → heading (type:display-3)</code></li><li><code>neutral → text (type:code)</code></li><li><code>neutral → text (type:display-1)</code></li><li><code>neutral → text (type:display-2)</code></li><li><code>neutral → text (type:display-3)</code></li><li><code>neutral → badge (variant:success)</code></li><li><code>neutral → badge (variant:warning)</code></li><li><code>neutral → badge (variant:error)</code></li><li><code>neutral → badge (variant:red)</code></li><li><code>neutral → badge (variant:orange)</code></li><li><code>neutral → badge (variant:yellow)</code></li><li><code>neutral → badge (variant:green)</code></li><li><code>neutral → badge (variant:teal)</code></li><li><code>neutral → badge (variant:cyan)</code></li><li><code>neutral → badge (variant:blue)</code></li><li><code>neutral → badge (variant:purple)</code></li><li><code>neutral → badge (variant:pink)</code></li><li><code>neutral → badge (variant:gray)</code></li><li><code>neutral → status-dot (variant:accent)</code></li><li><code>neutral → segmented-control-item (size:sm)</code></li><li><code>neutral → segmented-control-item (size:lg)</code></li><li><code>neutral → segmented-control-item (selected)</code></li><li><code>neutral → banner (status:success)</code></li><li><code>neutral → banner (status:warning)</code></li><li><code>neutral → banner (status:error)</code></li><li><code>neutral → step-indicator (status:accent)</code></li><li><code>neutral → step-indicator (status:success)</code></li><li><code>neutral → step-indicator (status:warning)</code></li><li><code>neutral → step-indicator (status:error)</code></li><li><code>neutral → progress-bar (variant:success)</code></li><li><code>neutral → progress-bar (variant:warning)</code></li><li><code>neutral → progress-bar (variant:error)</code></li><li><code>stone → heading (level:6)</code></li><li><code>stone → heading (type:display-1)</code></li><li><code>stone → heading (type:display-2)</code></li><li><code>stone → heading (type:display-3)</code></li><li><code>stone → text (type:code)</code></li><li><code>stone → text (type:display-1)</code></li><li><code>stone → text (type:display-2)</code></li><li><code>stone → text (type:display-3)</code></li><li><code>stone → badge (variant:success)</code></li><li><code>stone → badge (variant:warning)</code></li><li><code>stone → badge (variant:error)</code></li><li><code>stone → banner (status:success)</code></li><li><code>stone → banner (status:warning)</code></li><li><code>stone → banner (status:error)</code></li><li><code>stone → progress-bar-fill (variant:success)</code></li><li><code>stone → progress-bar-fill (variant:warning)</code></li><li><code>stone → progress-bar-fill (variant:error)</code></li><li><code>stone → text-input (status:success)</code></li><li><code>stone → text-input (status:warning)</code></li><li><code>stone → text-input (status:error)</code></li><li><code>stone → text-area (status:success)</code></li><li><code>stone → text-area (status:warning)</code></li><li><code>stone → text-area (status:error)</code></li><li><code>stone → number-input (status:success)</code></li><li><code>stone → number-input (status:warning)</code></li><li><code>stone → number-input (status:error)</code></li><li><code>stone → date-input (status:success)</code></li><li><code>stone → date-input (status:warning)</code></li><li><code>stone → date-input (status:error)</code></li><li><code>stone → time-input (status:success)</code></li><li><code>stone → time-input (status:warning)</code></li><li><code>stone → time-input (status:error)</code></li><li><code>stone → selector (status:success)</code></li><li><code>stone → selector (status:warning)</code></li><li><code>stone → selector (status:error)</code></li><li><code>stone → multi-selector (status:success)</code></li><li><code>stone → multi-selector (status:warning)</code></li><li><code>stone → multi-selector (status:error)</code></li><li><code>stone → typeahead (status:success)</code></li><li><code>stone → typeahead (status:warning)</code></li><li><code>stone → typeahead (status:error)</code></li><li><code>stone → tokenizer (status:success)</code></li><li><code>stone → tokenizer (status:warning)</code></li><li><code>stone → tokenizer (status:error)</code></li><li><code>y2k → heading (level:6)</code></li><li><code>y2k → heading (type:display-1)</code></li><li><code>y2k → heading (type:display-2)</code></li><li><code>y2k → heading (type:display-3)</code></li><li><code>y2k → text (type:code)</code></li><li><code>y2k → text (type:display-1)</code></li><li><code>y2k → text (type:display-2)</code></li><li><code>y2k → text (type:display-3)</code></li><li><code>y2k → top-nav-item (selected)</code></li><li><code>y2k → badge (variant:success)</code></li><li><code>y2k → badge (variant:warning)</code></li><li><code>y2k → badge (variant:error)</code></li><li><code>y2k → banner (status:success)</code></li><li><code>y2k → banner (status:warning)</code></li><li><code>y2k → banner (status:error)</code></li></ul>
+</section>
+<section class="list">
+  <h2>Declared targets never seen <span class="muted">(6)</span></h2>
+  <p class="muted">Documented as themeable, absent from every shot. A coverage gap, not necessarily a bug.</p>
+  <ul><li><code>command-palette-item</code></li><li><code>date-time-input-time-listbox</code></li><li><code>date-time-input-time-option</code></li><li><code>dialog-header-start-content</code></li><li><code>table-footer</code></li><li><code>timestamp-copy-button</code></li></ul>
+</section>
+<section class="list">
+  <h2>Rendered but undeclared <span class="muted">(1)</span></h2>
+  <p class="muted">An astryx-* class in the DOM that no component doc declares as a theming target.</p>
+  <ul><li><code>default-marker</code></li></ul>
+</section>
+<script>
+  for (const views of document.querySelectorAll('.views')) {
+    const stage = views.querySelector('.stage');
+    views.querySelectorAll('.tabs button').forEach((button) => {
+      button.addEventListener('click', () => {
+        views.querySelectorAll('.tabs button').forEach((b) => b.classList.toggle('active', b === button));
+        stage.dataset.view = button.dataset.view;
+      });
+    });
+    const range = views.querySelector('.wipe input');
+    const clip = views.querySelector('.before-clip');
+    range?.addEventListener('input', () => { clip.style.width = range.value + '%'; });
+  }
+</script>
+</html>

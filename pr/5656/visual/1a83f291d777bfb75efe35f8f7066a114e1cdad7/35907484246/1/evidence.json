@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5656,
+  "headSha": "1a83f291d777bfb75efe35f8f7066a114e1cdad7",
+  "testedSha": "1a83f291d777bfb75efe35f8f7066a114e1cdad7",
+  "baseSha": "01fa43907180573a5ee48f9b7617bfeb427f3d58",
+  "run": {
+    "id": 35907484246,
+    "attempt": 1
+  },
+  "capture": null,
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "skipped",
+    "generatedAt": "2026-09-23T20:40:01.569Z",
+    "reason": "Broad stable scope is deferred to the daily release gate. It covers 390 trusted baseline shots instead of recapturing them for this PR.",
+    "context": {
+      "sha": "1a83f291d777bfb75efe35f8f7066a114e1cdad7",
+      "headSha": "1a83f291d777bfb75efe35f8f7066a114e1cdad7",
+      "baseSha": "01fa43907180573a5ee48f9b7617bfeb427f3d58",
+      "runId": "35907484246",
+      "runAttempt": "1",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": true,
+        "stableComponents": [
+          "DateTimeInput",
+          "Layout",
+          "MetadataList",
+          "NavMenu",
+          "RadioList",
+          "TimeInput",
+          "TopNav"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/DateTimeInput/NativeTimeSegment.tsx",
+          "packages/core/src/Layout/Layout.tsx",
+          "packages/core/src/MetadataList/MetadataList.tsx",
+          "packages/core/src/NavMenu/NavHeadingMenu.tsx",
+          "packages/core/src/NavMenu/NavHeadingMenuItem.tsx",
+          "packages/core/src/RadioList/RadioList.tsx",
+          "packages/core/src/TimeInput/TimeInput.tsx",
+          "packages/core/src/TopNav/TopNavMegaMenuItem.tsx",
+          "packages/core/src/hooks/useAnnounce.ts",
+          "packages/core/src/utils/inputAria.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "counts": {
+      "total": 390,
+      "unchanged": 0,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "components": [
+      "DateTimeInput",
+      "Layout",
+      "MetadataList",
+      "NavMenu",
+      "RadioList",
+      "TimeInput",
+      "TopNav"
+    ],
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": []
+  }
+}

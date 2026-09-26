@@ -1,0 +1,428 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5375,
+  "headSha": "9e3e28b4560141d4d17a58915e64c7490ab359a0",
+  "testedSha": "9e3e28b4560141d4d17a58915e64c7490ab359a0",
+  "baseSha": "8692106e2f801cec0fd96578d17bb6178ef60303",
+  "run": {
+    "id": 33219800855,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "baseline": {
+    "ghPagesCommit": "eaa5b6045172a6d84c113540f9b8fd0eaf172654",
+    "manifestDigest": "ed18824da8222f88d8d7723fba414f3577a8a79118fdb9d0be5b04c0540d5c9e"
+  },
+  "keys": [
+    {
+      "key": "core-toast--mobile-swipe-to-dismiss__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "24c861f5e2efd890aa2c91f17ed3a4db8122fdd6097dd8f1b51579ddec9a5bab",
+      "shot": {
+        "sha256": "24c861f5e2efd890aa2c91f17ed3a4db8122fdd6097dd8f1b51579ddec9a5bab",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--mobile-swipe-to-dismiss",
+        "title": "Core/Toast",
+        "name": "Mobile situations / Swipe to dismiss",
+        "component": "Toast",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--mobile-swipe-to-dismiss__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c5f9143091954ee13eb913f84e550d05aea09ed00289c0d6053b31a80c7d908a",
+      "shot": {
+        "sha256": "c5f9143091954ee13eb913f84e550d05aea09ed00289c0d6053b31a80c7d908a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--mobile-swipe-to-dismiss",
+        "title": "Core/Toast",
+        "name": "Mobile situations / Swipe to dismiss",
+        "component": "Toast",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--mobile-swipe-to-dismiss__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "70d6e9133e003f867321f487246f2b03e5d4f5810f954f4fa3756c117df47806",
+      "shot": {
+        "sha256": "70d6e9133e003f867321f487246f2b03e5d4f5810f954f4fa3756c117df47806",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--mobile-swipe-to-dismiss",
+        "title": "Core/Toast",
+        "name": "Mobile situations / Swipe to dismiss",
+        "component": "Toast",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--mobile-swipe-to-dismiss__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "58143c9eb8cc3524e4190674b5499061edfea7e18fc8cf0805a75fb7cef9b898",
+      "shot": {
+        "sha256": "58143c9eb8cc3524e4190674b5499061edfea7e18fc8cf0805a75fb7cef9b898",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--mobile-swipe-to-dismiss",
+        "title": "Core/Toast",
+        "name": "Mobile situations / Swipe to dismiss",
+        "component": "Toast",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-butter",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--mobile-swipe-to-dismiss__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c90205284a39f336377a99d42a1474aafc20640d42560f22460cda4dc2fecb02",
+      "shot": {
+        "sha256": "c90205284a39f336377a99d42a1474aafc20640d42560f22460cda4dc2fecb02",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--mobile-swipe-to-dismiss",
+        "title": "Core/Toast",
+        "name": "Mobile situations / Swipe to dismiss",
+        "component": "Toast",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--mobile-swipe-to-dismiss__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8401f128985a754e9a6dea0d792d35396cf31ab63734a01db49932ef57e1e225",
+      "shot": {
+        "sha256": "8401f128985a754e9a6dea0d792d35396cf31ab63734a01db49932ef57e1e225",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--mobile-swipe-to-dismiss",
+        "title": "Core/Toast",
+        "name": "Mobile situations / Swipe to dismiss",
+        "component": "Toast",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-gothic",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--mobile-swipe-to-dismiss__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "289b7187d19d4999a9e485ef91a76aadbd565f715e3f3a4560489e7aed2be278",
+      "shot": {
+        "sha256": "289b7187d19d4999a9e485ef91a76aadbd565f715e3f3a4560489e7aed2be278",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--mobile-swipe-to-dismiss",
+        "title": "Core/Toast",
+        "name": "Mobile situations / Swipe to dismiss",
+        "component": "Toast",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--mobile-swipe-to-dismiss__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8c1d3998b564216ee050670429e5589b73be69075df2757f737277da2d96c789",
+      "shot": {
+        "sha256": "8c1d3998b564216ee050670429e5589b73be69075df2757f737277da2d96c789",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--mobile-swipe-to-dismiss",
+        "title": "Core/Toast",
+        "name": "Mobile situations / Swipe to dismiss",
+        "component": "Toast",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-stone",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--mobile-swipe-to-dismiss__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3374511e5e97cad1bd404c501bb1a2bac57dfbbb317fc586ab3c0d103efd7566",
+      "shot": {
+        "sha256": "3374511e5e97cad1bd404c501bb1a2bac57dfbbb317fc586ab3c0d103efd7566",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--mobile-swipe-to-dismiss",
+        "title": "Core/Toast",
+        "name": "Mobile situations / Swipe to dismiss",
+        "component": "Toast",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--mobile-swipe-to-dismiss__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "dc818ce69ba833a3e4688120eb5601dc068df475abd4ac89b0ef81de5700759d",
+      "shot": {
+        "sha256": "dc818ce69ba833a3e4688120eb5601dc068df475abd4ac89b0ef81de5700759d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--mobile-swipe-to-dismiss",
+        "title": "Core/Toast",
+        "name": "Mobile situations / Swipe to dismiss",
+        "component": "Toast",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-y2k",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--mobile-swipe-to-dismiss__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "07f397fcbee054cc26a0565fdfb806949653610361e7ea5c5a1263b1a56be581",
+      "shot": {
+        "sha256": "07f397fcbee054cc26a0565fdfb806949653610361e7ea5c5a1263b1a56be581",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--mobile-swipe-to-dismiss",
+        "title": "Core/Toast",
+        "name": "Mobile situations / Swipe to dismiss",
+        "component": "Toast",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--mobile-swipe-to-dismiss__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "48283d9a4de2e1d54c784531901ba1431e53c15a57f78ac9782fef59b78586d7",
+      "shot": {
+        "sha256": "48283d9a4de2e1d54c784531901ba1431e53c15a57f78ac9782fef59b78586d7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--mobile-swipe-to-dismiss",
+        "title": "Core/Toast",
+        "name": "Mobile situations / Swipe to dismiss",
+        "component": "Toast",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-matcha",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--mobile-swipe-to-dismiss__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6578f379324b25b4a9ef662921ece4018d98280f4085c2374afa7211bf5fbffa",
+      "shot": {
+        "sha256": "6578f379324b25b4a9ef662921ece4018d98280f4085c2374afa7211bf5fbffa",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--mobile-swipe-to-dismiss",
+        "title": "Core/Toast",
+        "name": "Mobile situations / Swipe to dismiss",
+        "component": "Toast",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-toast--mobile-swipe-to-dismiss__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b943b86b937632ecc3b1fd7ed87c62eaf7985340f2b85ff486c22de5ad86d6c2",
+      "shot": {
+        "sha256": "b943b86b937632ecc3b1fd7ed87c62eaf7985340f2b85ff486c22de5ad86d6c2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-toast--mobile-swipe-to-dismiss",
+        "title": "Core/Toast",
+        "name": "Mobile situations / Swipe to dismiss",
+        "component": "Toast",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-chocolate",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    }
+  ],
+  "decision": {
+    "approver": "rubyycheung",
+    "approverId": 254546175,
+    "permission": "write",
+    "effectivePermission": "maintain",
+    "roleName": "Repo Owner",
+    "reason": "Adds the intended Mobile situations / Swipe to dismiss story across all seven stable themes in light and dark modes; 224 existing frames are unchanged, with 14 expected additions and 0 changed, removed, or failed frames.",
+    "commentId": 5458884392,
+    "at": "2026-08-28T23:42:42.312Z"
+  }
+}

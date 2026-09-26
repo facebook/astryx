@@ -1,0 +1,1 @@
+import{J as e,Z as t,q as n}from"./padding.stylex-C-GcuG1E.js";import{r}from"./index-BvsTu2Ox.js";import{n as i}from"./BlockDocContext-D6Oa4Cmo.js";var a=t(e(),1),o=n();function s(){let[e,t]=(0,a.useState)(50);return(0,o.jsx)(r,{label:`Volume`,value:e,onChange:t,style:{width:300}})}function c(){return(0,o.jsx)(i,{children:(0,o.jsx)(s,{})})}export{c as default};

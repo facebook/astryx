@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "status": "skipped",
+  "generatedAt": "2026-09-23T03:05:17.393Z",
+  "reason": "Broad stable scope is deferred to the daily release gate. It covers 386 trusted baseline shots instead of recapturing them for this PR.",
+  "context": {
+    "sha": "d1260af5503a6506ded0f9200729c3ee1d90a89c",
+    "headSha": "d1260af5503a6506ded0f9200729c3ee1d90a89c",
+    "baseSha": "158512f79464dd7b87e08337b84698267e327571",
+    "runId": "35806378584",
+    "runAttempt": "1",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": true,
+      "stableComponents": [
+        "ButtonGroup",
+        "OverflowList",
+        "Popover"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/ButtonGroup/ButtonGroup.tsx",
+        "packages/core/src/OverflowList/OverflowList.tsx",
+        "packages/core/src/Popover/Popover.tsx",
+        "packages/core/src/hooks/useListFocus.ts"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "counts": {
+    "total": 386,
+    "unchanged": 0,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "components": [
+    "ButtonGroup",
+    "OverflowList",
+    "Popover"
+  ],
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": []
+}

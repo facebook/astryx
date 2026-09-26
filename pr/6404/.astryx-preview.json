@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6404,
+    "headSha": "0d86420761c52cb040e5a046d41c031426d281d0",
+    "headRef": "rocky/issue-6393-collapse-mixed-agent-activity",
+    "headRepository": "AKnassa/astryx",
+    "headRepositoryId": "1286656571"
+  },
+  "sourceRun": {
+    "id": 35545514997,
+    "attempt": 1,
+    "conclusion": "failure"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/6404/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": false,
+      "path": "pr/6404/sandbox/",
+      "indexSha256": null
+    }
+  }
+}

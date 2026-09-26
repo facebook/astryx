@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6653,
+    "headSha": "601cc95dc411542b2c74ed54757cf7d6bc896e3f",
+    "headRef": "night-watch-component-audit/ChatSendButton/2026-09-26",
+    "headRepository": "facebook/astryx",
+    "headRepositoryId": "1131202426"
+  },
+  "sourceRun": {
+    "id": 36246976559,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/6653/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6653/sandbox/",
+      "indexSha256": "65411e602f2d384ff040b125520f3f9bb14ba8320730352398c1f06d4f458410"
+    }
+  }
+}

@@ -1,0 +1,1 @@
+import{q as e}from"./padding.stylex-C-GcuG1E.js";import{t}from"./Tooltip-CjOj4OzH.js";var n=e();function r({content:e,children:r}){return(0,n.jsx)(t,{content:e,placement:`above`,focusTrigger:`always`,children:r})}export{r as default};

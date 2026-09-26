@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 4961,
+  "headSha": "825c2c2054f095a82ac881a52f8f3987d66bb050",
+  "testedSha": "825c2c2054f095a82ac881a52f8f3987d66bb050",
+  "baseSha": "6298680a9002c6db7669a49eb0e461bf13707a05",
+  "run": {
+    "id": 35593662750,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-21T12:50:09.906Z",
+    "context": {
+      "sha": "825c2c2054f095a82ac881a52f8f3987d66bb050",
+      "runId": "35593662750",
+      "runAttempt": "1",
+      "headSha": "825c2c2054f095a82ac881a52f8f3987d66bb050",
+      "baseSha": "6298680a9002c6db7669a49eb0e461bf13707a05",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "TopNav"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/TopNav/TopNavMegaMenu.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-12T01:13:50.430Z",
+      "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 2,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

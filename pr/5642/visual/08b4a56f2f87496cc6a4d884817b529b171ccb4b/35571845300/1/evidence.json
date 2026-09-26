@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5642,
+  "headSha": "08b4a56f2f87496cc6a4d884817b529b171ccb4b",
+  "testedSha": "08b4a56f2f87496cc6a4d884817b529b171ccb4b",
+  "baseSha": "023c3e4cfed02471c942b0c01573a19c4b11df8d",
+  "run": {
+    "id": 35571845300,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-21T08:32:01.249Z",
+    "context": {
+      "sha": "08b4a56f2f87496cc6a4d884817b529b171ccb4b",
+      "runId": "35571845300",
+      "runAttempt": "1",
+      "headSha": "08b4a56f2f87496cc6a4d884817b529b171ccb4b",
+      "baseSha": "023c3e4cfed02471c942b0c01573a19c4b11df8d",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Dialog"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Dialog/Dialog.tsx",
+          "packages/core/src/Dialog/__tests__/Dialog.a11y.known-failures.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-12T01:13:50.430Z",
+      "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 2,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

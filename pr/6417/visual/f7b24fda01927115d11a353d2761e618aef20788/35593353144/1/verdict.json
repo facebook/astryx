@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-21T11:57:44.706Z",
+  "context": {
+    "sha": "f7b24fda01927115d11a353d2761e618aef20788",
+    "runId": "35593353144",
+    "runAttempt": "1",
+    "headSha": "f7b24fda01927115d11a353d2761e618aef20788",
+    "baseSha": "6298680a9002c6db7669a49eb0e461bf13707a05",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "PowerSearch"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/PowerSearch/PowerSearch.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-12T01:13:50.430Z",
+    "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 2,
+    "unchanged": 2,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

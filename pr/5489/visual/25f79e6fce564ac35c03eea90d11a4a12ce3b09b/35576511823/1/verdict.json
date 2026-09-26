@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-21T09:30:13.806Z",
+  "context": {
+    "sha": "25f79e6fce564ac35c03eea90d11a4a12ce3b09b",
+    "runId": "35576511823",
+    "runAttempt": "1",
+    "headSha": "25f79e6fce564ac35c03eea90d11a4a12ce3b09b",
+    "baseSha": "c8d5849619b3f73b9b1015a7eeba3b16e9413f94",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Table"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Table/BaseTable.tsx",
+        "packages/core/src/Table/Table.tsx",
+        "packages/core/src/Table/index.ts",
+        "packages/core/src/Table/plugins/selection/TableBulkActionsToolbar.tsx",
+        "packages/core/src/Table/plugins/selection/index.ts",
+        "packages/core/src/Table/plugins/selection/useTableSelection.tsx",
+        "packages/core/src/Table/types.ts"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-12T01:13:50.430Z",
+    "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 2,
+    "unchanged": 2,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-10T17:22:50.818Z",
+  "context": {
+    "sha": "2cac78443f4d7d2fd943057bf7dad0426c74afd0",
+    "runId": "34503975653",
+    "runAttempt": "1",
+    "headSha": "2cac78443f4d7d2fd943057bf7dad0426c74afd0",
+    "baseSha": "cf3ae89e40c8d6f36dcd03aa7861a06951285311",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Table"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Table/plugins/groupedRows/useTableGroupedRows.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-09T13:21:32.655Z",
+    "sha": "4a31578d288df665a1ceabab296d430f6e361cb5",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 2,
+    "unchanged": 2,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

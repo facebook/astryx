@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6623,
+    "headSha": "22dd93fa8564a9f3cc5d7c4151dc9b6ea2bb5394",
+    "headRef": "fix/cli-init-remove-reports-nothing",
+    "headRepository": "facebook/astryx",
+    "headRepositoryId": "1131202426"
+  },
+  "sourceRun": {
+    "id": 36071044372,
+    "attempt": 1,
+    "conclusion": "failure"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/6623/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": false,
+      "path": "pr/6623/sandbox/",
+      "indexSha256": null
+    }
+  }
+}

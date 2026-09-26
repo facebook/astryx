@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 4314,
+  "headSha": "03a1c89bed05704322e58a8384ba6890e2ac4598",
+  "testedSha": "03a1c89bed05704322e58a8384ba6890e2ac4598",
+  "baseSha": "c2ae093f4e82c23ae419602cdd2186c464e1e159",
+  "run": {
+    "id": 33231100820,
+    "attempt": 1
+  },
+  "capture": null,
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "skipped",
+    "generatedAt": "2026-08-29T03:39:28.564Z",
+    "reason": "Broad stable scope is deferred to the daily release gate. It covers 1964 trusted baseline shots instead of recapturing them for this PR.",
+    "context": {
+      "sha": "03a1c89bed05704322e58a8384ba6890e2ac4598",
+      "headSha": "03a1c89bed05704322e58a8384ba6890e2ac4598",
+      "baseSha": "c2ae093f4e82c23ae419602cdd2186c464e1e159",
+      "runId": "33231100820",
+      "runAttempt": "1",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": true,
+        "stableComponents": [
+          "CodeBlock"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/CodeBlock/CodeBlock.tsx",
+          "packages/core/src/theme/derivedVarRegistry.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "counts": {
+      "total": 1964,
+      "unchanged": 0,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "components": [
+      "CodeBlock"
+    ],
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": []
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 6221,
+  "headSha": "dd513b1980b88e77e270b65e2ab1c4af919904a1",
+  "testedSha": "dd513b1980b88e77e270b65e2ab1c4af919904a1",
+  "baseSha": "023c3e4cfed02471c942b0c01573a19c4b11df8d",
+  "run": {
+    "id": 35643474139,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-21T20:46:52.737Z",
+    "context": {
+      "sha": "dd513b1980b88e77e270b65e2ab1c4af919904a1",
+      "runId": "35643474139",
+      "runAttempt": "1",
+      "headSha": "dd513b1980b88e77e270b65e2ab1c4af919904a1",
+      "baseSha": "023c3e4cfed02471c942b0c01573a19c4b11df8d",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Table"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Table/index.ts",
+          "packages/core/src/Table/plugins/groupedRows/useTableGroupedRows.tsx",
+          "packages/core/src/Table/plugins/stickyHeader/index.ts",
+          "packages/core/src/Table/plugins/stickyHeader/useTableStickyHeader.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-12T01:13:50.430Z",
+      "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 2,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

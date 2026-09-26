@@ -1,0 +1,1 @@
+function e(e,t){return e.graphicalItems.cartesianItems.find(e=>e.id===t)?.xAxisId??0}function t(e,t){return e.graphicalItems.cartesianItems.find(e=>e.id===t)?.yAxisId??0}export{t as n,e as t};

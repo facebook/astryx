@@ -1,0 +1,1 @@
+import{i as e}from"./preload-helper-CT_b8DTk.js";import{Da as t,Ea as n,Ga as r,Ka as i,Ta as a,wa as o}from"./iframe-wpCtO5-1.js";var s;e((()=>{n(),a(),i(),s=(0,r(t(),1).default)(2)(async(e,t)=>e===!1?t:o(t))}))();export{s as formatter};

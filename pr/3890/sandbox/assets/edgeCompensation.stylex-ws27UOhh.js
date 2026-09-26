@@ -1,0 +1,1 @@
+var e=`data-astryx-edge-comp`,t={keTefX:`x1kftj4p`,k71WvV:`x92e2el`,$$css:!0},n={inset:e=>[t,{"--x-126w13d":(e=>typeof e==`number`?e+`px`:e??void 0)(`calc(-1 * ${e})`),"--x-4drmnv":(e=>typeof e==`number`?e+`px`:e??void 0)(`calc(-1 * ${e})`)}]};export{n,e as t};

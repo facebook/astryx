@@ -1,0 +1,1 @@
+import{J as e,Z as t}from"./padding.stylex-Dhh1fYrP.js";import{n}from"./FieldLabel-DBeodY_m.js";var r=t(e(),1);function i({isRequired:e=!1,isOptional:t=!1}){let{defaultOptionality:i}=(0,r.use)(n);return!t&&(e||i===`required`)}export{i as t};

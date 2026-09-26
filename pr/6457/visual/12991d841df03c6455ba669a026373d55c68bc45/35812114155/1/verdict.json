@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-23T04:08:06.599Z",
+  "context": {
+    "sha": "12991d841df03c6455ba669a026373d55c68bc45",
+    "runId": "35812114155",
+    "runAttempt": "1",
+    "headSha": "12991d841df03c6455ba669a026373d55c68bc45",
+    "baseSha": "158512f79464dd7b87e08337b84698267e327571",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "BottomSheet",
+        "Dialog",
+        "Layer",
+        "Lightbox",
+        "MobileNav",
+        "Toast"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/BottomSheet/BottomSheetPanel.tsx",
+        "packages/core/src/Dialog/Dialog.tsx",
+        "packages/core/src/Layer/__tests__/LayerTextBoundary.a11y.chromium.spec.ts",
+        "packages/core/src/Layer/index.ts",
+        "packages/core/src/Layer/layerTextReset.stylex.ts",
+        "packages/core/src/Layer/useLayer.tsx",
+        "packages/core/src/Lightbox/Lightbox.tsx",
+        "packages/core/src/MobileNav/MobileNav.tsx",
+        "packages/core/src/Toast/ToastViewport.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": [
+        "@astryxdesign/lab"
+      ]
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-12T01:13:50.430Z",
+    "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 10,
+    "unchanged": 10,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

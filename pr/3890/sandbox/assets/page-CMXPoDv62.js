@@ -1,0 +1,1 @@
+import{J as e,Z as t,q as n}from"./padding.stylex-C-GcuG1E.js";import{t as r}from"./Calendar-D0nPf_9I.js";import{n as i}from"./BlockDocContext-D6Oa4Cmo.js";var a=t(e(),1),o=n();function s(){let[e,t]=(0,a.useState)(`2026-04-15`);return(0,o.jsx)(r,{mode:`single`,value:e,onChange:t})}function c(){return(0,o.jsx)(i,{children:(0,o.jsx)(s,{})})}export{c as default};

@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 5489,
+    "headSha": "11503afa26fa537dcfca2bfabb11e8a60413269b",
+    "headRef": "feat/table-selection-bulk-actions",
+    "headRepository": "humbertovirtudes/astryx",
+    "headRepositoryId": "1280505123"
+  },
+  "sourceRun": {
+    "id": 36132531680,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/5489/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/5489/sandbox/",
+      "indexSha256": "bf301296aad2200f8a876e4e7aff567f6ee9b54cc82facdaf56a6921a7ae8305"
+    }
+  }
+}

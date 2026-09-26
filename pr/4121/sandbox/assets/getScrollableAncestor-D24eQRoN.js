@@ -1,0 +1,1 @@
+function e(e,{requireOverflow:t=!0}={}){for(let n=e?.parentElement??null;n!=null;n=n.parentElement){let{overflowY:e}=window.getComputedStyle(n);if((e===`auto`||e===`scroll`||e===`overlay`)&&(!t||n.scrollHeight>n.clientHeight))return n}return null}export{e as t};

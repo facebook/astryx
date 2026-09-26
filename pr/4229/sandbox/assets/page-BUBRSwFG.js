@@ -1,0 +1,1 @@
+import{q as e}from"./padding.stylex-C-GcuG1E.js";import{t}from"./Text-D02T_EDN.js";import{n,t as r}from"./LayoutContent-Bxqq0ePR.js";var i=e();function a(){return(0,i.jsx)(n,{content:(0,i.jsx)(r,{children:(0,i.jsx)(t,{type:`large`,children:`New Page`})})})}export{a as default};

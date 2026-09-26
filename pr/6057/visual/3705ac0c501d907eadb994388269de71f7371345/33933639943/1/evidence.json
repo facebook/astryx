@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 6057,
+  "headSha": "3705ac0c501d907eadb994388269de71f7371345",
+  "testedSha": "3705ac0c501d907eadb994388269de71f7371345",
+  "baseSha": "f613dcb64e32b09d41713cf141a5a3f1ccfe6cb0",
+  "run": {
+    "id": 33933639943,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-05T01:00:34.900Z",
+    "context": {
+      "sha": "3705ac0c501d907eadb994388269de71f7371345",
+      "runId": "33933639943",
+      "runAttempt": "1",
+      "headSha": "3705ac0c501d907eadb994388269de71f7371345",
+      "baseSha": "f613dcb64e32b09d41713cf141a5a3f1ccfe6cb0",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Tokenizer"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Tokenizer/Tokenizer.tsx",
+          "packages/core/src/Tokenizer/useEndLaneReserve.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-03T16:04:27.248Z",
+      "sha": "5d873281643e752567722ecb691325de1b8b2f86",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 2,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

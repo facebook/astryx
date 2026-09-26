@@ -1,0 +1,1029 @@
+{
+  "version": 1,
+  "status": "changed",
+  "generatedAt": "2026-09-26T04:52:40.542Z",
+  "platform": "linux-arm64",
+  "reason": "",
+  "context": {
+    "sha": "15e70e2ae6a88a15ec5d1a5e3651eab40e0f0e7f",
+    "headSha": "1b49a0e6c1ec571e9ee2bd7afb1be9aa7b45db8f",
+    "baseSha": "82fb22c3c14b4095dd20902c812f2c0908e9e53a",
+    "runId": "36217739005",
+    "runAttempt": "1"
+  },
+  "baseline": {
+    "sha": "82fb22c3c14b4095dd20902c812f2c0908e9e53a"
+  },
+  "counts": {
+    "total": 420,
+    "unchanged": 419,
+    "changed": 1,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [
+    {
+      "key": "core-sidenav--resizable-in-app-shell__probe-dark",
+      "component": "SideNav",
+      "title": "Core/SideNav",
+      "name": "Resizable in AppShell",
+      "theme": "probe",
+      "mode": "dark",
+      "diffPixels": 3208,
+      "diffRatio": 0.003996,
+      "sizeChanged": false,
+      "reasons": [
+        "probe"
+      ]
+    }
+  ],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [
+      {
+        "theme": "butter",
+        "key": "heading",
+        "selector": "level:6"
+      },
+      {
+        "theme": "butter",
+        "key": "heading",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "butter",
+        "key": "heading",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "butter",
+        "key": "heading",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "butter",
+        "key": "text",
+        "selector": "type:code"
+      },
+      {
+        "theme": "butter",
+        "key": "text",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "butter",
+        "key": "text",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "butter",
+        "key": "text",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "butter",
+        "key": "top-nav-item",
+        "selector": "selected"
+      },
+      {
+        "theme": "butter",
+        "key": "badge",
+        "selector": "variant:success"
+      },
+      {
+        "theme": "butter",
+        "key": "badge",
+        "selector": "variant:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "badge",
+        "selector": "variant:error"
+      },
+      {
+        "theme": "butter",
+        "key": "banner",
+        "selector": "status:success"
+      },
+      {
+        "theme": "butter",
+        "key": "banner",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "banner",
+        "selector": "status:error"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:info"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:success"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:error"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:blue"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:cyan"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:gray"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:green"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:orange"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:pink"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:purple"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:red"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:teal"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:yellow"
+      },
+      {
+        "theme": "butter",
+        "key": "card",
+        "selector": "variant:muted"
+      },
+      {
+        "theme": "butter",
+        "key": "progress-bar-fill",
+        "selector": "variant:success"
+      },
+      {
+        "theme": "butter",
+        "key": "progress-bar-fill",
+        "selector": "variant:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "progress-bar-fill",
+        "selector": "variant:error"
+      },
+      {
+        "theme": "butter",
+        "key": "text-input",
+        "selector": "status:success"
+      },
+      {
+        "theme": "butter",
+        "key": "text-input",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "text-input",
+        "selector": "status:error"
+      },
+      {
+        "theme": "butter",
+        "key": "text-area",
+        "selector": "status:success"
+      },
+      {
+        "theme": "butter",
+        "key": "text-area",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "text-area",
+        "selector": "status:error"
+      },
+      {
+        "theme": "butter",
+        "key": "number-input",
+        "selector": "status:success"
+      },
+      {
+        "theme": "butter",
+        "key": "number-input",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "number-input",
+        "selector": "status:error"
+      },
+      {
+        "theme": "butter",
+        "key": "date-input",
+        "selector": "status:success"
+      },
+      {
+        "theme": "butter",
+        "key": "date-input",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "date-input",
+        "selector": "status:error"
+      },
+      {
+        "theme": "butter",
+        "key": "time-input",
+        "selector": "status:success"
+      },
+      {
+        "theme": "butter",
+        "key": "time-input",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "time-input",
+        "selector": "status:error"
+      },
+      {
+        "theme": "butter",
+        "key": "selector",
+        "selector": "status:success"
+      },
+      {
+        "theme": "butter",
+        "key": "selector",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "selector",
+        "selector": "status:error"
+      },
+      {
+        "theme": "butter",
+        "key": "multi-selector",
+        "selector": "status:success"
+      },
+      {
+        "theme": "butter",
+        "key": "multi-selector",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "multi-selector",
+        "selector": "status:error"
+      },
+      {
+        "theme": "butter",
+        "key": "typeahead",
+        "selector": "status:success"
+      },
+      {
+        "theme": "butter",
+        "key": "typeahead",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "typeahead",
+        "selector": "status:error"
+      },
+      {
+        "theme": "butter",
+        "key": "tokenizer",
+        "selector": "status:success"
+      },
+      {
+        "theme": "butter",
+        "key": "tokenizer",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "butter",
+        "key": "tokenizer",
+        "selector": "status:error"
+      },
+      {
+        "theme": "chocolate",
+        "key": "heading",
+        "selector": "level:6"
+      },
+      {
+        "theme": "chocolate",
+        "key": "heading",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "chocolate",
+        "key": "heading",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "chocolate",
+        "key": "heading",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "chocolate",
+        "key": "text",
+        "selector": "type:code"
+      },
+      {
+        "theme": "chocolate",
+        "key": "text",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "chocolate",
+        "key": "text",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "chocolate",
+        "key": "text",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "gothic",
+        "key": "heading",
+        "selector": "level:6"
+      },
+      {
+        "theme": "gothic",
+        "key": "heading",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "gothic",
+        "key": "heading",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "gothic",
+        "key": "heading",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "gothic",
+        "key": "text",
+        "selector": "type:code"
+      },
+      {
+        "theme": "gothic",
+        "key": "text",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "gothic",
+        "key": "text",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "gothic",
+        "key": "text",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "gothic",
+        "key": "badge",
+        "selector": "variant:success"
+      },
+      {
+        "theme": "gothic",
+        "key": "badge",
+        "selector": "variant:warning"
+      },
+      {
+        "theme": "gothic",
+        "key": "badge",
+        "selector": "variant:error"
+      },
+      {
+        "theme": "gothic",
+        "key": "banner",
+        "selector": "status:success"
+      },
+      {
+        "theme": "gothic",
+        "key": "banner",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "gothic",
+        "key": "banner",
+        "selector": "status:error"
+      },
+      {
+        "theme": "gothic",
+        "key": "card",
+        "selector": "variant:blue"
+      },
+      {
+        "theme": "gothic",
+        "key": "card",
+        "selector": "variant:cyan"
+      },
+      {
+        "theme": "gothic",
+        "key": "card",
+        "selector": "variant:gray"
+      },
+      {
+        "theme": "gothic",
+        "key": "card",
+        "selector": "variant:green"
+      },
+      {
+        "theme": "gothic",
+        "key": "card",
+        "selector": "variant:orange"
+      },
+      {
+        "theme": "gothic",
+        "key": "card",
+        "selector": "variant:pink"
+      },
+      {
+        "theme": "gothic",
+        "key": "card",
+        "selector": "variant:purple"
+      },
+      {
+        "theme": "gothic",
+        "key": "card",
+        "selector": "variant:red"
+      },
+      {
+        "theme": "gothic",
+        "key": "card",
+        "selector": "variant:teal"
+      },
+      {
+        "theme": "gothic",
+        "key": "card",
+        "selector": "variant:yellow"
+      },
+      {
+        "theme": "matcha",
+        "key": "heading",
+        "selector": "level:6"
+      },
+      {
+        "theme": "matcha",
+        "key": "heading",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "matcha",
+        "key": "heading",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "matcha",
+        "key": "heading",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "matcha",
+        "key": "text",
+        "selector": "type:code"
+      },
+      {
+        "theme": "matcha",
+        "key": "text",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "matcha",
+        "key": "text",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "matcha",
+        "key": "text",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "neutral",
+        "key": "heading",
+        "selector": "level:6"
+      },
+      {
+        "theme": "neutral",
+        "key": "heading",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "neutral",
+        "key": "heading",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "neutral",
+        "key": "heading",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "neutral",
+        "key": "text",
+        "selector": "type:code"
+      },
+      {
+        "theme": "neutral",
+        "key": "text",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "neutral",
+        "key": "text",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "neutral",
+        "key": "text",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:success"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:warning"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:error"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:red"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:orange"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:yellow"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:green"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:teal"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:cyan"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:blue"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:purple"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:pink"
+      },
+      {
+        "theme": "neutral",
+        "key": "badge",
+        "selector": "variant:gray"
+      },
+      {
+        "theme": "neutral",
+        "key": "status-dot",
+        "selector": "variant:accent"
+      },
+      {
+        "theme": "neutral",
+        "key": "segmented-control-item",
+        "selector": "size:sm"
+      },
+      {
+        "theme": "neutral",
+        "key": "segmented-control-item",
+        "selector": "size:lg"
+      },
+      {
+        "theme": "neutral",
+        "key": "segmented-control-item",
+        "selector": "selected"
+      },
+      {
+        "theme": "neutral",
+        "key": "banner",
+        "selector": "status:success"
+      },
+      {
+        "theme": "neutral",
+        "key": "banner",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "neutral",
+        "key": "banner",
+        "selector": "status:error"
+      },
+      {
+        "theme": "neutral",
+        "key": "step-indicator",
+        "selector": "status:accent"
+      },
+      {
+        "theme": "neutral",
+        "key": "step-indicator",
+        "selector": "status:success"
+      },
+      {
+        "theme": "neutral",
+        "key": "step-indicator",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "neutral",
+        "key": "step-indicator",
+        "selector": "status:error"
+      },
+      {
+        "theme": "neutral",
+        "key": "progress-bar",
+        "selector": "variant:success"
+      },
+      {
+        "theme": "neutral",
+        "key": "progress-bar",
+        "selector": "variant:warning"
+      },
+      {
+        "theme": "neutral",
+        "key": "progress-bar",
+        "selector": "variant:error"
+      },
+      {
+        "theme": "stone",
+        "key": "heading",
+        "selector": "level:6"
+      },
+      {
+        "theme": "stone",
+        "key": "heading",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "stone",
+        "key": "heading",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "stone",
+        "key": "heading",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "stone",
+        "key": "text",
+        "selector": "type:code"
+      },
+      {
+        "theme": "stone",
+        "key": "text",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "stone",
+        "key": "text",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "stone",
+        "key": "text",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "stone",
+        "key": "badge",
+        "selector": "variant:success"
+      },
+      {
+        "theme": "stone",
+        "key": "badge",
+        "selector": "variant:warning"
+      },
+      {
+        "theme": "stone",
+        "key": "badge",
+        "selector": "variant:error"
+      },
+      {
+        "theme": "stone",
+        "key": "banner",
+        "selector": "status:success"
+      },
+      {
+        "theme": "stone",
+        "key": "banner",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "stone",
+        "key": "banner",
+        "selector": "status:error"
+      },
+      {
+        "theme": "stone",
+        "key": "progress-bar-fill",
+        "selector": "variant:success"
+      },
+      {
+        "theme": "stone",
+        "key": "progress-bar-fill",
+        "selector": "variant:warning"
+      },
+      {
+        "theme": "stone",
+        "key": "progress-bar-fill",
+        "selector": "variant:error"
+      },
+      {
+        "theme": "stone",
+        "key": "text-input",
+        "selector": "status:success"
+      },
+      {
+        "theme": "stone",
+        "key": "text-input",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "stone",
+        "key": "text-input",
+        "selector": "status:error"
+      },
+      {
+        "theme": "stone",
+        "key": "text-area",
+        "selector": "status:success"
+      },
+      {
+        "theme": "stone",
+        "key": "text-area",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "stone",
+        "key": "text-area",
+        "selector": "status:error"
+      },
+      {
+        "theme": "stone",
+        "key": "number-input",
+        "selector": "status:success"
+      },
+      {
+        "theme": "stone",
+        "key": "number-input",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "stone",
+        "key": "number-input",
+        "selector": "status:error"
+      },
+      {
+        "theme": "stone",
+        "key": "date-input",
+        "selector": "status:success"
+      },
+      {
+        "theme": "stone",
+        "key": "date-input",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "stone",
+        "key": "date-input",
+        "selector": "status:error"
+      },
+      {
+        "theme": "stone",
+        "key": "time-input",
+        "selector": "status:success"
+      },
+      {
+        "theme": "stone",
+        "key": "time-input",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "stone",
+        "key": "time-input",
+        "selector": "status:error"
+      },
+      {
+        "theme": "stone",
+        "key": "selector",
+        "selector": "status:success"
+      },
+      {
+        "theme": "stone",
+        "key": "selector",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "stone",
+        "key": "selector",
+        "selector": "status:error"
+      },
+      {
+        "theme": "stone",
+        "key": "multi-selector",
+        "selector": "status:success"
+      },
+      {
+        "theme": "stone",
+        "key": "multi-selector",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "stone",
+        "key": "multi-selector",
+        "selector": "status:error"
+      },
+      {
+        "theme": "stone",
+        "key": "typeahead",
+        "selector": "status:success"
+      },
+      {
+        "theme": "stone",
+        "key": "typeahead",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "stone",
+        "key": "typeahead",
+        "selector": "status:error"
+      },
+      {
+        "theme": "stone",
+        "key": "tokenizer",
+        "selector": "status:success"
+      },
+      {
+        "theme": "stone",
+        "key": "tokenizer",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "stone",
+        "key": "tokenizer",
+        "selector": "status:error"
+      },
+      {
+        "theme": "y2k",
+        "key": "heading",
+        "selector": "level:6"
+      },
+      {
+        "theme": "y2k",
+        "key": "heading",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "y2k",
+        "key": "heading",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "y2k",
+        "key": "heading",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "y2k",
+        "key": "text",
+        "selector": "type:code"
+      },
+      {
+        "theme": "y2k",
+        "key": "text",
+        "selector": "type:display-1"
+      },
+      {
+        "theme": "y2k",
+        "key": "text",
+        "selector": "type:display-2"
+      },
+      {
+        "theme": "y2k",
+        "key": "text",
+        "selector": "type:display-3"
+      },
+      {
+        "theme": "y2k",
+        "key": "top-nav-item",
+        "selector": "selected"
+      },
+      {
+        "theme": "y2k",
+        "key": "badge",
+        "selector": "variant:success"
+      },
+      {
+        "theme": "y2k",
+        "key": "badge",
+        "selector": "variant:warning"
+      },
+      {
+        "theme": "y2k",
+        "key": "badge",
+        "selector": "variant:error"
+      },
+      {
+        "theme": "y2k",
+        "key": "banner",
+        "selector": "status:success"
+      },
+      {
+        "theme": "y2k",
+        "key": "banner",
+        "selector": "status:warning"
+      },
+      {
+        "theme": "y2k",
+        "key": "banner",
+        "selector": "status:error"
+      }
+    ],
+    "uncoveredTargets": [
+      "command-palette-item",
+      "date-time-input-time-listbox",
+      "date-time-input-time-option",
+      "dialog-header-start-content",
+      "table-footer",
+      "timestamp-copy-button"
+    ],
+    "undeclaredTargets": [
+      "default-marker"
+    ]
+  }
+}

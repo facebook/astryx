@@ -1,0 +1,1 @@
+import{J as e,Z as t}from"./padding.stylex-C-GcuG1E.js";var n=t(e(),1),r=(0,n.createContext)(null);r.displayName=`DialogContext`;function i(){return(0,n.use)(r)}export{i as n,r as t};

@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 6423,
+  "headSha": "cbffd5b1eaad640b93bd8bc433ab04b01018d3f9",
+  "testedSha": "cbffd5b1eaad640b93bd8bc433ab04b01018d3f9",
+  "baseSha": "17f2a58dac128e9159a5a8cb4693720cdbfe2ff0",
+  "run": {
+    "id": 35636388059,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-21T19:22:50.126Z",
+    "context": {
+      "sha": "cbffd5b1eaad640b93bd8bc433ab04b01018d3f9",
+      "runId": "35636388059",
+      "runAttempt": "1",
+      "headSha": "cbffd5b1eaad640b93bd8bc433ab04b01018d3f9",
+      "baseSha": "17f2a58dac128e9159a5a8cb4693720cdbfe2ff0",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Chat"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Chat/ChatComposerInput.tsx",
+          "packages/core/src/Chat/chatComposerSelection.ts",
+          "packages/core/src/Chat/useChatComposerTokens.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-12T01:13:50.430Z",
+      "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 2,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5489,
+  "headSha": "36bd76945e4f93b09c7d412d73ec88db195ffb4f",
+  "testedSha": "36bd76945e4f93b09c7d412d73ec88db195ffb4f",
+  "baseSha": "d72e4d6b474d6cc46a6516fd1a6923178daff79a",
+  "run": {
+    "id": 35849539671,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-23T11:51:19.184Z",
+    "context": {
+      "sha": "36bd76945e4f93b09c7d412d73ec88db195ffb4f",
+      "runId": "35849539671",
+      "runAttempt": "1",
+      "headSha": "36bd76945e4f93b09c7d412d73ec88db195ffb4f",
+      "baseSha": "d72e4d6b474d6cc46a6516fd1a6923178daff79a",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Table"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Table/TableSelectionToolbar.tsx",
+          "packages/core/src/Table/index.ts",
+          "packages/core/src/Table/plugins/selection/index.ts",
+          "packages/core/src/Table/plugins/selection/useTableSelectionState.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-12T01:13:50.430Z",
+      "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 2,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

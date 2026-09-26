@@ -1,0 +1,1 @@
+import{i as e}from"./useTheme-BpvoQv6c.js";import{t}from"./globalIconRegistry-DJDPJJ3M.js";function n(n){return t(n,e())}export{n as t};

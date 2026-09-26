@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6515,
+    "headSha": "2c91eccd58ae4c6657124ba45a5f3c19db6e8ad1",
+    "headRef": "cli-spec/authoring-surfaces/structure-check-command-layout",
+    "headRepository": "facebook/astryx",
+    "headRepositoryId": "1131202426"
+  },
+  "sourceRun": {
+    "id": 36036590737,
+    "attempt": 1,
+    "conclusion": "failure"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/6515/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": false,
+      "path": "pr/6515/sandbox/",
+      "indexSha256": null
+    }
+  }
+}

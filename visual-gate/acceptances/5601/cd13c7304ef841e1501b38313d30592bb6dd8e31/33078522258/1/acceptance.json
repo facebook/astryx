@@ -1,0 +1,3916 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5601,
+  "headSha": "cd13c7304ef841e1501b38313d30592bb6dd8e31",
+  "testedSha": "cd13c7304ef841e1501b38313d30592bb6dd8e31",
+  "baseSha": "143c51974480dc7a6cf8f3afd942a4965467219e",
+  "run": {
+    "id": 33078522258,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "baseline": {
+    "ghPagesCommit": "48eee523e8be886ac6c14cef819e4c7407fb5196",
+    "manifestDigest": "849ec47faed2af8fe9ac9974435ff0a51015b5c934691bb2de5ae64b0e7a08df"
+  },
+  "keys": [
+    {
+      "key": "core-carousel--default__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "83b6a0bd2bb81321048bd3f887270ea7a75365a66e55df3a624bcd47b62085d0",
+      "shot": {
+        "sha256": "83b6a0bd2bb81321048bd3f887270ea7a75365a66e55df3a624bcd47b62085d0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--default",
+        "title": "Core/Carousel",
+        "name": "Default",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--default__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4db35d21a1cfb0810893dca5f1d5ad2696cdb618e1886980e360c2074543ad21",
+      "shot": {
+        "sha256": "4db35d21a1cfb0810893dca5f1d5ad2696cdb618e1886980e360c2074543ad21",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--default",
+        "title": "Core/Carousel",
+        "name": "Default",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--default__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0fabb7623640ce8b02f7859df7784853d0d9b42667ad149dd631bab7c86e6e56",
+      "shot": {
+        "sha256": "0fabb7623640ce8b02f7859df7784853d0d9b42667ad149dd631bab7c86e6e56",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--default",
+        "title": "Core/Carousel",
+        "name": "Default",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--default__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8e00a0ad06c9393e265054671b192434c8582c11e149cfdae6e87819ad154934",
+      "shot": {
+        "sha256": "8e00a0ad06c9393e265054671b192434c8582c11e149cfdae6e87819ad154934",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--default",
+        "title": "Core/Carousel",
+        "name": "Default",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--default__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "090b2564f75ab3115cf138fd834aac9606b15a6572b002ba80fd5404e31546f9",
+      "shot": {
+        "sha256": "090b2564f75ab3115cf138fd834aac9606b15a6572b002ba80fd5404e31546f9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--default",
+        "title": "Core/Carousel",
+        "name": "Default",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--default__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8fc472adf5d43dc6f8a85070c7d3bb7836e0cf27c667731ec46944abeedd82b1",
+      "shot": {
+        "sha256": "8fc472adf5d43dc6f8a85070c7d3bb7836e0cf27c667731ec46944abeedd82b1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--default",
+        "title": "Core/Carousel",
+        "name": "Default",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--default__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1449606341ed2985f320f6005eea267da1d12e6ac9757013abda2d6354b90064",
+      "shot": {
+        "sha256": "1449606341ed2985f320f6005eea267da1d12e6ac9757013abda2d6354b90064",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--default",
+        "title": "Core/Carousel",
+        "name": "Default",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--default__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "37c876c50e3532186095feff0ed473400cfcb8ec2234786abfd9edc6ef06902f",
+      "shot": {
+        "sha256": "37c876c50e3532186095feff0ed473400cfcb8ec2234786abfd9edc6ef06902f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--default",
+        "title": "Core/Carousel",
+        "name": "Default",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--default__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6cd2633a77dd2a3fb15eac0a8696201dd2743c50f3e76a9bcd23a76e942b62b8",
+      "shot": {
+        "sha256": "6cd2633a77dd2a3fb15eac0a8696201dd2743c50f3e76a9bcd23a76e942b62b8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--default",
+        "title": "Core/Carousel",
+        "name": "Default",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--default__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fd2d76d3c5174d14a761466bb704cc8e3f2f4ec26e25df37d13ef3581002ae28",
+      "shot": {
+        "sha256": "fd2d76d3c5174d14a761466bb704cc8e3f2f4ec26e25df37d13ef3581002ae28",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--default",
+        "title": "Core/Carousel",
+        "name": "Default",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--default__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "80fefb868522171dccbfaa449d42ef4ffc288badb5986f07f3d594f876817660",
+      "shot": {
+        "sha256": "80fefb868522171dccbfaa449d42ef4ffc288badb5986f07f3d594f876817660",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--default",
+        "title": "Core/Carousel",
+        "name": "Default",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--default__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cd5f779507d697a0f9403d24a7409cb67ae3c0933abdacfed6ddc42f10d5e370",
+      "shot": {
+        "sha256": "cd5f779507d697a0f9403d24a7409cb67ae3c0933abdacfed6ddc42f10d5e370",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--default",
+        "title": "Core/Carousel",
+        "name": "Default",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-remove__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "dee0ebd47aa525530d88e51b221f28476867b93eebafa20ce950298fcb88d205",
+      "shot": {
+        "sha256": "dee0ebd47aa525530d88e51b221f28476867b93eebafa20ce950298fcb88d205",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-remove",
+        "title": "Core/Carousel",
+        "name": "Thumbnails with Remove",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-remove__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a4cb6699a0de091dffeb26c35debb5910ab647d0134d6bce70c36b637dc6af4f",
+      "shot": {
+        "sha256": "a4cb6699a0de091dffeb26c35debb5910ab647d0134d6bce70c36b637dc6af4f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-remove",
+        "title": "Core/Carousel",
+        "name": "Thumbnails with Remove",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-remove__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e78ce5b805ca2cd1ec3c3c9f171221e4542fed773936653cda9165d9125b1527",
+      "shot": {
+        "sha256": "e78ce5b805ca2cd1ec3c3c9f171221e4542fed773936653cda9165d9125b1527",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-remove",
+        "title": "Core/Carousel",
+        "name": "Thumbnails with Remove",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-remove__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8eece8f627256d1eedee3e943755bdfbb7667d9dcc840bdf16f7aaad1b227f02",
+      "shot": {
+        "sha256": "8eece8f627256d1eedee3e943755bdfbb7667d9dcc840bdf16f7aaad1b227f02",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-remove",
+        "title": "Core/Carousel",
+        "name": "Thumbnails with Remove",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-remove__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c097aec6486b10f27c3ebfea3d78785fde0f0cc84b780f8343cf1b0c17965f54",
+      "shot": {
+        "sha256": "c097aec6486b10f27c3ebfea3d78785fde0f0cc84b780f8343cf1b0c17965f54",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-remove",
+        "title": "Core/Carousel",
+        "name": "Thumbnails with Remove",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-remove__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "db393faf4a9f3bd893df26d6887df69af9358444c1bd3b37c14cc18db43a2012",
+      "shot": {
+        "sha256": "db393faf4a9f3bd893df26d6887df69af9358444c1bd3b37c14cc18db43a2012",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-remove",
+        "title": "Core/Carousel",
+        "name": "Thumbnails with Remove",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-remove__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c4bbe39831075080d9b094f52990fb0a3d28f1167cee0de41d39788cf5b37d92",
+      "shot": {
+        "sha256": "c4bbe39831075080d9b094f52990fb0a3d28f1167cee0de41d39788cf5b37d92",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-remove",
+        "title": "Core/Carousel",
+        "name": "Thumbnails with Remove",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-remove__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6ad5cb85dc3596d482e94b1a3b1237a88e355b845879385540a158dd0af2d0e1",
+      "shot": {
+        "sha256": "6ad5cb85dc3596d482e94b1a3b1237a88e355b845879385540a158dd0af2d0e1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-remove",
+        "title": "Core/Carousel",
+        "name": "Thumbnails with Remove",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-remove__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8f93d48d8234b0f1cd1856bce35d97c2f6e133e5783c4aca17e0fd4198a20036",
+      "shot": {
+        "sha256": "8f93d48d8234b0f1cd1856bce35d97c2f6e133e5783c4aca17e0fd4198a20036",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-remove",
+        "title": "Core/Carousel",
+        "name": "Thumbnails with Remove",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-remove__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "805b1e3b393f05011b266acc6dcbef2a3521eda735ac3c8595274443ae7a3215",
+      "shot": {
+        "sha256": "805b1e3b393f05011b266acc6dcbef2a3521eda735ac3c8595274443ae7a3215",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-remove",
+        "title": "Core/Carousel",
+        "name": "Thumbnails with Remove",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-remove__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "49a5baafde464d4c8747046b8b6815f8b2cea3980e68b5562a95858d13f9bfa0",
+      "shot": {
+        "sha256": "49a5baafde464d4c8747046b8b6815f8b2cea3980e68b5562a95858d13f9bfa0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-remove",
+        "title": "Core/Carousel",
+        "name": "Thumbnails with Remove",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-remove__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e28d85b2f81a3ab39059017b3e9525f3cf6cac556cc15632712c2269358e85c2",
+      "shot": {
+        "sha256": "e28d85b2f81a3ab39059017b3e9525f3cf6cac556cc15632712c2269358e85c2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-remove",
+        "title": "Core/Carousel",
+        "name": "Thumbnails with Remove",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-remove__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1e7d6e938b02a72ece7bc3da4322bbbe66371d931c78960c5d4767644333b9f9",
+      "shot": {
+        "sha256": "1e7d6e938b02a72ece7bc3da4322bbbe66371d931c78960c5d4767644333b9f9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-remove",
+        "title": "Core/Carousel",
+        "name": "Thumbnails with Remove",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-remove__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "aa7b0f0bee1a19ca4c8c767fbda2591423010421091121fd1ae01126e94eef44",
+      "shot": {
+        "sha256": "aa7b0f0bee1a19ca4c8c767fbda2591423010421091121fd1ae01126e94eef44",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-remove",
+        "title": "Core/Carousel",
+        "name": "Thumbnails with Remove",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--few-items__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "09b76b709ca55b2e676b32fa6947172a21128362ceea5ab0deb3aa8938a4b22a",
+      "shot": {
+        "sha256": "09b76b709ca55b2e676b32fa6947172a21128362ceea5ab0deb3aa8938a4b22a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--few-items",
+        "title": "Core/Carousel",
+        "name": "Few Items (No Overflow)",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--few-items__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "68ee808701236da9589994252ea60ccdf5f01489d4816fb121ba33592115e75f",
+      "shot": {
+        "sha256": "68ee808701236da9589994252ea60ccdf5f01489d4816fb121ba33592115e75f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--few-items",
+        "title": "Core/Carousel",
+        "name": "Few Items (No Overflow)",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--few-items__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "de0429bd129bf12b262b8a8ee4ee65c6f47dae6cdf576efba8104d3a3debc9ca",
+      "shot": {
+        "sha256": "de0429bd129bf12b262b8a8ee4ee65c6f47dae6cdf576efba8104d3a3debc9ca",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--few-items",
+        "title": "Core/Carousel",
+        "name": "Few Items (No Overflow)",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--few-items__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "18b93d5b1707c9b937670128d154cd7a8cbe618e7e3f9d8bd90cdeaba2a6f6d4",
+      "shot": {
+        "sha256": "18b93d5b1707c9b937670128d154cd7a8cbe618e7e3f9d8bd90cdeaba2a6f6d4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--few-items",
+        "title": "Core/Carousel",
+        "name": "Few Items (No Overflow)",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--few-items__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cb65fcb59db27ff970efbcde4c615865dfdf26590fd02da5739906a554e9323d",
+      "shot": {
+        "sha256": "cb65fcb59db27ff970efbcde4c615865dfdf26590fd02da5739906a554e9323d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--few-items",
+        "title": "Core/Carousel",
+        "name": "Few Items (No Overflow)",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--few-items__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f4549f8bb6d73028dd4e12df3ece719709274ee3da5e75ec2badd21631e97faa",
+      "shot": {
+        "sha256": "f4549f8bb6d73028dd4e12df3ece719709274ee3da5e75ec2badd21631e97faa",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--few-items",
+        "title": "Core/Carousel",
+        "name": "Few Items (No Overflow)",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--few-items__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "de374eac7adc679f6e4786f67e2fa098244a2e52a1106e8369fb28032bcd26ba",
+      "shot": {
+        "sha256": "de374eac7adc679f6e4786f67e2fa098244a2e52a1106e8369fb28032bcd26ba",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--few-items",
+        "title": "Core/Carousel",
+        "name": "Few Items (No Overflow)",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--few-items__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e5a6367f13098d7f44222d038bc45ee20eca9844a750907bd66d6e9d38d0bb73",
+      "shot": {
+        "sha256": "e5a6367f13098d7f44222d038bc45ee20eca9844a750907bd66d6e9d38d0bb73",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--few-items",
+        "title": "Core/Carousel",
+        "name": "Few Items (No Overflow)",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--few-items__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fc0318dffcadc869237ef5c813e56bf2336901a63aef0d8d30d6ab3a726dece8",
+      "shot": {
+        "sha256": "fc0318dffcadc869237ef5c813e56bf2336901a63aef0d8d30d6ab3a726dece8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--few-items",
+        "title": "Core/Carousel",
+        "name": "Few Items (No Overflow)",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--few-items__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3afd4895715e2841a836aabb2e4274f6363d0347fa54ca273ae0aace257e7d4e",
+      "shot": {
+        "sha256": "3afd4895715e2841a836aabb2e4274f6363d0347fa54ca273ae0aace257e7d4e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--few-items",
+        "title": "Core/Carousel",
+        "name": "Few Items (No Overflow)",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--few-items__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ccf49e9390b69026036f268524c0a28bd73aea08f7a174ff52b656c5d7115d2b",
+      "shot": {
+        "sha256": "ccf49e9390b69026036f268524c0a28bd73aea08f7a174ff52b656c5d7115d2b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--few-items",
+        "title": "Core/Carousel",
+        "name": "Few Items (No Overflow)",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--few-items__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0fd6688782be808d6070e289aa35aef135b61a0db0af276da91d234517357afa",
+      "shot": {
+        "sha256": "0fd6688782be808d6070e289aa35aef135b61a0db0af276da91d234517357afa",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--few-items",
+        "title": "Core/Carousel",
+        "name": "Few Items (No Overflow)",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--few-items__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "46a221e9f5fe8cf382417fcff62a776d9b7c970dbd4f7e8ac88cd58ddd28511f",
+      "shot": {
+        "sha256": "46a221e9f5fe8cf382417fcff62a776d9b7c970dbd4f7e8ac88cd58ddd28511f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--few-items",
+        "title": "Core/Carousel",
+        "name": "Few Items (No Overflow)",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--few-items__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1a71443515abd26692d4accdb65edffcdeb80c7b9e579c9cd232680d9d350167",
+      "shot": {
+        "sha256": "1a71443515abd26692d4accdb65edffcdeb80c7b9e579c9cd232680d9d350167",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--few-items",
+        "title": "Core/Carousel",
+        "name": "Few Items (No Overflow)",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--cards__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bc966b3e1cd3694858909194934e6e9649112e7f109012afca4f1003acdc675c",
+      "shot": {
+        "sha256": "bc966b3e1cd3694858909194934e6e9649112e7f109012afca4f1003acdc675c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--cards",
+        "title": "Core/Carousel",
+        "name": "Card Content",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--cards__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3f372adef0b4413a1cdee6a5864335f0a391000ef4c85c1af0136f7b5c2341c3",
+      "shot": {
+        "sha256": "3f372adef0b4413a1cdee6a5864335f0a391000ef4c85c1af0136f7b5c2341c3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--cards",
+        "title": "Core/Carousel",
+        "name": "Card Content",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--cards__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5289fb9ee1455992347ad8a166e8d5a27976a0434eb319c31b2ab7c226d512e7",
+      "shot": {
+        "sha256": "5289fb9ee1455992347ad8a166e8d5a27976a0434eb319c31b2ab7c226d512e7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--cards",
+        "title": "Core/Carousel",
+        "name": "Card Content",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--cards__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "41091dcc2b29f9767fef12fb6fd022a0d7aec017397d0bfaffb2968e26d62134",
+      "shot": {
+        "sha256": "41091dcc2b29f9767fef12fb6fd022a0d7aec017397d0bfaffb2968e26d62134",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--cards",
+        "title": "Core/Carousel",
+        "name": "Card Content",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--cards__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "24a31296eae9a1e822bc88597081a8bb4a02d8a8914a699ea596657486085797",
+      "shot": {
+        "sha256": "24a31296eae9a1e822bc88597081a8bb4a02d8a8914a699ea596657486085797",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--cards",
+        "title": "Core/Carousel",
+        "name": "Card Content",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--cards__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "25aaea664e1ba4831c67cf49666620cb2b661c0eead67073ef4687ab4f010d58",
+      "shot": {
+        "sha256": "25aaea664e1ba4831c67cf49666620cb2b661c0eead67073ef4687ab4f010d58",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--cards",
+        "title": "Core/Carousel",
+        "name": "Card Content",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--cards__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f96d799ef8ceaba2d0533228e6e1df603c92679b7b7aa65b53c4244b840183eb",
+      "shot": {
+        "sha256": "f96d799ef8ceaba2d0533228e6e1df603c92679b7b7aa65b53c4244b840183eb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--cards",
+        "title": "Core/Carousel",
+        "name": "Card Content",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--cards__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4178307ce3fb49f29b12e6ddfab5d3d6892552d981e18baf57789f851a25c369",
+      "shot": {
+        "sha256": "4178307ce3fb49f29b12e6ddfab5d3d6892552d981e18baf57789f851a25c369",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--cards",
+        "title": "Core/Carousel",
+        "name": "Card Content",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--cards__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f009827fd0f60bedc439097ef05a055fa8bd2c1322dd35e8138d4c75fca4c01a",
+      "shot": {
+        "sha256": "f009827fd0f60bedc439097ef05a055fa8bd2c1322dd35e8138d4c75fca4c01a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--cards",
+        "title": "Core/Carousel",
+        "name": "Card Content",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--cards__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e732a53a5ad3e3c40c16f1aed527b9b737bc7c9b398e4265b524899ed26bdf62",
+      "shot": {
+        "sha256": "e732a53a5ad3e3c40c16f1aed527b9b737bc7c9b398e4265b524899ed26bdf62",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--cards",
+        "title": "Core/Carousel",
+        "name": "Card Content",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--cards__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e38fa5eaa8e1d22099560f369c7440268e3ddd50a2c0299110b93520fe757936",
+      "shot": {
+        "sha256": "e38fa5eaa8e1d22099560f369c7440268e3ddd50a2c0299110b93520fe757936",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--cards",
+        "title": "Core/Carousel",
+        "name": "Card Content",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--cards__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3f50ede9be0de3ec452bac1d5321f969dcc2e074adb891f5eb43a5a31698970f",
+      "shot": {
+        "sha256": "3f50ede9be0de3ec452bac1d5321f969dcc2e074adb891f5eb43a5a31698970f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--cards",
+        "title": "Core/Carousel",
+        "name": "Card Content",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--cards__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "671b3e0b193fb2182d1f95786a156c44f35e4689280dd3f80f6568015279f273",
+      "shot": {
+        "sha256": "671b3e0b193fb2182d1f95786a156c44f35e4689280dd3f80f6568015279f273",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--cards",
+        "title": "Core/Carousel",
+        "name": "Card Content",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--cards__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "46532f5990116f4c1c38497310cb4f2ac2a46aaca188f8caefb6aa7445372edd",
+      "shot": {
+        "sha256": "46532f5990116f4c1c38497310cb4f2ac2a46aaca188f8caefb6aa7445372edd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--cards",
+        "title": "Core/Carousel",
+        "name": "Card Content",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--no-buttons__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a2621c53236dad7be0c76b19f3365caed98073b72f9c6d95f9f02aa782d85dd0",
+      "shot": {
+        "sha256": "a2621c53236dad7be0c76b19f3365caed98073b72f9c6d95f9f02aa782d85dd0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--no-buttons",
+        "title": "Core/Carousel",
+        "name": "Without Buttons",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--no-buttons__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7cd4377f8aac657ec2a8c1e92322b0aec5b2c34ab42d8d7baf67536c5e6039f3",
+      "shot": {
+        "sha256": "7cd4377f8aac657ec2a8c1e92322b0aec5b2c34ab42d8d7baf67536c5e6039f3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--no-buttons",
+        "title": "Core/Carousel",
+        "name": "Without Buttons",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--no-buttons__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c2461ac64d45a0145838c7cc40f882700fe10c5a6a278805c29943f5e0fdc1e8",
+      "shot": {
+        "sha256": "c2461ac64d45a0145838c7cc40f882700fe10c5a6a278805c29943f5e0fdc1e8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--no-buttons",
+        "title": "Core/Carousel",
+        "name": "Without Buttons",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--no-buttons__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d6b3b0783499a81993b15b9cfb3f525a51bc772daef5ca478c13f3b797c2700c",
+      "shot": {
+        "sha256": "d6b3b0783499a81993b15b9cfb3f525a51bc772daef5ca478c13f3b797c2700c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--no-buttons",
+        "title": "Core/Carousel",
+        "name": "Without Buttons",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--no-buttons__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0f0b10e3b53cd9649bd002e4beea2f7e4d3e80a942f47a84ec7270ede83d457b",
+      "shot": {
+        "sha256": "0f0b10e3b53cd9649bd002e4beea2f7e4d3e80a942f47a84ec7270ede83d457b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--no-buttons",
+        "title": "Core/Carousel",
+        "name": "Without Buttons",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--no-buttons__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "699a56e792719edebed8780daf3818e25f8d7efcb43e0a15599d7ce6b47b8f34",
+      "shot": {
+        "sha256": "699a56e792719edebed8780daf3818e25f8d7efcb43e0a15599d7ce6b47b8f34",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--no-buttons",
+        "title": "Core/Carousel",
+        "name": "Without Buttons",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--no-buttons__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7ff5aec1b2be25276a979111339131d541a840771ea353f7882234d70d36d93d",
+      "shot": {
+        "sha256": "7ff5aec1b2be25276a979111339131d541a840771ea353f7882234d70d36d93d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--no-buttons",
+        "title": "Core/Carousel",
+        "name": "Without Buttons",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--no-buttons__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d031504c0c62462d93af3bc3ea5e0e44d698cc9621ef52bae276f40dab34d223",
+      "shot": {
+        "sha256": "d031504c0c62462d93af3bc3ea5e0e44d698cc9621ef52bae276f40dab34d223",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--no-buttons",
+        "title": "Core/Carousel",
+        "name": "Without Buttons",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--no-buttons__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ee44a9b1bb20d7b6066b197798a7a32b6051095933b8874de34ad2ed64cf22c8",
+      "shot": {
+        "sha256": "ee44a9b1bb20d7b6066b197798a7a32b6051095933b8874de34ad2ed64cf22c8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--no-buttons",
+        "title": "Core/Carousel",
+        "name": "Without Buttons",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--no-buttons__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5bf8fa674810466feb148cf5d74648750bbf04e29570411a707c249ccc57b9d4",
+      "shot": {
+        "sha256": "5bf8fa674810466feb148cf5d74648750bbf04e29570411a707c249ccc57b9d4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--no-buttons",
+        "title": "Core/Carousel",
+        "name": "Without Buttons",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--no-buttons__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0dab8626330559b7d975ce7d164bb17b148c9199629d1b9eae3ae20449fcd9fc",
+      "shot": {
+        "sha256": "0dab8626330559b7d975ce7d164bb17b148c9199629d1b9eae3ae20449fcd9fc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--no-buttons",
+        "title": "Core/Carousel",
+        "name": "Without Buttons",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--no-buttons__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f61b0fec42e8ae754f1bb7e50dee1c2f94f8a6809ce5ae88032540bd6ecc6862",
+      "shot": {
+        "sha256": "f61b0fec42e8ae754f1bb7e50dee1c2f94f8a6809ce5ae88032540bd6ecc6862",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--no-buttons",
+        "title": "Core/Carousel",
+        "name": "Without Buttons",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--no-buttons__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "39823287644c168e1e5bf4766b9b531c7f278264bbc718458b430770390dba55",
+      "shot": {
+        "sha256": "39823287644c168e1e5bf4766b9b531c7f278264bbc718458b430770390dba55",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--no-buttons",
+        "title": "Core/Carousel",
+        "name": "Without Buttons",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--no-buttons__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6d62f9bc36254e4e116080a7021f22673a36476b86b9fab8f5fee11c600ad6f8",
+      "shot": {
+        "sha256": "6d62f9bc36254e4e116080a7021f22673a36476b86b9fab8f5fee11c600ad6f8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--no-buttons",
+        "title": "Core/Carousel",
+        "name": "Without Buttons",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-snap__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4e1fd75e9ca039df7fdf775c3741918940a0076c12a8dd324e53535e5059d095",
+      "shot": {
+        "sha256": "4e1fd75e9ca039df7fdf775c3741918940a0076c12a8dd324e53535e5059d095",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-snap",
+        "title": "Core/Carousel",
+        "name": "Scroll Snap",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-snap__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4ae28030b062aa5838e300cd0acc54c6c422e07eac8b48285771d6d9a7b48710",
+      "shot": {
+        "sha256": "4ae28030b062aa5838e300cd0acc54c6c422e07eac8b48285771d6d9a7b48710",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-snap",
+        "title": "Core/Carousel",
+        "name": "Scroll Snap",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-snap__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3f89c229c7ab559114cbd90bbdad7bd1b5c21738db1884ed7536bf7418e23410",
+      "shot": {
+        "sha256": "3f89c229c7ab559114cbd90bbdad7bd1b5c21738db1884ed7536bf7418e23410",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-snap",
+        "title": "Core/Carousel",
+        "name": "Scroll Snap",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-snap__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4608b8b214ac0631e17e68cdbe19d0050e6ea7f6bb1056a55127c92005c5ba09",
+      "shot": {
+        "sha256": "4608b8b214ac0631e17e68cdbe19d0050e6ea7f6bb1056a55127c92005c5ba09",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-snap",
+        "title": "Core/Carousel",
+        "name": "Scroll Snap",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-snap__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "92819b94ea67ac4d76016f42ffa010b829dfc6080596d66396100a9f9fe2fb57",
+      "shot": {
+        "sha256": "92819b94ea67ac4d76016f42ffa010b829dfc6080596d66396100a9f9fe2fb57",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-snap",
+        "title": "Core/Carousel",
+        "name": "Scroll Snap",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-snap__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "06a51a5616983f1e39a30aef2901dc5897dbf8e32c7aacb8e8ebe25f696a43f1",
+      "shot": {
+        "sha256": "06a51a5616983f1e39a30aef2901dc5897dbf8e32c7aacb8e8ebe25f696a43f1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-snap",
+        "title": "Core/Carousel",
+        "name": "Scroll Snap",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-snap__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9e6679fc1bbc9b3664a150d3c03e624708f67fe7f92212f860c2879d8e1c23e2",
+      "shot": {
+        "sha256": "9e6679fc1bbc9b3664a150d3c03e624708f67fe7f92212f860c2879d8e1c23e2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-snap",
+        "title": "Core/Carousel",
+        "name": "Scroll Snap",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-snap__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b0f82e16ab60fa4d1b85f8650852f1c8bb46a70c7d572360cb432acabe1d6042",
+      "shot": {
+        "sha256": "b0f82e16ab60fa4d1b85f8650852f1c8bb46a70c7d572360cb432acabe1d6042",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-snap",
+        "title": "Core/Carousel",
+        "name": "Scroll Snap",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-snap__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "71fb53cfe7f1e04d0f6d5114a9b8bc30545f47decd26cd8a0952f9cb3025463c",
+      "shot": {
+        "sha256": "71fb53cfe7f1e04d0f6d5114a9b8bc30545f47decd26cd8a0952f9cb3025463c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-snap",
+        "title": "Core/Carousel",
+        "name": "Scroll Snap",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-snap__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b7c755b07dfba1b5697a45cc1c2bc4d99e5e0d7a1da6905a9946df196f735b1f",
+      "shot": {
+        "sha256": "b7c755b07dfba1b5697a45cc1c2bc4d99e5e0d7a1da6905a9946df196f735b1f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-snap",
+        "title": "Core/Carousel",
+        "name": "Scroll Snap",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-snap__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "937e8a3b61a1341e90a372274366932e7a5676fdedef986e2d7ed005667cafb8",
+      "shot": {
+        "sha256": "937e8a3b61a1341e90a372274366932e7a5676fdedef986e2d7ed005667cafb8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-snap",
+        "title": "Core/Carousel",
+        "name": "Scroll Snap",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-snap__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "96f645cb616229e5b9061a53e1230a763eadaf264998f8414958666b25f8fd56",
+      "shot": {
+        "sha256": "96f645cb616229e5b9061a53e1230a763eadaf264998f8414958666b25f8fd56",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-snap",
+        "title": "Core/Carousel",
+        "name": "Scroll Snap",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-snap__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "241e6e7ed25c59dce5e2a47bc64c38ce36e1f083637cc473bdaa6c2f0680343d",
+      "shot": {
+        "sha256": "241e6e7ed25c59dce5e2a47bc64c38ce36e1f083637cc473bdaa6c2f0680343d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-snap",
+        "title": "Core/Carousel",
+        "name": "Scroll Snap",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-snap__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "83a851a945eb84ce2611c46956fda66b9492690aa4f32b1196c1fabb277119e7",
+      "shot": {
+        "sha256": "83a851a945eb84ce2611c46956fda66b9492690aa4f32b1196c1fabb277119e7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-snap",
+        "title": "Core/Carousel",
+        "name": "Scroll Snap",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--large-gap__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3b36b5157acce5d7542090817d96d49a87f3b0251e33416a5892749bd492b670",
+      "shot": {
+        "sha256": "3b36b5157acce5d7542090817d96d49a87f3b0251e33416a5892749bd492b670",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--large-gap",
+        "title": "Core/Carousel",
+        "name": "Large Gap",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--large-gap__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d049dd6251a3f282d5bd087805cb7427600d8cd3bbe84c5ef1e1fa5eeab20a8e",
+      "shot": {
+        "sha256": "d049dd6251a3f282d5bd087805cb7427600d8cd3bbe84c5ef1e1fa5eeab20a8e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--large-gap",
+        "title": "Core/Carousel",
+        "name": "Large Gap",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--large-gap__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4fe2207e71431b74a3d6cca6fa0514c7e358652653f462c32e3d7230a2dcea40",
+      "shot": {
+        "sha256": "4fe2207e71431b74a3d6cca6fa0514c7e358652653f462c32e3d7230a2dcea40",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--large-gap",
+        "title": "Core/Carousel",
+        "name": "Large Gap",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--large-gap__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7b15708ddc436ade694cc7aabdfc8338d1bb5d911b86e56f6745a2cef2569021",
+      "shot": {
+        "sha256": "7b15708ddc436ade694cc7aabdfc8338d1bb5d911b86e56f6745a2cef2569021",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--large-gap",
+        "title": "Core/Carousel",
+        "name": "Large Gap",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--large-gap__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ce425a9700eac42d6f64d52af9a47e0ab8dcc13a3cfb20a147f1ab4a882f7420",
+      "shot": {
+        "sha256": "ce425a9700eac42d6f64d52af9a47e0ab8dcc13a3cfb20a147f1ab4a882f7420",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--large-gap",
+        "title": "Core/Carousel",
+        "name": "Large Gap",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--large-gap__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "656d331224ada960e85c19b0591fad3a1bbbbcd320466022523769e4dbc2d897",
+      "shot": {
+        "sha256": "656d331224ada960e85c19b0591fad3a1bbbbcd320466022523769e4dbc2d897",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--large-gap",
+        "title": "Core/Carousel",
+        "name": "Large Gap",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--large-gap__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "89df20c76a137a627461dd7d9266b162eba5ae800d1e0dfad93cab9d215ecb5e",
+      "shot": {
+        "sha256": "89df20c76a137a627461dd7d9266b162eba5ae800d1e0dfad93cab9d215ecb5e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--large-gap",
+        "title": "Core/Carousel",
+        "name": "Large Gap",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--large-gap__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "076b87fa33e40b61ca27c67a98de65a0f601312158baaa3940d540ffb83fd089",
+      "shot": {
+        "sha256": "076b87fa33e40b61ca27c67a98de65a0f601312158baaa3940d540ffb83fd089",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--large-gap",
+        "title": "Core/Carousel",
+        "name": "Large Gap",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--large-gap__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e081b6f755a6f2b7452094615d6597266bb2b58ac2cdc5527c745a0e37faf9eb",
+      "shot": {
+        "sha256": "e081b6f755a6f2b7452094615d6597266bb2b58ac2cdc5527c745a0e37faf9eb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--large-gap",
+        "title": "Core/Carousel",
+        "name": "Large Gap",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--large-gap__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "85552d18c92b59a7ed79dc762de69783b334613174caf48e03afef542f46f7a2",
+      "shot": {
+        "sha256": "85552d18c92b59a7ed79dc762de69783b334613174caf48e03afef542f46f7a2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--large-gap",
+        "title": "Core/Carousel",
+        "name": "Large Gap",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--large-gap__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5e94472a4e52ca3acc5093de52ec7a8506e04ef25d5335b93badd89dfda72325",
+      "shot": {
+        "sha256": "5e94472a4e52ca3acc5093de52ec7a8506e04ef25d5335b93badd89dfda72325",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--large-gap",
+        "title": "Core/Carousel",
+        "name": "Large Gap",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--large-gap__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2900707fcbee3ab5a42c75cde5a929a7c0fc9e97d2788f354be13355b93f265d",
+      "shot": {
+        "sha256": "2900707fcbee3ab5a42c75cde5a929a7c0fc9e97d2788f354be13355b93f265d",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--large-gap",
+        "title": "Core/Carousel",
+        "name": "Large Gap",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--large-gap__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "908c4327b9a58061cb901266b4e36b1f3e6dd56c51ea75afd695b2ca410d7450",
+      "shot": {
+        "sha256": "908c4327b9a58061cb901266b4e36b1f3e6dd56c51ea75afd695b2ca410d7450",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--large-gap",
+        "title": "Core/Carousel",
+        "name": "Large Gap",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--large-gap__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5d2690f5bf572aedbaa6d98fad424b60b3e967fd51ae24a457e6f958cffe3190",
+      "shot": {
+        "sha256": "5d2690f5bf572aedbaa6d98fad424b60b3e967fd51ae24a457e6f958cffe3190",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--large-gap",
+        "title": "Core/Carousel",
+        "name": "Large Gap",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--color-swatches__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c5d6ea7e4ffa4ceaee6144a8ecd3723c63dd0f0eb833bcc981edde3efb16c728",
+      "shot": {
+        "sha256": "c5d6ea7e4ffa4ceaee6144a8ecd3723c63dd0f0eb833bcc981edde3efb16c728",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--color-swatches",
+        "title": "Core/Carousel",
+        "name": "Custom Content (Swatches)",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--color-swatches__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "20055ff343af13f8bbd2d64c8a20440170cd010a33326cf86d7bf962a669be16",
+      "shot": {
+        "sha256": "20055ff343af13f8bbd2d64c8a20440170cd010a33326cf86d7bf962a669be16",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--color-swatches",
+        "title": "Core/Carousel",
+        "name": "Custom Content (Swatches)",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--color-swatches__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5719063cfaa6317643bdd28a8aed73319e6a96a65ed159909c9d8f7ef47cab7f",
+      "shot": {
+        "sha256": "5719063cfaa6317643bdd28a8aed73319e6a96a65ed159909c9d8f7ef47cab7f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--color-swatches",
+        "title": "Core/Carousel",
+        "name": "Custom Content (Swatches)",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--color-swatches__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "dc07c73859d933e612bd9c9fa65ac3e38b0ac322333565beeed278bcf35253ad",
+      "shot": {
+        "sha256": "dc07c73859d933e612bd9c9fa65ac3e38b0ac322333565beeed278bcf35253ad",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--color-swatches",
+        "title": "Core/Carousel",
+        "name": "Custom Content (Swatches)",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--color-swatches__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c41bed820800435f6cf8cc51e1e394c117beba604dad3a8f5bf13f794944eb9a",
+      "shot": {
+        "sha256": "c41bed820800435f6cf8cc51e1e394c117beba604dad3a8f5bf13f794944eb9a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--color-swatches",
+        "title": "Core/Carousel",
+        "name": "Custom Content (Swatches)",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--color-swatches__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "de2ee2fc0bd9c79a794343377255a11fafa92184f3e9e88f4f2a3bc02a2c0483",
+      "shot": {
+        "sha256": "de2ee2fc0bd9c79a794343377255a11fafa92184f3e9e88f4f2a3bc02a2c0483",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--color-swatches",
+        "title": "Core/Carousel",
+        "name": "Custom Content (Swatches)",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--color-swatches__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a100c08942b871675621c9d8c702f18195fa0c01c84dffd50046ddf5ceb435e4",
+      "shot": {
+        "sha256": "a100c08942b871675621c9d8c702f18195fa0c01c84dffd50046ddf5ceb435e4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--color-swatches",
+        "title": "Core/Carousel",
+        "name": "Custom Content (Swatches)",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--color-swatches__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2ee60bf5e1fb8bafd873fdde81922ce5a535ed20b6084721fbc3ccda01dbb411",
+      "shot": {
+        "sha256": "2ee60bf5e1fb8bafd873fdde81922ce5a535ed20b6084721fbc3ccda01dbb411",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--color-swatches",
+        "title": "Core/Carousel",
+        "name": "Custom Content (Swatches)",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--color-swatches__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ea46bf360d34d32ca0dc60134115b4e058bbd617c7885f9cabe248d0e30a5aa7",
+      "shot": {
+        "sha256": "ea46bf360d34d32ca0dc60134115b4e058bbd617c7885f9cabe248d0e30a5aa7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--color-swatches",
+        "title": "Core/Carousel",
+        "name": "Custom Content (Swatches)",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--color-swatches__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ab0af35482780e12cd28b99c9bd00c5375cdbcf136142eeed18fa816ea0bccc8",
+      "shot": {
+        "sha256": "ab0af35482780e12cd28b99c9bd00c5375cdbcf136142eeed18fa816ea0bccc8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--color-swatches",
+        "title": "Core/Carousel",
+        "name": "Custom Content (Swatches)",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--color-swatches__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "94b967cd6cda10c005ed7f879bd093e9d9a565e81f9ddecd03d5c20aa22fccb9",
+      "shot": {
+        "sha256": "94b967cd6cda10c005ed7f879bd093e9d9a565e81f9ddecd03d5c20aa22fccb9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--color-swatches",
+        "title": "Core/Carousel",
+        "name": "Custom Content (Swatches)",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--color-swatches__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "089bf1cf2843efa65efc9c9b59ffb171cbffd7325c8806f2db317670b21e99f5",
+      "shot": {
+        "sha256": "089bf1cf2843efa65efc9c9b59ffb171cbffd7325c8806f2db317670b21e99f5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--color-swatches",
+        "title": "Core/Carousel",
+        "name": "Custom Content (Swatches)",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--color-swatches__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "17fd2f17c010636fe819f95741282ebf6644a30cd55e80e3910c35e464586a05",
+      "shot": {
+        "sha256": "17fd2f17c010636fe819f95741282ebf6644a30cd55e80e3910c35e464586a05",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--color-swatches",
+        "title": "Core/Carousel",
+        "name": "Custom Content (Swatches)",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--color-swatches__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e32cefce93d0f6af7e6f9182870b8730aae96f403858c38e7abbb16f53174d18",
+      "shot": {
+        "sha256": "e32cefce93d0f6af7e6f9182870b8730aae96f403858c38e7abbb16f53174d18",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--color-swatches",
+        "title": "Core/Carousel",
+        "name": "Custom Content (Swatches)",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--loop__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "205d2af123a58e378badf82f3e755c415a0c34b9f824fb3ee03f318f1bf4d7ec",
+      "shot": {
+        "sha256": "205d2af123a58e378badf82f3e755c415a0c34b9f824fb3ee03f318f1bf4d7ec",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--loop",
+        "title": "Core/Carousel",
+        "name": "Loop (Wrap-Around)",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--loop__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2b6fbb7fb00a8eacfc2fe26b41ff52dc573e45dd4aa70f87016722b6278a1ce3",
+      "shot": {
+        "sha256": "2b6fbb7fb00a8eacfc2fe26b41ff52dc573e45dd4aa70f87016722b6278a1ce3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--loop",
+        "title": "Core/Carousel",
+        "name": "Loop (Wrap-Around)",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--loop__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f2664e447771ed003fc020ba5567bd7248effc43d5d7f25fc53576f7daeb415a",
+      "shot": {
+        "sha256": "f2664e447771ed003fc020ba5567bd7248effc43d5d7f25fc53576f7daeb415a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--loop",
+        "title": "Core/Carousel",
+        "name": "Loop (Wrap-Around)",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--loop__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f0bae6b0b548350abfa0d573330d53af7ae3cdcfc348646dabb71f1009a7fd57",
+      "shot": {
+        "sha256": "f0bae6b0b548350abfa0d573330d53af7ae3cdcfc348646dabb71f1009a7fd57",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--loop",
+        "title": "Core/Carousel",
+        "name": "Loop (Wrap-Around)",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--loop__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e86ace6c0edcbfc2fb216b0754957b9af37bb3f1e8e10e4de29ad6750675552c",
+      "shot": {
+        "sha256": "e86ace6c0edcbfc2fb216b0754957b9af37bb3f1e8e10e4de29ad6750675552c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--loop",
+        "title": "Core/Carousel",
+        "name": "Loop (Wrap-Around)",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--loop__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "16397f8808d712a726929e2fb13bd21f99cc213fe661dd6d1a88ad2573dda812",
+      "shot": {
+        "sha256": "16397f8808d712a726929e2fb13bd21f99cc213fe661dd6d1a88ad2573dda812",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--loop",
+        "title": "Core/Carousel",
+        "name": "Loop (Wrap-Around)",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--loop__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b7b04c7dceef94aaf40b32387e0169c94f93830c7be18041aa63b4ad5104492e",
+      "shot": {
+        "sha256": "b7b04c7dceef94aaf40b32387e0169c94f93830c7be18041aa63b4ad5104492e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--loop",
+        "title": "Core/Carousel",
+        "name": "Loop (Wrap-Around)",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--loop__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b4b15e808423fd4eb645977030999f441205f30cb8c5dd9fa9468d27fd5ecab7",
+      "shot": {
+        "sha256": "b4b15e808423fd4eb645977030999f441205f30cb8c5dd9fa9468d27fd5ecab7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--loop",
+        "title": "Core/Carousel",
+        "name": "Loop (Wrap-Around)",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--loop__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "07037f3e90e4256105d5dcd714489635c1b1ff70d31b57df9455463ff80b6269",
+      "shot": {
+        "sha256": "07037f3e90e4256105d5dcd714489635c1b1ff70d31b57df9455463ff80b6269",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--loop",
+        "title": "Core/Carousel",
+        "name": "Loop (Wrap-Around)",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--loop__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3dcb1579a30690096bd1983dda2f3fac851580712d745b08275005b4b5bf6454",
+      "shot": {
+        "sha256": "3dcb1579a30690096bd1983dda2f3fac851580712d745b08275005b4b5bf6454",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--loop",
+        "title": "Core/Carousel",
+        "name": "Loop (Wrap-Around)",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--loop__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ff6cd138dac8cc2770dcae65b89507bbc622ec28c48d9f98d3e30cb2fb876265",
+      "shot": {
+        "sha256": "ff6cd138dac8cc2770dcae65b89507bbc622ec28c48d9f98d3e30cb2fb876265",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--loop",
+        "title": "Core/Carousel",
+        "name": "Loop (Wrap-Around)",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--loop__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1969e11d6abc2c3e4015f7638c7c50b02ca1a59dd37915ada339fecc8a8d6c5f",
+      "shot": {
+        "sha256": "1969e11d6abc2c3e4015f7638c7c50b02ca1a59dd37915ada339fecc8a8d6c5f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--loop",
+        "title": "Core/Carousel",
+        "name": "Loop (Wrap-Around)",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--loop__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bb2379fa03c6b355589208a2df765cdef0610e3cc1fe75dbbcd0d2bf4b59438e",
+      "shot": {
+        "sha256": "bb2379fa03c6b355589208a2df765cdef0610e3cc1fe75dbbcd0d2bf4b59438e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--loop",
+        "title": "Core/Carousel",
+        "name": "Loop (Wrap-Around)",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--loop__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e4e9b8da552937a410936417dcdfcc5c89f0d601af0fe01c98ff2618ce5a12c9",
+      "shot": {
+        "sha256": "e4e9b8da552937a410936417dcdfcc5c89f0d601af0fe01c98ff2618ce5a12c9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--loop",
+        "title": "Core/Carousel",
+        "name": "Loop (Wrap-Around)",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--imperative-control__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "bb7f01874a2b54a4dee01bf9b45f3ff6b5108829a4951bacbb12b3f168be8da2",
+      "shot": {
+        "sha256": "bb7f01874a2b54a4dee01bf9b45f3ff6b5108829a4951bacbb12b3f168be8da2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--imperative-control",
+        "title": "Core/Carousel",
+        "name": "Imperative Control (handleRef)",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--imperative-control__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0b0c7ca76d18776e4ec068c4dcd6df94c2865710c04c08fe6221cc91bb9f3d91",
+      "shot": {
+        "sha256": "0b0c7ca76d18776e4ec068c4dcd6df94c2865710c04c08fe6221cc91bb9f3d91",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--imperative-control",
+        "title": "Core/Carousel",
+        "name": "Imperative Control (handleRef)",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--imperative-control__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "44a4b9a4a43b1c2406add6ffc654bfda5d946f8c140ccf2a71386656f4e58237",
+      "shot": {
+        "sha256": "44a4b9a4a43b1c2406add6ffc654bfda5d946f8c140ccf2a71386656f4e58237",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--imperative-control",
+        "title": "Core/Carousel",
+        "name": "Imperative Control (handleRef)",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--imperative-control__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "27da89fe5aa923f1d5816216eaf866946a557757a98e938ba99f63654e70ecab",
+      "shot": {
+        "sha256": "27da89fe5aa923f1d5816216eaf866946a557757a98e938ba99f63654e70ecab",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--imperative-control",
+        "title": "Core/Carousel",
+        "name": "Imperative Control (handleRef)",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--imperative-control__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "75d1835b65e4a241cc6f34e8e81148d237ce1acf8ba1927ee8b5bf22d887be47",
+      "shot": {
+        "sha256": "75d1835b65e4a241cc6f34e8e81148d237ce1acf8ba1927ee8b5bf22d887be47",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--imperative-control",
+        "title": "Core/Carousel",
+        "name": "Imperative Control (handleRef)",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--imperative-control__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "65c3e0b97532c05b4873f654234c22d8d12f6bd9cd7e8b01efdd124f4f81c2e5",
+      "shot": {
+        "sha256": "65c3e0b97532c05b4873f654234c22d8d12f6bd9cd7e8b01efdd124f4f81c2e5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--imperative-control",
+        "title": "Core/Carousel",
+        "name": "Imperative Control (handleRef)",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--imperative-control__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "31f508ba8e627151d85dfea8dc1f9004510f76142da74a28e02af54a96a9372b",
+      "shot": {
+        "sha256": "31f508ba8e627151d85dfea8dc1f9004510f76142da74a28e02af54a96a9372b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--imperative-control",
+        "title": "Core/Carousel",
+        "name": "Imperative Control (handleRef)",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--imperative-control__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c708cdc966a3b325256b0da9611c41e4fb5911893c3f567add99dc3e704e7a7a",
+      "shot": {
+        "sha256": "c708cdc966a3b325256b0da9611c41e4fb5911893c3f567add99dc3e704e7a7a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--imperative-control",
+        "title": "Core/Carousel",
+        "name": "Imperative Control (handleRef)",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--imperative-control__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c63223bbedfb8208ba49942e96e7589b519c5970db7df718008b06fcf0494da1",
+      "shot": {
+        "sha256": "c63223bbedfb8208ba49942e96e7589b519c5970db7df718008b06fcf0494da1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--imperative-control",
+        "title": "Core/Carousel",
+        "name": "Imperative Control (handleRef)",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--imperative-control__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7dd2b7fb52f9e13c04fbb9a460b9bf5b471a6ab9ec064e93fd6502bd44eb0701",
+      "shot": {
+        "sha256": "7dd2b7fb52f9e13c04fbb9a460b9bf5b471a6ab9ec064e93fd6502bd44eb0701",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--imperative-control",
+        "title": "Core/Carousel",
+        "name": "Imperative Control (handleRef)",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--imperative-control__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "09b537158c1e35151899f30a62ce1efd9ec3ba8b9311da73ca45bfce527127a4",
+      "shot": {
+        "sha256": "09b537158c1e35151899f30a62ce1efd9ec3ba8b9311da73ca45bfce527127a4",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--imperative-control",
+        "title": "Core/Carousel",
+        "name": "Imperative Control (handleRef)",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--imperative-control__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "17056ce0e51c8f962d6a6f3fb69bacfcb6419165b524ed57ca1a06451ba2e665",
+      "shot": {
+        "sha256": "17056ce0e51c8f962d6a6f3fb69bacfcb6419165b524ed57ca1a06451ba2e665",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--imperative-control",
+        "title": "Core/Carousel",
+        "name": "Imperative Control (handleRef)",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--imperative-control__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "8564685d10b1429ab18151f56785450b42d2e8b948888cafce3d122411deff20",
+      "shot": {
+        "sha256": "8564685d10b1429ab18151f56785450b42d2e8b948888cafce3d122411deff20",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--imperative-control",
+        "title": "Core/Carousel",
+        "name": "Imperative Control (handleRef)",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--imperative-control__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f77d58bda61bb8913b020061dc2f1b6bbc57472f547cdd867964d1903d158309",
+      "shot": {
+        "sha256": "f77d58bda61bb8913b020061dc2f1b6bbc57472f547cdd867964d1903d158309",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--imperative-control",
+        "title": "Core/Carousel",
+        "name": "Imperative Control (handleRef)",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-padding__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "6019d2507992a70d687fe17e2ccf189ab7480dea62b958ae89e3692a75cbc2ca",
+      "shot": {
+        "sha256": "6019d2507992a70d687fe17e2ccf189ab7480dea62b958ae89e3692a75cbc2ca",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-padding",
+        "title": "Core/Carousel",
+        "name": "Inline Padding",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-padding__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c60c669ec885e7259b3fc79986a71f499fa7017d38719a35f15685769a0cdcf3",
+      "shot": {
+        "sha256": "c60c669ec885e7259b3fc79986a71f499fa7017d38719a35f15685769a0cdcf3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-padding",
+        "title": "Core/Carousel",
+        "name": "Inline Padding",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-padding__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "749f074f3e2481cdf1729e316e3c1e4c96e283ea8d903222caf2ed9440d20f86",
+      "shot": {
+        "sha256": "749f074f3e2481cdf1729e316e3c1e4c96e283ea8d903222caf2ed9440d20f86",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-padding",
+        "title": "Core/Carousel",
+        "name": "Inline Padding",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-padding__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "7eeaf5bed0cbebc0fd2959e19d99f37b8d4cda9e26686f02c472d5b1e0e7624f",
+      "shot": {
+        "sha256": "7eeaf5bed0cbebc0fd2959e19d99f37b8d4cda9e26686f02c472d5b1e0e7624f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-padding",
+        "title": "Core/Carousel",
+        "name": "Inline Padding",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-padding__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "c003c9e521691a68b5eb646b1bd40ebeeed8a1ea6a25c6236f9ef2d9e653e38e",
+      "shot": {
+        "sha256": "c003c9e521691a68b5eb646b1bd40ebeeed8a1ea6a25c6236f9ef2d9e653e38e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-padding",
+        "title": "Core/Carousel",
+        "name": "Inline Padding",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-padding__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d2d696baf3c642eaf519a640c3685f9831ed339edbaeb11becf11116d17ed902",
+      "shot": {
+        "sha256": "d2d696baf3c642eaf519a640c3685f9831ed339edbaeb11becf11116d17ed902",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-padding",
+        "title": "Core/Carousel",
+        "name": "Inline Padding",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-padding__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5b1441b41f7ea5575c95cb653b6c22895196e50faaf376418d22e7d5e92244e6",
+      "shot": {
+        "sha256": "5b1441b41f7ea5575c95cb653b6c22895196e50faaf376418d22e7d5e92244e6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-padding",
+        "title": "Core/Carousel",
+        "name": "Inline Padding",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-padding__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "43b7cd18964f55255dab2fb69af16f48b2049000af40195fdb585e2cfec21c79",
+      "shot": {
+        "sha256": "43b7cd18964f55255dab2fb69af16f48b2049000af40195fdb585e2cfec21c79",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-padding",
+        "title": "Core/Carousel",
+        "name": "Inline Padding",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-padding__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "58fbfe83c75ef8781477dcc36144bbab2607cae5292dff9f1fc313d4b7a580ee",
+      "shot": {
+        "sha256": "58fbfe83c75ef8781477dcc36144bbab2607cae5292dff9f1fc313d4b7a580ee",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-padding",
+        "title": "Core/Carousel",
+        "name": "Inline Padding",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-padding__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "3c7da9d88b05a46e4f052ec0d305bca250a23d1b3f8d9fae74ecee660baf1e72",
+      "shot": {
+        "sha256": "3c7da9d88b05a46e4f052ec0d305bca250a23d1b3f8d9fae74ecee660baf1e72",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-padding",
+        "title": "Core/Carousel",
+        "name": "Inline Padding",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-padding__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "adf56ec9a248084cfc9181097627904e3208d8523a751f748891157066046107",
+      "shot": {
+        "sha256": "adf56ec9a248084cfc9181097627904e3208d8523a751f748891157066046107",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-padding",
+        "title": "Core/Carousel",
+        "name": "Inline Padding",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-padding__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9861115441b7de18b6ff200addd71c1fded0d25c2b59083dee9fc27514e1adaa",
+      "shot": {
+        "sha256": "9861115441b7de18b6ff200addd71c1fded0d25c2b59083dee9fc27514e1adaa",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-padding",
+        "title": "Core/Carousel",
+        "name": "Inline Padding",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-padding__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2d73701df0bd962bb81b348383192e0b9ec66bd592d9e75b96301bd97cdab59e",
+      "shot": {
+        "sha256": "2d73701df0bd962bb81b348383192e0b9ec66bd592d9e75b96301bd97cdab59e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-padding",
+        "title": "Core/Carousel",
+        "name": "Inline Padding",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--with-padding__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "91afa039ad092e0b1de7808444d790c5b7aa0bfc3dea5c020695cc1f68ef7b9f",
+      "shot": {
+        "sha256": "91afa039ad092e0b1de7808444d790c5b7aa0bfc3dea5c020695cc1f68ef7b9f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--with-padding",
+        "title": "Core/Carousel",
+        "name": "Inline Padding",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--narrow-container__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d166a51d221fe3ea2b995f6327a05b21ce9df2e78de24ef7458ebcc0c752ec7f",
+      "shot": {
+        "sha256": "d166a51d221fe3ea2b995f6327a05b21ce9df2e78de24ef7458ebcc0c752ec7f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--narrow-container",
+        "title": "Core/Carousel",
+        "name": "Narrow Container",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--narrow-container__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "10529f2f075b84449e68fb59795b52fce4f4241d51e1e6aa188ac46def09f740",
+      "shot": {
+        "sha256": "10529f2f075b84449e68fb59795b52fce4f4241d51e1e6aa188ac46def09f740",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--narrow-container",
+        "title": "Core/Carousel",
+        "name": "Narrow Container",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--narrow-container__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4029eb5c678036d34336d919e3a04f8c6255eb6cc6bdb23266a772f7a0c83be9",
+      "shot": {
+        "sha256": "4029eb5c678036d34336d919e3a04f8c6255eb6cc6bdb23266a772f7a0c83be9",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--narrow-container",
+        "title": "Core/Carousel",
+        "name": "Narrow Container",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--narrow-container__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b1f5f9d1a7eb20b839cce65703bd7f12da8ba81c94beb5bacb6c55b324ceda47",
+      "shot": {
+        "sha256": "b1f5f9d1a7eb20b839cce65703bd7f12da8ba81c94beb5bacb6c55b324ceda47",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--narrow-container",
+        "title": "Core/Carousel",
+        "name": "Narrow Container",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--narrow-container__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "70b8def797cedae361e2429af7239eb5f154fdc8939cd688ecc8a7a4344e6d67",
+      "shot": {
+        "sha256": "70b8def797cedae361e2429af7239eb5f154fdc8939cd688ecc8a7a4344e6d67",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--narrow-container",
+        "title": "Core/Carousel",
+        "name": "Narrow Container",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--narrow-container__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4471b3ea2a78e552140c721765cf96e497f71ba93594e80f6bb51a24b85a94ff",
+      "shot": {
+        "sha256": "4471b3ea2a78e552140c721765cf96e497f71ba93594e80f6bb51a24b85a94ff",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--narrow-container",
+        "title": "Core/Carousel",
+        "name": "Narrow Container",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--narrow-container__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "702483f4b19c7937a12c3fb92a45124d88ac52ab0d282f9aaade593207e58847",
+      "shot": {
+        "sha256": "702483f4b19c7937a12c3fb92a45124d88ac52ab0d282f9aaade593207e58847",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--narrow-container",
+        "title": "Core/Carousel",
+        "name": "Narrow Container",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--narrow-container__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "62dca172df438d5314475906fd163bc96ee575fdbf6bbc525e41fd37b2374ac1",
+      "shot": {
+        "sha256": "62dca172df438d5314475906fd163bc96ee575fdbf6bbc525e41fd37b2374ac1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--narrow-container",
+        "title": "Core/Carousel",
+        "name": "Narrow Container",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--narrow-container__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "5316a8589725e411304b16c0eb99cd12c0c4043e7c03e2dd7d4badc9fe634e4e",
+      "shot": {
+        "sha256": "5316a8589725e411304b16c0eb99cd12c0c4043e7c03e2dd7d4badc9fe634e4e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--narrow-container",
+        "title": "Core/Carousel",
+        "name": "Narrow Container",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--narrow-container__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9743c8178b2a3a43fea7f5319401bef8072fd219f7eb76e23cc6e324af05c451",
+      "shot": {
+        "sha256": "9743c8178b2a3a43fea7f5319401bef8072fd219f7eb76e23cc6e324af05c451",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--narrow-container",
+        "title": "Core/Carousel",
+        "name": "Narrow Container",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--narrow-container__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "cca75611b4f54dd4ee76f703da273ae1de24da6f12ff0422c7ba640d8aa0536e",
+      "shot": {
+        "sha256": "cca75611b4f54dd4ee76f703da273ae1de24da6f12ff0422c7ba640d8aa0536e",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--narrow-container",
+        "title": "Core/Carousel",
+        "name": "Narrow Container",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--narrow-container__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "1d0cc2ac3f759819268a7f548c11be4cde9e53d427b6788ac1336c2797152818",
+      "shot": {
+        "sha256": "1d0cc2ac3f759819268a7f548c11be4cde9e53d427b6788ac1336c2797152818",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--narrow-container",
+        "title": "Core/Carousel",
+        "name": "Narrow Container",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--narrow-container__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "44b87d5a5032baa56b8357eceee2b16a3fbbb2ed8f81f150deb4e5e6ef28d721",
+      "shot": {
+        "sha256": "44b87d5a5032baa56b8357eceee2b16a3fbbb2ed8f81f150deb4e5e6ef28d721",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--narrow-container",
+        "title": "Core/Carousel",
+        "name": "Narrow Container",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--narrow-container__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b4994fdad690b069fe5c0ee92ba7a33b87da353e0c301cbf7bb2162549807ec7",
+      "shot": {
+        "sha256": "b4994fdad690b069fe5c0ee92ba7a33b87da353e0c301cbf7bb2162549807ec7",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--narrow-container",
+        "title": "Core/Carousel",
+        "name": "Narrow Container",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--long-text-items__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0e487f8fc87e4db4fe6c43205228068de82ab09cbe83fd1cb080d93c41642b88",
+      "shot": {
+        "sha256": "0e487f8fc87e4db4fe6c43205228068de82ab09cbe83fd1cb080d93c41642b88",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--long-text-items",
+        "title": "Core/Carousel",
+        "name": "Long Text Items",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--long-text-items__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "e838949c79d5d4b84598950bb390118dff60558990862de072f26f121e29e919",
+      "shot": {
+        "sha256": "e838949c79d5d4b84598950bb390118dff60558990862de072f26f121e29e919",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--long-text-items",
+        "title": "Core/Carousel",
+        "name": "Long Text Items",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--long-text-items__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d3130b01b754030a9826e1be2611285337b81e5896895ae0bc9b84ae31ebc797",
+      "shot": {
+        "sha256": "d3130b01b754030a9826e1be2611285337b81e5896895ae0bc9b84ae31ebc797",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--long-text-items",
+        "title": "Core/Carousel",
+        "name": "Long Text Items",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--long-text-items__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "fa62b35aeacf9ac30f320a94c2f257d4734808727ca01ba554982861a0cfc9ab",
+      "shot": {
+        "sha256": "fa62b35aeacf9ac30f320a94c2f257d4734808727ca01ba554982861a0cfc9ab",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--long-text-items",
+        "title": "Core/Carousel",
+        "name": "Long Text Items",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--long-text-items__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "07a2f06a203a1e50c7db0a941b3a3ea8c349fe76db874335af14e9ed1c143cbe",
+      "shot": {
+        "sha256": "07a2f06a203a1e50c7db0a941b3a3ea8c349fe76db874335af14e9ed1c143cbe",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--long-text-items",
+        "title": "Core/Carousel",
+        "name": "Long Text Items",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--long-text-items__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "62f188f363e1894c61c258a4b7f0fa460d20d83ce8b3cf5f3d41f5b8e52f3bdc",
+      "shot": {
+        "sha256": "62f188f363e1894c61c258a4b7f0fa460d20d83ce8b3cf5f3d41f5b8e52f3bdc",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--long-text-items",
+        "title": "Core/Carousel",
+        "name": "Long Text Items",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--long-text-items__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "51226d8d61e1dea0de74f69f2e7a59c326a544a4f286b42e1af792845584faca",
+      "shot": {
+        "sha256": "51226d8d61e1dea0de74f69f2e7a59c326a544a4f286b42e1af792845584faca",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--long-text-items",
+        "title": "Core/Carousel",
+        "name": "Long Text Items",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--long-text-items__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "014ced8909f30a239e0821d7b452f46914b2743f4057aca4c99b7df0626950cd",
+      "shot": {
+        "sha256": "014ced8909f30a239e0821d7b452f46914b2743f4057aca4c99b7df0626950cd",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--long-text-items",
+        "title": "Core/Carousel",
+        "name": "Long Text Items",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--long-text-items__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "76479a3c94220e8413ce76c324a0254dc57a18f991943968262de831dd3a52a5",
+      "shot": {
+        "sha256": "76479a3c94220e8413ce76c324a0254dc57a18f991943968262de831dd3a52a5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--long-text-items",
+        "title": "Core/Carousel",
+        "name": "Long Text Items",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--long-text-items__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ea5f0a9817b065efa4167814f3aa97f60e187e0d8f102a70bbc11a7c0189378f",
+      "shot": {
+        "sha256": "ea5f0a9817b065efa4167814f3aa97f60e187e0d8f102a70bbc11a7c0189378f",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--long-text-items",
+        "title": "Core/Carousel",
+        "name": "Long Text Items",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--long-text-items__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a7c4c39a3b17ec38421876a37fb7cd70af30c709890cbad85fee6c8647751df6",
+      "shot": {
+        "sha256": "a7c4c39a3b17ec38421876a37fb7cd70af30c709890cbad85fee6c8647751df6",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--long-text-items",
+        "title": "Core/Carousel",
+        "name": "Long Text Items",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--long-text-items__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "41c27f53227373e68761e46d9ad78275c98a8672aafab69badf74070619de03b",
+      "shot": {
+        "sha256": "41c27f53227373e68761e46d9ad78275c98a8672aafab69badf74070619de03b",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--long-text-items",
+        "title": "Core/Carousel",
+        "name": "Long Text Items",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--long-text-items__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f597670ef8db0238199f6c2927ec5b48feb65f6bc5f52f8f23af1eb9b41760ef",
+      "shot": {
+        "sha256": "f597670ef8db0238199f6c2927ec5b48feb65f6bc5f52f8f23af1eb9b41760ef",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--long-text-items",
+        "title": "Core/Carousel",
+        "name": "Long Text Items",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--long-text-items__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "9782c64e2188a0759b9a6e5b079e184dad46a5170ed333684a9330aab7b4f1bb",
+      "shot": {
+        "sha256": "9782c64e2188a0759b9a6e5b079e184dad46a5170ed333684a9330aab7b4f1bb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--long-text-items",
+        "title": "Core/Carousel",
+        "name": "Long Text Items",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--single-item__neutral-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "a07e2129804f6d1a77bc8d978c948aa1b5dc78044392c962a1751444300467ea",
+      "shot": {
+        "sha256": "a07e2129804f6d1a77bc8d978c948aa1b5dc78044392c962a1751444300467ea",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--single-item",
+        "title": "Core/Carousel",
+        "name": "Single Item",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--single-item__neutral-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "4eb0764418af9a0dbd665aadf391bca575eb080e190fb7571361d9ebb70def71",
+      "shot": {
+        "sha256": "4eb0764418af9a0dbd665aadf391bca575eb080e190fb7571361d9ebb70def71",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--single-item",
+        "title": "Core/Carousel",
+        "name": "Single Item",
+        "component": "Carousel",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--single-item__butter-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "ccff27160acf2bbdc461241feed77aa429c49293648347df1a4b006df7c7a010",
+      "shot": {
+        "sha256": "ccff27160acf2bbdc461241feed77aa429c49293648347df1a4b006df7c7a010",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--single-item",
+        "title": "Core/Carousel",
+        "name": "Single Item",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--single-item__butter-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "0dbf9801b0707d88c9d358fe4d11fabd84123df96d87623fc241bf6988f8dbee",
+      "shot": {
+        "sha256": "0dbf9801b0707d88c9d358fe4d11fabd84123df96d87623fc241bf6988f8dbee",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--single-item",
+        "title": "Core/Carousel",
+        "name": "Single Item",
+        "component": "Carousel",
+        "theme": "butter",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--single-item__gothic-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "2e242c9c4aaeb28db33b6a5ae2dcb56c7424418a149e304b60e840cf14462e84",
+      "shot": {
+        "sha256": "2e242c9c4aaeb28db33b6a5ae2dcb56c7424418a149e304b60e840cf14462e84",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--single-item",
+        "title": "Core/Carousel",
+        "name": "Single Item",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--single-item__gothic-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "d613daeab0b1678fab490da1e1a961b38c35126c408a2c9c4f241464725466f2",
+      "shot": {
+        "sha256": "d613daeab0b1678fab490da1e1a961b38c35126c408a2c9c4f241464725466f2",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--single-item",
+        "title": "Core/Carousel",
+        "name": "Single Item",
+        "component": "Carousel",
+        "theme": "gothic",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--single-item__stone-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "f2a2a3074fc65d983f4b47fbc5027aa45f6b1e5e013ecc854bcb88b16e298087",
+      "shot": {
+        "sha256": "f2a2a3074fc65d983f4b47fbc5027aa45f6b1e5e013ecc854bcb88b16e298087",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--single-item",
+        "title": "Core/Carousel",
+        "name": "Single Item",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--single-item__stone-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "b764e7214148f3d194fd9940a1914ee114f01c64d78be17a2441561d8df6f173",
+      "shot": {
+        "sha256": "b764e7214148f3d194fd9940a1914ee114f01c64d78be17a2441561d8df6f173",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--single-item",
+        "title": "Core/Carousel",
+        "name": "Single Item",
+        "component": "Carousel",
+        "theme": "stone",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--single-item__y2k-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "eb4a52a108bc550b7cab4a7552aa5400692386362fdbfe0330489388ce02df98",
+      "shot": {
+        "sha256": "eb4a52a108bc550b7cab4a7552aa5400692386362fdbfe0330489388ce02df98",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--single-item",
+        "title": "Core/Carousel",
+        "name": "Single Item",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--single-item__y2k-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "064bff4d36cb395a1e1525513e806644cf8daf68660c311d0b0f8fbbadec53b1",
+      "shot": {
+        "sha256": "064bff4d36cb395a1e1525513e806644cf8daf68660c311d0b0f8fbbadec53b1",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--single-item",
+        "title": "Core/Carousel",
+        "name": "Single Item",
+        "component": "Carousel",
+        "theme": "y2k",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--single-item__matcha-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "13b9471098dba97de07c95fed74ad516123324a9a94c5e05daf0198a7f4925a0",
+      "shot": {
+        "sha256": "13b9471098dba97de07c95fed74ad516123324a9a94c5e05daf0198a7f4925a0",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--single-item",
+        "title": "Core/Carousel",
+        "name": "Single Item",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--single-item__matcha-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "69673c338279ed0f66bfaaa0ab00b1a9779721e9d0691d183031e3fd5d98c09c",
+      "shot": {
+        "sha256": "69673c338279ed0f66bfaaa0ab00b1a9779721e9d0691d183031e3fd5d98c09c",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--single-item",
+        "title": "Core/Carousel",
+        "name": "Single Item",
+        "component": "Carousel",
+        "theme": "matcha",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--single-item__chocolate-light",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "83bf9eb75eecb99c4fcddfc0bd3c48734da4ad94faee67713626b8becbce45a3",
+      "shot": {
+        "sha256": "83bf9eb75eecb99c4fcddfc0bd3c48734da4ad94faee67713626b8becbce45a3",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--single-item",
+        "title": "Core/Carousel",
+        "name": "Single Item",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    },
+    {
+      "key": "core-carousel--single-item__chocolate-dark",
+      "kind": "added",
+      "beforeSha256": null,
+      "afterSha256": "217b5acb774a6a157b39f1b702ca11c0514115c5a4ae7db24a85c0cfc602cbbb",
+      "shot": {
+        "sha256": "217b5acb774a6a157b39f1b702ca11c0514115c5a4ae7db24a85c0cfc602cbbb",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-carousel--single-item",
+        "title": "Core/Carousel",
+        "name": "Single Item",
+        "component": "Carousel",
+        "theme": "chocolate",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    }
+  ],
+  "decision": {
+    "approver": "cixzhang",
+    "approverId": 2781099,
+    "permission": "write",
+    "effectivePermission": "maintain",
+    "roleName": "Repo Owner",
+    "reason": "Carousel is being baselined for the first time: 194 added, 0 removed, 0 failed, and the report says no shot changed against the baseline. This is 14 stories across 7 themes in light/dark; 56 additions are the four new stories, the other 138 are pre-existing unbaselined stories.",
+    "commentId": 5440364502,
+    "at": "2026-08-27T14:13:34.257Z"
+  }
+}

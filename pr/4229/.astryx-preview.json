@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 4229,
+    "headSha": "3e04bf7e05d5f2cad9246333bb7dad62b97c37c7",
+    "headRef": "ak-4145-vibe-a11y-eval",
+    "headRepository": "AKnassa/astryx",
+    "headRepositoryId": "1286656571"
+  },
+  "sourceRun": {
+    "id": 36217732255,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/4229/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/4229/sandbox/",
+      "indexSha256": "7f08fa81f6794c5180b59c2bf85bf109e1fa797fa981e62f2f8993a726ad6c75"
+    }
+  }
+}

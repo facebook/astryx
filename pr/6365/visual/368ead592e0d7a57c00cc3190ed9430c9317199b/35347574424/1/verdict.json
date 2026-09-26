@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "status": "skipped",
+  "generatedAt": "2026-09-18T14:20:52.948Z",
+  "reason": "Broad stable scope is deferred to the daily release gate. It covers 386 trusted baseline shots instead of recapturing them for this PR.",
+  "context": {
+    "sha": "368ead592e0d7a57c00cc3190ed9430c9317199b",
+    "headSha": "368ead592e0d7a57c00cc3190ed9430c9317199b",
+    "baseSha": "5a7b81959305e8f7e63238ff2f475353a7716222",
+    "runId": "35347574424",
+    "runAttempt": "1",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": true,
+      "stableComponents": [],
+      "stableCoreFiles": [
+        "packages/core/src/utils/plainDate.ts"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "counts": {
+    "total": 386,
+    "unchanged": 0,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "components": [],
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": []
+}

@@ -1,0 +1,1 @@
+import{J as e,Z as t}from"./padding.stylex-Dhh1fYrP.js";var n=t(e(),1),r=(0,n.createContext)({isMobile:!1,isMobileNavOpen:!1,toggleMobileNav:()=>{},openMobileNav:()=>{},closeMobileNav:()=>{},isMobileNavEnabled:!1,hasAutoToggle:!0});r.displayName=`AppShellMobileContext`;function i(){return(0,n.use)(r)}export{i as n,r as t};

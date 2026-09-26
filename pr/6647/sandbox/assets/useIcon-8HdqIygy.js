@@ -1,0 +1,1 @@
+import{i as e}from"./useTheme-DlBak1Gc.js";import{t}from"./globalIconRegistry-CRaYnppK.js";function n(n){return t(n,e())}export{n as t};

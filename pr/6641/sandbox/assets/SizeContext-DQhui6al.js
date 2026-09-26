@@ -1,0 +1,1 @@
+import{J as e,Z as t}from"./padding.stylex-Dhh1fYrP.js";var n=t(e(),1),r=(0,n.createContext)(null);r.displayName=`SizeContext`;function i(e,t=`md`){let i=(0,n.use)(r);return e??i??t}var a=r.Provider;export{i as n,a as t};

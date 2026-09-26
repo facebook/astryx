@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6609,
+    "headSha": "d2e16b2de93e091bef09895ebec4b05e17c59216",
+    "headRef": "fix/timer-hardening-audit",
+    "headRepository": "ManoharPaturi/astryx",
+    "headRepositoryId": "1357470661"
+  },
+  "sourceRun": {
+    "id": 36048799789,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/6609/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6609/sandbox/",
+      "indexSha256": "aebe862a773f93ec8ee2b363e08d24505dd981a48fde2de74aab27baafe34f73"
+    }
+  }
+}

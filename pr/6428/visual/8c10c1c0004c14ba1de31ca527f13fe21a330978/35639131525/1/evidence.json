@@ -1,0 +1,159 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 6428,
+  "headSha": "8c10c1c0004c14ba1de31ca527f13fe21a330978",
+  "testedSha": "8c10c1c0004c14ba1de31ca527f13fe21a330978",
+  "baseSha": "17f2a58dac128e9159a5a8cb4693720cdbfe2ff0",
+  "run": {
+    "id": 35639131525,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__neutral-light",
+      "kind": "changed",
+      "beforeSha256": "f468cb107e7d821a8ebb14b1c18876eb0fce20f4e182eb0773aea3da3354bffb",
+      "shot": {
+        "sha256": "cd54d8d8a1fa9effddbd17c1be2f51f246f1eb1db6a3d227b5b23569713a7e1a",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-complexselector--fruit-ripeness-grid__neutral-dark",
+      "kind": "changed",
+      "beforeSha256": "127c5ef452fefd8e99ab19a4ca18628fe536aa73455833c3fc6b2b5fcd096fbc",
+      "shot": {
+        "sha256": "024f9b6156a1cc0547736b2f5e16035d3bfc253edfe969ad20eb3096735bb810",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    }
+  ],
+  "verdict": {
+    "version": 1,
+    "status": "changed",
+    "generatedAt": "2026-09-21T19:58:16.131Z",
+    "context": {
+      "sha": "8c10c1c0004c14ba1de31ca527f13fe21a330978",
+      "runId": "35639131525",
+      "runAttempt": "1",
+      "headSha": "8c10c1c0004c14ba1de31ca527f13fe21a330978",
+      "baseSha": "17f2a58dac128e9159a5a8cb4693720cdbfe2ff0",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "ComplexSelector",
+          "Tokenizer",
+          "Typeahead"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/ComplexSelector/ComplexSelector.tsx",
+          "packages/core/src/Tokenizer/Tokenizer.tsx",
+          "packages/core/src/Typeahead/Typeahead.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-12T01:13:50.430Z",
+      "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 6,
+      "unchanged": 4,
+      "changed": 2,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [
+      {
+        "key": "core-complexselector--fruit-ripeness-grid__neutral-light",
+        "diffPixels": 4007,
+        "diffRatio": 0.005095,
+        "sizeChanged": false,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      },
+      {
+        "key": "core-complexselector--fruit-ripeness-grid__neutral-dark",
+        "diffPixels": 3825,
+        "diffRatio": 0.004864,
+        "sizeChanged": false,
+        "storyId": "core-complexselector--fruit-ripeness-grid",
+        "title": "Core/ComplexSelector",
+        "name": "Fruit ripeness selector",
+        "component": "ComplexSelector",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    ],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

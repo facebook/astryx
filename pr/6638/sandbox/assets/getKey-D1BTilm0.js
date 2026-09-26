@@ -1,0 +1,1 @@
+function e(e,t){return e==null?`fallback:${typeof t==`function`?t():t}`:`id:${e}`}export{e as t};

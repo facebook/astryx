@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 5616,
+    "headSha": "338bb53737c4b14005bf3b46f46933ae2f460d20",
+    "headRef": "rocky/issue-5421-doc-source-drift",
+    "headRepository": "AKnassa/astryx",
+    "headRepositoryId": "1286656571"
+  },
+  "sourceRun": {
+    "id": 36217744596,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/5616/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/5616/sandbox/",
+      "indexSha256": "98fdefc9b944a76074e5b372ea2bab83d06349b6b86525a27804b42408c3873d"
+    }
+  }
+}

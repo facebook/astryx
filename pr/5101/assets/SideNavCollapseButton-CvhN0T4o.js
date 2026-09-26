@@ -1,0 +1,24 @@
+import{i as e,s as t}from"./preload-helper-CT_b8DTk.js";import{t as n}from"./react-B7Te67-h.js";import{F as r,P as i}from"./ime-Dy4QRKoo.js";import{D as a,c as o,t as s}from"./utils-eYNPhPe_.js";import{t as c}from"./jsx-runtime-DqZldVDK.js";import{t as l}from"./Button-DUIADQT_.js";import{l as u,t as d}from"./i18n-CBs6GlIS.js";import{t as f}from"./Button-Dvm6iPOY.js";import{t as p}from"./Icon-DFeHK1VW.js";import{t as m}from"./Icon-CVfTgJi9.js";import{n as h,r as g}from"./AppShellMobileContext-Ba-CZ9bb.js";function _(){return(0,v.use)(y)}var v,y,b=e((()=>{v=t(n(),1),y=(0,v.createContext)({isCollapsed:!1,toggle:()=>{},isCollapsible:!1}),y.displayName=`SideNavCollapseContext`}));function x({ref:e,collapsible:t,handleRef:n,label:i,size:s,children:c,onClick:d,...f}){let m=u(),{isCollapsed:h,toggle:_,isCollapsible:v}=S(t,n),{isMobile:y}=g();return!v||y?null:(0,w.jsx)(l,{ref:e,label:i??m(h?`@astryx.sideNavCollapseButton.expandSidebar`:`@astryx.sideNavCollapseButton.collapseSidebar`),variant:`ghost`,size:s,...f,onClick:a(d,_),icon:c??(0,w.jsx)(`span`,{...r(T.chevronMirror,o.mirror),children:(0,w.jsx)(p,{icon:`chevronLeft`,size:`sm`,color:`inherit`,xstyle:[T.chevron,h&&T.chevronCollapsed]})}),isIconOnly:!0})}function S(e,t){let n=_(),{isCollapsed:r,onCollapsedChange:i}=e??{},a=(0,C.useCallback)(()=>i?.(!r),[r,i]),o=(0,C.useCallback)(()=>{t?.current?.getCollapseState()?.toggle()},[t]);if(e!=null)return{isCollapsed:r??!1,toggle:a,isCollapsible:!0};if(t==null)return n;let s=t.current?.getCollapseState()??null;return{isCollapsed:s?.isCollapsed??!1,toggle:o,isCollapsible:s?.isCollapsible??!0}}var C,w,T,E=e((()=>{C=t(n(),1),i(),m(),f(),s(),b(),h(),d(),w=c(),T={chevronMirror:{k1xSpc:`astryx78zum5`,kGNEyG:`astryx6s0dn4`,kjj79g:`astryxl56j7k`,$$css:!0},chevron:{k1xSpc:`astryx3nfvp2`,kGNEyG:`astryx6s0dn4`,k1ekBW:`astryx11xpdln`,kIyJzY:`astryxuedmi6 astryx12w9bfk`,kAMwcw:`astryxlr8y92`,$$css:!0},chevronCollapsed:{k3aq6I:`astryx19jd1h0`,$$css:!0}},x.displayName=`SideNavCollapseButton`,x.__docgenInfo={description:`Composable toggle button for sidenav collapse.
+
+Place anywhere inside SideNav (header, topContent, footer, footerIcons)
+and it reads collapse state from context automatically. For placement
+outside the sidenav (e.g. in TopNav or content area), hold the state and
+hand the same \`collapsible\` config to both.
+
+@example
+\`\`\`
+<SideNav isCollapsible footerIcons={<SideNavCollapseButton />}>
+  ...
+</SideNav>
+\`\`\`
+
+@example
+\`\`\`
+const [isCollapsed, setIsCollapsed] = useState(false);
+const collapsible = {isCollapsed, onCollapsedChange: setIsCollapsed};
+<TopNav endContent={<SideNavCollapseButton collapsible={collapsible} />} />
+<SideNav collapsible={{...collapsible, hasButton: false}}>...</SideNav>
+\`\`\``,methods:[],displayName:`SideNavCollapseButton`,props:{xstyle:{required:!1,tsType:{name:`StyleXStyles`},description:"StyleX styles created via `stylex.create()`. Merged with the component's\nbase styles inside a single `stylex.props()` call for optimal deduplication.\n\n@example\n```\nconst overrides = stylex.create({ root: { marginBottom: 8 } });\n<Component xstyle={overrides.root} />\n```"},ref:{required:!1,tsType:{name:`ReactRef`,raw:`React.Ref<HTMLButtonElement>`,elements:[{name:`HTMLButtonElement`}]},description:``},collapsible:{required:!1,tsType:{name:`SideNavControlledCollapsible`},description:"The same controlled `collapsible` config given to SideNav\n(`{isCollapsed, onCollapsedChange}`). Needed only when the button is\nrendered outside the sidenav, where collapse context cannot reach it."},handleRef:{required:!1,tsType:{name:`ReactRefObject`,raw:`React.RefObject<SideNavImperativeCollapseHandle | null>`,elements:[{name:`union`,raw:`SideNavImperativeCollapseHandle | null`,elements:[{name:`SideNavImperativeCollapseHandle`},{name:`null`}]}]},description:`Imperative handle from SideNav.
+
+@deprecated Pass \`collapsible\` instead.`},label:{required:!1,tsType:{name:`string`},description:`Custom button label text. When provided, renders as a text button
+with the chevron icon. When omitted, renders as an icon-only button.`},size:{required:!1,tsType:{name:`union`,raw:`'sm' | 'md' | 'lg'`,elements:[{name:`literal`,value:`'sm'`},{name:`literal`,value:`'md'`},{name:`literal`,value:`'lg'`}]},description:"Button size. Defaults to the size its container cascades — `sm` in a\nSideNav footer — or `md` outside one. Set it for placements with no row\nto inherit from, e.g. a button placed in a `TopNav`."},children:{required:!1,tsType:{name:`ReactNode`},description:`Custom button content. Overrides the default chevron icon and label.`}},composes:[`Omit`]}}));export{_ as a,b as i,E as n,y as r,x as t};

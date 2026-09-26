@@ -1,0 +1,1 @@
+import{i as e}from"./preload-helper-CT_b8DTk.js";function t(e){return!e||typeof window>`u`?!1:window.getComputedStyle(e).direction===`rtl`}var n=e((()=>{}));export{t as n,n as t};

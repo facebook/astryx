@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6084,
+    "headSha": "91733bd74778e187407c5828e322949f96c80b25",
+    "headRef": "fix/segmented-control-touch-floor",
+    "headRepository": "ManoharPaturi/astryx",
+    "headRepositoryId": "1357470661"
+  },
+  "sourceRun": {
+    "id": 36230857244,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/6084/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6084/sandbox/",
+      "indexSha256": "bc0511108e1d36f98d3d93201f8f943d3edfdc8cdfe8840861dbc7791212f934"
+    }
+  }
+}

@@ -1,0 +1,1 @@
+import{J as e,Z as t,q as n}from"./padding.stylex-C-GcuG1E.js";import{t as r}from"./Switch-B5btFe1F.js";import{n as i}from"./BlockDocContext-CAx6gy8H.js";var a=t(e(),1),o=n();function s(){let[e,t]=(0,a.useState)(!0);return(0,o.jsx)(r,{label:`Enable notifications`,value:e,onChange:t})}function c(){return(0,o.jsx)(i,{children:(0,o.jsx)(s,{})})}export{c as default};

@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-21T11:23:17.631Z",
+  "context": {
+    "sha": "9ca8b362da147b372f2d8006ed460681d8f19c65",
+    "runId": "35586691173",
+    "runAttempt": "1",
+    "headSha": "9ca8b362da147b372f2d8006ed460681d8f19c65",
+    "baseSha": "c8d5849619b3f73b9b1015a7eeba3b16e9413f94",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Layer",
+        "Tooltip"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Layer/__tests__/anchorReadiness.chromium.spec.ts",
+        "packages/core/src/Layer/useLayer.tsx",
+        "packages/core/src/Tooltip/useTooltip.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-12T01:13:50.430Z",
+    "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 4,
+    "unchanged": 4,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

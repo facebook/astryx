@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5656,
+  "headSha": "54dae36cd7daf66f126eb5c558d4cffb9a83631a",
+  "testedSha": "54dae36cd7daf66f126eb5c558d4cffb9a83631a",
+  "baseSha": "030fd676121819db386d248a875c6a6aa1a6550a",
+  "run": {
+    "id": 33797369732,
+    "attempt": 1
+  },
+  "capture": null,
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "skipped",
+    "generatedAt": "2026-09-03T20:16:59.391Z",
+    "reason": "Broad stable scope is deferred to the daily release gate. It covers 380 trusted baseline shots instead of recapturing them for this PR.",
+    "context": {
+      "sha": "54dae36cd7daf66f126eb5c558d4cffb9a83631a",
+      "headSha": "54dae36cd7daf66f126eb5c558d4cffb9a83631a",
+      "baseSha": "030fd676121819db386d248a875c6a6aa1a6550a",
+      "runId": "33797369732",
+      "runAttempt": "1",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": true,
+        "stableComponents": [
+          "DateTimeInput",
+          "Layout",
+          "MetadataList",
+          "NavMenu",
+          "RadioList",
+          "TimeInput",
+          "TopNav"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/DateTimeInput/NativeTimeSegment.tsx",
+          "packages/core/src/Layout/Layout.tsx",
+          "packages/core/src/MetadataList/MetadataList.tsx",
+          "packages/core/src/NavMenu/NavHeadingMenuItem.tsx",
+          "packages/core/src/RadioList/RadioList.tsx",
+          "packages/core/src/TimeInput/TimeInput.tsx",
+          "packages/core/src/TopNav/TopNavMegaMenuItem.tsx",
+          "packages/core/src/utils/inputAria.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "counts": {
+      "total": 380,
+      "unchanged": 0,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "components": [
+      "DateTimeInput",
+      "Layout",
+      "MetadataList",
+      "NavMenu",
+      "RadioList",
+      "TimeInput",
+      "TopNav"
+    ],
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": []
+  }
+}

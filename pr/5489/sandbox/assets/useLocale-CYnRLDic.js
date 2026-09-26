@@ -1,0 +1,1 @@
+import{J as e,Z as t}from"./padding.stylex-C-GcuG1E.js";import{n}from"./useTranslator-C7IFzqly.js";var r=t(e(),1);function i(){return(0,r.use)(n).locale}export{i as t};

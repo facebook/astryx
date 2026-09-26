@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6367,
+    "headSha": "5efbfcc013fdfebb8ef14dedac4a8053d689ef6e",
+    "headRef": "fix/tokenizer-create-dedupe-by-label",
+    "headRepository": "ManoharPaturi/astryx",
+    "headRepositoryId": "1357470661"
+  },
+  "sourceRun": {
+    "id": 36230865296,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/6367/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6367/sandbox/",
+      "indexSha256": "0b49182d2000d4dfce3995bfe20c9171de2b658beee1893bb623b51083c2ac5b"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6638,
+    "headSha": "1077f2fb0cc1e1f2c08624d15edf67b20266f79a",
+    "headRef": "cindyxz/a11y-spinbutton-20260925",
+    "headRepository": "cixzhang/astryx",
+    "headRepositoryId": "1324298265"
+  },
+  "sourceRun": {
+    "id": 36149395511,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/6638/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6638/sandbox/",
+      "indexSha256": "30d94f5f861963bcd2af5d24378028af07426ac0b0f78e44e2226cd431199219"
+    }
+  }
+}

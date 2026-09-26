@@ -1,0 +1,1 @@
+import{q as e}from"./padding.stylex-C-GcuG1E.js";import{n as t}from"./BlockDocContext-Sq0U7csD.js";import{t as n}from"./MoreMenu-BVRPcL9z.js";var r=e();function i(){return(0,r.jsx)(n,{items:[{label:`Edit`,onClick:()=>{}},{label:`Duplicate`,onClick:()=>{}},{label:`Delete`,onClick:()=>{}}]})}function a(){return(0,r.jsx)(t,{children:(0,r.jsx)(i,{})})}export{a as default};

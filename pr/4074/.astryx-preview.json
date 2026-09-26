@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 4074,
+    "headSha": "1b49a0e6c1ec571e9ee2bd7afb1be9aa7b45db8f",
+    "headRef": "ak-2473-composer-state",
+    "headRepository": "AKnassa/astryx",
+    "headRepositoryId": "1286656571"
+  },
+  "sourceRun": {
+    "id": 36217739005,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": false,
+      "path": "pr/4074/",
+      "indexSha256": null
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/4074/sandbox/",
+      "indexSha256": "2534bdbc3a8064dffa184d7d54c833712a6b6e223f5f7aaa7e6485cf991638ae"
+    }
+  }
+}

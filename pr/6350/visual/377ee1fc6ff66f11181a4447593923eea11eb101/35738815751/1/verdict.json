@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-22T15:55:06.445Z",
+  "context": {
+    "sha": "377ee1fc6ff66f11181a4447593923eea11eb101",
+    "runId": "35738815751",
+    "runAttempt": "1",
+    "headSha": "377ee1fc6ff66f11181a4447593923eea11eb101",
+    "baseSha": "20777236fb41228ea370c3af52c11167ea1433f3",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Collapsible"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Collapsible/__tests__/Collapsible.a11y.chromium.spec.ts",
+        "packages/core/src/Collapsible/__tests__/Collapsible.a11y.states.ts"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-12T01:13:50.430Z",
+    "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 2,
+    "unchanged": 2,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

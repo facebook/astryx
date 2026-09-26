@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 6383,
+    "headSha": "dea8f1662dabdc433578dbe03b8289167bd5014b",
+    "headRef": "touch-press-controller",
+    "headRepository": "vjeux/astryx",
+    "headRepositoryId": "1377680215"
+  },
+  "sourceRun": {
+    "id": 35492304373,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/6383/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/6383/sandbox/",
+      "indexSha256": "0f836a7432069aab634db8e82256aba7782e94a7d59ad4c87f07fec5d985e3be"
+    }
+  }
+}

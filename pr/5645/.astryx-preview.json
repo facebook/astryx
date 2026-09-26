@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 5645,
+    "headSha": "d66233c77de937b54740fe28484099fac4da909d",
+    "headRef": "codex/progressbar-contrast-presentations",
+    "headRepository": "facebook/astryx",
+    "headRepositoryId": "1131202426"
+  },
+  "sourceRun": {
+    "id": 33428257633,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/5645/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/5645/sandbox/",
+      "indexSha256": "d79b54de6d70a6af7a9631b49fd73d99f77270d63313e1c6dc828497b85ca12e"
+    }
+  }
+}

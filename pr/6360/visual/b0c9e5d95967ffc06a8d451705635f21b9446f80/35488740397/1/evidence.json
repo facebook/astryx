@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 6360,
+  "headSha": "b0c9e5d95967ffc06a8d451705635f21b9446f80",
+  "testedSha": "b0c9e5d95967ffc06a8d451705635f21b9446f80",
+  "baseSha": "b09d120ab04530dc0f03b5e0a594751ad8595369",
+  "run": {
+    "id": 35488740397,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-20T05:39:03.715Z",
+    "context": {
+      "sha": "b0c9e5d95967ffc06a8d451705635f21b9446f80",
+      "runId": "35488740397",
+      "runAttempt": "1",
+      "headSha": "b0c9e5d95967ffc06a8d451705635f21b9446f80",
+      "baseSha": "b09d120ab04530dc0f03b5e0a594751ad8595369",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Tokenizer",
+          "Typeahead"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Tokenizer/Tokenizer.tsx",
+          "packages/core/src/Tokenizer/__tests__/TokenizerSelection.a11y.chromium.spec.ts",
+          "packages/core/src/Typeahead/BaseTypeahead.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-12T01:13:50.430Z",
+      "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 4,
+      "unchanged": 4,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

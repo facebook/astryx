@@ -1,0 +1,1 @@
+var e={second:1,minute:60,hour:3600,day:86400,week:604800,month:2592e3,year:31536e3};function t(t,n=Date.now()/1e3){switch(t.type){case`NOW`:return Math.floor(n);case`ABSOLUTE`:return t.unixSeconds;case`RELATIVE`:return Math.floor(n-t.backValue*e[t.unit])}}export{t};

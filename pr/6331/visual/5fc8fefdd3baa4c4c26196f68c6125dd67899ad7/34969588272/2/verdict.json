@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-20T06:13:50.663Z",
+  "context": {
+    "sha": "5fc8fefdd3baa4c4c26196f68c6125dd67899ad7",
+    "runId": "34969588272",
+    "runAttempt": "2",
+    "headSha": "5fc8fefdd3baa4c4c26196f68c6125dd67899ad7",
+    "baseSha": "c87f73fb0cedc16c78b60bcbb43e11a8d23af12e",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Markdown"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Markdown/Markdown.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-12T01:13:50.430Z",
+    "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 4,
+    "unchanged": 4,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

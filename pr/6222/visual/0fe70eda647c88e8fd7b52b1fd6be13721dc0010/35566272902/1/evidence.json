@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 6222,
+  "headSha": "0fe70eda647c88e8fd7b52b1fd6be13721dc0010",
+  "testedSha": "0fe70eda647c88e8fd7b52b1fd6be13721dc0010",
+  "baseSha": "cf3ae89e40c8d6f36dcd03aa7861a06951285311",
+  "run": {
+    "id": 35566272902,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-21T07:14:46.127Z",
+    "context": {
+      "sha": "0fe70eda647c88e8fd7b52b1fd6be13721dc0010",
+      "runId": "35566272902",
+      "runAttempt": "1",
+      "headSha": "0fe70eda647c88e8fd7b52b1fd6be13721dc0010",
+      "baseSha": "cf3ae89e40c8d6f36dcd03aa7861a06951285311",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Table"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Table/plugins/groupedRows/useTableGroupedRows.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-12T01:13:50.430Z",
+      "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 2,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

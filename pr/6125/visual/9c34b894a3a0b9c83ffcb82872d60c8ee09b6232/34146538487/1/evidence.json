@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 6125,
+  "headSha": "9c34b894a3a0b9c83ffcb82872d60c8ee09b6232",
+  "testedSha": "9c34b894a3a0b9c83ffcb82872d60c8ee09b6232",
+  "baseSha": "a8b08f399c192ffe2d7d3c2245d109cee1d20232",
+  "run": {
+    "id": 34146538487,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [],
+  "verdict": {
+    "version": 1,
+    "status": "pass",
+    "generatedAt": "2026-09-07T17:30:00.498Z",
+    "context": {
+      "sha": "9c34b894a3a0b9c83ffcb82872d60c8ee09b6232",
+      "runId": "34146538487",
+      "runAttempt": "1",
+      "headSha": "9c34b894a3a0b9c83ffcb82872d60c8ee09b6232",
+      "baseSha": "a8b08f399c192ffe2d7d3c2245d109cee1d20232",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Switch"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Switch/Switch.tsx"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-05T07:37:37.596Z",
+      "sha": "18eec1821479f873ff26acc25793186285f85aa0",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 2,
+      "unchanged": 2,
+      "changed": 0,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

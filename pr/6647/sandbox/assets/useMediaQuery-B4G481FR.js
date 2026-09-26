@@ -1,0 +1,1 @@
+import{J as e,Z as t}from"./padding.stylex-C-GcuG1E.js";var n=t(e(),1);function r(e,t=!1){return(0,n.useSyncExternalStore)((0,n.useCallback)(t=>{let n=window.matchMedia(e);return n.addEventListener(`change`,t),()=>n.removeEventListener(`change`,t)},[e]),(0,n.useCallback)(()=>window.matchMedia(e).matches,[e]),(0,n.useCallback)(()=>t,[t]))}export{r as t};

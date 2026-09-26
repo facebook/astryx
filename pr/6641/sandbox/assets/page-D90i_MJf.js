@@ -1,0 +1,1 @@
+import{q as e}from"./padding.stylex-Dhh1fYrP.js";import{n as t}from"./BlockDocContext-DEnBEmxw.js";import{t as n}from"./Timestamp-Dv_3Rqix.js";var r=e();function i(){return(0,r.jsx)(n,{value:`2026-03-25T12:00:00Z`,color:`primary`})}function a(){return(0,r.jsx)(t,{children:(0,r.jsx)(i,{})})}export{a as default};

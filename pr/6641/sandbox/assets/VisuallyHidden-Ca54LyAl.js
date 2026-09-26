@@ -1,0 +1,1 @@
+import{J as e,Z as t}from"./padding.stylex-Dhh1fYrP.js";var n=t(e(),1);function r({children:e,as:t=`span`,ref:r,...i}){return(0,n.createElement)(t,{ref:r,...i,className:`x10l6tqk x1i1rx1s xjm9jq1 xkdpibf x1717udv xb3r6kr xzpqnlu xuxw1ft xng3xce x13vifvy x1o0tod x47corl x87ps6o`},e)}r.displayName=`VisuallyHidden`;export{r as t};

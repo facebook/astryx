@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "status": "pass",
+  "generatedAt": "2026-09-21T08:07:31.840Z",
+  "context": {
+    "sha": "15b098df29088cf09bbcee11889a76510ef0e962",
+    "runId": "35569992769",
+    "runAttempt": "1",
+    "headSha": "15b098df29088cf09bbcee11889a76510ef0e962",
+    "baseSha": "023c3e4cfed02471c942b0c01573a19c4b11df8d",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Table"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Table/index.ts",
+        "packages/core/src/Table/plugins/stickyHeader/index.ts",
+        "packages/core/src/Table/plugins/stickyHeader/useTableStickyHeader.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-12T01:13:50.430Z",
+    "sha": "e72a3662fd6dbdaf226dfba41a90a70b6827a6a4",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 2,
+    "unchanged": 2,
+    "changed": 0,
+    "added": 0,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}
