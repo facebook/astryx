@@ -598,6 +598,7 @@
     "InternationalizationProvider02Overrides",
     "InternationalizationProvider03RtlDirection",
     "ItemBasicItem",
+    "ItemDocumentTabs",
     "ItemShowcase",
     "ItemWithMedia",
     "ItemWithMetadata",
