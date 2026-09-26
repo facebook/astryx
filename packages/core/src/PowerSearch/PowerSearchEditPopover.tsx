@@ -20,8 +20,12 @@ import {HStack, VStack} from '../Stack';
 import {Icon} from '../Icon';
 import {TreeList, type TreeListItemData} from '../TreeList';
 import {useTranslator} from '../i18n';
+import {isImeKeyEvent} from '../utils/ime';
 import {spacingVars, typeScaleVars} from '../theme/tokens.stylex';
-import {PowerSearchValueEditor} from './PowerSearchValueEditor';
+import {
+  PowerSearchValueEditor,
+  type PowerSearchValueEditorProps,
+} from './PowerSearchValueEditor';
 import {resolveOperatorLabel} from './resolveOperatorLabel';
 import type {InternalConfig} from './useInternalConfig';
 import type {
@@ -31,12 +35,22 @@ import type {
   OperatorValue,
 } from './types';
 
+// Below the popover layer's 400px floor (see popoverLayerStyles in
+// PowerSearch.tsx) the chip rows collapse from one line to wrapped lines.
+// A container query, not a viewport one, so the rows track the width the
+// popover actually got (#4761).
+const CHIP_ROW_COLLAPSE = '@container (max-width: 399px)';
+
 const styles = stylex.create({
   container: {
     overflow: 'hidden',
+    containerType: 'inline-size',
   },
   content: {
     padding: spacingVars['--spacing-4'],
+  },
+  chipRow: {
+    flexWrap: {default: 'nowrap', [CHIP_ROW_COLLAPSE]: 'wrap'},
   },
   footer: {
     padding: spacingVars['--spacing-3'],
@@ -50,6 +64,9 @@ const styles = stylex.create({
   operatorSelector: {
     flexGrow: 1,
     flexShrink: 0,
+    // Long translated operator labels truncate in the Selector trigger
+    // instead of pushing the row wider than the popover (#4761).
+    maxWidth: '100%',
   },
   valueEditor: {
     flexGrow: 2,
@@ -62,10 +79,12 @@ const styles = stylex.create({
   nestedFieldSelector: {
     flexShrink: 0,
     width: 200,
+    maxWidth: '100%',
   },
   nestedOperatorSelector: {
     flexShrink: 0,
     width: 180,
+    maxWidth: '100%',
   },
   nestedRow: {
     width: '100%',
@@ -89,6 +108,8 @@ export interface PowerSearchEditPopoverProps {
   onCancel: () => void;
   /** Label for the save button. @default 'Apply' */
   saveButtonLabel?: string;
+  /** Max suggestions in string and entity value typeaheads. */
+  maxMenuItems?: number;
   /** Whether the filter is read-only. */
   isReadOnly?: boolean;
 }
@@ -231,6 +252,7 @@ interface NestedSubFilterRowProps {
   config: InternalConfig;
   subFilter: EditablePartialFilter;
   onChange: (subFilter: EditablePartialFilter) => void;
+  maxMenuItems?: number;
   isReadOnly: boolean;
 }
 
@@ -238,6 +260,7 @@ function NestedSubFilterRow({
   config,
   subFilter,
   onChange,
+  maxMenuItems,
   isReadOnly,
 }: NestedSubFilterRowProps) {
   const t = useTranslator();
@@ -308,7 +331,7 @@ function NestedSubFilterRow({
   );
 
   return (
-    <HStack gap={2} vAlign="center">
+    <HStack gap={2} vAlign="center" xstyle={styles.chipRow}>
       <div {...stylex.props(styles.nestedFieldSelector)}>
         <Selector
           label={t('@astryx.powersearch.editor.field')}
@@ -336,10 +359,12 @@ function NestedSubFilterRow({
       {operatorValue && !isEmptyType && !isNestedType && (
         <div {...stylex.props(styles.nestedRowValueEditor)}>
           <PowerSearchValueEditor
+            key={valueEditorKey(subFilter)}
             operatorValue={operatorValue}
             filterValue={subFilter.value}
             onChange={handleValueChange}
             config={config}
+            maxMenuItems={maxMenuItems}
             isDisabled={isReadOnly}
           />
         </div>
@@ -358,6 +383,7 @@ interface NestedEditorProps {
   operatorOptions: {value: string; label: string}[];
   onOperatorChange: (operatorKey: string) => void;
   onPartialFilterChange: (filter: PartialFilter) => void;
+  maxMenuItems?: number;
   isReadOnly: boolean;
 }
 
@@ -367,6 +393,7 @@ function NestedEditor({
   operatorOptions,
   onOperatorChange,
   onPartialFilterChange,
+  maxMenuItems,
   isReadOnly,
 }: NestedEditorProps) {
   const t = useTranslator();
@@ -488,6 +515,7 @@ function NestedEditor({
               config={config}
               subFilter={sf}
               onChange={updated => handleUpdate(itemPath, updated)}
+              maxMenuItems={maxMenuItems}
               isReadOnly={isReadOnly}
             />
           ),
@@ -514,6 +542,7 @@ function NestedEditor({
             config={config}
             subFilter={sf}
             onChange={updated => handleUpdate(itemPath, updated)}
+            maxMenuItems={maxMenuItems}
             isReadOnly={isReadOnly}
           />
         ),
@@ -582,29 +611,23 @@ function NestedEditor({
 }
 
 // =============================================================================
-// Main popover
+// Value editor cell
 // =============================================================================
 
-export function PowerSearchEditPopover({
-  config,
-  filter: initialFilter,
-  mode,
-  onSave,
-  onCancel,
-  saveButtonLabel: saveButtonLabelFromProps,
-  isReadOnly = false,
-}: PowerSearchEditPopoverProps) {
-  const t = useTranslator();
-  const saveButtonLabel =
-    saveButtonLabelFromProps ?? t('@astryx.powersearch.editor.apply');
-  const [partialFilter, setPartialFilter] =
-    useState<PartialFilter>(initialFilter);
-  const valueEditorRef = useRef<HTMLDivElement>(null);
+// A field switch must replace the editor, not update it in place: a reused
+// editor keeps its open menu and old results.
+function valueEditorKey(filter: {field: string; operator?: string}): string {
+  return `${filter.field}\u0000${filter.operator ?? ''}`;
+}
 
-  // Focus the first focusable element inside the value editor after mount
+// Keyed on field + operator, so this also mounts on a field switch, not just
+// when the popover opens; the focus handoff below runs for both.
+function ValueEditorCell(props: PowerSearchValueEditorProps) {
+  const ref = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
-      const container = valueEditorRef.current;
+      const container = ref.current;
       if (!container) {
         return;
       }
@@ -615,6 +638,33 @@ export function PowerSearchEditPopover({
     });
     return () => cancelAnimationFrame(frame);
   }, []);
+
+  return (
+    <div ref={ref} {...stylex.props(styles.valueEditor)}>
+      <PowerSearchValueEditor {...props} />
+    </div>
+  );
+}
+
+// =============================================================================
+// Main popover
+// =============================================================================
+
+export function PowerSearchEditPopover({
+  config,
+  filter: initialFilter,
+  mode,
+  onSave,
+  onCancel,
+  saveButtonLabel: saveButtonLabelFromProps,
+  maxMenuItems,
+  isReadOnly = false,
+}: PowerSearchEditPopoverProps) {
+  const t = useTranslator();
+  const saveButtonLabel =
+    saveButtonLabelFromProps ?? t('@astryx.powersearch.editor.apply');
+  const [partialFilter, setPartialFilter] =
+    useState<PartialFilter>(initialFilter);
 
   const currentOperator = partialFilter.operator
     ? config.getOperator(partialFilter.field, partialFilter.operator)
@@ -702,7 +752,13 @@ export function PowerSearchEditPopover({
   // Handle Enter to save, Escape to cancel
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' && !isSaveDisabled) {
+      // Don't treat an IME composition-commit Enter as save-to-close --
+      // typing a CJK filter value and pressing Enter to confirm the
+      // composition would otherwise close the popover mid-composition.
+      if (isImeKeyEvent(e.nativeEvent)) {
+        return;
+      }
+      if (e.key === 'Enter' && !isSaveDisabled && !e.defaultPrevented) {
         e.preventDefault();
         handleSave();
       } else if (e.key === 'Escape' && !e.defaultPrevented) {
@@ -755,6 +811,7 @@ export function PowerSearchEditPopover({
               operatorOptions={operatorOptions}
               onOperatorChange={handleOperatorChange}
               onPartialFilterChange={setPartialFilter}
+              maxMenuItems={maxMenuItems}
               isReadOnly={isReadOnly}
             />
           </VStack>
@@ -795,7 +852,7 @@ export function PowerSearchEditPopover({
   return (
     <div {...stylex.props(styles.container)} onKeyDown={handleKeyDown}>
       <div {...stylex.props(styles.content)}>
-        <HStack gap={2}>
+        <HStack gap={2} xstyle={styles.chipRow}>
           <div {...stylex.props(styles.fieldSelector)}>
             <Selector
               label={t('@astryx.powersearch.editor.field')}
@@ -821,16 +878,16 @@ export function PowerSearchEditPopover({
             </div>
           )}
           {operatorValue && !isEmptyType && (
-            <div ref={valueEditorRef} {...stylex.props(styles.valueEditor)}>
-              <PowerSearchValueEditor
-                operatorValue={operatorValue}
-                filterValue={partialFilter.value}
-                onChange={handleValueChange}
-                onEnter={handleSave}
-                config={config}
-                isDisabled={isReadOnly}
-              />
-            </div>
+            <ValueEditorCell
+              key={valueEditorKey(partialFilter)}
+              operatorValue={operatorValue}
+              filterValue={partialFilter.value}
+              onChange={handleValueChange}
+              onEnter={handleSave}
+              config={config}
+              maxMenuItems={maxMenuItems}
+              isDisabled={isReadOnly}
+            />
           )}
         </HStack>
       </div>

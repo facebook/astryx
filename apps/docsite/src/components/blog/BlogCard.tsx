@@ -51,14 +51,42 @@ const styles = stylex.create({
     WebkitBoxOrient: 'vertical',
     overflow: 'hidden',
   },
+  // Below 720px (where the post grid becomes a single column) the feature
+  // card's title/excerpt match the regular cards' size for a consistent stack.
+  featureTitle: {
+    fontSize: {
+      default: 'var(--text-heading-3-size)',
+      '@media (min-width: 720px)': 'var(--text-heading-1-size)',
+    },
+    lineHeight: {
+      default: 'var(--text-heading-3-leading)',
+      '@media (min-width: 720px)': 'var(--text-heading-1-leading)',
+    },
+  },
+  featureExcerpt: {
+    fontSize: {
+      default: 'var(--text-body-size)',
+      '@media (min-width: 720px)': 'var(--text-large-size)',
+    },
+    lineHeight: {
+      default: 'var(--text-body-leading)',
+      '@media (min-width: 720px)': 'var(--text-large-leading)',
+    },
+  },
 });
 
 export interface BlogCardProps {
   post: BlogPost;
   feature?: boolean;
+  /** Hide the description/excerpt (e.g. to keep the home showcase tight). */
+  hideDescription?: boolean;
 }
 
-export function BlogCard({post, feature = false}: BlogCardProps) {
+export function BlogCard({
+  post,
+  feature = false,
+  hideDescription = false,
+}: BlogCardProps) {
   const releaseVersion = parseReleaseVersion(post.title);
   return (
     <Link
@@ -87,15 +115,25 @@ export function BlogCard({post, feature = false}: BlogCardProps) {
         </AspectRatio>
         <VStack gap={3}>
           <VStack gap={1}>
-            <Heading level={feature ? 1 : 3}>{post.title}</Heading>
-            <Text
-              type={feature ? 'large' : 'body'}
-              weight="normal"
-              color="secondary"
-              xstyle={styles.excerpt}
-              className={css.description}>
-              {post.description}
-            </Text>
+            <Heading
+              level={feature ? 1 : 3}
+              xstyle={feature ? styles.featureTitle : undefined}>
+              {post.title}
+            </Heading>
+            {hideDescription ? null : (
+              <Text
+                type={feature ? 'large' : 'body'}
+                weight="normal"
+                color="secondary"
+                xstyle={
+                  feature
+                    ? [styles.excerpt, styles.featureExcerpt]
+                    : styles.excerpt
+                }
+                className={css.description}>
+                {post.description}
+              </Text>
+            )}
           </VStack>
           <AuthorByline
             authors={post.authors}

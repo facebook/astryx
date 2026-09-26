@@ -4,9 +4,12 @@
 
 /**
  * @file useGridFocus.ts
- * @input Uses React useCallback, useRef, useIsomorphicLayoutEffect
+ * @input Uses React useCallback, useRef, useIsomorphicLayoutEffect,
+ *   isRtlElement
  * @output Exports useGridFocus hook for grid keyboard navigation
- * @position Core hook; used by Calendar for date grid navigation
+ * @position Core hook; used by Calendar for date grid navigation. Auto-detects
+ *   RTL from the container's computed direction so horizontal arrow keys
+ *   follow visual direction (WCAG 1.3.2).
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts
@@ -14,6 +17,7 @@
  */
 
 import {useCallback, useRef} from 'react';
+import {isRtlElement} from './isRtlElement';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
 
 /**
@@ -84,13 +88,6 @@ export interface UseGridFocusOptions {
    * Callback for Page Down key (e.g., next month).
    */
   onPageDown?: () => void;
-
-  /**
-   * Whether the grid is in a right-to-left context. When true, ArrowLeft and
-   * ArrowRight are swapped so horizontal navigation follows visual direction.
-   * @default false
-   */
-  isRtl?: boolean;
 
   /**
    * Roving-tabindex ownership. When true, the hook manages a single tab stop
@@ -217,7 +214,6 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
     onNavigateAfter,
     onPageUp,
     onPageDown,
-    isRtl = false,
     hasRovingTabIndex = false,
   } = options;
 
@@ -455,13 +451,15 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
 
       // In RTL, ArrowLeft/ArrowRight are swapped so horizontal navigation
       // follows visual direction. Vertical keys (Up/Down) are unaffected.
+      // Direction is resolved lazily — getComputedStyle runs only when a
+      // horizontal arrow key is actually pressed (SSR-safe, no layout thrash
+      // on unrelated keys).
       let key = e.key;
-      if (isRtl) {
-        if (key === 'ArrowLeft') {
-          key = 'ArrowRight';
-        } else if (key === 'ArrowRight') {
-          key = 'ArrowLeft';
-        }
+      if (
+        (key === 'ArrowLeft' || key === 'ArrowRight') &&
+        isRtlElement(gridRef.current)
+      ) {
+        key = key === 'ArrowLeft' ? 'ArrowRight' : 'ArrowLeft';
       }
 
       switch (key) {
@@ -582,7 +580,6 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
       focusLast,
       getCells,
       getCurrentIndex,
-      isRtl,
       onNavigateAfter,
       onNavigateBefore,
       onPageDown,

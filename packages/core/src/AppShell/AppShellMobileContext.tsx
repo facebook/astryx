@@ -20,6 +20,14 @@ export interface AppShellMobileContextValue {
   isMobile: boolean;
   /** Whether the mobile nav drawer is currently open */
   isMobileNavOpen: boolean;
+  /**
+   * DOM id of the mobile nav drawer. `AppShell` sets this so the toggle can
+   * point its `aria-controls` at the drawer and the drawer can apply it as its
+   * `id`. Optional: callers that construct this context by hand may omit it, in
+   * which case `MobileNav` falls back to a locally generated id and the toggle
+   * simply drops `aria-controls`.
+   */
+  mobileNavId?: string;
   /** Toggle the mobile nav drawer open/closed */
   toggleMobileNav: () => void;
   /** Open the mobile nav drawer */

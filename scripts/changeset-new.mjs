@@ -11,8 +11,10 @@
  *      so you don't hand-enumerate the frontmatter. Only genuinely-affected
  *      packages get the changelog entry; the `fixed` lockstep co-bumps the
  *      rest so versions stay aligned without polluting their changelogs.
- *   2. semver vs v0 — forces `patch` while the repo is < 1.0. No way to
- *      accidentally author a `minor` that jumps 0.0.x -> 0.1.0.
+ *   2. semver for 0.x — derives the bump from the category. A [breaking]
+ *      change bumps the minor (0.x.y -> 0.(x+1).0, the breaking tier under
+ *      caret ranges); everything else bumps the patch. No way to declare a
+ *      mismatched bump by hand — check-changesets.mjs enforces the coupling.
  *   3. Contributor encapsulation — captures the human contributor(s) at
  *      authoring time (defaulting to your `gh` / git identity) and writes them
  *      into the changeset body, where the custom changelog module reads them.
@@ -249,8 +251,12 @@ async function main() {
   if (prNum && !/\(#\d+\)/.test(headline)) headline += ` (#${prNum})`;
   const body = `[${catKey}] ${headline}\n${contributors.map(c => '@' + c).join(' ')}`;
 
-  // ---- bump (patch-only pre-1.0) ----------------------------------------
-  const bump = 'patch'; // intentionally patch; minor/major gated by checker pre-1.0
+  // ---- bump (derived from category: [breaking] -> minor, else patch) ----
+  // Under 0.x caret ranges (^0.1.8 allows <0.2.0) a minor bump is the
+  // breaking tier, so breaking changes bump the minor and everything else
+  // bumps the patch. major is never used pre-1.0 (it would jump to 1.0.0).
+  // check-changesets.mjs enforces this coupling both ways.
+  const bump = catKey === 'breaking' ? 'minor' : 'patch';
   const frontmatter = selected.map(n => `'${n}': ${bump}`).join('\n');
 
   // ---- filename (human-id style without the dep) ------------------------
@@ -268,7 +274,12 @@ async function main() {
 
   console.log(`\n✓ Wrote ${path.relative(ROOT, file)}\n`);
   console.log(contents);
-  if (pre1) console.log('(pre-1.0: bump forced to patch)');
+  if (pre1)
+    console.log(
+      bump === 'minor'
+        ? '(0.x: [breaking] -> minor bump)'
+        : '(0.x: bump -> patch)',
+    );
 }
 
 main().catch(e => {

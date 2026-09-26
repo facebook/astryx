@@ -5,8 +5,8 @@
 /**
  * @file useFocusTrap.ts
  * @input Uses React useCallback, useEffect, useRef
- * @output Exports useFocusTrap hook for trapping focus within a container and
- *   restoring focus to the previously-focused element on deactivation
+ * @output Exports useFocusTrap, the deprecated Escape-state shim, and an
+ *   internal compatibility-signal hook
  * @position Core hook; used by dialogs, modals, date pickers
  *
  * Based on WAI-ARIA dialog pattern:
@@ -19,67 +19,63 @@
 import {useCallback, useEffect, useRef} from 'react';
 
 import {FOCUSABLE_SELECTOR} from './focusableSelector';
+import {useLayerDismissal} from '../Layer/useLayerDismissal';
+
+// Escape-dismissible focus traps currently mounted. This is the whole state
+// behind `hasActiveFocusTrapEscape`, which predates the shared stack and must
+// keep answering about focus traps alone — the stack now carries families that
+// never trapped focus (tooltips, hover cards), and counting those would tell
+// callers a trap is above them when none is.
+let activeEscapeTrapCount = 0;
 
 /**
- * Module-level stack of active focus-trap Escape handlers.
+ * Whether an Escape-dismissible focus trap is currently active — a Popover,
+ * menu or other trapped layer that would take an Escape press.
  *
- * Every active `useFocusTrap` used to attach its own document-level `keydown`
- * listener with no coordination, so a single Escape press closed *every* open
- * layer at once (e.g. a popover nested inside a Dialog closed both). Tracking
- * traps in a shared stack lets only the most recently activated (top-most)
- * trap respond to Escape.
- */
-const escapeStack: (() => void)[] = [];
-
-function pushEscapeHandler(handler: () => void): void {
-  escapeStack.push(handler);
-}
-
-function removeEscapeHandler(handler: () => void): void {
-  const index = escapeStack.lastIndexOf(handler);
-  if (index !== -1) {
-    escapeStack.splice(index, 1);
-  }
-}
-
-function isTopEscapeHandler(handler: () => void): boolean {
-  return escapeStack[escapeStack.length - 1] === handler;
-}
-
-/**
- * Whether any focus-trap Escape handler is currently active (i.e. a popover
- * layer is open). Other overlay primitives that manage their own Escape (e.g.
- * Dialog) can consult this to defer to a popover layered on top of them,
- * giving topmost-only dismissal until a full layer stack exists.
+ * @deprecated The focus trap no longer owns Escape coordination — every overlay
+ *   family shares one stack (`useLayerDismissal`), which routes each press to
+ *   the top-most layer. A layer that wants the same ordering should join the
+ *   stack rather than ask whether a trap exists.
  */
 export function hasActiveFocusTrapEscape(): boolean {
-  return escapeStack.length > 0;
+  return activeEscapeTrapCount > 0;
 }
 
 /**
- * Whether an Escape keydown should be ignored because it is cancelling an
- * in-progress IME composition. CJK/IME users press Escape to cancel
- * composition; that must not close the surrounding overlay. `keyCode === 229`
- * covers browsers that fire keydown before `isComposing` is set. Exported so
- * other overlays (Dialog, Drawer, CommandPalette) share one definition.
+ * Keep the deprecated `hasActiveFocusTrapEscape` signal accurate for a focus
+ * trap whose Escape is coordinated by another registration in the shared
+ * stack. This hook is intentionally internal (not re-exported from `hooks`): it
+ * preserves the released read-only compatibility signal without creating a
+ * second dismissal owner.
  */
-export function isImeKeyEvent(event: {
-  isComposing?: boolean;
-  keyCode?: number;
-}): boolean {
-  return event.isComposing === true || event.keyCode === 229;
+export function useFocusTrapEscapeCompatibilitySignal(isActive: boolean): void {
+  useEffect(() => {
+    if (!isActive) {
+      return;
+    }
+    activeEscapeTrapCount += 1;
+    return () => {
+      activeEscapeTrapCount -= 1;
+    };
+  }, [isActive]);
 }
 
 /**
  * Whether an element is currently perceivable/focusable — excludes ones hidden
  * via `display:none`/`visibility:hidden` or inside an `inert`/`hidden` subtree,
- * which the browser skips for Tab.
+ * which the browser skips for Tab, and ones inside an `aria-hidden="true"`
+ * subtree, which sighted-keyboard users could Tab to while AT skips them
+ * (WCAG 4.1.2 — focusable content must be exposed to assistive tech).
  */
 function isVisiblyFocusable(el: HTMLElement): boolean {
   if (el.hasAttribute('inert') || el.closest('[inert]')) {
     return false;
   }
   if (el.hidden || el.closest('[hidden]')) {
+    return false;
+  }
+  // closest() matches the element itself as well as any ancestor.
+  if (el.closest('[aria-hidden="true"]')) {
     return false;
   }
   // offsetParent is null for display:none (and fixed elements); pair with a
@@ -181,7 +177,9 @@ export interface UseFocusTrapReturn<T extends HTMLElement = HTMLElement> {
  * - Handles both Tab and Shift+Tab navigation
  * - Restores focus to the element that was focused before activation when the
  *   trap deactivates or unmounts, unless focus was already moved elsewhere
- *   (so consumers that restore focus themselves are unaffected)
+ *   (so consumers that restore focus themselves are unaffected) or focus
+ *   never entered the trap (so popups that keep focus on their trigger, like
+ *   comboboxes, are unaffected)
  *
  * @example
  * ```
@@ -212,6 +210,30 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
   // Track if focus change was triggered by keyboard (Tab key)
   const isKeyboardNavigationRef = useRef(false);
 
+  // Join the shared layer dismissal stack. The trap no longer listens for
+  // Escape itself: the stack owns one listener and routes each press to the
+  // top-most layer, so a popover inside a Dialog, a submenu inside a menu, and
+  // a modal inside a modal all peel off one at a time. A trap with no
+  // `onEscape` is not dismissible and stays off the stack, so a press flows
+  // past it to whatever is underneath.
+  // One expression drives both the stack registration and the deprecated
+  // `hasActiveFocusTrapEscape` count, so the two can never disagree about
+  // whether this trap is active.
+  const isEscapeTrap = isActive && onEscape != null;
+
+  useLayerDismissal({
+    isActive: isEscapeTrap,
+    onDismiss: () => {
+      onEscape?.();
+    },
+    // The trap renders nothing, so it cannot push a depth provider around its
+    // content; hand the stack the container instead so two DOM-nested traps
+    // still resolve in the right order.
+    getContainer: () => containerRef.current,
+  });
+
+  useFocusTrapEscapeCompatibilitySignal(isEscapeTrap);
+
   /**
    * Focus the first focusable element.
    */
@@ -234,6 +256,18 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
    * now-unmounted) trap container. If focus already moved to some other element
    * outside the trap (the user clicked elsewhere, or a consumer such as
    * DropdownMenu already refocused its trigger), the restore is a no-op.
+   *
+   * The restore is also skipped when focus never entered the trap while it
+   * was active. Some popups — a Typeahead/PowerSearch listbox anchored to its
+   * own input — deliberately keep DOM focus on the trigger and never move it
+   * into the trap container (they open with `role: "none"` and
+   * `hasAutoFocus: false`). For those, the restore would cancel a blur the
+   * user asked for on outside-click dismissal, re-focusing the trigger so a
+   * second click no longer fires a `focus` event and cannot reopen the menu.
+   * Tracking `focusin` inside the container distinguishes "focus was here and
+   * we should rescue it" from "focus was never here and we should leave it
+   * alone" — popups that do take focus (Dialog, DropdownMenu, a Typeahead
+   * option click) are unaffected.
    */
   useEffect(() => {
     if (!isActive) {
@@ -244,7 +278,27 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
     // Snapshot the container now; by cleanup it may be detached or unmounted.
     const container = containerRef.current;
 
+    // Whether focus ever entered the trap container while it was active.
+    // Initialized from the current active element in case focus was already
+    // inside at activation (e.g. a programmatic focus before the effect ran).
+    let hadFocusInside =
+      container != null && container.contains(document.activeElement);
+
+    const markFocusInside = (event: FocusEvent) => {
+      const target = event.target as Node | null;
+      if (target != null && containerRef.current?.contains(target)) {
+        hadFocusInside = true;
+      }
+    };
+    document.addEventListener('focusin', markFocusInside, true);
+
     return () => {
+      document.removeEventListener('focusin', markFocusInside, true);
+
+      if (!hadFocusInside) {
+        return;
+      }
+
       const active = document.activeElement;
       const focusWasLost =
         active == null ||
@@ -288,12 +342,21 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
         lastFocusRef.current = target as Element;
       } else if (isKeyboardNavigationRef.current) {
         // Focus escaped via keyboard - redirect it back
-        focusFirstDescendant(container);
+        const focusedFirst = focusFirstDescendant(container);
 
         // If we're back at the same element (Shift+Tab from first element),
         // try focusing the last element instead
-        if (lastFocusRef.current === document.activeElement) {
+        if (focusedFirst && lastFocusRef.current === document.activeElement) {
           focusLastDescendant(container);
+        } else if (
+          !focusedFirst &&
+          lastFocusRef.current instanceof HTMLElement &&
+          container.contains(lastFocusRef.current)
+        ) {
+          // A modal surface may intentionally have no tabbable controls and
+          // place initial focus on a tabIndex={-1} heading or panel. Preserve
+          // that programmatic focus target instead of letting Tab escape.
+          attemptFocus(lastFocusRef.current);
         }
 
         lastFocusRef.current = document.activeElement;
@@ -313,45 +376,22 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
   }, [isActive]);
 
   /**
-   * Handle Tab key to wrap focus at boundaries, and Escape to close.
-   * Also tracks that keyboard navigation is occurring.
+   * Handle Tab key to wrap focus at boundaries. Also tracks that keyboard
+   * navigation is occurring.
+   *
+   * No Escape here, and no IME guard: the shared stack owns the press, claims
+   * a composing Escape so no close request follows, and dismisses the trap
+   * through `onEscape` above. The trap renders no element of its own, so it
+   * has no `cancel` to answer either.
    */
   useEffect(() => {
     if (!isActive) {
       return;
     }
 
-    // Register this trap on the shared Escape stack so only the top-most
-    // active trap responds to Escape. A stable identity per active period is
-    // enough — we push on activate and remove on cleanup.
-    const escapeHandler = () => {
-      onEscape?.();
-    };
-    if (onEscape) {
-      pushEscapeHandler(escapeHandler);
-    }
-
     const handleKeyDown = (event: KeyboardEvent) => {
       const container = containerRef.current;
       if (!container) {
-        return;
-      }
-
-      if (event.key === 'Escape' && onEscape) {
-        // Ignore Escape that is cancelling an IME composition, already handled
-        // by a nested handler, or not targeting the top-most trap.
-        if (
-          event.defaultPrevented ||
-          isImeKeyEvent(event) ||
-          !isTopEscapeHandler(escapeHandler)
-        ) {
-          return;
-        }
-        // Mark handled and stop propagation so an outer layer (e.g. a Dialog
-        // hosting this popover) does not also dismiss on the same press.
-        event.preventDefault();
-        event.stopPropagation();
-        onEscape();
         return;
       }
 
@@ -361,11 +401,37 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
 
         const focusable = getFocusableElements(container);
         if (focusable.length === 0) {
+          const active = document.activeElement;
+          if (!(active instanceof HTMLElement) || !container.contains(active)) {
+            // A layer can be open while focus legitimately sits outside it —
+            // a listbox popup anchored to its own input. Cancelling there
+            // would take Tab away from the whole page.
+            return;
+          }
+          // There is nowhere to advance to. Keep focus on the current
+          // programmatic target (for example a dialog panel with tabIndex=-1)
+          // rather than allowing the browser to move into background content.
+          event.preventDefault();
+          lastFocusRef.current = active;
+          isKeyboardNavigationRef.current = false;
           return;
         }
 
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
+
+        if (document.activeElement === container) {
+          // Programmatic initial focus can sit on the trap container itself
+          // (for example a dialog panel with no content controls). Move into
+          // the tabbable cycle instead of letting Tab escape to the page.
+          event.preventDefault();
+          if (event.shiftKey) {
+            last.focus();
+          } else {
+            first.focus();
+          }
+          return;
+        }
 
         if (event.shiftKey) {
           // Shift+Tab: if on first element, wrap to last
@@ -387,9 +453,6 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      if (onEscape) {
-        removeEscapeHandler(escapeHandler);
-      }
     };
   }, [isActive, onEscape]);
 

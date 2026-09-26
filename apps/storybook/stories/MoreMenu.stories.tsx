@@ -41,6 +41,22 @@ const meta: Meta<typeof MoreMenu> = {
       control: 'boolean',
       description: 'Whether the menu trigger is disabled',
     },
+    placement: {
+      control: 'select',
+      options: ['above', 'below', 'start', 'end'],
+      description: 'Position of the menu relative to the trigger',
+    },
+    alignment: {
+      control: 'select',
+      options: ['start', 'center', 'end'],
+      description: 'Alignment of the menu along the placement axis',
+    },
+    presentation: {
+      control: 'select',
+      options: ['popover', 'bottom-sheet', 'adaptive'],
+      description:
+        'Popover, BottomSheet, or adaptive compact-touch presentation',
+    },
     'data-testid': {
       control: 'text',
       description: 'Test ID for testing frameworks',
@@ -248,6 +264,82 @@ export const InToolbar: Story = {
   ),
 };
 
+export const BottomSheetPresentation: Story = {
+  name: 'Presentation / BottomSheet',
+  parameters: {
+    layout: 'fullscreen',
+    viewport: {defaultViewport: 'mobile1'},
+    docs: {
+      story: {inline: false, height: '560px'},
+      description: {
+        story:
+          'The real MoreMenu component using DropdownMenu’s BottomSheet presentation. Its visible kebab trigger remains the discoverable mobile entry point.',
+      },
+    },
+  },
+  render: () => (
+    <div style={{padding: 16, display: 'flex', justifyContent: 'flex-end'}}>
+      <MoreMenu
+        presentation="bottom-sheet"
+        label="Project actions"
+        items={[
+          {label: 'Edit', icon: PencilIcon, onClick: () => {}},
+          {
+            label: 'Duplicate',
+            icon: DocumentDuplicateIcon,
+            onClick: () => {},
+          },
+          {label: 'Share', icon: ShareIcon, onClick: () => {}},
+          {
+            label: 'Delete',
+            icon: TrashIcon,
+            variant: 'destructive',
+            onClick: () => {},
+          },
+        ]}
+      />
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const trigger = canvasElement.querySelector('button');
+    if (trigger instanceof HTMLElement) {
+      trigger.click();
+    }
+  },
+};
+
+export const AdaptivePresentation: Story = {
+  name: 'Presentation / adaptive',
+  parameters: {
+    layout: 'fullscreen',
+    viewport: {defaultViewport: 'mobile1'},
+    docs: {
+      description: {
+        story:
+          'Uses the built-in adaptive policy: BottomSheet at 768px and below with a coarse primary pointer, anchored popover otherwise. Use device emulation to exercise the touch branch.',
+      },
+    },
+  },
+  render: () => (
+    <div style={{padding: 16, display: 'flex', justifyContent: 'flex-end'}}>
+      <MoreMenu
+        presentation="adaptive"
+        label="Project actions"
+        items={[
+          {label: 'Edit', icon: PencilIcon, onClick: () => {}},
+          {label: 'Share', icon: ShareIcon, onClick: () => {}},
+          {
+            label: 'Delete',
+            icon: TrashIcon,
+            variant: 'destructive',
+            onClick: () => {},
+          },
+        ]}
+      />
+    </div>
+  ),
+};
+
 // With custom item rendering
 export const CustomItemRendering: Story = {
   render: () => (
@@ -287,6 +379,42 @@ export const WithDisabledItems: Story = {
         },
       ]}
     />
+  ),
+};
+
+// Alignment along the placement axis — the default start-aligned menu and an
+// end-aligned one. Both triggers sit mid-viewport with room on either side, so
+// the difference is the `alignment` prop, not a collision flip.
+export const Alignment: Story = {
+  parameters: {layout: 'padded'},
+  render: () => (
+    <div
+      style={{
+        display: 'flex',
+        gap: 240,
+        justifyContent: 'center',
+        paddingBlock: 120,
+      }}>
+      <MoreMenu
+        label="Start aligned"
+        items={[
+          {label: 'Edit', icon: PencilIcon, onClick: () => {}},
+          {label: 'Duplicate', icon: DocumentDuplicateIcon, onClick: () => {}},
+          {type: 'divider'},
+          {label: 'Delete', icon: TrashIcon, onClick: () => {}},
+        ]}
+      />
+      <MoreMenu
+        label="End aligned"
+        alignment="end"
+        items={[
+          {label: 'Edit', icon: PencilIcon, onClick: () => {}},
+          {label: 'Duplicate', icon: DocumentDuplicateIcon, onClick: () => {}},
+          {type: 'divider'},
+          {label: 'Delete', icon: TrashIcon, onClick: () => {}},
+        ]}
+      />
+    </div>
   ),
 };
 

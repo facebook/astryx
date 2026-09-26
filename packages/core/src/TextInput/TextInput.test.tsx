@@ -2,7 +2,8 @@
 
 /**
  * @file TextInput.test.tsx
- * @input Uses vitest, @testing-library/react, TextInput component
+ * @input Uses vitest, @testing-library/react, TextInput component, and the
+ *   shared declaredValue StyleX read-back helper
  * @output Unit tests for TextInput component behavior
  * @position Testing; validates TextInput.tsx implementation
  *
@@ -13,6 +14,8 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TestIcon} from '../__tests__/TestIcon';
+import {declaredValue} from '../__tests__/stylexDeclarations';
+import {InputGroup} from '../InputGroup';
 import {TextInput} from './TextInput';
 
 // Mock showPopover/hidePopover since jsdom does not implement them. Used by the
@@ -229,6 +232,26 @@ describe('TextInput', () => {
       expect(screen.getByText('Invalid email address')).toBeInTheDocument();
     });
 
+    it('has no dangling aria-describedby ids inside InputGroup (WCAG 1.3.1)', () => {
+      // Inside an InputGroup no Field renders, so the status message element
+      // does not exist; aria-describedby must not reference its id.
+      render(
+        <InputGroup label="Contact">
+          <TextInput
+            label="Email"
+            value=""
+            onChange={() => {}}
+            status={{type: 'error', message: 'Invalid email address'}}
+          />
+        </InputGroup>,
+      );
+      const input = screen.getByRole('textbox');
+      const describedBy = input.getAttribute('aria-describedby') ?? '';
+      for (const idToken of describedBy.split(/\s+/).filter(Boolean)) {
+        expect(document.getElementById(idToken)).not.toBeNull();
+      }
+    });
+
     it('does not render status message when not provided', () => {
       render(
         <TextInput
@@ -350,6 +373,177 @@ describe('TextInput', () => {
     });
   });
 
+  describe('form participation', () => {
+    it('submits the value under htmlName', () => {
+      const {container} = render(
+        <form>
+          <TextInput
+            label="Owner"
+            htmlName="owner"
+            value="alice"
+            onChange={() => {}}
+          />
+        </form>,
+      );
+      const data = new FormData(container.querySelector('form')!);
+      expect(data.get('owner')).toBe('alice');
+    });
+
+    it('is excluded from form data when disabled', () => {
+      const {container} = render(
+        <form>
+          <TextInput
+            label="Owner"
+            htmlName="owner"
+            value="alice"
+            onChange={() => {}}
+            isDisabled
+          />
+        </form>,
+      );
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
+    });
+
+    // Regression: a disabledMessage swaps the native `disabled` attribute for
+    // aria-disabled + readOnly so the reason stays focus-discoverable, but
+    // read-only fields still submit — the name has to be withheld too.
+    it('is excluded from form data when disabled, even with a disabledMessage', () => {
+      const {container} = render(
+        <form>
+          <TextInput
+            label="Owner"
+            htmlName="owner"
+            value="alice"
+            onChange={() => {}}
+            isDisabled
+            disabledMessage="You need the Editor role to change this"
+          />
+        </form>,
+      );
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
+    });
+  });
+
+  describe('isReadOnly', () => {
+    it('marks the input read-only', () => {
+      render(
+        <TextInput
+          label="Owner"
+          value="alice"
+          onChange={() => {}}
+          isReadOnly
+        />,
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute('readonly');
+    });
+
+    it('still submits its value with the form', () => {
+      const {container} = render(
+        <form>
+          <TextInput
+            label="Owner"
+            htmlName="owner"
+            value="alice"
+            onChange={() => {}}
+            isReadOnly
+          />
+        </form>,
+      );
+      expect(new FormData(container.querySelector('form')!).get('owner')).toBe(
+        'alice',
+      );
+    });
+
+    it('does not call onChange when the user types', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <TextInput
+          label="Owner"
+          value="alice"
+          onChange={handleChange}
+          isReadOnly
+        />,
+      );
+      await user.type(screen.getByRole('textbox'), 'xyz');
+      expect(handleChange).not.toHaveBeenCalled();
+    });
+
+    it('stays focusable and is not disabled', async () => {
+      const user = userEvent.setup();
+      render(
+        <TextInput
+          label="Owner"
+          value="alice"
+          onChange={() => {}}
+          isReadOnly
+        />,
+      );
+      const input = screen.getByRole('textbox');
+      expect(input).not.toBeDisabled();
+      await user.tab();
+      expect(input).toHaveFocus();
+    });
+
+    it('hides the clear button', () => {
+      render(
+        <TextInput
+          label="Owner"
+          value="alice"
+          onChange={() => {}}
+          hasClear
+          isReadOnly
+        />,
+      );
+      expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    });
+
+    it('lets isDisabled win when both are set', () => {
+      const {container} = render(
+        <form>
+          <TextInput
+            label="Owner"
+            htmlName="owner"
+            value="alice"
+            onChange={() => {}}
+            isReadOnly
+            isDisabled
+          />
+        </form>,
+      );
+      expect(screen.getByRole('textbox')).toBeDisabled();
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
+    });
+  });
+
+  describe('autoComplete prop (#5638)', () => {
+    it('forwards autoComplete to the native input unchanged', () => {
+      render(
+        <TextInput
+          label="Reason"
+          value=""
+          onChange={() => {}}
+          autoComplete="off"
+        />,
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute(
+        'autocomplete',
+        'off',
+      );
+    });
+
+    it('does not set autocomplete when not provided', () => {
+      render(<TextInput label="Name" value="" onChange={() => {}} />);
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('autocomplete');
+    });
+  });
+
   describe('onEnter', () => {
     it('calls onEnter when Enter key is pressed', async () => {
       const user = userEvent.setup();
@@ -366,6 +560,51 @@ describe('TextInput', () => {
       await user.click(input);
       await user.keyboard('{Enter}');
       expect(handleEnter).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not call onEnter when Enter commits an IME conversion', () => {
+      // The browser fires this composing keydown for the Enter that commits an
+      // IME candidate (isComposing: true, or the legacy keyCode 229) before
+      // compositionend writes the conversion. It must NOT trigger onEnter —
+      // submit/save actions would fire before the user intends to submit.
+      // See utils/ime.ts and #6082.
+      const handleEnter = vi.fn();
+      const {container} = render(
+        <TextInput
+          label="Name"
+          value="にほんご"
+          onChange={() => {}}
+          onEnter={handleEnter}
+        />,
+      );
+      const input = container.querySelector('input')!;
+      fireEvent.keyDown(input, {key: 'Enter', isComposing: true});
+      expect(handleEnter).not.toHaveBeenCalled();
+      fireEvent.keyDown(input, {key: 'Enter', keyCode: 229});
+      expect(handleEnter).not.toHaveBeenCalled();
+
+      // A real, non-composing Enter after composition ends still submits.
+      fireEvent.keyDown(input, {key: 'Enter'});
+      expect(handleEnter).toHaveBeenCalledTimes(1);
+    });
+
+    it('still calls onKeyDown for composing keydowns', () => {
+      // onKeyDown is the raw escape hatch: it keeps receiving IME keydowns so
+      // consumers with custom composition handling are unaffected by the
+      // onEnter guard.
+      const handleKeyDown = vi.fn();
+      const {container} = render(
+        <TextInput
+          label="Name"
+          value="にほんご"
+          onChange={() => {}}
+          onKeyDown={handleKeyDown}
+          onEnter={() => {}}
+        />,
+      );
+      const input = container.querySelector('input')!;
+      fireEvent.keyDown(input, {key: 'Enter', isComposing: true});
+      expect(handleKeyDown).toHaveBeenCalledTimes(1);
     });
 
     it('does not call onEnter for other keys', async () => {
@@ -657,5 +896,238 @@ describe('TextInput', () => {
       expect(input).toBeDisabled();
       expect(input).not.toHaveAttribute('aria-disabled');
     });
+  });
+});
+
+describe('TextInput statusVariant forwarding', () => {
+  it('defaults to attached (status renders with data-variant="attached")', () => {
+    const {container} = render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+      />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'attached',
+    );
+  });
+
+  it('forwards statusVariant="detached" to the underlying Field status', () => {
+    const {container} = render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="detached"
+      />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
+  });
+
+  it('renders no message box for statusVariant="tooltip"', () => {
+    const {container} = render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="tooltip"
+      />,
+    );
+    expect(
+      container.querySelector('.astryx-field-status'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('surfaces the status message in a tooltip for statusVariant="tooltip"', () => {
+    render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="tooltip"
+      />,
+    );
+    const tooltip = screen.getByRole('tooltip', h);
+    expect(tooltip).toHaveTextContent('Invalid email');
+  });
+
+  it('describes the input by the status tooltip for statusVariant="tooltip"', () => {
+    render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="tooltip"
+      />,
+    );
+    const input = screen.getByRole('textbox');
+    const tooltip = screen.getByRole('tooltip', h);
+    expect(input.getAttribute('aria-describedby')).toContain(tooltip.id);
+  });
+
+  it('renders the tooltip status affordance as a focusable button (WCAG 2.1.1)', () => {
+    render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="tooltip"
+      />,
+    );
+    // The status affordance is a real button with an accessible name naming
+    // the status type (WCAG 4.1.2), so keyboard-only users (no AT) can reach it.
+    const statusButton = screen.getByRole('button', {name: /error details/i});
+    expect(statusButton).toBeInTheDocument();
+    expect(statusButton).toHaveAttribute('type', 'button');
+  });
+
+  it('opens the status tooltip on keyboard focus for statusVariant="tooltip"', async () => {
+    const user = userEvent.setup();
+    render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="tooltip"
+      />,
+    );
+    const tooltip = screen.getByRole('tooltip', h);
+    // Tab from the input to the status button; keyboard focus reveals the tip.
+    await user.tab();
+    await user.tab();
+    await waitFor(() => {
+      expect(tooltip).toHaveAttribute('popover-open');
+    });
+  });
+
+  it('describes the status button by the tooltip content for statusVariant="tooltip"', () => {
+    render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="tooltip"
+      />,
+    );
+    const statusButton = screen.getByRole('button', {name: /error details/i});
+    const tooltip = screen.getByRole('tooltip', h);
+    expect(statusButton.getAttribute('aria-describedby')).toContain(tooltip.id);
+  });
+});
+
+describe('TextInput disabled theme state', () => {
+  // Reflecting isDisabled on the root theming target lets a theme gate its own
+  // hover/border treatment on disabled (data-disabled + a .disabled variant),
+  // mirroring how status is reflected — without structural :has() CSS.
+  it('reflects disabled on the root target so themes can gate paint on it', () => {
+    const {container} = render(
+      <TextInput label="Name" value="" onChange={() => {}} isDisabled />,
+    );
+    const root = container.querySelector('.astryx-text-input');
+    expect(root).toHaveAttribute('data-disabled', 'disabled');
+  });
+
+  it('omits data-disabled when enabled, like status does', () => {
+    const {container} = render(
+      <TextInput label="Name" value="" onChange={() => {}} />,
+    );
+    const root = container.querySelector('.astryx-text-input');
+    expect(root).not.toHaveAttribute('data-disabled');
+  });
+});
+
+describe('TextInput readonly theme state', () => {
+  it('reflects readonly on the root target so themes can gate paint on it', () => {
+    const {container} = render(
+      <TextInput label="Name" value="" onChange={() => {}} isReadOnly />,
+    );
+    const root = container.querySelector('.astryx-text-input');
+    expect(root).toHaveAttribute('data-readonly', 'readonly');
+  });
+
+  it('omits data-readonly when editable', () => {
+    const {container} = render(
+      <TextInput label="Name" value="" onChange={() => {}} />,
+    );
+    const root = container.querySelector('.astryx-text-input');
+    expect(root).not.toHaveAttribute('data-readonly');
+  });
+});
+
+describe('TextInput clear button focus behavior', () => {
+  it('synchronously restores focus to the input on keyboard activation (detail === 0)', () => {
+    const handleChange = vi.fn();
+    render(
+      <TextInput
+        label="Search"
+        value="test"
+        hasClear
+        onChange={handleChange}
+      />,
+    );
+
+    const input = screen.getByRole('textbox');
+    const clearButton = screen.getByRole('button', {name: /clear/i});
+
+    clearButton.focus();
+    expect(document.activeElement).toBe(clearButton);
+
+    // Keyboard activation (e.g. Enter / Space on focused button yields detail 0)
+    fireEvent.click(clearButton, {detail: 0});
+
+    expect(handleChange).toHaveBeenCalledWith('', expect.any(Object));
+    // Must be synchronously focused without waiting for animation frames
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('defers focus restoration via requestAnimationFrame on pointer activation', () => {
+    const handleChange = vi.fn();
+    const rafSpy = vi.spyOn(window, 'requestAnimationFrame');
+    render(
+      <TextInput
+        label="Search"
+        value="test"
+        hasClear
+        onChange={handleChange}
+      />,
+    );
+
+    const clearButton = screen.getByRole('button', {name: /clear/i});
+
+    // Pointer activation (detail > 0)
+    fireEvent.click(clearButton, {detail: 1});
+
+    expect(handleChange).toHaveBeenCalledWith('', expect.any(Object));
+    expect(rafSpy).toHaveBeenCalled();
+    rafSpy.mockRestore();
+  });
+});
+
+describe('TextInput text size', () => {
+  it('renders the theme body size outside the iOS zoom gate', () => {
+    // The 16px floor rides `@supports (-webkit-touch-callout: none)` inside
+    // `@media (pointer: coarse)` — iOS Safari is the browser that zooms on
+    // focus under 16px, so the floor targets it alone instead of every
+    // coarse pointer. jsdom's CSSOM drops at-rule-wrapped declarations it
+    // cannot parse, so the gate itself is pinned against the sources in
+    // inputFontFloor.test.ts; what this asserts is the visible result off
+    // the gate: the plain token size, not a floor.
+    render(<TextInput label="Name" value="" onChange={() => {}} />);
+    expect(declaredValue(screen.getByLabelText('Name'), 'font-size')).toBe(
+      'var(--text-body-size)',
+    );
   });
 });

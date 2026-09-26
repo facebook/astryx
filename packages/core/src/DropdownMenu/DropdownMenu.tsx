@@ -4,8 +4,10 @@
 
 /**
  * @file DropdownMenu.tsx
- * @input Uses React, StyleX, usePopover, Button, Icon, useListFocus
- * @output Exports DropdownMenu component
+ * @input Uses React, StyleX, usePopover, MenuBottomSheet, Button, List,
+ *   useListFocus, and the shared viewport-safe menu-width resolver
+ * @output Exports DropdownMenu with caller-selected popover or bottom-sheet
+ *   presentation
  * @position Core implementation; consumed by index.ts
  *
  * Supports two modes with a single keyboard/focus path:
@@ -14,12 +16,17 @@
  *
  * Both modes use useListFocus for DOM-based keyboard navigation.
  *
+ * Initial focus on open follows the input modality: a keyboard open
+ * (Enter / Space / ArrowDown on the trigger) focuses the first enabled item
+ * (APG menu-button); a pointer open focuses the menu container itself so no
+ * item reads as pre-selected, and the first ArrowDown then moves to item 1.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/DropdownMenu/DropdownMenu.doc.mjs
  * - /packages/core/src/DropdownMenu/DropdownMenu.test.tsx
  * - /packages/core/src/DropdownMenu/index.ts
  * - /apps/storybook/stories/DropdownMenu.stories.tsx
- * - /packages/cli/templates/blocks/components/DropdownMenu/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/DropdownMenu/ (showcase blocks)
  */
 
 import React, {
@@ -34,37 +41,82 @@ import React, {
 import * as stylex from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {Button, type ButtonProps} from '../Button';
+import {Heading} from '../Heading';
 import {Icon} from '../Icon';
-import type {IconType} from '../Icon';
 
 import {renderDropdownItems} from './renderDropdownItems';
+import type {DropdownMenuItemProps} from './DropdownMenuItem';
+import {
+  MENU_ITEM_ROLES,
+  MENU_ITEM_SELECTOR,
+  MENU_BOUNDARY_SELECTOR,
+} from './menuItemRoles';
 import {
   DropdownMenuContext,
   type DropdownMenuContextValue,
 } from './DropdownMenuContext';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
+import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
+import {useMenuOverflow} from './useMenuOverflow';
+import {resolveMenuWidth} from './menuWidth';
+import {
+  useAdaptivePresentation,
+  type AdaptivePresentation,
+} from '../hooks/useAdaptivePresentation';
+import {MenuBottomSheet} from './MenuBottomSheet';
+import {MenuBottomSheetActionList} from './MenuBottomSheetActionList';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
-import type {LayerPlacement} from '../Layer/useLayer';
+import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {
   spacingVars,
+  colorVars,
   radiusVars,
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {mergeProps, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {
+  getInteractionModality,
+  useInteractionModalityTracking,
+} from '../utils/interactionModality';
 import {useTranslator} from '../i18n';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+
+const MENU_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
+const MENU_MAX_INLINE_SIZE = `calc(100vi - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px)) - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-right, 0px)))`;
+const MENU_MAX_INLINE_SIZE_FALLBACK = `calc(100vw - ${MENU_VIEWPORT_GUTTER} - ${MENU_VIEWPORT_GUTTER})`;
+const MENU_MAX_BLOCK_SIZE = `min(300px, calc(100dvb - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px)) - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))))`;
+const MENU_MAX_BLOCK_SIZE_FALLBACK = `min(300px, calc(100vh - ${MENU_VIEWPORT_GUTTER} - ${MENU_VIEWPORT_GUTTER}))`;
+const MENU_POSITION_AREA_MAX_INLINE_SIZE = `calc(100% - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)))`;
+const MENU_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK = `calc(100% - ${MENU_VIEWPORT_GUTTER})`;
+const MENU_INLINE_EDGE_GUTTER = `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px))`;
+const MENU_TRIGGER_OPEN_BACKGROUND = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
 
 const styles = stylex.create({
+  triggerOpen: {
+    backgroundImage: MENU_TRIGGER_OPEN_BACKGROUND,
+  },
   dropdown: {
     boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-0-5'],
-    maxHeight: '300px',
-    overflowY: 'auto',
+    // Pointer opens focus this container so subsequent arrow keys and Escape
+    // stay owned by the menu. It is an internal focus target, not a control,
+    // so suppress the browser ring; keyboard focus moves to an item instead.
+    outline: 'none',
+    maxInlineSize: stylex.firstThatWorks(
+      MENU_MAX_INLINE_SIZE,
+      MENU_MAX_INLINE_SIZE_FALLBACK,
+    ),
+    maxHeight: stylex.firstThatWorks(
+      MENU_MAX_BLOCK_SIZE,
+      MENU_MAX_BLOCK_SIZE_FALLBACK,
+    ),
     '--_dropdown-menu-radius': radiusVars['--radius-container'],
     '--_dropdown-menu-padding': spacingVars['--spacing-1'],
     padding: spacingVars['--spacing-1'],
@@ -74,45 +126,153 @@ const styles = stylex.create({
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
-  popover: {
-    minWidth: 'anchor-size(width)',
+  scrollable: {
+    overflowY: 'auto',
+    overflowX: 'hidden',
+    overscrollBehavior: 'contain',
   },
-  popoverBlockGap: {
-    marginBlockStart: spacingVars['--spacing-1'],
-    marginBlockEnd: spacingVars['--spacing-1'],
+  popoverViewport: {
+    boxSizing: 'border-box',
+    maxBlockSize: stylex.firstThatWorks(
+      MENU_MAX_BLOCK_SIZE,
+      MENU_MAX_BLOCK_SIZE_FALLBACK,
+    ),
   },
-  popoverInlineGap: {
-    marginInlineStart: spacingVars['--spacing-1'],
-    marginInlineEnd: spacingVars['--spacing-1'],
+  popoverViewportAligned: {
+    maxInlineSize: stylex.firstThatWorks(
+      MENU_POSITION_AREA_MAX_INLINE_SIZE,
+      MENU_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK,
+    ),
   },
-  popoverCustomWidth: (width: string | number) => ({
-    minWidth: typeof width === 'number' ? `${width}px` : width,
+  popoverViewportStart: {
+    marginInlineEnd: MENU_INLINE_EDGE_GUTTER,
+  },
+  popoverViewportEnd: {
+    marginInlineStart: MENU_INLINE_EDGE_GUTTER,
+  },
+  popoverViewportBlockStart: {
+    marginBlockEnd: `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))`,
+  },
+  popoverViewportBlockEnd: {
+    marginBlockStart: `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px))`,
+  },
+  popoverViewportCentered: {
+    marginInlineStart: MENU_INLINE_EDGE_GUTTER,
+    marginInlineEnd: MENU_INLINE_EDGE_GUTTER,
+    maxInlineSize: stylex.firstThatWorks(
+      MENU_MAX_INLINE_SIZE,
+      MENU_MAX_INLINE_SIZE_FALLBACK,
+    ),
+  },
+  popoverViewportBlockCentered: {
+    marginBlockStart: `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px))`,
+    marginBlockEnd: `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))`,
+    maxInlineSize: stylex.firstThatWorks(
+      MENU_MAX_INLINE_SIZE,
+      MENU_MAX_INLINE_SIZE_FALLBACK,
+    ),
+  },
+  popoverAligned: {
+    minWidth: stylex.firstThatWorks(
+      `min(anchor-size(width), ${MENU_POSITION_AREA_MAX_INLINE_SIZE})`,
+      `min(anchor-size(width), ${MENU_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK})`,
+      'anchor-size(width)',
+    ),
+  },
+  popoverCentered: {
+    minWidth: stylex.firstThatWorks(
+      `min(anchor-size(width), ${MENU_MAX_INLINE_SIZE})`,
+      `min(anchor-size(width), ${MENU_MAX_INLINE_SIZE_FALLBACK})`,
+      'anchor-size(width)',
+    ),
+  },
+  popoverCustomWidth: (width: string) => ({
+    minWidth: width,
   }),
+  popoverCustomIntrinsicWidth: (width: string) => ({
+    inlineSize: width,
+  }),
+});
+
+const bottomSheetStyles = stylex.create({
+  content: {
+    width: '100%',
+  },
+  header: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+    marginBottom: spacingVars['--spacing-2'],
+  },
+  rootHeading: {
+    // Match the content edge of a spacious ListItem. Icon-bearing rows place
+    // their icon here; rows without an icon place their label here.
+    marginInlineStart: spacingVars['--spacing-3'],
+  },
+  viewHeading: {
+    outline: 'none',
+  },
 });
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export interface DropdownMenuItemData {
-  label: string;
-  onClick?: () => void;
-  isDisabled?: boolean;
-  icon?: ReactNode | IconType;
+/**
+ * Data-mode shape for one menu row.
+ *
+ * The item fields are sourced from `DropdownMenuItemProps` — data mode renders
+ * through `DropdownMenuItem`, so the two APIs describe the same thing and must
+ * not drift. Only the fields listed here are part of the data API; add a key to
+ * the `Pick` to expose more of the item's props to `items`.
+ */
+export interface DropdownMenuItemData extends Pick<
+  DropdownMenuItemProps,
+  | 'icon'
+  | 'onClick'
+  | 'isDisabled'
+  | 'variant'
+  | 'description'
+  | 'endContent'
+  | 'hasCloseOnSelect'
+> {
+  /**
+   * Stable identity for the row, used as its React key (as on
+   * `TreeListItemData`). Omit it and the row is keyed by position, which is
+   * correct for a fixed menu; set it when `items` can reorder, filter, or grow,
+   * so a row keeps its DOM node — and therefore keyboard focus — as the array
+   * changes around it.
+   */
+  id?: string;
+  /** Primary label content. */
+  label: ReactNode;
+  /**
+   * Nested submenu entries. When present, this row becomes a submenu (a
+   * flyout revealing `items`) instead of a leaf action — no separate item
+   * "type" is needed. Data-mode parity for the compound DropdownMenuSubMenu API.
+   */
+  items?: DropdownMenuOption[];
 }
 
-export interface DropdownMenuDivider {
+/**
+ * Data-mode shape for a divider row. The compound-mode peer is the
+ * `DropdownMenuDivider` component, which both modes render.
+ */
+export interface DropdownMenuDividerData {
   type: 'divider';
 }
 
 export interface DropdownMenuSection {
   type: 'section';
+  /** Stable identity for the group; see {@link DropdownMenuItemData.id}. */
+  id?: string;
   title?: string;
   items: DropdownMenuItemData[];
 }
 
 export type DropdownMenuOption =
-  DropdownMenuItemData | DropdownMenuDivider | DropdownMenuSection;
+  DropdownMenuItemData | DropdownMenuDividerData | DropdownMenuSection;
 
 // =============================================================================
 // Props
@@ -120,29 +280,53 @@ export type DropdownMenuOption =
 
 export type DropdownMenuButtonProps = Omit<ButtonProps, 'onClick'>;
 
+export type DropdownMenuPresentation = AdaptivePresentation;
+
 interface DropdownMenuBaseProps extends BaseProps {
   button?: DropdownMenuButtonProps;
   isMenuOpen?: boolean;
   onOpenChange?: (isOpen: boolean) => void;
+  /**
+   * Minimum popover width. The menu may grow for its content but is capped to
+   * the available viewport space. Ignored by bottom-sheet presentation.
+   * Defaults to the trigger width.
+   */
   menuWidth?: number | string;
   onClick?: () => void;
   hasChevron?: boolean;
   /**
-   * Position placement relative to the trigger.
+   * Popover position relative to the trigger. Ignored by bottom-sheet
+   * presentation.
    * Uses the same placement values as other Astryx layer-based components.
    * @default 'below'
    */
   placement?: LayerPlacement;
 
+  /**
+   * Popover alignment along the placement axis. Ignored by bottom-sheet
+   * presentation.
+   * Uses the same alignment values as other Astryx layer-based components.
+   * @default 'start'
+   */
+  alignment?: LayerAlignment;
+
   'data-testid'?: string;
 }
 
 interface DropdownMenuDataProps extends DropdownMenuBaseProps {
+  /**
+   * Surface used to present the actions. Pass a value selected by product
+   * policy (for example, a compact-touch media query) when the presentation
+   * should adapt. Bottom-sheet presentation is intended for short action sets.
+   * @default 'popover'
+   */
+  presentation?: DropdownMenuPresentation;
   items: DropdownMenuOption[];
   children?: undefined;
 }
 
 interface DropdownMenuCompoundProps extends DropdownMenuBaseProps {
+  presentation?: 'popover';
   items?: undefined;
   children: ReactNode;
 }
@@ -158,15 +342,16 @@ export type DropdownMenuProps =
  * A dropdown menu component that displays a list of actionable items.
  *
  * Supports two modes:
- * - **Data-driven**: pass `items` for static menus with optional custom rendering
- * - **Compound-component**: pass JSX children for dynamic, stateful, or lazy-loaded menus
- *
- * Both modes share the same DOM-based keyboard navigation via useListFocus.
+ * - **Data-driven**: pass `items` and choose either the default anchored
+ *   popover or the modal bottom-sheet presentation.
+ * - **Compound-component**: pass JSX children for dynamic, stateful, or
+ *   lazy-loaded anchored popover menus.
  *
  * @example
  * ```
  * <DropdownMenu
  *   button={{ label: 'Actions' }}
+ *   presentation={useBottomSheet ? 'bottom-sheet' : 'popover'}
  *   items={[
  *     { label: 'Edit', onClick: () => handleEdit() },
  *     { label: 'Delete', onClick: () => handleDelete() },
@@ -179,7 +364,210 @@ export type DropdownMenuProps =
 // locale.
 const DEFAULT_BUTTON_I18N_KEY = '@astryx.dropdownMenu.label' as const;
 
-export function DropdownMenu({
+function DropdownMenuBottomSheet({
+  button: buttonFromProps,
+  isMenuOpen: controlledIsOpen,
+  onOpenChange,
+  onClick,
+  hasChevron = true,
+  items,
+  presentation: _presentation,
+  menuWidth: _menuWidth,
+  placement: _placement,
+  alignment: _alignment,
+  className,
+  style,
+  xstyle,
+  'data-testid': testId,
+  ...rest
+}: DropdownMenuDataProps & {presentation: 'bottom-sheet'}) {
+  const t = useTranslator();
+  const button = buttonFromProps ?? {label: t(DEFAULT_BUTTON_I18N_KEY)};
+  const backLabel = t('@astryx.dropdownMenu.back');
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const actionListRef = useRef<HTMLDivElement>(null);
+  const openModalityRef = useRef<'keyboard' | 'pointer'>('pointer');
+  const {
+    isFocusRingSuppressed,
+    onFocusReturnTargetFocus,
+    prepareFocusReturn,
+    resetFocusReturn,
+  } = useFocusReturnVisibility();
+  const viewHeadingRef = useRef<HTMLHeadingElement>(null);
+  const previousSubmenuDepthRef = useRef(0);
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const [submenuPath, setSubmenuPath] = useState<DropdownMenuItemData[]>([]);
+  const isControlled = controlledIsOpen !== undefined;
+  const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
+  const [previousIsOpen, setPreviousIsOpen] = useState(isOpen);
+  if (previousIsOpen !== isOpen) {
+    setPreviousIsOpen(isOpen);
+    if (!isOpen && submenuPath.length > 0) {
+      setSubmenuPath([]);
+    }
+  }
+  const currentSubmenu = submenuPath.at(-1);
+  const currentItems = currentSubmenu?.items ?? items;
+  const currentTitle = currentSubmenu?.label ?? button.label;
+  const sheetLabel =
+    typeof currentTitle === 'string' ? currentTitle : button.label;
+
+  const setOpen = useCallback(
+    (nextIsOpen: boolean) => {
+      if (!nextIsOpen) {
+        setSubmenuPath([]);
+        prepareFocusReturn();
+      } else {
+        resetFocusReturn();
+      }
+      onOpenChange?.(nextIsOpen);
+      if (!isControlled) {
+        setInternalIsOpen(nextIsOpen);
+      }
+    },
+    [isControlled, onOpenChange, prepareFocusReturn, resetFocusReturn],
+  );
+
+  const handleSelect = useCallback(
+    (item: DropdownMenuItemData) => {
+      if (item.isDisabled) {
+        return;
+      }
+      item.onClick?.();
+      if (item.hasCloseOnSelect !== false) {
+        setOpen(false);
+      }
+    },
+    [setOpen],
+  );
+
+  const isIconOnly = button.isIconOnly === true;
+  const resolvedEndContent =
+    button.endContent ??
+    (hasChevron && !isIconOnly ? (
+      <Icon icon="chevronDown" size="sm" color="inherit" />
+    ) : undefined);
+
+  useEffect(() => {
+    if (!isOpen || openModalityRef.current !== 'keyboard') {
+      return;
+    }
+    const frame = requestAnimationFrame(() => {
+      actionListRef.current
+        ?.querySelector<HTMLElement>('button:not(:disabled), a[href]')
+        ?.focus({preventScroll: true});
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [currentItems, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      previousSubmenuDepthRef.current = 0;
+      return;
+    }
+    if (submenuPath.length === previousSubmenuDepthRef.current) {
+      return;
+    }
+    previousSubmenuDepthRef.current = submenuPath.length;
+    const frame = requestAnimationFrame(() => {
+      viewHeadingRef.current?.focus({preventScroll: true});
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [isOpen, submenuPath.length]);
+
+  return (
+    <>
+      <Button
+        {...button}
+        ref={buttonRef}
+        xstyle={[
+          isOpen && styles.triggerOpen,
+          button.xstyle,
+          isFocusRingSuppressed && focusOutlineStyles.suppressed,
+        ]}
+        tooltip={isOpen ? undefined : button.tooltip}
+        endContent={resolvedEndContent}
+        onPointerDown={event => {
+          button.onPointerDown?.(event);
+          openModalityRef.current = 'pointer';
+        }}
+        onKeyDown={event => {
+          button.onKeyDown?.(event);
+          if (
+            event.key === 'ArrowDown' ||
+            event.key === 'Enter' ||
+            event.key === ' '
+          ) {
+            openModalityRef.current = 'keyboard';
+          }
+        }}
+        onFocus={event => {
+          button.onFocus?.(event);
+          onFocusReturnTargetFocus();
+        }}
+        onClick={() => {
+          onClick?.();
+          setOpen(!isOpen);
+        }}
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        data-testid={testId}
+      />
+
+      <MenuBottomSheet
+        isOpen={isOpen}
+        onOpenChange={setOpen}
+        finalFocusRef={buttonRef}
+        label={sheetLabel}>
+        <div
+          ref={actionListRef}
+          {...rest}
+          {...mergeProps(
+            themeProps('dropdown-menu', {presentation: 'bottom-sheet'}),
+            stylex.props(bottomSheetStyles.content, xstyle),
+            className,
+            style,
+          )}>
+          <div {...stylex.props(bottomSheetStyles.header)}>
+            {submenuPath.length > 0 && (
+              <Button
+                label={backLabel}
+                variant="ghost"
+                size="sm"
+                icon={
+                  <Icon
+                    icon="chevronLeft"
+                    size="sm"
+                    xstyle={rtlStyles.mirror}
+                  />
+                }
+                isIconOnly
+                onClick={() => setSubmenuPath(path => path.slice(0, -1))}
+              />
+            )}
+            <Heading
+              ref={viewHeadingRef}
+              level={3}
+              tabIndex={-1}
+              xstyle={[
+                bottomSheetStyles.viewHeading,
+                submenuPath.length === 0 && bottomSheetStyles.rootHeading,
+              ]}>
+              {currentTitle}
+            </Heading>
+          </div>
+          <MenuBottomSheetActionList
+            items={currentItems}
+            onSelect={handleSelect}
+            onOpenSubmenu={item => setSubmenuPath(path => [...path, item])}
+          />
+        </div>
+      </MenuBottomSheet>
+    </>
+  );
+}
+
+function DropdownMenuPopover({
   button: buttonFromProps,
   isMenuOpen: controlledIsOpen,
   onOpenChange,
@@ -187,6 +575,8 @@ export function DropdownMenu({
   onClick,
   hasChevron = true,
   placement = 'below',
+  alignment = 'start',
+  presentation: _presentation,
   className,
   style,
   xstyle,
@@ -199,6 +589,14 @@ export function DropdownMenu({
   const items = ('items' in props ? props.items : undefined) ?? [];
   const children = props.children;
 
+  // Extract BaseProps pass-throughs (aria-*, id, event handlers) from the
+  // discriminated-union rest bag so they can be forwarded to the menu element.
+  const {
+    items: _items,
+    children: _children,
+    ...rest
+  } = props as Record<string, unknown>;
+
   const menuId = useId();
   const menuSize = button.size ?? 'md';
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -207,38 +605,57 @@ export function DropdownMenu({
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const isControlled = controlledIsOpen !== undefined;
   const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
+  const acceptedOpenRef = useRef(false);
+  const notifyClickOnShowRef = useRef(false);
+  const pendingControlledOpenRef = useRef(false);
+  const suppressControlledRollbackHideRef = useRef(false);
 
-  // Track when the menu was last hidden so a near-simultaneous trigger
-  // click — e.g. on iOS Safari where pointerdown fires light-dismiss
-  // before the trigger's click event — can't immediately re-open it.
-  const lastHideTimeRef = useRef(0);
+  useInteractionModalityTracking();
 
-  // Close menu + return focus to trigger
+  // Keyboard dismissal returns focus to the trigger. Pointer dismissal leaves
+  // focus where the browser put it; Safari can otherwise paint a focus-visible
+  // ring on the trigger after a touch selection. Native popover restoration
+  // can happen before `toggle`, so explicitly blur that pointer-restored case.
   const handleLayerHide = useCallback(() => {
-    lastHideTimeRef.current = Date.now();
-    if (isControlled) {
-      onOpenChange?.(false);
-    } else {
+    if (suppressControlledRollbackHideRef.current) {
+      suppressControlledRollbackHideRef.current = false;
+      return;
+    }
+    pendingControlledOpenRef.current = false;
+    onOpenChange?.(false);
+    if (!isControlled) {
       setInternalIsOpen(false);
     }
-    buttonRef.current?.focus();
+    const trigger = buttonRef.current;
+    if (getInteractionModality() === 'keyboard') {
+      trigger?.focus();
+    } else if (document.activeElement === trigger) {
+      trigger?.blur();
+    }
   }, [isControlled, onOpenChange]);
 
-  // Track whether to focus the first item when the menu opens
+  // Defer item focus until the layer has committed open, so focus restore
+  // captures the trigger instead of the first menu item.
   const shouldFocusOnOpenRef = useRef(false);
 
+  // How the next open was initiated. Keyboard (and programmatic) opens focus
+  // the first enabled item per the APG menu-button pattern; pointer opens
+  // focus the menu container instead, so no item is visually highlighted as
+  // if pre-selected (#4477). Reset to 'keyboard' after every open so
+  // programmatic controlled opens keep the item-focus behavior.
+  const openModalityRef = useRef<'keyboard' | 'pointer'>('keyboard');
+
   const handleLayerShow = useCallback(() => {
-    if (isControlled) {
-      onOpenChange?.(true);
-    } else {
+    acceptedOpenRef.current = true;
+    if (notifyClickOnShowRef.current) {
+      notifyClickOnShowRef.current = false;
+      onClick?.();
+    }
+    onOpenChange?.(true);
+    if (!isControlled) {
       setInternalIsOpen(true);
     }
-    if (shouldFocusOnOpenRef.current) {
-      shouldFocusOnOpenRef.current = false;
-      // focusFirst is called via openAndFocus below — defer to rAF
-      // so the popover content is rendered before we query for items
-    }
-  }, [isControlled, onOpenChange]);
+  }, [isControlled, onClick, onOpenChange]);
 
   const popover = usePopover({
     onHide: handleLayerHide,
@@ -255,31 +672,27 @@ export function DropdownMenu({
     popover.hide();
   }, [popover]);
 
-  // Single keyboard navigation path for both modes
+  // Single keyboard navigation path for both modes.
+  // The selector matches plain items plus selectable items
+  // (menuitemradio/menuitemcheckbox) so lab checkbox/radio rows are reachable
+  // and roved to alongside plain items — not just role="menuitem".
   const {
     listRef,
     handleKeyDown: listNavKeyDown,
     focusFirst,
     focusItem,
+    ownsEvent,
+    getItems: getMenuItems,
   } = useListFocus<HTMLDivElement>({
-    itemSelector: '[role="menuitem"]:not([aria-disabled="true"])',
+    itemSelector: MENU_ITEM_SELECTOR,
+    boundarySelector: MENU_BOUNDARY_SELECTOR,
     wrap: false,
     onEscape: closeMenu,
   });
 
   // First-character typeahead over the (enabled) menu items — jump to the next
-  // item whose label starts with the typed text (menus-11).
-  const getMenuItems = useCallback(
-    (): HTMLElement[] =>
-      listRef.current
-        ? Array.from(
-            listRef.current.querySelectorAll<HTMLElement>(
-              '[role="menuitem"]:not([aria-disabled="true"])',
-            ),
-          )
-        : [],
-    [listRef],
-  );
+  // item whose label starts with the typed text (menus-11). Reuses the hook's
+  // scoped item collection so an inline submenu flyout's items aren't swept in.
   const typeahead = useTypeahead({
     getItemLabels: () => getMenuItems().map(el => el.textContent),
     onMatch: focusItem,
@@ -290,25 +703,75 @@ export function DropdownMenu({
       ),
   });
 
-  // Sync controlled open state → popover, and focus first item on open
-  useEffect(() => {
-    if (isControlled) {
-      if (controlledIsOpen && !popover.isOpen) {
+  // Mounting already open (`isMenuOpen` true on the first render) is not an
+  // open anyone asked for, so it must not move focus into the menu — that
+  // drops keyboard users mid-page (#5976). The flag is decided once at mount
+  // rather than per effect run, because the layer may defer the first show
+  // until its popover element mounts; it clears once the consumer closes the
+  // menu, so every later open follows the modality rules above.
+  const isMountedOpenRef = useRef(isControlled && controlledIsOpen === true);
+
+  // Sync controlled open state → popover. A trigger open is committed first so
+  // Popover can reject the dismissing gesture before notifying the controller.
+  // If the controller has not accepted by the next layout pass, roll the DOM
+  // state back before paint without emitting a second change request.
+  useIsomorphicLayoutEffect(() => {
+    if (!isControlled) {
+      return;
+    }
+    if (controlledIsOpen) {
+      pendingControlledOpenRef.current = false;
+      if (!popover.isOpen) {
+        shouldFocusOnOpenRef.current = !isMountedOpenRef.current;
         popover.show();
-        requestAnimationFrame(() => focusFirst());
-      } else if (!controlledIsOpen && popover.isOpen) {
+      }
+    } else {
+      isMountedOpenRef.current = false;
+      if (popover.isOpen) {
+        suppressControlledRollbackHideRef.current =
+          pendingControlledOpenRef.current;
+        pendingControlledOpenRef.current = false;
         popover.hide();
       }
     }
-  }, [controlledIsOpen, isControlled, popover, focusFirst]);
+  }, [controlledIsOpen, isControlled, popover]);
+
+  // Move focus into the menu only after the layer has committed open,
+  // honoring the input modality: keyboard (and programmatic) opens land on
+  // the first enabled item per the APG menu-button pattern; pointer opens
+  // focus the menu container itself (tabIndex={-1}) so no item is
+  // highlighted as if pre-selected (#4477). Container focus keeps arrows,
+  // typeahead, Escape and Tab in the menu's onKeyDown, and is also the
+  // fallback when no item is focusable (e.g. all disabled), mirroring the
+  // submenu flyout fallback.
+  useEffect(() => {
+    if (!popover.isOpen || !shouldFocusOnOpenRef.current) {
+      return;
+    }
+    shouldFocusOnOpenRef.current = false;
+    requestAnimationFrame(() => {
+      if (openModalityRef.current === 'pointer' || !focusFirst()) {
+        listRef.current?.focus();
+      }
+      openModalityRef.current = 'keyboard';
+    });
+  }, [popover.isOpen, focusFirst, listRef]);
 
   // Extend useListFocus with Enter/Space activation + typeahead
   const listKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // A submenu flyout renders inline inside this menu; its key events bubble
+      // up here. Let that level own them — only handle events from this level.
+      if (!ownsEvent(e)) {
+        return;
+      }
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         const focused = document.activeElement as HTMLElement | null;
-        if (focused?.getAttribute('role') === 'menuitem') {
+        if (
+          focused &&
+          MENU_ITEM_ROLES.has(focused.getAttribute('role') ?? '')
+        ) {
           focused.click();
         }
         return;
@@ -329,39 +792,61 @@ export function DropdownMenu({
       }
       listNavKeyDown(e);
     },
-    [listNavKeyDown, closeMenu, typeahead],
+    [listNavKeyDown, closeMenu, typeahead, ownsEvent],
   );
 
-  const openAndFocus = useCallback(() => {
-    popover.show();
-    requestAnimationFrame(() => focusFirst());
-  }, [popover, focusFirst]);
+  const openAndFocus = useCallback(
+    (
+      modality: 'keyboard' | 'pointer' = 'keyboard',
+      notifyClick = false,
+    ): boolean => {
+      acceptedOpenRef.current = false;
+      notifyClickOnShowRef.current = notifyClick;
+      pendingControlledOpenRef.current = isControlled;
+      openModalityRef.current = modality;
+      shouldFocusOnOpenRef.current = true;
+      popover.show();
+      if (!acceptedOpenRef.current) {
+        notifyClickOnShowRef.current = false;
+        pendingControlledOpenRef.current = false;
+        openModalityRef.current = 'keyboard';
+        shouldFocusOnOpenRef.current = false;
+        return false;
+      }
+      return true;
+    },
+    [isControlled, popover],
+  );
 
-  const handleButtonClick = useCallback(() => {
-    // If the menu was just closed by light dismiss (e.g. iOS Safari fires
-    // pointerdown → hide before the trigger's click), the click would
-    // otherwise immediately re-open it. Short-circuit within the guard window.
-    if (Date.now() - lastHideTimeRef.current < 50) {
-      return;
-    }
-    onClick?.();
-    if (isControlled) {
-      onOpenChange?.(!controlledIsOpen);
-    } else {
-      if (popover.isOpen) {
+  const handleButtonClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      // detail === 0 marks a synthesized click (screen reader / AT
+      // activation): treat it as keyboard so those users still land on the
+      // first item. Real pointer clicks report detail >= 1.
+      const modality = e.detail === 0 ? 'keyboard' : 'pointer';
+      if (isControlled) {
+        if (controlledIsOpen) {
+          onClick?.();
+          onOpenChange?.(false);
+        } else {
+          openAndFocus(modality, true);
+        }
+      } else if (popover.isOpen) {
+        onClick?.();
         popover.hide();
       } else {
-        openAndFocus();
+        openAndFocus(modality, true);
       }
-    }
-  }, [
-    onClick,
-    isControlled,
-    onOpenChange,
-    controlledIsOpen,
-    popover,
-    openAndFocus,
-  ]);
+    },
+    [
+      onClick,
+      isControlled,
+      onOpenChange,
+      controlledIsOpen,
+      popover,
+      openAndFocus,
+    ],
+  );
 
   const handleButtonKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -370,10 +855,21 @@ export function DropdownMenu({
           e.preventDefault();
           openAndFocus();
         }
+        return;
       }
-      // When open, key events go to the menu container via useListFocus
+      // Open with focus still on the trigger — a menu that mounted open, or
+      // a pointer open followed by Shift+Tab — has nothing in the tab order
+      // to reach its items, so ArrowDown walks in the way a keyboard open
+      // would land (#5976). Enter/Space keep toggling the menu closed, and
+      // once focus is inside, key events go to the menu container instead.
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (!focusFirst()) {
+          listRef.current?.focus();
+        }
+      }
     },
-    [popover.isOpen, openAndFocus],
+    [popover.isOpen, openAndFocus, focusFirst, listRef],
   );
 
   // Icon-only
@@ -384,14 +880,21 @@ export function DropdownMenu({
       <Icon icon="chevronDown" size="sm" color="inherit" />
     ) : undefined);
 
-  const popoverXstyle = menuWidth
-    ? styles.popoverCustomWidth(menuWidth)
-    : styles.popover;
-  const popoverGapStyle =
-    placement === 'above' || placement === 'below'
-      ? styles.popoverBlockGap
-      : styles.popoverInlineGap;
-
+  const requestedWidthLimit =
+    alignment === 'center'
+      ? MENU_MAX_INLINE_SIZE_FALLBACK
+      : MENU_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK;
+  const resolvedMenuWidth = menuWidth
+    ? resolveMenuWidth(menuWidth, requestedWidthLimit)
+    : null;
+  const popoverXstyle = resolvedMenuWidth
+    ? resolvedMenuWidth.property === 'inlineSize'
+      ? styles.popoverCustomIntrinsicWidth(resolvedMenuWidth.value)
+      : styles.popoverCustomWidth(resolvedMenuWidth.value)
+    : alignment === 'center'
+      ? styles.popoverCentered
+      : styles.popoverAligned;
+  const isSidePlacement = placement === 'start' || placement === 'end';
   // Context for compound items
   const contextValue = useMemo<DropdownMenuContextValue>(
     () => ({closeMenu, menuSize}),
@@ -401,6 +904,7 @@ export function DropdownMenu({
   // Resolve menu content: data-driven items become components
   const menuContent =
     props.items !== undefined ? renderDropdownItems(items) : children;
+  const hasOverflow = useMenuOverflow(listRef, menuContent, popover.isOpen);
 
   return (
     <>
@@ -418,6 +922,7 @@ export function DropdownMenu({
             /* eslint-enable react-compiler/react-compiler */
           }
         }}
+        xstyle={[isOpen && styles.triggerOpen, button.xstyle]}
         tooltip={isOpen ? undefined : button.tooltip}
         endContent={resolvedEndContent}
         onClick={handleButtonClick}
@@ -430,9 +935,15 @@ export function DropdownMenu({
 
       {popover.render(
         <div
+          {...rest}
           ref={listRef}
           id={menuId}
           role="menu"
+          // Pointer opens focus the container so arrows, typeahead, Escape and
+          // Tab remain owned by the menu without pre-highlighting an item.
+          // An overflowing menu joins the Tab order so its scrollable region is
+          // keyboard-accessible; Tab still dismisses through listKeyDown.
+          tabIndex={hasOverflow ? 0 : -1}
           // Give the menu an accessible name from its trigger's label, so
           // screen readers announce e.g. "Actions menu" rather than an unnamed
           // menu (menus-13).
@@ -440,7 +951,11 @@ export function DropdownMenu({
           onKeyDown={listKeyDown}
           {...mergeProps(
             themeProps('dropdown-menu'),
-            stylex.props(styles.dropdown, xstyle),
+            stylex.props(
+              styles.dropdown,
+              hasOverflow && styles.scrollable,
+              xstyle,
+            ),
             className,
             style,
           )}>
@@ -450,12 +965,70 @@ export function DropdownMenu({
         </div>,
         {
           placement,
-          alignment: 'start',
-          xstyle: [popoverXstyle, popoverGapStyle, layerAnimations[placement]],
+          alignment,
+          offset: spacingVars['--spacing-1'],
+          xstyle: [
+            styles.popoverViewport,
+            alignment === 'center'
+              ? isSidePlacement
+                ? styles.popoverViewportBlockCentered
+                : styles.popoverViewportCentered
+              : [
+                  styles.popoverViewportAligned,
+                  isSidePlacement
+                    ? alignment === 'start'
+                      ? styles.popoverViewportBlockStart
+                      : styles.popoverViewportBlockEnd
+                    : alignment === 'start'
+                      ? styles.popoverViewportStart
+                      : styles.popoverViewportEnd,
+                ],
+            popoverXstyle,
+            layerAnimations[placement],
+          ],
         },
       )}
     </>
   );
+}
+
+export function DropdownMenu(props: DropdownMenuProps) {
+  const {onOpenChange} = props;
+  const requestedPresentation =
+    'items' in props ? (props.presentation ?? 'popover') : 'popover';
+  const resolvedPresentation = useAdaptivePresentation(requestedPresentation);
+  const isControlled = props.isMenuOpen !== undefined;
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isOpen = isControlled ? props.isMenuOpen : internalIsOpen;
+  const handleOpenChange = useCallback(
+    (nextIsOpen: boolean) => {
+      onOpenChange?.(nextIsOpen);
+      if (!isControlled) {
+        setInternalIsOpen(nextIsOpen);
+      }
+    },
+    [isControlled, onOpenChange],
+  );
+  const sharedProps = {
+    ...props,
+    isMenuOpen: isOpen,
+    onOpenChange: handleOpenChange,
+  };
+
+  if (
+    resolvedPresentation === 'bottom-sheet' &&
+    'items' in props &&
+    props.items !== undefined
+  ) {
+    return (
+      <DropdownMenuBottomSheet
+        {...(sharedProps as DropdownMenuDataProps)}
+        presentation="bottom-sheet"
+      />
+    );
+  }
+
+  return <DropdownMenuPopover {...sharedProps} presentation="popover" />;
 }
 
 DropdownMenu.displayName = 'DropdownMenu';

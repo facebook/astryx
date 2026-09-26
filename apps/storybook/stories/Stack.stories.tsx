@@ -144,10 +144,34 @@ const meta: Meta<typeof Stack> = {
       description:
         'Inline (horizontal) padding; overrides padding on that axis',
     },
+    paddingInlineStart: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description:
+        'Inline-start (left in LTR) padding; overrides paddingInline/padding on that edge',
+    },
+    paddingInlineEnd: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description:
+        'Inline-end (right in LTR) padding; overrides paddingInline/padding on that edge',
+    },
     paddingBlock: {
       control: 'select',
       options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
       description: 'Block (vertical) padding; overrides padding on that axis',
+    },
+    paddingBlockStart: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description:
+        'Block-start (top) padding; overrides paddingBlock/padding on that edge',
+    },
+    paddingBlockEnd: {
+      control: 'select',
+      options: [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10],
+      description:
+        'Block-end (bottom) padding; overrides paddingBlock/padding on that edge',
     },
     isScrollable: {
       control: 'boolean',
@@ -702,6 +726,22 @@ export const PaddingPerAxis: Story = {
   ),
 };
 
+export const PaddingPerEdge: Story = {
+  args: {
+    gap: 2,
+    padding: 6,
+    paddingBlockStart: 1,
+    paddingInlineEnd: 2,
+  },
+  render: args => (
+    <Stack {...args} xstyle={styles.container}>
+      <Box>Item 1</Box>
+      <Box>Item 2</Box>
+      <Box>Item 3</Box>
+    </Stack>
+  ),
+};
+
 // ============================================================================
 // Scrollable — overflow: auto via the isScrollable prop
 // ============================================================================
@@ -712,6 +752,12 @@ export const Scrollable: Story = {
     padding: 2,
     isScrollable: true,
     height: 160,
+    // A scrollable stack of non-interactive content needs a tab stop and an
+    // accessible name so keyboard users can scroll it (axe:
+    // scrollable-region-focusable). Stack forwards these through BaseProps.
+    tabIndex: 0,
+    role: 'region',
+    'aria-label': 'Scrollable stack',
   },
   render: args => (
     <Stack {...args} xstyle={styles.container}>

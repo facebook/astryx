@@ -14,20 +14,14 @@ export {ChartBar, type ChartBarProps} from './ChartBar';
 export {ChartLine, type ChartLineProps} from './ChartLine';
 export {ChartArea, type ChartAreaProps} from './ChartArea';
 export {ChartErrorBar, type ChartErrorBarProps} from './ChartErrorBar';
-export {
-  ChartCandlestick,
-  type ChartCandlestickProps,
-} from './ChartCandlestick';
+export {ChartCandlestick, type ChartCandlestickProps} from './ChartCandlestick';
 export {ChartDot, type ChartDotProps} from './ChartDot';
 export {ChartDotGL, type ChartDotGLProps} from './ChartDotGL';
 export {
   ChartDotGLInteractive,
   type ChartDotGLInteractiveProps,
 } from './ChartDotGLInteractive';
-export {
-  ChartHeatmapGL,
-  type ChartHeatmapGLProps,
-} from './ChartHeatmapGL';
+export {ChartHeatmapGL, type ChartHeatmapGLProps} from './ChartHeatmapGL';
 export {
   ChartStreamGL,
   type ChartStreamGLProps,
@@ -68,7 +62,6 @@ export {
   sizeCanvas,
   mountCanvasOverSVG,
   compileShader,
-  createProgram as createGLProgram,
   CIRCLE_FRAG_BODY,
   POINT_SIZE_COMPENSATION,
 } from './webgl';

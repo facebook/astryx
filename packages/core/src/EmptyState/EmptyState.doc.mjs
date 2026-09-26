@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'EmptyState',
@@ -66,6 +66,8 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-empty-state', visualProps: ['variant']},
+      {className: 'astryx-empty-state-title', visualProps: ['variant']},
+      {className: 'astryx-empty-state-description', visualProps: ['variant']},
     ],
   },
   usage: {
@@ -87,7 +89,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 export const docsZh = {
   name: 'EmptyState',
   displayName: 'Empty State',
@@ -141,6 +143,8 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'astryx-empty-state', visualProps: ['variant']},
+      {className: 'astryx-empty-state-title', visualProps: ['variant']},
+      {className: 'astryx-empty-state-description', visualProps: ['variant']},
     ],
   },
   usage: {
@@ -156,7 +160,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
     'placeholder when a content area has no data: icon, title, description, action buttons',

@@ -98,4 +98,36 @@ describe('formatVersionBlock line-wrapping', () => {
       '- A single flowing line the author wrote on one line (#3466)',
     );
   });
+
+  it('keeps every paragraph of a multi-paragraph entry', () => {
+    const body = [
+      '### Patch Changes',
+      '',
+      '- [fix] AppShell: two a11y fixes. — thanks @cixzhang',
+      '  The mobile top bar is now a banner landmark.',
+      '',
+      '  The skip link draws the shared focus ring.',
+      '',
+      '- [fix] A later, unrelated entry. — thanks @athz',
+    ].join('\n');
+    const out = formatVersionBlock('0.9.9', body);
+    expect(out).toContain('The mobile top bar is now a banner landmark.');
+    expect(out).toContain('The skip link draws the shared focus ring.');
+    expect(out).toContain('- A later, unrelated entry.');
+  });
+
+  it('ends a bullet at a blank line followed by unindented content', () => {
+    const body = [
+      '### Patch Changes',
+      '',
+      '- [fix] One entry. — thanks @athz',
+      '',
+      '#### Contributors',
+      '',
+      '- @athz',
+    ].join('\n');
+    const out = formatVersionBlock('0.9.9', body);
+    expect(out).toContain('- One entry.');
+    expect(out).not.toContain('- One entry.\n\n  #### Contributors');
+  });
 });

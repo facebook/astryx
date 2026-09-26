@@ -2,27 +2,35 @@
 
 'use client';
 
-import type {ContentBlock} from '@astryxdesign/core';
+import type {ReferenceContentBlock} from '@astryxdesign/cli/authoring';
 import {ProseBlock} from './ProseBlock';
 import {CodeBlock} from './CodeBlock';
 import {TableBlock} from './TableBlock';
 import {ListBlock} from './ListBlock';
 
 /**
- * Renders a single ContentBlock by dispatching to the appropriate component.
+ * Renders a single ReferenceContentBlock by dispatching to the appropriate component.
  */
-export function ContentBlockRenderer({block}: {block: ContentBlock}) {
+export function ContentBlockRenderer({block}: {block: ReferenceContentBlock}) {
   switch (block.type) {
     case 'prose':
       return <ProseBlock text={block.text} />;
     case 'code':
-      return <CodeBlock lang={block.lang} code={block.code} label={block.label} />;
+      return (
+        <CodeBlock lang={block.lang} code={block.code} label={block.label} />
+      );
     case 'table':
       return <TableBlock headers={block.headers} rows={block.rows} />;
     case 'list':
       return <ListBlock items={block.items} listStyle={block.style} />;
     case 'token-ref':
       return null;
+    case 'workflow':
+    case 'collection':
+    case 'reference':
+      throw new Error(
+        `Documentation block "${block.type}" requires the compiled graph renderer.`,
+      );
     default:
       return null;
   }

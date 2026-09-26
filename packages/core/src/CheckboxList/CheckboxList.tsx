@@ -13,7 +13,7 @@
  * - /packages/core/src/CheckboxList/CheckboxList.test.tsx
  * - /packages/core/src/CheckboxList/index.ts
  * - /apps/storybook/stories/CheckboxList.stories.tsx
- * - /packages/cli/templates/blocks/components/CheckboxList/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/CheckboxList/ (showcase blocks)
  */
 
 import {
@@ -163,6 +163,7 @@ export function CheckboxList({
   className,
   style,
   'data-testid': dataTestId,
+  ...rest
 }: CheckboxListProps) {
   const inputID = useId();
   const labelID = useId();
@@ -234,6 +235,7 @@ export function CheckboxList({
 
   return (
     <Field
+      {...rest}
       ref={ref}
       data-testid={dataTestId}
       label={label}

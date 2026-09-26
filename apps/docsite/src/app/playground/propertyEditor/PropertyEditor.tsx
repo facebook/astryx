@@ -34,7 +34,6 @@ import {
   coerceDefault,
   coerceEnumOption,
   parsePropType,
-  type PropControlDescriptor,
 } from '../../../components/component-detail/parsePropType';
 import type {PropDoc} from '../../../generated/componentRegistry';
 import {
@@ -42,10 +41,11 @@ import {
   formatAttr,
   removeAttribute,
   setAttribute,
-  type AttrInfo,
   type InstanceInfo,
 } from './componentInstances';
+import {isEditable, isSupportedProp} from './isSupportedProp';
 import {getComponentByModule} from './componentLookup';
+import {useLiveNumberInput} from '@/lib/useLiveNumberInput';
 
 const NUMERIC_RE = /^-?\d+(\.\d+)?$/;
 
@@ -67,40 +67,40 @@ const s = stylex.create({
   },
 });
 
-function isEditable(control: PropControlDescriptor, attr?: AttrInfo): boolean {
-  if (attr?.valueKind === 'expression') {
-    return false;
-  }
-  return (
-    control.kind === 'boolean' ||
-    control.kind === 'enum' ||
-    control.kind === 'string' ||
-    control.kind === 'number'
-  );
-}
-
-// Prop types that have no inline control in the popover and so are
-// hidden entirely (ReactNode parses to a string control but isn't meaningfully
-// editable here; StyleXStyles/AriaRole have no control at all).
-const UNSUPPORTED_PROP_TYPES = new Set([
-  'ReactNode',
-  'StyleXStyles',
-  'AriaRole',
-]);
-
-/** Whether a prop can be edited through the editor (and should be shown). */
-function isSupportedProp(prop: PropDoc): boolean {
-  if (UNSUPPORTED_PROP_TYPES.has(prop.type.trim())) {
-    return false;
-  }
-  return isEditable(parsePropType(prop.type, prop.name, prop.slotElements));
-}
-
 interface PropRowProps {
   prop: PropDoc;
   instance: InstanceInfo;
   code: string;
   onCodeChange: (code: string) => void;
+}
+
+function LiveNumberControl({
+  label,
+  value,
+  isRequired,
+  onChange,
+}: {
+  label: string;
+  value: number | null;
+  isRequired: boolean;
+  onChange: (value: number | null) => void;
+}) {
+  const liveNumber = useLiveNumberInput(value, onChange);
+  return (
+    <NumberInput
+      label={label}
+      isLabelHidden
+      value={liveNumber.value}
+      placeholder={isRequired ? undefined : 'unset'}
+      hasClear={!isRequired}
+      onChange={liveNumber.handleChange}
+      onFocus={liveNumber.handleFocus}
+      onInput={liveNumber.handleInput}
+      onBlur={liveNumber.handleBlur}
+      onKeyDown={liveNumber.handleKeyDown}
+      xstyle={s.inputControl}
+    />
+  );
 }
 
 function PropRow({prop, instance, code, onCodeChange}: PropRowProps) {
@@ -228,14 +228,11 @@ function PropRow({prop, instance, code, onCodeChange}: PropRowProps) {
     // prop like maxWidth render `max-width: 0` with no way back to unset.
     const value = typeof attr?.value === 'number' ? attr.value : (def ?? null);
     controlEl = (
-      <NumberInput
+      <LiveNumberControl
         label={prop.name}
-        isLabelHidden
         value={value}
-        placeholder={prop.required ? undefined : 'unset'}
-        hasClear={!prop.required}
-        onChange={(next: number | null) => commit('number', next)}
-        xstyle={s.inputControl}
+        isRequired={!!prop.required}
+        onChange={next => commit('number', next)}
       />
     );
   }

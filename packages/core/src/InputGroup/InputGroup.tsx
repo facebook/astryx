@@ -18,7 +18,7 @@
  * - /packages/core/src/InputGroup/InputGroup.test.tsx
  * - /packages/core/src/InputGroup/index.ts
  * - /apps/storybook/stories/InputGroup.stories.tsx
- * - /packages/cli/templates/blocks/components/InputGroup/
+ * - /packages/cli/assets/templates/blocks/components/InputGroup/
  */
 
 import {useId, useMemo, type ReactNode} from 'react';
@@ -40,7 +40,7 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
   },
   disabled: {
-    cursor: 'not-allowed',
+    cursor: 'default',
     opacity: 0.5,
   },
 });

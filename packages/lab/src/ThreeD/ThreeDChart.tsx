@@ -2,12 +2,15 @@
 
 /**
  * @file ThreeDChart.tsx
- * @output Root 3D chart container — projected SVG with depth sorting
+ * @output Root 3D chart container — projected SVG with depth sorting,
+ *   accessible name, pointer + keyboard camera controls, and pausable
+ *   auto-rotation (respects prefers-reduced-motion)
  * @position Parent component; all 3D marks read from its context
  */
 
 import {
   type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
   useMemo,
   useRef,
@@ -16,6 +19,7 @@ import {
   useLayoutEffect,
   useCallback,
 } from 'react';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {ThreeDProvider} from './ThreeDContext';
 import type {Camera, ProjectedPoint} from './types';
 
@@ -31,10 +35,24 @@ export interface ThreeDChartProps {
   azimuth?: number;
   elevation?: number;
   interactive?: boolean;
-  /** Auto-rotate speed in degrees per frame (default: 0 = off) */
+  /**
+   * Auto-rotate speed in degrees per frame (default: 0 = off).
+   *
+   * Rotation pauses while the chart is hovered or focused, and is disabled
+   * entirely when the user has `prefers-reduced-motion: reduce` set. Pass 0
+   * (or omit) to turn it off.
+   */
   autoRotate?: number;
+  /**
+   * Accessible label for the chart. Defaults to a description derived from
+   * the data keys, e.g. "3D chart of sales by month and region".
+   */
+  label?: string;
   children: ReactNode;
 }
+
+/** Degrees the camera rotates per arrow-key press. */
+const KEYBOARD_STEP_DEGREES = 10;
 
 function computeDomain(
   data: Record<string, unknown>[],
@@ -69,10 +87,16 @@ export function ThreeDChart({
   elevation: elevationProp = 25,
   interactive = false,
   autoRotate = 0,
+  label,
   children,
 }: ThreeDChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const prefersReducedMotion = useMediaQuery(
+    '(prefers-reduced-motion: reduce)',
+  );
   const [camera, setCamera] = useState<Camera>({
     azimuth: azimuthProp,
     elevation: elevationProp,
@@ -168,9 +192,48 @@ export function ThreeDChart({
     dragRef.current = null;
   }, []);
 
-  // Auto-rotation — throttled to ~20fps to avoid overwhelming React with re-renders
+  // Keyboard camera: arrow keys rotate yaw/pitch with the same clamps as
+  // pointer drag (WCAG 2.1.1 — every pointer operation needs a keyboard
+  // equivalent). preventDefault stops the page from scrolling while focused.
+  const handleKeyDown = useCallback(
+    (e: ReactKeyboardEvent<SVGSVGElement>) => {
+      if (!interactive) {
+        return;
+      }
+      let deltaAzimuth = 0;
+      let deltaElevation = 0;
+      switch (e.key) {
+        case 'ArrowLeft':
+          deltaAzimuth = -KEYBOARD_STEP_DEGREES;
+          break;
+        case 'ArrowRight':
+          deltaAzimuth = KEYBOARD_STEP_DEGREES;
+          break;
+        case 'ArrowUp':
+          deltaElevation = KEYBOARD_STEP_DEGREES;
+          break;
+        case 'ArrowDown':
+          deltaElevation = -KEYBOARD_STEP_DEGREES;
+          break;
+        default:
+          return;
+      }
+      e.preventDefault();
+      setCamera(prev => ({
+        azimuth: prev.azimuth + deltaAzimuth,
+        elevation: Math.max(-89, Math.min(89, prev.elevation + deltaElevation)),
+      }));
+    },
+    [interactive],
+  );
+
+  // Auto-rotation — throttled to ~20fps to avoid overwhelming React with
+  // re-renders. Disabled under prefers-reduced-motion (WCAG 2.3.3) and
+  // paused while the chart is hovered or focused (WCAG 2.2.2).
+  const rotationActive =
+    autoRotate !== 0 && !prefersReducedMotion && !hovered && !focused;
   useEffect(() => {
-    if (autoRotate === 0) {
+    if (!rotationActive) {
       return;
     }
     let raf: number;
@@ -187,7 +250,7 @@ export function ThreeDChart({
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [autoRotate]);
+  }, [autoRotate, rotationActive]);
 
   const ctx = useMemo(
     () => ({
@@ -226,16 +289,31 @@ export function ThreeDChart({
     userSelect: interactive ? 'none' : undefined,
   };
 
+  const accessibleLabel = label ?? `3D chart of ${yKey} by ${xKey} and ${zKey}`;
+  // Focusable when there is something keyboard users can do with it:
+  // rotate the camera (interactive) or pause the auto-rotation.
+  const focusable = interactive || autoRotate !== 0;
+
   return (
     <div ref={containerRef} style={containerStyle}>
       {containerWidth > 0 && (
         <svg
+          role="img"
+          aria-label={accessibleLabel}
+          tabIndex={focusable ? 0 : undefined}
           width={containerWidth}
           height={height}
+          onKeyDown={handleKeyDown}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          onMouseEnter={() => setHovered(true)}
           onMouseDown={e => handleStart(e.clientX, e.clientY)}
           onMouseMove={e => handleMove(e.clientX, e.clientY)}
           onMouseUp={handleEnd}
-          onMouseLeave={handleEnd}
+          onMouseLeave={() => {
+            setHovered(false);
+            handleEnd();
+          }}
           onTouchStart={e => {
             const t = e.touches[0];
             if (t) {

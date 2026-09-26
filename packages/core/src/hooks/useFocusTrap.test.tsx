@@ -50,6 +50,39 @@ function EscapeTrap({
   );
 }
 
+function NestedInnerTrap({onEscape}: {onEscape: () => void}) {
+  const {containerRef} = useFocusTrap<HTMLDivElement>({
+    isActive: true,
+    onEscape,
+  });
+  return (
+    <div ref={containerRef} data-testid="nested-inner">
+      <button type="button">inner-btn</button>
+    </div>
+  );
+}
+
+function NestedTraps({
+  onOuterEscape,
+  onInnerEscape,
+  showInner = true,
+}: {
+  onOuterEscape: () => void;
+  onInnerEscape: () => void;
+  showInner?: boolean;
+}) {
+  const {containerRef} = useFocusTrap<HTMLDivElement>({
+    isActive: true,
+    onEscape: onOuterEscape,
+  });
+  return (
+    <div ref={containerRef} data-testid="nested-outer">
+      <button type="button">outer-btn</button>
+      {showInner && <NestedInnerTrap onEscape={onInnerEscape} />}
+    </div>
+  );
+}
+
 function RestoreTrap({isActive}: {isActive: boolean}) {
   const {containerRef} = useFocusTrap<HTMLDivElement>({isActive});
   return (
@@ -117,6 +150,117 @@ describe('useFocusTrap tabbable model (infra-8)', () => {
     fireEvent.click(screen.getByTestId('focus-first'));
     // Focus skips the inert button and lands on the real one.
     expect(screen.getByTestId('real-btn')).toHaveFocus();
+  });
+
+  it('ignores an aria-hidden subtree when finding focusables', () => {
+    render(
+      <Trap>
+        <div aria-hidden="true">
+          <button type="button" data-testid="aria-hidden-btn">
+            Hidden from AT
+          </button>
+        </div>
+        <button type="button" data-testid="real-btn">
+          Real
+        </button>
+      </Trap>,
+    );
+    fireEvent.click(screen.getByTestId('focus-first'));
+    // An element AT cannot perceive must not be a trap tab stop (WCAG 4.1.2).
+    expect(screen.getByTestId('real-btn')).toHaveFocus();
+  });
+
+  it('excludes an aria-hidden focusable from the Tab wrap boundary', () => {
+    render(
+      <Trap>
+        <button type="button" data-testid="first">
+          First
+        </button>
+        <button type="button" data-testid="visible-last">
+          Visible last
+        </button>
+        <div aria-hidden="true">
+          <button type="button" data-testid="aria-hidden-btn">
+            Hidden from AT
+          </button>
+        </div>
+      </Trap>,
+    );
+    // The last VISIBLE-to-AT element is the wrap boundary: Tab from it wraps
+    // to the first element instead of landing on the aria-hidden button.
+    screen.getByTestId('visible-last').focus();
+    fireEvent.keyDown(document, {key: 'Tab'});
+    expect(screen.getByTestId('first')).toHaveFocus();
+  });
+
+  it('moves from a programmatic container focus target into the tabbable cycle', () => {
+    render(
+      <Trap>
+        <button type="button" data-testid="first">
+          First
+        </button>
+        <button type="button" data-testid="last">
+          Last
+        </button>
+      </Trap>,
+    );
+    const trap = screen.getByTestId('trap');
+    trap.tabIndex = -1;
+    trap.focus();
+
+    fireEvent.keyDown(document, {key: 'Tab'});
+
+    expect(screen.getByTestId('first')).toHaveFocus();
+  });
+
+  it('moves backward from a programmatic container focus target to the last tabbable control', () => {
+    render(
+      <Trap>
+        <button type="button" data-testid="first">
+          First
+        </button>
+        <button type="button" data-testid="last">
+          Last
+        </button>
+      </Trap>,
+    );
+    const trap = screen.getByTestId('trap');
+    trap.tabIndex = -1;
+    trap.focus();
+
+    fireEvent.keyDown(document, {key: 'Tab', shiftKey: true});
+
+    expect(screen.getByTestId('last')).toHaveFocus();
+  });
+
+  it('keeps a programmatic focus target when the trap has no tabbable controls', () => {
+    render(
+      <Trap>
+        <div tabIndex={-1} data-testid="programmatic-target">
+          Read-only dialog content
+        </div>
+      </Trap>,
+    );
+    const target = screen.getByTestId('programmatic-target');
+    target.focus();
+
+    expect(fireEvent.keyDown(target, {key: 'Tab'})).toBe(false);
+    expect(target).toHaveFocus();
+    expect(screen.getByTestId('outside')).not.toHaveFocus();
+  });
+
+  it('leaves Tab alone when focus is outside a trap with no tabbable controls', () => {
+    render(
+      <Trap>
+        <div role="option" tabIndex={-1} data-testid="option">
+          Option
+        </div>
+      </Trap>,
+    );
+    const outside = screen.getByTestId('outside');
+    outside.focus();
+
+    expect(fireEvent.keyDown(outside, {key: 'Tab'})).toBe(true);
   });
 });
 
@@ -198,6 +342,36 @@ describe('useFocusTrap Escape coordination', () => {
     expect(onEscape).toHaveBeenCalledTimes(1);
   });
 
+  it('resolves Escape to the DOM-nested inner trap when both mount in one commit', () => {
+    const outer = vi.fn();
+    const inner = vi.fn();
+    // Outer and inner mount in the SAME React commit. React runs child
+    // effects before parent effects, so the inner trap is PUSHED first —
+    // DOM containment, not push order, must decide who answers Escape.
+    render(<NestedTraps onOuterEscape={outer} onInnerEscape={inner} />);
+    fireEvent.keyDown(document, {key: 'Escape'});
+    expect(inner).toHaveBeenCalledTimes(1);
+    expect(outer).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the outer trap once the nested inner trap unmounts', () => {
+    const outer = vi.fn();
+    const inner = vi.fn();
+    const {rerender} = render(
+      <NestedTraps onOuterEscape={outer} onInnerEscape={inner} />,
+    );
+    rerender(
+      <NestedTraps
+        onOuterEscape={outer}
+        onInnerEscape={inner}
+        showInner={false}
+      />,
+    );
+    fireEvent.keyDown(document, {key: 'Escape'});
+    expect(outer).toHaveBeenCalledTimes(1);
+    expect(inner).not.toHaveBeenCalled();
+  });
+
   it('does not respond after the trap is deactivated', () => {
     const onEscape = vi.fn();
     const {rerender} = render(
@@ -275,6 +449,54 @@ describe('useFocusTrap focus restoration', () => {
 
     // Unmounting the trap (cleanup path, not an isActive flip) still restores.
     rerender(<RestoreFixture isActive={true} showTrap={false} />);
+    expect(prev).toHaveFocus();
+  });
+
+  it('does not restore focus when focus never entered the trap', () => {
+    // Reproduces the Typeahead/PowerSearch scenario from #5651: a popup that
+    // opens with role="none" and hasAutoFocus={false} keeps DOM focus on its
+    // anchor input. The trap is active but focus never enters the container.
+    const {rerender} = render(<RestoreFixture isActive={false} />);
+    const prev = screen.getByTestId('prev');
+    prev.focus();
+    expect(prev).toHaveFocus();
+
+    // Activate the trap — focus stays on prev (outside the container).
+    rerender(<RestoreFixture isActive={true} />);
+
+    // Simulate an outside click: the browser blurs the input and focus falls
+    // to <body> before the layer's light dismiss hides it.
+    (document.activeElement as HTMLElement).blur();
+    expect(document.body).toHaveFocus();
+
+    // Deactivating should NOT restore focus to prev — focus never entered the
+    // trap, so restoring would cancel the blur the user asked for.
+    rerender(<RestoreFixture isActive={false} />);
+    expect(prev).not.toHaveFocus();
+    expect(document.body).toHaveFocus();
+  });
+
+  it('still restores focus when focus entered the trap and was then lost', () => {
+    // Complement to the test above: focus DID enter the trap (Dialog,
+    // DropdownMenu, a Typeahead option click), then the element was blurred
+    // so activeElement falls to <body>. The restore should still fire.
+    const {rerender} = render(<RestoreFixture isActive={false} />);
+    const prev = screen.getByTestId('prev');
+    prev.focus();
+
+    rerender(<RestoreFixture isActive={true} />);
+    // Focus enters the trap, as auto-focus or a keyboard user would.
+    screen.getByTestId('inside').focus();
+    expect(screen.getByTestId('inside')).toHaveFocus();
+
+    // Focus is lost from inside the trap — e.g. the trap content was removed
+    // or the user tabbed away — so activeElement falls to <body>.
+    (document.activeElement as HTMLElement).blur();
+    expect(document.body).toHaveFocus();
+
+    // Because focus was inside the trap at some point, the restore fires and
+    // returns focus to the element that was focused before activation.
+    rerender(<RestoreFixture isActive={false} />);
     expect(prev).toHaveFocus();
   });
 });

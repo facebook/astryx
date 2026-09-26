@@ -1,0 +1,43 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file Codemod: Rename `isShown` prop to `isOpen` on Dialog and Popover
+ * @see https://github.com/facebookexperimental/xds/pull/472
+ */
+
+export const meta = {
+  title: 'Rename isShown → isOpen',
+  description:
+    'Renames the `isShown` prop to `isOpen` on XDSDialog and XDSPopover for consistency.',
+  pr: '#472',
+};
+
+const TARGET_COMPONENTS = ['XDSDialog', 'XDSPopover'];
+
+/**
+ * @param {import('../../../../authoring/codemod/type').AstryxCodemodFile} file
+ * @param {import('../../../../authoring/codemod/type').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
+export default function transformer(file, api) {
+  const j = api.jscodeshift;
+  const root = j(file.source);
+  let hasChanges = false;
+
+  TARGET_COMPONENTS.forEach((componentName) => {
+    root
+      .find(j.JSXOpeningElement, {
+        name: {name: componentName},
+      })
+      .forEach((/** @type {any} */ path) => {
+        path.node.attributes.forEach((/** @type {any} */ attr) => {
+          if (attr.type === 'JSXAttribute' && attr.name.name === 'isShown') {
+            attr.name.name = 'isOpen';
+            hasChanges = true;
+          }
+        });
+      });
+  });
+
+  return hasChanges ? root.toSource() : undefined;
+}

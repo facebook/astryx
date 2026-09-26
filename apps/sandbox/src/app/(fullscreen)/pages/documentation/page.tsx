@@ -691,9 +691,9 @@ export default function DocumentationPage() {
             alignItems: 'center',
             flexWrap: 'wrap' as const,
           }}>
-          <Avatar name="Alice" size="small" />
-          <Avatar name="Bob" size="medium" />
-          <Avatar name="Charlie" size="large" />
+          <Avatar name="Alice" size="md" />
+          <Avatar name="Bob" size="lg" />
+          <Avatar name="Charlie" size="xl" />
         </div>
       </div>
     ),
@@ -744,9 +744,7 @@ export default function DocumentationPage() {
         <div
           style={{display: 'flex', flexDirection: 'column' as const, gap: 12}}>
           <Banner status="info" title="Information">
-            <Text type="body">
-              This is an informational banner message.
-            </Text>
+            <Text type="body">This is an informational banner message.</Text>
           </Banner>
           <Banner status="success" title="Success">
             <Text type="body">Operation completed successfully.</Text>
@@ -925,7 +923,6 @@ export default function DocumentationPage() {
           ))}
         </nav>
       </aside>
-
       {/* MAIN CONTENT */}
       <main
         style={{
@@ -960,8 +957,8 @@ export default function DocumentationPage() {
                 <div style={{marginTop: 16}}>
                   <Text type="large" color="secondary">
                     Astryx Web React is an open-source UI library created by the
-                    Astryx Design Team to help developers quickly build beautiful,
-                    accessible products.
+                    Astryx Design Team to help developers quickly build
+                    beautiful, accessible products.
                   </Text>
                 </div>
                 <div style={{marginTop: 24}}>
@@ -978,7 +975,6 @@ export default function DocumentationPage() {
               </div>
               <div style={{flex: 1}} />
             </div>
-
             {/* Category sections */}
             {COMPONENT_CATEGORIES.map(category => (
               <div key={category.label} style={{marginBottom: 64}}>
@@ -1032,7 +1028,6 @@ export default function DocumentationPage() {
                 March 30, 2026 · Updated 5:40 p.m. PST
               </Text>
             </div>
-
             {/* Live Preview Card */}
             <div
               style={{
@@ -1105,7 +1100,6 @@ export default function DocumentationPage() {
                 )}
               </div>
             </div>
-
             {/* Description */}
             {(() => {
               const docs = getComponentDocs(activeNav);
@@ -1138,7 +1132,6 @@ export default function DocumentationPage() {
                 </div>
               );
             })()}
-
             {/* Anatomy */}
             {(() => {
               const docs = getComponentDocs(activeNav);

@@ -11,7 +11,7 @@
  * - /packages/core/src/Table/Table.doc.mjs (component description, props)
  * - /packages/core/src/Table/Table.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Table/index.ts (exports if types change)
- * - /packages/cli/templates/blocks/components/Table/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Table/ (showcase blocks)
  */
 
 import {memo, useRef, type ReactElement, type ReactNode, type Ref} from 'react';
@@ -42,6 +42,7 @@ import {TableHeaderCell} from './TableHeaderCell';
 import {TableHeader} from './TableHeader';
 import {TableBody} from './TableBody';
 import {mergeProps} from '../utils';
+import {devError} from '../utils/devWarning';
 import {EmptyState} from '../EmptyState';
 import {Text} from '../Text';
 import {themeProps} from '../utils/themeProps';
@@ -92,10 +93,7 @@ function applyPlugins<TPlugin, TProps, TArgs extends unknown[]>(
     try {
       return transform(acc, ...args);
     } catch (error) {
-      console.error(
-        `[Table] Plugin at index ${index} threw in transform:`,
-        error,
-      );
+      devError('Table', `Plugin at index ${index} threw in transform:`, error);
       return acc;
     }
   }, initial);
@@ -136,6 +134,12 @@ interface TableRowProps<T extends Record<string, unknown>> {
   textOverflow: 'wrap' | 'truncate';
   RowComponent: React.ComponentType<TableRowComponentProps>;
   CellComponent: React.ComponentType<TableCellComponentProps>;
+  /**
+   * 1-based ARIA row index for this row's position in the full dataset.
+   * `undefined` when the table hasn't opted into ARIA row indexing, in which
+   * case no `aria-rowindex` is emitted (native table semantics).
+   */
+  ariaRowIndex?: number;
 }
 
 /**
@@ -152,6 +156,7 @@ function TableRowInner<T extends Record<string, unknown>>({
   textOverflow,
   RowComponent,
   CellComponent,
+  ariaRowIndex,
 }: TableRowProps<T>): ReactElement {
   // Build cells first
   const cells = columns.map((col, columnIndex) => {
@@ -163,7 +168,7 @@ function TableRowInner<T extends Record<string, unknown>>({
 
     const initialBodyCellRenderProps: BodyCellRenderProps = {
       htmlProps: initialCellHtmlProps,
-      styles: [],
+      xstyle: [],
       columnIndex,
       columns: columns as ReadonlyArray<TableColumn<Record<string, unknown>>>,
     };
@@ -178,9 +183,12 @@ function TableRowInner<T extends Record<string, unknown>>({
     );
 
     const isDefaultRenderer = !col.renderCell;
-    const rawContent = isDefaultRenderer
-      ? defaultCellRenderer(item, col.key)
-      : (col.renderCell?.(item) ?? null);
+    let rawContent: ReactNode = null;
+    if (!cellRenderProps.isContentSuppressed) {
+      rawContent = isDefaultRenderer
+        ? defaultCellRenderer(item, col.key)
+        : (col.renderCell?.(item) ?? null);
+    }
 
     // In truncate mode, wrap default-rendered string content in
     // <Text maxLines={1}> for smart tooltips that only appear
@@ -207,19 +215,21 @@ function TableRowInner<T extends Record<string, unknown>>({
         key={col.key}
         {...cellRenderProps.htmlProps}
         contextMenuActions={cellRenderProps.contextMenuActions}
-        xstyle={cellRenderProps.styles}>
+        xstyle={cellRenderProps.xstyle}>
         {content}
       </CellComponent>
     );
   });
 
-  // Apply plugin transforms for row (with pre-rendered children)
+  // Apply plugin transforms for row (with pre-rendered children).
+  // Seed `aria-rowindex` (when the table opts into ARIA row indexing) as a
+  // base htmlProp so plugins compose over it and can still override.
   const rowRenderProps = applyPlugins(
     plugins,
     p => p.transformBodyRow,
     {
-      htmlProps: {},
-      styles: [],
+      htmlProps: ariaRowIndex == null ? {} : {'aria-rowindex': ariaRowIndex},
+      xstyle: [],
       children: <>{cells}</>,
     } satisfies BodyRowRenderProps,
     item,
@@ -231,10 +241,21 @@ function TableRowInner<T extends Record<string, unknown>>({
       key={rowKey}
       ref={rowRenderProps.ref}
       {...rowRenderProps.htmlProps}
-      xstyle={rowRenderProps.styles}>
+      xstyle={rowRenderProps.xstyle}>
       {rowRenderProps.children}
     </RowComponent>
   );
+
+  // afterRow: plugins (e.g. row expansion) can append a full-width detail
+  // panel `<tr>` after the row. Rendered as a sibling fragment.
+  if (rowRenderProps.afterRow) {
+    return (
+      <>
+        {row}
+        {rowRenderProps.afterRow}
+      </>
+    );
+  }
 
   return row;
 }
@@ -256,6 +277,9 @@ function areRowPropsEqual<T extends Record<string, unknown>>(
     return false;
   }
   if (prevProps.rowIndex !== nextProps.rowIndex) {
+    return false;
+  }
+  if (prevProps.ariaRowIndex !== nextProps.ariaRowIndex) {
     return false;
   }
 
@@ -321,15 +345,32 @@ function BaseTableInner<T extends Record<string, unknown>>({
   idKey,
   plugins: pluginsProp,
   children,
-  tableProps: userTableProps,
   textOverflow = 'wrap',
   scrollWrapper: ScrollWrapper,
   emptyState,
+  rowIndexStart,
+  rowCount,
+  xstyle,
+  className,
+  style,
   ref,
+  ...rest
 }: BaseTableProps<T> & {ref?: Ref<HTMLTableElement>}): ReactElement {
   const t = useTranslator();
   // Use stable empty array when no plugins provided
   const plugins = pluginsProp ?? (EMPTY_PLUGINS as TablePlugin<T>[]);
+
+  // ARIA row indexing. The row ordinal is an accessibility concern that is
+  // independent of any visible index column: when the consumer opts in (by
+  // passing rowIndexStart or rowCount), body rows carry `aria-rowindex`
+  // reflecting their position in the full dataset, and the <table> carries
+  // `aria-rowcount`. `aria-rowindex` is 1-based and counts data rows from
+  // `rowIndexStart` (default 1); a windowed/paginated view passes the offset
+  // of its first visible row. `aria-rowcount` is `rowCount` when known, or
+  // `-1` (ARIA's "unknown count") for a windowed view with an unknown total.
+  const ariaRowIndexingEnabled = rowIndexStart != null || rowCount != null;
+  const firstRowAriaIndex = rowIndexStart ?? 1;
+  const ariaRowCount = ariaRowIndexingEnabled ? (rowCount ?? -1) : undefined;
 
   const RowComponent = TableRow as React.ComponentType<TableRowComponentProps>;
   const CellComponent =
@@ -366,8 +407,8 @@ function BaseTableInner<T extends Record<string, unknown>>({
 
   // --- Plugin pipeline: table ---
   const tableRenderProps = applyPlugins(plugins, p => p.transformTable, {
-    htmlProps: {...userTableProps},
-    styles: children ? [styles.table, styles.tableAutoLayout] : [styles.table],
+    htmlProps: {},
+    xstyle: children ? [styles.table, styles.tableAutoLayout] : [styles.table],
   } satisfies TableRenderProps);
 
   // --- Plugin pipeline: header cells ---
@@ -388,7 +429,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
 
     const initialHeaderRenderProps: HeaderCellRenderProps = {
       htmlProps: initialHeaderHtmlProps,
-      styles: [],
+      xstyle: [],
       content: headerContent,
       columnIndex,
       columns: resolvedColumns as ReadonlyArray<
@@ -449,7 +490,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
         {...mergedHtmlProps}
         {...headerTitleProp}
         contextMenuActions={cellRenderProps.contextMenuActions}
-        xstyle={cellRenderProps.styles}>
+        xstyle={cellRenderProps.xstyle}>
         {headerInner}
       </HeaderCellComponent>
     );
@@ -461,7 +502,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
     p => p.transformHeaderRow,
     {
       htmlProps: {},
-      styles: [],
+      xstyle: [],
       children: <>{headerCells}</>,
     } satisfies HeaderRowRenderProps,
   );
@@ -470,24 +511,36 @@ function BaseTableInner<T extends Record<string, unknown>>({
   const hasData = data != null && data.length > 0;
   const hasColumns = resolvedColumns.length > 0;
 
+  // Style precedence: consumer style < the computed column min-width
+  // (structural — derived from column defs, so it
+  // must win when present; when absent, a consumer minWidth survives).
   const tableStyle: React.CSSProperties = {
     ...tableRenderProps.htmlProps.style,
-    minWidth:
-      resolvedWidths.tableMinWidth > 0
-        ? `${resolvedWidths.tableMinWidth}px`
-        : undefined,
+    ...style,
+    ...(resolvedWidths.tableMinWidth > 0
+      ? {minWidth: `${resolvedWidths.tableMinWidth}px`}
+      : null),
   };
 
   let tableElement: ReactNode = (
     <table
       ref={ref}
+      {...(ariaRowCount != null ? {'aria-rowcount': ariaRowCount} : null)}
       {...tableRenderProps.htmlProps}
       {...mergeProps(
-        themeProps('base-table'),
-        stylex.props(...tableRenderProps.styles),
-        tableRenderProps.htmlProps.className,
+        themeProps('table', undefined, {
+          // `base-table` was a second root on the same <table> element that
+          // `table` names; themes styling it keep working until the next
+          // major.
+          legacyNames: ['base-table'],
+        }),
+        stylex.props(...tableRenderProps.xstyle, xstyle),
+        [tableRenderProps.htmlProps.className, className]
+          .filter(Boolean)
+          .join(' ') || undefined,
+        tableStyle,
       )}
-      style={tableStyle}>
+      {...rest}>
       {children ? (
         children
       ) : (
@@ -497,7 +550,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
               <RowComponent
                 {...headerRowRenderProps.htmlProps}
                 isHeaderRow
-                xstyle={headerRowRenderProps.styles}>
+                xstyle={headerRowRenderProps.xstyle}>
                 {headerRowRenderProps.children}
               </RowComponent>
             </TableHeader>
@@ -522,6 +575,11 @@ function BaseTableInner<T extends Record<string, unknown>>({
                       textOverflow={textOverflow}
                       RowComponent={RowComponent}
                       CellComponent={CellComponent}
+                      ariaRowIndex={
+                        ariaRowIndexingEnabled
+                          ? firstRowAriaIndex + rowIndex
+                          : undefined
+                      }
                     />
                   );
                 })
@@ -558,14 +616,14 @@ function BaseTableInner<T extends Record<string, unknown>>({
       p => p.transformScrollWrapper,
       {
         htmlProps: {},
-        styles: [],
+        xstyle: [],
       } satisfies ScrollWrapperRenderProps,
     );
 
     tableElement = (
       <ScrollWrapper
         htmlProps={scrollWrapperRenderProps.htmlProps}
-        styles={scrollWrapperRenderProps.styles}
+        xstyle={scrollWrapperRenderProps.xstyle}
         beforeTable={scrollWrapperRenderProps.beforeTable}
         afterTable={scrollWrapperRenderProps.afterTable}>
         {tableElement}
@@ -583,7 +641,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
       try {
         tableElement = plugin.transformTableContext(tableElement);
       } catch (error) {
-        console.error('[Table] Plugin threw in transformTableContext:', error);
+        devError('Table', 'Plugin threw in transformTableContext:', error);
       }
     }
   }

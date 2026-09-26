@@ -1,8 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect} from 'vitest';
-import {parseMarkdown, parseInline} from './parser';
-import type {InlineNode} from './parser';
+import {
+  createIncrementalState,
+  parseInline,
+  parseMarkdown,
+  parseMarkdownIncremental,
+} from './parser';
+import type {BlockNode, InlineNode} from './parser';
 
 describe('parseInline', () => {
   it('parses plain text', () => {
@@ -37,6 +42,78 @@ describe('parseInline', () => {
     expect(result).toEqual([{type: 'code', content: 'const x'}]);
   });
 
+  it('keeps backslash escapes literal inside standalone inline code', () => {
+    const result = parseInline('`T \\| null`');
+    expect(result).toEqual([{type: 'code', content: 'T \\| null'}]);
+  });
+
+  it('leaves math delimiters as literal text by default', () => {
+    expect(parseInline('Euler: $e^{i * pi} + 1 = 0$.')).toEqual([
+      {type: 'text', content: 'Euler: $e^{i * pi} + 1 = 0$.'},
+    ]);
+  });
+
+  it('parses inline math before Markdown formatting when explicitly enabled', () => {
+    expect(parseInline('Euler: $e^{i * pi} + 1 = 0$.', {math: true})).toEqual([
+      {type: 'text', content: 'Euler: '},
+      {type: 'math', value: 'e^{i * pi} + 1 = 0'},
+      {type: 'text', content: '.'},
+    ]);
+  });
+
+  it('preserves escaped delimiters inside math and leaves escaped openers literal', () => {
+    expect(
+      parseInline('Price: \\$5; formula: $x \\$ y$.', {math: true}),
+    ).toEqual([
+      {type: 'text', content: 'Price: '},
+      {type: 'text', content: '$5; formula: '},
+      {type: 'math', value: 'x \\$ y'},
+      {type: 'text', content: '.'},
+    ]);
+  });
+
+  it('leaves an unmatched inline math delimiter literal', () => {
+    expect(parseInline('The value is $x + 1.', {math: true})).toEqual([
+      {type: 'text', content: 'The value is $x + 1.'},
+    ]);
+  });
+
+  it('does not mistake paired currency amounts for inline math', () => {
+    expect(
+      parseInline('Tickets cost $20 and $30 today.', {math: true}),
+    ).toEqual([{type: 'text', content: 'Tickets cost $20 and $30 today.'}]);
+    expect(parseInline('$x$5 and $y$', {math: true})).toEqual([
+      {type: 'text', content: '$x$5 and '},
+      {type: 'math', value: 'y'},
+    ]);
+  });
+
+  it('allows an inline expression to begin with a number', () => {
+    expect(parseInline('Result: $2 + 2$.', {math: true})).toEqual([
+      {type: 'text', content: 'Result: '},
+      {type: 'math', value: '2 + 2'},
+      {type: 'text', content: '.'},
+    ]);
+  });
+
+  it('does not treat non-block double-dollar runs as inline math', () => {
+    expect(parseInline('Keep $$x + y$$ literal.', {math: true})).toEqual([
+      {type: 'text', content: 'Keep $$x + y$$ literal.'},
+    ]);
+  });
+
+  it('keeps code and link destinations opaque while parsing math in link labels', () => {
+    expect(parseInline('`$code$` [$label$](/price/$5)', {math: true})).toEqual([
+      {type: 'code', content: '$code$'},
+      {type: 'text', content: ' '},
+      {
+        type: 'link',
+        href: '/price/$5',
+        children: [{type: 'math', value: 'label'}],
+      },
+    ]);
+  });
+
   it('parses links', () => {
     const result = parseInline('[click](https://example.com)');
     expect(result[0].type).toBe('link');
@@ -49,6 +126,68 @@ describe('parseInline', () => {
   it('parses images', () => {
     const result = parseInline('![alt](img.png)');
     expect(result).toEqual([{type: 'image', src: 'img.png', alt: 'alt'}]);
+  });
+
+  it('rejects javascript: links as plain text (XSS prevention)', () => {
+    const result = parseInline('[click](javascript:alert(1))');
+    // Should be emitted as plain text, NOT as a link node
+    expect(result).toEqual([
+      {type: 'text', content: '[click](javascript:alert(1))'},
+    ]);
+  });
+
+  it('rejects javascript: with mixed case and whitespace (XSS prevention)', () => {
+    const result = parseInline('[click](JaVaScRiPt:alert(1))');
+    expect(result).toEqual([
+      {type: 'text', content: '[click](JaVaScRiPt:alert(1))'},
+    ]);
+  });
+
+  it('rejects vbscript: links (XSS prevention)', () => {
+    const result = parseInline('[click](vbscript:MsgBox(1))');
+    expect(result).toEqual([
+      {type: 'text', content: '[click](vbscript:MsgBox(1))'},
+    ]);
+  });
+
+  it('rejects data:text/html image src (XSS prevention)', () => {
+    const result = parseInline(
+      '![xss](data:text/html,<script>alert(1)</script>)',
+    );
+    expect(result).toEqual([
+      {
+        type: 'text',
+        content: '![xss](data:text/html,<script>alert(1)</script>)',
+      },
+    ]);
+  });
+
+  it('allows normal http/https links', () => {
+    const result = parseInline('[safe](https://example.com)');
+    expect(result[0].type).toBe('link');
+    if (result[0].type === 'link') {
+      expect(result[0].href).toBe('https://example.com');
+    }
+  });
+
+  it('decides link destinations with the shared navigation rule', () => {
+    const destinations: [string, boolean][] = [
+      ['https://example.com', true],
+      ['/page', true],
+      ['#section', true],
+      ['mailto:a@example.com', true],
+      ['tel:+1234567890', true],
+      ['custom:document', true],
+      ['data:image/png;base64,iVBORw0KGgo=', true],
+      ['javascript:alert(1)', false],
+      ['vbscript:MsgBox(1)', false],
+      ['data:text/html,<b>x</b>', false],
+      ['java\u0000script:alert(1)', false],
+    ];
+    for (const [destination, accepted] of destinations) {
+      const [node] = parseInline(`[t](${destination})`);
+      expect(node.type === 'link').toBe(accepted);
+    }
   });
 
   it('parses strikethrough', () => {
@@ -221,6 +360,61 @@ describe('parseMarkdown', () => {
     if (result[0].type === 'codeblock') {
       expect(result[0].language).toBe('python');
     }
+  });
+
+  it('parses display math only when explicitly enabled', () => {
+    const source = '$$\n\\int_0^1 x^2 \\, dx\n$$';
+    expect(parseMarkdown(source)).not.toContainEqual({
+      type: 'math',
+      value: '\\int_0^1 x^2 \\, dx',
+    });
+    expect(parseMarkdown(source, {math: true})).toEqual([
+      {type: 'math', value: '\\int_0^1 x^2 \\, dx'},
+    ]);
+  });
+
+  it('parses a same-line display math block', () => {
+    expect(parseMarkdown('$$E = mc^2$$', {math: true})).toEqual([
+      {type: 'math', value: 'E = mc^2'},
+    ]);
+  });
+
+  it('keeps empty display delimiters literal', () => {
+    const source = '$$\n$$';
+    expect(parseMarkdown(source, {math: true})).toEqual(parseMarkdown(source));
+  });
+
+  it('leaves unmatched display math delimiters literal', () => {
+    const source = '$$\nx + y';
+    expect(parseMarkdown(source, {math: true})).toEqual(parseMarkdown(source));
+  });
+
+  it('leaves escaped display delimiters literal', () => {
+    const blocks = parseMarkdown('\\$\\$\nx + y\n\\$\\$', {math: true});
+    expect(blocks.some(block => block.type === 'math')).toBe(false);
+  });
+
+  it('reports a display-math source range including its delimiters', () => {
+    const source = 'Before.\n\n$$\nx + y\n$$\n\nAfter.';
+    const blocks = parseMarkdown(source, {math: true, sourceRanges: true});
+    expect(blocks[1]?.range).toEqual({start: 9, end: 20});
+    expect(source.slice(blocks[1].range?.start, blocks[1].range?.end)).toBe(
+      '$$\nx + y\n$$',
+    );
+  });
+
+  it('keeps fenced code opaque when math parsing is enabled', () => {
+    expect(parseMarkdown('```tex\n$x$\n$$y$$\n```', {math: true})).toEqual([
+      {type: 'codeblock', language: 'tex', content: '$x$\n$$y$$'},
+    ]);
+  });
+
+  it('does not collect link definitions from display math', () => {
+    const blocks = parseMarkdown('$$\n[x]: /not-a-link\n$$\n\n[x]', {
+      math: true,
+    });
+    expect(blocks[0]).toEqual({type: 'math', value: '[x]: /not-a-link'});
+    expect(JSON.stringify(blocks[1])).not.toContain('"type":"link"');
   });
 
   it('parses blockquotes', () => {
@@ -407,6 +601,14 @@ describe('parseMarkdown', () => {
     }
   });
 
+  it('rejects a standalone image with an unsafe scheme as literal text (XSS prevention)', () => {
+    // Same rule as inline images: the line falls through to the paragraph
+    // path and stays literal text instead of becoming an image node.
+    const result = parseMarkdown('![alt](vbscript:msgbox)');
+    expect(result[0].type).toBe('paragraph');
+    expect(JSON.stringify(result)).not.toContain('"type":"image"');
+  });
+
   it('parses complex AI response', () => {
     const input = [
       '# Analysis',
@@ -484,17 +686,24 @@ describe('parseMarkdown', () => {
 
   // --- Table with escaped pipes ---
 
-  it('handles escaped pipes in table cells', () => {
+  it('decodes escaped pipes in table code spans without changing prose nodes', () => {
     const input =
-      '| Concept | TypeScript |\n| --- | --- |\n| Null safety | `T \\| null` |\n| Union | `A \\| B \\| C` |';
+      '| Concept | TypeScript |\n| --- | --- |\n| Prose | A \\| B |\n| Null safety | `T \\| null` |\n| Union | `A \\| B \\| C` |';
     const result = parseMarkdown(input);
     expect(result[0].type).toBe('table');
     if (result[0].type === 'table') {
       expect(result[0].headers).toHaveLength(2);
-      expect(result[0].rows).toHaveLength(2);
-      // The cell should contain the escaped pipe as inline content
-      expect(result[0].rows[0]).toHaveLength(2);
-      expect(result[0].rows[1]).toHaveLength(2);
+      expect(result[0].rows).toHaveLength(3);
+      expect(result[0].rows[0][1].children).toEqual([
+        {type: 'text', content: 'A '},
+        {type: 'text', content: '| B'},
+      ]);
+      expect(result[0].rows[1][1].children).toEqual([
+        {type: 'code', content: 'T | null'},
+      ]);
+      expect(result[0].rows[2][1].children).toEqual([
+        {type: 'code', content: 'A | B | C'},
+      ]);
     }
   });
 
@@ -725,6 +934,17 @@ describe('citation parsing', () => {
         href: 'https://example.com',
         children: [{type: 'text', content: 'https://example.com'}],
       });
+    });
+
+    it('rejects <javascript:...> angle-bracket autolinks (XSS prevention)', () => {
+      const result = parseInline('see <javascript:alert(1)> ok', {
+        autolink: 'gfm',
+      });
+      // Should NOT produce a link node with javascript: href
+      const linkNodes = result.filter(
+        (n): n is Extract<typeof n, {type: 'link'}> => n.type === 'link',
+      );
+      expect(linkNodes).toHaveLength(0);
     });
 
     it('parses <email> angle-bracket autolinks', () => {
@@ -1092,6 +1312,31 @@ describe('link reference definitions', () => {
     expect(links).toEqual([{type: 'image', src: '/logo.png', text: 'logo'}]);
   });
 
+  it('rejects a reference image whose definition has an unsafe scheme (XSS prevention)', () => {
+    const {links} = paragraphLinks('![logo][l]\n\n[l]: <javascript:alert(1)>');
+    expect(links).toEqual([]);
+  });
+
+  it('rejects a shortcut reference image with an unsafe definition (XSS prevention)', () => {
+    const {links} = paragraphLinks('![logo]\n\n[logo]: <javascript:alert(1)>');
+    expect(links).toEqual([]);
+  });
+
+  it('rejects definitions that hide the scheme behind control chars (XSS prevention)', () => {
+    // isSafeUrl strips control characters before testing; the angle-bracket
+    // destination form is the only definition shape that can contain them.
+    // Both consumers of a definition — reference images and reference links —
+    // must apply it.
+    const {links: imageLinks} = paragraphLinks(
+      '![logo][l]\n\n[l]: <java\tscript:alert(1)>',
+    );
+    expect(imageLinks).toEqual([]);
+    const {links: refLinks} = paragraphLinks(
+      '[click][l]\n\n[l]: <java\tscript:alert(1)>',
+    );
+    expect(refLinks).toEqual([]);
+  });
+
   it('does not treat a whitespace-only second label as collapsed', () => {
     // `[foo][ ]` is a full reference to the empty (normalized) label and matches
     // nothing; `[foo]` still resolves as a shortcut and `[ ]` stays literal.
@@ -1154,5 +1399,143 @@ describe('link reference definitions', () => {
     const {links, blocks} = paragraphLinks('an array like [1, 2, 3] here');
     expect(links).toEqual([]);
     expect(blocks[0].type).toBe('paragraph');
+  });
+});
+
+describe('sourceRanges', () => {
+  const slice = (source: string, block: BlockNode) =>
+    block.range == null
+      ? null
+      : source.slice(block.range.start, block.range.end);
+
+  it('is off by default', () => {
+    const [block] = parseMarkdown('# Title');
+    expect(block.range).toBeUndefined();
+  });
+
+  it('addresses a block with named start and end offsets', () => {
+    const source = 'One.\n\nTwo.';
+    const [, second] = parseMarkdown(source, {sourceRanges: true});
+    expect(second.range).toEqual({start: 6, end: 10});
+  });
+
+  it('gives every top-level block the source it came from', () => {
+    const source = [
+      '# Title',
+      '',
+      'A paragraph that',
+      'wraps onto two lines.',
+      '',
+      '- one',
+      '- two',
+      '',
+      '```js',
+      'const x = 1;',
+      '```',
+      '',
+      '| a | b |',
+      '| --- | --- |',
+      '| 1 | 2 |',
+      '',
+      '> quoted',
+      '',
+      '---',
+    ].join('\n');
+    const blocks = parseMarkdown(source, {sourceRanges: true});
+    expect(blocks.map(b => slice(source, b))).toEqual([
+      '# Title',
+      'A paragraph that\nwraps onto two lines.',
+      '- one\n- two',
+      '```js\nconst x = 1;\n```',
+      '| a | b |\n| --- | --- |\n| 1 | 2 |',
+      '> quoted',
+      '---',
+    ]);
+  });
+
+  it('reports offsets into the input, not into the link-definition-stripped text', () => {
+    // The definition lines are removed before the block loop runs, so a naive
+    // offset would drift by their length for everything after them.
+    const source = [
+      '[ref]: https://example.com',
+      '',
+      'See [the docs][ref].',
+      '',
+      'Another paragraph.',
+    ].join('\n');
+    const blocks = parseMarkdown(source, {sourceRanges: true});
+    expect(blocks.map(b => slice(source, b))).toEqual([
+      'See [the docs][ref].',
+      'Another paragraph.',
+    ]);
+  });
+
+  it('reports absolute offsets when the document is parsed incrementally', () => {
+    const source = ['# Title', '', 'One.', '', 'Two.', '', 'Three.'].join('\n');
+    const state = createIncrementalState();
+    let blocks: BlockNode[] = [];
+    for (let end = 1; end <= source.length; end++) {
+      blocks = parseMarkdownIncremental(source.slice(0, end), state, {
+        sourceRanges: true,
+      });
+    }
+    expect(blocks.map(b => slice(source, b))).toEqual([
+      '# Title',
+      'One.',
+      'Two.',
+      'Three.',
+    ]);
+  });
+
+  it('keeps the blank lines an unterminated fence owns', () => {
+    // Mid-stream the closing fence has not arrived, and the blank lines are
+    // part of the code, not spacing between blocks.
+    const source = '```\ncode\n\n';
+    const [block] = parseMarkdown(source, {sourceRanges: true});
+    // The whole thing: the fence consumed those lines as code.
+    expect(slice(source, block)).toBe(source);
+  });
+
+  it('slices to something that re-parses to the same block', () => {
+    // The property a consumer actually needs, and the one that says the
+    // offsets are right: what the range points at is the block.
+    const check = (source: string) => {
+      for (const block of parseMarkdown(source, {sourceRanges: true})) {
+        const {range: _range, ...node} = block;
+        expect(parseMarkdown(slice(source, block)!)).toEqual([node]);
+      }
+    };
+    check('# Title\n\nA paragraph.\n\n- one\n- two\n\n> quoted');
+    // CRLF: the parser keeps the `\r` in its own content, so the range does
+    // too rather than slicing to text that parses differently.
+    check('# Title\r\n\r\nA paragraph.\r\n');
+  });
+
+  it('re-parses when the caller flips the option on an existing state', () => {
+    const source = 'One.\n\nTwo.\n\nThree.';
+    const state = createIncrementalState();
+    const without = parseMarkdownIncremental(source, state);
+    expect(without.every(b => b.range == null)).toBe(true);
+    const with_ = parseMarkdownIncremental(source, state, {
+      sourceRanges: true,
+    });
+    expect(with_.map(b => slice(source, b))).toEqual([
+      'One.',
+      'Two.',
+      'Three.',
+    ]);
+    const back = parseMarkdownIncremental(source, state);
+    expect(back.every(b => b.range == null)).toBe(true);
+  });
+
+  it('spans both halves of a list the incremental parser merged', () => {
+    const source = '1. one\n\n1. two';
+    const state = createIncrementalState();
+    parseMarkdownIncremental('1. one\n\n', state, {sourceRanges: true});
+    const blocks = parseMarkdownIncremental(source, state, {
+      sourceRanges: true,
+    });
+    expect(blocks).toHaveLength(1);
+    expect(slice(source, blocks[0])).toBe(source);
   });
 });

@@ -61,9 +61,12 @@ export default meta;
 type Story = StoryObj<typeof CollapsibleGroup>;
 
 export const SingleMode: Story = {
-  name: 'Single Mode (default)',
+  name: 'Single Mode — Leading Chevron',
   render: () => (
-    <CollapsibleGroup type="single" defaultValue="general">
+    <CollapsibleGroup
+      type="single"
+      defaultValue="general"
+      chevronPosition="start">
       <VStack gap={2}>
         <Card>
           <Collapsible trigger="General Settings" value="general">
@@ -173,6 +176,34 @@ export const StandaloneCollapsible: Story = {
         <Collapsible trigger="Starts collapsed" defaultIsOpen={false}>
           <p {...stylex.props(styles.text)}>
             This collapsible starts collapsed. Click to reveal.
+          </p>
+        </Collapsible>
+      </Card>
+    </VStack>
+  ),
+};
+
+export const Disabled: Story = {
+  name: 'Disabled item',
+  render: () => (
+    <VStack gap={2}>
+      <Card>
+        <Collapsible trigger="Enabled — click to toggle">
+          <p {...stylex.props(styles.text)}>This section can be toggled.</p>
+        </Collapsible>
+      </Card>
+      <Card>
+        <Collapsible trigger="Disabled — can't be toggled" isDisabled>
+          <p {...stylex.props(styles.text)}>
+            The trigger is non-interactive and dimmed.
+          </p>
+        </Collapsible>
+      </Card>
+      <Card>
+        <Collapsible trigger="Disabled but open" isDisabled defaultIsOpen>
+          <p {...stylex.props(styles.text)}>
+            Disabling doesn't collapse an already-open item; the content stays
+            visible.
           </p>
         </Collapsible>
       </Card>
@@ -312,5 +343,33 @@ export const FAQ: Story = {
         </Card>
       </VStack>
     </CollapsibleGroup>
+  ),
+};
+
+export const PressedState: Story = {
+  name: 'Pressed state',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Press and hold the enabled trigger to paint the system's `--color-overlay-pressed` layer across its row. The disabled trigger remains visually unchanged and cannot expand or collapse.",
+      },
+    },
+  },
+  render: () => (
+    <VStack gap={2}>
+      <Card>
+        <Collapsible trigger="Details — press and hold">
+          <p {...stylex.props(styles.text)}>
+            The pressed overlay covers the trigger row.
+          </p>
+        </Collapsible>
+      </Card>
+      <Card>
+        <Collapsible trigger="Unavailable — no pressed state" isDisabled>
+          <p {...stylex.props(styles.text)}>Never opens.</p>
+        </Collapsible>
+      </Card>
+    </VStack>
   ),
 };

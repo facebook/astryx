@@ -1,5 +1,148 @@
 # @xds/theme-stone
 
+# 0.6.3
+
+---
+
+# 0.6.2
+
+---
+
+# 0.6.1
+
+#### Fixes
+
+- Prefer canonical component target names in maintained themes and new examples while preserving deprecated runtime aliases and released bare prop/state selector classes through the 0.7.0 removal window. Theme discovery labels deprecated targets, theme build warns with each exact canonical replacement, and `astryx upgrade --apply` provides the forward-compatible bare-selector migration. (#6126)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+
+---
+
+# 0.6.0
+
+#### Breaking Changes
+
+- Requires `@astryxdesign/core@0.6.0` as part of the coordinated stable release. Upgrade Core and this theme together.
+
+---
+
+# 0.5.4
+
+---
+
+# 0.5.3
+
+#### Fixes
+
+- Rename built-in syntax theme identifiers. (#5847)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @rubyycheung
+
+---
+
+# 0.5.2
+
+---
+
+# 0.5.1
+
+#### Fixes
+
+- Stone theme: move `--color-text-secondary` to the canonical T40/T70 pair so normal secondary text meets WCAG AA across the theme's light and dark consumer surfaces (#5505) (#5509)
+- Theme packages no longer ship an unused CommonJS `icons.js` artifact. Their root entry keeps its advertised CommonJS and ESM outputs, while the standalone icon companion used by `/built` is emitted only as `icons.mjs`. (#5512)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @jiunshinn
+
+---
+
+# 0.5.0
+
+---
+
+# 0.4.7
+
+---
+
+# 0.4.6
+
+---
+
+# 0.4.5
+
+---
+
+# 0.4.4
+
+---
+
+# 0.4.3
+
+#### Fixes
+
+- The `/built` entry now loads under Node ESM and externalized SSR (Vite `--ssr`, Remix / React Router v7): it imports `./icons.mjs` instead of the extensionless `./icons` Node cannot resolve.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @AKnassa
+
+---
+
+# 0.4.2
+
+#### Fixes
+
+- `--radius-none` no longer overrides to `0.125rem`. `--radius-none` and `--radius-full` are documented as always fixed (never scaled by a theme), matching `@astryxdesign/core`'s own defaults — each of these themes' radius group bumps swept `--radius-none` along with it by mistake, the same bug fixed for `theme-neutral` in #4856. Anything opting out of rounding via `--radius-none` under these themes now renders with a true `0px` radius again, instead of a silent 2px.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @is-jain
+
+---
+
+# 0.4.1
+
+---
+
+# 0.4.0
+
+---
+
+# 0.3.0
+
+---
+
+# 0.2.0
+
+---
+
+# 0.1.9
+
+---
+
+# 0.1.8
+
+---
+
+# 0.1.7
+
+---
+
 # 0.1.6
 
 ---

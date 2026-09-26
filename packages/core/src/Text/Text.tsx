@@ -13,7 +13,7 @@
  * - /packages/core/src/Text/Text.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Text/index.ts (exports if types change)
  * - /apps/storybook/stories/Text.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Text/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Text/ (showcase blocks)
  */
 
 import {lazy, Suspense, useRef, type ReactNode} from 'react';
@@ -23,6 +23,7 @@ import type {
   BuiltinTextType,
   TextSize,
   TextColor,
+  BuiltinTextColor,
   TextWeight,
   TextDisplay,
   TextJustify,
@@ -47,7 +48,8 @@ import {
 } from './text.stylex';
 import {useTruncation} from './useTruncation';
 import type {LayerPlacement} from '../Layer';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps} from '../utils';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 
@@ -186,6 +188,24 @@ function resolveStyleType(type: TextType): BuiltinTextType {
 }
 
 /**
+ * Resolve the StyleX baseline color. Built-in colors map to their own color
+ * style; custom (theme-defined) colors fall back to the `primary` baseline —
+ * their actual color comes from theme CSS (`.astryx-text.<color>` /
+ * `.astryx-heading.<color>`), which the rendered `color` class targets.
+ *
+ * Exported so Heading applies the same custom-color fallback as Text.
+ */
+export function resolveStyleColor(color: TextColor): BuiltinTextColor {
+  // The `in` guard is a runtime check for consumer-augmented custom colors
+  // (which widen `TextColor` beyond the built-ins via TextColorMap); within
+  // core the two types coincide, so no cast is needed.
+  if (color in colorStyles) {
+    return color;
+  }
+  return 'primary';
+}
+
+/**
  * Semantic text component. Renders text with type-based styling from the theme.
  *
  * @example
@@ -228,6 +248,11 @@ export function Text({
   // Resolve style type — custom types fall back to 'body' for StyleX baseline
   const styleType = resolveStyleType(type);
 
+  // Resolve style color — custom colors fall back to 'primary' for StyleX
+  // baseline; the real color comes from theme CSS via the rendered `color`
+  // class (see themeProps below).
+  const styleColor = resolveStyleColor(resolvedColor);
+
   // Resolve wordBreak with smart default
   const resolvedWordBreak =
     wordBreak ?? (maxLines === 1 ? 'break-all' : 'break-word');
@@ -247,17 +272,20 @@ export function Text({
   // Ref for the text element (used as tooltip anchor)
   const textRef = useRef<HTMLElement>(null);
 
+  // Keep the merged ref stable across rerenders.
+  const mergedRef = useMergedRefs(ref, truncation.ref, textRef);
+
   // Build inline style for -webkit-line-clamp (dynamic value)
   const inlineStyle = maxLines > 1 ? {WebkitLineClamp: maxLines} : undefined;
 
   return (
     <>
       <Component
-        ref={mergeRefs(ref, truncation.ref, textRef)}
+        ref={mergedRef}
         {...mergeProps(
           themeProps('text', {type, size, color: resolvedColor}),
           stylex.props(
-            colorStyles[resolvedColor],
+            colorStyles[styleColor],
             sizeByTypeStyles[styleType],
             size && sizeStyles[size],
             defaultWeightByTypeStyles[styleType],
@@ -285,7 +313,6 @@ export function Text({
           className,
           {...style, ...inlineStyle},
         )}
-        title={tooltipEnabled ? truncation.fullText : undefined}
         {...props}>
         {children}
       </Component>

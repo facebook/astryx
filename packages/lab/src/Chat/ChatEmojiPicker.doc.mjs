@@ -1,10 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../../core/src/docs-types').ComponentDoc} */
+/** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'ChatEmojiPicker',
   subComponentOf: 'Chat',
+  group: 'Chat',
+  category: 'Chat',
   displayName: 'Chat Emoji Picker',
   description: 'Popover emoji grid wrapping a trigger button: a shortname filter input over an 8-column grid with arrow-key roving focus. Picking an emoji calls onSelect and closes the popover, restoring focus to the trigger. Ships with a small default emoji set; override via emojis.',
   props: [

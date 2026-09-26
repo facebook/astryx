@@ -1,10 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').HookDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookDoc} */
 export const docs = {
   name: 'useTranslator',
   displayName: 'useTranslator',
-  group: 'Utilities',
+  category: 'utilities',
   keywords: [
     'i18n',
     'internationalization',
@@ -31,12 +31,16 @@ export const docs = {
   importPath: '@astryxdesign/core',
 };
 
-/** @type {import('../docs-types').HookTranslationDoc} */
+/** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description:
     'Hook returning a translator function bound to the current InternationalizationProvider context. Call with an ICU MessageFormat key and values to get the formatted string for the active locale.',
   usage: {
     description:
       'Returns a translator function that resolves keys against the current locale, provider overrides, and the shipped English fallback catalog.',
+  },
+  returnDescriptions: {
+    value:
+      'translator function bound to current InternationalizationProvider context. Call with message key + optional ICU MessageFormat values; returns formatted string in active locale. Safe in render, event handlers, effects.',
   },
 };

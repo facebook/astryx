@@ -11,7 +11,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Table/Table.doc.mjs
  * - /packages/core/src/Table/index.ts
- * - /packages/cli/templates/blocks/components/Table/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/Table/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';
@@ -161,12 +161,12 @@ const dividerRowStyles = stylex.create({
 
 const dividerColumnStyles = stylex.create({
   cell: {
-    borderRightWidth: {
+    borderInlineEndWidth: {
       default: borderVars['--border-width'],
       ':last-child': '0',
     },
-    borderRightStyle: 'solid',
-    borderRightColor: colorVars['--color-border'],
+    borderInlineEndStyle: 'solid',
+    borderInlineEndColor: colorVars['--color-border'],
   },
 });
 
@@ -252,7 +252,7 @@ export function TableCell({
       ref={ref}
       {...props}
       {...mergeProps(
-        themeProps('table-cell'),
+        themeProps('table-cell', {density: ctx?.density}),
         stylex.props(...mergeXStyle(cellStyles, xstyle)),
         incomingClassName,
         incomingStyle,

@@ -14,17 +14,13 @@
  */
 
 import {useRef, useEffect, useMemo} from 'react';
+import {parseHex, toGLFloats} from '@astryxdesign/core/utils';
 import {use3D} from './ThreeDContext';
 
 export interface ThreeDScatterGLProps {
   color: string;
   size?: number;
   opacity?: number;
-}
-
-function hexToGL(hex: string): [number, number, number] {
-  const n = parseInt(hex.replace('#', ''), 16);
-  return [(n >> 16) / 255, ((n >> 8) & 0xff) / 255, (n & 0xff) / 255];
 }
 
 // SYNC: Steps 1-5 match ThreeDChart.project() exactly.
@@ -240,7 +236,7 @@ export function ThreeDScatterGL({
     const azRad = (camera.azimuth * Math.PI) / 180;
     const elRad = (camera.elevation * Math.PI) / 180;
     const scale = Math.min(width, height) * 0.35;
-    const [r, g, b] = hexToGL(color);
+    const [r, g, b] = toGLFloats(parseHex(color));
 
     gl.uniform2f(gl.getUniformLocation(program, 'u_resolution'), width, height);
     gl.uniform2f(
