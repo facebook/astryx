@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 4
 template_version: 1
 kind: system-spec
 id: spec:AST-012
@@ -24,6 +24,17 @@ affects_consumer_docs: [theme, AppShell]
 ---
 
 # Theme adaptations
+
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "theming": ["FR4", "FR5", "FR6", "FR7"]
+  }
+}
+```
 
 ## Intent
 

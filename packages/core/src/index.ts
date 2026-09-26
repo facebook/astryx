@@ -161,6 +161,9 @@ export * from './Spinner';
 // Timestamp display
 export * from './Timestamp';
 
+// Elapsed timer display
+export * from './Timer';
+
 // Overlay
 export * from './Overlay';
 export * from './Outline';

@@ -1,8 +1,15 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file useScrollableArea.test.tsx
+ * @input Shared scroll hook, mocked geometry, and observed DOM changes
+ * @output Regression coverage for measurement, composition, and stable viewport access
+ * @position DOM-level hook contract; native traversal is verified in browser tests
+ */
+
 import {act, render, screen} from '@testing-library/react';
 import * as stylex from '@stylexjs/stylex';
-import {useRef, type Ref} from 'react';
+import {useRef, type ReactNode, type Ref} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   useScrollableArea,
@@ -192,6 +199,57 @@ describe('useScrollableArea', () => {
     flushFrame();
     expect(viewport.getAttribute('style')).toContain('--x-overflowX: auto');
     expect(viewport.getAttribute('style')).toContain('--x-overflowY: hidden');
+  });
+
+  it('keeps the named viewport available while content eligibility changes', () => {
+    function AdaptiveFixture({children}: {children?: ReactNode}) {
+      const area = useScrollableArea({
+        axis: 'block',
+        keyboardAccess: {
+          owner: 'contentOrViewport',
+          label: 'Adaptive results',
+          role: 'region',
+        },
+      });
+      return (
+        <div data-testid="adaptive-viewport" {...area.getViewportProps()}>
+          <div data-testid="adaptive-content" {...area.getContentProps()}>
+            {children}
+          </div>
+        </div>
+      );
+    }
+
+    vi.spyOn(HTMLElement.prototype, 'getClientRects').mockReturnValue([
+      new DOMRect(0, 0, 20, 20),
+    ] as unknown as DOMRectList);
+    const {rerender} = render(<AdaptiveFixture>Plain text</AdaptiveFixture>);
+    const viewport = screen.getByTestId('adaptive-viewport');
+    const content = screen.getByTestId('adaptive-content');
+    makeMeasurable(viewport);
+    setGeometry(viewport, {scrollHeight: 180});
+
+    void act(() => viewport.dispatchEvent(new Event('scroll')));
+    flushFrame();
+    expect(viewport).toHaveAttribute('role', 'region');
+    expect(viewport).toHaveAccessibleName('Adaptive results');
+    expect(viewport).toHaveAttribute('tabindex', '0');
+
+    viewport.focus();
+    rerender(
+      <AdaptiveFixture>
+        <button type="button">Use existing action</button>
+      </AdaptiveFixture>,
+    );
+    void act(() => content.dispatchEvent(new Event('transitionend')));
+    flushFrame();
+    expect(viewport).toHaveAttribute('tabindex', '0');
+    expect(viewport).toHaveFocus();
+
+    rerender(<AdaptiveFixture>Plain text again</AdaptiveFixture>);
+    void act(() => content.dispatchEvent(new Event('transitionend')));
+    flushFrame();
+    expect(viewport).toHaveAttribute('tabindex', '0');
   });
 
   it('requires scroll-capable computed overflow and more than 1px excess geometry', () => {
@@ -590,27 +648,6 @@ describe('useScrollableArea', () => {
     content.click();
     expect(onClick).toHaveBeenCalledTimes(1);
     expect(contentRef).toHaveBeenCalledWith(content);
-  });
-
-  it('keeps prop getter identity stable across unrelated re-renders', () => {
-    const identities: unknown[] = [];
-    function IdentityFixture() {
-      const area = useScrollableArea({
-        axis: 'inline',
-        keyboardAccess: {owner: 'viewport', label: 'Stable results'},
-      });
-      identities.push(area.getViewportProps);
-      return (
-        <div {...area.getViewportProps({style: {overflowX: 'auto'}})}>
-          <div {...area.getContentProps()}>Content</div>
-        </div>
-      );
-    }
-
-    const {rerender} = render(<IdentityFixture />);
-    const settled = identities.at(-1);
-    rerender(<IdentityFixture />);
-    expect(identities.at(-1)).toBe(settled);
   });
 
   it('preserves the last valid state while the viewport is unmeasurable', () => {

@@ -5,20 +5,19 @@
  *
  * `listThemes()` intentionally keeps its historical synchronous, bundled-only
  * contract. Project-aware callers use `listAvailableThemes()`, which asks
- * Project for the bundled catalog plus every installed integration catalog.
+ * Project for the bundled themes plus every installed integration theme root.
  */
 
 import {Project} from '../../foundation/config/project.mjs';
 import {
   BUNDLED_THEME_PACKAGE,
-  MANIFEST_PATH,
   THEMES_DIR,
   discoverBundledThemes,
 } from '../../foundation/discovery/theme-discovery.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
-export {BUNDLED_THEME_PACKAGE, MANIFEST_PATH, THEMES_DIR};
+export {BUNDLED_THEME_PACKAGE, THEMES_DIR};
 
 /**
  * A bundled theme entry kept for the historical public `listThemes()` helper.
@@ -55,7 +54,7 @@ function availableBundledThemes() {
 /**
  * Load available themes with any package-owned integration issues found while
  * discovering them. The issue set lets a package-scoped lookup distinguish an
- * absent theme from an installed package whose catalog is broken.
+ * absent theme from an installed package whose theme descriptors are broken.
  * @param {string} cwd
  * @returns {Promise<{themes: import('../../foundation/discovery/theme-discovery.mjs').DiscoveredTheme[], issues: Array<import('../../foundation/integrations/issue').AstryxIntegrationIssue & {package: string}>}>}
  */
@@ -71,7 +70,7 @@ async function availableThemeState(cwd) {
 
 /**
  * Bundled themes plus source themes from integrations installed in `cwd`.
- * A project/config load failure degrades to the bundled catalog, preserving the
+ * A project/config load failure degrades to the bundled set, preserving the
  * command's historical usefulness outside a configured project.
  * @param {string} [cwd]
  * @returns {Promise<import('../../foundation/discovery/theme-discovery.mjs').DiscoveredTheme[]>}

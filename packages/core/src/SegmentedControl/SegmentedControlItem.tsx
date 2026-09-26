@@ -33,6 +33,7 @@ import {mergeProps, composeEventHandlers} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 
 export interface SegmentedControlItemProps extends BaseProps<HTMLButtonElement> {
   ref?: React.Ref<HTMLButtonElement>;
@@ -90,14 +91,6 @@ const styles = stylex.create({
     transitionProperty: 'color, background-color, box-shadow',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-  },
-  hover: {
-    backgroundColor: {
-      default: null,
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': colorVars['--color-overlay-hover'],
-      },
-    },
   },
   selected: {
     // Forced colors (Windows High Contrast) strips the painted surface fill
@@ -248,7 +241,11 @@ export function SegmentedControlItem({
           sizeStyles[size],
           isFill && styles.fill,
           isSelected && styles.selected,
-          !isSelected && !isItemDisabled && styles.hover,
+          // The shared hover and pressed overlay, on the segments a press can
+          // change: the selected segment keeps its raised surface as it is.
+          !isSelected &&
+            !isItemDisabled &&
+            interactionOverlayStyles.backgroundColor,
           isItemDisabled && styles.disabled,
           xstyle,
         ),

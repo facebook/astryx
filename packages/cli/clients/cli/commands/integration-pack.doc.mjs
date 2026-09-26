@@ -5,7 +5,7 @@ export const doc = {
   type: 'command',
   name: 'integration pack',
   displayName: 'astryx integration pack',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Prove the packed integration is what consumers receive',
   description:
     'Runs the package lifecycle, packs with npm, checks every required contribution file against the real tarball, extracts it into a scratch consumer, and compares the local and packed contribution inventories through one shared contract.',

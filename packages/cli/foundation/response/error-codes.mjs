@@ -177,7 +177,7 @@ export const ERROR_CODES = Object.freeze({
   // ── Filesystem ───────────────────────────────────────────────────
   /** A required input file did not exist. */
   ERR_FILE_NOT_FOUND: 'ERR_FILE_NOT_FOUND',
-  /** Refused to overwrite an existing file in non-interactive mode. */
+  /** Refused to overwrite an existing file. */
   ERR_FILE_EXISTS: 'ERR_FILE_EXISTS',
   /** A path escaped its allowed root, or a name contained traversal markers. */
   ERR_PATH_TRAVERSAL: 'ERR_PATH_TRAVERSAL',
@@ -185,7 +185,7 @@ export const ERROR_CODES = Object.freeze({
   ERR_WRITE_FAILED: 'ERR_WRITE_FAILED',
 
   // ── Theme build ──────────────────────────────────────────────────
-  /** A theme definition or contributed theme catalog is invalid. */
+  /** A theme definition or contributed theme descriptor is invalid. */
   ERR_THEME_INVALID: 'ERR_THEME_INVALID',
   /** A theme file could not be loaded / parsed into a defineTheme result. */
   ERR_THEME_LOAD: 'ERR_THEME_LOAD',

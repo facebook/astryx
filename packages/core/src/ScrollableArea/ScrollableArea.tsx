@@ -12,6 +12,7 @@
  * - /packages/core/src/ScrollableArea/ScrollableArea.test.tsx
  * - /packages/core/src/ScrollableArea/ScrollableArea.doc.mjs
  * - /apps/storybook/stories/ScrollableArea.stories.tsx
+ * - /packages/cli/assets/templates/blocks/components/ScrollableArea/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';

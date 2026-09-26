@@ -14,7 +14,7 @@
  * @position Leaf under api/docs. Sibling of detail; both share _adapter.mjs.
  */
 
-import {pathToFileURL} from 'node:url';
+import {loadTopicFile} from '../../../foundation/doc-compiler/read.mjs';
 import {loadDocsCatalog} from '../_adapter.mjs';
 
 /**
@@ -29,12 +29,8 @@ export async function list({cwd} = {}) {
   for (const entry of catalog.entries()) {
     let description = entry.description ?? '';
     if (entry.description == null) {
-      try {
-        const mod = await import(pathToFileURL(entry.path).href);
-        description = (mod.docs ?? mod.default)?.description ?? '';
-      } catch {
-        description = '';
-      }
+      const file = await loadTopicFile(entry.path, null);
+      description = file.doc?.description ?? '';
     }
     /** @type {import('../docs.type.mjs').DocsListEntry} */
     const listed = {

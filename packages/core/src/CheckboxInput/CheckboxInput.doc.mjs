@@ -137,6 +137,17 @@ export const docs = {
     ],
   },
   usage: {
+    accessibility: [
+      {
+        name: 'Checkbox box',
+        category: 'Color contrast',
+        criterion: '1.4.11 Non-text Contrast',
+        requirement: '3:1',
+        states: ['Rest', 'Hover', 'Pointer down', 'Checked'],
+        description:
+          'The box edge (unchecked) and fill (checked) must have at least 3:1 contrast with the surface behind them. For Hover and Pointer down, measure the final colors after the tint and the pressed overlay are applied.',
+      },
+    ],
     description: 'CheckboxInput toggles a single on/off value. Use it for settings like "Enable notifications", terms acceptance, or opt-in choices. For multiple checkboxes in a group, use CheckboxList instead.',
     bestPractices: [
       { guidance: true, description: 'Always provide a visible label so the user knows what they are toggling. Use isLabelHidden only when surrounding context makes it obvious.' },

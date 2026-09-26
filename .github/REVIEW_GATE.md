@@ -24,11 +24,11 @@ neutral yellow "waiting" signal, not a red failure).
 
 Any PR that creates, changes, or archives a `current` architecture, component,
 family, design, or system spec waits on `spec-owner-approval` for its exact
-current head. `cixzhang` or `imdreamrunner` can approve every record kind.
-Current design records and normative design assets may also be approved by any
-handle in `.github/DESIGNOWNERS`. Mixed PRs still require `cixzhang` or
-`imdreamrunner` for non-design current records. Same-repository owner reviews
-update the exact-head approval automatically. Fork review events cannot write
+current head. Any handle in `.github/ENGOWNERS` can approve every record kind.
+Current design and theme records and normative design assets may also be approved
+by any handle in `.github/DESIGNOWNERS`. Mixed PRs still require an ENGOWNER for
+non-design current records. Same-repository owner reviews update the exact-head
+approval automatically. Fork review events cannot write
 with their read-only token, so an approver uses an issue comment containing
 `/approve-spec <full-head-sha>` instead; that command runs from the trusted
 default branch and a new commit invalidates it.
@@ -55,9 +55,8 @@ head **for the design-approval group only**. The attestation is published only
 for a `.github/DESIGNOWNERS` handle, and it is read back only for a handle that
 is still in that file — a marker left by someone since removed, or published
 before this rule existed, authorizes nothing. It satisfies no other group: the
-spec and theme groups always need a real exact-head review or command from
-someone in their own list. A spec or engineering owner cannot attest their own
-head.
+non-design and theme groups always need a real exact-head review or command from
+someone in their own list. An engineering owner cannot attest their own head.
 
 The attestation does not grant auto-merge by itself. The existing gate may enable
 squash auto-merge only when every changed path is a recognized spec record,
@@ -82,11 +81,11 @@ CI and never gain this auto-merge path.
 
 ## Sources of truth
 
-| File                            | Meaning                                                          |
-| ------------------------------- | ---------------------------------------------------------------- |
-| `.github/ENGOWNERS`             | Engineering team. Self-serve **code**.                           |
-| `.github/DESIGNOWNERS`          | Design team. Self-serve **design**. Checked first.               |
-| `.github/CODEOWNERS` (`*` line) | Who can **clear** the code gate (and native review requirement). |
+| File                            | Meaning                                                                     |
+| ------------------------------- | --------------------------------------------------------------------------- |
+| `.github/ENGOWNERS`             | Engineering team. Self-serve **code** and approve every spec kind.          |
+| `.github/DESIGNOWNERS`          | Design team. Self-serve **design** and approve visual specs. Checked first. |
+| `.github/CODEOWNERS` (`*` line) | Who can **clear** the code gate (and native review requirement).            |
 
 Author bucket is resolved in order: **design owner → eng owner → contributor.**
 A handle in `DESIGNOWNERS` is treated as a design owner even if also an eng

@@ -12,6 +12,7 @@
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {hasPressedArm} from '../__tests__/pressState';
 import {TabList} from './TabList';
 import type {TabListProps} from './TabList';
 import {Tab} from './Tab';
@@ -1513,5 +1514,70 @@ describe('TabList ARIA pattern — any other role', () => {
       'aria-current',
       'true',
     );
+  });
+});
+
+describe('pressed state', () => {
+  it('paints the pressed overlay on the tab surface while the tab is pressed', () => {
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <Tab value="settings" label="Settings" />
+      </TabList>,
+    );
+    const tab = screen.getByRole('button', {name: 'Settings'});
+    // The hover surface is a child layer read off the tab; the press paints
+    // the same layer, so the assertion is on that layer.
+    const surface = tab.querySelector('span[aria-hidden="true"]');
+    if (surface == null) {
+      throw new Error('the tab has no hover surface to press');
+    }
+    expect(hasPressedArm(surface)).toBe(true);
+  });
+
+  it('does not activate a disabled button tab or call its handler', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const onClick = vi.fn();
+    render(
+      <TabList value="home" onChange={onChange}>
+        <Tab value="home" label="Home" />
+        <Tab
+          value="settings"
+          label="Settings"
+          aria-disabled="true"
+          onClick={onClick}
+        />
+      </TabList>,
+    );
+    const tab = screen.getByRole('button', {name: 'Settings'});
+    await user.click(tab);
+    expect(onClick).not.toHaveBeenCalled();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('removes navigation from a disabled link tab', () => {
+    const onChange = vi.fn();
+    const {container} = render(
+      <LinkProvider component={CustomLink}>
+        <TabList value="home" onChange={onChange}>
+          <Tab value="home" label="Home" />
+          <Tab
+            value="settings"
+            label="Settings"
+            href="/settings"
+            aria-disabled="true"
+          />
+        </TabList>
+      </LinkProvider>,
+    );
+    const tab = container.querySelector('a');
+    if (tab == null) {
+      throw new Error('the disabled link tab did not render an anchor');
+    }
+    expect(tab).not.toHaveAttribute('data-custom-link');
+    expect(tab).not.toHaveAttribute('href');
+    fireEvent.click(tab);
+    expect(onChange).not.toHaveBeenCalled();
   });
 });

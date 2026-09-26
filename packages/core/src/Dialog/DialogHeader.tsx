@@ -37,9 +37,11 @@ const styles = stylex.create({
     justifyContent: 'space-between',
     gap: spacingVars['--spacing-3'],
   },
-  // Compensate for the icon button's visual padding on the actions area
-  actionsCompensation: {
+  // Compensate for the medium icon button's visual padding on the end slot.
+  endBlockEdgeCompensation: {
     marginBlock: `calc(-1 * ${spacingVars['--spacing-2']})`,
+  },
+  endInlineEdgeCompensation: {
     marginInlineEnd: `calc(-1 * ${spacingVars['--spacing-2']})`,
   },
   titleWrapper: {
@@ -99,6 +101,14 @@ export interface DialogHeaderProps extends BaseProps<HTMLDivElement> {
   endContent?: ReactNode;
 
   /**
+   * Overrides automatic end-slot compensation. When omitted, the slot keeps its
+   * existing behavior: rendering the close action applies block and logical
+   * inline-end compensation. Use `inline`, `block`, or `all` to select the axes
+   * explicitly.
+   */
+  endContentEdgeCompensation?: 'inline' | 'block' | 'all';
+
+  /**
    * Adds a themed border at the bottom edge.
    * When false, spacing collapse is applied automatically for seamless visual flow.
    * Defaults to the parent Layout's `defaultHasDividers` context value.
@@ -134,6 +144,7 @@ export function DialogHeader({
   onOpenChange,
   startContent,
   endContent,
+  endContentEdgeCompensation,
   hasDivider,
   xstyle,
   className,
@@ -146,6 +157,16 @@ export function DialogHeader({
   const dialogContext = useDialogContext();
   const shouldAutoFocus = dialogContext?.isInline !== true;
   const titleId = dialogContext?.titleId;
+  const shouldCompensateEndBlock =
+    endContentEdgeCompensation == null
+      ? onOpenChange != null
+      : endContentEdgeCompensation === 'block' ||
+        endContentEdgeCompensation === 'all';
+  const shouldCompensateEndInline =
+    endContentEdgeCompensation == null
+      ? onOpenChange != null
+      : endContentEdgeCompensation === 'inline' ||
+        endContentEdgeCompensation === 'all';
 
   // Auto-focus the title when mounted for screen reader accessibility.
   // Inline dialogs are documentation/showcase previews, so suppress focus to
@@ -172,7 +193,13 @@ export function DialogHeader({
           stylex.props(styles.container),
         )}>
         {startContent && (
-          <div {...stylex.props(styles.actions)}>{startContent}</div>
+          <div
+            {...mergeProps(
+              themeProps('dialog-header-start-content'),
+              stylex.props(styles.actions),
+            )}>
+            {startContent}
+          </div>
         )}
         <div
           {...mergeProps(
@@ -195,9 +222,13 @@ export function DialogHeader({
         </div>
         {(endContent || onOpenChange) && (
           <div
-            {...stylex.props(
-              styles.actions,
-              onOpenChange && styles.actionsCompensation,
+            {...mergeProps(
+              themeProps('dialog-header-end-content'),
+              stylex.props(
+                styles.actions,
+                shouldCompensateEndBlock && styles.endBlockEdgeCompensation,
+                shouldCompensateEndInline && styles.endInlineEdgeCompensation,
+              ),
             )}>
             {endContent}
             {onOpenChange && (

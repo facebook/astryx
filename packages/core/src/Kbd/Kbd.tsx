@@ -4,8 +4,8 @@
 
 /**
  * @file Kbd.tsx
- * @input Uses React, StyleX, theme tokens
- * @output Exports Kbd component and KbdProps
+ * @input Uses React, StyleX, theme tokens, shortcut key names and aliases
+ * @output Exports Kbd component and KbdProps with canonical shortcut labels
  * @position Core implementation; renders styled keyboard shortcut indicators
  *
  * SYNC: When modified, update:
@@ -61,20 +61,25 @@ const styles = stylex.create({
  * Note: `mod` is not in this map — it resolves dynamically via platform
  * detection inside the component.
  */
-const KEY_DISPLAY: Record<string, string> = {
-  ctrl: '\u2303', // ⌃
-  alt: '\u2325', // ⌥
-  shift: '\u21E7', // ⇧
-  enter: '\u21B5', // ↵
-  backspace: '\u232B', // ⌫
-  escape: 'Esc',
-  tab: '\u21E5', // ⇥
-  up: '\u2191',
-  down: '\u2193',
-  left: '\u2190',
-  right: '\u2192',
-  plus: '+',
-};
+const KEY_DISPLAY = new Map<string, string>([
+  ['ctrl', '\u2303'], // ⌃
+  ['alt', '\u2325'], // ⌥
+  ['shift', '\u21E7'], // ⇧
+  ['enter', '\u21B5'], // ↵
+  ['backspace', '\u232B'], // ⌫
+  ['escape', 'Esc'],
+  ['tab', '\u21E5'], // ⇥
+  ['up', '\u2191'],
+  ['down', '\u2193'],
+  ['left', '\u2190'],
+  ['right', '\u2192'],
+  ['plus', '+'],
+]);
+
+const KBD_KEY_ALIASES = new Map<string, string>([
+  ['esc', 'escape'],
+  ['return', 'enter'],
+]);
 
 /**
  * Resolves a key name to its display string. Handles the platform-aware
@@ -85,7 +90,7 @@ function getKeyDisplay(key: string, isMac: boolean): string {
   if (key === 'mod') {
     return isMac ? '\u2318' : 'Ctrl';
   }
-  return KEY_DISPLAY[key] ?? key.toUpperCase();
+  return KEY_DISPLAY.get(key) ?? key.toUpperCase();
 }
 
 /**
@@ -93,26 +98,26 @@ function getKeyDisplay(key: string, isMac: boolean): string {
  * (⌘, ⇧, ↵, …) that assistive tech cannot announce meaningfully, so the
  * accessible name for the shortcut is built from these words instead.
  */
-const KEY_LABEL: Record<string, string> = {
-  ctrl: 'Control',
-  alt: 'Alt',
-  shift: 'Shift',
-  enter: 'Enter',
-  backspace: 'Backspace',
-  escape: 'Escape',
-  tab: 'Tab',
-  up: 'Up arrow',
-  down: 'Down arrow',
-  left: 'Left arrow',
-  right: 'Right arrow',
-  plus: 'Plus',
-};
+const KEY_LABEL = new Map<string, string>([
+  ['ctrl', 'Control'],
+  ['alt', 'Alt'],
+  ['shift', 'Shift'],
+  ['enter', 'Enter'],
+  ['backspace', 'Backspace'],
+  ['escape', 'Escape'],
+  ['tab', 'Tab'],
+  ['up', 'Up arrow'],
+  ['down', 'Down arrow'],
+  ['left', 'Left arrow'],
+  ['right', 'Right arrow'],
+  ['plus', 'Plus'],
+]);
 
 function getKeyLabel(key: string, isMac: boolean): string {
   if (key === 'mod') {
     return isMac ? 'Command' : 'Control';
   }
-  return KEY_LABEL[key] ?? key.toUpperCase();
+  return KEY_LABEL.get(key) ?? key.toUpperCase();
 }
 
 function subscribeToPlatformChanges(): () => void {
@@ -127,7 +132,9 @@ export interface KbdProps extends BaseProps<HTMLSpanElement> {
   ref?: React.Ref<HTMLSpanElement>;
   /**
    * Keyboard shortcut string. Use "+" to separate keys.
-   * Special keys: mod (Cmd on Mac), ctrl, alt, shift, enter, backspace, escape.
+   * Special keys: mod (Cmd on Mac), ctrl, alt, shift, enter, backspace, escape,
+   * tab, up, down, left, and right.
+   * Aliases: "esc" for "escape" and "return" for "enter".
    * Use "plus" to render a literal "+" key (e.g. "shift+plus").
    *
    * @example
@@ -163,11 +170,24 @@ export function Kbd({keys, ref, xstyle, className, style, ...rest}: KbdProps) {
     getServerPlatformSnapshot,
   );
 
-  const parts = keys.split('+').map(key => key.trim().toLowerCase());
+  const keyOccurrences = new Map<string, number>();
+  const parts = keys
+    .split('+')
+    .map(key => key.trim().toLowerCase())
+    .map(sourceKey => {
+      const occurrence = keyOccurrences.get(sourceKey) ?? 0;
+      keyOccurrences.set(sourceKey, occurrence + 1);
+      return {
+        key: KBD_KEY_ALIASES.get(sourceKey) ?? sourceKey,
+        reactKey: `${sourceKey}:${occurrence}`,
+      };
+    });
 
   // Screen-reader name: the joined spoken labels (e.g. "Command + K"), since
   // the visual glyphs below are announced meaninglessly by assistive tech.
-  const accessibleName = parts.map(key => getKeyLabel(key, isMac)).join(' + ');
+  const accessibleName = parts
+    .map(({key}) => getKeyLabel(key, isMac))
+    .join(' + ');
 
   return (
     <span
@@ -181,8 +201,8 @@ export function Kbd({keys, ref, xstyle, className, style, ...rest}: KbdProps) {
         className,
         style,
       )}>
-      {parts.map(key => (
-        <kbd key={key} aria-hidden="true" {...stylex.props(styles.kbd)}>
+      {parts.map(({key, reactKey}) => (
+        <kbd key={reactKey} aria-hidden="true" {...stylex.props(styles.kbd)}>
           {getKeyDisplay(key, isMac)}
         </kbd>
       ))}

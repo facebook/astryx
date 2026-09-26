@@ -1,10 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file theme build API — compile a defineTheme file to CSS + JS + .d.ts.
+ * @file theme build API — compile standalone themes or one selected family.
  *
- * `themeBuild(file, options, ctx)` is the programmatic surface behind
- * `astryx theme build`. It reads a theme file that uses defineTheme() and, via
+ * `themeBuild` and `themeBuildFamily` share the same loader, compiler,
+ * serializers, check, and writer. They read defineTheme() sources and, via
  * @astryxdesign/core's shared generator (the SINGLE source of truth so the
  * build emits the exact CSS the `<Theme>` runtime does), writes:
  * - A CSS file with token overrides and component styles
@@ -12,9 +12,10 @@
  * - A .d.ts (plus an optional .variants.d.ts for custom prop values)
  *
  * It performs the writes and returns a `theme.build` receipt — its `warnings`
- * carry override problems and any fonts the theme names but does not load
- * (font-warning.mjs) — or `null` when the theme produced no CSS (nothing to
- * build). Errors throw AstryxError (with
+ * carry override problems, every declaration core's generator dropped because
+ * its value could not stay one CSS declaration, and any fonts the theme names
+ * but does not load (font-warning.mjs) — or `null` when the theme produced no
+ * CSS (nothing to build). Errors throw AstryxError (with
  * a stable code). Human progress is emitted through the shared `logger`
  * (silent by default), so the CLI keeps its exact output while a programmatic
  * caller stays quiet.
@@ -39,7 +40,9 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {fileURLToPath} from 'node:url';
+import {isBuiltin} from 'node:module';
+import {fileURLToPath, pathToFileURL} from 'node:url';
+import {parse} from '@babel/parser';
 import {createJiti} from 'jiti';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {CLI_ROOT, findCoreDir} from '../../../foundation/fs/paths.mjs';
@@ -58,6 +61,7 @@ import {
 } from '../../../foundation/discovery/theming-targets.mjs';
 import {collectUnloadedFonts, formatFontLoadingHelp} from './font-warning.mjs';
 import {interceptCore} from './core-interception.mjs';
+import {generateFamilyCSS, resolveThemeFamily} from './family.mjs';
 
 // Import shared theme processing from core. `astryx theme build` MUST produce the
 // exact same CSS as the `<Theme>` runtime, so it has exactly one generation
@@ -197,6 +201,52 @@ function normalizeForCompare(content) {
       return !t.startsWith('Command:');
     })
     .join('\n');
+}
+
+/** @param {Array<{dest: string, content: string}>} writes @param {string} cwd @returns {Array<{path: string, reason: 'missing' | 'outdated'}>} */
+function staleBuildOutputs(writes, cwd) {
+  /** @type {Array<{path: string, reason: 'missing' | 'outdated'}>} */
+  const stale = [];
+  for (const write of writes) {
+    const rel = path.relative(cwd, write.dest);
+    if (!fs.existsSync(write.dest)) {
+      stale.push({path: rel, reason: 'missing'});
+      continue;
+    }
+    const onDisk = fs.readFileSync(write.dest, 'utf8');
+    if (normalizeForCompare(onDisk) !== normalizeForCompare(write.content)) {
+      stale.push({path: rel, reason: 'outdated'});
+    }
+  }
+  return stale;
+}
+
+/** @param {Array<{dest: string, content: string}>} writes */
+function writeBuildOutputs(writes) {
+  if (writes.length === 0) return;
+  /** @type {Array<{tmp: string, dest: string}>} */
+  const staged = [];
+  try {
+    fs.mkdirSync(path.dirname(writes[0].dest), {recursive: true});
+    for (const write of writes) {
+      const tmp = `${write.dest}.${process.pid}.tmp`;
+      fs.writeFileSync(tmp, write.content);
+      staged.push({tmp, dest: write.dest});
+    }
+    for (const stagedWrite of staged) {
+      fs.renameSync(stagedWrite.tmp, stagedWrite.dest);
+    }
+  } catch (error) {
+    for (const stagedWrite of staged) {
+      try {
+        fs.rmSync(stagedWrite.tmp, {force: true});
+      } catch {
+        // Best effort: the command still fails and never reports success.
+      }
+    }
+    const message = `Failed to write theme outputs: ${/** @type {Error} */ (error).message}`;
+    throw new AstryxError(message, undefined, ERROR_CODES.ERR_WRITE_FAILED);
+  }
 }
 
 /**
@@ -1157,7 +1207,85 @@ const THEME_MODULE_EXTENSIONS = [
   '.js',
   '.json',
 ];
-
+// prettier-ignore
+const registryGraphError = (/** @type {string} */ message) => new AstryxError(message, undefined, ERROR_CODES.ERR_THEME_INVALID);
+// prettier-ignore
+function parseRegistryModule(/** @type {string} */ source, /** @type {string} */ filePath) {
+  try { return parse(source, {sourceType: 'unambiguous', plugins: ['typescript', 'jsx', 'decorators-legacy', 'importAttributes']}); }
+  catch (error) { throw registryGraphError(`Cannot inspect registry module ${filePath}: ${error instanceof Error ? error.message : String(error)}`); }
+}
+// prettier-ignore
+function moduleDependencies(/** @type {string} */ source, /** @type {string} */ filePath) {
+  const ast = parseRegistryModule(source, filePath);
+  /** @type {Array<{specifier: string, commonJs: boolean, imports: string[]}>} */ const found = [];
+  /** @param {any} node */ const literal = node => typeof node?.value === 'string' ? node.value : node?.type === 'TemplateLiteral' && node.expressions.length === 0 ? node.quasis[0]?.value?.cooked : null;
+  /** @param {any} node */ const visit = node => {
+    if (!node || typeof node !== 'object') return;
+    if (['ImportDeclaration', 'ExportNamedDeclaration', 'ExportAllDeclaration'].includes(node.type) && node.importKind !== 'type' && typeof node.source?.value === 'string') {
+      const specifiers = /** @type {any[]} */ (node.specifiers);
+      const imports = node.type === 'ImportDeclaration' ? specifiers.filter(item => item.importKind !== 'type' && item.type !== 'ImportNamespaceSpecifier').map(item => item.type === 'ImportDefaultSpecifier' ? 'default' : item.imported?.name ?? item.imported?.value) : node.type === 'ExportNamedDeclaration' ? specifiers.filter(item => item.exportKind !== 'type' && item.type === 'ExportSpecifier').map(item => item.local?.name ?? item.local?.value) : [];
+      found.push({specifier: node.source.value, commonJs: false, imports});
+    }
+    const dependency = node.type === 'ImportExpression' ? node.source : node.type === 'CallExpression' && (node.callee?.type === 'Import' || node.callee?.name === 'require') ? node.arguments?.[0] : null;
+    if (dependency) { const specifier = literal(dependency); if (specifier == null) throw registryGraphError(`Registry module ${filePath} has a non-static dependency; family output cannot prove that graph is resolvable and CSS-free.`); found.push({specifier, commonJs: node.callee?.name === 'require', imports: []}); }
+    for (const value of Object.values(node)) if (Array.isArray(value)) value.forEach(child => child?.type && visit(child)); else if (value?.type) visit(value);
+  };
+  visit(ast); return found;
+}
+// prettier-ignore
+function resolveRegistryModule(/** @type {string} */ specifier, /** @type {string} */ parentPath, commonJs = false) {
+  if (isBuiltin(specifier) || specifier.startsWith('node:')) return null;
+  let resolved;
+  try {
+    const resolver = createJiti(parentPath, {extensions: THEME_MODULE_EXTENSIONS});
+    if (commonJs) resolved = resolver.resolve(specifier);
+    else if (specifier.startsWith('.')) resolved = fileURLToPath(new URL(specifier, pathToFileURL(parentPath)));
+    else if (path.isAbsolute(specifier)) resolved = specifier;
+    else { const url = resolver.esmResolve(specifier); resolved = url.startsWith('file:') ? fileURLToPath(url) : url; }
+  } catch (error) { throw registryGraphError(`Cannot resolve registry import "${specifier}" from ${parentPath}: ${error instanceof Error ? error.message : String(error)}`); }
+  if (!fs.existsSync(resolved) || !fs.statSync(resolved).isFile()) throw registryGraphError(`Cannot resolve registry import "${specifier}" from ${parentPath}.`);
+  return fs.realpathSync(resolved);
+}
+/** @returns {boolean | null} */
+// prettier-ignore
+function hasNamedExport(/** @type {string} */ file, /** @type {string} */ name, seen = new Set()) {
+  const key = `${file}\0${name}`; if (seen.has(key)) return false; seen.add(key);
+  const ast = parseRegistryModule(fs.readFileSync(file, 'utf8'), file); let esm = false; let unknown = false;
+  for (const node of /** @type {any[]} */ (ast.program.body)) {
+    if (node.type === 'ExportDefaultDeclaration') { esm = true; if (name === 'default') return true; }
+    if (node.type === 'ExportNamedDeclaration') {
+      esm = true; const declaration = /** @type {any} */ (node.declaration);
+      if ((declaration?.id?.name === name) || (declaration?.type === 'VariableDeclaration' && declaration.declarations.some((/** @type {any} */ item) => item.id?.name === name))) return true;
+      for (const specifier of /** @type {any[]} */ (node.specifiers)) if ((specifier.exported?.name ?? specifier.exported?.value) === name) {
+        if (!node.source || specifier.type === 'ExportNamespaceSpecifier') return true;
+        const target = resolveRegistryModule(node.source.value, file); return target ? hasNamedExport(target, specifier.local?.name ?? specifier.local?.value, seen) : false;
+      }
+    }
+    if (node.type === 'ExportAllDeclaration') { esm = true; const target = resolveRegistryModule(node.source.value, file); const status = target ? hasNamedExport(target, name, seen) : false; if (status === true) return true; if (status === null) unknown = true; }
+  }
+  return esm ? unknown ? null : false : null;
+}
+// prettier-ignore
+async function validateRegistryGraphs(/** @type {Array<{specifier: string, exportName: string}>} */ registries, /** @type {string} */ aggregatePath) {
+  /** @type {Array<{specifier: string, parent: string, commonJs: boolean, imports: string[], root?: {exportName: string}}>} */ const pending = registries.map(root => ({specifier: root.specifier, parent: aggregatePath, commonJs: false, imports: [root.exportName], root}));
+  /** @type {Array<{file: string, exportName: string}>} */ const runtimeChecks = []; const seen = new Set();
+  while (pending.length > 0) {
+    const current = pending.pop(); if (!current) break; const {specifier, parent, commonJs, imports, root} = current;
+    if (/\.css(?:$|[?#])/i.test(specifier)) throw registryGraphError(`Theme family registry graph imports CSS: ${specifier}`);
+    const file = resolveRegistryModule(specifier, parent, commonJs); if (!file) continue;
+    if (/\.css$/i.test(file)) throw registryGraphError(`Theme family registry graph imports CSS: ${file}`);
+    const external = file.split(path.sep).includes('node_modules');
+    for (const name of imports) if (external) runtimeChecks.push({file, exportName: name}); else { const named = hasNamedExport(file, name); if (named === false) throw registryGraphError(`Family registry ${file} does not export "${name}".`); if (named === null) runtimeChecks.push({file, exportName: name}); }
+    if (root) runtimeChecks.push({file, exportName: root.exportName});
+    if (seen.has(file)) continue; seen.add(file);
+    if (/\.[cm]?[jt]sx?$/i.test(file)) for (const edge of moduleDependencies(fs.readFileSync(file, 'utf8'), file)) pending.push({...edge, parent: file});
+  }
+  for (const [index, root] of runtimeChecks.entries()) {
+    let exports; try { exports = await import(`${pathToFileURL(root.file).href}?astryx-family-check=${Date.now()}-${index}`); }
+    catch (error) { throw registryGraphError(`Cannot import family registry ${root.file}: ${error instanceof Error ? error.message : String(error)}`); }
+    if (!(root.exportName in exports)) throw registryGraphError(`Family registry ${root.file} does not export "${root.exportName}".`);
+  }
+}
 /**
  * Errors that mean "the synchronous loader cannot evaluate this module", as
  * opposed to "this module is broken". Only the former may fall back to the
@@ -1196,23 +1324,27 @@ function isSyncLoaderLimitation(error) {
  * author's adaptations unobserved. The sync path transpiles it, so the wrapped
  * core reaches inside installed packages too.
  *
- * A module the sync path cannot evaluate at all (top-level await) still has to
- * load, so it falls back to the async import — but that fallback is DEGRADED:
- * package sources on that path resolve their own core again. The caller is
- * told, and treats anything it could not observe as unproven rather than
- * assuming it is clean.
+ * A module the sync path cannot evaluate (top-level await) is force-transpiled
+ * through jiti's asynchronous evaluator. That keeps interception active for
+ * the entry and captures its exact `extends` value; relative dependencies may
+ * use native ESM, so family mode binds those objects back to the exact selected
+ * source export and old-Core adaptation checks keep treating that path as
+ * degraded/fail-closed.
  *
  * @param {string} filePath
  * @param {import('./core-interception.mjs').CoreInterception} [interception]
  * @returns {Promise<{theme: any, degraded: {topLevelAwait: boolean, commonJs: boolean}}>}
  */
-async function importThemeModule(filePath, interception) {
-  const jiti = createJiti(import.meta.url, {
-    moduleCache: false,
-    jsx: true,
-    extensions: THEME_MODULE_EXTENSIONS,
-    ...(interception ? {virtualModules: interception.modules} : {}),
-  });
+// prettier-ignore
+async function importThemeModule(filePath, interception, /** @type {any} */ loader = undefined) {
+  const jiti =
+    loader ??
+    createJiti(import.meta.url, {
+      moduleCache: false,
+      jsx: true,
+      extensions: THEME_MODULE_EXTENSIONS,
+      ...(interception ? {virtualModules: interception.modules} : {}),
+    });
 
   /** @type {any} */
   let mod;
@@ -1232,7 +1364,17 @@ async function importThemeModule(filePath, interception) {
         // theme's own failure and belongs to the caller unchanged.
         if (!isSyncLoaderLimitation(error)) throw error;
         degraded.topLevelAwait = true;
-        mod = await jiti.import(filePath, {default: true});
+        // Force asynchronous transformation instead of native import: this
+        // keeps virtual Core interception active even when the module uses
+        // top-level await.
+        mod = await jiti.evalModule(fs.readFileSync(filePath, 'utf8'), {
+          id: filePath,
+          filename: filePath,
+          ext: path.extname(filePath),
+          cache: jiti.cache,
+          async: true,
+          forceTranspile: true,
+        });
       }
     } finally {
       commonJsPatch.undo();
@@ -1282,9 +1424,10 @@ function isThemeObject(value) {
  * @param {import('./core-interception.mjs').CoreInterception} [interception]
  * @returns {Promise<{theme: any, degraded: {topLevelAwait: boolean, commonJs: boolean}}>}
  */
-async function extractThemeDefinition(filePath, interception) {
+// prettier-ignore
+async function extractThemeDefinition(filePath, interception, /** @type {any} */ loader = undefined) {
   try {
-    return await importThemeModule(filePath, interception);
+    return await importThemeModule(filePath, interception, loader);
   } catch (jitiError) {
     try {
       return {
@@ -1352,26 +1495,45 @@ function extractThemeDefinitionLegacy(filePath) {
  * @param {string} filePath
  * @returns {{exportName: string, importPath: string} | null}
  */
-function extractIconInfo(filePath) {
+function extractRegistryInfo(filePath, field = 'icons', familyMode = false) {
   const content = fs.readFileSync(filePath, 'utf8');
-
-  // Find the icons field in defineTheme
-  const iconsMatch = content.match(/icons:\s*([a-zA-Z_][a-zA-Z0-9_]*)/);
-  if (!iconsMatch) return null;
-
-  const varName = /** @type {string} */ (iconsMatch[1]);
-
-  // Find the import for that variable
-  const importRegex = new RegExp(
-    `import\\s*{[^}]*\\b${varName}\\b[^}]*}\\s*from\\s*['"]([^'"]+)['"]`,
+  if (!familyMode) {
+    const fieldMatch = content.match(
+      new RegExp(`${field}:\\s*([a-zA-Z_][a-zA-Z0-9_]*)`),
+    );
+    if (!fieldMatch) return null;
+    const varName = fieldMatch[1];
+    const match = content.match(
+      new RegExp(
+        `import\\s*{[^}]*\\b${varName}\\b[^}]*}\\s*from\\s*['"]([^'"]+)['"]`,
+      ),
+    );
+    return match ? {exportName: varName, importPath: match[1]} : null;
+  }
+  const defineIndex = content.indexOf('defineTheme(');
+  if (defineIndex < 0) return null;
+  const themeSource = content.slice(defineIndex);
+  const explicit = themeSource.match(
+    new RegExp(`${field}:\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=[,}])`),
   );
-  const importMatch = content.match(importRegex);
-  if (!importMatch) return null;
-
-  return {
-    exportName: varName,
-    importPath: /** @type {string} */ (importMatch[1]),
-  };
+  const shorthand = themeSource.match(
+    new RegExp(`[,{]\\s*(${field})\\s*(?=[,}])`),
+  );
+  const varName = explicit?.[1] ?? shorthand?.[1];
+  if (!varName) return null;
+  for (const match of content.matchAll(
+    /import\s*{([^}]*)}\s*from\s*['"]([^'"]+)['"]/g,
+  )) {
+    for (const specifier of match[1].split(',')) {
+      const [exportName, localName = exportName] = specifier
+        .trim()
+        .split(/\s+as\s+/);
+      if (localName === varName) {
+        return {exportName, importPath: match[2]};
+      }
+    }
+  }
+  return null;
 }
 
 /**
@@ -1397,9 +1559,20 @@ function extractIconInfo(filePath) {
  * @param {any} themeDef
  * @param {{exportName: string, importPath: string} | null} iconInfo
  * @param {string} [iconsSpecifier] - Overrides the scraped icon import specifier.
+ * @param {{themeBinding?: string, iconBinding?: string, iconsExpression?: string, indicatorsExpression?: string, artifactBaseName?: string, exportIcons?: boolean}} [moduleOptions]
  * @returns {string}
  */
-function generateBuiltModule(themeDef, iconInfo, iconsSpecifier) {
+function generateBuiltModule(
+  themeDef,
+  iconInfo,
+  iconsSpecifier,
+  moduleOptions = {},
+) {
+  const themeBinding =
+    moduleOptions.themeBinding ?? `${toIdentifier(themeDef.name)}Theme`;
+  const iconBinding = moduleOptions.iconBinding ?? iconInfo?.exportName;
+  const artifactBaseName = moduleOptions.artifactBaseName ?? themeDef.name;
+  const exportIcons = moduleOptions.exportIcons ?? true;
   // Preserve the historical generated bytes when no override is supplied.
   // User-provided specifiers need string-literal encoding so quotes and
   // backslashes cannot produce invalid JavaScript.
@@ -1408,10 +1581,18 @@ function generateBuiltModule(themeDef, iconInfo, iconsSpecifier) {
       ? `'${iconInfo?.importPath}'`
       : JSON.stringify(iconsSpecifier);
   const iconImport = iconInfo
-    ? `import { ${iconInfo.exportName} } from ${renderedSpecifier};\n`
+    ? `import { ${iconInfo.exportName}${iconBinding === iconInfo.exportName ? '' : ` as ${iconBinding}`} } from ${renderedSpecifier};\n`
     : '';
-  const iconsField = iconInfo ? `  icons: ${iconInfo.exportName},` : '';
-  const iconReExport = iconInfo ? `\nexport { ${iconInfo.exportName} };\n` : '';
+  const iconsExpression =
+    moduleOptions.iconsExpression ?? (iconInfo ? iconBinding : undefined);
+  const iconsField = iconsExpression ? `  icons: ${iconsExpression},` : '';
+  const indicatorsField = moduleOptions.indicatorsExpression
+    ? `\n  indicators: ${moduleOptions.indicatorsExpression},`
+    : '';
+  const iconReExport =
+    iconInfo && exportIcons
+      ? `\nexport { ${iconBinding}${iconBinding === iconInfo.exportName ? '' : ` as ${iconInfo.exportName}`} };\n`
+      : '';
 
   // Resolve token values — tuples become light-dark() strings
   /** @type {Record<string, unknown>} */
@@ -1474,14 +1655,14 @@ function generateBuiltModule(themeDef, iconInfo, iconsSpecifier) {
  * ${themeDef.name} theme — built by \`${getCliInvocation()} theme build\`
  * Import the CSS file alongside this module:
  *
- *   import { ${toIdentifier(themeDef.name)}Theme } from './${themeDef.name}';
- *   import './${themeDef.name}.css';
+ *   import { ${themeBinding} } from './${artifactBaseName}';
+ *   import './${artifactBaseName}.css';
  */
-export const ${toIdentifier(themeDef.name)}Theme = {
+export const ${themeBinding} = {
   name: '${themeDef.name}',
   __built: true,
   tokens: ${tokensStr},
-${inheritableFields}${iconsField}
+${inheritableFields}${iconsField}${indicatorsField}
 };
 ${iconReExport}`;
 }
@@ -1491,14 +1672,23 @@ ${iconReExport}`;
  * @param {any} themeDef
  * @param {{exportName: string, importPath: string} | null} iconInfo
  * @param {string | null} variantsFileName
+ * @param {{themeBinding?: string, includeIconExport?: boolean, includeThemeImport?: boolean}} [typeOptions]
  * @returns {string}
  */
-function generateBuiltTypes(themeDef, iconInfo, variantsFileName) {
-  const iconType = iconInfo
-    ? `import type { IconRegistry } from '@astryxdesign/core/Icon';
+function generateBuiltTypes(
+  themeDef,
+  iconInfo,
+  variantsFileName,
+  typeOptions = {},
+) {
+  const themeBinding =
+    typeOptions.themeBinding ?? `${toIdentifier(themeDef.name)}Theme`;
+  const iconType =
+    iconInfo && (typeOptions.includeIconExport ?? true)
+      ? `import type { IconRegistry } from '@astryxdesign/core/Icon';
 export declare const ${iconInfo.exportName}: IconRegistry;
 `
-    : '';
+      : '';
   // Pull in the generated custom-variant augmentations so that importing the
   // theme's types also loads the module augmentations (otherwise the
   // `.variants.d.ts` is emitted but never referenced, and the custom variants
@@ -1507,9 +1697,11 @@ export declare const ${iconInfo.exportName}: IconRegistry;
     ? `/// <reference path="./${variantsFileName}" />
 `
     : '';
-  return `${variantsRef}import type { DefinedTheme } from '@astryxdesign/core/theme';
-${iconType}export declare const ${toIdentifier(themeDef.name)}Theme: DefinedTheme;
-`;
+  const themeImport =
+    (typeOptions.includeThemeImport ?? true)
+      ? `import type { DefinedTheme } from '@astryxdesign/core/theme';\n`
+      : '';
+  return `${variantsRef}${themeImport}${iconType}export declare const ${themeBinding}: DefinedTheme;\n`;
 }
 
 // =============================================================================
@@ -1679,7 +1871,7 @@ function validatePrivateVars(themeDef) {
           if (prop.startsWith('--_')) {
             errors.push(
               `Component "${component}" (${[key, ...path].join(' ')}) sets private var "${prop}". ` +
-                `Private vars (--_*) are internal — use standard CSS properties ` +
+                `Private vars (--_*) are internal; use standard CSS properties ` +
                 `(e.g. borderRadius, padding) instead. The pipeline expands them automatically.`,
             );
           }
@@ -1739,20 +1931,7 @@ function getThemeComponentLayers(themeDef) {
  */
 function validateCustomHeadingTypes(themeDef) {
   const layers = getThemeComponentLayers(themeDef);
-  const customTypes = new Set();
-  for (const {components} of layers) {
-    const headingRules = components.heading;
-    if (!headingRules || typeof headingRules !== 'object') continue;
-
-    for (const key of Object.keys(headingRules)) {
-      for (const pair of key.split('+')) {
-        const colon = pair.indexOf(':');
-        if (colon === -1 || pair.slice(0, colon) !== 'type') continue;
-        const value = pair.slice(colon + 1);
-        if (value && !BUILTIN_HEADING_TYPES.has(value)) customTypes.add(value);
-      }
-    }
-  }
+  const customTypes = customHeadingTypes(themeDef);
 
   const errors = [];
   for (const type of customTypes) {
@@ -1780,9 +1959,64 @@ function validateCustomHeadingTypes(themeDef) {
 }
 
 /**
+ * Custom Heading type names declared on the root or media-surface component
+ * maps: the names the generated `HeadingTypeMap` augmentation enrolls.
+ *
+ * @param {{components?: Record<string, Record<string, unknown>>}} themeDef
+ * @returns {Set<string>}
+ */
+function customHeadingTypes(themeDef) {
+  /** @type {Set<string>} */
+  const customTypes = new Set();
+  for (const {components} of getThemeComponentLayers(themeDef)) {
+    const headingRules = components.heading;
+    if (!headingRules || typeof headingRules !== 'object') continue;
+
+    for (const key of Object.keys(headingRules)) {
+      for (const pair of key.split('+')) {
+        const colon = pair.indexOf(':');
+        if (colon === -1 || pair.slice(0, colon) !== 'type') continue;
+        const value = pair.slice(colon + 1);
+        if (value && !BUILTIN_HEADING_TYPES.has(value)) customTypes.add(value);
+      }
+    }
+  }
+  return customTypes;
+}
+
+/**
+ * Custom Heading types with no standalone rule in the generated CSS. A type
+ * whose every declaration the compiler dropped still passes the source check,
+ * and its augmentation would then name a type that has no styles.
+ *
+ * @param {Set<string>} types
+ * @param {string} css - Generated root component and media-surface rules.
+ * @returns {string[]}
+ */
+function headingTypesWithoutEmittedRule(types, css) {
+  /** @type {string[]} */
+  const missing = [];
+  for (const type of types) {
+    const selector = `.astryx-heading[data-type="${type}"]`;
+    let emitted = false;
+    for (
+      let at = css.indexOf(selector);
+      at !== -1 && !emitted;
+      at = css.indexOf(selector, at + 1)
+    ) {
+      // A following attribute is a combined selector, not the standalone rule.
+      emitted = css[at + selector.length] !== '[';
+    }
+    if (!emitted) missing.push(type);
+  }
+  return missing;
+}
+
+/**
  * Return true when a style object contains a declaration that the theme
- * generator can emit. Empty pseudo blocks do not count: they produce no CSS
- * and would leave the generated type augmentation without a usable rule.
+ * generator can emit. Empty pseudo blocks and blank values do not count: they
+ * produce no usable CSS and would leave the generated type augmentation
+ * without a usable rule.
  *
  * @param {unknown} styles
  * @returns {boolean}
@@ -1796,7 +2030,12 @@ function hasUsableStyleDeclaration(styles) {
       if (hasUsableStyleDeclaration(value)) return true;
       continue;
     }
-    if (value !== undefined && value !== null && typeof value !== 'object') {
+    if (
+      value !== undefined &&
+      value !== null &&
+      typeof value !== 'object' &&
+      String(value).trim() !== ''
+    ) {
       return true;
     }
   }
@@ -1853,15 +2092,15 @@ function validateHeadingTypeAugmentationSupport(themeDef) {
  * `logger` (silent by default).
  *
  * @param {string} file - Theme file path, resolved against `cwd`.
- * @param {{out?: string, check?: boolean, iconsSpecifier?: string}} [options] -
+ * @param {{out?: string, check?: boolean, iconsSpecifier?: string, __prepareFamily?: boolean, __familyLoader?: any, __familyInterception?: any}} [options] -
  *   `out` overrides the output CSS path; `check` compares against on-disk outputs
  *   instead of writing. `iconsSpecifier` overrides the icon registry import
  *   specifier in the generated module (e.g. `./icons.mjs`); when omitted, the
  *   specifier scraped from the theme source is emitted unchanged.
  * @param {{cwd?: string}} [ctx]
- * @returns {Promise<import('../theme.type.mjs').ThemeBuildResponse | import('../theme.type.mjs').ThemeBuildCheckResponse | null>}
+ * @returns {Promise<any>}
  */
-export async function themeBuild(
+async function themeBuildInternal(
   file,
   options = {},
   {cwd = process.cwd()} = {},
@@ -1878,21 +2117,26 @@ export async function themeBuild(
 
   logger.log(`\nBuilding theme from ${path.relative(cwd, filePath)}...`);
 
-  // When the installed core cannot compile adaptations, watch its
-  // `defineTheme` as the theme loads: that core erases `adaptations` while
-  // resolving, so the raw input captured here is the only remaining witness
-  // to what the author wrote. Costs no extra execution — the theme is loaded
-  // once either way — and a core that CAN compile them needs none of it.
-  const interception = _generateAdaptationCSS
-    ? undefined
-    : interceptCore(_coreThemeModule, _coreRootModule);
+  // Standalone builds only need interception when an older Core could erase
+  // adaptations. Family preparation always supplies the same recorder as its
+  // shared loader so exact authored parent identity stays CLI-private instead
+  // of becoming a public DefinedTheme field.
+  const interception =
+    options.__familyInterception ??
+    (_generateAdaptationCSS
+      ? undefined
+      : interceptCore(_coreThemeModule, _coreRootModule));
 
   // Extract theme definition
   let themeDef;
   /** Paths through the load that interception could not fully observe. */
   let loadDegradation;
   try {
-    const loaded = await extractThemeDefinition(filePath, interception);
+    const loaded = await extractThemeDefinition(
+      filePath,
+      interception,
+      options.__familyLoader,
+    );
     themeDef = loaded.theme;
     loadDegradation = loaded.degraded;
   } catch (e) {
@@ -1904,6 +2148,16 @@ export async function themeBuild(
   // reaches anything that reads or writes it. (Symbol keys are invisible to
   // JSON.stringify and Object.keys, so it could not reach output regardless.)
   // Both reads happen BEFORE the strip, which is what removes the evidence.
+  const ancestryObserved =
+    !options.__prepareFamily ||
+    !interception ||
+    interception.observed(themeDef) ||
+    Object.hasOwn(themeDef, 'extends');
+  if (options.__prepareFamily && interception) interception.retain(themeDef);
+  const sourceParent =
+    options.__prepareFamily && interception
+      ? interception.parentOf(themeDef)
+      : undefined;
   const adaptationLineage = interception
     ? interception.lineageOf(themeDef)
     : undefined;
@@ -1916,6 +2170,13 @@ export async function themeBuild(
   const unobservedLineage =
     interception && hasCoverageGap ? interception.unobservedIn(themeDef) : [];
   if (interception) interception.strip(themeDef);
+  if (!ancestryObserved) {
+    throw new AstryxError(
+      `Theme "${themeDef.name ?? path.basename(filePath)}" exact family ancestry could not be observed during CLI loading.`,
+      undefined,
+      ERROR_CODES.ERR_THEME_INVALID,
+    );
+  }
 
   if (!themeDef.name) {
     throw new AstryxError(
@@ -1949,14 +2210,14 @@ export async function themeBuild(
   const noticeMessages = [];
   for (const w of warnings) {
     warningMessages.push(w);
-    logger.warn(`  ⚠ ${w}`);
+    logger.warn(`  [warn] ${w}`);
   }
 
   // Validate no private vars are set directly
   const privateVarErrors = validatePrivateVars(themeDef);
   for (const e of privateVarErrors) {
     warningMessages.push(e);
-    logger.error(`  ✗ ${e}`);
+    logger.error(`  [error] ${e}`);
   }
   if (privateVarErrors.length > 0) {
     logger.error(
@@ -1982,7 +2243,7 @@ export async function themeBuild(
   // capability exports are checked against what the theme actually asks for.
   if (!_defineTheme || !_generateThemeRulesSplit) {
     throw new AstryxError(
-      'Could not load @astryxdesign/core/theme — `astryx theme build` requires a ' +
+      'Could not load @astryxdesign/core/theme: `astryx theme build` requires a ' +
         'built, resolvable @astryxdesign/core so it emits the same CSS as the ' +
         'runtime <Theme>. Build @astryxdesign/core first (e.g. `pnpm -F @astryxdesign/core ' +
         'build`)' +
@@ -2009,6 +2270,7 @@ export async function themeBuild(
 
   let css;
   let resolvedTheme;
+  let cssPlan;
   {
     // jiti returns an already-resolved theme; a plain object literal (or the
     // legacy eval path) returns raw defineTheme input, which still has to go
@@ -2089,7 +2351,15 @@ export async function themeBuild(
     const scopeSelector = themeScopeStart(themeDef.name);
     const scopeTo = THEME_SCOPE_TO;
 
-    const {component, prose} = _generateThemeRulesSplit(resolvedTheme);
+    // Older cores ignore this optional collector. Current core writes the same
+    // warning text here that runtime callers receive on the console.
+    /** @type {string[]} */
+    const droppedDeclarations = [];
+
+    const {component, prose} = _generateThemeRulesSplit(
+      resolvedTheme,
+      droppedDeclarations,
+    );
     const cssParts = [];
     // Prose element defaults always ship — the `<Theme>` runtime
     // (generateThemeCSS) always emits them, so the build must too, or the
@@ -2108,7 +2378,7 @@ export async function themeBuild(
     let adaptationCss;
     try {
       adaptationCss = _generateAdaptationCSS
-        ? _generateAdaptationCSS(resolvedTheme)
+        ? _generateAdaptationCSS(resolvedTheme, droppedDeclarations)
         : {component: '', prose: ''};
     } catch (error) {
       const message =
@@ -2152,14 +2422,39 @@ export async function themeBuild(
     }
     // Media-surface rules come last so onDark/onLight win over matching
     // adaptations on the same resolved leaf.
+    let onMediaCss = '';
     if (_generateOnMediaCSS) {
-      const onMediaCss = _generateOnMediaCSS(resolvedTheme);
+      onMediaCss = _generateOnMediaCSS(resolvedTheme, droppedDeclarations);
       if (onMediaCss) {
         cssParts.push(`@layer astryx-theme {\n${onMediaCss}\n}`);
       }
     }
+    for (const message of droppedDeclarations) {
+      const w = `Declaration ${message}. The generated CSS omits it; fix the value in the theme source.`;
+      warningMessages.push(w);
+      logger.warn(`  [warn] ${w}`);
+    }
+    const unemittedHeadingTypes = headingTypesWithoutEmittedRule(
+      customHeadingTypes(themeDef),
+      `${component.join('\n')}\n${onMediaCss}`,
+    );
+    if (unemittedHeadingTypes.length > 0) {
+      throw new AstryxError(
+        unemittedHeadingTypes
+          .map(
+            type =>
+              `Custom Heading type "${type}" has no declaration the theme ` +
+              `compiler could emit: every declaration in its standalone ` +
+              `"type:${type}" rule was dropped. Give that rule at least one ` +
+              'valid declaration.',
+          )
+          .join('\n'),
+        undefined,
+        ERROR_CODES.ERR_THEME_INVALID,
+      );
+    }
     if (cssParts.length === 0) {
-      logger.log('No overrides found — nothing to build.');
+      logger.log('No overrides found; nothing to build.');
       return null;
     }
     // The data-token defaults are theme-independent and go in @layer
@@ -2182,6 +2477,15 @@ export async function themeBuild(
         `@layer astryx-base {\n${baseCss}\n}`,
       );
     }
+    cssPlan = {
+      base: baseCss,
+      prose,
+      component,
+      adaptation: adaptationCss.component,
+      adaptationProse: adaptationCss.prose,
+      onMedia: onMediaCss,
+      colorScheme: colorSchemeDecl.trimEnd(),
+    };
     css = cssParts.join('\n\n') + '\n';
   }
 
@@ -2201,7 +2505,18 @@ export async function themeBuild(
     // Guard: relative paths must not escape cwd via `../`. Absolute paths are
     // trusted (the user explicitly controls where output goes, like gcc -o).
     if (!path.isAbsolute(options.out)) {
-      assertWithin(options.out, cwd, {label: 'output path'});
+      try {
+        assertWithin(options.out, cwd, {label: 'output path'});
+      } catch (err) {
+        if (err instanceof PathSafetyError) {
+          throw new AstryxError(
+            err.message,
+            undefined,
+            ERROR_CODES.ERR_PATH_TRAVERSAL,
+          );
+        }
+        throw err;
+      }
     }
   } else {
     outPath = path.join(path.dirname(filePath), `${baseName}.css`);
@@ -2225,7 +2540,14 @@ export async function themeBuild(
   const jsPath = path.join(outDir, `${baseName}.js`);
   const dtsPath = path.join(outDir, `${baseName}.d.ts`);
 
-  const iconInfo = extractIconInfo(filePath);
+  const iconInfo = extractRegistryInfo(
+    filePath,
+    'icons',
+    options.__prepareFamily,
+  );
+  const indicatorInfo = options.__prepareFamily
+    ? extractRegistryInfo(filePath, 'indicators', true)
+    : null;
 
   // Type augmentation .d.ts if theme has custom prop values. Computed
   // before the main .d.ts so the latter can reference it (see below).
@@ -2258,10 +2580,34 @@ export async function themeBuild(
     generatedHeader(sourceRelative, 'ts', buildCommand, versions) +
     generateBuiltTypes(themeDef, iconInfo, variantsFileName);
 
-  // Atomic-ish write: stage every file as `<dest>.tmp`, then rename
-  // each into place. If any stage step fails we clean up partials and
-  // exit; if a rename fails mid-way we still have the originals (or
-  // nothing) — never a half-built output set.
+  const unloadedFonts = [
+    ...new Set([
+      ...collectUnloadedFonts(resolvedTheme),
+      ...adaptationRuleValues(resolvedTheme).flatMap(
+        (/** @type {any} */ value) => collectUnloadedFonts(value),
+      ),
+    ]),
+  ];
+
+  if (options.__prepareFamily) {
+    return {
+      filePath,
+      sourceRelative: sourceRelative.split(path.sep).join('/'),
+      theme: displayTheme,
+      sourceTheme: themeDef,
+      sourceParent,
+      iconInfo,
+      indicatorInfo,
+      variantDecl,
+      css: cssPlan,
+      versions,
+      tokenCount,
+      componentCount,
+      warnings: warningMessages,
+      unloadedFonts,
+    };
+  }
+
   const writes = [
     {dest: outPath, content: cssContent},
     {dest: jsPath, content: jsContent},
@@ -2276,25 +2622,13 @@ export async function themeBuild(
   // volatile @generated `Command:` line is ignored. Returns a
   // receipt listing stale/missing outputs so callers (CI) can fail on drift.
   if (options.check) {
-    /** @type {Array<{path: string, reason: 'missing' | 'outdated'}>} */
-    const stale = [];
-    for (const w of writes) {
-      const rel = path.relative(cwd, w.dest);
-      if (!fs.existsSync(w.dest)) {
-        stale.push({path: rel, reason: 'missing'});
-        continue;
-      }
-      const onDisk = fs.readFileSync(w.dest, 'utf8');
-      if (normalizeForCompare(onDisk) !== normalizeForCompare(w.content)) {
-        stale.push({path: rel, reason: 'outdated'});
-      }
-    }
+    const stale = staleBuildOutputs(writes, cwd);
     const upToDate = stale.length === 0;
     if (upToDate) {
-      logger.log(`\n✓ Theme outputs are up to date with ${sourceRelative}.`);
+      logger.log(`\n[ok] Theme outputs are up to date with ${sourceRelative}.`);
     } else {
       logger.error(
-        `\n✗ ${stale.length} theme output(s) are out of date with ${sourceRelative}:`,
+        `\n[fail] ${stale.length} theme output(s) are out of date with ${sourceRelative}:`,
       );
       for (const s of stale) {
         logger.error(
@@ -2314,42 +2648,19 @@ export async function themeBuild(
     };
   }
 
-  fs.mkdirSync(outDir, {recursive: true});
-  /** @type {Array<{tmp: string, dest: string}>} */
-  const staged = [];
-  try {
-    for (const w of writes) {
-      const tmp = `${w.dest}.${process.pid}.tmp`;
-      fs.writeFileSync(tmp, w.content);
-      staged.push({tmp, dest: w.dest});
-    }
-    for (const s of staged) {
-      fs.renameSync(s.tmp, s.dest);
-    }
-  } catch (err) {
-    // Roll back any temp files we managed to create.
-    for (const s of staged) {
-      try {
-        fs.rmSync(s.tmp, {force: true});
-      } catch {
-        /* best-effort */
-      }
-    }
-    const msg = `Failed to write theme outputs: ${/** @type {Error} */ (err).message}`;
-    throw new AstryxError(msg, undefined, ERROR_CODES.ERR_WRITE_FAILED);
-  }
+  writeBuildOutputs(writes);
 
-  logger.log(`\n✓ ${path.relative(cwd, outPath)}`);
+  logger.log(`\n[ok] ${path.relative(cwd, outPath)}`);
   logger.log(
     `  ${tokenCount} token overrides, ${componentCount} component overrides`,
   );
   logger.log(`  ${size} KB`);
-  logger.log(`✓ ${path.relative(cwd, jsPath)}`);
-  logger.log(`✓ ${path.relative(cwd, dtsPath)}`);
+  logger.log(`[ok] ${path.relative(cwd, jsPath)}`);
+  logger.log(`[ok] ${path.relative(cwd, dtsPath)}`);
   if (variantDtsPath && variantDecl) {
     const augCount = (variantDecl.match(/': true;/g) || []).length;
     logger.log(
-      `✓ ${path.relative(cwd, variantDtsPath)} (${augCount} type augmentations)`,
+      `[ok] ${path.relative(cwd, variantDtsPath)} (${augCount} type augmentations)`,
     );
   }
 
@@ -2359,7 +2670,7 @@ export async function themeBuild(
   const cssImport = importSpecifier(relOutDir, cssBase) + '.css';
   const exportName = `${toIdentifier(baseName)}Theme`;
   logger.log(`
-Install in your app (paths are relative to a file in src/ — adjust if yours lives elsewhere):
+Install in your app (paths are relative to a file in src/; adjust if yours lives elsewhere):
 
   import { ${exportName} } from '${jsImport}';
   import '${cssImport}';
@@ -2390,16 +2701,8 @@ Or with a <link> tag:
   // permanently in violation of its own "compiles with no warnings" guard).
   // Adaptation rules are resolved theme writes in their own right, so a family
   // named only inside one needs the same notice as one named at the root.
-  const unloadedFonts = [
-    ...new Set([
-      ...collectUnloadedFonts(resolvedTheme),
-      ...adaptationRuleValues(resolvedTheme).flatMap(
-        (/** @type {any} */ value) => collectUnloadedFonts(value),
-      ),
-    ]),
-  ];
   for (const family of unloadedFonts) {
-    const msg = `Font "${family}" is named by this theme but not loaded — add a <link> or @font-face in your app (recipe: astryx docs typography)`;
+    const msg = `Font "${family}" is named by this theme but not loaded; add a <link> or @font-face in your app (recipe: astryx docs typography)`;
     noticeMessages.push(msg);
     logger.log(`  note: ${msg}`);
   }
@@ -2424,6 +2727,333 @@ Or with a <link> tag:
       },
       warnings: warningMessages,
       notices: noticeMessages,
+    },
+  };
+}
+
+/** @param {string} file @param {{out?: string, check?: boolean, iconsSpecifier?: string}} [options] @param {{cwd?: string}} [ctx] @returns {Promise<import('../theme.type.mjs').ThemeBuildResponse | import('../theme.type.mjs').ThemeBuildCheckResponse | null>} */
+export async function themeBuild(file, options = {}, ctx = {}) {
+  return /** @type {any} */ (themeBuildInternal(file, options, ctx));
+}
+/** @param {string} name */
+// prettier-ignore
+function familyThemeBinding(name) {
+  const words = name.split(/[^A-Za-z0-9_$]+/).filter(Boolean);
+  let identifier = words.map((word, index) => index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1)).join('');
+  if (!/^[A-Za-z_$]/.test(identifier)) identifier = `_${identifier}`;
+  return `${identifier || '_'}Theme`;
+}
+/** @param {any[]} members */
+// prettier-ignore
+function allocateFamilyBindings(members) {
+  const used = new Map();
+  return new Map(members.map(member => { const base = familyThemeBinding(member.theme.name), count = used.get(base) ?? 0; used.set(base, count + 1); return [member.theme.name, count === 0 ? base : `${base}${count + 1}`]; }));
+}
+/** Rebase a scraped relative registry import to the aggregate module. @param {any} info @param {string} filePath @param {string} outDir @param {string | undefined} override */
+// prettier-ignore
+function familyRegistryInput(info, filePath, outDir, override) {
+  if (!info || override !== undefined) return {info, specifier: override};
+  const source = info.importPath;
+  if (!source.startsWith('./') && !source.startsWith('../')) return {info, specifier: undefined};
+  const absolute = path.resolve(path.dirname(filePath), source);
+  let specifier = path.relative(outDir, absolute).split(path.sep).join('/');
+  if (!specifier.startsWith('./') && !specifier.startsWith('../')) specifier = `./${specifier}`;
+  return {info, specifier};
+}
+/** Dependency-first load plan including local barrels between selected files. @param {string[]} files @param {string} cwd */
+// prettier-ignore
+function planFamilySources(files, cwd) {
+  /** @type {Array<{file: string, filePath: string}>} */ const entries = files.map(file => ({file, filePath: path.resolve(cwd, file)}));
+  /** @param {string} value */ const canonical = value => fs.existsSync(value) ? fs.realpathSync(value) : path.resolve(value);
+  /** @type {Map<string, {file: string, filePath: string}>} */ const selected = new Map(entries.map(entry => [canonical(entry.filePath), entry]));
+  if (selected.size !== entries.length) return entries.map(entry => ({...entry, selected: true}));
+  /** @type {Map<string, Set<string>>} */ const reachableMemo = new Map(), dependencies = new Map();
+  /** @param {string} filePath @param {Set<string>} [visiting] @returns {Set<string>} */
+  const reachableSelected = (filePath, visiting = new Set()) => {
+    const key = canonical(filePath), cached = reachableMemo.get(key); if (cached) return cached;
+    if (visiting.has(key) || !fs.existsSync(key)) return new Set();
+    visiting.add(key); /** @type {Set<string>} */ const found = new Set(), direct = new Set(); let ast;
+    try { ast = parse(fs.readFileSync(key, 'utf8'), {sourceType: 'unambiguous', plugins: ['typescript', 'jsx', 'decorators-legacy', 'importAttributes']}); }
+    catch { visiting.delete(key); reachableMemo.set(key, found); return found; }
+    for (const node of /** @type {any[]} */ (ast.program.body)) {
+      const specifier = node.importKind !== 'type' ? node.source?.value : null; if (typeof specifier !== 'string' || (!specifier.startsWith('.') && !path.isAbsolute(specifier))) continue;
+      let dependency; try { dependency = canonical(createJiti(key, {extensions: THEME_MODULE_EXTENSIONS}).resolve(specifier)); } catch { continue; }
+      if (!dependency.split(path.sep).includes('node_modules') && /\.[cm]?[jt]sx?$/.test(dependency)) direct.add(dependency);
+      if (selected.has(dependency)) found.add(dependency); else for (const nested of reachableSelected(dependency, visiting)) found.add(nested);
+    }
+    visiting.delete(key); dependencies.set(key, direct); reachableMemo.set(key, found); return found;
+  };
+  for (const entry of entries) reachableSelected(entry.filePath);
+  /** @type {Array<{file: string, filePath: string, selected: boolean}>} */ const plan = []; /** @type {Set<string>} */ const marks = new Set();
+  /** @param {string} key */ const visit = key => { if (marks.has(key)) return; marks.add(key); for (const dependency of dependencies.get(key) ?? []) if (selected.has(dependency) || reachableSelected(dependency).size > 0) visit(dependency); const entry = selected.get(key); plan.push(entry ? {...entry, selected: true} : {file: key, filePath: key, selected: false}); };
+  for (const entry of entries) visit(canonical(entry.filePath)); return plan;
+}
+
+/** Preload an intermediary module into the shared family cache. @param {string} filePath @param {any} loader @param {import('./core-interception.mjs').CoreInterception} interception */
+// prettier-ignore
+async function preloadFamilySource(filePath, loader, interception) {
+  const patch = interception.patchCommonJs(filePath);
+  try { try { loader(filePath); } catch (error) { if (!isSyncLoaderLimitation(error)) throw error; await loader.evalModule(fs.readFileSync(filePath, 'utf8'), {id: filePath, filename: filePath, ext: path.extname(filePath), cache: loader.cache, async: true, forceTranspile: true}); } }
+  finally { patch.undo(); }
+}
+
+/** @param {string[]} files @param {{familyKey: string, check?: boolean, iconsSpecifier?: string}} options @param {{cwd?: string}} [ctx] */
+export async function themeBuildFamily(
+  files,
+  options,
+  {cwd = process.cwd()} = {},
+) {
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(options?.familyKey ?? '')) {
+    throw new AstryxError(
+      'Family key must be an exact lower-kebab filename stem (for example, ocean-family).',
+      undefined,
+      ERROR_CODES.ERR_THEME_INVALID,
+    );
+  }
+  try {
+    sanitizeName(options.familyKey, {label: 'family key'});
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Invalid family key.';
+    throw new AstryxError(message, undefined, ERROR_CODES.ERR_THEME_INVALID);
+  }
+  const familyInterception = interceptCore(_coreThemeModule, _coreRootModule);
+  // prettier-ignore
+  const familyLoader = createJiti(import.meta.url, {moduleCache: true, interopDefault: false, jsx: true, extensions: THEME_MODULE_EXTENSIONS, virtualModules: familyInterception.modules});
+  /** @type {any[]} */
+  const prepared = [];
+  for (const source of planFamilySources(files, cwd)) {
+    if (!source.selected) {
+      await preloadFamilySource(
+        source.filePath,
+        familyLoader,
+        familyInterception,
+      );
+      continue;
+    }
+    const file = source.file;
+    // prettier-ignore
+    const member = await themeBuildInternal(file, {iconsSpecifier: options.iconsSpecifier, __prepareFamily: true, __familyLoader: familyLoader, __familyInterception: familyInterception}, {cwd});
+    if (!member || member.type) {
+      throw new AstryxError(
+        `Theme family member "${file}" did not produce a complete build plan.`,
+        undefined,
+        ERROR_CODES.ERR_THEME_INVALID,
+      );
+    }
+    prepared.push(member);
+  }
+  let members;
+  try {
+    members = resolveThemeFamily(prepared);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Invalid selected theme family.';
+    throw new AstryxError(message, undefined, ERROR_CODES.ERR_THEME_INVALID);
+  }
+  for (const member of members) {
+    for (const [field, info] of [
+      ['icons', member.iconInfo],
+      ['indicators', member.indicatorInfo],
+    ]) {
+      const value = member.theme[field];
+      const inherited = member.sourceParent?.[field];
+      if (
+        value &&
+        Object.keys(value).length > 0 &&
+        value !== inherited &&
+        !info
+      ) {
+        throw new AstryxError(
+          `Theme "${member.theme.name}" must supply ${field} through a named import for family output.`,
+          undefined,
+          ERROR_CODES.ERR_THEME_INVALID,
+        );
+      }
+    }
+  }
+  const baseName = options.familyKey;
+  if (members.some(member => member.theme.name === baseName)) {
+    throw new AstryxError(
+      `Family key "${baseName}" collides with a selected theme's standalone outputs. Choose a distinct filename stem.`,
+      undefined,
+      ERROR_CODES.ERR_THEME_INVALID,
+    );
+  }
+  const root = members[0];
+  const outDir = path.dirname(root.filePath);
+  const outPath = path.join(outDir, `${baseName}.css`);
+  const jsPath = path.join(outDir, `${baseName}.js`);
+  const dtsPath = path.join(outDir, `${baseName}.d.ts`);
+  const sources = new Set(
+    members.flatMap(member =>
+      [path.resolve(member.filePath), fs.realpathSync(member.filePath)].map(
+        value => value.toLowerCase(),
+      ),
+    ),
+  );
+  const collision = [outPath, jsPath, dtsPath].find(output => {
+    const candidates = [path.resolve(output)];
+    if (fs.existsSync(output)) candidates.push(fs.realpathSync(output));
+    return candidates.some(value => sources.has(value.toLowerCase()));
+  });
+  if (collision) {
+    throw new AstryxError(
+      `Family output ${path.relative(cwd, collision)} collides with a selected source file.`,
+      undefined,
+      ERROR_CODES.ERR_THEME_INVALID,
+    );
+  }
+  const sourceRelative = members
+    .map(member => member.sourceRelative)
+    .join(', ');
+  const buildCommand = `${getCliInvocation()} theme build --family ${members
+    .map(member => member.sourceRelative)
+    .join(' ')} --family-key ${baseName}`;
+  const bindings = allocateFamilyBindings(members);
+  const css = generateFamilyCSS(members);
+  /** @type {Array<{specifier: string, exportName: string}>} */
+  const registryImports = [];
+  const js = members
+    .map(member => {
+      const themeBinding = bindings.get(member.theme.name);
+      const parentBinding = member.parentName
+        ? bindings.get(member.parentName)
+        : null;
+      // prettier-ignore
+      const icon = familyRegistryInput(member.iconInfo, member.filePath, outDir, options.iconsSpecifier);
+      // prettier-ignore
+      const indicator = familyRegistryInput(member.indicatorInfo, member.filePath, outDir, undefined);
+      // prettier-ignore
+      for (const registry of [icon, indicator]) if (registry.info) registryImports.push({specifier: registry.specifier ?? registry.info.importPath, exportName: registry.info.exportName});
+      const ownIcons = icon.info ? `${themeBinding}Icons` : null;
+      const inheritedIcons = parentBinding ? `${parentBinding}.icons` : null;
+      const ownIndicators = indicator.info ? `${themeBinding}Indicators` : null;
+      const inheritedIndicators = parentBinding
+        ? `${parentBinding}.indicators`
+        : null;
+      /** @param {string | null} own @param {string | null} inherited */
+      const expression = (own, inherited) =>
+        own && inherited
+          ? `{...${inherited}, ...${own}}`
+          : (own ?? inherited ?? undefined);
+      const indicatorImport = indicator.info
+        ? `import { ${indicator.info.exportName} as ${ownIndicators} } from ${JSON.stringify(indicator.specifier ?? indicator.info.importPath)};\n`
+        : '';
+      return (
+        indicatorImport +
+        generateBuiltModule(member.theme, icon.info, icon.specifier, {
+          themeBinding,
+          iconBinding: ownIcons ?? undefined,
+          iconsExpression: expression(ownIcons, inheritedIcons),
+          indicatorsExpression: expression(ownIndicators, inheritedIndicators),
+          artifactBaseName: baseName,
+          exportIcons: false,
+        })
+      );
+    })
+    .join('\n');
+  await validateRegistryGraphs(registryImports, jsPath);
+  const declarations = members
+    .map((member, index) =>
+      generateBuiltTypes(member.theme, member.iconInfo, null, {
+        themeBinding: bindings.get(member.theme.name),
+        includeIconExport: false,
+        includeThemeImport: index === 0,
+      }),
+    )
+    .join('');
+  const augmentations = [
+    ...new Set(members.map(member => member.variantDecl).filter(Boolean)),
+  ].join('\n');
+  const writes = [
+    {
+      dest: outPath,
+      content:
+        generatedHeader(sourceRelative, 'css', buildCommand, root.versions) +
+        css,
+    },
+    {
+      dest: jsPath,
+      content:
+        generatedHeader(sourceRelative, 'js', buildCommand, root.versions) + js,
+    },
+    {
+      dest: dtsPath,
+      content:
+        generatedHeader(sourceRelative, 'ts', buildCommand, root.versions) +
+        declarations +
+        (augmentations ? `\n${augmentations}` : ''),
+    },
+  ];
+  const outputs = {
+    css: path.relative(cwd, outPath),
+    js: path.relative(cwd, jsPath),
+    dts: path.relative(cwd, dtsPath),
+  };
+  if (options.check) {
+    const stale = staleBuildOutputs(writes, cwd);
+    const upToDate = stale.length === 0;
+    if (upToDate) {
+      logger.log(
+        `\n[ok] Theme family outputs are up to date with ${sourceRelative}.`,
+      );
+    } else {
+      logger.error(
+        `\n[fail] ${stale.length} theme family output(s) are out of date:`,
+      );
+      for (const entry of stale) {
+        logger.error(
+          `  ${entry.reason === 'missing' ? 'missing' : 'stale'}: ${entry.path}`,
+        );
+      }
+      logger.error(`\n  Rebuild with: ${buildCommand}`);
+    }
+    return {
+      type: 'theme.build.check',
+      data: {
+        name: root.theme.name,
+        upToDate,
+        stale,
+        checked: writes.map(write => path.relative(cwd, write.dest)),
+      },
+    };
+  }
+  writeBuildOutputs(writes);
+  for (const output of Object.values(outputs)) logger.log(`[ok] ${output}`);
+  const themeBindings = members.map(member => bindings.get(member.theme.name));
+  const relOutDir = path.relative(cwd, outDir) || '.';
+  const jsImport = importSpecifier(relOutDir, baseName);
+  const cssImport = `${jsImport}.css`;
+  logger.log(`
+Load the family CSS once, then select any member by theme identity:
+  import { ${themeBindings.join(', ')} } from '${jsImport}';
+  import '${cssImport}';
+Or load the same stylesheet natively:
+  <link rel="stylesheet" href="${cssImport}" />
+`);
+  const warnings = [...new Set(members.flatMap(member => member.warnings))];
+  const unloadedFonts = [
+    ...new Set(members.flatMap(member => member.unloadedFonts)),
+  ];
+  const notices = unloadedFonts.map(
+    family =>
+      `Font "${family}" is named by this theme family but not loaded; add a <link> or @font-face in your app (recipe: astryx docs typography)`,
+  );
+  for (const notice of notices) logger.log(`  note: ${notice}`);
+  return {
+    type: 'theme.build',
+    data: {
+      name: root.theme.name,
+      tokenCount: members.reduce((sum, member) => sum + member.tokenCount, 0),
+      componentCount: members.reduce(
+        (sum, member) => sum + member.componentCount,
+        0,
+      ),
+      sizeKB: parseFloat((Buffer.byteLength(css) / 1024).toFixed(1)),
+      outputs,
+      warnings,
+      notices,
     },
   };
 }

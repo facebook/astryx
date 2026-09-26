@@ -13,7 +13,7 @@ export const doc = {
   type: 'command',
   name: 'layout grammar',
   displayName: 'astryx layout grammar',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary:
     'Print the XLE/XLO cheatsheet (alias table generated from this branch)',
   description:

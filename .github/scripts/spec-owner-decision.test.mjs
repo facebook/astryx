@@ -21,6 +21,15 @@ const {
 
 const head = 'abcdef1234567890abcdef1234567890abcdef12';
 const owner = {login: 'cixzhang'};
+const componentPath = 'packages/core/src/Button/Button.spec.md';
+
+function componentRecord({body = 'Body.', decision = null} = {}) {
+  const block =
+    decision === null
+      ? ''
+      : `\n\n### Design decisions\n\n<!-- design-decisions:v1 -->\n\n| ID | Decision | Intent or reason | Applies to | Allowed variation |\n| --- | --- | --- | --- | --- |\n| DD1 | ${decision} | Preserve emphasis. | Default state | Theme tokens may vary. |`;
+  return `---\nkind: component\nauthority: current\n---\n\n## Design relationships\n\n${body}${block}\n\n### Theming anatomy\n`;
+}
 
 describe('spec owner decision', () => {
   it('binds approval commands to the current head', () => {
@@ -143,6 +152,58 @@ describe('spec owner decision', () => {
           previousPath: 'docs/architecture/themes.md',
           baseContent: 'kind: architecture\nauthority: current',
           headContent: 'kind: design\nauthority: current',
+        },
+      ]),
+    ).toEqual({spec: true, design: true, theme: false});
+  });
+
+  it('routes DD-only component changes to design owners', () => {
+    expect(
+      requiredApprovalGroups([
+        {
+          path: componentPath,
+          baseContent: componentRecord({decision: 'Use a quiet label.'}),
+          headContent: componentRecord({decision: 'Keep the label quiet.'}),
+        },
+      ]),
+    ).toEqual({spec: false, design: true, theme: false});
+  });
+
+  it('routes mixed DD and component contract changes to both groups', () => {
+    expect(
+      requiredApprovalGroups([
+        {
+          path: componentPath,
+          baseContent: componentRecord({decision: 'Use a quiet label.'}),
+          headContent: componentRecord({
+            body: 'Changed contract.',
+            decision: 'Keep the label quiet.',
+          }),
+        },
+      ]),
+    ).toEqual({spec: true, design: true, theme: false});
+  });
+
+  it('keeps component edits without a DD change in engineering', () => {
+    expect(
+      requiredApprovalGroups([
+        {
+          path: componentPath,
+          baseContent: componentRecord(),
+          headContent: componentRecord({body: 'Changed contract.'}),
+        },
+      ]),
+    ).toEqual({spec: true, design: false, theme: false});
+  });
+
+  it('fails closed for a renamed component record', () => {
+    expect(
+      requiredApprovalGroups([
+        {
+          path: 'packages/core/src/Action/Action.spec.md',
+          previousPath: componentPath,
+          baseContent: componentRecord(),
+          headContent: componentRecord(),
         },
       ]),
     ).toEqual({spec: true, design: true, theme: false});
@@ -506,8 +567,8 @@ describe('spec owner decision', () => {
     });
     const statuses = [marker('ernestt'), marker('imdreamrunner')];
 
-    // imdreamrunner is a spec owner and a design *approver*, but not a design
-    // owner. A marker they published — including one predating the rule that
+    // imdreamrunner is an engineering owner and a design *approver*, but not a
+    // design owner. A marker they published — including one predating the rule that
     // only design owners self-attest — is not evidence for any group.
     expect(
       parseReadyAttestations(statuses, {

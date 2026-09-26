@@ -4,8 +4,8 @@
 
 /**
  * @file useScrollableArea.ts
- * @input Logical scroll intent, keyboard ownership, caller-owned viewport/content props
- * @output Safe prop getters and stable per-axis effective scroll state
+ * @input Logical scroll intent, focus-time keyboard delegation, caller-owned viewport/content props
+ * @output Safe prop getters, native keyboard entry, and stable per-axis effective scroll state
  * @position Canonical behavior core for ScrollableArea and structure-owning adopters
  *
  * SYNC: When modified, update:
@@ -26,6 +26,7 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
+import {attachScrollKeyboardDelegation} from './scrollKeyboardDelegation';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
 import {mergeProps} from '../utils/mergeProps';
 import {mergeRefs} from '../utils/mergeRefs';
@@ -49,10 +50,18 @@ export type ScrollOverscroll = 'allow' | 'contain';
 /** Whether a fitting viewport deliberately remains a Sticky containing boundary. */
 export type ScrollStickyContainment = 'whenScrollable' | 'always';
 
-/** Where keyboard scrolling is reached: caller-owned content, or a named viewport. */
+/**
+ * Where keyboard scrolling is reached: caller-owned content, a named viewport,
+ * or a named viewport that delegates forward Tab entry into its content.
+ */
 export type ScrollKeyboardAccess =
   | {owner: 'content'}
-  | {owner: 'viewport'; label: string; role?: 'group' | 'region'};
+  | {owner: 'viewport'; label: string; role?: 'group' | 'region'}
+  | {
+      owner: 'contentOrViewport';
+      label: string;
+      role?: 'group' | 'region';
+    };
 
 /** Effective ownership and logical edge state for one requested axis. */
 export interface ScrollAxisState {
@@ -326,6 +335,8 @@ export function useScrollableArea({
     content.addEventListener('transitionend', scheduleMeasure);
     content.addEventListener('animationend', scheduleMeasure);
 
+    // Geometry invalidation is independent of keyboard eligibility. The latter
+    // is inspected only on native keyboard entry, never by these observers.
     const mutationObserver =
       typeof MutationObserver === 'undefined'
         ? null
@@ -387,15 +398,19 @@ export function useScrollableArea({
     [axis, measured],
   );
 
-  // Depend on the keyboard-access scalars rather than the option object so an
-  // adopter passing a fresh literal each render keeps stable getter identity.
-  const keyboardOwner = keyboardAccess.owner;
-  const keyboardLabel =
-    keyboardAccess.owner === 'viewport' ? keyboardAccess.label : undefined;
-  const keyboardRole =
-    keyboardAccess.owner === 'viewport'
-      ? (keyboardAccess.role ?? 'group')
-      : undefined;
+  const hasEffectiveAxis =
+    state.inline.isScrollable || state.block.isScrollable;
+  useIsomorphicLayoutEffect(() => {
+    if (
+      keyboardAccess.owner !== 'contentOrViewport' ||
+      !hasEffectiveAxis ||
+      viewport == null ||
+      content == null
+    ) {
+      return;
+    }
+    return attachScrollKeyboardDelegation(viewport, content);
+  }, [content, hasEffectiveAxis, keyboardAccess.owner, viewport]);
 
   const getViewportProps = useCallback(
     <E extends HTMLElement>(
@@ -436,7 +451,9 @@ export function useScrollableArea({
           ),
         ),
       ) as ScrollableElementProps<E>;
-      const keepsProgrammaticFocus = !hasEffectiveAxis && isViewportFocused;
+      const viewportIsKeyboardOwner = keyboardAccess.owner !== 'content';
+      const keepsProgrammaticFocus =
+        (!viewportIsKeyboardOwner || !hasEffectiveAxis) && isViewportFocused;
       const behaviorStyle: CSSProperties = {...styledProps.style};
       const containInline =
         overscroll === 'contain' && state.inline.isScrollable;
@@ -456,15 +473,16 @@ export function useScrollableArea({
       }
 
       const keyboardProps =
-        keyboardOwner === 'viewport'
+        keyboardAccess.owner !== 'content'
           ? {
-              role: keyboardRole,
-              'aria-label': keyboardLabel,
-              tabIndex: hasEffectiveAxis
-                ? 0
-                : keepsProgrammaticFocus
-                  ? -1
-                  : undefined,
+              role: keyboardAccess.role ?? 'group',
+              'aria-label': keyboardAccess.label,
+              tabIndex:
+                viewportIsKeyboardOwner && hasEffectiveAxis
+                  ? 0
+                  : keepsProgrammaticFocus
+                    ? -1
+                    : undefined,
             }
           : {};
 
@@ -489,9 +507,7 @@ export function useScrollableArea({
       axis,
       getComposedViewportRef,
       isViewportFocused,
-      keyboardLabel,
-      keyboardOwner,
-      keyboardRole,
+      keyboardAccess,
       mapping,
       overflow,
       overscroll,

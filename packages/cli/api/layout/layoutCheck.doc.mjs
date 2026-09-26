@@ -12,6 +12,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'layoutCheck',
+  namespace: 'cli/api',
   displayName: 'layoutCheck()',
   summary: 'Validate a layout expression without expanding it.',
   description:

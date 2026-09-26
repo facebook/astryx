@@ -211,11 +211,11 @@ export function formatFontLoadingHelp(themeName, families) {
   const first = families[0];
   const slug = first.toLowerCase().replace(/ /g, '-');
   return `
-⚠ Theme "${themeName}" names fonts it does not load: ${named}
-  The built CSS only sets font-family — load these in your app, or every
+[note] Theme "${themeName}" names fonts it does not load: ${named}
+  The built CSS only sets font-family; load these in your app, or every
   browser quietly falls back.
 
-  Google Fonts (add :wght@… axes as your theme's weights require):
+  Google Fonts (add :wght@... axes as your theme's weights require):
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

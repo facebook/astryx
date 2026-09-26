@@ -265,14 +265,18 @@ describe('collectThemingTargets', () => {
     expect(doc.subComponentOf).toBe('Dialog');
     expect(doc.theming.targets).toEqual([
       {className: 'astryx-dialog-header'},
+      {className: 'astryx-dialog-header-start-content'},
       {className: 'astryx-dialog-header-title-block'},
+      {className: 'astryx-dialog-header-end-content'},
       {className: 'astryx-dialog-header-close-icon'},
     ]);
   });
 
   it.each([
     'dialog-header',
+    'dialog-header-start-content',
     'dialog-header-title-block',
+    'dialog-header-end-content',
     'dialog-header-close-icon',
   ])('enumerates %s once under its canonical Dialog owner', async key => {
     const matches = (await enumerated).filter(target => target.key === key);

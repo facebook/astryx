@@ -12,6 +12,7 @@
 import {describe, it, expect, vi, afterEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {Spinner} from './Spinner';
+import {InternationalizationProvider} from '../i18n';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 
@@ -70,6 +71,34 @@ describe('Spinner', () => {
     const spinner = screen.getByTestId('spinner');
     expect(spinner).toBeInTheDocument();
     expect(spinner).toHaveAttribute('data-shade', 'inherit');
+  });
+
+  it('localizes the default assistive label through the i18n catalog', () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{fr: {'@astryx.spinner.loading': 'Chargement'}}}>
+        <Spinner data-testid="spinner" />
+      </InternationalizationProvider>,
+    );
+    expect(screen.getByTestId('spinner')).toHaveAttribute(
+      'aria-label',
+      'Chargement',
+    );
+  });
+
+  it('keeps an explicit aria-label over the localized default', () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{fr: {'@astryx.spinner.loading': 'Chargement'}}}>
+        <Spinner aria-label="Veuillez patienter" data-testid="spinner" />
+      </InternationalizationProvider>,
+    );
+    expect(screen.getByTestId('spinner')).toHaveAttribute(
+      'aria-label',
+      'Veuillez patienter',
+    );
   });
 
   it('does not duplicate a visible string label as aria-label', () => {
@@ -375,6 +404,10 @@ describe('Spinner ring', () => {
       frames.forEach(cb => cb(0));
       expect(animations).toHaveLength(5);
       expect(animations.every(a => a.startTime === 0)).toBe(true);
+      // The dash animation lives on the arc <circle>, a descendant of the
+      // <svg> this ref sits on, not the <svg> itself (#6253) — subtree:true
+      // is what lets getAnimations() find it from here.
+      expect(getAnimations).toHaveBeenCalledWith({subtree: true});
       // The pin runs on the branch the other shade cases cannot reach, so the
       // no-read assertion is made here too.
       expect(

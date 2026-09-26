@@ -31,6 +31,36 @@ const mockItems = [
 ];
 
 describe('TopNavMenu', () => {
+  it.each([
+    'javascript:alert(1)',
+    'vbscript:MsgBox(1)',
+    'data:text/html,<b>x</b>',
+  ])('does not expose rejected menu destination %s', href => {
+    const onClick = vi.fn();
+    render(
+      <TopNavMenu
+        label="Menu"
+        items={[{title: 'Destination', href, onClick}]}
+      />,
+    );
+    const item = screen.getByRole('menuitem', {hidden: true});
+    expect(item).not.toHaveAttribute('href');
+    fireEvent.click(item);
+    expect(onClick).toHaveBeenCalledOnce();
+  });
+
+  it('preserves an accepted native menu destination', () => {
+    render(
+      <TopNavMenu
+        label="Menu"
+        items={[{title: 'Destination', href: '/docs'}]}
+      />,
+    );
+    expect(screen.getByRole('menuitem', {hidden: true})).toHaveAttribute(
+      'href',
+      '/docs',
+    );
+  });
   it('renders the trigger button with label', () => {
     render(<TopNavMenu label="Products" items={mockItems} />);
     expect(screen.getByRole('button', {name: 'Products'})).toBeInTheDocument();

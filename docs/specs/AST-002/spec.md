@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 4
 template_version: 1
 kind: system-spec
 id: spec:AST-002
@@ -17,6 +17,26 @@ affects_consumer_docs: []
 ---
 
 # Public API admission and operation shape
+
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "public-api": [
+      "FR4",
+      "FR15",
+      "DEC-1",
+      "DEC-2",
+      "DEC-3",
+      "DEC-6",
+      "DEC-7",
+      "DEC-8"
+    ]
+  }
+}
+```
 
 ## Intent
 

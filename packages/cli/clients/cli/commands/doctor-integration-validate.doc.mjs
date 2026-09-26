@@ -9,7 +9,7 @@ export const doc = {
   type: 'command',
   name: 'doctor integration validate',
   displayName: 'astryx doctor integration validate',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Validate an integration manifest and its contributions',
   description:
     'Validates one integration at a time: the local package rooted at cwd, or an ' +

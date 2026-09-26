@@ -12,6 +12,7 @@ import {
   PR_ANALYSIS_MARKER,
   createPublishedDeploymentResult,
   createUnavailableDeploymentResult,
+  reconcileEarlyPreviewComment,
   reconcilePrComment,
   resolveWorkflowRunPullRequest,
   validateAnalysisMetadata,
@@ -22,6 +23,7 @@ const HEAD = 'a'.repeat(40);
 const BASE = 'b'.repeat(40);
 const PAGES = 'c'.repeat(40);
 const INDEX = 'd'.repeat(64);
+const VERCEL_ORIGIN = 'https://astryx-3s4xgbci4-fbopensource.vercel.app';
 const ROOT = path.resolve(import.meta.dirname, '../../..');
 const REQUIRE = createRequire(import.meta.url);
 const ASYNC_FUNCTION = Object.getPrototypeOf(async function () {}).constructor;
@@ -46,6 +48,7 @@ function identity(overrides = {}) {
     headRepositoryId: '321',
     baseRepository: 'facebook/astryx',
     baseSha: BASE,
+    testedBaseSha: null,
     sourceRunId: 33321033727,
     sourceRunAttempt: 1,
     sourceConclusion: 'success',
@@ -107,6 +110,21 @@ function githubFixture({value = identity(), comments = []} = {}) {
       pulls: {
         get: vi.fn(async () => ({data: pull(value)})),
         list: vi.fn(async () => ({data: [pull(value)]})),
+      },
+      repos: {
+        listDeployments: vi.fn(async () => ({
+          data: [
+            {
+              id: 11,
+              sha: value.headSha,
+              environment: 'Preview',
+              creator: {login: 'vercel[bot]'},
+            },
+          ],
+        })),
+        listDeploymentStatuses: vi.fn(async () => ({
+          data: [{state: 'success', environment_url: VERCEL_ORIGIN}],
+        })),
       },
       issues: {
         listComments: vi.fn(async ({issue_number}) => {
@@ -180,7 +198,7 @@ function fixture(value = identity(), {analysis = true, deployment} = {}) {
   return paths;
 }
 
-function published(value, available = ['storybook', 'sandbox']) {
+function published(value, available = ['sandbox']) {
   return createPublishedDeploymentResult(value, {
     storybookIndexSha256: available.includes('storybook') ? INDEX : null,
     sandboxIndexSha256: available.includes('sandbox') ? INDEX : null,
@@ -191,6 +209,7 @@ function published(value, available = ['storybook', 'sandbox']) {
 async function reconcile({
   value = identity(),
   deployment,
+  previewAvailable = false,
   analysis = true,
   comments = [],
   githubFixtureValue = value,
@@ -216,6 +235,8 @@ async function reconcile({
     metadataPath: paths.metadata,
     a11yPath: paths.a11y,
     deploymentResultPath: paths.deployment,
+    lookupPreview: async () => (previewAvailable ? VERCEL_ORIGIN : null),
+    probePreview: async () => true,
     visualPath: paths.visual,
     createIfMissing,
     fallbackMessage,
@@ -231,6 +252,42 @@ afterEach(() => {
 });
 
 describe('trusted PR preview identity', () => {
+  it('keeps the source-run base when main advances before publication', async () => {
+    const current = identity({baseSha: 'f'.repeat(40)});
+    const {github} = githubFixture({value: current});
+    const run = {
+      ...sourceRun(current),
+      pull_requests: [
+        {number: current.prNumber, head: {sha: HEAD}, base: {sha: BASE}},
+      ],
+    };
+    const resolved = await resolveWorkflowRunPullRequest({
+      github,
+      owner: 'facebook',
+      repo: 'astryx',
+      run,
+    });
+    expect(resolved.testedBaseSha).toBe(BASE);
+    expect(resolved.baseSha).toBe(current.baseSha);
+    const prepare = PR_COMMENT_WORKFLOW.jobs.comment.steps.find(
+      step => step.name === 'Prepare canonical visual report',
+    );
+    expect(prepare.env.BASE_SHA).toBe(
+      '${{ steps.identity.outputs.tested_base_sha }}',
+    );
+  });
+
+  it('does not substitute live main when a fork run omits the base association', async () => {
+    const {github} = githubFixture();
+    const resolved = await resolveWorkflowRunPullRequest({
+      github,
+      owner: 'facebook',
+      repo: 'astryx',
+      run: sourceRun(),
+    });
+    expect(resolved.testedBaseSha).toBeNull();
+  });
+
   it('resolves a fork run through the trusted owner and branch fallback', async () => {
     const value = identity();
     const {github} = githubFixture({value});
@@ -343,16 +400,17 @@ describe('trusted PR preview identity', () => {
       .map(([name]) => name);
 
     expect(writeCapableJobs).toEqual([
-      'invalidate',
-      'spec-only-visual',
+      'preview-comment',
       'spec-only-reconcile',
       'deploy-preview',
       'comment',
     ]);
     for (const name of writeCapableJobs) {
-      expect(PR_COMMENT_WORKFLOW.jobs[name].if, name).toContain(
-        "needs.resolve.outputs.valid == 'true'",
-      );
+      const expected =
+        name === 'preview-comment'
+          ? "needs.resolve-preview.outputs.valid == 'true'"
+          : "needs.resolve.outputs.valid == 'true'";
+      expect(PR_COMMENT_WORKFLOW.jobs[name].if, name).toContain(expected);
     }
   });
 
@@ -446,50 +504,60 @@ describe('analysis metadata compatibility', () => {
 
 describe('PR comment preview reconciliation', () => {
   it.each([
-    ['no deployment', undefined, false, false],
-    ['Storybook only', published(identity(), ['storybook']), true, false],
-    ['Sandbox only', published(identity(), ['sandbox']), false, true],
+    ['neither ready', undefined, false],
+    ['exact-head Vercel ready', undefined, true],
+    ['Pages Sandbox only is not proof', published(identity()), false],
+    ['Vercel ready with independent Pages result', published(identity()), true],
     [
-      'both previews',
-      published(identity(), ['storybook', 'sandbox']),
-      true,
-      true,
+      'obsolete Pages Storybook proof',
+      published(identity(), ['storybook']),
+      false,
     ],
     [
-      'deployment failure',
+      'Pages failure with ready Vercel',
       createUnavailableDeploymentResult(identity(), 'publisher-failed'),
-      false,
-      false,
+      true,
     ],
   ])(
-    'renders the behavioral availability matrix: %s',
-    async (_label, deployment, hasStorybook, hasSandbox) => {
-      const {result} = await reconcile({deployment});
-
-      expect(result.body.includes('View Storybook for this PR')).toBe(
-        hasStorybook,
-      );
-      expect(result.body.includes('View Sandbox for this PR')).toBe(hasSandbox);
-      expect(result.body.includes('> **Preview availability:**')).toBe(
-        !hasStorybook || !hasSandbox,
+    'shows both or neither exact-head links: %s',
+    async (_label, deployment, ready) => {
+      const {result} = await reconcile({deployment, previewAvailable: ready});
+      expect(result.body.includes('View Storybook for this PR')).toBe(ready);
+      expect(result.body.includes('View Sandbox for this PR')).toBe(ready);
+      expect(result.body.includes('> **Preview availability:**')).toBe(!ready);
+      if (ready) {
+        expect(result.body).toContain(`${VERCEL_ORIGIN}/storybook/`);
+        expect(result.body).toContain(`${VERCEL_ORIGIN}/sandbox/`);
+      }
+      expect(result.body).not.toContain(
+        'https://facebook.github.io/astryx/pr/5697/sandbox/',
       );
     },
   );
 
   it('keeps current trustworthy analysis when source CI fails', async () => {
     const value = identity({sourceConclusion: 'failure'});
-    const deployment = createUnavailableDeploymentResult(
-      value,
-      'source-failed',
-    );
+    const deployment = {status: 'unavailable', reason: 'source-failed'};
 
     const {result} = await reconcile({value, deployment});
 
     expect(result.body).toContain('Modified Components');
     expect(result.body).toContain('Card');
-    expect(result.body).toContain('CI did not succeed');
+    expect(result.body).toContain('CI concluded failure');
     expect(result.body).not.toContain('View Storybook for this PR');
     expect(result.body).not.toContain('View Sandbox for this PR');
+  });
+
+  it('shows the exact Vercel preview even when unrelated CI analysis fails', async () => {
+    const value = identity({sourceConclusion: 'failure'});
+    const {result} = await reconcile({
+      value,
+      analysis: false,
+      previewAvailable: true,
+    });
+    expect(result.body).toContain('concluded failure');
+    expect(result.body).toContain(`${VERCEL_ORIGIN}/storybook/`);
+    expect(result.body).toContain(`${VERCEL_ORIGIN}/sandbox/`);
   });
 
   it('replaces a stale linked comment when failed CI has no analysis artifact', async () => {
@@ -560,7 +628,10 @@ describe('PR comment preview reconciliation', () => {
     });
 
     expect(result.body).toContain('trusted analysis is unavailable');
-    expect(result.body).not.toContain('/pr/5697/');
+    expect(result.body).not.toContain(
+      'https://facebook.github.io/astryx/pr/5697/sandbox/',
+    );
+    expect(result.body).not.toContain('View Storybook for this PR');
     expect(core.warning).toHaveBeenCalledWith(
       expect.stringContaining('Could not render current analysis'),
     );
@@ -579,6 +650,7 @@ describe('PR comment preview reconciliation', () => {
         serverUrl: 'https://github.com',
       },
       visualPath: firstPaths.visual,
+      probePreview: async () => true,
     };
 
     await reconcilePrComment({
@@ -614,7 +686,7 @@ describe('PR comment preview reconciliation', () => {
     expect(harness.state.comments[0].body).toContain(
       'View Storybook for this PR',
     );
-    expect(harness.state.comments[0].body).not.toContain(
+    expect(harness.state.comments[0].body).toContain(
       'View Sandbox for this PR',
     );
     expect(harness.state.listedIssues).toEqual([5697, 5697]);
@@ -625,17 +697,12 @@ describe('PR comment preview reconciliation', () => {
     ['wrong head', {headSha: 'e'.repeat(40)}],
     ['wrong repository', {headRepository: 'someone/astryx'}],
   ])(
-    'fails closed for a deployment result with the %s',
+    'never treats an old Pages result with the %s as Vercel preview proof',
     async (_label, overrides) => {
       const deployment = published(identity(overrides));
-
-      const {result, core} = await reconcile({deployment});
-
+      const {result} = await reconcile({deployment, previewAvailable: false});
       expect(result.body).not.toContain('View Storybook for this PR');
       expect(result.body).not.toContain('View Sandbox for this PR');
-      expect(core.warning).toHaveBeenCalledWith(
-        expect.stringContaining('Ignoring untrusted or stale preview result'),
-      );
     },
   );
 
@@ -664,6 +731,35 @@ describe('PR comment preview reconciliation', () => {
     expect(state.created).toHaveLength(0);
     expect(state.updated).toHaveLength(0);
     expect(state.listedIssues).toHaveLength(0);
+  });
+
+  it('refuses a head push that happens during Vercel readiness before writing a comment', async () => {
+    const expected = identity();
+    const current = identity({headSha: 'f'.repeat(40)});
+    const paths = fixture(expected);
+    const {github, state} = githubFixture({value: expected});
+    await expect(
+      reconcilePrComment({
+        github,
+        core: {info: vi.fn(), warning: vi.fn()},
+        context: {
+          repo: {owner: 'facebook', repo: 'astryx'},
+          serverUrl: 'https://github.com',
+        },
+        expectedIdentity: expected,
+        analysisPath: paths.analysis,
+        metadataPath: paths.metadata,
+        a11yPath: paths.a11y,
+        visualPath: paths.visual,
+        lookupPreview: async () => {
+          github.rest.pulls.get.mockResolvedValue({data: pull(current)});
+          return VERCEL_ORIGIN;
+        },
+        probePreview: async () => true,
+      }),
+    ).rejects.toThrow(/head does not match source run/);
+    expect(state.created).toHaveLength(0);
+    expect(state.updated).toHaveLength(0);
   });
 
   it('does not emit links for dispatch without a PR-backed source run', async () => {
@@ -699,15 +795,255 @@ describe('PR comment preview reconciliation', () => {
     const {result, state} = await reconcile({
       value,
       deployment: published(value),
+      previewAvailable: true,
     });
 
     expect(result.action).toBe('created');
     expect(result.body).toContain(PR_ANALYSIS_MARKER);
-    expect(result.body).toContain('https://facebook.github.io/astryx/pr/5697/');
-    expect(result.body).toContain(
-      'https://facebook.github.io/astryx/pr/5697/sandbox/',
-    );
+    expect(result.body).toContain(`${VERCEL_ORIGIN}/storybook/`);
+    expect(result.body).toContain(`${VERCEL_ORIGIN}/sandbox/`);
     expect(state.created[0].issue_number).toBe(5697);
     expect(state.listedIssues).toEqual([5697]);
+  });
+
+  it('never advertises either link when one preview route probe fails', async () => {
+    const value = identity();
+    const paths = fixture(value, {deployment: published(value)});
+    const {github, state} = githubFixture({value});
+    const context = {
+      repo: {owner: 'facebook', repo: 'astryx'},
+      serverUrl: 'https://github.com',
+    };
+    const report = await reconcilePrComment({
+      github,
+      core: {info: vi.fn(), warning: vi.fn()},
+      context,
+      expectedIdentity: value,
+      analysisPath: paths.analysis,
+      metadataPath: paths.metadata,
+      a11yPath: paths.a11y,
+      visualPath: paths.visual,
+      lookupPreview: async () => VERCEL_ORIGIN,
+      probePreview: async () => false,
+      probeWaitMs: 0,
+    });
+    expect(report.body).not.toContain('View Storybook for this PR');
+    expect(report.body).not.toContain('View Sandbox for this PR');
+    const early = await reconcileEarlyPreviewComment({
+      github,
+      owner: 'facebook',
+      repo: 'astryx',
+      prNumber: value.prNumber,
+      headSha: value.headSha,
+      origin: VERCEL_ORIGIN,
+      lookupPreview: async () => VERCEL_ORIGIN,
+      probePreview: async () => false,
+      probeWaitMs: 0,
+    });
+    expect(early.action).toBe('none');
+    expect(state.updated).toHaveLength(0);
+  });
+
+  it('does not publish an older same-head origin after a newer redeploy starts', async () => {
+    const value = identity();
+    const paths = fixture(value);
+    const {github, state} = githubFixture({value});
+    let lookups = 0;
+    const lookupPreview = async () => (++lookups === 1 ? VERCEL_ORIGIN : null);
+    const report = await reconcilePrComment({
+      github,
+      core: {info: vi.fn(), warning: vi.fn()},
+      context: {
+        repo: {owner: 'facebook', repo: 'astryx'},
+        serverUrl: 'https://github.com',
+      },
+      expectedIdentity: value,
+      analysisPath: paths.analysis,
+      metadataPath: paths.metadata,
+      a11yPath: paths.a11y,
+      visualPath: paths.visual,
+      lookupPreview,
+      probePreview: async () => true,
+    });
+    expect(report.body).not.toContain('View Storybook for this PR');
+    expect(report.body).not.toContain('View Sandbox for this PR');
+    expect(state.created).toHaveLength(1);
+
+    let earlyLookups = 0;
+    const early = await reconcileEarlyPreviewComment({
+      github,
+      owner: 'facebook',
+      repo: 'astryx',
+      prNumber: value.prNumber,
+      headSha: value.headSha,
+      origin: VERCEL_ORIGIN,
+      lookupPreview: async () => (++earlyLookups === 1 ? VERCEL_ORIGIN : null),
+      probePreview: async () => true,
+    });
+    expect(early.action).toBe('none');
+    expect(state.updated).toHaveLength(0);
+  });
+
+  it('posts preview links before CI and later enriches the same report', async () => {
+    const value = identity();
+    const paths = fixture(value, {deployment: published(value)});
+    const {github, state} = githubFixture({value});
+    const early = () =>
+      reconcileEarlyPreviewComment({
+        github,
+        owner: 'facebook',
+        repo: 'astryx',
+        prNumber: value.prNumber,
+        headSha: value.headSha,
+        origin: VERCEL_ORIGIN,
+        lookupPreview: async () => VERCEL_ORIGIN,
+        probePreview: async () => true,
+      });
+    expect((await early()).action).toBe('created');
+    expect(state.comments[0].body).toContain(`${VERCEL_ORIGIN}/storybook/`);
+    expect(state.comments[0].body).toContain('View Sandbox for this PR');
+    expect(state.comments[0].body).not.toContain('Modified Components');
+    expect((await early()).action).toBe('unchanged');
+    expect(state.created).toHaveLength(1);
+
+    const enriched = await reconcilePrComment({
+      github,
+      core: {info: vi.fn(), warning: vi.fn()},
+      context: {
+        repo: {owner: 'facebook', repo: 'astryx'},
+        serverUrl: 'https://github.com',
+      },
+      expectedIdentity: value,
+      analysisPath: paths.analysis,
+      metadataPath: paths.metadata,
+      a11yPath: paths.a11y,
+      deploymentResultPath: paths.deployment,
+      visualPath: paths.visual,
+      lookupPreview: async () => VERCEL_ORIGIN,
+      probePreview: async () => true,
+    });
+    expect(enriched.action).toBe('updated');
+    expect(state.comments).toHaveLength(1);
+    expect(state.comments[0].body).toContain('Modified Components');
+    expect(state.comments[0].body).toContain(`${VERCEL_ORIGIN}/storybook/`);
+    expect(state.comments[0].body).toContain(`${VERCEL_ORIGIN}/sandbox/`);
+  });
+
+  it('adds a late preview without discarding same-head CI and visual evidence', async () => {
+    const value = identity();
+    const {result, github, state} = await reconcile({
+      value,
+      deployment: published(value),
+      previewAvailable: false,
+    });
+    expect(result.body).toContain('Modified Components');
+    expect(result.body).toContain('Preview availability');
+    const early = await reconcileEarlyPreviewComment({
+      github,
+      owner: 'facebook',
+      repo: 'astryx',
+      prNumber: value.prNumber,
+      headSha: value.headSha,
+      origin: VERCEL_ORIGIN,
+      lookupPreview: async () => VERCEL_ORIGIN,
+      probePreview: async () => true,
+    });
+    expect(early.action).toBe('updated');
+    expect(state.comments[0].body).toContain('Modified Components');
+    expect(state.comments[0].body).not.toContain('Preview availability');
+    expect(state.comments[0].body).toContain(`${VERCEL_ORIGIN}/storybook/`);
+    expect(state.comments[0].body).toContain(`${VERCEL_ORIGIN}/sandbox/`);
+  });
+
+  it('replaces a same-head Pages fallback without duplicating its Sandbox link', async () => {
+    const value = identity();
+    const oldOrigin = VERCEL_ORIGIN;
+    const nextOrigin = 'https://astryx-atz4b1yim-fbopensource.vercel.app';
+    const legacySandbox = 'https://facebook.github.io/astryx/pr/5697/sandbox/';
+    const evidence = 'CI, a11y and visual evidence remains here';
+    const {github, state} = githubFixture({
+      value,
+      comments: [
+        {
+          id: 777,
+          user: {type: 'Bot'},
+          body: `## PR Analysis Report\n${PR_ANALYSIS_MARKER}\n<!-- astryx-pr-head:${value.headSha} -->\n\n[View Storybook for this PR](${oldOrigin}/storybook/) · [View Sandbox for this PR](${legacySandbox})\n\n${evidence}`,
+        },
+      ],
+    });
+    const result = await reconcileEarlyPreviewComment({
+      github,
+      owner: 'facebook',
+      repo: 'astryx',
+      prNumber: value.prNumber,
+      headSha: value.headSha,
+      origin: nextOrigin,
+      lookupPreview: async () => nextOrigin,
+      probePreview: async () => true,
+    });
+    expect(result.action).toBe('updated');
+    expect(state.comments[0].body).toContain(evidence);
+    expect(state.comments[0].body).toContain(`${nextOrigin}/storybook/`);
+    expect(state.comments[0].body).toContain(`${nextOrigin}/sandbox/`);
+    expect(state.comments[0].body).not.toContain(legacySandbox);
+    expect(
+      state.comments[0].body.match(/View Sandbox for this PR/g),
+    ).toHaveLength(1);
+  });
+
+  it('refreshes a same-head redeployment without losing CI, a11y, or visual evidence', async () => {
+    const value = identity();
+    const {github, state} = await reconcile({
+      value,
+      deployment: published(value),
+      previewAvailable: true,
+    });
+    const prior = state.comments[0].body;
+    const visualEvidence =
+      '[Visual evidence](https://facebook.github.io/astryx/pr/5697/visual/example/)';
+    state.comments[0].body += `\n${visualEvidence}`;
+    const nextOrigin = 'https://astryx-atz4b1yim-fbopensource.vercel.app';
+
+    const result = await reconcileEarlyPreviewComment({
+      github,
+      owner: 'facebook',
+      repo: 'astryx',
+      prNumber: value.prNumber,
+      headSha: value.headSha,
+      origin: nextOrigin,
+      lookupPreview: async () => nextOrigin,
+      probePreview: async () => true,
+    });
+    expect(result.action).toBe('updated');
+    expect(state.comments).toHaveLength(1);
+    expect(state.comments[0].body).toContain('Modified Components');
+    expect(state.comments[0].body).toContain('Accessibility Audit');
+    expect(state.comments[0].body).toContain(visualEvidence);
+    expect(state.comments[0].body).toContain(`${nextOrigin}/storybook/`);
+    expect(state.comments[0].body).toContain(`${nextOrigin}/sandbox/`);
+    expect(state.comments[0].body).not.toContain(VERCEL_ORIGIN);
+    expect(prior).toContain(VERCEL_ORIGIN);
+  });
+
+  it('refuses an early comment when the deployment head becomes stale or draft', async () => {
+    for (const value of [
+      identity({headSha: 'f'.repeat(40)}),
+      identity({draft: true}),
+    ]) {
+      const {github, state} = githubFixture({value});
+      const result = await reconcileEarlyPreviewComment({
+        github,
+        owner: 'facebook',
+        repo: 'astryx',
+        prNumber: 5697,
+        headSha: HEAD,
+        origin: VERCEL_ORIGIN,
+        lookupPreview: async () => VERCEL_ORIGIN,
+        probePreview: async () => true,
+      });
+      expect(result.action).toBe('none');
+      expect(state.created).toHaveLength(0);
+      expect(state.updated).toHaveLength(0);
+    }
   });
 });

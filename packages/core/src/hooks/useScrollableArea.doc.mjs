@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file useScrollableArea.doc.mjs
+ * @input Shared scroll hook's fixed and entry-time keyboard policies
+ * @output Consumer guidance for named viewports and safe focus delegation
+ * @position Hook documentation consumed by the CLI and docsite
+ */
+
 /** @type {import('@astryxdesign/cli/authoring').HookDoc} */
 export const docs = {
   name: 'useScrollableArea',
@@ -18,7 +25,7 @@ export const docs = {
       name: 'options',
       type: 'UseScrollableAreaOptions',
       description:
-        'Logical scroll intent, keyboard owner, overscroll policy, and fitting Sticky containment.',
+        'Logical scroll intent, fixed or automatic keyboard owner, overscroll policy, and fitting Sticky containment.',
       required: true,
     },
   ],
@@ -59,7 +66,12 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use content keyboard ownership when an existing focusable descendant gives keyboard users access to all overflowed content.',
+          'Use contentOrViewport to delegate forward Tab entry to the first sequential native link or button when it preserves native scroll keys. Inputs, composite widgets, and nested scroll areas retain the named viewport stop. Shift+Tab from the delegated first child skips the viewport; pointer and programmatic focus stay on it.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use content keyboard ownership when your integration already supplies keyboard access to the full scroll range. Automatic delegation checks current content at each keyboard entry without continuously tracking its focusability.',
       },
       {
         guidance: true,
@@ -95,7 +107,7 @@ export const docsDense = {
     'Composes logical-axis scrolling into caller-owned viewport/content elements with stable effective-axis and edge state.',
   paramDescriptions: {
     options:
-      'axis, keyboard owner, allow/contain overscroll policy, and fitting Sticky containment.',
+      'axis, fixed/automatic keyboard owner, allow/contain overscroll policy, and fitting Sticky containment.',
   },
   returnDescriptions: {
     getViewportProps:

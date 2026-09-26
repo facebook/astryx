@@ -12,7 +12,9 @@ export const docs = {
     description: 'Use DialogHeader to give a dialog a labelled title area and optional close control.',
     anatomy: [
       {name: 'Header row', required: true, description: 'Arranges the title block, optional start/end content, and close control.'},
+      {name: 'Start content', required: false, description: 'Wraps optional leading content.'},
       {name: 'Title block', required: true, description: 'Groups the title and optional subtitle.'},
+      {name: 'End content', required: false, description: 'Groups optional trailing content with the optional close control.'},
       {name: 'Close icon', required: false, description: 'Visual close glyph inside the close button.'},
     ],
   },
@@ -67,6 +69,11 @@ export const docs = {
       ],
     },
     {
+      name: 'endContentEdgeCompensation',
+      type: "'inline' | 'block' | 'all'",
+      description: 'Selects compensation axes for the end-content slot. Omit to preserve automatic close-action compensation.',
+    },
+    {
       name: 'hasDivider',
       type: 'boolean',
       description: 'Adds border at the bottom edge.',
@@ -83,7 +90,9 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-dialog-header'},
+      {className: 'astryx-dialog-header-start-content'},
       {className: 'astryx-dialog-header-title-block'},
+      {className: 'astryx-dialog-header-end-content'},
       {className: 'astryx-dialog-header-close-icon'},
     ],
   },
@@ -136,7 +145,9 @@ export const docsZh = {
     description: '使用 DialogHeader 为对话框提供带标签的标题区和可选的关闭控件。',
     anatomy: [
       {name: 'Header row', required: true, description: '排列标题区、可选的首尾内容和关闭控件。'},
+      {name: 'Start content', required: false, description: '包装可选的首部内容。'},
       {name: 'Title block', required: true, description: '组合标题和可选副标题。'},
+      {name: 'End content', required: false, description: '组合可选尾部内容和可选关闭控件。'},
       {name: 'Close icon', required: false, description: '关闭按钮内的关闭图标。'},
     ],
   },
@@ -167,6 +178,11 @@ export const docsZh = {
       description: '标题之后、关闭按钮之前的内容。',
     },
     {
+      name: 'endContentEdgeCompensation',
+      type: "'inline' | 'block' | 'all'",
+      description: '选择尾部内容插槽的补偿轴；省略时保留关闭操作的自动补偿。',
+    },
+    {
       name: 'hasDivider',
       type: 'boolean',
       description: '在底部边缘添加分隔线。',
@@ -176,7 +192,9 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'astryx-dialog-header'},
+      {className: 'astryx-dialog-header-start-content'},
       {className: 'astryx-dialog-header-title-block'},
+      {className: 'astryx-dialog-header-end-content'},
       {className: 'astryx-dialog-header-close-icon'},
     ],
   },
@@ -191,7 +209,9 @@ export const docsDense = {
     description: 'labelled dialog title area + optional close control',
     anatomy: [
       {name: 'Header row', required: true, description: 'arranges title block, optional start/end content, close control'},
+      {name: 'Start content', required: false, description: 'wraps optional leading content'},
       {name: 'Title block', required: true, description: 'groups title + optional subtitle'},
+      {name: 'End content', required: false, description: 'groups optional trailing content + optional close control'},
       {name: 'Close icon', required: false, description: 'close glyph inside close button'},
     ],
   },
@@ -201,6 +221,8 @@ export const docsDense = {
     onOpenChange: 'close button callback (omit=no button)',
     startContent: 'content before title (e.g. back button)',
     endContent: 'content after title, before close button',
+    endContentEdgeCompensation:
+      'end-content slot axes: inline | block | all; omit=automatic close-action compensation',
     hasDivider: 'bottom border',
   },
 };

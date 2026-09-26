@@ -17,6 +17,8 @@ describe('spec-only workflow contract', () => {
     for (const workflow of [
       '.github/workflows/ci.yml',
       '.github/workflows/lint.yml',
+      '.github/workflows/cli-smoke-test.yml',
+      '.github/workflows/internal-registry.yml',
       '.github/workflows/pr-comment.yml',
     ]) {
       expect(read(workflow), workflow).toContain(
@@ -32,6 +34,8 @@ describe('spec-only workflow contract', () => {
     for (const workflow of [
       '.github/workflows/ci.yml',
       '.github/workflows/lint.yml',
+      '.github/workflows/cli-smoke-test.yml',
+      '.github/workflows/internal-registry.yml',
     ]) {
       const source = read(workflow);
       expect(source, workflow).toContain(
@@ -98,21 +102,68 @@ describe('spec-only workflow contract', () => {
     }
   });
 
-  it('keeps required CI names green while skipping heavy work', () => {
+  it('routes spec-only changes without unrelated CI commands', () => {
     const ci = read('.github/workflows/ci.yml');
     expect(ci).toContain(
       'git show "origin/${{ github.base_ref }}:.github/scripts/change-scope.cjs"',
     );
     expect(ci).toContain('spec_only: ${{ steps.scope.outputs.spec_only }}');
-    expect(ci).toContain('node scripts/check-knowledge.mjs');
-    expect(ci).toContain("needs.check-scope.outputs.spec_only != 'true'");
-    expect(ci).toContain('build:');
-    expect(ci).toContain('docsite-test:');
-    expect(ci).toContain('test:');
+
+    const jobBlock = name => {
+      const start = ci.indexOf(`  ${name}:`);
+      expect(start, name).toBeGreaterThanOrEqual(0);
+      const next = ci.slice(start + 1).search(/^  [a-zA-Z0-9_-]+:\s*$/m);
+      return next < 0 ? ci.slice(start) : ci.slice(start, start + 1 + next);
+    };
+    const unrelatedJobs = [
+      'check-components',
+      'test-ui',
+      'test-node',
+      'registry-contract',
+      'test',
+      'build-storybook',
+      'pr-rtl',
+    ];
+    for (const job of unrelatedJobs) {
+      expect(jobBlock(job), job).toContain(
+        "needs.check-scope.outputs.spec_only != 'true'",
+      );
+    }
+    expect(jobBlock('build')).toContain(
+      "needs.build-storybook.result != 'skipped'",
+    );
+
+    const docsite = jobBlock('docsite-test');
+    expect(docsite).toContain("needs.check-scope.outputs.spec_only == 'true'");
+    expect(docsite).toContain('node scripts/check-knowledge.mjs');
 
     const lint = read('.github/workflows/lint.yml');
-    expect(lint).toContain("steps.scope.outputs.spec_only == 'true'");
-    expect(lint).toContain('node scripts/check-knowledge.mjs');
+    expect(lint).toContain('.github/scripts/change-scope.cjs');
+    expect(lint).not.toContain('node scripts/check-knowledge.mjs');
+
+    for (const workflow of [
+      '.github/workflows/cli-smoke-test.yml',
+      '.github/workflows/internal-registry.yml',
+    ]) {
+      const source = read(workflow);
+      expect(source, workflow).toContain(
+        "if: steps.scope.outputs.spec_only == 'true'",
+      );
+      const expensiveSteps = source
+        .split(/\n      - /)
+        .slice(1)
+        .filter(step =>
+          /(?:github\/actions\/setup|pnpm|playwright|cli-smoke-test|dependency-check)/.test(
+            step,
+          ),
+        );
+      expect(expensiveSteps.length, workflow).toBeGreaterThan(0);
+      for (const step of expensiveSteps) {
+        expect(step, `${workflow}: ${step.slice(0, 60)}`).toContain(
+          "steps.scope.outputs.spec_only != 'true'",
+        );
+      }
+    }
   });
 
   it('sets up dependencies before spec validation and skips heavy spec-only work', () => {
@@ -166,14 +217,28 @@ describe('spec-only workflow contract', () => {
 
   it('fails closed when file APIs are truncated or scope classification fails', () => {
     const ci = read('.github/workflows/ci.yml');
-    expect(ci).toContain('if: ${{ always() && !cancelled() }}');
+    expect(ci).toContain(
+      "if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() }}",
+    );
     expect(ci).toContain("if: needs.check-scope.result != 'success'");
 
     const reviewSignal = read('.github/workflows/review-signal.yml');
     expect(reviewSignal).toContain('allFiles.length !== pr.changed_files');
 
     const prComment = read('.github/workflows/pr-comment.yml');
-    expect(prComment).toContain('files.length !== pr.changed_files');
+    expect(prComment).toContain('expectedCount: pull.changed_files');
+  });
+
+  it('keeps the schema approval roster within the ENGOWNERS set', () => {
+    const {parseOwnerFile} = require('./knowledge-frontmatter.cjs');
+    const latestSchema = JSON.parse(read('docs/schemas/knowledge/v4.json'));
+    const engineeringOwners = parseOwnerFile(
+      read('.github/ENGOWNERS'),
+    );
+
+    for (const owner of latestSchema.approvalOwners) {
+      expect(engineeringOwners).toContain(owner);
+    }
   });
 
   it('runs the tested exact-head reconciler from the trusted default branch', () => {
@@ -216,8 +281,16 @@ describe('spec-only workflow contract', () => {
     expect(reconciler).toContain('scope.touchesKnowledgeRecords');
     expect(reconciler).toContain('scope.touchesDesignAssets');
     expect(reconciler).toContain('requiredApprovalGroups(records');
+    expect(read('.github/scripts/spec-owner-decision.cjs')).toContain(
+      "require('./component-design-decisions.cjs')",
+    );
     expect(reconciler).toContain("'.github/DESIGNOWNERS'");
     expect(reconciler).toContain("'.github/ENGOWNERS'");
+    expect(workflow).not.toContain('SPEC_OWNERS:');
+    expect(reconciler).not.toContain('env.SPEC_OWNERS');
+    expect(reconciler).toContain(
+      'resolveOwnerDecision({...decisionInput, owners: engineeringOwners})',
+    );
     expect(reconciler).toContain(
       '...new Set([...engineeringOwners, ...designOwners])',
     );
@@ -324,8 +397,6 @@ describe('spec-only workflow contract', () => {
     const workflow = read('.github/workflows/pr-comment.yml');
     expect(workflow).toContain("needs.resolve.outputs.spec_only != 'true'");
     expect(workflow).toContain("needs.resolve.outputs.spec_only == 'true'");
-    expect(workflow).toContain(
-      "context: 'visual-acceptance', state: 'success'",
-    );
+    expect(workflow).not.toContain("context: 'visual-acceptance'");
   });
 });

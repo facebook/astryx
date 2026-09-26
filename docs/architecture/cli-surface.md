@@ -3,12 +3,12 @@ schema_version: 1
 template_version: 1
 kind: architecture
 id: architecture:cli-surface
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
-owners: [joeyfarina]
+approved_by: cixzhang
+approved_at: 2026-09-13
+owners: [josephfarina]
 applies_to: [packages/cli]
 verified_by:
   [
@@ -22,6 +22,9 @@ verified_by:
     foundation/integrations/autolink.test.mjs,
     foundation/integrations/manifest-writer.test.mjs,
     foundation/integrations/contribution-inventory.test.mjs,
+    foundation/discovery/theme-discovery.test.mjs,
+    authoring/doctypes/doctypes-new.test.mjs,
+    scripts/check-cli-theme-bundle.test.mjs,
     clients/cli/commands/integration-authoring.test.mjs,
     clients/cli/commands/integration-real-world.test.mjs,
     api/integration/add-contribution.test.mjs,
@@ -31,7 +34,7 @@ verified_by:
     clients/cli/commands/upgrade.integration-policy.test.mjs,
     clients/cli/formatters/index.test.mjs,
   ]
-deciding_specs: [spec:AST-017/DEC-4]
+deciding_specs: [spec:AST-017/DEC-4, spec:AST-042/DEC-1, spec:AST-042/DEC-2]
 ---
 
 # CLI surface architecture
@@ -66,10 +69,11 @@ rather than left to the command author.
 3. **Work.** The command parses its arguments and calls a function in `api/`.
    The command is a thin wrapper: parse, call, render. The API function is the
    unit that is scriptable and typed, and it is the source of truth for the
-   `type` discriminator on its own envelope.
+   `type` discriminator on its own envelope. `spec:AST-042` FR1 makes this the
+   contract; INV20–INV22 fix where each part lives.
 4. **Render.** Exactly one of two paths. In `--json` mode, `jsonOut` writes a
-   single envelope. Otherwise the formatters render the same values as text.
-   Nothing else may write to stdout.
+   single envelope. Otherwise the formatters render the same values as text,
+   from a closed set of blocks (INV23). Nothing else may write to stdout.
 
 Discovery of components, templates, themes, codemods and docs is not per-command. It
 goes through the `Project` seam in `foundation/config`, which resolves the
@@ -144,27 +148,92 @@ test, applicable text, and consumer-documentation projections.
 - **INV16 — Authoring preserves package policy and local source wins while it is
   being edited.** Writers never create `files` or `exports`; when either field
   already exists, they add only the required manifest, root, or public subpath
-  and preserve every author-owned entry. The integration beside the current
-  package.json replaces the same installed package in place, preserving its
-  configured order while making working bytes authoritative.
+  and preserve every author-owned entry. Generated component and template export
+  keys are extensionless public subpaths even when they target authored `.ts` or
+  `.tsx` source. The integration beside the current package.json replaces the
+  same installed package in place, preserving its configured order while making
+  working bytes authoritative.
 - **INV17 — Pack verification examines the artifact consumers receive.**
   `integration pack --check` runs the package lifecycle through `npm pack`,
   compares the required file inventory with the actual tarball, extracts that
-  tarball into a scratch consumer, reruns contribution discovery, and verifies
-  advertised component and template imports through Node's package resolver.
+  tarball into a scratch consumer, and reruns contribution discovery. It rejects
+  advertised component imports ending in `.ts` or `.tsx`, resolves every exact
+  advertised component and inferred template import through Node's package
+  resolver, and fails when the packed artifact has no usable public export. This
+  contract does not require project-local TypeScript or promise validation under
+  TypeScript's Node16 or bundler resolution modes.
 - **INV18 — Integration diagnostics are read-only and package-specific.** Doctor
   validation reports malformed or unreachable roots and contribution conflicts
   without rewriting the package. Everyday discovery skips a broken integration
   and records its issue; a package-scoped theme lookup surfaces that package's
   blocking catalog error instead of misreporting the theme as unknown.
 - **INV19 — Integration themes are packaged editable source.** The manifest's
-  `themes` root contains a versioned catalog. Each entry names its slug, source
-  entry, named runtime export, and complete file list. Discovery parses the entry
-  without executing it, requires every local static import and re-export to name
-  a file in that list, and rejects missing or type-only named exports. Pack
-  verification preserves that identity; `theme list` retains package ownership;
-  `theme add --package` copies every listed file, including nested palette/token
-  modules, before `theme build` compiles the consumer-owned copy.
+  `themes` root contains one directory per slug. Every theme source has a mandatory
+  same-stem, strongly typed `ThemeDoc`; there is no root item catalog. Discovery
+  derives the source entry and required named runtime export from the shared stem,
+  parses source without executing it, and rejects escaped local imports and missing
+  or type-only runtime exports. The theme directory is the recursive copy and pack
+  boundary; dot entries and files npm never publishes belong to no theme. A
+  dot-folder, or a folder holding neither a descriptor nor a `<name>Theme`
+  source, is not a theme and is neither read nor packed, and doctor warns about
+  one that looks like a theme; a folder with a theme source and no descriptor
+  fails. `theme list` retains package
+  ownership, and `theme add --package` copies the complete directory before
+  `theme build` compiles the consumer-owned copy.
+- **INV20 — A command's API subject has one layout.** A command's behavior lives
+  in `api/<subject>/`. `<subject>.mjs` is the subject's entry, and `api/index.mjs`
+  re-exports what it exports. A subject with more than one operation puts each in
+  a leaf, `<leaf>/<leaf>.mjs`, and the entry dispatches to the leaves. Every
+  exported function has a colocated `FunctionDoc` — `<subject>.doc.mjs` for the
+  entry function, `<function>.doc.mjs` for any other — and response typedefs in a
+  `*.type.mjs` file. Tests sit beside the module they cover as
+  `<module>.test.mjs`. A private helper is an underscore-prefixed file, such as
+  `_site.mjs`. `api/blog` is the reference layout.
+- **INV21 — An API subject reaches the environment only through its adapter.**
+  Within `api/<subject>/`, reading or writing files, network requests,
+  subprocesses, loading the project or its modules, and discovery that reads the
+  disk happen in the subject's adapter: `_adapter.mjs` and any underscore-prefixed
+  helper that only it imports. The adapter may call foundation seams such as the
+  `Project` seam and `assertWithin`. The entry and the leaves shape inputs and
+  results and call the adapter; they do not import filesystem, network, or
+  subprocess modules, the `Project` seam, or discovery and loader functions. A
+  subject that needs no environment access has no adapter.
+  `api/blog/_adapter.mjs` is the reference adapter.
+- **INV22 — A command handler parses, calls, and renders.** A handler in
+  `clients/cli/commands/` registers through `defineCommand` with its
+  `CommandDoc`, and an executable command's `CommandDoc` names in `fn` the API
+  function it calls. The handler parses its arguments, calls that function, and
+  renders the result through `jsonOut` or the formatter kit. It reads no files,
+  loads no project, runs no discovery, and starts no subprocess or network
+  request; it may phrase hints with how the CLI was invoked, such as the package
+  manager's run prefix. Only command handlers, their `CommandDoc` files, and
+  their tests live in that directory. `clients/cli/commands/blog.mjs` is the
+  reference handler.
+- **INV23 — The formatter kit is closed.** Text output is built only from the
+  block constructors in `clients/cli/formatters/index.mjs` — `section`, `text`,
+  `list`, `record`, `records`, and `code` — and printed through `emit`. A handler
+  does not pad strings to a width, align columns, or draw tables, and it defines
+  no renderer of its own; it maps its data onto records, lists, and sections. A
+  block kind is added to the kit, with its tests and its line in the help
+  "Output format" list, only as `spec:AST-042` FR3 allows.
+- **INV24 — Every discoverable integration item owns one typed descriptor.** New
+  authoring emits `<source-stem>.doc.mjs`, annotated with its public type from
+  `@astryxdesign/cli/authoring`, beside the source or payload it describes. The
+  descriptor is the sole per-item metadata authority; `astryx.integration.*`
+  locates roots and integration-level capabilities but never catalogs items:
+  there is no catalog file under a root and no per-item map or list in the
+  manifest (`spec:AST-039/FR11`). A released alternate reader is an isolated
+  compatibility path, not a second authoring convention.
+- **INV25 — Every CLI doc names the topic that reads it.** Each command, API
+  function, schema, and enum doc the CLI ships declares a `namespace`.
+  `cli/commands` and `cli/api` docs are sections of `astryx docs cli`, keyed
+  `commands-<name>` and `api-<name>`; `authoring` docs are sections of
+  `astryx docs authoring` and appear in its list. `astryx doctor` fails when a
+  CLI doc has no namespace, names one no topic reads, or disagrees with the
+  authoring list, so every doc the CLI ships stays readable from the CLI.
+
+Some modules predate INV20–INV23 and do not meet them yet; `spec:AST-042` lists
+the known gaps.
 
 ## Change coupling
 
@@ -175,14 +244,19 @@ updated in the same pull request when it moves an invariant:
 - adding an error code, or changing what an existing code means;
 - a change to a stable JSON envelope or discriminated response-entry field
   follows `spec:AST-017/DEC-4`;
-- adding a formatter, or writing to stdout from anywhere other than `emit` and
-  `jsonOut`;
+- adding a formatter or block kind (INV23, `spec:AST-042` FR3), or writing to
+  stdout from anywhere other than `emit` and `jsonOut`;
 - changing the file layout under `clients/cli/commands`;
-- changing an integration writer's receipt, no-clobber/rollback behavior, or
-  package.json mutation policy;
-- changing what `integration pack --check` executes or proves about the tarball;
+- adding an API subject, leaf, adapter, or exported function, or giving an API
+  module access to the environment (INV20–INV21);
+- adding a command, API function, schema, or enum doc, or a namespace a CLI
+  doc may declare (INV25);
+- changing an integration writer's receipt, no-clobber/rollback behavior,
+  package.json mutation policy, or public subpath spelling;
+- changing what `integration pack --check` executes, resolves, or proves about
+  the tarball;
 - changing local, configured, or autolinked integration precedence;
-- changing the integration theme catalog or consumer copy contract.
+- changing an integration item descriptor, the theme directory boundary, or the consumer copy contract.
 
 `pnpm check:cli-structure` enforces the layout. The contract tests listed in
 `verified_by` enforce the envelope, the exit codes, the error codes, and the
@@ -208,34 +282,48 @@ non-interactive guarantee.
   packed contribution identity/file contract.
 - `api/integration` — contribution writers, diagnostics, and packed-artifact
   verification.
-- `foundation/discovery/theme-discovery.mjs` and `api/theme` — integration theme
-  catalog discovery, package-aware selection, source copy, and build.
+- `foundation/discovery/theme-discovery.mjs` and `api/theme` — typed integration
+  theme descriptor discovery, package-aware selection, source copy, and build.
 - `foundation/agent-docs` — the shared expected-block renderer and managed-file
   writer used by init and upgrade.
-- `api/<subject>/…` — the scriptable functions the commands wrap; each owns the
-  `type` on its own envelope.
+- `api/index.mjs` — the public programmatic API, `@astryxdesign/cli/api`, which
+  re-exports every subject's functions.
+- `api/<subject>/…` — the scriptable functions the commands wrap, laid out as
+  INV20 describes; each owns the `type` on its own envelope.
+- `api/<subject>/_adapter.mjs` — the subject's only access to the environment
+  (INV21).
 
 ## Deciding specs
 
 - `spec:AST-017/DEC-4` — stable response fields and their complete projections
   are current compatibility authority.
+- `spec:AST-042/DEC-1` — every command is a thin layer over one programmatic
+  function.
+- `spec:AST-042/DEC-2` — every command's text output uses one shared block
+  vocabulary.
 
 ## Verification
 
-| Invariant | Evidence                                                                                           | Failure signal                                                                                    |
-| --------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| INV1      | `clients/cli/commands/interactive-guard.test.mjs`                                                  | The subprocess hangs: `signal === 'SIGTERM'` and `status === null`.                               |
-| INV2      | `clients/cli/commands/json-contract.test.mjs`                                                      | `--json` stdout does not parse, or parses to a shape outside the two.                             |
-| INV3      | `foundation/response/error-codes.test.mjs`                                                         | A shipped code disappears, or an envelope carries an unregistered one.                            |
-| INV4      | `clients/cli/formatters/index.test.mjs`, type tests                                                | `emit` accepts a bare string, or output varies between pipe and TTY.                              |
-| INV6      | `pnpm check:cli-structure`                                                                         | A command's file or its doc is missing, or sits at the wrong path.                                |
-| INV8      | `clients/cli/cli-exit-codes.test.mjs`                                                              | The same condition exits differently with and without `--json`.                                   |
-| INV14     | `foundation/integrations/autolink.test.mjs`, `foundation/config/project.test.mjs`                  | An undeclared package contributes, or configured/local precedence changes.                        |
-| INV15     | `api/integration/add-contribution.test.mjs`, `clients/cli/commands/integration-authoring.test.mjs` | Dry-run/write paths differ, a writer clobbers bytes, or the new contribution is not discoverable. |
-| INV16     | `foundation/integrations/manifest-writer.test.mjs`, `api/integration/add-contribution.test.mjs`    | A writer invents package policy, replaces an author entry, or local bytes lose precedence.        |
-| INV17     | `api/integration/pack-check.test.mjs`                                                              | Lifecycle output, packed files, identities, or public imports diverge without failing the gate.   |
-| INV18     | `api/integration/validate-integration.test.mjs`, `api/theme/integration-themes.test.mjs`           | Diagnostics mutate files, or a selected broken theme package is reported as merely unknown.       |
-| INV19     | `clients/cli/commands/integration-real-world.test.mjs`                                             | A CLI-authored theme, nested palette, or guides fail across pack, install, list, add, and build.  |
+| Invariant | Evidence                                                                                                                                                   | Failure signal                                                                                                                                  |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV1      | `clients/cli/commands/interactive-guard.test.mjs`                                                                                                          | The subprocess hangs: `signal === 'SIGTERM'` and `status === null`.                                                                             |
+| INV2      | `clients/cli/commands/json-contract.test.mjs`                                                                                                              | `--json` stdout does not parse, or parses to a shape outside the two.                                                                           |
+| INV3      | `foundation/response/error-codes.test.mjs`                                                                                                                 | A shipped code disappears, or an envelope carries an unregistered one.                                                                          |
+| INV4      | `clients/cli/formatters/index.test.mjs`, type tests                                                                                                        | `emit` accepts a bare string, or output varies between pipe and TTY.                                                                            |
+| INV6      | `pnpm check:cli-structure`                                                                                                                                 | A command's file or its doc is missing, or sits at the wrong path.                                                                              |
+| INV8      | `clients/cli/cli-exit-codes.test.mjs`                                                                                                                      | The same condition exits differently with and without `--json`.                                                                                 |
+| INV14     | `foundation/integrations/autolink.test.mjs`, `foundation/config/project.test.mjs`                                                                          | An undeclared package contributes, or configured/local precedence changes.                                                                      |
+| INV15     | `api/integration/add-contribution.test.mjs`, `clients/cli/commands/integration-authoring.test.mjs`                                                         | Dry-run/write paths differ, a writer clobbers bytes, or the new contribution is not discoverable.                                               |
+| INV16     | `foundation/integrations/manifest-writer.test.mjs`, `api/integration/add-contribution.test.mjs`                                                            | A writer invents package policy, replaces an author entry, or local bytes lose precedence.                                                      |
+| INV17     | `api/integration/pack-check.test.mjs`                                                                                                                      | Lifecycle output, packed files, identities, or public imports diverge without failing the gate.                                                 |
+| INV18     | `api/integration/validate-integration.test.mjs`, `api/theme/integration-themes.test.mjs`                                                                   | Diagnostics mutate files, or a selected broken theme package is reported as merely unknown.                                                     |
+| INV19     | `clients/cli/commands/integration-real-world.test.mjs`                                                                                                     | A CLI-authored theme, nested palette, or guides fail across pack, install, list, add, and build.                                                |
+| INV20     | `pnpm check:cli-structure` checks that each subject has a `FunctionDoc`, typedefs, and a test; per-function coverage and leaf layout are checked in review | A subject or exported function lacks its `FunctionDoc`, typedefs, or tests, or an operation sits outside its subject.                           |
+| INV21     | Review of imports under `api/**`; no mechanical check yet                                                                                                  | A module other than a subject's adapter reads or writes files, contacts the network, starts a subprocess, loads the project, or runs discovery. |
+| INV22     | Review of imports under `clients/cli/commands/**`; the docs drift harness checks each `CommandDoc` against the live command                                | A handler reaches the environment itself, an executable command's `CommandDoc` names no `fn`, or a non-command file sits in the directory.      |
+| INV23     | `clients/cli/formatters/index.test.mjs` for the kit; review of handlers; no mechanical check yet                                                           | A handler pads, aligns, or draws text itself, or a block kind is missing from the help "Output format" list.                                    |
+| INV24     | `api/integration/add-contribution.test.mjs`, `api/integration/add-theme.test.mjs`, `foundation/discovery/theme-discovery.test.mjs`                         | New authoring emits an untyped or non-`.doc.mjs` item, adding one item edits a shared file, or an item catalog becomes authoritative.           |
+| INV25     | `foundation/discovery/cli-self-docs.test.mjs`, `api/doctor/doctor.test.mjs`                                                                                | A CLI doc with no namespace, a namespace no topic reads, or no section in its topic passes doctor.                                              |
 
 ## Open questions
 
