@@ -73,6 +73,12 @@ const anatomy = [
     description:
       'Optional SVG diagram produced from a mermaid code fence; the ordinary CodeBlock remains while loading and after failure.',
   },
+  {
+    name: 'ANSI terminal output',
+    required: false,
+    description:
+      'Optional terminal-styled CodeBlock produced from an ansi fence; controls are removed from visible and copied text.',
+  },
 ];
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
@@ -283,6 +289,7 @@ export const docs = {
         visualProps: ['display'],
       },
       {className: 'astryx-markdown-mermaid'},
+      {className: 'astryx-markdown-ansi'},
     ],
   },
   usage: {
@@ -329,6 +336,11 @@ export const docs = {
         guidance: true,
         description:
           'Use createMarkdownFenceTransform for declared code-fence languages with semantic data. createNode returns an owned block extension node; its standard plugin renderer and toText own presentation. components.code still wins, and a declined or failed proposal keeps the accessible, copyable CodeBlock fallback. For Mermaid fences, import markdownMermaidPlugin from @astryxdesign/core/Markdown/mermaid; its optional engine loads only when needed and strict SVG rendering preserves that fallback on failure.',
+      },
+      {
+        guidance: true,
+        description:
+          'Import markdownAnsiPlugin from @astryxdesign/core/Markdown/ansi for exact ansi fences. It removes terminal controls, maps SGR styles into safe CodeBlock tokens, and copies plain text; customize colors through its palette instead of embedding HTML.',
       },
       {
         guidance: true,
@@ -514,6 +526,19 @@ import {markdownMermaidPlugin} from '@astryxdesign/core/Markdown/mermaid';
 
 <Markdown plugins={[markdownMermaidPlugin]}>
   {'\`\`\`mermaid title="Checkout flow"\\nflowchart LR\\n  Cart --> Payment\\n\`\`\`'}
+</Markdown>;
+`,
+    },
+    {
+      label: 'ANSI terminal output',
+      code: `
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {markdownAnsiPlugin} from '@astryxdesign/core/Markdown/ansi';
+
+const output = '\\u001b[32mPASS\\u001b[0m Build completed';
+
+<Markdown plugins={[markdownAnsiPlugin]}>
+  {'\`\`\`ansi title="Build log"\\n' + output + '\\n\`\`\`'}
 </Markdown>;
 `,
     },
@@ -848,6 +873,11 @@ export const docsZh = {
         description:
           '通过可选 Mermaid 插件生成的 SVG 图表。可覆盖外层颜色、背景、边框和间距。',
       },
+      {
+        className: 'astryx-markdown-ansi',
+        description:
+          '通过可选 ANSI 插件生成的终端输出。可覆盖外层颜色、背景、边框和间距。',
+      },
     ],
   },
   usage: {
@@ -894,6 +924,11 @@ export const docsZh = {
         guidance: true,
         description:
           'Use createMarkdownFenceTransform for declared code-fence languages with semantic data. createNode returns an owned block extension node; its standard plugin renderer and toText own presentation. components.code still wins, and a declined or failed proposal keeps the accessible, copyable CodeBlock fallback. For Mermaid fences, import markdownMermaidPlugin from @astryxdesign/core/Markdown/mermaid; its optional engine loads only when needed and strict SVG rendering preserves that fallback on failure.',
+      },
+      {
+        guidance: true,
+        description:
+          'Import markdownAnsiPlugin from @astryxdesign/core/Markdown/ansi for exact ansi fences. It removes terminal controls, maps SGR styles into safe CodeBlock tokens, and copies plain text; customize colors through its palette instead of embedding HTML.',
       },
       {
         guidance: true,
@@ -996,6 +1031,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Use createMarkdownFenceTransform for declared code-fence languages with semantic data. createNode returns an owned block extension node; its standard plugin renderer and toText own presentation. components.code still wins, and a declined or failed proposal keeps the accessible, copyable CodeBlock fallback. For Mermaid fences, import markdownMermaidPlugin from @astryxdesign/core/Markdown/mermaid; its optional engine loads only when needed and strict SVG rendering preserves that fallback on failure.',
+      },
+      {
+        guidance: true,
+        description:
+          'Import markdownAnsiPlugin from @astryxdesign/core/Markdown/ansi for exact ansi fences. It removes terminal controls, maps SGR styles into safe CodeBlock tokens, and copies plain text; customize colors through its palette instead of embedding HTML.',
       },
       {
         guidance: true,
