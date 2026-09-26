@@ -6,6 +6,6 @@
 
 An Item without the prop renders as before, with no `data-variant` attribute. `outline` and `muted` are reflected as `data-variant` for theming; the default `transparent` is not, matching DropdownMenuItem, so a menu row's own `data-variant="destructive"` on the same element is left alone.
 
-Interaction states composite over the variant surface instead of replacing it. The hover, active, highlighted, and selected overlays moved from `background-color` to a `background-image` gradient layer (the technique already used by TreeListItem and AvatarGroupOverflow), leaving `background-color` to the variant. This matters because `--color-background-muted` and `--color-overlay-hover` are the same value in light mode — painting hover as a background color gave a `muted` Item no hover feedback at all. Overlay precedence is unchanged, so an Item with no variant composites exactly as it did before.
+On `muted`, interaction states composite over the fill instead of replacing it: hover, press, highlighted, and selected paint an inset `box-shadow` above the muted background. This matters because `--color-background-muted` and `--color-overlay-hover` are the same value in light mode, so a background-color hover would give a `muted` Item no hover feedback at all. Every other Item keeps its `background-color` overlay, so an Item with no variant, and every menu row built on Item, paints exactly as before. Both properties are transitioned, so hover and press still fade on every variant.
 
 @AKnassa

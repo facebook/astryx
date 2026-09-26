@@ -251,18 +251,18 @@ const styles = stylex.create({
   alignStart: {
     alignItems: 'flex-start',
   },
-  // Interaction overlays are painted as background-image layers rather than
-  // background-color, so they composite *over* the variant surface (which owns
-  // background-color) instead of replacing it. Without this, `muted` would show
-  // no hover at all — --color-background-muted and --color-overlay-hover are the
-  // same value in light mode. The hover/pressed layer is the shared
-  // interactionOverlayStyles.backgroundImage, as in TreeListItem.
+  // Interaction overlays paint background-color, except on `muted`, which owns
+  // background-color for its fill. There they are an inset box-shadow drawn
+  // above the fill instead: --color-background-muted and --color-overlay-hover
+  // are the same value in light mode, so a background-color hover would not
+  // show. Both properties interpolate, so hover and press fade either way (a
+  // background-image gradient would snap).
   interactive: {
     cursor: {
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
-    transitionProperty: 'background-image',
+    transitionProperty: 'background-color, box-shadow',
     transitionDuration: durationVars['--duration-fast-min'],
     transitionTimingFunction: easeVars['--ease-standard'],
   },
@@ -281,10 +281,18 @@ const styles = stylex.create({
     paddingBlockEnd: `calc(var(--_item-padding-block) - ${borderVars['--border-width']})`,
   },
   highlighted: {
-    backgroundImage: `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
+    backgroundColor: colorVars['--color-overlay-hover'],
   },
   selected: {
-    backgroundImage: `linear-gradient(${colorVars['--color-accent-muted']}, ${colorVars['--color-accent-muted']})`,
+    backgroundColor: colorVars['--color-accent-muted'],
+  },
+  // The same two states over the `muted` fill, as inset box-shadows (see
+  // `interactive`).
+  mutedHighlighted: {
+    boxShadow: `inset 0 0 0 100vmax ${colorVars['--color-overlay-hover']}`,
+  },
+  mutedSelected: {
+    boxShadow: `inset 0 0 0 100vmax ${colorVars['--color-accent-muted']}`,
   },
   disabled: {
     cursor: 'default',
@@ -416,9 +424,10 @@ const densityStyles = stylex.create({
   },
 });
 
-// Variant surfaces own background-color — the layer *below* the interaction
-// overlays. Card's tokens, so themes style Item and Card consistently.
-// `transparent` paints nothing, so it has no entry here.
+// Variant surfaces own background-color. Only `muted` paints a fill, so only
+// its interaction states move to box-shadow (see `interactive`). Card's tokens,
+// so themes style Item and Card consistently. `transparent` paints nothing, so
+// it has no entry here.
 const variantStyles = stylex.create({
   outline: {
     backgroundColor: 'transparent',
@@ -656,6 +665,11 @@ export function Item({
 
   const mergedRef = useMergedRefs(ref, containerRef);
 
+  // `muted` owns background-color, so its states paint box-shadow above it.
+  // Every other Item keeps the background-color overlay, which a menu row's
+  // own xstyle backgroundColor replaces rather than stacks on.
+  const hasFill = variant === 'muted';
+
   return (
     <Component
       ref={(isDelegate ? mergedRef : ref) as React.Ref<never>}
@@ -685,9 +699,13 @@ export function Item({
           align === 'start' && styles.alignStart,
           variant !== 'transparent' && variantStyles[variant],
           isInteractive && styles.interactive,
-          isInteractive && interactionOverlayStyles.backgroundImage,
-          isHighlighted && styles.highlighted,
-          isSelected && styles.selected,
+          isInteractive &&
+            (hasFill
+              ? interactionOverlayStyles.boxShadow
+              : interactionOverlayStyles.backgroundColor),
+          isHighlighted &&
+            (hasFill ? styles.mutedHighlighted : styles.highlighted),
+          isSelected && (hasFill ? styles.mutedSelected : styles.selected),
           // After the density padding so the border-inset calc wins; it reads
           // the --_item-inset-inline and --_item-padding-block vars above.
           variant === 'outline' && styles.withBorder,

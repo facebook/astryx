@@ -779,52 +779,101 @@ describe('Item', () => {
     expect(css).not.toContain('--radius-container');
   });
 
-  // --- Interaction states must LAYER over the variant surface, not replace it.
+  // --- Interaction states must FADE, and on `muted` they must LAYER over the
+  // fill rather than replace it.
   //
   // --color-background-muted and --color-overlay-hover are byte-identical in
-  // light mode (both light-dark(#0536590C, ...)). So a hover that writes
-  // background-color would give a muted Item *zero* hover feedback. The
-  // overlays therefore ride on background-image (a separate layer painted
-  // above background-color) — the same technique used by TreeListItem and
-  // AvatarGroupOverflow.
+  // light mode (both light-dark(#0536590C, ...)), so a hover that writes
+  // background-color would give a muted Item *zero* hover feedback. Muted
+  // states therefore ride on an inset box-shadow painted above the fill. A
+  // background-image gradient would layer too, but gradients do not
+  // interpolate: hover and press would snap instead of fading.
 
-  it('layers the hover overlay above the variant surface instead of replacing it', () => {
+  /** Declarations that apply only while hovered or pressed. */
+  function stateCss(el: HTMLElement): string {
+    return normalize(
+      rulesFor(el)
+        .filter(r => /:hover|:active/.test(realSelector(r.selector)))
+        .map(r => r.css)
+        .join(' '),
+    );
+  }
+
+  /** The properties a run of declarations writes, e.g. `background-color`. */
+  const writtenProperties = (css: string) => [
+    ...new Set([...css.matchAll(/(?:^|;\s*)([a-z-]+):/g)].map(m => m[1])),
+  ];
+
+  /** The resting transition-property list. */
+  const transitionedProperties = (el: HTMLElement) =>
+    (/transition-property: ([^;]+)/.exec(baseCss(el))?.[1] ?? '')
+      .split(',')
+      .map(property => property.trim());
+
+  it.each([undefined, 'transparent', 'outline', 'muted'])(
+    'fades hover and press on a %s-variant item',
+    variant => {
+      const el = renderItem({variant, onClick: () => {}});
+      const written = writtenProperties(stateCss(el));
+      expect(written.length).toBeGreaterThan(0);
+      // A gradient swap starts no transition, so it must not carry a state.
+      expect(written).not.toContain('background-image');
+      for (const property of written) {
+        expect(transitionedProperties(el)).toContain(property);
+      }
+    },
+  );
+
+  it('layers muted hover and press above the fill as an inset box-shadow', () => {
     const el = renderItem({variant: 'muted', onClick: () => {}});
     expect(hoverCss(el)).toContain(
-      'background-image: linear-gradient(var(--color-overlay-hover), var(--color-overlay-hover))',
+      'box-shadow: inset 0 0 0 100vmax var(--color-overlay-hover)',
     );
-    expect(hoverCss(el)).not.toContain('background-color');
+    expect(stateCss(el)).toContain(
+      'box-shadow: inset 0 0 0 100vmax var(--color-overlay-pressed)',
+    );
+    expect(stateCss(el)).not.toContain('background-color:');
     // ...and the surface underneath survives the hover.
     expect(baseCss(el)).toContain(
       'background-color: var(--color-background-muted)',
     );
   });
 
-  it('layers the selected state above the variant surface', () => {
+  it('layers the selected state above the muted fill', () => {
     const el = renderItem({variant: 'muted', isSelected: true});
     expect(baseCss(el)).toContain(
-      'background-image: linear-gradient(var(--color-accent-muted), var(--color-accent-muted))',
+      'box-shadow: inset 0 0 0 100vmax var(--color-accent-muted)',
     );
     expect(baseCss(el)).toContain(
       'background-color: var(--color-background-muted)',
     );
   });
 
-  it('layers the highlighted state above the variant surface', () => {
+  it('layers the highlighted state above the muted fill', () => {
     const el = renderItem({variant: 'muted', isHighlighted: true});
     expect(baseCss(el)).toContain(
-      'background-image: linear-gradient(var(--color-overlay-hover), var(--color-overlay-hover))',
+      'box-shadow: inset 0 0 0 100vmax var(--color-overlay-hover)',
     );
     expect(baseCss(el)).toContain(
       'background-color: var(--color-background-muted)',
     );
   });
 
-  it('does not give a no-variant item a background-color surface for its states', () => {
-    // Guards the refactor: overlays moved off background-color entirely, so a
-    // plain Item composites exactly as before over whatever is behind it.
+  it('keeps the background-color hover overlay on an item without a variant', () => {
+    // Only `muted` owns background-color, so every other Item paints its
+    // states exactly as it did before variants existed.
+    const el = renderItem({onClick: () => {}});
+    expect(hoverCss(el)).toContain(
+      'background-color: var(--color-overlay-hover)',
+    );
+    expect(stateCss(el)).not.toContain('box-shadow:');
+  });
+
+  it('keeps the background-color selected state on an item without a variant', () => {
     const el = renderItem({isSelected: true, onClick: () => {}});
-    expect(baseCss(el)).not.toContain('background-color: var(--color-accent');
-    expect(hoverCss(el)).not.toContain('background-color');
+    expect(baseCss(el)).toContain(
+      'background-color: var(--color-accent-muted)',
+    );
+    expect(baseCss(el)).not.toContain('box-shadow:');
   });
 });
