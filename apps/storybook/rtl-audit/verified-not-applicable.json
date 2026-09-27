@@ -282,6 +282,15 @@
     "reason": "The metadata row owns no directional glyph, contextual directional separator, physical inline positioning, prev/next control order, horizontal scrolling, dragging, overlay, or arrow-key behavior. Sender-dependent row reversal uses CSS flex direction relative to the surrounding writing direction and is verified separately by matched LTR/RTL Chromium receipts. The RTL audit's D1, D2, D3, D5, and D6 detectors therefore have no applicable target for this component."
   },
   {
+    "component": "core/ChatToolCalls",
+    "reason": "ChatToolCalls uses logical inline spacing and source order. Its only component-owned chevrons rotate on the block axis to disclose vertically stacked content; status and wrench icons are non-directional. It owns no left/right glyph, physical inline positioning, directional reordering, horizontal scrolling or dragging, side-placed overlay, or horizontal keyboard behavior. Caller-supplied target, stats, and result-detail content retain their own direction contract.",
+    "evidence": {
+      "apps/storybook/stories/ChatToolCalls.stories.tsx": "sha256:36088a9a88ca7b3c23f5b0a840eec5e77b12cdaf83ba5f6d371ec6296cf722e5",
+      "packages/core/src/Chat/ChatToolCalls.tsx": "sha256:43baec764e8a7d8f5d28b7ea6507c9e01d6e788436c2c34c904e6737a88e0a2b",
+      "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb"
+    }
+  },
+  {
     "component": "core/ChatTokenizedText",
     "reason": "ChatTokenizedText projects caller-supplied text and inline token content in source reading order. Its root uses normal inline flow; its token wrapper is an inline flex box with no directional glyph, physical inline positioning, reordering, horizontal scrolling or dragging, side-placed overlay, or horizontal keyboard behavior. Structured token paint delegates to Badge and custom token content remains caller owned. The audit fixture covers plain, structured, custom, repeated, edge, empty-value, and narrow states without adding a component-owned RTL dimension.",
     "evidence": {
