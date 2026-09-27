@@ -170,6 +170,7 @@ async function capture(
     const storyRoot = document.getElementById('storybook-root');
     const style = getComputedStyle(root);
     return {
+      storyId: new URL(location.href).searchParams.get('id'),
       tagName: root.tagName,
       targetCount: document.querySelectorAll('.astryx-chat-tokenized-text')
         .length,
@@ -211,6 +212,9 @@ async function capture(
   const image = inspectPng(file, bytes);
 
   const failures: string[] = [];
+  if (actual.storyId !== auditCase.storyId) {
+    failures.push('Storybook served the wrong story');
+  }
   if (actual.tagName !== 'SPAN') {
     failures.push('root is not a span');
   }
@@ -281,8 +285,8 @@ async function capture(
     },
     Story: {
       expected: auditCase.storyId,
-      observed: auditCase.storyId,
-      passed: true,
+      observed: actual.storyId,
+      passed: actual.storyId === auditCase.storyId,
     },
     Theme: {
       expected: 'neutral',
