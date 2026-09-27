@@ -285,8 +285,8 @@
     "component": "core/ChatTokenizedText",
     "reason": "ChatTokenizedText projects caller-supplied text and inline token content in source reading order. Its root uses normal inline flow; its token wrapper is an inline flex box with no directional glyph, physical inline positioning, reordering, horizontal scrolling or dragging, side-placed overlay, or horizontal keyboard behavior. Structured token paint delegates to Badge and custom token content remains caller owned. The audit fixture covers plain, structured, custom, repeated, edge, overlapping, empty-value, and narrow states without adding a component-owned RTL dimension.",
     "evidence": {
-      "apps/storybook/stories/ChatTokenizedText.stories.tsx": "sha256:4f2fab86053d1edca05d2ad8f8fb41d42307709aecce86d2adc8e4595a22848b",
-      "packages/core/src/Chat/ChatTokenizedText.tsx": "sha256:bf559478ec506447c779d2c3226e2bb726c22ef2927ac7ac7fb5126ee3ce7c4b",
+      "apps/storybook/stories/ChatTokenizedText.stories.tsx": "sha256:bc80df8aef59c05ca200129fd6709cd2f44e16f185003fe857afa90fdbfd9d9c",
+      "packages/core/src/Chat/ChatTokenizedText.tsx": "sha256:239f9cd5e836fb618702f226d9a5e267ffab087c9751fca8f10a0f401c6721ac",
       "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb"
     }
   },

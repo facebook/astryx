@@ -9,9 +9,8 @@
  * @position Utility component for rendering tokenized text in message bubbles
  *
  * Parses a plain text string and replaces non-empty token values with inline
- * badges. Overlapping token values match longest first. Accepts the same
- * ChatComposerToken type used by the input triggers, so the same token
- * definitions work for both input and display.
+ * token content. Accepts the same ChatComposerToken type used by the input
+ * triggers, so the same token definitions work for both input and display.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts
@@ -53,8 +52,7 @@ export interface ChatTokenizedTextProps extends BaseProps<HTMLSpanElement> {
   /**
    * Token definitions — same type returned by trigger onSelect.
    * Each non-empty token `value` is matched literally against the text and
-   * replaced with its badge representation (label, variant, icon). When
-   * values overlap, the longest value matches first. Empty values are ignored.
+   * replaced with its Badge or custom representation. Empty values are ignored.
    *
    * @example
    * ```
@@ -90,7 +88,7 @@ function escapeRegExp(str: string): string {
 // =============================================================================
 
 /**
- * Renders text with token values replaced by inline badges.
+ * Renders text with token values replaced by inline token content.
  *
  * Accepts the same `ChatComposerToken` type used by input triggers,
  * so you can share a single token definition between input and display.
@@ -143,9 +141,7 @@ ChatTokenizedText.displayName = 'ChatTokenizedText';
 // =============================================================================
 
 function renderTokens(text: string, tokens: ChatComposerToken[]): ReactNode[] {
-  const matchableTokens = tokens
-    .filter(token => token.value.length > 0)
-    .sort((a, b) => b.value.length - a.value.length);
+  const matchableTokens = tokens.filter(token => token.value.length > 0);
 
   if (matchableTokens.length === 0) {
     return [text];

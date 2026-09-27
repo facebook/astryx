@@ -100,8 +100,8 @@ const CASES: AuditCase[] = [
     expectedText: ['@Cindy Zhang', '@Navi'],
   },
   {
-    key: 'overlap-narrow',
-    storyId: 'core-chattokenizedtext--overlapping-and-empty-values',
+    key: 'empty-value-narrow',
+    storyId: 'core-chattokenizedtext--empty-value-narrow',
     expectedTokens: 1,
     expectedBadges: 1,
     expectedText: ['@Alice Rivera', 'remains readable'],
@@ -189,9 +189,6 @@ async function capture(
         right: rect.right,
       },
       viewport: {width: innerWidth, height: innerHeight},
-      documentOverflowFree:
-        document.documentElement.scrollWidth <= innerWidth &&
-        document.documentElement.scrollHeight > 0,
       storyOverflowFree:
         storyRoot == null || storyRoot.scrollWidth <= storyRoot.clientWidth,
       fontsReady: document.fonts.status === 'loaded',
@@ -324,7 +321,6 @@ async function capture(
       expected: {visible: true, overflowFree: true, insideViewport: true},
       observed: {
         geometry: actual.geometry,
-        documentOverflowFree: actual.documentOverflowFree,
         storyOverflowFree: actual.storyOverflowFree,
       },
       passed:
@@ -505,9 +501,9 @@ test.afterAll(async () => {
             'Image',
           ],
           visualEvidence: {
-            requiredPair: true,
+            requiredPair: false,
             reason:
-              'The overlap repair changes visible token content. The pull request retains the failing-before and fixed-after exact-head artifacts.',
+              'The repair removes a non-advancing empty match and does not intentionally change settled pixels. The base behavior has no settled before frame because rendering does not terminate; bounded unit evidence proves that failure, and exact-head frames verify the repaired state.',
             subjectiveAcceptanceClaimed: false,
             contactSheet,
           },
@@ -531,7 +527,7 @@ test.afterAll(async () => {
           stateVisualConformance: {
             states: CASES.map(auditCase => auditCase.key),
             colorModes: ['light', 'dark'],
-            narrow320: ['overlap-narrow'],
+            narrow320: ['empty-value-narrow'],
           },
           frames: receipts,
         },

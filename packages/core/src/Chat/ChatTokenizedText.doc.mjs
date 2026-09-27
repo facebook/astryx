@@ -8,7 +8,7 @@ export const docs = {
   displayName: 'Chat Tokenized Text',
   isHiddenFromOverview: true,
   description:
-    'Renders a text string with token patterns replaced by inline Badge components. Wrap any message body inside ChatMessageBubble to turn raw @mentions, #tags, or /commands into styled badges. When no non-empty token matches or none are provided, the text renders as-is, so you can use ChatTokenizedText unconditionally on every message.',
+    'Renders a text string with token patterns replaced by inline token content. Wrap any message body inside ChatMessageBubble to turn raw @mentions, #tags, or /commands into styled content. When no non-empty token matches or none are provided, the text renders as-is, so you can use ChatTokenizedText unconditionally on every message.',
   props: [
     {
       name: 'children',
@@ -21,7 +21,7 @@ export const docs = {
       name: 'tokens',
       type: 'ChatComposerToken[]',
       description:
-        'Token definitions using the same type as composer input. Each non-empty value is matched literally; when values overlap, the longest value matches first. Empty values are ignored. Structured tokens render a Badge, while custom tokens render caller content.',
+        'Token definitions using the same type as composer input. Each non-empty value is matched literally. Empty values are ignored. Structured tokens render a Badge, while custom tokens render caller content.',
     },
     {
       name: 'xstyle',
@@ -35,7 +35,7 @@ export const docs = {
   },
   usage: {
     description:
-      'Use ChatTokenizedText inside a chat message when stored plain text contains serialized token values that should be projected as inline badges or caller-rendered token content. Unmatched text is preserved exactly, empty token values are ignored, and overlapping values resolve to the longest literal match.',
+      'Use ChatTokenizedText inside a chat message when stored plain text contains serialized token values that should be projected as inline badges or caller-rendered token content. Unmatched text is preserved exactly and empty token values are ignored so rendering always finishes.',
     bestPractices: [
       {
         guidance: true,
@@ -45,7 +45,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use non-empty, stable serialized values and let the longest value represent overlapping token prefixes.',
+          'Use non-empty, stable serialized values so every definition identifies real message text.',
       },
       {
         guidance: false,
@@ -80,7 +80,7 @@ export const docsZh = {
   isHiddenFromOverview: true,
   displayName: 'Chat Tokenized Text',
   description:
-    '渲染带有标记模式的文本，将匹配的模式替换为内联 Badge 组件。在 ChatMessageBubble 内使用，将 @提及、#标签或 /命令显示为样式化徽章。没有非空匹配标记时以纯文本渲染。',
+    '渲染带有标记模式的文本，将匹配的模式替换为内联标记内容。在 ChatMessageBubble 内使用，将 @提及、#标签或 /命令显示为样式化内容。没有非空匹配标记时以纯文本渲染。',
   propDescriptions: {
     children:
       '包含序列化标记值的纯文本消息。匹配标记值的模式将被替换为内联标记内容。',
@@ -98,7 +98,7 @@ export const docsDense = {
   isHiddenFromOverview: true,
   displayName: 'Chat Tokenized Text',
   description:
-    'renders text w/ literal token values replaced by inline content; longest overlap wins; empty values ignored',
+    'renders text w/ literal token values replaced by inline content; empty values ignored',
   usage: {
     description:
       'Use for stored chat text containing serialized token values; unmatched text is preserved.',
@@ -126,7 +126,8 @@ export const docsDense = {
   propDescriptions: {
     children:
       'plain text msg w/ serialized token values; matching patterns become inline content',
-    tokens: 'token defs; literal longest match wins; empty values ignored',
+    tokens:
+      'token defs; literal values matched in caller order; empty values ignored',
     xstyle: 'additional StyleX styles for root wrapper',
   },
 };

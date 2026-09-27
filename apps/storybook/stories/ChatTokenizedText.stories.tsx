@@ -144,8 +144,8 @@ export const IconAndCustomTokens: Story = {
   ),
 };
 
-/** Overlapping and empty values remain deterministic in a narrow message. */
-export const OverlappingAndEmptyValues: Story = {
+/** Empty token values are ignored in a narrow message. */
+export const EmptyValueNarrow: Story = {
   render: () => (
     <div style={{maxWidth: 288}}>
       <ChatMessage sender="user">
@@ -153,11 +153,10 @@ export const OverlappingAndEmptyValues: Story = {
           <ChatTokenizedText
             tokens={[
               {value: '', label: 'Ignored'},
-              {value: '@a', label: '@A', variant: 'blue'},
               {value: '@alice', label: '@Alice Rivera', variant: 'blue'},
             ]}>
             A longer localized message for @alice remains readable in a narrow
-            conversation without being split into a shorter mention.
+            conversation when an empty token definition is present.
           </ChatTokenizedText>
         </ChatMessageBubble>
       </ChatMessage>

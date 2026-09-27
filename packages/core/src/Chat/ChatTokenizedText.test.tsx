@@ -80,11 +80,11 @@ describe('ChatTokenizedText', () => {
     expect(container.textContent).toContain('@Cindy Zhang');
   });
 
-  it('matches the longest overlapping token value regardless of array order', () => {
+  it('ignores empty token values instead of creating zero-width matches', () => {
     render(
       <ChatTokenizedText
         tokens={[
-          {value: '@a', label: '@A'},
+          {value: '', label: 'Empty'},
           {value: '@alice', label: '@Alice'},
         ]}>
         Hello @alice
@@ -92,17 +92,6 @@ describe('ChatTokenizedText', () => {
     );
 
     expect(screen.getByText('@Alice')).toBeInTheDocument();
-    expect(screen.queryByText('@A')).not.toBeInTheDocument();
-  });
-
-  it('ignores empty token values instead of creating zero-width matches', () => {
-    render(
-      <ChatTokenizedText tokens={[{value: '', label: 'Empty'}]}>
-        Hello world
-      </ChatTokenizedText>,
-    );
-
-    expect(screen.getByText('Hello world')).toBeInTheDocument();
     expect(screen.queryByText('Empty')).not.toBeInTheDocument();
   });
 
