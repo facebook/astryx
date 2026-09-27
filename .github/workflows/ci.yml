@@ -1102,6 +1102,35 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # ChatTokenizedText is noninteractive, but its literal matching, delegated
+      # token paint, light/dark rendering, and narrow reflow require exact-head
+      # browser receipts for the state matrix graded by its component audit.
+      - name: Run ChatTokenizedText audit browser evidence
+        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ChatTokenizedText:')
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output chat-tokenized-text-a11y-report.json \
+            --components ChatTokenizedText \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new
+          pnpm exec playwright test \
+            packages/core/src/Chat/__tests__/ChatTokenizedText.a11y.chromium.spec.ts \
+            --project chromium
+
+      - name: Upload ChatTokenizedText audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ChatTokenizedText:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: chat-tokenized-text-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            chat-tokenized-text-a11y-report.json
+            test-results/chat-tokenized-text-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # Run the exhaustive contract/fixture matrix at release time. PRs retain
       # scoped axe validation and the fast interaction guards above; they must
       # not pay for every component's browser bindings on every change.

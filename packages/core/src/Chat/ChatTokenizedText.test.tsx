@@ -79,6 +79,21 @@ describe('ChatTokenizedText', () => {
     expect(container.textContent).toContain('@Cindy Zhang');
   });
 
+  it('matches the longest overlapping token value regardless of array order', () => {
+    render(
+      <ChatTokenizedText
+        tokens={[
+          {value: '@a', label: '@A'},
+          {value: '@alice', label: '@Alice'},
+        ]}>
+        Hello @alice
+      </ChatTokenizedText>,
+    );
+
+    expect(screen.getByText('@Alice')).toBeInTheDocument();
+    expect(screen.queryByText('@A')).not.toBeInTheDocument();
+  });
+
   it('forwards rest props (data-*, id) to the root element', () => {
     render(
       <ChatTokenizedText data-testid="tokenized" data-custom="x" id="tok-1">
