@@ -1109,6 +1109,7 @@ jobs:
         if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ChatTokenizedText:')
         env:
           ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          ASTRYX_AUDIT_BASELINE_HEAD: a7c6c7ecdf6b422df331124e8f6fc6d33cf1bd63
         run: |
           node .github/scripts/accessibility-audit.js \
             --storybook-dir apps/storybook/dist \

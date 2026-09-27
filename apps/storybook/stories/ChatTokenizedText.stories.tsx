@@ -152,6 +152,7 @@ export const OverlappingAndEmptyValues: Story = {
         <ChatMessageBubble>
           <ChatTokenizedText
             tokens={[
+              {value: '', label: 'Ignored'},
               {value: '@a', label: '@A', variant: 'blue'},
               {value: '@alice', label: '@Alice Rivera', variant: 'blue'},
             ]}>

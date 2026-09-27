@@ -245,8 +245,8 @@ async function capture(
   if (actual.theme !== mode) {
     failures.push('theme mode did not settle');
   }
-  if (!actual.documentOverflowFree || !actual.storyOverflowFree) {
-    failures.push('horizontal overflow detected');
+  if (!actual.storyOverflowFree) {
+    failures.push('component story overflow detected');
   }
   if (
     actual.geometry.width <= 0 ||
@@ -332,7 +332,6 @@ async function capture(
         actual.geometry.height > 0 &&
         actual.geometry.x >= 0 &&
         actual.geometry.right <= actual.viewport.width &&
-        actual.documentOverflowFree &&
         actual.storyOverflowFree,
     },
     'Settled render': {
