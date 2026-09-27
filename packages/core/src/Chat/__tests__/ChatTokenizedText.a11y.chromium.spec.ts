@@ -195,6 +195,10 @@ async function capture(
       storyError:
         document.querySelector('[data-storybook-error]') != null ||
         document.body.textContent?.includes('Error rendering story') === true,
+      themeName:
+        document
+          .querySelector('[data-astryx-theme]')
+          ?.getAttribute('data-astryx-theme') ?? null,
       theme: document.documentElement.getAttribute('data-theme'),
     };
   });
@@ -239,6 +243,9 @@ async function capture(
   if (actual.direction !== 'ltr') {
     failures.push('unexpected direction');
   }
+  if (actual.themeName !== 'neutral') {
+    failures.push('neutral theme did not settle');
+  }
   if (actual.theme !== mode) {
     failures.push('theme mode did not settle');
   }
@@ -277,7 +284,11 @@ async function capture(
       observed: auditCase.storyId,
       passed: true,
     },
-    Theme: {expected: 'neutral', observed: 'neutral', passed: true},
+    Theme: {
+      expected: 'neutral',
+      observed: actual.themeName,
+      passed: actual.themeName === 'neutral',
+    },
     'Color mode': {
       expected: mode,
       observed: actual.theme,

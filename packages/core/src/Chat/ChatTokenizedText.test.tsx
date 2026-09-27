@@ -95,6 +95,22 @@ describe('ChatTokenizedText', () => {
     expect(screen.queryByText('Empty')).not.toBeInTheDocument();
   });
 
+  it('renders plain text when every token value is empty', () => {
+    render(
+      <ChatTokenizedText
+        tokens={[
+          {value: '', label: 'First empty'},
+          {value: '', label: 'Second empty'},
+        ]}>
+        Hello world
+      </ChatTokenizedText>,
+    );
+
+    expect(screen.getByText('Hello world')).toBeInTheDocument();
+    expect(screen.queryByText('First empty')).not.toBeInTheDocument();
+    expect(screen.queryByText('Second empty')).not.toBeInTheDocument();
+  });
+
   it('renders custom tokens only for actual matches', () => {
     const renderCustom = vi.fn(() => <span>Custom token</span>);
 
