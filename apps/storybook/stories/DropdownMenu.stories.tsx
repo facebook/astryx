@@ -153,7 +153,7 @@ const PROJECT_DESTINATIONS = [
 ] as const;
 
 // Basic usage
-export const Default: Story = {
+export const DefaultPopover: Story = {
   render: () => (
     <DropdownMenu
       button={{label: 'Actions'}}
@@ -1016,7 +1016,7 @@ export const ActionSheetPresentation: Story = {
   },
 };
 
-export const SectionedActionSheetPresentation: Story = {
+export const Default: Story = {
   name: 'Presentation / sectioned action sheet',
   parameters: {
     layout: 'fullscreen',
