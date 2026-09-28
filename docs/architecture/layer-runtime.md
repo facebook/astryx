@@ -351,14 +351,14 @@ this current architecture record.
 
 ## Verification
 
-| Invariant  | Evidence                                                                                       | Failure signal                                                                                          |
-| ---------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| INV1, INV2 | `useLayer.test.tsx` and `layerHost.test.ts`                                                    | Invalid DOM, stale host, lost theme/writing context, or portal mistaken for top-layer promotion         |
-| INV3–INV5  | `useLayer.test.tsx`, `layerPlacement.test.ts`, and `anchorName.test.ts`                        | A mode leaks geometry, RTL resolves from the wrong context, fallback clips, or a sibling anchor is lost |
-| INV6, INV7 | `useLayer.test.tsx`, `Popover.test.tsx`, `DropdownMenu.test.tsx`, and `useMenuHover.test.tsx`  | Duplicate close callback or the same press/re-hover reopens a surface                                   |
-| INV8       | `useLayerDismissal.test.tsx`, `layerDismissalInvariants.test.tsx`, and `useFocusTrap.test.tsx` | Current top registered layer is skipped, two layers close, or a blocker leaks through                   |
-| INV9       | Representative Dialog, ContextMenu, Tooltip/HoverCard, and BottomSheet source/tests            | A current local channel silently changes ownership or policy                                            |
-| INV10      | `LayerProvider.tsx`, `useToast.tsx`, and `ToastViewport.test.tsx`                              | Provider begins relocating ordinary layers or Toast fallback loses its current lifecycle                |
+| Invariant  | Evidence                                                                                                           | Failure signal                                                                                          |
+| ---------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| INV1, INV2 | `useLayer.test.tsx` and `layerHost.test.ts`                                                                        | Invalid DOM, stale host, lost theme/writing context, or portal mistaken for top-layer promotion         |
+| INV3–INV5  | `useLayer.test.tsx`, `layerPlacement.test.ts`, `anchorName.test.ts`, and `LayerPlacement.geometry.browser.spec.ts` | A mode leaks geometry, RTL resolves from the wrong context, fallback clips, or a sibling anchor is lost |
+| INV6, INV7 | `useLayer.test.tsx`, `Popover.test.tsx`, `DropdownMenu.test.tsx`, and `useMenuHover.test.tsx`                      | Duplicate close callback or the same press/re-hover reopens a surface                                   |
+| INV8       | `useLayerDismissal.test.tsx`, `layerDismissalInvariants.test.tsx`, and `useFocusTrap.test.tsx`                     | Current top registered layer is skipped, two layers close, or a blocker leaks through                   |
+| INV9       | Representative Dialog, ContextMenu, Tooltip/HoverCard, and BottomSheet source/tests                                | A current local channel silently changes ownership or policy                                            |
+| INV10      | `LayerProvider.tsx`, `useToast.tsx`, and `ToastViewport.test.tsx`                                                  | Provider begins relocating ordinary layers or Toast fallback loses its current lifecycle                |
 
 Current unit coverage proves emitted styles, reducers, state transitions, and DOM
 placement. Native Popover, `<dialog>`, focus, top-layer ordering, and rendered

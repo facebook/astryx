@@ -406,3 +406,109 @@ export const InlineTriggerHosting: Story = {
     },
   },
 };
+
+// ---------------------------------------------------------------------------
+// Placement evidence: triggers at the viewport edges, on a page that scrolls.
+// The browser spec (`Layer/__tests__/LayerPlacement.geometry.browser.spec.ts`)
+// opens each one on a real engine — with CSS anchor positioning, and with it
+// taken away — and measures where the layer lands.
+// ---------------------------------------------------------------------------
+
+const evidenceStyles = stylex.create({
+  page: {
+    position: 'relative',
+    // Room to scroll, so a layer can be proven to follow its trigger.
+    height: '250vh',
+  },
+  nearTop: {
+    position: 'absolute',
+    top: 24,
+    left: '50%',
+  },
+  nearBottom: {
+    position: 'absolute',
+    // Close enough to the bottom edge that a 120px layer cannot fit below.
+    top: 'calc(100vh - 80px)',
+    left: '50%',
+  },
+  nearStart: {
+    position: 'absolute',
+    top: '50vh',
+    left: 24,
+  },
+  card: {
+    boxSizing: 'border-box',
+    width: 200,
+    height: 120,
+    padding: 16,
+    backgroundColor: 'var(--color-background-surface)',
+    border: '1px solid var(--color-border-default)',
+    borderRadius: 8,
+  },
+});
+
+function EvidenceTrigger({
+  label,
+  placement,
+  alignment,
+  xstyle,
+}: {
+  label: string;
+  placement: 'above' | 'below' | 'start' | 'end';
+  alignment?: 'start' | 'center' | 'end';
+  xstyle: stylex.StyleXStyles;
+}) {
+  const layer = useLayer({mode: 'context', lightDismiss: true});
+  return (
+    <div {...stylex.props(xstyle)}>
+      <Button
+        ref={layer.ref}
+        label={label}
+        onClick={() => (layer.isOpen ? layer.hide() : layer.show())}
+      />
+      {layer.render(
+        <div
+          {...stylex.props(evidenceStyles.card)}
+          data-testid={`${label} layer`}>
+          <Text type="body">{label}</Text>
+        </div>,
+        {placement, alignment, offset: 4},
+      )}
+    </div>
+  );
+}
+
+function PlacementEvidenceDemo() {
+  return (
+    <div {...stylex.props(evidenceStyles.page)}>
+      <EvidenceTrigger
+        label="Top edge"
+        placement="above"
+        xstyle={evidenceStyles.nearTop}
+      />
+      <EvidenceTrigger
+        label="Start edge"
+        placement="start"
+        xstyle={evidenceStyles.nearStart}
+      />
+      <EvidenceTrigger
+        label="Bottom edge"
+        placement="below"
+        alignment="start"
+        xstyle={evidenceStyles.nearBottom}
+      />
+    </div>
+  );
+}
+
+/**
+ * Three triggers that each ask for the side they do not have room on: `above`
+ * at the top edge, `start` at the start edge, `below` at the bottom edge. Every
+ * layer must land on the opposite side, whichever path places it — CSS anchor
+ * positioning, or the measured fallback on an engine without it. Scroll the
+ * page with a layer open and it must follow its trigger.
+ */
+export const PlacementEvidence: Story = {
+  render: () => <PlacementEvidenceDemo />,
+  parameters: {layout: 'fullscreen'},
+};

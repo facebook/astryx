@@ -80,20 +80,23 @@ const styles = stylex.create({
   fixed: {
     position: 'fixed',
   },
+  // Every path that measures (measured and anchor-flip) reads the viewport
+  // gutter back from the element. The gutter is a CSS length
+  // (`max(token, env(safe-area-inset-*))`) and JS needs it as a number:
+  // `scroll-margin` carries it to `getComputedStyle`, which resolves it to
+  // px, and has no effect on a fixed top-layer box.
+  gutterCarrier: {
+    scrollMarginTop: measuredGutter('top'),
+    scrollMarginRight: measuredGutter('right'),
+    scrollMarginBottom: measuredGutter('bottom'),
+    scrollMarginLeft: measuredGutter('left'),
+  },
   // The measured path: the hook writes `top`/`left` itself, so the UA
   // popover's `inset: 0` must not hold the other two edges. Physical, like
   // the coordinates: they come from `getBoundingClientRect`.
   measured: {
     position: 'fixed',
     inset: 'auto',
-    // The gutter is a CSS length (`max(token, env(safe-area-inset-*))`) and
-    // JS needs it as a number. `scroll-margin` carries it to
-    // `getComputedStyle`, which resolves it to px, and has no effect on a
-    // fixed top-layer box.
-    scrollMarginTop: measuredGutter('top'),
-    scrollMarginRight: measuredGutter('right'),
-    scrollMarginBottom: measuredGutter('bottom'),
-    scrollMarginLeft: measuredGutter('left'),
   },
   // Clearance from the anchor. Set on BOTH edges of the placement axis, not
   // just the one facing the anchor: `position-try-fallbacks` can flip the
@@ -981,19 +984,22 @@ function useLayerImplementation(
 
   const measures = mode === 'context' && placementPath !== 'anchor' && isOpen;
 
-  // While open, listen for everything after which the trigger may have moved
-  // or the room around it changed: the window, an ancestor scrolling
-  // (capture), the visual viewport (the on-screen keyboard), and the layer's
-  // or trigger's own box.
+  // A layout effect, so the first coordinates land before the first paint:
+  // a passive effect would show one frame of the layer wherever the UA
+  // stylesheet left it, then jump it onto the trigger.
   useLayoutEffect(() => {
     if (!measures) {
       return;
     }
+    measure();
     const layer = popoverRef.current;
     const view = layer?.ownerDocument.defaultView;
     if (!layer || !view) {
       return;
     }
+    // Everything after which the trigger may have moved or the room around it
+    // changed: the window, an ancestor scrolling (capture), the visual
+    // viewport (the on-screen keyboard), and the layer's or trigger's own box.
     view.addEventListener('resize', measure);
     view.addEventListener('scroll', measure, {capture: true, passive: true});
     view.visualViewport?.addEventListener('resize', measure);
@@ -1015,12 +1021,9 @@ function useLayerImplementation(
     };
   }, [measures, measure]);
 
-  // Measure after every commit while open — a layout effect, so the first
-  // coordinates land before the first paint (a passive effect would show one
-  // frame of the layer wherever the UA stylesheet left it, then jump it onto
-  // the trigger), and every commit, because the placement props reach the
-  // hook through `render`, not through options, and can change while the
-  // layer is open. Cheap: one geometry read, and a state write only when the
+  // The placement props can change while the layer is open, and they reach
+  // the hook through `render`, not through options: re-measure after every
+  // commit. Cheap — one geometry read, and a state write only when the
   // answer changes.
   useLayoutEffect(() => {
     if (measures) {
@@ -1095,6 +1098,9 @@ function useLayerImplementation(
         styles.base,
         overlayPaddingReset.reset,
         offsetStyle,
+        positioning === 'anchor' && placementPath !== 'anchor'
+          ? styles.gutterCarrier
+          : null,
         positioning === 'anchor' && placementPath === 'measured'
           ? styles.measured
           : null,

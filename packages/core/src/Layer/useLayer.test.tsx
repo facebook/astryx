@@ -1428,6 +1428,41 @@ describe('measured placement (engines without CSS anchor positioning)', () => {
     expect(style).not.toMatch(/(^|; )top:/);
   });
 
+  it('carries the viewport gutter on both measuring paths, and on neither the anchor path nor custom positioning', async () => {
+    const carried = async (
+      support: {positionArea: boolean; positionTryFallbacks: boolean},
+      ui = <ContextLayerHarness placement="below" alignment="start" />,
+    ) => {
+      engine(support);
+      const {popover, unmount} = await open(ui);
+      const style = popover.getAttribute('style') ?? '';
+      // StyleX's `scroll-margin-*` rule, injected as a class, and the
+      // computed style jsdom resolves from it (`getComputedStyle` reads the
+      // injected stylesheet).
+      const carries = Array.from(document.styleSheets)
+        .flatMap(sheet => Array.from(sheet.cssRules))
+        .filter(rule =>
+          Array.from(popover.classList).some(cls =>
+            rule.cssText.includes(`.${cls}`),
+          ),
+        )
+        .some(rule => rule.cssText.includes('scroll-margin'));
+      unmount();
+      return {carries, style};
+    };
+    expect(
+      (await carried({positionArea: false, positionTryFallbacks: false}))
+        .carries,
+    ).toBe(true);
+    expect(
+      (await carried({positionArea: true, positionTryFallbacks: false}))
+        .carries,
+    ).toBe(true);
+    expect(
+      (await carried({positionArea: true, positionTryFallbacks: true})).carries,
+    ).toBe(false);
+  });
+
   it('keeps the requested side in CSS where it has room and no position-try-fallbacks', async () => {
     engine({positionArea: true, positionTryFallbacks: false});
     const {popover} = await open(

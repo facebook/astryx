@@ -22,8 +22,9 @@
  *   pnpm test:a11y-contract
  *   pnpm exec playwright test BottomSheetKeyboard.a11y.browser.spec.ts
  *
- * Cross-browser specs use `.a11y.browser.spec.ts`; Chromium-only contracts keep
- * `.a11y.chromium.spec.ts`. The WebKit project runs only the former.
+ * Cross-browser specs use `.a11y.browser.spec.ts` (and `.geometry.browser.spec.ts`
+ * for rendered geometry); Chromium-only contracts keep `.a11y.chromium.spec.ts`.
+ * The WebKit project runs only the cross-browser ones.
  *
  * SYNC: When a package gains an accessibility binding, add its spec glob here.
  */
@@ -42,6 +43,9 @@ export default defineConfig({
     // Component bindings.
     'packages/*/src/**/*.a11y.chromium.spec.ts',
     'packages/*/src/**/*.a11y.browser.spec.ts',
+    // Rendered geometry that only a shipping engine can observe (layer
+    // placement paths).
+    'packages/*/src/**/*.geometry.browser.spec.ts',
   ],
   // The contract mounts, focuses, and types into one page at a time; parallel
   // workers would race over real keyboard focus.
@@ -57,7 +61,10 @@ export default defineConfig({
     {name: 'chromium', use: {...devices['Desktop Chrome']}},
     {
       name: 'webkit',
-      testMatch: ['packages/*/src/**/*.a11y.browser.spec.ts'],
+      testMatch: [
+        'packages/*/src/**/*.a11y.browser.spec.ts',
+        'packages/*/src/**/*.geometry.browser.spec.ts',
+      ],
       use: {...devices['Desktop Safari']},
     },
   ],
