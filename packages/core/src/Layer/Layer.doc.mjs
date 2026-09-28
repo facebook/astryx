@@ -19,6 +19,9 @@ export const docs = {
     'portal',
   ],
   theming: {
+    // Layer paints no surface of its own, so it renders no theme target; the
+    // vars below are app-level properties every viewport-fitted layer reads.
+    targets: [],
     // App-level custom properties every viewport-fitted layer (Popover,
     // DropdownMenu and its submenus) reads through
     // Layer/layerViewportInset.stylex.ts. Set once, usually on :root.

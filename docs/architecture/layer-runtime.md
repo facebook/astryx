@@ -119,6 +119,16 @@ applied to both edges of the placement axis so a flip retains the gap.
 Popover adds component-specific viewport sizing and overflow behavior above this
 geometry. Those constraints are not universal Layer behavior.
 
+The runtime does own the per-edge viewport inset a fitted layer reads
+(`Layer/layerViewportInset.stylex.ts`, pending owner review through
+`component:Popover/DEC-4`): four app-level custom properties,
+`--astryx-layer-inset-block-start`, `--astryx-layer-inset-block-end`,
+`--astryx-layer-inset-inline-start` and `--astryx-layer-inset-inline-end`, each
+added to the `--spacing-4` + safe-area gutter for its edge and reading `0px`
+unless the app sets it on `:root`. A persistent bar floating over the viewport
+is declared once there; Popover, DropdownMenu and its submenus read the shared
+expressions rather than carrying their own gutter constants.
+
 ### Current browser support behavior
 
 Native Popover API plus CSS Anchor Positioning provide the complete behavior
@@ -335,6 +345,8 @@ be updated only as that work ships.
   anchor/fixed/custom rendering, trigger source, and current same-gesture memory.
 - `Layer/layerHost.ts` owns safe inline versus nearest corrective portal placement.
 - `Layer/anchorName.ts` owns composition of anchor names on one trigger.
+- `Layer/layerViewportInset.stylex.ts` owns the per-edge viewport gutter
+  expressions and the `--astryx-layer-inset-*` properties they read.
 - `Layer/gestureCounter.ts` owns physical pointer/key gesture identity.
 - `Layer/layerStack.ts`, `Layer/useLayerDismissal.ts`, and
   `Layer/LayerDepthContext.tsx` own current registration, presence, ordering, and
