@@ -12,7 +12,7 @@ export const doc = {
   displayName: 'Authored doc graph fields',
   namespace: 'authoring',
   description:
-    "Placement, compatibility aliases, and audience: fields every authored doc kind declares for the docs tree. The docs tree reads `placement` and `aliases` for every guide, the CLI's and each integration's; audience is not built yet. A reference topic outside the docs tree that sets one fails to load, and other doc kinds accept them and ignore them.",
+    "Placement, compatibility aliases, and audience: fields every authored doc kind declares for the docs tree. The docs tree reads `placement` for every guide, the CLI's and each integration's; aliases and audience are not built yet. A reference topic outside the docs tree that sets one fails to load, and other doc kinds accept them and ignore them.",
   appliesTo: 'Every supported .doc.mjs object',
   fields: [
     {
@@ -45,7 +45,7 @@ export const doc = {
       name: 'aliases',
       type: 'string[]',
       description:
-        'Old names a guide the docs tree places keeps answering to: `astryx docs <alias>` opens the guide, and the topic list still names it. A reference topic outside the docs tree that sets it fails to load.',
+        'Prior names or routes the docs tree will keep resolving to this doc, without creating another identity. Not read yet: a topic that sets it fails to load.',
     },
     {
       name: 'audience',

@@ -45,13 +45,6 @@ export async function list({cwd} = {}) {
   // integration's, each the way into a whole branch (spec:AST-046). After the
   // topics, so the first topic stays the first entry.
   const tree = await projectTree(catalog);
-  // An old name a placed guide keeps is still listed, as a topic that opens it.
-  for (const {name, route} of tree.aliases?.values() ?? []) {
-    const node = tree.get(route);
-    if (node) {
-      entries.push({topic: name, description: node.summary, package: node.provider});
-    }
-  }
   for (const root of tree.roots()) {
     entries.push({
       topic: root.route,

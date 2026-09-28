@@ -97,8 +97,7 @@ const TOPIC_NAME_RE = /^[\w-]+$/;
  *   configured; each section an extension adds resolves its links against the
  *   extension's provider id (its package name when absent)
  * @property {string} [parent] the route of the namespace a tree guide sits in
- * @property {string} [route] a tree guide's route, when it is read by an old
- *   name it keeps
+ * @property {string} [route] a tree guide's route
  * @property {boolean} [tree] a guide that only the docs tree reads, by its
  *   route; never a flat topic
  */
@@ -219,9 +218,8 @@ export function problemsInTopic(doc, {placement = false} = {}) {
     );
   }
   for (const field of GRAPH_ONLY_FIELDS) {
-    // A guide the docs tree places carries `placement`, and may keep old
-    // names in `aliases`; the tree reads both.
-    if ((field === 'placement' || field === 'aliases') && placement) continue;
+    // A guide the docs tree places carries `placement`; the tree reads it.
+    if (field === 'placement' && placement) continue;
     if (doc?.[field] != null) {
       problems.push(
         `${field}: requires the compiled graph reader and is not supported by legacy topic readers`,
@@ -499,7 +497,6 @@ export async function discoverIntegrationDocs(integration) {
         summary: parsed.description,
         group: null,
         placement: parsed.placement,
-        ...(Array.isArray(parsed.aliases) ? {aliases: parsed.aliases} : {}),
         ref: {topicFile: file},
       });
       continue;

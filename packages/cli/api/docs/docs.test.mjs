@@ -155,7 +155,7 @@ describe('docs() dispatcher routing', () => {
     expect(home).toMatchObject({id: null, kind: 'namespace', links: {up: 'astryx docs'}});
     expect(home.slots[0].children.map(child => child.route)).toEqual(
       (await docs()).data
-        .filter(entry => entry.kind == null && entry.topic !== 'cli-integrations')
+        .filter(entry => entry.kind == null)
         .map(entry => entry.topic),
     );
   }, SLOW);
@@ -183,19 +183,12 @@ describe('docs() dispatcher routing', () => {
     );
   }, SLOW);
 
-  it("the guide's old flat name still opens it", async () => {
-    const byRoute = await docs('cli/integrations');
-    const byOldName = await docs('cli-integrations');
-    expect(byOldName.type).toBe('docs.detail');
-    expect(byOldName.data.sections.map(s => s.id)).toEqual(
-      byRoute.data.sections.map(s => s.id),
-    );
-    const index = await docs('cli-integrations', undefined, {index: true});
-    expect(index.data).toMatchObject({
-      name: 'cli-integrations',
-      links: {up: 'astryx docs cli'},
+  it("the guide's old flat name is gone, and its error names the new route", async () => {
+    await expect(docs('cli-integrations')).rejects.toMatchObject({
+      code: 'ERR_UNKNOWN_TOPIC',
+      suggestions: [expect.objectContaining({name: 'cli/integrations'})],
     });
-    expect((await docs()).data.map(entry => entry.topic)).toContain(
+    expect((await docs()).data.map(entry => entry.topic)).not.toContain(
       'cli-integrations',
     );
   }, SLOW);

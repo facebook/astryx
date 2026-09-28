@@ -169,8 +169,7 @@ describe('the docs tree, one level at a time', () => {
     expect(stdout).toMatch(/^Topics$/m);
     expect(stdout).toMatch(/^cli +Commands, programmatic APIs/m);
     expect(stdout.indexOf('\ncli ')).toBeLessThan(stdout.indexOf('\nprinciples '));
-    // The guide's old name is still listed, as a topic that opens it.
-    expect(stdout).toMatch(/^cli-integrations +Build an Astryx integration/m);
+    expect(stdout).not.toMatch(/^cli-integrations /m);
   }, SLOW);
 
   it("shows a child's own name when its route name does not spell it", async () => {
@@ -209,7 +208,7 @@ describe('the docs tree, one level at a time', () => {
     expect(JSON.parse(both.stdout).code).toBe('ERR_INVALID_ARGUMENT');
   }, SLOW);
 
-  it('reads the integration guide by its route, and by its old name', async () => {
+  it('reads the integration guide by its route, and not by its old name', async () => {
     const guide = await runCli(['docs', 'cli/integrations', '--index']);
     expect(guide.status).toBe(0);
     expect(guide.stdout).toMatch(/Read one section: .*docs cli\/integrations <section>/);
@@ -228,9 +227,9 @@ describe('the docs tree, one level at a time', () => {
     expect(full.status).toBe(0);
     expect(full.stdout).toMatch(/^## Overview$/m);
     expect(full.stdout.length).toBeGreaterThan(bare.stdout.length * 4);
-    const old = await runCli(['docs', 'cli-integrations', '--full']);
-    expect(old.status).toBe(0);
-    expect(old.stdout).toMatch(/^## Overview$/m);
+    const old = await runCli(['docs', 'cli-integrations']);
+    expect(old.status).toBe(1);
+    expect(old.stderr).toContain('Unknown topic "cli-integrations"');
   }, SLOW);
 
   it('returns docs.node as JSON, and fails a section of a namespace', async () => {

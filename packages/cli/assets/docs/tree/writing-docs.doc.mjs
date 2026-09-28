@@ -171,7 +171,7 @@ export const docs = {
           style: 'unordered',
           items: [
             'Give each section one idea. If it needs a second topic, split it into two sections.',
-            'The first sentence of a section is its summary in the section list. Make it say what the section answers.',
+            "A section's summary, shown in the section list and in search, is its first prose block or first list item, cut at 240 characters. Lead with what the section answers.",
             'In text, a topic with more than one section reads as its section list. The reader opens one section, or prints everything with `--full`. With `--json`, a topic returns the whole doc and `--index` its section list.',
             'Every read should fit in 32 KB; `astryx doctor` warns on one that does not. Aim for sections under about 30 lines.',
           ],
@@ -193,7 +193,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: "Search matches titles, section titles, headings, the first sentence of each section, and identifiers written in code ticks, such as `ERR_UNKNOWN_SECTION` or `token-ref`. It also matches a doc's own name and the `keywords` of a namespace or typed doc.",
+          text: "Search matches titles, section titles, headings, each section's summary, and identifiers written in code ticks, such as `ERR_UNKNOWN_SECTION` or `token-ref`. It also matches a doc's own name and the `keywords` of a namespace or typed doc.",
         },
         {
           type: 'list',

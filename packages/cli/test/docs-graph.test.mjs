@@ -443,16 +443,9 @@ describe('the docs graph', () => {
   it('agrees on neighbors: the next read names this one as its previous', async () => {
     /** @type {string[]} */
     const broken = [];
-    // A topic's section list and its whole read are one place, and so are a
-    // guide's route and an old name it keeps.
-    const {aliases} = await loadDocsTree();
+    // A topic's section list and its whole read are one place.
     /** @param {string | undefined} command */
-    const place = command => {
-      const bare = command?.replace(/ --index$/, '');
-      const name = bare?.replace(/^astryx docs /, '');
-      const alias = name == null ? undefined : aliases.get(name.toLowerCase());
-      return alias ? `astryx docs ${alias.route}` : bare;
-    };
+    const place = command => command?.replace(/ --index$/, '');
     for (const [from, kind, to] of moves) {
       if (kind !== 'next') continue;
       const back = reads.get(to)?.data?.links?.previous;

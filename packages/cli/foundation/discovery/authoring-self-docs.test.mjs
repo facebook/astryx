@@ -68,9 +68,7 @@ describe('what the authoring docs say about the docs tree', () => {
     // The tree reads `placement` for every guide (spec:AST-046); the other
     // graph fields are still refused by every topic reader.
     expect(notReadYet.sort()).toEqual(
-      GRAPH_ONLY_FIELDS.filter(
-        field => field !== 'placement' && field !== 'aliases',
-      ).sort(),
+      GRAPH_ONLY_FIELDS.filter(field => field !== 'placement').sort(),
     );
     for (const field of graphFieldsDoc.fields) {
       if (GRAPH_ONLY_FIELDS.includes(field.name)) {

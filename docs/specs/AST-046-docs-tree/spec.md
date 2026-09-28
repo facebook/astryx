@@ -49,8 +49,8 @@ the docsite onto the tree.
   guide the tree places keeps a flat page named after its route. The docsite
   moves onto the tree in a later phase, as its own change.
 - A top-level browse of every provider. It is a later phase.
-- Audiences. `audience` stays a reserved field that a topic may not set. A flat
-  topic may not set `aliases` either; only a placed guide's aliases are read.
+- Aliases and audiences. `aliases` and `audience` stay reserved fields that a
+  doc may not set.
 - Rendering `collection` blocks. A topic that uses one fails to load.
 
 ## Requirements
@@ -104,7 +104,9 @@ the docsite onto the tree.
 - **FR7 — The topic list names the tree.** `astryx docs --json` MUST list each
   top-level namespace after the topics, marked `kind: 'namespace'`, so the first
   topic stays the first entry. The text view MUST show the namespaces first,
-  under their own heading, because that is where the CLI's own docs start.
+  under their own heading, because that is where the CLI's own docs start. A
+  package whose docs did not load MUST be named, in `meta.notLoaded` and under
+  its own heading in text, so its author knows why its docs are missing.
 - **FR8 — Doctor proves the tree.** `astryx doctor` MUST warn when the tree has
   an error diagnostic, when a CLI typed doc whose group the tree reads has no
   route, and when a link between docs names no doc (`spec:AST-047` FR9). These
@@ -115,9 +117,10 @@ the docsite onto the tree.
   namespaces under it. Every command doc MUST have a route under
   `cli/commands`, and every function, schema, and enum doc in the `cli/api`
   group a route under `cli/api/<kind>s`. The integration guide's route MUST be
-  `cli/integrations`, and its flat name `cli-integrations` MUST keep opening it:
-  the guide declares the old name in `aliases`, which the tree reads for a
-  placed guide, and the topic list still names it.
+  `cli/integrations`; its old flat name `cli-integrations` is gone. A CLI route
+  or name MAY change like this when every reference changes with it: links name
+  docs by identity (`spec:AST-047` FR9), and the graph walk fails on a reference
+  left behind (`spec:AST-047` FR11, FR12).
 - **FR10 — Search finds the smallest part that answers.** `astryx search` MUST
   index each section of each topic and placed guide, and each namespace and
   typed doc of the tree. A section result MUST carry `section`, and its command
@@ -136,7 +139,9 @@ the docsite onto the tree.
   then integrations in configured order, and the claim that loses MUST be a
   `duplicate_route` diagnostic. `astryx doctor integration docs` MUST run the
   same tree and link checks on one integration's docs, so an author finds a
-  broken placement or link before the package ships.
+  broken placement or link before the package ships, and
+  `astryx integration add doc <name> --parent <namespace>` MUST write a guide
+  placed in that namespace, and the namespace doc the first time.
 - **FR12 — Every doc has a home.** Every flat topic, the CLI's and each
   integration's, MUST sit in the generated Unorganized level (`unorganized`), in
   the order the topic list reads. The level has no authored doc, so its `id` is
@@ -170,8 +175,8 @@ Phase 1 changes:
 - `astryx search` finds sections and tree nodes, as FR10 states;
 - an integration's namespace docs and placed guides join the tree, and
   `astryx doctor integration docs` checks them, as FR11 states;
-- `cli-integrations` moves to `cli/integrations`, and the old name stays as an
-  alias;
+- `cli-integrations` moves to `cli/integrations`, and every reference moves
+  with it;
 - every flat topic sits in the generated Unorganized level, as FR12 states;
 - the docsite reads the placed guide through `docs()` and keeps
   `/docs/cli-integrations`.
@@ -217,18 +222,18 @@ function appears in the tree with no other edit.
 Rejected: a second field for the tree, and a list of children in each namespace.
 Both repeat what the doc already says and drift from it.
 
-### DEC-3 — Keep the old guide name as an alias
+### DEC-3 — Rename, and move every reference with it
 
 **Reference:** `spec:AST-046/DEC-3`
 **Decider:** `josephfarina`, `2026-09-28`
 
-`cli-integrations` was a published topic, and the docs graph ships without
-breaking a published read. The guide keeps the old name in `aliases`, which the
-tree reads for a placed guide: `astryx docs cli-integrations` and
-`docs('cli-integrations')` open the guide, and the topic list names it.
+`cli-integrations` becomes `cli/integrations`, with no alias. A CLI name or
+route may change when every reference changes with it: links name docs by
+identity, so they follow the doc, and the graph walk fails on any reference
+left behind. An alias would keep a second name for one doc.
 
-Rejected: removing the old name with no alias (the first version of this
-decision, 2026-09-24), which fails every reader that still uses it.
+Rejected: keeping `cli-integrations` as an alias, and removing it before typed
+links and the graph walk could prove no reference was left.
 
 ### DEC-4 — Integrations join the tree in the first phase
 

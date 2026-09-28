@@ -11,8 +11,6 @@ export const docs = {
   type: 'generic',
   name: 'integrations',
   placement: {parent: 'namespace:cli', slot: 'guides', order: 10},
-  // The guide's name before it joined the docs tree; it keeps opening it.
-  aliases: ['cli-integrations'],
   title: 'CLI Integrations',
   category: 'guide',
   description:

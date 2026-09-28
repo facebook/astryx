@@ -32,14 +32,14 @@ export interface DocPlacement {
 
 /**
  * Tree metadata shared by every authored doc kind. The docs tree reads
- * `placement` and `aliases` for every guide, the CLI's and each integration's
- * (spec:AST-046); nothing reads `audience` yet. A reference topic
+ * `placement` for every guide, the CLI's and each integration's
+ * (spec:AST-046); nothing reads `aliases` or `audience` yet. A reference topic
  * outside the docs tree that sets one fails to load.
  */
 export interface AuthoredDocGraphFields {
   /** The doc's one parent in the docs tree: a namespace of its own package. */
   placement?: DocPlacement;
-  /** Prior routes or names the docs tree will keep resolving. Read for guides the docs tree places. */
+  /** Prior routes or names the docs tree will keep resolving. Not read yet. */
   aliases?: string[];
   /** Docs bundle audience; omit for public docs. Not read yet. */
   audience?: DocAudience;

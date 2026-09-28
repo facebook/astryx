@@ -613,17 +613,10 @@ export async function resolveDocsArgument(topic, {cwd} = {}) {
   if (typeof topic !== 'string' || topic === '')
     return {kind: 'unknown', catalog};
   const tree = await projectTree(catalog);
-  // An old name a placed guide keeps (`aliases`) opens that guide.
-  const alias = tree.get(topic) ? undefined : tree.aliases?.get(topic.toLowerCase());
-  const node = tree.get(alias?.route ?? topic);
+  const node = tree.get(topic);
   if (!node || node.ref?.flatTopic) return {kind: 'unknown', catalog};
   if (node.kind === 'generic') {
-    const entry = guideEntry(node);
-    return {
-      kind: 'topic',
-      catalog,
-      entry: alias ? {...entry, name: alias.name} : entry,
-    };
+    return {kind: 'topic', catalog, entry: guideEntry(node)};
   }
   return {kind: 'node', catalog, tree, node};
 }
@@ -659,9 +652,17 @@ export async function unknownTopicError(topic, catalog) {
     }
   }
   if (suggestions.length === 0 && typeof topic === 'string') {
+    // The docs whose own name it is (`doctor` is cli/commands/doctor), or whose
+    // route it spells with hyphens (`cli-integrations`, the guide's name before
+    // it moved to cli/integrations).
     const wanted = topic.toLowerCase();
     suggestions = [...tree.nodes.values()]
-      .filter(node => !node.ref?.flatTopic && node.name.toLowerCase() === wanted)
+      .filter(
+        node =>
+          !node.ref?.flatTopic &&
+          (node.name.toLowerCase() === wanted ||
+            node.route.replaceAll('/', '-').toLowerCase() === wanted),
+      )
       .map(node => ({name: node.route, reason: node.summary}));
   }
   if (suggestions.length === 0) {
@@ -670,10 +671,6 @@ export async function unknownTopicError(topic, catalog) {
         .roots()
         .map(root => ({name: root.route, reason: 'docs namespace'})),
       ...catalog.names().map(name => ({name, reason: 'available topic'})),
-      ...[...(tree.aliases?.values() ?? [])].map(alias => ({
-        name: alias.name,
-        reason: `old name of ${alias.route}`,
-      })),
     ];
   }
   return new AstryxError(

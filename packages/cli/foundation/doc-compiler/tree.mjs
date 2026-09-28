@@ -100,7 +100,6 @@ export const KIND_GROUPS = Object.freeze({
  * @property {string} summary
  * @property {string | null} group the discovery group adoption reads, or null
  * @property {DocPlacement | undefined} placement
- * @property {string[]} [aliases] old names a placed guide keeps answering to
  * @property {any} [ref] what a reader needs to open the doc, carried as given
  */
 
@@ -155,8 +154,6 @@ export const UNORGANIZED = 'unorganized';
  * @property {(route: string) => TreeNode | undefined} get
  * @property {() => TreeNode[]} roots the namespaces with no parent
  * @property {(node: TreeNode) => TreeNode[]} ancestors top first, not the node
- * @property {Map<string, {name: string, route: string}>} aliases old names a
- *   placed guide keeps answering to, by lowercase name
  */
 
 /** @param {string} a @param {string} b */
@@ -560,35 +557,10 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
     }
   }
 
-  // Old names a placed guide keeps answering to. An alias never takes a
-  // route or another guide's alias.
-  /** @type {Map<string, {name: string, route: string}>} */
-  const aliases = new Map();
-  for (const input of sortedDocs) {
-    for (const alias of input.aliases ?? []) {
-      const route = [...nodes.values()].find(
-        node => node.provider === input.provider && node.kind === input.kind && node.name === input.name,
-      )?.route;
-      if (route == null || typeof alias !== 'string') continue;
-      const key = alias.toLowerCase();
-      if (nodes.has(alias) || aliases.has(key)) {
-        report(
-          'duplicate_route',
-          input,
-          `The alias "${alias}" of ${route} is already ${nodes.has(alias) ? 'a route' : `an alias of ${aliases.get(key)?.route}`}. Remove it from one of them.`,
-          'aliases',
-        );
-        continue;
-      }
-      aliases.set(key, {name: alias, route});
-    }
-  }
-
   const sorted = new Map([...nodes.entries()].sort(([a], [b]) => byText(a, b)));
   return {
     nodes: sorted,
     diagnostics: sortDiagnostics(diagnostics),
-    aliases,
     get: route => sorted.get(route),
     roots: () => [...sorted.values()].filter(node => node.parent == null),
     ancestors: node => {
@@ -757,7 +729,6 @@ export async function loadTreeInputs({
         summary: doc.description,
         group: null,
         placement: doc.placement,
-        ...(Array.isArray(doc.aliases) ? {aliases: doc.aliases} : {}),
         ref: {topicFile: file},
       });
     } else {

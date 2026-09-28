@@ -96,7 +96,7 @@ This record owns the moves a read offers and how they appear in text and JSON.
   unresolved or ambiguous. A link names a doc identity, not a provider instance,
   so it survives version changes.
 - **FR10 — Phase 1 covers docs and search.** `astryx docs` and `astryx search`
-  MUST meet FR1–FR9 and FR11. A command a doc shows as an example, in a code
+  MUST meet FR1–FR9, FR11, and FR12. A command a doc shows as an example, in a code
   block or in prose, is not a link: FR11 keeps it true. Other commands adopt
   this record in later phases, each as its own change.
 - **FR11 — Nothing a read shows can go stale.** A move or a cross-link MUST be
@@ -107,6 +107,12 @@ This record owns the moves a read offers and how they appear in text and JSON.
   otherwise. A command a doc shows wrong on purpose, as an error-code example,
   MUST be listed as such, and the list MUST fail when an entry is no longer
   shown.
+- **FR12 — Every doc is one walk away.** Every doc a provider ships MUST be
+  reachable from `astryx docs` by following the moves reads offer: Down from the
+  topic list and each namespace, then Across and Out. Neighbors MUST agree: the
+  read an item's Next opens names that item as its Previous. A test MUST walk
+  the whole graph from the top and fail on a doc file it cannot reach, a move
+  that does not open, or a link that names no doc.
 
 ### Platform support
 
@@ -132,7 +138,9 @@ Phase 1 changes:
   fields), resolved on every read, and checked by Doctor, which warns; the
   hand-written `astryx docs` links in the CLI's own docs become typed links;
 - a test proves every command a doc or hint shows is a real command with real
-  options, and every docs command opens.
+  options, and every docs command opens;
+- a test walks the whole graph from the top and reaches every doc file the CLI
+  ships, as FR12 states.
 
 `architecture:cli-surface` INV27 carries this record into the code.
 
@@ -145,6 +153,7 @@ Phase 1 changes:
 | FR8          | `spec:AST-046` FR6 tests                                                                          | an unknown route, topic, and section                                                                                         | A dead end without suggestions                                                                      |
 | FR9          | Link tests, the doctor docs-tree check, and the graph walk                                        | an inline link, a link in a list and a table, and a typed field; a link to another provider; a link in code ticks            | A link that names no doc and still passes, a link resolved by guess, or a stored route              |
 | FR11         | The graph walk's shown-commands check                                                             | commands in doc prose and code blocks, CLI hint lines, and the agent prompt; the wrong-on-purpose list                       | A command or option the CLI does not have, a docs command that does not open, or a stale list entry |
+| FR12         | The graph walk (`packages/cli/test/docs-graph.test.mjs`)                                          | every tree node; every doc file the CLI ships; Next and Previous on sections, topics, guides, and tree nodes                 | A doc file no walk reaches, a move that does not open, or a Next whose read names another Previous  |
 
 ## Decision log
 

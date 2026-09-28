@@ -1,9 +1,9 @@
 ---
-'@astryxdesign/cli': patch
+'@astryxdesign/cli': minor
 ---
 
-[feat] The integration guide is also at `astryx docs cli/integrations`. (#6626)
+[breaking] The integration guide moved from `astryx docs cli-integrations` to `astryx docs cli/integrations`. (#6626)
 
-The guide now lives in the CLI's docs tree, under `cli`. Its old name keeps working: `astryx docs cli-integrations` and `docs('cli-integrations')` open the same guide, and the topic list still names it. The docsite page stays at `/docs/cli-integrations`.
+The guide now lives in the CLI's docs tree, under `cli`. The old name is gone: `astryx docs cli-integrations` and `docs('cli-integrations')` fail with an unknown topic. Use `astryx docs cli/integrations`, including section reads such as `astryx docs cli/integrations components`. The docsite page stays at `/docs/cli-integrations`.
 
 @josephfarina
