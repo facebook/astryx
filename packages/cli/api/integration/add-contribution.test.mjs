@@ -77,6 +77,7 @@ describe('integrationAdd component', () => {
       path.join(tmpDir, 'components/MyWidget.doc.mjs'),
       'utf-8',
     );
+    expect(doc).toContain("@astryxdesign/cli/authoring').ComponentDoc");
     expect(doc).toContain("type: 'component'");
     expect(doc).toContain("name: 'MyWidget'");
     expect(doc).toContain('props: []');
@@ -118,14 +119,14 @@ describe('integrationAdd component', () => {
     );
     expect(pkg.exports).toEqual({
       '.': './index.mjs',
-      './components/MyWidget.tsx': './components/MyWidget.tsx',
+      './components/MyWidget': './components/MyWidget.tsx',
     });
     expect(
       fs.readFileSync(
         path.join(tmpDir, 'components/MyWidget.doc.mjs'),
         'utf-8',
       ),
-    ).toContain('import: "@acme/integration/components/MyWidget.tsx"');
+    ).toContain('import: "@acme/integration/components/MyWidget"');
   });
 
   it('does not create exports when the package has no exports map', async () => {
@@ -143,7 +144,7 @@ describe('integrationAdd component', () => {
     setup({
       exports: {
         '.': './index.mjs',
-        './components/MyWidget.tsx': './different.tsx',
+        './components/MyWidget': './different.tsx',
       },
     });
 
@@ -304,6 +305,7 @@ describe('integrationAdd doc', () => {
       path.join(tmpDir, 'docs/my-guide.doc.mjs'),
       'utf-8',
     );
+    expect(doc).toContain("@astryxdesign/cli/authoring').ReferenceDoc");
     expect(doc).toContain("type: 'generic'");
     expect(doc).toContain("name: 'my-guide'");
 
@@ -390,13 +392,14 @@ describe('integrationAdd template', () => {
     expect(result.data.kind).toBe('template');
     expect(result.data.name).toBe('my-widget');
     expect(result.data.root).toEqual({path: './templates', created: true});
-    expect(result.data.files).toContain('templates/my-widget.template.mjs');
+    expect(result.data.files).toContain('templates/my-widget.doc.mjs');
     expect(result.data.files).toContain('templates/my-widget.tsx');
 
     const spec = fs.readFileSync(
-      path.join(tmpDir, 'templates/my-widget.template.mjs'),
+      path.join(tmpDir, 'templates/my-widget.doc.mjs'),
       'utf-8',
     );
+    expect(spec).toContain("@astryxdesign/cli/authoring').TemplateDoc");
     expect(spec).toContain("type: 'page'");
     expect(spec).toContain("name: 'my-widget'");
 
@@ -421,7 +424,7 @@ describe('integrationAdd template', () => {
     );
     expect(pkg.exports).toEqual({
       '.': './index.mjs',
-      './templates/my-widget.tsx': './templates/my-widget.tsx',
+      './templates/my-widget': './templates/my-widget.tsx',
     });
   });
 
@@ -432,10 +435,11 @@ describe('integrationAdd template', () => {
       templateType: 'block',
     });
     const spec = fs.readFileSync(
-      path.join(tmpDir, 'templates/my-card.template.mjs'),
+      path.join(tmpDir, 'templates/my-card.doc.mjs'),
       'utf-8',
     );
     expect(spec).toContain("type: 'block'");
+    expect(spec).toContain('aspectRatio: 1');
   });
 
   it('rejects an invalid template type', async () => {
@@ -676,6 +680,35 @@ describe('custom root preservation', () => {
   });
 });
 
+describe('typed descriptor conformance', () => {
+  it('emits a strongly typed .doc.mjs for every canonical item writer', async () => {
+    setup();
+    await integrationAdd('component', 'MyWidget', {cwd: tmpDir});
+    await integrationAdd('doc', 'my-guide', {cwd: tmpDir});
+    await integrationAdd('template', 'my-page', {cwd: tmpDir});
+    await integrationAdd('theme', 'ocean', {cwd: tmpDir});
+
+    // Codemod and agent-doc keep their released formats for compatibility;
+    // no new kind may copy those exceptions.
+    for (const [relativePath, type] of [
+      ['components/MyWidget.doc.mjs', 'ComponentDoc'],
+      ['docs/my-guide.doc.mjs', 'ReferenceDoc'],
+      ['templates/my-page.doc.mjs', 'TemplateDoc'],
+      ['themes/ocean/oceanTheme.doc.mjs', 'ThemeDoc'],
+    ]) {
+      const source = fs.readFileSync(path.join(tmpDir, relativePath), 'utf-8');
+      expect(source).toContain(`@astryxdesign/cli/authoring').${type}`);
+      expect(source).toContain('export default {');
+    }
+    expect(
+      fs.existsSync(path.join(tmpDir, 'templates/my-page.template.mjs')),
+    ).toBe(false);
+    expect(fs.existsSync(path.join(tmpDir, 'themes/manifest.json'))).toBe(
+      false,
+    );
+  });
+});
+
 describe('public per-kind APIs', () => {
   it('exposes narrow functions for every non-theme contribution kind', async () => {
     setup();
@@ -711,6 +744,7 @@ describe('public dispatcher', () => {
     const result = await integrationAdd('theme', 'ocean', {cwd: tmpDir});
     expect(result.data).toMatchObject({kind: 'theme', name: 'ocean'});
     expect(result.data.files).toContain('themes/ocean/oceanTheme.ts');
+    expect(result.data.files).toContain('themes/ocean/oceanTheme.doc.mjs');
   });
 
   it('refuses a kind-specific option on the wrong kind', async () => {
@@ -730,4 +764,84 @@ describe('public dispatcher', () => {
       integrationAdd(/** @type {any} */ ('plugin'), 'thing', {cwd: tmpDir}),
     ).rejects.toThrow(/component, doc, template, codemod, agent-doc, or theme/);
   });
+});
+
+describe('dry-run receipts match the real write', () => {
+  /** Package states each writer has to plan for. */
+  const STATES = {
+    'no manifest': {pkg: {files: ['dist']}},
+    'an empty manifest': {pkg: {}, manifest: 'export default {};\n'},
+    'declared roots and an exports map': {
+      pkg: {files: ['dist'], exports: {'.': './dist/index.js'}},
+      manifest:
+        "export default {\n  components: './components',\n  docs: './docs',\n  templates: './templates',\n  codemods: './codemods',\n  themes: './themes',\n};\n",
+    },
+  };
+  /** @type {Array<[any, string, Record<string, unknown>]>} */
+  const KINDS = [
+    ['component', 'AcmeWidget', {}],
+    ['doc', 'deploying', {}],
+    ['template', 'account-page', {}],
+    ['template', 'account-card', {templateType: 'block'}],
+    ['codemod', 'rename-widget', {to: '1.2.0'}],
+    ['agent-doc', 'Run acme verify before finishing.', {}],
+    ['theme', 'ocean', {}],
+  ];
+
+  /** Every file under the package, keyed by project path, with its bytes. */
+  function snapshot() {
+    /** @type {Record<string, string>} */
+    const files = {};
+    /** @param {string} dir */
+    const walk = dir => {
+      for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else {
+          files[path.relative(tmpDir, full).split(path.sep).join('/')] =
+            fs.readFileSync(full, 'base64');
+        }
+      }
+    };
+    walk(tmpDir);
+    return files;
+  }
+
+  for (const [stateName, state] of Object.entries(STATES)) {
+    for (const [kind, name, options] of KINDS) {
+      it(`${kind} ${name} in a package with ${stateName}`, async () => {
+        fs.writeFileSync(
+          path.join(tmpDir, 'package.json'),
+          `${JSON.stringify({name: '@acme/integration', version: '1.0.0', ...state.pkg}, null, 2)}\n`,
+        );
+        if (state.manifest != null) {
+          fs.writeFileSync(
+            path.join(tmpDir, 'astryx.integration.mjs'),
+            state.manifest,
+          );
+        }
+        const before = snapshot();
+
+        const plan = await integrationAdd(kind, name, {
+          cwd: tmpDir,
+          dryRun: true,
+          ...options,
+        });
+        expect(snapshot()).toEqual(before);
+
+        const written = await integrationAdd(kind, name, {
+          cwd: tmpDir,
+          ...options,
+        });
+        const after = snapshot();
+        const changed = Object.keys(after)
+          .filter(file => after[file] !== before[file])
+          .sort();
+
+        expect(written.data.root).toEqual(plan.data.root);
+        expect(written.data.files).toEqual(plan.data.files);
+        expect([...written.data.files].sort()).toEqual(changed);
+      });
+    }
+  }
 });

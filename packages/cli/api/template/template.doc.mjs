@@ -11,6 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'template',
+  namespace: 'cli/api',
   displayName: 'template()',
   summary: 'List, inspect, or scaffold page and block templates.',
   description:
@@ -75,7 +76,8 @@ export const doc = {
       name: 'options.targetPath',
       type: 'string',
       description:
-        'Destination (relative to cwd) to scaffold the template into. Its presence switches a named lookup into a copy.',
+        'Destination (relative to cwd) to scaffold the template into. Its presence switches a named lookup into a copy. ' +
+        'A path that ends in .tsx, .ts, .jsx, .js, .mjs, .cjs, .css, .scss, .json, .md or .html is the file to write; any other path is a directory, which receives page.tsx for a page template or the block\'s own file name for a block.',
     },
     {
       name: 'options.overwrite',

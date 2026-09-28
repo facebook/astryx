@@ -1,6 +1,6 @@
 ---
 schema_version: 3
-template_version: 2
+template_version: 3
 kind: module
 id: module:<ParentComponent>/<PublicName>
 authority: draft
@@ -87,6 +87,20 @@ Consumer migration instructions belong in consumer docs and release notes.
 | Anatomy or state | Design requirement     | Representation authority                     | Module contract     |
 | ---------------- | ---------------------- | -------------------------------------------- | ------------------- |
 | `<role/state>`   | `design:<surface>/DR1` | `<prescribed, human-selected, or unsettled>` | `<FR/AR reference>` |
+
+Use the optional table below only for durable module-local visual intent that a
+future redesign must reconsider. Reuse or amend an existing row before adding
+one. Exact pixel tuning normally stays in code and visual evidence. Put shared or
+cross-component rules in `docs/design/` and link them from the relationship table
+above. Use `DD1`, `DD2`, and so on; IDs remain stable and unique within this
+record.
+
+### Design decisions
+
+<!-- design-decisions:v1 -->
+
+| ID  | Decision | Intent or reason | Applies to | Allowed variation |
+| --- | -------- | ---------------- | ---------- | ----------------- |
 
 ### Theming anatomy
 

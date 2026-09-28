@@ -14,6 +14,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import {themeTemplate, THEME_TEMPLATE_DEFAULT_PATH} from './template.mjs';
+import {isErrorCode} from '../../../foundation/response/error-codes.mjs';
 
 let tmpDir;
 beforeEach(() => {
@@ -78,5 +79,19 @@ describe('themeTemplate()', () => {
       /theme template path/,
     );
     expect(fs.existsSync(path.join(path.dirname(tmpDir), 'escaped.ts'))).toBe(false);
+  });
+
+  it('reports a failed write with a registered error code', () => {
+    fs.writeFileSync(path.join(tmpDir, 'blocker'), '');
+
+    let error;
+    try {
+      themeTemplate({cwd: tmpDir, targetPath: 'blocker/theme.ts'});
+    } catch (caught) {
+      error = caught;
+    }
+
+    expect(error).toMatchObject({code: 'ERR_WRITE_FAILED'});
+    expect(isErrorCode(error.code)).toBe(true);
   });
 });

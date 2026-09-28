@@ -1,0 +1,36 @@
+{
+  "apiVersion": 1,
+  "type": "docs.detail",
+  "data": {
+    "name": "acme-guide",
+    "description": "How zorblax cards fit together.",
+    "type": "generic",
+    "title": "Acme guide",
+    "sections": [
+      {
+        "title": "Start",
+        "content": [
+          {
+            "type": "prose",
+            "text": "Install the kit."
+          }
+        ],
+        "id": "start"
+      },
+      {
+        "title": "Colors",
+        "content": [
+          {
+            "type": "prose",
+            "text": "Cards use the core tokens."
+          },
+          {
+            "type": "prose",
+            "text": "[token-ref: unknown topic \"no-such-topic\"]"
+          }
+        ],
+        "id": "colors"
+      }
+    ]
+  }
+}

@@ -120,7 +120,7 @@ describe('integration authoring CLI', () => {
     );
   });
 
-  it('packs the generated contribution and proves the consumer inventory', async () => {
+  it('pack-check rejects a generated component without an exports map (no-map false green)', async () => {
     const added = await runCli(
       ['integration', 'add', 'component', 'AcmeWidget', '--json'],
       tmpDir,
@@ -131,19 +131,23 @@ describe('integration authoring CLI', () => {
       ['integration', 'pack', '--check', '--json'],
       tmpDir,
     );
-    expect(checked.status).toBe(0);
-    expect(parseEnvelope(checked.stdout)).toMatchObject({
+    // Without an exports map, the extensionless import cannot resolve —
+    // pack-check must fail, not false-green.
+    expect(checked.status).not.toBe(0);
+    const envelope = parseEnvelope(checked.stdout);
+    expect(envelope).toMatchObject({
       type: 'integration.pack-check',
       data: {
         name: '@acme/widgets',
-        version: '1.0.0',
-        packable: true,
-        contributions: {
-          local: {components: ['AcmeWidget']},
-          packed: {components: ['AcmeWidget']},
-        },
+        packable: false,
       },
     });
+    expect(envelope.data.issues).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        message: expect.stringContaining('AcmeWidget'),
+      }),
+    );
   });
 
   it('requires the explicit --check gate on pack', async () => {

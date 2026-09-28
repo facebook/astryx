@@ -4,6 +4,46 @@
  * @file Shared leaf primitives used across the doc types.
  */
 
+/** Every authored documentation kind accepted by `parseDoc`. */
+export type AuthoredDocKind =
+  | 'component'
+  | 'function'
+  | 'generic'
+  | 'page'
+  | 'block'
+  | 'schema'
+  | 'command'
+  | 'enum'
+  | 'namespace';
+
+/** Visibility of an authored doc in a compiled audience-specific bundle. */
+export type DocAudience = 'public' | 'internal';
+
+/**
+ * Optional canonical placement request. The compiler resolves `parent` as a
+ * stable doc reference. `slot` selects one parent-owned slot, and `order`
+ * provides deterministic sibling ordering inside that slot.
+ */
+export interface DocPlacement {
+  parent: string;
+  slot?: string;
+  order?: number;
+}
+
+/**
+ * Graph metadata shared by every authored doc kind. Reserved for the docs
+ * graph, which is not built yet: nothing reads these fields, and a reference
+ * topic that sets one fails to load.
+ */
+export interface AuthoredDocGraphFields {
+  /** Requested canonical parent in the docs graph. Not read yet. */
+  placement?: DocPlacement;
+  /** Prior routes or names the docs graph will keep resolving. Not read yet. */
+  aliases?: string[];
+  /** Docs bundle audience; omit for public docs. Not read yet. */
+  audience?: DocAudience;
+}
+
 /**
  * Stable public identity for generated registry resources.
  *

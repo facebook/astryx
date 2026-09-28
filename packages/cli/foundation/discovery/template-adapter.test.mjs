@@ -18,6 +18,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import {
   extractComponents,
+  findPageDocFile,
   stripTemplateAssetRefs,
 } from './template-adapter.mjs';
 
@@ -161,6 +162,20 @@ describe('stripTemplateAssetRefs', () => {
       stripTemplateAssetRefs('src="/template-assets/clip.bin"'),
     ).toThrow(
       /Unrecognized template asset format bin for \/template-assets\/clip\.bin/,
+    );
+  });
+});
+
+describe('findPageDocFile', () => {
+  it('keeps the released precedence when one page has two specs', () => {
+    const page = fs.mkdtempSync(path.join(dir, 'page-'));
+    fs.writeFileSync(path.join(page, 'template.doc.mjs'), 'export {};\n');
+    fs.writeFileSync(path.join(page, 'template.doc.ts'), 'export {};\n');
+    expect(findPageDocFile(page)).toBe(path.join(page, 'template.doc.ts'));
+
+    fs.writeFileSync(path.join(page, 'template.template.mjs'), 'export {};\n');
+    expect(findPageDocFile(page)).toBe(
+      path.join(page, 'template.template.mjs'),
     );
   });
 });

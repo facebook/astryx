@@ -53,25 +53,10 @@ function writePackage({
       "import {defineTheme} from '@astryxdesign/core/theme';\n\nexport const oceanTheme = defineTheme({name: 'ocean'});\n",
     );
     fs.writeFileSync(
-      path.join(root, 'manifest.json'),
-      JSON.stringify(
-        {
-          version: 1,
-          themes: [
-            {
-              slug: 'ocean',
-              displayName: 'Ocean',
-              description: 'Ocean theme.',
-              maintained: true,
-              entry: 'oceanTheme.ts',
-              exportName: 'oceanTheme',
-              files: ['oceanTheme.ts'],
-            },
-          ],
-        },
-        null,
-        2,
-      ) + '\n',
+      path.join(root, 'ocean', 'oceanTheme.doc.mjs'),
+      `/** @type {import('@astryxdesign/cli/authoring').ThemeDoc} */
+export default {type: 'theme', name: 'ocean', displayName: 'Ocean', description: 'Ocean theme.', maintained: true};
+`,
     );
   }
   if (components) {
@@ -109,7 +94,7 @@ describe('integrationPackCheck', () => {
     );
   });
 
-  it('fails when a theme entry omits its catalog export', async () => {
+  it('fails when a theme entry omits its inferred runtime export', async () => {
     writePackage({files: ['astryx.integration.mjs', 'themes']});
     fs.writeFileSync(
       path.join(tmpDir, 'themes', 'ocean', 'oceanTheme.ts'),
@@ -129,18 +114,11 @@ describe('integrationPackCheck', () => {
     );
   });
 
-  it('fails when a theme imports a file omitted from its catalog', async () => {
+  it('fails when a theme imports a missing local file', async () => {
     writePackage({files: ['astryx.integration.mjs', 'themes']});
-    fs.mkdirSync(path.join(tmpDir, 'themes', 'ocean', 'tokens'), {
-      recursive: true,
-    });
     fs.writeFileSync(
       path.join(tmpDir, 'themes', 'ocean', 'oceanTheme.ts'),
       "import {oceanPalette} from './tokens/ocean.palette';\nexport const oceanTheme = {oceanPalette};\n",
-    );
-    fs.writeFileSync(
-      path.join(tmpDir, 'themes', 'ocean', 'tokens', 'ocean.palette.ts'),
-      'export const oceanPalette = {};\n',
     );
 
     const result = await integrationPackCheck({cwd: tmpDir});
@@ -150,7 +128,7 @@ describe('integrationPackCheck', () => {
       expect.objectContaining({
         code: 'invalid_theme',
         message: expect.stringContaining(
-          'must resolve to a listed file inside the theme directory',
+          'must resolve to a file inside the theme directory',
         ),
       }),
     );
@@ -231,7 +209,7 @@ describe('integrationPackCheck', () => {
     );
     fs.mkdirSync(path.join(tmpDir, 'templates'));
     fs.writeFileSync(
-      path.join(tmpDir, 'templates', 'account-page.template.mjs'),
+      path.join(tmpDir, 'templates', 'account-page.doc.mjs'),
       "export default {type: 'page', name: 'Account page', description: 'Account page.'};\n",
     );
     fs.writeFileSync(
@@ -314,10 +292,10 @@ describe('integrationPackCheck', () => {
     const script = [
       "const fs=require('fs')",
       "fs.renameSync('themes/ocean','themes/storm')",
-      "const p='themes/manifest.json'",
-      'const x=JSON.parse(fs.readFileSync(p))',
-      "x.themes[0].slug='storm'",
-      'fs.writeFileSync(p,JSON.stringify(x))',
+      "const p='themes/storm/oceanTheme.doc.mjs'",
+      "let x=fs.readFileSync(p,'utf8')",
+      "x=x.replace(/name: 'ocean'/, 'name: '+String.fromCharCode(39)+'storm'+String.fromCharCode(39))",
+      'fs.writeFileSync(p,x)',
     ].join(';');
     writePackage({
       files: ['astryx.integration.mjs', 'themes'],
@@ -513,23 +491,15 @@ describe('integrationPackCheck', () => {
 });
 
 describe('pack-check mutation tests', () => {
-  it('detects when a theme file is deleted after initial add', async () => {
+  it('detects when a theme source is deleted after initial authoring', async () => {
     writePackage({files: ['astryx.integration.mjs', 'themes']});
-
-    // Write a second theme file then delete it — catalog still references it
-    const catalog = JSON.parse(
-      fs.readFileSync(path.join(tmpDir, 'themes', 'manifest.json'), 'utf-8'),
-    );
-    catalog.themes[0].files.push('tokens.ts');
-    fs.writeFileSync(
-      path.join(tmpDir, 'themes', 'manifest.json'),
-      JSON.stringify(catalog, null, 2) + '\n',
-    );
-    // tokens.ts doesn't exist on disk → will be in inventory but not on disk
-    // (Phase 1 catches this; the file won't be in the pack list either)
+    fs.rmSync(path.join(tmpDir, 'themes', 'ocean', 'oceanTheme.ts'));
 
     const result = await integrationPackCheck({cwd: tmpDir});
     expect(result.data.packable).toBe(false);
+    expect(result.data.issues).toContainEqual(
+      expect.objectContaining({code: 'invalid_theme'}),
+    );
   });
 
   it('detects when files[] is narrowed after add removes themes', async () => {
@@ -565,5 +535,254 @@ describe('pack-check mutation tests', () => {
       expect(root.complete).toBe(true);
       expect(root.missingFiles).toEqual([]);
     }
+  });
+});
+
+describe('extensionless subpath resolution', () => {
+  it('rejects .tsx public specifiers before publishing', async () => {
+    // Manually construct a package with OLD-style .tsx exports keys
+    writePackage({
+      manifest: "export default {components: './components'};\n",
+      files: ['astryx.integration.mjs', 'components', 'index.mjs'],
+      themes: false,
+    });
+    const pkgFile = path.join(tmpDir, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+    pkg.exports = {
+      '.': './index.mjs',
+      './components/AcmeWidget.tsx': './components/AcmeWidget.tsx',
+    };
+    fs.writeFileSync(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
+    fs.writeFileSync(
+      path.join(tmpDir, 'index.mjs'),
+      'export const existing = 1;\n',
+    );
+    fs.mkdirSync(path.join(tmpDir, 'components'));
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'AcmeWidget.doc.mjs'),
+      `export default {type: 'component', name: 'AcmeWidget', import: '@acme/widgets/components/AcmeWidget.tsx', description: 'Widget.', props: []};\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'components', 'AcmeWidget.tsx'),
+      'export function AcmeWidget() { return null; }\n',
+    );
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    // The .tsx extension in the specifier must be caught
+    expect(result.data.packable).toBe(false);
+    expect(result.data.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'typescript_extension_in_specifier',
+        message: expect.stringContaining('.tsx'),
+      }),
+    );
+  });
+
+  it('generated extensionless component specifier resolves through exports map', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      `${JSON.stringify({
+        name: '@acme/widgets',
+        version: '1.0.0',
+        files: ['index.mjs'],
+        exports: {'.': './index.mjs'},
+      })}\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'index.mjs'),
+      'export const existing = 1;\n',
+    );
+    await integrationAddComponent('AcmeWidget', {cwd: tmpDir});
+
+    // Verify the exports map has extensionless key → .tsx target
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'),
+    );
+    expect(pkg.exports['./components/AcmeWidget']).toBe(
+      './components/AcmeWidget.tsx',
+    );
+    expect(pkg.exports['./components/AcmeWidget.tsx']).toBeUndefined();
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    expect(result.data.packable).toBe(true);
+    expect(result.data.issues).not.toContainEqual(
+      expect.objectContaining({code: 'typescript_extension_in_specifier'}),
+    );
+    expect(result.data.issues).not.toContainEqual(
+      expect.objectContaining({code: 'component_import_unresolvable'}),
+    );
+  });
+
+  it('validates generated imports without project-local TypeScript', async () => {
+    fs.rmSync(tmpDir, {recursive: true, force: true});
+    tmpDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'astryx-pack-check-no-typescript-'),
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      `${JSON.stringify({
+        name: '@acme/widgets',
+        version: '1.0.0',
+        files: ['index.mjs'],
+        exports: {'.': './index.mjs'},
+      })}\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'index.mjs'),
+      'export const existing = 1;\n',
+    );
+    await integrationAddComponent('AcmeWidget', {cwd: tmpDir});
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    expect(result.data.packable).toBe(true);
+    expect(result.data.issues).not.toContainEqual(
+      expect.objectContaining({code: 'component_import_unresolvable'}),
+    );
+  });
+
+  it('generated extensionless template specifiers resolve for page and block types', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      `${JSON.stringify({
+        name: '@acme/widgets',
+        version: '1.0.0',
+        files: ['index.mjs'],
+        exports: {'.': './index.mjs'},
+      })}\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'index.mjs'),
+      'export const existing = 1;\n',
+    );
+    await integrationAddTemplate('account-page', {cwd: tmpDir, type: 'page'});
+    await integrationAddTemplate('info-card', {cwd: tmpDir, type: 'block'});
+
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'),
+    );
+    expect(pkg.exports['./templates/account-page']).toBe(
+      './templates/account-page.tsx',
+    );
+    expect(pkg.exports['./templates/info-card']).toBe(
+      './templates/info-card.tsx',
+    );
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    expect(result.data.packable).toBe(true);
+    expect(result.data.issues).not.toContainEqual(
+      expect.objectContaining({code: 'template_import_unresolvable'}),
+    );
+    expect(result.data.issues).not.toContainEqual(
+      expect.objectContaining({code: 'typescript_extension_in_specifier'}),
+    );
+  });
+
+  it('preserves condition-style exports sugar without creating a map', async () => {
+    // Package with condition-only exports (sugar, no subpaths)
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      `${JSON.stringify({
+        name: '@acme/widgets',
+        version: '1.0.0',
+        files: ['index.mjs'],
+        exports: {import: './index.mjs', require: './index.cjs'},
+      })}\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'index.mjs'),
+      'export const existing = 1;\n',
+    );
+    fs.writeFileSync(path.join(tmpDir, 'index.cjs'), 'exports.existing = 1;\n');
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      'export default {};\n',
+    );
+
+    await integrationAddComponent('AcmeWidget', {cwd: tmpDir});
+
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'),
+    );
+    // Condition sugar wrapped into subpath map with the component added
+    expect(pkg.exports['.']).toEqual({
+      import: './index.mjs',
+      require: './index.cjs',
+    });
+    expect(pkg.exports['./components/AcmeWidget']).toBe(
+      './components/AcmeWidget.tsx',
+    );
+  });
+
+  it('no-map: pack-check fails when generated component has no exports map', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      `${JSON.stringify({
+        name: '@acme/widgets',
+        version: '1.0.0',
+        files: ['dist'],
+      })}\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      'export default {};\n',
+    );
+
+    await integrationAddComponent('AcmeWidget', {cwd: tmpDir});
+    await integrationAddTemplate('hero-page', {cwd: tmpDir, type: 'page'});
+
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'),
+    );
+    // No exports map created
+    expect(pkg.exports).toBeUndefined();
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    // The extensionless import cannot resolve without an exports map —
+    // pack-check must fail closed, not false-green.
+    expect(result.data.packable).toBe(false);
+    expect(result.data.issues).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        message: expect.stringContaining('AcmeWidget'),
+      }),
+    );
+  });
+
+  it('idempotent when extensionless export already exists', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      `${JSON.stringify({
+        name: '@acme/widgets',
+        version: '1.0.0',
+        files: ['index.mjs'],
+        exports: {
+          '.': './index.mjs',
+          './components/AcmeWidget': './components/AcmeWidget.tsx',
+        },
+      })}\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'index.mjs'),
+      'export const existing = 1;\n',
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      'export default {};\n',
+    );
+
+    await integrationAddComponent('AcmeWidget', {cwd: tmpDir});
+
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'),
+    );
+    // Export preserved, no duplicate
+    expect(
+      Object.keys(pkg.exports).filter(k => k.includes('AcmeWidget')),
+    ).toEqual(['./components/AcmeWidget']);
   });
 });

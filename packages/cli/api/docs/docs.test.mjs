@@ -33,6 +33,12 @@ describe('docs() dispatcher routing', () => {
     expect(r.type).toBe('docs.detail');
   }, SLOW);
 
+  it('topic + index -> docs.index', async () => {
+    const {data} = await docs();
+    const r = await docs(data[0].topic, undefined, {index: true});
+    expect(r.type).toBe('docs.index');
+  }, SLOW);
+
   it('topic + section -> docs.detail.section', async () => {
     const {data} = await docs();
     let routed = null;

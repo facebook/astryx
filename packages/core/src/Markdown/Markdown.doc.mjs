@@ -112,7 +112,7 @@ export const docs = {
       name: 'onLinkClick',
       type: '(href: string, event: MouseEvent) => void | false',
       description:
-        'Handler for link clicks. Return false to prevent the default navigation behavior.',
+        'Handler for link clicks. Return false to prevent the default navigation behavior. Link destinations in the markdown follow the shared navigation rule described on the Link `href` prop: a blocked destination renders as plain text and never reaches this handler or a custom link renderer. Image URLs use a separate, stricter policy (every data: URL is rejected).',
     },
     {
       name: 'sources',
@@ -255,6 +255,11 @@ export const docs = {
       {
         guidance: true,
         description:
+          'Add markdownSoftBreaksPlugin when single line endings are meaningful. It matches remark-breaks for supported Markdown, including multiline link labels, while code and other opaque content stay unchanged.',
+      },
+      {
+        guidance: true,
+        description:
           'Use createMarkdownTextTransform for prose matching; it preserves code, links, images, citations, math, and accepted extension syntax as protected contexts. Provide requiredSubstrings only when they conservatively cover every possible match.',
       },
       {
@@ -328,6 +333,17 @@ import {Text} from '@astryxdesign/core/Text';
 <Markdown autolink="gfm">
   {'Visit https://example.com or email contact@example.com. ' +
     'You can also bracket links: <https://docs.example.com>.'}
+</Markdown>;
+`,
+    },
+    {
+      label: 'First-party soft breaks',
+      code: `
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {markdownSoftBreaksPlugin} from '@astryxdesign/core/Markdown/plugins';
+
+<Markdown plugins={[markdownSoftBreaksPlugin]}>
+  {'First line\\nSecond line'}
 </Markdown>;
 `,
     },
@@ -715,6 +731,11 @@ export const docsZh = {
       {
         guidance: true,
         description:
+          'Add markdownSoftBreaksPlugin when single line endings are meaningful. It matches remark-breaks for supported Markdown, including multiline link labels, while code and other opaque content stay unchanged.',
+      },
+      {
+        guidance: true,
+        description:
           'Use createMarkdownTextTransform for prose matching; it preserves code, links, images, citations, math, and accepted extension syntax as protected contexts. Provide requiredSubstrings only when they conservatively cover every possible match.',
       },
       {
@@ -797,6 +818,11 @@ export const docsDense = {
       {
         guidance: true,
         description:
+          'Add markdownSoftBreaksPlugin when single line endings are meaningful. It matches remark-breaks for supported Markdown, including multiline link labels, while code and other opaque content stay unchanged.',
+      },
+      {
+        guidance: true,
+        description:
           'Use createMarkdownTextTransform for prose matching; it preserves code, links, images, citations, math, and accepted extension syntax as protected contexts. Provide requiredSubstrings only when they conservatively cover every possible match.',
       },
       {
@@ -859,7 +885,7 @@ export const docsDense = {
     isStreaming:
       'Incremental parse + fade-in for streamed chunks. Default: false.',
     onLinkClick:
-      '(href, event) => void|false. Return false prevents navigation.',
+      '(href, event) => void|false. Return false prevents navigation. Link destinations follow the shared navigation rule (see Link href); blocked ones render as text. Image URLs: separate stricter policy.',
     sources:
       'Record<string, MarkdownSource>. Citation sources by ID. [id]/【id】 markers render as chips.',
     citationStyle:

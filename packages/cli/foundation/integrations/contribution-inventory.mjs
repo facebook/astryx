@@ -14,8 +14,11 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {isDeepStrictEqual} from 'node:util';
-import {THEME_MANIFEST_BASENAME} from '../discovery/theme-discovery.mjs';
-import {discoverIntegrationThemes} from '../discovery/theme-discovery.mjs';
+import {
+  discoverIntegrationThemes,
+  isThemeFolder,
+  listThemeFiles,
+} from '../discovery/theme-discovery.mjs';
 import {discoverIntegrationComponents} from '../discovery/component-discovery.mjs';
 import {loadComponentDoc} from '../discovery/component-loader.mjs';
 import {discoverIntegrationTemplatesForOne} from '../discovery/template-adapter.mjs';
@@ -65,27 +68,21 @@ function rel(packageDir, file) {
 
 /** @param {string} root @param {string} pkgDir */
 function enumerateThemeFiles(root, pkgDir) {
+  if (!root || !fs.existsSync(root) || !fs.statSync(root).isDirectory()) {
+    return [];
+  }
+  // Exactly what `theme add` copies: each theme folder's files, including
+  // tests and fixtures, but no dot entry or file npm never publishes. Files
+  // beside the theme folders belong to no theme.
   /** @type {string[]} */
   const files = [];
-  const catalog = path.join(root, THEME_MANIFEST_BASENAME);
-  if (!fs.existsSync(catalog)) return files;
-  files.push(rel(pkgDir, catalog));
-  try {
-    const data = JSON.parse(fs.readFileSync(catalog, 'utf-8'));
-    if (data?.version !== 1 || !Array.isArray(data.themes)) return files;
-    for (const theme of data.themes) {
-      if (typeof theme.slug !== 'string' || !Array.isArray(theme.files))
-        continue;
-      for (const f of theme.files) {
-        if (typeof f === 'string') {
-          files.push(rel(pkgDir, path.join(root, theme.slug, f)));
-        }
-      }
+  for (const entry of fs.readdirSync(root, {withFileTypes: true})) {
+    const full = path.join(root, entry.name);
+    if (entry.isDirectory() && isThemeFolder(full)) {
+      files.push(...listThemeFiles(full).map(file => path.join(full, file)));
     }
-  } catch {
-    /* Phase 1 catches structural issues */
   }
-  return files;
+  return files.sort().map(file => rel(pkgDir, file));
 }
 
 /** @param {string} root @param {string} pkgDir */
@@ -158,7 +155,7 @@ const ROOT_KINDS = /** @type {const} */ ([
 
 /**
  * Compute the files the tarball must contain for an integration's
- * contributions to be visible. Reads catalogs and walks directories;
+ * contributions to be visible. Walks descriptor-owned directories;
  * never imports or executes authored modules.
  *
  * @param {import('./integrations.mjs').LoadedIntegration} loaded

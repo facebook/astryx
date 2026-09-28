@@ -4,6 +4,7 @@ import {useCallback, useEffect, useMemo, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Markdown} from '@astryxdesign/core/Markdown';
 import type {MarkdownComponents} from '@astryxdesign/core/Markdown';
+import {markdownSoftBreaksPlugin} from '@astryxdesign/core/Markdown/plugins';
 import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';
 import {Text} from '@astryxdesign/core/Text';
@@ -16,6 +17,7 @@ import {
   markdownSemanticFenceDemoPlugin,
 } from './Markdown.demoPlugins';
 import {
+  remarkBreaksPlugin,
   remarkRawHtmlPlugin,
   remarkSpecLinkPlugin,
   remarkUnsafeLinkPlugin,
@@ -496,6 +498,76 @@ export const CustomMath: Story = {
       </Markdown>
     </div>
   ),
+};
+
+const softBreaksSource = [
+  'First line',
+  'Second **emphasized** line',
+  '',
+  '[Linked',
+  'label](/docs) stays one protected link.',
+  '',
+  '```text',
+  'fenced',
+  'code',
+  '```',
+].join('\n');
+
+export const SoftBreaks: Story = {
+  name: 'First-party soft breaks',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The first-party native plugin matches adapted remark-breaks output for supported prose. Links and code remain protected in both paths.',
+      },
+    },
+  },
+  render: () => (
+    <div style={{display: 'grid', gap: 24, maxWidth: 680}}>
+      <section data-soft-breaks="native">
+        <Text>Native first-party plugin</Text>
+        <Markdown plugins={[markdownSoftBreaksPlugin]}>
+          {softBreaksSource}
+        </Markdown>
+      </section>
+      <section data-soft-breaks="remark">
+        <Text>Adapted remark-breaks</Text>
+        <Markdown plugins={[remarkBreaksPlugin]}>{softBreaksSource}</Markdown>
+      </section>
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const pane = (kind: string): HTMLElement => {
+      const element = canvasElement.querySelector<HTMLElement>(
+        `[data-soft-breaks="${kind}"]`,
+      );
+      if (element == null) {
+        throw new Error(`missing soft-breaks pane: ${kind}`);
+      }
+      return element;
+    };
+    const nativePane = pane('native');
+    const remarkPane = pane('remark');
+
+    await expect(nativePane.querySelectorAll('br')).toHaveLength(2);
+    await expect(remarkPane.querySelectorAll('br')).toHaveLength(2);
+    await expect(nativePane.querySelector('p')?.innerHTML).toBe(
+      remarkPane.querySelector('p')?.innerHTML,
+    );
+    await expect(
+      within(nativePane).getByRole('link', {name: 'Linked label'}),
+    ).toHaveAttribute('href', '/docs');
+    await expect(
+      within(remarkPane).getByRole('link', {name: 'Linked label'}),
+    ).toHaveAttribute('href', '/docs');
+    await expect(nativePane.querySelector('code')?.textContent).toBe(
+      'fenced\ncode',
+    );
+    await expect(remarkPane.querySelector('code')?.textContent).toBe(
+      'fenced\ncode',
+    );
+  },
 };
 
 export const SyntaxPlugins: Story = {

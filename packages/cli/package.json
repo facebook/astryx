@@ -105,6 +105,7 @@
     "@babel/types": "7.29.8",
     "ast-types": "0.16.3",
     "commander": "^12.1.0",
+    "ignore": "^7.0.5",
     "jiti": "^2.7.0",
     "jscodeshift": "^17.3.0",
     "node-diff3": "3.2.1",
@@ -117,8 +118,7 @@
     "@astryxdesign/charts": "*",
     "@astryxdesign/core": "*",
     "@astryxdesign/lab": "*",
-    "@astryxdesign/theme-neutral": "*",
-    "gpt-tokenizer": "^3.4.0"
+    "@astryxdesign/theme-neutral": "*"
   },
   "peerDependenciesMeta": {
     "@astryxdesign/charts": {
@@ -142,7 +142,6 @@
     "@heroicons/react": "^2.2.0",
     "@stylexjs/stylex": "catalog:",
     "@types/babel__core": "^7.20.5",
-    "gpt-tokenizer": "^3.4.0",
     "lucide-react": "^1.18.0",
     "recharts": "^3.9.2"
   }

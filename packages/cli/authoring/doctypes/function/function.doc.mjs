@@ -57,7 +57,7 @@ export const doc = {
       name: 'namespace',
       type: 'string',
       description:
-        "Docs namespace path. Defaults (e.g. 'cli/api') applied by the docs index.",
+        "The `astryx docs` topic that reads this doc. The CLI's API functions use 'cli/api' (the section `api-<name>` of the `cli` topic). Every function doc the CLI ships declares one, and `astryx doctor` fails on one that is missing or that no topic reads.",
     },
     {
       name: 'aliases',
@@ -250,6 +250,10 @@ export const doc = {
     },
   ],
   notes: [
+    {
+      type: 'prose',
+      text: 'When it loads, a stamped function doc may leave out `displayName`, and its `usage` is not checked. Write to the type anyway; it is the contract.',
+    },
     {
       type: 'prose',
       text: "The `type` discriminant is 'function' for both flavors. Set `kind: 'hook'` or `kind: 'api'` to drive docsite sectioning; it is inferred from `importPath` when omitted.",

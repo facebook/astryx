@@ -17,19 +17,43 @@ import {
   discoverExternalComponentsGrouped,
   discoverIntegrationComponents,
   findComponentReadme,
+  findExternalComponentDoc,
   resolveImportPath,
   resolveIntegrationImportPath,
 } from '../../../foundation/discovery/component-discovery.mjs';
 import {discoverExternalPackages} from '../../../foundation/fs/paths.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../../error.mjs';
-import {loadComponentDoc, loadIntegrationsSafely} from '../_adapter.mjs';
+import {loadComponentDoc, loadIntegrationsSafely, withOwnership} from '../_adapter.mjs';
 
 /**
  * @typedef {import('../component.type.mjs').ComponentListResponse} ComponentListResponse
  * @typedef {import('../component.type.mjs').ComponentListEntry} ComponentListEntry
  * @typedef {import('../component.type.mjs').ComponentBriefEntry} ComponentBriefEntry
  */
+
+/**
+ * The import a legacy `pkg.astryx.docs` component's detail reports, derived the
+ * same way (`withOwnership`) so list and detail agree.
+ * @param {{name: string, docsDir: string}} ext
+ * @param {string} name
+ * @param {string} coreDir
+ * @param {{zh: boolean, lang: string|null}} docOpts
+ * @returns {Promise<string>}
+ */
+async function legacyImport(ext, name, coreDir, docOpts) {
+  const docPath = findExternalComponentDoc(ext.docsDir, name);
+  /** @type {import('../_adapter.mjs').LoadedComponentDoc} */
+  let docs = {};
+  if (docPath && docPath.endsWith('.doc.mjs')) {
+    try {
+      docs = await loadComponentDoc(docPath, docOpts);
+    } catch {
+      // Keep list resilient; validation owns malformed docs.
+    }
+  }
+  return withOwnership(docs, {package: ext.name, sourcePath: null}, name, coreDir).import;
+}
 
 /**
  * Build the `component.list` envelope. The list taxonomy is collapsed: all
@@ -267,20 +291,24 @@ export async function componentList(
       k => grouped[k].length > 1 || grouped[k][0] !== k,
     );
 
-    if (hasGroups) {
-      for (const [group, members] of Object.entries(grouped)) {
-        listData[`${group} (${ext.name})`] = members.map(n => ({
+    /** @param {string[]} names */
+    const entriesFor = names =>
+      Promise.all(
+        names.map(async n => ({
           name: n,
           package: ext.name,
-        }));
+          import: await legacyImport(ext, n, coreDir, {zh, lang}),
+        })),
+      );
+
+    if (hasGroups) {
+      for (const [group, members] of Object.entries(grouped)) {
+        listData[`${group} (${ext.name})`] = await entriesFor(members);
       }
     } else {
       const allComps = Object.values(grouped).flat().sort();
       if (allComps.length > 0) {
-        listData[`${ext.category} (${ext.name})`] = allComps.map(n => ({
-          name: n,
-          package: ext.name,
-        }));
+        listData[`${ext.category} (${ext.name})`] = await entriesFor(allComps);
       }
     }
   }

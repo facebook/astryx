@@ -5,6 +5,7 @@
  */
 
 import type {
+  AuthoredDocGraphFields,
   ComponentAccessibilityRequirement,
   ComponentAnatomyElement,
   ComponentBestPractice,
@@ -18,13 +19,13 @@ import type {
   HookReturnDoc,
   RegistryDocIdentity,
   UsageDoc,
-} from '../base/type';
+} from '../base/type.js';
 
 /**
  * Shared fields between single-component and multi-component docs.
  * Do not use this interface directly — use `ComponentDoc` (the union type).
  */
-export interface ComponentBaseDoc {
+export interface ComponentBaseDoc extends AuthoredDocGraphFields {
   /** Doc-kind discriminant for the stamped default-export format
    *  (`export default { type: 'component', ... }`). Optional: legacy
    *  `export const docs = {...}` docs omit it, and `parseDoc` falls back to
@@ -49,7 +50,7 @@ export interface ComponentBaseDoc {
   import?: string;
   /** Search keywords for CLI discovery. Terms a developer might type when
    *  looking for this component: synonyms, related UI concepts, and common
-   *  names from other design systems (MUI, Chakra, Radix, shadcn).
+   *  names from other design systems (MUI, Chakra, Radix, and others).
    *  Lowercase only. Used by `astryx component <term>` for fuzzy matching.
    *  e.g. `['accordion', 'expand', 'toggle', 'disclosure']` for Collapsible */
   keywords?: string[];
@@ -145,10 +146,10 @@ export interface ComponentBaseDoc {
 /**
  * The documentation type for a component directory's {Name}.doc.mjs file.
  *
- * Every .doc.mjs must export a single `docs` constant of this type:
+ * Every new .doc.mjs default-exports a stamped object of this type:
  *
  *   /\*\* \@type \{import('@astryxdesign/cli/authoring').ComponentDoc\} *\/
- *   export const docs = \{ ... \};
+ *   export default \{ type: 'component', ... \};
  *
  * Use SingleComponentDoc (with `props`) for single-component directories.
  * Use MultiComponentDoc (with `components`) for multi-component directories.

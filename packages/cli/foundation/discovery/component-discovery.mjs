@@ -7,11 +7,12 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {existsCaseExact} from '../fs/paths.mjs';
+import {CORE_PROVIDER_ID} from '../identity/providers.mjs';
 
 const SKIP_DIRS = new Set(['hooks', 'utils', '__tests__', 'node_modules']);
 
 /** The owner package name for built-in (core) components. */
-export const CORE_PACKAGE = '@astryxdesign/core';
+export const CORE_PACKAGE = CORE_PROVIDER_ID;
 
 /** Conventional doc-file suffixes for integration components (same-stem). */
 const INTEGRATION_DOC_SUFFIXES = ['.doc.ts', '.doc.mjs', '.doc.js'];

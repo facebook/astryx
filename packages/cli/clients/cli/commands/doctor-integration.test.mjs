@@ -44,7 +44,7 @@ function writeIntegration({
   const stem = path.join(tmpDir, 'templates', id);
   fs.mkdirSync(path.dirname(stem), {recursive: true});
   fs.writeFileSync(
-    `${stem}.template.mjs`,
+    `${stem}.doc.mjs`,
     `export default {type: 'page', name: ${JSON.stringify(name)}, description: 'fixture'};\n`,
   );
   fs.writeFileSync(
@@ -124,7 +124,12 @@ describe('doctor integration — command', () => {
       return true;
     });
 
-    await createProgram().parseAsync(['node', 'astryx', 'doctor', 'integration']);
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      'doctor',
+      'integration',
+    ]);
 
     const output = writes.join('');
     expect(output).toContain('validate [package]');
@@ -136,7 +141,9 @@ describe('doctor integration — command', () => {
 
   it('explains the optional package argument in every leaf help', () => {
     const program = createProgram();
-    const doctor = program.commands.find(command => command.name() === 'doctor');
+    const doctor = program.commands.find(
+      command => command.name() === 'doctor',
+    );
     const integration = doctor?.commands.find(
       command => command.name() === 'integration',
     );
@@ -152,7 +159,10 @@ describe('doctor integration — command', () => {
   });
 
   it('templates explains how to check an installed package when no local manifest exists', async () => {
-    fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({name: 'plain'}));
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: 'plain'}),
+    );
     process.chdir(tmpDir);
 
     await createProgram().parseAsync([
@@ -278,9 +288,7 @@ describe('doctor integration — command', () => {
     const output = logCalls.join('\n');
     expect(output).toContain('[warn]');
     expect(output).toContain(core.name);
-    expect(output).toContain(
-      `component ${core.name} --package @acme/widgets`,
-    );
+    expect(output).toContain(`component ${core.name} --package @acme/widgets`);
     expect(process.exitCode).toBeUndefined();
   });
 

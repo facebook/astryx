@@ -9,7 +9,8 @@
  * `--help`. Colocated at `clients/cli/commands/<name>.doc.mjs`.
  */
 
-import type {ReferenceContentBlock} from '../reference/type';
+import type {AuthoredDocGraphFields} from '../base/type.js';
+import type {ReferenceContentBlock} from '../reference/type.js';
 
 /** A positional argument. `param` links it to a FunctionDoc param for its description. */
 export interface CommandArgDoc {
@@ -53,7 +54,7 @@ export interface CommandExampleDoc {
  *   /\*\* @type {import('@astryxdesign/cli/authoring').CommandDoc} \*\/
  *   export const doc = { type: 'command', name: 'search', fn: 'search', ... };
  */
-export interface CommandDoc {
+export interface CommandDoc extends AuthoredDocGraphFields {
   /** Doc-kind discriminant. */
   type?: 'command';
   /** Command path, e.g. 'search' | 'theme build'. */
@@ -64,7 +65,7 @@ export interface CommandDoc {
   summary: string;
   /** Longer help body / when-to-use. */
   description?: string;
-  /** Docs namespace path. Defaults to 'cli' when applied by the docs index. */
+  /** The `astryx docs` topic that reads this doc. The CLI's commands use 'cli/commands' (the section `commands-<name>` of the `cli` topic). Every command doc the CLI ships declares one, and `astryx doctor` fails on one that is missing or that no topic reads. */
   namespace?: string;
   /** Alternate slugs that also resolve to this doc. */
   aliases?: string[];

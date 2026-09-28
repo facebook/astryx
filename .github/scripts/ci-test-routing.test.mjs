@@ -229,9 +229,47 @@ describe('ci.yml RTL package sharding', () => {
     expect(commands).toContain('has_stable_visual=false');
   });
 
-  it('broadens both browser audits for unresolved canonical source ownership', () => {
+  it('binds component evidence source, Storybook bytes, and RTL code to the PR head', () => {
+    const exactRef = '${{ github.event.pull_request.head.sha || github.sha }}';
+    for (const name of ['build-storybook', 'pr-a11y', 'pr-rtl-shard']) {
+      const checkout = workflow.jobs[name].steps.find(candidate =>
+        candidate.uses?.startsWith('actions/checkout@'),
+      );
+      expect(checkout?.with?.ref, `${name} checkout is not exact-head`).toBe(
+        exactRef,
+      );
+    }
+    const storybookVerify = workflow.jobs['build-storybook'].steps.find(
+      candidate => candidate.name === 'Verify Storybook source checkout',
+    );
+    expect(storybookVerify.if).toContain(
+      "needs.check-scope.outputs.tooling_only != 'true'",
+    );
+    expect(runLines(workflow.jobs['build-storybook'])).toContain(
+      'astryx-build-sha.txt',
+    );
+    expect(runLines(workflow.jobs['pr-a11y'])).toContain('git rev-parse HEAD');
+    expect(runLines(shard)).toContain('git rev-parse HEAD');
+
+    const evidence = read(
+      'packages/core/src/Chat/__tests__/ChatMessageBubble.a11y.chromium.spec.ts',
+    );
+    const provenance = read(
+      'packages/core/src/Chat/__tests__/ChatMessageBubble.auditProvenance.ts',
+    );
+    expect(evidence).toContain("execFileSync('git', ['rev-parse', 'HEAD']");
+    expect(evidence).toContain('resolveChatMessageBubbleAuditProvenance');
+    expect(provenance).toContain('/astryx-build-sha.txt');
+    expect(provenance).toContain('storybookSha !== checkoutSha');
+    expect(provenance).toContain("mode: 'local-unstamped'");
+  });
+
+  it('keeps PR accessibility scoped while RTL retains its canonical resolver', () => {
     expect(runLines(workflow.jobs['pr-a11y'])).toContain(
-      '.forceFullComponentAudits // false',
+      '.github/scripts/a11y-pr-scope.mjs',
+    );
+    expect(runLines(workflow.jobs['pr-a11y'])).toContain(
+      'SCOPE_ARGS=(--components "$COMPONENTS")',
     );
     expect(runLines(shard)).toContain('.github/scripts/rtl-shard-scope.mjs');
   });

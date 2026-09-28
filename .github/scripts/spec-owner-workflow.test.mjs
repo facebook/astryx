@@ -217,14 +217,28 @@ describe('spec-only workflow contract', () => {
 
   it('fails closed when file APIs are truncated or scope classification fails', () => {
     const ci = read('.github/workflows/ci.yml');
-    expect(ci).toContain('if: ${{ always() && !cancelled() }}');
+    expect(ci).toContain(
+      "if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() }}",
+    );
     expect(ci).toContain("if: needs.check-scope.result != 'success'");
 
     const reviewSignal = read('.github/workflows/review-signal.yml');
     expect(reviewSignal).toContain('allFiles.length !== pr.changed_files');
 
     const prComment = read('.github/workflows/pr-comment.yml');
-    expect(prComment).toContain('files.length !== pr.changed_files');
+    expect(prComment).toContain('expectedCount: pull.changed_files');
+  });
+
+  it('keeps the schema approval roster within the ENGOWNERS set', () => {
+    const {parseOwnerFile} = require('./knowledge-frontmatter.cjs');
+    const latestSchema = JSON.parse(read('docs/schemas/knowledge/v4.json'));
+    const engineeringOwners = parseOwnerFile(
+      read('.github/ENGOWNERS'),
+    );
+
+    for (const owner of latestSchema.approvalOwners) {
+      expect(engineeringOwners).toContain(owner);
+    }
   });
 
   it('runs the tested exact-head reconciler from the trusted default branch', () => {
@@ -267,6 +281,9 @@ describe('spec-only workflow contract', () => {
     expect(reconciler).toContain('scope.touchesKnowledgeRecords');
     expect(reconciler).toContain('scope.touchesDesignAssets');
     expect(reconciler).toContain('requiredApprovalGroups(records');
+    expect(read('.github/scripts/spec-owner-decision.cjs')).toContain(
+      "require('./component-design-decisions.cjs')",
+    );
     expect(reconciler).toContain("'.github/DESIGNOWNERS'");
     expect(reconciler).toContain("'.github/ENGOWNERS'");
     expect(workflow).not.toContain('SPEC_OWNERS:');
@@ -380,8 +397,6 @@ describe('spec-only workflow contract', () => {
     const workflow = read('.github/workflows/pr-comment.yml');
     expect(workflow).toContain("needs.resolve.outputs.spec_only != 'true'");
     expect(workflow).toContain("needs.resolve.outputs.spec_only == 'true'");
-    expect(workflow).toContain(
-      "context: 'visual-acceptance', state: 'success'",
-    );
+    expect(workflow).not.toContain("context: 'visual-acceptance'");
   });
 });

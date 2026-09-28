@@ -572,6 +572,11 @@
       "aliases": []
     },
     {
+      "name": "component-lab-mobile-tokenizer",
+      "path": "components/lab/mobile-tokenizer",
+      "aliases": []
+    },
+    {
       "name": "component-lab-radial-chart",
       "path": "components/lab/radial-chart",
       "aliases": []
@@ -999,6 +1004,11 @@
     {
       "name": "component-time-input",
       "path": "components/time-input",
+      "aliases": []
+    },
+    {
+      "name": "component-timer",
+      "path": "components/timer",
       "aliases": []
     },
     {
@@ -2191,6 +2201,11 @@
       "aliases": []
     },
     {
+      "name": "example-item-document-tabs",
+      "path": "examples/item/document-tabs",
+      "aliases": []
+    },
+    {
       "name": "example-item-metadata",
       "path": "examples/item/metadata",
       "aliases": []
@@ -2643,6 +2658,31 @@
     {
       "name": "example-resize-handle-resizable-collapsible-with-snap-points",
       "path": "examples/resize-handle/resizable-collapsible-with-snap-points",
+      "aliases": []
+    },
+    {
+      "name": "example-scrollable-area-inline-rail",
+      "path": "examples/scrollable-area/inline-rail",
+      "aliases": []
+    },
+    {
+      "name": "example-scrollable-area-overscroll",
+      "path": "examples/scrollable-area/overscroll",
+      "aliases": []
+    },
+    {
+      "name": "example-scrollable-area-sticky-passthrough",
+      "path": "examples/scrollable-area/sticky-passthrough",
+      "aliases": []
+    },
+    {
+      "name": "example-scrollable-area-sticky-section-labels",
+      "path": "examples/scrollable-area/sticky-section-labels",
+      "aliases": []
+    },
+    {
+      "name": "example-scrollable-area-two-axis-board",
+      "path": "examples/scrollable-area/two-axis-board",
       "aliases": []
     },
     {
@@ -3153,6 +3193,21 @@
     {
       "name": "example-time-input-states",
       "path": "examples/time-input/states",
+      "aliases": []
+    },
+    {
+      "name": "example-timer-formats",
+      "path": "examples/timer/formats",
+      "aliases": []
+    },
+    {
+      "name": "example-timer-inline",
+      "path": "examples/timer/inline",
+      "aliases": []
+    },
+    {
+      "name": "example-timer-typography",
+      "path": "examples/timer/typography",
       "aliases": []
     },
     {
@@ -4376,6 +4431,11 @@
       "aliases": []
     },
     {
+      "name": "showcase-scrollable-area-default",
+      "path": "showcases/scrollable-area/default",
+      "aliases": []
+    },
+    {
       "name": "showcase-section-variants",
       "path": "showcases/section/variants",
       "aliases": []
@@ -4528,6 +4588,11 @@
     {
       "name": "showcase-time-input-default",
       "path": "showcases/time-input/default",
+      "aliases": []
+    },
+    {
+      "name": "showcase-timer-default",
+      "path": "showcases/timer/default",
       "aliases": []
     },
     {
@@ -4883,6 +4948,11 @@
     {
       "name": "template-table-page",
       "path": "templates/table-page",
+      "aliases": []
+    },
+    {
+      "name": "template-table-tree",
+      "path": "templates/table-tree",
       "aliases": []
     },
     {

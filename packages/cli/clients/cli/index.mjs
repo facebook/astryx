@@ -16,7 +16,6 @@ import {Command, Option} from 'commander';
 import {fileURLToPath} from 'node:url';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {checkForUpdate} from './lib/update-check.mjs';
 import {getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {API_VERSION, setJsonMode} from '../../foundation/response/json.mjs';
 import {buildManifest} from './lib/manifest.mjs';
@@ -25,7 +24,8 @@ import {emit, section, text, records} from './formatters/index.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {installJsonShim} from './lib/json-shim.mjs';
-import {markReportsResult} from './lib/define-command.mjs';
+import {addExitCodesHelp, markReportsResult} from './lib/define-command.mjs';
+import {doc as manifestDoc} from './commands/manifest.doc.mjs';
 import {isAstryxInitialized} from '../../foundation/agent-docs/agent-docs.mjs';
 import * as debug from '../../foundation/debug/index.mjs';
 
@@ -275,7 +275,6 @@ const commands = [
   {name: 'doctor', path: './commands/doctor.mjs', register: 'registerDoctor'},
 ];
 
-const UPDATE_HINT_COMMANDS = new Set(['component', 'docs']);
 const SETUP_NUDGE_EXEMPT = new Set(['init', 'agent-docs']);
 
 /**
@@ -352,7 +351,7 @@ export async function createProgram() {
     )
     .option(
       '--json',
-      'Output as typed JSON. Success envelope: { type, data }. Error envelope: { error, suggestions? }.',
+      'Output as typed JSON. Success envelope: { apiVersion, type, data, meta? }. Error envelope: { apiVersion, error, code, suggestions? }.',
     )
     .addHelpCommand('help', 'Show all commands')
     .action((options, cmd) => {
@@ -500,25 +499,6 @@ export async function createProgram() {
   });
 
   /**
-   * Post-action hook: print update hint after any command output.
-   * Only fires for commands that produce output agents read (component, docs, etc.).
-   * Suppressed when --json is active to avoid contaminating stdout.
-   */
-  program.hook('postAction', (thisCommand, actionCommand) => {
-    if (program.opts().json) return;
-    try {
-      if (UPDATE_HINT_COMMANDS.has(actionCommand.name())) {
-        const hint = checkForUpdate();
-        if (hint) {
-          console.error(`\n${hint}`);
-        }
-      }
-    } catch {
-      // Never let update check break the CLI
-    }
-  });
-
-  /**
    * Enforcement layer 3 — setup nudge. If this project hasn't run `astryx init`
    * yet (no Astryx marker in any agent-doc file — see isAstryxInitialized), remind
    * the user/agent that setup is missing.
@@ -557,16 +537,18 @@ export async function createProgram() {
       mod[cmd.register](program);
     } catch (e) {
       // Command fails to load but CLI still works
+      const reason = /** @type {any} */ (e).message;
       const stub = program
         .command(cmd.name)
-        .description(`(failed to load: ${/** @type {any} */ (e).message})`)
+        .description(`(failed to load: ${reason})`)
         .action(() => {
           // Nothing loaded, so nothing was answered — say that rather than
           // leaving the run's result unreported.
           debug.recordCommandResult(debug.NO_RESULT_SET);
-          console.error(`Command "${cmd.name}" failed to load:`);
-          console.error(/** @type {any} */ (e).message);
-          process.exit(1);
+          // cliError, so --json still gets its one envelope.
+          cliError(`Command "${cmd.name}" failed to load: ${reason}`, {
+            code: ERROR_CODES.ERR_UNKNOWN,
+          });
         });
       markReportsResult(stub);
     }
@@ -601,20 +583,21 @@ export async function createProgram() {
       }
       // Human-readable summary as greppable records (agents should use --json).
       // One record per command: name, whether it supports --json, and the
-      // description.
+      // description. Field names are the manifest entry's own keys.
       emit(
         section(`${manifest.name} v${manifest.version} (${manifest.commands.length} commands)`),
         records(
           manifest.commands.map(c => ({
-            command: c.name,
+            name: c.name,
             json: c.json ? 'yes' : '',
             description: c.description || '',
           })),
-          {fields: ['command', 'json', 'description']},
+          {fields: ['name', 'json', 'description']},
         ),
         text(`Run \`${getCliInvocation()} manifest --json\` for the full structured manifest.`),
       );
     });
+  addExitCodesHelp(manifestCommand, manifestDoc.exitCodes);
   markReportsResult(manifestCommand);
 
   // Hidden command used by package.json postinstall scripts

@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 4
 template_version: 1
 kind: system-spec
 id: spec:AST-030
@@ -17,6 +17,17 @@ affects_consumer_docs: []
 ---
 
 # Positive CI surface routing system spec
+
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "testing": ["FR7", "FR11"]
+  }
+}
+```
 
 ## Intent
 
@@ -67,7 +78,7 @@ they are separately named.
   | `node-tooling`      | admitted operational Node tooling whose consumers are covered by Node contract tests                                               | Node Vitest, repository guardrails, and ESLint                                                                                                       |
   | `runtime:<package>` | public source and package contract for Core, Lab, Charts, Rich Text, Vega, CLI, and Build                                          | the package's unit/type checks plus current broad build and downstream consumer checks; Build's owner includes production CSS-layer browser behavior |
   | `theme-build`       | shipped theme packages and theme compilation outputs                                                                               | theme tests, theme package builds, theme-family browser behavior, and stable visual evidence where applicable                                        |
-  | `storybook-visual`  | Storybook stories/configuration and visual, accessibility, or RTL audit infrastructure                                             | Storybook build, preview/visual-acceptance publication, and the applicable browser, visual, accessibility, and RTL checks                            |
+  | `storybook-visual`  | Storybook stories/configuration and visual, accessibility, or RTL audit infrastructure                                             | Storybook build, preview/visual-report publication, and the applicable browser, visual, accessibility, and RTL checks                                |
   | `shared-or-unknown` | shared configuration, dependency graphs, workflows, classifiers, generated ownership, ambiguous paths, and every unclassified path | all applicable pull-request CI checks                                                                                                                |
 
   A category does not earn a specialized lane merely by existing in this table.
@@ -109,9 +120,9 @@ they are separately named.
   Node project and the required lint
   workflow, including repository guardrails. It skips the UI Vitest project,
   component analysis, docsite generation, production package, Storybook and
-  Sandbox builds, preview/visual-acceptance publication, and browser/theme/visual/
-  a11y/RTL jobs. The trusted post-CI workflow MUST settle the visual status
-  explicitly and remove stale preview links without enqueueing the preview
+  Sandbox builds, preview/visual-report publication, and browser/theme/visual/
+  a11y/RTL jobs. The trusted post-CI workflow MUST explicitly report that visual
+  checks are not applicable and remove stale preview links without enqueueing the preview
   publisher. The Sandbox score-ledger projection MUST have a Node contract test
   for the exports it consumes before this lane can be enabled.
 - **FR9 — Routing tests are mutation-sensitive.** Tests MUST prove both the
@@ -138,12 +149,37 @@ they are separately named.
   owner includes its production CSS-layer cascade behavior. Theme-family
   compilation remains `theme-build` and does not become Build merely because both
   behaviors concern CSS.
-- **FR12 — Visual regression has one shared pull-request owner.** Every
+- **FR12 — Visual regression has one shared pull-request workflow.** Every
   visual-regression test from every surface MUST use the existing Storybook
-  framework and the single shared pull-request visual owner. That owner MAY use
-  multiple jobs, workflows, artifacts, and a status projection. A new or existing
-  surface, component, package, theme family, or visual suite MUST NOT create
-  another independently routed PR visual owner.
+  framework and the single shared owner in `.github/workflows/ci.yml`
+  (`pr-visual`). That workflow MAY use multiple jobs, steps, and artifacts, but
+  visual capture and regression comparison MUST NOT run in another workflow,
+  including scheduled, post-CI, post-merge, or manual replacement owners.
+  Publication of the canonical run's reports is not another test owner: it MUST
+  consume that run's artifacts without recapturing or recomparing pixels.
+  Explicit full-plan baseline capture and reviewed baseline publication MUST
+  remain in `ci.yml`; they are maintenance operations, not release gates.
+  Release evidence MUST come from an explicit `operation=release-check`
+  `workflow_dispatch` in this same workflow, dispatched from `main` and bound to
+  its exact event SHA. It MUST run the canonical `pr-visual` (**Stable visual
+  regression**), `pr-a11y`, and `pr-rtl` owners with full scope: the closed stable
+  visual plan and unfiltered accessibility/RTL component rosters. Changed-file,
+  focused, smoke, and no-op paths MUST NOT narrow release checks. PR a11y MUST
+  remain scoped to changed components plus fast interaction guards; full a11y
+  sweeps, whole-repository spec-test contracts, their evidence uploads, and Probe
+  reach MUST run only for `release-check` in this workflow. Missing,
+  failed, cancelled, or skipped required work MUST block the release-check join.
+  The request and join MUST verify that the checked SHA is still current `main`;
+  release callers MUST recheck it before mutation and dispatch again after drift.
+  This replaces constituent-PR-only release gating, not the canonical checks'
+  existing finding policies. Release checks MUST NOT run on every push, capture
+  baseline candidates, publish baselines, or use a separate daily workflow or
+  retroactive acceptance status.
+  Deployment, accessibility, RTL, and vibe evidence MAY retain their workflows
+  and artifacts when they do not duplicate visual regression. A new or existing
+  surface, component, package, theme family, or visual suite MUST join the
+  canonical workflow. A repository guard MUST reject independent visual owners
+  while preserving legitimate non-visual artifact use.
 
 ### Platform support
 
@@ -172,16 +208,16 @@ the shared Storybook PR owner.
 
 ## Verification
 
-| Contract | Verification                                                             | Representative states                                                                                    | Mutation or failure expectation                                                                                                                                                    |
-| -------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR2  | classifier unit tests expose the surface set                             | knowledge; docsite; admitted tool; Core/Lab/Charts/Rich Text/Vega source; shared config; unknown         | an unclassified path receives a specialized lane or a category has no check owner                                                                                                  |
-| FR3–FR4  | workflow contract tests execute an isolated trusted-base classifier      | valid base; missing merge base; missing matcher/registry; classifier self-change; merge group            | PR-controlled policy grants a lane, or missing trust data skips checks                                                                                                             |
-| FR5      | mixed-surface and incomplete-owner routing tests                         | spec+component; tooling+component; named surface without admitted lane; docsite+shared                   | one surface hides another owner or a named-but-incomplete surface skips broad CI                                                                                                   |
-| FR6–FR8  | Node-tooling dependency, CI workflow, and trusted post-CI workflow tests | both admitted score-ledger paths; Sandbox projection imports; test/build joins; preview/visual publisher | UI/browser/build work or preview publication runs for the singleton tool set, an operational consumer is untested, a visual status stays pending, or a required context disappears |
-| FR9      | mutation-sensitive classifier and workflow fixtures                      | unknown path; rename from unknown; truncated list; package-specific public paths                         | weakening a fail-closed rule leaves the suite green                                                                                                                                |
-| FR10     | surface-admission and routing contract tests                             | existing surface; proposed surface with and without the full admission contract                          | a new surface adds lanes without its approved paths, commands, ownership, projections, and routing tests                                                                           |
-| FR11     | surface owner, internal-job, and required-join contract tests            | Build package browser behavior; CLI; theme-family broad fallback; mixed Core+CLI                         | a second owner is routed for one surface, an internal job masquerades as a lane, an owned failure misses its join, or an unrelated owner runs                                      |
-| FR12     | Storybook visual-plan, PR owner, and status-projection contract tests    | component, package, story, and theme-family cases                                                        | visual coverage bypasses the shared PR owner, creates another independently routed PR visual owner, or conflates a status projection with a lane                                   |
+| Contract | Verification                                                                | Representative states                                                                                    | Mutation or failure expectation                                                                                                                                                    |
+| -------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR2  | classifier unit tests expose the surface set                                | knowledge; docsite; admitted tool; Core/Lab/Charts/Rich Text/Vega source; shared config; unknown         | an unclassified path receives a specialized lane or a category has no check owner                                                                                                  |
+| FR3–FR4  | workflow contract tests execute an isolated trusted-base classifier         | valid base; missing merge base; missing matcher/registry; classifier self-change; merge group            | PR-controlled policy grants a lane, or missing trust data skips checks                                                                                                             |
+| FR5      | mixed-surface and incomplete-owner routing tests                            | spec+component; tooling+component; named surface without admitted lane; docsite+shared                   | one surface hides another owner or a named-but-incomplete surface skips broad CI                                                                                                   |
+| FR6–FR8  | Node-tooling dependency, CI workflow, and trusted post-CI workflow tests    | both admitted score-ledger paths; Sandbox projection imports; test/build joins; preview/visual publisher | UI/browser/build work or preview publication runs for the singleton tool set, an operational consumer is untested, a visual status stays pending, or a required context disappears |
+| FR9      | mutation-sensitive classifier and workflow fixtures                         | unknown path; rename from unknown; truncated list; package-specific public paths                         | weakening a fail-closed rule leaves the suite green                                                                                                                                |
+| FR10     | surface-admission and routing contract tests                                | existing surface; proposed surface with and without the full admission contract                          | a new surface adds lanes without its approved paths, commands, ownership, projections, and routing tests                                                                           |
+| FR11     | surface owner, internal-job, and required-join contract tests               | Build package browser behavior; CLI; theme-family broad fallback; mixed Core+CLI                         | a second owner is routed for one surface, an internal job masquerades as a lane, an owned failure misses its join, or an unrelated owner runs                                      |
+| FR12     | Storybook visual-plan, canonical workflow, and repository-owner guard tests | PR scope; full-plan maintenance; report-only publication; deployment/a11y/RTL/vibe artifacts             | another workflow captures or compares pixels, a renamed or aliased owner escapes the guard, or legitimate non-visual artifacts are rejected                                        |
 
 ## Decision log
 
@@ -236,9 +272,11 @@ add owners only after the complete FR10 admission contract is approved. A named
 surface without a complete admitted owner remains on broad CI.
 
 Visual regression is the exception to per-surface routing: every surface
-registers its cases with the one shared Storybook-backed PR visual owner. Its
-jobs, workflows, artifacts, and status projection are not additional visual
-lanes.
+registers its cases with the one shared Storybook-backed PR visual owner in
+`ci.yml`. Its jobs, steps, artifacts, and report publication are not additional
+visual lanes; a second workflow that captures or compares those pixels is.
+The single-workflow wording clarifies the existing shared-system requirement;
+it does not admit a new owner.
 
 Build's production CSS-layer cascade is a Build package integration contract, so
 it belongs to Build's test owner. Theme-family compilation remains owned by
@@ -248,6 +286,31 @@ Rejected: per-suite, per-component, per-feature, per-theme-family, or separate
 PR visual owners; counting internal jobs or required status projections as
 lanes; and implicit expansion under an undefined “additional specialized
 surface” exception.
+
+### DEC-5 — Release checks reuse the canonical owners on exact main
+
+**Reference:** `spec:AST-030/DEC-5`
+**Decider:** `cixzhang`, `2026-09-23`
+
+Run release evidence against exact current `main`, not only constituent PR heads.
+Use an explicit release-time dispatch in `ci.yml` so full visual, accessibility,
+and RTL checks do not run on every main push. Reuse existing test/build owners,
+keep their finding policies, and fail closed on incomplete scope, missing work,
+or main drift. Baseline capture and reviewed promotion remain separate operations.
+
+PR accessibility remains a scoped, fast check: audit only explicitly resolved
+changed component owners and retain the fast modal-close, theme-var, and story-play
+browser guards. Never widen a PR to the exhaustive accessibility sweep because a
+shared path changed or the component set is empty. Missing or approximate analysis
+fails the scoped check rather than silently claiming no work. Multi-component
+folders expand only to their own canonical component owners or existing umbrella
+Storybook routes; an exported name without either route cannot be passed to axe. The full
+accessibility roster, whole-repository spec-test contracts and their evidence
+uploads, and Probe reach sweep run only on `release-check` in this workflow.
+The release path retains the complete suite and cannot substitute a scoped result.
+
+Rejected: a separate workflow, per-push full audits, and treating a maintenance
+capture, skipped check, old main SHA, or retroactive status as release evidence.
 
 ## Open questions
 

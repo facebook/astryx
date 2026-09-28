@@ -12,7 +12,7 @@ export const doc = {
   type: 'command',
   name: 'doctor',
   displayName: 'astryx doctor',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Diagnose Astryx projects and integration packages',
   description:
     'Runs read-only project health diagnostics by default: Node version, @astryxdesign/core ' +

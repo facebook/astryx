@@ -9,7 +9,7 @@ export const doc = {
   type: 'command',
   name: 'doctor integration templates',
   displayName: 'astryx doctor integration templates',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Warn when integration template ids conflict with Core',
   description:
     'Compares one local or installed integration with the built-in Core page and ' +

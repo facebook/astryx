@@ -7,6 +7,7 @@ import {
   SegmentedControlItem,
 } from '@astryxdesign/core/SegmentedControl';
 import {Icon} from '@astryxdesign/core/Icon';
+import {VStack} from '@astryxdesign/core/Stack';
 import {
   Squares2X2Icon,
   ListBulletIcon,
@@ -56,6 +57,26 @@ export const Default: Story = {
         <SegmentedControlItem value="list" label="List" />
         <SegmentedControlItem value="table" label="Table" />
       </SegmentedControl>
+    );
+  },
+};
+
+export const InVerticalStack: Story = {
+  name: 'Inside a vertical stack',
+  render: () => {
+    const [value, setValue] = useState('viewer');
+    return (
+      <VStack width="100%">
+        <SegmentedControl
+          value={value}
+          onChange={setValue}
+          label="Access level"
+          layout="hug">
+          <SegmentedControlItem value="viewer" label="Viewer" />
+          <SegmentedControlItem value="operator" label="Operator" />
+          <SegmentedControlItem value="owner" label="Owner" />
+        </SegmentedControl>
+      </VStack>
     );
   },
 };

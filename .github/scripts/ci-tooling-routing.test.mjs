@@ -98,7 +98,9 @@ describe('Node-tooling CI routing', () => {
     ).run;
     expect(componentCheck).toContain('needs.check-scope.outputs.tooling_only');
     expect(componentCheck).toContain('has_components=false');
-    expect(ci.jobs['test-build'].if).toBe(BROAD_ONLY);
+    expect(ci.jobs['test-build'].if).toBe(
+      `github.event_name != 'workflow_dispatch' && ${BROAD_ONLY}`,
+    );
     expect(step(ci.jobs['test-build'], 'Build the Vite plugin').run).toBe(
       'pnpm -F @astryxdesign/build build',
     );
@@ -194,15 +196,17 @@ describe('Node-tooling CI routing', () => {
     expect(prComment.jobs.resolve.outputs.tooling_only).toContain(
       'steps.identity.outputs.tooling_only',
     );
-    for (const name of ['invalidate', 'deploy-preview', 'comment']) {
+    for (const name of ['deploy-preview', 'comment']) {
       expect(prComment.jobs[name].if, name).toContain(
         "needs.resolve.outputs.tooling_only != 'true'",
       );
     }
-    for (const name of ['spec-only-visual', 'spec-only-reconcile']) {
-      expect(prComment.jobs[name].if, name).toContain(
-        "needs.resolve.outputs.tooling_only == 'true'",
-      );
-    }
+    expect(prComment.jobs['spec-only-reconcile'].if).toContain(
+      "needs.resolve.outputs.tooling_only == 'true'",
+    );
+    expect(
+      step(prComment.jobs['spec-only-reconcile'], 'Report no visual scope').run,
+    ).toContain('canonical visual checks are not applicable');
+    expect(prComment.jobs.invalidate).toBeUndefined();
   });
 });

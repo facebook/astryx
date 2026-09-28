@@ -11,13 +11,14 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'build',
+  namespace: 'cli/api',
   displayName: 'build()',
   summary:
     'Page-building assistant: the how-to-build playbook, or a composition kit for an idea.',
   description:
     'The "assemble a page" entry point. Called with no query it returns the ' +
-    'playbook signal that the renderer expands into the how-to-build-a-page ' +
-    'workflow. Called with a query it runs the unified search and groups the ' +
+    'how-to-build-a-page playbook as data: the workflow steps with their ' +
+    'commands, the on-system rules, and related lookups. Called with a query it runs the unified search and groups the ' +
     'hits into a composition KIT: the closest page templates, drop-in blocks, ' +
     'and idea-specific components/hooks, plus the always-on frame + foundation.',
   importPath: '@astryxdesign/cli/api',
@@ -54,7 +55,7 @@ export const doc = {
     {
       type: 'build.help',
       description:
-        'Emitted when the query is omitted: a pure marker (`data.playbook: true`) that the command renderer expands into the page-building workflow prose.',
+        'Emitted when the query is omitted: the page-building playbook — `playbook: true`, a `title`, the ordered `steps` (each a `title`, its `commands`, and optionally what the step `returns`), the on-system `rules`, and `related` lookups. Each command is a bare subcommand ({command, purpose?}) for the caller to render with its own CLI invocation.',
     },
     {
       type: 'build.kit',

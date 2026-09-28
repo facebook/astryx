@@ -10,6 +10,7 @@
 
 import {collectAllCodemods} from '../_adapter.mjs';
 import {logger} from '../../logger.mjs';
+import {toAscii} from '../../../assets/codemods/term-log.mjs';
 
 /**
  * List every available codemod (oldest→newest).
@@ -19,7 +20,7 @@ export async function list() {
   const codemods = await collectAllCodemods();
   logger.log('Available codemods:');
   for (const {name, title, pr, optional} of codemods) {
-    logger.log(`  ${name} — ${title}${optional ? ' (optional)' : ''} (${pr})`);
+    logger.log(`  ${name} - ${toAscii(title)}${optional ? ' (optional)' : ''} (${pr})`);
   }
   logger.log('Done\n');
   return {

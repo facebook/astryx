@@ -369,7 +369,7 @@ export function registerTheme(program) {
         emit(
           section(
             'Palette candidate',
-            `${result.data.familyCount} families · ${result.data.stopCount} stops · ${result.data.modes.join(', ')}`,
+            `${result.data.familyCount} families, ${result.data.stopCount} stops, ${result.data.modes.join(', ')}`,
           ),
           code(serializePaletteCandidate(result.data.candidate).trimEnd()),
         );
@@ -426,7 +426,7 @@ export function registerTheme(program) {
                 {
                   name: `astryx theme build ${entry.file.replace(/['"]/g, '')}`,
                   reason:
-                    'globs are expanded by your shell — pass the pattern unquoted, or list the files',
+                    'globs are expanded by your shell; pass the pattern unquoted, or list the files',
                 },
               ]
             : undefined,
@@ -491,7 +491,7 @@ export function registerTheme(program) {
       // Non-watch: delegate to the API compiler, once per theme, in argument
       // order. Enable human output unless in --json mode (log → stdout via
       // humanLog, warn/error → stderr). The "Building theme from" line, the
-      // ✓/warning lines, and the install instructions are all emitted from
+      // [ok]/[warn] lines, and the install instructions are all emitted from
       // inside themeBuild via the shared logger.
       logger.setSilent(json);
 
@@ -574,8 +574,8 @@ export function registerTheme(program) {
         emit(
           text(
             options.check
-              ? `\n${stale ? '✗' : '✓'} Checked ${entries.length} themes.`
-              : `\n✓ Built ${entries.length} themes.`,
+              ? `\n${stale ? '[fail]' : '[ok]'} Checked ${entries.length} themes.`
+              : `\n[ok] Built ${entries.length} themes.`,
           ),
         );
       }

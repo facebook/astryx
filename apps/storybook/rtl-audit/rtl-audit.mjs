@@ -20,14 +20,14 @@
  *             in repeated-item or between-sibling contexts mirror exactly once.
  *     (B) CURATED PRECISION — targets.json entries add D2 (order-flip),
  *         D3 (behavior-flip), D4 (overlay-side), D7 (coarse hit alignment),
- *         and D8 (logical inline-edge mirroring): the geometry/behavior dims that
- *         genuinely need hand-written selectors.
+ *         D8 (logical inline-edge mirroring), and D9 (logical grouped corners):
+ *         the geometry/behavior dims that genuinely need hand-written selectors.
  *     (C) APPLICABILITY: every component is measured, explicitly verified N/A,
  *         or reported as a coverage gap. An all-N/A result is never called clean.
  * @input --storybook-dir <path> --output <file> [--targets <path>]
  *   [--verified-not-applicable <path>] [--filter <csv>] [--packages <csv>]
  *   [--auto-only] [--curated-only]
- * @output JSON scorecard: D1/D5/D6 auto verdicts, curated D2/D3/D4/D7/D8
+ * @output JSON scorecard: D1/D5/D6 auto verdicts, curated D2/D3/D4/D7/D8/D9
  *   results, exact planned/completed scan counts, and a component coverage
  *   rollup. Mirrors the pr-a11y accessibility-audit harness.
  * @position internal test harness; run by the soft-gated `pr-rtl` CI job and
@@ -54,6 +54,7 @@ import {
   buildAuditedComponentRoster,
   buildComponentCoverage,
   buildStoryComponentRoutes,
+  classifyLogicalGroupedCorners,
   classifyLogicalInlinePair,
   collectDirectionalDecorations,
   componentFromTarget,
@@ -707,7 +708,7 @@ async function autoD1(page, port, storyId, component) {
 }
 
 // ===========================================================================
-// CURATED precision dims (D2/D3/D4) — hand selectors from targets.json
+// CURATED precision dims (D2/D3/D4/D7/D8/D9) — hand selectors from targets.json
 // ===========================================================================
 async function checkD2(page, port, t, card) {
   const {prev, next} = t.selectors;
@@ -897,6 +898,61 @@ async function checkD8LogicalInline(page, port, t, card) {
   );
 }
 
+async function measureGroupedCorners(page, group) {
+  return page.evaluate(({first, middle, last}) => {
+    const selectors = [first, middle, last];
+    const boxes = selectors.map(selector => {
+      const elements = document.querySelectorAll(selector);
+      if (elements.length !== 1) return null;
+      const element = elements[0];
+      const style = getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      const number = value => Number.parseFloat(value);
+      const visible = typeof element.checkVisibility === 'function'
+        ? element.checkVisibility({checkOpacity: true, checkVisibilityCSS: true})
+        : style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) !== 0;
+      return {
+        visible, width: rect.width, height: rect.height,
+        direction: style.direction, writingMode: style.writingMode,
+        corners: {
+          topLeft: number(style.borderTopLeftRadius),
+          topRight: number(style.borderTopRightRadius),
+          bottomRight: number(style.borderBottomRightRadius),
+          bottomLeft: number(style.borderBottomLeftRadius),
+        },
+      };
+    });
+    return {
+      direction: boxes.find(Boolean)?.direction ?? null,
+      writingMode: boxes.find(Boolean)?.writingMode ?? null,
+      boxes,
+    };
+  }, group).catch(() => null);
+}
+
+async function checkD9GroupedCorners(page, port, t, card) {
+  const groups = t.selectors?.groups;
+  if (!Array.isArray(groups) || groups.length === 0) {
+    card.dims.D9 = 'N-A';
+    card.notes.push('D9: no grouped-corner selectors configured');
+    return;
+  }
+  const run = async rtl => {
+    await page.goto(storyUrl(port, t.storyId, rtl), {waitUntil: 'domcontentloaded'});
+    await settle(page); await doSetup(page, t);
+    return Promise.all(groups.map(group => measureGroupedCorners(page, group)));
+  };
+  const ltr = await run(false), rtl = await run(true);
+  const results = groups.map((group, index) => ({
+    name: group.name,
+    logicalSide: group.logicalSide,
+    ...classifyLogicalGroupedCorners(ltr[index], rtl[index], group.logicalSide),
+  }));
+  card.dims.D9 = results.every(result => result.verdict === 'pass') ? 'pass' : 'fail';
+  card.notes.push(...results.map(result => `D9 ${result.name ?? result.logicalSide}: ${result.reason}`));
+  card.groupedCorners = results;
+}
+
 async function scoreCurated(page, coarsePage, port, t) {
   const card = {component: t.component, storyId: t.storyId, dims: {}, notes: []};
   for (const dim of t.dims) {
@@ -906,6 +962,7 @@ async function scoreCurated(page, coarsePage, port, t) {
       else if (dim === 'D4') await checkD4(page, port, t, card);
       else if (dim === 'D7') await checkD7CoarseHit(coarsePage, port, t, card);
       else if (dim === 'D8') await checkD8LogicalInline(page, port, t, card);
+      else if (dim === 'D9') await checkD9GroupedCorners(page, port, t, card);
       // D1 is handled by auto-discovery; ignore any stray D1 in curated entries.
     } catch (e) {
       card.dims[dim] = 'ERROR';

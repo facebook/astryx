@@ -65,6 +65,9 @@ export function registerUpgrade(program) {
                 ? result.data.registryCompositions
                 : undefined;
         if (registrySummary && !registrySummary.ok) process.exitCode = 1;
+        if (result.type === 'upgrade.run' && result.data.complete === false) {
+          process.exitCode = 1;
+        }
 
         // `--list` is the one lookup here: which migrations exist for the
         // range. Everything else migrates the project — an effect, reported by

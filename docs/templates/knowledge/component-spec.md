@@ -1,6 +1,6 @@
 ---
 schema_version: 3
-template_version: 5
+template_version: 6
 kind: component
 id: component:<Name>
 authority: draft
@@ -118,6 +118,20 @@ durable constraints and their verification target.
 The component implements design requirements without copying their rationale.
 An `unsettled` representation remains a human decision; principles do not let an
 agent invent the answer.
+
+Use the optional table below only for durable component-local visual intent that
+a future redesign must reconsider. Reuse or amend an existing row before adding
+one. Exact pixel tuning normally stays in code and visual evidence. Put shared or
+cross-component rules in `docs/design/` and link them from the relationship table
+above. Use `DD1`, `DD2`, and so on; IDs remain stable and unique within this
+record.
+
+### Design decisions
+
+<!-- design-decisions:v1 -->
+
+| ID  | Decision | Intent or reason | Applies to | Allowed variation |
+| --- | -------- | ---------------- | ---------- | ----------------- |
 
 ### Theming anatomy
 

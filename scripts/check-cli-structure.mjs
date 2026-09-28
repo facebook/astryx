@@ -9,8 +9,8 @@
  * precisely what typechecking and unit tests cannot see — every individual file
  * is valid, the set is incomplete.
  *
- * 1. Every doc-type ships a complete trio, and re-exports its parser from the
- *    authoring barrel:
+ * 1. Every doc-type ships a complete trio, re-exports its public type from the
+ *    doc vocabulary, and re-exports its parser from the authoring barrel:
  *      type.ts          the authored shape
  *      parse.mjs        the sealed parser (the CLI's load boundary)
  *      <kind>.doc.mjs   the doc-type documenting itself
@@ -39,7 +39,10 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const REPO_ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..',
+);
 const CLI = path.join(REPO_ROOT, 'packages/cli');
 const DOCTYPES = path.join(CLI, 'authoring/doctypes');
 const API = path.join(CLI, 'api');
@@ -51,7 +54,9 @@ const DOCTYPE_EXEMPT = new Set(['base']);
 /** @param {string} dir @returns {string[]} */
 const dirsIn = dir =>
   fs.existsSync(dir)
-    ? fs.readdirSync(dir).filter(f => fs.statSync(path.join(dir, f)).isDirectory())
+    ? fs
+        .readdirSync(dir)
+        .filter(f => fs.statSync(path.join(dir, f)).isDirectory())
     : [];
 
 /** Recursively collect file names under a directory. @param {string} dir @returns {string[]} */
@@ -71,8 +76,15 @@ let doctypeCount = 0;
 let apiCount = 0;
 
 // ── 1. doc-type quartets ────────────────────────────────────────────────
-const authoringIndexTypes = fs.readFileSync(path.join(CLI, 'authoring/index.d.ts'), 'utf8');
-const authoringIndexImpl = fs.readFileSync(path.join(CLI, 'authoring/index.mjs'), 'utf8');
+const authoringIndexTypes = fs.readFileSync(
+  path.join(CLI, 'authoring/index.d.ts'),
+  'utf8',
+);
+const docTypeExports = fs.readFileSync(path.join(DOCTYPES, 'types.ts'), 'utf8');
+const authoringIndexImpl = fs.readFileSync(
+  path.join(CLI, 'authoring/index.mjs'),
+  'utf8',
+);
 /**
  * parseDoc's own `@returns {...}` union — the source the emitted declaration
  * derives from. Scoped to the JSDoc block immediately above `export function
@@ -80,11 +92,16 @@ const authoringIndexImpl = fs.readFileSync(path.join(CLI, 'authoring/index.mjs')
  * whole file would find every kind name and never fail.
  */
 const parseSrc = fs.readFileSync(path.join(DOCTYPES, 'parse.mjs'), 'utf8');
-const parseDocJsdoc = parseSrc.slice(0, parseSrc.indexOf('export function parseDoc'));
+const parseDocJsdoc = parseSrc.slice(
+  0,
+  parseSrc.indexOf('export function parseDoc'),
+);
 const returnsMatches = parseDocJsdoc.match(/@returns\s*\{[^}]*\}/g) ?? [];
 const aggregateParserReturns = returnsMatches[returnsMatches.length - 1] ?? '';
 if (!aggregateParserReturns) {
-  errors.push('could not find a @returns union on parseDoc in authoring/doctypes/parse.mjs');
+  errors.push(
+    'could not find a @returns union on parseDoc in authoring/doctypes/parse.mjs',
+  );
 }
 
 for (const kind of dirsIn(DOCTYPES)) {
@@ -100,13 +117,24 @@ for (const kind of dirsIn(DOCTYPES)) {
     }
   }
 
+  const typeSpec = `./${kind}/type`;
+  if (!docTypeExports.includes(typeSpec)) {
+    errors.push(
+      `doc-type "${kind}" type is not re-exported from authoring/doctypes/types.ts`,
+    );
+  }
+
   // A parser nobody re-exports is unreachable from @astryxdesign/cli/authoring.
   const spec = `./doctypes/${kind}/parse.mjs`;
   if (!authoringIndexTypes.includes(spec)) {
-    errors.push(`doc-type "${kind}" parser is not re-exported from authoring/index.d.ts`);
+    errors.push(
+      `doc-type "${kind}" parser is not re-exported from authoring/index.d.ts`,
+    );
   }
   if (!authoringIndexImpl.includes(spec)) {
-    errors.push(`doc-type "${kind}" parser is not re-exported from authoring/index.mjs`);
+    errors.push(
+      `doc-type "${kind}" parser is not re-exported from authoring/index.mjs`,
+    );
   }
 
   // parseDoc's own `@returns` is what the generated declaration derives its
@@ -134,7 +162,10 @@ for (const name of dirsIn(API)) {
   // Types ship as colocated JSDoc typedefs, or — for a barrel that only
   // re-exports other leaves' types (api/json) — as the published index.ts that
   // package.json's "exports" points at.
-  if (!files.some(f => f.endsWith('.type.mjs')) && !topLevel.includes('index.ts')) {
+  if (
+    !files.some(f => f.endsWith('.type.mjs')) &&
+    !topLevel.includes('index.ts')
+  ) {
     errors.push(
       `api/${name}/ is missing response typedefs (*.type.mjs, or a published index.ts)`,
     );

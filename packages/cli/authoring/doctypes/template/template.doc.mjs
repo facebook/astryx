@@ -18,7 +18,7 @@ export const doc = {
     "(type: 'page') for full page templates and BlockTemplateDoc (type: 'block') for " +
     'editable compositions. A block can stand alone or use `exampleFor` to attach ' +
     'to one component; `isShowcase` requires that component ownership.',
-  appliesTo: '<Name>.template.mjs',
+  appliesTo: '<Name>.doc.mjs',
   fields: [
     {
       name: 'type',
@@ -123,7 +123,7 @@ export const doc = {
     {
       label: 'Page template',
       code: `/** @type {import('@astryxdesign/cli/authoring').TemplateDoc} */
-export const doc = {
+export default {
   type: 'page',
   name: 'Dashboard',
   displayName: 'Dashboard',
@@ -135,7 +135,7 @@ export const doc = {
     {
       label: 'Block template (component example)',
       code: `/** @type {import('@astryxdesign/cli/authoring').TemplateDoc} */
-export const doc = {
+export default {
   type: 'block',
   name: 'ButtonGroupExample',
   displayName: 'Button Group Example',
@@ -148,6 +148,10 @@ export const doc = {
     },
   ],
   notes: [
+    {
+      type: 'prose',
+      text: 'When it loads, a template may leave out `displayName` and `aspectRatio` and use its own `category`, as integration templates already published do; a block with no `aspectRatio` previews at 1. Write to the type anyway; it is the contract.',
+    },
     {
       type: 'prose',
       text: "TemplateDoc is a discriminated union keyed by `type`. Set `type: 'page'` for a full page template. Set `type: 'block'` for an editable composition; add `exampleFor` only when one component owns the example.",

@@ -17,7 +17,7 @@ import {
   validateIntegration,
 } from '../../../api/integration/validate-integration.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {emit, section, records, text} from '../formatters/index.mjs';
+import {emit, section, record, records, text} from '../formatters/index.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {doc as doctorCommand} from './doctor.doc.mjs';
 import {doc as doctorIntegrationGroup} from './doctor-integration.doc.mjs';
@@ -55,7 +55,7 @@ function integrationLabel(data) {
  * @param {import('../../../api/doctor/doctor.mjs').DoctorReport} report
  */
 function printHuman(report) {
-  const {pass, warn, fail, info} = report.summary;
+  const {warn, fail} = report.summary;
   const closing =
     fail > 0
       ? 'Some checks failed. Address the items marked [fail] above.'
@@ -63,18 +63,15 @@ function printHuman(report) {
         ? 'No failures — but review the [warn] warnings above when you can.'
         : 'All checks passed. Your Astryx setup looks healthy.';
 
+  // Field names are the JSON keys, so text and --json map one to one.
   emit(
     section('astryx doctor — diagnosing your setup'),
     records(report.checks, {
-      fields: ['status', 'label', 'message', 'fix'],
-      labels: {label: 'check'},
+      fields: ['id', 'status', 'label', 'message', 'fix'],
       format: {status: statusToken},
     }),
-    text(
-      `Summary: ${pass} passed, ${warn} warning${warn === 1 ? '' : 's'}, ` +
-        `${fail} failure${fail === 1 ? '' : 's'}` +
-        (info ? `, ${info} info` : ''),
-    ),
+    section('summary'),
+    record(report.summary, {fields: ['pass', 'warn', 'fail', 'info']}),
     text(closing),
   );
 }
@@ -290,13 +287,6 @@ export function registerDoctor(program) {
     fn: doctorFn,
     action: async () => runProjectDoctor(program),
   });
-  doctorCmd.addHelpText(
-    'after',
-    '\nExit code:\n' +
-      '  0  no failures (warnings are allowed) — safe as a CI gate\n' +
-      '  1  one or more checks failed\n',
-  );
-
   /** @type {import('commander').Command} */
   let integrationCmd;
   integrationCmd = defineCommand(doctorCmd, doctorIntegrationGroup, {

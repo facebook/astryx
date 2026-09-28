@@ -36,13 +36,22 @@ export function templateCopy(match, {targetPath, cwd, overwrite = false}) {
     );
   }
 
-  // Path-safety: resolve the user-supplied targetPath relative to cwd,
-  // rejecting absolute paths and any traversal that escapes the project
-  // root. This guard runs BEFORE any mkdir/copyFile so we never create
-  // directories outside the root just to fail on the file write.
-  let resolvedTarget;
+  // If targetPath looks like a file (e.g. `./foo.tsx`), write directly to
+  // it. Previously this path was treated as a directory and the file was
+  // written as `./foo.tsx/page.tsx`, which is wrong and surprising.
+  const fileTarget = isFilePathArg(targetPath)
+    ? targetPath
+    : path.join(
+        targetPath,
+        match.type === 'block' ? path.basename(match.filePath) : 'page.tsx',
+      );
+
+  // Path-safety: the guard sees the file that will be written, not only its
+  // directory — a symlink at that name would otherwise carry the write
+  // outside the project root. Runs BEFORE any mkdir/write.
+  let outputFilePath;
   try {
-    resolvedTarget = assertWithin(targetPath, cwd, {
+    outputFilePath = assertWithin(fileTarget, cwd, {
       label: 'template target path',
     });
   } catch (err) {
@@ -55,23 +64,8 @@ export function templateCopy(match, {targetPath, cwd, overwrite = false}) {
     }
     throw err;
   }
-
-  // If targetPath looks like a file (e.g. `./foo.tsx`), write directly to
-  // it. Previously this path was treated as a directory and the file was
-  // written as `./foo.tsx/page.tsx`, which is wrong and surprising.
-  let outputDir;
-  let outputFileName;
-  let outputFilePath;
-  if (isFilePathArg(targetPath)) {
-    outputDir = path.dirname(resolvedTarget);
-    outputFileName = path.basename(resolvedTarget);
-    outputFilePath = resolvedTarget;
-  } else {
-    outputDir = resolvedTarget;
-    outputFileName =
-      match.type === 'block' ? path.basename(match.filePath) : 'page.tsx';
-    outputFilePath = path.join(outputDir, outputFileName);
-  }
+  const outputDir = path.dirname(outputFilePath);
+  const outputFileName = path.basename(outputFilePath);
 
   // Refuse to clobber an existing file unless the caller opts in. The CLI has
   // its own pre-flight collision message, but the API is a public surface

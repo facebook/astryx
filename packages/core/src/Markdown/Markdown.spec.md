@@ -7,21 +7,23 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-09-19
+approved_at: 2026-09-25
 owners: [cixzhang]
 review_triggers: [api, theming]
 verified_by:
   [
     packages/core/src/Markdown/Markdown.test.tsx,
+    packages/core/src/Markdown/Markdown.renderBoundary.test.tsx,
     packages/core/src/Markdown/Markdown.public.test.ts,
     packages/core/src/Markdown/parser.test.ts,
     packages/core/src/Markdown/incremental.test.ts,
     packages/core/src/Markdown/remark.test.tsx,
+    packages/core/src/Markdown/plugins/softBreaks.test.tsx,
     packages/core/src/Outline/parseOutlineFromMarkdown.test.ts,
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
-modules: [module:Markdown/remark]
+modules: [module:Markdown/remark, module:Markdown/softBreaks]
 families: [family:navigation-destinations]
 design_specs: []
 architecture:
@@ -175,6 +177,13 @@ unions. Enabled calls return the explicit `InlineNodeWithMath` and
 | FR24 | `createMarkdownFrontmatter()` recognizes only a leading `---` block of unique `key: value` lines, decodes it through the caller's typed parser, stores finite JSON-like metadata on the canonical document, and removes the syntax from rendered content. An unfinished leading block yields no visible Markdown while streaming; malformed or unfinished final input remains ordinary Markdown. Frontmatter has no renderer and requires no Remark compatibility.                                                                                    |
 | FR25 | The canonical parser and plugin-construction subpaths remain server-safe and can run function-bearing plugins entirely within server or RSC code. The client-owned `Markdown` component supports traditional and streaming SSR, but plugin entries containing functions cannot be serialized from a Server Component into that client boundary; direct RSC rendering requires a future additive server renderer rather than weakening the plugin protocol.                                                                                            |
 
+FR23 includes table-level escaping inside inline-code spans: `\|` keeps the pipe
+inside its authored cell, contributes only `|` to the code value and rendered
+text, and produces the same result in full and incremental parsing. A completed
+inline-code span excludes its delimiting backticks from the parsed value and
+renders only that value inside `<code>`; an unmatched backtick remains literal
+text. Outside a table cell, inline code retains its authored backslashes.
+
 ### Allowed variation
 
 - **AV1 — Parsed content.** The number and ordering of block parts may vary with
@@ -316,7 +325,9 @@ and this change preserves the existing spelling exactly.
   current with the implementation.
 - `family:navigation-destinations` owns the shared accept/block result for parsed
   links and every Astryx-owned navigation sink. `spec:AST-005/DEC-1` requires
-  Markdown navigation to remain conformant with Core link plumbing.
+  Markdown parsing and link rendering to preserve the same normalized navigation
+  decision as other Core links. Rejected links remain inert and do not reach a
+  custom link renderer; accepted links retain their ordinary behavior.
 - `spec:AST-005/DEC-2` keeps embedded-resource policy separate. Markdown may
   reject a broader set of image/resource URLs without narrowing the shared
   navigation contract.
@@ -332,20 +343,21 @@ and this change preserves the existing spelling exactly.
 
 ## Verification map
 
-| Contract               | Verification                                                               | Representative states                                                                                                      | Failure signal                                                                                                                                        |
-| ---------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR5                | `Markdown.test.tsx`, theme-target tests, and `scripts/check-knowledge.mjs` | Default block/inline output and all current targets                                                                        | Existing DOM, target, spacing, or renderer behavior changes.                                                                                          |
-| FR6–FR10               | `parser.test.ts` and `Markdown.test.tsx`                                   | Opt-out, inline/display math, escapes, currency, code, links, plugins                                                      | A delimiter is claimed without opt-in, TeX is formatted as Markdown, or opaque contexts leak.                                                         |
-| FR11                   | `incremental.test.ts` and `Markdown.test.tsx`                              | Every-character top-level/list/task-list/blockquote splits, CRLF, source ranges                                            | Streaming diverges from a full parse, shows partial syntax, mistakes a nested closer for an opener, or crosses a closed container.                    |
-| FR12–FR16              | plugin, transform, adapter, performance, and Outline parser tests          | omitted/empty lists, immutable transforms, invalid outputs, live updates, one compatible Remark plugin, duplicate headings | Empty behavior forks, input mutates, invalid structure escapes, transforms reparse, adapter loses content, budgets fail, or heading targets diverge.  |
-| FR17–FR18              | container parse/validation, ownership, and dependency tests                | leaf/container declarations, nested containers, foreign read/remove/mint/edit, unmet/misordered dependencies               | Plugin-built parsed children, invalid content, lost fallback children, foreign mint/edit, or generic ownership codes.                                 |
-| FR19                   | diagnostic-channel tests in development and production                     | every phase, advisory reports, rate suppression, no handler, malformed list, duplicate Core, version skew                  | A silent production failure, document content in a diagnostic, or one entrypoint throwing where another recovers.                                     |
-| FR20–FR22              | canonical/server imports, inference, streaming, preparation, theming tests | server imports, no explicit type args, chunk boundaries, recreated lists, themed/unthemed extensions                       | Client references, explicit-type workarounds, oscillation, per-render re-preparation, or unreachable opted-in output.                                 |
-| FR23                   | parser, renderer, nesting, and public option tests                         | task-only, plain-only, and mixed ordered/unordered lists at top level and nested; autolink omitted/enabled                 | A mixed list splits or loses order/state, a plain item becomes a checkbox, or `autolink: 'gfm'` changes non-autolink syntax.                          |
-| FR24                   | `plugins/frontmatter.test.tsx`, Storybook, and server rendering            | complete, malformed, non-leading, LF/CRLF, unfinished streaming, full plugin stack                                         | Metadata syntax renders after completion, unfinished syntax leaks while streaming, typing is lost, or later plugins stop composing.                   |
-| FR25                   | `parser.public.test.ts`, plugin SSR tests, and package export checks       | server/RSC parsing with plugins, synchronous SSR, suspending renderer streaming boundary                                   | A server import gains `use client`, plugin execution needs serialization, SSR loses fallback, or direct RSC rendering is misrepresented as supported. |
-| Public syntax/types    | `Markdown.public.test.ts`, core typecheck, and `Markdown.doc.mjs`          | Legacy exhaustive switches, math opt-ins, inferred extension-node unions                                                   | A released union widens, an enabled union loses nodes, or docs drift from declarations.                                                               |
-| Security/accessibility | `parser.test.ts`, `Markdown.test.tsx`, and renderer guidance               | Inert expression strings and renderer-owned semantics                                                                      | Astryx executes math as HTML or silently claims renderer-owned accessibility.                                                                         |
+| Contract               | Verification                                                                  | Representative states                                                                                                                  | Failure signal                                                                                                                                        |
+| ---------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR5                | `Markdown.test.tsx`, theme-target tests, and `scripts/check-knowledge.mjs`    | Default block/inline output and all current targets                                                                                    | Existing DOM, target, spacing, or renderer behavior changes.                                                                                          |
+| FR6–FR10               | `parser.test.ts` and `Markdown.test.tsx`                                      | Opt-out, inline/display math, escapes, currency, code, links, plugins                                                                  | A delimiter is claimed without opt-in, TeX is formatted as Markdown, or opaque contexts leak.                                                         |
+| FR11                   | `incremental.test.ts` and `Markdown.test.tsx`                                 | Every-character top-level/list/task-list/blockquote splits, CRLF, source ranges                                                        | Streaming diverges from a full parse, shows partial syntax, mistakes a nested closer for an opener, or crosses a closed container.                    |
+| FR12–FR16              | plugin, transform, adapter, performance, and Outline parser tests             | omitted/empty lists, immutable transforms, invalid outputs, live updates, one compatible Remark plugin, duplicate headings             | Empty behavior forks, input mutates, invalid structure escapes, transforms reparse, adapter loses content, budgets fail, or heading targets diverge.  |
+| FR17–FR18              | container parse/validation, ownership, and dependency tests                   | leaf/container declarations, nested containers, foreign read/remove/mint/edit, unmet/misordered dependencies                           | Plugin-built parsed children, invalid content, lost fallback children, foreign mint/edit, or generic ownership codes.                                 |
+| FR19                   | diagnostic-channel tests in development and production                        | every phase, advisory reports, rate suppression, no handler, malformed list, duplicate Core, version skew                              | A silent production failure, document content in a diagnostic, or one entrypoint throwing where another recovers.                                     |
+| FR20–FR22              | canonical/server imports, inference, streaming, preparation, theming tests    | server imports, no explicit type args, chunk boundaries, recreated lists, themed/unthemed extensions                                   | Client references, explicit-type workarounds, oscillation, per-render re-preparation, or unreachable opted-in output.                                 |
+| FR23                   | parser, incremental, renderer, nesting, and public option tests               | mixed lists; escaped prose/code table cells, nested inline code, full/streaming parity; autolink omitted/enabled                       | A mixed list splits or loses state, an escaped table pipe changes cells or exposes its backslash, or autolink changes other syntax.                   |
+| FR24                   | `plugins/frontmatter.test.tsx`, Storybook, and server rendering               | complete, malformed, non-leading, LF/CRLF, unfinished streaming, full plugin stack                                                     | Metadata syntax renders after completion, unfinished syntax leaks while streaming, typing is lost, or later plugins stop composing.                   |
+| FR25                   | `parser.public.test.ts`, plugin SSR tests, and package export checks          | server/RSC parsing with plugins, synchronous SSR, suspending renderer streaming boundary                                               | A server import gains `use client`, plugin execution needs serialization, SSR loses fallback, or direct RSC rendering is misrepresented as supported. |
+| Public syntax/types    | `Markdown.public.test.ts`, core typecheck, and `Markdown.doc.mjs`             | Legacy exhaustive switches, math opt-ins, inferred extension-node unions                                                               | A released union widens, an enabled union loses nodes, or docs drift from declarations.                                                               |
+| Navigation contract    | `parser.test.ts`, `Markdown.test.tsx`, and `Markdown.renderBoundary.test.tsx` | Parsed and rendered links, including transformed built-in links; accepted ordinary schemes; rejected destinations; links versus images | A blocked destination reaches navigation or a custom link renderer, or resource policy narrows accepted navigation.                                   |
+| Security/accessibility | `parser.test.ts`, `Markdown.test.tsx`, and renderer guidance                  | Inert expression strings and renderer-owned semantics                                                                                  | Astryx executes math as HTML or silently claims renderer-owned accessibility.                                                                         |
 
 Focused tests continue to pin all nine current target names and default block
 placement. Math intentionally adds no target and no default anatomy.
@@ -410,7 +422,7 @@ This projects `spec:AST-036/DEC-5` through `DEC-11` into the component owner in 
 **Reference:** `component:Markdown/DEC-4`
 **Decider:** `cixzhang`, `2026-09-19`
 
-Markdown's released grammar is an explicit Astryx-owned subset. Task-list markers are item semantics inside the ordinary ordered or unordered list structure, so mixed task and plain items stay in one compatible list and each item retains its own state at every nesting level. Released table and task-list syntax remains enabled by default. The optional `autolink: 'gfm'` value adds only the documented autolink behavior; it neither enables another syntax feature nor changes list structure.
+Markdown's released grammar is an explicit Astryx-owned subset. Task-list markers are item semantics inside the ordinary ordered or unordered list structure, so mixed task and plain items stay in one compatible list and each item retains its own state at every nesting level. Released table and task-list syntax remains enabled by default. A backslash-escaped pipe inside a table cell is structural source syntax: it keeps the pipe in that cell and contributes only the literal pipe to rendered prose or inline code, with the same result in full and incremental parsing. The optional `autolink: 'gfm'` value adds only the documented autolink behavior; it neither enables another syntax feature nor changes list structure.
 
 This keeps documents stable as Astryx adds or declines individual ecosystem features. It rejects a blanket CommonMark or GFM conformance claim, aggregate all-task/all-plain classification, an implicit whole-grammar mode switch, and silently enabling future GFM features under the existing autolink option.
 

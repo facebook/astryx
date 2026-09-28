@@ -80,6 +80,59 @@ const tseslintRecommended = /** @type {import('eslint').Linter.Config[]} */ (
   tseslint.configs.recommended
 );
 
+const ZOD_SEALED = {
+  name: 'zod',
+  message:
+    'zod is sealed behind the authoring/ parsers. Validate at the load boundary (parseDoc/parseConfig/parseIntegration) and pass typed data inward.',
+};
+
+// Doc merging, section keys and token-reference linking belong to the doc
+// compiler (packages/cli/foundation/doc-compiler). The import scan in its
+// tests enforces the same list and also catches a dynamic import().
+/** @param {string[]} [allowed] compiler functions the file may call */
+const docCompilerOnly = (allowed = []) =>
+  [
+    {
+      group: ['**/foundation/discovery/docs-discovery.mjs'],
+      importNames: ['mergeTopic'],
+    },
+    {
+      group: ['**/foundation/discovery/docs-section-key.mjs'],
+      importNames: ['withSectionKeys'],
+    },
+    {
+      group: ['**/foundation/doc-compiler/compile.mjs'],
+      importNames: [
+        'lowerReferenceTopic',
+        'linkReferenceTopic',
+        'linkReferenceSection',
+        'lowerDoc',
+      ].filter(name => !allowed.includes(name)),
+    },
+  ]
+    .filter(pattern => pattern.importNames.length > 0)
+    .map(pattern => ({
+      ...pattern,
+      message:
+        'Doc merging, section keys and token-reference linking belong to the doc compiler. Read compiled nodes through api/docs/_adapter.mjs and foundation/doc-compiler/lenses.mjs.',
+    }));
+
+/** api/'s import rules, allowing the compiler functions one docs file calls. */
+const apiImportRules = (/** @type {string[]} */ allowed = []) => [
+  'error',
+  {
+    patterns: [
+      {
+        group: ['**/clients/**'],
+        message:
+          'api/ is the behavior source of truth and must not import clients/ (the CLI presentation layer). Return data in the { type, data } envelope and let the command handler render it.',
+      },
+      ...docCompilerOnly(allowed),
+    ],
+    paths: [ZOD_SEALED],
+  },
+];
+
 export default defineConfig(
   js.configs.recommended,
   tseslintRecommended,
@@ -595,30 +648,30 @@ export default defineConfig(
   },
   // api/ is the behavior source of truth — it must never reach up into the
   // CLI presentation layer (that's what keeps `astryx --json` and the imported
-  // function returning identical data).
+  // function returning identical data). It reads docs only as compiled nodes.
   {
     files: ['packages/cli/api/**/*.mjs'],
+    rules: {'no-restricted-imports': apiImportRules()},
+  },
+  // The docs adapter and leaves are the only files that drive the doc
+  // compiler. These overlap the api/ block on purpose: each repeats its rules
+  // and allows only the compiler functions that file calls.
+  {
+    files: ['packages/cli/api/docs/_adapter.mjs'],
     rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            {
-              group: ['**/clients/**'],
-              message:
-                'api/ is the behavior source of truth and must not import clients/ (the CLI presentation layer). Return data in the { type, data } envelope and let the command handler render it.',
-            },
-          ],
-          paths: [
-            {
-              name: 'zod',
-              message:
-                'zod is sealed behind the authoring/ parsers. Validate at the load boundary (parseDoc/parseConfig/parseIntegration) and pass typed data inward.',
-            },
-          ],
-        },
-      ],
+      'no-restricted-imports': apiImportRules([
+        'lowerReferenceTopic',
+        'linkReferenceTopic',
+      ]),
     },
+  },
+  {
+    files: ['packages/cli/api/docs/detail/detail.mjs'],
+    rules: {'no-restricted-imports': apiImportRules(['linkReferenceTopic'])},
+  },
+  {
+    files: ['packages/cli/api/docs/detail/section/section.mjs'],
+    rules: {'no-restricted-imports': apiImportRules(['linkReferenceSection'])},
   },
   // Everything above the contracts consumes already-parsed, typed data.
   {
@@ -626,15 +679,7 @@ export default defineConfig(
     rules: {
       'no-restricted-imports': [
         'error',
-        {
-          paths: [
-            {
-              name: 'zod',
-              message:
-                'zod is sealed behind the authoring/ parsers. Validate at the load boundary (parseDoc/parseConfig/parseIntegration) and pass typed data inward.',
-            },
-          ],
-        },
+        {patterns: docCompilerOnly(), paths: [ZOD_SEALED]},
       ],
     },
   },

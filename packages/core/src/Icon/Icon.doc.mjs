@@ -49,8 +49,9 @@ export const docs = {
     {
       name: 'size',
       type: "'xsm' | 'sm' | 'md' | 'lg'",
-      description: 'Icon size.',
-      default: "'md'",
+      description:
+        'Icon size. An explicit value wins. When omitted, Icon uses the nearest default supplied by an owning Astryx component for its icon slot, then falls back to md when no contextual default exists.',
+      default: "Contextual; otherwise 'md'",
     },
     {
       name: 'label',
@@ -153,8 +154,9 @@ export const docsZh = {
     {
       name: 'size',
       type: "'xsm' | 'sm' | 'md' | 'lg'",
-      description: '图标尺寸。',
-      default: "'md'",
+      description:
+        '图标尺寸。显式值优先。省略时，Icon 使用最近的 Astryx 所属组件为其图标槽提供的默认尺寸；如果没有上下文默认值，则回退为 md。',
+      default: "上下文默认值；否则为 'md'",
     },
     {
       name: 'label',
@@ -294,7 +296,7 @@ export const docsDense = {
   propDescriptions: {
     icon: 'Semantic icon name or SVG component. Valid names: close, chevronDown, chevronLeft, chevronRight, chevronsLeft, chevronsRight, check, success, error, warning, info, calendar, clock, externalLink, menu, moreHorizontal, search, arrowUp, arrowDown, arrowsUpDown, funnel, eyeSlash, viewColumns, copy, checkDouble, wrench, stop, microphone. For others, pass an SVG component.',
     color: 'Color variant mapped to Astryx icon color tokens.',
-    size: 'Icon size.',
+    size: "explicit Icon size; otherwise nearest owning-component default, then 'md' when no contextual default exists",
     label:
       'Accessible name for a meaningful, standalone icon. Sets role="img" + aria-label and drops the default aria-hidden. Omit (default) for decorative icons (stays aria-hidden). Empty string = decorative. The accessible-name/alt-text prop for icons.',
     xstyle:

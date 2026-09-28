@@ -71,7 +71,12 @@ describe('DialogHeader', () => {
 
   it('renders close button when onOpenChange is provided', () => {
     render(<DialogHeader title="Title" onOpenChange={() => {}} />);
-    expect(screen.getByRole('button', {name: /close/i})).toBeInTheDocument();
+    const closeButton = screen.getByRole('button', {name: /close/i});
+
+    expect(closeButton).toBeInTheDocument();
+    expect(closeButton.parentElement).toHaveClass(
+      'astryx-dialog-header-end-content',
+    );
   });
 
   it('preserves automatic end-slot compensation when the close action renders', () => {
@@ -160,18 +165,31 @@ describe('DialogHeader', () => {
     expect(getEndSlot().className).toBe(inlineClassName);
   });
 
-  it('exposes theme targets for the header row, title block, and close icon', () => {
+  it('exposes theme targets for the header row, title block, both content slots, and close icon', () => {
     const {container} = render(
       <DialogHeader
         title="Title"
         subtitle="Subtitle"
+        startContent={<button type="button">Back</button>}
+        endContent={<button type="button">Custom Action</button>}
         onOpenChange={() => {}}
       />,
     );
 
     expect(container.querySelector('.astryx-dialog-header')).not.toBeNull();
+    expect(
+      screen.getByRole('button', {name: 'Back'}).parentElement,
+    ).toHaveClass('astryx-dialog-header-start-content');
     expect(screen.getByRole('heading', {level: 2}).parentElement).toHaveClass(
       'astryx-dialog-header-title-block',
+    );
+
+    const endContent = screen.getByRole('button', {
+      name: 'Custom Action',
+    }).parentElement;
+    expect(endContent).toHaveClass('astryx-dialog-header-end-content');
+    expect(screen.getByRole('button', {name: /close/i}).parentElement).toBe(
+      endContent,
     );
 
     const closeIcon = screen
@@ -180,12 +198,57 @@ describe('DialogHeader', () => {
     expect(closeIcon).toHaveClass('astryx-icon');
   });
 
-  it('lets themes set the two internal gaps and close-icon size', () => {
+  it('exposes the start-content target when startContent renders', () => {
+    const {container} = render(
+      <DialogHeader
+        title="Title"
+        startContent={<button type="button">Back</button>}
+      />,
+    );
+
+    expect(
+      screen.getByRole('button', {name: 'Back'}).parentElement,
+    ).toHaveClass('astryx-dialog-header-start-content');
+    expect(
+      container.querySelectorAll('.astryx-dialog-header-start-content'),
+    ).toHaveLength(1);
+  });
+
+  it('exposes the end-content target when endContent renders without a close button', () => {
+    const {container} = render(
+      <DialogHeader
+        title="Title"
+        endContent={<button type="button">Custom Action</button>}
+      />,
+    );
+
+    expect(
+      screen.getByRole('button', {name: 'Custom Action'}).parentElement,
+    ).toHaveClass('astryx-dialog-header-end-content');
+    expect(
+      container.querySelectorAll('.astryx-dialog-header-end-content'),
+    ).toHaveLength(1);
+  });
+
+  it('omits the content-slot targets when their content does not render', () => {
+    const {container} = render(<DialogHeader title="Title" />);
+
+    expect(
+      container.querySelector('.astryx-dialog-header-start-content'),
+    ).toBeNull();
+    expect(
+      container.querySelector('.astryx-dialog-header-end-content'),
+    ).toBeNull();
+  });
+
+  it('lets themes set the internal gaps and close-icon size', () => {
     const theme = defineTheme({
       name: 'dialog-header-targets-test',
       components: {
         'dialog-header': {base: {gap: '8px'}},
+        'dialog-header-start-content': {base: {gap: '5px'}},
         'dialog-header-title-block': {base: {gap: '4px'}},
+        'dialog-header-end-content': {base: {gap: '6px'}},
         'dialog-header-close-icon': {
           base: {width: '16px', height: '16px', fontSize: '16px'},
         },
@@ -195,8 +258,12 @@ describe('DialogHeader', () => {
 
     expect(css).toContain('.astryx-dialog-header {');
     expect(css).toContain('gap: 8px');
+    expect(css).toContain('.astryx-dialog-header-start-content {');
+    expect(css).toContain('gap: 5px');
     expect(css).toContain('.astryx-dialog-header-title-block {');
     expect(css).toContain('gap: 4px');
+    expect(css).toContain('.astryx-dialog-header-end-content {');
+    expect(css).toContain('gap: 6px');
     expect(css).toContain('.astryx-dialog-header-close-icon {');
     expect(css).toContain('width: 16px');
     expect(css).toContain('height: 16px');

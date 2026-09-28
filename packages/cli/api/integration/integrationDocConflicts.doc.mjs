@@ -7,6 +7,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'integrationDocConflicts',
+  namespace: 'cli/api',
   displayName: 'integrationDocConflicts()',
   summary: 'Classify integration doc overlaps with Core topics.',
   description:

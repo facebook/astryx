@@ -31,7 +31,9 @@ function topic(fields) {
     name: 'deploying',
     title: 'Deploying',
     description: 'How to ship it.',
-    sections: [{title: 'Overview', content: [{type: 'prose', text: 'Ship it.'}]}],
+    sections: [
+      {title: 'Overview', content: [{type: 'prose', text: 'Ship it.'}]},
+    ],
     ...fields,
   };
 }
@@ -97,7 +99,9 @@ describe('discoverIntegrationDocs', () => {
       }),
     );
     expect(errors).toEqual([]);
-    expect(records.map(r => [r.name, r.package, r.replaces, r.extendsTopic])).toEqual([
+    expect(
+      records.map(r => [r.name, r.package, r.replaces, r.extendsTopic]),
+    ).toEqual([
       ['deploying', '@acme/widgets', undefined, undefined],
       ['getting-started', '@acme/widgets', 'getting-started', undefined],
       ['theme-extra', '@acme/widgets', undefined, 'theme'],
@@ -126,7 +130,9 @@ describe('discoverIntegrationDocs', () => {
 
   it('reports a doc that exports nothing, rather than skipping it silently', async () => {
     const {records, errors} = await discoverIntegrationDocs(
-      integration('@acme/empty', {'deploying.doc.mjs': 'export const nope = 1;\n'}),
+      integration('@acme/empty', {
+        'deploying.doc.mjs': 'export const nope = 1;\n',
+      }),
     );
     expect(records).toEqual([]);
     expect(errors).toHaveLength(1);
@@ -153,6 +159,49 @@ describe('discoverIntegrationDocs', () => {
     expect(records).toEqual([]);
     expect(errors[0].message).toContain('declares both');
   });
+
+  it('rejects graph blocks at the legacy topic-reader boundary', async () => {
+    const {records, errors} = await discoverIntegrationDocs(
+      integration('@acme/graph-block', {
+        'deploying.doc.mjs': topic({
+          sections: [
+            {
+              id: 'steps',
+              title: 'Steps',
+              content: [
+                {
+                  type: 'workflow',
+                  steps: [{title: 'Install', description: 'Run install.'}],
+                },
+              ],
+            },
+          ],
+        }),
+      }),
+    );
+    expect(records).toEqual([]);
+    expect(errors[0].message).toContain('requires the compiled graph renderer');
+  });
+
+  it('names a namespace doc instead of listing topic fields it lacks', async () => {
+    const {records, errors} = await discoverIntegrationDocs(
+      integration('@acme/namespace', {
+        'guides.doc.mjs': {
+          type: 'namespace',
+          name: 'guides',
+          title: 'Guides',
+          summary: 'Every guide.',
+          slots: {guides: {title: 'Guides', accepts: {kinds: ['generic']}}},
+        },
+      }),
+    );
+    expect(records).toEqual([]);
+    expect(errors).toHaveLength(1);
+    expect(errors[0].message).toContain(
+      '"guides" is a namespace doc. Only the docs graph reads namespace docs',
+    );
+    expect(errors[0].message).not.toContain('sections:');
+  });
 });
 
 describe('problemsInTopic', () => {
@@ -170,7 +219,11 @@ describe('problemsInTopic', () => {
     // A misspelled required field: the block renders nothing at all.
     expect(
       problemsInTopic(
-        topic({sections: [{title: 'Overview', content: [{type: 'prose', txt: 'oops'}]}]}),
+        topic({
+          sections: [
+            {title: 'Overview', content: [{type: 'prose', txt: 'oops'}]},
+          ],
+        }),
       ),
     ).toEqual([
       'sections[0].content[0].text: required for a prose block',
@@ -180,7 +233,12 @@ describe('problemsInTopic', () => {
     expect(
       problemsInTopic(
         topic({
-          sections: [{title: 'Overview', content: [{type: 'heading', level: 2, text: 'x'}]}],
+          sections: [
+            {
+              title: 'Overview',
+              content: [{type: 'heading', level: 2, text: 'x'}],
+            },
+          ],
         }),
       ),
     ).toContain('sections[0].content[0].level: 2 is not one of 3, 4, 5, 6');
@@ -196,11 +254,27 @@ describe('problemsInTopic', () => {
           ],
         }),
       ),
-    ).toContain('sections[0].content[0].rows[0]: has 1 cells but the table has 2 headers');
+    ).toContain(
+      'sections[0].content[0].rows[0]: has 1 cells but the table has 2 headers',
+    );
+  });
+
+  it('rejects graph metadata at the legacy topic-reader boundary', () => {
+    for (const fields of [
+      {placement: {parent: 'namespace:cli'}},
+      {aliases: ['setup']},
+      {audience: 'internal'},
+    ]) {
+      expect(problemsInTopic(topic(fields)).join('\n')).toContain(
+        'requires the compiled graph reader',
+      );
+    }
   });
 
   it('rejects a name that is not URL-safe', () => {
-    expect(problemsInTopic(topic({name: 'not a topic'})).join('\n')).toContain('URL-safe');
+    expect(problemsInTopic(topic({name: 'not a topic'})).join('\n')).toContain(
+      'URL-safe',
+    );
   });
 });
 
@@ -228,11 +302,23 @@ describe('DocsCatalog', () => {
     expect(catalog.resolve('deploying').package).toBe('@acme/widgets');
   });
 
+  it('treats topic identities case-insensitively without losing display case', () => {
+    const catalog = DocsCatalog.fromBuiltins();
+    expect(catalog.add(record({name: 'Deploying'}))).toBeNull();
+    expect(catalog.resolve('deploying').name).toBe('Deploying');
+    expect(catalog.resolve('DEPLOYING').name).toBe('Deploying');
+
+    const issue = catalog.add(
+      record({name: 'deploying', package: '@acme/duplicate'}),
+    );
+    expect(issue).toMatchObject({code: 'invalid_doc', severity: 'error'});
+  });
+
   it('refuses to shadow an existing topic by name alone', () => {
     const catalog = DocsCatalog.fromBuiltins({tokens: '/cli/tokens.doc.mjs'});
     const issue = catalog.add(record({name: 'tokens'}));
     expect(issue).toMatchObject({code: 'invalid_doc', severity: 'error'});
-    expect(issue.message).toContain("already provided by @astryxdesign/cli");
+    expect(issue.message).toContain('already provided by @astryxdesign/cli');
     expect(issue.message).toContain("replaces: 'tokens'");
     // The built-in topic is untouched.
     expect(catalog.resolve('tokens').package).toBe(BUILTIN_DOCS_PACKAGE);
@@ -244,7 +330,9 @@ describe('DocsCatalog', () => {
       tokens: '/cli/tokens.doc.mjs',
     });
     expect(
-      catalog.add(record({name: 'getting-started', replaces: 'getting-started'})),
+      catalog.add(
+        record({name: 'getting-started', replaces: 'getting-started'}),
+      ),
     ).toBeNull();
     expect(catalog.names()).toEqual(['getting-started', 'tokens']);
     const entry = catalog.resolve('getting-started');
@@ -276,12 +364,16 @@ describe('DocsCatalog', () => {
 
   it('warns, and lets the later package win, when two replace one topic', () => {
     const catalog = DocsCatalog.fromBuiltins({tokens: '/cli/tokens.doc.mjs'});
-    expect(catalog.add(record({name: 'tokens', replaces: 'tokens'}))).toBeNull();
+    expect(
+      catalog.add(record({name: 'tokens', replaces: 'tokens'})),
+    ).toBeNull();
     const issue = catalog.add(
       record({name: 'tokens', package: '@acme/later', replaces: 'tokens'}),
     );
     expect(issue).toMatchObject({code: 'duplicate_doc', severity: 'warning'});
-    expect(issue.message).toContain('@acme/later is configured later, so it wins');
+    expect(issue.message).toContain(
+      '@acme/later is configured later, so it wins',
+    );
     expect(catalog.resolve('tokens').package).toBe('@acme/later');
   });
 
@@ -327,15 +419,192 @@ describe('mergeTopic', () => {
         {title: 'Internal', content: [{type: 'prose', text: 'the meta way'}]},
       ],
     });
-    expect(merged.sections.map(s => s.title)).toEqual(['Install', 'Tokens', 'Internal']);
+    expect(merged.sections.map(s => s.title)).toEqual([
+      'Install',
+      'Tokens',
+      'Internal',
+    ]);
     expect(merged.sections[0].content[0].text).toBe('yarn add');
     expect(merged.sections[1].content[0].text).toBe('use tokens');
     // The base is untouched.
     expect(base.sections[0].content[0].text).toBe('npm i');
   });
 
-  it('takes the title and description only when the overlay states them', () => {
-    expect(mergeTopic(base, {sections: []}).title).toBe('Theme');
-    expect(mergeTopic(base, {title: 'Theming', sections: []}).title).toBe('Theming');
+  it('replaces a section by stable ID even when its title changes', () => {
+    const merged = mergeTopic(
+      {
+        ...base,
+        sections: [
+          {id: 'install', title: 'Install', content: []},
+          {id: 'tokens', title: 'Tokens', content: []},
+        ],
+      },
+      {
+        sections: [{id: 'install', title: 'Setup', content: []}],
+      },
+    );
+    expect(merged.sections.map(section => [section.id, section.title])).toEqual(
+      [
+        ['install', 'Setup'],
+        ['tokens', 'Tokens'],
+      ],
+    );
+  });
+
+  it('migrates a legacy section to a stable ID without duplicating it', () => {
+    const merged = mergeTopic(base, {
+      sections: [
+        {
+          id: 'install',
+          title: 'Install',
+          content: [{type: 'prose', text: 'yarn add'}],
+        },
+      ],
+    });
+    expect(
+      merged.sections.map(section => [section.id ?? null, section.title]),
+    ).toEqual([
+      ['install', 'Install'],
+      [null, 'Tokens'],
+    ]);
+    expect(merged.sections[0].content[0].text).toBe('yarn add');
+  });
+
+  it('lets a legacy extension replace a section that has since gained an ID', () => {
+    const merged = mergeTopic(
+      {
+        ...base,
+        sections: [
+          {id: 'setup-steps', title: 'Install', content: []},
+          {title: 'Tokens', content: []},
+        ],
+      },
+      {
+        sections: [
+          {title: 'Install', content: [{type: 'prose', text: 'yarn add'}]},
+        ],
+      },
+    );
+    expect(
+      merged.sections.map(section => [section.id ?? null, section.title]),
+    ).toEqual([
+      ['setup-steps', 'Install'],
+      [null, 'Tokens'],
+    ]);
+    expect(merged.sections[0].content[0].text).toBe('yarn add');
+  });
+
+  it('keeps two different authored IDs distinct under one title', () => {
+    const merged = mergeTopic(
+      {...base, sections: [{id: 'install', title: 'Install', content: []}]},
+      {sections: [{id: 'install-yarn', title: 'Install', content: []}]},
+    );
+    expect(merged.sections.map(section => section.id)).toEqual([
+      'install',
+      'install-yarn',
+    ]);
+  });
+
+  it('keeps the base title and description: an extension never renames a topic', () => {
+    const merged = mergeTopic(base, {
+      title: 'Acme theme notes',
+      description: 'Our additions.',
+      sections: [],
+    });
+    expect(merged.title).toBe('Theme');
+    expect(merged.description).toBe('Theming.');
+  });
+});
+
+describe('problemsInTopic section keys', () => {
+  /** @param {object[]} sections */
+  const doc = sections => ({
+    type: 'generic',
+    name: 'keys',
+    title: 'Keys',
+    description: 'Section keys.',
+    sections: sections.map(s => ({
+      content: [{type: 'prose', text: 'x'}],
+      ...s,
+    })),
+  });
+
+  it('rejects two sections that derive the same key', () => {
+    expect(
+      problemsInTopic(doc([{title: 'Quick Start'}, {title: 'Quick-start'}])),
+    ).toEqual([
+      expect.stringContaining('"quick-start" is already used by sections[0]'),
+    ]);
+  });
+
+  it('rejects an unsafe id', () => {
+    expect(
+      problemsInTopic(doc([{id: 'Quick Start', title: 'Quick Start'}])),
+    ).toEqual([expect.stringContaining('is not a stable key')]);
+  });
+
+  it('rejects a title no key derives from, unless it has an id', () => {
+    expect(problemsInTopic(doc([{title: '亮/暗模式'}]))).toEqual([
+      expect.stringContaining('Give the section an id'),
+    ]);
+    expect(
+      problemsInTopic(doc([{id: 'light-dark', title: '亮/暗模式'}])),
+    ).toEqual([]);
+  });
+});
+
+describe('mergeTopic by section key', () => {
+  const base = {
+    title: 'Theme',
+    sections: [
+      {title: 'Quick Start', content: [{type: 'prose', text: 'base'}]},
+      {title: 'Light/Dark Mode', content: [{type: 'prose', text: 'base'}]},
+    ],
+  };
+  const titles = doc =>
+    doc.sections.map(s => [s.id ?? null, s.title, s.content[0].text]);
+
+  it('replaces the section whose derived key an extension id names', () => {
+    const merged = mergeTopic(base, {
+      sections: [
+        {
+          id: 'quick-start',
+          title: 'Quick Start with Acme',
+          content: [{type: 'prose', text: 'acme'}],
+        },
+      ],
+    });
+    expect(titles(merged)).toEqual([
+      ['quick-start', 'Quick Start with Acme', 'acme'],
+      [null, 'Light/Dark Mode', 'base'],
+    ]);
+  });
+
+  it('replaces the section a title variant derives the same key as', () => {
+    const merged = mergeTopic(base, {
+      sections: [
+        {title: 'Light-Dark Mode', content: [{type: 'prose', text: 'acme'}]},
+      ],
+    });
+    expect(titles(merged)).toEqual([
+      [null, 'Quick Start', 'base'],
+      [null, 'Light-Dark Mode', 'acme'],
+    ]);
+  });
+
+  it('prefers the key over a legacy title for an extension with an id', () => {
+    const merged = mergeTopic(base, {
+      sections: [
+        {
+          id: 'light-dark-mode',
+          title: 'Quick Start',
+          content: [{type: 'prose', text: 'acme'}],
+        },
+      ],
+    });
+    expect(titles(merged)).toEqual([
+      [null, 'Quick Start', 'base'],
+      ['light-dark-mode', 'Quick Start', 'acme'],
+    ]);
   });
 });

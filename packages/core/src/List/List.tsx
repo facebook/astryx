@@ -5,6 +5,7 @@
 /**
  * @file List.tsx
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, ListContext
+ *   with optional inline edge compensation
  * @output Exports List component, ListProps, ListDensity, ListStyle types
  * @position Core implementation; consumed by index.ts, tested by List.test.tsx
  *
@@ -57,6 +58,20 @@ export interface ListProps extends BaseProps<
    * @default false
    */
   hasDividers?: boolean;
+
+  /**
+   * Compensates for each item's built-in inline inset, up to the container
+   * padding available on each edge. Use "inline" to bring row content toward
+   * sibling content such as a section heading. Content aligns when the
+   * container padding is at least the item inset; smaller padding leaves
+   * some inset uncompensated.
+   * The cancelling margin reads the same variable the items derive their
+   * inline padding from, so it tracks density and theme padding overrides
+   * automatically. Hover and selection backgrounds still extend past the
+   * text by the inset.
+   * Omit to leave item positions unchanged.
+   */
+  edgeCompensation?: 'inline';
 
   /**
    * Header content rendered above the list.
@@ -128,6 +143,10 @@ const dynamicStyles = stylex.create({
  * Renders semantic `<ul>` or `<ol>` elements with configurable density,
  * dividers, marker styles, and an optional header.
  *
+ * Set `edgeCompensation="inline"` to compensate for the items' inline inset
+ * up to the container padding available on each edge, for alignment with
+ * sibling content such as a section heading.
+ *
  * @example
  * ```
  * <List>
@@ -144,6 +163,7 @@ export function List({
   children,
   density = 'balanced',
   hasDividers = false,
+  edgeCompensation,
   header,
   listStyle = 'none',
   start,
@@ -159,8 +179,8 @@ export function List({
   const Tag = isOrdered ? 'ol' : 'ul';
 
   const contextValue = useMemo(
-    () => ({density, hasDividers, listStyle}),
-    [density, hasDividers, listStyle],
+    () => ({density, hasDividers, listStyle, edgeCompensation}),
+    [density, hasDividers, listStyle, edgeCompensation],
   );
 
   const listElement = (

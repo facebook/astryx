@@ -4,10 +4,48 @@
  * @file Reference/topic doc types.
  */
 
+import type {AuthoredDocGraphFields} from '../base/type.js';
+
+/** One step in a renderer-neutral workflow. */
+export interface WorkflowStep {
+  title: string;
+  description?: string;
+  /** Stable doc references that supply detail for this step. */
+  references?: string[];
+}
+
+/** Ordered procedural guidance. */
+export interface WorkflowDocBlock {
+  type: 'workflow';
+  title?: string;
+  steps: WorkflowStep[];
+}
+
+/** A generated view over docs placed in one namespace slot. */
+export interface CollectionDocBlock {
+  type: 'collection';
+  title?: string;
+  source: {slot: string};
+  presentation?: 'list' | 'cards' | 'compact';
+  whenEmpty?: 'show' | 'omit';
+}
+
+/** A bounded projection of one canonical doc. */
+export interface ReferenceDocBlock {
+  type: 'reference';
+  target: string;
+  projection?: {
+    fields?: string[];
+    sections?: string[];
+  };
+  presentation?: 'summary' | 'compact' | 'full';
+}
+
 /**
- * A content block within a reference doc section.
- * Ordered array of these makes up a section's content.
- * New block types can be added without breaking existing docs.
+ * A content block within a reference doc section or namespace.
+ * Ordered arrays of these blocks form renderer-neutral documentation content.
+ * A new semantic kind must ship with every renderer or fail visibly at a legacy
+ * reader boundary until that renderer is available.
  *
  * @example
  * ```
@@ -17,6 +55,9 @@
  * { type: 'table', headers: ['Token', 'Value'], rows: [['--spacing-4', '16px']] }
  * { type: 'list', style: 'do', items: ['Use semantic tokens'] }
  * { type: 'token-ref', topic: 'tokens', section: 'Color Tokens' }
+ * { type: 'workflow', steps: [{title: 'Validate', references: ['command:doctor']}] }
+ * { type: 'collection', source: {slot: 'guides'}, presentation: 'cards' }
+ * { type: 'reference', target: 'schema:integration', projection: {fields: ['docs']} }
  * ```
  */
 export type ReferenceContentBlock =
@@ -39,7 +80,10 @@ export type ReferenceContentBlock =
       topic: string;
       /** Section title to pull from that topic. e.g. `'Color Tokens'` */
       section: string;
-    };
+    }
+  | WorkflowDocBlock
+  | CollectionDocBlock
+  | ReferenceDocBlock;
 
 /**
  * A reference documentation file (.doc.mjs).
@@ -49,12 +93,12 @@ export type ReferenceContentBlock =
  * they aren't tied to a specific component — just drop a .doc.mjs file
  * in the docs/ directory and it shows up in `astryx docs`.
  *
- * Every reference .doc.mjs must export a single `docs` constant:
+ * Every new reference .doc.mjs default-exports a stamped object:
  *
  *   /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} *\/
- *   export const docs = { ... };
+ *   export default { type: 'generic', ... };
  */
-export interface ReferenceDoc {
+export interface ReferenceDoc extends AuthoredDocGraphFields {
   /** Doc-kind discriminant for the stamped default-export format
    *  (`export default { type: 'generic', ... }`). Optional: legacy
    *  `export const docs = {...}` docs omit it. The value stays `'generic'`
@@ -95,6 +139,8 @@ export interface ReferenceDoc {
  * and can be individually retrieved via `astryx docs <topic> <section>`.
  */
 export interface ReferenceSection {
+  /** Stable section anchor. New docs should set this instead of relying on title. */
+  id?: string;
   /** Section title, e.g. "Spacing Tokens", "Light/Dark Mode" */
   title: string;
   /** Navigation category ('guide' | 'foundations'). Mirrors the parent doc's

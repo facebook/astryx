@@ -76,7 +76,7 @@ import type {
   MarkdownPluginEntry,
   PreparedMarkdownPlugins,
 } from './plugins/protocol';
-import {sanitizeMarkdownUrl} from './url';
+import {sanitizeMarkdownLinkUrl, sanitizeMarkdownUrl} from './url';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator, type TranslatorFn} from '../i18n';
 
@@ -961,7 +961,7 @@ function renderInline(
       return <MathComp key={index} value={node.value} display="inline" />;
     }
     case 'link': {
-      const safeHref = sanitizeMarkdownUrl(node.url);
+      const safeHref = sanitizeMarkdownLinkUrl(node.url);
       if (safeHref == null) {
         // Unsafe URL — render as plain text
         return (

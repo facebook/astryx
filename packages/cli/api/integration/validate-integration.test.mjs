@@ -13,10 +13,16 @@ import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
+  validateIntegration,
   validateLocalIntegration,
   validateInstalledIntegration,
   summarizeIssues,
 } from './validate-integration.mjs';
+import {
+  integrationComponentConflicts,
+  integrationDocConflicts,
+  integrationTemplateConflicts,
+} from './authoring-checks.mjs';
 
 let tmpDir;
 
@@ -187,6 +193,39 @@ describe('validate-integration API', () => {
     expect(byCode(result.issues, 'invalid_codemod')).toHaveLength(1);
   });
 
+  it('names a broken codemod of an installed package by its path inside the package', async () => {
+    const consumer = path.join(tmpDir, 'consumer');
+    fs.mkdirSync(consumer, {recursive: true});
+    fs.writeFileSync(
+      path.join(consumer, 'package.json'),
+      JSON.stringify({name: 'consumer'}),
+    );
+    const pkgDir = path.join(consumer, 'node_modules', '@acme', 'kit');
+    writePackage(pkgDir, {
+      name: '@acme/kit',
+      manifest: `export default { codemods: './codemods' };\n`,
+    });
+    fs.mkdirSync(path.join(pkgDir, 'codemods', '1.1.0'), {recursive: true});
+    fs.writeFileSync(
+      path.join(pkgDir, 'codemods', '1.1.0', 'no-default.mjs'),
+      'export const nope = 1;\n',
+    );
+    fs.writeFileSync(
+      path.join(pkgDir, 'codemods', 'stray.mjs'),
+      `export default {type: 'code', title: 'Stray', transform: file => file.source};\n`,
+    );
+
+    const result = await validateInstalledIntegration('@acme/kit', consumer);
+
+    const [broken] = byCode(result.issues, 'invalid_codemod');
+    expect(broken.message).toContain('(codemods/1.1.0/no-default.mjs)');
+    const [stray] = byCode(result.issues, 'codemod_outside_version');
+    expect(stray.message).toContain('"codemods/stray.mjs"');
+    for (const issue of result.issues) {
+      expect(issue.message).not.toContain(tmpDir);
+    }
+  });
+
   it('flags a broken template as invalid_template error', async () => {
     const pkgDir = path.join(tmpDir, 'pkg');
     writePackage(pkgDir, {
@@ -204,33 +243,24 @@ describe('validate-integration API', () => {
     expect(byCode(result.issues, 'invalid_template')).toHaveLength(1);
   });
 
-  it('reports no errors for a valid source-theme catalog', async () => {
+  it('reports no errors for a valid source-theme descriptor', async () => {
     const pkgDir = path.join(tmpDir, 'pkg');
     writePackage(pkgDir, {
-      manifest: `export default { themes: './themes' };\n`,
+      manifest: `export default { themes: './themes' };
+`,
     });
     const themeDir = path.join(pkgDir, 'themes', 'ocean');
     fs.mkdirSync(themeDir, {recursive: true});
     fs.writeFileSync(
-      path.join(pkgDir, 'themes', 'manifest.json'),
-      JSON.stringify({
-        version: 1,
-        themes: [
-          {
-            slug: 'ocean',
-            displayName: 'Ocean',
-            description: 'Blue and calm.',
-            maintained: true,
-            entry: 'oceanTheme.ts',
-            exportName: 'oceanTheme',
-            files: ['oceanTheme.ts'],
-          },
-        ],
-      }),
+      path.join(themeDir, 'oceanTheme.doc.mjs'),
+      `/** @type {import('@astryxdesign/cli/authoring').ThemeDoc} */
+export default {type: 'theme', name: 'ocean', displayName: 'Ocean', description: 'Blue and calm.', maintained: true};
+`,
     );
     fs.writeFileSync(
       path.join(themeDir, 'oceanTheme.ts'),
-      `export const oceanTheme = {};\n`,
+      `export const oceanTheme = {};
+`,
     );
 
     const result = await validateLocalIntegration(pkgDir);
@@ -238,13 +268,17 @@ describe('validate-integration API', () => {
     expect(summarizeIssues(result.issues).errors).toBe(0);
   });
 
-  it('flags an unreadable source-theme catalog as invalid_theme', async () => {
+  it('flags an obsolete source-theme catalog as invalid_theme', async () => {
     const pkgDir = path.join(tmpDir, 'pkg');
     writePackage(pkgDir, {
-      manifest: `export default { themes: './themes' };\n`,
+      manifest: `export default { themes: './themes' };
+`,
     });
     fs.mkdirSync(path.join(pkgDir, 'themes'), {recursive: true});
-    fs.writeFileSync(path.join(pkgDir, 'themes', 'manifest.json'), '{not-json');
+    fs.writeFileSync(
+      path.join(pkgDir, 'themes', 'manifest.json'),
+      '{"version":1}',
+    );
 
     const result = await validateLocalIntegration(pkgDir);
     expect(byCode(result.issues, 'invalid_theme')).toHaveLength(1);
@@ -269,6 +303,11 @@ describe('validate-integration API', () => {
         message: expect.stringContaining('InvisibleWidget.doc.mjs'),
       }),
     ]);
+    expect(
+      byCode(result.issues, 'source_without_component_doc')[0].message,
+    ).toContain(
+      "Fix: add InvisibleWidget.doc.mjs beside it with type: 'component'",
+    );
   });
 
   it('reports codemods outside semver folders and invalid folder names', async () => {
@@ -284,8 +323,12 @@ describe('validate-integration API', () => {
 
     const result = await validateLocalIntegration(pkgDir);
 
-    expect(byCode(result.issues, 'codemod_outside_version')).toHaveLength(1);
-    expect(byCode(result.issues, 'invalid_codemod_version')).toHaveLength(1);
+    const [stray] = byCode(result.issues, 'codemod_outside_version');
+    expect(stray.message).toContain('"codemods/forgotten.mjs"');
+    expect(stray.message).toContain('codemods/1.2.0/forgotten.mjs');
+    expect(stray.message).not.toContain(tmpDir);
+    const [folder] = byCode(result.issues, 'invalid_codemod_version');
+    expect(folder.message).toContain('Fix: rename it');
   });
 
   it('warns about valid contribution metadata outside every declared root', async () => {
@@ -327,6 +370,31 @@ describe('validate-integration API', () => {
     const unreachable = byCode(result.issues, 'unreachable_contribution');
     expect(unreachable).toHaveLength(1);
     expect(unreachable[0].message).toContain('src/orphan.doc.mjs');
+    // No docs root is declared, but src/ also holds a .doc.mjs that is not a
+    // topic, which a docs root at src/ would read too; so the fix moves it.
+    expect(unreachable[0].message).toContain(
+      "Fix: move it into docs/ and set `docs: './docs'` in astryx.integration.mjs.",
+    );
+  });
+
+  it('names the root that reads misplaced metadata when one is declared', async () => {
+    const pkgDir = path.join(tmpDir, 'pkg');
+    writePackage(pkgDir, {
+      manifest: `export default { templates: './templates' };\n`,
+    });
+    fs.mkdirSync(path.join(pkgDir, 'templates'));
+    fs.mkdirSync(path.join(pkgDir, 'src', 'blocks'), {recursive: true});
+    fs.writeFileSync(
+      path.join(pkgDir, 'src', 'blocks', 'Carousel.doc.mjs'),
+      `export default {type: 'block', name: 'Carousel', displayName: 'Carousel', aspectRatio: 1};\n`,
+    );
+
+    const result = await validateLocalIntegration(pkgDir);
+
+    const [issue] = byCode(result.issues, 'unreachable_contribution');
+    expect(issue.message).toContain(
+      "Fix: move it under templates/ (the templates root), or set `templates: './src/blocks'` in astryx.integration.mjs.",
+    );
   });
 
   it('never executes unreachable metadata while diagnosing it', async () => {
@@ -470,5 +538,90 @@ describe('validate-integration API', () => {
     );
     const result = await validateInstalledIntegration('/etc/passwd', consumer);
     expect(byCode(result.issues, 'invalid_package_spec')).toHaveLength(1);
+  });
+});
+
+describe('integration diagnostics are read-only', () => {
+  /** Every directory and file under `dir`, with file bytes. */
+  function snapshot(dir) {
+    /** @type {Record<string, string>} */
+    const entries = {};
+    /** @param {string} current */
+    const walk = current => {
+      for (const entry of fs.readdirSync(current, {withFileTypes: true})) {
+        const full = path.join(current, entry.name);
+        const key = path.relative(dir, full);
+        if (entry.isDirectory()) {
+          entries[`${key}/`] = '';
+          walk(full);
+        } else {
+          entries[key] = fs.readFileSync(full, 'base64');
+        }
+      }
+    };
+    walk(dir);
+    return entries;
+  }
+
+  /** A package with valid, broken, conflicting, and unreachable contributions. */
+  function writeDiagnosedPackage(dir) {
+    writePackage(dir, {
+      manifest:
+        "export default {\n  components: './components',\n  templates: './templates',\n  docs: './docs',\n  codemods: './gone',\n  themes: './themes',\n};\n",
+    });
+    const write = (relative, contents) => {
+      fs.mkdirSync(path.dirname(path.join(dir, relative)), {recursive: true});
+      fs.writeFileSync(path.join(dir, relative), contents);
+    };
+    write(
+      'components/Card.doc.mjs',
+      "export default {type: 'component', name: 'Card', props: []};\n",
+    );
+    write('components/Card.tsx', 'export function Card() { return null; }\n');
+    write(
+      'components/Orphan.doc.mjs',
+      "export default {type: 'component', name: 'Orphan', props: []};\n",
+    );
+    write('templates/dash.doc.mjs', "export default {type: 'page', name: 'Dash'};\n");
+    write(
+      'docs/theme.doc.mjs',
+      "export default {type: 'generic', name: 'theme', title: 'Theme', description: 'x', sections: [{title: 'A', content: [{type: 'prose', text: 'x'}]}]};\n",
+    );
+    write('themes/manifest.json', '{"version": 1, "themes": [{"slug": 7}]}\n');
+    write(
+      'stray/Stray.doc.mjs',
+      "export default {type: 'component', name: 'Stray', props: []};\n",
+    );
+  }
+
+  it('leaves local and installed packages byte-for-byte unchanged', async () => {
+    const pkgDir = path.join(tmpDir, 'pkg');
+    writeDiagnosedPackage(pkgDir);
+    const consumer = path.join(tmpDir, 'consumer');
+    fs.mkdirSync(consumer, {recursive: true});
+    fs.writeFileSync(
+      path.join(consumer, 'package.json'),
+      JSON.stringify({name: 'consumer'}),
+    );
+    writeDiagnosedPackage(path.join(consumer, 'node_modules', '@acme', 'widgets'));
+    const before = {pkg: snapshot(pkgDir), consumer: snapshot(consumer)};
+
+    const local = await validateIntegration(undefined, {cwd: pkgDir});
+    const installed = await validateIntegration('@acme/widgets', {
+      cwd: consumer,
+    });
+    for (const [pkg, cwd] of [
+      [undefined, pkgDir],
+      ['@acme/widgets', consumer],
+    ]) {
+      await integrationTemplateConflicts(pkg, {cwd});
+      await integrationComponentConflicts(pkg, {cwd});
+      await integrationDocConflicts(pkg, {cwd});
+    }
+
+    expect(summarizeIssues(local.data.issues).errors).toBeGreaterThan(0);
+    expect(byCode(local.data.issues, 'unreachable_contribution')).toHaveLength(1);
+    expect(summarizeIssues(installed.data.issues).errors).toBeGreaterThan(0);
+    expect({pkg: snapshot(pkgDir), consumer: snapshot(consumer)}).toEqual(before);
   });
 });

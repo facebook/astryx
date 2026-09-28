@@ -33,7 +33,7 @@ function writeIntegration({id, name, type = 'block', root = tmpDir}) {
   const stem = path.join(root, 'templates', id);
   fs.mkdirSync(path.dirname(stem), {recursive: true});
   fs.writeFileSync(
-    `${stem}.template.mjs`,
+    `${stem}.doc.mjs`,
     `export default {type: '${type}', name: ${JSON.stringify(name)}, description: 'fixture'};\n`,
   );
   fs.writeFileSync(
@@ -176,7 +176,7 @@ describe('integrationTemplateConflicts', () => {
     );
     fs.mkdirSync(path.join(tmpDir, 'templates'), {recursive: true});
     fs.writeFileSync(
-      path.join(tmpDir, 'templates', 'broken.template.mjs'),
+      path.join(tmpDir, 'templates', 'broken.doc.mjs'),
       `throw new Error('broken fixture');\n`,
     );
     fs.writeFileSync(
@@ -221,7 +221,9 @@ describe('integrationComponentConflicts', () => {
     expect(core).toBeDefined();
     writeComponentIntegration(core.name);
 
-    const result = await integrationComponentConflicts(undefined, {cwd: tmpDir});
+    const result = await integrationComponentConflicts(undefined, {
+      cwd: tmpDir,
+    });
 
     expect(result.type).toBe('integration.component-conflicts');
     expect(result.data.issues).toEqual([]);
@@ -240,7 +242,9 @@ describe('integrationComponentConflicts', () => {
   it('does not flag an integration-only component name', async () => {
     writeComponentIntegration('AcmeOnlyWidget');
 
-    const result = await integrationComponentConflicts(undefined, {cwd: tmpDir});
+    const result = await integrationComponentConflicts(undefined, {
+      cwd: tmpDir,
+    });
 
     expect(result.data.conflicts).toEqual([]);
     expect(result.data.issues).toEqual([]);

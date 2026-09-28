@@ -5,7 +5,7 @@
 /**
  * @file TopNavMenu.tsx
  * @input Uses React, StyleX, usePopover, useMenuHover, useListFocus,
- *   useTypeahead, TopNavItem tokens
+ *   useTypeahead, TopNavItem tokens, and the shared navigation policy
  * @output Exports TopNavMenu component and related types
  * @position Navigation item with hover-triggered overflow menu for TopNav
  *
@@ -37,6 +37,7 @@ import {useTopNavSlot} from './TopNavContext';
 import {useTopNavRenderMode} from './TopNavRenderContext';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {useLinkComponent} from '../Link/useLinkComponent';
+import {isSafeUrl} from '../utils/safeUrl';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
@@ -575,7 +576,11 @@ export function TopNavMenu({
                 // Single tab stop: useListFocus owns the roving tabindex and
                 // promotes exactly one item to 0.
                 tabIndex={-1}
-                href={item.href}
+                href={
+                  item.href != null && isSafeUrl(item.href)
+                    ? item.href
+                    : undefined
+                }
                 onClick={item.onClick}
                 {...focusOutlineProps.focusVisible(styles.menuItem)}>
                 <div {...stylex.props(styles.menuItemIcon)}>{item.icon}</div>

@@ -7,25 +7,32 @@
  *   packages/cli/assets/docs/{topic}.doc.mjs plus every topic the configured
  *   integrations contribute — and, when a --dense/--zh overlay is requested,
  *   the sibling {topic}.doc.dense.mjs / {topic}.doc.zh.mjs.
- * @output Catalog access, overlay- and extension-merged reference-doc data,
- *   and a combined resolve step ({catalog, docsData}) that the detail and
- *   section leaves share.
- * @position Sits beside docs.mjs (api/docs/). Owns everything ≥2 leaves need so
- *   no leaf re-implements resolution, overlay merging, or unknown-topic
- *   handling. Discovery itself lives in foundation/discovery/docs-discovery,
- *   which api/search and the agent-docs block read through the same catalog.
+ * @output Catalog access, the compiler input for a topic, and the compiled
+ *   node for it: lowered (overlaid, extensions merged, keys stamped) or linked
+ *   (token references resolved too), memoized per catalog.
+ * @position Sits beside docs.mjs (api/docs/). Hands topics to
+ *   foundation/doc-compiler (which loads their files) and memoizes the nodes
+ *   per catalog, so no leaf, doctor check or search loads, merges, or resolves
+ *   docs on its own. Discovery itself lives in
+ *   foundation/discovery/docs-discovery, which the catalog comes from.
  */
 
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import {pathToFileURL} from 'node:url';
 import {Project} from '../../foundation/config/project.mjs';
+import {DocsCatalog} from '../../foundation/discovery/docs-discovery.mjs';
 import {
-  DocsCatalog,
-  mergeTopic,
-} from '../../foundation/discovery/docs-discovery.mjs';
+  linkReferenceTopic,
+  lowerReferenceTopic,
+} from '../../foundation/doc-compiler/compile.mjs';
+import {
+  deepFreeze,
+  loadTopicInput,
+  OVERLAY_LANGUAGES,
+  overlayLanguages,
+} from '../../foundation/doc-compiler/read.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
+
+export {OVERLAY_LANGUAGES, overlayLanguages};
 
 /**
  * The project's topics: the built-in ones plus whatever the configured
@@ -50,92 +57,78 @@ export async function loadDocsCatalog(cwd = process.cwd()) {
 }
 
 /**
- * @param {string} docPath
- * @param {{lang?: string|null}} [opts]
- * @returns {Promise<import('./docs.type.mjs').DocsDetailResponse['data']>}
+ * The overlay a read applies: none for the authored language.
+ * @param {string | null | undefined} lang
+ * @returns {string | null}
  */
-export async function loadReferenceDocs(docPath, {lang} = {}) {
-  const mod = await import(pathToFileURL(docPath).href);
-  const docs = mod.docs ?? mod.default;
-  if (!lang || lang === 'en') return docs;
+function overlayLanguage(lang) {
+  return lang && lang !== 'en' ? lang : null;
+}
 
-  const dir = path.dirname(docPath);
-  const base = path.basename(docPath, '.doc.mjs');
-  const locale = lang === 'dense' ? 'dense' : lang;
-  const translationPath = path.join(dir, `${base}.doc.${locale}.mjs`);
-  if (!fs.existsSync(translationPath)) return docs;
+/** @type {WeakMap<DocsCatalog, Map<string, Promise<import('../../foundation/doc-compiler/compile.mjs').CompiledReferenceNode>>>} */
+const loweredByCatalog = new WeakMap();
 
-  const translationMod = await import(pathToFileURL(translationPath).href);
-  const translation = translationMod.docsZh || translationMod.docsDense;
-  if (!translation) return docs;
-
-  // Overlays are keyed to a base section by title (`section`), not by array
-  // position. Position-keying silently grafted each overlay title onto whatever
-  // base section happened to share its index, so an overlay that omitted or
-  // reordered a section corrupted every section after it — `docs tokens --dense`
-  // printed the colour table under a "Spacing" heading (#2182). An overlay may
-  // now cover any subset of sections, in any order; sections it does not name
-  // keep their base content.
-  /** @type {Map<string, any>} */
-  const bySection = new Map();
-  for (const ts of translation.sections ?? []) {
-    if (ts?.section != null) bySection.set(ts.section, ts);
+/**
+ * One topic, lowered for `lang`: overlaid, extensions merged, keys stamped.
+ * Memoized per catalog, so a read that references a topic twice loads it once.
+ * Every read of the catalog shares the memoized node, so it is frozen; the
+ * lenses hand readers copies.
+ * @param {DocsCatalog} catalog
+ * @param {import('../../foundation/discovery/docs-discovery.mjs').DocsTopicEntry} entry
+ * @param {string | null} [lang]
+ * @returns {Promise<import('../../foundation/doc-compiler/compile.mjs').CompiledReferenceNode>}
+ */
+export function lowerTopic(catalog, entry, lang = null) {
+  const overlay = overlayLanguage(lang);
+  let cache = loweredByCatalog.get(catalog);
+  if (!cache) {
+    cache = new Map();
+    loweredByCatalog.set(catalog, cache);
   }
+  const key = `${entry.name.toLowerCase()}\u0000${overlay ?? ''}`;
+  let lowered = cache.get(key);
+  if (!lowered) {
+    lowered = loadTopicInput(entry, overlay).then(input =>
+      deepFreeze(lowerReferenceTopic(input)),
+    );
+    cache.set(key, lowered);
+  }
+  return lowered;
+}
 
-  return {
-    ...docs,
-    description: translation.description || docs.description,
-    sections: docs.sections.map(
-      (/** @type {import('@astryxdesign/cli/authoring').ReferenceSection} */ section) => {
-        const ts = bySection.get(section.title);
-        if (!ts) return section;
-        return {
-          ...section,
-          title: ts.title || section.title,
-          content: section.content.map(
-            (
-              /** @type {import('@astryxdesign/cli/authoring').ReferenceContentBlock} */ block,
-              /** @type {number} */ bi,
-            ) => {
-              const tb = ts.content?.[bi];
-              if (!tb) return block;
-              if (tb.type === 'prose' && block.type === 'prose') return {...block, text: tb.text};
-              if (tb.type === 'list' && block.type === 'list') return {...block, items: tb.items};
-              return block;
-            },
-          ),
-        };
-      },
-    ),
+/**
+ * How a token reference finds its target: the topic it names in `catalog`,
+ * lowered for the same language.
+ * @param {DocsCatalog} catalog
+ * @param {string | null} lang
+ * @returns {(topic: string) => Promise<import('../../foundation/doc-compiler/compile.mjs').CompiledReferenceNode | null>}
+ */
+export function referenceTargets(catalog, lang) {
+  return async topic => {
+    const target = catalog.resolve(topic);
+    return target ? lowerTopic(catalog, target, lang) : null;
   };
 }
 
 /**
- * Load one catalog entry: its own doc, plus any extension an integration
- * merged onto it, in configuration order.
- *
- * A localization overlay applies to each file before the extensions are
- * merged, so an extension written in the base language stays readable under
- * `--dense`/`--zh` (it replaces its own sections and leaves the rest
- * translated) rather than being dropped.
- *
+ * One topic, compiled for `lang`: lowered, then every token reference linked.
+ * @param {DocsCatalog} catalog
  * @param {import('../../foundation/discovery/docs-discovery.mjs').DocsTopicEntry} entry
- * @param {{lang?: string|null}} [opts]
- * @returns {Promise<import('./docs.type.mjs').DocsDetailResponse['data']>}
+ * @param {string | null} [lang]
+ * @returns {Promise<import('../../foundation/doc-compiler/compile.mjs').CompiledReferenceNode>}
  */
-export async function loadTopicDoc(entry, {lang} = {}) {
-  let doc = await loadReferenceDocs(entry.path, {lang});
-  for (const extension of entry.extensions) {
-    doc = mergeTopic(doc, await loadReferenceDocs(extension.path, {lang}));
-  }
-  return doc;
+export async function compileTopic(catalog, entry, lang = null) {
+  return linkReferenceTopic(
+    await lowerTopic(catalog, entry, lang),
+    referenceTargets(catalog, lang),
+  );
 }
 
 /**
  * Resolve `topic` against the project's catalog (throwing `ERR_UNKNOWN_TOPIC`
- * when unmatched), and load it with any --dense/--zh overlay and any
- * integration extension applied. Shared by the detail and section leaves so
- * topic normalization and unknown-topic handling live in exactly one place.
+ * when unmatched) and lower it with any --dense/--zh overlay and any
+ * integration extension applied. Shared by the leaves so topic normalization
+ * and unknown-topic handling live in exactly one place.
  *
  * @param {string} topic
  * @param {object} [options]
@@ -145,7 +138,8 @@ export async function loadTopicDoc(entry, {lang} = {}) {
  * @param {string} [options.cwd]
  * @returns {Promise<{
  *   catalog: DocsCatalog,
- *   docsData: import('./docs.type.mjs').DocsDetailResponse['data'],
+ *   node: import('../../foundation/doc-compiler/compile.mjs').CompiledReferenceNode,
+ *   lang: string | null,
  * }>}
  */
 export async function resolveTopicDocs(topic, options = {}) {
@@ -165,6 +159,6 @@ export async function resolveTopicDocs(topic, options = {}) {
     );
   }
 
-  const docsData = await loadTopicDoc(entry, {lang: effectiveLang});
-  return {catalog, docsData};
+  const node = await lowerTopic(catalog, entry, effectiveLang);
+  return {catalog, node, lang: effectiveLang};
 }

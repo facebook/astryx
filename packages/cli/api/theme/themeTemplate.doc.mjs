@@ -12,6 +12,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'themeTemplate',
+  namespace: 'cli/api',
   displayName: 'themeTemplate()',
   summary: 'Write the annotated theme template into a project.',
   description:
@@ -51,7 +52,10 @@ export const doc = {
         'Receipt: the path (relative to cwd), whether it was written, and the reason it was not. `exists` when a file was already there, which is a success, not a failure.',
     },
   ],
-  throws: [{code: 'ERR_PATH_TRAVERSAL', when: 'the target path escapes cwd'}],
+  throws: [
+    {code: 'ERR_PATH_TRAVERSAL', when: 'the target path escapes cwd'},
+    {code: 'ERR_WRITE_FAILED', when: 'the template file cannot be written'},
+  ],
   examples: [
     {label: 'Write it at the project root', code: 'themeTemplate();'},
     {

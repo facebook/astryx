@@ -5,6 +5,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'integrationAdd',
+  namespace: 'cli/api',
   displayName: 'integrationAdd()',
   summary: 'Add one working contribution to an integration package.',
   description:
@@ -33,7 +34,8 @@ export const doc = {
     {
       name: 'name',
       type: 'string',
-      description: 'Contribution name, or the literal agent-doc line.',
+      description:
+        'Contribution name: PascalCase for component, lowercase kebab-case for template, codemod, and theme, letters, digits, _ and - for doc, or the literal agent-doc line.',
       required: true,
     },
     {
@@ -56,17 +58,19 @@ export const doc = {
     {
       name: 'options.replaces',
       type: 'string',
-      description: 'Existing topic to replace. Only valid for doc.',
+      description:
+        'Existing topic to replace. Only valid for doc, and not with options.extends.',
     },
     {
       name: 'options.extends',
       type: 'string',
-      description: 'Existing topic to extend. Only valid for doc.',
+      description:
+        'Existing topic to extend. Only valid for doc, and not with options.replaces.',
     },
     {
       name: 'options.to',
       type: 'string',
-      description: 'Exact target semver. Required for codemod.',
+      description: 'Exact target semver (e.g. 1.2.0). Required for codemod and only valid there.',
     },
   ],
   returns: [

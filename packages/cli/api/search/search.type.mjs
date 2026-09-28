@@ -28,7 +28,7 @@
  */
 
 /**
- * xds --json search <query>
+ * astryx --json search <query>
  * @typedef {object} SearchResponse
  * @property {'search'} type
  * @property {object} data

@@ -9,8 +9,8 @@
  * boundary; there is no factory to call.
  */
 
-import type {DebugEventHandler} from '../debug/type';
-import type {GapReportHandler} from '../gap-report/type';
+import type {DebugEventHandler} from '../debug/type.js';
+import type {GapReportHandler} from '../gap-report/type.js';
 
 /**
  * A command to run as part of a post-codemod hook. Returned by a hook's
@@ -21,7 +21,7 @@ export interface PostCodemodCommand {
   args?: string[];
   options?: {
     cwd?: string;
-    env?: NodeJS.ProcessEnv;
+    env?: Record<string, string | undefined>;
     timeout?: number;
   };
 }
@@ -56,8 +56,9 @@ export interface XleComponent {
 /**
  * Record every astryx command run in this project.
  *
- * A function that receives each run. Setting it is the whole opt-in; leave it
- * out and nothing is recorded.
+ * A function that receives each run. Leaving it out does not stop a handler an
+ * integration contributes; see {@link AstryxConfig.debug} for how the two
+ * combine and how to refuse inherited handlers.
  *
  * ```
  * export default {
@@ -80,7 +81,18 @@ export interface AstryxConfig {
   hooks?: {
     postCodemod?: PostCodemodHook[];
   };
-  /** Record every astryx command run in this project. See {@link DebugConfig}. */
+  /**
+   * Record every astryx command run in this project. See {@link DebugConfig}.
+   *
+   * An integration can contribute a handler too, as a `debug` named export
+   * from its `astryx.integration.*` module. Every handler receives the run:
+   * this one first, then each integration's in load order (the ones
+   * `integrations` lists, in that order, then autolinked ones). A handler that
+   * throws is skipped; the others still run and the command's result does not
+   * change. To refuse inherited handlers, set
+   * `{"astryx": {"inheritDebug": false}}` in the project's package.json; this
+   * handler still runs.
+   */
   debug?: DebugConfig;
   /** Route gap reports through a project-owned handler. See {@link GapReportHandler}. */
   gapReport?: GapReportHandler;
