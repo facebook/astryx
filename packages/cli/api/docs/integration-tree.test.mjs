@@ -142,6 +142,25 @@ afterEach(() => {
 });
 
 describe('integration docs in the docs tree', () => {
+  it('names a package whose docs did not load, instead of dropping them silently', async () => {
+    scaffold({
+      ...kit(),
+      'broken.doc.mjs': {
+        type: 'generic',
+        name: 'broken',
+        title: 'Broken',
+        description: 'A topic whose block no topic may hold.',
+        sections: [
+          {title: 'Only', content: [{type: 'reference', target: 'generic:setup'}]},
+        ],
+      },
+    });
+    const listed = await docs(undefined, undefined, {cwd: tmpDir});
+    expect(listed.meta?.notLoaded).toEqual([
+      expect.objectContaining({package: '@acme/kit', message: expect.any(String)}),
+    ]);
+  }, 60_000);
+
   it('lists an integration namespace beside the CLI, named by its provider id', async () => {
     scaffold(kit());
     const listed = await docs(undefined, undefined, {cwd: tmpDir});

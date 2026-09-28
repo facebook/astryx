@@ -314,6 +314,29 @@ describe('integrationAdd doc', () => {
     expect(docErrors).toEqual([]);
   });
 
+  it('refuses to write from a folder with no package.json into the package above it', async () => {
+    setupBare();
+    const inside = path.join(tmpDir, 'kit');
+    fs.mkdirSync(inside);
+    await expect(
+      integrationAdd('doc', 'my-guide', {cwd: inside, parent: 'acme'}),
+    ).rejects.toMatchObject({
+      code: 'ERR_INVALID_ARGUMENT',
+      message: expect.stringContaining('has no package.json'),
+    });
+    expect(fs.existsSync(path.join(tmpDir, 'docs'))).toBe(false);
+    expect(fs.existsSync(path.join(tmpDir, 'astryx.integration.mjs'))).toBe(false);
+  });
+
+  it('finds an integration from a folder inside it', async () => {
+    setup();
+    const inside = path.join(tmpDir, 'src');
+    fs.mkdirSync(inside);
+    const result = await integrationAdd('doc', 'my-guide', {cwd: inside});
+    expect(result.data.files).toContain('docs/my-guide.doc.mjs');
+    expect(fs.existsSync(path.join(tmpDir, 'docs/my-guide.doc.mjs'))).toBe(true);
+  });
+
   it('places a guide in a namespace of the package, writing the namespace once', async () => {
     setup();
     const first = await integrationAdd('doc', 'deploying', {

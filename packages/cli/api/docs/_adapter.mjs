@@ -23,13 +23,17 @@ import {
   linkReferenceTopic,
   lowerReferenceTopic,
 } from '../../foundation/doc-compiler/compile.mjs';
-import {loadTopicFile, 
+import {
   deepFreeze,
+  loadTopicFile,
   loadTopicInput,
   OVERLAY_LANGUAGES,
   overlayLanguages,
 } from '../../foundation/doc-compiler/read.mjs';
-import {buildDocsTree, loadTreeInputs} from '../../foundation/doc-compiler/tree.mjs';
+import {
+  buildDocsTree,
+  loadTreeInputs,
+} from '../../foundation/doc-compiler/tree.mjs';
 import {sortDiagnostics} from '../../foundation/doc-compiler/diagnostics.mjs';
 import {
   linkBlocks,
