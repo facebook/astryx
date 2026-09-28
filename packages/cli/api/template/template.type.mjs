@@ -50,7 +50,8 @@
  * @property {string} data.template
  * @property {string} data.description
  * @property {'page' | 'block'} data.type
- * @property {string[]} data.components
+ * @property {string[]} data.components - Astryx components the template composes.
+ * @property {string[]} data.resolvableComponents - The subset of components that resolves through `astryx component <Name>`.
  * @property {string} data.source
  */
 
@@ -61,7 +62,8 @@
  * @property {object} data
  * @property {string} data.template
  * @property {string} data.description
- * @property {string[]} data.components
+ * @property {string[]} data.components - Astryx components the template composes.
+ * @property {string[]} data.resolvableComponents - The subset of components that resolves through `astryx component <Name>`.
  * @property {string} data.skeleton
  */
 
