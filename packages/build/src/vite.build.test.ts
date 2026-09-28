@@ -28,7 +28,16 @@
 import {describe, it, expect, beforeAll, afterAll} from 'vitest';
 import {build} from 'vite';
 import react from '@vitejs/plugin-react';
-import {mkdtempSync, readdirSync, readFileSync, rmSync} from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import {tmpdir} from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -38,6 +47,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../../..');
 const FIXTURES = path.resolve(__dirname, '../__fixtures__');
 const CORE_SRC = path.join(REPO_ROOT, 'packages/core/src');
+const CORE_PACKAGE = path.join(REPO_ROOT, 'packages/core');
 
 /** The class prefixes @astryxdesign/build/babel assigns per origin. */
 const LIBRARY_CLASS = /\.astryx[a-z0-9]{5,}/g;
@@ -147,6 +157,43 @@ function itSplitsCorrectly(get: () => Built) {
     expect(html.split(cssName).length - 1, 'linked more than once').toBe(1);
   });
 }
+
+describe('a production build resolves generated locale modules', () => {
+  it('loads a generated string map through the standard Astryx Vite aliases', async () => {
+    const root = realpathSync(
+      mkdtempSync(path.join(tmpdir(), 'astryx-locale-import-')),
+    );
+    const packageDir = path.join(root, 'node_modules/@astryxdesign');
+    const outDir = path.join(root, 'dist');
+    mkdirSync(packageDir, {recursive: true});
+    symlinkSync(CORE_PACKAGE, path.join(packageDir, 'core'), 'dir');
+    writeFileSync(
+      path.join(root, 'index.html'),
+      '<script type="module" src="/main.ts"></script>',
+    );
+    writeFileSync(
+      path.join(root, 'main.ts'),
+      `import frFR from '@astryxdesign/core/locales/fr-FR.generated.js';\ndocument.body.textContent = frFR['@astryx.pagination.next'];\n`,
+    );
+
+    try {
+      await build({
+        root,
+        logLevel: 'error',
+        build: {outDir, emptyOutDir: true, minify: false},
+        plugins: [...astryxStylex({rootDir: root})],
+      });
+      const assets = path.join(outDir, 'assets');
+      const jsName = readdirSync(assets).find(file => file.endsWith('.js'));
+      expect(jsName).toBeTruthy();
+      expect(readFileSync(path.join(assets, jsName!), 'utf8')).toContain(
+        'Aller à la page suivante',
+      );
+    } finally {
+      rmSync(root, {recursive: true, force: true});
+    }
+  }, 180_000);
+});
 
 describe('a production build separates Astryx and product styles by layer', () => {
   describe('when the app imports a stylesheet of its own', () => {

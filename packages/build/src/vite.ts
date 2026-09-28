@@ -202,18 +202,35 @@ export function astryxStylex(
         // Fallback to just @astryxdesign/core if discovery fails
       }
 
+      const corePackageDir = path.resolve(
+        rootDir,
+        'node_modules/@astryxdesign/core',
+      );
+      const coreSourceDir = path.join(corePackageDir, 'src');
+
       return {
         resolve: {
-          alias: {
-            '@astryxdesign/core/theme/tokens.stylex': path.resolve(
-              rootDir,
-              'node_modules/@astryxdesign/core/src/theme/tokens.stylex.ts',
-            ),
-            '@astryxdesign/core': path.resolve(
-              rootDir,
-              'node_modules/@astryxdesign/core/src',
-            ),
-          },
+          alias: [
+            {
+              find: /^@astryxdesign\/core\/locales\/(.+)\.generated\.js$/,
+              replacement: path.join(
+                coreSourceDir,
+                'i18n/generated-locales/$1.generated.ts',
+              ),
+            },
+            {
+              find: /^@astryxdesign\/core\/locales\/(.+)\.json$/,
+              replacement: path.join(corePackageDir, 'locales/$1.json'),
+            },
+            {
+              find: '@astryxdesign/core/theme/tokens.stylex',
+              replacement: path.join(coreSourceDir, 'theme/tokens.stylex.ts'),
+            },
+            {
+              find: '@astryxdesign/core',
+              replacement: coreSourceDir,
+            },
+          ],
         },
         optimizeDeps: {
           exclude: xdsPackages,
