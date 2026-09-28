@@ -18,43 +18,9 @@ export const docs = {
     'popup',
     'portal',
   ],
-  theming: {
-    // Layer paints no surface of its own, so it renders no theme target; the
-    // vars below are app-level properties every viewport-fitted layer reads.
-    targets: [],
-    // App-level custom properties every viewport-fitted layer (Popover,
-    // DropdownMenu and its submenus) reads through
-    // Layer/layerViewportInset.stylex.ts. Set once, usually on :root.
-    vars: [
-      {
-        name: '--astryx-layer-inset-block-end',
-        description:
-          'Extra viewport inset at the block-end (bottom) edge, added to the spacing-4 + safe-area gutter every layer fits against. Set it once on :root to the height of a persistent bar floating over the bottom of the viewport (a phone navigation bar, a docked toolbar) so layers end above the bar instead of underneath it.',
-        default: '0px',
-      },
-      {
-        name: '--astryx-layer-inset-block-start',
-        description:
-          'Extra viewport inset at the block-start (top) edge, for a bar floating over the top of the viewport.',
-        default: '0px',
-      },
-      {
-        name: '--astryx-layer-inset-inline-start',
-        description:
-          'Extra viewport inset at the inline-start edge, for a rail floating over that side of the viewport.',
-        default: '0px',
-      },
-      {
-        name: '--astryx-layer-inset-inline-end',
-        description:
-          'Extra viewport inset at the inline-end edge, for a rail floating over that side of the viewport.',
-        default: '0px',
-      },
-    ],
-  },
   usage: {
     description:
-      'Layer utilities provide the app-level provider used by overlay systems. Use LayerProvider at the app root for toast/layer configuration; use higher-level Popover, HoverCard, or Tooltip APIs for most overlay UI. Rendered layer content, not the provider’s application subtree, uses theme body text defaults and exits ancestor surface/group membership. Establish intentional groups and complete required providers inside each layer.',
+      'Layer utilities provide the app-level provider used by overlay systems. Use LayerProvider at the app root for toast/layer configuration; use higher-level Popover, HoverCard, or Tooltip APIs for most overlay UI. Rendered layer content, not the provider’s application subtree, uses theme body text defaults and exits ancestor surface/group membership. Establish intentional groups and complete required providers inside each layer. Layer also owns the per-edge viewport inset every fitted layer reads: the app-level custom properties --astryx-layer-inset-block-end, --astryx-layer-inset-block-start, --astryx-layer-inset-inline-start and --astryx-layer-inset-inline-end (each 0px unless set, usually once on :root), added to the spacing-4 + safe-area gutter Popover and DropdownMenu keep from that viewport edge. They are declared by the app, not by a theme, so they are not theme-target vars.',
     bestPractices: [
       {
         guidance: true,

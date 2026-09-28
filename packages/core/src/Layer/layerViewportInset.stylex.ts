@@ -15,15 +15,19 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Layer/layerViewportInset.test.ts
- * - /packages/core/src/Layer/Layer.doc.mjs (theming.vars)
- * - /packages/core/src/theme/derivedVarRegistry.test.ts (VARS_WITHOUT_DERIVED_MAPPING)
+ * - /packages/core/src/Layer/Layer.doc.mjs (usage description)
+ * - /packages/core/src/Popover/Popover.spec.md (FR8, DEC-4)
+ * - /docs/architecture/layer-runtime.md (Positioning, Owning code)
  */
 
 import * as stylex from '@stylexjs/stylex';
 
 /**
  * Custom properties an app sets — usually once, on `:root` — to declare a
- * persistent bar floating over one viewport edge: a phone navigation bar
+ * persistent bar floating over one viewport edge. They are app-level
+ * declarations, not theme-target vars: no component target class carries
+ * them, so they are documented in prose (Layer usage, Popover contract)
+ * rather than in a `theming.vars` list. Declare one: a phone navigation bar
  * fixed over the bottom of the viewport, a docked toolbar, a banner. The bar
  * contributes no layout height, so without the inset a layer the browser has
  * correctly fitted to the viewport still ends underneath it.

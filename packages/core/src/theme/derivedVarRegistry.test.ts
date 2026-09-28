@@ -269,14 +269,6 @@ const CROSS_COMPONENT_VARS: Record<string, string[]> = {
  * name. The list should shrink over time, not grow.
  */
 const VARS_WITHOUT_DERIVED_MAPPING = new Set([
-  // A per-edge viewport inset an app declares on :root for a persistent bar
-  // floating over the viewport. It widens the gutter every layer fits against
-  // (max sizes and margins across Popover and DropdownMenu); no standard
-  // property on a theme target maps onto it — an app sets the var directly.
-  '--astryx-layer-inset-block-start',
-  '--astryx-layer-inset-block-end',
-  '--astryx-layer-inset-inline-start',
-  '--astryx-layer-inset-inline-end',
   // No standard CSS property maps onto these — they are component behaviors.
   '--button-focus-offset',
   '--button-icon-only-aspect',
