@@ -266,7 +266,10 @@ describe('Popover', () => {
     const layer = document.querySelector('[popover]');
     expect(layer).toHaveStyle({boxSizing: 'border-box'});
     expect(layer?.className).toContain('Popover__styles.viewportFit');
-    expect(layer?.className).toContain('Popover__styles.viewportAligned');
+    // An explicit width caps to the viewport, not to the span beside the
+    // trigger; see "explicit width" below.
+    expect(layer?.className).toContain('Popover__styles.viewportWidthClamp');
+    expect(layer?.className).not.toContain('Popover__styles.viewportAligned');
     expect(layer?.className).toContain('Popover__styles.viewportStart');
     const surface = screen.getByTestId('popover-content').parentElement;
     expect(surface?.className).toContain('Popover__styles.surfaceViewportFit');
@@ -500,6 +503,113 @@ describe('Popover', () => {
     const layer = document.querySelector('[popover]');
     expect(layer?.className).toContain('Popover__styles.viewportBlockStart');
     expect(layer?.className).not.toContain('Popover__styles.viewportStart');
+  });
+
+  describe('explicit width on an aligned popover', () => {
+    const popoverSource = readFileSync(
+      'packages/core/src/Popover/Popover.tsx',
+      'utf8',
+    );
+
+    it('caps an end-aligned explicit width to the viewport, not to the span beside the trigger', () => {
+      render(
+        <Popover
+          content={<span>Content</span>}
+          label="Only me"
+          alignment="end"
+          width={352}>
+          <button type="button">Open</button>
+        </Popover>,
+      );
+
+      fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+
+      const layer = document.querySelector<HTMLElement>('[popover]');
+      // jsdom lays out no anchor positioning; the contract is the emitted
+      // width, cap and fallback list.
+      expect(layer?.style.getPropertyValue('--x-width')).toBe('352px');
+      expect(layer?.className).toContain('Popover__styles.viewportWidthClamp');
+      expect(layer?.className).not.toContain('Popover__styles.viewportAligned');
+      // The far-edge gutter still applies on the aligned side.
+      expect(layer?.className).toContain('Popover__styles.viewportEnd');
+      // The cap is the viewport minus both gutters — a `100vi` expression, not
+      // the `100%` that resolves against the anchor's inset-modified
+      // containing block.
+      expect(popoverSource).toMatch(
+        /viewportWidthClamp: \{\s*maxInlineSize: stylex\.firstThatWorks\(\s*POPOVER_MAX_INLINE_SIZE,\s*POPOVER_MAX_INLINE_SIZE_FALLBACK,/,
+      );
+      expect(popoverSource).toMatch(
+        /const POPOVER_MAX_INLINE_SIZE = `calc\(100vi - /,
+      );
+      // When neither side of the trigger fits the width, the layer may leave
+      // its alignment: span-all fallbacks after the flips.
+      expect(layer?.style.positionTryFallbacks).toBe(
+        'flip-block, flip-inline, flip-block flip-inline, bottom span-all, top span-all',
+      );
+    });
+
+    it('does the same for a start-aligned explicit width', () => {
+      render(
+        <Popover
+          content={<span>Content</span>}
+          label="Test"
+          placement="above"
+          alignment="start"
+          width="20rem">
+          <button type="button">Open</button>
+        </Popover>,
+      );
+
+      fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+
+      const layer = document.querySelector<HTMLElement>('[popover]');
+      expect(layer?.style.getPropertyValue('--x-width')).toBe('20rem');
+      expect(layer?.className).toContain('Popover__styles.viewportWidthClamp');
+      expect(layer?.className).toContain('Popover__styles.viewportStart');
+      expect(layer?.style.positionTryFallbacks).toBe(
+        'flip-block, flip-inline, flip-block flip-inline, top span-all, bottom span-all',
+      );
+    });
+
+    it('keeps the anchor-span cap and flip-only fallbacks without a width', () => {
+      render(
+        <Popover content={<span>Content</span>} label="Test" alignment="end">
+          <button type="button">Open</button>
+        </Popover>,
+      );
+
+      fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+
+      const layer = document.querySelector<HTMLElement>('[popover]');
+      expect(layer?.className).toContain('Popover__styles.viewportAligned');
+      expect(layer?.className).not.toContain(
+        'Popover__styles.viewportWidthClamp',
+      );
+      expect(layer?.style.positionTryFallbacks).toBe(
+        'flip-block, flip-inline, flip-block flip-inline',
+      );
+    });
+
+    it('leaves a centered explicit width on the centered clamp, which already slides', () => {
+      render(
+        <Popover
+          content={<span>Content</span>}
+          label="Test"
+          alignment="center"
+          width={352}>
+          <button type="button">Open</button>
+        </Popover>,
+      );
+
+      fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+
+      const layer = document.querySelector<HTMLElement>('[popover]');
+      expect(layer?.className).toContain('Popover__styles.viewportCentered');
+      expect(layer?.className).not.toContain(
+        'Popover__styles.viewportWidthClamp',
+      );
+      expect(layer?.style.positionTryFallbacks).toContain('bottom span-left');
+    });
   });
 
   it('preserves the dialog aria-haspopup contract for render-prop triggers', () => {

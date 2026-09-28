@@ -143,6 +143,23 @@ export interface ContextRenderProps {
    */
   offset?: number | string;
   /**
+   * Whether the layer may leave its alignment when every flip fails.
+   *
+   * An aligned layer (`alignment: 'start' | 'end'`) is positioned in the
+   * region of the containing block on one side of its anchor. A layer wider
+   * than that region — an explicit `width` on a trigger near a panel edge —
+   * flips to the anchor's other side; when that side is too small as well, a
+   * flip-only layer overflows the viewport. With `hasSlideFallback` the hook
+   * appends `span-all` fallbacks: the layer then spans the whole axis,
+   * centers on its anchor and is shifted by the browser to stay in view.
+   *
+   * Centered alignments always slide (they have no flip that helps).
+   * Ignored when `positioning` is `'custom'`.
+   *
+   * @default false
+   */
+  hasSlideFallback?: boolean;
+  /**
    * ARIA role applied to the popover container (e.g. `'tooltip'`). Lets
    * consumers complete the ARIA pattern and gives test tooling a stable,
    * non-hashed selector for the layer.
@@ -435,26 +452,38 @@ function getPositionArea(
  * axis maps center → center, so overflow on that axis renders clipped
  * (#3671). Centered alignments therefore append span-based fallbacks letting
  * the browser slide the layer along the alignment axis as a last resort
- * (same-side spans first). Flips already resolve non-centered alignments.
+ * (same-side spans first). Flips already resolve non-centered alignments
+ * whose size fits one side of the anchor; an aligned layer wider than both
+ * sides (an explicit width on a trigger near a panel edge) opts into a
+ * `span-all` last resort with `hasSlideFallback`, which centers it on the
+ * anchor across the whole axis and lets the browser shift it into view.
  */
 export function getPositionTryFallbacks(
   placement: LayerPlacement = 'above',
   alignment: LayerAlignment = 'center',
+  hasSlideFallback: boolean = false,
 ): string {
   const flips = 'flip-block, flip-inline, flip-block flip-inline';
+  const isBlockPlacement = placement === 'above' || placement === 'below';
+  const [same, opposite] = isBlockPlacement
+    ? placement === 'above'
+      ? ['top', 'bottom']
+      : ['bottom', 'top']
+    : placement === 'start'
+      ? ['left', 'right']
+      : ['right', 'left'];
 
   if (alignment !== 'center') {
-    return flips;
+    if (!hasSlideFallback) {
+      return flips;
+    }
+    return `${flips}, ${same} span-all, ${opposite} span-all`;
   }
 
-  if (placement === 'above' || placement === 'below') {
-    const [same, opposite] =
-      placement === 'above' ? ['top', 'bottom'] : ['bottom', 'top'];
+  if (isBlockPlacement) {
     return `${flips}, ${same} span-left, ${same} span-right, ${opposite} span-left, ${opposite} span-right`;
   }
 
-  const [same, opposite] =
-    placement === 'start' ? ['left', 'right'] : ['right', 'left'];
   return `${flips}, ${same} span-top, ${same} span-bottom, ${opposite} span-top, ${opposite} span-bottom`;
 }
 
@@ -872,6 +901,7 @@ function useLayerImplementation(
         alignment = 'center',
         positioning = 'anchor',
         offset,
+        hasSlideFallback = false,
         role,
         'aria-label': ariaLabel,
         xstyle,
@@ -894,6 +924,7 @@ function useLayerImplementation(
               positionTryFallbacks: getPositionTryFallbacks(
                 placement,
                 alignment,
+                hasSlideFallback,
               ),
             };
 

@@ -164,6 +164,16 @@ export interface PopoverProps extends Pick<
   /**
    * Width of the popover container.
    * Numbers are px, strings used as-is.
+   *
+   * An explicit width is honoured up to the viewport (minus the gutters),
+   * not up to the span of viewport on the aligned side of the trigger: an
+   * end-aligned 352px menu under a button near a panel edge renders 352px
+   * and overhangs past the trigger's other side rather than shrinking to the
+   * span beside the button. When neither side of the trigger fits the width,
+   * the layer centers on the trigger and slides into view.
+   *
+   * Without a width the popover sizes to its content and caps to the span
+   * on its aligned side, as before.
    * @default 'auto'
    */
   width?: number | string;
@@ -261,10 +271,26 @@ const styles = stylex.create({
       POPOVER_MAX_BLOCK_SIZE_FALLBACK,
     ),
   },
+  // The no-width cap for an aligned layer: `100%` here is the anchor's
+  // inset-modified containing block — the span of viewport on the aligned
+  // side of the trigger — which is exactly what a content-sized layer should
+  // fit into.
   viewportAligned: {
     maxInlineSize: stylex.firstThatWorks(
       POPOVER_POSITION_AREA_MAX_INLINE_SIZE,
       POPOVER_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK,
+    ),
+  },
+  // The cap for an aligned layer WITH an explicit width: the viewport minus
+  // both gutters. The percentage cap above would shrink a requested width to
+  // the span beside the trigger (an end-aligned 352px menu under a button
+  // 45px from a panel edge rendered 259px); a requested width may instead
+  // overhang past the trigger's other side, which the layer's flip and
+  // span-all fallbacks arrange (see `hasSlideFallback`).
+  viewportWidthClamp: {
+    maxInlineSize: stylex.firstThatWorks(
+      POPOVER_MAX_INLINE_SIZE,
+      POPOVER_MAX_INLINE_SIZE_FALLBACK,
     ),
   },
   viewportStart: {
@@ -671,13 +697,19 @@ export function Popover({
       ? styles.matchTriggerCentered
       : styles.matchTriggerAligned;
   const isSidePlacement = placement === 'start' || placement === 'end';
+  const hasExplicitWidth = Boolean(width) && width !== 'auto';
+  // An explicit width on an aligned layer may exceed the span beside the
+  // trigger; the flips move it to the other side and, when neither side
+  // fits, the span-all fallback centers it on the trigger and slides it into
+  // view instead of clipping it at the viewport edge.
+  const hasSlideFallback = hasExplicitWidth && alignment !== 'center';
   const popoverViewportXstyle =
     alignment === 'center'
       ? isSidePlacement
         ? styles.viewportBlockCentered
         : styles.viewportCentered
       : [
-          styles.viewportAligned,
+          hasExplicitWidth ? styles.viewportWidthClamp : styles.viewportAligned,
           isSidePlacement
             ? alignment === 'start'
               ? styles.viewportBlockStart
@@ -694,6 +726,7 @@ export function Popover({
         {popover.render(<div data-testid={testId}>{content}</div>, {
           placement,
           alignment,
+          hasSlideFallback,
           offset: spacingVars['--spacing-1'],
           xstyle: [
             styles.viewportFit,
@@ -724,6 +757,7 @@ export function Popover({
         {popover.render(<div data-testid={testId}>{content}</div>, {
           placement,
           alignment,
+          hasSlideFallback,
           offset: spacingVars['--spacing-1'],
           xstyle: [
             styles.viewportFit,
@@ -747,6 +781,7 @@ export function Popover({
       {popover.render(<div data-testid={testId}>{content}</div>, {
         placement,
         alignment,
+        hasSlideFallback,
         offset: spacingVars['--spacing-1'],
         xstyle: [
           styles.viewportFit,
