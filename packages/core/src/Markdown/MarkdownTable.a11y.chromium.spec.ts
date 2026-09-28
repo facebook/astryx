@@ -110,7 +110,8 @@ async function openStory(
     .waitFor({state: 'visible'});
   // One frame, so layout for the story's width is settled before measuring.
   await page.evaluate(
-    async () => new Promise<void>(resolve => requestAnimationFrame(() => resolve())),
+    async () =>
+      new Promise<void>(resolve => requestAnimationFrame(() => resolve())),
   );
 }
 
@@ -120,9 +121,7 @@ async function measure(page: Page, longTokenChars: number): Promise<Metrics> {
       const unbreakable = new RegExp(tokenPattern);
       const root = document.querySelector('#storybook-root') as HTMLElement;
       const block = root.querySelector('.astryx-markdown-table') as HTMLElement;
-      const scroller = root.querySelector(
-        '.astryx-table-scroll-wrapper',
-      );
+      const scroller = root.querySelector('.astryx-table-scroll-wrapper');
 
       const lineCount = (element: Element): number => {
         const range = document.createRange();
@@ -339,7 +338,10 @@ test('a wide table scrolls only in the Table scroll region, and by keyboard', as
     ...metrics,
   });
 
-  // The wide table really does overflow, and the overflow is Table's.
+  // The wide table really does overflow, and the overflow is Table's alone.
+  expect(metrics.groupCount).toBe(1);
+  expect(metrics.block.role).toBeNull();
+  expect(metrics.block.tabIndex).toBeNull();
   expect(metrics.scroller.scrollWidth).toBeGreaterThan(
     metrics.scroller.clientWidth,
   );
@@ -378,21 +380,39 @@ test('a column floor survives the cell padding it sits behind', async ({
   page,
 }) => {
   // The floor is a `ch` count on the cell's text box. Border-box padding used
-  // to eat it: a 4ch floor delivered about 1.5 characters of text. Measure the
-  // content box against the floor the renderer asked for.
+  // to eat it: a 4ch floor delivered about 1.5 characters of text, and the old
+  // fixed buckets capped a column at 120px however long its content was.
+  // Measure the content box against the floor the renderer asked for.
+  await openStory(page, WIDE_CONTENT_STORY, 390);
+  const wide = await measure(page, LONG_TOKEN_CHARS);
+  evidence.push({
+    storyId: WIDE_CONTENT_STORY,
+    width: 390,
+    paddingCorrect: true,
+    ...wide,
+  });
+  const identifier = wide.headers.find(header => header.text === 'Identifier');
+  const longLabel = wide.headers.find(header =>
+    header.text.startsWith('Accessibility status'),
+  );
+  // `D116586407` is ten characters and cannot break: the column carries it.
+  expect(identifier?.contentWidth).toBeGreaterThanOrEqual(10 * wide.chPx - 1);
+  // A 42-character label floors the column at 21ch (its body floor) and wraps.
+  expect(longLabel?.contentWidth).toBeGreaterThanOrEqual(20 * wide.chPx - 1);
+  expect(longLabel?.lines).toBeGreaterThan(1);
+
   await openStory(page, SHORT_COLUMNS_STORY, 390);
-  const metrics = await measure(page, LONG_TOKEN_CHARS);
+  const short = await measure(page, LONG_TOKEN_CHARS);
   evidence.push({
     storyId: SHORT_COLUMNS_STORY,
     width: 390,
     paddingCorrect: true,
-    ...metrics,
+    ...short,
   });
-  const minimumFloorCh = 4;
-  for (const header of metrics.headers) {
+  for (const header of short.headers) {
     expect(
       header.contentWidth,
-      `header "${header.text}" should keep at least ${minimumFloorCh}ch of text box`,
-    ).toBeGreaterThanOrEqual(minimumFloorCh * metrics.chPx - 1);
+      `header "${header.text}" should keep at least 4ch of text box`,
+    ).toBeGreaterThanOrEqual(4 * short.chPx - 1);
   }
 });
