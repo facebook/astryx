@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import {createRoot} from 'react-dom/client';
 import './main.css';
 import {Theme} from '@astryxdesign/core/theme';
