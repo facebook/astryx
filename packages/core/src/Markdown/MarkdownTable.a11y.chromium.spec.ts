@@ -34,12 +34,14 @@ const SHORT_COLUMNS_STORY = 'core-markdown--table-narrow-short-columns';
 const PROSE_COLUMNS_STORY = 'core-markdown--table-narrow-prose-columns';
 const EDGE_SHAPES_STORY = 'core-markdown--table-narrow-edge-shapes';
 const WIDE_CONTENT_STORY = 'core-markdown--table-narrow-wide-content';
+const CHAT_STORY = 'core-markdown--table-in-chat-message';
 
 const ALL_STORIES = [
   SHORT_COLUMNS_STORY,
   PROSE_COLUMNS_STORY,
   EDGE_SHAPES_STORY,
   WIDE_CONTENT_STORY,
+  CHAT_STORY,
 ];
 
 /**

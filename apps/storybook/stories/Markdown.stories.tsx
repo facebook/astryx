@@ -4,6 +4,11 @@ import {useCallback, useEffect, useMemo, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Markdown} from '@astryxdesign/core/Markdown';
 import type {MarkdownComponents} from '@astryxdesign/core/Markdown';
+import {
+  ChatMessageList,
+  ChatMessage,
+  ChatMessageBubble,
+} from '@astryxdesign/core/Chat';
 import {markdownSoftBreaksPlugin} from '@astryxdesign/core/Markdown/plugins';
 import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';
@@ -408,6 +413,42 @@ export const TableNarrowWideContent: StoryObj<{width: string}> = {
   args: {width: '390'},
   render: ({width}) => (
     <ReadingColumn width={width}>{WIDE_TOKEN_TABLE}</ReadingColumn>
+  ),
+};
+
+export const TableInChatMessage: StoryObj<{width: string}> = {
+  name: 'Table — in a chat message',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The narrow reading column as chat surfaces actually have it: the same wide table inside a `ChatMessageBubble`, which already accepts Markdown as its content. The bubble constrains the message, and the table still keeps its column floors and scrolls inside Table’s own Scroll region — the bubble adds no second scroller.',
+      },
+    },
+  },
+  argTypes: NARROW_WIDTH_ARG_TYPES,
+  args: {width: '390'},
+  render: ({width}) => (
+    <div
+      style={{
+        width: Number(width),
+        maxWidth: '100%',
+        padding: 12,
+        outline: '1px dashed #c33',
+      }}>
+      <ChatMessageList>
+        <ChatMessage sender="user">
+          <ChatMessageBubble>
+            Which pipelines are still waiting on review?
+          </ChatMessageBubble>
+        </ChatMessage>
+        <ChatMessage sender="assistant">
+          <ChatMessageBubble>
+            <Markdown density="compact">{WIDE_TOKEN_TABLE}</Markdown>
+          </ChatMessageBubble>
+        </ChatMessage>
+      </ChatMessageList>
+    </div>
   ),
 };
 
