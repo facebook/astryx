@@ -46,6 +46,17 @@ const TARGETS = [
       'nested Theme/MediaTheme scope above a native modal with nonzero geometry',
   },
   {
+    component: 'ChatToolCalls',
+    story: 'core-chattoolcalls--focused-grouped-detail',
+    guards:
+      'grouped detail focus ring remains visible inside the animated clip boundary',
+  },
+  {
+    component: 'ChatToolCalls',
+    story: 'core-chattoolcalls--narrow',
+    guards: 'long metadata stays within the 320px narrow-container fixture',
+  },
+  {
     component: 'TabList',
     story: 'core-tablist--full-bleed-geometry',
     guards:

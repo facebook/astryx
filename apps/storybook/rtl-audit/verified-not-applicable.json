@@ -227,8 +227,18 @@
       "apps/storybook/stories/ChatComposer.stories.tsx": "sha256:355778a847934f9af02adf3b42846089ade03ee37d935c2a30d32fba3e3cd291",
       "packages/core/src/Chat/ChatComposer.tsx": "sha256:aa955ff0f59901285eadf7de209f78530d0f8deb0ef162f6baa4e9faa3661880",
       "packages/core/src/Chat/ChatComposerInput.tsx": "sha256:19a9ed5be57e083a270f20d0348d2719c493d94fc270169ce91b43fe0bab13d4",
-      "packages/core/src/Chat/ChatSendButton.tsx": "sha256:0e4948ab7b94b456da37d04cefc2473f893b79d12cde954a7b8923085923a2be",
+      "packages/core/src/Chat/ChatSendButton.tsx": "sha256:e966e7fe3b0fc24678a0db4f230b903f47f66b133baf9cad8e3d0ccfa9517612",
       "packages/core/src/Chat/index.ts": "sha256:1e1883f9baa0b9661fefe855a7df6db2a0d0e69118734b3d309543a6c5518b46"
+    }
+  },
+  {
+    "component": "core/ChatSendButton",
+    "reason": "ChatSendButton composes one centered square Button and adds no inline-axis layout or positioning. Its upward send arrow and stop mark both express block-axis actions and must remain unchanged in RTL; the shared Button uses logical padding and centered icon-only geometry. The component owns no left/right glyph, inline ordering, horizontal scrolling or dragging, side-placed overlay, or directional keyboard behavior. The dedicated small-size audit stories are excluded only from stable visual baselines: they remain routed to the ChatSendButton a11y owner, while this source-hashed N/A record and the browser evidence's LTR/RTL coarse-hit matrix cover their direction-neutral geometry.",
+    "evidence": {
+      "apps/storybook/stories/ChatComposer.stories.tsx": "sha256:355778a847934f9af02adf3b42846089ade03ee37d935c2a30d32fba3e3cd291",
+      "apps/storybook/stories/ChatSendButtonAudit.stories.tsx": "sha256:8a72613f67ffebdb1e5624b3acc53ed5bb2a752457a312664ea5b8d834020862",
+      "packages/core/src/Chat/ChatSendButton.tsx": "sha256:e966e7fe3b0fc24678a0db4f230b903f47f66b133baf9cad8e3d0ccfa9517612",
+      "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb"
     }
   },
   {
@@ -270,5 +280,34 @@
   {
     "component": "core/ChatMessageMetadata",
     "reason": "The metadata row owns no directional glyph, contextual directional separator, physical inline positioning, prev/next control order, horizontal scrolling, dragging, overlay, or arrow-key behavior. Sender-dependent row reversal uses CSS flex direction relative to the surrounding writing direction and is verified separately by matched LTR/RTL Chromium receipts. The RTL audit's D1, D2, D3, D5, and D6 detectors therefore have no applicable target for this component."
+  },
+  {
+    "component": "core/ChatToolCalls",
+    "reason": "ChatToolCalls uses logical inline spacing and source order. Its only component-owned chevrons rotate on the block axis to disclose vertically stacked content; status and wrench icons are non-directional. It owns no left/right glyph, physical inline positioning, directional reordering, horizontal scrolling or dragging, side-placed overlay, or horizontal keyboard behavior. Caller-supplied target, stats, and result-detail content retain their own direction contract.",
+    "evidence": {
+      "apps/storybook/stories/ChatToolCalls.stories.tsx": "sha256:36088a9a88ca7b3c23f5b0a840eec5e77b12cdaf83ba5f6d371ec6296cf722e5",
+      "packages/core/src/Chat/ChatToolCalls.tsx": "sha256:43baec764e8a7d8f5d28b7ea6507c9e01d6e788436c2c34c904e6737a88e0a2b",
+      "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb"
+    }
+  },
+  {
+    "component": "core/ChatTokenizedText",
+    "reason": "ChatTokenizedText projects caller-supplied text and inline token content in source reading order. Its root uses normal inline flow; its token wrapper is an inline flex box with no directional glyph, physical inline positioning, reordering, horizontal scrolling or dragging, side-placed overlay, or horizontal keyboard behavior. Structured token paint delegates to Badge and custom token content remains caller owned. The audit fixture covers plain, structured, custom, repeated, edge, empty-value, and narrow states without adding a component-owned RTL dimension.",
+    "evidence": {
+      "apps/storybook/stories/ChatTokenizedText.stories.tsx": "sha256:bc80df8aef59c05ca200129fd6709cd2f44e16f185003fe857afa90fdbfd9d9c",
+      "packages/core/src/Chat/ChatTokenizedText.tsx": "sha256:239f9cd5e836fb618702f226d9a5e267ffab087c9751fca8f10a0f401c6721ac",
+      "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb"
+    }
+  },
+  {
+    "component": "core/ChatSystemMessage",
+    "reason": "ChatSystemMessage uses centered flex layout and logical block spacing only. Its default content follows normal document direction; optional icon artwork is caller-owned. The divider branch delegates a symmetric horizontal rule and centered label to Divider. The component owns no left/right glyph, physical inline positioning, directional order, horizontal scrolling or dragging, side-placed overlay, or horizontal keyboard behavior. Its dedicated audit fixtures cover both variants, optional default-branch icon content, and narrow layout without adding a component-owned RTL dimension.",
+    "evidence": {
+      "apps/storybook/stories/ChatSystemMessage.stories.tsx": "sha256:ac979e4e63e32d5f6542f39c9f8cfeeab4636643db2513c987f84746bf79a4ee",
+      "apps/storybook/stories/ChatSystemMessageAudit.stories.tsx": "sha256:54e81ad2fb8360c9d30ce8f6f33a8aa4fde8602d2ba2ab8774d03638ee8c0a82",
+      "packages/core/src/Chat/ChatSystemMessage.tsx": "sha256:11273238c02e6b48292cb2444b1229e5a06eb08494d32696e88143b5ad2e1ca3",
+      "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb",
+      "packages/core/src/Divider/Divider.tsx": "sha256:f302b5c9eecde40b486c09d49c71cb7dab158e2fcedcb38c0145671c45d9cf8d"
+    }
   }
 ]
