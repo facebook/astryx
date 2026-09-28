@@ -341,7 +341,7 @@ function SaveButton() {
         },
         {
           type: 'prose',
-          text: "Astryx's own strings live in `packages/core/locales/en.json`. New user-facing strings must go through `useTranslator`; this is enforced by the `@astryx/no-hardcoded-i18n-string` ESLint rule. See the AI contribution guide for the alias-and-resolve pattern used when adding new keys.",
+          text: "Astryx's own strings live in `packages/core/locales/en.json`. New user-facing strings must go through `useTranslator`; this is enforced by the `@astryx/no-hardcoded-i18n-string` ESLint rule. See the AI contribution guide for the alias-and-resolve pattern used when adding new keys. After editing `en.json`, run `pnpm -F @astryxdesign/core build:i18n`: the runtime reads the generated `src/i18n/enMessages.ts` (the messages without their translator descriptions, about a tenth of the JSON), and `check:i18n-catalog` fails when the two drift.",
         },
         {
           type: 'prose',

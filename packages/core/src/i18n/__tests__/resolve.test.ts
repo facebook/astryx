@@ -57,8 +57,9 @@ describe('resolveLocaleChain', () => {
 
 describe('resolve — basic lookup', () => {
   test('falls back to shipped en catalog when locale is en and no messages passed', () => {
-    // The shipped en.json is imported at module load; Pagination keys should
-    // resolve. This asserts the module wiring works end-to-end.
+    // The shipped catalog is the generated `enMessages.ts` projection of
+    // en.json, imported at module load; Pagination keys should resolve. This
+    // asserts the module wiring works end-to-end.
     const out = resolve(
       '@astryx.pagination.next',
       undefined,

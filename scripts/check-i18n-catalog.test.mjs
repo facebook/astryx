@@ -10,8 +10,12 @@
  * message-contract, locale-severity, and plural-category behavior.
  */
 
+import {mkdtempSync, writeFileSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
 import {describe, it, expect} from 'vitest';
 import {
+  compareEnMessagesModule,
   extractKeyRefs,
   validateSourceCatalog,
   compareLocale,
@@ -21,6 +25,7 @@ import {
   classifyLocalePluralRules,
   analyzeIcuMessage,
 } from './check-i18n-catalog.mjs';
+import {renderEnMessagesModule} from '../packages/core/scripts/build-en-messages.mjs';
 
 const keys = source => extractKeyRefs(source, 'Test.tsx').refs.map(r => r.key);
 const unresolved = source =>
@@ -177,6 +182,50 @@ describe('validateSourceCatalog', () => {
     expect(validateSourceCatalog({'@astryx.a.one': 'Next'})).toEqual([
       '@astryx.a.one: entry is not an object',
     ]);
+  });
+});
+
+describe('compareEnMessagesModule — the runtime catalog stays the projection of en.json', () => {
+  const catalog = {
+    '@astryx.a.one': {defaultMessage: 'Next', description: 'ctx'},
+    '@astryx.a.two': {
+      defaultMessage: "Don't {count, plural, one {page} other {pages}}",
+      description: 'ctx',
+    },
+  };
+  const write = async source => {
+    const file = path.join(
+      mkdtempSync(path.join(tmpdir(), 'en-messages-')),
+      'enMessages.ts',
+    );
+    writeFileSync(file, source, 'utf8');
+    return file;
+  };
+
+  it('accepts the module the generator renders, apostrophes and ICU intact', async () => {
+    const file = await write(await renderEnMessagesModule(catalog));
+    expect(await compareEnMessagesModule(catalog, file)).toEqual([]);
+  });
+
+  it('names the changed line when en.json moved on', async () => {
+    const file = await write(await renderEnMessagesModule(catalog));
+    const edited = {
+      ...catalog,
+      '@astryx.a.one': {defaultMessage: 'Forward', description: 'ctx'},
+    };
+    const problems = await compareEnMessagesModule(edited, file);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain("have \"  '@astryx.a.one': 'Next',\"");
+    expect(problems[0]).toContain("want \"  '@astryx.a.one': 'Forward',\"");
+  });
+
+  it('reports a missing module as drift', async () => {
+    expect(
+      await compareEnMessagesModule(
+        catalog,
+        path.join(tmpdir(), 'nowhere', 'enMessages.ts'),
+      ),
+    ).toEqual([expect.stringMatching(/enMessages\.ts is missing$/)]);
   });
 });
 
