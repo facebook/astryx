@@ -269,7 +269,10 @@ independent for each invocation.
   establish this boundary.
 - **FR22 — Experimental changes are patch-level and stay confined.** Adding,
   changing, renaming, or removing an explicitly experimental surface uses an
-  `[experimental]` Changeset and a patch bump. Its release note names the affected
+  `[experimental]` Changeset and a patch bump. An incompatibility confined to that
+  boundary is `[experimental]`, not `[breaking]`; the Changeset authoring and
+  validation process MUST derive and enforce a patch bump for the category even when
+  the experimental surface changes incompatibly. Its release note names the affected
   surface and replacement when one exists. A compatibility alias is optional; a
   codemod is supplied when a mechanical migration would materially reduce caller
   work. This exception never covers a change to stable defaults, stable runtime or
@@ -318,13 +321,16 @@ slug value into a contractual API.
 The repository already isolates whole experimental components in the canary-only
 Lab package, but it has no equivalent boundary for a new prop, callback, hook, or
 type on an existing stable component. This amendment adds that per-surface boundary
-without weakening the component around it. The release tooling does not yet support
-the `[experimental]` category or verify declaration/doc markers; follow-up
-implementation must add those checks before another surface uses the contract.
-Integration-theme contributions are the sole grandfathered enrollment and may use
-existing patch categories until the dedicated category ships. Open PR #6615 removes
-the released `layout` command, which was experimental only in practice and carried no
-contract marker; it remains breaking and is not enrolled by this amendment.
+without weakening the component around it. The release tooling and public Release
+Process do not yet support the `[experimental]` category or verify declaration/doc
+markers. Before another surface uses the contract, follow-up implementation must add
+the category to Changeset authoring, CI validation, changelog grouping, and the
+Release Process, with tests that prove even an incompatible experimental-only change
+stays patch-level. Integration-theme contributions are the sole grandfathered
+enrollment and may use existing patch categories until the dedicated category ships.
+Open PR #6615 removes the released `layout` command, which was experimental only in
+practice and carried no contract marker; it remains breaking and is not enrolled by
+this amendment.
 
 This spec supplies the missing classification rule shared by those documents. In
 particular, both CLI-template cases discussed during review are nonbreaking catalog
