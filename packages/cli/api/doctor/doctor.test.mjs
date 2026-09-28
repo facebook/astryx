@@ -391,7 +391,7 @@ describe('checkDocsProgressiveDisclosure', () => {
     expect(c.message).toMatch(/^\d+ topics: /);
   }, SLOW);
 
-  it('fails on an invalid doc an integration contributed', async () => {
+  it('warns on an invalid doc an integration contributed', async () => {
     const c = await checkDocsProgressiveDisclosure({
       docsCatalogIssues: [
         {
@@ -402,13 +402,13 @@ describe('checkDocsProgressiveDisclosure', () => {
         },
       ],
     });
-    expect(c.status).toBe('fail');
+    expect(c.status).toBe('warn');
     expect(c.message).toBe('@acme/widgets: bad.doc.mjs exports no doc');
   });
 
-  it('fails when the docs catalog cannot be built', async () => {
+  it('warns when the docs catalog cannot be built', async () => {
     const c = await checkDocsProgressiveDisclosure({docsCatalogError: 'boom'});
-    expect(c.status).toBe('fail');
+    expect(c.status).toBe('warn');
     expect(c.message).toContain('boom');
   });
 
@@ -436,7 +436,7 @@ describe('checkDocsProgressiveDisclosure', () => {
       }),
       docsCatalogIssues: [],
     });
-    expect(c.status).toBe('fail');
+    expect(c.status).toBe('warn');
     expect(c.message).toMatch(/^2 problems: /);
     expect(c.message).toContain('huge everything: 41 KB, over the 32 KB one read may return');
     expect(c.message).toContain('broken: ');
@@ -812,7 +812,7 @@ describe('checkDocsProgressiveDisclosure languages', () => {
       docsCatalog: DocsCatalog.fromBuiltins({deploying: path.join(dir, 'deploying.doc.mjs')}),
       docsCatalogIssues: [],
     });
-    expect(c.status).toBe('fail');
+    expect(c.status).toBe('warn');
     expect(c.message).toContain('deploying [zh]: zh overlay broken');
     expect(c.message).toContain('deploying [dense] overview: 41 KB');
     expect(c.message).not.toMatch(/deploying overview:/);

@@ -41,8 +41,13 @@ export interface ReferenceDocBlock {
   presentation?: 'summary' | 'compact' | 'full';
 }
 
+/** Graph-only content blocks. These are additive and do not widen the stable
+ * {@link ReferenceContentBlock} union consumed by existing exhaustive renderers. */
+export type GraphContentBlock =
+  WorkflowDocBlock | CollectionDocBlock | ReferenceDocBlock;
+
 /**
- * A content block within a reference doc section or namespace.
+ * A content block within a reference doc section.
  * Ordered arrays of these blocks form renderer-neutral documentation content.
  * A new semantic kind must ship with every renderer or fail visibly at a legacy
  * reader boundary until that renderer is available.
@@ -55,9 +60,6 @@ export interface ReferenceDocBlock {
  * { type: 'table', headers: ['Token', 'Value'], rows: [['--spacing-4', '16px']] }
  * { type: 'list', style: 'do', items: ['Use semantic tokens'] }
  * { type: 'token-ref', topic: 'tokens', section: 'Color Tokens' }
- * { type: 'workflow', steps: [{title: 'Validate', references: ['command:doctor']}] }
- * { type: 'collection', source: {slot: 'guides'}, presentation: 'cards' }
- * { type: 'reference', target: 'schema:integration', projection: {fields: ['docs']} }
  * ```
  */
 export type ReferenceContentBlock =
@@ -80,10 +82,7 @@ export type ReferenceContentBlock =
       topic: string;
       /** Section title to pull from that topic. e.g. `'Color Tokens'` */
       section: string;
-    }
-  | WorkflowDocBlock
-  | CollectionDocBlock
-  | ReferenceDocBlock;
+    };
 
 /**
  * A reference documentation file (.doc.mjs).

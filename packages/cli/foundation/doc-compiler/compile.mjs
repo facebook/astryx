@@ -26,7 +26,7 @@ import {parseTheme} from '../../authoring/doctypes/theme/parse.mjs';
 import {mergeTopic, problemsInTopic} from '../discovery/docs-discovery.mjs';
 import {
   sectionKey,
-  sectionKeyProblems,
+  sectionKeyErrors,
   sourceTitle,
   withSectionKeys,
   withSourceTitle,
@@ -130,11 +130,12 @@ export function lowerReferenceTopic(input) {
   let doc = readAuthoredFile(input.base);
   for (const extension of input.extensions) {
     doc = mergeTopic(doc, readAuthoredFile(extension));
-    // Merging matches on keys, so this holds unless merge itself regresses.
-    const problems = sectionKeyProblems(doc.sections);
+    // Explicit authored IDs remain strict. Legacy title-derived collisions are
+    // assigned deterministic compatibility keys after every extension merges.
+    const problems = sectionKeyErrors(doc.sections);
     if (problems.length > 0) {
       throw new Error(
-        `${extension.file}, extending ${input.id}, leaves two sections with one key: ${problems.join('; ')}`,
+        `${extension.file}, extending ${input.id}, leaves duplicate authored section IDs: ${problems.join('; ')}`,
       );
     }
   }

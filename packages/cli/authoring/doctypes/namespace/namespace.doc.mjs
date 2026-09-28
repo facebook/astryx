@@ -78,9 +78,9 @@ export const doc = {
     },
     {
       name: 'blocks',
-      type: 'ReferenceContentBlock[]',
+      type: '(ReferenceContentBlock | GraphContentBlock)[]',
       description:
-        'Ordered layout content. V1 adds only workflow, collection, and reference to the existing prose, heading, code, table, list, and token-ref blocks.',
+        'Ordered layout content. Graph-only workflow, collection, and reference blocks are available here without widening the stable ReferenceContentBlock union used by existing topic renderers.',
     },
   ],
   examples: [

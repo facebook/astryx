@@ -23,8 +23,6 @@ import {
   text,
   code,
   wrapText,
-  displayWidth,
-  WRAP_WIDTH,
 } from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
@@ -53,28 +51,6 @@ function formatTable(headers, rows) {
 }
 
 /**
- * A table too wide for {@link WRAP_WIDTH}: one `header: cell` line per cell and
- * a blank line between rows, so nothing runs off the side of a terminal.
- * @param {string[]} headers
- * @param {string[][]} rows
- * @returns {string}
- */
-function formatTableVertical(headers, rows) {
-  const width = Math.max(...headers.map(h => h.length)) + 2;
-  return rows
-    .map(row =>
-      headers
-        .map((h, i) =>
-          wrapText(`${`${h}:`.padEnd(width)}${row[i] ?? ''}`, {
-            indent: ' '.repeat(width),
-          }),
-        )
-        .join('\n'),
-    )
-    .join('\n\n');
-}
-
-/**
  * @param {string[]} headers
  * @param {string[][]} rows
  * @returns {string}
@@ -91,7 +67,7 @@ function formatTableCompact(headers, rows) {
 function formatBlock(block, detail) {
   switch (block.type) {
     case 'prose':
-      return wrapText(block.text);
+      return block.text;
 
     case 'heading':
       return `${'#'.repeat(block.level || 3)} ${block.text}`;
@@ -110,12 +86,7 @@ function formatBlock(block, detail) {
       if (detail === 'compact') {
         return formatTableCompact(block.headers, block.rows);
       }
-      {
-        const table = formatTable(block.headers, block.rows);
-        return table.split('\n').some(line => displayWidth(line) > WRAP_WIDTH)
-          ? formatTableVertical(block.headers, block.rows)
-          : table;
-      }
+      return formatTable(block.headers, block.rows);
 
     case 'list': {
       const prefix =
@@ -126,20 +97,8 @@ function formatBlock(block, detail) {
             : block.style === 'do'
               ? () => '+ '
               : () => '- ';
-      return block.items
-        .map((item, i) => {
-          const head = prefix(i);
-          return wrapText(`${head}${item}`, {indent: ' '.repeat(head.length)});
-        })
-        .join('\n');
+      return block.items.map((item, i) => `${prefix(i)}${item}`).join('\n');
     }
-
-    case 'workflow':
-    case 'collection':
-    case 'reference':
-      throw new Error(
-        `Documentation block "${block.type}" requires the compiled graph renderer.`,
-      );
 
     default:
       return null;
@@ -173,16 +132,15 @@ function formatSection(section, detail) {
  */
 function formatReferenceFull(docs, detail) {
   if (detail === 'brief') {
-    const header = wrapText(`${docs.title}: ${docs.description}`);
+    const header = `${docs.title}: ${docs.description}`;
     const sections = docs.sections.map(s => formatSection(s, detail));
     return `${header}\n${sections.join('\n')}`;
   }
 
-  const description = wrapText(docs.description);
   const header =
     detail === 'compact'
-      ? `# ${docs.title}\n${description}`
-      : `# ${docs.title}\n\n${description}`;
+      ? `# ${docs.title}\n${docs.description}`
+      : `# ${docs.title}\n\n${docs.description}`;
   const sections = docs.sections.map(s => formatSection(s, detail));
   const sep = detail === 'compact' ? '\n\n' : '\n\n';
   return `${header}\n\n${sections.join(sep)}`;
@@ -196,7 +154,10 @@ function formatReferenceFull(docs, detail) {
  */
 function emitIndex(index, run) {
   emit(
-    section(index.title, index.description ? wrapText(index.description) : undefined),
+    section(
+      index.title,
+      index.description ? wrapText(index.description) : undefined,
+    ),
     records(index.sections, {
       fields: ['id', 'title', 'summary'],
       layout: 'inline',
@@ -275,19 +236,15 @@ export function registerDocs(program) {
 
       switch (result.type) {
         case 'docs.list': {
-          // The text view mirrors the JSON list: one record per topic (topic +
-          // description), then the usage footer as plain prose.
+          // Keep the published 0.6 text projection: stacked topic and
+          // description fields, followed by the two original usage lines.
           emit(
             section('Available docs'),
-            records(result.data, {
-              fields: ['topic', 'description', 'package'],
-              layout: 'inline',
-            }),
+            records(result.data, {fields: ['topic', 'description']}),
             text(
               [
-                `Usage: ${run} docs <topic>                  read the whole topic`,
-                `       ${run} docs <topic> --index          list its sections`,
-                `       ${run} docs <topic> <section>        read one section`,
+                `Usage: ${run} docs <topic>`,
+                `       ${run} docs <topic> <section>`,
               ].join('\n'),
             ),
           );

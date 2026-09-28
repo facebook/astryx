@@ -131,6 +131,7 @@ export type {
   // reference
   ReferenceSection,
   ReferenceContentBlock,
+  GraphContentBlock,
   ReferenceTokenPreviewType,
   ReferenceTranslationDoc,
   WorkflowStep,

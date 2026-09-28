@@ -74,14 +74,15 @@ describe('what the authoring docs say about the unbuilt docs graph', () => {
     expect(graphFieldsDoc.description).toMatch(/not built yet/);
   });
 
-  it('says a topic using a graph block fails to load', () => {
+  it('keeps graph blocks behind the separate GraphContentBlock type', () => {
     const content = referenceDoc.fields
       .flatMap(field => [field, ...(field.fields ?? [])])
       .find(field => field.name === 'sections[].content');
+    expect(content.type).toBe('ReferenceContentBlock[]');
+    expect(content.description).toContain('GraphContentBlock');
     for (const type of GRAPH_BLOCK_TYPES) {
       expect(content.description).toContain(type);
     }
-    expect(content.description).toMatch(/fails to load/);
   });
 
   it('says namespace docs are not loaded yet', () => {

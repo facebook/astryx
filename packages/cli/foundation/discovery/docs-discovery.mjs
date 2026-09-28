@@ -37,7 +37,7 @@ import {CLI_PROVIDER_ID} from '../identity/providers.mjs';
 import {parseReadableDoc} from '../doc-compiler/parse-readable.mjs';
 import {
   sectionKey,
-  sectionKeyProblems,
+  sectionKeyErrors,
   sourceTitle,
   withSourceTitle,
 } from './docs-section-key.mjs';
@@ -312,9 +312,10 @@ export function problemsInTopic(doc) {
       );
     },
   );
-  // Readers address a section by its key, so two sections sharing one would
-  // make one of them unreachable.
-  problems.push(...sectionKeyProblems(doc.sections));
+  // Explicit authored IDs are a new opt-in contract and remain strict. Topics
+  // that relied on 0.6.x title-only sections keep loading; the compiler assigns
+  // deterministic fallback/suffixed keys for the additive index API.
+  problems.push(...sectionKeyErrors(doc.sections));
   return problems;
 }
 
@@ -487,7 +488,7 @@ function findMergeTarget(sections, section) {
   const sameTitle = sections.findIndex(
     candidate => sourceTitle(candidate) === title,
   );
-  return sameTitle === -1 ? byKey() : sameTitle;
+  return sameTitle;
 }
 
 /**

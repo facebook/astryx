@@ -180,7 +180,7 @@ describe('discoverIntegrationDocs', () => {
       }),
     );
     expect(records).toEqual([]);
-    expect(errors[0].message).toContain('requires the compiled graph renderer');
+    expect(errors[0].message).toContain('Invalid discriminator value');
   });
 
   it('names a namespace doc instead of listing topic fields it lacks', async () => {
@@ -529,12 +529,10 @@ describe('problemsInTopic section keys', () => {
     })),
   });
 
-  it('rejects two sections that derive the same key', () => {
+  it('keeps legacy title-only key conflicts readable', () => {
     expect(
       problemsInTopic(doc([{title: 'Quick Start'}, {title: 'Quick-start'}])),
-    ).toEqual([
-      expect.stringContaining('"quick-start" is already used by sections[0]'),
-    ]);
+    ).toEqual([]);
   });
 
   it('rejects an unsafe id', () => {
@@ -543,10 +541,8 @@ describe('problemsInTopic section keys', () => {
     ).toEqual([expect.stringContaining('is not a stable key')]);
   });
 
-  it('rejects a title no key derives from, unless it has an id', () => {
-    expect(problemsInTopic(doc([{title: '亮/暗模式'}]))).toEqual([
-      expect.stringContaining('Give the section an id'),
-    ]);
+  it('keeps a legacy title that has no derived key readable', () => {
+    expect(problemsInTopic(doc([{title: '亮/暗模式'}]))).toEqual([]);
     expect(
       problemsInTopic(doc([{id: 'light-dark', title: '亮/暗模式'}])),
     ).toEqual([]);
@@ -580,7 +576,7 @@ describe('mergeTopic by section key', () => {
     ]);
   });
 
-  it('replaces the section a title variant derives the same key as', () => {
+  it('keeps a legacy title variant as a separate section', () => {
     const merged = mergeTopic(base, {
       sections: [
         {title: 'Light-Dark Mode', content: [{type: 'prose', text: 'acme'}]},
@@ -588,6 +584,7 @@ describe('mergeTopic by section key', () => {
     });
     expect(titles(merged)).toEqual([
       [null, 'Quick Start', 'base'],
+      [null, 'Light/Dark Mode', 'base'],
       [null, 'Light-Dark Mode', 'acme'],
     ]);
   });

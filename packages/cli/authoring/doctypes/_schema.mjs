@@ -15,6 +15,7 @@ import {z} from 'zod';
 /** @typedef {import('./base/type.js').AuthoredDocKind} AuthoredDocKind */
 /** @typedef {import('./namespace/type.js').NamespaceDoc} NamespaceDoc */
 /** @typedef {import('./reference/type.js').ReferenceContentBlock} ReferenceContentBlock */
+/** @typedef {import('./reference/type.js').GraphContentBlock} GraphContentBlock */
 /** @typedef {import('./reference/type.js').ReferenceDoc} ReferenceDoc */
 /** @typedef {import('./component/type.js').SingleComponentDoc} SingleComponentDoc */
 /** @typedef {import('./base/type.js').ComponentPropDoc} ComponentPropDoc */
@@ -161,8 +162,25 @@ const ReferenceBlockSchema = z
   })
   .strict();
 
-/** Runtime schema for every existing and V1 semantic content block. */
+/** Runtime schema for the stable content-block union published in 0.6.x. */
 export const ReferenceContentBlockSchema = z.discriminatedUnion('type', [
+  ProseBlockSchema,
+  HeadingBlockSchema,
+  CodeBlockSchema,
+  TableBlockSchema,
+  ListBlockSchema,
+  TokenReferenceBlockSchema,
+]);
+
+/** Runtime schema for graph-only blocks used by NamespaceDoc. */
+export const GraphContentBlockSchema = z.discriminatedUnion('type', [
+  WorkflowBlockSchema,
+  CollectionBlockSchema,
+  ReferenceBlockSchema,
+]);
+
+/** Namespace content accepts both stable reference blocks and graph-only blocks. */
+export const NamespaceContentBlockSchema = z.discriminatedUnion('type', [
   ProseBlockSchema,
   HeadingBlockSchema,
   CodeBlockSchema,
@@ -181,6 +199,15 @@ export const ReferenceContentBlockSchema = z.discriminatedUnion('type', [
  *     ReferenceContentBlock
  *   >
  * >} _ReferenceContentBlockDriftLock
+ */
+
+/**
+ * @typedef {import('../_shared/contract.js').Expect<
+ *   import('../_shared/contract.js').Equal<
+ *     z.infer<typeof GraphContentBlockSchema>,
+ *     GraphContentBlock
+ *   >
+ * >} _GraphContentBlockDriftLock
  */
 
 const ReferenceSectionSchema = z
@@ -605,7 +632,7 @@ export const NamespaceDocKindSchema = z
           .strict(),
       )
       .optional(),
-    blocks: z.array(ReferenceContentBlockSchema).optional(),
+    blocks: z.array(NamespaceContentBlockSchema).optional(),
   })
   .strict()
   .superRefine((doc, context) => {

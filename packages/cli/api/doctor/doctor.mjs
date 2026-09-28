@@ -994,7 +994,7 @@ export async function checkDocsProgressiveDisclosure(ctx) {
     return {
       id,
       label,
-      status: 'fail',
+      status: 'warn',
       message: joinProblems(problems),
       fix: 'Fix the doc each problem names; split a section that is too large into smaller ones, each with its own key.',
     };
