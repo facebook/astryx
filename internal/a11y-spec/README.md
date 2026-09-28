@@ -48,7 +48,8 @@ src/
     ├── modal-dialog.*       the native modal-dialog pattern, same four files
     ├── status-message.*     live-region and progress status mechanics
     ├── tabs.*               explicit horizontal ARIA Tabs semantics
-    └── listbox.*            listbox, group, and option semantics
+    ├── listbox.*            listbox, group, and option semantics
+    └── carousel.*           non-rotating collection, slide, off-screen, and focus semantics
 ```
 
 ## The patterns
@@ -64,6 +65,15 @@ src/
 | `status-message` | [WCAG 2.2 Status Messages](https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html) | Toast, FieldStatus, Spinner, ChatSystemMessage, ChatTypingIndicator, ProgressBar |
 | `tabs`           | [APG Tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)                                   | Explicit `role="tablist"` TabList, Tab, and caller-authored tabpanels            |
 | `listbox`        | [WAI-ARIA 1.2 Listbox](https://www.w3.org/TR/wai-aria-1.2/#listbox) and WCAG 2.2 semantics   | Selector and MultiSelector popup listbox, group, and option parts                |
+| `carousel`       | [APG Carousel](https://www.w3.org/WAI/ARIA/apg/patterns/carousel/) and WCAG 2.2 semantics    | Carousel container, slides, scroll area, and stable navigation-control focus     |
+
+The `carousel` contract starts with the non-rotating Carousel behavior Astryx already
+ships. It covers the labelled collection, positional slide identity, semantic
+containment including an off-screen slide, keyboard entry and exit for the native
+scroll area, and focus preservation when an available navigation control is used.
+Button activation, scroll distance, looping, snapping, paint, and motion retain their
+existing component or pattern owners; the binding adds direct Chromium evidence for
+keyboard panning and reduced motion without pretending those are tree facts.
 
 The `listbox` contract is a bounded semantic migration, not blanket APG
 interaction adoption. Its first bindings cover 21 existing scenarios across
