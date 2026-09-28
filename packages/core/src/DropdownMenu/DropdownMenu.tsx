@@ -84,16 +84,22 @@ import {
   useInteractionModalityTracking,
 } from '../utils/interactionModality';
 import {useTranslator} from '../i18n';
+import {
+  layerViewportGutter,
+  layerViewportGutterFallback,
+} from '../Layer/layerViewportInset.stylex';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 
-const MENU_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
-const MENU_MAX_INLINE_SIZE = `calc(100vi - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px)) - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-right, 0px)))`;
-const MENU_MAX_INLINE_SIZE_FALLBACK = `calc(100vw - ${MENU_VIEWPORT_GUTTER} - ${MENU_VIEWPORT_GUTTER})`;
-const MENU_MAX_BLOCK_SIZE = `min(300px, calc(100dvb - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px)) - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))))`;
-const MENU_MAX_BLOCK_SIZE_FALLBACK = `min(300px, calc(100vh - ${MENU_VIEWPORT_GUTTER} - ${MENU_VIEWPORT_GUTTER}))`;
-const MENU_POSITION_AREA_MAX_INLINE_SIZE = `calc(100% - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)))`;
-const MENU_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK = `calc(100% - ${MENU_VIEWPORT_GUTTER})`;
-const MENU_INLINE_EDGE_GUTTER = `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px))`;
+// The viewport gutters read the app's per-edge inset custom properties
+// (`--astryx-layer-inset-block-end` etc., see Layer/layerViewportInset.stylex.ts), so
+// a persistent bar floating over one viewport edge is declared once on `:root`.
+const MENU_MAX_INLINE_SIZE = `calc(100vi - ${layerViewportGutter.inlineStart} - ${layerViewportGutter.inlineEnd})`;
+const MENU_MAX_INLINE_SIZE_FALLBACK = `calc(100vw - ${layerViewportGutterFallback.inlineStart} - ${layerViewportGutterFallback.inlineEnd})`;
+const MENU_MAX_BLOCK_SIZE = `min(300px, calc(100dvb - ${layerViewportGutter.blockStart} - ${layerViewportGutter.blockEnd}))`;
+const MENU_MAX_BLOCK_SIZE_FALLBACK = `min(300px, calc(100vh - ${layerViewportGutterFallback.blockStart} - ${layerViewportGutterFallback.blockEnd}))`;
+const MENU_POSITION_AREA_MAX_INLINE_SIZE = `calc(100% - ${layerViewportGutter.inline})`;
+const MENU_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK = `calc(100% - ${layerViewportGutterFallback.inline})`;
+const MENU_INLINE_EDGE_GUTTER = layerViewportGutter.inline;
 const MENU_TRIGGER_OPEN_BACKGROUND = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
 
 const styles = stylex.create({
@@ -151,10 +157,10 @@ const styles = stylex.create({
     marginInlineStart: MENU_INLINE_EDGE_GUTTER,
   },
   popoverViewportBlockStart: {
-    marginBlockEnd: `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))`,
+    marginBlockEnd: layerViewportGutter.blockEnd,
   },
   popoverViewportBlockEnd: {
-    marginBlockStart: `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px))`,
+    marginBlockStart: layerViewportGutter.blockStart,
   },
   popoverViewportCentered: {
     marginInlineStart: MENU_INLINE_EDGE_GUTTER,
@@ -165,8 +171,8 @@ const styles = stylex.create({
     ),
   },
   popoverViewportBlockCentered: {
-    marginBlockStart: `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px))`,
-    marginBlockEnd: `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))`,
+    marginBlockStart: layerViewportGutter.blockStart,
+    marginBlockEnd: layerViewportGutter.blockEnd,
     maxInlineSize: stylex.firstThatWorks(
       MENU_MAX_INLINE_SIZE,
       MENU_MAX_INLINE_SIZE_FALLBACK,

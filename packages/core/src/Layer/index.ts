@@ -29,6 +29,9 @@ export type {
   FixedLayerReturn,
 } from './useLayer';
 
+// The per-edge viewport inset an app declares for a persistent bar
+export {layerInsetVars} from './layerViewportInset.stylex';
+
 // Layer dismissal stack — one Escape owner for every overlay family
 export {useLayerDismissal} from './useLayerDismissal';
 export type {

@@ -32,6 +32,10 @@ import {usePopover} from './usePopover';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {spacingVars} from '../theme/tokens.stylex';
+import {
+  layerViewportGutter,
+  layerViewportGutterFallback,
+} from '../Layer/layerViewportInset.stylex';
 import {InteractiveRoleContext} from '../InteractiveRoleContext/InteractiveRoleContext';
 
 // =============================================================================
@@ -39,14 +43,17 @@ import {InteractiveRoleContext} from '../InteractiveRoleContext/InteractiveRoleC
 // =============================================================================
 
 const BUTTON_SELECTOR = 'button, [role="button"]';
-const POPOVER_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
-const POPOVER_MAX_INLINE_SIZE = `calc(100vi - max(${POPOVER_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px)) - max(${POPOVER_VIEWPORT_GUTTER}, env(safe-area-inset-right, 0px)))`;
-const POPOVER_MAX_INLINE_SIZE_FALLBACK = `calc(100vw - ${POPOVER_VIEWPORT_GUTTER} - ${POPOVER_VIEWPORT_GUTTER})`;
-const POPOVER_MAX_BLOCK_SIZE = `calc(100dvb - max(${POPOVER_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px)) - max(${POPOVER_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px)))`;
-const POPOVER_MAX_BLOCK_SIZE_FALLBACK = `calc(100vh - ${POPOVER_VIEWPORT_GUTTER} - ${POPOVER_VIEWPORT_GUTTER})`;
-const POPOVER_POSITION_AREA_MAX_INLINE_SIZE = `calc(100% - max(${POPOVER_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)))`;
-const POPOVER_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK = `calc(100% - ${POPOVER_VIEWPORT_GUTTER})`;
-const POPOVER_INLINE_EDGE_GUTTER = `max(${POPOVER_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px))`;
+// Every viewport gutter reads the app's per-edge inset custom properties
+// (`--astryx-layer-inset-block-end` etc., see layerViewportInset.stylex.ts), so a
+// persistent bar floating over one viewport edge is declared once on `:root`
+// and every popover ends above it.
+const POPOVER_MAX_INLINE_SIZE = `calc(100vi - ${layerViewportGutter.inlineStart} - ${layerViewportGutter.inlineEnd})`;
+const POPOVER_MAX_INLINE_SIZE_FALLBACK = `calc(100vw - ${layerViewportGutterFallback.inlineStart} - ${layerViewportGutterFallback.inlineEnd})`;
+const POPOVER_MAX_BLOCK_SIZE = `calc(100dvb - ${layerViewportGutter.blockStart} - ${layerViewportGutter.blockEnd})`;
+const POPOVER_MAX_BLOCK_SIZE_FALLBACK = `calc(100vh - ${layerViewportGutterFallback.blockStart} - ${layerViewportGutterFallback.blockEnd})`;
+const POPOVER_POSITION_AREA_MAX_INLINE_SIZE = `calc(100% - ${layerViewportGutter.inline})`;
+const POPOVER_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK = `calc(100% - ${layerViewportGutterFallback.inline})`;
+const POPOVER_INLINE_EDGE_GUTTER = layerViewportGutter.inline;
 
 /**
  * Find the trigger button inside a container element.
@@ -274,10 +281,10 @@ const styles = stylex.create({
     marginInlineStart: POPOVER_INLINE_EDGE_GUTTER,
   },
   viewportBlockStart: {
-    marginBlockEnd: `max(${POPOVER_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))`,
+    marginBlockEnd: layerViewportGutter.blockEnd,
   },
   viewportBlockEnd: {
-    marginBlockStart: `max(${POPOVER_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px))`,
+    marginBlockStart: layerViewportGutter.blockStart,
   },
   viewportCentered: {
     marginInlineStart: POPOVER_INLINE_EDGE_GUTTER,
@@ -288,8 +295,8 @@ const styles = stylex.create({
     ),
   },
   viewportBlockCentered: {
-    marginBlockStart: `max(${POPOVER_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px))`,
-    marginBlockEnd: `max(${POPOVER_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))`,
+    marginBlockStart: layerViewportGutter.blockStart,
+    marginBlockEnd: layerViewportGutter.blockEnd,
     maxInlineSize: stylex.firstThatWorks(
       POPOVER_MAX_INLINE_SIZE,
       POPOVER_MAX_INLINE_SIZE_FALLBACK,
