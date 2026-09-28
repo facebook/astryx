@@ -3,7 +3,7 @@
 /**
  * @file themeAdaptations.test.ts
  * Tests AST-012's ordered, closed, CSS-first theme adaptation contract,
- * including normalization, type-scale component defaults, and final
+ * including normalization, root-dependent type-scale component writes, and final
  * reachable-cascade validation.
  */
 
@@ -524,6 +524,46 @@ describe('adapted type-scale component defaults', () => {
     // Explicit heading defaults still trigger the public weight-prop guard.
     expect(css).toContain(
       '.astryx-heading[data-weight="bold"] { font-weight: var(--font-weight-bold); }',
+    );
+  });
+
+  it('lets a later generated component leaf win when its root path is absent', () => {
+    const theme = defineTheme(
+      adaptationInput([
+        {
+          when: {pointer: 'coarse'},
+          value: {components: {text: {'type:body': {fontSize: '2rem'}}}},
+        },
+        {
+          when: {pointer: 'coarse'},
+          value: {typography: {scale: {base: 14, ratio: 1.2}}},
+        },
+      ]),
+    );
+    expect(theme.__axes.typography).toBeUndefined();
+    expect(theme.components).toBeUndefined();
+    const [authored, generated] = theme.__adaptationRules!;
+    expect(authored.components?.text['type:body'].fontSize).toBe('2rem');
+    expect(generated.components?.text['type:body'].fontSize).toBe(
+      'var(--text-body-size)',
+    );
+
+    // FR4/FR6: only existing root paths suppress generated defaults. Without
+    // root wiring, the later scale produces a component write, so it beats the
+    // earlier authored leaf when both conditions match (unlike the case above).
+    const css = generateAdaptationCSS(theme).component;
+    const bodyRules = [
+      ...css.matchAll(/\.astryx-text\[data-type="body"\] \{([^}]+)\}/g),
+    ].map(match => match[1]);
+    expect(bodyRules).toHaveLength(2);
+    expect(bodyRules[0]).toContain('font-size: 2rem;');
+    expect(bodyRules[1]).toContain('font-size: var(--text-body-size);');
+    expect(mediaPreludes(css)).toEqual([
+      '(pointer: coarse)',
+      '(pointer: coarse)',
+    ]);
+    expect(generateThemeCSS({...theme, __adaptationRules: undefined})).toEqual(
+      generateThemeCSS(theme),
     );
   });
 
