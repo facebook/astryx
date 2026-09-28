@@ -699,6 +699,7 @@
     "build:esm": "babel src --out-dir dist --extensions .ts,.tsx --out-file-extension .js --ignore \"**/*.test.ts,**/*.test.tsx,**/__tests__/**,**/*.perf.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css,**/*.css.d.ts\" --config-file ./babel.config.json",
     "build:css": "node ../../scripts/build-css.mjs",
     "dev": "babel src --watch --out-dir dist --extensions .ts,.tsx --out-file-extension .js --ignore \"**/*.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css*\" --config-file ./babel.config.json",
+    "dev:i18n": "babel src/i18n/generated-locales --watch --out-dir dist/i18n/generated-locales --extensions .ts --out-file-extension .js --config-file ./babel.config.json",
     "test": "vitest run --root ../..",
     "test:watch": "vitest --root ../..",
     "lint": "eslint src",

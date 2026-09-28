@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "node ../../scripts/generate-i18n-runtime.mjs && storybook dev -p 6006",
+    "dev": "node ../../scripts/generate-i18n-runtime.mjs --watch -- storybook dev -p 6006",
     "build": "node ../../scripts/generate-i18n-runtime.mjs && storybook build -o dist",
     "rtl-audit": "node rtl-audit/rtl-audit.mjs --storybook-dir dist --output rtl-audit-report.json",
     "typecheck": "tsc --noEmit"

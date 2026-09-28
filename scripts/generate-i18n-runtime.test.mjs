@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {spawnSync} from 'node:child_process';
+import {spawn, spawnSync} from 'node:child_process';
+import {once} from 'node:events';
 import {mkdtempSync, rmSync, symlinkSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
@@ -9,11 +10,39 @@ import {describe, expect, it} from 'vitest';
 import {
   createRuntimeCatalog,
   createRuntimeCatalogs,
+  createSpawnInvocation,
   getGeneratedModuleName,
+  isSourceLocaleFile,
   renderRuntimeCatalogModule,
 } from './generate-i18n-runtime.mjs';
 
 const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url));
+const GENERATOR = fileURLToPath(
+  new URL('./generate-i18n-runtime.mjs', import.meta.url),
+);
+
+function waitForMatch(stream, pattern, timeoutMs = 5_000) {
+  return new Promise((resolve, reject) => {
+    let output = '';
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error(`Timed out waiting for ${pattern} in:\n${output}`));
+    }, timeoutMs);
+    const onData = chunk => {
+      output += chunk;
+      const match = output.match(pattern);
+      if (match) {
+        cleanup();
+        resolve(match);
+      }
+    };
+    const cleanup = () => {
+      clearTimeout(timeout);
+      stream.off('data', onData);
+    };
+    stream.on('data', onData);
+  });
+}
 
 describe('generator CLI', () => {
   it('runs when invoked through a symlinked repository path', () => {
@@ -104,6 +133,92 @@ describe('generated module names', () => {
       'Expected a JSON locale filename',
     );
   });
+});
+
+describe('locale source watcher', () => {
+  it('regenerates for authored locale JSON but ignores generated pseudo output', () => {
+    expect(isSourceLocaleFile('en.json')).toBe(true);
+    expect(isSourceLocaleFile('fr-FR.json')).toBe(true);
+    expect(isSourceLocaleFile('pseudo.json')).toBe(false);
+    expect(isSourceLocaleFile('README.md')).toBe(false);
+    expect(isSourceLocaleFile(Buffer.from('en.json'))).toBe(false);
+  });
+
+  it('constructs Windows commands only from shell-safe tokens', () => {
+    expect(
+      createSpawnInvocation(
+        ['pnpm', '--parallel', '--filter', '@astryxdesign/core', 'dev:i18n'],
+        'win32',
+        'cmd.exe',
+      ),
+    ).toEqual({
+      file: 'cmd.exe',
+      args: [
+        '/d',
+        '/s',
+        '/c',
+        'pnpm --parallel --filter @astryxdesign/core dev:i18n',
+      ],
+    });
+    expect(() =>
+      createSpawnInvocation(['tool', 'argument with spaces'], 'win32'),
+    ).toThrow('cannot contain spaces or shell metacharacters');
+    expect(() =>
+      createSpawnInvocation(['tool', 'value&next'], 'win32'),
+    ).toThrow('cannot contain spaces or shell metacharacters');
+  });
+
+  it.skipIf(process.platform === 'win32')(
+    'forwards repeated termination signals until the child exits',
+    async () => {
+      const childCode = `
+        let exitTimer;
+        process.on('SIGINT', () => {
+          clearTimeout(exitTimer);
+          exitTimer = setTimeout(() => process.exit(0), 250);
+        });
+        console.log('child-ready:' + process.pid);
+        setInterval(() => {}, 1_000);
+      `;
+      const wrapper = spawn(
+        process.execPath,
+        [GENERATOR, '--watch', '--', process.execPath, '-e', childCode],
+        {
+          cwd: REPO_ROOT,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        },
+      );
+      let childPid;
+
+      try {
+        const match = await waitForMatch(wrapper.stdout, /child-ready:(\d+)/);
+        childPid = Number(match[1]);
+        wrapper.kill('SIGINT');
+        await new Promise(resolve => setTimeout(resolve, 50));
+        wrapper.kill('SIGINT');
+        const [code, signal] = await Promise.race([
+          once(wrapper, 'exit'),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('wrapper did not exit')), 5_000),
+          ),
+        ]);
+
+        expect(signal).toBeNull();
+        expect(code).toBe(0);
+        expect(() => process.kill(childPid, 0)).toThrow();
+      } finally {
+        if (wrapper.exitCode === null) wrapper.kill('SIGKILL');
+        if (childPid !== undefined) {
+          try {
+            process.kill(childPid, 'SIGKILL');
+          } catch {
+            // The expected path: the wrapper already reaped its child.
+          }
+        }
+      }
+    },
+    10_000,
+  );
 });
 
 describe('renderRuntimeCatalogModule', () => {

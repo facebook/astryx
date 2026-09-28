@@ -115,9 +115,10 @@ Storybook will open at http://localhost:6006 with:
 - **Mode switcher** - Toggle between Light and Dark modes
 - **Component stories** - Interactive component examples
 
-**If you make changes to `@astryxdesign/core`:** ordinary source changes update
-without a rebuild or restart. After editing `packages/core/locales/*.json`,
-restart Storybook; rebuild Core before restarting the docsite.
+**If you make changes to `@astryxdesign/core`:** source changes update without a
+rebuild or restart. Storybook and the docsite also watch
+`packages/core/locales/*.json`, regenerate the compact runtime catalogs, and
+reload imported messages after a locale edit.
 
 ### Running the Doc Site
 
