@@ -118,6 +118,22 @@ applied to both edges of the placement axis so a flip retains the gap.
 Popover adds component-specific viewport sizing and overflow behavior above this
 geometry. Those constraints are not universal Layer behavior.
 
+Anchored placement takes one of three paths, chosen once per layer from
+`CSS.supports` and reported on the element as `data-astryx-layer-placement`:
+
+- **anchor:** `position-area` and `position-try-fallbacks` both exist; CSS
+  places the layer end to end (the primary path, unchanged);
+- **anchor-flip:** `position-area` exists without `position-try-fallbacks`; CSS
+  keeps the side and the hook measures the trigger and the layer to decide the
+  flip, emitting `position-area` for the side it chose; and
+- **measured:** no `position-area`; the hook measures on open and on window
+  resize, capture-phase scroll, visual-viewport change, and layer or trigger
+  resize, and writes `position: fixed` coordinates following the same contract
+  (`Layer/layerPlacement.ts`: requested side, flip when the room is short, the
+  roomier side when neither fits, alignment, viewport-gutter clamp).
+
+Custom positioning takes none of them and carries no attribute.
+
 ### Current browser support behavior
 
 Native Popover API plus CSS Anchor Positioning provide the complete behavior
@@ -129,8 +145,13 @@ When `showPopover` or `hidePopover` is unavailable, `useLayer` falls back to
 changing `display`. Explicit component controls can still show and hide mounted
 content, callbacks and React state still update, and fixed coordinates still
 apply. This fallback does not reproduce top-layer promotion, native outside or
-close-request behavior, auto-popover exclusivity or nesting, invoker focus order,
-anchored geometry, or collision fallbacks.
+close-request behavior, auto-popover exclusivity or nesting, or invoker focus
+order.
+
+When CSS anchor positioning is unavailable, the measured path above places the
+layer against its trigger and flips it by measurement, so anchored geometry and
+the collision flip survive; the span-based slides for centered layers do not
+(the clamp keeps the layer inside the viewport gutter instead).
 
 Public docs do not yet state this reduced behavior as a support boundary. The
 accepted support contract and documentation change are owned by `spec:AST-003`.
@@ -293,6 +314,8 @@ be updated only as that work ships.
   anchor/fixed/custom rendering, trigger source, and current same-gesture memory.
 - `Layer/layerHost.ts` owns safe inline versus nearest corrective portal placement.
 - `Layer/anchorName.ts` owns composition of anchor names on one trigger.
+- `Layer/layerPlacement.ts` owns the anchor-positioning capability probe and the
+  pure placement math behind the measured path.
 - `Layer/gestureCounter.ts` owns physical pointer/key gesture identity.
 - `Layer/layerStack.ts`, `Layer/useLayerDismissal.ts`, and
   `Layer/LayerDepthContext.tsx` own current registration, presence, ordering, and
@@ -331,7 +354,7 @@ this current architecture record.
 | Invariant  | Evidence                                                                                       | Failure signal                                                                                          |
 | ---------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | INV1, INV2 | `useLayer.test.tsx` and `layerHost.test.ts`                                                    | Invalid DOM, stale host, lost theme/writing context, or portal mistaken for top-layer promotion         |
-| INV3–INV5  | `useLayer.test.tsx` and `anchorName.test.ts`                                                   | A mode leaks geometry, RTL resolves from the wrong context, fallback clips, or a sibling anchor is lost |
+| INV3–INV5  | `useLayer.test.tsx`, `layerPlacement.test.ts`, and `anchorName.test.ts`                        | A mode leaks geometry, RTL resolves from the wrong context, fallback clips, or a sibling anchor is lost |
 | INV6, INV7 | `useLayer.test.tsx`, `Popover.test.tsx`, `DropdownMenu.test.tsx`, and `useMenuHover.test.tsx`  | Duplicate close callback or the same press/re-hover reopens a surface                                   |
 | INV8       | `useLayerDismissal.test.tsx`, `layerDismissalInvariants.test.tsx`, and `useFocusTrap.test.tsx` | Current top registered layer is skipped, two layers close, or a blocker leaks through                   |
 | INV9       | Representative Dialog, ContextMenu, Tooltip/HoverCard, and BottomSheet source/tests            | A current local channel silently changes ownership or policy                                            |

@@ -9,7 +9,7 @@
  * SYNC: When useLayer.tsx changes, update tests accordingly
  */
 
-import {describe, it, expect, vi, afterEach} from 'vitest';
+import {describe, it, expect, vi, afterEach, beforeEach} from 'vitest';
 import {
   render,
   renderHook,
@@ -1223,5 +1223,241 @@ describe('wasJustDismissed (light dismiss vs. the trigger click, #5004)', () => 
     fireEvent.click(trigger);
 
     expect(getByTestId('state')).toHaveTextContent('closed');
+  });
+});
+
+describe('measured placement (engines without CSS anchor positioning)', () => {
+  const originalCSS = globalThis.CSS;
+  const originalRect = HTMLElement.prototype.getBoundingClientRect;
+  const originalOffsetWidth = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    'offsetWidth',
+  );
+  const originalOffsetHeight = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    'offsetHeight',
+  );
+  const originalInnerWidth = window.innerWidth;
+  const originalInnerHeight = window.innerHeight;
+
+  // The engine under test, and the geometry it reports: a 100x40 trigger and
+  // a 200x120 layer in a 1024x768 window.
+  let triggerRect = {top: 300, left: 350, width: 100, height: 40};
+  const layerSize = {width: 200, height: 120};
+
+  function engine(support: {
+    positionArea: boolean;
+    positionTryFallbacks: boolean;
+  }) {
+    globalThis.CSS = {
+      supports: (property: string) =>
+        property === 'position-area'
+          ? support.positionArea
+          : property === 'position-try-fallbacks'
+            ? support.positionTryFallbacks
+            : false,
+    } as unknown as typeof CSS;
+  }
+
+  beforeEach(() => {
+    triggerRect = {top: 300, left: 350, width: 100, height: 40};
+    window.innerWidth = 1024;
+    window.innerHeight = 768;
+    HTMLElement.prototype.getBoundingClientRect = function () {
+      const rect = this.hasAttribute('popover')
+        ? {top: 0, left: 0, ...layerSize}
+        : triggerRect;
+      return {
+        ...rect,
+        right: rect.left + rect.width,
+        bottom: rect.top + rect.height,
+        x: rect.left,
+        y: rect.top,
+        toJSON: () => rect,
+      };
+    };
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.hasAttribute('popover')
+          ? layerSize.width
+          : triggerRect.width;
+      },
+    });
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.hasAttribute('popover')
+          ? layerSize.height
+          : triggerRect.height;
+      },
+    });
+  });
+
+  afterEach(() => {
+    globalThis.CSS = originalCSS;
+    HTMLElement.prototype.getBoundingClientRect = originalRect;
+    if (originalOffsetWidth) {
+      Object.defineProperty(
+        HTMLElement.prototype,
+        'offsetWidth',
+        originalOffsetWidth,
+      );
+    }
+    if (originalOffsetHeight) {
+      Object.defineProperty(
+        HTMLElement.prototype,
+        'offsetHeight',
+        originalOffsetHeight,
+      );
+    }
+    window.innerWidth = originalInnerWidth;
+    window.innerHeight = originalInnerHeight;
+  });
+
+  async function open(ui: React.ReactElement) {
+    const user = userEvent.setup();
+    const result = render(ui);
+    await user.click(result.getByRole('button', {name: 'Trigger'}));
+    const popover = result.container.querySelector<HTMLElement>('[popover]');
+    if (!popover) {
+      throw new Error('layer did not render');
+    }
+    return {...result, popover};
+  }
+
+  it('takes the anchor path, and says so, where the engine has both halves', async () => {
+    engine({positionArea: true, positionTryFallbacks: true});
+    const {popover} = await open(
+      <ContextLayerHarness placement="below" alignment="center" />,
+    );
+    expect(popover).toHaveAttribute('data-astryx-layer-placement', 'anchor');
+    const style = popover.getAttribute('style') ?? '';
+    expect(style).toContain('position-area: self-block-end');
+    expect(style).toContain('position-try-fallbacks:');
+    expect(style).not.toMatch(/(^|; )top:/);
+  });
+
+  it('places the layer from measurements where the engine has no position-area', async () => {
+    engine({positionArea: false, positionTryFallbacks: false});
+    const {popover} = await open(
+      <ContextLayerHarness placement="below" alignment="center" />,
+    );
+    expect(popover).toHaveAttribute('data-astryx-layer-placement', 'measured');
+    const style = popover.getAttribute('style') ?? '';
+    expect(style).not.toContain('position-area');
+    expect(style).not.toContain('position-try-fallbacks');
+    expect(style).not.toContain('position-anchor');
+    // Below the trigger (300 + 40), centered on it (350 + 50 - 100).
+    expect(popover).toHaveStyle({top: '340px', left: '300px'});
+  });
+
+  it('flips a measured layer when the requested side has no room', async () => {
+    engine({positionArea: false, positionTryFallbacks: false});
+    // 768 - 16 - 740 = 12px below; 120 needed.
+    triggerRect = {top: 700, left: 350, width: 100, height: 40};
+    const {popover} = await open(
+      <ContextLayerHarness placement="below" alignment="start" />,
+    );
+    expect(popover).toHaveStyle({top: '580px', left: '350px'});
+  });
+
+  it('re-measures when the window resizes or scrolls', async () => {
+    engine({positionArea: false, positionTryFallbacks: false});
+    const {popover} = await open(
+      <ContextLayerHarness placement="below" alignment="start" />,
+    );
+    expect(popover).toHaveStyle({top: '340px', left: '350px'});
+
+    triggerRect = {top: 100, left: 40, width: 100, height: 40};
+    act(() => {
+      window.dispatchEvent(new Event('resize'));
+    });
+    expect(popover).toHaveStyle({top: '140px', left: '40px'});
+
+    triggerRect = {top: 120, left: 60, width: 100, height: 40};
+    act(() => {
+      document.body.dispatchEvent(new Event('scroll', {bubbles: true}));
+    });
+    expect(popover).toHaveStyle({top: '160px', left: '60px'});
+  });
+
+  it('stops measuring once the layer is hidden', async () => {
+    engine({positionArea: false, positionTryFallbacks: false});
+    let api: {hide: () => void} | null = null;
+    function Harness() {
+      const layer = useLayer({mode: 'context'});
+      api = layer;
+      return (
+        <>
+          <button type="button" ref={layer.ref} onClick={layer.show}>
+            Trigger
+          </button>
+          {layer.render(<span>Layer content</span>, {placement: 'below'})}
+        </>
+      );
+    }
+    const {popover} = await open(<Harness />);
+    expect(popover).toHaveStyle({top: '340px'});
+    act(() => {
+      api?.hide();
+    });
+    triggerRect = {top: 100, left: 40, width: 100, height: 40};
+    act(() => {
+      window.dispatchEvent(new Event('resize'));
+    });
+    expect(popover).toHaveStyle({top: '340px'});
+  });
+
+  it('leaves the side to CSS and decides only the flip where position-try-fallbacks is missing', async () => {
+    engine({positionArea: true, positionTryFallbacks: false});
+    triggerRect = {top: 700, left: 350, width: 100, height: 40};
+    const {popover} = await open(
+      <ContextLayerHarness placement="below" alignment="start" />,
+    );
+    expect(popover).toHaveAttribute(
+      'data-astryx-layer-placement',
+      'anchor-flip',
+    );
+    const style = popover.getAttribute('style') ?? '';
+    // The flip, as position-area for the side the measurement chose.
+    expect(style).toContain(
+      'position-area: self-block-start span-self-inline-end',
+    );
+    expect(style).not.toContain('position-try-fallbacks');
+    expect(style).not.toMatch(/(^|; )top:/);
+  });
+
+  it('keeps the requested side in CSS where it has room and no position-try-fallbacks', async () => {
+    engine({positionArea: true, positionTryFallbacks: false});
+    const {popover} = await open(
+      <ContextLayerHarness placement="below" alignment="start" />,
+    );
+    expect(popover.getAttribute('style')).toContain(
+      'position-area: self-block-end span-self-inline-end',
+    );
+  });
+
+  it('measures nothing under custom positioning', async () => {
+    engine({positionArea: false, positionTryFallbacks: false});
+    function CustomHarness() {
+      const layer = useLayer({mode: 'context'});
+      return (
+        <>
+          <button type="button" ref={layer.ref} onClick={layer.show}>
+            Trigger
+          </button>
+          {layer.render(<span>Layer content</span>, {
+            positioning: 'custom',
+            style: {insetBlockStart: 'anchor(bottom)'},
+          })}
+        </>
+      );
+    }
+    const {popover} = await open(<CustomHarness />);
+    expect(popover).not.toHaveAttribute('data-astryx-layer-placement');
+    const style = popover.getAttribute('style') ?? '';
+    expect(style).toContain('position-anchor');
+    expect(style).not.toMatch(/(^|; )top:/);
   });
 });

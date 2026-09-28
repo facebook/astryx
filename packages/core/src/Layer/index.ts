@@ -28,6 +28,8 @@ export type {
   ContextLayerReturn,
   FixedLayerReturn,
 } from './useLayer';
+// Which path placed a layer: the value of `data-astryx-layer-placement`.
+export type {LayerPlacementPath} from './layerPlacement';
 
 // Layer dismissal stack — one Escape owner for every overlay family
 export {useLayerDismissal} from './useLayerDismissal';

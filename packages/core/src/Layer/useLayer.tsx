@@ -11,6 +11,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Layer/useLayer.doc.mjs
  * - /packages/core/src/Layer/useLayer.test.tsx
+ * - /packages/core/src/Layer/layerPlacement.ts
  * - /packages/core/src/Layer/index.ts
  */
 
@@ -18,6 +19,7 @@ import React, {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -30,8 +32,26 @@ import {createPortal} from 'react-dom';
 import {addAnchorName, removeAnchorName} from './anchorName';
 import {currentGesture, currentGestureHasClicked} from './gestureCounter';
 import {resolveLayerPortalTarget} from './layerHost';
-import {typeScaleVars, typographyVars} from '../theme/tokens.stylex';
+import {
+  layerPlacementPathFor,
+  readLayerPositioningSupport,
+  resolveMeasuredPlacement,
+  type LayerGutter,
+  type LayerPlacementPath,
+  type MeasuredPlacement,
+} from './layerPlacement';
+import {
+  spacingVars,
+  typeScaleVars,
+  typographyVars,
+} from '../theme/tokens.stylex';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
+
+// The room a measured layer keeps from the viewport edge: the gutter Popover
+// and DropdownMenu already size against, safe area included.
+const LAYER_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
+const measuredGutter = (edge: 'top' | 'right' | 'bottom' | 'left') =>
+  `max(${LAYER_VIEWPORT_GUTTER}, env(safe-area-inset-${edge}, 0px))`;
 
 const styles = stylex.create({
   // Base reset for all layers
@@ -59,6 +79,21 @@ const styles = stylex.create({
   // Fixed positioning mode
   fixed: {
     position: 'fixed',
+  },
+  // The measured path: the hook writes `top`/`left` itself, so the UA
+  // popover's `inset: 0` must not hold the other two edges. Physical, like
+  // the coordinates: they come from `getBoundingClientRect`.
+  measured: {
+    position: 'fixed',
+    inset: 'auto',
+    // The gutter is a CSS length (`max(token, env(safe-area-inset-*))`) and
+    // JS needs it as a number. `scroll-margin` carries it to
+    // `getComputedStyle`, which resolves it to px, and has no effect on a
+    // fixed top-layer box.
+    scrollMarginTop: measuredGutter('top'),
+    scrollMarginRight: measuredGutter('right'),
+    scrollMarginBottom: measuredGutter('bottom'),
+    scrollMarginLeft: measuredGutter('left'),
   },
   // Clearance from the anchor. Set on BOTH edges of the placement axis, not
   // just the one facing the anchor: `position-try-fallbacks` can flip the
@@ -351,6 +386,40 @@ function toCssLength(value: number | string): string {
   return typeof value === 'number' ? `${value}px` : value;
 }
 
+/** A computed length in px; `fallback` where the engine gave nothing back. */
+function readPx(value: string, fallback: number): number {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+/**
+ * What `--spacing-4` is when the engine does not resolve the gutter for us
+ * (a DOM emulator): the token's base value.
+ */
+const DEFAULT_GUTTER_PX = 16;
+
+function readMeasuredGutter(style: CSSStyleDeclaration): LayerGutter {
+  const token = readPx(
+    style.getPropertyValue('--spacing-4'),
+    DEFAULT_GUTTER_PX,
+  );
+  return {
+    top: readPx(style.scrollMarginTop, token),
+    right: readPx(style.scrollMarginRight, token),
+    bottom: readPx(style.scrollMarginBottom, token),
+    left: readPx(style.scrollMarginLeft, token),
+  };
+}
+
+function samePlacement(
+  a: MeasuredPlacement | null,
+  b: MeasuredPlacement,
+): boolean {
+  return (
+    a !== null && a.top === b.top && a.left === b.left && a.side === b.side
+  );
+}
+
 interface ContextLayerMount {
   /** Null means the marker's parent is safe and the layer stays inline. */
   portalTarget: HTMLElement | null;
@@ -543,6 +612,21 @@ function useLayerImplementation(
   // A show() that arrives before the final layer mounts is replayed when its
   // popover ref attaches.
   const pendingShowRef = useRef(false);
+
+  // Which path places this layer, asked of the engine once per hook: CSS
+  // anchor positioning where it exists, measurement where it does not. Read
+  // lazily so a server render never touches `CSS`.
+  const [placementPath] = useState<LayerPlacementPath>(() =>
+    layerPlacementPathFor(readLayerPositioningSupport()),
+  );
+  // The last render's placement props, for the measurement to read; they are
+  // render arguments, not hook options, so an effect cannot close over them.
+  const renderPropsRef = useRef<{
+    placement: LayerPlacement;
+    alignment: LayerAlignment;
+    positioning: 'anchor' | 'custom';
+  }>({placement: 'above', alignment: 'center', positioning: 'anchor'});
+  const [measured, setMeasured] = useState<MeasuredPlacement | null>(null);
 
   // Ref mirrors isOpen for synchronous reads inside show/hide.
   // State drives re-renders; the ref lets the imperative calls avoid
@@ -855,6 +939,95 @@ function useLayerImplementation(
     };
   }, [handleToggle, bindToggleListener]);
 
+  // The measured fallback (see layerPlacement.ts): where the engine has no
+  // CSS anchor positioning, read the trigger's box and the layer's size and
+  // place the layer from them. Where it has `position-area` but no
+  // `position-try-fallbacks`, only the flip is decided here and CSS keeps the
+  // side.
+  const measure = useCallback(() => {
+    const layer = popoverRef.current;
+    const anchor = triggerRef.current;
+    const view = layer?.ownerDocument.defaultView;
+    const props = renderPropsRef.current;
+    if (!layer || !anchor || !view || props.positioning === 'custom') {
+      return;
+    }
+    const style = view.getComputedStyle(layer);
+    const next = resolveMeasuredPlacement({
+      anchorRect: anchor.getBoundingClientRect(),
+      // The margin box: the `offset` clearance lives in the margins, and
+      // `top`/`left` position the margin edge.
+      layerSize: {
+        width:
+          layer.offsetWidth +
+          readPx(style.marginLeft, 0) +
+          readPx(style.marginRight, 0),
+        height:
+          layer.offsetHeight +
+          readPx(style.marginTop, 0) +
+          readPx(style.marginBottom, 0),
+      },
+      // The layout viewport: the frame `getBoundingClientRect` reports in
+      // and `position: fixed` resolves against.
+      viewport: {width: view.innerWidth, height: view.innerHeight},
+      placement: props.placement,
+      alignment: props.alignment,
+      gutter: readMeasuredGutter(style),
+      direction: style.direction === 'rtl' ? 'rtl' : 'ltr',
+    });
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- the coordinates are a measurement; layout is the only place they exist, and the write is skipped when nothing moved
+    setMeasured(previous => (samePlacement(previous, next) ? previous : next));
+  }, []);
+
+  const measures = mode === 'context' && placementPath !== 'anchor' && isOpen;
+
+  // While open, listen for everything after which the trigger may have moved
+  // or the room around it changed: the window, an ancestor scrolling
+  // (capture), the visual viewport (the on-screen keyboard), and the layer's
+  // or trigger's own box.
+  useLayoutEffect(() => {
+    if (!measures) {
+      return;
+    }
+    const layer = popoverRef.current;
+    const view = layer?.ownerDocument.defaultView;
+    if (!layer || !view) {
+      return;
+    }
+    view.addEventListener('resize', measure);
+    view.addEventListener('scroll', measure, {capture: true, passive: true});
+    view.visualViewport?.addEventListener('resize', measure);
+    view.visualViewport?.addEventListener('scroll', measure);
+    const observer =
+      typeof view.ResizeObserver === 'function'
+        ? new view.ResizeObserver(measure)
+        : null;
+    observer?.observe(layer);
+    if (triggerRef.current) {
+      observer?.observe(triggerRef.current);
+    }
+    return () => {
+      view.removeEventListener('resize', measure);
+      view.removeEventListener('scroll', measure, {capture: true});
+      view.visualViewport?.removeEventListener('resize', measure);
+      view.visualViewport?.removeEventListener('scroll', measure);
+      observer?.disconnect();
+    };
+  }, [measures, measure]);
+
+  // Measure after every commit while open — a layout effect, so the first
+  // coordinates land before the first paint (a passive effect would show one
+  // frame of the layer wherever the UA stylesheet left it, then jump it onto
+  // the trigger), and every commit, because the placement props reach the
+  // hook through `render`, not through options, and can change while the
+  // layer is open. Cheap: one geometry read, and a state write only when the
+  // answer changes.
+  useLayoutEffect(() => {
+    if (measures) {
+      measure();
+    }
+  });
+
   // Render function for context mode
   const renderContext = useCallback(
     (children: ReactNode, props?: ContextRenderProps) => {
@@ -882,20 +1055,34 @@ function useLayerImplementation(
         onMouseLeave,
       } = props || {};
 
+      renderPropsRef.current = {placement, alignment, positioning};
+
       // CSS anchor positioning (dynamic, not in StyleX)
-      const anchorStyle: React.CSSProperties =
-        positioning === 'custom'
-          ? // Consumer authors its own position styles via `style` — keep
-            // only the anchor wiring, derive nothing from placement.
-            {positionAnchor: anchorId}
-          : {
-              positionAnchor: anchorId,
-              positionArea: getPositionArea(placement, alignment),
-              positionTryFallbacks: getPositionTryFallbacks(
-                placement,
-                alignment,
-              ),
-            };
+      let anchorStyle: React.CSSProperties;
+      if (positioning === 'custom') {
+        // Consumer authors its own position styles via `style` — keep
+        // only the anchor wiring, derive nothing from placement.
+        anchorStyle = {positionAnchor: anchorId};
+      } else if (placementPath === 'measured') {
+        // No `position-area` on this engine: the coordinates come from the
+        // measurement, the UA popover box carries them as `position: fixed`.
+        anchorStyle = measured ? {top: measured.top, left: measured.left} : {};
+      } else {
+        anchorStyle = {
+          positionAnchor: anchorId,
+          positionArea: getPositionArea(
+            // Without `position-try-fallbacks` the flip is the measurement's
+            // to call; the side it picked goes into the CSS the engine has.
+            placementPath === 'anchor-flip' && measured
+              ? measured.side
+              : placement,
+            alignment,
+          ),
+          ...(placementPath === 'anchor' && {
+            positionTryFallbacks: getPositionTryFallbacks(placement, alignment),
+          }),
+        };
+      }
 
       const offsetStyle =
         positioning === 'anchor' && offset
@@ -908,6 +1095,9 @@ function useLayerImplementation(
         styles.base,
         overlayPaddingReset.reset,
         offsetStyle,
+        positioning === 'anchor' && placementPath === 'measured'
+          ? styles.measured
+          : null,
         xstyle,
       );
       const combinedClassName = extraClassName
@@ -924,6 +1114,9 @@ function useLayerImplementation(
           role={role}
           aria-label={ariaLabel}
           popover={lightDismiss ? 'auto' : 'manual'}
+          data-astryx-layer-placement={
+            positioning === 'anchor' ? placementPath : undefined
+          }
           className={combinedClassName}
           style={{
             ...stylexResult.style,
@@ -951,6 +1144,8 @@ function useLayerImplementation(
       contextMount,
       id,
       lightDismiss,
+      measured,
+      placementPath,
       popoverRefCallback,
       sentinelRefCallback,
     ],
