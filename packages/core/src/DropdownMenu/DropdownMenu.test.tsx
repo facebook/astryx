@@ -171,6 +171,29 @@ describe('DropdownMenu', () => {
     });
   });
 
+  it('keeps bottom-sheet section groups inside semantic list items', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <DropdownMenu
+        button={{label: 'File actions'}}
+        presentation="bottom-sheet"
+        items={[
+          {
+            type: 'section',
+            title: 'Create',
+            items: [{label: 'New file'}],
+          },
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /File actions/}));
+
+    const group = screen.getByRole('group', {name: 'Create'});
+    expect(group.parentElement).toHaveRole('listitem');
+  });
+
   it('drills into nested data items in bottom-sheet presentation', async () => {
     const user = userEvent.setup();
 

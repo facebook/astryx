@@ -122,7 +122,6 @@ export function MenuBottomSheetActionList({
           return (
             <li
               key={`section-${option.id ?? index}`}
-              role="presentation"
               {...stylex.props(styles.structuralItem)}>
               <div
                 role="group"
