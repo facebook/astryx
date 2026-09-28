@@ -113,7 +113,6 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-accent-muted'],
   },
   invisibleButton: {
-    all: 'unset',
     cursor: {
       default: 'inherit',
       ':is(:disabled,[aria-disabled="true"])': 'default',
@@ -129,7 +128,6 @@ const styles = stylex.create({
     outline: 'none',
   },
   invisibleAnchor: {
-    all: 'unset',
     cursor: {
       default: 'inherit',
       ':is(:disabled,[aria-disabled="true"])': 'default',
@@ -190,7 +188,6 @@ const styles = stylex.create({
     marginInlineEnd: `calc(${spacingVars['--spacing-1']} * -1)`,
   },
   chevronButton: {
-    all: 'unset',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
