@@ -189,7 +189,7 @@ export function computeRequiredFiles(loaded) {
  * @typedef {object} ContributionIdentities
  * @property {{slug: string, exportName: string}[]} themes
  * @property {string[]} components
- * @property {{id: string, type: string, name: string}[]} templates
+ * @property {{id: string, type: string, name: string, replaces?: string}[]} templates
  * @property {{version: string, id: string}[]} codemods
  * @property {string[]} docs
  * @property {string[]} agentDocsAppend
@@ -278,7 +278,12 @@ export async function collectIdentities(loaded) {
         errors.push({kind: 'templates', message: templateError.message});
       }
       identities.templates = templates
-        .map(t => ({id: t.dirName, type: t.type, name: t.name}))
+        .map(t => ({
+          id: t.dirName,
+          type: t.type,
+          name: t.name,
+          ...(t.replaces == null ? {} : {replaces: t.replaces}),
+        }))
         .sort((a, b) => a.id.localeCompare(b.id));
     } catch (err) {
       errors.push({
@@ -309,12 +314,13 @@ export async function collectIdentities(loaded) {
 
   if (loaded.docs && fs.existsSync(loaded.docs)) {
     try {
-      const {records, errors: docErrors} =
+      const {records, guides, errors: docErrors} =
         await discoverIntegrationDocs(loaded);
       for (const docError of docErrors) {
         errors.push({kind: 'docs', message: docError.message});
       }
-      identities.docs = records.map(r => r.name).sort();
+      // A guide placed in the docs tree is a doc contribution too.
+      identities.docs = [...records, ...guides].map(r => r.name).sort();
     } catch (err) {
       errors.push({kind: 'docs', message: /** @type {Error} */ (err).message});
     }

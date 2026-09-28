@@ -13,6 +13,10 @@
         "text": "[token-ref: unknown topic \"no-such-topic\"]"
       }
     ],
-    "id": "colors"
+    "id": "colors",
+    "links": {
+      "up": "astryx docs acme-guide --index",
+      "previous": "astryx docs acme-guide start"
+    }
   }
 }

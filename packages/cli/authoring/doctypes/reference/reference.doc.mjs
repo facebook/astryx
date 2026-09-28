@@ -95,7 +95,7 @@ export const doc = {
           name: 'sections[].content',
           type: 'ReferenceContentBlock[]',
           description:
-            'Ordered content blocks: prose, heading, code, table, list, and token-ref. Graph-only workflow, collection, and reference blocks are available through GraphContentBlock on NamespaceDoc, without widening this stable union.',
+            'Ordered content blocks: prose, heading, code, table, list, and token-ref. Graph-only workflow, collection, and reference blocks are available through GraphContentBlock on NamespaceDoc, without widening this stable union. Inside text, `{@link <target>}` links another doc by identity (`[<provider>:]<kind>:<name>`): the CLI prints the command that opens it, and `astryx doctor` warns on one that names no doc.',
           required: true,
         },
         {
@@ -144,7 +144,7 @@ export const docs = {
     },
     {
       type: 'prose',
-      text: 'Each `sections[].content` is an ordered array of ReferenceContentBlock, the stable discriminated union of prose, heading, code, table, list, and token-ref. Docs-graph-only workflow, collection, and reference blocks are exported separately as GraphContentBlock and accepted by NamespaceDoc. choice, callout, and checklist remain invalid. ReferenceContentBlock is also reused by the `notes` field on SchemaDoc and CommandDoc.',
+      text: 'Each `sections[].content` is an ordered array of ReferenceContentBlock, the stable discriminated union of prose, heading, code, table, list, and token-ref. Docs-graph-only workflow, collection, and reference blocks are exported separately as GraphContentBlock and accepted by NamespaceDoc. choice, callout, and checklist remain invalid. ReferenceContentBlock is also reused by the `notes` field on SchemaDoc and CommandDoc. Inside text, `{@link <target>}` links another doc by identity (`[<provider>:]<kind>:<name>`): the CLI prints the command that opens it, and `astryx doctor` warns on one that names no doc.',
     },
     {
       type: 'code',
@@ -161,7 +161,7 @@ export const docs = {
 type GraphContentBlock =
   | { type: 'workflow'; title?: string; steps: WorkflowStep[] }
   | { type: 'collection'; source: {slot: string}; presentation?: 'list' | 'cards' | 'compact'; whenEmpty?: 'show' | 'omit' }
-  | { type: 'reference'; target: string; projection?: {fields?: string[]; sections?: string[]} };`,
+  | { type: 'reference'; target: string; presentation?: 'summary' | 'compact' };`,
     },
     {
       type: 'prose',

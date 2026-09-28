@@ -63,6 +63,7 @@ export const COMPILED_DOC_KINDS = /** @type {const} */ ([
   'command',
   'enum',
   'theme',
+  'namespace',
 ]);
 
 /**
@@ -76,6 +77,7 @@ export const ROOT_KINDS = Object.freeze({
   templates: ['page', 'block'],
   themes: ['theme'],
   'self-docs': ['command', 'function', 'schema', 'enum'],
+  tree: ['namespace', 'generic'],
 });
 
 /**
@@ -94,8 +96,14 @@ export const ROOT_KINDS = Object.freeze({
  * @property {string} provider the package that owns the topic
  * @property {string | null} replaces the topic it took the place of
  * @property {string | null} lang the overlay language, or null for authored text
+ * @property {string} [providerId] the owner's provider id; the package name
+ *   when absent. The base file's sections resolve their links against it.
  * @property {AuthoredFile} base
- * @property {Array<AuthoredFile & {provider: string}>} extensions in merge order
+ * @property {Array<AuthoredFile & {provider: string, providerId?: string}>} extensions
+ *   in merge order; each extension's sections resolve their links against its
+ *   own provider id
+ * @property {boolean} [tree] a guide the docs tree places: its `placement` is
+ *   read by the tree, so the topic reader accepts it
  */
 
 /**
@@ -116,9 +124,32 @@ export const ROOT_KINDS = Object.freeze({
  * @property {string | null} lang
  * @property {{provider: string, replaces: string | null, extensions: string[]}} provenance
  * @property {Record<string, string>} sourceTitles section key -> authored title
+ * @property {Record<string, string>} sectionProviders section key -> the
+ *   provider id that wrote the section: a topic merges sections from its base
+ *   and its extensions, and each section's links resolve against its own
+ *   provider (spec:AST-047 FR9)
  * @property {any} doc the topic: authored fields in authored order, every
  *   section keyed; a linked node's token references carry `resolved`
  */
+
+/** Which provider wrote a section, until lowering records it by key. */
+const SECTION_PROVIDER = Symbol('astryx.docs.sectionProvider');
+
+/**
+ * Mark each section of one authored file with the provider that wrote it. The
+ * overlay, the merge, and the key stamp copy the mark with the section.
+ * @param {any} doc
+ * @param {string} provider
+ * @returns {any}
+ */
+function markProvider(doc, provider) {
+  return {
+    ...doc,
+    sections: doc.sections.map((/** @type {any} */ section) =>
+      withSourceTitle({...section, [SECTION_PROVIDER]: provider}, sourceTitle(section)),
+    ),
+  };
+}
 
 /**
  * Lower one topic: overlay each file, merge the extensions in order, and stamp
@@ -127,9 +158,18 @@ export const ROOT_KINDS = Object.freeze({
  * @returns {CompiledReferenceNode}
  */
 export function lowerReferenceTopic(input) {
-  let doc = readAuthoredFile(input.base);
+  let doc = markProvider(
+    readAuthoredFile(input.base, {placement: input.tree === true}),
+    input.providerId ?? input.provider,
+  );
   for (const extension of input.extensions) {
-    doc = mergeTopic(doc, readAuthoredFile(extension));
+    doc = mergeTopic(
+      doc,
+      markProvider(
+        readAuthoredFile(extension),
+        extension.providerId ?? extension.provider,
+      ),
+    );
     // Explicit authored IDs remain strict. Legacy title-derived collisions are
     // assigned deterministic compatibility keys after every extension merges.
     const problems = sectionKeyErrors(doc.sections);
@@ -143,8 +183,12 @@ export function lowerReferenceTopic(input) {
   const keyed = withSectionKeys(doc);
   /** @type {Record<string, string>} */
   const sourceTitles = {};
+  /** @type {Record<string, string>} */
+  const sectionProviders = {};
   for (const section of keyed.sections) {
     sourceTitles[section.id] = sourceTitle(section);
+    sectionProviders[section.id] =
+      section[SECTION_PROVIDER] ?? input.providerId ?? input.provider;
   }
   return {
     schemaVersion: COMPILED_DOC_SCHEMA_VERSION,
@@ -158,7 +202,9 @@ export function lowerReferenceTopic(input) {
       extensions: input.extensions.map(extension => extension.provider),
     },
     sourceTitles,
-    // The authored title travels in sourceTitles; JSON drops the symbol.
+    sectionProviders,
+    // The authored title and provider travel in sourceTitles and
+    // sectionProviders; JSON drops the symbols.
     doc: asJson(keyed, input.id),
   };
 }
@@ -255,13 +301,13 @@ function asJson(value, topic) {
  * @param {AuthoredFile} file
  * @returns {any}
  */
-function readAuthoredFile(file) {
+function readAuthoredFile(file, {placement = false} = {}) {
   if ('error' in file) throw file.error;
   const parsed = file.doc;
   if (!('sections' in parsed)) {
     throw new Error(`${file.file} is not a reference document.`);
   }
-  const problems = problemsInTopic(parsed);
+  const problems = problemsInTopic(parsed, {placement});
   if (problems.length > 0) {
     throw new Error(`${file.file} is invalid: ${problems.join('; ')}`);
   }

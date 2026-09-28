@@ -74,16 +74,16 @@ describe('discoverBuiltinTopics', () => {
 
 describe('discoverIntegrationDocs', () => {
   it('contributes nothing when no docs root is declared or the root is gone', async () => {
-    expect(await discoverIntegrationDocs({name: '@acme/widgets'})).toEqual({
-      records: [],
-      errors: [],
-    });
+    const nothing = {records: [], errors: [], namespaces: [], guides: []};
+    expect(await discoverIntegrationDocs({name: '@acme/widgets'})).toEqual(
+      nothing,
+    );
     expect(
       await discoverIntegrationDocs({
         name: '@acme/widgets',
         docs: path.join(tmpDir, 'nope'),
       }),
-    ).toEqual({records: [], errors: []});
+    ).toEqual(nothing);
   });
 
   it('reads every topic under the root, with what it declares', async () => {
@@ -169,10 +169,7 @@ describe('discoverIntegrationDocs', () => {
               id: 'steps',
               title: 'Steps',
               content: [
-                {
-                  type: 'workflow',
-                  steps: [{title: 'Install', description: 'Run install.'}],
-                },
+                {type: 'collection', source: {slot: 'guides'}},
               ],
             },
           ],
@@ -183,9 +180,9 @@ describe('discoverIntegrationDocs', () => {
     expect(errors[0].message).toContain('Invalid discriminator value');
   });
 
-  it('names a namespace doc instead of listing topic fields it lacks', async () => {
-    const {records, errors} = await discoverIntegrationDocs(
-      integration('@acme/namespace', {
+  it('hands namespace docs and placed guides to the docs tree, by provider id', async () => {
+    const found = await discoverIntegrationDocs({
+      ...integration('@acme/namespace', {
         'guides.doc.mjs': {
           type: 'namespace',
           name: 'guides',
@@ -193,14 +190,56 @@ describe('discoverIntegrationDocs', () => {
           summary: 'Every guide.',
           slots: {guides: {title: 'Guides', accepts: {kinds: ['generic']}}},
         },
+        'setup.doc.mjs': topic({
+          name: 'setup',
+          title: 'Set up',
+          placement: {parent: 'namespace:guides', slot: 'guides', order: 1},
+        }),
+        'deploying.doc.mjs': topic(),
+      }),
+      providerId: '@acme/tree-provider',
+    });
+    expect(found.errors).toEqual([]);
+    expect(found.records.map(record => record.name)).toEqual(['deploying']);
+    expect(found.records[0].providerId).toBe('@acme/tree-provider');
+    expect(found.namespaces).toMatchObject([
+      {
+        provider: '@acme/namespace',
+        providerId: '@acme/tree-provider',
+        source: '@acme/namespace/guides.doc.mjs',
+        doc: {name: 'guides'},
+      },
+    ]);
+    expect(found.guides).toMatchObject([
+      {
+        provider: '@acme/namespace',
+        providerId: '@acme/tree-provider',
+        kind: 'generic',
+        name: 'setup',
+        placement: {parent: 'namespace:guides', slot: 'guides', order: 1},
+      },
+    ]);
+  });
+
+  it('names what a namespace doc lacks, and refuses a placed guide that replaces a topic', async () => {
+    const {errors, namespaces, guides} = await discoverIntegrationDocs(
+      integration('@acme/namespace', {
+        'guides.doc.mjs': {type: 'namespace', name: 'guides', title: 'Guides'},
+        'setup.doc.mjs': topic({
+          name: 'setup',
+          replaces: 'getting-started',
+          placement: {parent: 'namespace:guides', slot: 'guides'},
+        }),
       }),
     );
-    expect(records).toEqual([]);
-    expect(errors).toHaveLength(1);
-    expect(errors[0].message).toContain(
-      '"guides" is a namespace doc. Only the docs graph reads namespace docs',
+    expect(namespaces).toEqual([]);
+    expect(guides).toEqual([]);
+    expect(errors.map(error => error.message).join('\n')).toMatch(
+      /guides\.doc\.mjs.*slots/,
     );
-    expect(errors[0].message).not.toContain('sections:');
+    expect(errors.map(error => error.message).join('\n')).toContain(
+      'is placed in the docs tree and also declares `replaces`',
+    );
   });
 });
 

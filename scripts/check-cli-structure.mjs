@@ -320,7 +320,7 @@ const INV22_KNOWN_GAPS = new Map([
   // remove with the layout command
   ['layout.mjs', new Set(['fs'])],
   ['search.mjs', new Set(['project'])],
-  ['template.mjs', new Set(['fs', 'project'])],
+  ['template.mjs', new Set(['project'])],
 ]);
 const handlerFiles = walkScopedMjs(HANDLER_DIR);
 const inv22Count = checkEnvironmentImports(
@@ -550,7 +550,7 @@ for (const m of apiIndexSrc.matchAll(/export\s*\{([^}]+)\}\s*from\s*['"]([^'"]+)
 
 /** @type {Set<string>} known FR1 gaps: fn values not yet exported.
  *  Remove an entry when the function is exported; do not add entries. */
-const FR1_KNOWN_GAPS = new Set(['themeTemplate']);
+const FR1_KNOWN_GAPS = new Set();
 
 let fr1Count = 0;
 

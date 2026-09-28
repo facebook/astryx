@@ -62,8 +62,9 @@ export function detailView(node) {
 
 /**
  * `docs.index`: what the topic is, and each section's key, title and summary.
+ * The index leaf adds the moves.
  * @param {import('./compile.mjs').CompiledReferenceNode} node
- * @returns {import('../../api/docs/docs.type.mjs').DocsIndex}
+ * @returns {Omit<import('../../api/docs/docs.type.mjs').DocsIndex, 'links'>}
  */
 export function indexView(node) {
   return buildDocsIndexData(node.doc);

@@ -11,7 +11,7 @@
  * The manifest module may also carry `debug` and `gapReport` NAMED exports.
  * They are not fields here on purpose: a CLI released before a given manifest
  * field existed could reject it and lose every contribution, while an unknown
- * named export is simply not read. See the `cli-integrations` doc topic.
+ * named export is simply not read. See `astryx docs cli/integrations`.
  */
 export interface AstryxIntegration {
   /** Stable logical provider ID. Omit to use package.json#name. Set this only

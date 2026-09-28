@@ -16,7 +16,9 @@
 /**
  * @typedef {object} IntegrationTemplateConflict
  * @property {string} id
- * @property {'warning'} severity
+ * @property {'info' | 'warning'} severity
+ * @property {'replaces' | 'accidental'} relationship
+ * @property {string} [replaces]
  * @property {string} integrationPackage
  * @property {'page' | 'block'} integrationType
  * @property {string} integrationName

@@ -83,6 +83,17 @@ function resolvePackage(cwd) {
   }
   const owner = typeof pkg.name === 'string' ? pkg.name : '(local integration)';
   const existingManifest = findLocalIntegrationManifestOrNull(packageDir);
+  // The nearest package.json above the cwd may belong to another package (an
+  // app that contains the folder). Only a package that is already an
+  // integration is found from a subfolder; the first add runs in the package.
+  const here = path.resolve(cwd ?? process.cwd());
+  if (existingManifest == null && path.resolve(packageDir) !== here) {
+    throw new AstryxError(
+      `${here} has no package.json. The nearest is ${packageFile} (${owner}), which is not an Astryx integration yet. Run this in your integration package's own directory, next to its package.json.`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
   const manifestFile =
     existingManifest ?? path.join(packageDir, 'astryx.integration.mjs');
   return {
@@ -353,7 +364,7 @@ async function addComponent(name, options) {
 
 /**
  * @param {string} name  topic name (must match [\w-]+)
- * @param {{cwd?: string, dryRun?: boolean, replaces?: string, extends?: string}} options
+ * @param {{cwd?: string, dryRun?: boolean, replaces?: string, extends?: string, parent?: string}} options
  * @returns {Promise<import('./integration-authoring.type.mjs').IntegrationAddResponse>}
  */
 async function addDoc(name, options) {
@@ -368,6 +379,20 @@ async function addDoc(name, options) {
   if (options.replaces != null && options.extends != null) {
     throw new AstryxError(
       'A topic either replaces another or extends it, not both.',
+      undefined,
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
+  if (options.parent != null && (options.replaces != null || options.extends != null)) {
+    throw new AstryxError(
+      'A guide placed in a namespace has its own route: it cannot also replace or extend a topic.',
+      undefined,
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
+  if (options.parent != null && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(options.parent)) {
+    throw new AstryxError(
+      '--parent must name a namespace in lowercase letters and digits joined by single hyphens, such as "acme".',
       undefined,
       ERROR_CODES.ERR_INVALID_ARGUMENT,
     );
@@ -436,11 +461,27 @@ async function addDoc(name, options) {
     ? `\n  replaces: '${options.replaces}',`
     : options.extends
       ? `\n  extends: '${options.extends}',`
-      : '';
+      : options.parent
+        ? `\n  placement: {parent: 'namespace:${options.parent}', slot: 'guides'},`
+        : '';
+  // A guide placed in a namespace needs that namespace: write it the first
+  // time, with the `guides` slot the placement names (spec:AST-046 FR11).
+  const namespaceFile =
+    options.parent == null
+      ? null
+      : assertWithin(`${options.parent}.doc.mjs`, root, {
+          label: 'namespace doc file',
+        });
+  const namespaceTitle =
+    options.parent == null ? '' : kebabToTitle(options.parent);
+  const namespaceContents = `/** @type {import('@astryxdesign/cli/authoring').NamespaceDoc} */\nexport default {\n  type: 'namespace',\n  name: '${options.parent}',\n  title: '${namespaceTitle}',\n  summary: 'Guides for ${namespaceTitle}.',\n  slots: {\n    guides: {title: 'Guides', accepts: {kinds: ['generic']}},\n  },\n};\n`;
   const docContents = `/** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */\nexport default {\n  type: 'generic',\n  name: '${name}',\n  title: '${title}',\n  description: '${title} documentation.',${relationship}\n  sections: [\n    {\n      title: 'Overview',\n      content: [\n        { type: 'prose', text: '${title} documentation.' },\n      ],\n    },\n  ],\n};\n`;
 
   /** @type {import('./add-helpers.mjs').WritePlan[]} */
   const plans = [{path: docFile, contents: docContents, createOnly: true}];
+  if (namespaceFile != null && !fs.existsSync(namespaceFile)) {
+    plans.push({path: namespaceFile, contents: namespaceContents, createOnly: true});
+  }
   const pkgUpdate = packageJsonUpdate(
     packageFile,
     rootPath,
@@ -1105,7 +1146,7 @@ export function integrationAddAgentDoc(line, options = {}) {
 
 const KIND_OPTIONS = {
   component: new Set(['cwd', 'dryRun']),
-  doc: new Set(['cwd', 'dryRun', 'replaces', 'extends']),
+  doc: new Set(['cwd', 'dryRun', 'replaces', 'extends', 'parent']),
   template: new Set(['cwd', 'dryRun', 'templateType']),
   codemod: new Set(['cwd', 'dryRun', 'to']),
   'agent-doc': new Set(['cwd', 'dryRun']),
@@ -1136,7 +1177,7 @@ function validateKindOptions(kind, options) {
  *
  * @param {'component'|'doc'|'template'|'codemod'|'agent-doc'|'theme'} kind
  * @param {string} name
- * @param {{cwd?: string, dryRun?: boolean, templateType?: 'page'|'block', to?: string, replaces?: string, extends?: string}} [options]
+ * @param {{cwd?: string, dryRun?: boolean, templateType?: 'page'|'block', to?: string, replaces?: string, extends?: string, parent?: string}} [options]
  * @returns {Promise<import('./integration-authoring.type.mjs').IntegrationAddResponse>}
  */
 export async function integrationAdd(kind, name, options = {}) {

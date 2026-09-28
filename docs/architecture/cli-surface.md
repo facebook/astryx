@@ -80,11 +80,15 @@ goes through the `Project` seam in `foundation/config`, which resolves the
 integrations named in `astryx.config` and then autolinks any DECLARED dependency
 that ships a root `astryx.integration.*` manifest — a config entry is how a
 project pins an integration, not how the CLI finds one. Each integration is
-loaded independently, so one broken package degrades that package's
-contribution and never fails the run.
+loaded independently. A manifest load failure withdraws that package. An error
+in one contribution kind does not hide other valid kinds, and invalid template
+or component files do not hide valid siblings.
 
 AST-017 DEC-4 owns stable response-entry fields and requires their complete type,
-test, applicable text, and consumer-documentation projections.
+test, applicable text, and consumer-documentation projections. A `template.list`
+entry can carry optional `replaces`, naming the Core id that a winning
+integration template supersedes; the Core entry is omitted from the default list
+and remains available through explicit Core package selection.
 
 ## Boundaries and invariants
 
@@ -162,11 +166,13 @@ test, applicable text, and consumer-documentation projections.
   resolver, and fails when the packed artifact has no usable public export. This
   contract does not require project-local TypeScript or promise validation under
   TypeScript's Node16 or bundler resolution modes.
-- **INV18 — Integration diagnostics are read-only and package-specific.** Doctor
-  validation reports malformed or unreachable roots and contribution conflicts
-  without rewriting the package. Everyday discovery skips a broken integration
-  and records its issue; a package-scoped theme lookup surfaces that package's
-  blocking catalog error instead of misreporting the theme as unknown.
+- **INV18 — Integration diagnostics are read-only and contribution-specific.**
+  Doctor reports malformed or unreachable roots and contribution conflicts
+  without rewriting the package. A manifest load failure withdraws the package.
+  A contribution-kind error remains visible without hiding other valid kinds.
+  Invalid template and component files do not hide valid siblings. A
+  package-scoped theme lookup still surfaces that package's blocking catalog
+  error instead of misreporting the theme as unknown.
 - **INV19 — Integration themes are packaged editable source.** The manifest's
   `themes` root contains one directory per slug. Every theme source has a mandatory
   same-stem, strongly typed `ThemeDoc`; there is no root item catalog. Discovery
@@ -224,13 +230,31 @@ test, applicable text, and consumer-documentation projections.
   there is no catalog file under a root and no per-item map or list in the
   manifest (`spec:AST-039/FR11`). A released alternate reader is an isolated
   compatibility path, not a second authoring convention.
-- **INV25 — Every CLI doc names the topic that reads it.** Each command, API
-  function, schema, and enum doc the CLI ships declares a `namespace`.
-  `cli/commands` and `cli/api` docs are sections of `astryx docs cli`, keyed
-  `commands-<name>` and `api-<name>`; `authoring` docs are sections of
+- **INV25 — Every CLI doc names the group that reads it.** Each command, API
+  function, schema, and enum doc the CLI ships declares a `namespace`. The docs
+  tree adopts `cli/commands` and `cli/api` docs, one route each under
+  `cli/commands` and `cli/api/<kind>s`; `authoring` docs are sections of
   `astryx docs authoring` and appear in its list. `astryx doctor` fails when a
-  CLI doc has no namespace, names one no topic reads, or disagrees with the
+  CLI doc has no namespace, names one nothing reads, or disagrees with the
   authoring list, so every doc the CLI ships stays readable from the CLI.
+- **INV26 — The docs tree gives each doc one home (`spec:AST-046`).** The tree
+  is compiled in `foundation/doc-compiler/tree.mjs` from namespace docs, the
+  guides they place, and the typed docs they adopt; the CLI's own tree files
+  live in `assets/docs/tree/`. A namespace never lists or scans its children.
+  `astryx docs <route>` reads it one level at a time, and `astryx doctor` warns
+  on any tree error diagnostic or unplaced CLI doc.
+  An integration's namespace docs and placed guides join the same tree, named
+  by its provider id; the CLI's own docs keep a contested route.
+  Every flat topic sits in the generated Unorganized level under its own name,
+  so every doc has a home in the tree.
+- **INV27 — Every read says where to go next (`spec:AST-047`).** A read names
+  its place and ends with its moves (up, down, across, and out) as runnable
+  commands, and its JSON carries the same moves as `links`; a search hit
+  carries `parent`. Nothing a read shows can go stale: moves are derived, and a
+  test proves every command a doc shows is real. `astryx docs` and
+  `astryx search` meet it first.
+  A link between docs names its target by doc identity and is resolved on
+  every read; Doctor warns on one that names no doc.
 
 Some modules predate INV20–INV23 and do not meet them yet; `spec:AST-042` lists
 the known gaps.
@@ -251,6 +275,10 @@ updated in the same pull request when it moves an invariant:
   module access to the environment (INV20–INV21);
 - adding a command, API function, schema, or enum doc, or a namespace a CLI
   doc may declare (INV25);
+- adding a docs-tree namespace or guide, or changing how a doc gets its home or
+  its route (INV26);
+- adding a read that offers no moves, or changing how a move is spelled in text
+  or JSON (INV27);
 - changing an integration writer's receipt, no-clobber/rollback behavior,
   package.json mutation policy, or public subpath spelling;
 - changing what `integration pack --check` executes, resolves, or proves about

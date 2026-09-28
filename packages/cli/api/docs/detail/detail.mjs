@@ -13,7 +13,7 @@
 
 import {linkReferenceTopic} from '../../../foundation/doc-compiler/compile.mjs';
 import {detailView} from '../../../foundation/doc-compiler/lenses.mjs';
-import {referenceTargets, resolveTopicDocs} from '../_adapter.mjs';
+import {referenceTargets, resolveTopicDocs, topicLinks} from '../_adapter.mjs';
 
 /**
  * @param {string} topic
@@ -25,10 +25,19 @@ import {referenceTargets, resolveTopicDocs} from '../_adapter.mjs';
  * @returns {Promise<import('../docs.type.mjs').DocsDetailResponse>}
  */
 export async function detail(topic, options = {}) {
-  const {catalog, node, lang} = await resolveTopicDocs(topic, options);
+  const {catalog, node, lang, entry} = await resolveTopicDocs(topic, options);
   const linked = await linkReferenceTopic(
     node,
     referenceTargets(catalog, lang),
   );
-  return {type: 'docs.detail', data: detailView(linked)};
+  return {
+    type: 'docs.detail',
+    data: {
+      ...detailView(linked),
+      // A guide the docs tree places is read by its route (or an old name it
+      // keeps), not its doc name.
+      ...(entry.tree ? {name: entry.name} : {}),
+      links: await topicLinks(catalog, entry),
+    },
+  };
 }

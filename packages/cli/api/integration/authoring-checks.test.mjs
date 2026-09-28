@@ -20,7 +20,14 @@ import {
 
 let tmpDir;
 
-function writeIntegration({id, name, type = 'block', root = tmpDir}) {
+function writeIntegration({
+  id,
+  name,
+  type = 'block',
+  root = tmpDir,
+  replacements,
+  withSource = true,
+}) {
   fs.mkdirSync(root, {recursive: true});
   fs.writeFileSync(
     path.join(root, 'package.json'),
@@ -34,8 +41,9 @@ function writeIntegration({id, name, type = 'block', root = tmpDir}) {
   fs.mkdirSync(path.dirname(stem), {recursive: true});
   fs.writeFileSync(
     `${stem}.doc.mjs`,
-    `export default {type: '${type}', name: ${JSON.stringify(name)}, description: 'fixture'};\n`,
+    `export default {type: '${type}', name: ${JSON.stringify(name)}, description: 'fixture'${replacements?.[id] == null ? '' : `, replaces: ${JSON.stringify(replacements[id])}`}};\n`,
   );
+  if (!withSource) return;
   fs.writeFileSync(
     `${stem}.tsx`,
     'export default function Fixture() { return null; }\n',
@@ -156,6 +164,159 @@ describe('integrationTemplateConflicts', () => {
     expect(result.data.conflicts.map(conflict => conflict.id)).toContain(
       core.dirName,
     );
+  });
+
+  it('classifies a valid replacement and points to the Core original', async () => {
+    const core = (await discoverCoreTemplates()).find(
+      template => template.type === 'page',
+    );
+    expect(core).toBeDefined();
+    writeIntegration({
+      id: 'acme-app-shell',
+      name: 'Acme app shell',
+      type: core.type,
+      replacements: {'acme-app-shell': core.dirName},
+    });
+
+    const result = await integrationTemplateConflicts(undefined, {cwd: tmpDir});
+
+    expect(result.data.issues).toEqual([]);
+    expect(result.data.conflicts).toEqual([
+      expect.objectContaining({
+        id: 'acme-app-shell',
+        severity: 'info',
+        relationship: 'replaces',
+        replaces: core.dirName,
+      }),
+    ]);
+    expect(result.data.conflicts[0].command).toContain(
+      `template ${core.dirName} --package @astryxdesign/core`,
+    );
+  });
+
+  it('reports a replacement target that Core does not provide', async () => {
+    writeIntegration({
+      id: 'acme-app-shell',
+      name: 'Acme app shell',
+      type: 'page',
+      replacements: {'acme-app-shell': 'missing-core-shell'},
+    });
+
+    const result = await integrationTemplateConflicts(undefined, {cwd: tmpDir});
+
+    expect(result.data.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'missing_template_replacement_target',
+          severity: 'error',
+        }),
+      ]),
+    );
+  });
+
+  it('reports a replacement declared by a template that cannot be used', async () => {
+    const [core] = await discoverCoreTemplates();
+    expect(core).toBeDefined();
+    writeIntegration({
+      id: 'broken-template',
+      name: 'Broken template',
+      type: core.type,
+      replacements: {'broken-template': core.dirName},
+      withSource: false,
+    });
+
+    const result = await integrationTemplateConflicts(undefined, {cwd: tmpDir});
+
+    expect(result.data.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'invalid_template_replacement',
+          severity: 'error',
+          message: expect.stringContaining('cannot be used'),
+        }),
+      ]),
+    );
+  });
+
+  it('reports two templates that replace the same Core target as ambiguous', async () => {
+    const [core] = await discoverCoreTemplates();
+    expect(core).toBeDefined();
+    const replacements = {
+      'acme-app-shell-a': core.dirName,
+      'acme-app-shell-b': core.dirName,
+    };
+    writeIntegration({
+      id: 'acme-app-shell-a',
+      name: 'Acme app shell A',
+      type: core.type,
+      replacements,
+    });
+    writeIntegration({
+      id: 'acme-app-shell-b',
+      name: 'Acme app shell B',
+      type: core.type,
+      replacements,
+    });
+
+    const result = await integrationTemplateConflicts(undefined, {cwd: tmpDir});
+
+    expect(result.data.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'ambiguous_template_replacement',
+          severity: 'error',
+        }),
+      ]),
+    );
+  });
+
+  it('reports a replacement whose template kind differs from Core', async () => {
+    const corePage = (await discoverCoreTemplates()).find(
+      template => template.type === 'page',
+    );
+    expect(corePage).toBeDefined();
+    writeIntegration({
+      id: 'acme-app-shell',
+      name: 'Acme app shell',
+      type: 'block',
+      replacements: {'acme-app-shell': corePage.dirName},
+    });
+
+    const result = await integrationTemplateConflicts(undefined, {cwd: tmpDir});
+
+    expect(result.data.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'invalid_template_replacement',
+          severity: 'error',
+          message: expect.stringContaining('same type'),
+        }),
+      ]),
+    );
+  });
+
+  it('does not recommend an impossible replacement for a different Core kind', async () => {
+    const corePage = (await discoverCoreTemplates()).find(
+      template => template.type === 'page',
+    );
+    expect(corePage).toBeDefined();
+    writeIntegration({
+      id: corePage.dirName,
+      name: 'Acme block with a page id',
+      type: 'block',
+    });
+
+    const result = await integrationTemplateConflicts(undefined, {cwd: tmpDir});
+    const conflict = result.data.conflicts.find(
+      item => item.id === corePage.dirName,
+    );
+
+    expect(conflict?.relationship).toBe('accidental');
+    expect(conflict?.message).toContain(
+      'cannot replace a different template kind',
+    );
+    expect(conflict?.message).toContain('Rename');
+    expect(conflict?.message).not.toContain('set replaces');
   });
 
   it('shell-quotes unusual ids instead of allowing command substitution', () => {

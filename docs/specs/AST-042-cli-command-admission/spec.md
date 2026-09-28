@@ -132,8 +132,6 @@ The CLI has 17 top-level commands. The command docs of 28 commands and
 subcommands name the function they call. Known gaps, for which this record does
 not assign migrations:
 
-- `theme template` calls a function that `@astryxdesign/cli/api` does not
-  export (FR1);
 - the component, discover, layout, search, template, and theme handlers read
   project state or files themselves (FR1);
 - the theme handler draws its target table from characters, and the docs

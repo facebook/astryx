@@ -75,7 +75,7 @@ describe('hyphenated doc filenames', () => {
 
   it('returns docs.detail via API for hyphenated topic', async () => {
     const {docs: docsApi} = await import('../../../api/docs/docs.mjs');
-    const result = await docsApi('getting-started');
+    const result = await docsApi('getting-started', undefined, {full: true});
     expect(result.type).toBe('docs.detail');
     expect(result.data).toBeDefined();
     expect(result.data.description).toBeDefined();
@@ -108,10 +108,11 @@ describe('progressive reads', () => {
   /** @param {string} out */
   const widest = out => Math.max(...out.split('\n').map(line => line.length));
 
-  it('keeps the 0.6.x stacked topic list', async () => {
+  it('lists every topic on one line each', async () => {
     const {status, stdout} = await runCli(['docs']);
     expect(status).toBe(0);
-    expect(stdout).toMatch(/^topic: +principles$/m);
+    expect(stdout).toMatch(/^principles +\S/m);
+    expect(widest(stdout)).toBeLessThanOrEqual(120);
     expect(stdout).toContain('Usage: pnpm exec astryx docs <topic>');
   }, SLOW);
 
@@ -120,7 +121,7 @@ describe('progressive reads', () => {
     expect(status).toBe(0);
     expect(stdout).toMatch(/^quick-start +Quick Start/m);
     expect(stdout).toContain('docs theme <section>');
-    expect(stdout).toMatch(/Read everything: +\S.* docs theme$/m);
+    expect(stdout).toMatch(/Read everything: +\S.* docs theme --full$/m);
     expect(widest(stdout)).toBeLessThanOrEqual(120);
   }, SLOW);
 
@@ -130,26 +131,125 @@ describe('progressive reads', () => {
     expect(stdout).toMatch(/^## Quick Start/m);
   }, SLOW);
 
-  it('prints the whole topic by default, as before', async () => {
+  it("lists a topic's sections by default; --full prints the whole topic", async () => {
     const index = await runCli(['docs', 'theme', '--index']);
-    const full = await runCli(['docs', 'theme']);
+    expect((await runCli(['docs', 'theme'])).stdout).toBe(index.stdout);
+    const full = await runCli(['docs', 'theme', '--full']);
     expect(full.status).toBe(0);
     expect(full.stdout).toMatch(/^## Quick Start/m);
     expect(full.stdout.length).toBeGreaterThan(index.stdout.length * 3);
-    expect((await runCli(['--detail', 'full', 'docs', 'theme'])).stdout).toBe(
+    expect((await runCli(['--detail', 'full', 'docs', 'theme', '--full'])).stdout).toBe(
       full.stdout,
     );
   }, SLOW);
 
   it('returns the matching envelopes as JSON', async () => {
     const envelope = async args => JSON.parse((await runCli([...args, '--json'])).stdout);
+    // JSON keeps docs(): a bare read is the whole topic.
     expect((await envelope(['docs', 'theme'])).type).toBe('docs.detail');
+    expect((await envelope(['docs', 'theme', '--full'])).type).toBe('docs.detail');
     expect((await envelope(['docs', 'theme', '--index'])).type).toBe(
       'docs.index',
     );
     expect((await envelope(['docs', 'theme', 'quick-start'])).type).toBe(
       'docs.detail.section',
     );
+  }, SLOW);
+});
+
+describe('the docs tree, one level at a time', () => {
+  const SLOW = 60_000;
+  /** @param {string} out */
+  const widest = out => Math.max(...out.split('\n').map(line => line.length));
+
+  it('lists the docs tree first, under its own heading, then the topics', async () => {
+    const {status, stdout} = await runCli(['docs']);
+    expect(status).toBe(0);
+    expect(stdout).toMatch(/^Docs tree$/m);
+    expect(stdout).toMatch(/^Topics$/m);
+    expect(stdout).toMatch(/^cli +Commands, programmatic APIs/m);
+    expect(stdout.indexOf('\ncli ')).toBeLessThan(stdout.indexOf('\nprinciples '));
+    // The guide's old name is still listed, as a topic that opens it.
+    expect(stdout).toMatch(/^cli-integrations +Build an Astryx integration/m);
+  }, SLOW);
+
+  it("shows a child's own name when its route name does not spell it", async () => {
+    const {status, stdout} = await runCli(['docs', 'cli/api/functions']);
+    expect(status).toBe(0);
+    expect(stdout).toMatch(/^assert-response +assertResponse\(\): \S/m);
+    expect(stdout).toMatch(/^search +search\(\): Unified ranked search/m);
+  }, SLOW);
+
+  it('prints a namespace: each slot, its children, and how to go down and up', async () => {
+    const {status, stdout} = await runCli(['docs', 'cli/api']);
+    expect(status).toBe(0);
+    expect(stdout).toMatch(/^API$/m);
+    expect(stdout).toMatch(/^Reference$/m);
+    expect(stdout).toMatch(/^functions +Functions: Every function/m);
+    expect(stdout).toMatch(/^schemas +/m);
+    expect(stdout).toMatch(/^enums +/m);
+    // One level only: no function is listed on the api page.
+    expect(stdout).not.toMatch(/^search +/m);
+    expect(stdout).toMatch(/Open one: .*docs cli\/api\/<name>$/m);
+    expect(stdout).toMatch(/Up: .*docs cli$/m);
+    expect(widest(stdout)).toBeLessThanOrEqual(120);
+  }, SLOW);
+
+  it('prints a typed doc and the way back up', async () => {
+    const {status, stdout} = await runCli(['docs', 'cli/api/functions/search']);
+    expect(status).toBe(0);
+    expect(stdout).toMatch(/^## search\(\)/m);
+    expect(stdout).toContain('Read it with `astryx docs cli/commands/search`.');
+    expect(stdout).toMatch(/Up: .*docs cli\/api\/functions$/m);
+  }, SLOW);
+
+  it('refuses --index with --full', async () => {
+    const both = await runCli(['docs', 'theme', '--index', '--full', '--json']);
+    expect(both.status).toBe(1);
+    expect(JSON.parse(both.stdout).code).toBe('ERR_INVALID_ARGUMENT');
+  }, SLOW);
+
+  it('reads the integration guide by its route, and by its old name', async () => {
+    const guide = await runCli(['docs', 'cli/integrations', '--index']);
+    expect(guide.status).toBe(0);
+    expect(guide.stdout).toMatch(/Read one section: .*docs cli\/integrations <section>/);
+    // A bare read is one level too: the sections, and how to read it all.
+    const bare = await runCli(['docs', 'cli/integrations']);
+    expect(bare.status).toBe(0);
+    expect(bare.stdout).toBe(guide.stdout);
+    expect(bare.stdout).toMatch(/Read everything: +.*docs cli\/integrations --full$/m);
+    const one = await runCli(['docs', 'cli/integrations', 'codemods']);
+    expect(one.status).toBe(0);
+    expect(one.stdout).toMatch(/^## Codemods$/m);
+    expect(one.stdout).toMatch(/^Up: .*docs cli\/integrations --index$/m);
+    expect(one.stdout).toMatch(/^Previous: .*docs cli\/integrations agent-docs$/m);
+    expect(one.stdout).toMatch(/^Next: .*docs cli\/integrations recording-runs$/m);
+    const full = await runCli(['docs', 'cli/integrations', '--full']);
+    expect(full.status).toBe(0);
+    expect(full.stdout).toMatch(/^## Overview$/m);
+    expect(full.stdout.length).toBeGreaterThan(bare.stdout.length * 4);
+    const old = await runCli(['docs', 'cli-integrations', '--full']);
+    expect(old.status).toBe(0);
+    expect(old.stdout).toMatch(/^## Overview$/m);
+  }, SLOW);
+
+  it('returns docs.node as JSON, and fails a section of a namespace', async () => {
+    const node = JSON.parse((await runCli(['docs', 'cli', '--json'])).stdout);
+    expect(node).toMatchObject({
+      type: 'docs.node',
+      data: {route: 'cli', kind: 'namespace', breadcrumb: []},
+    });
+    expect(node.data.slots.map(slot => slot.name)).toEqual(['guides', 'reference']);
+    const section = await runCli(['docs', 'cli', 'commands', '--json']);
+    expect(section.status).toBe(1);
+    const error = JSON.parse(section.stdout);
+    expect(error).toMatchObject({code: 'ERR_UNKNOWN_SECTION'});
+    expect(error.suggestions.map(s => s.name)).toEqual([
+      'cli/integrations',
+      'cli/writing-docs',
+      'cli/commands',
+      'cli/api',
+    ]);
   }, SLOW);
 });
 

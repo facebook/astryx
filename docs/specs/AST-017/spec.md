@@ -363,7 +363,7 @@ and every integration handler run, the app first; a throwing handler is skipped
 without affecting the others or the command; `inheritDebug: false` in the
 package's `astryx` field refuses inherited handlers; and a repeated project load
 delivers each event once. Its configuration schema entry states that rule, and
-the `cli-integrations` authoring topic documents the `debug` named export. Draft
+the `cli/integrations` guide documents the `debug` named export. Draft
 AST-031 details the same model for runtime handler features. No command yet
 reports an effective contributed value with its sources, so existing contributed
 settings do not meet FR20's inspection requirement; this record does not choose

@@ -8,14 +8,14 @@
  *   English `description` is read from its file; a contributed topic already
  *   carries the one discovery read. The listing never applies --dense/--zh
  *   overlays.
- * @output { type: 'docs.list', data: DocsListEntry[] } — one entry per topic in
- *   read order, each naming the package that owns it, matching
- *   `astryx --json docs`.
+ * @output { type: 'docs.list', data: DocsListEntry[] } — one entry per topic
+ *   in read order, then one per top-level docs-tree namespace, each naming the
+ *   package that owns it, matching `astryx --json docs`.
  * @position Leaf under api/docs. Sibling of detail; both share _adapter.mjs.
  */
 
 import {loadTopicFile} from '../../../foundation/doc-compiler/read.mjs';
-import {loadDocsCatalog} from '../_adapter.mjs';
+import {loadDocsCatalog, projectTree} from '../_adapter.mjs';
 
 /**
  * @param {object} [options]
@@ -41,5 +41,28 @@ export async function list({cwd} = {}) {
     if (entry.replaces != null) listed.replaces = entry.replaces;
     entries.push(listed);
   }
-  return {type: 'docs.list', data: entries};
+  // Then the docs tree's top-level namespaces, the CLI's and each
+  // integration's, each the way into a whole branch (spec:AST-046). After the
+  // topics, so the first topic stays the first entry.
+  const tree = await projectTree(catalog);
+  // An old name a placed guide keeps is still listed, as a topic that opens it.
+  for (const {name, route} of tree.aliases?.values() ?? []) {
+    const node = tree.get(route);
+    if (node) {
+      entries.push({topic: name, description: node.summary, package: node.provider});
+    }
+  }
+  for (const root of tree.roots()) {
+    entries.push({
+      topic: root.route,
+      description: root.summary,
+      package: root.provider,
+      kind: 'namespace',
+    });
+  }
+  // A package whose docs did not load is named, so its author knows why its
+  // topics are missing.
+  return catalog.issues.length === 0
+    ? {type: 'docs.list', data: entries}
+    : {type: 'docs.list', data: entries, meta: {notLoaded: [...catalog.issues]}};
 }

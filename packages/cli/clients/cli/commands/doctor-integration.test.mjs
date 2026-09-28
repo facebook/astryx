@@ -31,6 +31,8 @@ function writeIntegration({
   id,
   name = 'Integration template',
   missingRoot = false,
+  replacements,
+  type = 'page',
 }) {
   fs.writeFileSync(
     path.join(tmpDir, 'package.json'),
@@ -45,7 +47,7 @@ function writeIntegration({
   fs.mkdirSync(path.dirname(stem), {recursive: true});
   fs.writeFileSync(
     `${stem}.doc.mjs`,
-    `export default {type: 'page', name: ${JSON.stringify(name)}, description: 'fixture'};\n`,
+    `export default {type: '${type}', name: ${JSON.stringify(name)}, description: 'fixture'${replacements?.[id] == null ? '' : `, replaces: ${JSON.stringify(replacements[id])}`}};\n`,
   );
   fs.writeFileSync(
     `${stem}.tsx`,
@@ -247,6 +249,71 @@ describe('doctor integration — command', () => {
       `--package @acme/widgets`,
     );
     expect(process.exitCode).toBeUndefined();
+  });
+
+  it('templates reports an intentional replacement and the Core-original command', async () => {
+    const core = (await discoverCoreTemplates()).find(
+      template => template.type === 'page',
+    );
+    expect(core).toBeDefined();
+    writeIntegration({
+      id: 'acme-app-shell',
+      type: core.type,
+      replacements: {'acme-app-shell': core.dirName},
+    });
+    process.chdir(tmpDir);
+
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      '--json',
+      'doctor',
+      'integration',
+      'templates',
+    ]);
+
+    const parsed = JSON.parse(logCalls.join('\n'));
+    expect(parsed.data.issues).toEqual([]);
+    expect(parsed.data.conflicts).toEqual([
+      expect.objectContaining({
+        id: 'acme-app-shell',
+        relationship: 'replaces',
+        replaces: core.dirName,
+        severity: 'info',
+      }),
+    ]);
+    expect(parsed.data.conflicts[0].command).toContain(
+      `--package @astryxdesign/core`,
+    );
+    expect(process.exitCode).toBeUndefined();
+  });
+
+  it('templates exits 1 for a missing replacement target', async () => {
+    writeIntegration({
+      id: 'acme-app-shell',
+      replacements: {'acme-app-shell': 'missing-core-shell'},
+    });
+    process.chdir(tmpDir);
+
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      '--json',
+      'doctor',
+      'integration',
+      'templates',
+    ]);
+
+    const parsed = JSON.parse(logCalls.join('\n'));
+    expect(parsed.data.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'missing_template_replacement_target',
+          severity: 'error',
+        }),
+      ]),
+    );
+    expect(process.exitCode).toBe(1);
   });
 
   it('templates exits 1 when structural errors prevent a trustworthy check', async () => {

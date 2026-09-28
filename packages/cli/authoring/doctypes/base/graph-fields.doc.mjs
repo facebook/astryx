@@ -12,25 +12,27 @@ export const doc = {
   displayName: 'Authored doc graph fields',
   namespace: 'authoring',
   description:
-    'Placement, compatibility aliases, and audience: fields every authored doc kind declares for the docs graph. The docs graph is not built yet, so nothing reads them: a reference topic that sets one fails to load, and other doc kinds accept them and ignore them.',
+    "Placement, compatibility aliases, and audience: fields every authored doc kind declares for the docs tree. The docs tree reads `placement` and `aliases` for every guide, the CLI's and each integration's; audience is not built yet. A reference topic outside the docs tree that sets one fails to load, and other doc kinds accept them and ignore them.",
   appliesTo: 'Every supported .doc.mjs object',
   fields: [
     {
       name: 'placement',
       type: 'DocPlacement',
       description:
-        'Requests one canonical parent in the docs graph. Not read yet: a topic that sets it fails to load.',
+        "Names the doc's one parent in the docs tree: a namespace of the same package, one of its slots, and an order. Read for every guide, the CLI's and each integration's: a guide with `placement` gets a route in the tree instead of a flat topic name, and cannot also `replaces` or `extends` a topic. In the CLI's own topic directory a topic that sets it fails to load: the CLI keeps its guides in its docs tree directory. Commands, API functions, schemas, and enums do not set it: the tree adopts each by its `namespace`.",
       fields: [
         {
           name: 'placement.parent',
           type: 'string',
-          description: 'Stable reference to the requested parent namespace.',
+          description:
+            'The parent namespace: `namespace:<name>` in the same package.',
           required: true,
         },
         {
           name: 'placement.slot',
           type: 'string',
-          description: 'Named slot owned by the parent namespace.',
+          description:
+            "A slot the parent namespace declares; it must accept this doc's kind. Optional when the parent has one slot.",
         },
         {
           name: 'placement.order',
@@ -43,7 +45,7 @@ export const doc = {
       name: 'aliases',
       type: 'string[]',
       description:
-        'Prior names or routes the docs graph will keep resolving to this doc, without creating another identity. Not read yet: a topic that sets it fails to load.',
+        'Old names a guide the docs tree places keeps answering to: `astryx docs <alias>` opens the guide, and the topic list still names it. A reference topic outside the docs tree that sets it fails to load.',
     },
     {
       name: 'audience',

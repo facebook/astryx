@@ -24,6 +24,7 @@ import {
 import {discoverHooks, findHookDoc} from '../discovery/hook-discovery.mjs';
 import {CLI_ROOT, findCoreDir} from '../fs/paths.mjs';
 import {packageSource} from './source.mjs';
+import {treeDocFiles} from './tree.mjs';
 
 export {packageSource};
 
@@ -42,7 +43,7 @@ const NON_DESCRIPTOR_DIRS = new Set([
 ]);
 
 /**
- * @typedef {'components' | 'hooks' | 'templates' | 'themes' | 'docs' | 'self-docs'} DocRoot
+ * @typedef {'components' | 'hooks' | 'templates' | 'themes' | 'docs' | 'self-docs' | 'tree'} DocRoot
  */
 
 /**
@@ -125,6 +126,10 @@ export async function collectDocInputs(project) {
     }
   }
 
+  // The docs tree's own files: its namespaces and the guides it places.
+  for (const file of treeDocFiles()) {
+    list.add('tree', path.basename(file, '.doc.mjs'), CLI_PACKAGE, file);
+  }
   for (const file of selfDocFiles()) {
     const name = path
       .relative(CLI_ROOT, file)

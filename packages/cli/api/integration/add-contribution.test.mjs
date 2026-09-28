@@ -314,6 +314,44 @@ describe('integrationAdd doc', () => {
     expect(docErrors).toEqual([]);
   });
 
+  it('places a guide in a namespace of the package, writing the namespace once', async () => {
+    setup();
+    const first = await integrationAdd('doc', 'deploying', {
+      cwd: tmpDir,
+      parent: 'acme',
+    });
+    expect(first.data.files).toEqual(
+      expect.arrayContaining(['docs/deploying.doc.mjs', 'docs/acme.doc.mjs']),
+    );
+    const guide = fs.readFileSync(path.join(tmpDir, 'docs/deploying.doc.mjs'), 'utf-8');
+    expect(guide).toContain("placement: {parent: 'namespace:acme', slot: 'guides'}");
+    const namespace = fs.readFileSync(path.join(tmpDir, 'docs/acme.doc.mjs'), 'utf-8');
+    expect(namespace).toContain("type: 'namespace'");
+    expect(namespace).toContain("guides: {title: 'Guides', accepts: {kinds: ['generic']}}");
+
+    const second = await integrationAdd('doc', 'upgrading', {
+      cwd: tmpDir,
+      parent: 'acme',
+    });
+    expect(second.data.files).not.toContain('docs/acme.doc.mjs');
+
+    const validation = await validateLocalIntegration(tmpDir);
+    expect(validation.issues.filter(i => i.code === 'invalid_doc')).toEqual([]);
+  });
+
+  it('refuses --parent with a relationship, or a namespace name that is not a route segment', async () => {
+    setup();
+    await expect(
+      integrationAdd('doc', 'x', {cwd: tmpDir, parent: 'acme', replaces: 'getting-started'}),
+    ).rejects.toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
+    await expect(
+      integrationAdd('doc', 'x', {cwd: tmpDir, parent: 'Acme Kit'}),
+    ).rejects.toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
+    await expect(
+      integrationAdd('template', 'x', {cwd: tmpDir, parent: 'acme'}),
+    ).rejects.toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
+  });
+
   it('includes replaces in the generated doc', async () => {
     setup();
     const result = await integrationAdd('doc', 'my-tokens', {

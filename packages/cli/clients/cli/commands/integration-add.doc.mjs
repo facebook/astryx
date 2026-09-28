@@ -51,6 +51,12 @@ export const doc = {
         'Existing doc topic this one extends (letters, digits, _ and -); only valid for doc and not with --replaces',
     },
     {
+      flag: '--parent <namespace>',
+      param: 'options.parent',
+      description:
+        "Namespace of this package to place the doc in, as a guide in its `guides` slot; writes the namespace doc when it is missing. Only valid for doc, and not with --replaces or --extends",
+    },
+    {
       flag: '--to <version>',
       param: 'options.to',
       description:
@@ -78,6 +84,10 @@ export const doc = {
     {
       label: 'Extend a doc topic',
       cli: 'astryx integration add doc acme-theming --extends theme',
+    },
+    {
+      label: 'Add a guide to the package\'s own docs section',
+      cli: 'astryx integration add doc deploying --parent acme',
     },
     {
       label: 'Add a codemod',

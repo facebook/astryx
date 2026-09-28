@@ -94,6 +94,20 @@ function legacyTitleMatchIndex(sections, query) {
 }
 
 /**
+ * A name as a docs-tree route segment: lowercase words joined by hyphens, so
+ * `integrationPackCheck` and `integration pack` both read naturally.
+ * @param {string} name
+ * @returns {string}
+ */
+export function routeSegment(name) {
+  return String(name)
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
  * Fatal key problems: only an explicitly authored `id` can make a previously
  * readable topic invalid. Derived-key collisions and titles with no Latin
  * letters or digits are handled by {@link withSectionKeys} for 0.6.x
@@ -292,7 +306,7 @@ export function sectionSummary(section, max = SECTION_SUMMARY_MAX) {
  * The index a topic-only read returns: what the topic is, and one entry per
  * section with the key to read it by.
  * @param {{name: string, title: string, description: string, sections: any[]}} doc
- * @returns {import('../../api/docs/docs.type.mjs').DocsIndex}
+ * @returns {Omit<import('../../api/docs/docs.type.mjs').DocsIndex, 'links'>}
  */
 export function buildDocsIndexData(doc) {
   return {

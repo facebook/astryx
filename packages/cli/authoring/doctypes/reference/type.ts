@@ -60,9 +60,12 @@ export type GraphContentBlock =
  * { type: 'table', headers: ['Token', 'Value'], rows: [['--spacing-4', '16px']] }
  * { type: 'list', style: 'do', items: ['Use semantic tokens'] }
  * { type: 'token-ref', topic: 'tokens', section: 'Color Tokens' }
+ * { type: 'prose', text: 'Check it with {@link command:doctor}.' }
  * ```
  */
 export type ReferenceContentBlock =
+  /** Text. `{@link [<provider>:]<kind>:<name>}` inside it links another doc
+   *  by identity; `astryx docs` prints the command that opens that doc. */
   | {type: 'prose'; text: string}
   | {type: 'heading'; level: 3 | 4 | 5 | 6; text: string}
   | {type: 'code'; lang: string; code: string; label?: string}
