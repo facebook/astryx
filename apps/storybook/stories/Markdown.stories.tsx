@@ -254,6 +254,91 @@ export const TableFocused: Story = {
   },
 };
 
+/**
+ * Narrow-width table states.
+ *
+ * `width` is a control so one story covers the reading widths that matter:
+ * 320 and 390 are phone-sized reading columns, 528 is a side panel, and 1024
+ * is a roomy document. Density stays at the component default.
+ */
+const NARROW_WIDTH_ARG_TYPES = {
+  width: {
+    control: 'select' as const,
+    options: ['320', '390', '528', '1024'],
+    description: 'Width of the reading column the table renders inside, in px',
+  },
+};
+
+/** Six short columns: the table that must fit, not scroll, in a narrow column. */
+const SHORT_SIX_COLUMN_TABLE = [
+  '| Step | Time | Code | Tier | Runs | Team |',
+  '|---|---|---|---|---|---|',
+  '| Init | 12 ms | 200 | A | 3 | Core |',
+  '| Sync | 84 ms | 200 | A | 1 | Core |',
+  '| Lint | 2.1 s | 422 | B | 2 | Docs |',
+  '| Ship | 9.4 s | 200 | A | 1 | Docs |',
+].join('\n');
+
+/**
+ * Genuinely wide content: unbreakable identifiers, a long URL, inline code,
+ * and a long header over a short body column. This one is meant to scroll —
+ * in Table's Scroll region, with its tokens whole and its headers readable.
+ */
+const WIDE_TOKEN_TABLE = [
+  '| Identifier | Endpoint | Status | Accessibility status and remediation owner |',
+  '|---|---|---|---|',
+  '| D116586407 | https://example.com/v2/pipelines/build/runs/1284/logs | `needs_revision_before_landing_v2` | Pass |',
+  '| D116586999 | https://example.com/v2/pipelines/docs/runs/97/logs | `ContentNegotiationMiddleware` | Review |',
+].join('\n');
+
+function ReadingColumn({width, children}: {width: string; children: string}) {
+  return (
+    <div
+      style={{
+        width: Number(width),
+        maxWidth: '100%',
+        padding: 12,
+        outline: '1px dashed #c33',
+      }}>
+      <Markdown>{children}</Markdown>
+    </div>
+  );
+}
+
+export const TableNarrowShortColumns: StoryObj<{width: string}> = {
+  name: 'Table — six short columns',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Six short columns fit the reading column instead of squashing. Each column keeps a content-derived floor in `ch` on its text box, so the floor means the same number of characters whatever the cell padding is, and a table this narrow never needs to scroll.',
+      },
+    },
+  },
+  argTypes: NARROW_WIDTH_ARG_TYPES,
+  args: {width: '390'},
+  render: ({width}) => (
+    <ReadingColumn width={width}>{SHORT_SIX_COLUMN_TABLE}</ReadingColumn>
+  ),
+};
+
+export const TableNarrowWideContent: StoryObj<{width: string}> = {
+  name: 'Table — wide, token-heavy content',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Long identifiers, a long URL, and inline code stay whole: the column is never narrower than its longest unbreakable token, and the table scrolls in Table’s own Scroll region rather than shredding words. Header labels wrap past their one-line cap instead of ellipsizing.',
+      },
+    },
+  },
+  argTypes: NARROW_WIDTH_ARG_TYPES,
+  args: {width: '390'},
+  render: ({width}) => (
+    <ReadingColumn width={width}>{WIDE_TOKEN_TABLE}</ReadingColumn>
+  ),
+};
+
 export const Streaming: Story = {
   render: () => {
     const text = STREAMING_RESPONSE;

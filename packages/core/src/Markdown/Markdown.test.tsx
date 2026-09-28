@@ -461,15 +461,85 @@ describe('Markdown', () => {
     expect(cells[1].querySelector('code')).toHaveTextContent('T | null');
   });
 
-  it('makes the table scroll wrapper keyboard-focusable', () => {
-    render(<Markdown>{'| A | B |\n| --- | --- |\n| 1 | 2 |'}</Markdown>);
-    const table = document.querySelector('table');
+  it('delegates table scrolling and focus to the Table-owned viewport', () => {
+    const {container} = render(
+      <Markdown>{'| A | B |\n| --- | --- |\n| 1 | 2 |'}</Markdown>,
+    );
+    const table = container.querySelector('table');
+    const markdownBlock = container.querySelector('.astryx-markdown-table');
+    const groups = container.querySelectorAll('[role="group"]');
+
     expect(table).toBeInTheDocument();
-    // The GFM table's outer overflow wrapper is keyboard-focusable so keyboard
-    // users can horizontally scroll a wide table.
-    const wrapper = table!.closest('[role="group"][tabindex="0"]');
-    expect(wrapper).toBeTruthy();
-    expect(wrapper).toHaveAttribute('aria-label', 'Table');
+    // Exactly one scroll region: Table's own, which also owns the name and
+    // (when it actually overflows) the tab stop. Markdown's block carries
+    // spacing and sizing only.
+    expect(groups).toHaveLength(1);
+    expect(groups[0]).toContainElement(table);
+    expect(groups[0]).toHaveAttribute('aria-label', 'Table');
+    expect(markdownBlock).not.toHaveAttribute('role');
+    expect(markdownBlock).not.toHaveAttribute('tabindex');
+  });
+
+  it('floors each table column from its own content, in ch', () => {
+    // The floor algorithm: max(4, ceil(longest cell / 2), min(header, 20)),
+    // capped at 24, expressed in `ch` so it follows the reader's font size.
+    // That the floor then survives cell padding and actually widens the
+    // column is geometry, and is proved in MarkdownTable.a11y.chromium.spec.ts.
+    const long = 'x'.repeat(120);
+    render(
+      <Markdown>
+        {`| Key | Meaning | Note |\n| --- | --- | --- |\n| id | Stable identifier never reused | ${long} |`}
+      </Markdown>,
+    );
+    const floors = Array.from(document.querySelectorAll('th')).map(th =>
+      th.getAttribute('style'),
+    );
+    expect(floors[0]).toMatch(/\b4ch\b/); // "Key" / "id" — short, min floor
+    expect(floors[1]).toMatch(/\b15ch\b/); // 30 chars → ceil(30 / 2)
+    expect(floors[2]).toMatch(/\b24ch\b/); // 120 chars → capped
+    // No fixed pixel bucket survives anywhere in the column floors.
+    expect(floors.join(' ')).not.toMatch(/\d+px/);
+  });
+
+  it('floors a short-bodied column from its header label, up to the cap', () => {
+    render(
+      <Markdown>
+        {
+          '| Component name | Accessibility status and remediation owner | X |\n| --- | --- | --- |\n| Button | Pass | 1 |'
+        }
+      </Markdown>,
+    );
+    const ths = Array.from(document.querySelectorAll('th'));
+    // 14-char label: the header floor (14ch) beats the body floor (3ch).
+    expect(ths[0].getAttribute('style')).toMatch(/\b14ch\b/);
+    // 42-char label: the header floor caps at 20ch, so the body floor
+    // (ceil(42 / 2) = 21ch) is what the column keeps.
+    expect(ths[1].getAttribute('style')).toMatch(/\b21ch\b/);
+  });
+
+  it('keeps inline code inside a table cell on the default Code part', () => {
+    render(
+      <Markdown>
+        {'| Status |\n| --- |\n| `needs_revision_before_landing_v2` |'}
+      </Markdown>,
+    );
+    const code = document.querySelector('tbody td code');
+    expect(code).toHaveTextContent('needs_revision_before_landing_v2');
+  });
+
+  it('lets a supplied inlineCode renderer own code inside table cells', () => {
+    const components: Partial<MarkdownComponents> = {
+      inlineCode: ({children}) => <kbd data-custom>{children}</kbd>,
+    };
+    render(
+      <Markdown components={components}>
+        {'| Status |\n| --- |\n| `x` |'}
+      </Markdown>,
+    );
+    expect(
+      document.querySelector('tbody td kbd[data-custom]'),
+    ).toHaveTextContent('x');
+    expect(document.querySelector('tbody td code')).toBeNull();
   });
 
   it('renders horizontal rules', () => {
