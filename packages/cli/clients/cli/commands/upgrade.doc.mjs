@@ -101,13 +101,14 @@ export const doc = {
     {label: 'Apply a migration', cli: 'astryx upgrade --from 0.1.0 --apply'},
   ],
   exitCodes: [
-    {code: 0, when: 'success (including dry-run previews)'},
+    {code: 0, when: 'success, including complete dry-run previews'},
     {
       code: 1,
       when:
         'missing or invalid --from, --registry with --list or a migration flag, a --path escape, ' +
         'no installed @astryxdesign/core (or legacy @xds/core), jscodeshift missing and not installed by --install-deps, ' +
         'an astryx.config that fails validation and that no pending config codemod repairs, ' +
+        'an unreadable or invalid protection declaration, a protected file that still requires a codemod change, ' +
         'an unknown codemod, a codemod or post-codemod hook failure, or unresolved registry items',
     },
   ],

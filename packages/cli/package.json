@@ -105,6 +105,7 @@
     "@babel/types": "7.29.8",
     "ast-types": "0.16.3",
     "commander": "^12.1.0",
+    "ignore": "^7.0.5",
     "jiti": "^2.7.0",
     "jscodeshift": "^17.3.0",
     "node-diff3": "3.2.1",

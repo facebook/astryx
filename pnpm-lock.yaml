@@ -778,6 +778,9 @@ importers:
       commander:
         specifier: ^12.1.0
         version: 12.1.0
+      ignore:
+        specifier: ^7.0.5
+        version: 7.0.5
       jiti:
         specifier: ^2.7.0
         version: 2.7.0

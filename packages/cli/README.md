@@ -189,6 +189,8 @@ if (isError(result)) {
 | `ERR_UNKNOWN_FEATURE`             | An unrecognized `--features` value was passed to init.                                                                                                   |
 | `ERR_UNKNOWN_CODEMOD`             | A `--codemod` value did not match any registered codemod (upgrade).                                                                                      |
 | `ERR_CODEMOD_FAILED`              | One or more codemods failed during an upgrade run.                                                                                                       |
+| `ERR_CODEMOD_PROTECTED`           | A required codemod change remains blocked by a protected consumer file.                                                                                  |
+| `ERR_CODEMOD_PROTECTION_SOURCE`   | A working-tree protection declaration could not be read or parsed.                                                                                       |
 | `ERR_NOT_FOUND`                   | A generic discover/lookup query matched nothing in any package.                                                                                          |
 | `ERR_NO_DOC`                      | A component exists but has no typed `.doc.mjs` file.                                                                                                     |
 | `ERR_NO_SHOWCASE`                 | No showcase exists for the requested component.                                                                                                          |

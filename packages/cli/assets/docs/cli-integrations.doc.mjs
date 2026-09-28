@@ -332,6 +332,19 @@ export const docs = {
         },
         {
           type: 'prose',
+          text: 'Core and integration upgrade codemods do not edit existing consumer files that the working tree protects. Protection is VCS-neutral: Astryx reads nested `.gitattributes` rules for `linguist-generated` and `linguist-vendored`, leading `@generated` and `@partially-generated` comments, standard `Code generated … DO NOT EDIT.` comments, `.gitignore`, and `.hgignore` directly from disk. Later attribute rules, explicit false or unset values, and ignore negation keep their normal semantics. Installed dependencies, VCS metadata, paths outside the project, and symbolic links are also protected. Directory or file names such as `dist` and `generated` are not evidence by themselves.',
+        },
+        {
+          type: 'prose',
+          text: 'A protected file is transformed only in memory. If it would change, the upgrade applies eligible owned-source edits, runs `hooks.postCodemod` regeneration, and checks the protected file again. A remaining change makes the run incomplete and exits nonzero with `ERR_CODEMOD_PROTECTED`; JSON output lists `modifiedFiles` and `protectedFiles` with every effective declaration. Generated headers may include `Command: <exact command>` so the result can tell a consumer how to regenerate when no hook resolves the output. Dry-run uses the same classification without writing.',
+        },
+        {
+          type: 'code',
+          lang: 'text',
+          code: '# .gitattributes\ngenerated/** linguist-generated=true\nvendor/** linguist-vendored=true\n\n# A later rule can explicitly return an authored file to normal handling\ngenerated/hand-authored.ts linguist-generated=false',
+        },
+        {
+          type: 'prose',
           text: 'All authoring types are exported from `@astryxdesign/cli/authoring`: `ComponentDoc`, `HookDoc`, and `ReferenceDoc` for docs, `TemplateDoc` for templates, and `AstryxConfig`, `AstryxIntegration`, and `AstryxCodemod` for the project files. Consumers can also run their own post-codemod hooks, such as a reinstall or rebuild, via `hooks.postCodemod` in their `astryx.config`.',
         },
       ],

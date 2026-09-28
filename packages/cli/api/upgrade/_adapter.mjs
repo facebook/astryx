@@ -329,19 +329,20 @@ export async function ensureCodemodDeps({installDeps} = {}) {
  * Run the CORE registry codemods. Runs BEFORE the config is loaded so a core
  * CONFIG codemod can repair a config the strict loader would otherwise reject.
  * @param {CoreVersionManifest[]} versionManifests
- * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>, root?: string}} options
+ * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>, root?: string, protection?: {root: string, classify: (file: string) => import('../../foundation/fs/file-protection.mjs').FileProtection[]}, silent?: boolean}} options
  */
 export async function runCoreCodemods(
   versionManifests,
-  {apply, path: srcPath, codemod, skipCodemods, root},
+  {apply, path: srcPath, codemod, skipCodemods, root, protection, silent},
 ) {
   return runCodemods(versionManifests, {
     apply,
     path: srcPath,
     codemod,
     skipCodemods,
-    silent: logger.silent,
+    silent: silent ?? logger.silent,
     root,
+    protection,
   });
 }
 
@@ -479,11 +480,20 @@ export async function selectIntegrationCodemodsFor(integrations, from, to) {
 /**
  * Run the file-based INTEGRATION codemods (config codemods first, then code).
  * @param {Array<{version: string, codemods: import('../../authoring/codemod/type').CodemodEntry[]}>} versionGroups
- * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>}} options
+ * @param {{apply: boolean, path: string, codemod?: string, skipCodemods: Set<string>, root?: string, protection?: {root: string, classify: (file: string) => import('../../foundation/fs/file-protection.mjs').FileProtection[]}, contents?: Map<string, string>, silent?: boolean}} options
  */
 export async function runIntegrationCodemodsStep(
   versionGroups,
-  {apply, path: srcPath, codemod, skipCodemods},
+  {
+    apply,
+    path: srcPath,
+    codemod,
+    skipCodemods,
+    root,
+    protection,
+    contents,
+    silent,
+  },
 ) {
   const jscodeshift = (await import('jscodeshift')).default;
   return runIntegrationCodemods(versionGroups, {
@@ -492,6 +502,9 @@ export async function runIntegrationCodemodsStep(
     codemod,
     skipCodemods,
     jscodeshift,
-    silent: logger.silent,
+    silent: silent ?? logger.silent,
+    root,
+    protection,
+    contents,
   });
 }
