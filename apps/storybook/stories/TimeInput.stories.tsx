@@ -138,6 +138,13 @@ export const NativePickerModes: Story = {
           presentation="native"
         />
         <TimeInput
+          label="presentation='adaptive-bottom-sheet'"
+          description="Astryx bottom sheet on a coarse primary pointer; Astryx typed field on a fine pointer"
+          value={value}
+          onChange={setValue}
+          presentation="adaptive-bottom-sheet"
+        />
+        <TimeInput
           label="presentation='text-input'"
           description="Astryx typed field on every pointer type"
           value={value}
