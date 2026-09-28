@@ -152,8 +152,49 @@ const PROJECT_DESTINATIONS = [
   ['Website refresh', 'Brand'],
 ] as const;
 
+export const SectionedActionSheetPresentation: Story = {
+  name: 'Presentation / sectioned action sheet',
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      story: {inline: false, height: '560px'},
+      description: {
+        story:
+          'Shows titled sections in the bottom-sheet presentation. Section headings and spacious action rows share the same inline content edge.',
+      },
+    },
+  },
+  globals: {viewport: {value: 'mobile1', isRotated: false}},
+  render: () => (
+    <div {...stylex.props(readinessStyles.viewportStoryCanvas)}>
+      <DropdownMenu
+        presentation="bottom-sheet"
+        button={{label: 'File actions'}}
+        items={[
+          {
+            type: 'section',
+            title: 'Create',
+            items: [{label: 'New file'}, {label: 'New folder'}],
+          },
+          {
+            type: 'section',
+            title: 'Manage',
+            items: [{label: 'Share file'}, {label: 'Archive file'}],
+          },
+        ]}
+      />
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const trigger = canvasElement.querySelector('button');
+    if (trigger instanceof HTMLElement) {
+      trigger.click();
+    }
+  },
+};
+
 // Basic usage
-export const DefaultPopover: Story = {
+export const Default: Story = {
   render: () => (
     <DropdownMenu
       button={{label: 'Actions'}}
@@ -1005,47 +1046,6 @@ export const ActionSheetPresentation: Story = {
           ...action,
           onClick: () => console.log(`${action.label} selected`),
         }))}
-      />
-    </div>
-  ),
-  play: async ({canvasElement}) => {
-    const trigger = canvasElement.querySelector('button');
-    if (trigger instanceof HTMLElement) {
-      trigger.click();
-    }
-  },
-};
-
-export const Default: Story = {
-  name: 'Presentation / sectioned action sheet',
-  parameters: {
-    layout: 'fullscreen',
-    docs: {
-      story: {inline: false, height: '560px'},
-      description: {
-        story:
-          'Shows titled sections in the bottom-sheet presentation. Section headings and spacious action rows share the same inline content edge.',
-      },
-    },
-  },
-  globals: {viewport: {value: 'mobile1', isRotated: false}},
-  render: () => (
-    <div {...stylex.props(readinessStyles.viewportStoryCanvas)}>
-      <DropdownMenu
-        presentation="bottom-sheet"
-        button={{label: 'File actions'}}
-        items={[
-          {
-            type: 'section',
-            title: 'Create',
-            items: [{label: 'New file'}, {label: 'New folder'}],
-          },
-          {
-            type: 'section',
-            title: 'Manage',
-            items: [{label: 'Share file'}, {label: 'Archive file'}],
-          },
-        ]}
       />
     </div>
   ),
