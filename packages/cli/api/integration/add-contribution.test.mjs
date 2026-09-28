@@ -12,6 +12,7 @@ import {
   integrationAddTemplate,
 } from './add-contribution.mjs';
 import {validateLocalIntegration} from './validate-integration.mjs';
+import {NAMESPACE_DOCS_CLI} from '../../foundation/integrations/cli-requirement.mjs';
 
 let tmpDir;
 
@@ -352,6 +353,11 @@ describe('integrationAdd doc', () => {
     expect(namespace).toContain("type: 'namespace'");
     expect(namespace).toContain("guides: {title: 'Guides', accepts: {kinds: ['generic']}}");
 
+    // The namespace doc needs a CLI that reads it, declared as an optional peer.
+    const pkg = JSON.parse(fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'));
+    expect(pkg.peerDependencies).toEqual({'@astryxdesign/cli': `>=${NAMESPACE_DOCS_CLI}`});
+    expect(pkg.peerDependenciesMeta).toEqual({'@astryxdesign/cli': {optional: true}});
+
     const second = await integrationAdd('doc', 'upgrading', {
       cwd: tmpDir,
       parent: 'acme',
@@ -360,6 +366,26 @@ describe('integrationAdd doc', () => {
 
     const validation = await validateLocalIntegration(tmpDir);
     expect(validation.issues.filter(i => i.code === 'invalid_doc')).toEqual([]);
+  });
+
+  it('raises a CLI peer that admits a CLI too old for namespace docs, and keeps one that does not', async () => {
+    setup();
+    const file = path.join(tmpDir, 'package.json');
+    const write = (/** @type {string} */ range) => {
+      const pkg = JSON.parse(fs.readFileSync(file, 'utf-8'));
+      pkg.peerDependencies = {'@astryxdesign/cli': range};
+      fs.writeFileSync(file, `${JSON.stringify(pkg, null, 2)}\n`);
+    };
+    write('^0.6.0');
+    await integrationAdd('doc', 'deploying', {cwd: tmpDir, parent: 'acme'});
+    expect(JSON.parse(fs.readFileSync(file, 'utf-8')).peerDependencies).toEqual({
+      '@astryxdesign/cli': `>=${NAMESPACE_DOCS_CLI}`,
+    });
+    write('^9.1.0');
+    await integrationAdd('doc', 'upgrading', {cwd: tmpDir, parent: 'acme'});
+    expect(JSON.parse(fs.readFileSync(file, 'utf-8')).peerDependencies).toEqual({
+      '@astryxdesign/cli': '^9.1.0',
+    });
   });
 
   it('refuses --parent with a relationship, or a namespace name that is not a route segment', async () => {

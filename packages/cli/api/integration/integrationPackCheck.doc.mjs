@@ -9,7 +9,7 @@ export const doc = {
   displayName: 'integrationPackCheck()',
   summary: 'Prove an integration package survives npm packing.',
   description:
-    "Validates the local integration, runs the package lifecycle, packs with npm, checks required files against npm's authoritative tarball list, extracts the real tarball into a scratch consumer, compares local and packed contribution inventories, and resolves every packed component through its documented public import to verify that module exports the component.",
+    "Validates the local integration, runs the package lifecycle, packs with npm, checks required files against npm's authoritative tarball list, extracts the real tarball into a scratch consumer, compares local and packed contribution inventories, and resolves every packed component through its documented public import to verify that module exports the component. A package that ships a namespace doc fails unless its `@astryxdesign/cli` peer range admits only CLIs that read one.",
   importPath: '@astryxdesign/cli/api',
   signature:
     'integrationPackCheck(options?: IntegrationPackCheckOptions): Promise<IntegrationPackCheckResponse>',

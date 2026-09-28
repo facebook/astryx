@@ -46,7 +46,7 @@ export const doc = {
       name: 'options.parent',
       type: 'string',
       description:
-        "Namespace of this package to place the doc in, as a guide in its `guides` slot; the namespace doc is written when missing. Only valid for doc, and not with options.replaces or options.extends.",
+        "Namespace of this package to place the doc in, as a guide in its `guides` slot; the namespace doc is written when missing, and package.json declares the CLI that reads it as an optional `@astryxdesign/cli` peer. Only valid for doc, and not with options.replaces or options.extends.",
     },
   ],
   returns: [

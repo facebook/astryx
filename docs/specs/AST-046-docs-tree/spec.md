@@ -141,7 +141,11 @@ the docsite onto the tree.
   same tree and link checks on one integration's docs, so an author finds a
   broken placement or link before the package ships, and
   `astryx integration add doc <name> --parent <namespace>` MUST write a guide
-  placed in that namespace, and the namespace doc the first time.
+  placed in that namespace, and the namespace doc the first time. On an older CLI,
+  a package that ships a namespace doc loses every doc topic from `astryx docs`
+  and Doctor, with nothing saying why, so a package that ships one MUST declare a `@astryxdesign/cli` peer range that
+  admits only CLIs that read it: `integration add doc --parent` MUST declare it,
+  and `astryx integration pack --check` MUST fail without it.
 - **FR12 — Every doc has a home.** Every flat topic, the CLI's and each
   integration's, MUST sit in the generated Unorganized level (`unorganized`), in
   the order the topic list reads. The level has no authored doc, so its `id` is

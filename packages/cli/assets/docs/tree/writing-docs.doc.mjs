@@ -209,7 +209,7 @@ export const docs = {
           type: 'list',
           style: 'dont',
           items: [
-            'Open a section with background. Its first sentence is its summary.',
+            'Open a section with background. Its first block is its summary.',
             'Use vague titles such as "Overview" or "Details" when a specific one fits.',
           ],
         },
@@ -235,6 +235,10 @@ export const docs = {
         {
           type: 'prose',
           text: 'Let the CLI write the files: inside the package, `astryx integration add doc deploying --parent acme` writes the guide with its placement, declares the docs root, and writes the `acme` namespace doc the first time. Run `astryx docs` in the package to see it.',
+        },
+        {
+          type: 'prose',
+          text: "A namespace doc needs a CLI that reads it. On an older CLI, such as 0.6.3, a package that ships one loses every doc topic: none appear in `astryx docs`, in text or JSON, and `astryx doctor` does not say why. So `--parent` also declares the CLI release your docs need as an optional `@astryxdesign/cli` peer in package.json, which makes npm warn when an older CLI is installed, and `astryx integration pack --check` fails a package that ships a namespace doc without it. A guide's `placement` alone is safe: an older CLI reads the guide as a flat topic.",
         },
         {
           type: 'code',
@@ -265,6 +269,7 @@ export const docs = {
           items: [
             '`astryx doctor`, in a project, checks the whole graph: the tree, the links, and the size of each read.',
             '`astryx doctor integration docs`, inside an integration package, runs the same checks on that package\'s docs before it ships.',
+            '`astryx integration pack --check` fails a package that ships a namespace doc without a CLI peer that reads it.',
             'In the Astryx repository, a test walks the whole graph. It fails on any move, link, or `astryx` command in a doc that does not work.',
           ],
         },

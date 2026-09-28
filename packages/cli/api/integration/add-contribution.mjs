@@ -34,6 +34,10 @@ import {
 } from '../../foundation/integrations/integrations.mjs';
 import {isValidSemver} from '../../foundation/env/semver.mjs';
 import {assertContributionVisible} from '../../foundation/integrations/contribution-inventory.mjs';
+import {
+  namespaceDocsCliProblem,
+  withNamespaceDocsCli,
+} from '../../foundation/integrations/cli-requirement.mjs';
 import {findIntegrationComponentDoc} from '../../foundation/discovery/component-discovery.mjs';
 import {parseAgentDocsField} from '../../authoring/integration/schema.mjs';
 import {integrationAddTheme} from './add-theme.mjs';
@@ -482,11 +486,28 @@ async function addDoc(name, options) {
   if (namespaceFile != null && !fs.existsSync(namespaceFile)) {
     plans.push({path: namespaceFile, contents: namespaceContents, createOnly: true});
   }
-  const pkgUpdate = packageJsonUpdate(
+  let pkgUpdate = packageJsonUpdate(
     packageFile,
     rootPath,
     path.basename(manifestFile),
   );
+  // A namespace doc needs a CLI that reads it: an older one hides every doc
+  // topic the package ships. Declare that CLI as a peer, so an older one fails
+  // at install instead (spec:AST-046 FR11).
+  if (options.parent != null) {
+    const expectedOriginal =
+      pkgUpdate?.expectedOriginal ?? fs.readFileSync(packageFile);
+    const text = pkgUpdate?.contents ?? expectedOriginal.toString('utf-8');
+    const current = JSON.parse(text);
+    if (namespaceDocsCliProblem(current) != null) {
+      pkgUpdate = {
+        contents:
+          JSON.stringify(withNamespaceDocsCli(current), null, 2) +
+          (text.endsWith('\n') ? '\n' : ''),
+        expectedOriginal,
+      };
+    }
+  }
   if (pkgUpdate != null) {
     plans.push({
       path: packageFile,

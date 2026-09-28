@@ -54,7 +54,7 @@ export const doc = {
       flag: '--parent <namespace>',
       param: 'options.parent',
       description:
-        "Namespace of this package to place the doc in, as a guide in its `guides` slot; writes the namespace doc when it is missing. Only valid for doc, and not with --replaces or --extends",
+        "Namespace of this package to place the doc in, as a guide in its `guides` slot; writes the namespace doc when it is missing, and declares the CLI that reads it as an optional `@astryxdesign/cli` peer. Only valid for doc, and not with --replaces or --extends",
     },
     {
       flag: '--to <version>',

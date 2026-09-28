@@ -27,6 +27,8 @@ import {spawnSync} from 'node:child_process';
 import jscodeshift from 'jscodeshift';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {resolvePackageDir} from '../../foundation/integrations/integrations.mjs';
+import {namespaceDocsCliProblem} from '../../foundation/integrations/cli-requirement.mjs';
+import {discoverIntegrationDocs} from '../../foundation/discovery/docs-discovery.mjs';
 import {
   discoverIntegrationComponents,
   resolveIntegrationImportPath,
@@ -589,6 +591,19 @@ export async function integrationPackCheck(options = {}) {
           `Declared ${root.kind} root "${root.path}" contains no discoverable contribution files.`,
         ),
       );
+    }
+  }
+  // A namespace doc needs a CLI that reads it (spec:AST-046 FR11): an older
+  // CLI hides every doc topic the package ships, so the declared CLI range
+  // must admit only CLIs that read one.
+  if (loaded.docs) {
+    const {namespaces} = await discoverIntegrationDocs(loaded).catch(() => ({
+      namespaces: [],
+    }));
+    const problem =
+      namespaces.length > 0 ? namespaceDocsCliProblem(pkg) : null;
+    if (problem != null) {
+      issues.push(error('namespace_docs_need_cli', problem));
     }
   }
 

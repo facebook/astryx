@@ -280,6 +280,37 @@ describe('integrationPackCheck', () => {
     expect(fileErrors.length).toBeGreaterThan(0);
   });
 
+  it('fails a package that ships a namespace doc on a CLI range that cannot read it', async () => {
+    writePackage({manifest: "export default {docs: './docs'};\n", themes: false});
+    fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'acme.doc.mjs'),
+      "export default {type: 'namespace', name: 'acme', title: 'Acme', summary: 'Acme guides.', slots: {guides: {title: 'Guides', accepts: {kinds: ['generic']}}}};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'deploying.doc.mjs'),
+      "export default {type: 'generic', name: 'deploying', title: 'Deploying', description: 'Ship it.', placement: {parent: 'namespace:acme', slot: 'guides'}, sections: [{title: 'Overview', content: [{type: 'prose', text: 'Ship it.'}]}]};\n",
+    );
+    const file = path.join(tmpDir, 'package.json');
+    const peer = (/** @type {string | undefined} */ range) => {
+      const pkg = JSON.parse(fs.readFileSync(file, 'utf-8'));
+      if (range == null) delete pkg.peerDependencies;
+      else pkg.peerDependencies = {'@astryxdesign/cli': range};
+      fs.writeFileSync(file, `${JSON.stringify(pkg, null, 2)}\n`);
+    };
+    const codes = async () =>
+      (await integrationPackCheck({cwd: tmpDir})).data.issues.map(
+        (/** @type {{code: string}} */ issue) => issue.code,
+      );
+
+    peer(undefined);
+    expect(await codes()).toContain('namespace_docs_need_cli');
+    peer('^0.6.0 || >=0.7.0');
+    expect(await codes()).toContain('namespace_docs_need_cli');
+    peer('>=0.7.0');
+    expect(await codes()).not.toContain('namespace_docs_need_cli');
+  }, 120_000);
+
   it('passes when package.json has no files field', async () => {
     writePackage({files: undefined});
     const result = await integrationPackCheck({cwd: tmpDir});

@@ -15,6 +15,10 @@ up in `astryx docs` beside `cli`, with the same moves, links, and search, and
 `astryx doctor integration docs` checks them before the package ships. A
 namespace doc in an integration's docs directory no longer fails to load, and
 `astryx integration add doc <name> --parent <namespace>` writes a placed guide.
+On an older CLI, a package that ships a namespace doc loses every doc topic
+from `astryx docs` and doctor, with nothing saying why, so `--parent` declares the CLI that reads it as an optional
+`@astryxdesign/cli` peer, and `astryx integration pack --check` fails a package
+that ships a namespace doc without one.
 
 Every flat topic now sits in `astryx docs unorganized`, under its own name,
 so every doc has a place in the tree with a way up and across. Search hits
