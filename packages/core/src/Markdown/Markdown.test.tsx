@@ -517,6 +517,33 @@ describe('Markdown', () => {
     expect(ths[1].getAttribute('style')).toMatch(/\b21ch\b/);
   });
 
+  it('floors a header-only table from its labels alone', () => {
+    // No body rows: the body floor is computed over nothing, so the header
+    // label has to carry the column by itself rather than collapsing to the
+    // minimum (or throwing on an absent row).
+    render(<Markdown>{'| Status | Owner |\n| --- | --- |'}</Markdown>);
+    const ths = Array.from(document.querySelectorAll('th'));
+    expect(ths.map(th => th.textContent)).toEqual(['Status', 'Owner']);
+    expect(document.querySelectorAll('tbody tr')).toHaveLength(0);
+    expect(ths[0].getAttribute('style')).toMatch(/\b6ch\b/);
+    expect(ths[1].getAttribute('style')).toMatch(/\b5ch\b/);
+  });
+
+  it('floors a column of empty cells at the minimum', () => {
+    render(
+      <Markdown>
+        {'| A | B | C |\n| --- | --- | --- |\n|  | middle only |  |'}
+      </Markdown>,
+    );
+    const ths = Array.from(document.querySelectorAll('th'));
+    // Empty body cells contribute nothing; a one-character header still
+    // leaves the column at the 4ch minimum rather than at zero.
+    expect(ths[0].getAttribute('style')).toMatch(/\b4ch\b/);
+    expect(ths[2].getAttribute('style')).toMatch(/\b4ch\b/);
+    // 11 chars in the middle column → ceil(11 / 2) = 6ch.
+    expect(ths[1].getAttribute('style')).toMatch(/\b6ch\b/);
+  });
+
   it('keeps inline code inside a table cell on the default Code part', () => {
     render(
       <Markdown>

@@ -322,6 +322,78 @@ export const TableNarrowShortColumns: StoryObj<{width: string}> = {
   ),
 };
 
+/**
+ * Six prose columns and no unbreakable tokens: min-content alone is only as
+ * wide as the longest word, so the readable floor is the whole story here.
+ */
+const SIX_PROSE_COLUMN_TABLE = [
+  '| Stage | What it does | When it runs | What it needs | What it emits | Who reads it |',
+  '|---|---|---|---|---|---|',
+  '| Parse | Turns the source text into blocks and inline nodes | On every edit | The raw document | A canonical tree | The renderer |',
+  '| Render | Maps each node in the tree onto a part | After a parse | A canonical tree | Rendered output | The reader |',
+].join('\n');
+
+/**
+ * Shapes that are easy to get wrong once a floor is computed from content:
+ * a header with no body rows at all, empty cells, one pathological token far
+ * past the floor cap, a cell mixing a link with inline code, and a table whose
+ * columns sit at opposite ends of the floor range.
+ */
+const EDGE_SHAPE_TABLES = [
+  '| Status | Owner |',
+  '|---|---|',
+  '',
+  '| A | B | C |',
+  '|---|---|---|',
+  '|  | only the middle cell has content |  |',
+  '',
+  '| Key | Value |',
+  '|---|---|',
+  `| digest | ${'a1b2c3d4e5'.repeat(18)} |`,
+  '',
+  '| Ref | Where it points |',
+  '|---|---|',
+  '| [the parser guide](https://example.com/docs/parser) and `parseDocument` | Both in one cell |',
+  '',
+  '| Id | Description |',
+  '|---|---|',
+  '| 7 | A column at the minimum floor next to one that reaches the cap and keeps going well past it |',
+].join('\n');
+
+export const TableNarrowProseColumns: StoryObj<{width: string}> = {
+  name: 'Table — six prose columns',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Prose columns have no long tokens, so min-content alone would let six of them wrap one word per line. The readable floor — half the longest cell, capped — gives each column enough width to wrap to a couple of lines instead.',
+      },
+    },
+  },
+  argTypes: NARROW_WIDTH_ARG_TYPES,
+  args: {width: '390'},
+  render: ({width}) => (
+    <ReadingColumn width={width}>{SIX_PROSE_COLUMN_TABLE}</ReadingColumn>
+  ),
+};
+
+export const TableNarrowEdgeShapes: StoryObj<{width: string}> = {
+  name: 'Table — edge shapes',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Five shapes that stress the column floor: a header row with no body, empty cells, a 180-character token far past the floor cap (the column grows to its min-content rather than breaking the token), a cell mixing a link with inline code, and a minimum-floor column beside a capped one.',
+      },
+    },
+  },
+  argTypes: NARROW_WIDTH_ARG_TYPES,
+  args: {width: '390'},
+  render: ({width}) => (
+    <ReadingColumn width={width}>{EDGE_SHAPE_TABLES}</ReadingColumn>
+  ),
+};
+
 export const TableNarrowWideContent: StoryObj<{width: string}> = {
   name: 'Table — wide, token-heavy content',
   parameters: {

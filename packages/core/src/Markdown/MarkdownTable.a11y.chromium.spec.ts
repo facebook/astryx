@@ -2,7 +2,7 @@
 
 /**
  * @file MarkdownTable.a11y.chromium.spec.ts
- * @input Uses the two narrow-width Markdown table stories and a built Storybook
+ * @input Uses the four narrow-width Markdown table stories and a built Storybook
  * @output Real-Chromium geometry and focus evidence for Markdown table columns
  * @position Layout and focus proof for `component:Markdown`'s table clause. A
  *   DOM emulator resolves no layout: it cannot say whether a column floor
@@ -31,7 +31,16 @@ const OUTPUT = path.resolve('test-results/markdown-table-narrow');
 const WIDTHS = [320, 390, 528, 1024] as const;
 
 const SHORT_COLUMNS_STORY = 'core-markdown--table-narrow-short-columns';
+const PROSE_COLUMNS_STORY = 'core-markdown--table-narrow-prose-columns';
+const EDGE_SHAPES_STORY = 'core-markdown--table-narrow-edge-shapes';
 const WIDE_CONTENT_STORY = 'core-markdown--table-narrow-wide-content';
+
+const ALL_STORIES = [
+  SHORT_COLUMNS_STORY,
+  PROSE_COLUMNS_STORY,
+  EDGE_SHAPES_STORY,
+  WIDE_CONTENT_STORY,
+];
 
 /**
  * A token this long with no break opportunity in it — an identifier, a status
@@ -53,27 +62,31 @@ interface HeaderMetrics {
   whiteSpace: string;
 }
 
-interface Metrics {
-  scroller: {
-    exists: boolean;
-    scrollWidth: number;
-    clientWidth: number;
-    overflowX: string;
-    role: string | null;
-    label: string | null;
-    tabIndex: string | null;
-  };
-  block: {
-    scrollWidth: number;
-    clientWidth: number;
-    overflowX: string;
-    role: string | null;
-    tabIndex: string | null;
-  };
-  groupCount: number;
+/** One Markdown table block, with the Table it owns. */
+interface TableMetrics {
+  index: number;
+  scrollerExists: boolean;
+  scrollWidth: number;
+  clientWidth: number;
+  overflowX: string;
+  role: string | null;
+  label: string | null;
+  tabIndex: string | null;
+  blockScrollWidth: number;
+  blockClientWidth: number;
+  blockOverflowX: string;
+  blockRole: string | null;
+  blockTabIndex: string | null;
+  groupsInBlock: number;
   headers: HeaderMetrics[];
+  bodyCellLines: number[];
   brokenTokens: string[];
   chPx: number;
+}
+
+interface StoryMetrics {
+  tables: TableMetrics[];
+  groupsInStory: number;
 }
 
 let storybook: StaticServer;
@@ -90,7 +103,7 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
   fs.writeFileSync(
     path.join(OUTPUT, 'manifest.json'),
-    `${JSON.stringify({version: 1, measurements: evidence}, null, 2)}\n`,
+    `${JSON.stringify({version: 2, measurements: evidence}, null, 2)}\n`,
   );
   await storybook?.close();
 });
@@ -115,13 +128,15 @@ async function openStory(
   );
 }
 
-async function measure(page: Page, longTokenChars: number): Promise<Metrics> {
+/** Measure every Markdown table block in the story, in document order. */
+async function measure(
+  page: Page,
+  longTokenChars: number,
+): Promise<StoryMetrics> {
   return page.evaluate(
     ({minToken, tokenPattern}: {minToken: number; tokenPattern: string}) => {
       const unbreakable = new RegExp(tokenPattern);
       const root = document.querySelector('#storybook-root') as HTMLElement;
-      const block = root.querySelector('.astryx-markdown-table') as HTMLElement;
-      const scroller = root.querySelector('.astryx-table-scroll-wrapper');
 
       const lineCount = (element: Element): number => {
         const range = document.createRange();
@@ -135,72 +150,82 @@ async function measure(page: Page, longTokenChars: number): Promise<Metrics> {
         return Math.max(tops.size, 1);
       };
 
-      const headers = Array.from(root.querySelectorAll('th')).map(th => {
-        const styles = getComputedStyle(th);
-        return {
-          text: (th.textContent ?? '').trim(),
-          clientWidth: th.clientWidth,
-          scrollWidth: th.scrollWidth,
-          contentWidth:
-            th.getBoundingClientRect().width -
-            parseFloat(styles.paddingLeft) -
-            parseFloat(styles.paddingRight),
-          lines: lineCount(th),
-          textOverflow: styles.textOverflow,
-          whiteSpace: styles.whiteSpace,
-        };
-      });
+      const tables = Array.from(
+        root.querySelectorAll('.astryx-markdown-table'),
+      ).map((blockNode, index) => {
+        const block = blockNode as HTMLElement;
+        const scroller = block.querySelector('.astryx-table-scroll-wrapper');
 
-      // A long token that renders across more than one line box was broken
-      // mid-word. Walk the real text nodes rather than trusting the markup.
-      const brokenTokens: string[] = [];
-      const body = root.querySelector('tbody');
-      if (body != null) {
-        const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT);
-        for (
-          let node = walker.nextNode();
-          node != null;
-          node = walker.nextNode()
-        ) {
-          const value = node.nodeValue ?? '';
-          const pattern = /\S+/g;
-          let match = pattern.exec(value);
-          while (match != null) {
-            if (match[0].length >= minToken && unbreakable.test(match[0])) {
-              const range = document.createRange();
-              range.setStart(node, match.index);
-              range.setEnd(node, match.index + match[0].length);
-              const tops = new Set<number>();
-              for (const rect of Array.from(range.getClientRects())) {
-                if (rect.width > 0) {
-                  tops.add(Math.round(rect.top));
+        const headers = Array.from(block.querySelectorAll('th')).map(th => {
+          const styles = getComputedStyle(th);
+          return {
+            text: (th.textContent ?? '').trim(),
+            clientWidth: th.clientWidth,
+            scrollWidth: th.scrollWidth,
+            contentWidth:
+              th.getBoundingClientRect().width -
+              parseFloat(styles.paddingLeft) -
+              parseFloat(styles.paddingRight),
+            lines: lineCount(th),
+            textOverflow: styles.textOverflow,
+            whiteSpace: styles.whiteSpace,
+          };
+        });
+
+        const bodyCellLines = Array.from(block.querySelectorAll('tbody td'))
+          .filter(cell => (cell.textContent ?? '').trim().length > 0)
+          .map(cell => lineCount(cell));
+
+        // A long token that renders across more than one line box was broken
+        // mid-word. Walk the real text nodes rather than trusting the markup.
+        const brokenTokens: string[] = [];
+        const body = block.querySelector('tbody');
+        if (body != null) {
+          const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT);
+          for (
+            let node = walker.nextNode();
+            node != null;
+            node = walker.nextNode()
+          ) {
+            const value = node.nodeValue ?? '';
+            const pattern = /\S+/g;
+            let match = pattern.exec(value);
+            while (match != null) {
+              if (match[0].length >= minToken && unbreakable.test(match[0])) {
+                const range = document.createRange();
+                range.setStart(node, match.index);
+                range.setEnd(node, match.index + match[0].length);
+                const tops = new Set<number>();
+                for (const rect of Array.from(range.getClientRects())) {
+                  if (rect.width > 0) {
+                    tops.add(Math.round(rect.top));
+                  }
+                }
+                if (tops.size > 1) {
+                  brokenTokens.push(match[0]);
                 }
               }
-              if (tops.size > 1) {
-                brokenTokens.push(match[0]);
-              }
+              match = pattern.exec(value);
             }
-            match = pattern.exec(value);
           }
         }
-      }
 
-      // One `ch` in a header cell, measured rather than assumed.
-      let chPx = 0;
-      const firstHeader = root.querySelector('th');
-      if (firstHeader != null) {
-        const probe = document.createElement('span');
-        probe.style.cssText =
-          'position:absolute;visibility:hidden;font:inherit';
-        probe.textContent = '0';
-        firstHeader.appendChild(probe);
-        chPx = probe.getBoundingClientRect().width;
-        probe.remove();
-      }
+        // One `ch` in a header cell, measured rather than assumed.
+        let chPx = 0;
+        const firstHeader = block.querySelector('th');
+        if (firstHeader != null) {
+          const probe = document.createElement('span');
+          probe.style.cssText =
+            'position:absolute;visibility:hidden;font:inherit';
+          probe.textContent = '0';
+          firstHeader.appendChild(probe);
+          chPx = probe.getBoundingClientRect().width;
+          probe.remove();
+        }
 
-      return {
-        scroller: {
-          exists: scroller != null,
+        return {
+          index,
+          scrollerExists: scroller != null,
           scrollWidth: scroller?.scrollWidth ?? 0,
           clientWidth: scroller?.clientWidth ?? 0,
           overflowX:
@@ -208,98 +233,115 @@ async function measure(page: Page, longTokenChars: number): Promise<Metrics> {
           role: scroller?.getAttribute('role') ?? null,
           label: scroller?.getAttribute('aria-label') ?? null,
           tabIndex: scroller?.getAttribute('tabindex') ?? null,
-        },
-        block: {
-          scrollWidth: block.scrollWidth,
-          clientWidth: block.clientWidth,
-          overflowX: getComputedStyle(block).overflowX,
-          role: block.getAttribute('role'),
-          tabIndex: block.getAttribute('tabindex'),
-        },
-        groupCount: root.querySelectorAll('[role="group"]').length,
-        headers,
-        brokenTokens,
-        chPx,
+          blockScrollWidth: block.scrollWidth,
+          blockClientWidth: block.clientWidth,
+          blockOverflowX: getComputedStyle(block).overflowX,
+          blockRole: block.getAttribute('role'),
+          blockTabIndex: block.getAttribute('tabindex'),
+          groupsInBlock: block.querySelectorAll('[role="group"]').length,
+          headers,
+          bodyCellLines,
+          brokenTokens,
+          chPx,
+        };
+      });
+
+      return {
+        tables,
+        groupsInStory: root.querySelectorAll('[role="group"]').length,
       };
     },
     {minToken: longTokenChars, tokenPattern: UNBREAKABLE_TOKEN.source},
   );
 }
 
-/** Every width, both stories: the invariants that must hold everywhere. */
+/**
+ * Every table in every story, at every reading width: the invariants that must
+ * hold for all of them, whatever the table's shape.
+ */
 test('Markdown table columns keep their content floor and headers stay readable', async ({
   page,
 }) => {
-  test.setTimeout(3 * 60 * 1000);
+  test.setTimeout(5 * 60 * 1000);
   const failures: string[] = [];
 
-  for (const storyId of [SHORT_COLUMNS_STORY, WIDE_CONTENT_STORY]) {
+  for (const storyId of ALL_STORIES) {
     for (const width of WIDTHS) {
       await openStory(page, storyId, width);
-      const metrics = await measure(page, LONG_TOKEN_CHARS);
-      evidence.push({storyId, width, ...metrics});
+      const story = await measure(page, LONG_TOKEN_CHARS);
+      evidence.push({storyId, width, ...story});
       // Evidence for review: what the reading column actually looks like.
       await page
         .locator('#storybook-root .astryx-markdown')
         .screenshot({path: path.join(OUTPUT, `${storyId}-${width}.png`)});
 
-      if (!metrics.scroller.exists) {
-        failures.push(`${storyId} @${width}: no Table scroll region rendered`);
+      const where = `${storyId} @${width}`;
+      if (story.tables.length === 0) {
+        failures.push(`${where}: no Markdown table block rendered`);
         continue;
       }
-
-      // Exactly one scroll region, named, and it is Table's own.
-      if (metrics.groupCount !== 1) {
+      // One scroll region per table, and no others loose in the story.
+      if (story.groupsInStory !== story.tables.length) {
         failures.push(
-          `${storyId} @${width}: ${metrics.groupCount} role="group" elements, expected 1`,
-        );
-      }
-      if (metrics.scroller.label !== 'Table') {
-        failures.push(
-          `${storyId} @${width}: scroll region name is ${String(metrics.scroller.label)}`,
-        );
-      }
-      if (metrics.block.role != null || metrics.block.tabIndex != null) {
-        failures.push(
-          `${storyId} @${width}: Markdown's block still claims role/tabindex`,
-        );
-      }
-      // Markdown's own block never scrolls; Table's region is the scroller.
-      if (metrics.block.scrollWidth > metrics.block.clientWidth + 1) {
-        failures.push(
-          `${storyId} @${width}: Markdown's block overflows (${metrics.block.scrollWidth} > ${metrics.block.clientWidth})`,
-        );
-      }
-      if (metrics.block.overflowX !== 'visible') {
-        failures.push(
-          `${storyId} @${width}: Markdown's block has overflow-x: ${metrics.block.overflowX}`,
+          `${where}: ${story.groupsInStory} role="group" elements for ${story.tables.length} tables`,
         );
       }
 
-      // Headers wrap; none is cut off or ellipsized.
-      for (const header of metrics.headers) {
-        if (header.textOverflow === 'ellipsis') {
+      for (const table of story.tables) {
+        const at = `${where} table ${table.index}`;
+        if (!table.scrollerExists) {
+          failures.push(`${at}: no Table scroll region rendered`);
+          continue;
+        }
+        if (table.groupsInBlock !== 1) {
           failures.push(
-            `${storyId} @${width}: header "${header.text}" keeps text-overflow: ellipsis`,
+            `${at}: ${table.groupsInBlock} role="group" elements, expected 1`,
           );
         }
-        if (header.whiteSpace === 'nowrap') {
+        if (table.label !== 'Table') {
+          failures.push(`${at}: scroll region name is ${String(table.label)}`);
+        }
+        if (table.blockRole != null || table.blockTabIndex != null) {
+          failures.push(`${at}: Markdown's block still claims role/tabindex`);
+        }
+        // Markdown's own block never scrolls; Table's region is the scroller.
+        if (table.blockScrollWidth > table.blockClientWidth + 1) {
           failures.push(
-            `${storyId} @${width}: header "${header.text}" keeps white-space: nowrap`,
+            `${at}: Markdown's block overflows (${table.blockScrollWidth} > ${table.blockClientWidth})`,
           );
         }
-        if (header.scrollWidth > header.clientWidth + 1) {
+        if (table.blockOverflowX !== 'visible') {
           failures.push(
-            `${storyId} @${width}: header "${header.text}" overflows its cell (${header.scrollWidth} > ${header.clientWidth})`,
+            `${at}: Markdown's block has overflow-x: ${table.blockOverflowX}`,
           );
         }
-      }
 
-      // Long identifiers, URLs, and code keep their tokens whole.
-      if (metrics.brokenTokens.length > 0) {
-        failures.push(
-          `${storyId} @${width}: tokens broken mid-word — ${metrics.brokenTokens.join(', ')}`,
-        );
+        // Headers wrap; none is cut off or ellipsized.
+        for (const header of table.headers) {
+          if (header.textOverflow === 'ellipsis') {
+            failures.push(
+              `${at}: header "${header.text}" keeps text-overflow: ellipsis`,
+            );
+          }
+          if (header.whiteSpace === 'nowrap') {
+            failures.push(
+              `${at}: header "${header.text}" keeps white-space: nowrap`,
+            );
+          }
+          if (header.scrollWidth > header.clientWidth + 1) {
+            failures.push(
+              `${at}: header "${header.text}" overflows its cell (${header.scrollWidth} > ${header.clientWidth})`,
+            );
+          }
+        }
+
+        // Long identifiers, codes, and snake_case values keep their tokens
+        // whole — including the pathological one, far past the floor cap.
+        if (table.brokenTokens.length > 0) {
+          failures.push(
+            `${at}: tokens broken mid-word — ${table.brokenTokens.join(', ')}`,
+          );
+        }
       }
     }
   }
@@ -312,45 +354,129 @@ test('six short columns fit a narrow reading column instead of scrolling', async
 }) => {
   for (const width of [390, 528, 1024]) {
     await openStory(page, SHORT_COLUMNS_STORY, width);
-    const metrics = await measure(page, LONG_TOKEN_CHARS);
-    evidence.push({
-      storyId: SHORT_COLUMNS_STORY,
-      width,
-      fits: true,
-      ...metrics,
-    });
+    const story = await measure(page, LONG_TOKEN_CHARS);
+    evidence.push({storyId: SHORT_COLUMNS_STORY, width, fits: true, ...story});
+    const table = story.tables[0];
     expect(
-      metrics.scroller.scrollWidth,
+      table.scrollWidth,
       `six short columns should fit at ${width}px`,
-    ).toBeLessThanOrEqual(metrics.scroller.clientWidth + 1);
+    ).toBeLessThanOrEqual(table.clientWidth + 1);
   }
+});
+
+test('prose columns wrap to a few readable lines, not one word per line', async ({
+  page,
+}) => {
+  // Six prose columns carry no long tokens, so min-content alone is just the
+  // longest word and every cell would wrap once per word. The readable floor
+  // is what keeps them legible; measure lines per cell rather than CSS.
+  await openStory(page, PROSE_COLUMNS_STORY, 390);
+  const story = await measure(page, LONG_TOKEN_CHARS);
+  evidence.push({
+    storyId: PROSE_COLUMNS_STORY,
+    width: 390,
+    prose: true,
+    ...story,
+  });
+  const table = story.tables[0];
+
+  // Every cell's longest word count is at least 8, so one-word-per-line would
+  // mean 8+ lines. The floor holds each cell to a handful.
+  const worst = Math.max(...table.bodyCellLines);
+  expect(worst, 'prose cells should wrap to a few lines').toBeLessThanOrEqual(
+    6,
+  );
+  // The floor is real: each column keeps well more than the 4ch minimum.
+  for (const header of table.headers) {
+    expect(header.contentWidth).toBeGreaterThanOrEqual(4 * table.chPx - 1);
+  }
+});
+
+test('an edge-shape table keeps one scroll owner per table and one whole token', async ({
+  page,
+}) => {
+  // Five tables in one reading column: a header with no body rows, empty
+  // cells, a 180-character token, a link beside inline code, and a
+  // minimum-floor column next to a capped one.
+  await openStory(page, EDGE_SHAPES_STORY, 390);
+  const story = await measure(page, LONG_TOKEN_CHARS);
+  evidence.push({
+    storyId: EDGE_SHAPES_STORY,
+    width: 390,
+    edges: true,
+    ...story,
+  });
+
+  expect(story.tables).toHaveLength(5);
+  // Five tables, five scroll regions — no table borrows another's, and none
+  // of them is a bare block claiming a role.
+  expect(story.groupsInStory).toBe(5);
+  for (const table of story.tables) {
+    expect(table.groupsInBlock).toBe(1);
+    expect(table.blockRole).toBeNull();
+    expect(table.blockTabIndex).toBeNull();
+  }
+
+  // The header-only table still renders its header row and floors its columns.
+  const headerOnly = story.tables[0];
+  expect(headerOnly.headers.map(header => header.text)).toEqual([
+    'Status',
+    'Owner',
+  ]);
+  expect(headerOnly.bodyCellLines).toEqual([]);
+
+  // The pathological token is 180 characters — far past the 24ch floor cap —
+  // so the column grows to its min-content rather than breaking the token.
+  // Had the cap clamped it, ~24ch would have fit the reading column and the
+  // table would not scroll at all; instead it scrolls several screens wide.
+  // (Measured against the container, not against `ch`: the body font is
+  // proportional, so 180 characters is not 180 `ch`.)
+  const pathological = story.tables[2];
+  expect(pathological.brokenTokens).toEqual([]);
+  expect(pathological.scrollWidth).toBeGreaterThan(
+    pathological.clientWidth * 3,
+  );
+  expect(pathological.blockScrollWidth).toBeLessThanOrEqual(
+    pathological.blockClientWidth + 1,
+  );
+  expect(pathological.tabIndex).toBe('0');
+
+  // A cell mixing a link with inline code renders both, and the link text is
+  // not shredded.
+  const linkAndCode = story.tables[3];
+  expect(linkAndCode.brokenTokens).toEqual([]);
+  expect(
+    await page.locator('#storybook-root tbody a').first().isVisible(),
+  ).toBe(true);
+  expect(
+    await page.locator('#storybook-root tbody code').first().isVisible(),
+  ).toBe(true);
 });
 
 test('a wide table scrolls only in the Table scroll region, and by keyboard', async ({
   page,
 }) => {
   await openStory(page, WIDE_CONTENT_STORY, 390);
-  const metrics = await measure(page, LONG_TOKEN_CHARS);
+  const story = await measure(page, LONG_TOKEN_CHARS);
   evidence.push({
     storyId: WIDE_CONTENT_STORY,
     width: 390,
     keyboard: true,
-    ...metrics,
+    ...story,
   });
+  const table = story.tables[0];
 
   // The wide table really does overflow, and the overflow is Table's alone.
-  expect(metrics.groupCount).toBe(1);
-  expect(metrics.block.role).toBeNull();
-  expect(metrics.block.tabIndex).toBeNull();
-  expect(metrics.scroller.scrollWidth).toBeGreaterThan(
-    metrics.scroller.clientWidth,
-  );
-  expect(metrics.scroller.overflowX).toBe('auto');
-  expect(metrics.block.scrollWidth).toBeLessThanOrEqual(
-    metrics.block.clientWidth + 1,
+  expect(story.groupsInStory).toBe(1);
+  expect(table.blockRole).toBeNull();
+  expect(table.blockTabIndex).toBeNull();
+  expect(table.scrollWidth).toBeGreaterThan(table.clientWidth);
+  expect(table.overflowX).toBe('auto');
+  expect(table.blockScrollWidth).toBeLessThanOrEqual(
+    table.blockClientWidth + 1,
   );
   // Focusable only because it scrolls.
-  expect(metrics.scroller.tabIndex).toBe('0');
+  expect(table.tabIndex).toBe('0');
 
   const scroller = page.locator('.astryx-table-scroll-wrapper');
   await scroller.evaluate(element => {
@@ -384,13 +510,14 @@ test('a column floor survives the cell padding it sits behind', async ({
   // fixed buckets capped a column at 120px however long its content was.
   // Measure the content box against the floor the renderer asked for.
   await openStory(page, WIDE_CONTENT_STORY, 390);
-  const wide = await measure(page, LONG_TOKEN_CHARS);
+  const wideStory = await measure(page, LONG_TOKEN_CHARS);
   evidence.push({
     storyId: WIDE_CONTENT_STORY,
     width: 390,
     paddingCorrect: true,
-    ...wide,
+    ...wideStory,
   });
+  const wide = wideStory.tables[0];
   const identifier = wide.headers.find(header => header.text === 'Identifier');
   const longLabel = wide.headers.find(header =>
     header.text.startsWith('Accessibility status'),
@@ -402,17 +529,17 @@ test('a column floor survives the cell padding it sits behind', async ({
   expect(longLabel?.lines).toBeGreaterThan(1);
 
   await openStory(page, SHORT_COLUMNS_STORY, 390);
-  const short = await measure(page, LONG_TOKEN_CHARS);
+  const shortStory = await measure(page, LONG_TOKEN_CHARS);
   evidence.push({
     storyId: SHORT_COLUMNS_STORY,
     width: 390,
     paddingCorrect: true,
-    ...short,
+    ...shortStory,
   });
-  for (const header of short.headers) {
+  for (const header of shortStory.tables[0].headers) {
     expect(
       header.contentWidth,
       `header "${header.text}" should keep at least 4ch of text box`,
-    ).toBeGreaterThanOrEqual(4 * short.chPx - 1);
+    ).toBeGreaterThanOrEqual(4 * shortStory.tables[0].chPx - 1);
   }
 });
