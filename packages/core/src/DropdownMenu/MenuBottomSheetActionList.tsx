@@ -5,7 +5,7 @@
 /**
  * @file MenuBottomSheetActionList.tsx
  * @input Uses menu data entries and callbacks for selection and drill-in
- * @output Internal touch-friendly action list shared by DropdownMenu and ContextMenu
+ * @output Internal touch-friendly action list with row-aligned section headings
  * @position Shared implementation for menu bottom-sheet presentations
  */
 
@@ -36,6 +36,9 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-1'],
+  },
+  sectionHeading: {
+    paddingInline: spacingVars['--spacing-3'],
   },
 });
 
@@ -125,7 +128,11 @@ export function MenuBottomSheetActionList({
                 role="group"
                 aria-label={option.title}
                 {...stylex.props(styles.section)}>
-                {option.title && <Heading level={4}>{option.title}</Heading>}
+                {option.title && (
+                  <Heading level={4} xstyle={styles.sectionHeading}>
+                    {option.title}
+                  </Heading>
+                )}
                 <List density="spacious">{option.items.map(renderItem)}</List>
               </div>
             </li>
