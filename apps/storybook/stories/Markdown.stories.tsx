@@ -399,6 +399,95 @@ export const TableNarrowEdgeShapes: StoryObj<{width: string}> = {
   ),
 };
 
+// ---------------------------------------------------------------------------
+// Realistic tables
+//
+// The fixtures above are shaped to pin geometry — a column of empty cells, a
+// 180-character token. These are the documents people actually paste into a
+// narrow reading column, and they are what the width behavior is for.
+// ---------------------------------------------------------------------------
+
+/** An API reference: short method column, long paths, prose behavior. */
+const API_REFERENCE_TABLE = [
+  '| Method | Path | Behavior | Response |',
+  '|---|---|---|---|',
+  '| `GET` | `/v2/projects/{projectId}/documents` | Lists documents in the project, newest first. Paginates with `cursor`. | `200` `DocumentPage` |',
+  '| `POST` | `/v2/projects/{projectId}/documents` | Creates a document. Rejects a duplicate `slug` in the same project. | `201` `Document`, `409` on conflict |',
+  '| `PATCH` | `/v2/documents/{documentId}` | Updates title, body, or tags. Fields left out are untouched. | `200` `Document` |',
+  '| `DELETE` | `/v2/documents/{documentId}` | Soft-deletes the document; it stays readable for 30 days. | `204` no content |',
+].join('\n');
+
+/** A release dashboard: many short columns, one prose column, version strings. */
+const RELEASE_STATUS_TABLE = [
+  '| Service | Environment | Version | State | Updated | Owner |',
+  '|---|---|---|---|---|---|',
+  '| `web-gateway` | production | `4.12.0` | Healthy | 2 h ago | Platform |',
+  '| `web-gateway` | staging | `4.13.0-rc.2` | Rolling out | 11 min ago | Platform |',
+  '| `search-indexer` | production | `2.8.4` | Degraded — reindexing a shard after a failed migration | 40 min ago | Search |',
+  '| `notifications` | production | `1.30.1` | Healthy | 6 h ago | Messaging |',
+].join('\n');
+
+/** A comparison matrix: long headers over short cells, plus a prose column. */
+const FEATURE_COMPARISON_TABLE = [
+  '| Capability | Available on the free plan | Included in the team plan | Notes for administrators |',
+  '|---|---|---|---|',
+  '| Single sign-on | No | Yes | Requires a verified domain and a SAML or OIDC provider. |',
+  '| Audit log retention | 7 days | 400 days | Exportable as newline-delimited JSON from the admin console. |',
+  '| Scheduled exports | No | Yes | Runs nightly; a failed run retries twice before it alerts the owner. |',
+  '| Seats included | 3 | 25 | Additional seats are billed monthly and prorated. |',
+].join('\n');
+
+export const TableRealisticApiReference: StoryObj<{width: string}> = {
+  name: 'Table — API reference',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A real API reference in a narrow reading column: a two-character method column beside routes that must stay readable. The path column is floored by its own content, so `/v2/projects/{projectId}/documents` does not split across lines, and the table scrolls rather than squashing the method column to nothing.',
+      },
+    },
+  },
+  argTypes: NARROW_WIDTH_ARG_TYPES,
+  args: {width: '390'},
+  render: ({width}) => (
+    <ReadingColumn width={width}>{API_REFERENCE_TABLE}</ReadingColumn>
+  ),
+};
+
+export const TableRealisticReleaseStatus: StoryObj<{width: string}> = {
+  name: 'Table — release status',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A deployment dashboard pasted into a narrow column: six columns, most of them short, one carrying a sentence. Version strings such as `4.13.0-rc.2` stay whole, and the short columns keep their minimum floor instead of collapsing to a character apiece.',
+      },
+    },
+  },
+  argTypes: NARROW_WIDTH_ARG_TYPES,
+  args: {width: '390'},
+  render: ({width}) => (
+    <ReadingColumn width={width}>{RELEASE_STATUS_TABLE}</ReadingColumn>
+  ),
+};
+
+export const TableRealisticComparison: StoryObj<{width: string}> = {
+  name: 'Table — feature comparison',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A plan comparison matrix, where the headers are longer than the cells under them. Each header reads on one line up to its cap and wraps past it — never truncating to `Availabl…` — and a two-character cell such as `No` still gets a readable column.',
+      },
+    },
+  },
+  argTypes: NARROW_WIDTH_ARG_TYPES,
+  args: {width: '390'},
+  render: ({width}) => (
+    <ReadingColumn width={width}>{FEATURE_COMPARISON_TABLE}</ReadingColumn>
+  ),
+};
+
 export const TableNarrowWideContent: StoryObj<{width: string}> = {
   name: 'Table — wide, token-heavy content',
   parameters: {
@@ -422,7 +511,7 @@ export const TableInChatMessage: StoryObj<{width: string}> = {
     docs: {
       description: {
         story:
-          'The narrow reading column as chat surfaces actually have it: the same wide table inside a `ChatMessageBubble`, which already accepts Markdown as its content. The bubble constrains the message, and the table still keeps its column floors and scrolls inside Table’s own Scroll region — the bubble adds no second scroller.',
+          'The narrow reading column as chat surfaces actually have it: a deployment status table — the kind an assistant answers with — inside a `ChatMessageBubble`, which already accepts Markdown as its content. The bubble constrains the message, and the table still keeps its column floors and scrolls inside Table’s own Scroll region — the bubble adds no second scroller.',
       },
     },
   },
@@ -439,12 +528,12 @@ export const TableInChatMessage: StoryObj<{width: string}> = {
       <ChatMessageList>
         <ChatMessage sender="user">
           <ChatMessageBubble>
-            Which pipelines are still waiting on review?
+            Which services are still rolling out?
           </ChatMessageBubble>
         </ChatMessage>
         <ChatMessage sender="assistant">
           <ChatMessageBubble>
-            <Markdown density="compact">{WIDE_TOKEN_TABLE}</Markdown>
+            <Markdown density="compact">{RELEASE_STATUS_TABLE}</Markdown>
           </ChatMessageBubble>
         </ChatMessage>
       </ChatMessageList>

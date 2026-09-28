@@ -36,12 +36,24 @@ const EDGE_SHAPES_STORY = 'core-markdown--table-narrow-edge-shapes';
 const WIDE_CONTENT_STORY = 'core-markdown--table-narrow-wide-content';
 const CHAT_STORY = 'core-markdown--table-in-chat-message';
 
+/**
+ * The realistic documents: an API reference, a release dashboard, and a plan
+ * comparison matrix. The fixtures above pin geometry; these are what people
+ * actually paste into a narrow reading column.
+ */
+const API_STORY = 'core-markdown--table-realistic-api-reference';
+const RELEASE_STORY = 'core-markdown--table-realistic-release-status';
+const COMPARISON_STORY = 'core-markdown--table-realistic-comparison';
+
+const REALISTIC_STORIES = [API_STORY, RELEASE_STORY, COMPARISON_STORY];
+
 const ALL_STORIES = [
   SHORT_COLUMNS_STORY,
   PROSE_COLUMNS_STORY,
   EDGE_SHAPES_STORY,
   WIDE_CONTENT_STORY,
   CHAT_STORY,
+  ...REALISTIC_STORIES,
 ];
 
 /**
@@ -502,6 +514,173 @@ test('a wide table scrolls only in the Table scroll region, and by keyboard', as
   );
   const after = await scroller.evaluate(element => element.scrollLeft);
   expect(after).toBeGreaterThan(before);
+});
+
+/**
+ * The realistic documents at the two phone-sized reading widths: the states
+ * the fix exists for, asserted on the things a reader would notice.
+ */
+test('realistic tables stay readable at 320 and 390', async ({page}) => {
+  test.setTimeout(3 * 60 * 1000);
+  const failures: string[] = [];
+
+  for (const storyId of REALISTIC_STORIES) {
+    for (const width of [320, 390]) {
+      await openStory(page, storyId, width);
+      const story = await measure(page, LONG_TOKEN_CHARS);
+      evidence.push({storyId, width, realistic: true, ...story});
+      const table = story.tables[0];
+      const at = `${storyId} @${width}`;
+
+      // Exactly one scroll viewport owns overflow and focus.
+      if (story.groupsInStory !== 1) {
+        failures.push(
+          `${at}: ${story.groupsInStory} scroll regions, expected 1`,
+        );
+      }
+      if (table.label !== 'Table' || table.blockRole != null) {
+        failures.push(`${at}: the Table viewport is not the sole named region`);
+      }
+      // Focusable exactly when it scrolls, never otherwise.
+      const scrolls = table.scrollWidth > table.clientWidth + 1;
+      if (scrolls !== (table.tabIndex === '0')) {
+        failures.push(
+          `${at}: scrolls=${scrolls} but tabindex=${String(table.tabIndex)}`,
+        );
+      }
+
+      // Headers read: none truncated, none overflowing its cell.
+      for (const header of table.headers) {
+        if (
+          header.textOverflow === 'ellipsis' ||
+          header.whiteSpace === 'nowrap' ||
+          header.scrollWidth > header.clientWidth + 1
+        ) {
+          failures.push(`${at}: header "${header.text}" is not fully readable`);
+        }
+      }
+
+      // Identifiers, versions, and status codes stay whole.
+      if (table.brokenTokens.length > 0) {
+        failures.push(
+          `${at}: broken mid-word — ${table.brokenTokens.join(', ')}`,
+        );
+      }
+    }
+  }
+
+  expect(failures).toEqual([]);
+});
+
+test('an API reference keeps its routes whole and its method column readable', async ({
+  page,
+}) => {
+  // The shape that motivated the fix: a two-character method column beside
+  // routes far longer than any floor. Under the old fixed buckets the method
+  // column was padded to 60px while `/v2/projects/{projectId}/documents` was
+  // shredded; now the route column carries the width and the table scrolls.
+  await openStory(page, API_STORY, 390);
+  const story = await measure(page, LONG_TOKEN_CHARS);
+  evidence.push({storyId: API_STORY, width: 390, routes: true, ...story});
+  const table = story.tables[0];
+
+  const routeLines = await page.evaluate(() => {
+    const cells = Array.from(
+      document.querySelectorAll('#storybook-root tbody tr'),
+    ).map(row => row.children[1] as HTMLElement);
+    return cells.map(cell => {
+      const range = document.createRange();
+      range.selectNodeContents(cell);
+      const tops = new Set<number>();
+      for (const rect of Array.from(range.getClientRects())) {
+        if (rect.width > 0) {
+          tops.add(Math.round(rect.top));
+        }
+      }
+      return {text: (cell.textContent ?? '').trim(), lines: tops.size};
+    });
+  });
+  // Each route renders on a single line — not split across two.
+  for (const route of routeLines) {
+    expect(route.lines, `route ${route.text} should stay on one line`).toBe(1);
+  }
+
+  // The method column still reads: `DELETE` is not clipped to `DELE…`.
+  const method = table.headers[0];
+  expect(method.text).toBe('Method');
+  expect(method.scrollWidth).toBeLessThanOrEqual(method.clientWidth + 1);
+  // And the table takes the width it needs through its own scroll region.
+  expect(table.scrollWidth).toBeGreaterThan(table.clientWidth);
+  expect(table.tabIndex).toBe('0');
+  expect(table.blockScrollWidth).toBeLessThanOrEqual(
+    table.blockClientWidth + 1,
+  );
+});
+
+test('a comparison matrix keeps long headers readable over short cells', async ({
+  page,
+}) => {
+  // Headers longer than everything beneath them: the case where truncation
+  // used to make a column unreadable (`Availabl…`). The header drives the
+  // column's floor, so it reads in full rather than being cut; whether it
+  // then fits on one line is layout's business, and the wide-content story
+  // covers the case where a label is long enough to wrap.
+  await openStory(page, COMPARISON_STORY, 390);
+  const story = await measure(page, LONG_TOKEN_CHARS);
+  evidence.push({
+    storyId: COMPARISON_STORY,
+    width: 390,
+    longHeaders: true,
+    ...story,
+  });
+  const table = story.tables[0];
+
+  const freePlan = table.headers.find(header =>
+    header.text.startsWith('Available on'),
+  );
+  expect(freePlan, 'the long header should be present').toBeDefined();
+  // Reads in full: nothing clipped, nothing ellipsized, no nowrap clamp.
+  expect(freePlan?.textOverflow).not.toBe('ellipsis');
+  expect(freePlan?.whiteSpace).not.toBe('nowrap');
+  expect(freePlan?.scrollWidth).toBeLessThanOrEqual(
+    (freePlan?.clientWidth ?? 0) + 1,
+  );
+  // The header carries the column past its short cells: the label's own
+  // floor is 20ch (the one-line cap), far more than `No` would ask for.
+  expect(freePlan?.contentWidth).toBeGreaterThanOrEqual(20 * table.chPx - 1);
+  // Every other header is readable too, including the shortest column.
+  for (const header of table.headers) {
+    expect(header.scrollWidth).toBeLessThanOrEqual(header.clientWidth + 1);
+    expect(header.contentWidth).toBeGreaterThanOrEqual(4 * table.chPx - 1);
+  }
+});
+
+test('a chat message carries a realistic table with one scroll owner', async ({
+  page,
+}) => {
+  for (const width of [320, 390]) {
+    await openStory(page, CHAT_STORY, width);
+    const story = await measure(page, LONG_TOKEN_CHARS);
+    evidence.push({storyId: CHAT_STORY, width, chat: true, ...story});
+    const table = story.tables[0];
+
+    // The bubble adds no scroller of its own, and no second focus stop.
+    expect(story.groupsInStory).toBe(1);
+    expect(table.label).toBe('Table');
+    expect(table.blockRole).toBeNull();
+    expect(table.blockScrollWidth).toBeLessThanOrEqual(
+      table.blockClientWidth + 1,
+    );
+    // Version strings survive the narrowest bubble.
+    expect(table.brokenTokens).toEqual([]);
+    const bubbleOverflows = await page.evaluate(() => {
+      const bubble = document.querySelector('.astryx-chat-message-bubble');
+      return bubble == null
+        ? null
+        : bubble.scrollWidth > bubble.clientWidth + 1;
+    });
+    expect(bubbleOverflows).toBe(false);
+  }
 });
 
 test('a column floor survives the cell padding it sits behind', async ({
