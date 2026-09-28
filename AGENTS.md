@@ -165,7 +165,7 @@ Documentation lives in two places:
 
 <!-- STYLEX-CAPS:START -->
 
-[StyleX v0.17.5 CSS Support]|Use CSS-native solutions. Don't build JS workarounds for supported features.
+[StyleX v0.19.0 CSS Support]|Use CSS-native solutions. Don't build JS workarounds for supported features.
 |AT-RULES: @media, @supports, @container (+named), @starting-style, @scope — YES
 |AT-RULES: @layer, @property (explicit) — NO (compiles but invalid CSS output)
 |PSEUDO-CLS: :hover, :focus, :focus-visible, :focus-within, :active, :disabled — YES
@@ -174,7 +174,8 @@ Documentation lives in two places:
 |PSEUDO-EL: ::before, ::after, ::placeholder, ::selection, ::backdrop, ::marker, ::view-transition-_ — YES
 |COMPOUND: ::backdrop+condition, RTL :is([dir="rtl"] _), nested @media+pseudo — YES
 |VALUES: var(), calc(), clamp(), light-dark(), color-mix(), container-type/name — YES
-|ANIM: transition (shorthand+individual), transitionBehavior:allow-discrete, animation, stylex.keyframes — YES
+|ANIM: transition (shorthand+individual), transitionBehavior:allow-discrete, animation longhands, stylex.keyframes — YES
+|ANIM: animation shorthand — NO (use animationName/duration/timingFunction/etc.)
 |WHEN: stylex.when.ancestor(':hover'/':focus-within'/':active'/':disabled') — YES
 |WHEN: stylex.when.descendant(':hover'), siblingBefore(':checked'), siblingAfter(':checked'), anySibling(':hover') — YES
 |WHEN: stylex.when.ancestor('[data-attr]') — NO (pseudo selectors only, must start with ":")
