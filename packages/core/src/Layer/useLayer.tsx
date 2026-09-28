@@ -153,8 +153,10 @@ export interface ContextRenderProps {
    * appends `span-all` fallbacks: the layer then spans the whole axis,
    * centers on its anchor and is shifted by the browser to stay in view.
    *
-   * Centered alignments always slide (they have no flip that helps).
-   * Ignored when `positioning` is `'custom'`.
+   * The span runs along the alignment axis: it rescues inline overflow for
+   * `above`/`below` and block overflow for `start`/`end`. Centered alignments
+   * always slide (they have no flip that helps). Ignored when `positioning`
+   * is `'custom'`.
    *
    * @default false
    */

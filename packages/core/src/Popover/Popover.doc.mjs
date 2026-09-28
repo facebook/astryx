@@ -86,7 +86,7 @@ export const docs = {
           name: 'width',
           type: 'number | string',
           description:
-            'Width of the popover container. An explicit width is honoured up to the viewport minus its gutters, not up to the span of viewport beside the trigger: an end-aligned 352px menu under a button near a panel edge renders 352px and overhangs past the trigger, flipping to the other side or centering on the trigger when a side does not fit. Without a width the popover sizes to its content and caps to the span on its aligned side. Long content scrolls inside the surface either way.',
+            'Width of the popover container. An explicit width is honoured up to the viewport minus its gutters, not up to the span of viewport beside the trigger: an end-aligned 352px menu under a button near a panel edge renders 352px and overhangs past the trigger, flipping to the other side, or (placed above or below) centering on the trigger when neither side fits. Without a width the popover sizes to its content and caps to the span on its aligned side. Long content scrolls inside the surface either way.',
           default: "'auto'",
         },
         {

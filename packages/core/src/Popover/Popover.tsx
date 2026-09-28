@@ -170,7 +170,8 @@ export interface PopoverProps extends Pick<
    * end-aligned 352px menu under a button near a panel edge renders 352px
    * and overhangs past the trigger's other side rather than shrinking to the
    * span beside the button. When neither side of the trigger fits the width,
-   * the layer centers on the trigger and slides into view.
+   * a layer placed above or below centers on the trigger and slides into
+   * view; a side-placed layer flips to the trigger's other side.
    *
    * Without a width the popover sizes to its content and caps to the span
    * on its aligned side, as before.
@@ -701,8 +702,12 @@ export function Popover({
   // An explicit width on an aligned layer may exceed the span beside the
   // trigger; the flips move it to the other side and, when neither side
   // fits, the span-all fallback centers it on the trigger and slides it into
-  // view instead of clipping it at the viewport edge.
-  const hasSlideFallback = hasExplicitWidth && alignment !== 'center';
+  // view instead of clipping it at the viewport edge. Only a block placement
+  // aligns along the inline axis; for a side placement the alignment axis is
+  // the block axis, where a span cannot rescue a width, so the inline overflow
+  // there is left to `flip-inline` alone.
+  const hasSlideFallback =
+    hasExplicitWidth && alignment !== 'center' && !isSidePlacement;
   const popoverViewportXstyle =
     alignment === 'center'
       ? isSidePlacement

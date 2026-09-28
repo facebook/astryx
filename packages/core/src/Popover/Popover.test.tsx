@@ -571,6 +571,30 @@ describe('Popover', () => {
       );
     });
 
+    it('keeps flip-only fallbacks for a side placement, where a span cannot rescue a width', () => {
+      render(
+        <Popover
+          content={<span>Content</span>}
+          label="Test"
+          placement="end"
+          alignment="start"
+          width={352}>
+          <button type="button">Open</button>
+        </Popover>,
+      );
+
+      fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+
+      const layer = document.querySelector<HTMLElement>('[popover]');
+      // The viewport cap still replaces the anchor-span cap…
+      expect(layer?.className).toContain('Popover__styles.viewportWidthClamp');
+      // …but the alignment axis is the block axis here, so a span-all would
+      // span the block axis and do nothing for the inline overflow.
+      expect(layer?.style.positionTryFallbacks).toBe(
+        'flip-block, flip-inline, flip-block flip-inline',
+      );
+    });
+
     it('keeps the anchor-span cap and flip-only fallbacks without a width', () => {
       render(
         <Popover content={<span>Content</span>} label="Test" alignment="end">

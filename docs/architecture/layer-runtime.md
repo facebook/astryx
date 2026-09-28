@@ -112,8 +112,12 @@ Anchor names form a list so several layers may share one trigger without
 clobbering one another. Standard placement uses the `self-*` logical keyword
 family so inherited direction controls RTL behavior. Every anchored placement
 can flip across either axis. Centered placements also gain span fallbacks so the
-surface can move along the alignment axis near viewport edges. Clearance is
-applied to both edges of the placement axis so a flip retains the gap.
+surface can move along the alignment axis near viewport edges. An aligned
+placement gains a `span-all` last resort only when the caller passes
+`hasSlideFallback` (pending owner review through `component:Popover/DEC-4`): the
+surface then spans its alignment axis, centers on the anchor and is shifted into
+view when neither side of the anchor fits it. Clearance is applied to both edges
+of the placement axis so a flip retains the gap.
 
 Popover adds component-specific viewport sizing and overflow behavior above this
 geometry. Those constraints are not universal Layer behavior.
