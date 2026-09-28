@@ -2,13 +2,23 @@
 
 /**
  * @file Configure the docsite's routes, response headers, and theme resolution.
- * @input Next.js build configuration and staged preview-only static exports.
+ * @input Next.js build configuration, the early playground cookie guard, and
+ *   staged preview-only static exports.
  * @output Docsite routes plus Storybook and Sandbox at /storybook/ and /sandbox/.
+ *   Client main-app chunks start with the preview's cookie compatibility guard.
  * @position Next.js configuration for the existing Vercel docsite deployment.
  */
 
-import {readdirSync} from 'node:fs';
+import {readFileSync, readdirSync} from 'node:fs';
 import {resolve} from 'node:path';
+
+const playgroundCookieCompatibility = readFileSync(
+  resolve(
+    import.meta.dirname,
+    'src/app/playground/preview/cookieCompatibility.js',
+  ),
+  'utf8',
+);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -80,7 +90,7 @@ const nextConfig = {
       },
     ];
   },
-  webpack: config => {
+  webpack: (config, {isServer, webpack}) => {
     // Webpack's CSS @import resolver doesn't follow package.json "exports".
     // Map each theme's /theme.css subpath to the actual dist file.
     const themesDir = resolve(import.meta.dirname, '../../packages/themes');
@@ -92,6 +102,21 @@ const nextConfig = {
         themesDir,
         t,
         'dist/theme.css',
+      );
+    }
+
+    // Vercel can add Toolbar instrumentation to Next's shared main-app entry.
+    // Its cookie probe throws before React starts in the playground's opaque
+    // frame, so prepend our route-scoped guard to the final client asset. A
+    // layout Script is too late: Next emits the async main-app tag first.
+    if (!isServer) {
+      config.plugins.push(
+        new webpack.BannerPlugin({
+          banner: playgroundCookieCompatibility,
+          entryOnly: true,
+          include: /main-app-/,
+          raw: true,
+        }),
       );
     }
 
