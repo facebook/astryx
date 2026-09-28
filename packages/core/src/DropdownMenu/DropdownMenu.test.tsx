@@ -1361,6 +1361,34 @@ describe('DropdownMenu sections', () => {
   });
 });
 
+describe('DropdownMenuItem ref', () => {
+  it('a ref reaches the menuitem element', () => {
+    const ref = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} ref={ref} />
+      </DropdownMenu>,
+    );
+    const row = screen.getByRole('menuitem', {name: 'Edit', hidden: true});
+    expect(ref).toHaveBeenCalledWith(row);
+    // The row root, not a child of it: what the ref sees is the element the
+    // menu's roving focus and role structure are built on.
+    expect(ref.mock.calls[0][0]).toBe(row);
+  });
+
+  it('a ref object holds the menuitem element', () => {
+    const ref = {current: null as HTMLElement | null};
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} ref={ref} />
+      </DropdownMenu>,
+    );
+    expect(ref.current).toBe(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    );
+  });
+});
+
 describe('DropdownMenu dividers', () => {
   it('renders dividers between items', () => {
     render(
