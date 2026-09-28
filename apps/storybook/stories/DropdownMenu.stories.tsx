@@ -152,8 +152,8 @@ const PROJECT_DESTINATIONS = [
   ['Website refresh', 'Brand'],
 ] as const;
 
-export const SectionedActionSheetPresentation: Story = {
-  name: 'Presentation / sectioned action sheet',
+// Open action sheet used by the stable visual surface.
+export const Default: Story = {
   parameters: {
     layout: 'fullscreen',
     docs: {
@@ -193,8 +193,7 @@ export const SectionedActionSheetPresentation: Story = {
   },
 };
 
-// Basic usage
-export const Default: Story = {
+export const BasicPopover: Story = {
   render: () => (
     <DropdownMenu
       button={{label: 'Actions'}}
