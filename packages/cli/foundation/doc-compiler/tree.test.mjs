@@ -93,6 +93,44 @@ const problems = tree => tree.diagnostics.map(d => [d.code, d.message]);
 
 describe('buildDocsTree', () => {
 
+  it('withdraws a namespace placed in a withdrawn namespace, and what is placed in it', () => {
+    const CLI = '@astryxdesign/cli';
+    const tree = buildDocsTree({
+      namespaces: [
+        ns('tokens'),
+        ns('alpha', {placement: {parent: 'namespace:tokens', slot: 'items'}}),
+      ],
+      docs: [guide('deep', {placement: {parent: 'namespace:alpha', slot: 'items'}})],
+      topics: [
+        {provider: CLI, providerId: CLI, name: 'tokens', title: 'Tokens', summary: 'Tokens.', source: `${CLI}/tokens.doc.mjs`},
+      ],
+    });
+    expect(tree.get('tokens')?.provider).toBe(CLI);
+    expect(routes(tree).filter(route => route.startsWith('tokens/'))).toEqual([]);
+    expect(problems(tree)).toEqual(
+      expect.arrayContaining([
+        ['duplicate_route', expect.stringContaining('takes the route "tokens"')],
+        ['invalid_placement', 'Namespace "alpha" has no route: the namespace it is placed in was withdrawn.'],
+        ['invalid_placement', expect.stringContaining('names a namespace that has no route')],
+      ]),
+    );
+  });
+
+  it("keeps a name a topic answers to through replaces as that topic's route", () => {
+    const tree = buildDocsTree({
+      namespaces: [ns('tokens')],
+      docs: [],
+      topics: [
+        {provider: '@acme/a', providerId: '@acme/a', name: 'acme-tokens', title: 'Acme tokens', summary: 'Acme tokens.', source: '@acme/a:acme-tokens', replaces: 'tokens'},
+      ],
+    });
+    expect(tree.get('tokens')).toBeUndefined();
+    expect(tree.get('acme-tokens')?.provider).toBe('@acme/a');
+    expect(problems(tree)).toEqual([
+      ['duplicate_route', expect.stringContaining('which the topic "acme-tokens" answers to because it replaces "tokens"')],
+    ]);
+  });
+
   it("keeps the CLI's own routes from an integration, compared without case", () => {
     const CLI = '@astryxdesign/cli';
     /** @param {string} name @param {string} [provider] */

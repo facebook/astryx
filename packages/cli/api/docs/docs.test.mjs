@@ -75,6 +75,12 @@ describe('docs() dispatcher routing', () => {
     }
   }, SLOW);
 
+  it('opens a route typed in another case', async () => {
+    const r = await docs('CLI/API');
+    expect(r.type).toBe('docs.node');
+    expect(r.data).toMatchObject({route: 'cli/api', links: {up: 'astryx docs cli'}});
+  }, SLOW);
+
   it('a section of a typed doc -> ERR_UNKNOWN_SECTION, suggesting the doc itself', async () => {
     const err = await docs('cli/api/functions/search', 'x').catch(e => e);
     expect(err.code).toBe('ERR_UNKNOWN_SECTION');

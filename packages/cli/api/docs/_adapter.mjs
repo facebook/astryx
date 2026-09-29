@@ -272,6 +272,7 @@ async function flatTopicInputs(catalog) {
       title: title ?? entry.name,
       summary: description ?? '',
       source: `${entry.package}:${entry.name}`,
+      ...(entry.replaces != null ? {replaces: entry.replaces} : {}),
     });
   }
   return topics;

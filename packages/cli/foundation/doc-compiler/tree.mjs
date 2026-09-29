@@ -121,6 +121,8 @@ export const KIND_GROUPS = Object.freeze({
  * @property {string} title
  * @property {string} summary
  * @property {string} source where the topic comes from, for diagnostics
+ * @property {string} [replaces] the topic it took the place of, whose name
+ *   also opens it
  */
 
 /** The route of the generated level that holds every flat topic. */
@@ -241,6 +243,13 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
   for (const topic of topics) {
     if (topic.provider === CLI_PROVIDER) cliRoutes.add(topic.name.toLowerCase());
   }
+  // A name a topic answers to through `replaces` is that topic's route too:
+  // `astryx docs <name>` opens the replacement, so no other doc can hold it.
+  /** @type {Map<string, TreeTopicInput>} */
+  const aliasRoutes = new Map();
+  for (const topic of topics) {
+    if (topic.replaces) aliasRoutes.set(topic.replaces.toLowerCase(), topic);
+  }
 
   // Namespaces by package and name.
   /** @type {Map<string, TreeNamespaceInput>} */
@@ -348,6 +357,19 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
       );
       return false;
     }
+    const alias = aliasRoutes.get(folded);
+    if (
+      alias != null &&
+      node.provider !== CLI_PROVIDER &&
+      node.ref?.flatTopic !== alias.name
+    ) {
+      report(
+        'duplicate_route',
+        at,
+        `${nodeLabel(node)} takes the route "${node.route}", which the topic "${alias.name}" answers to because it replaces "${alias.replaces}". Rename it.`,
+      );
+      return false;
+    }
     const taken = byFoldedRoute.get(folded);
     if (taken) {
       report(
@@ -362,10 +384,27 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
     return true;
   };
 
-  for (const [key, input] of declared) {
+  // Parents before children, so a namespace placed in a withdrawn namespace
+  // is withdrawn before anything is placed in it.
+  const parentsFirst = [...declared].sort(
+    ([a], [b]) =>
+      String(routeOf.get(a) ?? '').split('/').length -
+      String(routeOf.get(b) ?? '').split('/').length,
+  );
+  for (const [key, input] of parentsFirst) {
     const route = routeOf.get(key);
     if (route == null) continue;
     const home = parentOf.get(key);
+    if (home != null && routeOf.get(home.parentKey) == null) {
+      routeOf.set(key, null);
+      report(
+        'invalid_placement',
+        input,
+        `Namespace "${input.doc.name}" has no route: the namespace it is placed in was withdrawn.`,
+        'placement',
+      );
+      continue;
+    }
     const parentRoute =
       home == null ? null : /** @type {string} */ (routeOf.get(home.parentKey));
     const added = addNode(
@@ -391,7 +430,8 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
       },
       input,
     );
-    // A withdrawn namespace has no route, so a doc placed in it says so.
+    // A withdrawn namespace has no route, so a namespace placed in it is
+    // withdrawn too, and a doc placed in it says so.
     if (!added) routeOf.set(key, null);
   }
 

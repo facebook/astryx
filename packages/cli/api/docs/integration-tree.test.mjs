@@ -315,6 +315,36 @@ describe('integration docs in the docs tree', () => {
     expect(graph).toContain('takes the route "Unorganized"');
   }, SLOW);
 
+  it("keeps a replaced name for the topic that replaces it, over another integration's namespace", async () => {
+    scaffold({...kit(), 'tokens-ns.doc.mjs': {...NAMESPACE, name: 'tokens', title: 'Kit tokens', summary: 'Kit tokens.'}});
+    const two = path.join(tmpDir, 'node_modules', '@acme', 'two');
+    fs.mkdirSync(path.join(two, 'docs'), {recursive: true});
+    fs.writeFileSync(path.join(two, 'package.json'), JSON.stringify({name: '@acme/two', version: '1.0.0'}));
+    fs.writeFileSync(path.join(two, 'astryx.integration.mjs'), "export default {docs: './docs'};\n");
+    fs.writeFileSync(
+      path.join(two, 'docs', 'acme-tokens.doc.mjs'),
+      `export const docs = ${JSON.stringify({
+        type: 'generic',
+        name: 'acme-tokens',
+        title: 'Acme tokens',
+        description: 'Acme tokens.',
+        replaces: 'tokens',
+        sections: [{title: 'One', content: [{type: 'prose', text: 'One.'}]}],
+      }, null, 2)};\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.config.mjs'),
+      "export default {integrations: ['@acme/kit', '@acme/two']};\n",
+    );
+    const listed = await docs(undefined, undefined, {cwd: tmpDir});
+    expect(listed.meta.namespaces.map(entry => entry.topic)).not.toContain('tokens');
+    const read = await docs('tokens', undefined, {cwd: tmpDir, index: true});
+    expect(read.data.name).toBe('acme-tokens');
+    const check = await checkDocsTree({docsCatalog: await loadDocsCatalog(tmpDir)});
+    expect(check.status).toBe('warn');
+    expect(check.message).toContain('which the topic "acme-tokens" answers to');
+  }, SLOW);
+
   it('runs the same checks inside the package: doctor integration docs', async () => {
     scaffold({...kit(), 'broken.doc.mjs': broken()});
     const result = await integrationDocConflicts('@acme/kit', {cwd: tmpDir});

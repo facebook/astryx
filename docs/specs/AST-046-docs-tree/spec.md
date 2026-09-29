@@ -138,8 +138,11 @@ the docsite onto the tree.
   hold them to FR2–FR8. A placed guide MUST NOT also `replaces` or `extends` a
   topic. When two providers claim one route, the CLI's own docs MUST keep it,
   including its flat topics' names and the Unorganized level, then integrations
-  in configured order, and the claim that loses MUST be a `duplicate_route`
-  diagnostic filed against the provider that lost it. `astryx doctor integration docs` MUST run the
+  in configured order; between integrations a namespace keeps its route over a
+  topic, and a name a topic answers to through `replaces` is that topic's route.
+  The claim that loses MUST be a `duplicate_route` diagnostic filed against the
+  provider that lost it, and the topic list, reads, and search MUST agree with
+  the tree. `astryx doctor integration docs` MUST run the
   same tree and link checks on one integration's docs, so an author finds a
   broken placement or link before the package ships, and
   `astryx integration add doc <name> --parent <namespace>` MUST write a guide
