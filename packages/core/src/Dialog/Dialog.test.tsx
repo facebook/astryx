@@ -805,6 +805,24 @@ describe('Dialog', () => {
       expect(dialog).toHaveAccessibleName('Dialog title');
     });
 
+    it('is labelled by the text content of a node title', () => {
+      render(
+        <Dialog isOpen={true} onOpenChange={() => {}}>
+          <DialogHeader
+            title={
+              <span>
+                Rich <strong>dialog</strong> title
+              </span>
+            }
+          />
+        </Dialog>,
+      );
+      const dialog = screen.getByRole('dialog');
+      const heading = screen.getByRole('heading', {level: 2});
+      expect(dialog).toHaveAttribute('aria-labelledby', heading.id);
+      expect(dialog).toHaveAccessibleName('Rich dialog title');
+    });
+
     it('prefers a consumer-provided aria-label over the header title', () => {
       render(
         <Dialog isOpen={true} onOpenChange={() => {}} aria-label="Custom name">
