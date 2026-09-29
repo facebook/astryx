@@ -42,6 +42,7 @@ import {
 } from './heroThemeContent';
 import {AstryxLogo} from '../../../../components/logos';
 import {HeroFloatingCards} from './HeroFloatingCards';
+import {HeroPinRail} from './HeroPinRail';
 
 // How long each theme stays on screen before auto-advancing (ms).
 const ADVANCE_INTERVAL_MS = 4500;
@@ -123,10 +124,21 @@ const styles = stylex.create({
     },
     height: 'auto',
   },
-  // Sticky, zero-height layer hosting the overlap cards so they pin with the
-  // hero and don't intercept clicks.
-  cardsLayer: {
-    position: 'sticky',
+  // Zero-height layer hosting the desktop pinned art (aurora glow + overlap
+  // cards) so they pin together and don't intercept clicks. Sticky rather than
+  // fixed so the art lifts with the document during overscroll instead of
+  // painting in the exposed gap — see HeroPinRail, which supplies the
+  // containing block that keeps it pinned past the hero band.
+  //
+  // Static below 1024px: nothing pins there (the overlap stage is display:none
+  // and the glow scrolls away with the hero), and staying unpositioned is what
+  // keeps this layer OUT of the glow's containing-block chain, so the glow
+  // resolves against heroScope exactly as it did before (#5392).
+  pinLayer: {
+    position: {
+      default: 'static',
+      '@media (min-width: 1024px)': 'sticky',
+    },
     top: 'var(--appshell-header-height, 0px)',
     height: 0,
     width: '100%',
@@ -156,7 +168,11 @@ const styles = stylex.create({
     pointerEvents: 'none',
     transition: 'background-color 600ms ease',
   },
-  // Per-slide band behind the transparent top nav so it retints too.
+  // Per-slide band behind the transparent top nav so it retints too. Fixed, not
+  // sticky like the layers below: the band has to cover the header strip, and
+  // the header sits ABOVE heroScope in flow — so there is no box inside the
+  // hero for a sticky band to stick to. It is only a header-height tall, so it
+  // never reaches the bottom-overscroll gap the pinned art used to bleed into.
   navBackdrop: {
     position: 'fixed',
     top: 0,
@@ -168,31 +184,24 @@ const styles = stylex.create({
     transition: 'background-color 600ms ease',
     zIndex: 0,
   },
-  // Blurred aurora glow — in the same 1200px box as the cards so blobs and
-  // cards stay aligned; pinned at >=1024px and scrolling away with the hero
-  // below that (see `position`). Capped to 100vw to avoid horizontal scroll.
-  // Blob centers sit under the card clusters; colors come from --aurora-* per
-  // slide.
+  // Blurred aurora glow — in the same 1200px box as the cards (it shares their
+  // pin layer) so blobs and cards stay aligned. Capped to 100vw to avoid
+  // horizontal scroll. Blob centers sit under the card clusters; colors come
+  // from --aurora-* per slide.
   backdropGlow: {
-    // Desktop: fixed, part of the pin-and-cover effect alongside heroContent
-    // and the cards stage. Narrow: absolute within heroScope (position:
-    // relative), so it scrolls away with the hero instead of staying pinned
-    // for the whole page — a fixed glow below 1024px reached past the footer
-    // into the bottom-overscroll gap. That exposure is what the app-global
-    // `overscroll-behavior-y: none` in globals.css was suppressing, at the
-    // cost of pull-to-refresh on every route on mobile; bounding the glow
-    // here is what lets that rule scope to desktop widths (#5392).
-    position: {
-      default: 'absolute',
-      '@media (min-width: 1024px)': 'fixed',
-    },
-    // heroScope already starts below the header (it's the sibling after
-    // navBackdrop in document flow), so the absolute case needs no offset;
-    // only the fixed case has to clear the header itself.
-    top: {
-      default: 0,
-      '@media (min-width: 1024px)': 'var(--appshell-header-height, 0px)',
-    },
+    // Absolute at every width; what changes is the box it resolves against.
+    // ≥1024px that is pinLayer, which is sticky, so the glow pins with the
+    // hero. Below 1024px pinLayer is unpositioned and the glow resolves
+    // against heroScope instead, so it scrolls away with the hero rather than
+    // staying pinned for the whole page — a pinned glow down there reached past
+    // the footer into the bottom-overscroll gap, and suppressing that with an
+    // app-global `overscroll-behavior-y: none` cost pull-to-refresh on every
+    // route on mobile (#5392).
+    position: 'absolute',
+    // Both containing blocks already start where the glow should: pinLayer is
+    // pinned a header-height down, and heroScope begins below the header (it is
+    // the sibling after navBackdrop in document flow).
+    top: 0,
     left: '50%',
     transform: 'translateX(-50%)',
     width: 'min(1200px, 100vw)',
@@ -451,21 +460,25 @@ export function HeroReelCards() {
     <Theme theme={active.theme} mode={effectiveMode(active, reel.userMode)}>
       <div {...stylex.props(styles.themeFill)} aria-hidden="true" />
       <div {...stylex.props(styles.navBackdrop)} aria-hidden="true" />
-      <div
-        aria-hidden="true"
-        {...stylex.props(
-          styles.backdropGlow,
-          dynamic.aurora(
-            active.aurora.left,
-            active.aurora.center,
-            active.aurora.right,
-          ),
-        )}
-      />
-      {/* Floating cards layer */}
-      <div {...stylex.props(styles.cardsLayer)}>
-        <HeroFloatingCards content={active.content} mounted={shown} />
-      </div>
+      {/* Desktop pin layer: the rail bounds it to heroScope so it stays pinned
+          for the whole pin-and-cover run without going `fixed`. */}
+      <HeroPinRail>
+        <div {...stylex.props(styles.pinLayer)}>
+          <div
+            aria-hidden="true"
+            {...stylex.props(
+              styles.backdropGlow,
+              dynamic.aurora(
+                active.aurora.left,
+                active.aurora.center,
+                active.aurora.right,
+              ),
+            )}
+          />
+          {/* Floating cards layer */}
+          <HeroFloatingCards content={active.content} mounted={shown} />
+        </div>
+      </HeroPinRail>
     </Theme>
   );
 }
