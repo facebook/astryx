@@ -193,3 +193,43 @@ describe('DropdownMenuRadioGroup / RadioItem', () => {
     spy.mockRestore();
   });
 });
+
+describe('selectable item refs', () => {
+  it('a ref reaches the menuitemcheckbox element', () => {
+    const ref = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'View'}}>
+        <DropdownMenuCheckboxItem
+          label="Show archived"
+          value={false}
+          onChange={() => {}}
+          ref={ref}
+        />
+      </DropdownMenu>,
+    );
+    expect(ref).toHaveBeenCalledWith(
+      screen.getByRole('menuitemcheckbox', {
+        name: 'Show archived',
+        hidden: true,
+      }),
+    );
+  });
+
+  it('a ref reaches the menuitemradio element', () => {
+    const ref = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'Sort'}}>
+        <DropdownMenuRadioGroup
+          label="Sort by"
+          value="newest"
+          onChange={() => {}}>
+          <DropdownMenuRadioItem value="newest" label="Newest" ref={ref} />
+          <DropdownMenuRadioItem value="oldest" label="Oldest" />
+        </DropdownMenuRadioGroup>
+      </DropdownMenu>,
+    );
+    expect(ref).toHaveBeenCalledWith(
+      screen.getByRole('menuitemradio', {name: 'Newest', hidden: true}),
+    );
+  });
+});

@@ -486,6 +486,7 @@ export function generateCompressedIndex(
   if (resolvedTopics.length > 0) {
     lines.push(`  docs <topic>       ${resolvedTopics.join(', ')}`);
   }
+  lines.push('  docs cli           commands, API reference, integration authoring (one level at a time)');
   lines.push('  swizzle <Name>     eject component source for deep customization');
   lines.push('  upgrade --apply    run after any Astryx or integration dependency bump');
   const appendCount = agentDocs.reduce(

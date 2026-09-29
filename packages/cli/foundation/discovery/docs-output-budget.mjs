@@ -26,7 +26,7 @@ export function docPayloadBytes(payload) {
 }
 
 /**
- * @param {import('../../api/docs/docs.type.mjs').DocsIndex} index
+ * @param {Omit<import('../../api/docs/docs.type.mjs').DocsIndex, 'links'> | import('../../api/docs/docs.type.mjs').DocsIndex} index
  * @returns {number}
  */
 export function docsIndexBytes(index) {

@@ -36,6 +36,7 @@ affects_consumer_docs: [release-process, templates]
       "DEC-6",
       "DEC-7",
       "DEC-8",
+      "DEC-9",
       "FR3",
       "FR4",
       "FR5",
@@ -46,7 +47,11 @@ affects_consumer_docs: [release-process, templates]
       "FR17",
       "FR18",
       "FR19",
-      "FR20"
+      "FR20",
+      "FR21",
+      "FR22",
+      "FR23",
+      "FR24"
     ]
   }
 }
@@ -71,7 +76,8 @@ independent for each invocation.
 
 - Freezing implementation details or every byte of generated example code.
 - Defining component or template naming conventions.
-- Treating private packages, canaries, or unreleased work as stable public API.
+- Treating private packages, canaries, unreleased work, or explicitly marked
+  experimental surfaces as stable public API.
 - Replacing the release process, Changesets, or migration tooling.
 
 ## Requirements
@@ -248,13 +254,59 @@ independent for each invocation.
   contribution once. No integration contribution can remove or weaken a value
   supplied by the app or by another integration. When a setting protects the
   project, a failed contribution MUST fail closed instead of being skipped.
+- **FR21 — Experimental APIs are explicit and opt-in before publication.** A
+  public surface inside a stable published package is outside the stable
+  compatibility promise only when its first stable release exposes it through a
+  canonical experimental boundary and marks it in both declarations and consumer
+  documentation. On an existing stable component, experimental props and callbacks
+  live inside one optional `experimental` prop object; omitting that object preserves
+  the component's stable defaults and behavior. Experimental hooks, functions, and
+  types use the owning component's `/experimental` import subpath and are not
+  re-exported from the package root or the component's ordinary subpath. Declarations
+  carry `@experimental`; authored docs carry machine-readable
+  `stability: 'experimental'` metadata and state that the surface may change or be
+  removed in a patch release. Prose-only warnings and reviewer knowledge do not
+  establish this boundary.
+- **FR22 — Experimental changes are patch-level and stay confined.** Adding,
+  changing, renaming, or removing an explicitly experimental surface uses an
+  `[experimental]` Changeset and a patch bump. An incompatibility confined to that
+  boundary is `[experimental]`, not `[breaking]`; the Changeset authoring and
+  validation process MUST derive and enforce a patch bump for the category even when
+  the experimental surface changes incompatibly. Its release note names the affected
+  surface and replacement when one exists. A compatibility alias is optional; a
+  codemod is supplied when a mechanical migration would materially reduce caller
+  work. This exception never covers a change to stable defaults, stable runtime or
+  accessibility behavior, ordinary import paths, non-experimental props, or stable
+  CLI commands and machine schemas; those changes follow FR1–FR8. A released stable
+  surface cannot be retroactively demoted to experimental.
+- **FR23 — Promotion creates a stable contract deliberately.** Promotion is an
+  owner-approved change that removes the experimental marker, exposes the settled
+  prop, callback, hook, function, or type on its normal stable surface, and uses a
+  `[feat]` Changeset. From that release forward, FR1–FR8 protect the promoted surface.
+  Moving a component API out of the `experimental` prop object or moving an export
+  out of a component's `/experimental` subpath names the stable replacement and
+  supplies a codemod when the rewrite is mechanical. Keeping a deprecated
+  experimental alias for a transition is encouraged but is not itself part of the
+  new stable promise.
+- **FR24 — Experimental status is verified per public surface.** Release review
+  compares the previous published surface with current declarations and authored
+  docs, verifies that their experimental markers agree, and rejects an
+  `[experimental]` Changeset when any incompatible delta reaches a stable surface.
+  The integration-theme contribution capability is the one grandfathered surface:
+  its introduction in 0.6.3 is treated as experimental even though it predates the
+  markers in FR21, and no other released surface may be enrolled retroactively. Its
+  contribution metadata, discovery, and authoring contract may evolve in patch
+  releases until an explicit promotion removes the marker. The surrounding stable
+  CLI command names, options, exit behavior, and machine-readable envelope remain
+  protected under FR3 and FR13.
 
 ### Platform support
 
 - Supported feature/engine floor: every published Astryx package and stable CLI
   release.
-- Unsupported behavior: private packages, unreleased branch state, and canary-only
-  surfaces carry no stable compatibility promise.
+- Unsupported behavior: private packages, unreleased branch state, canary-only
+  surfaces, and surfaces that meet FR21's explicit experimental contract carry no
+  stable compatibility promise.
 - Browser evidence: not applicable to the classification itself; a browser-owned
   compatibility claim still follows the governing component or platform spec.
 
@@ -265,6 +317,20 @@ category to patch while packages are on `0.x`. The Release Process already limit
 migration obligations to released surfaces. The template contribution guide notes
 that template resolution is exact-match, but that lookup mechanic does not turn a
 slug value into a contractual API.
+
+The repository already isolates whole experimental components in the canary-only
+Lab package, but it has no equivalent boundary for a new prop, callback, hook, or
+type on an existing stable component. This amendment adds that per-surface boundary
+without weakening the component around it. The release tooling and public Release
+Process do not yet support the `[experimental]` category or verify declaration/doc
+markers. Before another surface uses the contract, follow-up implementation must add
+the category to Changeset authoring, CI validation, changelog grouping, and the
+Release Process, with tests that prove even an incompatible experimental-only change
+stays patch-level. Integration-theme contributions are the sole grandfathered
+enrollment and may use existing patch categories until the dedicated category ships.
+Open PR #6615 removes the released `layout` command, which was experimental only in
+practice and carried no contract marker; it remains breaking and is not enrolled by
+this amendment.
 
 This spec supplies the missing classification rule shared by those documents. In
 particular, both CLI-template cases discussed during review are nonbreaking catalog
@@ -297,7 +363,7 @@ and every integration handler run, the app first; a throwing handler is skipped
 without affecting the others or the command; `inheritDebug: false` in the
 package's `astryx` field refuses inherited handlers; and a repeated project load
 delivers each event once. Its configuration schema entry states that rule, and
-the `cli-integrations` authoring topic documents the `debug` named export. Draft
+the `cli/integrations` guide documents the `debug` named export. Draft
 AST-031 details the same model for runtime handler features. No command yet
 reports an effective contributed value with its sources, so existing contributed
 settings do not meet FR20's inspection requirement; this record does not choose
@@ -306,17 +372,18 @@ reclassify existing keys.
 
 ## Verification
 
-| Contract  | Verification                                                                                                                     | Representative states                                                                                                | Mutation or failure expectation                                                                                                                                                                          |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR3   | PR compatibility statement plus latest stable package inspection                                                                 | released export, behavior, CLI command; unreleased and private surface                                               | A change is labeled from diff size or possibility alone, or a released contract change is missed                                                                                                         |
-| FR4–FR6   | Old-usage type/runtime/CLI regression test                                                                                       | alias retained, deprecation warning, broad rewrite, low-adoption caller                                              | Contractual old usage fails despite a nonbreaking label, or risk is substituted for compatibility                                                                                                        |
-| FR7–FR8   | `pnpm check:changesets` plus migration review                                                                                    | breaking and patch Changesets; codemoddable and non-codemoddable migration                                           | Category and bump diverge, or a breaking release gives no usable migration path                                                                                                                          |
-| FR9–FR13  | CLI contract tests, response-schema/type snapshots, text projections, generated consumer docs, and template catalog/output tests | slug rename, metadata edit, source rebuild, optional field addition, command or schema change                        | Catalog data is frozen as API, a command/schema incompatibility is mislabeled as catalog-only, or a response field lacks a complete projection                                                           |
-| FR12      | Minimum and representative supported-version tests plus manifest and release-note review                                         | retained range, narrowed range, adapter, coordinated upgrade                                                         | An in-range combination breaks under a nonbreaking label, or release coordination hides the affected package or migration                                                                                |
-| FR14      | Help/manifest snapshots, public API and consumer docs, and focused contract tests                                                | command, option, API/config, private rollout/test hook                                                               | Supported behavior is hidden, an environment variable changes behavior, or automation lacks a documented API                                                                                             |
-| FR15      | Full manifest-derived command matrix, supported-consumer evidence, and scope-specific contract tests                             | global invariant, scoped command group, single command, programmatic API                                             | A global control is a no-op for any command, has different meanings, or replaces a narrower owning surface                                                                                               |
-| FR16–FR18 | Boundary inventory, hostile side-effect probes, response snapshots, and concurrent API tests                                     | known and new extension, partial result, text/JSON/API parity, independent concurrent calls                          | A route bypasses the guarantee, omitted work looks complete, or one invocation changes another                                                                                                           |
-| FR19–FR20 | Proposal evidence with a regression fixture for the detection failure, plus composition and provenance tests                     | convention covers the case, detection fails, app plus two integrations, refusal, failing contribution, repeated load | A key ships without a reproduced detection failure, a contribution displaces the app or applies twice, a part of the effective value has no inspectable source, or a failure silently weakens protection |
+| Contract  | Verification                                                                                                                     | Representative states                                                                                                   | Mutation or failure expectation                                                                                                                                                                          |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR3   | PR compatibility statement plus latest stable package inspection                                                                 | released export, behavior, CLI command; unreleased and private surface                                                  | A change is labeled from diff size or possibility alone, or a released contract change is missed                                                                                                         |
+| FR4–FR6   | Old-usage type/runtime/CLI regression test                                                                                       | alias retained, deprecation warning, broad rewrite, low-adoption caller                                                 | Contractual old usage fails despite a nonbreaking label, or risk is substituted for compatibility                                                                                                        |
+| FR7–FR8   | `pnpm check:changesets` plus migration review                                                                                    | breaking and patch Changesets; codemoddable and non-codemoddable migration                                              | Category and bump diverge, or a breaking release gives no usable migration path                                                                                                                          |
+| FR9–FR13  | CLI contract tests, response-schema/type snapshots, text projections, generated consumer docs, and template catalog/output tests | slug rename, metadata edit, source rebuild, optional field addition, command or schema change                           | Catalog data is frozen as API, a command/schema incompatibility is mislabeled as catalog-only, or a response field lacks a complete projection                                                           |
+| FR12      | Minimum and representative supported-version tests plus manifest and release-note review                                         | retained range, narrowed range, adapter, coordinated upgrade                                                            | An in-range combination breaks under a nonbreaking label, or release coordination hides the affected package or migration                                                                                |
+| FR14      | Help/manifest snapshots, public API and consumer docs, and focused contract tests                                                | command, option, API/config, private rollout/test hook                                                                  | Supported behavior is hidden, an environment variable changes behavior, or automation lacks a documented API                                                                                             |
+| FR15      | Full manifest-derived command matrix, supported-consumer evidence, and scope-specific contract tests                             | global invariant, scoped command group, single command, programmatic API                                                | A global control is a no-op for any command, has different meanings, or replaces a narrower owning surface                                                                                               |
+| FR16–FR18 | Boundary inventory, hostile side-effect probes, response snapshots, and concurrent API tests                                     | known and new extension, partial result, text/JSON/API parity, independent concurrent calls                             | A route bypasses the guarantee, omitted work looks complete, or one invocation changes another                                                                                                           |
+| FR19–FR20 | Proposal evidence with a regression fixture for the detection failure, plus composition and provenance tests                     | convention covers the case, detection fails, app plus two integrations, refusal, failing contribution, repeated load    | A key ships without a reproduced detection failure, a contribution displaces the app or applies twice, a part of the effective value has no inspectable source, or a failure silently weakens protection |
+| FR21–FR24 | Published-surface comparison, declaration/doc metadata checks, import-boundary checks, and Changeset classification review       | experimental prop object, experimental subpath, patch evolution, promotion, stable-surface spillover, integration theme | A prose-only marker excludes a stable API, an experimental export leaks through a stable path, a patch changes stable behavior, or a promoted API remains unprotected                                    |
 
 ## Decision log
 
@@ -476,6 +543,31 @@ Rejected: adding a key because it is easy to add, a key that duplicates a
 convention or a derivable value, an integration silently replacing an app value,
 an integration defining its own merge rule, contributions made by import side
 effects, and one broken integration disabling a setting for every app.
+
+### DEC-9 — Existing stable components incubate APIs behind one explicit boundary
+
+**Reference:** `spec:AST-017/DEC-9`
+**Decider:** `cixzhang`, `2026-09-28`
+
+Keep Lab as the canary-only home for an entire experimental component. When an
+existing stable component needs to test a new prop or callback, put it inside the
+component's optional `experimental` prop object so every callsite opts in visibly
+and the ordinary prop namespace stays stable. Put experimental hooks, functions,
+and types on the owning component's `/experimental` subpath. Mark the same surface
+in declarations and authored docs, and keep stable defaults unchanged when the
+experimental boundary is unused.
+
+Allow those marked surfaces to evolve through `[experimental]` patch releases.
+Promotion is a separate `[feat]` decision that moves the settled API onto its stable
+surface; after that release the ordinary compatibility rules apply. Never use an
+experimental marker to demote an already stable contract. Integration-theme
+contributions are the single grandfathered exception because they shipped before
+this declaration mechanism while still being introduced for early iteration.
+
+Rejected: moving a stable component into Lab to test one new API, scattering
+`unstableFoo` names through its ordinary prop namespace, relying on prose warnings
+that tooling cannot verify, treating every recently added API as implicitly
+experimental, and retroactively marking another released stable surface unstable.
 
 ## Open questions
 

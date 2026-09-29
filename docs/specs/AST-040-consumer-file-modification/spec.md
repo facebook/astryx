@@ -13,7 +13,7 @@ owners: [josephfarina]
 affects_architecture: [architecture:cli-surface]
 affects_families: []
 affects_contributing: [contributing:cli-conventions]
-affects_consumer_docs: [cli-integrations]
+affects_consumer_docs: [cli/integrations]
 ---
 
 # Evidence-based consumer file modification system spec
@@ -129,7 +129,7 @@ permission to edit matching literals anywhere in that file. Both behaviors are
 non-conforming with FR1–FR3; this record does not choose their implementation.
 
 Post-codemod hooks already exist and serve as the declared regeneration for FR5.
-The `cli-integrations` authoring topic and the codemod authoring guidance must
+The `cli/integrations` guide and the codemod authoring guidance must
 explain protection, how to mark generated files, and how transforms prove scope.
 
 This specification-only change alters no runtime behavior or published package

@@ -54,7 +54,7 @@ import {readDocView} from '../../foundation/doc-compiler/read.mjs';
 import {findCoreDir} from '../../foundation/fs/paths.mjs';
 import {
   discoverComponents,
-  discoverIntegrationComponents,
+  discoverValidIntegrationComponents,
   findComponentReadme,
   resolveImportPath,
   resolveIntegrationImportPath,
@@ -66,7 +66,20 @@ import {
 import {loadIntegrationsSafely} from '../component/_adapter.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {discoverTemplates, extractComponents} from '../template/template.mjs';
-import {loadDocsCatalog, lowerTopic} from '../docs/_adapter.mjs';
+import {templateLookupIds} from '../../foundation/discovery/template-adapter.mjs';
+import {
+  guideEntry,
+  loadDocsCatalog,
+  lowerTopic,
+  projectTree,
+  holdsOwnName,
+} from '../docs/_adapter.mjs';
+import {unlinkText} from '../../foundation/doc-compiler/links.mjs';
+import {nodeView} from '../docs/node/node.mjs';
+import {
+  sectionKey,
+  sectionSummary,
+} from '../../foundation/discovery/docs-section-key.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {setResultCoverage} from './coverage.mjs';
@@ -84,8 +97,18 @@ import {setResultCoverage} from './coverage.mjs';
  * @property {string[]} [guidance]
  * @property {string} [_import]
  * @property {string} [_title]
+ * @property {string} [_topic] - A doc result's topic or docs-tree route.
+ * @property {string} [_section] - A doc result's section key, when it is one section.
+ * @property {string} [_command] - The command that reads exactly this doc part.
+ * @property {string} [_parent] - The command that opens the level above a doc
+ *   part: its topic's section list, or the docs-tree namespace it sits in.
+ * @property {string} [_package] - The npm package that authored a docs-tree
+ *   doc part. Flat topics carry none: an extension's sections can come from
+ *   another package.
  * @property {string} [_displayName]
  * @property {'page'|'block'} [_kind]
+ * @property {string} [_resultName]
+ * @property {string} [_commandName]
  */
 
 /**
@@ -647,7 +670,8 @@ async function gatherIntegrationComponents(cwd) {
   /** @type {Candidate[]} */
   const candidates = [];
   for (const integration of loadedIntegrations) {
-    for (const rec of discoverIntegrationComponents(integration)) {
+    const {components} = await discoverValidIntegrationComponents(integration);
+    for (const rec of components) {
       const doc = await loadModuleDoc(rec.docPath);
       candidates.push({
         domain: 'component',
@@ -730,7 +754,11 @@ async function gatherHooks(coreDir) {
 }
 
 /**
- * Build doc-topic candidates: topic name + description + section prose.
+ * Build doc candidates at the grain a reader reads them: each section of a
+ * topic, whose command reads just that section; each topic as a whole, whose
+ * command lists its sections; and each docs-tree node by its route. The tree's
+ * guides split into sections like topics, and its typed docs also match by
+ * their own name, so `assertResponse` finds `cli/api/functions/assert-response`.
  *
  * Reads the project's catalog rather than the CLI's own docs directory, so a
  * topic an integration contributed (or replaced) is searchable exactly like a
@@ -748,36 +776,266 @@ async function gatherDocs(cwd) {
   } catch {
     return candidates;
   }
+  let tree = null;
+  try {
+    tree = await projectTree(catalog);
+  } catch {
+    // `astryx doctor` reports a tree that fails to build; search still
+    // indexes the topics.
+  }
   for (const entry of catalog.entries()) {
-    let doc = null;
+    // A topic whose name opens another doc (spec:AST-046 FR11) is not
+    // offered: every hit's command must open the hit.
+    if (tree && !holdsOwnName(tree, catalog, entry)) continue;
+    let lowered = null;
     try {
-      doc = (await lowerTopic(catalog, entry)).doc;
+      lowered = await lowerTopic(catalog, entry);
     } catch {
       // A topic that cannot be loaded is reported by the commands that own
       // integration issues; search just cannot index it.
     }
-    let description = '';
-    /** @type {string[]} */
-    const prose = [];
-    if (doc) {
-      description = doc.description || '';
-      for (const section of doc.sections || []) {
-        if (section.title) prose.push(section.title);
-        for (const block of section.content || []) {
-          if (block.type === 'prose' && block.text) prose.push(block.text);
-        }
+    const doc = lowered?.doc ?? null;
+    // A flat topic lives in the Unorganized level; its hits say so, and name
+    // the package each section came from.
+    const home = tree?.get(entry.name);
+    const placed = home?.ref?.flatTopic === entry.name ? home : null;
+    /** @type {Map<string, string>} */
+    const packages = new Map([
+      [entry.providerId ?? entry.package, entry.package],
+      ...entry.extensions.map(
+        ext => /** @type {[string, string]} */ ([ext.providerId ?? ext.package, ext.package]),
+      ),
+    ]);
+    candidates.push(
+      ...topicCandidates(
+        entry.name,
+        doc,
+        entry.title,
+        '',
+        placed && tree
+          ? [
+              ...tree.ancestors(placed).map(a => a.title),
+              doc?.title || entry.title || entry.name,
+            ].join(' › ')
+          : undefined,
+        placed ? `astryx docs ${placed.parent}` : undefined,
+        entry.package,
+        key =>
+          packages.get(lowered?.sectionProviders?.[key] ?? '') ?? entry.package,
+      ),
+    );
+  }
+  if (tree == null) return candidates;
+  for (const node of tree.nodes.values()) {
+    // A flat topic is indexed above, as a topic.
+    if (node.ref?.flatTopic) continue;
+    // A tree hit names where it lives: its ancestors' titles, then its own.
+    const path = [...tree.ancestors(node).map(a => a.title), node.title];
+    if (node.kind === 'generic') {
+      let doc = null;
+      try {
+        doc = (await lowerTopic(catalog, guideEntry(node))).doc;
+      } catch {
+        // As above: the owning commands report it.
       }
+      candidates.push(
+        ...topicCandidates(
+          node.route,
+          doc,
+          node.title,
+          node.summary,
+          path.join(' › '),
+          node.parent == null ? undefined : `astryx docs ${node.parent}`,
+          node.provider,
+        ),
+      );
+      continue;
+    }
+    const selfDoc = /** @type {any} */ (node.ref)?.selfDoc;
+    // A typed doc's content is what `astryx docs <route>` prints. The first
+    // column of its tables names what the doc defines (an error code, an
+    // option, a parameter), so each is a keyword the doc answers to.
+    /** @type {any[]} */
+    const content = (await nodeView(catalog, tree, node)).content ?? [];
+    /** @type {string[]} */
+    const defined = [];
+    for (const block of content) {
+      if (block.type !== 'table' || !Array.isArray(block.rows)) continue;
+      for (const row of block.rows)
+        if (row[0] != null) defined.push(plain(row[0]));
     }
     candidates.push({
       domain: 'doc',
-      name: entry.name,
-      keywords: [],
-      description,
-      prose,
-      _title: doc?.title || entry.title || entry.name,
+      name: node.name,
+      keywords: [
+        node.route.slice(node.route.lastIndexOf('/') + 1),
+        ...(Array.isArray(selfDoc?.keywords) ? selfDoc.keywords : []),
+        ...defined,
+        ...codeTerms({content}),
+      ],
+      description: node.summary || '',
+      prose: sectionProse({title: node.title, content}),
+      _topic: node.route,
+      _title: path.join(' › '),
+      _command: `astryx docs ${node.route}`,
+      _parent: node.parent == null ? 'astryx docs' : `astryx docs ${node.parent}`,
+      _package: node.provider,
     });
   }
   return candidates;
+}
+
+/**
+ * The words one section says: its prose, headings, and list items.
+ * @param {any} section
+ * @returns {string[]}
+ */
+function sectionProse(section) {
+  /** @type {string[]} */
+  const prose = [];
+  if (section?.title) prose.push(section.title);
+  for (const block of section?.content || []) {
+    if ((block.type === 'prose' || block.type === 'heading') && block.text) {
+      prose.push(block.text);
+    } else if (block.type === 'list' && Array.isArray(block.items)) {
+      for (const item of block.items) {
+        const text = typeof item === 'string' ? item : item?.text;
+        if (typeof text === 'string') prose.push(text);
+      }
+    } else if (block.type === 'table' && Array.isArray(block.rows)) {
+      for (const row of block.rows) prose.push(row.map(plain).join(' '));
+    } else if (block.type === 'code' && typeof block.code === 'string') {
+      prose.push([block.label, block.code].filter(Boolean).join(' '));
+    }
+  }
+  return prose;
+}
+
+/**
+ * The identifiers a doc part names in code ticks (`token-ref`,
+ * `ERR_UNKNOWN_SECTION`). Each is a keyword: a reader who types one exactly
+ * wants the part that defines or explains it.
+ * @param {any} part - a section, or `{content}` of a typed doc
+ * @returns {string[]}
+ */
+function codeTerms(part) {
+  /** @type {Set<string>} */
+  const terms = new Set();
+  /** @param {unknown} text */
+  const scan = text => {
+    for (const m of String(text ?? '').matchAll(/`([^`\s]{2,40})`/g)) {
+      terms.add(m[1]);
+    }
+  };
+  for (const block of part?.content || []) {
+    if (block.type === 'prose') scan(block.text);
+    else if (block.type === 'list' && Array.isArray(block.items)) {
+      for (const item of block.items) {
+        scan(typeof item === 'string' ? item : item?.text);
+      }
+    } else if (block.type === 'table' && Array.isArray(block.rows)) {
+      for (const row of block.rows) for (const cell of row) scan(cell);
+    }
+  }
+  return [...terms];
+}
+
+/**
+ * The headings inside a section. Each names a subsection, so a query that
+ * names one should find the section as surely as one that names its title.
+ * @param {any} section
+ * @returns {string[]}
+ */
+function headings(section) {
+  return (section?.content || [])
+    .filter(
+      (/** @type {any} */ block) => block.type === 'heading' && block.text,
+    )
+    .map((/** @type {any} */ block) => String(block.text));
+}
+
+/**
+ * A table cell as plain words, without its code ticks.
+ * @param {unknown} cell
+ * @returns {string}
+ */
+function plain(cell) {
+  return unlinkText(String(cell ?? '')).replaceAll('`', '');
+}
+
+/**
+ * The candidates one topic yields: the topic itself, and one per section when
+ * it has more than one. A topic's command lists its sections, and a section's
+ * command reads only that section, so a hit never costs a whole-topic read.
+ * @param {string} name - the topic name, or a placed guide's route
+ * @param {any} doc - the lowered topic, or null when it did not load
+ * @param {string} [title]
+ * @param {string} [summary]
+ * @param {string} [path] - where the topic lives in the docs tree, as titles
+ *   joined by ` › `; a flat topic is its own title
+ * @param {string} [parent] - the command that opens the level above the
+ *   topic: its namespace, or the Unorganized level for a flat topic
+ * @param {string} [pkg] - the npm package that authored the topic
+ * @param {(key: string) => string} [sectionPackage] - the npm package a
+ *   section came from: an extension's section names the extension's package
+ * @returns {Candidate[]}
+ */
+function topicCandidates(
+  name,
+  doc,
+  title,
+  summary = '',
+  path,
+  parent,
+  pkg,
+  sectionPackage,
+) {
+  /** @type {any[]} */
+  const sections = doc?.sections ?? [];
+  const docTitle = path || doc?.title || title || name;
+  const split = sections.length > 1;
+  /** @type {Candidate[]} */
+  const out = [
+    {
+      domain: 'doc',
+      name,
+      keywords: [
+        ...(doc?.title || title ? [doc?.title || title] : []),
+        ...(Array.isArray(doc?.keywords) ? doc.keywords : []),
+      ],
+      description: doc?.description || summary,
+      prose: split
+        ? sections.map(section => section.title).filter(Boolean)
+        : sections.flatMap(sectionProse),
+      _topic: name,
+      _title: docTitle,
+      _command: split ? `astryx docs ${name} --index` : `astryx docs ${name}`,
+      ...(parent ? {_parent: parent} : {}),
+      ...(pkg ? {_package: pkg} : {}),
+    },
+  ];
+  if (!split) return out;
+  for (const section of sections) {
+    const key = sectionKey(section);
+    out.push({
+      domain: 'doc',
+      name: key,
+      keywords: [
+        ...(section.title ? [section.title] : []),
+        ...headings(section),
+        ...codeTerms(section),
+      ],
+      description: sectionSummary(section),
+      prose: sectionProse(section),
+      _topic: name,
+      _section: key,
+      _title: `${docTitle} › ${section.title}`,
+      _command: `astryx docs ${name} ${key}`,
+      _parent: `astryx docs ${name} --index`,
+      ...((sectionPackage?.(key) ?? pkg) ? {_package: sectionPackage?.(key) ?? pkg} : {}),
+    });
+  }
+  return out;
 }
 
 /**
@@ -793,6 +1051,13 @@ async function gatherTemplates(cwd) {
     return [];
   }
   return templates.map(t => {
+    // A replacement's target is its canonical unqualified lookup id. Keep the
+    // integration-owned id as a keyword and response label, but score and print
+    // commands against the id that `template()` resolves back to this entry.
+    // This matters for replacement chains: one replacement's own id can be the
+    // target of another, so using that shadowed id as the command would select
+    // the other template.
+    const commandName = t.replaces ?? t.dirName;
     // Blocks ship an authored componentsUsed; page templates don't, so derive
     // them from the source. Category words (e.g. "Dashboard - Analytics") are
     // strong intent signal for pages, which otherwise only index on name +
@@ -805,6 +1070,7 @@ async function gatherTemplates(cwd) {
     const keywords = Array.isArray(t.componentsUsed)
       ? [...t.componentsUsed]
       : [];
+    keywords.push(...templateLookupIds(t).filter(id => id !== commandName));
     /** @type {string[]} */
     let weakKeywords = [];
     if (t.type === 'page') {
@@ -820,12 +1086,14 @@ async function gatherTemplates(cwd) {
     }
     return {
       domain: 'template',
-      name: t.dirName,
+      name: commandName,
       keywords,
       weakKeywords,
       description: t.description || '',
       _displayName: t.name,
       _kind: t.type, // 'page' | 'block'
+      _resultName: t.dirName,
+      _commandName: commandName,
     };
   });
 }
@@ -844,7 +1112,7 @@ async function gatherTemplates(cwd) {
 function toResult(c, score, reason, matchedTerms, queryTerms) {
   const base = {
     domain: c.domain,
-    name: c.name,
+    name: c._resultName ?? c.name,
     score,
     reason,
     description: c.description || '',
@@ -866,10 +1134,16 @@ function toResult(c, score, reason, matchedTerms, queryTerms) {
       };
       break;
     case 'doc':
+      // A doc result names its topic or route, plus the section when the
+      // hit is one section; its command reads exactly that part.
       result = {
         ...base,
+        name: c._topic ?? c.name,
+        ...(c._section ? {section: c._section} : {}),
         title: c._title,
-        command: `astryx docs ${c.name}`,
+        command: c._command ?? `astryx docs ${c.name}`,
+        ...(c._parent ? {parent: c._parent} : {}),
+        ...(c._package ? {package: c._package} : {}),
       };
       break;
     case 'template':
@@ -877,7 +1151,7 @@ function toResult(c, score, reason, matchedTerms, queryTerms) {
         ...base,
         displayName: c._displayName,
         kind: c._kind,
-        command: `astryx template ${c.name}`,
+        command: `astryx template ${c._commandName ?? c.name} --type ${c._kind}`,
       };
       break;
     default:
@@ -929,8 +1203,11 @@ export async function search(query, options = {}) {
   const term = String(query).trim().toLowerCase();
   const tokens = tokenizeQuery(term);
 
-  const coreDir = findCoreDir(cwd);
-  if (!coreDir) {
+  // `astryx docs` reads docs without @astryxdesign/core, so a docs-only
+  // search must too. Every other domain reads core.
+  const docsOnly = type === 'doc';
+  const coreDir = docsOnly ? null : findCoreDir(cwd);
+  if (!docsOnly && !coreDir) {
     throw new AstryxError(
       'Could not find @astryxdesign/core package',
       undefined,
@@ -942,8 +1219,10 @@ export async function search(query, options = {}) {
   /** @param {string} d */
   const wants = d => !type || type === d;
   const [components, hooks, docTopics, templates] = await Promise.all([
-    wants('component') ? gatherComponents(coreDir, cwd) : [],
-    wants('hook') ? gatherHooks(coreDir) : [],
+    wants('component')
+      ? gatherComponents(/** @type {string} */ (coreDir), cwd)
+      : [],
+    wants('hook') ? gatherHooks(/** @type {string} */ (coreDir)) : [],
     wants('doc') ? gatherDocs(cwd) : [],
     wants('template') ? gatherTemplates(cwd) : [],
   ]);

@@ -49,7 +49,7 @@ export function registerSearch(program) {
 
       try {
         const project = await Project.load(process.cwd());
-        await warnOnIntegrationIssues(project.loadedIntegrations, {json});
+        await warnOnIntegrationIssues(project, {json});
       } catch {
         // Never let the nudge break the command.
       }
@@ -115,7 +115,9 @@ export function registerSearch(program) {
       const fields = options.verbose
         ? [
             'name',
+            'section',
             'domain',
+            'package',
             'title',
             'displayName',
             'kind',
@@ -124,16 +126,20 @@ export function registerSearch(program) {
             'import',
             'description',
             'command',
+            'parent',
           ]
         : [
             'name',
+            'section',
             'domain',
+            'package',
             'title',
             'displayName',
             'kind',
             'import',
             'description',
             'command',
+            'parent',
           ];
 
       // The heading mirrors the JSON: `matchCount` is what matched, and the
@@ -145,7 +151,10 @@ export function registerSearch(program) {
             ? `Results for "${q}" (${results.length} of ${matchCount})`
             : `Results for "${q}" (${results.length})`,
         ),
-        records(results, {fields, format: {command: formatCliCommand}}),
+        records(results, {
+          fields,
+          format: {command: formatCliCommand, parent: formatCliCommand},
+        }),
       );
       return answered;
     },

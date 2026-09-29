@@ -24,7 +24,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'For available token names and values, run `astryx docs tokens`. Focused references are also available with `astryx docs color`, `astryx docs spacing`, `astryx docs shape`, `astryx docs typography`, `astryx docs elevation`, and `astryx docs motion`.',
+          text: 'For available token names and values, run {@link generic:tokens}. Focused references are also available with {@link generic:color}, {@link generic:spacing}, {@link generic:shape}, {@link generic:typography}, {@link generic:elevation}, and {@link generic:motion}.',
         },
       ],
     },
@@ -455,7 +455,7 @@ function RevenueChart({data}: {data: Array<{x: string; y: number}>}) {
             'Import the reset/base CSS and a theme CSS file early enough for first paint. For production SSR, prefer built themes from `astryx theme build` or published `/built` theme imports plus `theme.css`.',
             'Choose one owner for color mode. Theme uses `data-theme="light|dark"` and `color-scheme` to resolve `light-dark()` tokens.',
             'Map the external library\'s semantic layer to system variables by intent, not by exact naming. For example, MUI `background.paper` maps to `--color-background-surface`.',
-            'Use `astryx docs tokens` and focused token docs when building mappings. Keep mappings small at first: text, surface/body/card/popover, border, accent, status, spacing, radius, typography, shadow.',
+            'Use {@link generic:tokens} and focused token docs when building mappings. Keep mappings small at first: text, surface/body/card/popover, border, accent, status, spacing, radius, typography, shadow.',
             'Use token resolver APIs only for non-CSS APIs that need resolved values.',
           ],
         },

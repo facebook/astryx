@@ -280,12 +280,133 @@ describe('integrationPackCheck', () => {
     expect(fileErrors.length).toBeGreaterThan(0);
   });
 
+  it('fails a package that ships a namespace doc on a CLI range that cannot read it', async () => {
+    writePackage({manifest: "export default {docs: './docs'};\n", themes: false});
+    fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'acme.doc.mjs'),
+      "export default {type: 'namespace', name: 'acme', title: 'Acme', summary: 'Acme guides.', slots: {guides: {title: 'Guides', accepts: {kinds: ['generic']}}}};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'deploying.doc.mjs'),
+      "export default {type: 'generic', name: 'deploying', title: 'Deploying', description: 'Ship it.', placement: {parent: 'namespace:acme', slot: 'guides'}, sections: [{title: 'Overview', content: [{type: 'prose', text: 'Ship it.'}]}]};\n",
+    );
+    const file = path.join(tmpDir, 'package.json');
+    const peer = (/** @type {string | undefined} */ range) => {
+      const pkg = JSON.parse(fs.readFileSync(file, 'utf-8'));
+      if (range == null) delete pkg.peerDependencies;
+      else pkg.peerDependencies = {'@astryxdesign/cli': range};
+      fs.writeFileSync(file, `${JSON.stringify(pkg, null, 2)}\n`);
+    };
+    const codes = async () =>
+      (await integrationPackCheck({cwd: tmpDir})).data.issues.map(
+        (/** @type {{code: string}} */ issue) => issue.code,
+      );
+
+    peer(undefined);
+    expect(await codes()).toContain('docs_tree_needs_cli');
+    peer('^0.6.0 || >=0.7.0');
+    expect(await codes()).toContain('docs_tree_needs_cli');
+    peer('>=0.7.0');
+    expect(await codes()).not.toContain('docs_tree_needs_cli');
+  }, 120_000);
+
+  it('fails a package with only a placed guide on a CLI range that cannot read the docs tree, and passes flat topics', async () => {
+    writePackage({manifest: "export default {docs: './docs'};\n", themes: false});
+    fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'notes.doc.mjs'),
+      "export default {type: 'generic', name: 'notes', title: 'Notes', description: 'Notes.', sections: [{title: 'Overview', content: [{type: 'prose', text: 'Notes.'}]}]};\n",
+    );
+    const codes = async () =>
+      (await integrationPackCheck({cwd: tmpDir})).data.issues.map(
+        (/** @type {{code: string}} */ issue) => issue.code,
+      );
+    // Flat topics alone need no CLI peer.
+    expect(await codes()).not.toContain('docs_tree_needs_cli');
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'setup.doc.mjs'),
+      "export default {type: 'generic', name: 'setup', title: 'Setup', description: 'Set up.', placement: {parent: 'namespace:acme', slot: 'guides'}, sections: [{title: 'Overview', content: [{type: 'prose', text: 'Set up.'}]}]};\n",
+    );
+    expect(await codes()).toContain('docs_tree_needs_cli');
+    const file = path.join(tmpDir, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(file, 'utf-8'));
+    pkg.peerDependencies = {'@astryxdesign/cli': '>=0.7.0'};
+    fs.writeFileSync(file, `${JSON.stringify(pkg, null, 2)}\n`);
+    expect(await codes()).not.toContain('docs_tree_needs_cli');
+  }, 120_000);
+
+  it('fails a package with a template that sets replaces on a CLI range that rejects the field', async () => {
+    writePackage({manifest: "export default {templates: './templates'};\n", themes: false});
+    fs.mkdirSync(path.join(tmpDir, 'templates'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, 'templates', 'acme-shell.doc.mjs'),
+      "export default {type: 'page', name: 'acme-shell', description: 'Acme shell.', replaces: 'shell-side-nav'};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'templates', 'acme-shell.tsx'),
+      'export default function AcmeShell() { return null; }\n',
+    );
+    const file = path.join(tmpDir, 'package.json');
+    const peer = (/** @type {string | undefined} */ range) => {
+      const pkg = JSON.parse(fs.readFileSync(file, 'utf-8'));
+      if (range == null) delete pkg.peerDependencies;
+      else pkg.peerDependencies = {'@astryxdesign/cli': range};
+      fs.writeFileSync(file, `${JSON.stringify(pkg, null, 2)}\n`);
+    };
+    const codes = async () =>
+      (await integrationPackCheck({cwd: tmpDir})).data.issues.map(
+        (/** @type {{code: string}} */ issue) => issue.code,
+      );
+
+    peer(undefined);
+    expect(await codes()).toContain('replaces_needs_cli');
+    peer('^0.6.0');
+    expect(await codes()).toContain('replaces_needs_cli');
+    peer('>=0.7.0');
+    expect(await codes()).not.toContain('replaces_needs_cli');
+  }, 120_000);
+
   it('passes when package.json has no files field', async () => {
     writePackage({files: undefined});
     const result = await integrationPackCheck({cwd: tmpDir});
 
     // No files field → npm includes everything
     expect(result.data.packable).toBe(true);
+  });
+
+  it('detects a lifecycle script that changes packed template replacements', async () => {
+    const script = [
+      "const fs=require('fs')",
+      "const p='templates/acme-shell.template.mjs'",
+      "const s=fs.readFileSync(p,'utf8')",
+      "fs.writeFileSync(p,s.replace('shell-side-nav','shell-top-nav'))",
+    ].join(';');
+    writePackage({
+      manifest: "export default {templates: './templates'};\n",
+      files: ['astryx.integration.mjs', 'templates'],
+      themes: false,
+      scripts: {prepack: `node -e "${script}"`},
+    });
+    fs.mkdirSync(path.join(tmpDir, 'templates'));
+    fs.writeFileSync(
+      path.join(tmpDir, 'templates', 'acme-shell.template.mjs'),
+      "export default {type: 'page', name: 'Acme shell', description: 'Fixture.', replaces: 'shell-side-nav'};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'templates', 'acme-shell.tsx'),
+      'export default function AcmeShell() { return null; }\n',
+    );
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    expect(result.data.packable).toBe(false);
+    expect(result.data.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'identity_mismatch',
+        message: expect.stringContaining('acme-shell'),
+      }),
+    );
   });
 
   it('detects a lifecycle script that changes the packed identity', async () => {

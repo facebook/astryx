@@ -71,7 +71,7 @@ describe('load check vs published type', () => {
       expect(() => parseDoc(EXAMPLES[kind], `${kind}.doc.mjs`)).not.toThrow();
     }
     expect(() => parseDoc({type: 'widget', name: 'x'}, 'x.doc.mjs')).toThrow(
-      /unsupported type "widget"/,
+      /x\.doc\.mjs is invalid/u,
     );
   });
 });

@@ -24,7 +24,7 @@ export const doc = {
     '`overwrite`, so it is safe to re-run.',
   importPath: '@astryxdesign/cli/api',
   signature:
-    'themeTemplate(options?: {targetPath?: string, overwrite?: boolean, cwd?: string}): ThemeNewResponse',
+    'themeTemplate(options?: {targetPath?: string, overwrite?: boolean, cwd?: string}): ThemeTemplateResponse',
   keywords: ['theme', 'template', 'starter', 'defineTheme', 'scaffold', 'reference', 'tokens'],
   params: [
     {

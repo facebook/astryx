@@ -74,16 +74,16 @@ describe('discoverBuiltinTopics', () => {
 
 describe('discoverIntegrationDocs', () => {
   it('contributes nothing when no docs root is declared or the root is gone', async () => {
-    expect(await discoverIntegrationDocs({name: '@acme/widgets'})).toEqual({
-      records: [],
-      errors: [],
-    });
+    const nothing = {records: [], errors: [], namespaces: [], guides: []};
+    expect(await discoverIntegrationDocs({name: '@acme/widgets'})).toEqual(
+      nothing,
+    );
     expect(
       await discoverIntegrationDocs({
         name: '@acme/widgets',
         docs: path.join(tmpDir, 'nope'),
       }),
-    ).toEqual({records: [], errors: []});
+    ).toEqual(nothing);
   });
 
   it('reads every topic under the root, with what it declares', async () => {
@@ -169,10 +169,7 @@ describe('discoverIntegrationDocs', () => {
               id: 'steps',
               title: 'Steps',
               content: [
-                {
-                  type: 'workflow',
-                  steps: [{title: 'Install', description: 'Run install.'}],
-                },
+                {type: 'collection', source: {slot: 'guides'}},
               ],
             },
           ],
@@ -180,12 +177,12 @@ describe('discoverIntegrationDocs', () => {
       }),
     );
     expect(records).toEqual([]);
-    expect(errors[0].message).toContain('requires the compiled graph renderer');
+    expect(errors[0].message).toContain('Invalid discriminator value');
   });
 
-  it('names a namespace doc instead of listing topic fields it lacks', async () => {
-    const {records, errors} = await discoverIntegrationDocs(
-      integration('@acme/namespace', {
+  it('hands namespace docs and placed guides to the docs tree, by provider id', async () => {
+    const found = await discoverIntegrationDocs({
+      ...integration('@acme/namespace', {
         'guides.doc.mjs': {
           type: 'namespace',
           name: 'guides',
@@ -193,14 +190,56 @@ describe('discoverIntegrationDocs', () => {
           summary: 'Every guide.',
           slots: {guides: {title: 'Guides', accepts: {kinds: ['generic']}}},
         },
+        'setup.doc.mjs': topic({
+          name: 'setup',
+          title: 'Set up',
+          placement: {parent: 'namespace:guides', slot: 'guides', order: 1},
+        }),
+        'deploying.doc.mjs': topic(),
+      }),
+      providerId: '@acme/tree-provider',
+    });
+    expect(found.errors).toEqual([]);
+    expect(found.records.map(record => record.name)).toEqual(['deploying']);
+    expect(found.records[0].providerId).toBe('@acme/tree-provider');
+    expect(found.namespaces).toMatchObject([
+      {
+        provider: '@acme/namespace',
+        providerId: '@acme/tree-provider',
+        source: '@acme/namespace/guides.doc.mjs',
+        doc: {name: 'guides'},
+      },
+    ]);
+    expect(found.guides).toMatchObject([
+      {
+        provider: '@acme/namespace',
+        providerId: '@acme/tree-provider',
+        kind: 'generic',
+        name: 'setup',
+        placement: {parent: 'namespace:guides', slot: 'guides', order: 1},
+      },
+    ]);
+  });
+
+  it('names what a namespace doc lacks, and refuses a placed guide that replaces a topic', async () => {
+    const {errors, namespaces, guides} = await discoverIntegrationDocs(
+      integration('@acme/namespace', {
+        'guides.doc.mjs': {type: 'namespace', name: 'guides', title: 'Guides'},
+        'setup.doc.mjs': topic({
+          name: 'setup',
+          replaces: 'getting-started',
+          placement: {parent: 'namespace:guides', slot: 'guides'},
+        }),
       }),
     );
-    expect(records).toEqual([]);
-    expect(errors).toHaveLength(1);
-    expect(errors[0].message).toContain(
-      '"guides" is a namespace doc. Only the docs graph reads namespace docs',
+    expect(namespaces).toEqual([]);
+    expect(guides).toEqual([]);
+    expect(errors.map(error => error.message).join('\n')).toMatch(
+      /guides\.doc\.mjs.*slots/,
     );
-    expect(errors[0].message).not.toContain('sections:');
+    expect(errors.map(error => error.message).join('\n')).toContain(
+      'is placed in the docs tree and also declares `replaces`',
+    );
   });
 });
 
@@ -529,12 +568,10 @@ describe('problemsInTopic section keys', () => {
     })),
   });
 
-  it('rejects two sections that derive the same key', () => {
+  it('keeps legacy title-only key conflicts readable', () => {
     expect(
       problemsInTopic(doc([{title: 'Quick Start'}, {title: 'Quick-start'}])),
-    ).toEqual([
-      expect.stringContaining('"quick-start" is already used by sections[0]'),
-    ]);
+    ).toEqual([]);
   });
 
   it('rejects an unsafe id', () => {
@@ -543,10 +580,8 @@ describe('problemsInTopic section keys', () => {
     ).toEqual([expect.stringContaining('is not a stable key')]);
   });
 
-  it('rejects a title no key derives from, unless it has an id', () => {
-    expect(problemsInTopic(doc([{title: '亮/暗模式'}]))).toEqual([
-      expect.stringContaining('Give the section an id'),
-    ]);
+  it('keeps a legacy title that has no derived key readable', () => {
+    expect(problemsInTopic(doc([{title: '亮/暗模式'}]))).toEqual([]);
     expect(
       problemsInTopic(doc([{id: 'light-dark', title: '亮/暗模式'}])),
     ).toEqual([]);
@@ -580,7 +615,7 @@ describe('mergeTopic by section key', () => {
     ]);
   });
 
-  it('replaces the section a title variant derives the same key as', () => {
+  it('keeps a legacy title variant as a separate section', () => {
     const merged = mergeTopic(base, {
       sections: [
         {title: 'Light-Dark Mode', content: [{type: 'prose', text: 'acme'}]},
@@ -588,6 +623,7 @@ describe('mergeTopic by section key', () => {
     });
     expect(titles(merged)).toEqual([
       [null, 'Quick Start', 'base'],
+      [null, 'Light/Dark Mode', 'base'],
       [null, 'Light-Dark Mode', 'acme'],
     ]);
   });

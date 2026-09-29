@@ -14,6 +14,8 @@ verified_by:
   [
     packages/core/src/Collapsible/Collapsible.test.tsx,
     packages/core/src/Collapsible/CollapsibleGroup.test.tsx,
+    packages/core/src/Collapsible/__tests__/Collapsible.a11y.test.tsx,
+    packages/core/src/Collapsible/__tests__/Collapsible.a11y.chromium.spec.ts,
   ]
 modules: []
 families: []
@@ -21,7 +23,7 @@ design_specs: []
 architecture:
   [architecture:public-component-api, architecture:react-component-runtime]
 contributing: [contributing:api-conventions]
-system_specs: [spec:AST-002/DEC-1]
+system_specs: [spec:AST-002/DEC-1, spec:AST-020, spec:AST-021]
 ---
 
 # Collapsible component contract
@@ -163,12 +165,12 @@ semantic direction or position states.
 
 ## Verification map
 
-| Contract           | Verification                                                                 | Representative states                                       | Mutation or failure expectation                                                                                           | Audit section                   |
-| ------------------ | ---------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| FR1–FR5            | Collapsible prop/type, DOM-order, glyph/direction, and no-extra-values tests | omitted/end/start; collapsed/expanded; LTR/RTL              | default changes, `start` follows the label, collapsed leading cue points outward, or an unsupported cue value is admitted | audit:Collapsible/public-api    |
-| FR6                | composed trigger layout and geometry tests                                   | plain text; composed label with trailing content; start/end | label becomes shrink-wrapped/stranded or composed content cannot use remaining row                                        | audit:Collapsible/layout        |
-| FR7–FR8, ORD1      | group inheritance, item override, and nested reset tests                     | group start/end; item override; nested omission             | group value is ignored, item cannot override, or position leaks into nested content                                       | audit:Collapsible/behavior      |
-| FR9, AR1–AR3, ORD2 | disclosure semantics plus real RTL rendering                                 | collapsed/expanded; start/end; LTR/RTL                      | position changes state behavior, duplicates accessible output, or leading direction fails to mirror                       | audit:Collapsible/accessibility |
+| Contract           | Verification                                                                                       | Representative states                                                             | Mutation or failure expectation                                                                                                                                                                    | Audit section                   |
+| ------------------ | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| FR1–FR5            | Collapsible prop/type, DOM-order, glyph/direction, and no-extra-values tests                       | omitted/end/start; collapsed/expanded; LTR/RTL                                    | default changes, `start` follows the label, collapsed leading cue points outward, or an unsupported cue value is admitted                                                                          | audit:Collapsible/public-api    |
+| FR6                | composed trigger layout and geometry tests                                                         | plain text; composed label with trailing content; start/end                       | label becomes shrink-wrapped/stranded or composed content cannot use remaining row                                                                                                                 | audit:Collapsible/layout        |
+| FR7–FR8, ORD1      | group inheritance, item override, and nested reset tests                                           | group start/end; item override; nested omission                                   | group value is ignored, item cannot override, or position leaks into nested content                                                                                                                | audit:Collapsible/behavior      |
+| FR9, AR1–AR3, ORD2 | disclosure semantics via `DISCLOSURE_PATTERN`, plus component-owned chevron and real RTL rendering | collapsed/expanded; controlled/uncontrolled; enabled/disabled; start/end; LTR/RTL | position changes state behavior, the trigger loses its controlled-content relationship, content visibility diverges from state, accessible output duplicates, or leading direction fails to mirror | audit:Collapsible/accessibility |
 
 ## Decision log
 

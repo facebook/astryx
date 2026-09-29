@@ -9,7 +9,7 @@
  */
 
 import {afterEach, beforeEach, describe, it, expect} from 'vitest';
-import {docs as integrationGuide} from '../assets/docs/cli-integrations.doc.mjs';
+import {docs as integrationGuide} from '../assets/docs/tree/integrations.doc.mjs';
 import {doc as upgradeCommandDoc} from '../clients/cli/commands/upgrade.doc.mjs';
 import {doc as upgradeFnDoc} from '../api/upgrade/upgrade.doc.mjs';
 import {doc as paletteGenerateDoc} from '../clients/cli/commands/theme-palette-generate.doc.mjs';

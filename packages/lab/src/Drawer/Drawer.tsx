@@ -4,7 +4,7 @@
 
 /**
  * @file Drawer.tsx
- * @input Uses React, StyleX, theme tokens, Icon/IconButton, useScrollLock/useDrawerDialogPresence, BaseProps, mergeProps/mergeRefs, themeProps
+ * @input Uses React, StyleX, theme tokens and text defaults, Icon/IconButton, useScrollLock/useDrawerDialogPresence, BaseProps, mergeProps/mergeRefs, themeProps
  * @output Exports Drawer component and DrawerProps
  * @position Lab implementation; consumed by index.ts, tested by Drawer.test.tsx, demonstrated in Storybook
  *
@@ -60,6 +60,8 @@ import {
   easeVars,
   shadowVars,
   spacingVars,
+  typeScaleVars,
+  typographyVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {Icon} from '@astryxdesign/core/Icon';
 import {IconButton} from '@astryxdesign/core/IconButton';
@@ -130,6 +132,23 @@ const MOBILE_WIDTH_FULL = '100dvw';
 
 const styles = stylex.create({
   dialog: {
+    // Keep the layer text boundary local rather than exposing Core styling internals.
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-body-size'],
+    fontWeight: typeScaleVars['--text-body-weight'],
+    lineHeight: typeScaleVars['--text-body-leading'],
+    fontStyle: 'normal',
+    textAlign: 'start',
+    textAlignLast: 'auto',
+    textIndent: 0,
+    textTransform: 'none',
+    letterSpacing: 'normal',
+    wordSpacing: 'normal',
+    textShadow: 'none',
+    whiteSpace: 'normal',
+    wordBreak: 'normal',
+    overflowWrap: 'normal',
+    hyphens: 'manual',
     // Reset native <dialog> defaults — the dialog element IS the panel.
     position: 'fixed',
     margin: 0,
