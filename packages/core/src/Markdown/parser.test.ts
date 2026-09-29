@@ -1,10 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect} from 'vitest';
+import {markdownAstText} from './ast';
+import type {MarkdownAstParagraph} from './ast';
 import {
   createIncrementalState,
   parseInline,
   parseMarkdown,
+  parseMarkdownAst,
   parseMarkdownIncremental,
 } from './parser';
 import type {BlockNode, InlineNode} from './parser';
@@ -570,6 +573,72 @@ describe('parseMarkdown', () => {
       expect(result[0].items[0].checked).toBe(false);
       expect(result[0].items[1].checked).toBe(true);
     }
+  });
+
+  it.each([
+    ['unordered', '- [ ] Open\n- Plain\n- [x] Done', false],
+    ['ordered', '3. [ ] Open\n4. Plain\n5. [x] Done', true],
+  ] as const)(
+    'keeps mixed %s task and plain items in one list',
+    (_label, input, ordered) => {
+      const result = parseMarkdown(input);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        type: 'list',
+        ordered,
+        items: [{checked: false}, {checked: undefined}, {checked: true}],
+      });
+
+      const root = parseMarkdownAst(input);
+      const list = root.children[0];
+      expect(list.type).toBe('list');
+      if (list.type === 'list') {
+        expect(list.children.map(item => item.checked)).toEqual([
+          false,
+          undefined,
+          true,
+        ]);
+        expect(
+          list.children.map(item => {
+            const paragraph = item.children[0] as MarkdownAstParagraph;
+            return markdownAstText(paragraph.children);
+          }),
+        ).toEqual(['Open', 'Plain', 'Done']);
+      }
+    },
+  );
+
+  it('preserves mixed task state at nested levels', () => {
+    const input = [
+      '- Outer plain',
+      '  - [x] Nested done',
+      '  - Nested plain',
+      '  - [ ] Nested open',
+      '- [ ] Outer task',
+    ].join('\n');
+    const result = parseMarkdown(input);
+    const outer = result[0];
+    expect(outer).toMatchObject({
+      type: 'list',
+      items: [{checked: undefined}, {checked: false}],
+    });
+    if (outer.type === 'list') {
+      const nested = outer.items[0].children[1];
+      expect(nested).toMatchObject({
+        type: 'list',
+        items: [{checked: true}, {checked: undefined}, {checked: false}],
+      });
+    }
+  });
+
+  it('keeps malformed task markers as ordinary item text', () => {
+    const result = parseMarkdown(
+      '- [maybe] Plain\n- [x]Missing space\n- [ ] Task',
+    );
+    expect(result[0]).toMatchObject({
+      type: 'list',
+      items: [{checked: undefined}, {checked: undefined}, {checked: false}],
+    });
   });
 
   it('parses GFM tables', () => {

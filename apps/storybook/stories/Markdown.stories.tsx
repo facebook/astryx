@@ -195,6 +195,33 @@ export const AIResponse: Story = {
   },
 };
 
+export const MixedTaskLists: Story = {
+  name: 'Mixed task and plain lists',
+  args: {
+    children: [
+      '## Unordered',
+      '',
+      '- [ ] Open task',
+      '- Plain item',
+      '- [x] Completed task',
+      '',
+      '## Ordered from three',
+      '',
+      '3. [ ] Open task',
+      '4. Plain item',
+      '5. [x] Completed task',
+      '',
+      '## Nested',
+      '',
+      '- Outer plain item',
+      '  - [x] Nested completed task',
+      '  - Nested plain item',
+      '  - [ ] Nested open task',
+      '- [ ] Outer task',
+    ].join('\n'),
+  },
+};
+
 export const ShiftedHeadings: Story = {
   name: 'Shifted Headings (start at h3)',
   args: {

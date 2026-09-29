@@ -4,7 +4,7 @@
 
 /**
  * @file Markdown.tsx
- * @input Markdown string, canonical AST, optional plugins and custom renderers
+ * @input Markdown string, canonical AST, optional plugins, renderers, and list contexts
  * @output Exports Markdown component, MarkdownProps, and renderer contracts
  * @position Core implementation; renders markdown as Astryx components
  */
@@ -28,9 +28,13 @@ import {
 import type {TextDisplay} from '../theme/types';
 import {CodeBlock, Code} from '../CodeBlock';
 import {CheckboxList} from '../CheckboxList/CheckboxList';
+import {CheckboxListContext} from '../CheckboxList/CheckboxListContext';
+import type {CheckboxListContextValue} from '../CheckboxList/CheckboxListContext';
 import {CheckboxListItem} from '../CheckboxList/CheckboxListItem';
 import {Blockquote} from '../Blockquote/Blockquote';
 import {List} from '../List/List';
+import {ListContext} from '../List/ListContext';
+import type {ListContextValue} from '../List/ListContext';
 import {ListItem} from '../List/ListItem';
 import {Table} from '../Table/Table';
 import {TableRow} from '../Table/TableRow';
@@ -428,6 +432,11 @@ const styles = stylex.create({
   blockIndent: {
     marginInline: `calc(-1 * ${spacingVars['--spacing-2']})`,
   },
+  orderedTaskItem: {
+    // A task item hides the ordered marker but still occupies its ordinal so
+    // the next plain item keeps the authored list number.
+    counterIncrement: 'astryx-list',
+  },
   // HR
   hr: {
     borderWidth: 0,
@@ -452,6 +461,18 @@ const styles = stylex.create({
     textDecoration: 'underline',
   },
 });
+
+const MIXED_TASK_ITEM_LIST_CONTEXT: ListContextValue = Object.freeze({
+  density: 'compact',
+  hasDividers: false,
+  listStyle: 'none',
+});
+
+const MIXED_TASK_ITEM_CHECKBOX_CONTEXT: CheckboxListContextValue =
+  Object.freeze({
+    isDisabled: false,
+    isReadOnly: true,
+  });
 
 // ---------------------------------------------------------------------------
 // Streaming fade-in animation
@@ -1627,6 +1648,24 @@ function renderBlock(
                   )}
                 </>
               );
+
+              if (item.checked != null) {
+                return (
+                  // eslint-disable-next-line @eslint-react/no-array-index-key -- markdown list items are rendered from positional AST nodes
+                  <ListContext key={i} value={MIXED_TASK_ITEM_LIST_CONTEXT}>
+                    <CheckboxListContext
+                      value={MIXED_TASK_ITEM_CHECKBOX_CONTEXT}>
+                      <CheckboxListItem
+                        isChecked={item.checked}
+                        label={label}
+                        xstyle={
+                          node.ordered ? styles.orderedTaskItem : undefined
+                        }
+                      />
+                    </CheckboxListContext>
+                  </ListContext>
+                );
+              }
 
               return (
                 <ListItem

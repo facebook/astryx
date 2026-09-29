@@ -326,6 +326,37 @@ describe('parseMarkdownIncremental', () => {
     }
   });
 
+  it('preserves mixed task state at every stream boundary and on final input', () => {
+    const text = '- [ ] Open\n- Plain continuation\n- [x] Done';
+    const full = parseMarkdown(text);
+
+    for (let split = 0; split <= text.length; split++) {
+      const state = createIncrementalState();
+      parseMarkdownIncremental(text.slice(0, split), state);
+      expect(parseMarkdownIncremental(text, state, {isFinal: true})).toEqual(
+        full,
+      );
+    }
+
+    expect(full[0]).toMatchObject({
+      type: 'list',
+      items: [{checked: false}, {checked: undefined}, {checked: true}],
+    });
+  });
+
+  it('restores a malformed streamed task marker as ordinary final text', () => {
+    const text = '- [x]Missing space';
+    const state = createIncrementalState();
+    parseMarkdownIncremental('- [x]', state);
+    expect(parseMarkdownIncremental(text, state, {isFinal: true})).toEqual(
+      parseMarkdown(text),
+    );
+    expect(parseMarkdown(text)[0]).toMatchObject({
+      type: 'list',
+      items: [{checked: undefined}],
+    });
+  });
+
   it('complex mixed content matches full parse', () => {
     const text = [
       '# Overview',

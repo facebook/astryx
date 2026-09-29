@@ -9,7 +9,8 @@ import {
   beforeEach,
   afterEach,
 } from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, within} from '@testing-library/react';
+import {renderToString} from 'react-dom/server';
 import type {ComponentProps, ReactNode} from 'react';
 import {Markdown} from './Markdown';
 import type {MarkdownComponents, MarkdownInlinePlugin} from './Markdown';
@@ -435,6 +436,78 @@ describe('Markdown', () => {
     expect(checkboxes).toHaveLength(2);
     expect((checkboxes[0] as HTMLInputElement).checked).toBe(true);
     expect((checkboxes[1] as HTMLInputElement).checked).toBe(false);
+  });
+
+  it.each([
+    ['unordered', '- [ ] Open\n- Plain\n- [x] Done', 'UL'],
+    ['ordered', '3. [ ] Open\n4. Plain\n5. [x] Done', 'OL'],
+  ] as const)(
+    'renders mixed %s items in one semantic list with per-item state',
+    (_label, source, tagName) => {
+      const {container} = render(<Markdown>{source}</Markdown>);
+      const list = container.querySelector(tagName.toLowerCase());
+      expect(list).not.toBeNull();
+      expect(container.querySelectorAll(tagName.toLowerCase())).toHaveLength(1);
+      const items = Array.from(list!.children);
+      expect(items).toHaveLength(3);
+      expect(items.every(item => item.tagName === 'LI')).toBe(true);
+
+      const firstCheckbox = within(items[0] as HTMLElement).getByRole(
+        'checkbox',
+      );
+      expect(firstCheckbox).not.toBeChecked();
+      expect(
+        within(items[1] as HTMLElement).queryByRole('checkbox'),
+      ).toBeNull();
+      const lastCheckbox = within(items[2] as HTMLElement).getByRole(
+        'checkbox',
+      );
+      expect(lastCheckbox).toBeChecked();
+      expect(firstCheckbox).toHaveAttribute('aria-readonly', 'true');
+      expect(lastCheckbox).toHaveAttribute('aria-readonly', 'true');
+      expect(firstCheckbox).toHaveAccessibleName('Open');
+      expect(lastCheckbox).toHaveAccessibleName('Done');
+      expect(items[1]).toHaveTextContent('Plain');
+      expect(items[0].className).not.toContain('ListItem__styles.withCounter');
+      expect(items[1].className).toContain('ListItem__styles.withCounter');
+      if (tagName === 'OL') {
+        expect(items[0].className).toContain(
+          'Markdown__styles.orderedTaskItem',
+        );
+        expect(items[2].className).toContain(
+          'Markdown__styles.orderedTaskItem',
+        );
+      }
+    },
+  );
+
+  it('preserves mixed task state and list structure when nested', () => {
+    const source = [
+      '- Outer plain',
+      '  - [x] Nested done',
+      '  - Nested plain',
+      '  - [ ] Nested open',
+      '- [ ] Outer task',
+    ].join('\n');
+    const {container} = render(<Markdown>{source}</Markdown>);
+    const lists = container.querySelectorAll('ul');
+    expect(lists).toHaveLength(2);
+    expect(Array.from(lists[0].children)).toHaveLength(2);
+    expect(Array.from(lists[1].children)).toHaveLength(3);
+    const nestedItems = Array.from(lists[1].children) as HTMLElement[];
+    expect(within(nestedItems[0]).getByRole('checkbox')).toBeChecked();
+    expect(within(nestedItems[1]).queryByRole('checkbox')).toBeNull();
+    expect(within(nestedItems[2]).getByRole('checkbox')).not.toBeChecked();
+  });
+
+  it('server-renders mixed lists with the same one-list structure', () => {
+    const html = renderToString(
+      <Markdown>{'- [ ] Open\n- Plain\n- [x] Done'}</Markdown>,
+    );
+    expect(html.match(/<ul/g)).toHaveLength(1);
+    expect(html.match(/<li/g)).toHaveLength(3);
+    expect(html.match(/type="checkbox"/g)).toHaveLength(2);
+    expect(html).toContain('aria-readonly="true"');
   });
 
   it('renders tables', () => {
