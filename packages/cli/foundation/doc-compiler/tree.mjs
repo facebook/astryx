@@ -627,6 +627,22 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
     }
   }
 
+  // A topic that answers, through `replaces`, to a route the CLI's own docs
+  // keep cannot have it: the CLI's doc opens there. Say so, against the topic.
+  for (const topic of topics) {
+    if (topic.provider === CLI_PROVIDER) continue;
+    for (const alias of topic.aliases ?? []) {
+      const holder = byFoldedRoute.get(alias.toLowerCase());
+      if (holder != null && holder.provider === CLI_PROVIDER) {
+        report(
+          'duplicate_route',
+          topic,
+          `The topic "${topic.name}" answers to "${alias}" through replaces, but the CLI's own docs keep that route, so \`astryx docs ${alias}\` opens theirs. Drop that replacement.`,
+        );
+      }
+    }
+  }
+
   const sorted = new Map([...nodes.entries()].sort(([a], [b]) => byText(a, b)));
   return {
     nodes: sorted,

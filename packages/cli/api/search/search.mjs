@@ -72,7 +72,7 @@ import {
   loadDocsCatalog,
   lowerTopic,
   projectTree,
-  routeOwner,
+  holdsOwnName,
 } from '../docs/_adapter.mjs';
 import {unlinkText} from '../../foundation/doc-compiler/links.mjs';
 import {nodeView} from '../docs/node/node.mjs';
@@ -784,9 +784,9 @@ async function gatherDocs(cwd) {
     // indexes the topics.
   }
   for (const entry of catalog.entries()) {
-    // A topic whose route another doc owns reads as that doc (spec:AST-046
-    // FR11), so search does not offer it.
-    if (tree && routeOwner(tree, entry)) continue;
+    // A topic whose name opens another doc (spec:AST-046 FR11) is not
+    // offered: every hit's command must open the hit.
+    if (tree && !holdsOwnName(tree, catalog, entry)) continue;
     let lowered = null;
     try {
       lowered = await lowerTopic(catalog, entry);

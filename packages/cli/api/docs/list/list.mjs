@@ -15,7 +15,7 @@
  */
 
 import {loadTopicFile} from '../../../foundation/doc-compiler/read.mjs';
-import {loadDocsCatalog, projectTree, routeOwner} from '../_adapter.mjs';
+import {holdsOwnName, loadDocsCatalog, projectTree} from '../_adapter.mjs';
 
 /**
  * @param {object} [options]
@@ -28,9 +28,9 @@ export async function list({cwd} = {}) {
   /** @type {Array<import('../docs.type.mjs').DocsListEntry>} */
   const entries = [];
   for (const entry of catalog.entries()) {
-    // A topic whose route another doc owns reads as that doc, so it is not
-    // listed (spec:AST-046 FR11); `astryx doctor` names the clash.
-    if (routeOwner(tree, entry)) continue;
+    // A topic whose name opens another doc is not listed (spec:AST-046
+    // FR11); `astryx doctor` names the clash.
+    if (!holdsOwnName(tree, catalog, entry)) continue;
     let description = entry.description ?? '';
     if (entry.description == null) {
       const file = await loadTopicFile(entry.path, null);

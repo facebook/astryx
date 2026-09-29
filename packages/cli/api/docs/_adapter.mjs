@@ -602,8 +602,8 @@ export async function topicLinks(catalog, entry) {
 
 /**
  * What a docs argument names: a topic (a flat one, or a guide the docs tree
- * places), a namespace or typed doc in the tree, or nothing. The flat catalog
- * answers first, unless the tree gave that topic's route to another doc.
+ * places), a namespace or typed doc in the tree, or nothing, as nameOwner
+ * decides.
  * @param {unknown} topic
  * @param {{cwd?: string}} [options]
  * @returns {Promise<
@@ -614,21 +614,55 @@ export async function topicLinks(catalog, entry) {
  */
 export async function resolveDocsArgument(topic, {cwd} = {}) {
   const catalog = await loadDocsCatalog(cwd);
-  const entry = catalog.resolve(topic);
-  if (entry) {
-    // A topic whose route the tree gave to another doc opens that doc: the
-    // CLI keeps its routes, and a namespace keeps its route over a topic.
-    const tree = await projectTree(catalog);
-    const owner = routeOwner(tree, entry);
-    if (owner == null) return {kind: 'topic', catalog, entry};
-    return treeArgument(catalog, tree, owner);
-  }
   if (typeof topic !== 'string' || topic === '')
     return {kind: 'unknown', catalog};
   const tree = await projectTree(catalog);
-  const node = tree.get(topic) ?? tree.getFolded?.(topic);
-  if (!node || node.ref?.flatTopic) return {kind: 'unknown', catalog};
-  return treeArgument(catalog, tree, node);
+  const owner = nameOwner(tree, catalog, topic);
+  if (owner == null) return {kind: 'unknown', catalog};
+  if (owner.kind === 'topic') return {kind: 'topic', catalog, entry: owner.entry};
+  return treeArgument(catalog, tree, owner.node);
+}
+
+/**
+ * Who answers to a name a reader types (spec:AST-046 FR5, FR11). The tree
+ * decides first: the node at that route, compared without case, holds it. A
+ * name with no node of its own is a topic's other name (its `replaces`
+ * alias), and that topic answers, unless the tree gave the topic's own route
+ * to another doc. Reads, the topic list, and search all ask this, so they
+ * agree on every name.
+ * @param {DocsTree} tree
+ * @param {DocsCatalog} catalog
+ * @param {string} name
+ * @returns {{kind: 'topic', entry: import('../../foundation/discovery/docs-discovery.mjs').DocsTopicEntry} | {kind: 'node', node: TreeNode} | null}
+ */
+export function nameOwner(tree, catalog, name) {
+  const node = tree.get(name) ?? tree.getFolded?.(name);
+  if (node != null) {
+    if (node.ref?.flatTopic == null) return {kind: 'node', node};
+    const entry = catalog.resolve(node.ref.flatTopic);
+    return entry == null ? null : {kind: 'topic', entry};
+  }
+  const entry = catalog.resolve(name);
+  if (entry == null) return null;
+  const owner = routeOwner(tree, entry);
+  return owner == null ? {kind: 'topic', entry} : {kind: 'node', node: owner};
+}
+
+/**
+ * Whether a topic answers to its own name: what the topic list and search
+ * offer must open that topic.
+ * @param {DocsTree} tree
+ * @param {DocsCatalog} catalog
+ * @param {import('../../foundation/discovery/docs-discovery.mjs').DocsTopicEntry} entry
+ * @returns {boolean}
+ */
+export function holdsOwnName(tree, catalog, entry) {
+  const owner = nameOwner(tree, catalog, entry.name);
+  return (
+    owner?.kind === 'topic' &&
+    owner.entry.name === entry.name &&
+    owner.entry.package === entry.package
+  );
 }
 
 /**

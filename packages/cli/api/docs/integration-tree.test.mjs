@@ -397,6 +397,66 @@ describe('integration docs in the docs tree', () => {
     expect(check.message).not.toContain('names no doc');
   }, SLOW);
 
+  it("keeps the CLI's routes from a replacement that answers to one, in one package or across a chain", async () => {
+    const flat = (/** @type {string} */ name, /** @type {object} */ extra = {}) => ({
+      type: 'generic',
+      name,
+      title: `Acme ${name}`,
+      description: `Acme's ${name} notes.`,
+      sections: [
+        {title: 'One', content: [{type: 'prose', text: 'One.'}]},
+        {title: 'Two', content: [{type: 'prose', text: 'Two.'}]},
+      ],
+      ...extra,
+    });
+    scaffold({
+      ...kit(),
+      'a-cli.doc.mjs': flat('cli'),
+      'a-unorganized.doc.mjs': flat('Unorganized'),
+      'z-b2.doc.mjs': flat('b2', {replaces: 'cli'}),
+      'z-u2.doc.mjs': flat('u2', {replaces: 'Unorganized'}),
+    });
+    // Another package carries the chain on: c3 replaces b2, which replaced cli.
+    const three = path.join(tmpDir, 'node_modules', '@acme', 'three');
+    fs.mkdirSync(path.join(three, 'docs'), {recursive: true});
+    fs.writeFileSync(path.join(three, 'package.json'), JSON.stringify({name: '@acme/three', version: '1.0.0'}));
+    fs.writeFileSync(path.join(three, 'astryx.integration.mjs'), "export default {docs: './docs'};\n");
+    fs.writeFileSync(
+      path.join(three, 'docs', 'c3.doc.mjs'),
+      `export const docs = ${JSON.stringify(flat('c3', {replaces: 'b2'}), null, 2)};\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.config.mjs'),
+      "export default {integrations: ['@acme/kit', '@acme/three']};\n",
+    );
+    for (const name of ['cli', 'CLI']) {
+      expect((await docs(name, undefined, {cwd: tmpDir})).data).toMatchObject({route: 'cli', package: '@astryxdesign/cli'});
+    }
+    for (const name of ['unorganized', 'UNORGANIZED']) {
+      expect((await docs(name, undefined, {cwd: tmpDir})).data).toMatchObject({route: 'unorganized', package: '@astryxdesign/cli'});
+    }
+    // The replacement still answers to its own names.
+    for (const name of ['b2', 'c3']) {
+      expect((await docs(name, undefined, {cwd: tmpDir, index: true})).data.name).toBe('c3');
+    }
+    const listed = await docs(undefined, undefined, {cwd: tmpDir});
+    for (const entry of listed.data) {
+      const read = await docs(entry.topic, undefined, {cwd: tmpDir});
+      expect(read.type).toBe('docs.detail');
+      expect(read.data.name).toBe(entry.topic);
+    }
+    const check = await checkDocsTree({docsCatalog: await loadDocsCatalog(tmpDir)});
+    expect(check.status).toBe('warn');
+    expect(check.message).toContain('The topic "c3" answers to "cli" through replaces');
+    expect(check.message).toContain('The topic "u2" answers to "unorganized" through replaces');
+    const inPackage = await integrationDocConflicts('@acme/kit', {cwd: tmpDir});
+    const graph = inPackage.data.issues
+      .filter(issue => issue.code === 'invalid_doc_graph')
+      .map(issue => issue.message)
+      .join('\n');
+    expect(graph).toContain('answers to "cli" through replaces');
+  }, SLOW);
+
   it('runs the same checks inside the package: doctor integration docs', async () => {
     scaffold({...kit(), 'broken.doc.mjs': broken()});
     const result = await integrationDocConflicts('@acme/kit', {cwd: tmpDir});
