@@ -268,7 +268,7 @@ The shipped contract remains distributed across its current owners:
 
 - `architecture:public-component-api` owns stable export and component contract
   shape;
-- [`spec:AST-017` — Release compatibility and versioning system spec](../AST-017/spec.md)
+- [`spec:AST-017` — Release Compatibility & Versioning system spec](../AST-017/spec.md)
   owns classification, deprecation/cleanup state, Changesets, and migration evidence;
   this spec keeps the exact Resizable mapping and its direct transition requirement;
 - `family:layout-regions` delegates resize state and interaction to useResizable

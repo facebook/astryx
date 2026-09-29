@@ -11,7 +11,11 @@ approved_at: 2026-09-02
 phase: accepted
 owners: [cixzhang, josephfarina]
 affects_architecture:
-  [architecture:public-component-api, architecture:cli-surface]
+  [
+    architecture:public-component-api,
+    architecture:cli-surface,
+    architecture:theme-tokens,
+  ]
 affects_families: []
 affects_contributing:
   [
@@ -22,7 +26,7 @@ affects_contributing:
 affects_consumer_docs: [release-process, templates]
 ---
 
-# Release compatibility and versioning system spec
+# Release Compatibility & Versioning system spec
 
 <!-- review-applicability:v1 -->
 
