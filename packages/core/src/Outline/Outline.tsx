@@ -54,7 +54,7 @@ export interface OutlineProps extends BaseProps<HTMLElement> {
   ref?: React.Ref<HTMLElement>;
 
   /** Ordered list of heading items to render. */
-  items: OutlineItem[];
+  items: ReadonlyArray<OutlineItem>;
 
   /** ID of the currently active item. When provided, disables built-in scroll-spy. */
   activeId?: string;

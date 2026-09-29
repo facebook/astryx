@@ -149,7 +149,7 @@ function scrollToTarget(
  * the first), the first item is active; at the bottom, the last item is active.
  */
 function resolveActiveId(
-  items: OutlineItem[],
+  items: ReadonlyArray<OutlineItem>,
   scrollRoot: HTMLElement | null,
   offset: number,
 ): string | undefined {
@@ -187,7 +187,7 @@ function resolveActiveId(
 
 interface UseScrollSpyOptions {
   activeId?: string;
-  items: OutlineItem[];
+  items: ReadonlyArray<OutlineItem>;
   onActiveIdChange?: (id: string) => void;
   rootRef: React.RefObject<HTMLElement | null>;
   /**

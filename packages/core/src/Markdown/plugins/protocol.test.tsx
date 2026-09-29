@@ -12,6 +12,7 @@ import {renderToPipeableStream, renderToString} from 'react-dom/server';
 import {act, render, screen} from '@testing-library/react';
 import {describe, expect, expectTypeOf, it, vi} from 'vitest';
 import {Markdown} from '../Markdown';
+import {prepareMarkdownDocument} from '../preparedDocument';
 import {
   createIncrementalState,
   parseInline,
@@ -279,6 +280,53 @@ describe('Markdown plugin protocol', () => {
     );
     expect(screen.getByTestId('mention')).toHaveTextContent('@Ada');
     expect(screen.getByTestId('callout')).toHaveTextContent('Read this');
+  });
+
+  it('reuses one prepared parse for Markdown and its outline', () => {
+    let tokenizations = 0;
+    let transforms = 0;
+    const countingPlugin = createMarkdownPlugin<'mentions', MentionNode>({
+      ...mentionDefinition,
+      transform(root) {
+        transforms++;
+        return root;
+      },
+      syntax: {
+        inline: [
+          {
+            ...mentionDefinition.syntax.inline[0],
+            tokenize(input) {
+              tokenizations++;
+              return mentionDefinition.syntax.inline[0].tokenize(input);
+            },
+          },
+        ],
+      },
+    });
+    const source = '# Hello @{Ada}';
+    const document = prepareMarkdownDocument(source, {
+      plugins: [countingPlugin] as const,
+    });
+    const callsAfterPreparation = tokenizations;
+    const transformsAfterPreparation = transforms;
+
+    render(<Markdown document={document} />);
+    const serverHtml = renderToString(<Markdown document={document} />);
+
+    expect(callsAfterPreparation).toBeGreaterThan(0);
+    expect(transformsAfterPreparation).toBe(1);
+    expect(tokenizations).toBe(callsAfterPreparation);
+    expect(transforms).toBe(transformsAfterPreparation);
+    expect(serverHtml).toContain('Hello');
+    expect(document.outline).toEqual([
+      {id: 'hello-ada', label: 'Hello @Ada', level: 1},
+    ]);
+    expect(screen.getByRole('heading', {name: 'Hello @Ada'})).toHaveAttribute(
+      'id',
+      document.outline[0].id,
+    );
+    expect(Object.isFrozen(document)).toBe(true);
+    expect(Object.isFrozen(document.outline)).toBe(true);
   });
 
   it('isolates a suspending renderer behind its node source', async () => {

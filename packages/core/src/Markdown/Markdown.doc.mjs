@@ -78,8 +78,14 @@ export const docs = {
     {
       name: 'children',
       type: 'string',
-      description: 'The markdown string to render.',
-      required: true,
+      description:
+        'The markdown string to render. Required unless document is provided; do not provide both.',
+    },
+    {
+      name: 'document',
+      type: 'PreparedMarkdownDocument',
+      description:
+        'Optional PreparedMarkdownDocument to render instead of children. Reuses one canonical parse, transform pass, and heading projection with document.outline; supported for non-streaming block rendering.',
     },
     {
       name: 'display',
@@ -276,6 +282,11 @@ export const docs = {
         guidance: true,
         description:
           'Import parseMarkdownAst or parseInlineAst from @astryxdesign/core/Markdown/parser when server or React Server Component code needs to run plugins against the canonical readonly tree. The parser and plugin subpaths have no use-client boundary. The Markdown component remains client-owned, so function-bearing plugin entries must not be passed across an RSC serialization boundary.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use prepareMarkdownDocument from @astryxdesign/core/Markdown/document for a finished block document shown with Outline. Pass the result as Markdown document and pass its outline to Outline so parsing, transforms, and heading projection run once. Prepare and consume it in the same runtime; the opaque value is not serializable across an RSC boundary.',
       },
       {
         guidance: true,
@@ -546,8 +557,14 @@ export const docsZh = {
     {
       name: 'children',
       type: 'string',
-      description: '要渲染的 Markdown 字符串。',
-      required: true,
+      description:
+        '要渲染的 Markdown 字符串。未提供 document 时必填；不要同时提供两者。',
+    },
+    {
+      name: 'document',
+      type: 'PreparedMarkdownDocument',
+      description:
+        '可选的 PreparedMarkdownDocument，用于替代 children 渲染。与 document.outline 共享一次规范解析、转换和标题投影；仅支持非流式块级渲染。',
     },
     {
       name: 'display',
@@ -756,6 +773,11 @@ export const docsZh = {
       {
         guidance: true,
         description:
+          'Use prepareMarkdownDocument from @astryxdesign/core/Markdown/document for a finished block document shown with Outline. Pass the result as Markdown document and pass its outline to Outline so parsing, transforms, and heading projection run once. Prepare and consume it in the same runtime; the opaque value is not serializable across an RSC boundary.',
+      },
+      {
+        guidance: true,
+        description:
           'Use createMarkdownFrontmatter for typed document metadata. Its parse() method gives the host metadata directly; its plugin removes a complete leading block before rendering and withholds an unfinished block during streaming.',
       },
       {
@@ -843,6 +865,11 @@ export const docsDense = {
       {
         guidance: true,
         description:
+          'Use prepareMarkdownDocument from @astryxdesign/core/Markdown/document for a finished block document shown with Outline. Pass the result as Markdown document and pass its outline to Outline so parsing, transforms, and heading projection run once. Prepare and consume it in the same runtime; the opaque value is not serializable across an RSC boundary.',
+      },
+      {
+        guidance: true,
+        description:
           'Use createMarkdownFrontmatter for typed document metadata. Its parse() method gives the host metadata directly; its plugin removes a complete leading block before rendering and withholds an unfinished block during streaming.',
       },
       {
@@ -879,6 +906,8 @@ export const docsDense = {
   },
   propDescriptions: {
     children: 'markdown string',
+    document:
+      'PreparedMarkdownDocument from the server-safe Markdown/document subpath. Reuses one block parse/transform/heading projection; replaces children; not for inline or streaming rendering.',
     density: "Block spacing. 'default'|'compact'. Default: 'default'.",
     headingLevelStart:
       'Maps # to this heading level (1-6). Clamped to h6. Default: 1.',

@@ -4,7 +4,7 @@
 
 /**
  * @file index.ts
- * @output Exports Markdown component, canonical and compatibility parser functions, and types
+ * @output Exports Markdown component, prepared document API, canonical and compatibility parser functions, and types
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  */
 
@@ -43,10 +43,17 @@ export type {
 export {Markdown} from './Markdown';
 export type {
   MarkdownProps,
+  MarkdownDocumentProps,
   MarkdownSource,
   MarkdownComponents,
   MarkdownInlinePlugin,
 } from './Markdown';
+export {prepareMarkdownDocument} from './preparedDocument';
+export type {
+  PreparedMarkdownDocument,
+  PreparedMarkdownOutlineItem,
+  PrepareMarkdownDocumentOptions,
+} from './preparedDocument';
 
 export {
   parseMarkdown,
