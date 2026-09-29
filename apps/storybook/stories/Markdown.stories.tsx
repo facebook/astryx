@@ -4,11 +4,15 @@ import {useCallback, useEffect, useMemo, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Markdown} from '@astryxdesign/core/Markdown';
 import type {MarkdownComponents} from '@astryxdesign/core/Markdown';
+import {markdownAnsiPlugin} from '@astryxdesign/core/Markdown/ansi';
+import {MarkdownKaTeX} from '@astryxdesign/core/Markdown/katex';
+import {markdownMermaidPlugin} from '@astryxdesign/core/Markdown/mermaid';
+import {markdownShikiPlugin} from '@astryxdesign/core/Markdown/shiki';
 import {markdownSoftBreaksPlugin} from '@astryxdesign/core/Markdown/plugins';
 import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';
 import {Text} from '@astryxdesign/core/Text';
-import {expect, userEvent, within} from 'storybook/test';
+import {expect, userEvent, waitFor, within} from 'storybook/test';
 import {
   createDelayedMarkdownDemoPlugin,
   createSourceDecorationDemo,
@@ -558,6 +562,99 @@ export const CustomMath: Story = {
       </Markdown>
     </div>
   ),
+};
+
+const markdownIntegrationPlugins = [
+  markdownMermaidPlugin,
+  markdownAnsiPlugin,
+  markdownShikiPlugin,
+] as const;
+
+const markdownIntegrationSource = [
+  '# Optional renderers',
+  '',
+  'Core Markdown keeps authored text available while optional renderers load. Inline math such as $E = mc^2$ uses the same document flow.[^source]',
+  '',
+  '## Build graph',
+  '',
+  '```mermaid title="Build graph"',
+  'flowchart LR',
+  '  Source --> Parse --> Render',
+  '```',
+  '',
+  '## Terminal output',
+  '',
+  '```ansi title="Build output"',
+  '\u001b[1;34mINFO\u001b[0m Parsed 42 modules',
+  '\u001b[1;32mPASS\u001b[0m All checks completed',
+  '```',
+  '',
+  '## Grammar highlighting',
+  '',
+  '```rust title="main.rs"',
+  'fn main() {',
+  '    let answer: i32 = 42;',
+  '    println!("{answer}");',
+  '}',
+  '```',
+  '',
+  '$$',
+  '\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}',
+  '$$',
+  '',
+  '[^source]: The source remains readable during loading and after renderer failures.',
+].join('\n');
+
+export const OptionalRenderers: Story = {
+  name: 'Optional renderers',
+  render: () => (
+    <section style={{maxWidth: 760}}>
+      <Markdown
+        variant="document"
+        hasHeadingPermalinks
+        footnotes="github"
+        components={{math: MarkdownKaTeX}}
+        plugins={markdownIntegrationPlugins}>
+        {markdownIntegrationSource}
+      </Markdown>
+    </section>
+  ),
+  play: async ({canvasElement}) => {
+    await waitFor(
+      () =>
+        expect(
+          canvasElement.querySelector('.astryx-markdown-mermaid[role="img"]'),
+        ).not.toBeNull(),
+      {timeout: 15_000},
+    );
+    await waitFor(
+      () =>
+        expect(
+          canvasElement.querySelector(
+            '.astryx-markdown-shiki .astryx-token-keyword',
+          ),
+        ).not.toBeNull(),
+      {timeout: 15_000},
+    );
+    await waitFor(
+      () =>
+        expect(
+          canvasElement.querySelector('.astryx-markdown-katex .katex'),
+        ).not.toBeNull(),
+      {timeout: 15_000},
+    );
+    await expect(
+      canvasElement.querySelector('.astryx-markdown-ansi'),
+    ).not.toBeNull();
+    await expect(
+      within(canvasElement).getByRole('link', {
+        name: 'Permalink to Optional renderers',
+      }),
+    ).toHaveAttribute('href', '#optional-renderers');
+    await expect(
+      within(canvasElement).getByRole('link', {name: 'Go to footnote 1'}),
+    ).toBeVisible();
+  },
 };
 
 const softBreaksSource = [
