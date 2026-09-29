@@ -62,6 +62,7 @@ export function pkgOf(t) {
  * @property {string[]} [alsoExampleFor]
  * @property {string[]} [alsoShowcaseFor]
  * @property {string[]} [componentsUsed]
+ * @property {string[]} [dependencies] - Declared runtime npm dependencies (TemplateDoc.dependencies).
  * @property {boolean} [isShowcase]
  * @property {string} filePath
  * @property {string} docPath
@@ -573,6 +574,7 @@ async function discoverPages() {
       category: doc?.category || '',
       isReady: doc?.isReady ?? true,
       scaffold: doc?.scaffold ?? false,
+      dependencies: doc?.dependencies ?? [],
       filePath: path.join(dirPath, 'page.tsx'),
       docPath,
     });
@@ -602,6 +604,7 @@ async function discoverBlocks() {
       isReady: doc?.isReady ?? true,
       aspectRatio: doc?.aspectRatio ?? 1,
       componentsUsed: doc?.componentsUsed ?? [],
+      dependencies: doc?.dependencies ?? [],
       isShowcase: doc?.isShowcase ?? false,
       filePath: tsxPath,
       docPath,
@@ -643,6 +646,7 @@ async function discoverExternalBlocks(cwd = process.cwd()) {
         isReady: doc?.isReady ?? true,
         aspectRatio: doc?.aspectRatio ?? 1,
         componentsUsed: doc?.componentsUsed ?? [],
+      dependencies: doc?.dependencies ?? [],
         isShowcase: doc?.isShowcase ?? false,
         filePath: tsxPath,
         docPath,
@@ -891,6 +895,8 @@ export async function discoverIntegrationTemplatesForOne(integration) {
       // so read it off the envelope shape here.
       componentsUsed:
         /** @type {{componentsUsed?: string[]}} */ (doc).componentsUsed ?? [],
+      dependencies:
+        /** @type {{dependencies?: string[]}} */ (doc).dependencies ?? [],
       filePath: sourcePath,
       docPath,
       package: pkgLabel,
