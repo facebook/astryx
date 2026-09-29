@@ -278,32 +278,29 @@ function buildLucideTypes() {
 }
 
 // Theme packages the preview scope exposes (mirrors SCOPE_THEMES in
-// generate-scope.mjs). Each package's `/built` types are a few lines that
-// import from @astryxdesign/core, which the editor already has, so they can
-// be wrapped as-is; the bare specifier re-exports the built module.
+// generate-scope.mjs). `astryx theme build` always emits exactly two exports
+// from `/built`, typed against @astryxdesign/core, which the editor already
+// has. Synthesize the declaration from the table rather than reading the
+// package's dist: CI's docsite-test job builds core but not the theme
+// packages, so their dist does not exist when this script runs there.
 const SCOPE_THEMES = [
-  '@astryxdesign/theme-neutral',
-  '@astryxdesign/theme-matcha',
+  {pkg: '@astryxdesign/theme-neutral', name: 'neutralTheme'},
+  {pkg: '@astryxdesign/theme-matcha', name: 'matchaTheme'},
 ];
 
 function buildThemeTypes() {
   const files = {};
-  for (const name of SCOPE_THEMES) {
-    // The packages' exports map does not expose package.json; walk up from
-    // the resolved `/built` entry (dist/<theme>.js) to the package root.
-    const pkgRoot = join(dirname(resolveFromDocsite(`${name}/built`)), '..');
-    const pkg = JSON.parse(
-      readFileSync(join(pkgRoot, 'package.json'), 'utf-8'),
-    );
-    const builtDts = join(pkgRoot, pkg.exports['./built'].types);
-    const body = readFileSync(builtDts, 'utf-8')
-      .split('\n')
-      .filter(line => !line.startsWith('/// <reference'))
-      .join('\n');
-    files[name] = {
+  for (const {pkg, name} of SCOPE_THEMES) {
+    const registry = name.replace(/Theme$/, 'IconRegistry');
+    files[pkg] = {
       'index.d.ts':
-        `declare module '${name}/built' {\n${body}\n}\n` +
-        `declare module '${name}' {\n  export * from '${name}/built';\n}`,
+        `declare module '${pkg}/built' {\n` +
+        `  import type {DefinedTheme} from '@astryxdesign/core/theme';\n` +
+        `  import type {IconRegistry} from '@astryxdesign/core/Icon';\n` +
+        `  export const ${name}: DefinedTheme;\n` +
+        `  export const ${registry}: IconRegistry;\n` +
+        `}\n` +
+        `declare module '${pkg}' {\n  export * from '${pkg}/built';\n}`,
     };
   }
   return files;
