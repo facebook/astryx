@@ -9,12 +9,13 @@ superseded_by: null
 approved_by: cixzhang
 approved_at: 2026-09-25
 owners: [cixzhang]
-review_triggers: [api, theming]
+review_triggers: [api, theming, behavior, layout, accessibility]
 verified_by:
   [
     packages/core/src/Markdown/Markdown.test.tsx,
     packages/core/src/Markdown/Markdown.renderBoundary.test.tsx,
     packages/core/src/Markdown/Markdown.public.test.ts,
+    packages/core/src/Markdown/MarkdownTable.a11y.chromium.spec.ts,
     packages/core/src/Markdown/parser.test.ts,
     packages/core/src/Markdown/incremental.test.ts,
     packages/core/src/Markdown/remark.test.tsx,
@@ -35,6 +36,8 @@ system_specs:
     spec:AST-002/DEC-5,
     spec:AST-005/DEC-1,
     spec:AST-005/DEC-2,
+    spec:AST-025/DEC-1,
+    spec:AST-025/DEC-4,
     spec:AST-036/DEC-1,
     spec:AST-036/DEC-2,
     spec:AST-036/DEC-3,
@@ -352,6 +355,14 @@ and this change preserves the existing spelling exactly.
   supported subset, rejections, and diagnostics; and
   `module:Outline/parseOutlineFromMarkdown` owns the corresponding Outline
   projection.
+- `component:Table/DEC-1` and `spec:AST-025/DEC-1` own the nested Scroll
+  region's behavior: Table adopts the shared scrollable-area composition on its
+  own viewport, and that composition — not Markdown — decides how the region
+  scrolls, names itself, and contains its overflow. `spec:AST-025/DEC-4` owns
+  the keyboard ownership that makes the region a tab stop only while it
+  actually scrolls. FR28 projects those claims onto Markdown's table block: it
+  requires Markdown to add no competing scroll container, name, or tab stop,
+  and it neither restates nor narrows what Table and the shared behavior own.
 - Nested Astryx primitives retain ownership of their own anatomy and targets;
   Markdown owns the outer block targets listed here.
 
