@@ -88,6 +88,15 @@ export interface MarkdownAstCitation extends MarkdownAstNodeBase {
   readonly sourceId: string;
 }
 
+/** A resolved reference to one Core-owned footnote definition. */
+export interface MarkdownAstFootnoteReference extends MarkdownAstNodeBase {
+  readonly type: 'footnoteReference';
+  /** Normalized document-global matching key. */
+  readonly identifier: string;
+  /** Authored label text without `[^` / `]`. */
+  readonly label: string;
+}
+
 export interface MarkdownAstBreak extends MarkdownAstNodeBase {
   readonly type: 'break';
 }
@@ -104,6 +113,7 @@ export type MarkdownAstPhrasingContent<
   | MarkdownAstLink<Extension>
   | MarkdownAstImage
   | MarkdownAstCitation
+  | MarkdownAstFootnoteReference
   | MarkdownAstBreak
   | (Extension & {readonly display: 'inline'});
 
@@ -165,6 +175,18 @@ export function getMarkdownAstLegacyCodeLanguage(
 export interface MarkdownAstMath extends MarkdownAstNodeBase {
   readonly type: 'math';
   readonly value: string;
+}
+
+/** One first-wins top-level definition for resolved footnote references. */
+export interface MarkdownAstFootnoteDefinition<
+  Extension extends MarkdownAstExtensionNode = never,
+> extends MarkdownAstNodeBase {
+  readonly type: 'footnoteDefinition';
+  /** Normalized document-global matching key. */
+  readonly identifier: string;
+  /** Authored label text without `[^` / `]:`. */
+  readonly label: string;
+  readonly children: ReadonlyArray<MarkdownAstBlockContent<Extension>>;
 }
 
 export interface MarkdownAstBlockquote<
@@ -229,6 +251,7 @@ export type MarkdownAstBlockContent<
   | MarkdownAstParagraph<Extension>
   | MarkdownAstCode
   | MarkdownAstMath
+  | MarkdownAstFootnoteDefinition<Extension>
   | MarkdownAstBlockquote<Extension>
   | MarkdownAstList<Extension>
   | MarkdownAstTable<Extension>
@@ -257,10 +280,12 @@ export interface MarkdownAstNodeMap<
   readonly link: MarkdownAstLink<Extension>;
   readonly image: MarkdownAstImage;
   readonly citation: MarkdownAstCitation;
+  readonly footnoteReference: MarkdownAstFootnoteReference;
   readonly heading: MarkdownAstHeading<Extension>;
   readonly paragraph: MarkdownAstParagraph<Extension>;
   readonly code: MarkdownAstCode;
   readonly math: MarkdownAstMath;
+  readonly footnoteDefinition: MarkdownAstFootnoteDefinition<Extension>;
   readonly blockquote: MarkdownAstBlockquote<Extension>;
   readonly list: MarkdownAstList<Extension>;
   readonly listItem: MarkdownAstListItem<Extension>;
@@ -324,6 +349,7 @@ export function markdownAstText<
         text += node.alt;
         break;
       case 'citation':
+      case 'footnoteReference':
       case 'break':
         break;
       case 'extension':

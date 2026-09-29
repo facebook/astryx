@@ -55,6 +55,12 @@ const anatomy = [
     description:
       'Block image or unsafe-URL fallback; a custom image renderer replaces a safe default image.',
   },
+  {
+    name: 'Footnote section',
+    required: false,
+    description:
+      'Ordered list generated after visible blocks, introduced by one localized visually hidden heading when Core footnotes are enabled and referenced.',
+  },
 ];
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
@@ -85,7 +91,7 @@ export const docs = {
       name: 'document',
       type: 'PreparedMarkdownDocument',
       description:
-        'Optional PreparedMarkdownDocument to render instead of children. Reuses one canonical parse, transform pass, and heading projection with document.outline; supported for non-streaming block rendering.',
+        'Optional PreparedMarkdownDocument to render instead of children. Reuses one canonical parse, transform pass, heading projection, and any enabled Core-footnote projection with document.outline; supported for non-streaming block rendering.',
     },
     {
       name: 'display',
@@ -120,6 +126,12 @@ export const docs = {
       description:
         'Adds a localized # fragment link beside each top-level default heading. Reuses the same collision-safe IDs as Outline and the configured LinkProvider, does not affect nested headings, and is not implied by variant="document". The components.link override remains limited to authored links; custom heading renderers own their permalink presentation.',
       default: 'false',
+    },
+    {
+      name: 'footnotes',
+      type: "'github'",
+      description:
+        "Opt-in block footnotes. Resolved [^label] references are numbered by first appearance and link to a localized end-of-document section with one backlink per occurrence. Native fragment ids are scoped by the Markdown root id or an SSR-safe generated identity, so multiple instances can share a page. Uses LinkProvider and onLinkClick; unresolved references and later duplicate definitions stay literal. Not implied by variant='document' and rejected at runtime with display='inline'.",
     },
     {
       name: 'isStreaming',
@@ -250,6 +262,10 @@ export const docs = {
         className: 'astryx-markdown-image',
         visualProps: ['density'],
       },
+      {
+        className: 'astryx-markdown-footnotes',
+        visualProps: ['density'],
+      },
     ],
   },
   usage: {
@@ -266,6 +282,11 @@ export const docs = {
         guidance: true,
         description:
           'Use variant="document" for long-form reading surfaces; keep autolink and other syntax options explicit, and override contentWidth or contentAlign when the host needs different geometry.',
+      },
+      {
+        guidance: true,
+        description:
+          "Set footnotes='github' only for block documents that use [^label] references. Give the Markdown root a stable id when external links must survive remounts; otherwise an SSR-safe instance scope keeps multiple documents distinct. Pass the same syntax option to parseOutlineFromMarkdown, or prepare the document once and reuse document.outline, so heading IDs stay aligned.",
       },
       {
         guidance: true,
@@ -358,6 +379,14 @@ export const docs = {
       code: `
 <Markdown hasHeadingPermalinks>
   {'# Installation\\n\\nEach top-level heading gets an adjacent fragment link.'}
+</Markdown>;
+`,
+    },
+    {
+      label: 'Footnotes',
+      code: `
+<Markdown footnotes="github">
+  {'A statement with a note.[^detail]\\n\\n[^detail]: Supporting context.'}
 </Markdown>;
 `,
     },
@@ -599,7 +628,7 @@ export const docsZh = {
       name: 'document',
       type: 'PreparedMarkdownDocument',
       description:
-        '可选的 PreparedMarkdownDocument，用于替代 children 渲染。与 document.outline 共享一次规范解析、转换和标题投影；仅支持非流式块级渲染。',
+        '可选的 PreparedMarkdownDocument，用于替代 children 渲染。与 document.outline 共享一次规范解析、转换、标题投影及已启用的 Core 脚注投影；仅支持非流式块级渲染。',
     },
     {
       name: 'display',
@@ -634,6 +663,12 @@ export const docsZh = {
       description:
         '在每个顶级默认标题旁添加一个本地化的 # 片段链接。复用与 Outline 相同的冲突安全 ID 和已配置的 LinkProvider，不影响嵌套标题，也不会由 variant="document" 隐式启用。components.link 仍仅处理文档中编写的链接；自定义标题渲染器自行负责永久链接呈现。',
       default: 'false',
+    },
+    {
+      name: 'footnotes',
+      type: "'github'",
+      description:
+        "选择性启用块级脚注。已解析的 [^label] 引用按首次出现编号，并链接到文档末尾带本地化隐藏标题的脚注区域；每次引用都有返回链接。原生片段 ID 使用 Markdown 根 ID 或服务端渲染安全的实例标识作为作用域，因此多个实例可共存于同一页面。使用 LinkProvider 和 onLinkClick；未解析的引用和后续重复定义保持原文。不会由 variant='document' 隐式启用，且与 display='inline' 组合时会在运行时被拒绝。",
     },
     {
       name: 'isStreaming',
@@ -772,6 +807,12 @@ export const docsZh = {
         description:
           '每个渲染的块级图片外层容器（以及损坏图片的占位符）。覆盖 marginBlockStart/marginBlockEnd 可调整图片周围的间距；反映 data-density。仅适用于默认渲染——自定义的 components.image 拥有自己的样式。',
       },
+      {
+        className: 'astryx-markdown-footnotes',
+        visualProps: ['density'],
+        description:
+          '已解析脚注的文档末尾区域。可覆盖分隔线、间距、文本颜色和字号；生成的引用与返回链接仍由 Link 主题拥有。',
+      },
     ],
   },
   usage: {
@@ -788,6 +829,11 @@ export const docsZh = {
         guidance: true,
         description:
           'Use variant="document" for long-form reading surfaces; keep autolink and other syntax options explicit, and override contentWidth or contentAlign when the host needs different geometry.',
+      },
+      {
+        guidance: true,
+        description:
+          "Set footnotes='github' only for block documents that use [^label] references. Give the Markdown root a stable id when external links must survive remounts; otherwise an SSR-safe instance scope keeps multiple documents distinct. Pass the same syntax option to parseOutlineFromMarkdown, or prepare the document once and reuse document.outline, so heading IDs stay aligned.",
       },
       {
         guidance: true,
@@ -889,6 +935,11 @@ export const docsDense = {
       {
         guidance: true,
         description:
+          "Set footnotes='github' only for block documents that use [^label] references. Give the Markdown root a stable id when external links must survive remounts; otherwise an SSR-safe instance scope keeps multiple documents distinct. Pass the same syntax option to parseOutlineFromMarkdown, or prepare the document once and reuse document.outline, so heading IDs stay aligned.",
+      },
+      {
+        guidance: true,
+        description:
           'Use contentWidth to keep prose at a readable line length in wide layouts.',
       },
       {
@@ -966,7 +1017,7 @@ export const docsDense = {
   propDescriptions: {
     children: 'markdown string',
     document:
-      'PreparedMarkdownDocument from the server-safe Markdown/document subpath. Reuses one block parse/transform/heading projection; replaces children; not for inline or streaming rendering.',
+      'PreparedMarkdownDocument from the server-safe Markdown/document subpath. Reuses one block parse/transform plus heading and enabled footnote projections; replaces children; not for inline or streaming rendering.',
     variant:
       "'default'|'document'. Presentation-only document mode uses 16px/1.7 body text, centered 680px prose, 64px heading scroll clearance, and grid table dividers. Block display only; syntax options remain explicit.",
     density: "Block spacing. 'default'|'compact'. Default: 'default'.",
@@ -974,6 +1025,8 @@ export const docsDense = {
       'Maps # to this heading level (1-6). Clamped to h6. Default: 1.',
     hasHeadingPermalinks:
       'boolean. Adds localized # fragment links beside top-level default headings; reuses Outline ids. Custom headings own this presentation. Default: false.',
+    footnotes:
+      "'github'. Block-only Core footnotes with first-reference numbering, instance-scoped native fragment links, a localized hidden section heading, repeated-reference backlinks, and literal unresolved/duplicate fallback. Inline combinations fail at runtime. Default: off.",
     isStreaming:
       'Incremental parse + fade-in for streamed chunks. Default: false.',
     onLinkClick:

@@ -1482,5 +1482,17 @@
   "@astryx.transferListSelector.triggerLabel": {
     "defaultMessage": "Wybrano {count, number}",
     "description": "Default summary on the closed trigger of a lab TransferListSelector, stating how many options are currently chosen. Consumers usually override this with a domain phrase (e.g. \"7 columns\")."
+  },
+  "@astryx.markdown.footnotes": {
+    "defaultMessage": "Przypisy",
+    "description": "Accessible name for the generated section containing resolved Markdown footnotes."
+  },
+  "@astryx.markdown.footnoteReference": {
+    "defaultMessage": "Przejdź do przypisu {number}",
+    "description": "Accessible name for a generated Markdown footnote reference link. `{number}` is the displayed footnote number."
+  },
+  "@astryx.markdown.footnoteBacklink": {
+    "defaultMessage": "Wróć do odwołania {reference} przypisu {number}",
+    "description": "Accessible name for a generated Markdown footnote backlink. `{number}` is the footnote number and `{reference}` is this occurrence among repeated references."
   }
 }

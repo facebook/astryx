@@ -836,9 +836,16 @@ function collectExtensionSignatures(
 }
 
 const sourceHeadingMarker = Symbol('MarkdownSourceHeading');
+const sourceFootnoteMarker = Symbol('MarkdownSourceFootnote');
 
 interface SourceHeadingMarker {
   readonly depth: number;
+}
+
+interface SourceFootnoteMarker {
+  readonly type: 'footnoteReference' | 'footnoteDefinition';
+  readonly identifier: string;
+  readonly label: string;
 }
 
 function markSourceHeadings(
@@ -877,6 +884,55 @@ function markSourceHeadings(
   return markers;
 }
 
+function markSourceFootnotes(
+  root: MarkdownAstRoot<MarkdownExtensionNode>,
+): Set<SourceFootnoteMarker> {
+  const markers = new Set<SourceFootnoteMarker>();
+  const visit = (node: MarkdownAstNodeBase & {readonly type: string}): void => {
+    if (
+      (node.type === 'footnoteReference' ||
+        node.type === 'footnoteDefinition') &&
+      !(sourceFootnoteMarker in node)
+    ) {
+      const record = node as unknown as {
+        readonly identifier: string;
+        readonly label: string;
+      };
+      Object.defineProperty(node, sourceFootnoteMarker, {
+        configurable: false,
+        enumerable: true,
+        value: Object.freeze({
+          type: node.type,
+          identifier: record.identifier,
+          label: record.label,
+        } satisfies SourceFootnoteMarker),
+        writable: false,
+      });
+    }
+    if (
+      node.type === 'footnoteReference' ||
+      node.type === 'footnoteDefinition'
+    ) {
+      markers.add(
+        (
+          node as unknown as {
+            readonly [sourceFootnoteMarker]: SourceFootnoteMarker;
+          }
+        )[sourceFootnoteMarker],
+      );
+    }
+    if ('children' in node && Array.isArray(node.children)) {
+      for (const child of node.children) {
+        if (child != null && typeof child === 'object') {
+          visit(child as MarkdownAstNodeBase & {readonly type: string});
+        }
+      }
+    }
+  };
+  visit(root);
+  return markers;
+}
+
 const PHRASING_TYPES = new Set([
   'text',
   'strong',
@@ -888,12 +944,14 @@ const PHRASING_TYPES = new Set([
   'link',
   'image',
   'citation',
+  'footnoteReference',
 ]);
 const BLOCK_TYPES = new Set([
   'heading',
   'paragraph',
   'code',
   'math',
+  'footnoteDefinition',
   'blockquote',
   'list',
   'table',
@@ -909,7 +967,12 @@ const PHRASING_PARENTS = new Set([
   'link',
   'tableCell',
 ]);
-const BLOCK_PARENTS = new Set(['root', 'blockquote', 'listItem']);
+const BLOCK_PARENTS = new Set([
+  'root',
+  'blockquote',
+  'listItem',
+  'footnoteDefinition',
+]);
 const CHILD_PARENT_TYPES = new Set([
   ...PHRASING_PARENTS,
   ...BLOCK_PARENTS,
@@ -924,6 +987,7 @@ function validateAst(
   rendererKeys: ReadonlySet<string>,
   sourcePositions: Map<string, SourceInvariant[]>,
   sourceHeadingMarkers: ReadonlySet<SourceHeadingMarker>,
+  sourceFootnoteMarkers: ReadonlySet<SourceFootnoteMarker>,
   activePluginName: string,
   existingExtensions: Map<string, ExistingExtension>,
   display: 'inline' | 'block',
@@ -933,11 +997,13 @@ function validateAst(
   }
   const seen = new Set<object>();
   const seenHeadingMarkers = new Set<SourceHeadingMarker>();
+  const seenFootnoteMarkers = new Set<SourceFootnoteMarker>();
   let count = 0;
   const visit = (
     value: unknown,
     parent: string | null,
     insideLink: boolean,
+    insideFootnoteDefinition: boolean,
   ): boolean => {
     if (value == null || typeof value !== 'object' || seen.has(value)) {
       return false;
@@ -949,6 +1015,18 @@ function validateAst(
     const node = value as Record<string, unknown>;
     const type = node.type;
     if (typeof type !== 'string') {
+      return false;
+    }
+    const sourceFootnote = (
+      node as unknown as {
+        readonly [sourceFootnoteMarker]?: SourceFootnoteMarker;
+      }
+    )[sourceFootnoteMarker];
+    if (
+      sourceFootnote != null &&
+      type !== 'footnoteReference' &&
+      type !== 'footnoteDefinition'
+    ) {
       return false;
     }
     if (node.data !== undefined && !isMarkdownPluginData(node.data)) {
@@ -963,7 +1041,9 @@ function validateAst(
       if (
         (PHRASING_PARENTS.has(parent) && !phrasing) ||
         (BLOCK_PARENTS.has(parent) && !block) ||
-        (insideLink && type === 'link') ||
+        (insideLink && (type === 'link' || type === 'footnoteReference')) ||
+        (insideFootnoteDefinition && type === 'footnoteReference') ||
+        (type === 'footnoteDefinition' && parent !== 'root') ||
         (parent === 'list' && type !== 'listItem') ||
         (parent === 'table' && type !== 'tableRow') ||
         (parent === 'tableRow' && type !== 'tableCell')
@@ -1078,6 +1158,28 @@ function validateAst(
           return false;
         }
         break;
+      case 'footnoteReference':
+      case 'footnoteDefinition': {
+        const marker = (
+          node as unknown as {
+            readonly [sourceFootnoteMarker]?: SourceFootnoteMarker;
+          }
+        )[sourceFootnoteMarker];
+        if (
+          typeof node.identifier !== 'string' ||
+          typeof node.label !== 'string' ||
+          marker == null ||
+          !sourceFootnoteMarkers.has(marker) ||
+          marker.type !== type ||
+          marker.identifier !== node.identifier ||
+          marker.label !== node.label ||
+          seenFootnoteMarkers.has(marker)
+        ) {
+          return false;
+        }
+        seenFootnoteMarkers.add(marker);
+        break;
+      }
       case 'list':
         if (
           typeof node.ordered !== 'boolean' ||
@@ -1147,7 +1249,14 @@ function validateAst(
         return false;
       }
       for (const child of node.children) {
-        if (!visit(child, type, insideLink || type === 'link')) {
+        if (
+          !visit(
+            child,
+            type,
+            insideLink || type === 'link',
+            insideFootnoteDefinition || type === 'footnoteDefinition',
+          )
+        ) {
           return false;
         }
       }
@@ -1158,7 +1267,7 @@ function validateAst(
   };
   const candidate = root as MarkdownAstRoot<MarkdownExtensionNode>;
   return (
-    visit(candidate, null, false) &&
+    visit(candidate, null, false, false) &&
     candidate.type === 'root' &&
     Array.from(existingExtensions.values()).every(
       extension =>
@@ -1497,6 +1606,9 @@ export function applyMarkdownTransforms<Node extends MarkdownExtensionNode>(
   const sourceHeadingMarkers = plugins.hasUntrustedTransform
     ? markSourceHeadings(root)
     : undefined;
+  const sourceFootnoteMarkers = plugins.hasUntrustedTransform
+    ? markSourceFootnotes(root)
+    : undefined;
   let guarded = false;
   let priorTransformChangedTree = false;
   /** A trusted helper has produced a tree nothing has frozen yet. */
@@ -1564,8 +1676,10 @@ export function applyMarkdownTransforms<Node extends MarkdownExtensionNode>(
         document = next as MarkdownAstRoot<Node>;
         continue;
       }
-      const positions = collectSourceInvariants(document);
-      const existingExtensions = collectExtensionSignatures(document);
+      const broadDocument =
+        document as unknown as MarkdownAstRoot<MarkdownExtensionNode>;
+      const positions = collectSourceInvariants(broadDocument);
+      const existingExtensions = collectExtensionSignatures(broadDocument);
       if (
         !validateAst(
           next,
@@ -1573,6 +1687,7 @@ export function applyMarkdownTransforms<Node extends MarkdownExtensionNode>(
           rendererKeys as ReadonlySet<string>,
           positions,
           sourceHeadingMarkers as ReadonlySet<SourceHeadingMarker>,
+          sourceFootnoteMarkers as ReadonlySet<SourceFootnoteMarker>,
           prepared.pluginName,
           existingExtensions,
           display,
@@ -1582,8 +1697,8 @@ export function applyMarkdownTransforms<Node extends MarkdownExtensionNode>(
       }
       priorTransformChangedTree = true;
       document = freezeAst(
-        restoreCodeInternalProperties(document, next),
-      ) as MarkdownAstRoot<Node>;
+        restoreCodeInternalProperties(broadDocument, next),
+      ) as unknown as MarkdownAstRoot<Node>;
     } catch (error) {
       reportMarkdownPluginFailure(prepared.pluginName, 'transform', error);
     }

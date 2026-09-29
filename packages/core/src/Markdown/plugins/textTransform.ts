@@ -383,7 +383,8 @@ function transformBlocks<Node extends MarkdownExtensionNode>(
           children === block.children ? block : {...block, children};
         break;
       }
-      case 'blockquote': {
+      case 'blockquote':
+      case 'footnoteDefinition': {
         const children = transformBlocks(
           block.children,
           options,

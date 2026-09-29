@@ -44,37 +44,69 @@ import {isSafeMarkdownParserUrl} from './url';
 // Types
 // ---------------------------------------------------------------------------
 
-/** Nodes returned by default and legacy parser calls. */
-export type InlineNode<Extension extends MarkdownExtensionNode = never> =
+/** The additional inline node returned only when parsing with `math: true`. */
+export type MathInlineNode = {type: 'math'; value: string};
+
+/** A resolved inline reference returned only with `footnotes: 'github'`. */
+export type FootnoteReferenceInlineNode = {
+  type: 'footnoteReference';
+  identifier: string;
+  label: string;
+};
+
+type InlineNodeFor<
+  Extension extends MarkdownExtensionNode,
+  MathEnabled extends boolean,
+  FootnotesEnabled extends boolean,
+> =
   | {type: 'text'; content: string}
-  | {type: 'bold'; children: InlineNode<Extension>[]}
-  | {type: 'italic'; children: InlineNode<Extension>[]}
-  | {type: 'strikethrough'; children: InlineNode<Extension>[]}
+  | {
+      type: 'bold';
+      children: InlineNodeFor<Extension, MathEnabled, FootnotesEnabled>[];
+    }
+  | {
+      type: 'italic';
+      children: InlineNodeFor<Extension, MathEnabled, FootnotesEnabled>[];
+    }
+  | {
+      type: 'strikethrough';
+      children: InlineNodeFor<Extension, MathEnabled, FootnotesEnabled>[];
+    }
   | {type: 'code'; content: string}
-  | {type: 'link'; href: string; children: InlineNode<Extension>[]}
+  | (MathEnabled extends true ? MathInlineNode : never)
+  | {
+      type: 'link';
+      href: string;
+      children: InlineNodeFor<Extension, MathEnabled, FootnotesEnabled>[];
+    }
   | {type: 'image'; src: string; alt: string}
   | {type: 'citation'; sourceId: string}
+  | (FootnotesEnabled extends true ? FootnoteReferenceInlineNode : never)
   | {type: 'break'}
   | Extract<Extension, {display: 'inline'}>;
 
-/** The additional inline node returned only when parsing with `math: true`. */
-export type MathInlineNode = {type: 'math'; value: string};
+/** Nodes returned by default and legacy parser calls. */
+export type InlineNode<Extension extends MarkdownExtensionNode = never> =
+  InlineNodeFor<Extension, false, false>;
 
 /** Nodes returned by an explicitly math-enabled inline parse. */
 export type InlineNodeWithMath<
   Extension extends MarkdownExtensionNode = never,
+> = InlineNode<Extension> | InlineNodeFor<Extension, true, false>;
+
+/** Nodes returned by an explicitly footnote-enabled parse. */
+export type InlineNodeWithFootnotes<
+  Extension extends MarkdownExtensionNode = never,
+> = InlineNode<Extension> | InlineNodeFor<Extension, false, true>;
+
+/** Nodes returned when math and footnotes are both explicitly enabled. */
+export type InlineNodeWithMathAndFootnotes<
+  Extension extends MarkdownExtensionNode = never,
 > =
-  | {type: 'text'; content: string}
-  | {type: 'bold'; children: InlineNodeWithMath<Extension>[]}
-  | {type: 'italic'; children: InlineNodeWithMath<Extension>[]}
-  | {type: 'strikethrough'; children: InlineNodeWithMath<Extension>[]}
-  | {type: 'code'; content: string}
-  | MathInlineNode
-  | {type: 'link'; href: string; children: InlineNodeWithMath<Extension>[]}
-  | {type: 'image'; src: string; alt: string}
-  | {type: 'citation'; sourceId: string}
-  | {type: 'break'}
-  | Extract<Extension, {display: 'inline'}>;
+  | InlineNode<Extension>
+  | InlineNodeWithMath<Extension>
+  | InlineNodeWithFootnotes<Extension>
+  | InlineNodeFor<Extension, true, true>;
 
 type BlockMetadata = {
   /**
@@ -84,51 +116,57 @@ type BlockMetadata = {
   range?: SourceRange;
 };
 
-type LegacyBlockNodeKind<Extension extends MarkdownExtensionNode = never> =
-  | {
-      type: 'heading';
-      level: 1 | 2 | 3 | 4 | 5 | 6;
-      children: InlineNode<Extension>[];
-    }
-  | {type: 'paragraph'; children: InlineNode<Extension>[]}
-  | {type: 'codeblock'; language: string; content: string}
-  | {type: 'blockquote'; children: BlockNode<Extension>[]}
-  | {
-      type: 'list';
-      ordered: boolean;
-      start?: number;
-      /** Ordered-list marker delimiter ('.' or ')'). Undefined for bullets. */
-      delimiter?: '.' | ')';
-      loose?: boolean;
-      items: ListItemNode<Extension>[];
-    }
-  | {
-      type: 'table';
-      headers: TableCellNode<Extension>[];
-      alignments: TableAlignment[];
-      rows: TableCellNode<Extension>[][];
-    }
-  | {type: 'hr'}
-  | {type: 'image'; src: string; alt: string}
-  | Extract<Extension, {display: 'block'}>;
-
-/** Blocks returned by default and legacy parser calls. */
-export type BlockNode<Extension extends MarkdownExtensionNode = never> =
-  LegacyBlockNodeKind<Extension> & BlockMetadata;
-
 /** The additional block returned only when parsing with `math: true`. */
 export type MathBlockNode = {type: 'math'; value: string} & BlockMetadata;
 
-type MathEnabledBlockNodeKind<Extension extends MarkdownExtensionNode = never> =
+type ListItemNodeFor<
+  Extension extends MarkdownExtensionNode,
+  MathEnabled extends boolean,
+  FootnotesEnabled extends boolean,
+> = {
+  checked?: boolean;
+  children: BlockNodeFor<Extension, MathEnabled, FootnotesEnabled>[];
+};
+
+type TableCellNodeFor<
+  Extension extends MarkdownExtensionNode,
+  MathEnabled extends boolean,
+  FootnotesEnabled extends boolean,
+> = {
+  children: InlineNodeFor<Extension, MathEnabled, FootnotesEnabled>[];
+};
+
+/** One first-wins definition returned only with `footnotes: 'github'`. */
+export type FootnoteDefinitionBlockNode<
+  Extension extends MarkdownExtensionNode = never,
+  MathEnabled extends boolean = false,
+> = {
+  type: 'footnoteDefinition';
+  identifier: string;
+  label: string;
+  children: BlockNodeFor<Extension, MathEnabled, true>[];
+} & BlockMetadata;
+
+type BlockNodeFor<
+  Extension extends MarkdownExtensionNode,
+  MathEnabled extends boolean,
+  FootnotesEnabled extends boolean,
+> = (
   | {
       type: 'heading';
       level: 1 | 2 | 3 | 4 | 5 | 6;
-      children: InlineNodeWithMath<Extension>[];
+      children: InlineNodeFor<Extension, MathEnabled, FootnotesEnabled>[];
     }
-  | {type: 'paragraph'; children: InlineNodeWithMath<Extension>[]}
+  | {
+      type: 'paragraph';
+      children: InlineNodeFor<Extension, MathEnabled, FootnotesEnabled>[];
+    }
   | {type: 'codeblock'; language: string; content: string}
-  | MathBlockNode
-  | {type: 'blockquote'; children: BlockNodeWithMath<Extension>[]}
+  | (MathEnabled extends true ? MathBlockNode : never)
+  | {
+      type: 'blockquote';
+      children: BlockNodeFor<Extension, MathEnabled, FootnotesEnabled>[];
+    }
   | {
       type: 'list';
       ordered: boolean;
@@ -136,21 +174,44 @@ type MathEnabledBlockNodeKind<Extension extends MarkdownExtensionNode = never> =
       /** Ordered-list marker delimiter ('.' or ')'). Undefined for bullets. */
       delimiter?: '.' | ')';
       loose?: boolean;
-      items: ListItemNodeWithMath<Extension>[];
+      items: ListItemNodeFor<Extension, MathEnabled, FootnotesEnabled>[];
     }
   | {
       type: 'table';
-      headers: TableCellNodeWithMath<Extension>[];
+      headers: TableCellNodeFor<Extension, MathEnabled, FootnotesEnabled>[];
       alignments: TableAlignment[];
-      rows: TableCellNodeWithMath<Extension>[][];
+      rows: TableCellNodeFor<Extension, MathEnabled, FootnotesEnabled>[][];
     }
   | {type: 'hr'}
   | {type: 'image'; src: string; alt: string}
-  | Extract<Extension, {display: 'block'}>;
+  | (FootnotesEnabled extends true
+      ? FootnoteDefinitionBlockNode<Extension, MathEnabled>
+      : never)
+  | Extract<Extension, {display: 'block'}>
+) &
+  BlockMetadata;
+
+/** Blocks returned by default and legacy parser calls. */
+export type BlockNode<Extension extends MarkdownExtensionNode = never> =
+  BlockNodeFor<Extension, false, false>;
 
 /** Blocks returned by an explicitly math-enabled block parse. */
 export type BlockNodeWithMath<Extension extends MarkdownExtensionNode = never> =
-  MathEnabledBlockNodeKind<Extension> & BlockMetadata;
+  BlockNode<Extension> | BlockNodeFor<Extension, true, false>;
+
+/** Blocks returned by an explicitly footnote-enabled block parse. */
+export type BlockNodeWithFootnotes<
+  Extension extends MarkdownExtensionNode = never,
+> = BlockNode<Extension> | BlockNodeFor<Extension, false, true>;
+
+/** Blocks returned when math and footnotes are both explicitly enabled. */
+export type BlockNodeWithMathAndFootnotes<
+  Extension extends MarkdownExtensionNode = never,
+> =
+  | BlockNode<Extension>
+  | BlockNodeWithMath<Extension>
+  | BlockNodeWithFootnotes<Extension>
+  | BlockNodeFor<Extension, true, true>;
 
 /**
  * Where a block sits in the source string handed to `parseMarkdown`:
@@ -163,27 +224,28 @@ export type BlockNodeWithMath<Extension extends MarkdownExtensionNode = never> =
  */
 export type SourceRange = {readonly start: number; readonly end: number};
 
-export type ListItemNode<Extension extends MarkdownExtensionNode = never> = {
-  checked?: boolean;
-  children: BlockNode<Extension>[];
-};
-type ListItemNodeWithMath<Extension extends MarkdownExtensionNode = never> = {
-  checked?: boolean;
-  children: BlockNodeWithMath<Extension>[];
-};
-export type TableCellNode<Extension extends MarkdownExtensionNode = never> = {
-  children: InlineNode<Extension>[];
-};
-type TableCellNodeWithMath<Extension extends MarkdownExtensionNode = never> = {
-  children: InlineNodeWithMath<Extension>[];
-};
+export type ListItemNode<Extension extends MarkdownExtensionNode = never> =
+  ListItemNodeFor<Extension, false, false>;
+type ListItemNodeWithMath<Extension extends MarkdownExtensionNode = never> =
+  ListItemNodeFor<Extension, true, true>;
+export type TableCellNode<Extension extends MarkdownExtensionNode = never> =
+  TableCellNodeFor<Extension, false, false>;
+type TableCellNodeWithMath<Extension extends MarkdownExtensionNode = never> =
+  TableCellNodeFor<Extension, true, true>;
 export type TableAlignment = 'left' | 'center' | 'right' | null;
 
 type RuntimeExtensionNode =
   | MarkdownExtensionNode<string, string, MarkdownPluginData, 'inline'>
   | MarkdownExtensionNode<string, string, MarkdownPluginData, 'block'>;
-type RuntimeInlineNode = InlineNodeWithMath<RuntimeExtensionNode>;
-type RuntimeBlockNode = BlockNodeWithMath<RuntimeExtensionNode>;
+type RuntimeAstInlineNode = MarkdownAstPhrasingContent<RuntimeExtensionNode>;
+type RuntimeAstBlockNode = MarkdownAstBlockContent<RuntimeExtensionNode>;
+type RuntimeAstRoot = MarkdownAstRoot<RuntimeExtensionNode>;
+type RuntimeAstTableCell = MarkdownAstTableCell<RuntimeExtensionNode>;
+type RuntimeAstTableRow = MarkdownAstTableRow<RuntimeExtensionNode>;
+type RuntimeAstListItem = MarkdownAstListItem<RuntimeExtensionNode>;
+type RuntimeAstList = MarkdownAstList<RuntimeExtensionNode>;
+type RuntimeInlineNode = InlineNodeWithMathAndFootnotes<RuntimeExtensionNode>;
+type RuntimeBlockNode = BlockNodeWithMathAndFootnotes<RuntimeExtensionNode>;
 
 type LegacyProjectionCache = WeakMap<object, object>;
 
@@ -218,7 +280,7 @@ function projectExtensionNode<Node extends RuntimeExtensionNode>(
 }
 
 function projectInlineNode(
-  node: MarkdownAstPhrasingContent<RuntimeExtensionNode>,
+  node: RuntimeAstInlineNode,
   cache: LegacyProjectionCache,
   withRanges: boolean,
 ): RuntimeInlineNode {
@@ -276,6 +338,13 @@ function projectInlineNode(
     case 'citation':
       projected = {type: 'citation', sourceId: node.sourceId};
       break;
+    case 'footnoteReference':
+      projected = {
+        type: 'footnoteReference',
+        identifier: node.identifier,
+        label: node.label,
+      };
+      break;
     case 'break':
       projected = {type: 'break'};
       break;
@@ -288,7 +357,7 @@ function projectInlineNode(
 }
 
 function projectTableCell(
-  node: MarkdownAstTableCell<RuntimeExtensionNode>,
+  node: RuntimeAstTableCell,
   cache: LegacyProjectionCache,
   withRanges: boolean,
 ): TableCellNodeWithMath<RuntimeExtensionNode> {
@@ -306,7 +375,7 @@ function projectTableCell(
 }
 
 function projectListItem(
-  node: MarkdownAstListItem<RuntimeExtensionNode>,
+  node: RuntimeAstListItem,
   cache: LegacyProjectionCache,
   withRanges: boolean,
 ): ListItemNodeWithMath<RuntimeExtensionNode> {
@@ -325,7 +394,7 @@ function projectListItem(
 }
 
 function projectBlockNode(
-  node: MarkdownAstBlockContent<RuntimeExtensionNode>,
+  node: RuntimeAstBlockNode,
   cache: LegacyProjectionCache,
   withRanges: boolean,
 ): RuntimeBlockNode {
@@ -365,6 +434,17 @@ function projectBlockNode(
       break;
     case 'math':
       projected = {type: 'math', value: node.value, ...metadata};
+      break;
+    case 'footnoteDefinition':
+      projected = {
+        type: 'footnoteDefinition',
+        identifier: node.identifier,
+        label: node.label,
+        children: node.children.map(child =>
+          projectBlockNode(child, cache, withRanges),
+        ),
+        ...metadata,
+      };
       break;
     case 'blockquote':
       projected = {
@@ -419,7 +499,7 @@ function projectBlockNode(
 }
 
 function projectInlineNodes(
-  nodes: ReadonlyArray<MarkdownAstPhrasingContent<RuntimeExtensionNode>>,
+  nodes: ReadonlyArray<RuntimeAstInlineNode>,
   withRanges: boolean,
   cache: LegacyProjectionCache = new WeakMap(),
 ): RuntimeInlineNode[] {
@@ -427,7 +507,7 @@ function projectInlineNodes(
 }
 
 function projectMarkdownRoot(
-  root: MarkdownAstRoot<RuntimeExtensionNode>,
+  root: RuntimeAstRoot,
   withRanges: boolean,
   cache: LegacyProjectionCache = new WeakMap(),
 ): RuntimeBlockNode[] {
@@ -491,7 +571,10 @@ type CommonParseOptions<
 /** Options for default and legacy parser results. */
 export type ParseOptions<
   Plugins extends ReadonlyArray<MarkdownPluginEntry> = readonly [],
-> = CommonParseOptions<Plugins> & {math?: false | undefined};
+> = CommonParseOptions<Plugins> & {
+  math?: false | undefined;
+  footnotes?: undefined;
+};
 
 /**
  * Options that explicitly parse `$…$` and `$$…$$` into math-enabled result
@@ -500,7 +583,20 @@ export type ParseOptions<
  */
 export type MathParseOptions<
   Plugins extends ReadonlyArray<MarkdownPluginEntry> = readonly [],
-> = CommonParseOptions<Plugins> & {math: true};
+> = CommonParseOptions<Plugins> & {math: true; footnotes?: undefined};
+
+/** Options that explicitly enable Core-owned GitHub-style footnotes. */
+export type FootnoteParseOptions<
+  Plugins extends ReadonlyArray<MarkdownPluginEntry> = readonly [],
+> = CommonParseOptions<Plugins> & {
+  math?: false | undefined;
+  footnotes: 'github';
+};
+
+/** Options that explicitly enable both math and Core-owned footnotes. */
+export type MathFootnoteParseOptions<
+  Plugins extends ReadonlyArray<MarkdownPluginEntry> = readonly [],
+> = CommonParseOptions<Plugins> & {math: true; footnotes: 'github'};
 
 export type IncrementalParseOptions<
   Plugins extends ReadonlyArray<MarkdownPluginEntry> = readonly [],
@@ -516,10 +612,25 @@ export type IncrementalMathParseOptions<
   readonly isFinal?: boolean;
 };
 
+export type IncrementalFootnoteParseOptions<
+  Plugins extends ReadonlyArray<MarkdownPluginEntry> = readonly [],
+> = FootnoteParseOptions<Plugins> & {
+  /** False while more source may arrive; true for the terminal snapshot. */
+  readonly isFinal?: boolean;
+};
+
+export type IncrementalMathFootnoteParseOptions<
+  Plugins extends ReadonlyArray<MarkdownPluginEntry> = readonly [],
+> = MathFootnoteParseOptions<Plugins> & {
+  /** False while more source may arrive; true for the terminal snapshot. */
+  readonly isFinal?: boolean;
+};
+
 type RuntimeParseOptions = CommonParseOptions<
   ReadonlyArray<MarkdownPluginEntry>
 > & {
   math?: boolean;
+  footnotes?: 'github';
   isFinal?: boolean;
 };
 
@@ -528,10 +639,24 @@ type MarkdownLinkDefinition = Readonly<{
   title?: string;
 }>;
 
+type MarkdownFootnoteDefinition = Readonly<{
+  identifier: string;
+  label: string;
+  body: string;
+  startLine: number;
+  endLine: number;
+  sourceStart: number;
+}>;
+
 type ResolvedOptions = {
   readonly sourceIds: ReadonlySet<string> | undefined;
   readonly autolink: 'gfm' | undefined;
   readonly math?: boolean;
+  readonly footnotes?: 'github';
+  /** Whether this parse may recognize top-level footnote declarations. */
+  readonly allowFootnoteDefinitions?: boolean;
+  /** Winning document-global footnote definitions for reference resolution. */
+  readonly footnoteDefs?: ReadonlyMap<string, MarkdownFootnoteDefinition>;
   /** Whether the caller asked for the released `range` projection. */
   readonly sourceRanges?: boolean;
   /**
@@ -574,6 +699,9 @@ function makeResolvedOptions(
     sourceIds: fields.sourceIds,
     autolink: fields.autolink,
     math: fields.math,
+    footnotes: fields.footnotes,
+    allowFootnoteDefinitions: fields.allowFootnoteDefinitions ?? true,
+    footnoteDefs: fields.footnoteDefs,
     sourceRanges: fields.sourceRanges,
     astPositions: fields.astPositions ?? true,
     plugins: fields.plugins,
@@ -612,6 +740,7 @@ function resolveOptions(
     sourceIds: opts.sourceIds,
     autolink: opts.autolink,
     math: opts.math === true ? true : undefined,
+    footnotes: opts.footnotes === 'github' ? 'github' : undefined,
     sourceRanges: opts.sourceRanges,
     plugins:
       opts.plugins != null && opts.plugins.length > 0
@@ -628,9 +757,8 @@ function resolveOptions(
 // A CommonMark link reference definition line: up to 3 leading spaces, a
 // bracketed label, `:`, a destination (bare or `<...>`), and an optional
 // same-line title (captured as group 4 so a title-less definition can absorb a
-// title on the following line). `^`-leading labels (`[^1]:`) are footnote
-// definitions — a separate, unsupported feature — and are excluded so they
-// pass through verbatim.
+// title on the following line). `^`-leading labels (`[^1]:`) are reserved for
+// the separate opt-in footnote grammar and are excluded from link definitions.
 const LINK_DEFINITION_RE =
   /^ {0,3}\[([^\]^](?:\\.|[^\]\\])*)\]:[ \t]*(?:<([^<>\n]*)>|(\S+))([ \t]+(?:"[^"\n]*"|'[^'\n]*'|\([^()\n]*\)))?[ \t]*$/;
 
@@ -974,6 +1102,199 @@ function linkDefsSignature(
     .join('\u0001');
 }
 
+function normalizeFootnoteLabel(label: string): string {
+  return label.trim().replace(/\s+/g, ' ').toLowerCase().normalize('NFC');
+}
+
+function matchFootnoteDefinitionLine(line: string): {
+  readonly identifier: string;
+  readonly label: string;
+  readonly body: string;
+} | null {
+  const source = line.endsWith('\r') ? line.slice(0, -1) : line;
+  const match = /^ {0,3}\[\^((?:\\.|[^\]\\])+)]:[ \t]*(.*)$/.exec(source);
+  if (match == null || match[1].length > 999) {
+    return null;
+  }
+  const rawLabel = match[1];
+  const unescapedLabel = rawLabel.replace(/\\([^\r\n])/g, '$1');
+  const identifier = normalizeFootnoteLabel(unescapedLabel);
+  return identifier === ''
+    ? null
+    : {identifier, label: rawLabel, body: match[2]};
+}
+
+function footnoteContinuation(line: string): string | null {
+  const source = line.endsWith('\r') ? line.slice(0, -1) : line;
+  if (source.startsWith('\t')) {
+    return source.slice(1);
+  }
+  return source.startsWith('  ') ? source.slice(2) : null;
+}
+
+/**
+ * Collect first-wins top-level footnote definitions without removing them.
+ * The block parser uses `byStartLine` to materialize the winning declarations;
+ * inline parsing uses `defs` to leave unresolved references literal.
+ */
+function collectFootnoteDefinitions(
+  input: string,
+  math = false,
+  baseOffset = 0,
+): {
+  readonly defs: ReadonlyMap<string, MarkdownFootnoteDefinition>;
+  readonly byStartLine: ReadonlyMap<number, MarkdownFootnoteDefinition>;
+} {
+  const lines = input.split('\n');
+  const lineStarts = [0];
+  for (let index = 0; index < input.length; index++) {
+    if (input[index] === '\n') {
+      lineStarts.push(index + 1);
+    }
+  }
+  const defs = new Map<string, MarkdownFootnoteDefinition>();
+  const byStartLine = new Map<number, MarkdownFootnoteDefinition>();
+  let atBoundary = true;
+  let inFence = false;
+  let fenceMarker = '';
+  let listContext:
+    | {
+        ordered: boolean;
+        indent: number;
+        contentIndent: number;
+        delimiter: '.' | ')';
+      }
+    | undefined;
+
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index];
+    if (inFence) {
+      if (line.startsWith(fenceMarker)) {
+        inFence = false;
+        fenceMarker = '';
+        atBoundary = true;
+      } else {
+        atBoundary = false;
+      }
+      continue;
+    }
+    if (line.trim() !== '') {
+      const marker = matchListMarker(line);
+      if (listContext != null) {
+        if (
+          marker != null &&
+          isCompatibleListMarker(
+            marker,
+            listContext.ordered,
+            listContext.indent,
+            listContext.delimiter,
+          )
+        ) {
+          listContext = {
+            ordered: marker.ordered,
+            indent: marker.indent,
+            contentIndent: marker.contentIndent,
+            delimiter: marker.delimiter ?? '.',
+          };
+          atBoundary = false;
+          continue;
+        }
+        if (getIndent(line) >= listContext.contentIndent) {
+          atBoundary = false;
+          continue;
+        }
+        listContext = undefined;
+      }
+      if (marker != null) {
+        listContext = {
+          ordered: marker.ordered,
+          indent: marker.indent,
+          contentIndent: marker.contentIndent,
+          delimiter: marker.delimiter ?? '.',
+        };
+        atBoundary = false;
+        continue;
+      }
+    }
+    if (math) {
+      const displayMath = matchDisplayMathBlock(lines, index);
+      if (displayMath != null) {
+        index = displayMath.endLine;
+        atBoundary = true;
+        continue;
+      }
+    }
+    const fenceMatch = line.match(/^(`{3,}|~{3,})/);
+    if (fenceMatch != null) {
+      inFence = true;
+      fenceMarker = fenceMatch[1];
+      atBoundary = false;
+      continue;
+    }
+    if (line.trim() === '') {
+      atBoundary = true;
+      continue;
+    }
+    if (atBoundary) {
+      const opener = matchFootnoteDefinitionLine(line);
+      if (opener != null) {
+        const bodyLines = [opener.body];
+        let endLine = index;
+        let cursor = index + 1;
+        while (cursor < lines.length) {
+          if (lines[cursor].trim() === '') {
+            let next = cursor + 1;
+            while (next < lines.length && lines[next].trim() === '') {
+              next++;
+            }
+            if (
+              next >= lines.length ||
+              footnoteContinuation(lines[next]) == null
+            ) {
+              break;
+            }
+            while (cursor < next) {
+              bodyLines.push('');
+              cursor++;
+            }
+          }
+          const continuation = footnoteContinuation(lines[cursor]);
+          if (continuation == null) {
+            break;
+          }
+          bodyLines.push(continuation);
+          endLine = cursor;
+          cursor++;
+        }
+        const body = bodyLines.join('\n');
+        if (body.trim() !== '' && !defs.has(opener.identifier)) {
+          const definition = {
+            ...opener,
+            body,
+            startLine: index,
+            endLine,
+            sourceStart: baseOffset + lineStarts[index],
+          };
+          defs.set(opener.identifier, definition);
+          byStartLine.set(index, definition);
+        }
+        index = endLine;
+        atBoundary = true;
+        continue;
+      }
+    }
+    atBoundary = /^ {0,3}#{1,6}(?: |\t|$)/.test(line) || isHorizontalRule(line);
+  }
+
+  return {defs, byStartLine};
+}
+
+function footnoteDefsSignature(
+  defs: ReadonlyMap<string, MarkdownFootnoteDefinition>,
+): string {
+  return defs.size === 0 ? '' : [...defs.keys()].sort().join('\u0000');
+}
+
 /**
  * Resolve a full (`[text][label]`), collapsed (`[text][]`), or shortcut
  * (`[text]`) reference at `start` (which points at `[`) against `linkDefs`.
@@ -981,7 +1302,64 @@ function linkDefsSignature(
  * not a resolvable reference (caller falls through to literal handling).
  */
 function protectedInlineOptions(opts: ResolvedOptions): ResolvedOptions {
-  return opts.plugins == null ? opts : {...opts, plugins: undefined};
+  return opts.plugins == null && opts.footnoteDefs == null
+    ? opts
+    : {...opts, plugins: undefined, footnoteDefs: undefined};
+}
+
+function matchFootnoteReference(
+  text: string,
+  start: number,
+  defs: ReadonlyMap<string, MarkdownFootnoteDefinition>,
+): {
+  readonly node: RuntimeAstInlineNode;
+  readonly end: number;
+} | null {
+  if (text[start] !== '[' || text[start + 1] !== '^') {
+    return null;
+  }
+  let close = -1;
+  for (
+    let index = start + 2;
+    index < text.length && index - (start + 2) <= 999;
+    index++
+  ) {
+    if (
+      text[index] === '\n' ||
+      (!isEscaped(text, index) && text[index] === '[')
+    ) {
+      return null;
+    }
+    if (!isEscaped(text, index) && text[index] === ']') {
+      close = index;
+      break;
+    }
+  }
+  if (close < 0) {
+    return null;
+  }
+  const lineStart = text.lastIndexOf('\n', start - 1) + 1;
+  const declarationIndent = text.slice(lineStart, start);
+  if (
+    text[close + 1] === ':' &&
+    declarationIndent.length <= 3 &&
+    /^ *$/.test(declarationIndent)
+  ) {
+    return null;
+  }
+  const rawLabel = text.slice(start + 2, close);
+  if (rawLabel === '' || rawLabel.length > 999) {
+    return null;
+  }
+  const unescapedLabel = rawLabel.replace(/\\([^\r\n])/g, '$1');
+  const identifier = normalizeFootnoteLabel(unescapedLabel);
+  if (identifier === '' || !defs.has(identifier)) {
+    return null;
+  }
+  return {
+    node: {type: 'footnoteReference', identifier, label: rawLabel},
+    end: close + 1,
+  };
 }
 
 function matchReferenceLink(
@@ -991,7 +1369,7 @@ function matchReferenceLink(
   opts: ResolvedOptions,
   context: 'default' | 'tableCell',
 ): {
-  node: MarkdownAstPhrasingContent<RuntimeExtensionNode>;
+  node: RuntimeAstInlineNode;
   end: number;
 } | null {
   const textClose = text.indexOf(']', start + 1);
@@ -1058,7 +1436,7 @@ function matchReferenceImage(
   start: number,
   linkDefs: ReadonlyMap<string, MarkdownLinkDefinition>,
 ): {
-  node: MarkdownAstPhrasingContent<RuntimeExtensionNode>;
+  node: RuntimeAstInlineNode;
   end: number;
 } | null {
   const altClose = text.indexOf(']', start + 2);
@@ -1515,12 +1893,25 @@ function matchExtensionSyntax(
 
 type ParseOptionsWithoutPlugins = Omit<ParseOptions, 'plugins'>;
 type MathParseOptionsWithoutPlugins = Omit<MathParseOptions, 'plugins'>;
+type FootnoteParseOptionsWithoutPlugins = Omit<FootnoteParseOptions, 'plugins'>;
+type MathFootnoteParseOptionsWithoutPlugins = Omit<
+  MathFootnoteParseOptions,
+  'plugins'
+>;
 type IncrementalParseOptionsWithoutPlugins = Omit<
   IncrementalParseOptions,
   'plugins'
 >;
 type IncrementalMathParseOptionsWithoutPlugins = Omit<
   IncrementalMathParseOptions,
+  'plugins'
+>;
+type IncrementalFootnoteParseOptionsWithoutPlugins = Omit<
+  IncrementalFootnoteParseOptions,
+  'plugins'
+>;
+type IncrementalMathFootnoteParseOptionsWithoutPlugins = Omit<
+  IncrementalMathFootnoteParseOptions,
   'plugins'
 >;
 
@@ -1584,21 +1975,25 @@ export function parseInlineAst<
 export function parseInlineAst(
   text: string,
   arg?: ReadonlySet<string> | RuntimeParseOptions,
-): MarkdownAstPhrasingContent<RuntimeExtensionNode>[] {
+): RuntimeAstInlineNode[] {
   return parseInlineAstRuntime(text, arg);
 }
 
 function parseInlineAstRuntime(
   text: string,
   arg?: ReadonlySet<string> | RuntimeParseOptions,
-): MarkdownAstPhrasingContent<RuntimeExtensionNode>[] {
+): RuntimeAstInlineNode[] {
   const opts = resolveOptions(arg);
   const nodes = parseInlineEntry(text, opts);
   if ((opts.plugins?.transforms.length ?? 0) === 0) {
     return nodes;
   }
+  const root: RuntimeAstRoot = {
+    type: 'root',
+    children: [{type: 'paragraph', children: nodes}],
+  };
   const transformed = applyMarkdownTransforms(
-    {type: 'root', children: [{type: 'paragraph', children: nodes}]},
+    root,
     opts.plugins,
     text,
     opts.isFinal,
@@ -1621,7 +2016,7 @@ function parseInlineEntry(
   text: string,
   opts: ResolvedOptions,
   context: 'default' | 'tableCell' = 'default',
-): MarkdownAstPhrasingContent<RuntimeExtensionNode>[] {
+): RuntimeAstInlineNode[] {
   const nodes = parseInlineImpl(text, opts, context);
   return opts.autolink === 'gfm' ? transformAutolinks(nodes) : nodes;
 }
@@ -1630,8 +2025,8 @@ function parseInlineImpl(
   text: string,
   opts: ResolvedOptions,
   context: 'default' | 'tableCell' = 'default',
-): MarkdownAstPhrasingContent<RuntimeExtensionNode>[] {
-  const nodes: MarkdownAstPhrasingContent<RuntimeExtensionNode>[] = [];
+): RuntimeAstInlineNode[] {
+  const nodes: RuntimeAstInlineNode[] = [];
   // Only a plugin that actually contributes INLINE syntax may cost anything
   // per source position. A transform-only list contributes none, so it takes
   // the same path as an omitted or empty one: no candidate probe per
@@ -1717,6 +2112,16 @@ function parseInlineImpl(
       if (ref) {
         nodes.push(ref.node);
         i = ref.end;
+        continue;
+      }
+    }
+
+    // --- Footnote reference [^label] (before citations and links) ---
+    if (opts.footnoteDefs != null && text[i] === '[' && text[i + 1] === '^') {
+      const reference = matchFootnoteReference(text, i, opts.footnoteDefs);
+      if (reference != null) {
+        nodes.push(reference.node);
+        i = reference.end;
         continue;
       }
     }
@@ -2173,14 +2578,12 @@ function scanAutolinksInText(text: string): AutolinkMatch[] {
  * Split a text-node `content` string into a sequence of text + link nodes
  * based on autolink matches.
  */
-function splitTextOnAutolinks(
-  content: string,
-): MarkdownAstPhrasingContent<RuntimeExtensionNode>[] {
+function splitTextOnAutolinks(content: string): RuntimeAstInlineNode[] {
   const matches = scanAutolinksInText(content);
   if (matches.length === 0) {
     return [{type: 'text', value: content}];
   }
-  const out: MarkdownAstPhrasingContent<RuntimeExtensionNode>[] = [];
+  const out: RuntimeAstInlineNode[] = [];
   let cursor = 0;
   for (const m of matches) {
     if (m.start > cursor) {
@@ -2208,9 +2611,9 @@ function splitTextOnAutolinks(
  * block's inline tree (see `parseInlineEntry`).
  */
 function transformAutolinks(
-  nodes: ReadonlyArray<MarkdownAstPhrasingContent<RuntimeExtensionNode>>,
-): MarkdownAstPhrasingContent<RuntimeExtensionNode>[] {
-  const out: MarkdownAstPhrasingContent<RuntimeExtensionNode>[] = [];
+  nodes: ReadonlyArray<RuntimeAstInlineNode>,
+): RuntimeAstInlineNode[] {
+  const out: RuntimeAstInlineNode[] = [];
   for (const node of nodes) {
     if (node.type === 'text') {
       const split = splitTextOnAutolinks(node.value);
@@ -2309,7 +2712,13 @@ function isTableSeparator(line: string): boolean {
  */
 function nested(opts: ResolvedOptions): ResolvedOptions {
   const nestedOptions =
-    opts.allowBlockSyntax === false ? opts : {...opts, allowBlockSyntax: false};
+    opts.allowBlockSyntax === false && opts.allowFootnoteDefinitions === false
+      ? opts
+      : {
+          ...opts,
+          allowBlockSyntax: false,
+          allowFootnoteDefinitions: false,
+        };
   return nestedOptions.sourceRanges || nestedOptions.astPositions
     ? {...nestedOptions, sourceRanges: false, astPositions: false}
     : nestedOptions;
@@ -2393,13 +2802,13 @@ function parseTable(
   lines: string[],
   lineIndex: number,
   opts: ResolvedOptions,
-): {node: MarkdownAstBlockContent<RuntimeExtensionNode>; nextIndex: number} {
-  const headers: MarkdownAstTableCell<RuntimeExtensionNode>[] = splitTableRow(
-    lines[lineIndex],
-  ).map(cell => ({
-    type: 'tableCell',
-    children: parseInlineEntry(cell, opts, 'tableCell'),
-  }));
+): {node: RuntimeAstBlockNode; nextIndex: number} {
+  const headers: RuntimeAstTableCell[] = splitTableRow(lines[lineIndex]).map(
+    cell => ({
+      type: 'tableCell',
+      children: parseInlineEntry(cell, opts, 'tableCell'),
+    }),
+  );
   const alignments: TableAlignment[] = splitTableRow(lines[lineIndex + 1]).map(
     cell => {
       const trimmed = cell.trim();
@@ -2414,7 +2823,7 @@ function parseTable(
             : null;
     },
   );
-  const rows: MarkdownAstTableRow<RuntimeExtensionNode>[] = [];
+  const rows: RuntimeAstTableRow[] = [];
   let rowIndex = lineIndex + 2;
   while (
     rowIndex < lines.length &&
@@ -2430,7 +2839,7 @@ function parseTable(
     });
     rowIndex++;
   }
-  const header: MarkdownAstTableRow<RuntimeExtensionNode> = {
+  const header: RuntimeAstTableRow = {
     type: 'tableRow',
     children: headers,
   };
@@ -2498,8 +2907,8 @@ function parseList(
   startIndex: number,
   ordered: boolean,
   opts: ResolvedOptions,
-): {node: MarkdownAstBlockContent<RuntimeExtensionNode>; nextIndex: number} {
-  const items: MarkdownAstListItem<RuntimeExtensionNode>[] = [];
+): {node: RuntimeAstBlockNode; nextIndex: number} {
+  const items: RuntimeAstListItem[] = [];
   const firstMarker = matchListMarker(lines[startIndex]);
   const baseIndent = firstMarker?.indent ?? getIndent(lines[startIndex]);
   // Ordered lists may use either '.' or ')' as the marker delimiter
@@ -2621,7 +3030,7 @@ function parseList(
       index = lookahead;
     }
   }
-  const node: MarkdownAstList<RuntimeExtensionNode> = {
+  const node: RuntimeAstList = {
     type: 'list',
     ordered,
     start,
@@ -2646,6 +3055,14 @@ export function parseMarkdown(
 ): BlockNodeWithMath[];
 export function parseMarkdown(
   input: string,
+  options: FootnoteParseOptionsWithoutPlugins,
+): BlockNodeWithFootnotes[];
+export function parseMarkdown(
+  input: string,
+  options: MathFootnoteParseOptionsWithoutPlugins,
+): BlockNodeWithMathAndFootnotes[];
+export function parseMarkdown(
+  input: string,
   options: ParseOptionsWithoutPlugins,
 ): BlockNode[];
 export function parseMarkdown<
@@ -2660,6 +3077,18 @@ export function parseMarkdown<
   input: string,
   options: MathParseOptionsWithoutPlugins & {plugins: Plugins},
 ): BlockNodeWithMath<MarkdownExtensionsOf<Plugins>>[];
+export function parseMarkdown<
+  const Plugins extends ReadonlyArray<MarkdownPluginEntry>,
+>(
+  input: string,
+  options: FootnoteParseOptionsWithoutPlugins & {plugins: Plugins},
+): BlockNodeWithFootnotes<MarkdownExtensionsOf<Plugins>>[];
+export function parseMarkdown<
+  const Plugins extends ReadonlyArray<MarkdownPluginEntry>,
+>(
+  input: string,
+  options: MathFootnoteParseOptionsWithoutPlugins & {plugins: Plugins},
+): BlockNodeWithMathAndFootnotes<MarkdownExtensionsOf<Plugins>>[];
 export function parseMarkdown(
   input: string,
   arg?: ReadonlySet<string> | RuntimeParseOptions,
@@ -2674,8 +3103,9 @@ export function parseMarkdown(
  * Parse block Markdown into the canonical immutable Astryx AST.
  *
  * Unlike `parseMarkdown`, this returns the MDAST-aligned root used by Markdown,
- * transforms, and Outline. Math nodes are present only when `math: true`, and
- * plugin extension nodes are inferred from the ordered `plugins` tuple.
+ * transforms, and Outline. Math and footnote nodes are present only when their
+ * explicit options are enabled, and plugin extension nodes are inferred from
+ * the ordered `plugins` tuple.
  */
 export function parseMarkdownAst(
   input: string,
@@ -2683,20 +3113,29 @@ export function parseMarkdownAst(
 ): MarkdownAstRoot;
 export function parseMarkdownAst(
   input: string,
-  options: ParseOptionsWithoutPlugins | MathParseOptionsWithoutPlugins,
+  options:
+    | ParseOptionsWithoutPlugins
+    | MathParseOptionsWithoutPlugins
+    | FootnoteParseOptionsWithoutPlugins
+    | MathFootnoteParseOptionsWithoutPlugins,
 ): MarkdownAstRoot;
 export function parseMarkdownAst<
   const Plugins extends ReadonlyArray<MarkdownPluginEntry>,
 >(
   input: string,
-  options: (ParseOptionsWithoutPlugins | MathParseOptionsWithoutPlugins) & {
+  options: (
+    | ParseOptionsWithoutPlugins
+    | MathParseOptionsWithoutPlugins
+    | FootnoteParseOptionsWithoutPlugins
+    | MathFootnoteParseOptionsWithoutPlugins
+  ) & {
     plugins: Plugins;
   },
 ): MarkdownAstRoot<MarkdownExtensionsOf<Plugins>>;
 export function parseMarkdownAst(
   input: string,
   arg?: ReadonlySet<string> | RuntimeParseOptions,
-): MarkdownAstRoot<RuntimeExtensionNode> {
+): RuntimeAstRoot {
   return parseMarkdownAstInternal(input, arg, true);
 }
 
@@ -2705,10 +3144,10 @@ export function parseMarkdownAstInternal(
   input: string,
   arg: ReadonlySet<string> | RuntimeParseOptions | undefined,
   isFinal: boolean,
-): MarkdownAstRoot<RuntimeExtensionNode> {
+): RuntimeAstRoot {
   const resolved = resolveOptions(arg);
   const opts = isFinal ? resolved : {...resolved, isFinal: false};
-  const root: MarkdownAstRoot<RuntimeExtensionNode> = {
+  const root: RuntimeAstRoot = {
     type: 'root',
     children: parseMarkdownImpl(input, opts),
   };
@@ -2724,7 +3163,28 @@ export function parseMarkdownAstInternal(
 function parseMarkdownImpl(
   input: string,
   baseOpts: ResolvedOptions,
-): MarkdownAstBlockContent<RuntimeExtensionNode>[] {
+): RuntimeAstBlockNode[] {
+  const localFootnotes =
+    baseOpts.footnotes === 'github' &&
+    baseOpts.allowFootnoteDefinitions !== false
+      ? collectFootnoteDefinitions(
+          input,
+          baseOpts.math,
+          baseOpts.baseOffset ?? 0,
+        )
+      : {defs: new Map(), byStartLine: new Map()};
+  const inheritedFootnotes = baseOpts.footnoteDefs;
+  let footnoteDefs: ReadonlyMap<string, MarkdownFootnoteDefinition> | undefined;
+  if (localFootnotes.defs.size === 0) {
+    footnoteDefs = inheritedFootnotes;
+  } else if (inheritedFootnotes == null) {
+    footnoteDefs = localFootnotes.defs;
+  } else {
+    // The inherited map represents the whole document during incremental and
+    // nested parses. Its earlier winner must outrank a local duplicate.
+    footnoteDefs = new Map([...localFootnotes.defs, ...inheritedFootnotes]);
+  }
+
   // Collect this input's link reference definitions and strip their lines,
   // then merge them with any definitions inherited from an enclosing parse
   // (the incremental parser passes the whole document's definitions in; a
@@ -2743,7 +3203,9 @@ function parseMarkdownImpl(
     linkDefs = new Map<string, MarkdownLinkDefinition>([...defs, ...inherited]);
   }
   const opts: ResolvedOptions =
-    linkDefs != null ? {...baseOpts, linkDefs} : baseOpts;
+    linkDefs !== baseOpts.linkDefs || footnoteDefs !== baseOpts.footnoteDefs
+      ? {...baseOpts, linkDefs, footnoteDefs}
+      : baseOpts;
   const lines = cleaned.split('\n');
   const hasBlockExtensionSyntax =
     opts.allowBlockSyntax !== false &&
@@ -2759,7 +3221,7 @@ function parseMarkdownImpl(
     }
   }
   const blockExtensionMatches = new Map<number, ExtensionMatch>();
-  const blocks: MarkdownAstBlockContent<RuntimeExtensionNode>[] = [];
+  const blocks: RuntimeAstBlockNode[] = [];
   // The line each block started on, parallel to `blocks`. Only collected when
   // ranges were asked for; a block's end is resolved after the loop, since the
   // branch that produced it has already moved `index` past whatever it read.
@@ -2770,10 +3232,7 @@ function parseMarkdownImpl(
   const blockEndLines: (number | undefined)[] | null =
     opts.astPositions === true ? [] : null;
   let blockStartLine = 0;
-  const pushBlock = (
-    node: MarkdownAstBlockContent<RuntimeExtensionNode>,
-    endLine?: number,
-  ) => {
+  const pushBlock = (node: RuntimeAstBlockNode, endLine?: number) => {
     blocks.push(node);
     blockStartLines?.push(blockStartLine);
     blockEndLines?.push(endLine);
@@ -2835,6 +3294,41 @@ function parseMarkdownImpl(
         index = displayMath.nextIndex;
         continue;
       }
+    }
+
+    // --- Footnote definition (opt-in; top-level only) ---
+    const inputLine = lineMap?.[index] ?? index;
+    const footnoteDefinition = localFootnotes.byStartLine.get(inputLine);
+    if (
+      footnoteDefinition != null &&
+      footnoteDefs?.get(footnoteDefinition.identifier)?.sourceStart ===
+        footnoteDefinition.sourceStart
+    ) {
+      let definitionEndLine = index;
+      while (
+        definitionEndLine + 1 < lines.length &&
+        (lineMap?.[definitionEndLine + 1] ?? definitionEndLine + 1) <=
+          footnoteDefinition.endLine
+      ) {
+        definitionEndLine++;
+      }
+      const definitionOptions = nested(opts);
+      pushBlock(
+        {
+          type: 'footnoteDefinition',
+          identifier: footnoteDefinition.identifier,
+          label: footnoteDefinition.label,
+          children: parseMarkdownImpl(
+            footnoteDefinition.body,
+            definitionOptions.footnoteDefs == null
+              ? definitionOptions
+              : {...definitionOptions, footnoteDefs: undefined},
+          ),
+        },
+        definitionEndLine,
+      );
+      index = definitionEndLine + 1;
+      continue;
     }
 
     // --- Heading ---
@@ -3025,7 +3519,7 @@ function parseMarkdownImpl(
  * `lineMap` says which input line each surviving line came from.
  */
 function stampSourceRanges(
-  blocks: MarkdownAstBlockContent<RuntimeExtensionNode>[],
+  blocks: RuntimeAstBlockNode[],
   blockStartLines: number[],
   blockEndLines: (number | undefined)[],
   lines: string[],
@@ -3076,17 +3570,28 @@ function stampSourceRanges(
 // Incremental parsing
 // ---------------------------------------------------------------------------
 
-type IncrementalBlockNode<MathEnabled extends boolean> =
-  MathEnabled extends true ? BlockNodeWithMath : BlockNode;
+type IncrementalBlockNode<
+  MathEnabled extends boolean,
+  FootnotesEnabled extends boolean,
+> = FootnotesEnabled extends true
+  ? MathEnabled extends true
+    ? BlockNodeWithMathAndFootnotes
+    : BlockNodeWithFootnotes
+  : MathEnabled extends true
+    ? BlockNodeWithMath
+    : BlockNode;
 
 declare const incrementalStateMode: unique symbol;
 
-export interface IncrementalState<MathEnabled extends boolean = false> {
+export interface IncrementalState<
+  MathEnabled extends boolean = false,
+  FootnotesEnabled extends boolean = false,
+> {
   /** @internal Nominally couples a factory-created cache to its node union. */
-  readonly [incrementalStateMode]: MathEnabled;
+  readonly [incrementalStateMode]: readonly [MathEnabled, FootnotesEnabled];
   prevInput: string;
   settledText: string;
-  settledBlocks: IncrementalBlockNode<MathEnabled>[];
+  settledBlocks: IncrementalBlockNode<MathEnabled, FootnotesEnabled>[];
   settledUpTo: number;
   /**
    * The `autolink` option the cached `settledBlocks` were parsed with.
@@ -3097,6 +3602,8 @@ export interface IncrementalState<MathEnabled extends boolean = false> {
   autolink?: 'gfm';
   /** Whether the cached settled blocks were parsed with math enabled. */
   math?: MathEnabled;
+  /** Whether the cached settled blocks were parsed with footnotes enabled. */
+  footnotes?: 'github';
   /**
    * The `sourceRanges` option the cached `settledBlocks` were parsed with.
    * Flipping it invalidates them the same way `autolink` does: they either
@@ -3114,6 +3621,8 @@ export interface IncrementalState<MathEnabled extends boolean = false> {
    * the settled cache is invalidated to let earlier references resolve.
    */
   linkDefsKey?: string;
+  /** Signature of document-global footnote labels used by settled references. */
+  footnoteDefsKey?: string;
 }
 
 type IncrementalWork = {
@@ -3137,8 +3646,15 @@ type IncrementalCache = {
   /** The effective document-global definitions used by slice parses. */
   linkDefs: ReadonlyMap<string, MarkdownLinkDefinition>;
   linkDefsKey: string;
+  /** Footnote definitions whose complete block is in the settled prefix. */
+  settledFootnoteDefs: Map<string, MarkdownFootnoteDefinition>;
+  /** Footnote definitions still in the mutable tail. */
+  tailFootnoteDefs: ReadonlyMap<string, MarkdownFootnoteDefinition>;
+  /** Effective first-wins definitions used to resolve references. */
+  footnoteDefs: ReadonlyMap<string, MarkdownFootnoteDefinition>;
+  footnoteDefsKey: string;
   /** Canonical settled blocks shared by rendering and compatibility projection. */
-  settledAstBlocks: MarkdownAstBlockContent<RuntimeExtensionNode>[];
+  settledAstBlocks: RuntimeAstBlockNode[];
   settledRevision: number;
   projectedRevision: number;
   projectedSettledBlocks: RuntimeBlockNode[];
@@ -3148,20 +3664,28 @@ type IncrementalCache = {
 };
 
 const incrementalCaches = new WeakMap<
-  IncrementalState<boolean>,
+  IncrementalState<boolean, boolean>,
   IncrementalCache
 >();
 
 function makeIncrementalCache(
-  state: IncrementalState<boolean>,
+  state: IncrementalState<boolean, boolean>,
 ): IncrementalCache {
   const {defs} = extractLinkDefinitions(state.settledText, state.math);
+  const footnoteDefs =
+    state.footnotes === 'github'
+      ? collectFootnoteDefinitions(state.settledText, state.math).defs
+      : new Map<string, MarkdownFootnoteDefinition>();
   const cache: IncrementalCache = {
     settledEnd: state.settledText.length,
     settledLinkDefs: new Map(defs),
     tailLinkDefs: new Map(),
     linkDefs: defs,
     linkDefsKey: linkDefsSignature(defs),
+    settledFootnoteDefs: new Map(footnoteDefs),
+    tailFootnoteDefs: new Map(),
+    footnoteDefs,
+    footnoteDefsKey: footnoteDefsSignature(footnoteDefs),
     settledAstBlocks: [],
     settledRevision: 0,
     projectedRevision: -1,
@@ -3179,18 +3703,19 @@ function makeIncrementalCache(
 }
 
 /**
- * Create an incremental parser cache. Use the `<true>` type argument with
- * `MathParseOptions` so the cache and returned nodes share the math contract.
+ * Create an incremental parser cache. The two boolean type arguments select
+ * the math and footnote result families, in that order.
  */
 export function createIncrementalState<
   MathEnabled extends boolean = false,
->(): IncrementalState<MathEnabled> {
+  FootnotesEnabled extends boolean = false,
+>(): IncrementalState<MathEnabled, FootnotesEnabled> {
   const state = {
     prevInput: '',
     settledText: '',
     settledBlocks: [],
     settledUpTo: 0,
-  } as unknown as IncrementalState<MathEnabled>;
+  } as unknown as IncrementalState<MathEnabled, FootnotesEnabled>;
   makeIncrementalCache(state);
   return state;
 }
@@ -3200,7 +3725,7 @@ export function createIncrementalState<
  * @internal Exported from this module for performance regression tests only.
  */
 export function getIncrementalParseWork(
-  state: IncrementalState<boolean>,
+  state: IncrementalState<boolean, boolean>,
 ): IncrementalWork {
   return (
     incrementalCaches.get(state)?.work ?? {
@@ -3229,6 +3754,7 @@ export function getIncrementalParseWork(
 function findSettledBoundary(
   lines: string[],
   math = false,
+  footnotes = false,
 ): {
   boundary: number;
   openFence: boolean;
@@ -3242,6 +3768,7 @@ function findSettledBoundary(
   let lastBoundary = -1;
   let boundaryBeforeFence = -1;
   let boundaryBeforeMath = -1;
+  let footnoteContext: {boundaryBefore: number; sawBlank: boolean} | undefined;
   let listContext:
     | {
         ordered: boolean;
@@ -3301,6 +3828,21 @@ function findSettledBoundary(
       suppressMathUntilBoundary = true;
     }
 
+    if (footnoteContext != null) {
+      if (line.trim() === '') {
+        footnoteContext.sawBlank = true;
+        continue;
+      }
+      if (footnoteContinuation(line) != null) {
+        footnoteContext.sawBlank = false;
+        continue;
+      }
+      if (footnoteContext.sawBlank) {
+        lastBoundary = lineIndex - 1;
+      }
+      footnoteContext = undefined;
+    }
+
     if (line.trim() === '') {
       suppressMathUntilBoundary = false;
       if (listContext != null) {
@@ -3310,6 +3852,11 @@ function findSettledBoundary(
       } else if (lineIndex > 0 && lineIndex < lines.length - 1) {
         lastBoundary = lineIndex;
       }
+      continue;
+    }
+
+    if (footnotes && matchFootnoteDefinitionLine(line) != null) {
+      footnoteContext = {boundaryBefore: lastBoundary, sawBlank: false};
       continue;
     }
 
@@ -3395,9 +3942,11 @@ function findSettledBoundary(
       ? boundaryBeforeFence
       : mathContainer != null
         ? boundaryBeforeMath
-        : listContext != null
-          ? listContext.boundaryBefore
-          : lastBoundary,
+        : footnoteContext != null
+          ? footnoteContext.boundaryBefore
+          : listContext != null
+            ? listContext.boundaryBefore
+            : lastBoundary,
     openFence: inFence,
     openMath: mathContainer != null,
   };
@@ -3409,7 +3958,7 @@ function findSettledBoundary(
  */
 export function trimStreamingArtifacts(
   input: string,
-  options?: {math?: boolean},
+  options?: {math?: boolean; footnotes?: 'github'},
 ): string {
   // First remove an incomplete display expression as one structural unit. This
   // full-input scan distinguishes a terminal nested closer from a new opener;
@@ -3458,12 +4007,24 @@ export function trimStreamingArtifacts(
   }
 
   // Scan backwards for unclosed syntax markers — no regex to avoid ReDoS
-  // Find the last unclosed [ or ![ (link/image start)
-  const lastBracket = tail.lastIndexOf('[');
+  // Find the last unclosed [ or ![ (link/image start). In the explicit
+  // footnote mode, an escaped `[` inside a complete `[^label]` is not an
+  // opener, and a closed footnote marker needs no following link destination.
+  let lastBracket = tail.lastIndexOf('[');
+  if (options?.footnotes === 'github') {
+    while (lastBracket >= 0 && isEscaped(tail, lastBracket)) {
+      lastBracket = tail.lastIndexOf('[', lastBracket - 1);
+    }
+  }
   if (lastBracket !== -1) {
     const afterBracket = tail.slice(lastBracket);
-    // A closed link/image has ](...)  somewhere after the [
-    const hasClose = afterBracket.includes('](') && afterBracket.includes(')');
+    // A closed link/image has ](...) somewhere after the [. A closed footnote
+    // marker is complete on `]`; its definition or ordinary following prose is
+    // handled by the block/inline parser rather than this streaming guard.
+    const hasClose =
+      (afterBracket.includes('](') && afterBracket.includes(')')) ||
+      (options?.footnotes === 'github' &&
+        /^\[\^(?:\\.|[^\]\\])+\]/.test(afterBracket));
     if (!hasClose) {
       // Also trim a preceding `!` for images
       const trimTo =
@@ -3751,9 +4312,9 @@ function atOffset(opts: ResolvedOptions, offset: number): ResolvedOptions {
  * lists even though the full-text parser joins them per CommonMark §5.3.
  */
 function mergeSettledBlocks(
-  prev: MarkdownAstBlockContent<RuntimeExtensionNode>[],
-  delta: MarkdownAstBlockContent<RuntimeExtensionNode>[],
-): MarkdownAstBlockContent<RuntimeExtensionNode>[] {
+  prev: RuntimeAstBlockNode[],
+  delta: RuntimeAstBlockNode[],
+): RuntimeAstBlockNode[] {
   if (prev.length === 0 || delta.length === 0) {
     return [...prev, ...delta];
   }
@@ -3765,7 +4326,7 @@ function mergeSettledBlocks(
     prevLast.ordered === deltaFirst.ordered &&
     prevLast.delimiter === deltaFirst.delimiter
   ) {
-    const merged: MarkdownAstBlockContent<RuntimeExtensionNode> = {
+    const merged: RuntimeAstBlockNode = {
       type: 'list',
       ordered: prevLast.ordered,
       start: prevLast.start,
@@ -3789,8 +4350,8 @@ function mergeSettledBlocks(
 
 /** Append a newly-settled slice without copying the already-settled prefix. */
 function appendSettledBlocks(
-  prev: MarkdownAstBlockContent<RuntimeExtensionNode>[],
-  delta: MarkdownAstBlockContent<RuntimeExtensionNode>[],
+  prev: RuntimeAstBlockNode[],
+  delta: RuntimeAstBlockNode[],
 ): boolean {
   if (delta.length === 0) {
     return false;
@@ -3855,7 +4416,7 @@ function sameUnsettledDefinitions(
 }
 
 function resetIncrementalCache(
-  state: IncrementalState<boolean>,
+  state: IncrementalState<boolean, boolean>,
   cache: IncrementalCache,
 ): void {
   state.prevInput = '';
@@ -3863,14 +4424,20 @@ function resetIncrementalCache(
   state.settledBlocks = [];
   state.settledUpTo = 0;
   state.linkDefsKey = undefined;
+  state.footnoteDefsKey = undefined;
   state.sourceIdsKey = undefined;
   state.pluginSyntaxIdentity = undefined;
   state.math = undefined;
+  state.footnotes = undefined;
   cache.settledEnd = 0;
   cache.settledLinkDefs.clear();
   cache.tailLinkDefs = new Map();
   cache.linkDefs = new Map();
   cache.linkDefsKey = '';
+  cache.settledFootnoteDefs.clear();
+  cache.tailFootnoteDefs = new Map();
+  cache.footnoteDefs = new Map();
+  cache.footnoteDefsKey = '';
   cache.settledAstBlocks = [];
   cache.settledRevision++;
   cache.projectedRevision = -1;
@@ -3907,6 +4474,16 @@ export function parseMarkdownIncremental(
 ): BlockNodeWithMath[];
 export function parseMarkdownIncremental(
   input: string,
+  state: IncrementalState<false, true>,
+  options: IncrementalFootnoteParseOptionsWithoutPlugins,
+): BlockNodeWithFootnotes[];
+export function parseMarkdownIncremental(
+  input: string,
+  state: IncrementalState<true, true>,
+  options: IncrementalMathFootnoteParseOptionsWithoutPlugins,
+): BlockNodeWithMathAndFootnotes[];
+export function parseMarkdownIncremental(
+  input: string,
   state: IncrementalState<false>,
   options: IncrementalParseOptionsWithoutPlugins,
 ): BlockNode[];
@@ -3924,9 +4501,25 @@ export function parseMarkdownIncremental<
   state: IncrementalState<true>,
   options: IncrementalMathParseOptionsWithoutPlugins & {plugins: Plugins},
 ): BlockNodeWithMath<MarkdownExtensionsOf<Plugins>>[];
+export function parseMarkdownIncremental<
+  const Plugins extends ReadonlyArray<MarkdownPluginEntry>,
+>(
+  input: string,
+  state: IncrementalState<false, true>,
+  options: IncrementalFootnoteParseOptionsWithoutPlugins & {plugins: Plugins},
+): BlockNodeWithFootnotes<MarkdownExtensionsOf<Plugins>>[];
+export function parseMarkdownIncremental<
+  const Plugins extends ReadonlyArray<MarkdownPluginEntry>,
+>(
+  input: string,
+  state: IncrementalState<true, true>,
+  options: IncrementalMathFootnoteParseOptionsWithoutPlugins & {
+    plugins: Plugins;
+  },
+): BlockNodeWithMathAndFootnotes<MarkdownExtensionsOf<Plugins>>[];
 export function parseMarkdownIncremental(
   input: string,
-  state: IncrementalState<boolean>,
+  state: IncrementalState<boolean, boolean>,
   arg?: ReadonlySet<string> | RuntimeParseOptions,
 ): RuntimeBlockNode[] {
   const withRanges = wantsLegacyRanges(arg);
@@ -3951,11 +4544,11 @@ export function parseMarkdownIncremental(
 /** @internal Canonical incremental parse used by Markdown rendering. */
 export function parseMarkdownAstIncremental(
   input: string,
-  state: IncrementalState<boolean>,
+  state: IncrementalState<boolean, boolean>,
   arg?: ReadonlySet<string> | RuntimeParseOptions,
-): MarkdownAstRoot<RuntimeExtensionNode> {
+): RuntimeAstRoot {
   const opts = resolveOptions(arg, true);
-  const root: MarkdownAstRoot<RuntimeExtensionNode> = {
+  const root: RuntimeAstRoot = {
     type: 'root',
     children: parseMarkdownIncrementalAstBlocks(input, state, opts),
   };
@@ -3970,9 +4563,9 @@ export function parseMarkdownAstIncremental(
 
 function parseMarkdownIncrementalAstBlocks(
   input: string,
-  state: IncrementalState<boolean>,
+  state: IncrementalState<boolean, boolean>,
   opts: ResolvedOptions,
-): MarkdownAstBlockContent<RuntimeExtensionNode>[] {
+): RuntimeAstBlockNode[] {
   const cache = incrementalCaches.get(state) ?? makeIncrementalCache(state);
   let reparseSettled = false;
 
@@ -3984,6 +4577,7 @@ function parseMarkdownIncrementalAstBlocks(
   if (
     state.autolink !== opts.autolink ||
     state.math !== opts.math ||
+    state.footnotes !== opts.footnotes ||
     Boolean(state.sourceRanges) !== Boolean(opts.sourceRanges) ||
     state.sourceIdsKey !== nextSourceIdsKey ||
     state.pluginSyntaxIdentity !== nextPluginSyntaxIdentity
@@ -3991,6 +4585,7 @@ function parseMarkdownIncrementalAstBlocks(
     reparseSettled = true;
     state.autolink = opts.autolink;
     state.math = opts.math;
+    state.footnotes = opts.footnotes;
     state.sourceRanges = opts.sourceRanges;
     state.sourceIdsKey = nextSourceIdsKey;
     state.pluginSyntaxIdentity = nextPluginSyntaxIdentity;
@@ -4014,6 +4609,7 @@ function parseMarkdownIncrementalAstBlocks(
     resetIncrementalCache(state, cache);
     state.autolink = opts.autolink;
     state.math = opts.math;
+    state.footnotes = opts.footnotes;
     state.sourceRanges = opts.sourceRanges;
     state.sourceIdsKey = nextSourceIdsKey;
     state.pluginSyntaxIdentity = nextPluginSyntaxIdentity;
@@ -4028,11 +4624,34 @@ function parseMarkdownIncrementalAstBlocks(
   const {boundary, openFence, openMath} = findSettledBoundary(
     tailLines,
     opts.math,
+    opts.footnotes === 'github',
   );
   const settledDelta =
     boundary >= 0 ? tailLines.slice(0, boundary).join('\n') : '';
   const nextSettledEnd = oldSettledEnd + settledDelta.length;
   const unsettledInput = input.slice(nextSettledEnd);
+  const trimmedUnsettledInput = unsettledInput.trim();
+  // String#trim removes the CR that belongs to the final content line of a
+  // CRLF snapshot along with trailing blank lines. Keep that one byte so
+  // source ranges and delimiter content remain identical to a full parse.
+  const unsettledRaw =
+    trimmedUnsettledInput !== '' && /\r(?:\n[\s]*)?$/.test(unsettledInput)
+      ? `${trimmedUnsettledInput}\r`
+      : trimmedUnsettledInput;
+  // Structural trimming holds back lines that look like an incomplete list or
+  // table, which inside a fence is ordinary code: a TypeScript union or a `- `
+  // would disappear from the code block as it streams.
+  const unsettledText = openFence
+    ? unsettledRaw
+    : openMath
+      ? trimOpenDisplayMath(unsettledRaw)
+      : trimUnsettledStructural(unsettledRaw);
+  // `unsettledText` is a trimmed prefix of the mutable tail. Use its actual
+  // document offset for both definition collection and parsing so first-wins
+  // identity remains stable when the first content line is indented.
+  const unsettledStart = unsettledText
+    ? input.indexOf(unsettledText, nextSettledEnd)
+    : -1;
 
   // Promote definitions only when their entire block becomes immutable.
   // Tail definitions are re-collected because the tail is allowed to change.
@@ -4072,8 +4691,51 @@ function parseMarkdownIncrementalAstBlocks(
     reparseSettled = true;
   }
   state.linkDefsKey = cache.linkDefsKey;
+
+  if (opts.footnotes === 'github') {
+    if (settledDelta !== '') {
+      const {defs: deltaFootnoteDefs} = collectFootnoteDefinitions(
+        settledDelta,
+        opts.math,
+        oldSettledEnd,
+      );
+      for (const [identifier, definition] of deltaFootnoteDefs) {
+        if (!cache.settledFootnoteDefs.has(identifier)) {
+          cache.settledFootnoteDefs.set(identifier, definition);
+        }
+      }
+    }
+    cache.tailFootnoteDefs =
+      unsettledStart >= 0
+        ? collectFootnoteDefinitions(unsettledText, opts.math, unsettledStart)
+            .defs
+        : new Map();
+  } else {
+    cache.settledFootnoteDefs.clear();
+    cache.tailFootnoteDefs = new Map();
+  }
+  const nextFootnoteDefs = new Map([
+    ...cache.tailFootnoteDefs,
+    ...cache.settledFootnoteDefs,
+  ]);
+  const nextFootnoteDefsKey = footnoteDefsSignature(nextFootnoteDefs);
+  if (nextFootnoteDefsKey !== cache.footnoteDefsKey) {
+    reparseSettled = true;
+  }
+  cache.footnoteDefs = nextFootnoteDefs;
+  cache.footnoteDefsKey = nextFootnoteDefsKey;
+  state.footnoteDefsKey = cache.footnoteDefsKey;
+
   const parseOpts: ResolvedOptions =
-    cache.linkDefs.size > 0 ? {...opts, linkDefs: cache.linkDefs} : opts;
+    cache.linkDefs.size > 0 || cache.footnoteDefs.size > 0
+      ? {
+          ...opts,
+          ...(cache.linkDefs.size > 0 ? {linkDefs: cache.linkDefs} : null),
+          ...(cache.footnoteDefs.size > 0
+            ? {footnoteDefs: cache.footnoteDefs}
+            : null),
+        }
+      : opts;
 
   if (settledDelta !== '') {
     state.settledText += settledDelta;
@@ -4083,23 +4745,6 @@ function parseMarkdownIncrementalAstBlocks(
     }
     cache.settledEnd = nextSettledEnd;
   }
-
-  const trimmedUnsettledInput = unsettledInput.trim();
-  // String#trim removes the CR that belongs to the final content line of a
-  // CRLF snapshot along with trailing blank lines. Keep that one byte so
-  // source ranges and delimiter content remain identical to a full parse.
-  const unsettledRaw =
-    trimmedUnsettledInput !== '' && /\r(?:\n[\s]*)?$/.test(unsettledInput)
-      ? `${trimmedUnsettledInput}\r`
-      : trimmedUnsettledInput;
-  // Structural trimming holds back lines that look like an incomplete list or
-  // table, which inside a fence is ordinary code: a TypeScript union or a `- `
-  // would disappear from the code block as it streams.
-  const unsettledText = openFence
-    ? unsettledRaw
-    : openMath
-      ? trimOpenDisplayMath(unsettledRaw)
-      : trimUnsettledStructural(unsettledRaw);
 
   const legacyRanges = opts.sourceRanges === true;
   let parsedSettledBlocks = 0;
@@ -4140,15 +4785,9 @@ function parseMarkdownIncrementalAstBlocks(
     cache.projectedRevision = cache.settledRevision;
   }
 
-  // The unsettled tail is trimmed before parsing, so its offset in the
-  // document is where that trimmed text actually starts — not the boundary,
-  // which is a line index. If it somehow cannot be located, parse it without
-  // positions rather than report wrong ones. The search starts at the
-  // settled end, so it scans the tail and never the prefix.
-  const unsettledStart =
-    unsettledText && opts.astPositions === true
-      ? input.indexOf(unsettledText, cache.settledEnd)
-      : -1;
+  // The unsettled tail was located above so definition collection and parsing
+  // share one document offset. If a derived prefix somehow cannot be found,
+  // parse it without positions rather than report wrong ones.
   const unsettledBlocks = unsettledText
     ? parseMarkdownImpl(
         unsettledText,

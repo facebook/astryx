@@ -260,8 +260,10 @@ function annotateCode(
   return annotated;
 }
 
+type TransformBlock = MarkdownAstBlockContent<MarkdownExtensionNode>;
+
 function transformBlocks(
-  blocks: ReadonlyArray<MarkdownAstBlockContent<MarkdownExtensionNode>>,
+  blocks: ReadonlyArray<TransformBlock>,
   languages: ReadonlySet<string>,
   pluginName: string,
   hasRenderer: (nodeName: string) => boolean,
@@ -274,11 +276,11 @@ function transformBlocks(
     | null
     | undefined,
   report: (message: string) => void,
-): ReadonlyArray<MarkdownAstBlockContent<MarkdownExtensionNode>> {
-  let next: MarkdownAstBlockContent<MarkdownExtensionNode>[] | undefined;
+): ReadonlyArray<TransformBlock> {
+  let next: TransformBlock[] | undefined;
   for (let index = 0; index < blocks.length; index++) {
     const block = blocks[index];
-    let replacement: MarkdownAstBlockContent<MarkdownExtensionNode>;
+    let replacement: TransformBlock;
     switch (block.type) {
       case 'code':
         replacement = annotateCode(
@@ -290,7 +292,8 @@ function transformBlocks(
           report,
         );
         break;
-      case 'blockquote': {
+      case 'blockquote':
+      case 'footnoteDefinition': {
         const children = transformBlocks(
           block.children,
           languages,

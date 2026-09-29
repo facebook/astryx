@@ -204,6 +204,7 @@ function runAdapter(
   options: {
     display?: 'inline' | 'block';
     sourceIds?: ReadonlySet<string>;
+    footnotes?: 'github';
     plugins?: ReadonlyArray<MarkdownPluginEntry>;
   } = {},
 ): RunResult {
@@ -219,11 +220,21 @@ function runAdapter(
             },
           ],
         } as MarkdownAstRoot<MarkdownExtensionNode>)
-      : (parseMarkdownAst(source, {
-          sourceRanges: true,
-          sourceIds: options.sourceIds,
-          plugins: options.plugins ?? [],
-        }) as MarkdownAstRoot<MarkdownExtensionNode>);
+      : (parseMarkdownAst(
+          source,
+          options.footnotes === 'github'
+            ? {
+                sourceRanges: true,
+                sourceIds: options.sourceIds,
+                footnotes: 'github',
+                plugins: options.plugins ?? [],
+              }
+            : {
+                sourceRanges: true,
+                sourceIds: options.sourceIds,
+                plugins: options.plugins ?? [],
+              },
+        ) as MarkdownAstRoot<MarkdownExtensionNode>);
   const root = deepFreeze(parsed);
   const reports: string[] = [];
   const context: MarkdownTransformContext = {
@@ -1434,6 +1445,19 @@ const rejectionCases: RejectionCase[] = [
 ];
 
 describe('Remark adapter — rejection matrix', () => {
+  it('fails closed when a source document already contains Core footnotes', () => {
+    const {root, result, reports} = runAdapter(
+      'Body[^note].\n\n[^note]: Definition.',
+      () => tree => tree,
+      {footnotes: 'github'},
+    );
+
+    expect(result).toBe(root);
+    expect(reports).toEqual([
+      'Remark adapter: the node type "footnoteReference" is outside the supported MDAST subset',
+    ]);
+  });
+
   it.each(rejectionCases)(
     'keeps the last valid document after $name',
     ({plugin, reason, source, display, sourceIds, plugins}) => {
