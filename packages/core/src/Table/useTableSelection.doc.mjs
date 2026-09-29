@@ -65,7 +65,7 @@ export const docs = {
       name: 'hasRowHighlight',
       type: 'boolean',
       description:
-        'Paints checked rows with the accent wash. Set false when the surrounding UI already uses row background to mean something else (a row open in a detail panel, say). The wash is an inline style, so it cannot be overridden from userland. Only the background is dropped: aria-selected is still set on checked rows either way.',
+        'Paints checked rows with the accent wash. Set false when the surrounding UI already uses row background to mean something else (a row open in a detail panel, say). The wash is an inline style, so it cannot be overridden from userland; a theme that only wants a different colour sets --table-row-selected-background on the table-row selected target instead of turning it off. Only the background is dropped: aria-selected (and the selected state a theme can key off) is still set on checked rows either way.',
       default: 'true',
     },
   ],
@@ -103,6 +103,25 @@ const selectionPlugin = useTableSelection({
   onSelectAll: ({isAllSelected}) => selectAll(isAllSelected),
   getIsAllSelected: () => selectedIds.size === users.length,
   hasRowHighlight: false,
+});
+`,
+    },
+    {
+      label: 'Recolour the checked-row wash from a theme',
+      code: `
+// A theme retints the wash by setting --table-row-selected-background on
+// the table-row selected target. Checked rows publish the selected state
+// (.astryx-table-row.selected / [data-selected="selected"]), so any other
+// property can be themed on them too.
+const theme = defineTheme({
+  name: 'my-brand',
+  components: {
+    'table-row': {
+      selected: {
+        '--table-row-selected-background': 'var(--color-success-muted)',
+      },
+    },
+  },
 });
 `,
     },
@@ -168,7 +187,7 @@ export const docsZh = {
       name: 'hasRowHighlight',
       type: 'boolean',
       description:
-        '为选中的行绘制强调色背景。当周围的界面已用行背景表达其他含义（例如该行已在详情面板中打开）时设为 false —— 该背景是内联样式，无法从业务代码覆盖。仅去掉背景：无论如何选中的行仍会设置 aria-selected。',
+        '为选中的行绘制强调色背景。当周围的界面已用行背景表达其他含义（例如该行已在详情面板中打开）时设为 false —— 该背景是内联样式，无法从业务代码覆盖；只需换色的主题可改为在 table-row 的 selected 目标上设置 --table-row-selected-background。仅去掉背景：无论如何选中的行仍会设置 aria-selected（以及主题可依据的 selected 状态）。',
       default: 'true',
     },
   ],
@@ -194,6 +213,6 @@ export const docsDense = {
     getRowLabel:
       'Derives row identity for the checkbox\'s hidden label: `Select ${getRowLabel(item)}`. Falls back to "Select row" when omitted.',
     hasRowHighlight:
-      'false => skip the accent wash on checked rows (inline style, not overridable from userland). aria-selected is unaffected. Defaults to true.',
+      'false => skip the accent wash on checked rows (inline style, not overridable from userland); a theme wanting a different colour sets --table-row-selected-background on the table-row selected target. aria-selected and the published selected state are unaffected. Defaults to true.',
   },
 };
