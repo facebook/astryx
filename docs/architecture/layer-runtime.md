@@ -192,14 +192,16 @@ current `main`.
 ### Layer content boundary — AST-038 implementation projection
 
 [AST-038](../specs/AST-038-layer-text-boundary/spec.md) owns the reading baseline
-and surface/group boundary. This implementation resets layer-root text and whole
-React contexts carrying surface/group membership; structural CSS isolation is
-incomplete.
+and surface/group boundary. This implementation resets layer-root text, the
+Stepper connector-gap presentation channel, and whole React contexts carrying
+surface/group membership.
 
-The shared private text baseline is applied in both `useLayer` renderers and the
+The shared private layer baseline is applied in both `useLayer` renderers and the
 Dialog, Lightbox, MobileNav, BottomSheetPanel, and ToastViewport content roots.
-Component and caller styling remains stronger. Existing padding normalization,
-hosting, theme inheritance, and writing context remain unchanged.
+It supplies the documented text defaults and resets `--step-connector-gap` to
+Stepper's `0px` default. Component and caller styling remains stronger. Existing
+padding normalization, hosting, theme inheritance, and writing context remain
+unchanged.
 
 `createLayerScopedContext` creates surface-scoped contexts whose complete default
 value is provided by `LayerContentBoundary`. Membership-owned disabled state,
@@ -221,14 +223,10 @@ isolation for Drawer is not implemented: the private Core boundary is not
 available across that package boundary. This is a remaining package-architecture
 gap, not a claim of complete provider isolation.
 
-Structural custom-property channels remain outside this implementation. A layer
-opened from supported `Step.children` content can contain an inner Stepper that
-still inherits the outer `--step-connector-gap`. React membership ends, but this
-connector-layout inheritance remains a structural isolation gap.
-
 Existing component behavior checks cover membership exit, explicit inner owners,
-unrelated context continuity, and state/focus retention. Browser evidence covers
-text inheritance and visual appearance.
+unrelated context continuity, state/focus retention, and the Stepper structural
+channel. Browser evidence covers text inheritance, connector geometry, and visual
+appearance.
 
 ### Current global and nonparticipating surfaces
 

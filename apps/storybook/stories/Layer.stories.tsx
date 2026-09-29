@@ -1,11 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useRef, useState} from 'react';
+import {useRef, useState, type CSSProperties} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
+import {expect, userEvent, within} from 'storybook/test';
 import * as stylex from '@stylexjs/stylex';
 import {useLayer} from '@astryxdesign/core/Layer';
 import {LayerProvider} from '@astryxdesign/core/Layer';
 import {Button} from '@astryxdesign/core/Button';
+import {Stepper, Step} from '@astryxdesign/core/Stepper';
 import {Text} from '@astryxdesign/core/Text';
 
 const styles = stylex.create({
@@ -64,6 +66,86 @@ function ContextModeDemo() {
 
 export const ContextMode: Story = {
   render: () => <ContextModeDemo />,
+};
+
+function StepperBoundaryDemo() {
+  const layer = useLayer({mode: 'fixed', lightDismiss: true});
+  const connectorGap: CSSProperties & Record<'--step-connector-gap', string> = {
+    '--step-connector-gap': '6px',
+  };
+
+  return (
+    <div style={{width: 560}}>
+      <Stepper
+        activeStep={0}
+        orientation="vertical"
+        indicatorPosition="on-track"
+        label="Outer progress"
+        style={connectorGap}>
+        <Step step={0} label="Outer step">
+          <div style={{display: 'flex', gap: 24, alignItems: 'flex-start'}}>
+            <div style={{width: 220}}>
+              <Text type="supporting">Ordinary nested Stepper</Text>
+              <Stepper
+                activeStep={0}
+                orientation="vertical"
+                indicatorPosition="on-track"
+                label="Ordinary nested progress">
+                <Step step={0} label="Nested first" />
+                <Step step={1} label="Nested second" />
+              </Stepper>
+            </div>
+            <Button
+              label="Open layer progress"
+              onClick={() => (layer.isOpen ? layer.hide() : layer.show())}
+            />
+            {layer.render(
+              <div
+                {...stylex.props(styles.popoverContent)}
+                style={{width: 220}}>
+                <Stepper
+                  activeStep={0}
+                  orientation="vertical"
+                  indicatorPosition="on-track"
+                  label="Layer progress">
+                  <Step step={0} label="Layer first" />
+                  <Step step={1} label="Layer second" />
+                </Stepper>
+              </div>,
+              {
+                x: 460,
+                y: 72,
+              },
+            )}
+          </div>
+        </Step>
+        <Step step={1} label="Outer next" />
+      </Stepper>
+    </div>
+  );
+}
+
+export const StepperBoundary: Story = {
+  tags: ['visual-baseline'],
+  render: () => <StepperBoundaryDemo />,
+  play: async ({canvasElement}) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole('button', {name: 'Open layer progress'}),
+    );
+    const page = within(canvasElement.ownerDocument.body);
+    const ordinary = page.getByRole('list', {
+      name: 'Ordinary nested progress',
+    });
+    const layered = await page.findByRole('list', {name: 'Layer progress'});
+
+    await expect(
+      getComputedStyle(ordinary).getPropertyValue('--step-connector-gap'),
+    ).toBe('6px');
+    await expect(
+      getComputedStyle(layered).getPropertyValue('--step-connector-gap'),
+    ).toBe('0px');
+  },
 };
 
 function OffsetDemo() {

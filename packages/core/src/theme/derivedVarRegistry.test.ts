@@ -241,6 +241,9 @@ const DIR_TO_REGISTRY_KEY: Record<string, string> = {
  * but --_button-radius is documented in Button's doc.
  */
 const CROSS_COMPONENT_VARS: Record<string, string[]> = {
+  // Layer resets Stepper's scoped presentation channel at the content boundary;
+  // Stepper remains the component that owns and documents the public variable.
+  Layer: ['--step-connector-gap'],
   Carousel: ['--_button-radius'],
   Thumbnail: ['--_button-radius'],
   Chat: ['--_button-radius'],

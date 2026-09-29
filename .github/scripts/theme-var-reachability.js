@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-
 /**
  * @description Asserts every documented public component var is settable from a theme
  * @input --storybook-dir <path> [--port <n>]
@@ -131,38 +130,43 @@ function storiesFor(index, component) {
 }
 
 /**
- * In the page: find the element that declares `name`, check it carries one of
- * the component's documented target classes, then override through that class
- * from `@layer astryx-theme` and read the value back.
+ * In the page: find a rendered documented target that carries `name`, then
+ * override through that class from `@layer astryx-theme` and read the value
+ * back. Other components may declare a boundary value for the same variable;
+ * the caller keeps searching the owning component's stories until it finds the
+ * documented target rather than treating that declaration as the owner.
  */
 function reachInPage([name, classNames, sentinel]) {
-  const declaring = [...document.querySelectorAll('*')].find(el => {
-    if (!getComputedStyle(el).getPropertyValue(name).trim()) return false;
+  const elements = [...document.querySelectorAll('*')];
+  const carrying = elements.filter(el =>
+    getComputedStyle(el).getPropertyValue(name).trim(),
+  );
+  const declaring = carrying.find(el => {
     const parent = el.parentElement;
-    return (
-      !parent || !getComputedStyle(parent).getPropertyValue(name).trim()
-    );
+    return !parent || !getComputedStyle(parent).getPropertyValue(name).trim();
   });
-  if (!declaring) return {status: 'undeclared'};
-
-  const target = classNames.find(c => declaring.classList.contains(c));
+  const target = carrying.find(el =>
+    classNames.some(className => el.classList.contains(className)),
+  );
   if (!target) {
+    if (!declaring) return {status: 'undeclared'};
     return {
       status: 'unselectable',
       classes: [...declaring.classList].filter(c => c.startsWith('astryx-')),
     };
   }
 
-  const before = getComputedStyle(declaring).getPropertyValue(name).trim();
+  const targetClass = classNames.find(c => target.classList.contains(c));
+  const before = getComputedStyle(target).getPropertyValue(name).trim();
   const style = document.createElement('style');
-  style.textContent = `@layer astryx-theme { .${target} { ${name}: ${sentinel}; } }`;
+  style.textContent = `@layer astryx-theme { .${targetClass} { ${name}: ${sentinel}; } }`;
   document.head.appendChild(style);
-  const after = getComputedStyle(declaring).getPropertyValue(name).trim();
+  const after = getComputedStyle(target).getPropertyValue(name).trim();
   style.remove();
 
   return {
     status: after === sentinel ? 'reaches' : 'inert',
-    target,
+    target: targetClass,
     before,
     after,
   };
@@ -186,8 +190,12 @@ async function probe(context, entry, index) {
         entry.classNames,
         SENTINEL,
       ]);
-      if (result.status !== 'undeclared') return {...result, story: id};
-      last = {...result, story: id};
+      if (result.status === 'reaches' || result.status === 'inert') {
+        return {...result, story: id};
+      }
+      if (result.status === 'unselectable' || last.status !== 'unselectable') {
+        last = {...result, story: id};
+      }
     } finally {
       await page.close();
     }
@@ -231,7 +239,9 @@ async function run() {
       const r = await probe(context, entry, index);
       const where = `${entry.component} ${entry.name}`;
       if (r.status === 'reaches') {
-        console.log(`✓ ${where} — .${r.target} sets it (${r.before} → ${r.after})`);
+        console.log(
+          `✓ ${where} — .${r.target} sets it (${r.before} → ${r.after})`,
+        );
         continue;
       }
       failures.push(where);
@@ -265,7 +275,9 @@ async function run() {
     );
     return 1;
   }
-  console.log(`\nAll ${entries.length} public component vars are settable from a theme.`);
+  console.log(
+    `\nAll ${entries.length} public component vars are settable from a theme.`,
+  );
   return 0;
 }
 

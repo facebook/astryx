@@ -26,6 +26,7 @@ import {
   getPositionTryFallbacks,
 } from './useLayer';
 import {typeScaleVars} from '../theme/tokens.stylex';
+import {Stepper, Step} from '../Stepper';
 import type {
   LayerPlacement,
   LayerAlignment,
@@ -709,6 +710,69 @@ describe('typography baseline', () => {
       />,
     );
     expect(fontSize).toBe('var(--text-supporting-size)');
+  });
+});
+
+describe('scoped presentation baseline', () => {
+  function StepperLayerHarness({innerGap}: {innerGap?: string}) {
+    const layer = useLayer({mode: 'fixed'});
+    const outerGap = {'--step-connector-gap': '6px'} as React.CSSProperties;
+    const innerStyle = innerGap
+      ? ({'--step-connector-gap': innerGap} as React.CSSProperties)
+      : undefined;
+
+    return (
+      <div style={outerGap}>
+        <Stepper
+          activeStep={0}
+          orientation="vertical"
+          indicatorPosition="on-track">
+          <Step step={0} label="Outer step">
+            <button type="button" onClick={layer.show}>
+              Open inner stepper
+            </button>
+            {layer.render(
+              <Stepper
+                activeStep={0}
+                orientation="vertical"
+                indicatorPosition="on-track"
+                style={innerStyle}>
+                <Step step={0} label="Inner first" />
+                <Step step={1} label="Inner second" />
+              </Stepper>,
+              {x: 0, y: 0},
+            )}
+          </Step>
+          <Step step={1} label="Outer next" />
+        </Stepper>
+      </div>
+    );
+  }
+
+  async function openStepperLayer(innerGap?: string) {
+    const user = userEvent.setup();
+    const result = render(<StepperLayerHarness innerGap={innerGap} />);
+    await user.click(result.getByRole('button', {name: 'Open inner stepper'}));
+    const layer = result.container.querySelector('[popover]') as HTMLElement;
+    const inner = layer.querySelector('.astryx-stepper') as HTMLElement;
+    return {layer, inner};
+  }
+
+  it('stops an outer Stepper connector gap at the Layer boundary', async () => {
+    const {layer, inner} = await openStepperLayer();
+
+    expect(
+      getComputedStyle(layer).getPropertyValue('--step-connector-gap'),
+    ).toBe('0px');
+    expect(inner.style.getPropertyValue('--step-connector-gap')).toBe('');
+  });
+
+  it('preserves an explicit connector gap on the inner Stepper', async () => {
+    const {inner} = await openStepperLayer('4px');
+
+    expect(
+      getComputedStyle(inner).getPropertyValue('--step-connector-gap'),
+    ).toBe('4px');
   });
 });
 
