@@ -4,7 +4,11 @@
  * @file EnumDoc for the `type` discriminant carried on every --json success
  * envelope. The vocabulary mirrors the RESPONSE_TYPES map (each command's
  * `jsonOut(...)` call sites) in `clients/cli/lib/manifest.mjs`; a consumer
- * switches on `type` to narrow the `data` payload.
+ * switches on `type` to narrow the `data` payload. Descriptions follow the
+ * currently published response projection, not a future package-version boundary.
+ *
+ * @input Public response discriminants and their currently released payloads.
+ * @output Generated consumer reference for every typed JSON success response.
  * @position packages/cli/foundation/response — enum documentation
  */
 
@@ -61,7 +65,7 @@ export const doc = {
     {
       value: 'docs.list',
       description:
-        'All reference-doc topics as DocsListEntry[] ({topic, description, package, replaces?}), in read order; meta.namespaces lists the docs tree\'s top-level namespaces, and meta.notLoaded each package whose docs did not load.',
+        "All reference-doc topics as DocsListEntry[] ({topic, description, package, replaces?}), in read order; meta.namespaces lists the docs tree's top-level namespaces, and meta.notLoaded each package whose docs did not load.",
     },
     {
       value: 'docs.detail',
@@ -291,7 +295,7 @@ export const doc = {
     {
       value: 'integration.template-conflicts',
       description:
-        'The integration identity, issues, and conflicts as {severity: info | warning, relationship: replaces | accidental, replaces?, command}.',
+        'The integration identity, structural issues, and non-blocking Core template-id conflicts as {id, severity: warning, integrationPackage, integrationType, integrationName, coreMatches, message, command}.',
     },
     {
       value: 'integration.component-conflicts',

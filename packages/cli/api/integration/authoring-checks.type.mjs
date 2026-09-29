@@ -1,6 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @file Colocated types for integration authoring diagnostics. */
+/**
+ * @file Colocated public types for integration authoring diagnostics.
+ * @input Stable response fields exposed by integration-authoring APIs.
+ * @output JSDoc typedefs consumed by declarations, commands, and callers.
+ * @position Public type boundary for integration diagnostics.
+ */
 
 /**
  * @typedef {object} IntegrationAuthoringOptions
@@ -16,9 +21,7 @@
 /**
  * @typedef {object} IntegrationTemplateConflict
  * @property {string} id
- * @property {'info' | 'warning'} severity
- * @property {'replaces' | 'accidental'} relationship
- * @property {string} [replaces]
+ * @property {'warning'} severity
  * @property {string} integrationPackage
  * @property {'page' | 'block'} integrationType
  * @property {string} integrationName
