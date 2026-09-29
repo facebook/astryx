@@ -1008,6 +1008,282 @@ export async function checkDocsProgressiveDisclosure(ctx) {
 }
 
 /**
+ * Check 10 — a StyleX compiler integration is present and wired.
+ *
+ * Astryx styles are compiled at build time: `stylex.create()` calls are
+ * transformed by a StyleX compiler plugin into generated CSS. When the
+ * compiler is missing or misconfigured, nothing throws — the styles simply
+ * never exist, and the app renders unstyled. That silent failure is the
+ * single most expensive setup mistake an agent can make, because every
+ * subsequent debugging step assumes the styles are there.
+ *
+ * Detection is two-pronged and read-only: a known compiler package declared
+ * in dependencies/devDependencies (and actually installed), or a bundler
+ * config file that references stylex. Either counts as wired.
+ *
+ * @param {DoctorContext} ctx
+ * @returns {DoctorCheck}
+ */
+const STYLEX_COMPILER_PACKAGES = [
+  '@stylexjs/babel-plugin',
+  '@stylexjs/unplugin',
+  '@stylexjs/rollup-plugin',
+  '@stylexjs/vite-plugin',
+  '@stylexjs/webpack-plugin',
+  '@stylexjs/nextjs-plugin',
+  '@stylexjs/postcss-plugin',
+  '@stylexjs/esbuild-plugin',
+  '@astryxdesign/build',
+];
+
+const STYLEX_CONFIG_FILES = [
+  'vite.config.mjs',
+  'vite.config.ts',
+  'vite.config.js',
+  'babel.config.mjs',
+  'babel.config.js',
+  'babel.config.cjs',
+  '.babelrc',
+  '.babelrc.js',
+  'postcss.config.mjs',
+  'postcss.config.js',
+  'postcss.config.cjs',
+  'next.config.mjs',
+  'next.config.js',
+  'next.config.ts',
+  'webpack.config.mjs',
+  'webpack.config.js',
+  'webpack.config.cjs',
+];
+
+export function checkStylexCompiler(ctx) {
+  const id = 'stylex-compiler';
+  const label = 'StyleX compiler integration';
+
+  if (!ctx.coreDir) {
+    return {
+      id,
+      label,
+      status: 'info',
+      message: 'Skipped — @astryxdesign/core is not installed.',
+    };
+  }
+
+  const pkg = readPkg(path.join(ctx.cwd, 'package.json'));
+  const deps = {...(pkg?.dependencies ?? {}), ...(pkg?.devDependencies ?? {})};
+  const declared = STYLEX_COMPILER_PACKAGES.filter(name => name in deps);
+  const notInstalled = declared.filter(
+    name => !findInstalledPackage(ctx.cwd, name),
+  );
+  const wiredConfigs = STYLEX_CONFIG_FILES.filter(file => {
+    try {
+      return /stylex/i.test(
+        fs.readFileSync(path.join(ctx.cwd, file), 'utf-8'),
+      );
+    } catch {
+      return false;
+    }
+  });
+
+  if (notInstalled.length > 0) {
+    return {
+      id,
+      label,
+      status: 'fail',
+      message: `StyleX compiler declared but not installed: ${notInstalled.join(', ')}. Until it is installed, no Astryx styles are compiled and the app renders unstyled.`,
+      fix: `Install project dependencies (\`npm install\` in ${ctx.cwd}).`,
+    };
+  }
+
+  const installed = declared.filter(name => !notInstalled.includes(name));
+  if (installed.length === 0 && wiredConfigs.length === 0) {
+    return {
+      id,
+      label,
+      status: 'fail',
+      message:
+        'No StyleX compiler integration detected. Astryx styles are compiled at build time — without the compiler, stylex.create() output is never generated and styles silently do not apply.',
+      fix: `Add a StyleX compiler, e.g. \`npm install -D @stylexjs/unplugin\` and wire it into your bundler config. See the StyleX setup guide via \`${getCliInvocation(ctx.cwd)} docs\`.`,
+    };
+  }
+
+  const via = [
+    ...installed,
+    ...wiredConfigs.map(file => `config ${file}`),
+  ].join(', ');
+  return {
+    id,
+    label,
+    status: 'pass',
+    message: `StyleX compiler integration detected (${via}).`,
+  };
+}
+
+/**
+ * Check 11 — no raw color literals bypassing design tokens in project source.
+ *
+ * A theme can retint every token a component reads; it cannot reach inside a
+ * literal. A hardcoded `#6b7280` is the same grey in every theme, which breaks
+ * theming silently. This check reuses the detection patterns from
+ * `internal/eslint-plugin-astryx/no-raw-color.js` (hex literals and color
+ * functions carrying a literal digit) as a fast doctor-level scan over the
+ * project's `src/`. It warns rather than fails: literals in a demo or a
+ * one-off page still render, they just don't theme.
+ *
+ * @param {DoctorContext} ctx
+ * @returns {DoctorCheck}
+ */
+const TOKEN_LITERAL_HEX =
+  /(?<![\w#])#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})(?![\w#])/;
+const TOKEN_LITERAL_COLOR_FN =
+  /(?<![\w-])(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(/gi;
+const TOKEN_LITERAL_EXTENSIONS = new Set([
+  '.ts',
+  '.tsx',
+  '.js',
+  '.jsx',
+  '.mjs',
+]);
+const TOKEN_LITERAL_SKIP_DIRS = new Set([
+  'node_modules',
+  'dist',
+  'build',
+  '.git',
+  '.next',
+  'coverage',
+]);
+const TOKEN_LITERAL_SKIP_FILE = /\.(test|spec|stories|doc|sandbox)\./;
+/** The theme layer owns color values by design; never flag it. Paths here are
+ * relative to src/, so `theme/` alone identifies the layer. */
+const TOKEN_LITERAL_THEME_LAYER = /(^|\/)theme\//;
+
+/**
+ * A color function only counts when its arguments carry a literal digit —
+ * `rgba(${r}, ${g}, ${b}, ${a})` builds a color from handed-in values and
+ * holds none. Mirrors no-raw-color.js.
+ * @param {string} text
+ * @param {number} openParenIndex index of the '(' that opens the call
+ * @returns {boolean}
+ */
+function colorFnHasLiteralArg(text, openParenIndex) {
+  let depth = 0;
+  for (let i = openParenIndex; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '(') depth++;
+    else if (ch === ')') {
+      depth--;
+      if (depth === 0) {
+        return /[0-9]/.test(text.slice(openParenIndex + 1, i));
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Yield relative paths of scannable source files under `dir`.
+ * Bounded: stops after `limit` files.
+ */
+function* scannableSourceFiles(dir, limit) {
+  let count = 0;
+  /** @param {string} abs @param {string} rel */
+  function* walk(abs, rel) {
+    let entries;
+    try {
+      entries = fs.readdirSync(abs, {withFileTypes: true});
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      if (count >= limit) return;
+      const entryRel = rel ? `${rel}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) {
+        if (TOKEN_LITERAL_SKIP_DIRS.has(entry.name)) continue;
+        yield* walk(path.join(abs, entry.name), entryRel);
+      } else if (
+        entry.isFile() &&
+        TOKEN_LITERAL_EXTENSIONS.has(path.extname(entry.name)) &&
+        !TOKEN_LITERAL_SKIP_FILE.test(entry.name) &&
+        !TOKEN_LITERAL_THEME_LAYER.test(entryRel)
+      ) {
+        count++;
+        yield entryRel;
+      }
+    }
+  }
+  yield* walk(dir, '');
+}
+
+export function checkTokenLiterals(ctx) {
+  const id = 'token-literals';
+  const label = 'Design token usage';
+
+  if (!ctx.coreDir) {
+    return {
+      id,
+      label,
+      status: 'info',
+      message: 'Skipped — @astryxdesign/core is not installed.',
+    };
+  }
+
+  const srcDir = path.join(ctx.cwd, 'src');
+  if (!fs.existsSync(srcDir)) {
+    return {
+      id,
+      label,
+      status: 'pass',
+      message: 'No src/ directory to scan.',
+    };
+  }
+
+  /** @type {string[]} */
+  const offenders = [];
+  for (const rel of scannableSourceFiles(srcDir, 300)) {
+    if (offenders.length >= 5) break;
+    let text;
+    try {
+      text = fs.readFileSync(path.join(srcDir, rel), 'utf-8');
+    } catch {
+      continue;
+    }
+    let hit = TOKEN_LITERAL_HEX.test(text);
+    if (!hit) {
+      TOKEN_LITERAL_COLOR_FN.lastIndex = 0;
+      let match;
+      while ((match = TOKEN_LITERAL_COLOR_FN.exec(text)) !== null) {
+        const openParen = match.index + match[0].length - 1;
+        if (colorFnHasLiteralArg(text, openParen)) {
+          hit = true;
+          break;
+        }
+      }
+    }
+    if (hit) offenders.push(rel);
+  }
+
+  if (offenders.length > 0) {
+    const shown = offenders.slice(0, 3).join(', ');
+    const more =
+      offenders.length > 3 ? ` and ${offenders.length - 3} more` : '';
+    return {
+      id,
+      label,
+      status: 'warn',
+      message: `Raw color literals bypassing design tokens in ${offenders.length} file(s): ${shown}${more}. Hardcoded colors do not retint with the theme.`,
+      fix: 'Replace literals with theme tokens (e.g. colorVars / shadowVars from your theme), or run the no-raw-color ESLint rule to find every occurrence.',
+    };
+  }
+
+  return {
+    id,
+    label,
+    status: 'pass',
+    message: 'No raw color literals found in src/ — colors flow through design tokens.',
+  };
+}
+
+/**
  * Ordered list of synchronous check functions. Append here to add a check.
  * (checkConfig is async and is awaited separately by {@link runChecks}.)
  * @type {Array<(ctx: DoctorContext) => DoctorCheck>}
@@ -1022,6 +1298,8 @@ export const SYNC_CHECKS = [
   checkAgentDocs,
   checkPeerDeps,
   checkPackageManager,
+  checkStylexCompiler,
+  checkTokenLiterals,
 ];
 
 /**

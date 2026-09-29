@@ -28,6 +28,8 @@ import {
   checkProviderIdentity,
   checkVersionAlignment,
   checkPackageManager,
+  checkStylexCompiler,
+  checkTokenLiterals,
 } from './doctor.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
@@ -816,5 +818,145 @@ describe('checkDocsProgressiveDisclosure languages', () => {
     expect(c.message).toContain('deploying [zh]: zh overlay broken');
     expect(c.message).toContain('deploying [dense] overview: 41 KB');
     expect(c.message).not.toMatch(/deploying overview:/);
+  });
+});
+
+describe('checkStylexCompiler', () => {
+  /** @param {object} [fields] */
+  const ctx = (dir, fields = {}) => ({
+    cwd: dir,
+    coreDir: dir,
+    nodeVersion: process.version,
+    configPath: null,
+    configTheme: null,
+    ...fields,
+  });
+
+  it('is informational when @astryxdesign/core is not installed', () => {
+    const dir = mkProject({'package.json': '{"name":"x"}'});
+    const c = checkStylexCompiler(ctx(dir, {coreDir: null}));
+    expect(c).toMatchObject({id: 'stylex-compiler', status: 'info'});
+  });
+
+  it('fails when no StyleX compiler integration is detectable', () => {
+    // The regression (#6715): without the compiler, stylex.create() output
+    // is never generated and the app renders unstyled — silently. Doctor
+    // must say so loudly.
+    const dir = mkProject({
+      'package.json': JSON.stringify({
+        dependencies: {'@astryxdesign/core': '^1.0.0', react: '^19.0.0'},
+      }),
+    });
+    const c = checkStylexCompiler(ctx(dir));
+    expect(c.status).toBe('fail');
+    expect(c.message).toMatch(/no StyleX compiler/i);
+    expect(c.fix).toContain('@stylexjs/unplugin');
+  });
+
+  it('fails when the compiler is declared but not installed', () => {
+    const dir = mkProject({
+      'package.json': JSON.stringify({
+        devDependencies: {'@stylexjs/unplugin': '^0.19.0'},
+      }),
+    });
+    const c = checkStylexCompiler(ctx(dir));
+    expect(c.status).toBe('fail');
+    expect(c.message).toMatch(/declared but not installed/);
+    expect(c.fix).toMatch(/npm install/);
+  });
+
+  it('passes when a declared compiler is installed', () => {
+    const dir = mkProject({
+      'package.json': JSON.stringify({
+        devDependencies: {'@stylexjs/unplugin': '^0.19.0'},
+      }),
+      'node_modules/@stylexjs/unplugin/package.json': JSON.stringify({
+        name: '@stylexjs/unplugin',
+        version: '0.19.0',
+      }),
+    });
+    const c = checkStylexCompiler(ctx(dir));
+    expect(c.status).toBe('pass');
+    expect(c.message).toContain('@stylexjs/unplugin');
+  });
+
+  it('passes when a bundler config references stylex', () => {
+    const dir = mkProject({
+      'package.json': JSON.stringify({dependencies: {vite: '^6.0.0'}}),
+      'vite.config.ts': `import {defineConfig} from 'vite';\nimport {astryxStylex} from '@astryxdesign/build/vite';\nexport default defineConfig({plugins: [...astryxStylex()]});\n`,
+    });
+    const c = checkStylexCompiler(ctx(dir));
+    expect(c.status).toBe('pass');
+    expect(c.message).toContain('vite.config.ts');
+  });
+});
+
+describe('checkTokenLiterals', () => {
+  /** @param {object} [fields] */
+  const ctx = (dir, fields = {}) => ({
+    cwd: dir,
+    coreDir: dir,
+    nodeVersion: process.version,
+    configPath: null,
+    configTheme: null,
+    ...fields,
+  });
+
+  it('is informational when @astryxdesign/core is not installed', () => {
+    const dir = mkProject({'package.json': '{"name":"x"}'});
+    const c = checkTokenLiterals(ctx(dir, {coreDir: null}));
+    expect(c).toMatchObject({id: 'token-literals', status: 'info'});
+  });
+
+  it('warns on raw hex literals in project source', () => {
+    const dir = mkProject({
+      'package.json': '{"name":"x"}',
+      'src/Card.tsx':
+        `import * as stylex from '@stylexjs/stylex';\nconst styles = stylex.create({root: {color: '#6b7280'}});\n`,
+    });
+    const c = checkTokenLiterals(ctx(dir));
+    expect(c.status).toBe('warn');
+    expect(c.message).toMatch(/Card\.tsx/);
+    expect(c.fix).toMatch(/token/i);
+  });
+
+  it('warns on color functions carrying literal digits', () => {
+    const dir = mkProject({
+      'package.json': '{"name":"x"}',
+      'src/Card.tsx': `const styles = {boxShadow: '0 1px 2px rgba(0, 0, 0, 0.12)'};\n`,
+    });
+    const c = checkTokenLiterals(ctx(dir));
+    expect(c.status).toBe('warn');
+    expect(c.message).toMatch(/bypassing design tokens/);
+  });
+
+  it('ignores color functions built from handed-in values', () => {
+    // Mirrors no-raw-color.js: rgba(${r}, ${g}, ${b}, ${a}) holds no literal.
+    const dir = mkProject({
+      'package.json': '{"name":"x"}',
+      'src/color.ts': `export const tint = (r, g, b, a) => \`rgba(\${r}, \${g}, \${b}, \${a})\`;\n`,
+    });
+    const c = checkTokenLiterals(ctx(dir));
+    expect(c.status).toBe('pass');
+  });
+
+  it('ignores the theme layer and non-shipping files', () => {
+    const dir = mkProject({
+      'package.json': '{"name":"x"}',
+      'src/theme/tokens.stylex.ts': `export const color = '#6b7280';\n`,
+      'src/Card.test.tsx': `expect(color).toBe('#6b7280');\n`,
+    });
+    const c = checkTokenLiterals(ctx(dir));
+    expect(c.status).toBe('pass');
+  });
+
+  it('passes on token-based styles', () => {
+    const dir = mkProject({
+      'package.json': '{"name":"x"}',
+      'src/Card.tsx':
+        `import {colorVars} from './theme/tokens.stylex';\nconst styles = {color: colorVars['--color-text-secondary']};\n`,
+    });
+    const c = checkTokenLiterals(ctx(dir));
+    expect(c.status).toBe('pass');
   });
 });
