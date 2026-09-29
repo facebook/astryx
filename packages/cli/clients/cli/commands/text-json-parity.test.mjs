@@ -312,7 +312,6 @@ const CASES = [
     jsonFieldAllowlist: [
       'topic — inline layout lead column, not a key: value record',
       'description — inline layout trailing column',
-      'kind — a namespace prints under the "Docs tree" heading, a topic under "Topics"',
     ],
   },
   {

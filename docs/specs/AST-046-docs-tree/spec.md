@@ -87,7 +87,8 @@ the docsite onto the tree.
   tree, whatever order they arrive in. Children sort by `placement.order`, then
   title, then identity.
 - **FR5 — `astryx docs` reads the tree one level at a time.** `astryx docs
-<route>` MUST resolve a flat topic first, then a tree route. A namespace MUST
+<route>` MUST resolve a flat topic first, then a tree route, except that a
+  topic whose route the tree gives to another doc (FR11) opens that doc. A namespace MUST
   print its title, its summary, and each slot's children one level down, each
   with its summary and the command to open it; it MUST NOT inline its
   grandchildren. When a child's title is not its route name
@@ -102,8 +103,8 @@ the docsite onto the tree.
   route MUST fail with `ERR_UNKNOWN_TOPIC` and suggest the children of the
   deepest namespace the route reaches.
 - **FR7 — The topic list names the tree.** `astryx docs --json` MUST list each
-  top-level namespace after the topics, marked `kind: 'namespace'`, so the first
-  topic stays the first entry. The text view MUST show the namespaces first,
+  top-level namespace in `meta.namespaces`, so `data` stays the topic list, and
+  every entry in it reads as a topic. The text view MUST show the namespaces first,
   under their own heading, because that is where the CLI's own docs start. A
   package whose docs did not load MUST be named, in `meta.notLoaded` and under
   its own heading in text, so its author knows why its docs are missing.
@@ -136,16 +137,20 @@ the docsite onto the tree.
   provider id (FR1) and name its `package` by the integration's npm name, and
   hold them to FR2–FR8. A placed guide MUST NOT also `replaces` or `extends` a
   topic. When two providers claim one route, the CLI's own docs MUST keep it,
-  then integrations in configured order, and the claim that loses MUST be a
-  `duplicate_route` diagnostic. `astryx doctor integration docs` MUST run the
+  including its flat topics' names and the Unorganized level, then integrations
+  in configured order, and the claim that loses MUST be a `duplicate_route`
+  diagnostic filed against the provider that lost it. `astryx doctor integration docs` MUST run the
   same tree and link checks on one integration's docs, so an author finds a
   broken placement or link before the package ships, and
   `astryx integration add doc <name> --parent <namespace>` MUST write a guide
-  placed in that namespace, and the namespace doc the first time. On an older CLI,
-  a package that ships a namespace doc loses every doc topic from `astryx docs`
-  and Doctor, with nothing saying why, so a package that ships one MUST declare a `@astryxdesign/cli` peer range that
-  admits only CLIs that read it: `integration add doc --parent` MUST declare it,
-  and `astryx integration pack --check` MUST fail without it.
+  placed in that namespace, found by its name, and the namespace doc when the
+  package has none. A CLI release that does not read the docs tree can hide every doc topic of a
+  package that ships a namespace doc or a placed guide, with nothing saying why
+  (published 0.6.3 does so for a namespace doc, and earlier builds of main for a
+  placed guide too), so such a package MUST declare a `@astryxdesign/cli` peer
+  range that admits only CLIs that read it: `integration add doc --parent` MUST declare it,
+  and `astryx integration pack --check` MUST fail without it. The same check
+  covers a template that sets `replaces` (`spec:AST-035`).
 - **FR12 — Every doc has a home.** Every flat topic, the CLI's and each
   integration's, MUST sit in the generated Unorganized level (`unorganized`), in
   the order the topic list reads. The level has no authored doc, so its `id` is

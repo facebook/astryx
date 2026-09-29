@@ -10,8 +10,9 @@
  *   ordered children per slot, plus one diagnostic for each placement that
  *   failed. {@link loadDocsTree} builds the CLI's own tree once per process.
  * @position Between discovery and the readers: `astryx docs <route>`,
- *   `astryx doctor`, and the docsite build all read this tree. In phase 1 only
- *   the CLI's own docs have a home here; every other doc keeps its flat route.
+ *   `astryx doctor`, and the docsite build all read this tree. The CLI's docs
+ *   and each integration's have a home here, and a flat topic's home is the
+ *   generated Unorganized level.
  *   A namespace never scans files and never lists its children: a child names
  *   its parent, or a namespace adopts a discovery group.
  */
@@ -210,7 +211,8 @@ function resolveParent(parent, provider, declared) {
  * the one adoption rule in its package that matches its group and kind. A
  * placement that fails withdraws the doc; it never falls back to adoption. A
  * doc with neither is a flat topic: it keeps its flat name as its route, and its
- * home is the generated Unorganized level.
+ * home is the generated Unorganized level. The CLI keeps its own routes: an
+ * integration's node that would take one is withdrawn with a diagnostic.
  *
  * @param {{namespaces: TreeNamespaceInput[], docs: TreeDocInput[], topics?: TreeTopicInput[]}} inputs
  * @returns {DocsTree}
@@ -228,6 +230,14 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
         ...(field ? {field} : {}),
       }),
     );
+
+  // Routes the CLI's own docs keep (spec:AST-046 FR11): the name of each of
+  // its flat topics, and the generated Unorganized level. Its namespaces keep
+  // theirs by rank, because they go into the tree first.
+  const cliRoutes = new Set(topics.length > 0 ? [UNORGANIZED] : []);
+  for (const topic of topics) {
+    if (topic.provider === CLI_PROVIDER) cliRoutes.add(topic.name);
+  }
 
   // Namespaces by package and name.
   /** @type {Map<string, TreeNamespaceInput>} */
@@ -324,6 +334,14 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
   const nodeLabel = node => node.id ?? `the generated level "${node.route}"`;
   /** @param {TreeNode} node @param {{provider: string, source: string}} at */
   const addNode = (node, at) => {
+    if (node.provider !== CLI_PROVIDER && cliRoutes.has(node.route)) {
+      report(
+        'duplicate_route',
+        at,
+        `${nodeLabel(node)} takes the route "${node.route}", which the CLI's own docs keep. Rename it.`,
+      );
+      return false;
+    }
     const taken = nodes.get(node.route);
     if (taken) {
       report(
@@ -343,7 +361,7 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
     const home = parentOf.get(key);
     const parentRoute =
       home == null ? null : /** @type {string} */ (routeOf.get(home.parentKey));
-    addNode(
+    const added = addNode(
       {
         id: createDocId(input.providerId, 'namespace', input.doc.name),
         route,
@@ -366,6 +384,8 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
       },
       input,
     );
+    // A withdrawn namespace has no route, so a doc placed in it says so.
+    if (!added) routeOf.set(key, null);
   }
 
   // Docs: explicit placement, else one adoption rule, else no home.

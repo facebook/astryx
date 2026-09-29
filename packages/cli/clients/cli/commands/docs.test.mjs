@@ -202,6 +202,14 @@ describe('the docs tree, one level at a time', () => {
     expect(stdout).toMatch(/Up: .*docs cli\/api\/functions$/m);
   }, SLOW);
 
+  it('reads the dense variant whole, asked with --dense or with --lang dense', async () => {
+    for (const args of [['--dense', 'docs', 'theme'], ['--lang', 'dense', 'docs', 'theme']]) {
+      const {status, stdout} = await runCli(args);
+      expect(status).toBe(0);
+      expect(stdout).not.toContain('Read one section:');
+    }
+  }, SLOW);
+
   it('refuses --index with --full', async () => {
     const both = await runCli(['docs', 'theme', '--index', '--full', '--json']);
     expect(both.status).toBe(1);

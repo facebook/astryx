@@ -55,7 +55,7 @@ export const doc = {
     {
       type: 'search',
       description:
-        'The query echoed back, `matchCount` (how many candidates matched in total, before `limit`), plus a ranked SearchResultEntry[] bounded by `limit`: each has domain, name, score, reason, description, and follow-up command, plus `import` for components and hooks, `title` for docs, and `displayName` and `kind` for templates. A doc result is the smallest part that answers: one section (with `section`, and a command that reads only it), one docs-tree route, or a topic, whose command lists its sections. `parent` is the command that opens the level above it: the section list of its topic, the namespace a tree node sits in, or the Unorganized level for a flat topic. Every doc result also carries `package`, the npm package that authored it (for a section, the package its file came from).',
+        'The query echoed back, `matchCount` (how many candidates matched in total, before `limit`), plus a ranked SearchResultEntry[] bounded by `limit`: each has domain, name, score, reason, description, and follow-up command, plus `import` for components and hooks, `title` for docs, and `displayName` and `kind` for templates. A doc result is the smallest part that answers: one section (with `section`, and a command that reads only it), one docs-tree route, or a topic, whose command lists its sections. `parent` is the command that opens the level above it: the section list of its topic, the namespace a tree node sits in, the Unorganized level for a flat topic, or the topic list for a top-level namespace. Every doc result also carries `package`, the npm package that authored it (for a section, the package its file came from).',
     },
   ],
   throws: [

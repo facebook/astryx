@@ -24,6 +24,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {createRequire} from 'node:module';
+import {pathToFileURL} from 'node:url';
 import {readDocView} from '../doc-compiler/read.mjs';
 import {CLI_ROOT, discoverExternalPackages} from '../fs/paths.mjs';
 import {CORE_PROVIDER_ID} from '../identity/providers.mjs';
@@ -1220,6 +1221,20 @@ export async function discoverIntegrationTemplatesForOne(integration) {
         template: id,
         message: `Template "${id}" failed to load: ${/** @type {any} */ (err).message}`,
       });
+      // A replacement this unusable template declares still counts, so its
+      // target fails closed instead of going to a sibling (spec:AST-035 FR4).
+      const declared = await declaredReplacement(docPath, id);
+      if (declared != null) {
+        errors.push({
+          code: 'invalid_template_replacement',
+          severity: 'error',
+          package: pkgLabel,
+          autolinked: integration.__autolinked,
+          template: id,
+          replacementTarget: declared,
+          message: `Template "${id}" replaces "${declared}", but it cannot be used: its metadata does not load.`,
+        });
+      }
       continue;
     }
 
@@ -1233,6 +1248,18 @@ export async function discoverIntegrationTemplatesForOne(integration) {
         template: id,
         message: `Template "${id}" is missing a "type" of "page" or "block". Stamp the default export with type: 'page' or type: 'block'.`,
       });
+      const declared = doc?.replaces ?? (await declaredReplacement(docPath, id));
+      if (declared != null) {
+        errors.push({
+          code: 'invalid_template_replacement',
+          severity: 'error',
+          package: pkgLabel,
+          autolinked: integration.__autolinked,
+          template: id,
+          replacementTarget: declared,
+          message: `Template "${id}" replaces "${declared}", but it cannot be used: it has no "type".`,
+        });
+      }
       continue;
     }
 
@@ -1275,7 +1302,9 @@ export async function discoverIntegrationTemplatesForOne(integration) {
 }
 
 /**
- * The replacement a template doc declares, or null when the doc does not load.
+ * The replacement a template doc declares, even when the doc does not validate
+ * or load: an unusable template's declaration still counts, so its target
+ * fails closed (spec:AST-035 FR4). Null when it declares none.
  * @param {string} docPath
  * @param {string} id
  * @returns {Promise<string | null>}
@@ -1284,6 +1313,22 @@ async function declaredReplacement(docPath, id) {
   try {
     const doc = await loadIntegrationDoc(docPath, `Template "${id}"`);
     return doc?.replaces ?? null;
+  } catch {
+    // The doc does not validate; read what it declares without validating.
+  }
+  try {
+    const raw = (await import(pathToFileURL(docPath).href))?.default;
+    if (raw != null && typeof raw === 'object') {
+      return typeof raw.replaces === 'string' ? raw.replaces : null;
+    }
+  } catch {
+    // The module does not load at all; its text may still name a target.
+  }
+  try {
+    const match = /\breplaces\s*:\s*['"]([^'"\n]+)['"]/u.exec(
+      fs.readFileSync(docPath, 'utf8'),
+    );
+    return match ? match[1] : null;
   } catch {
     return null;
   }

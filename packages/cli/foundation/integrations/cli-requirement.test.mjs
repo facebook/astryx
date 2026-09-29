@@ -6,10 +6,11 @@ import * as path from 'node:path';
 import {CLI_ROOT} from '../fs/paths.mjs';
 import {semverCompare} from '../env/semver.mjs';
 import {
-  NAMESPACE_DOCS_CLI,
+  DOCS_TREE_CLI,
   lowestAdmitted,
-  namespaceDocsCliProblem,
-  withNamespaceDocsCli,
+  docsTreeCliProblem,
+  replacesCliProblem,
+  withDocsTreeCli,
 } from './cli-requirement.mjs';
 
 describe('lowestAdmitted', () => {
@@ -30,9 +31,9 @@ describe('lowestAdmitted', () => {
   });
 });
 
-describe('namespaceDocsCliProblem', () => {
+describe('docsTreeCliProblem', () => {
   it('asks for a CLI peer when there is none', () => {
-    expect(namespaceDocsCliProblem({name: '@acme/kit'})).toContain(
+    expect(docsTreeCliProblem({name: '@acme/kit'})).toContain(
       'declares no @astryxdesign/cli peer',
     );
   });
@@ -41,23 +42,23 @@ describe('namespaceDocsCliProblem', () => {
     'refuses %s, which admits a CLI that cannot read a namespace doc',
     range => {
       expect(
-        namespaceDocsCliProblem({peerDependencies: {'@astryxdesign/cli': range}}),
+        docsTreeCliProblem({peerDependencies: {'@astryxdesign/cli': range}}),
       ).toContain('admits a CLI older than');
     },
   );
 
   it.each(['>=0.7.0', '^0.7.2', '>=0.7.0 <2'])('accepts %s', range => {
     expect(
-      namespaceDocsCliProblem({peerDependencies: {'@astryxdesign/cli': range}}),
+      docsTreeCliProblem({peerDependencies: {'@astryxdesign/cli': range}}),
     ).toBeNull();
   });
 
   it('declares the peer as optional, and keeps what the package says of it', () => {
-    const declared = withNamespaceDocsCli({name: '@acme/kit'});
-    expect(declared.peerDependencies).toEqual({'@astryxdesign/cli': `>=${NAMESPACE_DOCS_CLI}`});
+    const declared = withDocsTreeCli({name: '@acme/kit'});
+    expect(declared.peerDependencies).toEqual({'@astryxdesign/cli': `>=${DOCS_TREE_CLI}`});
     expect(declared.peerDependenciesMeta).toEqual({'@astryxdesign/cli': {optional: true}});
-    expect(namespaceDocsCliProblem(declared)).toBeNull();
-    const required = withNamespaceDocsCli({
+    expect(docsTreeCliProblem(declared)).toBeNull();
+    const required = withDocsTreeCli({
       peerDependencies: {react: '^19.0.0', '@astryxdesign/cli': '^0.6.0'},
       peerDependenciesMeta: {'@astryxdesign/cli': {optional: false}},
     });
@@ -66,7 +67,17 @@ describe('namespaceDocsCliProblem', () => {
   });
 });
 
-describe('NAMESPACE_DOCS_CLI', () => {
+describe('replacesCliProblem', () => {
+  it('asks a package that sets replaces for a CLI that reads the field', () => {
+    expect(replacesCliProblem({name: '@acme/kit'})).toContain('sets `replaces`');
+    expect(replacesCliProblem({peerDependencies: {'@astryxdesign/cli': '^0.6.0'}})).toContain(
+      'admits a CLI older than',
+    );
+    expect(replacesCliProblem({peerDependencies: {'@astryxdesign/cli': '>=0.7.0'}})).toBeNull();
+  });
+});
+
+describe('DOCS_TREE_CLI', () => {
   it('is no later than the release the pending changesets make', () => {
     const {version} = JSON.parse(
       fs.readFileSync(path.join(CLI_ROOT, 'package.json'), 'utf-8'),
@@ -93,6 +104,6 @@ describe('NAMESPACE_DOCS_CLI', () => {
     // The first release that reads namespace docs is this one or an earlier
     // one; a later constant would make every author wait for a CLI that does
     // not exist yet.
-    expect(semverCompare(NAMESPACE_DOCS_CLI, next)).toBeLessThanOrEqual(0);
+    expect(semverCompare(DOCS_TREE_CLI, next)).toBeLessThanOrEqual(0);
   });
 });

@@ -15,7 +15,7 @@
  */
 
 import {loadTopicFile} from '../../../foundation/doc-compiler/read.mjs';
-import {loadDocsCatalog, projectTree} from '../_adapter.mjs';
+import {loadDocsCatalog, projectTree, routeOwner} from '../_adapter.mjs';
 
 /**
  * @param {object} [options]
@@ -24,9 +24,13 @@ import {loadDocsCatalog, projectTree} from '../_adapter.mjs';
  */
 export async function list({cwd} = {}) {
   const catalog = await loadDocsCatalog(cwd);
+  const tree = await projectTree(catalog);
   /** @type {Array<import('../docs.type.mjs').DocsListEntry>} */
   const entries = [];
   for (const entry of catalog.entries()) {
+    // A topic whose route another doc owns reads as that doc, so it is not
+    // listed (spec:AST-046 FR11); `astryx doctor` names the clash.
+    if (routeOwner(tree, entry)) continue;
     let description = entry.description ?? '';
     if (entry.description == null) {
       const file = await loadTopicFile(entry.path, null);
@@ -41,21 +45,21 @@ export async function list({cwd} = {}) {
     if (entry.replaces != null) listed.replaces = entry.replaces;
     entries.push(listed);
   }
-  // Then the docs tree's top-level namespaces, the CLI's and each
-  // integration's, each the way into a whole branch (spec:AST-046). After the
-  // topics, so the first topic stays the first entry.
-  const tree = await projectTree(catalog);
-  for (const root of tree.roots()) {
-    entries.push({
-      topic: root.route,
-      description: root.summary,
-      package: root.provider,
-      kind: 'namespace',
-    });
-  }
+  // The docs tree's top-level namespaces, the CLI's and each integration's,
+  // each the way into a whole branch (spec:AST-046 FR7). They go in `meta`,
+  // so `data` stays the topic list 0.6 returned: every entry reads as a topic.
+  const namespaces = tree.roots().map(root => ({
+    topic: root.route,
+    description: root.summary,
+    package: root.provider,
+  }));
+  /** @type {NonNullable<import('../docs.type.mjs').DocsListResponse['meta']>} */
+  const meta = {};
+  if (namespaces.length > 0) meta.namespaces = namespaces;
   // A package whose docs did not load is named, so its author knows why its
   // topics are missing.
-  return catalog.issues.length === 0
+  if (catalog.issues.length > 0) meta.notLoaded = [...catalog.issues];
+  return Object.keys(meta).length === 0
     ? {type: 'docs.list', data: entries}
-    : {type: 'docs.list', data: entries, meta: {notLoaded: [...catalog.issues]}};
+    : {type: 'docs.list', data: entries, meta};
 }

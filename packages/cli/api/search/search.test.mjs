@@ -128,6 +128,23 @@ describe('search leaf — docs at the grain a reader reads them', () => {
   );
 
   it(
+    'gives a top-level namespace hit the topic list as its parent',
+    async () => {
+      for (const [query, route] of [['unorganized', 'unorganized'], ['Astryx CLI', 'cli']]) {
+        const r = await search(query, {cwd, type: 'doc'});
+        expect(r.data.results).toContainEqual(
+          expect.objectContaining({
+            name: route,
+            command: `astryx docs ${route}`,
+            parent: 'astryx docs',
+          }),
+        );
+      }
+    },
+    SLOW,
+  );
+
+  it(
     'points a topic hit at its index, never a whole-topic read',
     async () => {
       const r = await search('cli/integrations', {cwd, type: 'doc'});

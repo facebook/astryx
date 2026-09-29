@@ -308,7 +308,11 @@ export function registerDocs(program) {
       // --index. The dense variant is written to be read whole.
       const listSections =
         Boolean(options.index) ||
-        (!json && !options.full && !dense && sectionName == null);
+        (!json &&
+          !options.full &&
+          !dense &&
+          lang !== 'dense' &&
+          sectionName == null);
       let result;
       try {
         result = await docsApi(topic, sectionName, {
@@ -344,10 +348,11 @@ export function registerDocs(program) {
       switch (result.type) {
         case 'docs.list': {
           // The text view mirrors the JSON list, with the docs tree's
-          // namespaces first under their own heading: that is where the CLI's
-          // own docs start, and a namespace reads differently from a topic.
-          const namespaces = result.data.filter(e => e.kind === 'namespace');
-          const topics = result.data.filter(e => e.kind !== 'namespace');
+          // namespaces (`meta.namespaces`) first under their own heading: that
+          // is where the CLI's own docs start, and a namespace reads
+          // differently from a topic.
+          const namespaces = result.meta?.namespaces ?? [];
+          const topics = result.data;
           emit(
             ...(namespaces.length > 0
               ? [

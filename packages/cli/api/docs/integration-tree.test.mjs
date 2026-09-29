@@ -164,11 +164,10 @@ describe('integration docs in the docs tree', () => {
   it('lists an integration namespace beside the CLI, named by its provider id', async () => {
     scaffold(kit());
     const listed = await docs(undefined, undefined, {cwd: tmpDir});
-    expect(listed.data).toContainEqual({
+    expect(listed.meta.namespaces).toContainEqual({
       topic: 'acme',
       description: 'Everything about the Acme kit.',
       package: '@acme/kit',
-      kind: 'namespace',
     });
     const top = await docs('acme', undefined, {cwd: tmpDir});
     expect(top.type).toBe('docs.node');
@@ -224,6 +223,51 @@ describe('integration docs in the docs tree', () => {
     expect(bad.status).toBe('warn');
     expect(bad.message).toContain('acme/broken');
     expect(bad.message).toContain('"generic:nope" names no doc');
+  }, SLOW);
+
+  it("keeps the CLI's routes: an integration namespace or topic that claims one is withdrawn, and both doctors say so", async () => {
+    const flat = (/** @type {string} */ name) => ({
+      type: 'generic',
+      name,
+      title: `Acme ${name}`,
+      description: `Acme's ${name} notes.`,
+      sections: [
+        {title: 'One', content: [{type: 'prose', text: 'One.'}]},
+        {title: 'Two', content: [{type: 'prose', text: 'Two.'}]},
+      ],
+    });
+    scaffold({
+      ...kit(),
+      'unorganized.doc.mjs': {...NAMESPACE, name: 'unorganized', title: 'Mine', summary: 'Mine.'},
+      'tokens.doc.mjs': {...NAMESPACE, name: 'tokens', title: 'Acme tokens', summary: 'Acme tokens.'},
+      'cli.doc.mjs': flat('cli'),
+    });
+    const listed = await docs(undefined, undefined, {cwd: tmpDir});
+    expect(listed.meta.namespaces).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({topic: 'cli', package: '@astryxdesign/cli'}),
+        expect.objectContaining({topic: 'unorganized', package: '@astryxdesign/cli'}),
+      ]),
+    );
+    expect(listed.meta.namespaces.filter(n => ['tokens', 'unorganized'].includes(n.topic) && n.package === '@acme/kit')).toEqual([]);
+    expect(listed.data.map(entry => entry.topic)).not.toContain('cli');
+    // Each name opens the CLI's doc, and a CLI topic keeps its home.
+    expect((await docs('cli', undefined, {cwd: tmpDir})).data).toMatchObject({route: 'cli', package: '@astryxdesign/cli'});
+    expect((await docs('unorganized', undefined, {cwd: tmpDir})).data).toMatchObject({route: 'unorganized', package: '@astryxdesign/cli'});
+    const tokens = await docs('tokens', undefined, {cwd: tmpDir});
+    expect(tokens.type).toBe('docs.detail');
+    expect(tokens.data.links.up).toBe('astryx docs unorganized');
+    // The project doctor and the package doctor both name the claims.
+    const check = await checkDocsTree({docsCatalog: await loadDocsCatalog(tmpDir)});
+    expect(check.status).toBe('warn');
+    expect(check.message).toContain('takes the route "unorganized", which the CLI\'s own docs keep');
+    expect(check.message).toContain('takes the route "tokens"');
+    expect(check.message).toContain('both have the route "cli"');
+    const result = await integrationDocConflicts('@acme/kit', {cwd: tmpDir});
+    const graph = result.data.issues.filter(issue => issue.code === 'invalid_doc_graph').map(issue => issue.message).join('\n');
+    expect(graph).toContain('takes the route "unorganized"');
+    expect(graph).toContain('takes the route "tokens"');
+    expect(graph).toContain('route "cli"');
   }, SLOW);
 
   it('runs the same checks inside the package: doctor integration docs', async () => {

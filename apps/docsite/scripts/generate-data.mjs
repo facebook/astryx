@@ -1685,9 +1685,7 @@ export const templateMetadataCount = ${templateMetadata.length};
 async function docsTreeGuides() {
   const guides = [];
   const list = await readDocs();
-  const pending = list.data
-    .filter(entry => entry.kind === 'namespace')
-    .map(entry => entry.topic);
+  const pending = (list.meta?.namespaces ?? []).map(entry => entry.topic);
   while (pending.length > 0) {
     const route = pending.shift();
     const read = await readDocs(route);

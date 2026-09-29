@@ -72,6 +72,7 @@ import {
   loadDocsCatalog,
   lowerTopic,
   projectTree,
+  routeOwner,
 } from '../docs/_adapter.mjs';
 import {unlinkText} from '../../foundation/doc-compiler/links.mjs';
 import {nodeView} from '../docs/node/node.mjs';
@@ -783,6 +784,9 @@ async function gatherDocs(cwd) {
     // indexes the topics.
   }
   for (const entry of catalog.entries()) {
+    // A topic whose route another doc owns reads as that doc (spec:AST-046
+    // FR11), so search does not offer it.
+    if (tree && routeOwner(tree, entry)) continue;
     let lowered = null;
     try {
       lowered = await lowerTopic(catalog, entry);
@@ -874,7 +878,7 @@ async function gatherDocs(cwd) {
       _topic: node.route,
       _title: path.join(' › '),
       _command: `astryx docs ${node.route}`,
-      ...(node.parent == null ? {} : {_parent: `astryx docs ${node.parent}`}),
+      _parent: node.parent == null ? 'astryx docs' : `astryx docs ${node.parent}`,
       _package: node.provider,
     });
   }

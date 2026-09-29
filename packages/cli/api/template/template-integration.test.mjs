@@ -687,6 +687,38 @@ describe('integration template discovery', () => {
     expect(own.data.template).toBe('acme-app-shell');
   });
 
+  it('keeps Core when a template whose metadata does not load declares the same replacement', async () => {
+    const pkgDir = installWidgets(tmpDir);
+    writeTemplate(pkgDir, 'acme-app-shell', {kind: 'page'});
+    writeTemplate(pkgDir, 'broken-app-shell', {
+      kind: 'page',
+      body: "export default {type: 'page', name: 'broken', description: 'b', bogusField: 1};\n",
+    });
+    writeTemplate(pkgDir, 'unparsable-app-shell', {
+      kind: 'page',
+      body: "export default {replaces: 'shell-side-nav', type: 'page' name: 'x'};\n",
+    });
+    declareReplaces(pkgDir, {
+      'acme-app-shell': 'shell-side-nav',
+      'broken-app-shell': 'shell-side-nav',
+    });
+
+    const discovered = await discoverAllWithErrors(tmpDir);
+    for (const id of ['broken-app-shell', 'unparsable-app-shell']) {
+      expect(discovered.errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: 'invalid_template_replacement',
+            template: id,
+            replacementTarget: 'shell-side-nav',
+          }),
+        ]),
+      );
+    }
+    const selected = await template('shell-side-nav', {show: true, cwd: tmpDir});
+    expect(selected.data.template).toBe('shell-side-nav');
+  });
+
   it('lets the later configured package win a shared replacement target with a warning', async () => {
     const first = installWidgets(tmpDir);
     writeTemplate(first, 'acme-app-shell-a', {

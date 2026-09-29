@@ -132,7 +132,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Link a doc with `{@link <target>}` or a typed field, never by writing its `astryx docs` route in prose: a route you write goes stale when the doc moves. Other commands, such as `astryx doctor`, you write as they are, and a test checks each one.',
+          text: 'Link a doc with `{@link <target>}` or a typed field, never by writing its `astryx docs` route in prose: a route you write goes stale when the doc moves. Other commands, such as `astryx doctor`, you write as they are.',
         },
         {
           type: 'prose',
@@ -238,7 +238,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: "A namespace doc needs a CLI that reads it. On an older CLI, such as 0.6.3, a package that ships one loses every doc topic: none appear in `astryx docs`, in text or JSON, and `astryx doctor` does not say why. So `--parent` also declares the CLI release your docs need as an optional `@astryxdesign/cli` peer in package.json, which makes npm warn when an older CLI is installed, and `astryx integration pack --check` fails a package that ships a namespace doc without it. A guide's `placement` alone is safe: an older CLI reads the guide as a flat topic.",
+          text: "A CLI release that does not read the docs tree can hide every doc topic your package ships when the package contains a namespace doc or a placed guide: none appear in `astryx docs`, in text or JSON, and `astryx doctor` may not say why. So `--parent` also declares the CLI release your docs need as an optional `@astryxdesign/cli` peer in package.json, which makes npm warn when an older CLI is installed, and `astryx integration pack --check` fails a package that ships either one without it.",
         },
         {
           type: 'code',
@@ -269,8 +269,7 @@ export const docs = {
           items: [
             '`astryx doctor`, in a project, checks the whole graph: the tree, the links, and the size of each read.',
             '`astryx doctor integration docs`, inside an integration package, runs the same checks on that package\'s docs before it ships.',
-            '`astryx integration pack --check` fails a package that ships a namespace doc without a CLI peer that reads it.',
-            'In the Astryx repository, a test walks the whole graph. It fails on any move, link, or `astryx` command in a doc that does not work.',
+            '`astryx integration pack --check` fails a package that ships a namespace doc or a placed guide without a CLI peer that reads them.',
           ],
         },
         {

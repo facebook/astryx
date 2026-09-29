@@ -601,7 +601,7 @@ export async function topicLinks(catalog, entry) {
 /**
  * What a docs argument names: a topic (a flat one, or a guide the docs tree
  * places), a namespace or typed doc in the tree, or nothing. The flat catalog
- * answers first, so a topic read never builds the tree.
+ * answers first, unless the tree gave that topic's route to another doc.
  * @param {unknown} topic
  * @param {{cwd?: string}} [options]
  * @returns {Promise<
@@ -613,16 +613,52 @@ export async function topicLinks(catalog, entry) {
 export async function resolveDocsArgument(topic, {cwd} = {}) {
   const catalog = await loadDocsCatalog(cwd);
   const entry = catalog.resolve(topic);
-  if (entry) return {kind: 'topic', catalog, entry};
+  if (entry) {
+    // A topic whose route the tree gave to another doc opens that doc: the
+    // CLI keeps its routes, and a namespace keeps its route over a topic.
+    const tree = await projectTree(catalog);
+    const owner = routeOwner(tree, entry);
+    if (owner == null) return {kind: 'topic', catalog, entry};
+    return treeArgument(catalog, tree, owner);
+  }
   if (typeof topic !== 'string' || topic === '')
     return {kind: 'unknown', catalog};
   const tree = await projectTree(catalog);
   const node = tree.get(topic);
   if (!node || node.ref?.flatTopic) return {kind: 'unknown', catalog};
+  return treeArgument(catalog, tree, node);
+}
+
+/**
+ * What a tree node opens as: a guide the tree places reads like a topic; a
+ * namespace or a typed doc is a node.
+ * @param {DocsCatalog} catalog
+ * @param {DocsTree} tree
+ * @param {TreeNode} node
+ * @returns {{kind: 'topic', catalog: DocsCatalog, entry: import('../../foundation/discovery/docs-discovery.mjs').DocsTopicEntry} | {kind: 'node', catalog: DocsCatalog, tree: DocsTree, node: TreeNode}}
+ */
+function treeArgument(catalog, tree, node) {
   if (node.kind === 'generic') {
     return {kind: 'topic', catalog, entry: guideEntry(node)};
   }
   return {kind: 'node', catalog, tree, node};
+}
+
+/**
+ * The doc that took a flat topic's route in the docs tree, when it is not
+ * that topic (spec:AST-046 FR11): the CLI keeps its routes, such as `cli`
+ * and `unorganized`, and a namespace keeps its route over a topic of the same
+ * name. Null when the topic owns its route, or the tree has no node there.
+ * @param {DocsTree} tree
+ * @param {import('../../foundation/discovery/docs-discovery.mjs').DocsTopicEntry} entry
+ * @returns {TreeNode | null}
+ */
+export function routeOwner(tree, entry) {
+  const node = tree.get(entry.name);
+  if (node == null) return null;
+  return node.ref?.flatTopic === entry.name && node.provider === entry.package
+    ? null
+    : node;
 }
 
 /**

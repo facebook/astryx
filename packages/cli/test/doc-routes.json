@@ -11,7 +11,7 @@
     {
       "name": "cli",
       "decision": "create",
-      "evidence": "cli-integrations documents the CLI's integration surface (see its row), and the NamespaceDoc contract's own example is a 'cli' namespace for commands, APIs and integration authoring.",
+      "evidence": "cli/integrations documents the CLI's integration surface (see its row), and the NamespaceDoc contract's own example is a 'cli' namespace for commands, APIs and integration authoring.",
       "note": "`astryx docs cli` reads the docs tree (spec:AST-046): its guides and the commands and api namespaces, one level at a time. /docs/cli is still the @astryxdesign/cli package page on the docsite; the namespace page must take that URL before the docsite publishes it. Considered and left out: authoring, whose section docs declare namespace 'authoring', a sibling of 'cli' in the SchemaDoc contract."
     },
     {

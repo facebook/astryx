@@ -17,6 +17,10 @@ recommends explicit configuration.
 
 Invalid contribution kinds remain reportable without hiding other valid kinds.
 Invalid template or component files do not hide valid siblings.
+`astryx doctor` warns about integration contribution problems, so a project
+that passed before keeps passing; `astryx doctor integration templates` fails on
+them. `astryx integration pack --check` fails a package that sets `replaces`
+unless its `@astryxdesign/cli` peer range starts at 0.7.0 or later.
 
 Migration for integration authors: require `@astryxdesign/cli >=0.7.0` in a
 package that sets `replaces`. Earlier CLIs reject the field and withhold the

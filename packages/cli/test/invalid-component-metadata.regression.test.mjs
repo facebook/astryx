@@ -19,7 +19,8 @@
  *   - FooWidget's invalidity is REPORTED as an issue
  *   - BarWidget (valid sibling) REMAINS in every result
  *   - Other contribution kinds (templates, themes) REMAIN unaffected
- *   - Doctor reports integration-issues as FAIL
+ *   - Doctor reports integration-issues as a warning (a project that passed
+ *     keeps passing); `astryx doctor integration` fails on it
  *   - component detail for FooWidget throws a coded error, not a raw SyntaxError
  *
  * @position packages/cli/test (regression — cross-surface FR9 pin)
@@ -279,12 +280,12 @@ describe('build — invalid component metadata (FR9)', () => {
 // ── D. Doctor ──────────────────────────────────────────────────────
 
 describe('doctor — invalid component metadata (FR9)', () => {
-  it('reports integration-issues as fail when a component doc is invalid', async () => {
+  it('reports integration-issues as a warning when a component doc is invalid', async () => {
     scaffoldInvalidDoc();
     const report = await doctor({cwd: tmpDir});
     const check = report.data.checks.find(c => c.id === 'integration-issues');
 
-    expect(check.status).toBe('fail');
+    expect(check.status).toBe('warn');
     expect(check.message).toMatch(
       /invalid_component|FooWidget|invalid metadata/i,
     );

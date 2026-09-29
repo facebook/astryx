@@ -19,9 +19,11 @@
  * astryx --json docs
  * @typedef {object} DocsListResponse
  * @property {'docs.list'} type
- * @property {DocsListEntry[]} data
- * @property {{notLoaded: Array<{package: string, message: string}>}} [meta] present when a
- *   package's doc files did not load: its docs are withdrawn, and each entry names why
+ * @property {DocsListEntry[]} data every topic, each readable as a topic
+ * @property {{namespaces?: DocsListNamespace[], notLoaded?: Array<{package: string, message: string}>}} [meta]
+ *   `namespaces`: the docs tree's top-level namespaces, each opened by its
+ *   `topic` as a docs.node; `notLoaded`: each package whose doc files did not
+ *   load, and why (its docs are withdrawn)
  */
 
 /**
@@ -32,8 +34,15 @@
  *   '@astryxdesign/cli' for a built-in one, else the contributing integration
  * @property {string} [replaces] the topic this one took the place of, when it
  *   was contributed as a replacement
- * @property {'namespace'} [kind] set on a top-level docs-tree namespace, such as
- *   `cli`; `astryx docs <topic>` then lists its children. Absent on a topic.
+ */
+
+/**
+ * A top-level namespace of the docs tree, as `astryx docs --json` lists it in
+ * `meta.namespaces`.
+ * @typedef {object} DocsListNamespace
+ * @property {string} topic its route, the argument that opens it
+ * @property {string} description
+ * @property {string} package the package that owns it
  */
 
 /**

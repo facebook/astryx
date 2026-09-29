@@ -35,9 +35,10 @@ import {
 import {isValidSemver} from '../../foundation/env/semver.mjs';
 import {assertContributionVisible} from '../../foundation/integrations/contribution-inventory.mjs';
 import {
-  namespaceDocsCliProblem,
-  withNamespaceDocsCli,
+  docsTreeCliProblem,
+  withDocsTreeCli,
 } from '../../foundation/integrations/cli-requirement.mjs';
+import {discoverIntegrationDocs} from '../../foundation/discovery/docs-discovery.mjs';
 import {findIntegrationComponentDoc} from '../../foundation/discovery/component-discovery.mjs';
 import {parseAgentDocsField} from '../../authoring/integration/schema.mjs';
 import {integrationAddTheme} from './add-theme.mjs';
@@ -461,21 +462,60 @@ async function addDoc(name, options) {
   }
 
   const title = kebabToTitle(name);
-  const relationship = options.replaces
-    ? `\n  replaces: '${options.replaces}',`
-    : options.extends
-      ? `\n  extends: '${options.extends}',`
-      : options.parent
-        ? `\n  placement: {parent: 'namespace:${options.parent}', slot: 'guides'},`
-        : '';
-  // A guide placed in a namespace needs that namespace: write it the first
-  // time, with the `guides` slot the placement names (spec:AST-046 FR11).
+  // --parent names a namespace of this package by its name, wherever its file
+  // is. An existing one is used as it is: its `guides` slot, or else its only
+  // slot that takes a guide. Otherwise the namespace doc is written, unless a
+  // file of that name is already something else (spec:AST-046 FR11).
   const namespaceFile =
     options.parent == null
       ? null
       : assertWithin(`${options.parent}.doc.mjs`, root, {
           label: 'namespace doc file',
         });
+  let parentSlot = 'guides';
+  let writeNamespace = false;
+  if (options.parent != null && namespaceFile != null) {
+    const {namespaces} = await discoverIntegrationDocs({
+      name: owner,
+      docs: root,
+    });
+    const existing = namespaces.find(ns => ns.doc.name === options.parent);
+    if (existing != null) {
+      const takesGuides = Object.entries(existing.doc.slots ?? {})
+        .filter(([, slot]) => slot?.accepts?.kinds?.includes('generic'))
+        .map(([slotName]) => slotName);
+      const slot = takesGuides.includes('guides')
+        ? 'guides'
+        : takesGuides.length === 1
+          ? takesGuides[0]
+          : null;
+      if (slot == null) {
+        throw new AstryxError(
+          takesGuides.length === 0
+            ? `Namespace "${options.parent}" (${existing.source}) has no slot that takes a guide. Add one, such as guides: {title: 'Guides', accepts: {kinds: ['generic']}}.`
+            : `Namespace "${options.parent}" (${existing.source}) has more than one slot that takes a guide (${takesGuides.join(', ')}). Write the guide yourself, and name its slot in its placement.`,
+          undefined,
+          ERROR_CODES.ERR_INVALID_ARGUMENT,
+        );
+      }
+      parentSlot = slot;
+    } else if (fs.existsSync(namespaceFile)) {
+      throw new AstryxError(
+        `${projectPath(path.relative(packageDir, namespaceFile))} exists but does not load as the namespace "${options.parent}". Fix or rename that file, or pass another --parent.`,
+        undefined,
+        ERROR_CODES.ERR_FILE_EXISTS,
+      );
+    } else {
+      writeNamespace = true;
+    }
+  }
+  const relationship = options.replaces
+    ? `\n  replaces: '${options.replaces}',`
+    : options.extends
+      ? `\n  extends: '${options.extends}',`
+      : options.parent
+        ? `\n  placement: {parent: 'namespace:${options.parent}', slot: '${parentSlot}'},`
+        : '';
   const namespaceTitle =
     options.parent == null ? '' : kebabToTitle(options.parent);
   const namespaceContents = `/** @type {import('@astryxdesign/cli/authoring').NamespaceDoc} */\nexport default {\n  type: 'namespace',\n  name: '${options.parent}',\n  title: '${namespaceTitle}',\n  summary: 'Guides for ${namespaceTitle}.',\n  slots: {\n    guides: {title: 'Guides', accepts: {kinds: ['generic']}},\n  },\n};\n`;
@@ -483,7 +523,7 @@ async function addDoc(name, options) {
 
   /** @type {import('./add-helpers.mjs').WritePlan[]} */
   const plans = [{path: docFile, contents: docContents, createOnly: true}];
-  if (namespaceFile != null && !fs.existsSync(namespaceFile)) {
+  if (namespaceFile != null && writeNamespace) {
     plans.push({path: namespaceFile, contents: namespaceContents, createOnly: true});
   }
   let pkgUpdate = packageJsonUpdate(
@@ -499,10 +539,10 @@ async function addDoc(name, options) {
       pkgUpdate?.expectedOriginal ?? fs.readFileSync(packageFile);
     const text = pkgUpdate?.contents ?? expectedOriginal.toString('utf-8');
     const current = JSON.parse(text);
-    if (namespaceDocsCliProblem(current) != null) {
+    if (docsTreeCliProblem(current) != null) {
       pkgUpdate = {
         contents:
-          JSON.stringify(withNamespaceDocsCli(current), null, 2) +
+          JSON.stringify(withDocsTreeCli(current), null, 2) +
           (text.endsWith('\n') ? '\n' : ''),
         expectedOriginal,
       };

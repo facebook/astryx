@@ -143,11 +143,8 @@ async function currentTopicRoutes(cwd) {
   const topics = [];
   /** @type {string[]} */
   const namespaces = [];
-  for (const {topic, kind} of list.data) {
-    if (kind === 'namespace') {
-      namespaces.push(topic);
-      continue;
-    }
+  for (const {topic} of list.meta?.namespaces ?? []) namespaces.push(topic);
+  for (const {topic} of list.data) {
     // The docsite builds one page per topic file the CLI ships.
     const file = path.join(CLI_ROOT, 'assets', 'docs', `${topic}.doc.mjs`);
     topics.push({

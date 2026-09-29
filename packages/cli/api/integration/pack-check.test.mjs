@@ -304,11 +304,67 @@ describe('integrationPackCheck', () => {
       );
 
     peer(undefined);
-    expect(await codes()).toContain('namespace_docs_need_cli');
+    expect(await codes()).toContain('docs_tree_needs_cli');
     peer('^0.6.0 || >=0.7.0');
-    expect(await codes()).toContain('namespace_docs_need_cli');
+    expect(await codes()).toContain('docs_tree_needs_cli');
     peer('>=0.7.0');
-    expect(await codes()).not.toContain('namespace_docs_need_cli');
+    expect(await codes()).not.toContain('docs_tree_needs_cli');
+  }, 120_000);
+
+  it('fails a package with only a placed guide on a CLI range that cannot read the docs tree, and passes flat topics', async () => {
+    writePackage({manifest: "export default {docs: './docs'};\n", themes: false});
+    fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'notes.doc.mjs'),
+      "export default {type: 'generic', name: 'notes', title: 'Notes', description: 'Notes.', sections: [{title: 'Overview', content: [{type: 'prose', text: 'Notes.'}]}]};\n",
+    );
+    const codes = async () =>
+      (await integrationPackCheck({cwd: tmpDir})).data.issues.map(
+        (/** @type {{code: string}} */ issue) => issue.code,
+      );
+    // Flat topics alone need no CLI peer.
+    expect(await codes()).not.toContain('docs_tree_needs_cli');
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'setup.doc.mjs'),
+      "export default {type: 'generic', name: 'setup', title: 'Setup', description: 'Set up.', placement: {parent: 'namespace:acme', slot: 'guides'}, sections: [{title: 'Overview', content: [{type: 'prose', text: 'Set up.'}]}]};\n",
+    );
+    expect(await codes()).toContain('docs_tree_needs_cli');
+    const file = path.join(tmpDir, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(file, 'utf-8'));
+    pkg.peerDependencies = {'@astryxdesign/cli': '>=0.7.0'};
+    fs.writeFileSync(file, `${JSON.stringify(pkg, null, 2)}\n`);
+    expect(await codes()).not.toContain('docs_tree_needs_cli');
+  }, 120_000);
+
+  it('fails a package with a template that sets replaces on a CLI range that rejects the field', async () => {
+    writePackage({manifest: "export default {templates: './templates'};\n", themes: false});
+    fs.mkdirSync(path.join(tmpDir, 'templates'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, 'templates', 'acme-shell.doc.mjs'),
+      "export default {type: 'page', name: 'acme-shell', description: 'Acme shell.', replaces: 'shell-side-nav'};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'templates', 'acme-shell.tsx'),
+      'export default function AcmeShell() { return null; }\n',
+    );
+    const file = path.join(tmpDir, 'package.json');
+    const peer = (/** @type {string | undefined} */ range) => {
+      const pkg = JSON.parse(fs.readFileSync(file, 'utf-8'));
+      if (range == null) delete pkg.peerDependencies;
+      else pkg.peerDependencies = {'@astryxdesign/cli': range};
+      fs.writeFileSync(file, `${JSON.stringify(pkg, null, 2)}\n`);
+    };
+    const codes = async () =>
+      (await integrationPackCheck({cwd: tmpDir})).data.issues.map(
+        (/** @type {{code: string}} */ issue) => issue.code,
+      );
+
+    peer(undefined);
+    expect(await codes()).toContain('replaces_needs_cli');
+    peer('^0.6.0');
+    expect(await codes()).toContain('replaces_needs_cli');
+    peer('>=0.7.0');
+    expect(await codes()).not.toContain('replaces_needs_cli');
   }, 120_000);
 
   it('passes when package.json has no files field', async () => {

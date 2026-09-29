@@ -622,11 +622,13 @@ export function checkIntegrationIssues(ctx) {
   const details = issues
     .map(issue => `${issue.package}: ${issue.message}`)
     .join(' | ');
+  // This check is new, so it warns: a project that passed before keeps
+  // passing (spec:AST-046 FR8). `astryx doctor integration` fails on errors.
   return {
     id: 'integration-issues',
     label: 'Integration contributions',
-    status: errors > 0 ? 'fail' : 'warn',
-    message: `${issues.length} integration issue(s): ${details}`,
+    status: 'warn',
+    message: `${issues.length} integration issue(s)${errors > 0 ? `, ${errors} of them errors` : ''}: ${details}`,
     fix: 'Run `astryx doctor integration` for package-specific diagnostics and resolve cross-package precedence in astryx.config.',
   };
 }

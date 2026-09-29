@@ -67,12 +67,19 @@ describe('docs() dispatcher routing', () => {
     });
   }, SLOW);
 
-  it('lists the docs tree\'s top-level namespaces after the topics', async () => {
-    const {data} = await docs();
-    const namespaces = data.filter(entry => entry.kind === 'namespace');
-    expect(namespaces.map(entry => entry.topic)).toEqual(['cli', 'unorganized']);
-    expect(data.at(-1)?.topic).toBe('unorganized');
-    expect(data[0].kind).toBeUndefined();
+  it("lists the docs tree's namespaces in meta, so every data entry reads as a topic", async () => {
+    const res = await docs();
+    expect(res.meta.namespaces.map(entry => entry.topic)).toEqual(['cli', 'unorganized']);
+    for (const entry of res.data) {
+      expect((await docs(entry.topic)).type).toBe('docs.detail');
+    }
+  }, SLOW);
+
+  it('a section of a typed doc -> ERR_UNKNOWN_SECTION, suggesting the doc itself', async () => {
+    const err = await docs('cli/api/functions/search', 'x').catch(e => e);
+    expect(err.code).toBe('ERR_UNKNOWN_SECTION');
+    expect(err.message).toContain('astryx docs cli/api/functions/search');
+    expect(err.suggestions.map(s => s.name)).toEqual(['cli/api/functions/search']);
   }, SLOW);
 
   it('a namespace route -> docs.node, one level of children', async () => {
@@ -154,9 +161,7 @@ describe('docs() dispatcher routing', () => {
     const home = (await docs('unorganized')).data;
     expect(home).toMatchObject({id: null, kind: 'namespace', links: {up: 'astryx docs'}});
     expect(home.slots[0].children.map(child => child.route)).toEqual(
-      (await docs()).data
-        .filter(entry => entry.kind == null)
-        .map(entry => entry.topic),
+      (await docs()).data.map(entry => entry.topic),
     );
   }, SLOW);
 

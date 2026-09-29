@@ -70,9 +70,10 @@ function movesOf(res) {
   if (type === 'docs.list') {
     for (const entry of data) {
       out.push(['down', `${TOP} ${entry.topic}`]);
-      if (entry.kind !== 'namespace') {
-        out.push(['down', `${TOP} ${entry.topic} --index`]);
-      }
+      out.push(['down', `${TOP} ${entry.topic} --index`]);
+    }
+    for (const entry of res.meta?.namespaces ?? []) {
+      out.push(['down', `${TOP} ${entry.topic}`]);
     }
   }
   if (type === 'docs.node') {
@@ -517,9 +518,10 @@ describe('the docs graph', () => {
   it("opens every search hit's command and parent", async () => {
     /** @type {string[]} */
     const broken = [];
-    for (const query of ['assertResponse', 'token-ref', 'codemod protected files', 'agent docs', 'ERR_UNKNOWN_SECTION', 'theme']) {
+    for (const query of ['assertResponse', 'token-ref', 'codemod protected files', 'agent docs', 'ERR_UNKNOWN_SECTION', 'theme', 'unorganized', 'Astryx CLI']) {
       const {data} = await search(query, {type: 'doc', limit: 20});
       for (const hit of data.results) {
+        if (!hit.parent) broken.push(`"${query}": ${hit.name} has no parent`);
         for (const command of [hit.command, hit.parent].filter(Boolean)) {
           try {
             await open(command);

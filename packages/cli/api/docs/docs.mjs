@@ -62,14 +62,16 @@ export async function docs(topic, section, options = {}) {
         `"${found.node.route}" has no sections. ${
           found.node.kind === 'namespace'
             ? 'Open one of its children instead.'
-            : 'Read it whole.'
+            : `Read it whole: astryx docs ${found.node.route}.`
         }`,
-        found.node.slots.flatMap(slot =>
-          slot.children.map(route => ({
-            name: route,
-            reason: found.tree.get(route)?.summary ?? '',
-          })),
-        ),
+        found.node.kind === 'namespace'
+          ? found.node.slots.flatMap(slot =>
+              slot.children.map(route => ({
+                name: route,
+                reason: found.tree.get(route)?.summary ?? '',
+              })),
+            )
+          : [{name: found.node.route, reason: found.node.summary}],
         ERROR_CODES.ERR_UNKNOWN_SECTION,
       );
     }

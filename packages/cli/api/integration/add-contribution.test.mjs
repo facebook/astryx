@@ -12,7 +12,7 @@ import {
   integrationAddTemplate,
 } from './add-contribution.mjs';
 import {validateLocalIntegration} from './validate-integration.mjs';
-import {NAMESPACE_DOCS_CLI} from '../../foundation/integrations/cli-requirement.mjs';
+import {DOCS_TREE_CLI} from '../../foundation/integrations/cli-requirement.mjs';
 
 let tmpDir;
 
@@ -355,7 +355,7 @@ describe('integrationAdd doc', () => {
 
     // The namespace doc needs a CLI that reads it, declared as an optional peer.
     const pkg = JSON.parse(fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'));
-    expect(pkg.peerDependencies).toEqual({'@astryxdesign/cli': `>=${NAMESPACE_DOCS_CLI}`});
+    expect(pkg.peerDependencies).toEqual({'@astryxdesign/cli': `>=${DOCS_TREE_CLI}`});
     expect(pkg.peerDependenciesMeta).toEqual({'@astryxdesign/cli': {optional: true}});
 
     const second = await integrationAdd('doc', 'upgrading', {
@@ -366,6 +366,46 @@ describe('integrationAdd doc', () => {
 
     const validation = await validateLocalIntegration(tmpDir);
     expect(validation.issues.filter(i => i.code === 'invalid_doc')).toEqual([]);
+  });
+
+  it('finds the --parent namespace by its name, wherever its file is, and uses its slot', async () => {
+    setup({manifest: "export default {docs: './docs'};\n"});
+    fs.mkdirSync(path.join(tmpDir, 'docs', 'ns'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'ns', 'acme.doc.mjs'),
+      "export default {type: 'namespace', name: 'acme', title: 'Acme', summary: 'Acme.', slots: {items: {title: 'Items', accepts: {kinds: ['generic']}}}};\n",
+    );
+    const result = await integrationAdd('doc', 'deploying', {cwd: tmpDir, parent: 'acme'});
+    expect(result.data.files).not.toContain('docs/acme.doc.mjs');
+    expect(fs.existsSync(path.join(tmpDir, 'docs', 'acme.doc.mjs'))).toBe(false);
+    expect(fs.readFileSync(path.join(tmpDir, 'docs', 'deploying.doc.mjs'), 'utf-8')).toContain(
+      "placement: {parent: 'namespace:acme', slot: 'items'}",
+    );
+  });
+
+  it('refuses --parent when its file is not that namespace, or the namespace has no slot for a guide', async () => {
+    setup({manifest: "export default {docs: './docs'};\n"});
+    fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
+    const nsFile = path.join(tmpDir, 'docs', 'acme.doc.mjs');
+    fs.writeFileSync(
+      nsFile,
+      "export default {type: 'generic', name: 'acme', title: 'Acme', description: 'A topic.', sections: [{title: 'Only', content: [{type: 'prose', text: 'x'}]}]};\n",
+    );
+    await expect(
+      integrationAdd('doc', 'deploying', {cwd: tmpDir, parent: 'acme'}),
+    ).rejects.toMatchObject({code: 'ERR_FILE_EXISTS'});
+    // A fresh file: the module loader keeps the first import of a path.
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'beta.doc.mjs'),
+      "export default {type: 'namespace', name: 'beta', title: 'Beta', summary: 'Beta.', slots: {items: {title: 'Items', accepts: {kinds: ['function']}}}};\n",
+    );
+    await expect(
+      integrationAdd('doc', 'deploying', {cwd: tmpDir, parent: 'beta'}),
+    ).rejects.toMatchObject({
+      code: 'ERR_INVALID_ARGUMENT',
+      message: expect.stringContaining('no slot that takes a guide'),
+    });
+    expect(fs.existsSync(path.join(tmpDir, 'docs', 'deploying.doc.mjs'))).toBe(false);
   });
 
   it('raises a CLI peer that admits a CLI too old for namespace docs, and keeps one that does not', async () => {
@@ -379,7 +419,7 @@ describe('integrationAdd doc', () => {
     write('^0.6.0');
     await integrationAdd('doc', 'deploying', {cwd: tmpDir, parent: 'acme'});
     expect(JSON.parse(fs.readFileSync(file, 'utf-8')).peerDependencies).toEqual({
-      '@astryxdesign/cli': `>=${NAMESPACE_DOCS_CLI}`,
+      '@astryxdesign/cli': `>=${DOCS_TREE_CLI}`,
     });
     write('^9.1.0');
     await integrationAdd('doc', 'upgrading', {cwd: tmpDir, parent: 'acme'});
