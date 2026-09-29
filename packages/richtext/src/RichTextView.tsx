@@ -20,6 +20,7 @@ import {useEffect, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {sharedEditorTheme} from './editorTheme';
 import type {BaseProps} from '@astryxdesign/core';
+import {mergeProps} from '@astryxdesign/core/utils';
 
 import {LexicalExtensionComposer} from '@lexical/react/LexicalExtensionComposer';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
@@ -201,10 +202,26 @@ export function RichTextView({
     lastValueRef.current = value;
   }
 
+  // The error is recorded during render (below, and from Lexical's `onError`
+  // while the composer builds) but reported to the consumer from an effect.
+  // Adjusting a component's own state during render is legal; calling a
+  // consumer's callback is not — under StrictMode, or in a concurrent render
+  // that is discarded, it would fire twice or for a render that never commits.
+  const pendingErrorRef = useRef<Error | null>(null);
+  const reportedErrorRef = useRef<Error | null>(null);
+
   const handleError = (error: Error) => {
-    onParseError?.(error);
+    pendingErrorRef.current = error;
     setHasError(true);
   };
+
+  useEffect(() => {
+    const error = pendingErrorRef.current;
+    if (error !== null && reportedErrorRef.current !== error) {
+      reportedErrorRef.current = error;
+      onParseError?.(error);
+    }
+  });
 
   // Validate `value` parses as JSON before handing it to Lexical. Malformed
   // JSON would otherwise throw synchronously while the composer builds the
@@ -224,11 +241,7 @@ export function RichTextView({
     // with the corrected `value`.
     extensionRef.current = null;
     return (
-      <div
-        {...stylex.props(styles.root, xstyle)}
-        className={className}
-        style={style}
-        {...rest}>
+      <div {...mergeProps(stylex.props(styles.root, xstyle), {className, style})} {...rest}>
         {errorFallback}
       </div>
     );
@@ -249,11 +262,7 @@ export function RichTextView({
   }
 
   return (
-    <div
-      {...stylex.props(styles.root, xstyle)}
-      className={className}
-      style={style}
-      {...rest}>
+    <div {...mergeProps(stylex.props(styles.root, xstyle), {className, style})} {...rest}>
       <LexicalExtensionComposer
         extension={extensionRef.current}
         contentEditable={null}>
