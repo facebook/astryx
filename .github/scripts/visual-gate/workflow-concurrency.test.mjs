@@ -155,7 +155,7 @@ describe('PR report and deployment workflow contracts', () => {
     );
   });
 
-  it('stages both static apps on Vercel while retaining separate Pages publication', () => {
+  it('stages both static apps in Vercel preview and production while retaining separate Pages publication', () => {
     const config = JSON.parse(
       fs.readFileSync(path.join(ROOT, 'apps/docsite/vercel.json'), 'utf8'),
     );
@@ -169,8 +169,9 @@ describe('PR report and deployment workflow contracts', () => {
       path.join(ROOT, 'apps/docsite/scripts/build-previews.mjs'),
       'utf8',
     );
-    expect(builder).toContain("deploymentEnv !== 'preview'");
-    expect(builder).toContain('buildPreviews(deploymentEnv, root');
+    expect(builder).toContain("new Set(['preview', 'production'])");
+    expect(builder).toContain('export function buildPreviews(');
+    expect(builder).toContain('VERCEL_GIT_COMMIT_SHA');
     expect(builder).toContain("'@astryxdesign/storybook'");
     expect(builder).toContain("'@astryxdesign/sandbox'");
     expect(builder).toContain("SANDBOX_BASE_PATH: '/sandbox'");
