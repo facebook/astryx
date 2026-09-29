@@ -9,7 +9,7 @@ superseded_by: null
 approved_by: cixzhang
 approved_at: 2026-09-25
 owners: [cixzhang]
-review_triggers: [api, theming]
+review_triggers: [accessibility, api, interaction, navigation, theming]
 verified_by:
   [
     apps/storybook/stories/Markdown.stories.tsx,
@@ -50,8 +50,9 @@ system_specs:
 
 Markdown renders parsed content in a Document with stable default block parts and
 constrained renderer seams. Callers may opt into a presentation-only document
-variant for long-form reading without changing the parsed language. Callers may opt
-into the canonical plugin protocol for
+variant for long-form reading without changing the parsed language, and may
+separately add native fragment permalinks beside top-level default headings. Callers
+may opt into the canonical plugin protocol for
 bounded source syntax, immutable document transformation, typed extension
 rendering, and native typed document-start frontmatter. They may separately opt into dollar-delimited math by supplying one typed
 renderer for both inline and display expressions. The parser accepts matching
@@ -63,8 +64,9 @@ remain unchanged when plugins and math are absent.
 - Released default preserved: `yes`
 - Compatibility class: additive, opt-in public API; existing parser nodes, DOM,
   styling, targets, dollar-delimited text, `components`, and `inlinePlugins` remain
-  unchanged unless the caller supplies `variant="document"`, supplies `plugins`,
-  supplies `components.math`, or passes the matching explicit parser option.
+  unchanged unless the caller supplies `variant="document"`, sets
+  `hasHeadingPermalinks`, supplies `plugins`, supplies `components.math`, or passes
+  the matching explicit parser option.
 - Controlled/uncontrolled behavior: not applicable
 - Migration decision: none
 
@@ -82,6 +84,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 - Applying the opt-in document presentation's reading typography, centered default
   measure, heading scroll clearance, and stronger table dividers without enabling
   syntax or navigation behavior.
+- Adding separately opted-in, localized native fragment links beside top-level
+  default headings while reusing the IDs shared with Outline.
 - Opt-in recognition of `$…$` inline math and `$$…$$` display math, including
   delimiter boundaries, escape behavior, parser nodes, and streaming parity.
 - Passing each recognized expression as inert text to the caller's one math
@@ -110,6 +114,8 @@ Consumer migration instructions belong in consumer docs and release notes.
   list/table/inline-style override slots.
 - Treating a presentation variant as a grammar, autolink, permalink, or
   heading-level switch.
+- Adding IDs or permalink controls to nested headings, or replacing native
+  fragment navigation with programmatic scrolling.
 
 ## Public concepts
 
@@ -199,6 +205,7 @@ unions. Enabled calls return the explicit `InlineNodeWithMath` and
 | FR27 | Ordered, unordered, and task lists apply the same `contentWidth` and `contentAlign` treatment to their shared List block.                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | FR28 | Markdown's Table block owns spacing, sizing, alignment, and the `markdown-table` target; the nested Table remains the sole owner of horizontal overflow, its accessible name, and conditional keyboard focusability.                                                                                                                                                                                                                                                                                                                                  |
 | FR29 | `variant="document"` is an opt-in block-only presentation: it reflects on the Document target, uses `1rem`/`1.7` body typography, centers the default 680px prose measure, gives default headings 64px logical scroll clearance, and uses grid table dividers. Explicit `contentWidth`, `contentAlign`, `density`, and `headingLevelStart` win. It enables no syntax, autolinking, navigation control, or replacement structure for custom renderers; omission preserves released output.                                                             |
+| FR30 | `hasHeadingPermalinks` adds one localized native fragment Link as a sibling of each top-level ID-bearing default Heading. It reuses the shared Outline ID and link provider, leaves the Heading accessible name unchanged, adds no nested-heading control or programmatic scrolling, and is not implied by `variant`. Custom heading renderers remain full replacements and receive no wrapper or permalink.                                                                                                                                          |
 
 FR23 includes table-level escaping inside inline-code spans: `\|` keeps the pipe
 inside its authored cell, contributes only `|` to the code value and rendered
@@ -243,6 +250,7 @@ text. Outside a table cell, inline code retains its authored backslashes.
 | Plugins omitted         | Released parser unions, AST, DOM, targets, heading IDs, and performance remain unchanged.                                                                             | Omitted or empty list; both are one empty transform pipeline.                                   |
 | Plugins enabled         | Fixed syntax → immutable transform → render order, validated roots, readable fallback, and matching Markdown/Outline heading identity remain invariant.               | Syntax, transforms, renderers, helper execution plans, plugin order, and live post-parse state. |
 | Prepared block document | The prepared canonical root, renderer ownership, and heading IDs are reused without reparsing or re-transforming; its readonly outline targets the rendered headings. | Source text, parser options, plugins, and resulting blocks/items.                               |
+| Heading permalinks      | Each top-level default Heading keeps its accessible name and shared ID while an adjacent localized Link targets that exact fragment.                                  | Independent from document presentation; custom and nested headings omit it.                     |
 | Native frontmatter      | A complete leading block is absent from rendered content and yields typed metadata; unfinished streaming input is withheld.                                           | Metadata schema and values are caller-defined finite data.                                      |
 
 ### Transformation and precedence order
@@ -282,8 +290,11 @@ text. Outside a table cell, inline code retains its authored backslashes.
 ## Accessibility contract
 
 The default document semantics, heading IDs, paragraph role, list semantics,
-scrollable Table wrapper, and image alternative text remain unchanged. Math has
-no Astryx-owned default output: the caller's renderer owns an accessible
+scrollable Table wrapper, and image alternative text remain unchanged. An enabled
+heading permalink is a native fragment Link adjacent to, rather than inside, its
+Heading: the Heading name remains its authored text and the Link receives a localized
+name containing that text. Markdown does not programmatically move focus or scroll.
+Math has no Astryx-owned default output: the caller's renderer owns an accessible
 representation appropriate to its typesetting engine (for example MathML or a
 labelled `role="math"` element). Markdown adds no wrapper, ARIA attributes, or
 HTML injection around renderer output. Plugin renderers likewise own their
@@ -296,7 +307,7 @@ required accessible meaning or make meaning color-only.
 | Anatomy or state | Design requirement                                                                 | Representation authority       | Hierarchy role | Component contract |
 | ---------------- | ---------------------------------------------------------------------------------- | ------------------------------ | -------------- | ------------------ |
 | Document         | Contains block or inline rendered Markdown content.                                | Current source and public docs | Supporting     | FR1, FR5           |
-| Heading          | Presents one parsed heading with its resolved level and optional generated ID.     | Current source and public docs | Prominent      | FR2, FR3, FR5      |
+| Heading          | Presents one parsed heading; an optional permalink targets its shared ID.          | Current source and public docs | Prominent      | FR2, FR3, FR5      |
 | Paragraph        | Presents one prose block using the default composition-safe paragraph structure.   | Current source and public docs | Prominent      | FR2, FR3           |
 | List             | Presents ordered, unordered, or task-list items as one block.                      | Current source and public docs | Prominent      | FR2, FR5           |
 | Code block       | Presents fenced code and owns the outer spacing target on the default path.        | Current source and public docs | Prominent      | FR2, FR3, FR4      |
@@ -334,7 +345,8 @@ Heading, Paragraph, Code block, Blockquote, Divider, and safe Image, a custom
 renderer replaces the default part and therefore replaces its local target. The
 `markdown-codeblock` spelling is a released compatibility anomaly: the current
 naming rule would produce `markdown-code-block`, but shipped targets are frozen
-and this change preserves the existing spelling exactly.
+and this change preserves the existing spelling exactly. Enabled heading permalinks
+compose the existing Link target inside the Heading block and add no Markdown target.
 
 ## Family and system relationships
 
@@ -351,7 +363,9 @@ and this change preserves the existing spelling exactly.
   links and every Astryx-owned navigation sink. `spec:AST-005/DEC-1` requires
   Markdown parsing and link rendering to preserve the same normalized navigation
   decision as other Core links. Rejected links remain inert and do not reach a
-  custom link renderer; accepted links retain their ordinary behavior.
+  custom link renderer; accepted links retain their ordinary behavior. Heading
+  permalinks are Core-generated safe fragments and compose the configured Link
+  provider without custom scrolling.
 - `spec:AST-005/DEC-2` keeps embedded-resource policy separate. Markdown may
   reject a broader set of image/resource URLs without narrowing the shared
   navigation contract.
@@ -382,12 +396,15 @@ and this change preserves the existing spelling exactly.
 | FR27                   | `Markdown.test.tsx`                                                                | ordered, unordered, and task lists with constrained and centered prose                                                                 | A task list ignores `contentWidth` or `contentAlign`, or diverges from ordinary List block layout.                                                                                                |
 | FR28                   | `Markdown.test.tsx` and Table scroll-owner tests                                   | fitting and overflowing Markdown tables                                                                                                | Markdown adds a second scroll viewport/name/focus target, or Table loses conditional focusability.                                                                                                |
 | FR29                   | `Markdown.test.tsx`, public type tests, and the document-presentation story        | omitted/opted-in variants, explicit overrides, inline rejection, table and heading treatment                                           | Omission changes legacy output, presentation enables syntax, an explicit prop loses, or document geometry is absent.                                                                              |
+| FR30                   | `Markdown.test.tsx`, locale checks, and the heading-permalink story                | omitted/enabled, duplicate and nested headings, prepared documents, custom renderers, LinkProvider                                     | A permalink invents an ID, enters the Heading name, bypasses localization/router composition, appears nested, or wraps custom output.                                                             |
 | Public syntax/types    | `Markdown.public.test.ts`, core typecheck, and `Markdown.doc.mjs`                  | Legacy exhaustive switches, math opt-ins, inferred extension-node unions                                                               | A released union widens, an enabled union loses nodes, or docs drift from declarations.                                                                                                           |
 | Navigation contract    | `parser.test.ts`, `Markdown.test.tsx`, and `Markdown.renderBoundary.test.tsx`      | Parsed and rendered links, including transformed built-in links; accepted ordinary schemes; rejected destinations; links versus images | A blocked destination reaches navigation or a custom link renderer, or resource policy narrows accepted navigation.                                                                               |
 | Security/accessibility | `parser.test.ts`, `Markdown.test.tsx`, and renderer guidance                       | Inert expression strings and renderer-owned semantics                                                                                  | Astryx executes math as HTML or silently claims renderer-owned accessibility.                                                                                                                     |
 
 Focused tests continue to pin all nine current target names and default block
-placement. Math intentionally adds no target and no default anatomy.
+placement. Math intentionally adds no target and no default anatomy. Heading
+permalinks compose the existing Link target rather than creating a tenth Markdown
+target.
 
 ## Decision log
 

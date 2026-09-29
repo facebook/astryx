@@ -136,10 +136,14 @@ describe('Markdown public parser types', () => {
 
   it('keeps source and prepared document props mutually exclusive', () => {
     const document = prepareMarkdownDocument('# Prepared');
-    const sourceProps: MarkdownProps = {children: '# Source'};
+    const sourceProps: MarkdownProps = {
+      children: '# Source',
+      hasHeadingPermalinks: true,
+    };
     const documentProps: MarkdownDocumentProps = {
       document,
       variant: 'document',
+      hasHeadingPermalinks: true,
     };
 
     function compileOnlyDocumentGuards() {
@@ -158,6 +162,9 @@ describe('Markdown public parser types', () => {
       NonNullable<MarkdownProps['variant']>
     >().toEqualTypeOf<MarkdownVariant>();
     expectTypeOf<MarkdownVariant>().toEqualTypeOf<'default' | 'document'>();
+    expectTypeOf<
+      NonNullable<MarkdownProps['hasHeadingPermalinks']>
+    >().toBeBoolean();
     expectTypeOf(documentProps.document.source).toBeString();
     expectTypeOf(compileOnlyDocumentGuards).toBeFunction();
   });

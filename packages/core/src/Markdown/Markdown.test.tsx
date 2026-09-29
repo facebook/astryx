@@ -17,6 +17,9 @@ import type {MarkdownComponents, MarkdownInlinePlugin} from './Markdown';
 import type {ParseOptions} from './index';
 import {stubMatchMedia} from '../__tests__/stubMatchMedia';
 import {parseOutlineFromMarkdown} from '../Outline/parseOutlineFromMarkdown';
+import {LinkProvider} from '../Link/LinkProvider';
+import {InternationalizationProvider} from '../i18n/InternationalizationProvider';
+import pseudoCatalog from '../../locales/pseudo.json';
 
 function cssDeclarationsOf(element: Element): string[] {
   const classes = new Set(element.className.split(/\s+/).filter(Boolean));
@@ -316,6 +319,106 @@ describe('Markdown', () => {
       expect(container.querySelector('blockquote')).toContainElement(nested);
       expect(nested).not.toHaveAttribute('id');
       expect(topLevel).toHaveAttribute('id', 'quoted');
+    });
+
+    it('adds accessible top-level permalink links only when requested', () => {
+      const source = '# Installation\n\n# Installation\n\n> # Nested';
+      const {rerender} = render(<Markdown>{source}</Markdown>);
+      expect(screen.queryByRole('link')).not.toBeInTheDocument();
+
+      const onLinkClick = vi.fn((): false => false);
+      rerender(
+        <Markdown
+          variant="document"
+          hasHeadingPermalinks
+          onLinkClick={onLinkClick}>
+          {source}
+        </Markdown>,
+      );
+      const headings = screen.getAllByRole('heading');
+      const links = screen.getAllByRole('link', {
+        name: 'Permalink to Installation',
+      });
+
+      expect(links).toHaveLength(2);
+      expect(links[0]).toHaveAttribute('href', '#installation');
+      expect(links[1]).toHaveAttribute('href', '#installation-1');
+      expect(headings[0]).toHaveAccessibleName('Installation');
+      expect(cssDeclarationsOf(headings[0])).toContain(
+        'scroll-margin-top: 64px',
+      );
+      expect(headings[0].parentElement?.getAttribute('style')).toContain(
+        '680px',
+      );
+      expect(headings[0].parentElement?.getAttribute('style')).toContain(
+        'auto',
+      );
+      expect(headings[0]).not.toContainElement(links[0]);
+      expect(links[0].parentElement).toContainElement(headings[0]);
+      expect(headings[0].parentElement?.className).toContain(
+        'astryx-markdown-heading',
+      );
+      expect(links[0].className).toContain('astryx-link');
+      links[0].focus();
+      expect(links[0]).toHaveFocus();
+      expect(fireEvent.click(links[0])).toBe(false);
+      expect(onLinkClick).toHaveBeenCalledWith(
+        '#installation',
+        expect.any(Object),
+      );
+      expect(screen.queryByRole('link', {name: /Nested/})).toBeNull();
+    });
+
+    it('localizes permalink names and uses the configured link component', () => {
+      function CustomLink({
+        children,
+        ref,
+        ...props
+      }: React.ComponentPropsWithRef<'a'>) {
+        return (
+          <a ref={ref} data-custom-link {...props}>
+            {children}
+          </a>
+        );
+      }
+
+      render(
+        <InternationalizationProvider
+          locale="pseudo"
+          messages={{pseudo: pseudoCatalog}}>
+          <LinkProvider component={CustomLink}>
+            <Markdown
+              document={prepareMarkdownDocument('# Installation')}
+              hasHeadingPermalinks
+            />
+          </LinkProvider>
+        </InternationalizationProvider>,
+      );
+
+      const link = screen.getByRole('link', {
+        name: '⟦Þéřɱàłíñķ ţó Installation⟧',
+      });
+      expect(link).toHaveAttribute('href', '#installation');
+      expect(link).toHaveAttribute('data-custom-link');
+    });
+
+    it('leaves permalink presentation to custom heading renderers', () => {
+      render(
+        <Markdown
+          hasHeadingPermalinks
+          components={{
+            heading: ({children, id}: {children: ReactNode; id?: string}) => (
+              <h2 id={id} data-custom-heading>
+                {children}
+              </h2>
+            ),
+          }}>
+          # Installation
+        </Markdown>,
+      );
+
+      expect(screen.getByRole('heading')).toHaveAttribute('id', 'installation');
+      expect(screen.queryByRole('link')).toBeNull();
     });
   });
 

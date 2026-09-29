@@ -41,6 +41,9 @@ const meta: Meta<typeof Markdown> = {
       control: 'select',
       options: [1, 2, 3, 4, 5, 6],
     },
+    hasHeadingPermalinks: {
+      control: 'boolean',
+    },
     isStreaming: {control: 'boolean'},
     display: {
       control: 'select',
@@ -188,6 +191,15 @@ export const DocumentPresentation: Story = {
   args: {
     children: SAMPLE_MD,
     variant: 'document',
+  },
+};
+
+export const HeadingPermalinks: Story = {
+  name: 'Heading Permalinks',
+  args: {
+    children:
+      '# Installation\n\nInstall the package.\n\n## Configuration\n\nConfigure the application.\n\n## Configuration\n\nDuplicate labels keep unique destinations.',
+    hasHeadingPermalinks: true,
   },
 };
 

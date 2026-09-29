@@ -115,6 +115,13 @@ export const docs = {
       default: '1',
     },
     {
+      name: 'hasHeadingPermalinks',
+      type: 'boolean',
+      description:
+        'Adds a localized # fragment link beside each top-level default heading. Reuses the same collision-safe IDs as Outline and the configured LinkProvider, does not affect nested headings, and is not implied by variant="document". The components.link override remains limited to authored links; custom heading renderers own their permalink presentation.',
+      default: 'false',
+    },
+    {
       name: 'isStreaming',
       type: 'boolean',
       description:
@@ -176,7 +183,7 @@ export const docs = {
       name: 'components',
       type: 'MarkdownComponents',
       description:
-        'Custom React component overrides for rendered Markdown elements (code, inlineCode, math, link, heading, paragraph, image, blockquote, hr, citation). Image renderers receive `{src, alt, title?}` with authored titles preserved. Providing math enables `$…$` inline and `$$…$$` display parsing and receives `{value, display}`; omit it when dollar text should stay literal.',
+        'Custom React component overrides for rendered Markdown elements (code, inlineCode, math, link, heading, paragraph, image, blockquote, hr, citation). Heading renderers receive the generated `id` and own document-variant and permalink presentation. Image renderers receive `{src, alt, title?}` with authored titles preserved. Providing math enables `$…$` inline and `$$…$$` display parsing and receives `{value, display}`; omit it when dollar text should stay literal.',
     },
     {
       name: 'xstyle',
@@ -328,7 +335,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Pair with Outline and useOutlineFromMarkdown for section navigation: headings render generated id attributes that match the outline item ids, so hash links scroll to their target.',
+          'Pair with Outline and useOutlineFromMarkdown for section navigation: headings render generated id attributes that match the outline item ids, so hash links scroll to their target. Enable hasHeadingPermalinks when readers also need visible, shareable section links.',
       },
       {
         guidance: false,
@@ -343,6 +350,14 @@ export const docs = {
       code: `
 <Markdown variant="document">
   {'# Guide\\n\\nLong-form prose uses a centered reading measure.\\n\\n| Option | Meaning |\\n| --- | --- |\\n| A | Grid-divided table |'}
+</Markdown>;
+`,
+    },
+    {
+      label: 'Heading permalinks',
+      code: `
+<Markdown hasHeadingPermalinks>
+  {'# Installation\\n\\nEach top-level heading gets an adjacent fragment link.'}
 </Markdown>;
 `,
     },
@@ -614,6 +629,13 @@ export const docsZh = {
       default: '1',
     },
     {
+      name: 'hasHeadingPermalinks',
+      type: 'boolean',
+      description:
+        '在每个顶级默认标题旁添加一个本地化的 # 片段链接。复用与 Outline 相同的冲突安全 ID 和已配置的 LinkProvider，不影响嵌套标题，也不会由 variant="document" 隐式启用。components.link 仍仅处理文档中编写的链接；自定义标题渲染器自行负责永久链接呈现。',
+      default: 'false',
+    },
+    {
       name: 'isStreaming',
       type: 'boolean',
       description: '启用流式模式，使用增量解析和淡入动画处理分块文本。',
@@ -673,7 +695,7 @@ export const docsZh = {
       name: 'components',
       type: 'MarkdownComponents',
       description:
-        '用于覆盖 Markdown 渲染元素的自定义 React 组件（code、inlineCode、math、link、heading、paragraph、image、blockquote、hr、citation）。image 渲染器接收保留原始标题的 `{src, alt, title?}`。提供 math 会启用 `$…$` 行内数学和 `$$…$$` 块级数学解析，并接收 `{value, display}`；不提供时美元符号保持原样。',
+        '用于覆盖 Markdown 渲染元素的自定义 React 组件（code、inlineCode、math、link、heading、paragraph、image、blockquote、hr、citation）。heading 渲染器接收生成的 `id`，并自行负责 document 变体和永久链接的呈现。image 渲染器接收保留原始标题的 `{src, alt, title?}`。提供 math 会启用 `$…$` 行内数学和 `$$…$$` 块级数学解析，并接收 `{value, display}`；不提供时美元符号保持原样。',
     },
     {
       name: 'xstyle',
@@ -835,7 +857,7 @@ export const docsZh = {
       {
         guidance: true,
         description:
-          'Pair with Outline and useOutlineFromMarkdown for section navigation: headings render generated id attributes that match the outline item ids, so hash links scroll to their target.',
+          'Pair with Outline and useOutlineFromMarkdown for section navigation: headings render generated id attributes that match the outline item ids, so hash links scroll to their target. Enable hasHeadingPermalinks when readers also need visible, shareable section links.',
       },
       {
         guidance: false,
@@ -950,6 +972,8 @@ export const docsDense = {
     density: "Block spacing. 'default'|'compact'. Default: 'default'.",
     headingLevelStart:
       'Maps # to this heading level (1-6). Clamped to h6. Default: 1.',
+    hasHeadingPermalinks:
+      'boolean. Adds localized # fragment links beside top-level default headings; reuses Outline ids. Custom headings own this presentation. Default: false.',
     isStreaming:
       'Incremental parse + fade-in for streamed chunks. Default: false.',
     onLinkClick:
@@ -969,7 +993,7 @@ export const docsDense = {
     autolink:
       "'gfm'. Opt-in GFM autolinking: bare URLs (https?://, www.), <scheme:url>, <email>, user@host. Skips code, code blocks, existing links. Default: off.",
     components:
-      'MarkdownComponents. Custom renderers; image({src, alt, title?}) preserves authored titles; math({value, display}) opts into $…$/$$…$$ parsing. Renderers own output and accessibility.',
+      'MarkdownComponents. Custom renderers; heading receives generated id and owns document/permalink presentation; image({src, alt, title?}) preserves authored titles; math({value, display}) opts into $…$/$$…$$ parsing. Renderers own output and accessibility.',
     xstyle: 'stylex.create() for layout (margins, sizing).',
     className: 'CSS class. Prefer xstyle.',
     style: 'Inline styles. Prefer xstyle.',

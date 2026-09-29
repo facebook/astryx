@@ -523,6 +523,10 @@
     "defaultMessage": "이 {itemName} 항목은 이미 {boundary, select, first {맨 앞} last {맨 뒤} other {}}에 있습니다.",
     "description": "Screen-reader-only live announcement when an arrow-key reorder attempt has no effect because the record is already at that end of the list. `{itemName}` is the consumer's singular noun for one record; `{boundary}` is always exactly \"first\" or \"last\"."
   },
+  "@astryx.markdown.headingPermalink": {
+    "defaultMessage": "{heading}의 고유 링크",
+    "description": "Accessible name for the `#` permalink beside a rendered Markdown heading. `{heading}` is the visible heading text."
+  },
   "@astryx.markdown.taskList": {
     "defaultMessage": "작업 목록",
     "description": "Screen-reader-only accessible name for a GitHub-flavored Markdown task list (rendered from `- [ ] item` / `- [x] done` syntax)."
@@ -1480,4 +1484,3 @@
     "description": "Default summary on the closed trigger of a lab TransferListSelector, stating how many options are currently chosen. Consumers usually override this with a domain phrase (e.g. \"7 columns\")."
   }
 }
-
