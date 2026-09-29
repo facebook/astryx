@@ -764,6 +764,20 @@ export class DocsCatalog {
   }
 
   /**
+   * Every other name a topic answers to, lowercased: the names of the topics
+   * it replaced, directly or through a chain of replacements. `resolve` finds
+   * the topic by each of them.
+   * @param {DocsTopicEntry} entry
+   * @returns {string[]}
+   */
+  aliasesOf(entry) {
+    const key = entry.name.toLowerCase();
+    return [...this.#aliases]
+      .filter(([, to]) => to === key)
+      .map(([from]) => from);
+  }
+
+  /**
    * Look a topic up by name, case-insensitively, following the alias a renamed
    * replacement left behind.
    * @param {unknown} name

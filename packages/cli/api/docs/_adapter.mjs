@@ -255,6 +255,7 @@ async function flatTopicInputs(catalog) {
   /** @type {import('../../foundation/doc-compiler/tree.mjs').TreeTopicInput[]} */
   const topics = [];
   for (const entry of catalog.entries()) {
+    const aliases = catalog.aliasesOf(entry);
     let {title, description} = entry;
     if (title == null || description == null) {
       try {
@@ -272,7 +273,7 @@ async function flatTopicInputs(catalog) {
       title: title ?? entry.name,
       summary: description ?? '',
       source: `${entry.package}:${entry.name}`,
-      ...(entry.replaces != null ? {replaces: entry.replaces} : {}),
+      ...(aliases.length > 0 ? {aliases} : {}),
     });
   }
   return topics;
@@ -369,7 +370,7 @@ export async function linkResolver(catalog, fromProvider) {
         entry &&
         !entry.tree &&
         (providerOf(entry) === provider ||
-          entry.replaces?.toLowerCase() === parsed.name.toLowerCase())
+          catalog.aliasesOf(entry).includes(parsed.name.toLowerCase()))
       ) {
         let title = entry.title ?? entry.name;
         let summary = entry.description ?? '';

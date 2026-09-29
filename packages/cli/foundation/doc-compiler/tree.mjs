@@ -121,8 +121,8 @@ export const KIND_GROUPS = Object.freeze({
  * @property {string} title
  * @property {string} summary
  * @property {string} source where the topic comes from, for diagnostics
- * @property {string} [replaces] the topic it took the place of, whose name
- *   also opens it
+ * @property {string[]} [aliases] every other name the topic answers to: the
+ *   topics it replaced, directly or through a chain
  */
 
 /** The route of the generated level that holds every flat topic. */
@@ -243,12 +243,15 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
   for (const topic of topics) {
     if (topic.provider === CLI_PROVIDER) cliRoutes.add(topic.name.toLowerCase());
   }
-  // A name a topic answers to through `replaces` is that topic's route too:
-  // `astryx docs <name>` opens the replacement, so no other doc can hold it.
+  // Every other name a topic answers to (the topics it replaced, directly or
+  // through a chain) is that topic's route too: `astryx docs <name>` opens the
+  // replacement, so no other doc can hold it.
   /** @type {Map<string, TreeTopicInput>} */
   const aliasRoutes = new Map();
   for (const topic of topics) {
-    if (topic.replaces) aliasRoutes.set(topic.replaces.toLowerCase(), topic);
+    for (const alias of topic.aliases ?? []) {
+      aliasRoutes.set(alias.toLowerCase(), topic);
+    }
   }
 
   // Namespaces by package and name.
@@ -366,7 +369,7 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
       report(
         'duplicate_route',
         at,
-        `${nodeLabel(node)} takes the route "${node.route}", which the topic "${alias.name}" answers to because it replaces "${alias.replaces}". Rename it.`,
+        `${nodeLabel(node)} takes the route "${node.route}", which the topic "${alias.name}" also answers to, because it replaced a topic of that name. Rename it.`,
       );
       return false;
     }

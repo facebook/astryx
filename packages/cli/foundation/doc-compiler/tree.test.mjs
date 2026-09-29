@@ -121,14 +121,23 @@ describe('buildDocsTree', () => {
       namespaces: [ns('tokens')],
       docs: [],
       topics: [
-        {provider: '@acme/a', providerId: '@acme/a', name: 'acme-tokens', title: 'Acme tokens', summary: 'Acme tokens.', source: '@acme/a:acme-tokens', replaces: 'tokens'},
+        {provider: '@acme/a', providerId: '@acme/a', name: 'acme-tokens', title: 'Acme tokens', summary: 'Acme tokens.', source: '@acme/a:acme-tokens', aliases: ['tokens', 'old-tokens']},
       ],
     });
     expect(tree.get('tokens')).toBeUndefined();
     expect(tree.get('acme-tokens')?.provider).toBe('@acme/a');
     expect(problems(tree)).toEqual([
-      ['duplicate_route', expect.stringContaining('which the topic "acme-tokens" answers to because it replaces "tokens"')],
+      ['duplicate_route', expect.stringContaining('takes the route "tokens", which the topic "acme-tokens" also answers to')],
     ]);
+    // Every name it answers to is reserved, not only the last one it replaced.
+    const older = buildDocsTree({
+      namespaces: [ns('old-tokens')],
+      docs: [],
+      topics: [
+        {provider: '@acme/a', providerId: '@acme/a', name: 'acme-tokens', title: 'Acme tokens', summary: 'Acme tokens.', source: '@acme/a:acme-tokens', aliases: ['tokens', 'old-tokens']},
+      ],
+    });
+    expect(older.get('old-tokens')).toBeUndefined();
   });
 
   it("keeps the CLI's own routes from an integration, compared without case", () => {
