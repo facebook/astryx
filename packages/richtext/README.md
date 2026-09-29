@@ -27,7 +27,8 @@ It ships to npm **only under the `@canary` dist-tag** — there is never a stabl
 
 > Note: this package is the successor to the experimental `RichTextEditor` that
 > used to live in `@astryxdesign/lab`; that code has moved here so it can be
-> canaried independently (e.g. into EPS/Nest) without a fresh package rollout.
+> canaried independently by an adopting application without a fresh package
+> rollout.
 
 ## Status
 
