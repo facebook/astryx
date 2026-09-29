@@ -407,6 +407,37 @@ describe('CodeBlock', () => {
     },
   );
 
+  it('uses spans for styled custom tokens and preserves source text', () => {
+    const code = 'error: retry';
+    const {container} = render(
+      <CodeBlock
+        code={code}
+        language="ansi"
+        highlightMode="ranges"
+        tokenizer={() => [
+          {
+            type: 'variable',
+            start: 0,
+            end: 5,
+            style: {
+              backgroundColor: 'rgb(40, 50, 60)',
+              color: 'rgb(10, 20, 30)',
+              fontWeight: 700,
+            },
+          },
+        ]}
+      />,
+    );
+
+    const token = container.querySelector('.astryx-token-variable');
+    expect(token).toHaveStyle({
+      backgroundColor: 'rgb(40, 50, 60)',
+      color: 'rgb(10, 20, 30)',
+      fontWeight: 700,
+    });
+    expect(container.querySelector('code')?.textContent).toBe(code);
+  });
+
   it('keeps each range-mode line in one bare text node', () => {
     const {container} = render(
       <CodeBlock

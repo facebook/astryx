@@ -144,6 +144,16 @@ describe('tokenizeStreaming', () => {
 });
 
 describe('flatTokensToLines', () => {
+  it('preserves optional token styles while converting offsets', () => {
+    const style = {color: 'rgb(10, 20, 30)', fontWeight: 700} as const;
+    const result = flatTokensToLines(
+      [{type: 'variable', start: 6, end: 10, style}],
+      'first\nnext',
+    );
+
+    expect(result[1]).toEqual([{type: 'variable', start: 0, end: 4, style}]);
+  });
+
   it('converts absolute offsets to line-relative', () => {
     const code = 'const x = 1;\nlet y = 2;';
     const flatTokens = [

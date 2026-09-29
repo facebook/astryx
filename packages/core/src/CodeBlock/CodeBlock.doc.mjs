@@ -87,8 +87,8 @@ export const docs = {
     },
     {
       name: 'tokenizer',
-      type: '(code: string, language: string) => Array<{type: string; start: number; end: number}>',
-      description: 'Custom tokenizer override for unsupported languages.',
+      type: '(code: string, language: string) => SyntaxToken[]',
+      description: 'Trusted custom tokenizer override. Styled tokens automatically use span rendering while code remains the clipboard value.',
     },
     {
       name: 'syntaxTheme',
@@ -166,6 +166,7 @@ export const docs = {
     description: 'CodeBlock renders syntax-highlighted code with line numbers, a copy button, and optional collapsible sections. Use CodeBlock for multi-line snippets like source files, terminal commands, and configuration examples. Use Code for inline references to function names, variables, or CLI flags within body text.',
     bestPractices: [
       {guidance: true, description: 'Set the language prop to match the code content so syntax highlighting is accurate. Use "plaintext" when the language is unknown.'},
+      {guidance: true, description: 'Use SyntaxToken.style only in trusted custom tokenizers that need color or emphasis beyond syntax classes; code remains the plain-text clipboard value.'},
       {guidance: true, description: 'Add a title when the code represents a file. It gives readers context and appears in the header bar alongside the copy button.'},
       {guidance: true, description: 'Use Code for short inline references like function names or CLI flags, and CodeBlock for standalone multi-line snippets.'},
       {guidance: false, description: 'Enable line numbers on short snippets (under 5 lines) where they add clutter without helping navigation.'},
@@ -201,6 +202,7 @@ export const docsDense = {
     description: 'CodeBlock renders syntax-highlighted code with line numbers, a copy button, and optional collapsible sections. Use CodeBlock for multi-line snippets like source files, terminal commands, and configuration examples. Use Code for inline references to function names, variables, or CLI flags within body text.',
     bestPractices: [
       {guidance: true, description: 'Set the language prop to match the code content so syntax highlighting is accurate. Use "plaintext" when the language is unknown.'},
+      {guidance: true, description: 'Use SyntaxToken.style only in trusted custom tokenizers that need color or emphasis beyond syntax classes; code remains the plain-text clipboard value.'},
       {guidance: true, description: 'Add a title when the code represents a file. It gives readers context and appears in the header bar alongside the copy button.'},
       {guidance: true, description: 'Use Code for short inline references like function names or CLI flags, and CodeBlock for standalone multi-line snippets.'},
       {guidance: false, description: 'Enable line numbers on short snippets (under 5 lines) where they add clutter without helping navigation.'},
