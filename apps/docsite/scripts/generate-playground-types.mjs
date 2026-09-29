@@ -220,8 +220,121 @@ function buildRechartsTypes() {
   };
 }
 
+// Lucide ambient module. The installed package's single .d.ts is ~26k lines
+// with an SVG preview per icon; bundling it whole would dwarf the rest of the
+// payload. Synthesize one declaration from its export list instead, so every
+// icon (and every `*Icon` alias) is a named export the editor can resolve —
+// an index-signature stub does not give TypeScript any named members, which
+// is how `import {Smartphone} from 'lucide-react'` came to be flagged.
+function buildLucideTypes() {
+  const pkgPath = resolveFromDocsite('lucide-react/package.json');
+  const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+  const source = readFileSync(
+    join(dirname(pkgPath), pkg.types ?? pkg.typings),
+    'utf-8',
+  );
+
+  const icons = new Set(
+    [
+      ...source.matchAll(
+        /^declare const (\w+): react\.ForwardRefExoticComponent/gm,
+      ),
+    ].map(m => m[1]),
+  );
+  const types = new Set(
+    [...source.matchAll(/^(?:type|interface) (\w+)\b/gm)].map(m => m[1]),
+  );
+  const exportList = source.match(/^export \{([^}]+)\}/m);
+  if (!exportList) throw new Error('lucide-react: export list not found');
+
+  const lines = [
+    "declare module 'lucide-react' {",
+    '  export interface LucideProps {',
+    '    size?: string | number;',
+    '    color?: string;',
+    '    strokeWidth?: string | number;',
+    '    absoluteStrokeWidth?: boolean;',
+    '    className?: string;',
+    '    style?: Record<string, string | number>;',
+    '    [attribute: string]: unknown;',
+    '  }',
+    '  export type LucideIcon = (props: LucideProps) => any;',
+  ];
+  for (const binding of exportList[1].split(',')) {
+    const [local, exported = local] = binding.trim().split(/\s+as\s+/);
+    if (!exported || exported === 'LucideProps' || exported === 'LucideIcon') {
+      continue;
+    }
+    if (icons.has(local)) {
+      lines.push(`  export const ${exported}: LucideIcon;`);
+    } else if (types.has(local)) {
+      lines.push(`  export type ${exported} = any;`);
+    } else {
+      lines.push(`  export const ${exported}: any;`);
+    }
+  }
+  lines.push('}');
+  return {'index.d.ts': lines.join('\n')};
+}
+
+// Theme packages the preview scope exposes (mirrors SCOPE_THEMES in
+// generate-scope.mjs). Each package's `/built` types are a few lines that
+// import from @astryxdesign/core, which the editor already has, so they can
+// be wrapped as-is; the bare specifier re-exports the built module.
+const SCOPE_THEMES = [
+  '@astryxdesign/theme-neutral',
+  '@astryxdesign/theme-matcha',
+];
+
+function buildThemeTypes() {
+  const files = {};
+  for (const name of SCOPE_THEMES) {
+    // The packages' exports map does not expose package.json; walk up from
+    // the resolved `/built` entry (dist/<theme>.js) to the package root.
+    const pkgRoot = join(dirname(resolveFromDocsite(`${name}/built`)), '..');
+    const pkg = JSON.parse(
+      readFileSync(join(pkgRoot, 'package.json'), 'utf-8'),
+    );
+    const builtDts = join(pkgRoot, pkg.exports['./built'].types);
+    const body = readFileSync(builtDts, 'utf-8')
+      .split('\n')
+      .filter(line => !line.startsWith('/// <reference'))
+      .join('\n');
+    files[name] = {
+      'index.d.ts':
+        `declare module '${name}/built' {\n${body}\n}\n` +
+        `declare module '${name}' {\n  export * from '${name}/built';\n}`,
+    };
+  }
+  return files;
+}
+
+// Runtime-only aliases the scope also serves: `next/image` renders a plain
+// <img>, and bare `stylex` is the same object as `@stylexjs/stylex`.
+const nextImageTypes = `
+declare module 'next/image' {
+  const Image: (props: Record<string, unknown>) => any;
+  export default Image;
+}
+`;
+
+const stylexAliasTypes = `
+declare module 'stylex' {
+  export * from '@stylexjs/stylex';
+  export {default} from '@stylexjs/stylex';
+}
+`;
+
 const heroiconTypes = buildHeroiconTypes();
 const rechartsTypes = buildRechartsTypes();
+const lucideTypes = buildLucideTypes();
+const themeTypes = buildThemeTypes();
+console.log(
+  `Generated Lucide types: ${(lucideTypes['index.d.ts'].match(/: LucideIcon;/g) ?? []).length} icon exports`,
+);
+console.log(
+  `Generated theme types: ${Object.keys(themeTypes).length} packages`,
+);
 console.log(
   `Generated heroicon types: ${Object.keys(heroiconTypes).length} variants`,
 );
@@ -233,8 +346,12 @@ const output = {
   '@astryxdesign/core': astryxTypes,
   react: {'index.d.ts': reactTypes, 'jsx-runtime.d.ts': reactJsxRuntimeTypes},
   '@stylexjs/stylex': {'index.d.ts': stylexTypes},
+  stylex: {'index.d.ts': stylexAliasTypes},
   '@heroicons/react': heroiconTypes,
   recharts: rechartsTypes,
+  'lucide-react': lucideTypes,
+  'next/image': {'index.d.ts': nextImageTypes},
+  ...themeTypes,
 };
 
 const json = JSON.stringify(output);
