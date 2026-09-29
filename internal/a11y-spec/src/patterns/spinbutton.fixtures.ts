@@ -34,6 +34,7 @@ interface Options {
   readonly role?: string;
   readonly label?: boolean;
   readonly value?: number | null;
+  readonly displayValue?: string | null;
   readonly min?: number | null;
   readonly max?: number | null;
   readonly valueText?: string | null;
@@ -47,6 +48,12 @@ interface Options {
 
 function html(options: Options = {}): string {
   const value = options.value === undefined ? 5 : options.value;
+  const displayValue =
+    options.displayValue === undefined
+      ? value == null
+        ? null
+        : String(value)
+      : options.displayValue;
   const min = options.min === undefined ? 1 : options.min;
   const max = options.max === undefined ? 9 : options.max;
   const valueText = options.valueText === undefined ? null : options.valueText;
@@ -56,12 +63,13 @@ function html(options: Options = {}): string {
     <button type="button">Before</button>
     ${label ? '<label for="amount">Quantity</label>' : ''}
     <input data-a11y-subject id="amount" type="text" role="${role}"
-      ${value == null ? '' : `value="${value}" aria-valuenow="${value}"`}
+      ${displayValue == null ? '' : `value="${displayValue}"`}
+      ${value == null ? '' : `aria-valuenow="${value}"`}
       ${min == null ? '' : `aria-valuemin="${min}"`}
       ${max == null ? '' : `aria-valuemax="${max}"`}
       ${valueText == null ? '' : `aria-valuetext="${valueText}"`}
       ${options.disabled ? 'disabled' : ''}
-      ${options.readOnly ? 'readonly' : ''}
+      ${options.readOnly ? 'readonly aria-readonly="true"' : ''}
       ${options.tabIndex == null ? '' : `tabindex="${options.tabIndex}"`}
       onkeydown="
         if (event.key === 'Tab' && ${options.trapTab ? 'true' : 'false'}) event.preventDefault();
@@ -83,7 +91,7 @@ export const SPINBUTTON_FIXTURES: readonly SpinbuttonFixture[] = [
     id: 'conforming-formatted',
     summary: 'a formatted spinbutton value',
     facts: facts({valueText: '5 GB', stepUpValue: null, stepDownValue: null}),
-    html: html({valueText: '5 GB'}),
+    html: html({displayValue: '5 GB', valueText: '5 GB'}),
   },
   {
     id: 'conforming-empty',
@@ -160,7 +168,7 @@ export const SPINBUTTON_FIXTURES: readonly SpinbuttonFixture[] = [
     id: 'violating-value-text',
     summary: 'incorrect formatted value text',
     facts: facts({valueText: '5 GB', stepUpValue: null, stepDownValue: null}),
-    html: html({valueText: 'five'}),
+    html: html({displayValue: 'five', valueText: 'five'}),
   },
   {
     id: 'violating-disabled',

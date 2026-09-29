@@ -10,6 +10,7 @@ import {
   formatFailures,
   neverExercised,
   summarize,
+  unmatchedKnownFailures,
   type BindingResult,
 } from '@astryxdesign/a11y-spec';
 import {
@@ -21,6 +22,7 @@ import {
   serveStorybook,
   type StaticServer,
 } from '@astryxdesign/a11y-spec/storybook';
+import {NUMBER_INPUT_KNOWN_FAILURES} from './NumberInput.a11y.known-failures';
 import {
   NUMBER_INPUT_A11Y_STATES,
   type NumberInputA11yRow,
@@ -57,6 +59,7 @@ async function runState(
     binding: 'NumberInput',
     state: state.id,
     facts: state.facts,
+    knownFailures: NUMBER_INPUT_KNOWN_FAILURES,
     mount: async () => {
       await mount(page, state);
       return createChromiumHarness({
@@ -78,6 +81,27 @@ test('every expectation is exercised by at least one NumberInput state', async (
     results.push(await runState(page, cdp, state));
   }
   expect(neverExercised(results)).toEqual([]);
+  expect(unmatchedKnownFailures(NUMBER_INPUT_KNOWN_FAILURES, results)).toEqual(
+    [],
+  );
+});
+
+test('the Chromium read-only omission remains exact visible debt', async ({
+  page,
+}) => {
+  const state = NUMBER_INPUT_A11Y_STATES.find(
+    candidate => candidate.id === 'read-only',
+  );
+  if (state == null) {
+    throw new Error('missing NumberInput accessibility state: read-only');
+  }
+  const cdp = await page.context().newCDPSession(page);
+  const result = await runState(page, cdp, state);
+  const readOnly = result.results.find(
+    candidate => candidate.expectation === 'spinbutton.readonly.exposed',
+  );
+  expect(readOnly?.status).toBe('known-failure');
+  expect(readOnly?.knownFailure).toBe(NUMBER_INPUT_KNOWN_FAILURES[0]);
 });
 
 for (const state of NUMBER_INPUT_A11Y_STATES) {
@@ -87,5 +111,6 @@ for (const state of NUMBER_INPUT_A11Y_STATES) {
     const report = summarize(SPINBUTTON_PATTERN, [result]);
     expect(formatFailures(blockingResults([result]))).toBe('');
     expect(report.unrunLayers).toEqual([]);
+    expect(report.counts.unexpectedPass).toBe(0);
   });
 }
