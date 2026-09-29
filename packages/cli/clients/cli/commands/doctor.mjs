@@ -161,8 +161,10 @@ function printComponentConflicts(data) {
     ),
     ...issueBlocks(data.issues),
   ];
+  // An [ok] after a failed check reads as a pass: say nothing it could not check.
+  const failed = data.issues.some(issue => issue.severity === 'error');
   if (data.conflicts.length === 0) {
-    output.push(text('[ok] No component names conflict with Core.'));
+    if (!failed) output.push(text('[ok] No component names conflict with Core.'));
   } else {
     output.push(
       records(data.conflicts, {
@@ -202,7 +204,9 @@ function printDocConflicts(data) {
     output.push(text('[ok] The docs tree and every link in these docs check out.'));
   }
   if (data.findings.length === 0) {
-    output.push(text('[ok] No doc topics overlap with Core.'));
+    if (!data.issues.some(issue => issue.severity === 'error')) {
+      output.push(text('[ok] No doc topics overlap with Core.'));
+    }
   } else {
     output.push(
       records(data.findings, {

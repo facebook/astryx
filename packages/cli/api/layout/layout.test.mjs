@@ -269,8 +269,11 @@ describe('template referencing', () => {
 });
 
 describe('layoutGrammar', () => {
-  it('emits the cheatsheet with branch-generated aliases', async () => {
+  it('emits the cheatsheet with aliases from the installed components', async () => {
     const result = await layoutGrammar();
+    expect(result.data.text.split('\n')[0]).toBe(
+      'XLE/XLO — Astryx layout expressions (aliases come from the installed components)',
+    );
     expect(result.data.text).toContain('TWO SURFACES');
     expect(result.data.aliases.V).toBe('VStack');
     expect(result.data.aliases.TB).toBe('TableBody');

@@ -128,7 +128,7 @@ describe('integration authoring CLI', () => {
     expect(added.status).toBe(0);
 
     const checked = await runCli(
-      ['integration', 'pack', '--check', '--json'],
+      ['integration', 'verify', '--json'],
       tmpDir,
     );
     // Without an exports map, the extensionless import cannot resolve —
@@ -150,13 +150,14 @@ describe('integration authoring CLI', () => {
     );
   });
 
-  it('requires the explicit --check gate on pack', async () => {
-    const result = await runCli(['integration', 'pack', '--json'], tmpDir);
+  it('names the pre-publish check `integration verify`, with no `pack` alias', async () => {
+    const result = await runCli(['integration', 'pack'], tmpDir);
     expect(result.status).not.toBe(0);
-    expect(parseEnvelope(result.stdout)).toMatchObject({
-      code: 'ERR_INVALID_ARGUMENT',
-      error: 'Pass --check to verify the integration tarball.',
-    });
+    expect(result.stderr).toContain("unknown subcommand 'integration pack'");
+    expect(result.stderr).toMatch(/verify\s+\(available subcommand\)/);
+    const flag = await runCli(['integration', 'verify', '--check'], tmpDir);
+    expect(flag.status).not.toBe(0);
+    expect(flag.stderr).toContain("unknown option '--check'");
   });
 
   it('refuses kind-specific options on another kind', async () => {

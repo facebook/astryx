@@ -469,6 +469,23 @@ describe('integration docs in the docs tree', () => {
     );
   }, SLOW);
 
+  it('fails doctor integration docs on a placement that hides a guide, and only warns on a link', async () => {
+    scaffold({
+      ...kit(),
+      'lost.doc.mjs': guide('lost', {
+        placement: {parent: 'namespace:nope', slot: 'guides'},
+      }),
+    });
+    const result = await integrationDocConflicts('@acme/kit', {cwd: tmpDir});
+    expect(result.data.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'invalid_doc_graph',
+        severity: 'error',
+        message: expect.stringContaining('namespace:nope'),
+      }),
+    );
+  }, SLOW);
+
   it("resolves an extension's links against the extension's provider, not the base topic's", async () => {
     scaffold({
       ...kit(),

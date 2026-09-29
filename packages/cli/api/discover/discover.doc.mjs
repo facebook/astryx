@@ -16,10 +16,12 @@ export const doc = {
   summary: 'Browse and search components from configured external packages.',
   description:
     'Explores components contributed by configured external packages and integrations ' +
-    'the ones that declare a components root. With no query it lists those packages; ' +
+    '(the ones that declare a components root). With no query it lists those packages; ' +
     'an @scope/name query browses one package; @scope/name/Component (or a free-text ' +
     "term that resolves to a single component) returns that component's validated doc; " +
-    'a free-text term with several matches returns the candidate list.',
+    'a free-text term with several matches returns the candidate list. When no configured ' +
+    'package contributes components, every call returns discover.list with an empty list, ' +
+    'whatever the query; meta.configured says whether any package is configured.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'discover(query?: string, options?: DiscoverOptions): Promise<DiscoverListResponse | DiscoverDetailResponse | DiscoverDetailDocResponse | DiscoverSearchResponse>',

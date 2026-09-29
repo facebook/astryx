@@ -114,11 +114,12 @@ the docsite onto the tree.
   checks are new, so they warn: a project that passed before keeps passing. The progressive-disclosure check MUST hold each guide the tree
   places to the same size budget as every topic.
 - **FR9 — Phase 1 places the CLI's own docs.** The CLI MUST ship the `cli`
-  namespace with the `integrations` guide and the `commands` and `api`
+  namespace with the `integrations` namespace and the `commands` and `api`
   namespaces under it. Every command doc MUST have a route under
   `cli/commands`, and every function, schema, and enum doc in the `cli/api`
-  group a route under `cli/api/<kind>s`. The integration guide's route MUST be
-  `cli/integrations`; its old flat name `cli-integrations` is gone. A CLI route
+  group a route under `cli/api/<kind>s`. The integration guides MUST live under
+  `cli/integrations`, one short guide per task; the old flat name
+  `cli-integrations` is gone. A CLI route
   or name MAY change like this when every reference changes with it: links name
   docs by identity (`spec:AST-047` FR9), and the graph walk fails on a reference
   left behind (`spec:AST-047` FR11, FR12).
@@ -152,8 +153,10 @@ the docsite onto the tree.
   (published 0.6.3 does so for a namespace doc, and earlier builds of main for a
   placed guide too), so such a package MUST declare a `@astryxdesign/cli` peer
   range that admits only CLIs that read it: `integration add doc --parent` MUST declare it,
-  and `astryx integration pack --check` MUST fail without it. The same check
-  covers a template that sets `replaces` (`spec:AST-035`).
+  and `astryx integration verify` MUST fail without it. The same check
+  covers a template that sets `replaces` (`spec:AST-035`), a doc section that
+  sets `id`, and a theme, whose typed descriptor an older CLI rejects along
+  with the package's doc topics; `integration add theme` declares the peer.
 - **FR12 — Every doc has a home.** Every flat topic, the CLI's and each
   integration's, MUST sit in the generated Unorganized level (`unorganized`), in
   the order the topic list reads. The level has no authored doc, so its `id` is
@@ -190,8 +193,8 @@ Phase 1 changes:
 - `cli-integrations` moves to `cli/integrations`, and every reference moves
   with it;
 - every flat topic sits in the generated Unorganized level, as FR12 states;
-- the docsite reads the placed guide through `docs()` and keeps
-  `/docs/cli-integrations`.
+- the docsite reads the placed guides through `docs()`, and
+  `/docs/cli-integrations` redirects to the first of them.
 
 `architecture:cli-surface` INV25 and INV26 carry this record into the code.
 

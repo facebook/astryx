@@ -1,17 +1,18 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, expect, it} from 'vitest';
-import {docs as integrationGuide} from './integrations.doc.mjs';
+import {docs as templatesGuide} from './templates.doc.mjs';
 import {doc as integrationSchema} from '../../../authoring/integration/integration.doc.mjs';
 import {doc as templateSchema} from '../../../authoring/doctypes/template/template.doc.mjs';
 
 function guideText() {
-  return integrationGuide.sections
+  return templatesGuide.sections
     .flatMap(section => section.content)
     .flatMap(block => {
       if (block.type === 'prose') return [block.text];
       if (block.type === 'code') return [block.label ?? '', block.code];
       if (block.type === 'list') return block.items;
+      if (block.type === 'table') return block.rows.flat();
       return [];
     })
     .join('\n');
@@ -24,22 +25,19 @@ describe('integration template replacement docs', () => {
     for (const required of [
       "replaces: 'shell-side-nav'",
       'acme-app-shell',
-      'astryx --json template --list --package @astryxdesign/core',
-      'astryx template shell-side-nav --package @astryxdesign/core',
-      'astryx template acme-app-shell --package @acme/navigation',
       'templates/acme-app-shell.doc.mjs',
-      'AcmeSideNav',
-      'AcmeTopNav',
-      '<Card>Product content</Card>',
-      'fail closed',
-      'configured later wins',
-      'wins over an autolinked one',
-      'listed later in package.json dependencies',
-      'valid siblings',
-      'Without `replaces`',
-      '@astryxdesign/cli >=0.7.0',
-      'templates and doc topics are withheld',
-      '`template.list` JSON response',
+      'npx astryx --json template --list --package @astryxdesign/core',
+      'npx astryx template shell-side-nav --package @astryxdesign/core',
+      '"@astryxdesign/cli": ">=0.7.0"',
+      'replaces_needs_cli',
+      'drops that template and hides your doc topics',
+      'wins over one that is only installed',
+      'the one listed later wins',
+      "listed later in the app's package.json dependencies",
+      'fails closed',
+      'missing_template_replacement_target',
+      'invalid_template_replacement',
+      'ambiguous_template_replacement',
     ]) {
       expect(text, required).toContain(required);
     }

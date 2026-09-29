@@ -6,8 +6,9 @@
  * @input A package.json object.
  * @output Whether its `peerDependencies` range for `@astryxdesign/cli` admits
  *   only CLIs that read namespace docs, and the package.json that declares it.
- * @position foundation/integrations; read by `integration add doc --parent`,
- *   which declares the peer, and `integration pack --check`, which requires it.
+ * @position foundation/integrations; read by `integration add doc --parent`
+ *   and `integration add theme`, which declare the peer, and
+ *   `integration verify`, which requires it.
  */
 
 import {semverCompare} from '../env/semver.mjs';
@@ -16,10 +17,12 @@ export const CLI_PACKAGE = '@astryxdesign/cli';
 
 /**
  * The first CLI release that reads an integration's docs tree (namespace docs
- * and placed guides) and its templates' `replaces`. A release before it can
- * hide every doc topic a package with a namespace doc or a placed guide
- * ships, with no warning, and it rejects `replaces` and withholds the
- * package's templates and doc topics.
+ * and placed guides), its templates' `replaces`, and its typed theme
+ * descriptors. A release before it can hide every doc topic a package with a
+ * namespace doc or a placed guide ships, with no warning; it rejects
+ * `replaces` and withholds the package's templates and doc topics; and it
+ * rejects a themes root without the `manifest.json` catalog the CLI no longer
+ * writes, withholding the package's themes and doc topics.
  */
 export const DOCS_TREE_CLI = '0.7.0';
 
@@ -130,6 +133,38 @@ export function replacesCliProblem(pkg) {
     pkg,
     'has a template that sets `replaces`',
     "rejects the field, and withholds the package's templates and doc topics",
+  );
+}
+
+/**
+ * Why a package with a doc section that sets `id` would lose its doc topics on
+ * an older CLI, or null when its declared CLI range admits only CLIs that read
+ * the field. Published 0.6.3 rejects a section `id` and hides every doc topic
+ * the package ships.
+ * @param {any} pkg package.json
+ * @returns {string | null}
+ */
+export function sectionIdsCliProblem(pkg) {
+  return cliRangeProblem(
+    pkg,
+    'has a doc section that sets `id`',
+    'rejects the field, and can hide every doc topic the package ships',
+  );
+}
+
+/**
+ * Why a package that ships a theme would lose its themes and doc topics on an
+ * older CLI, or null when its declared CLI range admits only CLIs that read
+ * typed theme descriptors. Published 0.6.3 rejects a themes root with no
+ * `manifest.json` catalog, which `integration add theme` no longer writes.
+ * @param {any} pkg package.json
+ * @returns {string | null}
+ */
+export function themesCliProblem(pkg) {
+  return cliRangeProblem(
+    pkg,
+    'ships a theme',
+    "cannot read typed theme descriptors, and withholds the package's themes and doc topics",
   );
 }
 

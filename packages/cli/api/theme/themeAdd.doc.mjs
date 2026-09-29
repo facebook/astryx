@@ -44,6 +44,7 @@ export const doc = {
       type: 'string',
       description:
         'Project directory used for integration discovery and target paths.',
+      default: 'process.cwd()',
     },
     {
       name: 'options.package',
@@ -57,11 +58,6 @@ export const doc = {
       description:
         'Copy receipt with slug, displayName, maintained flag, owner package, outputDir, entry, exportName, and files.',
     },
-    {
-      type: 'theme.list',
-      description:
-        'The CLI list affordance routes a bare `astryx theme add` or `--list` to themeListAvailable() and returns every available theme with its owner.',
-    },
   ],
   throws: [
     {
@@ -74,7 +70,10 @@ export const doc = {
       when: 'the selected installed package has a blocking integration or theme-descriptor error',
     },
     {code: 'ERR_PATH_TRAVERSAL', when: 'the target path escapes cwd'},
-    {code: 'ERR_NO_SOURCE', when: 'a theme file to copy is missing'},
+    {
+      code: 'ERR_NO_SOURCE',
+      when: 'the bundled theme descriptors cannot be read, or a theme file to copy is missing',
+    },
     {
       code: 'ERR_FILE_EXISTS',
       when: 'a destination exists and overwrite is not set',
@@ -82,12 +81,12 @@ export const doc = {
     {code: 'ERR_WRITE_FAILED', when: 'writing files fails'},
   ],
   examples: [
-    {label: 'Copy a bundled theme', code: "await themeAdd('ocean');"},
+    {label: 'Copy a bundled theme', code: "await themeAdd('butter');"},
     {
-      label: 'Copy an integration theme',
-      code: "await themeAdd('ocean', {package: '@acme/themes'});",
+      label: 'Name the owner package and the destination',
+      code: "await themeAdd('butter', {package: '@astryxdesign/cli', targetPath: 'src/brand-theme'});",
     },
   ],
   command: 'theme add',
-  related: ['themeList', 'listThemes'],
+  related: ['themeListAvailable', 'themeTemplate', 'listThemes'],
 };

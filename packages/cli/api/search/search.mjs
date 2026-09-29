@@ -32,6 +32,17 @@
  * Name + keyword signals always outweigh description/prose, so an exact match
  * sorts above an incidental mention.
  *
+ * A multi-word query has a reserved top tier (see {@link scoreQuery}): the
+ * whole query as a candidate's name or keyword (190-200), then the whole query
+ * as a phrase inside a doc's title or one of its headings (170), then a whole
+ * title of two words or more inside the query (160-169), then a candidate that
+ * matches every word of the query (151-159). Below those sits everything that
+ * matches only some words. A section titled "Light/Dark Mode" answers `dark
+ * mode` better than any doc that merely names `mode` in code, however exactly;
+ * "Dark mode" answers `how do I add dark mode`; and a guide whose title and
+ * description hold both words of `troubleshoot integration` answers it better
+ * than a doc named `integration`.
+ *
  * Description and guidance are separate tiers on purpose. A component's own
  * one-line description saying "notification" is a claim about what it IS; the
  * same word inside another component's best-practice advice is a passing
@@ -95,6 +106,9 @@ import {setResultCoverage} from './coverage.mjs';
  * @property {string} [description]
  * @property {string[]} [prose]
  * @property {string[]} [guidance]
+ * @property {string[]} [titles] - A doc's title and the headings inside it:
+ *   the lines a reader scans to pick it. The whole query standing in one of
+ *   them, or one of them standing whole in the query, is a top-tier match.
  * @property {string} [_import]
  * @property {string} [_title]
  * @property {string} [_topic] - A doc result's topic or docs-tree route.
@@ -327,6 +341,96 @@ function bestForToken(tok, candidate) {
 }
 
 /**
+ * The score of a whole-query phrase inside a doc's title or heading: a keyword
+ * substring hit (70) promoted by the same 100 as the exact tier. Below an
+ * exact name or keyword (190-200), above the token-sum path (~151 at most).
+ */
+const TITLE_PHRASE_SCORE = 170;
+
+/**
+ * The score of a whole title inside a longer query, before its coverage bonus:
+ * one step below {@link TITLE_PHRASE_SCORE}. The bonus (one per query term the
+ * candidate matches, at most 9) orders the sections that share a common title,
+ * so "best practices for spacing" puts Spacing's Best Practices first.
+ */
+const TITLE_IN_QUERY_SCORE = 160;
+
+/**
+ * The score of a candidate that matches every content word of a multi-word
+ * query, before a bonus of up to 8 for how strong its strongest match is: just
+ * above anything that matches only some of the words. The token-sum path tops
+ * out near 150 for a partial match (a 100 on one word, the per-word bonus, and
+ * the coverage term), so an AND-match always outranks an OR-match, and stays
+ * below the title tiers.
+ */
+const FULL_COVERAGE_SCORE = 151;
+
+/**
+ * The words of a title or query, lowercased, without punctuation or code ticks.
+ * @param {string} text
+ * @returns {string[]}
+ */
+function phraseWords(text) {
+  return unlinkText(text).toLowerCase().match(/[a-z0-9]+/g) ?? [];
+}
+
+/**
+ * Whether two words are the same word, allowing a plural on either side, so
+ * `data attributes selector` still reads "Data attribute selectors".
+ * @param {string} a
+ * @param {string} b
+ */
+function sameWord(a, b) {
+  return (
+    a === b ||
+    `${a}s` === b ||
+    `${b}s` === a ||
+    `${a}es` === b ||
+    `${b}es` === a
+  );
+}
+
+/**
+ * The first title or heading that holds every word of the query, in order and
+ * side by side, or null.
+ * @param {string} term - Lowercased full query.
+ * @param {string[] | undefined} titles
+ * @returns {string | null}
+ */
+export function headingWithPhrase(term, titles) {
+  const query = phraseWords(term);
+  if (query.length < 2 || !titles) return null;
+  for (const title of titles) {
+    const words = phraseWords(String(title ?? ''));
+    for (let i = 0; i + query.length <= words.length; i++) {
+      if (query.every((word, j) => sameWord(words[i + j], word))) return title;
+    }
+  }
+  return null;
+}
+
+/**
+ * The first title or heading of two words or more that the query holds whole,
+ * in order and side by side, or null. A question such as "how do I add dark
+ * mode" names the "Dark mode" section outright, around words no title has.
+ * @param {string} term - Lowercased full query.
+ * @param {string[] | undefined} titles
+ * @returns {string | null}
+ */
+export function titleInQuery(term, titles) {
+  const query = phraseWords(term);
+  if (!titles) return null;
+  for (const title of titles) {
+    const words = phraseWords(String(title ?? ''));
+    if (words.length < 2 || words.length > query.length) continue;
+    for (let i = 0; i + words.length <= query.length; i++) {
+      if (words.every((word, j) => sameWord(query[i + j], word))) return title;
+    }
+  }
+  return null;
+}
+
+/**
  * @param {string} term - Lowercased full query.
  * @param {string[]} tokens - Content tokens from tokenizeQuery(term).
  * @param {Candidate} candidate
@@ -346,16 +450,22 @@ export function scoreQuery(term, tokens, candidate) {
     total,
   });
   const full = scoreCandidate(term, candidate);
+  // A query of several words keeps its phrase tiers below even when stopwords
+  // leave one content word: "make an integration" is still the phrase an
+  // author declares as a keyword, and "build an integration" still names a
+  // title outright, though each tokenizes to `integration` alone.
+  const phrase = phraseWords(term).length >= 2;
 
-  // 0–1 content tokens: keep whole-phrase fuzzy matching (typo tolerance for
-  // single words), but if stopwords left exactly one DIFFERENT token (e.g.
-  // "pricing page" → "pricing"), score that token too and take the stronger.
-  if (tokens.length <= 1) {
+  /** 0–1 content tokens: whole-phrase fuzzy matching (typo tolerance for
+   *  single words), but if stopwords left exactly one DIFFERENT token (e.g.
+   *  "pricing page" → "pricing"), score that token too and take the stronger. */
+  const fewTokens = () => {
     const single =
       tokens.length === 1 ? bestForToken(tokens[0], candidate) : null;
     if (full && (!single || full.score >= single.score)) return asFull(full);
     return single ? asFull(single) : null;
-  }
+  };
+  if (tokens.length <= 1 && !phrase) return fewTokens();
 
   // The full (untokenized) query matching a candidate's name or a declared
   // keyword VERBATIM — full.score 90 or 100, the only two scoreCandidate
@@ -372,6 +482,22 @@ export function scoreQuery(term, tokens, candidate) {
     return asFull({score: full.score + 100, reason: full.reason});
   }
 
+  // The whole query standing as a phrase in a doc's title or one of its
+  // headings is the next tier down, and still above the token-sum path. The
+  // reader named what the section is about, in order: `dark mode` is the
+  // "Light/Dark Mode" section. Without this, the title scores a keyword
+  // substring (70) and loses to a doc that happens to name `mode` exactly in
+  // a code tick (90 on one token, 98 with coverage), so API enum docs outrank
+  // the guide section.
+  const heading = headingWithPhrase(term, candidate.titles);
+  if (heading != null) {
+    return asFull({
+      score: TITLE_PHRASE_SCORE,
+      reason: `title "${heading}" holds the whole query`,
+    });
+  }
+  if (tokens.length <= 1) return fewTokens();
+
   // Multi-word natural language: score each content token, counting only
   // strong hits, then reward coverage so candidates matching more terms win.
   let strongest = 0;
@@ -386,7 +512,39 @@ export function scoreQuery(term, tokens, candidate) {
       hitTerms.push(tok);
     }
   }
+  // The reverse of the title tier, a step lower: the query holds a whole title
+  // of two words or more, so the reader asked a question around the section's
+  // name ("how do I add dark mode"). Coverage breaks ties between sections
+  // that share a title such as "Best Practices".
+  const named = titleInQuery(term, candidate.titles);
+  if (named != null) {
+    return {
+      score: TITLE_IN_QUERY_SCORE + Math.min(matched, 9),
+      reason: `the query names the title "${named}"`,
+      matched,
+      total,
+    };
+  }
   if (matched === 0) return full ? asFull(full) : null;
+
+  const reason = `matches ${matched}/${tokens.length} terms: ${hitTerms.join(', ')}`;
+
+  // Every word matched is its own tier. Summed per word, a doc that matches
+  // both words of `troubleshoot integration` in its title and description
+  // (50 + bonus + coverage = 77) lost to thirty docs that each match
+  // `integration` alone, by name or in a code tick (98-108). The reader asked for
+  // both; a candidate that has both comes first, ordered among its peers by
+  // how strong its strongest match is.
+  if (matched === tokens.length) {
+    return {
+      score:
+        FULL_COVERAGE_SCORE +
+        Math.round((strongest - MIN_TOKEN_SCORE) / 6.25),
+      reason,
+      matched,
+      total,
+    };
+  }
 
   // Base the score on the STRONGEST concept that matched, plus a bonus per
   // additional matched concept and a coverage term.
@@ -409,14 +567,8 @@ export function scoreQuery(term, tokens, candidate) {
   const tokenScore = Math.round(
     strongest + Math.min(matched - 1, 3) * 12 + coverage * 15,
   );
-
   if (full && full.score >= tokenScore) return asFull(full);
-  return {
-    score: tokenScore,
-    reason: `matches ${matched}/${tokens.length} terms: ${hitTerms.join(', ')}`,
-    matched,
-    total,
-  };
+  return {score: tokenScore, reason, matched, total};
 }
 
 /**
@@ -461,7 +613,9 @@ export function scoreCandidate(
   const nameLower = name.toLowerCase();
 
   // ── Name signals ────────────────────────────────────────────────
-  if (nameLower === term) {
+  // A plural of the name is the name: `integration` is the `integrations`
+  // guides, `tab` the `tabs` doc.
+  if (nameLower === term || (term.length >= 3 && sameWord(nameLower, term))) {
     consider(100, 'exact name');
   } else {
     // Substring (both directions), min 4 chars, >=50% coverage.
@@ -870,11 +1024,14 @@ async function gatherDocs(cwd) {
       keywords: [
         node.route.slice(node.route.lastIndexOf('/') + 1),
         ...(Array.isArray(selfDoc?.keywords) ? selfDoc.keywords : []),
+        // A namespace doc's own keywords, which it declares for search.
+        ...(Array.isArray(node.keywords) ? node.keywords : []),
         ...defined,
         ...codeTerms({content}),
       ],
       description: node.summary || '',
       prose: sectionProse({title: node.title, content}),
+      titles: [node.title],
       _topic: node.route,
       _title: path.join(' › '),
       _command: `astryx docs ${node.route}`,
@@ -1007,6 +1164,11 @@ function topicCandidates(
       prose: split
         ? sections.map(section => section.title).filter(Boolean)
         : sections.flatMap(sectionProse),
+      titles: [
+        doc?.title || title || name,
+        // A topic read whole answers for the headings inside it.
+        ...(split ? [] : sections.flatMap(s => [s.title, ...headings(s)])),
+      ].filter(Boolean),
       _topic: name,
       _title: docTitle,
       _command: split ? `astryx docs ${name} --index` : `astryx docs ${name}`,
@@ -1027,6 +1189,7 @@ function topicCandidates(
       ],
       description: sectionSummary(section),
       prose: sectionProse(section),
+      titles: [section.title, ...headings(section)].filter(Boolean),
       _topic: name,
       _section: key,
       _title: `${docTitle} › ${section.title}`,

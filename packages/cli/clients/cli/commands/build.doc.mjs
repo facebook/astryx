@@ -14,7 +14,7 @@ export const doc = {
   displayName: 'astryx build',
   namespace: 'cli/commands',
   summary:
-    'Build a page: composition kit for an idea, or the workflow playbook (no args)',
+    'Start a page: matching templates, blocks, and components for an idea, or the playbook with no query',
   description:
     'The assemble-a-page entry point. With no query it returns the how-to-build-a-page ' +
     'playbook; with a query it groups the unified search hits into a composition kit: ' +

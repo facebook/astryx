@@ -5,7 +5,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import {Command} from 'commander';
-import {registerDocs} from './docs.mjs';
+import {formatBlock, registerDocs} from './docs.mjs';
 import {runCli} from '../../../test-utils/run-cli.mjs';
 import {displayWidth} from '../formatters/index.mjs';
 
@@ -119,7 +119,7 @@ describe('progressive reads', () => {
   it("prints a topic's section index with the keys to read by", async () => {
     const {status, stdout} = await runCli(['docs', 'theme', '--index']);
     expect(status).toBe(0);
-    expect(stdout).toMatch(/^quick-start +Quick Start/m);
+    expect(stdout).toMatch(/^quick-start +Wrap your app in a theme/m);
     expect(stdout).toContain('docs theme <section>');
     expect(stdout).toMatch(/Read everything: +\S.* docs theme --full$/m);
     expect(widest(stdout)).toBeLessThanOrEqual(120);
@@ -128,7 +128,7 @@ describe('progressive reads', () => {
   it('prints one section by its key', async () => {
     const {status, stdout} = await runCli(['docs', 'theme', 'quick-start']);
     expect(status).toBe(0);
-    expect(stdout).toMatch(/^## Quick Start/m);
+    expect(stdout).toMatch(/^## Wrap your app in a theme/m);
   }, SLOW);
 
   it("lists a topic's sections by default; --full prints the whole topic", async () => {
@@ -136,7 +136,7 @@ describe('progressive reads', () => {
     expect((await runCli(['docs', 'theme'])).stdout).toBe(index.stdout);
     const full = await runCli(['docs', 'theme', '--full']);
     expect(full.status).toBe(0);
-    expect(full.stdout).toMatch(/^## Quick Start/m);
+    expect(full.stdout).toMatch(/^## Wrap your app in a theme/m);
     expect(full.stdout.length).toBeGreaterThan(index.stdout.length * 3);
     expect((await runCli(['--detail', 'full', 'docs', 'theme', '--full'])).stdout).toBe(
       full.stdout,
@@ -154,6 +154,52 @@ describe('progressive reads', () => {
     expect((await envelope(['docs', 'theme', 'quick-start'])).type).toBe(
       'docs.detail.section',
     );
+  }, SLOW);
+});
+
+describe('blocks as text', () => {
+  const SLOW = 60_000;
+
+  it('prints a code label above the fence, never inside it', () => {
+    for (const lang of ['bash', 'css', 'json', 'html', 'text', 'tsx']) {
+      expect(
+        formatBlock({type: 'code', lang, label: 'Terminal', code: 'x'}, 'full'),
+      ).toBe(`Terminal:\n\`\`\`${lang}\nx\n\`\`\``);
+    }
+    expect(formatBlock({type: 'code', lang: 'bash', code: 'x'}, 'full')).toBe(
+      '```bash\nx\n```',
+    );
+    // A label that already ends in a colon does not get a second one.
+    expect(
+      formatBlock({type: 'code', lang: 'css', label: 'globals.css:', code: 'x'}, 'full'),
+    ).toBe('globals.css:\n```css\nx\n```');
+  });
+
+  it('escapes pipes in table cells, so a union type stays one column', () => {
+    const table = {
+      type: /** @type {const} */ ('table'),
+      headers: ['Prop', 'Type', 'Default'],
+      rows: [
+        ['mode', "'system' | 'light' | 'dark'", "'system'"],
+        ['theme', 'DefinedTheme', '-'],
+      ],
+    };
+    const lines = /** @type {string} */ (formatBlock(table, 'full')).split('\n');
+    expect(lines).toHaveLength(4);
+    // Every line has exactly two column separators, all at the same place.
+    for (const line of lines) expect(line.split(' | ')).toHaveLength(3);
+    expect(new Set(lines.map(line => line.indexOf(' | '))).size).toBe(1);
+    expect(lines[2]).toContain("'system' \\| 'light' \\| 'dark'");
+    expect(formatBlock(table, 'brief')).toBe(
+      "mode='system' \\| 'light' \\| 'dark' | theme=DefinedTheme",
+    );
+  });
+
+  it('prints the labels of a real section above their fences', async () => {
+    const {status, stdout} = await runCli(['docs', 'theme', 'quick-start']);
+    expect(status).toBe(0);
+    expect(stdout).toContain('Install a theme package:\n```bash\nnpm install');
+    expect(stdout).not.toContain('// Install a theme package');
   }, SLOW);
 });
 
@@ -216,25 +262,42 @@ describe('the docs tree, one level at a time', () => {
     expect(JSON.parse(both.stdout).code).toBe('ERR_INVALID_ARGUMENT');
   }, SLOW);
 
-  it('reads the integration guide by its route, and not by its old name', async () => {
-    const guide = await runCli(['docs', 'cli/integrations', '--index']);
+  it('reads the integration guides by their routes, and not by the old name', async () => {
+    // cli/integrations is a namespace: one level, its guides by slot.
+    const level = await runCli(['docs', 'cli/integrations']);
+    expect(level.status).toBe(0);
+    expect(level.stdout).toMatch(/^Start$/m);
+    expect(level.stdout).toMatch(/^quick-start +Quick start: /m);
+    const guide = await runCli(['docs', 'cli/integrations/codemods', '--index']);
     expect(guide.status).toBe(0);
-    expect(guide.stdout).toMatch(/Read one section: .*docs cli\/integrations <section>/);
+    expect(guide.stdout).toMatch(
+      /Read one section: .*docs cli\/integrations\/codemods <section>/,
+    );
     // A bare read is one level too: the sections, and how to read it all.
-    const bare = await runCli(['docs', 'cli/integrations']);
+    const bare = await runCli(['docs', 'cli/integrations/codemods']);
     expect(bare.status).toBe(0);
     expect(bare.stdout).toBe(guide.stdout);
-    expect(bare.stdout).toMatch(/Read everything: +.*docs cli\/integrations --full$/m);
-    const one = await runCli(['docs', 'cli/integrations', 'codemods']);
+    expect(bare.stdout).toMatch(
+      /Read everything: +.*docs cli\/integrations\/codemods --full$/m,
+    );
+    const one = await runCli([
+      'docs',
+      'cli/integrations/codemods',
+      'which-codemods-run',
+    ]);
     expect(one.status).toBe(0);
-    expect(one.stdout).toMatch(/^## Codemods$/m);
-    expect(one.stdout).toMatch(/^Up: .*docs cli\/integrations --index$/m);
-    expect(one.stdout).toMatch(/^Previous: .*docs cli\/integrations agent-docs$/m);
-    expect(one.stdout).toMatch(/^Next: .*docs cli\/integrations recording-runs$/m);
-    const full = await runCli(['docs', 'cli/integrations', '--full']);
+    expect(one.stdout).toMatch(/^## Which codemods run$/m);
+    expect(one.stdout).toMatch(/^Up: .*docs cli\/integrations\/codemods --index$/m);
+    expect(one.stdout).toMatch(
+      /^Previous: .*docs cli\/integrations\/codemods write-the-transform$/m,
+    );
+    expect(one.stdout).toMatch(
+      /^Next: .*docs cli\/integrations\/codemods run-codemods-in-an-app$/m,
+    );
+    const full = await runCli(['docs', 'cli/integrations/codemods', '--full']);
     expect(full.status).toBe(0);
-    expect(full.stdout).toMatch(/^## Overview$/m);
-    expect(full.stdout.length).toBeGreaterThan(bare.stdout.length * 4);
+    expect(full.stdout).toMatch(/^## Add a codemod$/m);
+    expect(full.stdout.length).toBeGreaterThan(bare.stdout.length * 2);
     const old = await runCli(['docs', 'cli-integrations']);
     expect(old.status).toBe(1);
     expect(old.stderr).toContain('Unknown topic "cli-integrations"');
@@ -253,7 +316,6 @@ describe('the docs tree, one level at a time', () => {
     expect(error).toMatchObject({code: 'ERR_UNKNOWN_SECTION'});
     expect(error.suggestions.map(s => s.name)).toEqual([
       'cli/integrations',
-      'cli/writing-docs',
       'cli/commands',
       'cli/api',
     ]);

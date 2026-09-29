@@ -426,6 +426,29 @@ describe('doctor integration — command', () => {
     expect(process.exitCode).toBeUndefined();
   });
 
+  it('docs exits 1 for a placement that hides a guide, with no [ok] after the failure', async () => {
+    writeDocIntegration({name: 'deploying'});
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'deploying.doc.mjs'),
+      "export default {type: 'generic', name: 'deploying', title: 'Deploying', description: 'Deploy.', placement: {parent: 'namespace:nope', slot: 'guides'}, sections: [{title: 'Deploy', content: [{type: 'prose', text: 'Deploy.'}]}]};\n",
+    );
+    process.chdir(tmpDir);
+
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      'doctor',
+      'integration',
+      'docs',
+    ]);
+
+    const printed = logCalls.join('\n');
+    expect(printed).toContain('[fail]');
+    expect(printed).toContain('invalid_doc_graph');
+    expect(printed).not.toContain('[ok]');
+    expect(process.exitCode).toBe(1);
+  });
+
   it('docs exits 1 for an accidental same-name Core topic', async () => {
     const [coreTopic] = Object.keys(discoverBuiltinTopics());
     writeDocIntegration({name: coreTopic});

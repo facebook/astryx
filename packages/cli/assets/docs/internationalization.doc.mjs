@@ -8,10 +8,12 @@ export const docs = {
   category: 'guide',
   description:
     'Set the active locale for astryx components, load locale catalogs, coexist with your own i18n library, swap languages at runtime, and test translations with the pseudo locale.',
+  keywords: ['translate', 'translation', 'language', 'locale'],
 
   sections: [
     {
-      title: 'Quick Start',
+      id: 'quick-start',
+      title: 'Set the locale',
       category: 'guide',
       content: [
         {
@@ -41,15 +43,15 @@ function App() {
           lang: 'tsx',
           label: 'Load an astryx locale catalog',
           code: `import {InternationalizationProvider} from '@astryxdesign/core/i18n';
-import fr from '@astryxdesign/core/locales/fr.json';
+import frFR from '@astryxdesign/core/locales/fr-FR.json';
 
-<InternationalizationProvider locale="fr" messages={{fr}}>
+<InternationalizationProvider locale="fr-FR" messages={{'fr-FR': frFR}}>
   <App />
 </InternationalizationProvider>;`,
         },
         {
           type: 'prose',
-          text: 'Astryx ships English today, with first-party translations for other locales on the roadmap. Until a locale is available from `@astryxdesign/core/locales/*`, apps can pass a local catalog with the same shape. See `@astryxdesign/core/locales/en.json` for the current key inventory. Missing keys fall back through the locale chain to English (for example, `pt-BR` walks to `pt`, then to shipped `en`).',
+          text: 'Astryx ships catalogs for 30 locales in `@astryxdesign/core/locales/*.json`: English (`en`) and region-tagged translations such as `fr-FR`, `ja-JP`, and `ar-SA`, plus `pseudo`. For any other locale, pass a catalog shaped like `en.json`. Missing keys fall back through the locale chain to English: `pt-BR` walks to `pt`, then to the built-in `en`. The chain only drops a region, so `fr` never finds `fr-FR`; pass the region-tagged name.',
         },
         {
           type: 'prose',
@@ -58,7 +60,8 @@ import fr from '@astryxdesign/core/locales/fr.json';
       ],
     },
     {
-      title: 'Runtime language swap',
+      id: 'runtime-language-swap',
+      title: 'Change the language at runtime',
       category: 'guide',
       content: [
         {
@@ -69,12 +72,12 @@ import fr from '@astryxdesign/core/locales/fr.json';
           type: 'code',
           lang: 'tsx',
           label: 'Toggle between locales',
-          code: `const [locale, setLocale] = useState<'en' | 'fr'>('en');
+          code: `const [locale, setLocale] = useState<'en' | 'fr-FR'>('en');
 
-<InternationalizationProvider locale={locale} messages={{fr}}>
+<InternationalizationProvider locale={locale} messages={{'fr-FR': frFR}}>
   <Button
     label={locale === 'en' ? 'Français' : 'English'}
-    onClick={() => setLocale(l => (l === 'en' ? 'fr' : 'en'))}
+    onClick={() => setLocale(l => (l === 'en' ? 'fr-FR' : 'en'))}
   />
   <App />
 </InternationalizationProvider>;`,
@@ -95,7 +98,7 @@ import fr from '@astryxdesign/core/locales/fr.json';
         },
         {
           type: 'prose',
-          text: "You don't wire anything per component. Once the direction is set, astryx components mirror on their own: layout and spacing flip via CSS logical properties, directional icons (chevrons, carets) flip in place, keyboard arrow keys swap left/right, and overlays position on the correct side. Set the direction once and the whole component tree follows.",
+          text: "You don't wire anything per component. Once the page's `dir` attribute is set (see below), astryx components mirror on their own: layout and spacing flip via CSS logical properties, directional icons (chevrons, carets) flip in place, keyboard arrow keys swap left/right, and overlays position on the correct side. Set the direction once and the whole component tree follows.",
         },
         {
           type: 'code',
@@ -110,20 +113,20 @@ import fr from '@astryxdesign/core/locales/fr.json';
         },
         {
           type: 'prose',
-          text: 'Pass the optional `dir` prop to force a direction. This overrides the locale-derived default; useful for RTL layout testing under an English catalog, or to skip derivation when you already know the direction.',
+          text: 'Pass the optional `dir` prop to force the direction the provider reports (for example, through `useDirection()`). It overrides the locale-derived default: use it to test RTL under an English catalog, together with `dir="rtl"` on the page, or to skip derivation when you already know the direction.',
         },
         {
           type: 'code',
           lang: 'tsx',
           label: 'Explicit direction override',
-          code: `// force RTL layout while keeping English strings
+          code: `// direction for useDirection(); set dir="rtl" on <html> to mirror layout
 <InternationalizationProvider locale="en" dir="rtl">
   <App />
 </InternationalizationProvider>;`,
         },
         {
           type: 'prose',
-          text: "There's one more step: tell the browser about the direction too. Add a `dir` attribute to your page; usually on the `<html>` tag. This is what makes text align to the correct side, punctuation and mixed-language text flow correctly, and layouts mirror. The provider handles astryx components; the `dir` attribute handles everything else on the page.",
+          text: "There's one more step: tell the browser about the direction too. Add a `dir` attribute to your page; usually on the `<html>` tag. This is what makes text align to the correct side, punctuation and mixed-language text flow correctly, and layouts mirror. Astryx components mirror from this attribute too; the provider's `dir` does not set it.",
         },
         {
           type: 'prose',
@@ -155,6 +158,7 @@ export default function RootLayout({children, params}) {
       ],
     },
     {
+      id: 'override-text',
       title: "Overriding astryx's default text",
       category: 'guide',
       content: [
@@ -180,6 +184,7 @@ export default function RootLayout({children, params}) {
       ],
     },
     {
+      id: 'own-i18n-library',
       title: 'Using astryx with your own i18n library',
       category: 'guide',
       content: [
@@ -195,8 +200,8 @@ export default function RootLayout({children, params}) {
 import {Selector} from '@astryxdesign/core/Selector';
 import {Button} from '@astryxdesign/core/Button';
 import {FormattedMessage, IntlProvider, useIntl} from 'react-intl';
-import astryxFr from './locales/astryx/fr.json'; // astryx's UI, in French
-import appFr from './locales/app/fr.json';       // your app strings, in French
+import astryxFr from '@astryxdesign/core/locales/fr-FR.json'; // astryx's UI, in French
+import appFr from './locales/app/fr.json'; // your app strings, in French
 
 function Pricing() {
   // Consumer strings — resolved by react-intl.
@@ -227,8 +232,8 @@ function Pricing() {
 export default function App() {
   return (
     // Same locale, two providers reading their own catalogs.
-    <IntlProvider locale="fr" messages={appFr}>
-      <InternationalizationProvider locale="fr" messages={{fr: astryxFr}}>
+    <IntlProvider locale="fr-FR" messages={appFr}>
+      <InternationalizationProvider locale="fr-FR" messages={{'fr-FR': astryxFr}}>
         <Pricing />
       </InternationalizationProvider>
     </IntlProvider>
@@ -241,11 +246,12 @@ export default function App() {
         },
         {
           type: 'prose',
-          text: "Single-catalog usage (where an external i18n runtime like react-intl or i18next resolves both your app strings AND astryx's strings through one provider) is on the roadmap via a `Translator` adapter. Track [facebook/astryx#4029](https://github.com/facebook/astryx/issues/4029). For now, run the two providers side by side as shown above.",
+          text: 'Astryx does not route its strings through another i18n runtime; run the two providers side by side as shown above.',
         },
       ],
     },
     {
+      id: 'astryx-as-i18n',
       title: 'Using astryx as your i18n library',
       category: 'guide',
       content: [
@@ -312,101 +318,6 @@ import pseudo from '@astryxdesign/core/locales/pseudo.json';
 <InternationalizationProvider locale="pseudo" messages={{pseudo}}>
   <App />
 </InternationalizationProvider>;`,
-        },
-      ],
-    },
-    {
-      title: 'For contributors',
-      category: 'guide',
-      content: [
-        {
-          type: 'heading',
-          level: 3,
-          text: 'Developers',
-        },
-        {
-          type: 'prose',
-          text: 'Astryx component authors read strings with `useTranslator()` rather than hardcoding user-facing text.',
-        },
-        {
-          type: 'code',
-          lang: 'tsx',
-          label: 'Read an astryx string',
-          code: `import {useTranslator} from '@astryxdesign/core/i18n';
-
-function SaveButton() {
-  const t = useTranslator();
-  return <button>{t('@astryx.actions.save')}</button>;
-}`,
-        },
-        {
-          type: 'prose',
-          text: "Astryx's own strings live in `packages/core/locales/en.json`. New user-facing strings must go through `useTranslator`; this is enforced by the `@astryx/no-hardcoded-i18n-string` ESLint rule. See the AI contribution guide for the alias-and-resolve pattern used when adding new keys.",
-        },
-        {
-          type: 'prose',
-          text: 'When you author a component that needs to respond to direction, resolve it from the DOM, not from a render-time JavaScript read, and reach for the lightest tool that works. In priority order:',
-        },
-        {
-          type: 'heading',
-          level: 4,
-          text: '1. CSS logical properties first',
-        },
-        {
-          type: 'prose',
-          text: 'Use `insetInlineStart`, `paddingInlineEnd`, `marginInline`, and friends instead of physical `left`/`right`. Most mirroring needs nothing more; the browser flips it from the ambient `dir`. The `@astryx/no-physical-properties` ESLint rule enforces this.',
-        },
-        {
-          type: 'heading',
-          level: 4,
-          text: '2. Directional icons: mirror with CSS, not a name-swap',
-        },
-        {
-          type: 'prose',
-          text: 'Render one fixed glyph and wrap it in the shared `rtlStyles.mirror` (a `scaleX(-1)` that only applies under `[dir="rtl"]`). It flips from the ancestor `dir` through the cascade, so it works on the server with no hydration flash. Do not pick `chevronLeft` vs `chevronRight` in JS. This is how Pagination, Calendar, and Carousel handle their chevrons.',
-        },
-        {
-          type: 'code',
-          lang: 'tsx',
-          label: 'Mirror a directional icon with CSS',
-          code: `import * as stylex from '@stylexjs/stylex';
-import {rtlStyles} from '@astryxdesign/core';
-
-function NextButton() {
-  // One glyph; CSS flips it under RTL. No direction read.
-  return (
-    <span {...stylex.props(rtlStyles.mirror)}>
-      <Icon icon="chevronRight" />
-    </span>
-  );
-}`,
-        },
-        {
-          type: 'heading',
-          level: 4,
-          text: '3. Behavioral logic: read the DOM lazily, on the event',
-        },
-        {
-          type: 'prose',
-          text: "For things CSS can't express; keyboard arrow-key mapping, drag/scroll math; read direction at interaction time with `isRtlElement(el)` (a `getComputedStyle().direction` check), never during render. The focus primitives (`useListFocus`, `useGridFocus`, `useTreeFocus`) already auto-detect direction from their container, so arrow keys flip for free; don't pass a direction flag to them.",
-        },
-        {
-          type: 'heading',
-          level: 4,
-          text: '4. useDirection() context: the last resort',
-        },
-        {
-          type: 'prose',
-          text: "Reach for it only when you genuinely need the direction value during render and none of the above fit. It's SSR-safe and returns `'ltr'` outside a provider (matching `useTranslator`'s silent fallback), but it's the one path that can mismatch on hydration if the provider's `direction` disagrees with `<html dir>`; so prefer the options above, which resolve purely from the DOM. As of the CSS-mirror migration, no astryx component reads direction from context at render time.",
-        },
-        {
-          type: 'heading',
-          level: 3,
-          text: 'Translators',
-        },
-        {
-          type: 'prose',
-          text: 'Crowdin is the preferred way to contribute; [join a language](https://crowdin.com/project/astryx), translate strings in the web UI, and your work syncs back to the repo without opening a PR. Direct PRs against `packages/core/locales/*.json` also work if you prefer that flow.',
         },
       ],
     },

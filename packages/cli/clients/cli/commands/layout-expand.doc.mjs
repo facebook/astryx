@@ -14,10 +14,10 @@ export const doc = {
   name: 'layout expand',
   displayName: 'astryx layout expand',
   namespace: 'cli/commands',
-  summary: 'Expand a layout expression into validated XDS TSX',
+  summary: 'Expand a layout expression into Astryx TSX',
   description:
     'Parses and validates a compressed XLE/XLO expression, then expands it into ' +
-    'ready-to-use XDS TSX, routing children into slots, scaffolding typed useState for ' +
+    'ready-to-use Astryx TSX, routing children into slots, scaffolding typed useState for ' +
     'interactive controls, and splicing referenced blocks. Writes to a path, or returns the code.',
   fn: 'layoutExpand',
   args: [

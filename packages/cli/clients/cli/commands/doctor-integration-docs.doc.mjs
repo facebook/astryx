@@ -10,9 +10,10 @@ export const doc = {
   namespace: 'cli/commands',
   summary: 'Check an integration\'s docs: the docs tree they add, every link, and overlaps with Core topics',
   description:
-    'Reports intentional Core topic replacements and extensions as information. ' +
+    'Checks the docs tree the package adds, every link in its docs, and overlaps with Core topics. ' +
+    'Intentional replacements and extensions are information. ' +
     'A same-name topic without `replaces` or `extends` is an accidental conflict ' +
-    'and fails until the author declares the relationship or renames it.',
+    'and fails until the author declares the relationship or renames it. See {@link generic:check-your-docs}.',
   fn: 'integrationDocConflicts',
   args: [
     {

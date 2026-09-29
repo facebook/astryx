@@ -497,8 +497,28 @@ describe("the CLI's own docs tree", () => {
       expect(
         tree.get('cli')?.slots.map(slot => [slot.name, slot.children]),
       ).toEqual([
-        ['guides', ['cli/integrations', 'cli/writing-docs']],
+        ['guides', ['cli/integrations']],
         ['reference', ['cli/commands', 'cli/api']],
+      ]);
+      // The integration guides: one short guide per task, in four slots, and
+      // the docs guides one level down.
+      expect(
+        tree
+          .get('cli/integrations')
+          ?.slots.map(slot => [slot.name, slot.children.length]),
+      ).toEqual([
+        ['start', 3],
+        ['contribute', 7],
+        ['ship', 5],
+        ['help', 1],
+      ]);
+      expect(tree.get('cli/integrations/docs')?.slots[0].children).toEqual([
+        'cli/integrations/docs/add-a-topic',
+        'cli/integrations/docs/sections-and-placement',
+        'cli/integrations/docs/links',
+        'cli/integrations/docs/extend-or-replace',
+        'cli/integrations/docs/short-and-findable',
+        'cli/integrations/docs/check-your-docs',
       ]);
       expect(tree.get('cli/api')?.slots[0].children).toEqual([
         'cli/api/functions',
@@ -564,11 +584,15 @@ describe("the CLI's own docs tree", () => {
         'api',
         'cli',
         'commands',
+        'docs',
+        'integrations',
       ]);
-      expect(inputs.docs.map(d => [d.name, d.placement?.parent])).toEqual([
-        ['integrations', 'namespace:cli'],
-        ['writing-docs', 'namespace:cli'],
+      const parents = new Set(inputs.docs.map(d => d.placement?.parent));
+      expect([...parents].sort()).toEqual([
+        'namespace:docs',
+        'namespace:integrations',
       ]);
+      expect(inputs.docs.length).toBe(21);
     },
     SLOW,
   );

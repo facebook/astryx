@@ -1684,14 +1684,19 @@ export const templateMetadataCount = ${templateMetadata.length};
  */
 async function docsTreeGuides() {
   const guides = [];
+  // Every route the tree has. The site has a page only for a guide; a
+  // reference to any other route still opens it in `astryx docs`.
+  const routes = [];
   const list = await readDocs();
   const pending = (list.meta?.namespaces ?? []).map(entry => entry.topic);
   while (pending.length > 0) {
     const route = pending.shift();
+    routes.push(route);
     const read = await readDocs(route);
     if (read.type !== 'docs.node') continue;
     for (const slot of read.data.slots) {
       for (const child of slot.children) {
+        if (child.kind !== 'namespace') routes.push(child.route);
         if (child.kind === 'namespace') {
           pending.push(child.route);
         } else if (child.kind === 'generic' && child.route.includes('/')) {
@@ -1709,7 +1714,7 @@ async function docsTreeGuides() {
       }
     }
   }
-  return guides;
+  return {guides, routes};
 }
 
 async function generateDocsRegistry() {
@@ -1719,7 +1724,7 @@ async function generateDocsRegistry() {
   if (!fs.existsSync(DOCS_DIR)) {
     writeRegistry(
       'docsRegistry.ts',
-      `// Auto-generated — no docs found\nexport const docTopics = [];\nexport const docsCount = 0;\n`,
+      `// Auto-generated — no docs found\nexport const docTopics = [];\nexport const docsCount = 0;\nexport const docsTreeRoutes = [];\n`,
     );
     return {docTopics: [], docsCount: 0};
   }
@@ -1781,10 +1786,12 @@ async function generateDocsRegistry() {
   // Guides the CLI's docs tree places (spec:AST-046) are not topic files: the
   // CLI reads them only by route. Until the site renders the tree itself, each
   // keeps a flat page whose slug is its route with "/" as "-", so
-  // `cli/integrations` stays at /docs/cli-integrations.
-  for (const guide of await docsTreeGuides()) {
+  // `cli/integrations/quick-start` is /docs/cli-integrations-quick-start.
+  const tree = await docsTreeGuides();
+  for (const guide of tree.guides) {
     docTopics.push(guide);
   }
+  const docsTreeRoutes = [...new Set(tree.routes)].sort();
 
   docTopics.sort((a, b) => a.topic.localeCompare(b.topic));
 
@@ -1830,6 +1837,10 @@ export interface DocTopic {
 export const docTopics: DocTopic[] = ${JSON.stringify(docTopics, null, 2)};
 
 export const docsCount = ${docTopics.length};
+
+/** Every route of the CLI's docs tree. A guide has a page here; any other
+ *  route (a namespace, a command or API doc) opens only in \`astryx docs\`. */
+export const docsTreeRoutes: string[] = ${JSON.stringify(docsTreeRoutes, null, 2)};
 `;
   writeRegistry('docsRegistry.ts', content);
   return {docTopics, docsCount: docTopics.length};

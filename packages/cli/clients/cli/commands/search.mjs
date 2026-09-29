@@ -14,6 +14,7 @@
  *
  * Usage:
  *   astryx search button                 Ranked results across all domains
+ *   astryx search dark mode              Every word is part of the query
  *   astryx search modal --type component Filter to a single domain
  *   astryx search forms --limit 5        Cap the result count
  *   astryx search button --verbose       Also print score / reason
@@ -42,10 +43,13 @@ export function registerSearch(program) {
   defineCommand(program, searchCommand, {
     fn: searchFn,
     action: async (
-      /** @type {string} */ query,
+      /** @type {string[] | string} */ words,
       /** @type {{type?: import('../../../api/search/search.type.mjs').SearchDomain, limit?: string, verbose?: boolean}} */ options,
     ) => {
       const json = program.opts().json || false;
+      // The query is variadic: `astryx search dark mode` is one query, "dark
+      // mode". Taking only the first word dropped the rest without a word.
+      const query = Array.isArray(words) ? words.join(' ') : words;
 
       try {
         const project = await Project.load(process.cwd());

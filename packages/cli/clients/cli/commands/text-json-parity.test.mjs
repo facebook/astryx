@@ -372,8 +372,8 @@ const CASES = [
     skipFieldChecks: true,
   },
   {
-    name: 'integration pack',
-    args: ['integration', 'pack', '--check'],
+    name: 'integration verify',
+    args: ['integration', 'verify'],
     // Needs a packable project; pack itself may exit differently.
     skipFieldChecks: true,
   },

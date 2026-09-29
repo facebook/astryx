@@ -17,8 +17,8 @@ export const doc = {
   summary: 'Return the XLE/XLO grammar cheatsheet for this install.',
   description:
     'The reference behind `astryx layout grammar`: the agent cheatsheet for writing XLE/XLO ' +
-    "layout expressions, with the alias table generated from this branch's registry rather than " +
-    'hand-maintained, so short names always reflect the components actually installed.',
+    'layout expressions, with the alias table generated from the installed @astryxdesign/core ' +
+    'registry, so short names always match the components you have.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'layoutGrammar(options?: LayoutGrammarOptions): Promise<LayoutGrammarResponse>',
@@ -37,6 +37,7 @@ export const doc = {
       type: 'string',
       description:
         'Directory the component registry (and its alias table) resolves against.',
+      default: 'process.cwd()',
     },
   ],
   returns: [

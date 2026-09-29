@@ -1,0 +1,15 @@
+---
+'@astryxdesign/cli': patch
+---
+
+[fix] Fix the CLI's topic docs and how they print.
+
+- A code block's label now prints above the block instead of as a `// label` line inside it, so copied bash, CSS, JSON, and HTML stay valid. Table cells escape `|`, so a union type stays in one column.
+- `astryx search dark mode` searches for both words; it used to drop every word after the first. A doc that matches every word of a query now outranks one that matches only some, and a section whose title or heading holds the whole query ranks near the top. Topics can declare search `keywords`, now a documented ReferenceDoc field, and a namespace's `keywords` now count too. A query keeps its phrase when common words such as `make`, `build`, or `an` drop out, so `astryx search make an integration` finds the integration guides, and a plural of a doc's name matches it.
+- Snippets that failed when copied now work: StyleX token imports, the `fr-FR.json` locale path, Tailwind `rounded-lg`, `--color-background-muted`, icon and color values, and the Cursor rule path.
+- Claims that did not match the code are corrected: the 30 shipped locales and how RTL mirroring works, what `astryx init` writes, `--detail brief` for a shorter read, the Neutral and Matcha fonts, the components that need anchor positioning, `gap` steps, Card's radius, and the Next.js StyleX example. The deprecated bare classes are still emitted and will be removed in a later release.
+- `astryx docs tokens` lists all 258 tokens, adding the data visualization and syntax groups, and shows both halves of every `light-dark()` value.
+- Long sections are split, vague titles renamed, and the `--dense` and Chinese versions no longer drop blocks. Twelve long section keys are shorter, such as `astryx docs styling stylex-setup`; the old keys no longer resolve.
+- The contributor-only sections, on adding a semantic icon and on strings and text direction inside components, moved to CONTRIBUTING.md.
+
+@josephfarina

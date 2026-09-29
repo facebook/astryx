@@ -15,7 +15,7 @@ export const doc = {
   displayName: 'astryx layout grammar',
   namespace: 'cli/commands',
   summary:
-    'Print the XLE/XLO cheatsheet (alias table generated from this branch)',
+    'Print the layout expression cheatsheet (aliases come from the installed components)',
   description:
     'Prints the XLE/XLO grammar cheatsheet for writing layout expressions, with the alias ' +
     "table generated from this install's registry so short names always reflect the " +

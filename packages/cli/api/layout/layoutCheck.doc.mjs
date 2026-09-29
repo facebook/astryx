@@ -20,7 +20,7 @@ export const doc = {
     'expression without generating any TSX, and echoes it back in both canonical surfaces ' +
     '(compact and outline). Validation failures are reported in the layout.check envelope ' +
     '(valid: false) with line/col and suggestions (not thrown) so callers can lint an ' +
-    'expression and surface fixes.',
+    'expression and surface fixes. Syntax errors are still thrown as ERR_LAYOUT_PARSE.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'layoutCheck(expression: string, options?: LayoutCheckOptions): Promise<LayoutCheckResponse>',
@@ -50,6 +50,7 @@ export const doc = {
       name: 'options.cwd',
       type: 'string',
       description: 'Directory the block catalog and registry resolve against.',
+      default: 'process.cwd()',
     },
   ],
   returns: [

@@ -14,7 +14,8 @@
  * `type` discriminators it can emit — are layered on from:
  *
  *   - JSON_SUPPORTED  (the allowlist in index.mjs), and
- *   - RESPONSE_TYPES  (the declarative map below).
+ *   - RESPONSE_TYPES  (the declarative map below; ROOT_RESPONSE_TYPES names the
+ *     two, help and version, that no single command owns).
  *
  * A drift-guard test (manifest.test.mjs) asserts every registered command
  * appears in the manifest and every JSON-supported command has a response-type
@@ -90,8 +91,8 @@ export const RESPONSE_TYPES = {
   'theme targets': ['theme.targets'],
   'theme palette generate': ['theme.palette.generate'],
   'integration add': ['integration.add'],
-  'integration pack': ['integration.pack-check'],
-  upgrade: ['upgrade.list', 'upgrade.status', 'upgrade.run'],
+  'integration verify': ['integration.pack-check'],
+  upgrade: ['upgrade.list', 'upgrade.registry', 'upgrade.status', 'upgrade.run'],
   manifest: ['manifest'],
   doctor: ['doctor'],
   'doctor integration validate': ['integration.validate'],
@@ -104,21 +105,29 @@ export const RESPONSE_TYPES = {
 };
 
 /**
+ * Response types no single command owns: `help` (a bare `astryx --json`, and
+ * `--help --json` on any command) and `version` (`astryx --version --json`).
+ * The response-types enum lists them beside {@link RESPONSE_TYPES}.
+ * @type {readonly string[]}
+ */
+export const ROOT_RESPONSE_TYPES = Object.freeze(['help', 'version']);
+
+/**
  * Example invocations per fully-qualified command. Optional, agent-facing.
  * @type {Record<string, string[]>}
  */
 const EXAMPLES = {
   component: [
     'astryx component',
-    'astryx component XDSButton',
-    'astryx component XDSButton --props --json',
+    'astryx component Button',
+    'astryx component Button --props --json',
   ],
   docs: [
     'astryx docs',
     'astryx docs spacing --json',
     'astryx docs theme',
     'astryx docs theme quick-start',
-    'astryx docs cli/integrations --full',
+    'astryx docs cli/integrations/quick-start --full',
   ],
   discover: ['astryx discover --json'],
   search: [
@@ -126,7 +135,7 @@ const EXAMPLES = {
     'astryx search button --type component --json',
   ],
   build: ['astryx build', 'astryx build "analytics dashboard" --json'],
-  swizzle: ['astryx swizzle XDSButton'],
+  swizzle: ['astryx swizzle Button'],
   'gap-report': [
     'astryx gap-report --list-categories',
     "astryx gap-report Button --category docs_gap --reason 'Missing keyboard example'",
@@ -159,7 +168,7 @@ const EXAMPLES = {
     'astryx integration add component AcmeWidget',
     'astryx integration add doc deploying --dry-run --json',
   ],
-  'integration pack': ['astryx integration pack --check --json'],
+  'integration verify': ['astryx integration verify --json'],
   upgrade: ['astryx upgrade --json'],
   manifest: ['astryx manifest --json', 'astryx --json'],
   doctor: ['astryx doctor', 'astryx doctor --json'],

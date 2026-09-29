@@ -191,6 +191,18 @@ describe('search CLI — exit codes + JSON contract', () => {
     expect(r.stdout).toContain('No results');
   });
 
+  it('takes every word after `search` as one query', async () => {
+    // Commander took only the first word, so `search dark mode` searched for
+    // "dark" and dropped "mode" without a word.
+    const json = await runCli(['--json', 'search', 'dark', 'mode', '--type', 'doc'], REPO_ROOT);
+    expect(json.status).toBe(0);
+    const env = JSON.parse(json.stdout);
+    expect(env.data.query).toBe('dark mode');
+    expect(env.data.results[0]).toMatchObject({name: 'theme', section: 'light-dark-mode'});
+    const text = await runCli(['search', 'dark', 'mode', '--type', 'doc'], REPO_ROOT);
+    expect(text.stdout).toContain('Results for "dark mode"');
+  }, SCAN_TIMEOUT);
+
   it('exits 1 for an invalid --type', async () => {
     const r = await runCli(['search', 'x', '--type', 'bogus'], REPO_ROOT);
     expect(r.status).toBe(1);

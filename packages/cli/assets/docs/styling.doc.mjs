@@ -8,6 +8,7 @@ export const docs = {
   category: 'guide',
   description:
     'How to customize component appearance: xstyle prop, Tailwind, StyleX, className, rest props, compound component patterns, theming hooks, and styling-library interop.',
+  keywords: ['override', 'customize', 'css'],
 
   sections: [
     {
@@ -16,7 +17,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'There are several ways to style things. Here is when to use each:',
+          text: 'Style components with `xstyle` (StyleX), `className` (Tailwind or your own CSS), or a styling library aliased to Astryx tokens. All of them resolve to the same tokens.',
         },
         {
           type: 'table',
@@ -30,7 +31,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'All approaches resolve to the same design tokens, so theming and dark mode work regardless of which you choose. For external styling libraries, run {@link generic:styling-libraries}; it covers Tailwind, StyleX, Panda, Chakra, MUI, CSS-in-JS, CSS Modules, Sass, and `useTheme()` for non-CSS processing.',
+          text: 'Theming and dark mode work whichever you choose. For external styling libraries, run {@link generic:styling-libraries}; it covers Tailwind, StyleX, Panda, Chakra, MUI, CSS-in-JS, CSS Modules, Sass, and `useTheme()` for non-CSS processing.',
         },
       ],
     },
@@ -40,7 +41,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Every component accepts an xstyle prop for style customization. It accepts StyleX styles created via stylex.create(), not inline objects or class name strings. StyleX styles are compiled at build time for optimal deduplication and dead-code elimination.',
+          text: 'Every component accepts an `xstyle` prop for style customization. It accepts StyleX styles created via `stylex.create()`, not inline objects or class name strings. StyleX styles are compiled at build time for optimal deduplication and dead-code elimination.',
         },
         {
           type: 'code',
@@ -94,24 +95,14 @@ const overrides = stylex.create({
           text: 'The package ships a Tailwind v4 theme bridge that maps all design tokens to Tailwind utility classes. Import it once and use Tailwind classes backed by design tokens: colors, spacing, radius, shadows, and typography all resolve to the active theme.',
         },
         {
-          type: 'code',
-          lang: 'css',
-          label: 'globals.css: import the bridge',
-          code: `@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
-
-@import "tailwindcss/theme.css" layer(theme);
-@import "tailwindcss/preflight.css" layer(base);
-@import "@astryxdesign/core/reset.css";
-@import "@astryxdesign/core/astryx.css";
-@import "@astryxdesign/theme-neutral/theme.css";
-@import "@astryxdesign/core/tailwind-theme.css";
-@import "tailwindcss/utilities.css" layer(utilities);`,
+          type: 'prose',
+          text: 'For the imports and the cascade-layer order to put in your global CSS, see the Tailwind section of {@link generic:styling-libraries}.',
         },
         {
           type: 'code',
           lang: 'tsx',
           label: 'Tailwind utilities alongside components',
-          code: `<div className="text-primary bg-surface rounded-container p-4 flex gap-3">
+          code: `<div className="text-primary bg-surface rounded-lg p-4 flex gap-3">
   <Button label="Save" variant="primary" />
   <Button label="Cancel" variant="secondary" />
 </div>`,
@@ -128,7 +119,7 @@ const overrides = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'Every component also accepts standard className and style props. className is appended after the component\'s own classes. style is merged after StyleX inline styles, so consumer values win on conflict.',
+          text: 'Every component also accepts standard `className` and `style` props. `className` is appended after the component\'s own classes. `style` is merged after StyleX inline styles, so consumer values win on conflict.',
         },
         {
           type: 'code',
@@ -226,7 +217,8 @@ const overrides = stylex.create({
       ],
     },
     {
-      title: 'Preferred Selector Surface: Data Attributes',
+      id: 'data-attributes',
+      title: 'Data attribute selectors',
   category: 'guide',
       content: [
         {
@@ -268,12 +260,13 @@ const overrides = stylex.create({
       ],
     },
     {
+      id: 'deprecated-classes',
       title: 'Deprecated: Bare Prop and State Classes',
   category: 'guide',
       content: [
         {
           type: 'prose',
-          text: 'Astryx continues to emit deprecated bare prop/state classes such as `.primary`, `.sm`, `.level-2`, and `.checked` through the 0.7.0 removal window. Prefer the explicit reflected data attributes for new CSS, and run `astryx upgrade --apply` before 0.7.0 to parse `.css` files and rewrite selectors qualified by a known Astryx target when the 0.5.4 target/value pair has one or more known meanings. Declarations, comments, JavaScript/TypeScript strings, and unqualified classes are never rewritten. Stable base target classes (`.astryx-button`, `.astryx-card`, etc.) remain unchanged.',
+          text: 'Astryx still emits the deprecated bare classes (`.primary`, `.sm`, `.level-2`, `.checked`) and will remove them in a later release. Use data attributes for new CSS; `astryx upgrade --apply` rewrites qualified selectors in `.css` files.',
         },
         {
           type: 'code',
@@ -290,7 +283,7 @@ const overrides = stylex.create({
         },
         {
           type: 'prose',
-          text: 'Each known old value becomes a specificity-preserving `:is(...)` union containing the original class arm plus every v0.5.4 data-attribute arm. Both arms match Astryx output during the deprecation window; the data-attribute arm continues matching after the bare compatibility classes are eligible for removal in 0.7.0. The class arm also preserves consumer-supplied `className` matches. Narrow the union later only when class provenance or prop-axis intent is known. Custom/unknown qualified classes and unqualified classes stay unchanged. Search for unqualified old values such as `.primary` or `.sm` and migrate only confirmed Astryx uses manually. Migrate selectors embedded in JavaScript or TypeScript manually with the same rules.',
+          text: 'The upgrade rewrites a selector only when an `.astryx-*` component class qualifies it, turning the old class into an `:is(...)` union of that class and the data attributes it stood for. The union keeps the selector\'s specificity and your own `className` matches, and keeps matching once the bare classes are gone; the `.astryx-*` classes themselves stay. It leaves unqualified classes (a bare `.primary`), unknown classes, and selectors in JavaScript or TypeScript alone: migrate those by hand, and only where they target Astryx.',
         },
       ],
     },
@@ -343,6 +336,7 @@ const styles = stylex.create({
       ],
     },
     {
+      id: 'stylex-setup',
       title: 'StyleX Build Setup (required for swizzled components)',
   category: 'guide',
       content: [
@@ -362,11 +356,11 @@ const styles = stylex.create({
         },
         {
           type: 'prose',
-          text: 'Next.js (App Router) is the sharp edge. StyleX\'s canonical compiler is a Babel plugin, but introducing a Babel config in Next.js disables the SWC compiler, which in turn breaks SWC-dependent features like `next/font`. So the "obvious" Babel setup is actively incompatible with a standard Next 15 App Router app.',
+          text: 'Next.js (App Router) is the sharp edge. StyleX\'s canonical compiler is a Babel plugin, but introducing a Babel config in Next.js disables the SWC compiler, and with it SWC-dependent features like `next/font`.',
         },
         {
           type: 'prose',
-          text: 'The working path on Next.js is an SWC-based StyleX transform (e.g. the community `@stylexswc/nextjs-plugin`) wired into `next.config`, which keeps SWC and `next/font` intact. See the example app `apps/example-nextjs-stylex` in the repo for a complete, working Next.js + StyleX + SWC configuration.',
+          text: 'The repo\'s `apps/example-nextjs-stylex` takes the Babel path (`next/babel`, `@stylexjs/babel-plugin`, `@stylexjs/postcss-plugin`). Babel turns off SWC, so that app does not use `next/font`. To keep `next/font`, use an SWC transform such as `@stylexswc/nextjs-plugin`.',
         },
         {
           type: 'code',
@@ -389,7 +383,7 @@ export default stylexPlugin({
           style: 'unordered',
           items: [
             'Symptom of a missing compiler: swizzled component renders with no styles, but no build or runtime error.',
-            'Do NOT add @stylexjs/babel-plugin to a Next.js App Router app; it disables SWC and breaks next/font.',
+            'A Babel config turns off SWC in Next.js; skip it if you need `next/font`.',
             'Pure theming (defineTheme + astryx theme build) needs NO StyleX compiler; only swizzled/authored StyleX source does.',
           ],
         },

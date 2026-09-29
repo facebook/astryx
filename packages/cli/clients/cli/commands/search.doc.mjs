@@ -18,7 +18,9 @@ export const doc = {
     'Terminal front-end to search(): prints one ranked, greppable list across ' +
     'every content domain, each row carrying a follow-up command to act on it.',
   fn: 'search',
-  args: [{name: 'query', param: 'query', required: true}],
+  // Every word after `search` is the query: `astryx search dark mode` searches
+  // for "dark mode", with no quotes needed.
+  args: [{name: 'query', param: 'query', required: true, variadic: true}],
   options: [
     {
       flag: '--type <domain>',
@@ -38,6 +40,10 @@ export const doc = {
   ],
   examples: [
     {label: 'Ranked results', cli: 'astryx search button'},
+    {
+      label: 'Several words, no quotes',
+      cli: 'astryx search dark mode --type doc',
+    },
     {
       label: 'Filter + JSON',
       cli: 'astryx search "data table" --type template --json',

@@ -41,7 +41,7 @@ export const doc = {
   examples: [
     {label: 'Scaffold a theme', cli: 'astryx theme add matcha'},
     {
-      label: 'Select an integration theme',
+      label: 'Pick the owner when two packages ship the same slug',
       cli: 'astryx theme add ocean --package @acme/themes',
     },
   ],

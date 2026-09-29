@@ -35,7 +35,7 @@ export async function layoutGrammar(options = {}) {
     aliasLines.push(`${aliases.join('/')}=${target}`);
   }
 
-  const text = `XLE/XLO — XDS layout expressions (branch-generated; aliases reflect this install)
+  const text = `XLE/XLO — Astryx layout expressions (aliases come from the installed components)
 
 WORKFLOW
   astryx layout check "<expr>"           validate; echoes canonical compact + outline forms

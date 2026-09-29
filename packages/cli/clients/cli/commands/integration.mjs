@@ -12,7 +12,7 @@ import {cliError} from '../lib/cli-error.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {doc as integrationGroup} from './integration.doc.mjs';
 import {doc as integrationAddCommand} from './integration-add.doc.mjs';
-import {doc as integrationPackCommand} from './integration-pack.doc.mjs';
+import {doc as integrationVerifyCommand} from './integration-verify.doc.mjs';
 import {doc as integrationAddFn} from '../../../api/integration/integrationAdd.doc.mjs';
 import {doc as integrationPackCheckFn} from '../../../api/integration/integrationPackCheck.doc.mjs';
 
@@ -102,15 +102,9 @@ export function registerIntegration(program) {
     },
   });
 
-  defineCommand(integration, integrationPackCommand, {
+  defineCommand(integration, integrationVerifyCommand, {
     fn: integrationPackCheckFn,
-    action: async options => {
-      if (!options.check) {
-        return cliError('Pass --check to verify the integration tarball.', {
-          code: ERROR_CODES.ERR_INVALID_ARGUMENT,
-        });
-      }
-
+    action: async () => {
       const result = await integrationPackCheck({cwd: process.cwd()});
       if (program.opts().json) {
         jsonOut(result);

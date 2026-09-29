@@ -18,7 +18,8 @@ export const doc = {
   description:
     'Explores components contributed by configured external packages and integrations. ' +
     'With no query it lists those packages; an @scope/name query browses one package; ' +
-    'an @scope/name/Component path or a free-text term resolves to a component doc.',
+    'an @scope/name/Component path or a free-text term resolves to a component doc. ' +
+    'When no configured integration contributes components, it says so and exits 0 for any query.',
   fn: 'discover',
   args: [{name: 'query', param: 'query', required: false}],
   options: [
@@ -35,10 +36,10 @@ export const doc = {
     {label: 'Browse a package', cli: 'astryx discover @acme/ui'},
   ],
   exitCodes: [
-    {code: 0, when: 'success'},
+    {code: 0, when: 'success, including any query when no integration contributes components'},
     {
       code: 1,
-      when: 'unknown package or component, a malformed doc, or a blank query when packages are discovered',
+      when: 'an unknown package or component, a malformed doc, or a blank query when packages are discovered',
     },
   ],
   related: ['component', 'search', 'template'],
