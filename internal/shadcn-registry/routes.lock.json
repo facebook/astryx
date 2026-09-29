@@ -707,6 +707,11 @@
       "aliases": []
     },
     {
+      "name": "component-markdown-ka-te-x",
+      "path": "components/markdown-ka-te-x",
+      "aliases": []
+    },
+    {
       "name": "component-media-theme",
       "path": "components/media-theme",
       "aliases": []
