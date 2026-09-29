@@ -2,7 +2,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {Drawer} from '@astryxdesign/lab';
+import {Drawer} from '@astryxdesign/core/Drawer';
 import {Button} from '@astryxdesign/core/Button';
 import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
 import {Divider} from '@astryxdesign/core/Divider';
@@ -12,7 +12,7 @@ import {VStack, HStack} from '@astryxdesign/core/Stack';
 import {Text} from '@astryxdesign/core/Text';
 
 const meta: Meta<typeof Drawer> = {
-  title: 'Lab/Drawer',
+  title: 'Core/Drawer',
   component: Drawer,
   tags: ['autodocs'],
   parameters: {

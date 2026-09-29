@@ -13,6 +13,9 @@ import migrateThemeCatalogToDescriptors, {
 import migrateNativePickerToPresentation, {
   meta as migrateNativePickerToPresentationMeta,
 } from './migrate-native-picker-to-presentation.mjs';
+import migrateLabDrawerImports, {
+  meta as migrateLabDrawerImportsMeta,
+} from './migrate-lab-drawer-imports.mjs';
 
 export default [
   {
@@ -24,5 +27,10 @@ export default [
     name: 'migrate-native-picker-to-presentation',
     transform: migrateNativePickerToPresentation,
     meta: migrateNativePickerToPresentationMeta,
+  },
+  {
+    name: 'migrate-lab-drawer-imports',
+    transform: migrateLabDrawerImports,
+    meta: migrateLabDrawerImportsMeta,
   },
 ];
