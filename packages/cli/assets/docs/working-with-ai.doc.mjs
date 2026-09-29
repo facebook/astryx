@@ -42,7 +42,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'By default this creates `AGENTS.md` (the tool-agnostic standard most agents read). To target a specific tool\'s file instead:',
+          text: "By default this creates `AGENTS.md` (the tool-agnostic standard most agents read). To target a specific tool's file instead:",
         },
         {
           type: 'code',
@@ -82,7 +82,7 @@ npx @astryxdesign/cli init --features agents --agent muse      # AGENTS.md (Muse
       content: [
         {
           type: 'prose',
-          text: 'Cursor project rules aren\'t always picked up; it selects which rules to apply based on relevance. For reliable inclusion, install the design system context as a User Rule instead. User Rules live at ~/.cursor/rules/ and apply across all projects.',
+          text: "Cursor project rules aren't always picked up; it selects which rules to apply based on relevance. For reliable inclusion, install the design system context as a User Rule instead. User Rules live at ~/.cursor/rules/ and apply across all projects.",
         },
         {
           type: 'code',
@@ -98,7 +98,7 @@ npx @astryxdesign/cli init --features agents --agent-docs-path ~/.cursor/rules/x
       content: [
         {
           type: 'prose',
-          text: 'Paste this into your AI before writing any component code. These three questions have a 0% pass rate without docs; models confidently guess wrong on all of them. If your AI can\'t answer them, it\'ll know to install the agent docs first.',
+          text: "Paste this into your AI before writing any component code. These three questions have a 0% pass rate without docs; models confidently guess wrong on all of them. If your AI can't answer them, it'll know to install the agent docs first.",
         },
         {
           type: 'code',
@@ -179,7 +179,7 @@ astryx docs tokens --dense`,
         {
           type: 'code',
           lang: 'json',
-          label: 'Claude Code (.mcp.json), Windsurf',
+          label: 'Claude Code (.mcp.json)',
           code: `{
   "mcpServers": {
     "astryx": {
@@ -190,12 +190,21 @@ astryx docs tokens --dense`,
 }`,
         },
         {
+          type: 'prose',
+          text: 'Claude Code can also write that entry from the terminal:',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          code: `claude mcp add --transport http astryx https://astryx.atmeta.com/mcp`,
+        },
+        {
           type: 'code',
           lang: 'json',
           label: 'Cline (cline_mcp_settings.json) - type is streamableHttp',
           code: `{
   "mcpServers": {
-    "xds": {
+    "astryx": {
       "type": "streamableHttp",
       "url": "https://astryx.atmeta.com/mcp"
     }
@@ -205,20 +214,15 @@ astryx docs tokens --dense`,
         {
           type: 'code',
           lang: 'json',
-          label: 'Cursor (.cursor/mcp.json) - remote servers take no type field',
+          label:
+            'Cursor (.cursor/mcp.json) - remote servers take no type field',
           code: `{
   "mcpServers": {
-    "xds": {
+    "astryx": {
       "url": "https://astryx.atmeta.com/mcp"
     }
   }
 }`,
-        },
-        {
-          type: 'code',
-          lang: 'bash',
-          label: 'Claude Code, equivalent to the JSON above',
-          code: `claude mcp add --transport http xds https://astryx.atmeta.com/mcp`,
         },
         {
           type: 'prose',
