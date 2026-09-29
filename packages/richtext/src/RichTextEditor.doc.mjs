@@ -157,7 +157,15 @@ export const docs = {
     },
   ],
   theming: {
-    targets: [{className: 'astryx-rich-text-editor', visualProps: []}],
+    targets: [
+      {
+        className: 'astryx-rich-text-editor',
+        // Both are reflected by the themeProps() call in RichTextEditor.tsx
+        // (`data-size`, `data-status`), matching TextArea, whose input visuals
+        // the field container shares.
+        visualProps: ['size', 'status'],
+      },
+    ],
   },
   usage: {
     description:
