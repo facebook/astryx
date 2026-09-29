@@ -407,11 +407,11 @@ independent for each invocation.
 - **FR34 — Incompatible fixes use a corrective lifecycle.** FR26 governs the state of
   each public surface; the `IFIX-*` record tracks `proposed`, `approved`,
   `transition-shipped`, `cleanup-approved`, `corrected`, `monitoring`, and `closed`.
-  `Proposed` or `approved` leaves the released surface `stable`.
-  `Transition-shipped` maps the coexisting old and corrected paths to
-  `correction-transition`. `Cleanup-approved` maps the old path to
+  `proposed` or `approved` leaves the released surface `stable`.
+  `transition-shipped` maps the coexisting old and corrected paths to
+  `correction-transition`. `cleanup-approved` maps the old path to
   `cleanup-approved` while the corrected path remains `correction-transition`.
-  `Corrected`, `monitoring`, or `closed` maps the surviving corrected contract to
+  `corrected`, `monitoring`, or `closed` maps the surviving corrected contract to
   `stable` and the eliminated old path to `removed`. When safe, a patch preserves the
   old default while shipping the corrected opt-in or adapter, warning, migration, and
   codemod. The paired minor changes the default or removes the old behavior only
