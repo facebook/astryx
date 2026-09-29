@@ -215,10 +215,8 @@ retain their original depth values; raw Layer, sheet panels, and toast content
 use the private content boundary directly. Toast page children stay outside it.
 
 Lab Drawer uses the equivalent package-local text baseline and retains its
-existing hosting, dismissal depth, and ancestor React contexts. Whole-context
-isolation for Drawer is not implemented: the private Core boundary is not
-available across that package boundary. This is a remaining package-architecture
-gap, not a claim of complete provider isolation.
+existing hosting, dismissal depth, and ancestor React contexts. Its boundary is
+intentionally text-only; whole-context isolation is not part of the Drawer contract.
 
 Structural custom-property channels remain outside this implementation. A layer
 opened from supported `Step.children` content can contain an inner Stepper that

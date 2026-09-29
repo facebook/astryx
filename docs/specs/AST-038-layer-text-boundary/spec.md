@@ -147,7 +147,7 @@ A nested layer establishes its own boundary.
 | Popover compositions           | DropdownMenu, MoreMenu, NavHeadingMenu, TabMenu, TopNav menus, collapsed SideNav items and heading menus, BreadcrumbItem menus; Selector/MultiSelector/ComplexSelector, Typeahead/BaseTypeahead, date inputs, PowerSearch, ChatComposerInput menus, Table filtering; Lab TourStep, ChatEmojiPicker, InfoTip | Inherit the common reset; no duplicate reset or trigger/API changes.                                                     |
 | Layer utility surfaces         | Keyboard hints, Carousel controls, Tokenizer overflow, chart/radial tooltips, ListInput/TransferList drag previews                                                                                                                                                                                          | Shared host supplies the baseline; authored hint/chart nowrap and component typography still win.                        |
 | Dialog family                  | Modal and inline Dialog, AlertDialog, imperative Dialog/AlertDialog, CommandPalette                                                                                                                                                                                                                         | Native and preview paths agree; component and caller styling stays stronger.                                             |
-| Independent viewers/navigation | Lightbox, MobileNav including AppShell, Lab Drawer in modal and non-modal modes                                                                                                                                                                                                                             | Each independent root participates; media/caption treatment and interaction stay unchanged.                              |
+| Independent viewers/navigation | Lightbox and MobileNav including AppShell; Lab Drawer in modal and non-modal modes participates only in FR1–FR6 and intentionally retains ancestor React provider context.                                                                                                                                  | Each independent root receives its intended text baseline; media/caption treatment and interaction stay unchanged.       |
 | Sheets                         | Standalone and switched BottomSheet, including adaptive menu/input presentations                                                                                                                                                                                                                            | The painted content panel owns the boundary, not its transparent shell or each child.                                    |
 | Notifications                  | Promoted and non-top-layer ToastViewport; LayerProvider and imperative fallback                                                                                                                                                                                                                             | The viewport supplies default/custom toast text without resetting page children or changing colors and pointer behavior. |
 
@@ -176,13 +176,15 @@ change; selected component type roles remain component-owned.
 
 ### Ancestor layout and grouping boundary
 
-**FR7 — Ancestor layout and presentation stop at the layer boundary.** All
-providers' scoped layout, visual, density, sizing, grouping, or presentation
-adjustments MUST stop at the content boundary by default; a surface/group
-membership context stops as a whole under FR8. This
-includes general SizeProvider, not only size supplied by ButtonGroup/InputGroup,
-and applies to **future providers by responsibility**, not a fixed allowlist of
-names or today's evidence ledger. This direction is approved in DEC-2.
+**FR7 — Ancestor layout and presentation stop at the layer boundary.** For Core
+participating content roots, all providers' scoped layout, visual, density, sizing,
+grouping, or presentation adjustments MUST stop at the content boundary by default;
+a surface/group membership context stops as a whole under FR8. This includes general
+SizeProvider, not only size supplied by ButtonGroup/InputGroup, and applies to
+**future providers by responsibility**, not a fixed allowlist of names or today's
+evidence ledger. This direction is approved in DEC-2. Lab Drawer is the intentional
+package-boundary exception: its FR1–FR6 boundary resets inherited text only and keeps
+ancestor React provider context.
 
 The trigger/control remains in its ancestor scope. Layer content must not gain
 ancestor-group connected corner/border/separator treatment, visual orientation,
@@ -322,13 +324,15 @@ leaks above therefore survive the proposed text-only reset.
   policy. Acceptance does not claim shipped behavior or authorize a merge.
   Verification must not be used to broaden implementation scope.
 - **IR4 — Inclusive responsibility, bounded implementation.** Provider isolation
-  must be private, ownership-aware, and consistent across FR4 content roots.
-  Apply FR7 by responsibility, including future scoped layout/visual providers,
-  not a fixed reset allowlist copied from this audit. Do not wipe unrelated
-  contexts or custom properties. When FR7 applies, whole surface/group membership
-  stops under FR8 without separating visual fields. No DOM wrapper, public boundary
-  API, semantic role, ARIA neutralization, portal, or general CSS reset is implied;
-  verification must cover visual isolation and unchanged unrelated behavior/accessibility.
+  must be private, ownership-aware, and consistent across Core FR4 content roots.
+  Lab Drawer intentionally retains its text-only FR1–FR6 boundary and ancestor React
+  provider context. Apply FR7 by responsibility, including future scoped
+  layout/visual providers, not a fixed reset allowlist copied from this audit. Do not
+  wipe unrelated contexts or custom properties. When FR7 applies, whole
+  surface/group membership stops under FR8 without separating visual fields. No DOM
+  wrapper, public boundary API, semantic role, ARIA neutralization, portal, or general
+  CSS reset is implied; verification must cover visual isolation and unchanged
+  unrelated behavior/accessibility.
 
 ### Platform support
 
@@ -483,6 +487,17 @@ state, including disabled/read-only state, stops with it.
 Unrelated contexts and explicitly authored props remain unchanged.
 This supersedes conflicting separation and membership-preservation
 clauses in DEC-1–DEC-4; all other scope and the FR1 baseline remain unchanged.
+
+### DEC-6 — Lab Drawer keeps a text-only boundary
+
+**Reference:** `spec:AST-038/DEC-6`
+**Decider:** `cixzhang`, `2026-09-29`
+
+Lab Drawer's package-local boundary intentionally implements the FR1–FR6 inherited
+text reset without clearing ancestor React provider context. Its retained provider
+inheritance is not a conformance gap. This exception is specific to Lab Drawer and
+does not weaken FR7/FR8 for Core Layer, Dialog, sheets, notifications, or the other
+participating Core roots.
 
 ## Open questions
 
