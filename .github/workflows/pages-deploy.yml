@@ -7,8 +7,9 @@
 # though every publisher succeeded.
 #
 # This workflow deliberately keeps the active deployment running. GitHub may
-# replace an older pending run with a newer one, but the current deployment
-# finishes and the newest queued run then deploys the latest branch snapshot.
+# replace an older eligible pending deployment with a newer one, but excluded
+# workflow completions never enter the deployment queue. The current deployment
+# finishes and the newest queued publisher then deploys the latest branch snapshot.
 # Until the repository's Pages source is set to GitHub Actions, the source
 # check exits successfully and the deployment job stays skipped.
 
@@ -28,10 +29,6 @@ on:
   workflow_dispatch:
 
 permissions: {}
-
-concurrency:
-  group: github-pages-deployment
-  cancel-in-progress: false
 
 jobs:
   source:
@@ -67,6 +64,12 @@ jobs:
   deploy:
     needs: source
     if: needs.source.outputs.workflow == 'true'
+    # Only deployable events join the shared queue. Workflow-level concurrency
+    # lets a newer excluded event replace the one pending eligible deployment;
+    # that skipped run then leaves the latest gh-pages snapshot unpublished.
+    concurrency:
+      group: github-pages-deployment
+      cancel-in-progress: false
     # The published branch is several GiB and contains hundreds of thousands of
     # files. ubuntu-slim has a 15-minute hard job limit, which can interrupt the
     # archive created by upload-pages-artifact before it reaches the upload step.

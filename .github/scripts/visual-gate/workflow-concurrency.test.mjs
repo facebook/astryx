@@ -27,6 +27,16 @@ function workflow(name) {
   return fs.readFileSync(path.join(WORKFLOWS, name), 'utf8');
 }
 
+// GitHub concurrency keeps one active and one pending entrant per group. Each
+// newer entrant replaces the pending one, even when cancel-in-progress is false.
+function simulateConcurrency(events, {eligibleOnly}) {
+  const entrants = eligibleOnly
+    ? events.filter(event => event.eligible)
+    : events;
+  const [active, ...waiting] = entrants;
+  return [active, waiting.at(-1)].filter(Boolean);
+}
+
 describe('PR report and deployment workflow contracts', () => {
   it('publishes canonical CI visual artifacts without taking over capture, comparison, or status', () => {
     const value = workflow('pr-comment.yml');
@@ -235,6 +245,33 @@ describe('PR report and deployment workflow contracts', () => {
     expect(workflow('ci.yml')).toContain(
       'gh-pages-publisher.mjs visual-baseline-manual',
     );
+  });
+
+  it('queues only eligible Pages deploy jobs so newer ignored traffic cannot evict a stable-site publish', () => {
+    const pages = yaml.parse(workflow('pages-deploy.yml'));
+    expect(pages.concurrency).toBeUndefined();
+    expect(pages.jobs.deploy.concurrency).toEqual({
+      group: 'github-pages-deployment',
+      'cancel-in-progress': false,
+    });
+    expect(pages.jobs.deploy.if).toBe(
+      "needs.source.outputs.workflow == 'true'",
+    );
+
+    const traffic = [
+      {id: 'active-deployment', eligible: true},
+      {id: 'main-stable-site', eligible: true},
+      {id: 'ignored-ci', eligible: false},
+      {id: 'ignored-pr-comment', eligible: false},
+    ];
+    expect(simulateConcurrency(traffic, {eligibleOnly: false})).toEqual([
+      traffic[0],
+      traffic[3],
+    ]);
+    expect(simulateConcurrency(traffic, {eligibleOnly: true})).toEqual([
+      traffic[0],
+      traffic[1],
+    ]);
   });
 
   it('retains the remaining Pages publishers behind the shared publisher', () => {
