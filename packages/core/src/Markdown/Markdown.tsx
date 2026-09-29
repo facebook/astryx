@@ -1607,29 +1607,31 @@ function renderBlock(
           <CodeBlockComp key={index} code={node.value} language={language} />
         );
       }
+      const fallbackContent = (
+        <CodeBlock
+          code={node.value}
+          language={language}
+          isCollapsible
+          xstyle={[
+            contentWidthValue != null
+              ? dynamicStyles.blockWidth(contentWidthValue)
+              : undefined,
+            blockAlignStyle,
+          ]}
+        />
+      );
+      const wrapperProps = mergeProps(
+        themeProps('markdown-codeblock', {density}),
+        stylex.props(
+          spacing,
+          styles.codeBlockWrapper,
+          isFirst && styles.noMarginBlockStart,
+          isLast && styles.noMarginBlockEnd,
+        ),
+      );
       const fallback = (
-        <div
-          key={index}
-          {...mergeProps(
-            themeProps('markdown-codeblock', {density}),
-            stylex.props(
-              spacing,
-              styles.codeBlockWrapper,
-              isFirst && styles.noMarginBlockStart,
-              isLast && styles.noMarginBlockEnd,
-            ),
-          )}>
-          <CodeBlock
-            code={node.value}
-            language={language}
-            isCollapsible
-            xstyle={[
-              contentWidthValue != null
-                ? dynamicStyles.blockWidth(contentWidthValue)
-                : undefined,
-              blockAlignStyle,
-            ]}
-          />
+        <div key={index} {...wrapperProps}>
+          {fallbackContent}
         </div>
       );
       const proposal = getMarkdownFenceProposal(node);
@@ -1649,14 +1651,15 @@ function renderBlock(
           return fallback;
         }
         return (
-          <MarkdownPluginBoundary
-            key={index}
-            pluginName={proposal.node.plugin}
-            resetKey={proposal.node}
-            resetRenderer={renderer.render}
-            fallback={fallback}>
-            <Suspense fallback={fallback}>{rendered}</Suspense>
-          </MarkdownPluginBoundary>
+          <div key={index} {...wrapperProps}>
+            <MarkdownPluginBoundary
+              pluginName={proposal.node.plugin}
+              resetKey={proposal.node}
+              resetRenderer={renderer.render}
+              fallback={fallbackContent}>
+              <Suspense fallback={fallbackContent}>{rendered}</Suspense>
+            </MarkdownPluginBoundary>
+          </div>
         );
       } catch (error) {
         reportMarkdownPluginFailure(proposal.node.plugin, 'render', error);

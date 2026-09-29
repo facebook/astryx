@@ -284,9 +284,12 @@ describe('createMarkdownFenceTransform', () => {
       </Markdown>,
     );
 
-    expect(
-      screen.getByRole('figure', {name: 'diagram: title="Flow"'}),
-    ).toHaveTextContent('start --> finish');
+    const figure = screen.getByRole('figure', {
+      name: 'diagram: title="Flow"',
+    });
+    expect(figure).toHaveTextContent('start --> finish');
+    expect(figure.parentElement).toHaveClass('astryx-markdown-codeblock');
+    expect(figure.parentElement).toHaveAttribute('data-density', 'default');
     expect(renderFence).toHaveBeenCalledOnce();
     expect(renderFence.mock.calls[0]?.[0].node.data).toEqual({
       code: 'start --> finish',
