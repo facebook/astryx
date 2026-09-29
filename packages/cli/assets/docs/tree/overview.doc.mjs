@@ -139,8 +139,8 @@ export const docs = {
           type: 'list',
           style: 'unordered',
           items: [
-            "Apps need CLI 0.7.0 or later to read a docs section, a placed guide, or a template's `replaces`. An older CLI hides those docs, and it withholds the templates of a package that sets `replaces`.",
-            '`npx astryx integration add doc --parent` declares an optional `@astryxdesign/cli` peer of `>=0.7.0`, so npm warns in an app with an older CLI.',
+            "Apps need CLI 0.7.0 or later to read a docs section, a placed guide, a doc section `id`, a template's `replaces`, or a theme. An older CLI hides your docs, and it drops templates and themes.",
+            '`npx astryx integration add doc --parent` and `integration add theme` declare an optional `@astryxdesign/cli` peer of `>=0.7.0`, so npm warns in an app with an older CLI.',
             '`npx astryx integration verify` fails a package that needs that peer and does not declare it.',
           ],
         },

@@ -12,6 +12,7 @@ export const docs = {
   placement: {parent: 'namespace:integrations', slot: 'ship', order: 40},
   title: 'Publish an integration',
   category: 'guide',
+  keywords: ['publish an integration', 'npm publish', 'release'],
   description:
     'Publish your package to npm under the right release tag, and check it before and after.',
   sections: [

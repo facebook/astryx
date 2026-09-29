@@ -60,7 +60,7 @@ export const doc = {
       flag: '--to <version>',
       param: 'options.to',
       description:
-        'Exact semver the codemod migrates to (e.g. 1.2.0); required for codemod and only valid there',
+        'Exact semver of the @astryxdesign/core version whose upgrade runs the codemod (e.g. 0.7.0); required for codemod and only valid there',
     },
   ],
   examples: [

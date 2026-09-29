@@ -70,12 +70,12 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Run `integration verify` to check that an app would see the component, then make the tarball you install next with `npm pack`.',
+          text: 'Run `integration verify` to check that an app would see the component, then make the tarball you install next. `--pack-destination ..` writes it beside the package folder, so the next pack does not ship it.',
         },
         {
           type: 'code',
           lang: 'bash',
-          code: 'npx astryx integration verify\nnpm pack',
+          code: 'npx astryx integration verify\nnpm pack --pack-destination ..',
         },
         {
           type: 'code',
@@ -84,7 +84,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: '`integration verify` packs the package, unpacks it into a temporary app, and checks that the component resolves through its public import there. It publishes nothing and leaves no tarball, so `npm pack` writes `acme-astryx-widgets-1.0.0.tgz` for the next step.',
+          text: '`integration verify` packs the package, unpacks it into a temporary app, and checks that the component resolves through its public import there. It publishes nothing and leaves no tarball, so `npm pack` writes `../acme-astryx-widgets-1.0.0.tgz` for the next step.',
         },
       ],
     },
@@ -99,7 +99,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: 'cd ..\nmkdir my-app && cd my-app\nnpm init -y\nnpm install @astryxdesign/core @astryxdesign/cli ../acme-widgets/acme-astryx-widgets-1.0.0.tgz\nnpx astryx component AcmeCarousel',
+          code: 'cd ..\nmkdir my-app && cd my-app\nnpm init -y\nnpm install @astryxdesign/core @astryxdesign/cli ../acme-astryx-widgets-1.0.0.tgz\nnpx astryx component AcmeCarousel',
         },
         {
           type: 'code',

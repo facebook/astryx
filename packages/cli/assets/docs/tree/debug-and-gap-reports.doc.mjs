@@ -13,6 +13,7 @@ export const docs = {
   placement: {parent: 'namespace:integrations', slot: 'contribute', order: 70},
   title: 'Debug and gap reports',
   category: 'guide',
+  keywords: ['gap report', 'debug handler'],
   description:
     'Receive a record of each CLI run in apps that use your package, and handle the gap reports they send about it.',
   sections: [

@@ -13,6 +13,7 @@ export const docs = {
   placement: {parent: 'namespace:integrations', slot: 'ship', order: 50},
   title: 'Upgrading',
   category: 'guide',
+  keywords: ['upgrade apps', 'release notes'],
   description:
     'Update your package for each Astryx release, and help apps upgrade with it.',
   sections: [

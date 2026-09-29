@@ -145,7 +145,9 @@ the docsite onto the tree.
   provider that lost it, and the topic list, reads, and search MUST agree with
   the tree. `astryx doctor integration docs` MUST run the
   same tree and link checks on one integration's docs, so an author finds a
-  broken placement or link before the package ships, and
+  broken placement or link before the package ships. It MUST fail on a tree
+  error diagnostic filed against the package, since that hides a doc, and warn
+  on a link that names no doc; `astryx doctor` keeps FR8's warnings. And
   `astryx integration add doc <name> --parent <namespace>` MUST write a guide
   placed in that namespace, found by its name, and the namespace doc when the
   package has none. A CLI release that does not read the docs tree can hide every doc topic of a

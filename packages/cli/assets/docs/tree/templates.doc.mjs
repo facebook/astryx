@@ -13,6 +13,7 @@ export const docs = {
   placement: {parent: 'namespace:integrations', slot: 'contribute', order: 20},
   title: 'Templates',
   category: 'guide',
+  keywords: ['integration template', 'replace a core template'],
   description:
     'Ship page and block templates that apps copy into their code, and replace a Core template when yours should be the default.',
   sections: [

@@ -37,6 +37,15 @@ describe('docs() dispatcher routing', () => {
     expect(r.type).toBe('docs.index');
   }, SLOW);
 
+  it('reads a shortened section by its old key, which its title still derives', async () => {
+    const r = await docs(
+      'styling',
+      'stylex-build-setup-required-for-swizzled-components',
+    );
+    expect(r.type).toBe('docs.detail.section');
+    expect(r.data).toMatchObject({id: 'stylex-setup'});
+  }, SLOW);
+
   it('topic + section -> docs.detail.section', async () => {
     const {data} = await docs();
     let routed = null;

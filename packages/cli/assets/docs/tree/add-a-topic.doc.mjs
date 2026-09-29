@@ -13,6 +13,7 @@ export const docs = {
   placement: {parent: 'namespace:docs', slot: 'guides', order: 10},
   title: 'Add a topic',
   category: 'guide',
+  keywords: ['add a doc', 'integration docs', 'write docs'],
   description: 'Add a doc topic to your package and write its sections.',
   sections: [
     {

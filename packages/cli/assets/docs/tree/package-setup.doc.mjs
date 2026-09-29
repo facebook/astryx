@@ -13,6 +13,7 @@ export const docs = {
   placement: {parent: 'namespace:integrations', slot: 'start', order: 30},
   title: 'Set up an integration package',
   category: 'guide',
+  keywords: ['package.json', 'exports map', 'astryx.integration.mjs'],
   description:
     'Set the package.json fields and the integration file your package needs, adopt a package you already publish, and type your files.',
   sections: [
@@ -22,7 +23,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'An integration is an ordinary npm package, and six package.json fields matter. `integration add` updates `exports` and `files` when they exist, and `add doc --parent` writes the CLI peer.',
+          text: 'An integration is an ordinary npm package, and six package.json fields matter. `integration add` updates `exports` and `files` when they exist, and `add doc --parent` and `add theme` write the CLI peer.',
         },
         {
           type: 'table',
@@ -50,8 +51,8 @@ export const docs = {
             ],
             [
               '`peerDependencies`',
-              '`@astryxdesign/core` if your source imports it; `@astryxdesign/cli` `>=0.7.0`, optional, if you ship a docs section or a template `replaces`',
-              '`integration add doc --parent` writes the CLI peer, and `integration verify` fails when a needed one is missing.',
+              '`@astryxdesign/core` if your source imports it; `@astryxdesign/cli` `>=0.7.0`, optional, if you ship a docs section, a placed guide, a doc section `id`, a template `replaces`, or a theme',
+              '`integration add doc --parent` and `integration add theme` write the CLI peer, and `integration verify` fails when a needed one is missing.',
             ],
             [
               '`devDependencies`',
@@ -111,7 +112,7 @@ export const docs = {
             "A custom root, such as `components: './src/components'`, stays, and new files go there.",
             'An existing `files` list gets the root and `astryx.integration.mjs`.',
             'An existing `exports` map keeps your entries and gets one more, such as `"./src/components/AcmeCarousel"`.',
-            'With no `exports` map, the add writes none, because a new map closes deep imports your users may rely on. Add `"exports": {}` yourself when you are ready.',
+            'With no `exports` map, the add writes none, because a new map closes deep imports your users may rely on. When you add one, give it an entry for each component and template you already added; later adds write theirs.',
           ],
         },
         {

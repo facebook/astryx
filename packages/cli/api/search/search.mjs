@@ -391,6 +391,19 @@ function sameWord(a, b) {
 }
 
 /**
+ * Whether `plural` is the plural of `word`: `integrations` of `integration`,
+ * `boxes` of `box`. `es` only follows s, x, z, ch, or sh, so `notes` is not a
+ * plural of `not`.
+ * @param {string} plural
+ * @param {string} word
+ */
+function pluralOf(plural, word) {
+  if (word.length < 3) return false;
+  if (plural === `${word}s`) return true;
+  return /(?:s|x|z|ch|sh)$/.test(word) && plural === `${word}es`;
+}
+
+/**
  * The first title or heading that holds every word of the query, in order and
  * side by side, or null.
  * @param {string} term - Lowercased full query.
@@ -615,7 +628,7 @@ export function scoreCandidate(
   // ── Name signals ────────────────────────────────────────────────
   // A plural of the name is the name: `integration` is the `integrations`
   // guides, `tab` the `tabs` doc.
-  if (nameLower === term || (term.length >= 3 && sameWord(nameLower, term))) {
+  if (nameLower === term || pluralOf(nameLower, term) || pluralOf(term, nameLower)) {
     consider(100, 'exact name');
   } else {
     // Substring (both directions), min 4 chars, >=50% coverage.
@@ -1367,10 +1380,11 @@ export async function search(query, options = {}) {
   const tokens = tokenizeQuery(term);
 
   // `astryx docs` reads docs without @astryxdesign/core, so a docs-only
-  // search must too. Every other domain reads core.
+  // search must too. Every other domain reads core: asked for by name, it is
+  // an error without core; an open search then covers the docs alone.
   const docsOnly = type === 'doc';
   const coreDir = docsOnly ? null : findCoreDir(cwd);
-  if (!docsOnly && !coreDir) {
+  if (type && !docsOnly && !coreDir) {
     throw new AstryxError(
       'Could not find @astryxdesign/core package',
       undefined,
@@ -1380,7 +1394,7 @@ export async function search(query, options = {}) {
 
   // Gather candidates from each requested domain in parallel.
   /** @param {string} d */
-  const wants = d => !type || type === d;
+  const wants = d => (!type && (coreDir != null || d === 'doc')) || type === d;
   const [components, hooks, docTopics, templates] = await Promise.all([
     wants('component')
       ? gatherComponents(/** @type {string} */ (coreDir), cwd)

@@ -12,6 +12,7 @@ export const docs = {
   placement: {parent: 'namespace:integrations', slot: 'contribute', order: 30},
   title: 'Themes',
   category: 'guide',
+  keywords: ['integration theme', 'ship a theme'],
   description:
     'Ship an editable source theme with a generated palette that apps copy into their code and build.',
   sections: [

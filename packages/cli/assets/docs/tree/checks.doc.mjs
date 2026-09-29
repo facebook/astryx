@@ -12,6 +12,7 @@ export const docs = {
   placement: {parent: 'namespace:integrations', slot: 'ship', order: 20},
   title: 'Check an integration',
   category: 'guide',
+  keywords: ['check before publishing', 'validate an integration', 'ci'],
   description:
     'Pick the check for each problem, learn what fails and what only warns, and run every check in CI.',
   sections: [

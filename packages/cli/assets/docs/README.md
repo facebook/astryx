@@ -55,5 +55,5 @@ Worked example: a responsive-and-interaction readiness rubric is grading criteri
 one section by its key. A section's key is its `id`, or a key derived from its
 title when it has none. Give a section an `id` when its title may change, since
 readers and extensions link to the key. Two sections in one topic cannot share
-a key. Keep each section small enough to read on its own: `astryx doctor` fails
+a key. Keep each section small enough to read on its own: `astryx doctor` warns on
 any section over 32 KB.

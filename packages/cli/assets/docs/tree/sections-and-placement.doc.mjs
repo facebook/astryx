@@ -99,7 +99,7 @@ export const docs = {
           items: [
             'A `parent` that your package does not ship, such as `namespace:cli`, "names no namespace".',
             'A `slot` that the namespace does not declare "is not a slot of namespace"; the message lists the slots it does declare.',
-            'The check exits 1, so a CI run stops on it; see {@link generic:check-your-docs}.',
+            'The check exits 1; see {@link generic:check-your-docs}.',
           ],
         },
       ],

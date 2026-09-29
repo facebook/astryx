@@ -12,6 +12,7 @@ export const docs = {
   placement: {parent: 'namespace:integrations', slot: 'contribute', order: 60},
   title: 'Agent guidance',
   category: 'guide',
+  keywords: ['agent docs', 'agents.md'],
   description:
     'Add a few lines of guidance that apps put in front of the AI agents working in their code.',
   sections: [
@@ -113,7 +114,7 @@ export default {
       content: [
         {
           type: 'prose',
-          text: 'The block changes only when the app runs `init` or `upgrade --apply`. After an app installs a version of your package with new lines, it runs one of them.',
+          text: 'The block changes only when the app runs `init`, or `upgrade --from <version> --apply`. After an app installs a version of your package with new lines, it runs one of them.',
         },
         {
           type: 'code',

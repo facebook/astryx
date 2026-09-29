@@ -129,9 +129,9 @@ describe('doc references in shipped content', () => {
     const inTree = (ref: string) =>
       treeRoutes.has(ref.replace(/^(?:npx )?astryx docs /, '').split(' ')[0]);
     const all = Object.values(corpora).flatMap(docReferences);
-    expect(
-      all.filter(ref => linkifyCode(ref) == null && !inTree(ref)),
-    ).toEqual([]);
+    expect(all.filter(ref => linkifyCode(ref) == null && !inTree(ref))).toEqual(
+      [],
+    );
     expect(treeRoutes.has('cli/commands/upgrade')).toBe(true);
   });
 });

@@ -266,7 +266,7 @@ const overrides = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'Astryx still emits the deprecated bare classes (`.primary`, `.sm`, `.level-2`, `.checked`) and will remove them in a later release. Use data attributes for new CSS; `astryx upgrade --apply` rewrites qualified selectors in `.css` files.',
+          text: 'Astryx still emits the deprecated bare classes (`.primary`, `.sm`, `.level-2`, `.checked`) and will remove them in a later release. Use data attributes for new CSS; `astryx upgrade --from <old version> --apply` rewrites qualified selectors in `.css` files.',
         },
         {
           type: 'code',

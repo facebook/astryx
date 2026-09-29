@@ -343,6 +343,33 @@ describe('integration guides required content', () => {
     expect(integrationAddDoc.related).toContain('integration verify');
   });
 
+  it('names the old spelling nowhere else in a shipped doc', () => {
+    // Only the guides that tell an older CLI's check from the new one may say
+    // `pack --check`.
+    const history = new Set([
+      path.join(TREE_DIR, 'checks.doc.mjs'),
+      path.join(TREE_DIR, 'troubleshooting.doc.mjs'),
+    ]);
+    const root = path.join(import.meta.dirname, '..');
+    /** @param {string} dir @returns {string[]} */
+    const docFiles = dir =>
+      fs.readdirSync(dir, {withFileTypes: true}).flatMap(entry => {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory())
+          return entry.name === 'node_modules' ? [] : docFiles(full);
+        return /\.doc(\.[a-z]+)?\.mjs$/.test(entry.name) ? [full] : [];
+      });
+    const files = ['api', 'assets', 'authoring', 'clients', 'foundation'].flatMap(
+      dir => docFiles(path.join(root, dir)),
+    );
+    expect(files.length).toBeGreaterThan(100);
+    const stale = files.filter(
+      file =>
+        !history.has(file) && fs.readFileSync(file, 'utf8').includes('pack --check'),
+    );
+    expect(stale.map(file => path.relative(root, file))).toEqual([]);
+  });
+
   it('names every CLI-peer failure `integration verify` reports', () => {
     for (const code of [
       'docs_tree_needs_cli',

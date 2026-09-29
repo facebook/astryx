@@ -96,7 +96,8 @@ describe('generateCompressedIndex', () => {
 
   it('includes upgrade command and migration rule', () => {
     const result = generateCompressedIndex('1.0.0');
-    expect(result).toContain('upgrade --apply');
+    // `upgrade --apply` alone stops with "Missing required --from".
+    expect(result).toContain('upgrade --from <old version> --apply');
     expect(result).toMatch(/after any Astryx or integration dependency bump/);
   });
 
@@ -192,7 +193,7 @@ describe('generateCompressedIndex', () => {
       ],
     });
 
-    expect(result.indexOf('upgrade --apply')).toBeLessThan(
+    expect(result.indexOf('upgrade --from <old version> --apply')).toBeLessThan(
       result.indexOf('INTEGRATIONS:'),
     );
     expect(result.indexOf('INTEGRATIONS:')).toBeLessThan(

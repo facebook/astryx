@@ -13,6 +13,7 @@ export const docs = {
   placement: {parent: 'namespace:integrations', slot: 'ship', order: 30},
   title: 'Versioning',
   category: 'guide',
+  keywords: ['peer dependency', 'semver', 'cli version'],
   description:
     'Version your package, declare its peers, and keep apps on older CLIs working.',
   sections: [

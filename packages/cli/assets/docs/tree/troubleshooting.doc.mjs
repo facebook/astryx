@@ -13,6 +13,7 @@ export const docs = {
   placement: {parent: 'namespace:integrations', slot: 'help', order: 10},
   title: 'Troubleshooting',
   category: 'guide',
+  keywords: ['integration error', 'integration not loading'],
   description:
     'Find the message the CLI printed while you build, verify, or install an integration, and apply its fix.',
   sections: [
@@ -38,14 +39,14 @@ export const docs = {
             ],
             [
               '`core_not_found`: `Could not resolve @astryxdesign/core, so component names could not be checked.`',
-              'Same fix. The `[ok] No component names conflict with Core.` line after it is not a pass: the check exits 1.',
+              'Same fix. The check exits 1.',
             ],
             [
-              "`Error: unknown subcommand 'integration verify'`",
+              "`Error: unknown subcommand 'integration verify'`, or `Error: Pass --check to verify the integration tarball.`",
               'Your CLI is older than `integration verify`. Run `npm install -D @astryxdesign/cli@latest`. On the older CLI, the same check is `integration pack --check`.',
             ],
             [
-              "`Error: Pass --check to verify the integration tarball.` or `Error: unknown subcommand 'integration pack'`",
+              "`Error: unknown subcommand 'integration pack'`",
               'Run `npx astryx integration verify`. It replaced `integration pack --check`.',
             ],
           ],
@@ -66,14 +67,18 @@ export const docs = {
           rows: [
             [
               '`component_export_missing`: `Component "AcmeCarousel" advertises import "@acme/astryx-widgets/components/AcmeCarousel", but that packed module does not export "AcmeCarousel".`',
-              "package.json has no `exports` entry for it, or the module does not export the name. Run `npm pkg set 'exports[./components/AcmeCarousel]=./components/AcmeCarousel.tsx'`, and keep `export function AcmeCarousel`.",
+              "package.json has no `exports` map, or the module does not export the name. Keep `export function AcmeCarousel`, and add the entry: `npm pkg set 'exports[./components/AcmeCarousel]=./components/AcmeCarousel.tsx'`.",
             ],
             [
               '`template_export_missing`: `Template "acme-dashboard" public import "@acme/astryx-widgets/templates/acme-dashboard" does not have a default export.`',
               'Run `npm pkg set \'exports[./templates/acme-dashboard]=./templates/acme-dashboard.tsx\'`, and keep `export default` in the source. Start new packages with `"exports": {}` so each add writes these.',
             ],
             [
-              '`component_import_unresolvable`: `…advertises import "@acme/astryx-widgets/components/AcmeCarousel", but a consumer cannot resolve it: Cannot find package \'@acme/astryx-widgets\'`',
+              '`component_import_unresolvable` or `template_import_unresolvable`: `…Package subpath \'./components/AcmeCarousel\' is not defined by "exports"…`',
+              "The `exports` map has no entry for it. Run `npm pkg set 'exports[./components/AcmeCarousel]=./components/AcmeCarousel.tsx'`, or `'exports[./templates/acme-dashboard]=./templates/acme-dashboard.tsx'` for a template.",
+            ],
+            [
+              '`component_import_unresolvable`: `…but a consumer cannot resolve it: Cannot find package \'@acme/old-name\'`',
               "You renamed the package after the add wrote each doc's `import`. Change `import` in every component doc to the new name.",
             ],
             [
@@ -86,7 +91,7 @@ export const docs = {
             ],
             [
               '`replaces_needs_cli`: The package has a template that sets `replaces` but declares no @astryxdesign/cli peer.',
-              'Same fix: an older CLI rejects `replaces` and withholds your templates and doc topics.',
+              'Same fix: an older CLI rejects `replaces`, drops templates, and hides your doc topics.',
             ],
             [
               '`themes_need_cli`: The package ships a theme but declares no @astryxdesign/cli peer.',

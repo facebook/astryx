@@ -12,6 +12,7 @@ export const docs = {
   placement: {parent: 'namespace:integrations', slot: 'contribute', order: 10},
   title: 'Components',
   category: 'guide',
+  keywords: ['integration component', 'ship a component'],
   description:
     'Add a component to your package, describe it, and make its import work in every app that installs the package.',
   sections: [

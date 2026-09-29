@@ -332,6 +332,15 @@ describe('search leaf — a whole-query phrase in a title or heading is top tier
     );
   });
 
+  it('reads a plural of a name as the name, and only a real plural', () => {
+    expect(scoreCandidate('integration', {name: 'integrations'})?.score).toBe(100);
+    expect(scoreCandidate('box', {name: 'boxes'})?.score).toBe(100);
+    expect(scoreCandidate('tabs', {name: 'tab'})?.score).toBe(100);
+    // `es` only follows s, x, z, ch, or sh.
+    expect(scoreCandidate('not', {name: 'notes'})?.score ?? 0).toBeLessThan(100);
+    expect(scoreCandidate('mod', {name: 'modes'})?.score ?? 0).toBeLessThan(100);
+  });
+
   it('keeps an exact name or keyword above a title phrase', () => {
     const titled = {name: 'x', titles: ['Table of contents for long pages']};
     const keyword = {name: 'Outline', keywords: ['table of contents']};
@@ -398,12 +407,20 @@ describe('search leaf — error paths (pinned)', () => {
     ).rejects.toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
   }, SLOW);
 
-  it('throws ERR_CORE_NOT_FOUND when @astryxdesign/core cannot be found', async () => {
+  it('searches the docs without @astryxdesign/core, and throws for a domain that needs it', async () => {
     const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-search-no-core-'));
     try {
-      await expect(search('button', {cwd: empty})).rejects.toMatchObject({
-        code: 'ERR_CORE_NOT_FOUND',
-      });
+      // An open search outside an app covers the docs, as `astryx docs` does.
+      const open = await search('make an integration', {cwd: empty});
+      expect(open.data.results.length).toBeGreaterThan(0);
+      expect(new Set(open.data.results.map(r => r.domain))).toEqual(
+        new Set(['doc']),
+      );
+      for (const type of ['component', 'hook', 'template']) {
+        await expect(
+          search('button', {cwd: empty, type: /** @type {any} */ (type)}),
+        ).rejects.toMatchObject({code: 'ERR_CORE_NOT_FOUND'});
+      }
     } finally {
       fs.rmSync(empty, {recursive: true, force: true});
     }

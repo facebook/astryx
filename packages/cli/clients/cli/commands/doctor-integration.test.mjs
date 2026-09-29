@@ -6,6 +6,7 @@
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import {Command} from 'commander';
 import {discoverCoreTemplates} from '../../../foundation/discovery/template-adapter.mjs';
@@ -335,6 +336,35 @@ describe('doctor integration — command', () => {
       parsed.data.issues.some(issue => issue.code === 'missing_root'),
     ).toBe(true);
     expect(process.exitCode).toBe(1);
+  });
+
+  it('components exits 1 when Core is missing, with no [ok] after the failure', async () => {
+    // Outside the repo, so nothing above the package resolves Core.
+    const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-no-core-'));
+    const previousTmp = tmpDir;
+    tmpDir = outside;
+    try {
+      writeComponentIntegration('AcmeCarousel');
+      expect(findCoreDir(outside)).toBeNull();
+      process.chdir(outside);
+
+      await createProgram().parseAsync([
+        'node',
+        'astryx',
+        'doctor',
+        'integration',
+        'components',
+      ]);
+
+      const printed = logCalls.join('\n');
+      expect(printed).toContain('core_not_found');
+      expect(printed).not.toContain('[ok]');
+      expect(process.exitCode).toBe(1);
+    } finally {
+      tmpDir = previousTmp;
+      process.chdir(previousCwd);
+      fs.rmSync(outside, {recursive: true, force: true});
+    }
   });
 
   it('components warns with the exact package-qualified command', async () => {

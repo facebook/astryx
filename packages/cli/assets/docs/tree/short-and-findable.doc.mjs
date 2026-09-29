@@ -75,7 +75,7 @@ export const docs = {
           style: 'unordered',
           items: [
             'Name the task in the words a reader types, such as "Deploy to production". Avoid titles such as "Overview" or "Details".',
-            'Write field names, file names, and error codes in backticks, such as `ACME_DEPLOY_TOKEN`: search treats each one as a keyword.',
+            'Write field names, file names, and error codes in backticks, such as `deployTarget`: search treats each one as a keyword.',
             'Other words in the summary and body match too, but rank below titles and identifiers. The summary shows under each hit, so make it answer the query.',
           ],
         },
@@ -99,7 +99,6 @@ export const docs = {
           style: 'unordered',
           items: [
             'This query returns the section of these guides that shows how to place a doc.',
-            'Without quotes, search reads only the first word, so `place a doc` searches for "place".',
             'Run the same search in an app that installs your package; see {@link generic:test-in-an-app}.',
           ],
         },

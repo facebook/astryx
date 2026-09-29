@@ -45,6 +45,10 @@ export function registerIntegration(program) {
     action: (options, command) =>
       showGroupOrUnknown(integration, 'integration', options, command),
   });
+  // `integration pack --check`, the old spelling of `integration verify`,
+  // reports the unknown subcommand and lists `verify`, not the unknown
+  // option. Each subcommand still parses its own options.
+  integration.allowUnknownOption(true);
 
   defineCommand(integration, integrationAddCommand, {
     fn: integrationAddFn,

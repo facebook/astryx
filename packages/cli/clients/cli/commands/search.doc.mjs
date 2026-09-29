@@ -16,7 +16,8 @@ export const doc = {
   summary: 'Search components, hooks, docs, and templates in one ranked list',
   description:
     'Terminal front-end to search(): prints one ranked, greppable list across ' +
-    'every content domain, each row carrying a follow-up command to act on it.',
+    'every content domain, each row carrying a follow-up command to act on it. ' +
+    'Outside an app, where @astryxdesign/core is not installed, it searches the docs.',
   fn: 'search',
   // Every word after `search` is the query: `astryx search dark mode` searches
   // for "dark mode", with no quotes needed.
@@ -53,7 +54,7 @@ export const doc = {
     {code: 0, when: 'success (including zero matches)'},
     {
       code: 1,
-      when: 'invalid --type, a --limit that is not a positive integer, or @astryxdesign/core cannot be found',
+      when: 'invalid --type, a --limit that is not a positive integer, or --type component, hook, or template where @astryxdesign/core cannot be found',
     },
   ],
   related: ['component', 'hook', 'docs', 'template', 'build'],

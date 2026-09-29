@@ -40,7 +40,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: "That's it. The `init --features agents` command generates everything your AI needs (component index, behavioral rules, CLI reference, and package guidance from configured integrations) from the installed project. After a dependency bump, `astryx upgrade` reports a stale block and `astryx upgrade --apply` refreshes it.",
+          text: "That's it. The `init --features agents` command generates everything your AI needs (component index, behavioral rules, CLI reference, and package guidance from configured integrations) from the installed project. After a dependency bump, `astryx upgrade --from <old version>` reports a stale block and adding `--apply` refreshes it.",
         },
         {
           type: 'prose',
@@ -86,7 +86,7 @@ npx @astryxdesign/cli init --features agents --agent all       # every agent fil
       content: [
         {
           type: 'prose',
-          text: 'Cursor reads project rules from `.cursor/rules/`. To keep the Astryx context in a rule of its own, write it there. The path must be inside the project: an absolute or home (`~/`) path is refused.',
+          text: 'Cursor reads project rules from `.cursor/rules/`. To keep the Astryx context in a rule of its own, write it there. Give a path relative to the project root, such as `.cursor/rules/astryx.mdc`; an absolute path is refused.',
         },
         {
           type: 'code',

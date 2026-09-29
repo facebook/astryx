@@ -12,6 +12,7 @@ export const docs = {
   placement: {parent: 'namespace:integrations', slot: 'contribute', order: 50},
   title: 'Codemods',
   category: 'guide',
+  keywords: ['breaking change', 'migrate apps', 'integration codemod'],
   description:
     'Ship codemods that `astryx upgrade` runs to migrate app code, and know which of them an app runs.',
   sections: [

@@ -19,6 +19,9 @@
  */
 
 import {search} from '../../search/search.mjs';
+import {findCoreDir} from '../../../foundation/fs/paths.mjs';
+import {AstryxError} from '../../error.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {getResultCoverage} from '../../search/coverage.mjs';
 
 /** A page at/above this score is a confident direct match. */
@@ -83,6 +86,15 @@ const ALWAYS = new Set([...FRAME, ...FOUNDATION]);
  */
 export async function buildKit(query, options = {}) {
   const {cwd = process.cwd(), type, limit = 60} = options;
+  // A kit is built from Core's components, hooks, and templates. An open
+  // search without core covers the docs alone, so the kit asks for core here.
+  if (type !== 'doc' && !findCoreDir(cwd)) {
+    throw new AstryxError(
+      'Could not find @astryxdesign/core package',
+      undefined,
+      ERROR_CODES.ERR_CORE_NOT_FOUND,
+    );
+  }
   // search()'s JSDoc @returns widens results to object[]; the SearchResponse
   // shape is the contract (api/search/search.type.mjs). Cast locally rather than
   // tightening the search @returns (a separate follow-up).

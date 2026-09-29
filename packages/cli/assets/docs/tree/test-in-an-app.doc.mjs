@@ -12,6 +12,7 @@ export const docs = {
   placement: {parent: 'namespace:integrations', slot: 'ship', order: 10},
   title: 'Test an integration in an app',
   category: 'guide',
+  keywords: ['test an integration locally', 'try an integration in an app'],
   description:
     'Install your packed package in an app and run the commands its users will run.',
   sections: [
@@ -21,19 +22,19 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Pack the package with `npm pack`, then install the tarball in an app together with Core and the CLI. The app loads your package because it is a dependency.',
+          text: 'Pack the package beside its folder, so the next pack does not ship the tarball, then install it in an app together with Core and the CLI. The app loads your package because it is a dependency.',
         },
         {
           type: 'code',
           lang: 'bash',
-          code: '# In the package\nnpm pack\n\n# In an app folder beside it\nnpm install @astryxdesign/core @astryxdesign/cli ../acme-widgets/acme-astryx-widgets-1.0.0.tgz',
+          code: '# In the package\nnpm pack --pack-destination ..\n\n# In an app folder beside it\nnpm install @astryxdesign/core @astryxdesign/cli ../acme-astryx-widgets-1.0.0.tgz',
         },
         {
           type: 'list',
           style: 'unordered',
           items: [
             "Install the CLI in the app too: `npx astryx` runs the CLI from the app's `node_modules`.",
-            'The app holds a copy, not a link. After each change, run `npm pack` and the same `npm install` again.',
+            'The app holds a copy, not a link. After each change, pack again and run the same `npm install`.',
             'Reading your work inside the package shows your source. The app shows what npm would publish.',
           ],
         },

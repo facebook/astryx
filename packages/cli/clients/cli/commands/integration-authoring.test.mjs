@@ -155,6 +155,11 @@ describe('integration authoring CLI', () => {
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("unknown subcommand 'integration pack'");
     expect(result.stderr).toMatch(/verify\s+\(available subcommand\)/);
+    // The old spelling, with its flag, names the subcommand too.
+    const old = await runCli(['integration', 'pack', '--check'], tmpDir);
+    expect(old.status).not.toBe(0);
+    expect(old.stderr).toContain("unknown subcommand 'integration pack'");
+    expect(old.stderr).toMatch(/verify\s+\(available subcommand\)/);
     const flag = await runCli(['integration', 'verify', '--check'], tmpDir);
     expect(flag.status).not.toBe(0);
     expect(flag.stderr).toContain("unknown option '--check'");

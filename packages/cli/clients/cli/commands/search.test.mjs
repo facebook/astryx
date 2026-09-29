@@ -311,14 +311,15 @@ describe('search CLI — exit codes + JSON contract', () => {
     expect(r.stdout).toContain('reason:');
   });
 
-  it('exits 1 with ERR_CORE_NOT_FOUND when no @astryxdesign/core is reachable', async () => {
+  it('searches the docs when no @astryxdesign/core is reachable, and exits 1 for --type component', async () => {
     const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-search-cli-no-core-'));
     try {
-      const json = await runCli(['--json', 'search', 'button'], empty);
+      const open = await runCli(['--json', 'search', 'make', 'an', 'integration'], empty);
+      expect(open.status).toBe(0);
+      expect(JSON.parse(open.stdout).data.results[0]).toMatchObject({domain: 'doc'});
+      const json = await runCli(['--json', 'search', 'button', '--type', 'component'], empty);
       expect(json.status).toBe(1);
       expect(JSON.parse(json.stdout)).toMatchObject({code: 'ERR_CORE_NOT_FOUND'});
-      const text = await runCli(['search', 'button'], empty);
-      expect(text.status).toBe(1);
     } finally {
       fs.rmSync(empty, {recursive: true, force: true});
     }
