@@ -5,6 +5,10 @@
  */
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+
+vi.mock('../../../foundation/discovery/template-replacement-release.mjs', () => ({
+  templateReplacementsActive: () => true,
+}));
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {Command} from 'commander';

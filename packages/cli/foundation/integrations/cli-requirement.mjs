@@ -16,14 +16,16 @@ export const CLI_PACKAGE = '@astryxdesign/cli';
 
 /**
  * The first CLI release that reads an integration's docs tree (namespace docs
- * and placed guides) and its templates' `replaces`. A release before it can
- * hide every doc topic a package with a namespace doc or a placed guide
- * ships, with no warning, and it rejects `replaces` and withholds the
- * package's templates and doc topics.
+ * and placed guides). A release before it can hide every doc topic a package
+ * with a namespace doc or a placed guide ships, with no warning.
  */
 export const DOCS_TREE_CLI = '0.7.0';
 
-const VERSION_RE = /^v?(\d+|[xX*])(?:\.(\d+|[xX*]))?(?:\.(\d+|[xX*]))?(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+/** First CLI release that activates integration template replacement selection. */
+export const TEMPLATE_REPLACEMENT_CLI = '0.7.0';
+
+const VERSION_RE =
+  /^v?(\d+|[xX*])(?:\.(\d+|[xX*]))?(?:\.(\d+|[xX*]))?(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 
 /**
  * A version or partial version as MAJOR.MINOR.PATCH, a wildcard part as 0.
@@ -81,22 +83,23 @@ export function lowestAdmitted(range) {
 }
 
 /**
- * Why a package that uses a feature an older CLI cannot read would lose it,
- * or null when its declared CLI range admits only CLIs that read it.
+ * Why a package that uses a feature before its supported CLI minimum would
+ * lose it, or null when its declared CLI range admits only supported CLIs.
  * @param {any} pkg package.json
  * @param {string} feature what the package does, e.g. "ships a namespace doc"
- * @param {string} loss what an older CLI does with it
+ * @param {string} loss what a CLI below the supported minimum does with it
+ * @param {string} minimumCli first CLI release that supports the feature
  * @returns {string | null}
  */
-function cliRangeProblem(pkg, feature, loss) {
+function cliRangeProblem(pkg, feature, loss, minimumCli) {
   const range = pkg?.peerDependencies?.[CLI_PACKAGE];
-  const fix = `"${CLI_PACKAGE}": ">=${DOCS_TREE_CLI}" in peerDependencies (optional in peerDependenciesMeta, if the CLI is not required)`;
+  const fix = `"${CLI_PACKAGE}": ">=${minimumCli}" in peerDependencies (optional in peerDependenciesMeta, if the CLI is not required)`;
   if (typeof range !== 'string') {
-    return `The package ${feature} but declares no ${CLI_PACKAGE} peer. A CLI older than ${DOCS_TREE_CLI} ${loss}. Declare ${fix}.`;
+    return `The package ${feature} but declares no ${CLI_PACKAGE} peer. A CLI older than ${minimumCli} ${loss}. Declare ${fix}.`;
   }
   const lowest = lowestAdmitted(range);
-  if (lowest == null || semverCompare(lowest, DOCS_TREE_CLI) < 0) {
-    return `The package ${feature}, but its ${CLI_PACKAGE} peer range "${range}" admits a CLI older than ${DOCS_TREE_CLI}, which ${loss}. Declare ${fix}.`;
+  if (lowest == null || semverCompare(lowest, minimumCli) < 0) {
+    return `The package ${feature}, but its ${CLI_PACKAGE} peer range "${range}" admits a CLI older than ${minimumCli}, which ${loss}. Declare ${fix}.`;
   }
   return null;
 }
@@ -115,13 +118,14 @@ export function docsTreeCliProblem(pkg) {
     pkg,
     'ships a namespace doc or a placed guide',
     'does not read the docs tree, and can hide every doc topic the package ships',
+    DOCS_TREE_CLI,
   );
 }
 
 /**
- * Why a package with a template that sets `replaces` would lose its templates
- * and doc topics on an older CLI (spec:AST-035), or null when its declared CLI
- * range admits only CLIs that read the field.
+ * Why a package with a template that sets `replaces` must require the CLI
+ * release that activates replacement selection (spec:AST-035), or null when
+ * its declared CLI range admits only supported CLIs.
  * @param {any} pkg package.json
  * @returns {string | null}
  */
@@ -129,7 +133,8 @@ export function replacesCliProblem(pkg) {
   return cliRangeProblem(
     pkg,
     'has a template that sets `replaces`',
-    "rejects the field, and withholds the package's templates and doc topics",
+    "does not activate replacement selection; versions without staged parser support also reject the field and withhold the package's templates and doc topics",
+    TEMPLATE_REPLACEMENT_CLI,
   );
 }
 

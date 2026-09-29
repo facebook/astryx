@@ -29,6 +29,7 @@ import {importDocModule} from '../doc-compiler/import.mjs';
 import {CLI_ROOT, discoverExternalPackages} from '../fs/paths.mjs';
 import {CORE_PROVIDER_ID} from '../identity/providers.mjs';
 import {Project} from '../config/project.mjs';
+import {templateReplacementsActive} from './template-replacement-release.mjs';
 
 const require = createRequire(import.meta.url);
 
@@ -118,7 +119,7 @@ export function effectiveTemplateDiscovery(templates) {
  *   from package.json rather than named in astryx.config
  * @property {string} [replaces] active Core template id this integration template replaces
  * @property {boolean} [replacementRejected] whether an invalid declaration was disabled
- * @property {string} [replacementTarget] disabled declaration target
+ * @property {string} [replacementTarget] inactive or disabled declaration target
  */
 
 /**
@@ -745,7 +746,8 @@ export async function discoverCoreTemplates() {
 }
 
 /**
- * Apply valid integration replacements to a raw template set.
+ * Validate integration replacement declarations and activate them only in a CLI
+ * release whose public response contract includes replacement selection.
  *
  * One declaration owns its Core target. When different configured packages
  * replace the same target, the later package wins and discovery returns a
@@ -756,9 +758,14 @@ export async function discoverCoreTemplates() {
  *
  * @param {DiscoveredTemplate[]} templates
  * @param {TemplateDiscoveryError[]} [declarationErrors]
+ * @param {{cliVersion?: string}} [options]
  * @returns {{templates: DiscoveredTemplate[], errors: TemplateReplacementError[]}}
  */
-export function applyTemplateReplacements(templates, declarationErrors = []) {
+export function applyTemplateReplacements(
+  templates,
+  declarationErrors = [],
+  options = {},
+) {
   /** @type {Map<string, DiscoveredTemplate[]>} */
   const coreById = new Map();
   /** @type {Map<string, DiscoveredTemplate[]>} */
@@ -924,6 +931,19 @@ export function applyTemplateReplacements(templates, declarationErrors = []) {
     if (coreMatch) replacedCore.add(coreMatch);
   }
 
+  if (!templateReplacementsActive(options.cliVersion)) {
+    const staged = templates.map(template => {
+      if (template.replaces == null) return template;
+      const dormant = {...template, replacementTarget: template.replaces};
+      delete dormant.replaces;
+      return dormant;
+    });
+    return {
+      templates: staged.sort((a, b) => a.name.localeCompare(b.name)),
+      errors,
+    };
+  }
+
   const effective = templates.flatMap(template => {
     if (replacedCore.has(template)) return [];
     if (template.replaces != null && !activeReplacements.has(template)) {
@@ -969,9 +989,11 @@ async function discoverAllSources(cwd = process.cwd()) {
  * @returns {Promise<DiscoveredTemplate[]>}
  */
 export async function discoverAllUnresolved(cwd = process.cwd()) {
-  return (await discoverAllSources(cwd)).templates.sort((a, b) =>
-    a.name.localeCompare(b.name),
-  );
+  const templates = (await discoverAllSources(cwd)).templates;
+  if (!templateReplacementsActive()) {
+    return applyTemplateReplacements(templates).templates;
+  }
+  return templates.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /**
@@ -1248,7 +1270,8 @@ export async function discoverIntegrationTemplatesForOne(integration) {
         template: id,
         message: `Template "${id}" is missing a "type" of "page" or "block". Stamp the default export with type: 'page' or type: 'block'.`,
       });
-      const declared = doc?.replaces ?? (await declaredReplacement(docPath, id));
+      const declared =
+        doc?.replaces ?? (await declaredReplacement(docPath, id));
       if (declared != null) {
         errors.push({
           code: 'invalid_template_replacement',

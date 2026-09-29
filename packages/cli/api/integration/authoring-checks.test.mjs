@@ -4,7 +4,11 @@
  * @file Hermetic integration authoring checks against the real Core catalogs.
  */
 
-import {afterEach, beforeEach, describe, expect, it} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+
+vi.mock('../../foundation/discovery/template-replacement-release.mjs', () => ({
+  templateReplacementsActive: () => true,
+}));
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {discoverCoreTemplates} from '../../foundation/discovery/template-adapter.mjs';

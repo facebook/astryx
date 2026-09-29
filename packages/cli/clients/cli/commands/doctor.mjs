@@ -126,26 +126,41 @@ function printTemplateConflicts(data) {
     ...issueBlocks(data.issues),
   ];
   if (data.conflicts.length === 0 && data.issues.length === 0) {
-    output.push(
-      text('[ok] No template replacements or id conflicts with Core.'),
-    );
+    output.push(text('[ok] No template ids conflict with Core.'));
   } else if (data.conflicts.length > 0) {
+    const expanded = data.conflicts.some(
+      conflict => 'relationship' in conflict,
+    );
     output.push(
       records(data.conflicts, {
-        fields: [
-          'severity',
-          'relationship',
-          'id',
-          'replaces',
-          'integrationPackage',
-          'integrationType',
-          'integrationName',
-          'message',
-          'command',
-        ],
+        fields: expanded
+          ? [
+              'severity',
+              'relationship',
+              'id',
+              'replaces',
+              'integrationPackage',
+              'integrationType',
+              'integrationName',
+              'message',
+              'command',
+            ]
+          : [
+              'severity',
+              'id',
+              'integrationPackage',
+              'integrationType',
+              'integrationName',
+              'message',
+              'command',
+            ],
         format: {severity: statusToken},
       }),
-      text(`${data.conflicts.length} Core template relationship(s).`),
+      text(
+        expanded
+          ? `${data.conflicts.length} Core template relationship(s).`
+          : `${data.conflicts.length} Core template conflict(s). Renaming is recommended but optional; keep the package-qualified command if the overlap is intentional.`,
+      ),
     );
   }
   emit(...output);
@@ -199,7 +214,9 @@ function printDocConflicts(data) {
       issue => issue.severity === 'error' || issue.code === 'invalid_doc_graph',
     )
   ) {
-    output.push(text('[ok] The docs tree and every link in these docs check out.'));
+    output.push(
+      text('[ok] The docs tree and every link in these docs check out.'),
+    );
   }
   if (data.findings.length === 0) {
     output.push(text('[ok] No doc topics overlap with Core.'));

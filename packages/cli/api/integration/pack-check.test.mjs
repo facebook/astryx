@@ -336,7 +336,7 @@ describe('integrationPackCheck', () => {
     expect(await codes()).not.toContain('docs_tree_needs_cli');
   }, 120_000);
 
-  it('fails a package with a template that sets replaces on a CLI range that rejects the field', async () => {
+  it('fails a package with a template that sets replaces on a CLI range before activation', async () => {
     writePackage({manifest: "export default {templates: './templates'};\n", themes: false});
     fs.mkdirSync(path.join(tmpDir, 'templates'), {recursive: true});
     fs.writeFileSync(

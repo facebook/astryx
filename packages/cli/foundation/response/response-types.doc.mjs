@@ -61,7 +61,7 @@ export const doc = {
     {
       value: 'docs.list',
       description:
-        'All reference-doc topics as DocsListEntry[] ({topic, description, package, replaces?}), in read order; meta.namespaces lists the docs tree\'s top-level namespaces, and meta.notLoaded each package whose docs did not load.',
+        "All reference-doc topics as DocsListEntry[] ({topic, description, package, replaces?}), in read order; meta.namespaces lists the docs tree's top-level namespaces, and meta.notLoaded each package whose docs did not load.",
     },
     {
       value: 'docs.detail',
@@ -162,8 +162,7 @@ export const doc = {
     // template
     {
       value: 'template.list',
-      description:
-        'The effective discovered TemplateListEntry[] for pages and blocks. A winning replacement entry includes optional `replaces`, naming the Core id omitted from the default list.',
+      description: 'The discovered TemplateListEntry[] for pages and blocks.',
     },
     {
       value: 'template.show',
@@ -291,7 +290,7 @@ export const doc = {
     {
       value: 'integration.template-conflicts',
       description:
-        'The integration identity, issues, and conflicts as {severity: info | warning, relationship: replaces | accidental, replaces?, command}.',
+        'The integration identity, structural issues, and non-blocking conflicts where an integration template id is also owned by Core; each conflict includes the exact package-qualified command.',
     },
     {
       value: 'integration.component-conflicts',

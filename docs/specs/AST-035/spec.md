@@ -37,8 +37,9 @@ original.
 - **FR1 — A template declares its own replacement.** An integration template MAY
   set `replaces` in its own metadata to an existing Core template id. No
   package-level map declares replacements (`spec:AST-039/FR11`). The field is part
-  of the strict template metadata object, so CLIs before 0.7.0 reject it; an
-  integration that uses it MUST declare `@astryxdesign/cli >=0.7.0`.
+  of the strict template metadata object, so CLIs without staged parser support
+  reject it. An integration that uses it MUST declare `@astryxdesign/cli >=0.7.0`
+  because replacement selection starts there.
 - **FR2 — A valid replacement owns default discovery.** When one valid declaration
   applies, unqualified template lookup and default template projections MUST use the
   integration template for the Core id. The integration template MUST remain
@@ -81,12 +82,15 @@ original.
 
 ### Platform support
 
-- Minimum CLI for an integration that declares `replaces`: `@astryxdesign/cli
-  > =0.7.0`. Earlier CLIs parse template metadata strictly: they reject the field,
-  > print one warning, and withhold the package's templates and doc topics, while
-  > its components still load.
+- Minimum CLI for an integration that declares `replaces`:
+  `@astryxdesign/cli >=0.7.0`. CLIs without staged parser support reject the
+  field, print one warning, and withhold the package's templates and doc topics,
+  while its components still load.
 - Replacement selection itself starts in `@astryxdesign/cli 0.7.0`, the release
-  produced by this breaking minor changeset.
+  produced by the breaking minor changeset. A 0.6.x implementation MAY read and
+  validate the future declaration for release preparation, but it MUST keep
+  default lookup, default list output, and the released warning-only
+  `IntegrationTemplateConflict` shape unchanged.
 - Browser evidence: not applicable to catalog selection. A generated consumer app
   MUST still build or run when its selected template renders integration-owned
   navigation.
@@ -101,12 +105,16 @@ Project reports invalid contributions while retaining other valid contribution k
 and valid template or component siblings.
 
 The field is optional, and valid templates keep their selection behavior when it is
-absent. The overall release is breaking: a winning replacement removes its
-Core target from the default `template.list` response, every
-`IntegrationTemplateConflict` gains required `relationship`, and its `severity` can
-now be `info`. The changeset uses a minor bump under 0.x and includes migration
-instructions as required by `spec:AST-017/FR8`. Optional `replaces` is projected
-across every public response surface under `spec:AST-017/FR13`.
+absent. Before the CLI package reaches 0.7.0, the implementation keeps the field
+dormant: it MAY validate declarations for integration authors, but it does not
+project `replaces`, replace Core in default discovery, or widen the released
+`IntegrationTemplateConflict` response. The 0.7.0 release is breaking: a winning
+replacement removes its Core target from the default `template.list` response,
+every `IntegrationTemplateConflict` gains required `relationship`, and its
+`severity` can now be `info`. The activating changeset uses a minor bump under
+0.x and includes migration instructions as required by `spec:AST-017/FR8`.
+Optional `replaces` is projected across every public response surface under
+`spec:AST-017/FR13` only after activation.
 
 ## Verification
 
@@ -159,9 +167,10 @@ to discovery later.
 
 Put `replaces` in the integration template's own metadata. Every integration item
 keeps its per-item metadata in its own descriptor (`spec:AST-039/FR11`), and doc
-topics already declare replacement with the same field. The cost: a CLI older than
-0.7.0 rejects the unknown field and withholds the package's templates and doc
-topics, where the manifest map let it fall back to own-id access. Integration
+topics already declare replacement with the same field. The cost: CLIs without
+staged parser support reject the unknown field and withhold the package's
+templates and doc topics, where the manifest map let them fall back to own-id
+access. Supported replacement selection does not begin until 0.7.0. Integration
 themes in 0.7.0 already need a 0.7.0 CLI, so this adds no new kind of break;
 integrations that use `replaces` declare `@astryxdesign/cli >=0.7.0`.
 

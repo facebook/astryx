@@ -68,11 +68,11 @@ describe('docsTreeCliProblem', () => {
 });
 
 describe('replacesCliProblem', () => {
-  it('asks a package that sets replaces for a CLI that reads the field', () => {
+  it('asks a package that sets replaces for a CLI that activates replacement selection', () => {
     expect(replacesCliProblem({name: '@acme/kit'})).toContain('sets `replaces`');
-    expect(replacesCliProblem({peerDependencies: {'@astryxdesign/cli': '^0.6.0'}})).toContain(
-      'admits a CLI older than',
-    );
+    const problem = replacesCliProblem({peerDependencies: {'@astryxdesign/cli': '^0.6.0'}});
+    expect(problem).toContain('admits a CLI older than');
+    expect(problem).toContain('does not activate replacement selection');
     expect(replacesCliProblem({peerDependencies: {'@astryxdesign/cli': '>=0.7.0'}})).toBeNull();
   });
 });

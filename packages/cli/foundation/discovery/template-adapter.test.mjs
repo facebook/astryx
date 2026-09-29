@@ -17,6 +17,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {
+  applyTemplateReplacements,
   effectiveTemplateDiscovery,
   extractComponents,
   findPageDocFile,
@@ -219,5 +220,58 @@ describe('effectiveTemplateDiscovery', () => {
     expect(effective).toContain(pageReplacement);
     expect(effective).toContain(coreBlock);
     expect(effective).not.toContain(corePage);
+  });
+});
+
+describe('integration template replacement release gate', () => {
+  const core = {
+    type: 'page',
+    dirName: 'dashboard',
+    name: 'Dashboard',
+    description: '',
+    filePath: '/dashboard.tsx',
+    docPath: '/dashboard.doc.mjs',
+  };
+  const replacement = {
+    type: 'page',
+    dirName: 'acme-dashboard',
+    name: 'Acme dashboard',
+    description: '',
+    filePath: '/acme-dashboard.tsx',
+    docPath: '/acme-dashboard.doc.mjs',
+    package: '@acme/widgets',
+    replaces: 'dashboard',
+  };
+
+  it('keeps 0.6.x selection and projection unchanged', () => {
+    const resolved = applyTemplateReplacements([core, replacement], [], {
+      cliVersion: '0.6.4',
+    });
+
+    expect(resolved.errors).toEqual([]);
+    expect(resolved.templates).toContain(core);
+    expect(resolved.templates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          dirName: 'acme-dashboard',
+          replacementTarget: 'dashboard',
+        }),
+      ]),
+    );
+    expect(
+      resolved.templates.find(
+        template => template.dirName === 'acme-dashboard',
+      ),
+    ).not.toHaveProperty('replaces');
+  });
+
+  it('activates the same validated declaration at 0.7.0', () => {
+    const resolved = applyTemplateReplacements([core, replacement], [], {
+      cliVersion: '0.7.0',
+    });
+
+    expect(resolved.errors).toEqual([]);
+    expect(resolved.templates).not.toContain(core);
+    expect(resolved.templates).toContain(replacement);
   });
 });

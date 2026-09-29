@@ -121,9 +121,21 @@ export function registerTemplate(program) {
             description: t.description,
             package:
               t.package && t.package !== '@astryxdesign/core' ? t.package : '',
-            replaces: t.replaces ?? '',
+            replaces:
+              'replaces' in t && typeof t.replaces === 'string'
+                ? t.replaces
+                : '',
           });
-          const fields = ['id', 'name', 'description', 'package', 'replaces'];
+          const fields = ['id', 'name', 'description', 'package'];
+          if (
+            result.data.some(
+              template =>
+                'replaces' in template &&
+                typeof template.replaces === 'string',
+            )
+          ) {
+            fields.push('replaces');
+          }
           emit(
             pages.length > 0 && section('Page Templates'),
             pages.length > 0 && records(pages.map(toRow), {fields}),

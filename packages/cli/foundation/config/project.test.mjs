@@ -1,6 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+
+vi.mock('../discovery/template-replacement-release.mjs', () => ({
+  templateReplacementsActive: () => true,
+}));
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {Project, DEFAULT_ISSUES_URL, findConfigPath} from './project.mjs';

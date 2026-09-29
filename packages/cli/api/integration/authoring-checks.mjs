@@ -24,6 +24,7 @@ import {
   discoverCoreTemplates,
   discoverIntegrationTemplatesForOne,
 } from '../../foundation/discovery/template-adapter.mjs';
+import {templateReplacementsActive} from '../../foundation/discovery/template-replacement-release.mjs';
 import {
   validateInstalledIntegration,
   validateLocalIntegration,
@@ -99,6 +100,7 @@ export async function integrationTemplateConflicts(pkg, options = {}) {
   ]);
   addErrors(issues, errors, 'invalid_template');
 
+  const replacementsActive = templateReplacementsActive();
   const replacementResolution = applyTemplateReplacements(
     [...coreTemplates, ...templates],
     errors.filter(error => error.replacementTarget != null),
@@ -144,21 +146,29 @@ export async function integrationTemplateConflicts(pkg, options = {}) {
     const sameIdCore = coreById.get(template.dirName);
     const replacementIsActive = activeReplacementIds.has(template.dirName);
 
-    if (replacementIsActive && template.replaces != null) {
-      conflicts.push({
-        id: template.dirName,
-        severity: 'info',
-        relationship: 'replaces',
-        replaces: template.replaces,
-        integrationPackage: name,
-        integrationType: template.type,
-        integrationName: template.name,
-        coreMatches: coreById.get(template.replaces) ?? [],
-        message:
-          `Intentional replacement: "${template.dirName}" replaces the Core template ` +
-          `"${template.replaces}" for unqualified lookup.`,
-        command: `${run} template ${shellArg(template.replaces)} --package ${shellArg('@astryxdesign/core')}`,
-      });
+    if (
+      replacementsActive &&
+      replacementIsActive &&
+      template.replaces != null
+    ) {
+      // This branch is unreachable before the package reaches 0.7.0. Keep the
+      // published 0.6.x conflict typedef narrow until the activation change.
+      conflicts.push(
+        /** @type {any} */ ({
+          id: template.dirName,
+          severity: 'info',
+          relationship: 'replaces',
+          replaces: template.replaces,
+          integrationPackage: name,
+          integrationType: template.type,
+          integrationName: template.name,
+          coreMatches: coreById.get(template.replaces) ?? [],
+          message:
+            `Intentional replacement: "${template.dirName}" replaces the Core template ` +
+            `"${template.replaces}" for unqualified lookup.`,
+          command: `${run} template ${shellArg(template.replaces)} --package ${shellArg('@astryxdesign/core')}`,
+        }),
+      );
     }
 
     if (
@@ -174,20 +184,24 @@ export async function integrationTemplateConflicts(pkg, options = {}) {
       conflicts.push({
         id: template.dirName,
         severity: 'warning',
-        relationship: 'accidental',
+        ...(replacementsActive ? {relationship: 'accidental'} : {}),
         integrationPackage: name,
         integrationType: template.type,
         integrationName: template.name,
         coreMatches: sameIdCore,
-        message: compatibleKind
-          ? `Template id "${template.dirName}" conflicts with Core (${coreKinds}). Consider renaming it, or set replaces: ${JSON.stringify(template.dirName)} in its metadata to replace the Core template.`
-          : `Template id "${template.dirName}" conflicts with Core (${coreKinds}), but a ${template.type} template cannot replace a different template kind. Rename the integration template.`,
+        message: replacementsActive
+          ? compatibleKind
+            ? `Template id "${template.dirName}" conflicts with Core (${coreKinds}). Consider renaming it, or set replaces: ${JSON.stringify(template.dirName)} in its metadata to replace the Core template.`
+            : `Template id "${template.dirName}" conflicts with Core (${coreKinds}), but a ${template.type} template cannot replace a different template kind. Rename the integration template.`
+          : `Template id "${template.dirName}" conflicts with Core (${coreKinds}). Consider renaming the integration template. If you keep it, always select it with --package.`,
         command: `${run} template ${shellArg(template.dirName)} --package ${shellArg(name)}`,
       });
     }
   }
   conflicts.sort((a, b) =>
-    `${a.id}:${a.relationship}`.localeCompare(`${b.id}:${b.relationship}`),
+    `${a.id}:${'relationship' in a ? a.relationship : ''}`.localeCompare(
+      `${b.id}:${'relationship' in b ? b.relationship : ''}`,
+    ),
   );
 
   return {
