@@ -9,15 +9,25 @@
  * SYNC: When NumberInput.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  expectTypeOf,
+  vi,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import {act, useState} from 'react';
+import {hydrateRoot} from 'react-dom/client';
+import {renderToString} from 'react-dom/server';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TestIcon} from '../__tests__/TestIcon';
 import {InternationalizationProvider} from '../i18n';
 import {registerIcons, resetIcons} from '../Icon';
 import {InputGroup} from '../InputGroup';
-import {NumberInput} from './NumberInput';
+import {NumberInput, type NumberInputProps} from './NumberInput';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -1268,7 +1278,13 @@ describe('NumberInput', () => {
   });
 
   describe('isReadOnly', () => {
-    it('marks the input read-only', () => {
+    it('keeps the public prop optional and boolean-only', () => {
+      expectTypeOf<NumberInputProps['isReadOnly']>().toEqualTypeOf<
+        boolean | undefined
+      >();
+    });
+
+    it('marks the input natively read-only and exposes the state to accessibility APIs', () => {
       render(
         <NumberInput
           label="Quantity"
@@ -1277,7 +1293,92 @@ describe('NumberInput', () => {
           isReadOnly
         />,
       );
-      expect(screen.getByRole('spinbutton')).toHaveAttribute('readonly');
+      const input = screen.getByRole('spinbutton');
+      expect(input).toHaveAttribute('readonly');
+      expect(input).toHaveAttribute('aria-readonly', 'true');
+    });
+
+    it('removes both read-only declarations when explicitly turned off', () => {
+      const renderInput = (isReadOnly: boolean) => (
+        <NumberInput
+          label="Quantity"
+          value={42}
+          onChange={() => {}}
+          isReadOnly={isReadOnly}
+        />
+      );
+      const {rerender} = render(renderInput(true));
+      const input = screen.getByRole('spinbutton');
+      expect(input).toHaveAttribute('readonly');
+      expect(input).toHaveAttribute('aria-readonly', 'true');
+
+      rerender(renderInput(false));
+      expect(input).not.toHaveAttribute('readonly');
+      expect(input).not.toHaveAttribute('aria-readonly');
+    });
+
+    it('serializes and hydrates read-only semantics without changing editable or disabled states', async () => {
+      const tree = (
+        <NumberInput
+          label="Quantity"
+          value={42}
+          onChange={() => {}}
+          isReadOnly
+        />
+      );
+      const serverHTML = renderToString(tree);
+      expect(serverHTML).toContain('readOnly=""');
+      expect(serverHTML).toContain('aria-readonly="true"');
+      expect(
+        renderToString(
+          <NumberInput label="Quantity" value={42} onChange={() => {}} />,
+        ),
+      ).not.toContain('aria-readonly');
+      const disabledHTML = renderToString(
+        <NumberInput
+          label="Quantity"
+          value={42}
+          onChange={() => {}}
+          isDisabled
+          isReadOnly
+        />,
+      );
+      expect(disabledHTML).toContain('disabled=""');
+      expect(disabledHTML).toContain('readOnly=""');
+      expect(disabledHTML).not.toContain('aria-readonly');
+
+      const container = document.createElement('div');
+      container.innerHTML = serverHTML;
+      document.body.appendChild(container);
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      const recoverableErrors: unknown[] = [];
+      let root: ReturnType<typeof hydrateRoot> | undefined;
+
+      try {
+        await act(async () => {
+          root = hydrateRoot(container, tree, {
+            onRecoverableError: error => recoverableErrors.push(error),
+          });
+        });
+        expect(recoverableErrors).toEqual([]);
+        expect(
+          consoleErrorSpy.mock.calls.filter(call =>
+            String(call[0] ?? '')
+              .toLowerCase()
+              .includes('hydrat'),
+          ),
+        ).toEqual([]);
+        expect(container.querySelector('[role="spinbutton"]')).toHaveAttribute(
+          'aria-readonly',
+          'true',
+        );
+      } finally {
+        await act(async () => root?.unmount());
+        consoleErrorSpy.mockRestore();
+        container.remove();
+      }
     });
 
     it('still submits its value with the form', () => {
@@ -1422,7 +1523,9 @@ describe('NumberInput', () => {
           />
         </form>,
       );
-      expect(screen.getByRole('spinbutton')).toBeDisabled();
+      const input = screen.getByRole('spinbutton');
+      expect(input).toBeDisabled();
+      expect(input).not.toHaveAttribute('aria-readonly');
       expect([
         ...new FormData(container.querySelector('form')!).keys(),
       ]).toEqual([]);
@@ -1633,6 +1736,7 @@ describe('NumberInput', () => {
       expect(input).not.toBeDisabled();
       expect(input).toHaveAttribute('aria-disabled', 'true');
       expect(input).toHaveAttribute('readonly');
+      expect(input).not.toHaveAttribute('aria-readonly');
     });
 
     it('links the reason tooltip from the input via aria-describedby', () => {

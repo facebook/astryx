@@ -80,6 +80,43 @@ test('every expectation is exercised by at least one NumberInput state', async (
   expect(neverExercised(results)).toEqual([]);
 });
 
+test('the accessibility tree distinguishes editable, read-only, and disabled states', async ({
+  page,
+}) => {
+  const cdp = await page.context().newCDPSession(page);
+  const cases = [
+    {id: 'default-value', disabled: false, readOnly: null},
+    {id: 'read-only', disabled: false, readOnly: true},
+    {id: 'disabled', disabled: true, readOnly: null},
+    {id: 'disabled-with-message', disabled: true, readOnly: null},
+  ] as const;
+
+  for (const expected of cases) {
+    const state = NUMBER_INPUT_A11Y_STATES.find(
+      candidate => candidate.id === expected.id,
+    );
+    if (state == null) {
+      throw new Error(
+        `missing NumberInput accessibility state: ${expected.id}`,
+      );
+    }
+    await mount(page, state);
+    const subject = await createChromiumHarness({
+      page,
+      cdp,
+      subject: page.locator(SUBJECT_SELECTOR),
+    }).subject();
+    const computed = await subject.computed();
+    expect(
+      {disabled: computed.disabled, readOnly: computed.readOnly},
+      expected.id,
+    ).toEqual({
+      disabled: expected.disabled,
+      readOnly: expected.readOnly,
+    });
+  }
+});
+
 for (const state of NUMBER_INPUT_A11Y_STATES) {
   test(`NumberInput [${state.id}] — ${state.summary}`, async ({page}) => {
     const cdp = await page.context().newCDPSession(page);

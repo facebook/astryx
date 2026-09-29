@@ -254,12 +254,12 @@ interface NumberInputPropsBase extends Omit<
   isDisabled?: boolean;
   /**
    * Whether the input is read-only.
-   * The value is shown at full opacity and still submits with the form, but
-   * cannot be edited. Unlike `isDisabled`, a read-only input is not dimmed and
-   * stays in the tab order — use it for a value the user should see and send
-   * but not change. Stepping is off in every form while read-only: arrow keys,
-   * the wheel, and the number steppers. `isDisabled` takes precedence when both
-   * are set.
+   * The value is shown at full opacity, still submits with the form, and is
+   * exposed as read-only to assistive technology, but cannot be edited. Unlike
+   * `isDisabled`, a read-only input is not dimmed and stays in the tab order —
+   * use it for a value the user should see and send but not change. Stepping is
+   * off in every form while read-only: arrow keys, the wheel, and the number
+   * steppers. `isDisabled` takes precedence when both are set.
    * @default false
    */
   isReadOnly?: boolean;
@@ -917,6 +917,7 @@ export function NumberInput({
         disabled={isDisabled && !showsDisabledMessage}
         aria-disabled={showsDisabledMessage ? 'true' : undefined}
         readOnly={isReadOnly || showsDisabledMessage || undefined}
+        aria-readonly={isReadOnly && !isDisabled ? 'true' : undefined}
         autoFocus={hasAutoFocus}
         data-autofocus={hasAutoFocus || undefined}
         aria-valuemin={min ?? undefined}
