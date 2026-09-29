@@ -352,6 +352,80 @@ describe('CodeBlock', () => {
     expect(scrollContainer).toHaveAttribute('tabindex', '0');
   });
 
+  it.each(['spans', 'ranges'] as const)(
+    'preserves exact DOM text in %s mode',
+    highlightMode => {
+      const code = 'alpha\nbeta\n\ngamma\n';
+      const {container} = render(
+        <CodeBlock
+          code={code}
+          language="plaintext"
+          highlightMode={highlightMode}
+        />,
+      );
+
+      expect(container.querySelector('code')?.textContent).toBe(code);
+      expect(container.querySelectorAll('[data-line]')).toHaveLength(4);
+      expect(container.textContent).not.toContain('\u200b');
+    },
+  );
+
+  it.each(['spans', 'ranges'] as const)(
+    'preserves newlines across rendering chunks in %s mode',
+    highlightMode => {
+      const code =
+        Array.from({length: 105}, (_, index) => `line ${index + 1}`).join(
+          '\n',
+        ) + '\n';
+      const {container} = render(
+        <CodeBlock
+          code={code}
+          language="plaintext"
+          highlightMode={highlightMode}
+        />,
+      );
+
+      expect(container.querySelector('code')?.textContent).toBe(code);
+      expect(container.querySelectorAll('[data-line]')).toHaveLength(105);
+    },
+  );
+
+  it.each(['spans', 'ranges'] as const)(
+    'preserves CRLF source text in %s mode',
+    highlightMode => {
+      const code = 'alpha\r\n\r\nbeta\r\n';
+      const {container} = render(
+        <CodeBlock
+          code={code}
+          language="plaintext"
+          highlightMode={highlightMode}
+        />,
+      );
+
+      expect(container.querySelector('code')?.textContent).toBe(code);
+      expect(container.querySelectorAll('[data-line]')).toHaveLength(3);
+    },
+  );
+
+  it('keeps each range-mode line in one bare text node', () => {
+    const {container} = render(
+      <CodeBlock
+        code={'alpha\n\nbeta'}
+        language="plaintext"
+        highlightMode="ranges"
+      />,
+    );
+    const lines = container.querySelectorAll('[data-line]');
+
+    expect(lines[0].childNodes).toHaveLength(1);
+    expect(lines[0].firstChild?.nodeType).toBe(Node.TEXT_NODE);
+    expect(lines[0].firstChild?.textContent).toBe('alpha\n');
+    expect(lines[1].childNodes).toHaveLength(1);
+    expect(lines[1].firstChild?.nodeType).toBe(Node.TEXT_NODE);
+    expect(lines[1].firstChild?.textContent).toBe('\n');
+    expect(lines[2].firstChild?.textContent).toBe('beta');
+  });
+
   it('applies a per-instance syntax theme via the syntaxTheme prop', () => {
     const {container} = render(
       <CodeBlock

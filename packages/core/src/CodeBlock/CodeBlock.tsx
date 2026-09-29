@@ -4,7 +4,7 @@
 /**
  * @file CodeBlock.tsx
  * @input Uses React, StyleX, theme tokens, CSS Custom Highlight API, SyntaxTheme provider
- * @output Exports CodeBlock component and CodeBlockProps
+ * @output Exports CodeBlock and CodeBlockProps with source-faithful rendered text
  * @position Core implementation; read-only syntax-highlighted code display
  */
 
@@ -262,6 +262,7 @@ const styles = stylex.create({
     },
   },
   line: {
+    minHeight: '1lh',
     lineHeight: typeScaleVars['--text-code-leading'],
   },
   // Per-line number gutter: a two-column grid ([number] [code]). The number is
@@ -330,20 +331,29 @@ const LINE_CHUNK_THRESHOLD = 100;
 const CodeChunk = React.memo(function CodeChunk({
   lines,
   startIndex,
+  totalLineCount,
+  hasTrailingLineBreak,
   highlightSet,
   renderLineContent,
   lineNumbers,
 }: {
   lines: string[];
   startIndex: number;
+  totalLineCount: number;
+  hasTrailingLineBreak: boolean;
   highlightSet: Set<number> | null;
-  renderLineContent: (line: string, lineIndex: number) => React.ReactNode;
+  renderLineContent: (
+    line: string,
+    lineIndex: number,
+    hasLineBreak: boolean,
+  ) => React.ReactNode;
   lineNumbers: boolean;
 }) {
   return (
     <>
       {lines.map((line, j) => {
         const i = startIndex + j;
+        const hasLineBreak = i < totalLineCount - 1 || hasTrailingLineBreak;
         return (
           <div
             key={i}
@@ -353,7 +363,7 @@ const CodeChunk = React.memo(function CodeChunk({
               lineNumbers && styles.lineNumbered,
               (highlightSet?.has(i + 1) ?? false) && styles.lineHighlighted,
             )}>
-            {renderLineContent(line, i)}
+            {renderLineContent(line, i, hasLineBreak)}
           </div>
         );
       })}
@@ -363,8 +373,13 @@ const CodeChunk = React.memo(function CodeChunk({
 
 function renderLines(
   lines: string[],
+  hasTrailingLineBreak: boolean,
   highlightSet: Set<number> | null,
-  renderLineContent: (line: string, lineIndex: number) => React.ReactNode,
+  renderLineContent: (
+    line: string,
+    lineIndex: number,
+    hasLineBreak: boolean,
+  ) => React.ReactNode,
   lineNumbers: boolean,
   chunkSize: number = LINE_CHUNK_SIZE,
 ): React.ReactNode {
@@ -375,6 +390,8 @@ function renderLines(
       <CodeChunk
         lines={lines}
         startIndex={0}
+        totalLineCount={lines.length}
+        hasTrailingLineBreak={hasTrailingLineBreak}
         highlightSet={highlightSet}
         renderLineContent={renderLineContent}
         lineNumbers={lineNumbers}
@@ -397,6 +414,8 @@ function renderLines(
         <CodeChunk
           lines={chunkLines}
           startIndex={start}
+          totalLineCount={lines.length}
+          hasTrailingLineBreak={hasTrailingLineBreak}
           highlightSet={highlightSet}
           renderLineContent={renderLineContent}
           lineNumbers={lineNumbers}
@@ -562,7 +581,7 @@ function buildSpanLine(
   tokens: SyntaxToken[],
 ): React.ReactNode {
   if (tokens.length === 0) {
-    return lineText || '\u200b';
+    return lineText;
   }
 
   const parts: React.ReactNode[] = [];
@@ -586,11 +605,12 @@ function buildSpanLine(
   if (cursor < lineText.length) {
     parts.push(lineText.slice(cursor));
   }
-  return parts.length > 0 ? parts : '\u200b';
+  return parts.length > 0 ? parts : lineText;
 }
 
 function SpanCodeContent({
   lines,
+  hasTrailingLineBreak,
   tokenLines,
   highlightSet,
   isWrapped,
@@ -599,6 +619,7 @@ function SpanCodeContent({
   maxDigits,
 }: {
   lines: string[];
+  hasTrailingLineBreak: boolean;
   tokenLines: TokenLine[];
   highlightSet: Set<number> | null;
   isWrapped: boolean;
@@ -611,13 +632,18 @@ function SpanCodeContent({
   }, []);
 
   const renderLineContent = useCallback(
-    (line: string, lineIndex: number): React.ReactNode => {
+    (
+      line: string,
+      lineIndex: number,
+      hasLineBreak: boolean,
+    ): React.ReactNode => {
       const tokens = tokenLines[lineIndex] ?? [];
       // Wrap tokens in a single element so they occupy one grid cell when line
       // numbers are on (see `lineNumbered`); an inline span is a no-op when off.
       return (
         <span {...stylex.props(styles.lineContent)}>
           {buildSpanLine(line, tokens)}
+          {hasLineBreak ? '\n' : null}
         </span>
       );
     },
@@ -633,7 +659,13 @@ function SpanCodeContent({
         hasLineNumbers && styles.codeNumbered,
         hasLineNumbers && dynamicStyles.gutterWidth(maxDigits),
       )}>
-      {renderLines(lines, highlightSet, renderLineContent, hasLineNumbers)}
+      {renderLines(
+        lines,
+        hasTrailingLineBreak,
+        highlightSet,
+        renderLineContent,
+        hasLineNumbers,
+      )}
     </code>
   );
 }
@@ -644,6 +676,7 @@ function SpanCodeContent({
 
 function RangeCodeContent({
   lines,
+  hasTrailingLineBreak,
   tokenLines,
   highlightSet,
   isWrapped,
@@ -652,6 +685,7 @@ function RangeCodeContent({
   maxDigits,
 }: {
   lines: string[];
+  hasTrailingLineBreak: boolean;
   tokenLines: TokenLine[];
   highlightSet: Set<number> | null;
   isWrapped: boolean;
@@ -679,7 +713,11 @@ function RangeCodeContent({
   // applyHighlightRangesChunked can map token offsets onto it \u2014 no wrapper. The
   // number ::before is a pseudo-element, so it never becomes a child node here.
   const renderLineContent = useCallback(
-    (line: string): React.ReactNode => line || '\u200b',
+    (
+      line: string,
+      _lineIndex: number,
+      hasLineBreak: boolean,
+    ): React.ReactNode => `${line}${hasLineBreak ? '\n' : ''}`,
     [],
   );
 
@@ -693,7 +731,13 @@ function RangeCodeContent({
         hasLineNumbers && styles.codeNumbered,
         hasLineNumbers && dynamicStyles.gutterWidth(maxDigits),
       )}>
-      {renderLines(lines, highlightSet, renderLineContent, hasLineNumbers)}
+      {renderLines(
+        lines,
+        hasTrailingLineBreak,
+        highlightSet,
+        renderLineContent,
+        hasLineNumbers,
+      )}
     </code>
   );
 }
@@ -749,6 +793,7 @@ export function CodeBlock({
     (highlightMode === 'auto' && !hasHighlightAPI()) ||
     (highlightMode === 'auto' && isSafari());
 
+  const hasTrailingLineBreak = code.endsWith('\n');
   const lines = useMemo(() => {
     const l = code.split('\n');
     if (l.length > 1 && l[l.length - 1] === '') {
@@ -914,6 +959,7 @@ export function CodeBlock({
         {useSpans ? (
           <SpanCodeContent
             lines={lines}
+            hasTrailingLineBreak={hasTrailingLineBreak}
             tokenLines={tokenLines}
             highlightSet={highlightSet}
             isWrapped={isWrapped}
@@ -924,6 +970,7 @@ export function CodeBlock({
         ) : (
           <RangeCodeContent
             lines={lines}
+            hasTrailingLineBreak={hasTrailingLineBreak}
             tokenLines={tokenLines}
             highlightSet={highlightSet}
             isWrapped={isWrapped}

@@ -14,7 +14,7 @@ export const docs = {
     {
       name: 'code',
       type: 'string',
-      description: 'The code string to display.',
+      description: 'The code string to display. Source line breaks are preserved in rendered DOM text and clipboard output.',
       required: true,
     },
     {
