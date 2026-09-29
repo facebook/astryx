@@ -3,8 +3,9 @@
 /**
  * @file check-changesets.test.mjs
  * Unit tests for the changeset convention gate — specifically the 0.x semver
- * coupling: a [breaking] change must bump the minor, every other category must
- * bump the patch, and major is rejected while pre-1.0.
+ * coupling: a [breaking] change must bump the minor, [experimental] and every
+ * other non-breaking category must bump the patch, and major is rejected while
+ * pre-1.0.
  */
 
 import {describe, it, expect} from 'vitest';
@@ -35,7 +36,34 @@ describe('validateChangeset — 0.x semver coupling', () => {
     expect(problems).toEqual([]);
   });
 
-  it('accepts a non-breaking category with a patch bump', () => {
+  it('accepts an incompatible experimental-only change with a patch bump', () => {
+    const problems = validateChangeset(
+      'a.md',
+      cs(
+        "'@astryxdesign/core': patch",
+        '[experimental] Rename an experimental callback (#1)\n@who',
+      ),
+      ctx,
+    );
+    expect(problems).toEqual([]);
+  });
+
+  it('rejects [experimental] declared as minor', () => {
+    const problems = validateChangeset(
+      'a.md',
+      cs(
+        "'@astryxdesign/core': minor",
+        '[experimental] Remove an experimental prop (#1)\n@who',
+      ),
+      ctx,
+    );
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatch(
+      /declares "minor".*category is \[experimental\].*Use "patch"/,
+    );
+  });
+
+  it('accepts another non-breaking category with a patch bump', () => {
     for (const category of [
       'feat',
       'fix',

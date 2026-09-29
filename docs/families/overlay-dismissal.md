@@ -65,6 +65,17 @@ deciding_specs: []
 
 # Overlay dismissal family contract
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "layering": ["FR1", "FR2", "FR3", "FR6"]
+  }
+}
+```
+
 ## Intent
 
 A person dismissing layered UI should affect only the topmost relevant surface.

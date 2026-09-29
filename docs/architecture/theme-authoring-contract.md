@@ -53,6 +53,17 @@ deciding_specs:
 
 # Theme authoring contract
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "theming": ["INV1", "INV3", "INV8", "INV9", "INV11", "INV12"]
+  }
+}
+```
+
 This record defines what a theme author may express and how `defineTheme`
 normalizes that input into one self-contained theme representation.
 

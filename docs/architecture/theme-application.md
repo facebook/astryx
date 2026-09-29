@@ -30,6 +30,17 @@ deciding_specs: [spec:AST-012/DEC-1]
 
 # Theme application
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "theming": ["INV1", "INV2", "INV3", "INV7", "INV8", "INV9"]
+  }
+}
+```
+
 This record defines how a compiled theme becomes active for a React tree and the
 browser document.
 

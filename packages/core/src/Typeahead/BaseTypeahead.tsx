@@ -262,9 +262,14 @@ const styles = stylex.create({
     borderStyle: 'none',
     padding: 0,
     fontFamily: typographyVars['--font-family-body'],
+    // The 16px floor is iOS-only: iOS Safari zooms the page when a focused
+    // control sits under 16px, and only iOS WebKit implements
+    // -webkit-touch-callout to key the coarse-pointer floor to it.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-primary'],
@@ -533,15 +538,24 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // Debounce ref
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Monotonic counter incremented on selection and query-clear. Async
-  // searches that resolve after a selection compare their captured
-  // generation to the current value and discard stale results.
+  // Monotonic counter incremented on selection, query-clear, and source
+  // replacement. Async searches that resolve afterwards compare their
+  // captured generation to the current value and discard stale results.
   const searchGenRef = useRef(0);
   // The generation at which results were last populated. handleFocus
   // compares this to searchGenRef — if they differ, the cached results
   // in the closure are stale (a selection cleared them) and shouldn't
   // be re-shown.
   const resultsGenRef = useRef(0);
+
+  // Results still arriving from a replaced source must not land in the new
+  // one's menu.
+  const prevSearchSourceRef = useRef(searchSource);
+  if (prevSearchSourceRef.current !== searchSource) {
+    prevSearchSourceRef.current.cancel?.();
+    prevSearchSourceRef.current = searchSource;
+    searchGenRef.current++;
+  }
 
   // Layer for dropdown
   const handleLayerShow = useCallback(() => {
@@ -987,15 +1001,15 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   const selectedKey =
     value == null ? null : getKey(value.id, () => results.indexOf(value));
 
-  // Cleanup timeout and cancel in-flight searches on unmount
+  // Unmount: clear the pending debounce and cancel in-flight work.
   useEffect(() => {
     return () => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
-      searchSource.cancel?.();
+      prevSearchSourceRef.current.cancel?.();
     };
-  }, [searchSource]);
+  }, []);
 
   return (
     <>

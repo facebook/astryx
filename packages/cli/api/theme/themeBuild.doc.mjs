@@ -12,6 +12,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'themeBuild',
+  namespace: 'cli/api',
   displayName: 'themeBuild()',
   summary: 'Compile a defineTheme file to CSS + JS + type declarations.',
   description:
@@ -73,7 +74,7 @@ export const doc = {
     {
       type: 'theme.build',
       description:
-        'Build receipt: theme name, token- and component-override counts, output size in KB, the written outputs {css, js, dts, and variantsDts when custom prop values were augmented}, and validation warnings—including exact canonical replacements for deprecated component target keys. Resolves to null instead when the theme produced no CSS (nothing to build).',
+        'Build receipt {name, tokenCount, componentCount, sizeKB, outputs, warnings, notices}: the theme name; how many tokens (portable plus theme-local) and component targets it overrides; the CSS size in KB; the written outputs {css, js, dts, and variantsDts when custom prop values were augmented}; warnings, the defects the author should fix, including exact canonical replacements for deprecated component target keys and declarations the generator dropped; and notices, advisories about a correct theme, such as a font it names but does not load. Resolves to null instead when the theme produced no CSS (nothing to build).',
     },
     {
       type: 'theme.build.check',
@@ -87,10 +88,13 @@ export const doc = {
       code: 'ERR_THEME_LOAD',
       when: 'the file cannot be loaded or parsed into a defineTheme() result',
     },
-    {code: 'ERR_THEME_INVALID', when: 'the resolved theme has no name'},
+    {
+      code: 'ERR_THEME_INVALID',
+      when: 'the resolved theme is invalid, for example it has no name, or a custom Heading type has no standalone rule with a declaration the compiler can emit',
+    },
     {
       code: 'ERR_PATH_TRAVERSAL',
-      when: 'the theme name contains a path separator or traversal marker',
+      when: 'the theme name contains a path separator or traversal marker, or a relative `out` path resolves outside cwd (including through a symlink)',
     },
     {
       code: 'ERR_CORE_NOT_FOUND',
@@ -102,7 +106,7 @@ export const doc = {
     },
     {
       code: 'ERR_WRITE_FAILED',
-      when: 'writing the outputs fails (staged temp files are rolled back)',
+      when: 'creating the output directory or writing the outputs fails (staged temp files are rolled back)',
     },
   ],
   examples: [

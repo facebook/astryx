@@ -12,6 +12,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'layoutGrammar',
+  namespace: 'cli/api',
   displayName: 'layoutGrammar()',
   summary: 'Return the XLE/XLO grammar cheatsheet for this install.',
   description:

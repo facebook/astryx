@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 4
 template_version: 1
 kind: system-spec
 id: spec:AST-025
@@ -19,6 +19,17 @@ affects_consumer_docs:
 ---
 
 # Scrollable container behavior system spec
+
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "scrolling": ["FR1", "FR12", "FR13", "FR14", "FR15", "FR16", "FR18"]
+  }
+}
+```
 
 ## Intent
 
@@ -129,7 +140,18 @@ the behavior.
   while at least one applicable axis is effective, and MUST provide an appropriate
   role and accessible name. An integration MAY instead rely on an existing
   focusable descendant when that path gives keyboard users access to all overflowed
-  content. Overflow alone does not authorize an unexplained extra tab stop.
+  content. In shared `contentOrViewport` mode the named viewport MUST retain
+  `tabIndex=0` while effectively scrollable. On forward keyboard Tab entry the
+  hook MUST inspect the first sequential descendant once and MAY delegate only
+  to a native link or button that preserves native scroll keys. It MUST NOT skip
+  an excluded first target to reach a later eligible one. Composite widgets,
+  nested scroll owners, editable surfaces, and navigation-key-owning roles MUST
+  retain the viewport stop. Reverse traversal from the delegated first child
+  MUST skip the viewport without a loop. Pointer and programmatic focus MUST NOT
+  delegate. Eligibility MUST be recalculated at each keyboard entry without
+  persistent subtree or ancestor observation for keyboard eligibility; existing
+  geometry observation remains governed by FR5–FR9. Both paths MUST retain clear
+  accessible naming and native Arrow/Page access to the full scroll range.
 - **FR13 — Losing overflow does not move focus.** If a focused viewport stops
   overflowing, the system MAY remove it from future sequential navigation but MUST
   NOT move or blur current focus solely because geometry changed.
@@ -215,7 +237,12 @@ type ScrollAxis = 'inline' | 'block' | 'both';
 
 type KeyboardAccess =
   | {owner: 'content'}
-  | {owner: 'viewport'; label: string; role?: 'group' | 'region'};
+  | {owner: 'viewport'; label: string; role?: 'group' | 'region'}
+  | {
+      owner: 'contentOrViewport';
+      label: string;
+      role?: 'group' | 'region';
+    };
 
 interface ScrollAxisState {
   isScrollable: boolean;
@@ -357,18 +384,18 @@ Representative public evidence:
 
 ## Verification
 
-| Contract         | Verification                                               | Representative states                                                                                                                                                    | Mutation or failure expectation                                                                                                      |
-| ---------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| FR1–FR4          | Unit geometry and computed-style tests plus browser matrix | inline, block, both; fitting, exact fit, >1px overflow; scroll-capable and non-scrollable computed values; horizontal, vertical, and sideways writing modes; LTR and RTL | A declaration or excess geometry alone becomes an owner, an effective axis is missed, or physical direction leaks into the contract  |
-| FR5–FR9          | Observer lifecycle and integration tests                   | viewport resize, content resize, async resource, hidden/show, reconnect, classic scrollbar                                                                               | State remains stale, reports fitting while unmeasurable, loops, or publishes redundant updates                                       |
-| FR10, FR11, FR18 | Real-browser nested Sticky matrix                          | arbitrary flow position; each logical edge; orthogonal and same-axis owners; inactive inner candidate                                                                    | Sticky binds to a non-effective or cross-axis owner, cannot appear mid-flow, or stacks against the wrong boundary                    |
-| FR12, FR13       | Keyboard and accessibility-tree tests                      | no overflow, overflow, focusable descendants, named viewport, overflow removed while focused                                                                             | Content is unreachable, a fitting area adds an unexplained stop, naming is absent, or focus moves on resize                          |
-| FR14             | Wheel/touch/keyboard chaining browser tests                | fitting child, active child, each edge, contain and chain                                                                                                                | A fitting child creates a dead wheel zone or explicit containment leaks to an inactive axis                                          |
-| FR15, FR16       | Native/custom presentation and forced-colors tests         | overlay/classic, thin/default, stable gutter, hidden/replacement, custom thumb                                                                                           | Presentation creates a second owner, masks state, loses platform fallback, or changes scrolling mechanics                            |
-| FR17             | Type/API tests and browser fixtures                        | requested inline, block, both; attempted visible opposite axis                                                                                                           | Public API admits a CSS combination the platform computes to different semantics                                                     |
-| FR19             | Table browser integration                                  | inline-only, bounded both-axis, sticky columns, sticky headers, intersection cell                                                                                        | Table plugins observe different owners or an external wrapper silently breaks sticky/accessibility behavior                          |
-| FR20             | ScrollableArea component and container-padding tests       | zero/default padding, uniform/edge overrides, nested bleed consumer, contained and full-bleed viewport                                                                   | Content publishes stale inset, a nested bleed child compensates incorrectly, or scrolling escapes its parent without explicit intent |
-| FR21             | Real-browser fitting/overflowing Sticky transition         | fitting default, fitting `always`, content growth, content shrink, outer block Sticky owner                                                                              | A fitting default viewport silently captures Sticky, explicit containment is lost, or overflow growth fails to activate scrolling    |
+| Contract         | Verification                                               | Representative states                                                                                                                                                                                        | Mutation or failure expectation                                                                                                                      |
+| ---------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR4          | Unit geometry and computed-style tests plus browser matrix | inline, block, both; fitting, exact fit, >1px overflow; scroll-capable and non-scrollable computed values; horizontal, vertical, and sideways writing modes; LTR and RTL                                     | A declaration or excess geometry alone becomes an owner, an effective axis is missed, or physical direction leaks into the contract                  |
+| FR5–FR9          | Observer lifecycle and integration tests                   | viewport resize, content resize, async resource, hidden/show, reconnect, classic scrollbar                                                                                                                   | State remains stale, reports fitting while unmeasurable, loops, or publishes redundant updates                                                       |
+| FR10, FR11, FR18 | Real-browser nested Sticky matrix                          | arbitrary flow position; each logical edge; orthogonal and same-axis owners; inactive inner candidate                                                                                                        | Sticky binds to a non-effective or cross-axis owner, cannot appear mid-flow, or stacks against the wrong boundary                                    |
+| FR12, FR13       | Keyboard and accessibility-tree tests                      | fit/overflow, named viewport, native link/button delegation, excluded roles, nested owners, forward/reverse entry, pointer/programmatic focus, dynamic eligibility, full Arrow/Page range in Chromium/WebKit | Content is unreachable, a fitting area adds an unexplained stop, an existing path gains a duplicate stop, naming is absent, or focus moves on change |
+| FR14             | Wheel/touch/keyboard chaining browser tests                | fitting child, active child, each edge, contain and chain                                                                                                                                                    | A fitting child creates a dead wheel zone or explicit containment leaks to an inactive axis                                                          |
+| FR15, FR16       | Native/custom presentation and forced-colors tests         | overlay/classic, thin/default, stable gutter, hidden/replacement, custom thumb                                                                                                                               | Presentation creates a second owner, masks state, loses platform fallback, or changes scrolling mechanics                                            |
+| FR17             | Type/API tests and browser fixtures                        | requested inline, block, both; attempted visible opposite axis                                                                                                                                               | Public API admits a CSS combination the platform computes to different semantics                                                                     |
+| FR19             | Table browser integration                                  | inline-only, bounded both-axis, sticky columns, sticky headers, intersection cell                                                                                                                            | Table plugins observe different owners or an external wrapper silently breaks sticky/accessibility behavior                                          |
+| FR20             | ScrollableArea component and container-padding tests       | zero/default padding, uniform/edge overrides, nested bleed consumer, contained and full-bleed viewport                                                                                                       | Content publishes stale inset, a nested bleed child compensates incorrectly, or scrolling escapes its parent without explicit intent                 |
+| FR21             | Real-browser fitting/overflowing Sticky transition         | fitting default, fitting `always`, content growth, content shrink, outer block Sticky owner                                                                                                                  | A fitting default viewport silently captures Sticky, explicit containment is lost, or overflow growth fails to activate scrolling                    |
 
 ## Decision log
 
@@ -424,6 +451,29 @@ Rejected: retaining `auto`/`hidden` for every requested viewport, because scroll
 intent alone would change Sticky behavior even when no scrolling can occur.
 Rejected: no overflow declaration while fitting, because content could flash before
 the first geometry measurement.
+
+### DEC-4 — Shared automatic keyboard ownership delegates at entry
+
+**Reference:** `spec:AST-025/DEC-4`
+**Decider:** `cixzhang`, `2026-09-13`
+
+`keyboardAccess.owner="contentOrViewport"` owns the automatic keyboard path in
+one shared hook. Components do not maintain parallel focusability detectors.
+The initial continuous-eligibility approach is replaced by focus-time delegation:
+the overflowing viewport remains a named stop, and forward Tab entry inspects the
+first sequential descendant. The conservative delegation set is native links and
+buttons outside composite widgets, editable surfaces, and nested scroll owners.
+Positive-tabindex ordering and unproven interactive roles retain the viewport.
+
+Native reverse traversal skips the viewport when returning from the delegated
+first child. Pointer/programmatic focus stays on the viewport. Content changes
+never move existing focus; eligibility is checked again on the next keyboard
+entry. Native scrolling remains responsible for Arrow/Page keys and chaining.
+
+Rejected: continuous keyboard-eligibility scans after subtree and ancestor
+mutations, because shared infrastructure should not pay that cost while idle.
+Geometry observation remains separate. Also rejected: forwarding past an excluded
+first descendant, because that changes the consumer's sequential focus order.
 
 ## Open questions
 

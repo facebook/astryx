@@ -370,10 +370,15 @@ describe('DateRangeInput', () => {
       expect(
         screen.queryByRole('listbox', {hidden: true}),
       ).not.toBeInTheDocument();
-      expect(
-        screen.getByRole('group', {name: 'Preset date ranges', hidden: true}),
-      ).toBeInTheDocument();
-      expect(getButton('Last 7 days')).toBeInTheDocument();
+      const group = screen.getByRole('group', {
+        name: 'Preset date ranges',
+        hidden: true,
+      });
+      expect(group).toBeInTheDocument();
+      expect(group).toHaveClass('astryx-date-range-input-presets');
+      expect(getButton('Last 7 days')).toHaveClass(
+        'astryx-date-range-input-preset',
+      );
     });
 
     it('marks the applied preset with aria-current, not aria-selected', () => {
@@ -386,10 +391,98 @@ describe('DateRangeInput', () => {
         />,
       );
       const active = getButton('Last 7 days');
+      expect(active).toHaveClass('astryx-date-range-input-preset');
+      expect(active).toHaveAttribute('data-selected', 'selected');
       expect(active).toHaveAttribute('aria-current', 'true');
       expect(active).not.toHaveAttribute('aria-selected');
       const inactive = getButton('This month');
+      expect(inactive).toHaveClass('astryx-date-range-input-preset');
+      expect(inactive).not.toHaveAttribute('data-selected');
+      expect(inactive).not.toHaveAttribute('data-disabled');
       expect(inactive).not.toHaveAttribute('aria-current');
+    });
+
+    it('disables a preset when its start is before min', () => {
+      const handleChange = vi.fn();
+      render(
+        <DateRangeInput
+          label="Range"
+          value={null}
+          onChange={handleChange}
+          min="2026-03-02"
+          presets={[presets[0]]}
+        />,
+      );
+
+      const preset = getButton('Last 7 days');
+      expect(preset).toBeDisabled();
+      fireEvent.click(preset);
+      expect(handleChange).not.toHaveBeenCalled();
+    });
+
+    it('disables a preset when its end is after max', () => {
+      const handleChange = vi.fn();
+      render(
+        <DateRangeInput
+          label="Range"
+          value={null}
+          onChange={handleChange}
+          max="2026-03-06"
+          presets={[presets[0]]}
+        />,
+      );
+
+      const preset = getButton('Last 7 days');
+      expect(preset).toBeDisabled();
+      fireEvent.click(preset);
+      expect(handleChange).not.toHaveBeenCalled();
+    });
+
+    it('disables a preset when either endpoint fails dateConstraints', () => {
+      const handleChange = vi.fn();
+      render(
+        <DateRangeInput
+          label="Range"
+          value={null}
+          onChange={handleChange}
+          dateConstraints={[date => date.getDate() !== 7]}
+          presets={[presets[0]]}
+        />,
+      );
+
+      const preset = getButton('Last 7 days');
+      expect(preset).toBeDisabled();
+      fireEvent.click(preset);
+      expect(handleChange).not.toHaveBeenCalled();
+    });
+
+    it('commits an enabled preset using its already-resolved range', () => {
+      const range = {start: '2026-03-01', end: '2026-03-07'} as const;
+      const getRange = vi.fn(() => range);
+      let getRangeCallsAtChange = 0;
+      const handleChange = vi.fn(() => {
+        getRangeCallsAtChange = getRange.mock.calls.length;
+      });
+      render(
+        <DateRangeInput
+          label="Range"
+          value={null}
+          onChange={handleChange}
+          min="2026-03-01"
+          max="2026-03-31"
+          dateConstraints={[date => date.getDate() !== 13]}
+          minRangeSpan={2}
+          maxRangeSpan={7}
+          presets={[{label: 'Allowed range', getRange}]}
+        />,
+      );
+
+      const getRangeCallsBeforeClick = getRange.mock.calls.length;
+      const preset = getButton('Allowed range');
+      expect(preset).not.toBeDisabled();
+      fireEvent.click(preset);
+      expect(handleChange).toHaveBeenCalledWith(range);
+      expect(getRangeCallsAtChange).toBe(getRangeCallsBeforeClick);
     });
   });
   describe('disabledMessage', () => {
@@ -831,7 +924,10 @@ describe('DateRangeInput range-span forwarding', () => {
     const withinCap = getButton('Last 3 days');
     const overCap = getButton('Last 30 days');
     expect(withinCap).not.toBeDisabled();
+    expect(withinCap).not.toHaveAttribute('data-disabled');
     expect(overCap).toBeDisabled();
+    expect(overCap).toHaveClass('astryx-date-range-input-preset');
+    expect(overCap).toHaveAttribute('data-disabled', 'disabled');
 
     fireEvent.click(overCap);
     expect(handleChange).not.toHaveBeenCalled();

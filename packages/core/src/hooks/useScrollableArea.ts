@@ -4,8 +4,8 @@
 
 /**
  * @file useScrollableArea.ts
- * @input Logical scroll intent, keyboard ownership, caller-owned viewport/content props
- * @output Safe prop getters and stable per-axis effective scroll state
+ * @input Logical scroll intent, focus-time keyboard delegation, caller-owned viewport/content props
+ * @output Safe prop getters, native keyboard entry, and stable per-axis effective scroll state
  * @position Canonical behavior core for ScrollableArea and structure-owning adopters
  *
  * SYNC: When modified, update:
@@ -26,6 +26,7 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
+import {attachScrollKeyboardDelegation} from './scrollKeyboardDelegation';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
 import {mergeProps} from '../utils/mergeProps';
 import {mergeRefs} from '../utils/mergeRefs';
@@ -48,7 +49,12 @@ export type ScrollStickyContainment = 'whenScrollable' | 'always';
 
 export type ScrollKeyboardAccess =
   | {owner: 'content'}
-  | {owner: 'viewport'; label: string; role?: 'group' | 'region'};
+  | {owner: 'viewport'; label: string; role?: 'group' | 'region'}
+  | {
+      owner: 'contentOrViewport';
+      label: string;
+      role?: 'group' | 'region';
+    };
 
 export interface ScrollAxisState {
   isScrollable: boolean;
@@ -285,6 +291,8 @@ export function useScrollableArea({
     content.addEventListener('transitionend', scheduleMeasure);
     content.addEventListener('animationend', scheduleMeasure);
 
+    // Geometry invalidation is independent of keyboard eligibility. The latter
+    // is inspected only on native keyboard entry, never by these observers.
     const mutationObserver =
       typeof MutationObserver === 'undefined'
         ? null
@@ -346,6 +354,20 @@ export function useScrollableArea({
     [axis, measured],
   );
 
+  const hasEffectiveAxis =
+    state.inline.isScrollable || state.block.isScrollable;
+  useIsomorphicLayoutEffect(() => {
+    if (
+      keyboardAccess.owner !== 'contentOrViewport' ||
+      !hasEffectiveAxis ||
+      viewport == null ||
+      content == null
+    ) {
+      return;
+    }
+    return attachScrollKeyboardDelegation(viewport, content);
+  }, [content, hasEffectiveAxis, keyboardAccess.owner, viewport]);
+
   const getViewportProps = useCallback(
     <E extends HTMLElement>(
       props: ScrollableElementProps<E> = {},
@@ -385,8 +407,9 @@ export function useScrollableArea({
           ),
         ),
       ) as ScrollableElementProps<E>;
+      const viewportIsKeyboardOwner = keyboardAccess.owner !== 'content';
       const keepsProgrammaticFocus =
-        !hasEffectiveAxis &&
+        (!viewportIsKeyboardOwner || !hasEffectiveAxis) &&
         viewport != null &&
         typeof document !== 'undefined' &&
         document.activeElement === viewport;
@@ -409,15 +432,16 @@ export function useScrollableArea({
       }
 
       const keyboardProps =
-        keyboardAccess.owner === 'viewport'
+        keyboardAccess.owner !== 'content'
           ? {
               role: keyboardAccess.role ?? 'group',
               'aria-label': keyboardAccess.label,
-              tabIndex: hasEffectiveAxis
-                ? 0
-                : keepsProgrammaticFocus
-                  ? -1
-                  : undefined,
+              tabIndex:
+                viewportIsKeyboardOwner && hasEffectiveAxis
+                  ? 0
+                  : keepsProgrammaticFocus
+                    ? -1
+                    : undefined,
             }
           : {};
 

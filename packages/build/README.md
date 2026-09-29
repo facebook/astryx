@@ -1,6 +1,6 @@
 # @astryxdesign/build
 
-Build plugins for XDS source builds. Provides babel, PostCSS, and Vite integrations that compile XDS library and product code with separate class name prefixes, which enables independent CSS layers:
+Build plugins for Astryx source builds. Provides babel, PostCSS, and Vite integrations that compile Astryx library and product code with separate class name prefixes, which enables independent CSS layers:
 
 ```
 reset < astryx-base (library, astryx prefix) < astryx-theme < product (app, x prefix)
@@ -12,7 +12,7 @@ StyleX generates atomic CSS: same declaration = same class name. Without separat
 
 `@astryxdesign/build` solves this by:
 
-1. Compiling XDS library code with `astryx` prefix (`.astryx78zum5`)
+1. Compiling Astryx library code with `astryx` prefix (`.astryx78zum5`)
 2. Compiling product code with default `x` prefix (`.x78zum5`)
 3. Placing each group in its own CSS `@layer`
 

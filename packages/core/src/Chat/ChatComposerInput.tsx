@@ -18,6 +18,10 @@
  *
  *
  * SYNC: When modified, update:
+ * - /packages/core/src/Chat/ChatComposerInput.test.tsx
+ * - /packages/core/src/Chat/ChatComposerInput.doc.mjs
+ * - /packages/core/src/Chat/ChatComposerInput.spec.md
+ * - /apps/storybook/stories/ChatComposerInput.stories.tsx
  * - /packages/core/src/Chat/index.ts
  * - /apps/storybook/stories/ChatComposer.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/ChatComposerInput/ (block examples)
@@ -32,6 +36,7 @@ import {
   type ReactNode,
   type KeyboardEvent,
   type ClipboardEvent,
+  type DragEvent,
 } from 'react';
 import {createPortal} from 'react-dom';
 import type {BaseProps} from '../BaseProps';
@@ -108,6 +113,13 @@ export type ChatComposerTokenCustom = {
  */
 export type ChatComposerToken =
   ChatComposerTokenBadge | ChatComposerTokenCustom;
+
+export interface ChatComposerTokenElementProps extends BaseProps<HTMLSpanElement> {
+  /** Ref forwarded to the token wrapper. */
+  ref?: React.Ref<HTMLSpanElement>;
+  /** Token rendered as a Badge or by its custom render function. */
+  token: ChatComposerToken;
+}
 
 export type ChatComposerTriggerItem = SearchableItem;
 
@@ -226,16 +238,32 @@ const styles = stylex.create({
     position: 'relative',
     display: 'flex',
     flexDirection: 'column',
-    minHeight: `${LINE_HEIGHT_PX}px`,
+    // The single-line floor, not just the line-height: `editable` and
+    // `placeholder` both add `spacingVars['--spacing-1']` padding on the
+    // block axis on top of their shared line-height, and normally that's
+    // what keeps the root this tall (the editable region reserves its own
+    // padded box even when empty). A disabled, empty editable stops
+    // reserving that empty line at all in Chromium (contentEditable=false
+    // collapses to just its padding), and the absolutely positioned
+    // placeholder that would otherwise stand in for it doesn't contribute
+    // to layout height — so without this explicit floor accounting for the
+    // same padding, the root shrinks by that padding's height the moment
+    // isDisabled flips true, moving anything bottom-aligned beside it.
+    minHeight: `calc(${LINE_HEIGHT_PX}px + 2 * ${spacingVars['--spacing-1']})`,
   },
   editable: {
     outline: 'none',
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-word',
     overflowY: 'auto',
+    // The 16px floor is iOS-only: iOS Safari zooms the page when a focused
+    // control sits under 16px, and only iOS WebKit implements
+    // -webkit-touch-callout to key the coarse-pointer floor to it.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: `${LINE_HEIGHT_PX}px`,
     fontFamily: typographyVars['--font-family-body'],
@@ -250,9 +278,12 @@ const styles = stylex.create({
     insetInlineEnd: 0,
     pointerEvents: 'none',
     color: colorVars['--color-text-secondary'],
+    // Same iOS-only floor as the editable region it stands in for.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: `${LINE_HEIGHT_PX}px`,
     fontFamily: typographyVars['--font-family-body'],
@@ -508,6 +539,7 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
   }, [controlledValue]);
 
   const cleanupPortalsRef = useRef<(() => void) | null>(null);
+  const emitChangeVersionRef = useRef(0);
 
   const emitChange = useCallback(() => {
     if (!editableRef.current) {
@@ -524,6 +556,7 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
     const nextValue = trimmedEmpty ? '' : text;
     pendingEchoValueRef.current = nextValue;
     setIsEmpty(trimmedEmpty);
+    emitChangeVersionRef.current += 1;
     onChange?.(nextValue);
     cleanupPortalsRef.current?.();
   }, [onChange]);
@@ -542,13 +575,21 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
       ? null
       : (pasteAsTokenProp ?? defaultPasteAsToken);
 
-  const insertText = useCallback((text: string) => {
+  const insertTextWithoutEmit = useCallback((text: string) => {
     const editable = editableRef.current;
     if (!editable) {
       return;
     }
     insertTextAtCursor(editable, text);
   }, []);
+
+  const insertText = useCallback(
+    (text: string) => {
+      insertTextWithoutEmit(text);
+      emitChange();
+    },
+    [emitChange, insertTextWithoutEmit],
+  );
 
   // Keep stable refs in sync for imperative handle
   insertTokenRef.current = tokens.insertToken;
@@ -559,7 +600,7 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
     triggers,
     editableRef,
     onInsertToken: tokens.insertToken,
-    onInsertText: insertText,
+    onInsertText: insertTextWithoutEmit,
     onEmitChange: emitChange,
     debounceMs,
   });
@@ -750,15 +791,21 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
       e.preventDefault();
       const text = e.clipboardData.getData('text/plain');
 
-      // Paste-as-token: convert long pastes to token chips
-      if (pasteAsToken?.onPaste(e, text)) {
-        emitChange();
+      // Consumer onPaste gets first refusal over plain text. Return true after
+      // handling it so the built-in insertion paths do not run. A consumer may
+      // use the observable imperative handle while handling the event; emit only
+      // if that path did not already publish the change.
+      const versionBeforeConsumer = emitChangeVersionRef.current;
+      const handled = onPasteProp?.(e, text);
+      if (handled) {
+        if (emitChangeVersionRef.current === versionBeforeConsumer) {
+          emitChange();
+        }
         return;
       }
 
-      // Consumer onPaste — return true to prevent default text insert
-      const handled = onPasteProp?.(e, text);
-      if (handled) {
+      // Paste-as-token: convert long pastes to token chips.
+      if (pasteAsToken?.onPaste(e, text)) {
         emitChange();
         return;
       }
@@ -767,6 +814,28 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
       emitChange();
     },
     [onFiles, onPasteProp, emitChange, tokens, pasteAsToken],
+  );
+
+  const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
+    if (Array.from(e.dataTransfer.types).includes('Files')) {
+      e.preventDefault();
+    }
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: DragEvent<HTMLDivElement>) => {
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length === 0) {
+        return;
+      }
+      // File drops navigate the page by default. The input owns that drop
+      // target even when no callback is supplied, so keep the user in place.
+      e.preventDefault();
+      if (!isDisabled) {
+        onFiles?.(files);
+      }
+    },
+    [isDisabled, onFiles],
   );
 
   const maxHeight = maxRows * LINE_HEIGHT_PX;
@@ -794,7 +863,10 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
         onInput={handleInput}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
         {...triggerMenu.ariaProps}
+        aria-disabled={isDisabled || undefined}
         {...mergeProps(stylex.props(styles.editable), {
           style: {maxHeight: `${maxHeight}px`},
         })}
@@ -834,13 +906,17 @@ ChatComposerInput.displayName = 'ChatComposerInput';
 // Token element helper (for custom rendering in stories/consumers)
 // =============================================================================
 
-export function ChatComposerTokenElement({token}: {token: ChatComposerToken}) {
+export function ChatComposerTokenElement(props: ChatComposerTokenElementProps) {
+  const {token, ref, xstyle, className, style, ...rest} = props;
+
   return (
     <span
+      ref={ref}
+      {...mergeProps(stylex.props(styles.tokenSpan, xstyle), className, style)}
+      {...rest}
       data-astryx-token=""
       data-astryx-token-value={token.value}
-      contentEditable={false}
-      {...stylex.props(styles.tokenSpan)}>
+      contentEditable={false}>
       {isCustomToken(token) ? (
         token.render()
       ) : (

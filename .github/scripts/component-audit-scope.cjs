@@ -42,7 +42,9 @@ function classifyComponentAuditScope(paths, componentPackages) {
   const isKnownNonComponentSurface = file =>
     file.startsWith('.changeset/') ||
     file.startsWith('apps/sandbox/') ||
-    file.startsWith('packages/cli/');
+    file.startsWith('packages/cli/') ||
+    file.startsWith('internal/scripts/') ||
+    file === '.github/workflows/crowdin-upload.yml';
   const isSharedRoutingPolicy = file =>
     file === 'apps/storybook/rtl-audit/rtl-audit-coverage.mjs' ||
     file === 'apps/storybook/rtl-audit/targets.json' ||

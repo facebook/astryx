@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 4
 template_version: 1
 kind: system-spec
 id: spec:AST-033
@@ -17,6 +17,26 @@ affects_consumer_docs: [docsite]
 ---
 
 # Docsite interaction and product-data contract
+
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "docsite": [
+      "DEC-1",
+      "DEC-2",
+      "DEC-3",
+      "DEC-5",
+      "FR3",
+      "FR8",
+      "FR13",
+      "FR16"
+    ]
+  }
+}
+```
 
 ## Intent
 
@@ -158,6 +178,25 @@ for each bug.
   Cancelled, rejected, failed, ignored, closed, or superseded work MUST NOT emit a
   success event.
 
+### Playground storage and parent-page isolation
+
+- **FR16 — Production playground code is isolated from storage and the parent page.**
+  Production previews, including deployed pull-request previews, MUST execute
+  user-authored code with an opaque origin, without access to the Docsite's
+  origin-bound storage or parent-page DOM. Local storage may be blocked entirely;
+  previewed code has no persistence guarantee. The playground MUST explain these
+  restrictions to users. Local development MAY differ, but MUST NOT stand in for
+  production isolation evidence.
+
+  Reload or hostile navigation may reset preview runtime state. The playground
+  MUST recover a trusted preview with the editor's current code and active
+  theme/mode. Replacement content MUST NOT receive editor source, theme state, or
+  authority to edit the parent merely because it occupies the preview.
+
+  Changes to this boundary require real production-browser evidence for storage
+  and parent-DOM denial, trusted recovery after reload and hostile navigation,
+  and restoration of current code and theme/mode.
+
 ### Authority routing
 
 `architecture:knowledge-contracts` owns public-delta routing and change disposition.
@@ -288,6 +327,20 @@ treatment. Closing or superseding the transition ends that authority.
 
 Rejected: one global pending/deferred value repainting a newly opened, closed, or
 newer selection.
+
+### DEC-6 — Trying code does not require persistence or parent-page access
+
+**Reference:** `spec:AST-033/DEC-6`
+**Decider:** `cixzhang`, `2026-09-23`
+
+The playground is for trying Astryx code, not storing local data. Production
+previews have an opaque origin and no access to the Docsite's origin-bound
+storage or parent-page DOM. Previewed code has no persistence guarantee;
+restrictions are explained to users. Development may differ. Reload and hostile
+navigation recover a trusted preview with current editor code and theme/mode.
+
+Rejected: treating local persistence or parent-page DOM access as a playground
+guarantee.
 
 ## Open questions
 

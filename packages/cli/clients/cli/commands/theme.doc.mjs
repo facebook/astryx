@@ -12,7 +12,7 @@ export const doc = {
   type: 'command',
   name: 'theme',
   displayName: 'astryx theme',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Theme tools: build, export, and manage themes',
   description:
     'The theme command group. Running astryx theme with no subcommand prints the ' +

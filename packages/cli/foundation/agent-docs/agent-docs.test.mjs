@@ -134,13 +134,22 @@ describe('generateCompressedIndex', () => {
     const line = topicLine(generateCompressedIndex('1.0.0'));
     for (const topic of [
       'getting-started',
-      'cli-integrations',
       'browser-support',
       'styling-libraries',
       'working-with-ai',
     ]) {
       expect(line).toContain(topic);
     }
+  });
+
+  it('points to the CLI docs tree on a line of its own', () => {
+    // The integration guide lives in the docs tree now (cli/integrations), so
+    // the topic line no longer names it; the tree's entry point does.
+    const block = generateCompressedIndex('1.0.0');
+    expect(block).toContain(
+      '  docs cli           commands, API reference, integration authoring (one level at a time)',
+    );
+    expect(topicLine(block)).not.toContain('cli-integrations');
   });
 
   it('lists the topics it is given, so an integration’s reach the agent', () => {
@@ -793,6 +802,15 @@ describe('installAgentDocs', () => {
     expect(fs.existsSync(path.join(tmpDir, '.claude'))).toBe(false);
   });
 
+  it('respects --agent muse preset: creates AGENTS.md', () => {
+    setupCorePackage(tmpDir);
+
+    const written = installAgentDocs(tmpDir, {agent: 'muse'});
+
+    expect(written).toEqual(['AGENTS.md']);
+    expect(fs.existsSync(path.join(tmpDir, 'AGENTS.md'))).toBe(true);
+  });
+
   it('respects explicit --paths', () => {
     setupCorePackage(tmpDir);
 
@@ -909,6 +927,11 @@ describe('resolveAgentPaths', () => {
     fs.writeFileSync(path.join(tmpDir, 'HERMES.md'), '');
     const result = resolveAgentPaths(tmpDir, 'hermes');
     expect(result).toEqual({inject: ['HERMES.md'], create: []});
+  });
+
+  it('muse preset creates AGENTS.md when nothing exists', () => {
+    const result = resolveAgentPaths(tmpDir, 'muse');
+    expect(result).toEqual({inject: [], create: ['AGENTS.md']});
   });
 
   it('claude preset still creates .claude/CLAUDE.md when nothing exists (hermes is additive)', () => {

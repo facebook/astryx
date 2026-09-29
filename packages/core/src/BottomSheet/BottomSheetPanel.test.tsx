@@ -3,7 +3,7 @@
 /**
  * @file BottomSheetPanel.test.tsx
  * @input Uses vitest, Testing Library, BottomSheetPanel
- * @output Tests the shared sheet surface motion contract
+ * @output Tests the shared sheet surface motion and keyboard scroll contracts
  * @position Internal presentation tests shared by standalone and switcher modes
  */
 
@@ -50,6 +50,7 @@ function renderPanel(
 ) {
   return render(
     <BottomSheetPanel
+      label="Sheet details"
       state={state}
       height="hug"
       style={panelTransitionStyle}
@@ -92,6 +93,7 @@ describe('BottomSheetPanel', () => {
     const onMotionComplete = vi.fn();
     const {rerender} = render(
       <BottomSheetPanel
+        label="Sheet details"
         state={{kind: 'retained', motion: 'covered', alignmentOffset: 0}}
         height="hug"
         style={panelTransitionStyle}
@@ -104,6 +106,7 @@ describe('BottomSheetPanel', () => {
 
     rerender(
       <BottomSheetPanel
+        label="Sheet details"
         state={{kind: 'open', entering: true}}
         height="hug"
         style={panelTransitionStyle}
@@ -139,6 +142,7 @@ describe('BottomSheetPanel', () => {
 
     rerender(
       <BottomSheetPanel
+        label="Sheet details"
         state={{kind: 'exiting'}}
         height="hug"
         style={panelTransitionStyle}
@@ -166,6 +170,7 @@ describe('BottomSheetPanel', () => {
     const onMotionComplete = vi.fn();
     render(
       <BottomSheetPanel
+        label="Sheet details"
         state={{kind: 'open', entering: true}}
         height="hug"
         onDismiss={() => {}}
@@ -184,6 +189,7 @@ describe('BottomSheetPanel', () => {
       const onMotionComplete = vi.fn();
       render(
         <BottomSheetPanel
+          label="Sheet details"
           state={{kind: 'open', entering: true}}
           height="hug"
           style={{
@@ -211,6 +217,7 @@ describe('BottomSheetPanel', () => {
     const panelRef = vi.fn();
     const {rerender, unmount} = render(
       <BottomSheetPanel
+        label="Sheet details"
         ref={panelRef}
         state={{kind: 'open', entering: false}}
         height="hug"
@@ -223,6 +230,7 @@ describe('BottomSheetPanel', () => {
     expect(panelRef).toHaveBeenCalledTimes(1);
     rerender(
       <BottomSheetPanel
+        label="Sheet details"
         ref={panelRef}
         state={{kind: 'open', entering: false}}
         height="hug"
@@ -361,6 +369,7 @@ describe('BottomSheetPanel', () => {
 
     const {container: closing} = render(
       <BottomSheetPanel
+        label="Sheet details"
         state={{kind: 'exiting'}}
         height="hug"
         onDismiss={() => {}}
@@ -379,6 +388,7 @@ describe('BottomSheetPanel', () => {
 
     const {container: resting} = render(
       <BottomSheetPanel
+        label="Sheet details"
         state={{kind: 'open', entering: false}}
         height="hug"
         onDismiss={() => {}}

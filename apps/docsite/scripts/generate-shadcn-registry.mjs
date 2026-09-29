@@ -16,6 +16,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import babel from '@babel/core';
+import presetTypeScript from '@babel/preset-typescript';
 import stylexPlugin from '@stylexjs/babel-plugin';
 import ts from 'typescript';
 import {registryItemSchema, registrySchema} from 'shadcn/schema';
@@ -58,6 +59,27 @@ function packageNameFromSpecifier(specifier) {
     return specifier.split('/').slice(0, 2).join('/');
   }
   return specifier.split('/')[0];
+}
+
+function packageExportsSpecifier(pkg, specifier) {
+  const packageExports = pkg.packageExports;
+  if (packageExports == null) return true;
+
+  const subpath = specifier.slice(pkg.name.length);
+  const exportKey = subpath ? `.${subpath}` : '.';
+  if (typeof packageExports === 'string' || Array.isArray(packageExports)) {
+    return exportKey === '.';
+  }
+  if (Object.hasOwn(packageExports, exportKey)) return true;
+
+  return Object.keys(packageExports).some(key => {
+    const wildcardIndex = key.indexOf('*');
+    if (wildcardIndex === -1) return false;
+    return (
+      exportKey.startsWith(key.slice(0, wildcardIndex)) &&
+      exportKey.endsWith(key.slice(wildcardIndex + 1))
+    );
+  });
 }
 
 function readImportSpecifiers(source, fileName) {
@@ -116,7 +138,10 @@ function precompileStylexSource(source, fileName) {
     filename: fileName,
     babelrc: false,
     configFile: false,
-    presets: [['@babel/preset-typescript', {allExtensions: true, isTSX: true}]],
+    // Imported, not named: Babel resolves a string preset from `cwd`, and CI
+    // runs this script from the repo root, where only a hoisted node_modules
+    // would carry docsite's own Babel presets.
+    presets: [[presetTypeScript, {allExtensions: true, isTSX: true}]],
     plugins: [
       [
         stylexPlugin,
@@ -562,9 +587,21 @@ export function buildShadcnRegistry({
       ),
     )
     .sort((a, b) => a.name.localeCompare(b.name));
+  const packageCatalog = new Map(packages.map(pkg => [pkg.name, pkg]));
   const blockItems = [];
   let skippedUnpublishedBlocks = 0;
   for (const block of blocks) {
+    const unpublishedComponentImport = readImportSpecifiers(
+      block.source,
+      `${block.dirName}.tsx`,
+    ).find(specifier => {
+      const pkg = packageCatalog.get(packageNameFromSpecifier(specifier));
+      return pkg != null && !packageExportsSpecifier(pkg, specifier);
+    });
+    if (unpublishedComponentImport) {
+      skippedUnpublishedBlocks++;
+      continue;
+    }
     try {
       blockItems.push(
         blockItem(

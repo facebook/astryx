@@ -17,8 +17,10 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs';
+import {createRequire} from 'node:module';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {promisify} from 'node:util';
 import {describe, expect, it} from 'vitest';
 import {reconcileRegistryCompositions} from '../../packages/cli/api/upgrade/registry/registry.mjs';
@@ -46,9 +48,32 @@ import {
 
 const execFileAsync = promisify(execFile);
 
+const DOCSITE_ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../apps/docsite',
+);
+
+// shadcn is a docsite dependency and its bin is the package entry, so resolving
+// it from docsite gives the script to run — no assumption about where the
+// installer put the package, and no dependence on NODE_PATH.
+const SHADCN_ENTRY = createRequire(
+  path.join(DOCSITE_ROOT, 'package.json'),
+).resolve('shadcn');
+
 const packages = [
-  {name: '@astryxdesign/cli', version: '0.6.0'},
-  {name: '@astryxdesign/core', version: '0.5.2'},
+  {
+    name: '@astryxdesign/cli',
+    version: '0.6.0',
+    packageExports: {'.': './dist/index.js', './api': './dist/api.js'},
+  },
+  {
+    name: '@astryxdesign/core',
+    version: '0.5.2',
+    packageExports: {
+      '.': './dist/index.js',
+      './Button': './dist/Button/index.js',
+    },
+  },
 ];
 
 function fixture(overrides = {}) {
@@ -268,6 +293,27 @@ describe('buildShadcnRegistry', () => {
     ]);
   });
 
+  it('skips blocks whose component import is not published', () => {
+    const input = fixture();
+    input.blocks.push({
+      ...input.blocks[0],
+      dirName: 'TimerShowcase',
+      name: 'Timer',
+      displayName: 'Timer',
+      exampleFor: 'Timer',
+      source:
+        "import {Timer} from '@astryxdesign/core/Timer';\n" +
+        'export default function TimerShowcase() { return <Timer />; }\n',
+    });
+
+    const {items, counts} = buildShadcnRegistry(input);
+
+    expect(items.map(item => item.name)).not.toContain(
+      'showcase-timer-default',
+    );
+    expect(counts.skippedUnpublishedBlocks).toBe(1);
+  });
+
   it('writes canonical nested paths and compatibility aliases', () => {
     const outDir = mkdtempSync(path.join(tmpdir(), 'astryx-shadcn-routes-'));
     try {
@@ -456,8 +502,8 @@ describe('buildShadcnRegistry', () => {
       writeFileSync(itemPath, JSON.stringify(block));
 
       await execFileAsync(
-        path.resolve('node_modules/.bin/shadcn'),
-        ['add', itemPath, '--yes'],
+        process.execPath,
+        [SHADCN_ENTRY, 'add', itemPath, '--yes'],
         {cwd: project, timeout: 30_000},
       );
 
@@ -549,8 +595,8 @@ describe('buildShadcnRegistry', () => {
       writeFileSync(itemPath, JSON.stringify(block));
 
       await execFileAsync(
-        path.resolve('node_modules/.bin/shadcn'),
-        ['add', itemPath, '--yes'],
+        process.execPath,
+        [SHADCN_ENTRY, 'add', itemPath, '--yes'],
         {cwd: project, timeout: 30_000},
       );
 
@@ -630,8 +676,8 @@ describe('buildShadcnRegistry', () => {
       const itemPath = path.join(project, 'block.json');
       writeFileSync(itemPath, JSON.stringify(oldItem));
       await execFileAsync(
-        path.resolve('node_modules/.bin/shadcn'),
-        ['add', itemPath, '--yes'],
+        process.execPath,
+        [SHADCN_ENTRY, 'add', itemPath, '--yes'],
         {cwd: project, timeout: 30_000},
       );
       await new Promise((resolve, reject) => {
@@ -779,8 +825,8 @@ describe('buildShadcnRegistry', () => {
       const itemPath = path.join(project, 'page.json');
       writeFileSync(itemPath, JSON.stringify(page));
       await execFileAsync(
-        path.resolve('node_modules/.bin/shadcn'),
-        ['add', itemPath, '--yes'],
+        process.execPath,
+        [SHADCN_ENTRY, 'add', itemPath, '--yes'],
         {cwd: project, timeout: 30_000},
       );
 
@@ -856,8 +902,8 @@ describe('buildShadcnRegistry', () => {
       writeConsumerProject(project);
 
       await execFileAsync(
-        path.resolve('node_modules/.bin/shadcn'),
-        ['add', `${origin}/shadcn/examples/parent.json`, '--yes'],
+        process.execPath,
+        [SHADCN_ENTRY, 'add', `${origin}/shadcn/examples/parent.json`, '--yes'],
         {
           cwd: project,
           timeout: 30_000,

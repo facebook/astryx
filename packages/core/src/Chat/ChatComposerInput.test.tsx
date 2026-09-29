@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi, afterEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ChatComposer} from './ChatComposer';
 import {useChatComposerContext} from './ChatContext';
@@ -570,6 +570,33 @@ describe('ChatComposerInput', () => {
       });
       expect(onFiles).toHaveBeenCalledWith([file]);
     });
+
+    it('calls onFiles when files are dropped onto the editor', () => {
+      const onFiles = vi.fn();
+      render(<ChatComposerInput onFiles={onFiles} />);
+      const textbox = screen.getByRole('textbox');
+      const file = new File(['content'], 'dropped.txt', {type: 'text/plain'});
+
+      const allowed = fireEvent.drop(textbox, {
+        dataTransfer: {files: [file], types: ['Files']},
+      });
+      expect(allowed).toBe(false);
+      expect(onFiles).toHaveBeenCalledWith([file]);
+    });
+
+    it('does not emit dropped files while disabled', () => {
+      const onFiles = vi.fn();
+      render(<ChatComposerInput isDisabled onFiles={onFiles} />);
+      const textbox = screen.getByRole('textbox');
+      const file = new File(['content'], 'blocked.txt', {type: 'text/plain'});
+
+      const allowed = fireEvent.drop(textbox, {
+        dataTransfer: {files: [file], types: ['Files']},
+      });
+
+      expect(allowed).toBe(false);
+      expect(onFiles).not.toHaveBeenCalled();
+    });
   });
 
   // Paste / insert paths used to bail silently when the contenteditable
@@ -651,10 +678,13 @@ describe('ChatComposerInput', () => {
       expect(textbox.querySelector('[data-astryx-token]')).toBeInTheDocument();
     });
 
-    it('imperative insertText works after a focus() with no selection range', () => {
+    it('imperative insertText updates the observable draft after a focus() with no selection range', () => {
       let handle: ChatComposerInputHandle | null = null;
+      const onChange = vi.fn();
       render(
         <ChatComposerInput
+          placeholder="Write a message"
+          onChange={onChange}
           handleRef={h => {
             handle = h;
           }}
@@ -665,8 +695,12 @@ describe('ChatComposerInput', () => {
       textbox.focus();
       clearSelection();
 
-      handle!.insertText('hello');
+      act(() => handle!.insertText('hello'));
+
       expect(textbox.textContent).toContain('hello');
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenLastCalledWith('hello');
+      expect(screen.queryByText('Write a message')).not.toBeInTheDocument();
     });
 
     // History recall reads where the caret sits, so where a programmatic
@@ -974,6 +1008,60 @@ describe('ChatComposerInput', () => {
         expect(prevented).toBe(false);
         expect(textbox.textContent).toBe('pending draft');
       });
+    });
+
+    it('lets onPaste intercept long text before default token conversion', () => {
+      const onPaste = vi.fn(() => true);
+      render(<ChatComposerInput onPaste={onPaste} />);
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+      clearSelection();
+      const long = 'c'.repeat(250);
+
+      fireEvent.paste(textbox, {
+        clipboardData: {
+          files: [],
+          getData: (type: string) => (type === 'text/plain' ? long : ''),
+        },
+      });
+
+      expect(onPaste).toHaveBeenCalledWith(expect.anything(), long);
+      expect(
+        textbox.querySelector('[data-astryx-token]'),
+      ).not.toBeInTheDocument();
+      expect(textbox.textContent).toBe('');
+    });
+
+    it('emits once when onPaste inserts through the imperative handle', () => {
+      let handle: ChatComposerInputHandle | null = null;
+      const onChange = vi.fn();
+      const onPaste = vi.fn((_event: unknown, text: string) => {
+        handle!.insertText(text);
+        return true;
+      });
+      render(
+        <ChatComposerInput
+          handleRef={next => {
+            handle = next;
+          }}
+          onChange={onChange}
+          onPaste={onPaste}
+        />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+      clearSelection();
+
+      fireEvent.paste(textbox, {
+        clipboardData: {
+          files: [],
+          getData: (type: string) => (type === 'text/plain' ? 'hello' : ''),
+        },
+      });
+
+      expect(textbox.textContent).toBe('hello');
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenCalledWith('hello');
     });
 
     it('paste falls through to plain-text path when pasteAsToken={false}', () => {
@@ -1393,6 +1481,28 @@ describe('ChatComposerInput', () => {
       fireEvent.input(textbox);
 
       expect(textbox.getAttribute('aria-expanded')).toBe('true');
+    });
+
+    it('emits once when a string trigger result is selected', async () => {
+      const {textbox, onChange} = setupTriggerInput([createCommandTrigger()]);
+
+      setCursorAfterText(textbox, '/');
+      fireEvent.input(textbox);
+      await waitFor(() => {
+        const menu = document.getElementById(
+          textbox.getAttribute('aria-controls')!,
+        );
+        expect(
+          menu?.querySelectorAll('[role="option"]').length ?? 0,
+        ).toBeGreaterThan(0);
+      });
+      onChange.mockClear();
+
+      fireEvent.keyDown(textbox, {key: 'Enter'});
+
+      expect(textbox.textContent).toBe('/summarize ');
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenCalledWith('/summarize ');
     });
   });
 

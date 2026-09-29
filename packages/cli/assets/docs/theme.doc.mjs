@@ -152,7 +152,7 @@ function App() {
         },
         {
           type: 'prose',
-          text: 'The copy is editable project source, not a reference back into node_modules. Every file named by the theme catalog comes with it, including nested token or palette modules. A second add refuses to overwrite those files unless you pass `--overwrite`.',
+          text: 'The copy is editable project source, not a reference back into node_modules. The complete theme directory comes with it, including its typed `.doc.mjs`, nested token and palette modules, and receipts. A second add refuses to overwrite those files unless you pass `--overwrite`.',
         },
       ],
     },
@@ -391,7 +391,7 @@ const brandTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: 'The `components` field in defineTheme uses semantic component keys and style keys, not raw CSS selectors. Use `base` for all instances, `variant:value` or `stateName` for specific props/states, and let the theme pipeline choose the underlying selector. For raw external CSS escape hatches, prefer the data-attribute selector surface documented in `astryx docs styling`.',
+          text: 'The `components` field in defineTheme uses semantic component keys and style keys, not raw CSS selectors. Use `base` for all instances, `variant:value` or `stateName` for specific props/states, and let the theme pipeline choose the underlying selector. For raw external CSS escape hatches, prefer the data-attribute selector surface documented in {@link generic:styling}.',
         },
         {
           type: 'code',
@@ -572,7 +572,44 @@ import './themes/ocean.css';
         },
         {
           type: 'prose',
-          text: "The build also warns when the theme names font families it does not load (webfonts like Fraunces) and prints the `<link>`/`@font-face` to add. The built CSS only sets font-family, so loading the font files stays the app's job. See `astryx docs typography` for the full recipe.",
+          text: "The build also warns when the theme names font families it does not load (webfonts like Fraunces) and prints the `<link>`/`@font-face` to add. The built CSS only sets font-family, so loading the font files stays the app's job. See {@link generic:typography} for the full recipe.",
+        },
+      ],
+    },
+    {
+      title: 'Building a Theme Family',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'Use family mode when an app switches among one base theme and its selected descendants. The build writes one keyed CSS file containing every member, plus one keyed JavaScript module and one declaration file beside the root source.',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'Build one family',
+          code: `astryx theme build --family \\
+  ./src/themes/ocean.mjs \\
+  ./src/themes/ocean-calm.mjs \\
+  ./src/themes/ocean-calm-deep.mjs \\
+  --family-key ocean-family`,
+        },
+        {
+          type: 'code',
+          lang: 'html',
+          label: 'Load native CSS and ESM independently',
+          code: `<link rel="stylesheet" href="./src/themes/ocean-family.css" />
+<script type="module">
+  import {oceanCalmTheme} from './src/themes/ocean-family.js';
+</script>`,
+        },
+        {
+          type: 'prose',
+          text: 'The family stylesheet eagerly downloads every selected member so first paint is complete. Switching members changes only the theme identity; it does not add, remove, or reorder stylesheets. A bundler such as Vite consumes the same CSS and ESM files.',
+        },
+        {
+          type: 'prose',
+          text: 'The family key is only the filename stem (`ocean-family.css`, `.js`, and `.d.ts`) and must differ from every selected member name. Use the ordinary standalone build when an app needs only one complete theme. Add `--check` to compare the exact keyed trio without writing.',
         },
       ],
     },
@@ -774,7 +811,7 @@ function ChartConfig() {
         },
         {
           type: 'prose',
-          text: 'See `astryx docs styling-libraries` for styling-library interop and `astryx docs tokens` for the full token reference.',
+          text: 'See {@link generic:styling-libraries} for styling-library interop and {@link generic:tokens} for the full token reference.',
         },
       ],
     },

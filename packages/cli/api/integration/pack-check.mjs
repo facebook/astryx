@@ -28,6 +28,11 @@ import jscodeshift from 'jscodeshift';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {resolvePackageDir} from '../../foundation/integrations/integrations.mjs';
 import {
+  docsTreeCliProblem,
+  replacesCliProblem,
+} from '../../foundation/integrations/cli-requirement.mjs';
+import {discoverIntegrationDocs} from '../../foundation/discovery/docs-discovery.mjs';
+import {
   discoverIntegrationComponents,
   resolveIntegrationImportPath,
 } from '../../foundation/discovery/component-discovery.mjs';
@@ -388,6 +393,14 @@ async function validatePackedComponentExports(integration, scratchBase) {
     components.map(component => component.specifier),
     scratchBase,
   );
+  issues.push(
+    ...validateSpecifierExtensions(
+      components.map(({name, specifier}) => ({
+        label: `Component "${name}"`,
+        specifier,
+      })),
+    ),
+  );
   for (const {name, specifier} of components) {
     const result = resolved.get(specifier);
     if (!result?.url || result.error) {
@@ -427,19 +440,27 @@ async function validatePackedComponentExports(integration, scratchBase) {
  */
 async function validatePackedTemplateExports(integration, scratchBase) {
   const {templates} = await discoverIntegrationTemplatesForOne(integration);
-  const entries = templates.map(template => ({
-    id: template.dirName,
-    specifier: `${integration.name}/${path
+  const entries = templates.map(template => {
+    const relPath = path
       .relative(integration.__packageDir, template.filePath)
       .split(path.sep)
-      .join('/')}`,
-  }));
+      .join('/');
+    const extensionless = relPath.replace(/\.tsx?$/u, '');
+    return {
+      id: template.dirName,
+      specifier: `${integration.name}/${extensionless}`,
+    };
+  });
   const resolved = resolveConsumerSpecifiers(
     entries.map(entry => entry.specifier),
     scratchBase,
   );
-  /** @type {Issue[]} */
-  const issues = [];
+  const issues = validateSpecifierExtensions(
+    entries.map(({id, specifier}) => ({
+      label: `Template "${id}"`,
+      specifier,
+    })),
+  );
   for (const {id, specifier} of entries) {
     const result = resolved.get(specifier);
     if (!result?.url || result.error) {
@@ -462,6 +483,32 @@ async function validatePackedTemplateExports(integration, scratchBase) {
         error(
           'template_export_missing',
           `Template "${id}" public import "${specifier}" does not have a default export.`,
+        ),
+      );
+    }
+  }
+  return issues;
+}
+
+const TS_EXTENSION_RE = /\.tsx?$/u;
+
+/**
+ * Reject specifiers that end in a TypeScript extension — they fail under
+ * default `moduleResolution` with TS5097/TS2307 unless the consumer enables
+ * `allowImportingTsExtensions`.
+ *
+ * @param {Array<{label: string, specifier: string}>} entries
+ * @returns {Issue[]}
+ */
+function validateSpecifierExtensions(entries) {
+  /** @type {Issue[]} */
+  const issues = [];
+  for (const {label, specifier} of entries) {
+    if (TS_EXTENSION_RE.test(specifier)) {
+      issues.push(
+        error(
+          'typescript_extension_in_specifier',
+          `${label} advertises import "${specifier}", which ends in a TypeScript extension. A consumer with default moduleResolution will reject it (TS5097). Use an extensionless specifier mapped through the package exports.`,
         ),
       );
     }
@@ -548,6 +595,35 @@ export async function integrationPackCheck(options = {}) {
         ),
       );
     }
+  }
+  // A namespace doc or a placed guide needs a CLI that reads the docs tree
+  // (spec:AST-046 FR11): an older CLI can hide every doc topic the package
+  // ships, so the declared CLI range must admit only CLIs that read it.
+  if (loaded.docs) {
+    const {namespaces, guides} = await discoverIntegrationDocs(loaded).catch(
+      () => ({namespaces: [], guides: []}),
+    );
+    const problem =
+      namespaces.length > 0 || guides.length > 0
+        ? docsTreeCliProblem(pkg)
+        : null;
+    if (problem != null) {
+      issues.push(error('docs_tree_needs_cli', problem));
+    }
+  }
+  // A template that sets `replaces` needs a CLI that reads the field
+  // (spec:AST-035): an older CLI withholds the package's templates and docs.
+  if (loaded.templates) {
+    const found = await discoverIntegrationTemplatesForOne(loaded).catch(
+      () => ({templates: [], errors: []}),
+    );
+    const setsReplaces =
+      found.templates.some(template => template.replaces != null) ||
+      found.errors.some(
+        (/** @type {any} */ issue) => issue.replacementTarget != null,
+      );
+    const problem = setsReplaces ? replacesCliProblem(pkg) : null;
+    if (problem != null) issues.push(error('replaces_needs_cli', problem));
   }
 
   // Temp resources — always cleaned up

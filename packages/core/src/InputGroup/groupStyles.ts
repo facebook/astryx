@@ -2,7 +2,7 @@
 
 /**
  * @file groupStyles.ts
- * @input Uses StyleX, theme tokens
+ * @input Uses StyleX, theme tokens, and layer-aware group end-cap selectors
  * @output Exports shared group-aware styles for input components
  * @position Shared styles consumed by InputGroup-compatible controls
  */
@@ -11,9 +11,9 @@ import * as stylex from '@stylexjs/stylex';
 import {radiusVars, borderVars} from '../theme/tokens.stylex';
 
 // A grouped control may be followed by context-layer infrastructure rather
-// than another control. Neither the inert marker nor the popover is a visual
-// group member, so skip both when finding the trailing edge.
-const IS_LAST_ITEM = ':not(:has(~ *:not([popover]):not(template)))';
+// than another control. Popovers, inert markers, and native dialog surfaces
+// are not visual group members; skip them when finding the trailing edge.
+const IS_LAST_ITEM = ':not(:has(~ *:not([popover]):not(template):not(dialog)))';
 
 export const groupStyles = stylex.create({
   inGroup: {

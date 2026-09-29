@@ -70,6 +70,22 @@ const styles = stylex.create({
     flexShrink: 0,
     isolation: 'isolate',
   },
+  // The owner paints this layer over the resolved indicator, so a theme
+  // replacement cannot accidentally drop the component's pressed contract.
+  indicatorPressOverlay: {
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      borderRadius: radiusVars['--radius-inner'],
+      pointerEvents: 'none',
+      backgroundColor: {
+        default: 'transparent',
+        [stylex.when.ancestor(':active', indicatorScope)]:
+          colorVars['--color-overlay-pressed'],
+      },
+    },
+  },
   // Holds only the indicator, so the focus ring has one unambiguous target.
   // `display: contents` adds no box of its own — the indicator keeps whatever
   // layout relationship it already had with the wrapper.
@@ -399,7 +415,11 @@ export function CheckboxInput({
           !isDisabled && indicatorScope,
         )}>
         <div
-          {...stylex.props(styles.checkboxWrapper, wrapperSizeStyles[size])}
+          {...stylex.props(
+            styles.checkboxWrapper,
+            wrapperSizeStyles[size],
+            !isDisabled && styles.indicatorPressOverlay,
+          )}
           {...focusProps}>
           <input
             {...rest}

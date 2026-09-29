@@ -223,6 +223,11 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
   },
+  interruptibleFooter: {
+    // The composer may disable editing while a response is streaming. Restore
+    // pointer hit-testing for the footer so its Stop action stays reachable.
+    pointerEvents: 'auto',
+  },
   statusBar: {
     position: 'relative',
     zIndex: 0,
@@ -386,14 +391,17 @@ export function ChatComposer(props: ChatComposerProps) {
     [isControlled, onChange],
   );
 
-  const handleSubmit = useCallback(() => {
-    const trimmed = currentValue.trim();
-    if (!trimmed || isDisabled) {
-      return;
-    }
-    onSubmit(trimmed);
-    updateValue('');
-  }, [currentValue, isDisabled, onSubmit, updateValue]);
+  const handleSubmit = useCallback(
+    (value: string) => {
+      const trimmed = value.trim();
+      if (!trimmed || isDisabled) {
+        return;
+      }
+      onSubmit(trimmed);
+      updateValue('');
+    },
+    [isDisabled, onSubmit, updateValue],
+  );
 
   const canSend = currentValue.trim().length > 0 && !isDisabled;
 
@@ -530,7 +538,11 @@ export function ChatComposer(props: ChatComposerProps) {
 
           <div {...stylex.props(styles.footer)}>
             <div {...stylex.props(styles.footerLeft)}>{footerActions}</div>
-            <div {...stylex.props(styles.footerRight)}>
+            <div
+              {...stylex.props(
+                styles.footerRight,
+                isDisabled && isStopShown && styles.interruptibleFooter,
+              )}>
               {sendActions}
               {sendButton ?? <ChatSendButton />}
             </div>

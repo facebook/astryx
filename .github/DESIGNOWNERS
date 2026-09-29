@@ -1,11 +1,14 @@
 # Design owners for the Astryx repository
 # Design-team members. This list has three responsibilities:
 #
-# - Current design specs and normative design assets may receive exact-head
-#   approval from any DESIGNOWNER, cixzhang, or imdreamrunner.
+# - Current design and theme specs, component/module Design decisions, and
+#   normative design assets may receive exact-head approval from any
+#   DESIGNOWNER. ENGOWNERS may approve every spec.
 # - A DESIGNOWNER author may attest an exact PR head by marking the PR ready for
 #   review. That evidence satisfies the design-approval group even in a mixed PR;
-#   every other applicable code or spec-owner group remains required. The
+#   every other applicable code or spec-owner group remains required. A
+#   classifier-proven appearance-only Core runtime change may also bypass the
+#   engineering review gate only when no other code reason applies. The
 #   existing gate may enable squash auto-merge only when every changed path is a
 #   recognized spec record and every required group and branch check passes.
 # - Review tooling may use the list to frame design-authored changes.

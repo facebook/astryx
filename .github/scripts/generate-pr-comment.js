@@ -193,7 +193,6 @@ if (storybookUrl) {
   storybookSection = `### 📚 Storybook Preview
 
 **${extLink('View Storybook for this PR', storybookUrl)}**
-_GitHub Pages may take up to a minute to hydrate after deploy._
 
 `;
 }
@@ -204,25 +203,16 @@ if (sandboxUrl) {
   sandboxSection = `### 🧪 Sandbox Preview
 
 **${extLink('View Sandbox for this PR', sandboxUrl)}**
-_GitHub Pages may take up to a minute to hydrate after deploy._
 
 `;
 }
 
-// Explain each independently unavailable target. The reconciler only passes this
-// state after validating the publisher's exact PR/head/source-run result.
+// Both previews share the exact-head Vercel deployment, never a Pages, canary,
+// production, or earlier-head fallback.
 let previewAvailabilitySection = '';
 if (previewState) {
-  const missing = [];
-  if (!storybookUrl) missing.push('Storybook');
-  if (!sandboxUrl) missing.push('Sandbox');
-  if (missing.length > 0) {
-    const reason =
-      sourceConclusion === 'success'
-        ? `${missing.join(' and ')} ${missing.length === 1 ? 'was' : 'were'} not published for this CI run.`
-        : 'CI did not succeed, so no preview was published.';
-    previewAvailabilitySection = `> **Preview availability:** ${reason}\n\n`;
-  }
+  if (!storybookUrl || !sandboxUrl)
+    previewAvailabilitySection = `> **Preview availability:** Storybook and Sandbox are not both ready on the exact-head Vercel preview.${sourceConclusion && sourceConclusion !== 'success' ? ` CI concluded ${sourceConclusion}.` : ''}\n\n`;
 }
 
 // Build footer with links

@@ -1,9 +1,9 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-# Trusted preview publisher used by pr-comment.yml after an exact pull-request CI
-# run completes. The caller resolves the source identity; this workflow verifies
-# it again, downloads only that run's static artifacts, and records the published
-# targets in a result produced by the shared gh-pages publisher.
+# Trusted Sandbox publisher used by pr-comment.yml after an exact PR CI run
+# completes. Storybook is hosted by the exact-head Vercel docsite preview.
+# The caller resolves the source identity; this workflow checks it again,
+# downloads only the matching Sandbox artifact, and records its Pages proof.
 
 name: Deploy PR Preview
 
@@ -155,16 +155,6 @@ jobs:
               core.setOutput('ready', 'false');
             }
 
-      - name: Download Storybook artifact
-        if: steps.artifact.outputs.ready == 'true'
-        uses: actions/download-artifact@v8
-        with:
-          name: storybook-${{ steps.identity.outputs.short_hash }}
-          path: storybook-dist
-          run-id: ${{ inputs.source_run_id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
       - name: Download Sandbox artifact
         if: steps.artifact.outputs.ready == 'true'
         uses: actions/download-artifact@v8
@@ -175,15 +165,10 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
-      - name: Detect independently available preview targets
+      - name: Detect Sandbox readiness
         id: targets
         if: always() && steps.identity.outputs.valid == 'true'
         run: |
-          if [ "${{ steps.artifact.outputs.ready }}" = 'true' ] && [ -f storybook-dist/index.html ]; then
-            echo "storybook=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "storybook=false" >> "$GITHUB_OUTPUT"
-          fi
           if [ "${{ steps.artifact.outputs.ready }}" = 'true' ] && [ -f sandbox-dist/index.html ]; then
             echo "sandbox=true" >> "$GITHUB_OUTPUT"
           else
@@ -204,7 +189,6 @@ jobs:
           SOURCE_RUN_ID: ${{ inputs.source_run_id }}
           SOURCE_RUN_ATTEMPT: ${{ inputs.source_run_attempt }}
           SOURCE_CONCLUSION: ${{ inputs.source_conclusion }}
-          STORYBOOK_CANDIDATE: ${{ steps.targets.outputs.storybook }}
           SANDBOX_CANDIDATE: ${{ steps.targets.outputs.sandbox }}
         with:
           retries: 3
@@ -231,10 +215,6 @@ jobs:
             const mayPublish = identity.sourceConclusion === 'success' && !identity.draft;
             core.setOutput('ready', 'true');
             core.setOutput(
-              'storybook',
-              String(mayPublish && process.env.STORYBOOK_CANDIDATE === 'true'),
-            );
-            core.setOutput(
               'sandbox',
               String(mayPublish && process.env.SANDBOX_CANDIDATE === 'true'),
             );
@@ -252,7 +232,6 @@ jobs:
           SOURCE_RUN_ID: ${{ inputs.source_run_id }}
           SOURCE_RUN_ATTEMPT: ${{ inputs.source_run_attempt }}
           SOURCE_CONCLUSION: ${{ inputs.source_conclusion }}
-          STORYBOOK_AVAILABLE: ${{ steps.final.outputs.storybook }}
           SANDBOX_AVAILABLE: ${{ steps.final.outputs.sandbox }}
         run: |
           args=(
@@ -268,9 +247,6 @@ jobs:
             --source-conclusion "$SOURCE_CONCLUSION"
             --result preview-deployment.json
           )
-          if [ "$STORYBOOK_AVAILABLE" = 'true' ]; then
-            args+=(--storybook storybook-dist)
-          fi
           if [ "$SANDBOX_AVAILABLE" = 'true' ]; then
             args+=(--sandbox sandbox-dist)
           fi

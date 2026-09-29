@@ -30,6 +30,7 @@ import {
   getAllInjectedCss,
   getForcedColorsRules,
 } from '../__tests__/forcedColors';
+import {hasPressedArm} from '../__tests__/pressState';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
 afterEach(() => {
@@ -752,6 +753,21 @@ describe('Switch', () => {
       expect(root).not.toBeNull();
       expect(root).toHaveAttribute('id', 'switch-1');
       expect(root).toHaveAttribute('aria-label', 'Toggle notifications');
+    });
+  });
+
+  describe('pressed state', () => {
+    it('paints the pressed overlay on the track and the thumb while the row is pressed', () => {
+      const {container} = render(
+        <Switch label="Notifications" value={false} onChange={() => {}} />,
+      );
+      const track = container.querySelector('.astryx-switch');
+      const thumb = container.querySelector('.astryx-switch-thumb');
+      if (track == null || thumb == null) {
+        throw new Error('the switch has no track or thumb to press');
+      }
+      expect(hasPressedArm(track)).toBe(true);
+      expect(hasPressedArm(thumb)).toBe(true);
     });
   });
 

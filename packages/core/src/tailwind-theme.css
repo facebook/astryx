@@ -182,12 +182,6 @@
   --text-4xl: var(--font-size-4xl);
   --text-5xl: var(--font-size-5xl);
 
-  /* --- Font weights --- */
-  --font-weight-normal: var(--font-weight-normal);
-  --font-weight-medium: var(--font-weight-medium);
-  --font-weight-semibold: var(--font-weight-semibold);
-  --font-weight-bold: var(--font-weight-bold);
-
   /* =========================================================================
    * Border radius
    *

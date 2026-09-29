@@ -20,13 +20,31 @@ nested `AGENTS.md`.
 - Pull requests: choose one primary intent and use its template under
   `.github/PULL_REQUEST_TEMPLATE/`; read `docs/contributing/pull-requests.md`
   before opening or reviewing a mixed change.
-- Component work: read the component's `{Name}.spec.md` when one exists, then
-  any `module:*` records it lists for the public module being changed, followed by
-  consumer docs, tests, and implementation.
+- Component work: derive the review's semantic triggers, load matching `current`
+  global baseline claims with `node scripts/review-global-baselines.mjs
+--authority-commit <base-sha> --review-head <head-sha> --triggers
+<comma-separated-triggers>`, then read
+  the component's `{Name}.spec.md` when one exists and any `module:*` records it
+  lists. Load global records before narrower owners, but resolve the direct
+  component or family owner first when it governs the exact delta. A global
+  route exposes only the listed claim; it never makes the whole record govern
+  the component or change. Preserve each matched record, claim, trigger, and
+  match reason in the review receipt.
+- Component-local visual intent: reuse or amend the optional `Design decisions`
+  table in the current component/module spec only when durable local intent must
+  survive future redesigns. Keep exact tuning in code/evidence and shared rules
+  in `docs/design/`. DESIGNOWNER authors may include that local intent with the
+  pixels and evidence in one atomic appearance-only PR. External contributors
+  follow the normal contribution flow and are never asked to author specs;
+  maintainers own missing authority.
 - Cross-component work: read the relevant contract under `docs/families/`,
   applicable design spec under `docs/design/`, and current architecture under
   `docs/architecture/`.
 - Consequential shared-system changes: use a record under `docs/specs/`.
+- Integration contribution work: read `docs/specs/AST-039/spec.md`. Every new
+  discoverable item owns a strongly typed, same-stem `.doc.mjs`; root manifests
+  locate directories and never catalog their items. No catalog file (like
+  `themes/manifest.json`) and no per-item map in the manifest, ever.
 
 ## Authority
 
@@ -194,6 +212,8 @@ astryx docs theme --dense # theme provider, light/dark, overrides
 astryx component --list # all components grouped by category
 astryx template --list # available page templates
 ON DEMAND:
+astryx docs <topic> --index # section index: one line per section, with its key
+astryx docs <topic> <section> # one section, by key or title
 astryx component <Name> --dense # props, variants, usage, anatomy for one component
 astryx template <name> # emit full page source
 astryx template <name> --skeleton # layout skeleton with spatial annotations

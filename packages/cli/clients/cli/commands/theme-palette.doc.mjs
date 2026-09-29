@@ -5,7 +5,7 @@ export const doc = {
   type: 'command',
   name: 'theme palette',
   displayName: 'astryx theme palette',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Create and work with theme-owned color palettes',
   description:
     'Palette authoring tools. The initial generate command creates reviewable candidates. ' +

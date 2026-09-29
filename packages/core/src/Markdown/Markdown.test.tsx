@@ -80,6 +80,17 @@ describe('Markdown', () => {
       }
     });
 
+    it('keeps citation markers out of released heading ids', () => {
+      render(
+        <Markdown sources={{cite: {title: 'Citation'}}}>
+          {'# Before [cite] after'}
+        </Markdown>,
+      );
+      expect(
+        screen.getByRole('heading', {name: /Before.*after/}),
+      ).toHaveAttribute('id', 'before-after');
+    });
+
     it('passes the generated id to a custom heading component', () => {
       const received: (string | undefined)[] = [];
       render(
@@ -286,9 +297,13 @@ describe('Markdown', () => {
     expect(screen.getByText('struck').tagName).toBe('DEL');
   });
 
-  it('renders inline code with Code', () => {
-    render(<Markdown>{'Use `code` here'}</Markdown>);
-    expect(screen.getByText('code').tagName).toBe('CODE');
+  it('renders inline code as delimiter-free <code> content', () => {
+    const {container} = render(<Markdown>{'Use `code` here'}</Markdown>);
+    const code = container.querySelector('code');
+    expect(code).toBeInTheDocument();
+    expect(code).toHaveTextContent('code');
+    expect(code?.textContent).toBe('code');
+    expect(container.textContent).toBe('Use code here');
   });
 
   it('renders code blocks with CodeBlock', () => {
@@ -427,6 +442,23 @@ describe('Markdown', () => {
     expect(document.querySelector('table')).toBeInTheDocument();
     expect(document.querySelectorAll('th')).toHaveLength(2);
     expect(document.querySelectorAll('td')).toHaveLength(2);
+  });
+
+  it('renders escaped table pipes without exposing the escape in code spans', () => {
+    render(
+      <Markdown>
+        {
+          '| Concept | TypeScript |\n| --- | --- |\n| Null safety | `T \\| null` |'
+        }
+      </Markdown>,
+    );
+
+    const cells = document.querySelectorAll('tbody td');
+    expect(Array.from(cells).map(cell => cell.textContent)).toEqual([
+      'Null safety',
+      'T | null',
+    ]);
+    expect(cells[1].querySelector('code')).toHaveTextContent('T | null');
   });
 
   it('makes the table scroll wrapper keyboard-focusable', () => {
@@ -623,6 +655,58 @@ describe('Markdown', () => {
     expect(links).toHaveLength(2);
     expect(links[0].getAttribute('href')).toBe('https://example.com');
     expect(links[1].getAttribute('href')).toBe('/page');
+  });
+
+  describe('link destinations follow the shared navigation rule', () => {
+    // The same matrix Core's link plumbing and imperative navigation apply
+    // (utils/safeUrl.ts): only executable document schemes are blocked.
+    const blocked = [
+      'javascript:alert(1)',
+      'JaVaScRiPt:alert(1)',
+      'vbscript:MsgBox(1)',
+      'data:text/html,<script>alert(1)</script>',
+      'java\nscript:alert(1)',
+    ];
+    const accepted = [
+      'https://example.com',
+      '/page',
+      '#section',
+      '//example.com/x',
+      'mailto:a@example.com',
+      'tel:+15555550100',
+      'data:image/png;base64,iVBORw0KGgo=',
+    ];
+
+    it.each(blocked)('renders %s as text, not a link', destination => {
+      const {container} = render(
+        <Markdown>{`[click](${destination})`}</Markdown>,
+      );
+      expect(container.querySelector('a')).toBeNull();
+      expect(container.textContent).toContain('click');
+    });
+
+    it.each(accepted)('renders %s as a link', destination => {
+      const {container} = render(
+        <Markdown>{`[click](${destination})`}</Markdown>,
+      );
+      const link = container.querySelector('a');
+      expect(link).not.toBeNull();
+      expect(link?.getAttribute('href')).toBe(destination);
+    });
+
+    it('a data:image link is navigation and is accepted, while a data:image image stays rejected by the resource policy', () => {
+      const {container} = render(
+        <Markdown>
+          {
+            '[view](data:image/png;base64,iVBORw0KGgo=)\n\n![pic](data:image/png;base64,iVBORw0KGgo=)'
+          }
+        </Markdown>,
+      );
+      expect(container.querySelector('a')?.getAttribute('href')).toBe(
+        'data:image/png;base64,iVBORw0KGgo=',
+      );
+      expect(container.querySelector('img')).toBeNull();
+    });
   });
 
   it('preserves dollar-delimited text when no math renderer is supplied', () => {

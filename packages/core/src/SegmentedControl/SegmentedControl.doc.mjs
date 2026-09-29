@@ -129,9 +129,9 @@ export const docs = {
         category: 'Color contrast',
         criterion: '1.4.3 Contrast (Minimum)',
         requirement: '4.5:1',
-        states: ['Rest', 'Hover', 'Selected'],
+        states: ['Rest', 'Hover', 'Pointer down', 'Selected'],
         description:
-          'Each label must have at least 4.5:1 contrast with its segment background. Check unselected, Hover, and selected colors as they appear on screen.',
+          'Each label must have at least 4.5:1 contrast with its segment background. Check unselected, Hover, Pointer down, and selected colors as they appear on screen. For Hover and Pointer down, measure the final background after the overlay is applied.',
       },
       {
         name: 'Essential icon',

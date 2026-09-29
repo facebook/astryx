@@ -196,3 +196,75 @@ export default {};\n`,
     });
   });
 });
+
+describe('gap-report control docs', () => {
+  const REQUIRED = 'Required unless --list-categories is set.';
+
+  it('help and manifest say which inputs are required and how long they may be', async () => {
+    const help = await runCli(['gap-report', '--help']);
+    expect(help.status).toBe(0);
+    const manifest = JSON.parse((await runCli(['manifest', '--json'])).stdout);
+    const entry = manifest.data.commands.find(
+      (/** @type {{name: string}} */ command) => command.name === 'gap-report',
+    );
+    /** @param {string} flag @returns {string} */
+    const option = flag =>
+      entry.options.find(
+        (/** @type {{flag: string}} */ item) => item.flag.split(' ')[0] === flag,
+      )?.description ?? '';
+    const component = entry.arguments[0].description;
+
+    for (const text of [component, option('--category'), option('--reason')]) {
+      expect(text).toContain(REQUIRED);
+      expect(help.stdout).toContain(text);
+    }
+    expect(option('--list-categories')).toContain(
+      'the component and the other gap-report options are ignored',
+    );
+
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-gap-limits-'));
+    try {
+      fs.writeFileSync(
+        path.join(cwd, 'package.json'),
+        JSON.stringify({name: 'fixture-app'}),
+      );
+      const base = {cwd, category: /** @type {const} */ ('docs_gap'), reason: 'x'};
+      /** @type {Array<[string, (value: string) => Promise<unknown>]>} */
+      const limits = [
+        [component, value => gapReport(value, base)],
+        [option('--reason'), value => gapReport('Button', {...base, reason: value})],
+        [
+          option('--additional-context'),
+          value => gapReport('Button', {...base, detail: value}),
+        ],
+      ];
+      for (const [text, call] of limits) {
+        const limit = Number(/up to (\d+) characters/.exec(text)?.[1]);
+        expect(limit, text).toBeGreaterThan(0);
+        await expect(call('x'.repeat(limit))).resolves.toMatchObject({
+          type: 'gap-report.file',
+        });
+        await expect(call('x'.repeat(limit + 1))).rejects.toMatchObject({
+          code: 'ERR_INVALID_ARGUMENT',
+        });
+      }
+    } finally {
+      fs.rmSync(cwd, {recursive: true, force: true});
+    }
+  });
+
+  it('enforces the documented requirement', async () => {
+    for (const [component, options] of [
+      [undefined, {category: 'docs_gap', reason: 'x'}],
+      ['Button', {reason: 'x'}],
+      ['Button', {category: 'docs_gap'}],
+    ]) {
+      await expect(gapReport(component, options)).rejects.toMatchObject({
+        code: 'ERR_MISSING_ARGUMENT',
+      });
+    }
+    await expect(
+      gapReport(undefined, {listCategories: true, category: 'not_real', package: 'nope'}),
+    ).resolves.toMatchObject({type: 'gap-report.categories'});
+  });
+});

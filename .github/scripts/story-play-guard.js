@@ -39,6 +39,24 @@ const port = Number(getArg('port') || 6010);
 // whole cost of promoting its play function into required CI.
 const TARGETS = [
   {
+    component: 'ChartTooltip',
+    story: 'charts-chrome-tooltip--modal-layering',
+    guards:
+      'ChartTooltip stays continuously open across content-bearing points in ' +
+      'nested Theme/MediaTheme scope above a native modal with nonzero geometry',
+  },
+  {
+    component: 'ChatToolCalls',
+    story: 'core-chattoolcalls--focused-grouped-detail',
+    guards:
+      'grouped detail focus ring remains visible inside the animated clip boundary',
+  },
+  {
+    component: 'ChatToolCalls',
+    story: 'core-chattoolcalls--narrow',
+    guards: 'long metadata stays within the 320px narrow-container fixture',
+  },
+  {
     component: 'TabList',
     story: 'core-tablist--full-bleed-geometry',
     guards:

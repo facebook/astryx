@@ -20,8 +20,14 @@ import {
   existsSync,
   mkdirSync,
 } from 'node:fs';
+import {createRequire} from 'node:module';
 import {join, dirname, relative} from 'node:path';
 import {fileURLToPath} from 'node:url';
+
+// Resolves from this script, so docsite's own dependencies are found wherever
+// the installer put them. Throws if one is missing, rather than emitting a
+// bundle that is quietly short a package.
+const resolveFromDocsite = createRequire(import.meta.url).resolve;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
@@ -160,14 +166,7 @@ declare module '@stylexjs/stylex' {
 // index.d.ts so the set stays accurate (e.g. 16/solid ships fewer icons).
 function buildHeroiconTypes() {
   const variants = ['16/solid', '20/solid', '24/outline', '24/solid'];
-  const heroRoot = join(
-    root,
-    '..',
-    '..',
-    'node_modules',
-    '@heroicons',
-    'react',
-  );
+  const heroRoot = dirname(resolveFromDocsite('@heroicons/react/package.json'));
   const iconType =
     'React.ComponentType<React.SVGProps<SVGSVGElement> & ' +
     '{title?: string; titleId?: string}>';
@@ -194,15 +193,8 @@ function buildHeroiconTypes() {
 }
 
 function buildRechartsTypes() {
-  const indexPath = join(
-    root,
-    '..',
-    '..',
-    'node_modules',
-    'recharts',
-    'types',
-    'index.d.ts',
-  );
+  const rechartsRoot = dirname(resolveFromDocsite('recharts/package.json'));
+  const indexPath = join(rechartsRoot, 'types', 'index.d.ts');
   if (!existsSync(indexPath)) return {};
 
   const source = readFileSync(indexPath, 'utf-8');

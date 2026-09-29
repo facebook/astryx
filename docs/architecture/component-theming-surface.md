@@ -41,6 +41,29 @@ deciding_specs:
 
 # Component theming surface
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "theming": [
+      "INV3",
+      "INV4",
+      "INV5",
+      "INV6",
+      "INV7",
+      "INV8",
+      "INV9",
+      "INV10",
+      "INV12",
+      "INV14",
+      "INV15"
+    ]
+  }
+}
+```
+
 This record defines how component anatomy relates to the public theming API.
 
 ## Purpose

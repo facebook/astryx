@@ -157,7 +157,7 @@ describe('deprecated theming target guidance', () => {
 
   it('keeps the replacement in brief agent guidance', () => {
     expect(formatBrief(docs, 'Example')).toContain(
-      'astryx-old-target deprecated→new-target',
+      'astryx-old-target deprecated->new-target',
     );
   });
 });

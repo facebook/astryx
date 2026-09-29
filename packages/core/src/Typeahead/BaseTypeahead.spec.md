@@ -98,7 +98,7 @@ Draft requirements identify their observational or current-authority basis.
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ---------------------------------------------- |
 | FR1 | The input is controlled by internal query state while `value` is caller-controlled; selecting a result calls `onChange(item)`, clears query/results, closes the popup, and returns focus to the input.                                                        | Current source and tests                              | verified shipped behavior                      |
 | FR2 | Search starts only at the grapheme-count threshold, uses the configured debounce, and never presents an empty result for a query that was not searched.                                                                                                       | Public API, current i18n character utility, tests     | verified audit remediation                     |
-| FR3 | A newer query, selection, clear, or unmount invalidates stale asynchronous work. Escape hides the current popup but does not invalidate pending work, so a late response currently reopens it (retained violation).                                           | Current source, focused retained-red probe, and tests | verified shipped behavior                      |
+| FR3 | A newer query, selection, clear, source replacement, or unmount invalidates stale asynchronous work. Escape hides the current popup but does not invalidate pending work, so a late response currently reopens it (retained violation).                       | Current source, focused retained-red probe, and tests | verified shipped behavior                      |
 | FR4 | The popup is a named listbox whose result rows are options. A completed empty search renders one disabled option so the listbox retains a valid owned child.                                                                                                  | APG combobox pattern, axe, tests                      | verified audit remediation                     |
 | FR5 | Arrow keys wrap the highlight; Home/End move to the first/last option; Enter selects; Escape and Tab hide the current popup; IME-owned key events do not activate combobox commands. Escape dismissal is not durable while source work remains pending (FR3). | Current source and tests                              | verified shipped behavior; Escape gap retained |
 | FR6 | Pending asynchronous source work sets `aria-busy` and renders one named Spinner unless the composed wrapper owns the busy indicator lane.                                                                                                                     | Current source, input-family FR7, tests               | verified shipped behavior                      |
@@ -139,8 +139,9 @@ Draft requirements identify their observational or current-authority basis.
 
 ### Performance and resources
 
-- **PR1 — Search lifetime.** One generation counter rejects stale responses;
-  debounce timers and optional source cancellation are cleared on replacement and
+- **PR1 — Search lifetime.** One generation counter rejects stale responses,
+  including responses from a source that has since been replaced; debounce
+  timers and optional source cancellation are cleared on replacement and
   unmount.
 
 ## Accessibility contract

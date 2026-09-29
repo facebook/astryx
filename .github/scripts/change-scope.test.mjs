@@ -193,6 +193,20 @@ describe('positive CI surfaces', () => {
     expect(result.surfaces).toEqual([SURFACES.NODE_TOOLING]);
   });
 
+  it('admits internal scripts and their upload workflow', () => {
+    const result = classifyChanges([
+      {filename: '.github/workflows/crowdin-upload.yml'},
+      {filename: 'internal/scripts/lib/a-future-strategy.mjs'},
+    ]);
+    expect(result.toolingOnly).toBe(true);
+  });
+
+  it('keeps root scripts on broad CI', () => {
+    expect(
+      classifyChanges([{filename: 'scripts/build-css.mjs'}]).toolingOnly,
+    ).toBe(false);
+  });
+
   it('keeps pure specification records in the knowledge singleton', () => {
     const result = classifyChanges([
       {filename: 'packages/core/src/Button/Button.spec.md'},

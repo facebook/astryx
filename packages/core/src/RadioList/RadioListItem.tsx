@@ -23,6 +23,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {RadioListContext} from './RadioList';
+import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {mergeProps, isRenderable, rtlStyles} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
@@ -38,6 +39,25 @@ const styles = stylex.create({
     justifyContent: 'center',
     flexShrink: 0,
     isolation: 'isolate',
+  },
+  // The row remains the large press target, but nested links and buttons keep
+  // their independent action and do not make the radio appear pressed. This
+  // owner-drawn layer also survives a theme replacing the indicator component.
+  indicatorPressOverlay: {
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      borderRadius: radiusVars['--radius-full'],
+      pointerEvents: 'none',
+      backgroundColor: {
+        default: 'transparent',
+        [stylex.when.ancestor(
+          ':active:not(:has(a:active,button:active,[role="button"]:active,[role="link"]:active))',
+          indicatorScope,
+        )]: colorVars['--color-overlay-pressed'],
+      },
+    },
   },
   input: {
     position: 'absolute',
@@ -222,7 +242,11 @@ export function RadioListItem({
 
   const radioCircle = (
     <div
-      {...stylex.props(styles.radioWrapper, wrapperSizeStyles[size])}
+      {...stylex.props(
+        styles.radioWrapper,
+        wrapperSizeStyles[size],
+        !isDisabled && styles.indicatorPressOverlay,
+      )}
       {...focusProps}>
       <input
         ref={radioRef}

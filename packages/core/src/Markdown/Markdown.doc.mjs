@@ -112,7 +112,7 @@ export const docs = {
       name: 'onLinkClick',
       type: '(href: string, event: MouseEvent) => void | false',
       description:
-        'Handler for link clicks. Return false to prevent the default navigation behavior.',
+        'Handler for link clicks. Return false to prevent the default navigation behavior. Link destinations in the markdown follow the shared navigation rule described on the Link `href` prop: a blocked destination renders as plain text and never reaches this handler or a custom link renderer. Image URLs use a separate, stricter policy (every data: URL is rejected).',
     },
     {
       name: 'sources',
@@ -140,6 +140,12 @@ export const docs = {
       description:
         'Alignment of prose content within the container when contentWidth is narrower than the available space.',
       default: "'start'",
+    },
+    {
+      name: 'plugins',
+      type: 'readonly MarkdownPluginEntry[]',
+      description:
+        'Ordered extensions created by createMarkdownPlugin(). Plugins may add bounded syntax, immutable typed AST transforms, and typed extension renderers. Use isMarkdownExtensionNode() to narrow extension data observed from other plugins. Renderer callbacks are pure; return a child component when hooks are needed. Omitted and empty lists preserve the released Markdown behavior.',
     },
     {
       name: 'inlinePlugins',
@@ -244,6 +250,46 @@ export const docs = {
       {
         guidance: true,
         description:
+          'Use plugins created by createMarkdownPlugin for reusable syntax, immutable AST transforms, and typed extension rendering. Keep the ordered list stable while its syntax configuration is unchanged.',
+      },
+      {
+        guidance: true,
+        description:
+          'Add markdownSoftBreaksPlugin when single line endings are meaningful. It matches remark-breaks for supported Markdown, including multiline link labels, while code and other opaque content stay unchanged.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use createMarkdownTextTransform for prose matching; it preserves code, links, images, citations, math, and accepted extension syntax as protected contexts. Provide requiredSubstrings only when they conservatively cover every possible match.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use createMarkdownFenceTransform for declared code-fence languages with semantic data. createNode returns an owned block extension node; its standard plugin renderer and toText own presentation. components.code still wins, and a declined or failed proposal keeps the accessible, copyable CodeBlock fallback.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use createMarkdownSourceDecoration to attach non-visual metadata — search hits, review annotations — to the blocks a source range touches, and getMarkdownSourceDecorations to read it back in a later plugin. Decorations appear on the settled document rather than on partial streaming chunks, and never change rendering, copyable text, accessible names, ids, focus order, or navigation.',
+      },
+      {
+        guidance: true,
+        description:
+          'Import parseMarkdownAst or parseInlineAst from @astryxdesign/core/Markdown/parser when server or React Server Component code needs to run plugins against the canonical readonly tree. The parser and plugin subpaths have no use-client boundary. The Markdown component remains client-owned, so function-bearing plugin entries must not be passed across an RSC serialization boundary.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use createMarkdownFrontmatter for typed document metadata. Its parse() method gives the host metadata directly; its plugin removes a complete leading block before rendering and withholds an unfinished block during streaming.',
+      },
+      {
+        guidance: true,
+        description:
+          "Import createMarkdownRemarkTransform from '@astryxdesign/core/Markdown/remark' only to reuse an existing synchronous transform-only Remark plugin; it stays out of every other bundle. Prove each plugin with fixtures: anything outside the supported MDAST subset — async work, parser or compiler plugins, processor state, raw HTML, unsupported nodes, forged positions, or metadata Astryx cannot represent — keeps the last valid document and reports one diagnostic.",
+      },
+      {
+        guidance: true,
+        description:
           'Use inlinePlugins for prefixed identifiers, mentions, and other prose-only shorthand instead of preprocessing the markdown string.',
       },
       {
@@ -288,6 +334,170 @@ import {Text} from '@astryxdesign/core/Text';
   {'Visit https://example.com or email contact@example.com. ' +
     'You can also bracket links: <https://docs.example.com>.'}
 </Markdown>;
+`,
+    },
+    {
+      label: 'First-party soft breaks',
+      code: `
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {markdownSoftBreaksPlugin} from '@astryxdesign/core/Markdown/plugins';
+
+<Markdown plugins={[markdownSoftBreaksPlugin]}>
+  {'First line\\nSecond line'}
+</Markdown>;
+`,
+    },
+    {
+      label: 'Text transform helper',
+      code: `
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {
+  createMarkdownPlugin,
+  createMarkdownTextTransform,
+} from '@astryxdesign/core/Markdown/plugins';
+
+const finalLabels = createMarkdownPlugin({
+  name: 'final-labels',
+  apiVersion: 1,
+  transform: createMarkdownTextTransform({
+    pattern: /\\bDraft\\b/g,
+    requiredSubstrings: ['Draft'],
+    replace: () => ({type: 'text', value: 'Final'}),
+  }),
+});
+
+<Markdown plugins={[finalLabels]}># Draft</Markdown>;
+`,
+    },
+    {
+      label: 'Semantic fence helper',
+      code: `
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {
+  createMarkdownFenceTransform,
+  createMarkdownPlugin,
+  type MarkdownExtensionNode,
+} from '@astryxdesign/core/Markdown/plugins';
+
+type DiagramNode = MarkdownExtensionNode<
+  'diagrams',
+  'diagram',
+  {readonly code: string; readonly label?: string},
+  'block'
+>;
+
+const diagrams = createMarkdownPlugin<'diagrams', DiagramNode>({
+  name: 'diagrams',
+  apiVersion: 1,
+  transform: createMarkdownFenceTransform({
+    languages: ['mermaid'],
+    createNode: ({code, meta}) => ({
+      type: 'extension',
+      plugin: 'diagrams',
+      name: 'diagram',
+      display: 'block',
+      data: {code, ...(meta == null ? {} : {label: meta})},
+    }),
+  }),
+  renderers: {
+    diagram: {
+      render: ({node}) => (
+        <Diagram source={node.data.code} label={node.data.label} />
+      ),
+      toText: node => node.data.code,
+    },
+  },
+});
+
+<Markdown plugins={[diagrams]}>
+  {'\`\`\`mermaid Checkout flow\\ngraph LR; A-->B\\n\`\`\`'}
+</Markdown>;
+`,
+    },
+    {
+      label: 'Source decoration helper',
+      code: `
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {
+  createMarkdownPlugin,
+  createMarkdownSourceDecoration,
+  getMarkdownSourceDecorations,
+} from '@astryxdesign/core/Markdown/plugins';
+
+// Ranges are UTF-16 offsets into the same string Markdown renders. Every
+// block a range touches is annotated; rendering, copyable text, and ids
+// never change.
+const searchHits = createMarkdownPlugin({
+  name: 'search-hits',
+  apiVersion: 1,
+  transform: createMarkdownSourceDecoration({
+    name: 'search-hit',
+    ranges: [{start: 0, end: 15, data: {query: 'release'}}],
+  }),
+});
+
+const readDecorations = createMarkdownPlugin({
+  name: 'read-decorations',
+  apiVersion: 1,
+  transform: root => {
+    report(root.children.map(getMarkdownSourceDecorations));
+    return root;
+  },
+});
+
+<Markdown plugins={[searchHits, readDecorations]}>{source}</Markdown>;
+`,
+    },
+    {
+      label: 'Native frontmatter',
+      code: `
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {createMarkdownFrontmatter} from '@astryxdesign/core/Markdown/plugins';
+
+const frontmatter = createMarkdownFrontmatter({
+  name: 'document-metadata',
+  parse: fields => ({
+    title: fields.title ?? 'Untitled',
+    draft: fields.draft === 'true',
+  }),
+});
+
+const source = '---\\ntitle: Release notes\\ndraft: true\\n---\\n# Shipped';
+const result = frontmatter.parse(source);
+
+<Markdown plugins={[frontmatter.plugin]}>{source}</Markdown>;
+`,
+    },
+    {
+      label: 'Compatible Remark plugin',
+      code: `
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {createMarkdownPlugin} from '@astryxdesign/core/Markdown/plugins';
+import {createMarkdownRemarkTransform} from '@astryxdesign/core/Markdown/remark';
+
+// A synchronous transform-only Remark plugin in the usual attacher shape.
+const remarkRename =
+  ({from, to}) =>
+  tree => {
+    const rename = node => {
+      if (node.type === 'text') {
+        node.value = node.value.split(from).join(to);
+      }
+      node.children?.forEach(rename);
+    };
+    rename(tree);
+  };
+
+const productName = createMarkdownPlugin({
+  name: 'product-name',
+  apiVersion: 1,
+  transform: createMarkdownRemarkTransform(remarkRename, {
+    from: 'Astryx',
+    to: 'Astryx Design',
+  }),
+});
+
+<Markdown plugins={[productName]}># Astryx release notes</Markdown>;
 `,
     },
     {
@@ -396,6 +606,12 @@ export const docsZh = {
       description:
         '当 contentWidth 小于可用空间时，正文内容在容器内的对齐方式。',
       default: "'start'",
+    },
+    {
+      name: 'plugins',
+      type: 'readonly MarkdownPluginEntry[]',
+      description:
+        '由 createMarkdownPlugin() 创建的有序扩展。插件可添加有界语法、不可变的类型化 AST 转换和类型化扩展渲染器。使用 isMarkdownExtensionNode() 缩小从其他插件观察到的扩展数据类型。渲染回调必须是纯函数；需要 Hook 时请返回子组件。省略或传入空列表时保持已发布的 Markdown 行为。',
     },
     {
       name: 'inlinePlugins',
@@ -510,6 +726,46 @@ export const docsZh = {
       {
         guidance: true,
         description:
+          'Use plugins created by createMarkdownPlugin for reusable syntax, immutable AST transforms, and typed extension rendering. Keep the ordered list stable while its syntax configuration is unchanged.',
+      },
+      {
+        guidance: true,
+        description:
+          'Add markdownSoftBreaksPlugin when single line endings are meaningful. It matches remark-breaks for supported Markdown, including multiline link labels, while code and other opaque content stay unchanged.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use createMarkdownTextTransform for prose matching; it preserves code, links, images, citations, math, and accepted extension syntax as protected contexts. Provide requiredSubstrings only when they conservatively cover every possible match.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use createMarkdownFenceTransform for declared code-fence languages with semantic data. createNode returns an owned block extension node; its standard plugin renderer and toText own presentation. components.code still wins, and a declined or failed proposal keeps the accessible, copyable CodeBlock fallback.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use createMarkdownSourceDecoration to attach non-visual metadata — search hits, review annotations — to the blocks a source range touches, and getMarkdownSourceDecorations to read it back in a later plugin. Decorations appear on the settled document rather than on partial streaming chunks, and never change rendering, copyable text, accessible names, ids, focus order, or navigation.',
+      },
+      {
+        guidance: true,
+        description:
+          'Import parseMarkdownAst or parseInlineAst from @astryxdesign/core/Markdown/parser when server or React Server Component code needs to run plugins against the canonical readonly tree. The parser and plugin subpaths have no use-client boundary. The Markdown component remains client-owned, so function-bearing plugin entries must not be passed across an RSC serialization boundary.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use createMarkdownFrontmatter for typed document metadata. Its parse() method gives the host metadata directly; its plugin removes a complete leading block before rendering and withholds an unfinished block during streaming.',
+      },
+      {
+        guidance: true,
+        description:
+          "Import createMarkdownRemarkTransform from '@astryxdesign/core/Markdown/remark' only to reuse an existing synchronous transform-only Remark plugin; it stays out of every other bundle. Prove each plugin with fixtures: anything outside the supported MDAST subset — async work, parser or compiler plugins, processor state, raw HTML, unsupported nodes, forged positions, or metadata Astryx cannot represent — keeps the last valid document and reports one diagnostic.",
+      },
+      {
+        guidance: true,
+        description:
           'Use inlinePlugins for prefixed identifiers, mentions, and other prose-only shorthand instead of preprocessing the markdown string.',
       },
       {
@@ -557,6 +813,46 @@ export const docsDense = {
       {
         guidance: true,
         description:
+          'Use plugins created by createMarkdownPlugin for reusable syntax, immutable AST transforms, and typed extension rendering. Keep the ordered list stable while its syntax configuration is unchanged.',
+      },
+      {
+        guidance: true,
+        description:
+          'Add markdownSoftBreaksPlugin when single line endings are meaningful. It matches remark-breaks for supported Markdown, including multiline link labels, while code and other opaque content stay unchanged.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use createMarkdownTextTransform for prose matching; it preserves code, links, images, citations, math, and accepted extension syntax as protected contexts. Provide requiredSubstrings only when they conservatively cover every possible match.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use createMarkdownFenceTransform for declared code-fence languages with semantic data. createNode returns an owned block extension node; its standard plugin renderer and toText own presentation. components.code still wins, and a declined or failed proposal keeps the accessible, copyable CodeBlock fallback.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use createMarkdownSourceDecoration to attach non-visual metadata — search hits, review annotations — to the blocks a source range touches, and getMarkdownSourceDecorations to read it back in a later plugin. Decorations appear on the settled document rather than on partial streaming chunks, and never change rendering, copyable text, accessible names, ids, focus order, or navigation.',
+      },
+      {
+        guidance: true,
+        description:
+          'Import parseMarkdownAst or parseInlineAst from @astryxdesign/core/Markdown/parser when server or React Server Component code needs to run plugins against the canonical readonly tree. The parser and plugin subpaths have no use-client boundary. The Markdown component remains client-owned, so function-bearing plugin entries must not be passed across an RSC serialization boundary.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use createMarkdownFrontmatter for typed document metadata. Its parse() method gives the host metadata directly; its plugin removes a complete leading block before rendering and withholds an unfinished block during streaming.',
+      },
+      {
+        guidance: true,
+        description:
+          "Import createMarkdownRemarkTransform from '@astryxdesign/core/Markdown/remark' only to reuse a synchronous transform-only Remark plugin; it stays out of every other bundle and unsupported behavior keeps the last valid document with one diagnostic.",
+      },
+      {
+        guidance: true,
+        description:
           'Use inlinePlugins for prefixed identifiers, mentions, and other prose-only shorthand instead of preprocessing the markdown string.',
       },
       {
@@ -589,7 +885,7 @@ export const docsDense = {
     isStreaming:
       'Incremental parse + fade-in for streamed chunks. Default: false.',
     onLinkClick:
-      '(href, event) => void|false. Return false prevents navigation.',
+      '(href, event) => void|false. Return false prevents navigation. Link destinations follow the shared navigation rule (see Link href); blocked ones render as text. Image URLs: separate stricter policy.',
     sources:
       'Record<string, MarkdownSource>. Citation sources by ID. [id]/【id】 markers render as chips.',
     citationStyle:
@@ -598,6 +894,8 @@ export const docsDense = {
       'number|string. Max width for prose (headings, paragraphs, lists). Tables/code unconstrained.',
     contentAlign:
       "'start'|'center'. Prose alignment when contentWidth < container. Default: 'start'.",
+    plugins:
+      'readonly MarkdownPluginEntry[]. Ordered syntax, immutable AST transforms, and typed extension renderers from createMarkdownPlugin(). Narrow observed extensions with isMarkdownExtensionNode(); renderer callbacks are pure. Default: omitted or empty.',
     inlinePlugins:
       'MarkdownInlinePlugin[]. Regex matches in text nodes -> custom inline React elements. Skips inline/fenced code and math.',
     autolink:

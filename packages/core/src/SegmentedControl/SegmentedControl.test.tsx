@@ -15,6 +15,7 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {hasPressedArm} from '../__tests__/pressState';
 import {SegmentedControl} from './SegmentedControl';
 import {SegmentedControlItem} from './SegmentedControlItem';
 import {
@@ -165,6 +166,36 @@ describe('SegmentedControl', () => {
     expect(radio).toHaveAttribute('aria-label', 'Grid view');
     // Label text should not be visible
     expect(screen.queryByText('Grid view')).not.toBeInTheDocument();
+  });
+
+  it('keeps hug layout content-sized inside a stretching flex parent', () => {
+    render(
+      <div style={{display: 'flex', flexDirection: 'column'}}>
+        <SegmentedControl value="grid" onChange={() => {}} label="View mode">
+          <SegmentedControlItem value="grid" label="Grid" />
+          <SegmentedControlItem value="list" label="List" />
+        </SegmentedControl>
+      </div>,
+    );
+
+    expect(getComputedStyle(screen.getByRole('radiogroup')).width).toBe(
+      'fit-content',
+    );
+  });
+
+  it('fill layout overrides the intrinsic control width', () => {
+    render(
+      <SegmentedControl
+        value="grid"
+        onChange={() => {}}
+        label="View mode"
+        layout="fill">
+        <SegmentedControlItem value="grid" label="Grid" />
+        <SegmentedControlItem value="list" label="List" />
+      </SegmentedControl>,
+    );
+
+    expect(getComputedStyle(screen.getByRole('radiogroup')).width).toBe('100%');
   });
 
   it('fill items can shrink and truncate long labels', () => {
@@ -670,5 +701,35 @@ describe('forced colors (WCAG 1.4.11)', () => {
     // HighlightText text on a white surface. forced-color-adjust: none makes
     // both render as authored.
     expect(getAllInjectedCss()).toContain('forced-color-adjust: none;');
+  });
+});
+
+describe('pressed state', () => {
+  it('paints the pressed overlay on a segment while it is pressed', () => {
+    render(
+      <SegmentedControl value="grid" onChange={() => {}} label="View mode">
+        <SegmentedControlItem value="grid" label="Grid" />
+        <SegmentedControlItem value="list" label="List" />
+      </SegmentedControl>,
+    );
+    // The unselected segment is the one a press can change; it carries the
+    // system's hover and pressed overlay.
+    expect(hasPressedArm(screen.getByRole('radio', {name: 'List'}))).toBe(true);
+    // The selected segment keeps its raised surface as it is.
+    expect(hasPressedArm(screen.getByRole('radio', {name: 'Grid'}))).toBe(
+      false,
+    );
+  });
+
+  it('does not press a disabled segment', () => {
+    render(
+      <SegmentedControl value="grid" onChange={() => {}} label="View mode">
+        <SegmentedControlItem value="grid" label="Grid" />
+        <SegmentedControlItem value="list" label="List" isDisabled />
+      </SegmentedControl>,
+    );
+    expect(hasPressedArm(screen.getByRole('radio', {name: 'List'}))).toBe(
+      false,
+    );
   });
 });

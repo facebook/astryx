@@ -89,6 +89,24 @@ describe('component audit scope', () => {
     );
   });
 
+  it('skips component audits for internal scripts and their upload workflow', () => {
+    expect(
+      classifyComponentAuditScope(
+        [
+          '.github/workflows/crowdin-upload.yml',
+          'internal/scripts/lib/a-future-strategy.mjs',
+        ],
+        COMPONENT_PACKAGES,
+      ),
+    ).toEqual(NO_COMPONENT_AUDIT_SCOPE);
+  });
+
+  it('keeps root scripts on full component audits', () => {
+    expect(
+      classifyComponentAuditScope(['scripts/build-css.mjs'], COMPONENT_PACKAGES),
+    ).toEqual(FULL_AUDIT_SCOPE);
+  });
+
   it('still audits a component changed beside a known non-component surface', () => {
     expect(
       classifyComponentAuditScope(

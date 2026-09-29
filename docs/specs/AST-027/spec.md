@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 4
 template_version: 1
 kind: system-spec
 id: spec:AST-027
@@ -18,6 +18,17 @@ affects_consumer_docs: []
 ---
 
 # Local stacking and browser top-layer routing system spec
+
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "layering": ["DEC-1", "DEC-2", "DEC-3", "DEC-4", "FR11"]
+  }
+}
+```
 
 ## Intent
 

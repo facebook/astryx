@@ -82,6 +82,17 @@ export const docs = {
     {name: 'CollapsibleGroup'},
   ],
   usage: {
+    accessibility: [
+      {
+        name: 'Trigger label',
+        category: 'Color contrast',
+        criterion: '1.4.3 Contrast (Minimum)',
+        requirement: '4.5:1',
+        states: ['Rest', 'Pointer down'],
+        description:
+          'The trigger text must have at least 4.5:1 contrast with the surface behind it. For Pointer down, measure against the pressed overlay the trigger row paints while it is pressed.',
+      },
+    ],
     description: 'Collapsible hides and reveals content behind a trigger button. Use it in settings panels, FAQ pages, or detail views to keep the page scannable while letting users drill into sections they care about. Wrap multiple collapsibles in CollapsibleGroup for accordion behavior. For custom collapsible components, use the `useCollapsible` hook directly (`astryx hook useCollapsible`).',
     bestPractices: [
       { guidance: true, description: 'Use hasDividers on CollapsibleGroup for FAQ-style lists: built-in row hairlines with themed border tokens, no hand-rolled borders.' },

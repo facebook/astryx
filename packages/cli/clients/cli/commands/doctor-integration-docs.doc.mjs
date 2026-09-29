@@ -7,8 +7,8 @@ export const doc = {
   type: 'command',
   name: 'doctor integration docs',
   displayName: 'astryx doctor integration docs',
-  namespace: 'cli',
-  summary: 'Classify integration doc overlaps with Core topics',
+  namespace: 'cli/commands',
+  summary: 'Check an integration\'s docs: the docs tree they add, every link, and overlaps with Core topics',
   description:
     'Reports intentional Core topic replacements and extensions as information. ' +
     'A same-name topic without `replaces` or `extends` is an accidental conflict ' +
@@ -32,7 +32,7 @@ export const doc = {
   ],
   exitCodes: [
     {code: 0, when: 'all Core overlaps are explicitly declared or no overlap exists'},
-    {code: 1, when: 'an overlap is accidental or the integration docs are invalid'},
+    {code: 1, when: 'an overlap is accidental, a doc is invalid, or a namespace or placement fails. A link that names no doc is a warning, and does not change the exit code'},
   ],
   related: ['doctor integration validate', 'docs'],
 };

@@ -1102,7 +1102,7 @@ export const docs = {
         },
         {
           "type": "prose",
-          "text": "See `astryx docs styling` for how to apply tokens via xstyle, className, and compound component patterns. See `astryx docs theme` for overriding tokens with defineTheme."
+          "text": "See {@link generic:styling} for how to apply tokens via xstyle, className, and compound component patterns. See {@link generic:theme} for overriding tokens with defineTheme."
         }
       ]
     }

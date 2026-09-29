@@ -378,3 +378,27 @@ export const LinkVsButtonComparison: Story = {
     },
   },
 };
+
+export const PressedState: Story = {
+  name: 'Pressed state',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Press and hold to see the system's `--color-overlay-pressed` layer behind the link text. The disabled example remains visually unchanged and cannot navigate.",
+      },
+    },
+  },
+  render: () => (
+    <Text>
+      Read the{' '}
+      <Link href="/docs" onClick={e => e.preventDefault()}>
+        documentation — press and hold
+      </Link>{' '}
+      or <Link onClick={() => {}}>open the panel (button form)</Link>.{' '}
+      <Link href="/unavailable" isDisabled>
+        Unavailable — no pressed state
+      </Link>
+    </Text>
+  ),
+};

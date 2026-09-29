@@ -93,7 +93,11 @@ jobs:
 
       - uses: ./.github/actions/setup
 
-      - run: pnpm vitest run --project ui
+      # Match the PR gate: FR23 needs an idle test runner, not just a new process.
+      - name: Run UI tests and isolated Markdown benchmark
+        run: |
+          pnpm vitest run --project ui --exclude packages/core/src/Markdown/Markdown.fr23.perf.test.ts
+          pnpm vitest run --project ui packages/core/src/Markdown/Markdown.fr23.perf.test.ts --no-file-parallelism
 
   test-node:
     runs-on: 2-core-ubuntu-arm

@@ -4,7 +4,7 @@
 
 /**
  * @file ToggleButtonGroup.tsx
- * @input Uses React Context, ToggleButton children
+ * @input Layer-scoped React context, ToggleButton children
  * @output Exports ToggleButtonGroup component and types
  * @position Groups toggle buttons for single or multi-select behavior
  *
@@ -18,7 +18,8 @@
  * - /packages/cli/assets/templates/blocks/components/ToggleButton/ (showcase blocks)
  */
 
-import {createContext, useCallback, use, useMemo, type ReactNode} from 'react';
+import {useCallback, use, useMemo, type ReactNode} from 'react';
+import {createLayerScopedContext as createContext} from '../Layer/layerScopedContext';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import type {ButtonSize} from '../Button';

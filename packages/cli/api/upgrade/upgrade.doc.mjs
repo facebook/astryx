@@ -11,13 +11,15 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'upgrade',
+  namespace: 'cli/api',
   displayName: 'upgrade()',
   summary: 'Run version migrations and reconcile copied compositions.',
   description:
     'Migrates project source from a previous Astryx version to the currently ' +
     'installed one by running the registered codemods, and compares the fully ' +
-    'rendered managed agent-docs block on every path, including same-Core ' +
-    'integration guidance changes. Dry-run previews without writing; `apply` ' +
+    'rendered managed agent-docs block on every migration path, including ' +
+    'same-Core integration guidance changes; list and registry-only modes do not ' +
+    'run migration reconciliation. Dry-run previews without writing; `apply` ' +
     'writes the prepared block only after selected codemods and hooks succeed. ' +
     'Core codemods run before ' +
     'the config is loaded so a config codemod can repair an otherwise-invalid ' +
@@ -68,7 +70,7 @@ export const doc = {
       name: 'options.integration',
       type: 'string[]',
       description:
-        'Explicit integration package names / file paths to process.',
+        'Explicit integration specifiers to process. Resolved beneath node_modules; absolute paths and `.` or `..` segments are rejected.',
     },
     {
       name: 'options.path',
@@ -79,7 +81,8 @@ export const doc = {
     {
       name: 'options.installDeps',
       type: 'boolean',
-      description: 'Auto-install jscodeshift without prompting.',
+      description:
+        'Install jscodeshift when it is missing; otherwise a missing jscodeshift throws ERR_DEP_MISSING.',
     },
     {
       name: 'options.registry',
@@ -118,7 +121,7 @@ export const doc = {
     {
       type: 'upgrade.run',
       description:
-        'The terminal run receipt: from/to versions, the codemod count, integrations processed, the agent-docs summary, an optional copied-composition registry summary, and (apply mode) filesChanged, transformsApplied, and any per-codemod errors.',
+        'The terminal run receipt: from/to versions, codemod count, integrations processed, agent-docs and registry summaries, modifiedFiles, protectedFiles, declinedCandidates, and completion state. A protected required change returns complete: false with ERR_CODEMOD_PROTECTED; the CLI exits nonzero while preserving the structured receipt.',
     },
   ],
   throws: [
@@ -143,6 +146,10 @@ export const doc = {
     {
       code: 'ERR_CODEMOD_FAILED',
       when: 'one or more codemods failed, or a post-codemod hook failed',
+    },
+    {
+      code: 'ERR_CODEMOD_PROTECTION_SOURCE',
+      when: 'a working-tree protection declaration cannot be read or parsed before writes begin',
     },
   ],
   examples: [
