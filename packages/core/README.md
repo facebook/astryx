@@ -68,7 +68,7 @@ astryx gap-report                   # report a missing capability
 
 ## Resources
 
-- [Component Storybook](https://facebook.github.io/astryx/)
+- [Component Storybook](https://astryx.atmeta.com/storybook/)
 - [GitHub Repository](https://github.com/facebook/astryx)
 
 ---

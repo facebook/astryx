@@ -11,33 +11,16 @@ on:
   pull_request:
     branches: ['main']
   merge_group:
-  # Explicit release checks and baseline maintenance share the canonical owners.
-  # Only a reviewed promotion may change the baseline.
+  # Explicit release checks and baseline capture share the canonical owners.
+  # Reviewed captures are committed through a normal pull request.
   workflow_dispatch:
     inputs:
       operation:
-        description: 'Check exact main for release, capture candidates, or promote a reviewed capture'
+        description: 'Check exact main for release or capture a baseline candidate'
         type: choice
-        options: [capture, promote, release-check]
+        options: [capture, release-check]
         default: capture
         required: true
-      run_id:
-        description: 'For promote: the reviewed CI maintenance capture run id'
-        required: false
-      run_attempt:
-        description: 'For promote: the reviewed capture attempt'
-        required: false
-      keys:
-        description: 'For promote: comma-separated shot keys, or "all"'
-        required: false
-      reason:
-        description: 'For promote: why the reviewed rendering is correct'
-        required: false
-      prune:
-        description: 'Also drop reviewed baseline keys absent from the canonical plan'
-        type: boolean
-        default: true
-        required: false
 
 permissions: {}
 
@@ -47,32 +30,16 @@ concurrency:
 
 jobs:
   maintenance-request:
-    if: github.event_name == 'workflow_dispatch' && inputs.operation != 'release-check'
+    if: github.event_name == 'workflow_dispatch' && inputs.operation == 'capture'
     runs-on: ubuntu-slim
     steps:
       - name: Require explicit main-branch maintenance
-        env:
-          OPERATION: ${{ inputs.operation }}
-          RUN_ID: ${{ inputs.run_id }}
-          RUN_ATTEMPT: ${{ inputs.run_attempt }}
-          KEYS: ${{ inputs.keys }}
-          REASON: ${{ inputs.reason }}
         run: |
           set -eu
           if [ "$GITHUB_REF" != 'refs/heads/main' ]; then
             echo 'Baseline maintenance must be dispatched from main.'
             exit 1
           fi
-          case "$OPERATION" in
-            capture) ;;
-            promote)
-              test -n "$RUN_ID"
-              test -n "$RUN_ATTEMPT"
-              test -n "$KEYS"
-              test -n "$REASON"
-              ;;
-            *) echo 'Choose capture or promote.'; exit 1 ;;
-          esac
 
   # Detect lightweight changes. Missing merge-base data fails closed.
   check-scope:
@@ -854,9 +821,8 @@ jobs:
           esac
 
   # CI keeps Storybook's static artifact for visual, accessibility, and RTL
-  # checks. The Vercel Preview deployment independently hosts human Storybook;
-  # the trusted deploy-preview.yml workflow still publishes only Sandbox to Pages
-  # after CI for fork and same-repository PRs without running PR code.
+  # checks. The exact-head Vercel deployment independently hosts both human
+  # Storybook and Sandbox previews; no branch-backed preview is published.
 
   # Accessibility audit
   # Skipped when no components changed. Depends only on build-storybook, so it
@@ -1281,10 +1247,10 @@ jobs:
       - name: Verify guest fixture contrast
         run: pnpm -F @astryxdesign/vibe-tests fixtures:contrast
 
-  # Stable-package visual regression and explicit baseline maintenance share
-  # this owner. Focused PRs compare existing canonical frames; broad PRs use the
-  # full canonical plan. Maintenance captures candidates on the same runner,
-  # but only a separate explicit promotion may publish them as the baseline.
+  # Stable-package visual regression and explicit baseline capture share this
+  # owner. Focused PRs compare the checked-in baseline; broad PRs use the full
+  # canonical plan. Maintenance captures candidates on the same runner, and a
+  # normal reviewed pull request updates the versioned baseline.
   # Audit and interaction fixtures stay with their existing browser checks.
   pr-visual:
     name: Stable visual regression
@@ -1346,17 +1312,8 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.operation == 'capture'
         run: pnpm build && pnpm -F @astryxdesign/storybook build
 
-      - name: Fetch visual baseline from gh-pages
-        run: |
-          set -eu
-          rm -rf /tmp/gh-pages
-          git clone --depth=1 --filter=blob:none --sparse --single-branch --branch gh-pages \
-            "https://github.com/${GITHUB_REPOSITORY}.git" /tmp/gh-pages
-          git -C /tmp/gh-pages sparse-checkout set visual-gate/baseline
-          mkdir -p .visual-baseline
-          if [ -d /tmp/gh-pages/visual-gate/baseline ]; then
-            cp -r /tmp/gh-pages/visual-gate/baseline/. .visual-baseline/
-          fi
+      # The reviewed baseline is versioned with the code so CI never depends on
+      # mutable website storage. Baseline refreshes remain separate reviewable PRs.
 
       - name: Run the visual gate for the touched components
         id: visual
@@ -1392,7 +1349,7 @@ jobs:
           set +e
           node .github/scripts/visual-gate/gate.mjs "$COMMAND" \
             --storybook-dir apps/storybook/dist \
-            --baseline .visual-baseline \
+            --baseline .github/visual-baseline \
             --out .visual-run \
             "${SCOPE_ARGS[@]}" \
             --summary-output visual-summary.md
@@ -1408,7 +1365,7 @@ jobs:
             set +e
             node .github/scripts/visual-gate/gate.mjs release \
               --storybook-dir apps/storybook/dist \
-              --baseline .visual-baseline \
+              --baseline .github/visual-baseline \
               --out .visual-run \
               --summary-output visual-summary.md
             code=$?
@@ -1432,7 +1389,7 @@ jobs:
             .visual-run/manifest.json
             .visual-run/shots/
             .visual-run/report/
-          retention-days: 7
+          retention-days: 30
           if-no-files-found: ignore
 
       - name: Run full release visual check
@@ -1442,7 +1399,7 @@ jobs:
           set +e
           node .github/scripts/visual-gate/gate.mjs release \
             --storybook-dir apps/storybook/dist \
-            --baseline .visual-baseline \
+            --baseline .github/visual-baseline \
             --out .visual-run \
             --summary-output visual-summary.md
           code=$?
@@ -1477,7 +1434,7 @@ jobs:
         run: |
           node .github/scripts/visual-gate/gate.mjs release \
             --storybook-dir apps/storybook/dist \
-            --baseline .visual-baseline \
+            --baseline .github/visual-baseline \
             --out .visual-run \
             --summary-output visual-summary.md
 
@@ -1516,105 +1473,6 @@ jobs:
             .visual-run/report/
           retention-days: 14
           if-no-files-found: error
-
-  # Publication only: no browser, comparison, automatic acceptance, or release
-  # status. The explicitly reviewed CI capture supplies the baseline bytes.
-  baseline-publication:
-    needs: maintenance-request
-    if: github.event_name == 'workflow_dispatch' && inputs.operation == 'promote'
-    runs-on: ubuntu-slim
-    timeout-minutes: 90
-    permissions:
-      actions: read
-      contents: write
-    steps:
-      - name: Checkout trusted maintenance implementation
-        uses: actions/checkout@v7
-
-      - name: Setup Node and pnpm
-        uses: ./.github/actions/setup
-
-      - name: Resolve the reviewed canonical capture
-        id: source
-        uses: actions/github-script@v9
-        env:
-          SOURCE_RUN_ID: ${{ inputs.run_id }}
-          SOURCE_RUN_ATTEMPT: ${{ inputs.run_attempt }}
-        with:
-          retries: 3
-          script: |
-            const {pathToFileURL} = require('node:url');
-            const {resolveVisualMaintenanceSource} = await import(
-              pathToFileURL(`${process.env.GITHUB_WORKSPACE}/.github/scripts/visual-maintenance-source.mjs`).href
-            );
-            const source = await resolveVisualMaintenanceSource({
-              github, ...context.repo,
-              runId: process.env.SOURCE_RUN_ID,
-              runAttempt: process.env.SOURCE_RUN_ATTEMPT,
-            });
-            core.setOutput('artifact_id', String(source.artifactId));
-            core.setOutput('run_id', String(source.runId));
-            core.setOutput('run_attempt', String(source.runAttempt));
-            core.setOutput('sha', source.sha);
-
-      - name: Queue baseline publication
-        id: queue
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: node .github/scripts/gh-pages-publisher.mjs enqueue --scope visual-gate/baseline
-
-      - name: Download the reviewed capture
-        uses: actions/download-artifact@v8
-        with:
-          artifact-ids: ${{ steps.source.outputs.artifact_id }}
-          run-id: ${{ steps.source.outputs.run_id }}
-          github-token: ${{ github.token }}
-          path: .visual-run
-          merge-multiple: true
-
-      - name: Verify downloaded capture identity
-        env:
-          CAPTURE_SHA: ${{ steps.source.outputs.sha }}
-          CAPTURE_RUN_ID: ${{ steps.source.outputs.run_id }}
-          CAPTURE_RUN_ATTEMPT: ${{ steps.source.outputs.run_attempt }}
-        run: |
-          node --input-type=module - <<'NODE'
-          import fs from 'node:fs';
-          import {validateVisualMaintenanceCapture} from './.github/scripts/visual-maintenance-source.mjs';
-          validateVisualMaintenanceCapture({
-            manifest: JSON.parse(fs.readFileSync('.visual-run/manifest.json', 'utf8')),
-            verdict: JSON.parse(fs.readFileSync('.visual-run/verdict.json', 'utf8')),
-            sha: process.env.CAPTURE_SHA,
-            runId: process.env.CAPTURE_RUN_ID,
-            runAttempt: process.env.CAPTURE_RUN_ATTEMPT,
-          });
-          NODE
-
-      - name: Wait for the baseline publication turn
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: node .github/scripts/gh-pages-publisher.mjs wait --scope visual-gate/baseline
-
-      - name: Promote the explicitly reviewed baseline
-        env:
-          KEYS: ${{ inputs.keys }}
-          REASON: ${{ inputs.reason }}
-          PROMOTER: ${{ github.actor }}
-          PRUNE: ${{ inputs.prune && 'true' || 'false' }}
-          GH_TOKEN: ${{ github.token }}
-        run: >
-          node .github/scripts/gh-pages-publisher.mjs visual-baseline-manual
-          --capture .visual-run
-          --keys "$KEYS"
-          --reason "$REASON"
-          --actor "$PROMOTER"
-          --prune "$PRUNE"
-
-      - name: Release the baseline publication turn
-        if: always() && steps.queue.outcome == 'success'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: node .github/scripts/gh-pages-publisher.mjs release --scope visual-gate/baseline
 
   # RTL semantic audit. Sibling to pr-a11y: same build-storybook artifact, same
   # analysis.json scoping, so ordinary PRs only pay for the components they

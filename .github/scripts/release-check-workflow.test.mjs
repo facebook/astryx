@@ -515,7 +515,7 @@ describe('full release scope without PR metadata or maintenance writes', () => {
     );
   });
 
-  it('does not run candidate capture, validation, or publication during release checks', () => {
+  it('does not run candidate capture or validation during release checks', () => {
     for (const name of [
       'Build canonical maintenance Storybook',
       'Capture canonical visual baseline',
@@ -524,7 +524,7 @@ describe('full release scope without PR metadata or maintenance writes', () => {
       expect(runs(step('pr-visual', name)), name).toBe(false);
     }
     expect(runs(jobs['maintenance-request'])).toBe(false);
-    expect(runs(jobs['baseline-publication'])).toBe(false);
+    expect(jobs).not.toHaveProperty('baseline-publication');
     expect(runs(step('pr-visual', 'Download Storybook artifact'))).toBe(true);
     const visual = step('pr-visual', 'Run full release visual check');
     expect(visual.run).toContain('gate.mjs release');
