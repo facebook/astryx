@@ -422,6 +422,177 @@ describe('parseMarkdown', () => {
     expect(result[0].type).toBe('blockquote');
   });
 
+  it('keeps lazy paragraph continuations inside blockquotes and list items', () => {
+    expect(parseMarkdown('> quoted\ncontinued lazily')).toEqual([
+      {
+        type: 'blockquote',
+        children: [
+          {
+            type: 'paragraph',
+            children: [{type: 'text', content: 'quoted\ncontinued lazily'}],
+          },
+        ],
+      },
+    ]);
+
+    for (const marker of ['-', '1.', '- [ ]']) {
+      const [list] = parseMarkdown(`${marker} listed\ncontinued lazily`);
+      expect(list).toMatchObject({
+        type: 'list',
+        items: [
+          {
+            children: [
+              {
+                type: 'paragraph',
+                children: [{type: 'text', content: 'listed\ncontinued lazily'}],
+              },
+            ],
+          },
+        ],
+      });
+    }
+    expect(parseMarkdown('> # Foo\n> bar\nbaz')).toMatchObject([
+      {
+        type: 'blockquote',
+        children: [
+          {type: 'heading', level: 1},
+          {
+            type: 'paragraph',
+            children: [{type: 'text', content: 'bar\nbaz'}],
+          },
+        ],
+      },
+    ]);
+    expect(parseMarkdown('> bar\nbaz\n> foo')).toMatchObject([
+      {
+        type: 'blockquote',
+        children: [
+          {
+            type: 'paragraph',
+            children: [{type: 'text', content: 'bar\nbaz\nfoo'}],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('keeps lazy continuations in the deepest open paragraph', () => {
+    expect(parseMarkdown('> 1. > Blockquote\ncontinued here.')).toMatchObject([
+      {
+        type: 'blockquote',
+        children: [
+          {
+            type: 'list',
+            items: [
+              {
+                children: [
+                  {
+                    type: 'blockquote',
+                    children: [
+                      {
+                        type: 'paragraph',
+                        children: [
+                          {
+                            type: 'text',
+                            content: 'Blockquote\ncontinued here.',
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    expect(
+      parseMarkdown('- Outer item\n  > Nested quote\ncontinued here.'),
+    ).toMatchObject([
+      {
+        type: 'list',
+        items: [
+          {
+            children: [
+              {type: 'paragraph'},
+              {
+                type: 'blockquote',
+                children: [
+                  {
+                    type: 'paragraph',
+                    children: [
+                      {
+                        type: 'text',
+                        content: 'Nested quote\ncontinued here.',
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('resumes lazy continuation for a later blockquote paragraph', () => {
+    expect(parseMarkdown('> para1\n>\n> para2\nlazy')).toMatchObject([
+      {
+        type: 'blockquote',
+        children: [
+          {
+            type: 'paragraph',
+            children: [{type: 'text', content: 'para1'}],
+          },
+          {
+            type: 'paragraph',
+            children: [{type: 'text', content: 'para2\nlazy'}],
+          },
+        ],
+      },
+    ]);
+
+    expect(parseMarkdown('> > para1\n> >\n> > para2\nlazy')).toMatchObject([
+      {
+        type: 'blockquote',
+        children: [
+          {
+            type: 'blockquote',
+            children: [
+              {
+                type: 'paragraph',
+                children: [{type: 'text', content: 'para1'}],
+              },
+              {
+                type: 'paragraph',
+                children: [{type: 'text', content: 'para2\nlazy'}],
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('does not continue a container paragraph across a blank or block start', () => {
+    expect(
+      parseMarkdown('> quoted\n\noutside').map(block => block.type),
+    ).toEqual(['blockquote', 'paragraph']);
+    expect(
+      parseMarkdown('- listed\n\noutside').map(block => block.type),
+    ).toEqual(['list', 'paragraph']);
+    expect(
+      parseMarkdown('> quoted\n# Outside').map(block => block.type),
+    ).toEqual(['blockquote', 'heading']);
+    expect(parseMarkdown('- listed\n```\noutside\n```')).toMatchObject([
+      {type: 'list'},
+      {type: 'codeblock', content: 'outside'},
+    ]);
+  });
+
   it('parses horizontal rules', () => {
     const result = parseMarkdown('---');
     expect(result[0].type).toBe('hr');

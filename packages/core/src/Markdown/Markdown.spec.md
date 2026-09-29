@@ -177,7 +177,13 @@ unions. Enabled calls return the explicit `InlineNodeWithMath` and
 | FR24 | `createMarkdownFrontmatter()` recognizes only a leading `---` block of unique `key: value` lines, decodes it through the caller's typed parser, stores finite JSON-like metadata on the canonical document, and removes the syntax from rendered content. An unfinished leading block yields no visible Markdown while streaming; malformed or unfinished final input remains ordinary Markdown. Frontmatter has no renderer and requires no Remark compatibility.                                                                                    |
 | FR25 | The canonical parser and plugin-construction subpaths remain server-safe and can run function-bearing plugins entirely within server or RSC code. The client-owned `Markdown` component supports traditional and streaming SSR, but plugin entries containing functions cannot be serialized from a Server Component into that client boundary; direct RSC rendering requires a future additive server renderer rather than weakening the plugin protocol.                                                                                            |
 
-FR23 includes table-level escaping inside inline-code spans: `\|` keeps the pipe
+FR23 includes CommonMark-compatible lazy paragraph continuation inside blockquotes
+and ordered, unordered, or task-list items. Omitting a repeated quote marker or
+item indentation does not close the deepest open paragraph; a blank line or an
+interrupting block start does. The owning top-level block's source range includes
+the lazy lines.
+
+FR23 also includes table-level escaping inside inline-code spans: `\|` keeps the pipe
 inside its authored cell, contributes only `|` to the code value and rendered
 text, and produces the same result in full and incremental parsing. A completed
 inline-code span excludes its delimiting backticks from the parsed value and

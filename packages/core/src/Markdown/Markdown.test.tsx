@@ -376,6 +376,21 @@ describe('Markdown', () => {
     expect(bq).toBeInTheDocument();
   });
 
+  it('renders lazy continuations in the owning nested containers', () => {
+    const {container} = render(
+      <Markdown>{'> 1. > Quoted **text**\ncontinued lazily'}</Markdown>,
+    );
+    const root = container.querySelector('.astryx-markdown');
+    const outerQuote = root?.querySelector('blockquote');
+    const nestedQuote = outerQuote?.querySelector('ol blockquote');
+
+    expect(root?.children).toHaveLength(1);
+    expect(root?.querySelectorAll('blockquote')).toHaveLength(2);
+    expect(root?.querySelectorAll('ol')).toHaveLength(1);
+    expect(nestedQuote).toHaveTextContent('Quoted text');
+    expect(nestedQuote).toHaveTextContent('continued lazily');
+  });
+
   it('renders unordered lists', () => {
     render(<Markdown>{'- A\n- B\n- C'}</Markdown>);
     const ul = document.querySelector('ul');

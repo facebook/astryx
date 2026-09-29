@@ -195,6 +195,32 @@ export const AIResponse: Story = {
   },
 };
 
+export const LazyContinuations: Story = {
+  name: 'Lazy continuations',
+  args: {
+    children: [
+      '## Wrapped container paragraphs',
+      '',
+      '> A quoted paragraph can wrap onto another source line',
+      'without repeating the quote marker.',
+      '>',
+      '> A later paragraph can wrap too',
+      'and remain in the same quote.',
+      '',
+      '- A list item can wrap the same way',
+      'without repeating its indentation.',
+      '',
+      '- [ ] A task item also keeps',
+      'its unindented continuation.',
+      '',
+      '> 1. > Nested quote text',
+      'continues in the deepest open paragraph.',
+      '',
+      'This paragraph follows all containers.',
+    ].join('\n'),
+  },
+};
+
 export const ShiftedHeadings: Story = {
   name: 'Shifted Headings (start at h3)',
   args: {
