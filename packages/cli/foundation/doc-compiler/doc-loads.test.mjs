@@ -253,7 +253,7 @@ const RUNNERS = {
   },
   'foundation/discovery/template-adapter.mjs': {
     runs: '@babel/parser, to find the fixture references in template source; and a template doc that does not validate, to read the replacement it declares',
-    sites: ['import(<computed>)', 'require(@babel/parser)'],
+    sites: ['importDocModule', 'require(@babel/parser)'],
   },
   'foundation/discovery/theme-discovery.mjs': {
     runs: '@babel/parser and jscodeshift (CommonJS), each on first use, so listing bundled themes never loads jscodeshift',

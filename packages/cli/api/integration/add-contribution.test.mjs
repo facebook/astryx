@@ -405,6 +405,16 @@ describe('integrationAdd doc', () => {
       code: 'ERR_INVALID_ARGUMENT',
       message: expect.stringContaining('no slot that takes a guide'),
     });
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'gamma.doc.mjs'),
+      "export default {type: 'namespace', name: 'gamma', title: 'Gamma', summary: 'Gamma.', slots: {guides: {title: 'Guides', accepts: {kinds: ['function']}}, more: {title: 'More', accepts: {kinds: ['generic']}}, extra: {title: 'Extra', accepts: {kinds: ['generic']}}}};\n",
+    );
+    await expect(
+      integrationAdd('doc', 'deploying', {cwd: tmpDir, parent: 'gamma'}),
+    ).rejects.toMatchObject({
+      code: 'ERR_INVALID_ARGUMENT',
+      message: expect.stringContaining('more than one slot that takes a guide (more, extra)'),
+    });
     expect(fs.existsSync(path.join(tmpDir, 'docs', 'deploying.doc.mjs'))).toBe(false);
   });
 

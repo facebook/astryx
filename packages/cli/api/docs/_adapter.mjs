@@ -624,7 +624,7 @@ export async function resolveDocsArgument(topic, {cwd} = {}) {
   if (typeof topic !== 'string' || topic === '')
     return {kind: 'unknown', catalog};
   const tree = await projectTree(catalog);
-  const node = tree.get(topic);
+  const node = tree.get(topic) ?? tree.getFolded?.(topic);
   if (!node || node.ref?.flatTopic) return {kind: 'unknown', catalog};
   return treeArgument(catalog, tree, node);
 }
@@ -654,7 +654,7 @@ function treeArgument(catalog, tree, node) {
  * @returns {TreeNode | null}
  */
 export function routeOwner(tree, entry) {
-  const node = tree.get(entry.name);
+  const node = tree.get(entry.name) ?? tree.getFolded?.(entry.name);
   if (node == null) return null;
   return node.ref?.flatTopic === entry.name && node.provider === entry.package
     ? null

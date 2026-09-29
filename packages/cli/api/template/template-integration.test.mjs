@@ -719,6 +719,59 @@ describe('integration template discovery', () => {
     expect(selected.data.template).toBe('shell-side-nav');
   });
 
+  it('keeps Core when an installed .doc.ts template with invalid metadata computes its replacement', async () => {
+    const pkgDir = installWidgets(tmpDir);
+    writeTemplate(pkgDir, 'acme-app-shell', {kind: 'page'});
+    declareReplaces(pkgDir, {'acme-app-shell': 'shell-side-nav'});
+    fs.writeFileSync(
+      path.join(pkgDir, 'templates', 'ts-app-shell.doc.ts'),
+      "const target: string = 'shell-side-nav';\nexport default {replaces: target, type: 'page', name: 'ts', description: 'd', bogusField: 1};\n",
+    );
+    fs.writeFileSync(
+      path.join(pkgDir, 'templates', 'ts-app-shell.tsx'),
+      'export default function TsAppShell() { return null; }\n',
+    );
+    const discovered = await discoverAllWithErrors(tmpDir);
+    expect(discovered.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'invalid_template_replacement',
+          template: 'ts-app-shell',
+          replacementTarget: 'shell-side-nav',
+        }),
+      ]),
+    );
+    const selected = await template('shell-side-nav', {show: true, cwd: tmpDir});
+    expect(selected.data.template).toBe('shell-side-nav');
+  });
+
+  it('keeps --json stdout clean when an unusable template doc writes as it loads', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      "export default {templates: './local-templates'};\n",
+    );
+    fs.mkdirSync(path.join(tmpDir, 'local-templates'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, 'local-templates', 'acme-shell.doc.ts'),
+      "process.stdout.write('HELLO-FROM-DOC\\n');\nexport default {name: 'acme-shell', description: 'Acme shell.', replaces: 'dashboard'};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'local-templates', 'acme-shell.tsx'),
+      'export default function AcmeShell() { return null; }\n',
+    );
+    const result = await runCli(['--json', 'template', '--list'], tmpDir);
+    expect(result.stdout).not.toContain('HELLO-FROM-DOC');
+    // One clean JSON envelope, and the doc was read: its replacement shows.
+    const envelope = JSON.parse(result.stdout);
+    expect(envelope.type).toBe('template.list');
+    const discovered = await discoverAllWithErrors(tmpDir);
+    expect(discovered.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({template: 'acme-shell', replacementTarget: 'dashboard'}),
+      ]),
+    );
+  });
+
   it('lets the later configured package win a shared replacement target with a warning', async () => {
     const first = installWidgets(tmpDir);
     writeTemplate(first, 'acme-app-shell-a', {

@@ -24,8 +24,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {createRequire} from 'node:module';
-import {pathToFileURL} from 'node:url';
 import {readDocView} from '../doc-compiler/read.mjs';
+import {importDocModule} from '../doc-compiler/import.mjs';
 import {CLI_ROOT, discoverExternalPackages} from '../fs/paths.mjs';
 import {CORE_PROVIDER_ID} from '../identity/providers.mjs';
 import {Project} from '../config/project.mjs';
@@ -1317,7 +1317,9 @@ async function declaredReplacement(docPath, id) {
     // The doc does not validate; read what it declares without validating.
   }
   try {
-    const raw = (await import(pathToFileURL(docPath).href))?.default;
+    // The guarded importer: anything the doc writes to stdout as it loads
+    // goes to stderr, so `--json` output stays clean.
+    const raw = (await importDocModule(docPath))?.default;
     if (raw != null && typeof raw === 'object') {
       return typeof raw.replaces === 'string' ? raw.replaces : null;
     }

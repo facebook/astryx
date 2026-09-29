@@ -92,6 +92,46 @@ const routes = tree => [...tree.nodes.keys()];
 const problems = tree => tree.diagnostics.map(d => [d.code, d.message]);
 
 describe('buildDocsTree', () => {
+
+  it("keeps the CLI's own routes from an integration, compared without case", () => {
+    const CLI = '@astryxdesign/cli';
+    /** @param {string} name @param {string} [provider] */
+    const topic = (name, provider = P) => ({
+      provider,
+      providerId: provider,
+      name,
+      title: name,
+      summary: `The ${name} topic.`,
+      source: `${provider}/${name}.doc.mjs`,
+    });
+    const cliNs = {...ns('cli'), provider: CLI, providerId: CLI, source: `${CLI}/tree/cli.doc.mjs`};
+    // An integration's topics named `CLI` and `UNORGANIZED` claim the CLI's
+    // namespace and the generated level; both are withdrawn.
+    const tree = buildDocsTree({
+      namespaces: [cliNs],
+      docs: [],
+      topics: [topic('theme', CLI), topic('CLI'), topic('UNORGANIZED')],
+    });
+    expect(tree.get('cli')?.provider).toBe(CLI);
+    expect(tree.get('unorganized')?.provider).toBe(CLI);
+    expect(routes(tree)).not.toContain('CLI');
+    expect(routes(tree)).not.toContain('UNORGANIZED');
+    expect(problems(tree)).toEqual(
+      expect.arrayContaining([
+        ['duplicate_route', expect.stringContaining('both have the route "CLI"')],
+        ['duplicate_route', expect.stringContaining('takes the route "UNORGANIZED", which the CLI\'s own docs keep')],
+      ]),
+    );
+    expect(tree.getFolded('THEME')?.provider).toBe(CLI);
+    // A CLI topic whose own name has capitals keeps its route against a
+    // lowercase namespace, although namespaces go into the tree first.
+    const caps = buildDocsTree({namespaces: [ns('tokens')], docs: [], topics: [topic('Tokens', CLI)]});
+    expect(caps.get('Tokens')?.provider).toBe(CLI);
+    expect(caps.get('tokens')).toBeUndefined();
+    expect(problems(caps)).toEqual([
+      ['duplicate_route', expect.stringContaining('takes the route "tokens", which the CLI\'s own docs keep')],
+    ]);
+  });
   it('builds three authored levels and a guide below them', () => {
     const tree = buildDocsTree({
       namespaces: [

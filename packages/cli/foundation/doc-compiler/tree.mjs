@@ -153,6 +153,8 @@ export const UNORGANIZED = 'unorganized';
  * @property {Map<string, TreeNode>} nodes by route, in route order
  * @property {CompilerDiagnostic[]} diagnostics sorted
  * @property {(route: string) => TreeNode | undefined} get
+ * @property {(route: string) => TreeNode | undefined} getFolded the node at a
+ *   route compared without case, as topic names are
  * @property {() => TreeNode[]} roots the namespaces with no parent
  * @property {(node: TreeNode) => TreeNode[]} ancestors top first, not the node
  */
@@ -233,10 +235,11 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
 
   // Routes the CLI's own docs keep (spec:AST-046 FR11): the name of each of
   // its flat topics, and the generated Unorganized level. Its namespaces keep
-  // theirs by rank, because they go into the tree first.
+  // theirs by rank, because they go into the tree first. Routes compare
+  // without case, as topic names do, so `CLI` claims `cli`.
   const cliRoutes = new Set(topics.length > 0 ? [UNORGANIZED] : []);
   for (const topic of topics) {
-    if (topic.provider === CLI_PROVIDER) cliRoutes.add(topic.name);
+    if (topic.provider === CLI_PROVIDER) cliRoutes.add(topic.name.toLowerCase());
   }
 
   // Namespaces by package and name.
@@ -330,11 +333,14 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
 
   /** @type {Map<string, TreeNode>} */
   const nodes = new Map();
+  /** @type {Map<string, TreeNode>} nodes by route, compared without case */
+  const byFoldedRoute = new Map();
   /** @param {TreeNode} node */
   const nodeLabel = node => node.id ?? `the generated level "${node.route}"`;
   /** @param {TreeNode} node @param {{provider: string, source: string}} at */
   const addNode = (node, at) => {
-    if (node.provider !== CLI_PROVIDER && cliRoutes.has(node.route)) {
+    const folded = node.route.toLowerCase();
+    if (node.provider !== CLI_PROVIDER && cliRoutes.has(folded)) {
       report(
         'duplicate_route',
         at,
@@ -342,7 +348,7 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
       );
       return false;
     }
-    const taken = nodes.get(node.route);
+    const taken = byFoldedRoute.get(folded);
     if (taken) {
       report(
         'duplicate_route',
@@ -352,6 +358,7 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
       return false;
     }
     nodes.set(node.route, node);
+    byFoldedRoute.set(folded, node);
     return true;
   };
 
@@ -582,6 +589,7 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
     nodes: sorted,
     diagnostics: sortDiagnostics(diagnostics),
     get: route => sorted.get(route),
+    getFolded: route => byFoldedRoute.get(String(route).toLowerCase()),
     roots: () => [...sorted.values()].filter(node => node.parent == null),
     ancestors: node => {
       /** @type {TreeNode[]} */

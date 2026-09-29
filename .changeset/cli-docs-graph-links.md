@@ -21,6 +21,10 @@ so `--parent` declares the CLI that reads them as an optional
 `@astryxdesign/cli` peer, and `astryx integration pack --check` fails a package
 that ships either one without it.
 
+The CLI keeps its own routes: an integration's flat topic or namespace named
+`cli`, `unorganized`, or after one of the CLI's topics (compared without case)
+is withdrawn from the tree, its name opens the CLI's doc, and doctor warns.
+
 Every flat topic now sits in `astryx docs unorganized`, under its own name,
 so every doc has a place in the tree with a way up and across. Search hits
 for a topic name the level and the package that wrote it.
