@@ -48,6 +48,16 @@ export interface BaseTemplateDoc extends AuthoredDocGraphFields {
    *  Use for duplicate/experimental variants. Scaffold templates are
    *  hidden automatically and don't need this flag. */
   isHiddenFromOverview?: boolean;
+
+  /** Runtime npm dependencies the template's source imports, as package
+   *  names (e.g. `["react", "@astryxdesign/core"]`). The repo's
+   *  `check-template-deps` gate verifies every declared dependency is
+   *  either a React platform peer, a stable `@astryxdesign/*` package, or
+   *  on the gate's documented allowlist — so a template can never quietly
+   *  teach agents a third-party escape hatch. The gate also verifies the
+   *  declaration matches the imports actually present in the template
+   *  source, so the list cannot go stale. */
+  dependencies?: string[];
 }
 
 export interface BlockTemplateDoc extends BaseTemplateDoc {

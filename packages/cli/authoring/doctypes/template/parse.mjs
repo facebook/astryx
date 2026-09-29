@@ -51,6 +51,7 @@ const baseTemplateFields = {
   scaffold: z.boolean().optional(),
   isHiddenFromOverview: z.boolean().optional(),
   registry: registryIdentitySchema.optional(),
+  dependencies: z.array(z.string().min(1)).optional(),
 };
 
 const pageTemplateSchema = z

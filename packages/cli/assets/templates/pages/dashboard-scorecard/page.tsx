@@ -27,17 +27,6 @@ import {
   SegmentedControlItem,
 } from '@astryxdesign/core/SegmentedControl';
 import {Timestamp} from '@astryxdesign/core/Timestamp';
-import {
-  AreaChart,
-  Area,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
 import {ArrowDownTrayIcon} from '@heroicons/react/24/outline';
 import {
   ArrowUpIcon,
@@ -414,48 +403,6 @@ function DeltaIndicator({deltaPct, rag}: {deltaPct: number; rag: Rag}) {
   );
 }
 
-interface TrendTooltipEntry {
-  name: string;
-  value: number;
-  color: string;
-}
-
-function makeTrendTooltip(unit: string) {
-  return function TrendTooltip({
-    active,
-    payload,
-    label,
-  }: {
-    active?: boolean;
-    payload?: TrendTooltipEntry[];
-    label?: number;
-  }) {
-    if (!active || !payload?.length) {
-      return null;
-    }
-    const wk =
-      typeof label === 'number'
-        ? (WEEK_LABELS[label] ?? '')
-        : String(label ?? '');
-    return (
-      <Card padding={3}>
-        <VStack gap={1}>
-          <Text type="supporting" color="secondary">
-            {wk}
-          </Text>
-          {payload.map(entry => (
-            <LegendDot
-              key={entry.name}
-              color={entry.color}
-              label={`${entry.name}: ${entry.value.toLocaleString()}${unit}`}
-            />
-          ))}
-        </VStack>
-      </Card>
-    );
-  };
-}
-
 // ============= SCORECARD =============
 
 function ScorecardTile({kpi, period}: {kpi: Kpi; period: Period}) {
@@ -517,18 +464,52 @@ function OkrRow({okr}: {okr: Okr}) {
   );
 }
 
-// ============= TREND CHART =============
+// ============= TREND CHART (dependency-free SVG) =============
+
+// The trend grid renders as hand-rolled SVG rather than a charting library.
+// Astryx ships no stable chart component, and reaching for a third-party
+// charting dependency in a template teaches agents the escape hatch. SVG is
+// platform-native — no dependency, no build plugin — and it themes through
+// the same CSS vars as everything else.
+const CHART_W = 600;
+const CHART_H = 200;
+const CHART_PAD = {top: 8, right: 22, bottom: 26, left: 46};
+
+const compactNum = new Intl.NumberFormat('en', {notation: 'compact'});
 
 function TrendChart({trend}: {trend: TrendSeries}) {
   const gradientId = `grad-${trend.key}`;
-  const TrendTooltip = useMemo(
-    () => makeTrendTooltip(trend.unit),
-    [trend.unit],
-  );
   const latest = trend.data[trend.data.length - 1];
   const deltaPct = Math.round(
     ((latest.current - latest.prior) / latest.prior) * 100,
   );
+
+  const n = trend.data.length;
+  const all = trend.data.flatMap(d => [d.current, d.prior]);
+  const span = Math.max(...all) - Math.min(...all) || 1;
+  const lo = Math.min(...all) - span * 0.12;
+  const hi = Math.max(...all) + span * 0.12;
+  const iw = CHART_W - CHART_PAD.left - CHART_PAD.right;
+  const ih = CHART_H - CHART_PAD.top - CHART_PAD.bottom;
+  const x = (i: number) =>
+    CHART_PAD.left + (n === 1 ? 0.5 : i / (n - 1)) * iw;
+  const y = (v: number) =>
+    CHART_PAD.top + (1 - (v - lo) / (hi - lo)) * ih;
+  const lineFor = (key: 'current' | 'prior') =>
+    trend.data
+      .map(
+        (d, i) =>
+          `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(d[key]).toFixed(1)}`,
+      )
+      .join(' ');
+  const baseY = CHART_PAD.top + ih;
+  const areaPath =
+    `${lineFor('current')} ` +
+    `L${x(n - 1).toFixed(1)},${baseY.toFixed(1)} ` +
+    `L${x(0).toFixed(1)},${baseY.toFixed(1)} Z`;
+  const xTicks = [0, 3, 7, 11].filter(t => t < n);
+  const yTicks = [0, 0.5, 1].map(f => lo + (hi - lo) * f);
+
   return (
     <Card padding={5}>
       <VStack gap={6}>
@@ -545,111 +526,85 @@ function TrendChart({trend}: {trend: TrendSeries}) {
             {deltaPct}% vs prior
           </Text>
         </HStack>
-        <ResponsiveContainer width="100%" height={200}>
-          {trend.kind === 'area' ? (
-            <AreaChart
-              data={trend.data}
-              margin={{top: 5, right: 8, left: 0, bottom: 0}}>
-              <defs>
-                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={trend.color} stopOpacity={0.3} />
-                  <stop
-                    offset="95%"
-                    stopColor={trend.color}
-                    stopOpacity={0.04}
-                  />
-                </linearGradient>
-              </defs>
-              <CartesianGrid horizontal vertical={false} stroke={GRID_STROKE} />
-              <XAxis
-                dataKey="t"
-                type="number"
-                domain={[0, 11]}
-                ticks={[0, 3, 7, 11]}
-                tickFormatter={(v: number) => WEEK_LABELS[v] ?? ''}
-                tick={AXIS_TICK}
-                axisLine={false}
-                tickLine={false}
+        <svg
+          viewBox={`0 0 ${CHART_W} ${CHART_H}`}
+          width="100%"
+          height={CHART_H}
+          role="img"
+          aria-label={`${trend.title} trend: ${latest.current.toLocaleString()}${trend.unit}, ${deltaPct >= 0 ? '+' : ''}${deltaPct}% vs prior period`}>
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={trend.color} stopOpacity={0.3} />
+              <stop offset="95%" stopColor={trend.color} stopOpacity={0.04} />
+            </linearGradient>
+          </defs>
+          {yTicks.map((v, i) => (
+            <g key={i}>
+              <line
+                x1={CHART_PAD.left}
+                x2={CHART_W - CHART_PAD.right}
+                y1={y(v)}
+                y2={y(v)}
+                stroke={GRID_STROKE}
               />
-              <YAxis
-                tick={AXIS_TICK}
-                axisLine={false}
-                tickLine={false}
-                width={40}
-              />
-              <Tooltip
-                content={<TrendTooltip />}
-                cursor={{stroke: GRID_STROKE}}
-              />
-              <Area
-                type="monotone"
-                dataKey="prior"
-                name="Prior"
-                stroke={COLORS.prior}
-                strokeWidth={1}
-                strokeDasharray="4 4"
-                fill="none"
-                dot={false}
-                isAnimationActive={false}
-              />
-              <Area
-                type="monotone"
-                dataKey="current"
-                name="Current"
-                stroke={trend.color}
-                strokeWidth={2}
-                fill={`url(#${gradientId})`}
-                dot={false}
-                isAnimationActive={false}
-              />
-            </AreaChart>
-          ) : (
-            <LineChart
-              data={trend.data}
-              margin={{top: 5, right: 8, left: 0, bottom: 0}}>
-              <CartesianGrid horizontal vertical={false} stroke={GRID_STROKE} />
-              <XAxis
-                dataKey="t"
-                type="number"
-                domain={[0, 11]}
-                ticks={[0, 3, 7, 11]}
-                tickFormatter={(v: number) => WEEK_LABELS[v] ?? ''}
-                tick={AXIS_TICK}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={AXIS_TICK}
-                axisLine={false}
-                tickLine={false}
-                width={40}
-              />
-              <Tooltip
-                content={<TrendTooltip />}
-                cursor={{stroke: GRID_STROKE}}
-              />
-              <Line
-                type="monotone"
-                dataKey="prior"
-                name="Prior"
-                stroke={COLORS.prior}
-                strokeWidth={1}
-                strokeDasharray="4 4"
-                dot={false}
-                isAnimationActive={false}
-              />
-              <Line
-                type="monotone"
-                dataKey="current"
-                name="Current"
-                stroke={trend.color}
-                strokeWidth={2}
-                dot={false}
-                isAnimationActive={false}
-              />
-            </LineChart>
+              <text
+                x={CHART_PAD.left - 8}
+                y={y(v) + 4}
+                textAnchor="end"
+                fontSize={AXIS_TICK.fontSize}
+                fill={AXIS_TICK.fill}>
+                {compactNum.format(v)}
+              </text>
+            </g>
+          ))}
+          {xTicks.map(t => (
+            <text
+              key={t}
+              x={x(t)}
+              y={CHART_H - 8}
+              textAnchor="middle"
+              fontSize={AXIS_TICK.fontSize}
+              fill={AXIS_TICK.fill}>
+              {WEEK_LABELS[t] ?? ''}
+            </text>
+          ))}
+          {trend.kind === 'area' && (
+            <path d={areaPath} fill={`url(#${gradientId})`} />
           )}
-        </ResponsiveContainer>
+          <path
+            d={lineFor('prior')}
+            fill="none"
+            stroke={COLORS.prior}
+            strokeWidth={1}
+            strokeDasharray="4 4"
+          />
+          <path
+            d={lineFor('current')}
+            fill="none"
+            stroke={trend.color}
+            strokeWidth={2}
+          />
+          {trend.data.map((d, i) => (
+            <circle
+              key={d.t}
+              cx={x(i)}
+              cy={y(d.current)}
+              r={8}
+              fill="transparent">
+              <title>{`${d.label}: current ${d.current.toLocaleString()}${trend.unit}, prior ${d.prior.toLocaleString()}${trend.unit}`}</title>
+            </circle>
+          ))}
+          {trend.data.map((d, i) => (
+            <circle
+              key={d.t}
+              cx={x(i)}
+              cy={y(d.current)}
+              r={2.5}
+              fill={trend.color}
+              pointerEvents="none"
+            />
+          ))}
+        </svg>
         <HStack gap={5} vAlign="center">
           <LegendDot color={trend.color} label="Current" />
           <LegendDot color={COLORS.prior} label="Prior" />
