@@ -531,8 +531,8 @@ than restating them:
 - The public [API Conventions](https://github.com/facebook/astryx/wiki/API-Conventions),
   [Distribution](https://github.com/facebook/astryx/wiki/Distribution), and
   [Release Process](https://github.com/facebook/astryx/wiki/Release-Process) pages
-  summarize API, package, and operator workflows and link here; they do not create
-  competing lifecycle rules.
+  are operational projections. When they discuss compatibility lifecycle, they MUST
+  link here and cannot create competing rules.
 - [`.changeset/config.json`](../../../.changeset/config.json),
   [`scripts/check-changesets.mjs`](../../../scripts/check-changesets.mjs), and
   [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml) implement fixed
