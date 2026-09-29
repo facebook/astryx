@@ -4,7 +4,7 @@
 
 /**
  * @file useOutlineFromMarkdown.ts
- * @input Uses React, parseOutlineFromMarkdown, and optional Markdown plugins
+ * @input Uses React, parseOutlineFromMarkdown, and Markdown parse options
  * @output Exports useOutlineFromMarkdown hook
  * @position Hook utility; consumed by applications and Outline examples
  *
@@ -26,10 +26,20 @@ export function useOutlineFromMarkdown<
   markdown: string,
   options?: ParseOutlineFromMarkdownOptions<Node>,
 ): OutlineItem[] {
+  const sourceIds = options?.sourceIds;
+  const autolink = options?.autolink;
+  const math = options?.math;
   const plugins = options?.plugins;
   const isFinal = options?.isFinal;
   return useMemo(
-    () => parseOutlineFromMarkdown(markdown, {plugins, isFinal}),
-    [markdown, plugins, isFinal],
+    () =>
+      parseOutlineFromMarkdown(markdown, {
+        sourceIds,
+        autolink,
+        math,
+        plugins,
+        isFinal,
+      }),
+    [markdown, sourceIds, autolink, math, plugins, isFinal],
   );
 }

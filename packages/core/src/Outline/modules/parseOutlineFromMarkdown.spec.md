@@ -10,7 +10,11 @@ approved_by: cixzhang
 approved_at: 2026-09-15
 owners: [cixzhang]
 review_triggers: [public-api, behavior]
-verified_by: [packages/core/src/Outline/parseOutlineFromMarkdown.test.ts]
+verified_by:
+  [
+    packages/core/src/Outline/parseOutlineFromMarkdown.test.ts,
+    packages/core/src/Outline/Outline.test.tsx,
+  ]
 parent_component: component:Outline
 references:
   [architecture:public-component-api, component:Markdown, spec:AST-036]
@@ -28,9 +32,10 @@ component's anatomy or theming.
 
 ## Compatibility and migration
 
-- Released default preserved: `yes`
-- Compatibility class: additive parser options; calls without plugins preserve
-  released labels, levels, IDs, and return types
+- Released default preserved: `yes` for ASCII, non-colliding headings
+- Compatibility class: additive parser options plus corrected Unicode and
+  cross-base collision handling; calls without affected headings preserve labels,
+  levels, IDs, and return types
 - Migration decision: `spec:AST-036`
 
 ## Ownership boundary
@@ -53,20 +58,22 @@ component's anatomy or theming.
 
 `parseOutlineFromMarkdown(source, options?)` performs direct derivation.
 `useOutlineFromMarkdown(source, options?)` memoizes the same derivation for React
-callers. `options.plugins` uses the canonical opaque Markdown plugin entries. The
-same ordered transforms run before heading selection; inline extension-node `toText`
-projections then contribute to heading labels and IDs.
+callers. `sourceIds`, `autolink`, `math`, `plugins`, and `isFinal` mirror every
+parser- or transform-affecting Markdown choice. `options.plugins` uses the canonical
+opaque Markdown plugin entries. The same ordered transforms run before heading
+selection; inline extension-node `toText` projections then contribute to heading
+labels and IDs.
 
 ## Behavioral contract
 
 | ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                             | Basis                           | Acceptance and implementation state |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ----------------------------------- |
-| FR1 | Both utilities accept the same Markdown parser options and ordered plugin list as the rendered Markdown document.                                                                                                                                                                                                                                                                     | `spec:AST-036` FR13, FR16       | pending implementation              |
+| FR1 | Both utilities accept the same Markdown parser options and ordered plugin list as the rendered Markdown document.                                                                                                                                                                                                                                                                     | `spec:AST-036` FR13, FR16       | implemented                         |
 | FR2 | Both utilities apply the same validated immutable transforms before selecting headings, without allowing renderer output to affect identity.                                                                                                                                                                                                                                          | `spec:AST-036` FR13, FR16       | pending implementation              |
-| FR3 | Plugin-enabled labels and IDs use the same extension `toText` projection, slugger, and cross-base collision allocator as Markdown, producing unique matching targets.                                                                                                                                                                                                                 | `spec:AST-036` FR16             | pending implementation              |
+| FR3 | Plugin-enabled labels and IDs use the same extension `toText` projection, NFC-normalized Unicode slugger, and document-global cross-base collision allocator as Markdown, producing unique matching targets.                                                                                                                                                                          | `spec:AST-036` FR16             | implemented                         |
 | FR4 | An extension node never creates an Outline entry of its own, and extension containers do not change heading traversal: entries come from the same blocks Markdown assigns heading IDs to, so a heading nested in a container is omitted exactly as one nested in a blockquote or list item is. A container never restarts, extends, or re-scopes heading identity or slug allocation. | `spec:AST-036` FR16, FR25       | pending implementation              |
-| FR5 | Omitting plugins and passing an empty list preserve released heading selection, labels, levels, IDs, return type, and memoization behavior.                                                                                                                                                                                                                                           | `spec:AST-036` FR2              | pending implementation              |
-| FR6 | The hook memoizes against source and every parse-affecting or transform-affecting option so changed configuration cannot return stale headings.                                                                                                                                                                                                                                       | `component:Markdown` FR15–FR16  | pending implementation              |
+| FR5 | Omitting plugins and passing an empty list use one heading-selection, label, level, id-allocation, return-type, and memoization behavior.                                                                                                                                                                                                                                             | `spec:AST-036` FR2              | pending implementation              |
+| FR6 | The hook memoizes against source and every parse-affecting or transform-affecting option so changed configuration cannot return stale headings.                                                                                                                                                                                                                                       | `component:Markdown` FR15–FR16  | implemented                         |
 | FR7 | A transform that removes a heading removes its Outline entry, and a transform that inserts a synthetic heading adds one, in both surfaces identically. Source-backed heading depth cannot change, so an entry's level always matches the rendered heading.                                                                                                                            | `spec:AST-036` FR26             | pending implementation              |
 | FR8 | When a plugin fails, derivation uses the same last valid root the rendered document uses, so labels, levels, and IDs still agree. Failures are reported through the shared diagnostic channel; this module adds no failure mode, fallback, or throw of its own.                                                                                                                       | `spec:AST-036` FR12, FR29       | pending implementation              |
 | FR9 | Derivation runs on the canonical tree through the shared parse path and requires no DOM, renderer, client boundary, or second parser. Because transforms are idempotent under streaming, an outline derived from a growing source prefix converges rather than oscillates.                                                                                                            | `spec:AST-036` FR32, FR33, FR36 | pending implementation              |

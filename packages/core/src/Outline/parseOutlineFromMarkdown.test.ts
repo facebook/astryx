@@ -54,6 +54,53 @@ describe('parseOutlineFromMarkdown', () => {
     expect(outline.map(i => i.id)).toEqual(['section', 'section-1']);
   });
 
+  it('preserves Unicode letters and normalizes canonically equivalent text', () => {
+    const outline = parseOutlineFromMarkdown(
+      [
+        '# Café',
+        '# 你好 世界',
+        '# Привет мир',
+        '# مرحبا ١٢٣',
+        '# Cafe\u0301',
+      ].join('\n\n'),
+    );
+    expect(outline.map(item => item.id)).toEqual([
+      'café',
+      '你好-世界',
+      'привет-мир',
+      'مرحبا-١٢٣',
+      'café-1',
+    ]);
+  });
+
+  it('reserves ids across distinct slug bases', () => {
+    const outline = parseOutlineFromMarkdown(
+      ['# Foo', '# Foo', '# Foo-1', '# Foo'].join('\n\n'),
+    );
+    expect(outline.map(item => item.id)).toEqual([
+      'foo',
+      'foo-1',
+      'foo-1-1',
+      'foo-2',
+    ]);
+  });
+
+  it('matches Markdown parser options that affect heading text', () => {
+    expect(
+      parseOutlineFromMarkdown('# Before [cite] after', {
+        sourceIds: new Set(['cite']),
+      }),
+    ).toEqual([{id: 'before-after', label: 'Before  after', level: 1}]);
+    expect(parseOutlineFromMarkdown('# Formula $x + y$', {math: true})).toEqual(
+      [{id: 'formula-x-y', label: 'Formula x + y', level: 1}],
+    );
+    expect(
+      parseOutlineFromMarkdown('# <https://example.com>', {autolink: 'gfm'}),
+    ).toEqual([
+      {id: 'https-example-com', label: 'https://example.com', level: 1},
+    ]);
+  });
+
   it('flattens inline formatting into the label text', () => {
     const outline = parseOutlineFromMarkdown('# **Bold** and _italic_ text');
     expect(outline[0].label).toBe('Bold and italic text');

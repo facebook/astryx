@@ -4182,27 +4182,38 @@ function parseMarkdownIncrementalAstBlocks(
 // derives its item ids from the same functions, so outline hash links always
 // resolve to a rendered heading by construction.
 
-/** Turn heading text into a URL-safe slug (lowercase, hyphen-separated). */
+/** Turn heading text into a normalized Unicode slug. */
 export function slugify(value: string): string {
   return value
     .trim()
     .toLowerCase()
+    .normalize('NFC')
     .replace(/['"]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/[^\p{Letter}\p{Mark}\p{Number}]+/gu, '-')
     .replace(/^-+|-+$/g, '');
 }
 
 /**
- * Disambiguate repeated slugs with a numeric suffix (`setup`, `setup-1`, …).
- * Empty slugs fall back to `section`. The caller owns the counts map so one
- * document shares a single numbering sequence.
+ * Allocate a globally unique heading id (`setup`, `setup-1`, …). Empty slugs
+ * fall back to `section`. The caller owns the allocation map so explicit bases
+ * cannot collide with ids that a previous base produced as a suffix.
  */
 export function uniqueSlug(
   baseSlug: string,
   counts: Map<string, number>,
 ): string {
   const fallbackSlug = baseSlug || 'section';
-  const count = counts.get(fallbackSlug) ?? 0;
-  counts.set(fallbackSlug, count + 1);
-  return count === 0 ? fallbackSlug : `${fallbackSlug}-${count}`;
+  let suffix = counts.get(fallbackSlug) ?? 0;
+  let candidate = suffix === 0 ? fallbackSlug : `${fallbackSlug}-${suffix}`;
+
+  while (candidate !== fallbackSlug && counts.has(candidate)) {
+    suffix++;
+    candidate = `${fallbackSlug}-${suffix}`;
+  }
+
+  counts.set(fallbackSlug, suffix + 1);
+  if (candidate !== fallbackSlug) {
+    counts.set(candidate, 1);
+  }
+  return candidate;
 }
