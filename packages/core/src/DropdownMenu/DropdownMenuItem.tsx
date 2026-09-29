@@ -55,7 +55,8 @@ const menuItemStyles = stylex.create({
       ':active:where(:not(:disabled,[aria-disabled="true"]))':
         colorVars['--color-overlay-pressed'],
     },
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     cursor: {
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
