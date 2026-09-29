@@ -434,7 +434,6 @@ const styles = stylex.create({
     maxWidth: '100%',
   },
   tableWrapper: {
-    overflowX: 'auto',
     maxWidth: '100%',
     '--container-padding-inline-start': '0px',
     '--container-padding-inline-end': '0px',
@@ -1678,13 +1677,6 @@ function renderBlock(
       return (
         <div
           key={index}
-          // Keyboard-focusable so keyboard users can scroll a horizontally
-          // overflowing GFM table. Uses role="group" (not "region") so
-          // multiple tables don't create duplicate same-named landmarks
-          // (axe: landmark-unique).
-          tabIndex={0}
-          role="group"
-          aria-label={t('@astryx.markdown.table')}
           {...mergeProps(
             themeProps('markdown-table', {density}),
             stylex.props(
