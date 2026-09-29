@@ -1,6 +1,9 @@
 ---
-'@astryxdesign/core': minor
+'@astryxdesign/core': patch
 ---
 
-[breaking] Layer content starts with theme body typography and neutral text formatting. Core layers end ancestor React surface/group membership as a whole, including group-owned disabled state, selection, callbacks, and label associations. Place intentional groups and complete required providers inside the layer. Unrelated contexts, explicitly authored props, themes, and styling overrides remain unchanged. Structural CSS isolation is incomplete: layers opened from Step content can still pass an outer `--step-connector-gap` to an inner Stepper. Lab Drawer receives the text baseline but retains ancestor React provider inheritance.
+[fix] Prevent ancestor text formatting and surface/group context from leaking into Layer content. (#6457)
+
+Layer content now starts with theme body typography and neutral text formatting. Core layer content no longer inherits accidental ancestor surface/group membership, including group-owned disabled state, selection, callbacks, and label associations. Intentional groups and required providers created inside the layer still apply. Unrelated contexts, explicit props, themes, and styling overrides remain unchanged.
+
 @cixzhang
