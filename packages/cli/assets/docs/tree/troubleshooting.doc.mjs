@@ -91,11 +91,11 @@ export const docs = {
             ],
             [
               '`replaces_needs_cli`: The package has a template that sets `replaces` but declares no @astryxdesign/cli peer.',
-              'Same fix: an older CLI rejects `replaces`, drops templates, and hides your doc topics.',
+              'Same fix: an older CLI rejects `replaces`, drops that template, and hides your doc topics.',
             ],
             [
               '`themes_need_cli`: The package ships a theme but declares no @astryxdesign/cli peer.',
-              'Same fix: an older CLI cannot read typed theme descriptors and withholds your themes and doc topics.',
+              'Same fix: an older CLI cannot read typed theme descriptors, so it drops your themes and can hide your doc topics.',
             ],
             [
               '`section_ids_need_cli`: The package has a doc section that sets `id` but declares no @astryxdesign/cli peer.',

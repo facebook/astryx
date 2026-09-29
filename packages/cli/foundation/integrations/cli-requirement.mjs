@@ -164,7 +164,7 @@ export function themesCliProblem(pkg) {
   return cliRangeProblem(
     pkg,
     'ships a theme',
-    "cannot read typed theme descriptors, and withholds the package's themes and doc topics",
+    "cannot read typed theme descriptors, and can drop the package's themes and hide its doc topics",
   );
 }
 

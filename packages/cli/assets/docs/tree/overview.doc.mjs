@@ -23,7 +23,7 @@ export const docs = {
   sections: [
     {
       id: 'what-you-can-ship',
-      title: 'What an integration can ship',
+      title: 'Choose what to ship',
       content: [
         {
           type: 'prose',
@@ -100,7 +100,7 @@ export const docs = {
     },
     {
       id: 'how-apps-load-it',
-      title: 'How apps load your package',
+      title: 'Load your package in an app',
       content: [
         {
           type: 'prose',
@@ -139,7 +139,7 @@ export const docs = {
           type: 'list',
           style: 'unordered',
           items: [
-            "Apps need CLI 0.7.0 or later to read a docs section, a placed guide, a doc section `id`, a template's `replaces`, or a theme. An older CLI hides your docs, and it drops templates and themes.",
+            "Apps need CLI 0.7.0 or later to read a docs section, a placed guide, a doc section `id`, a template's `replaces`, or a theme. An older CLI can hide all of your docs, and it drops each template that sets `replaces` and every theme.",
             '`npx astryx integration add doc --parent` and `integration add theme` declare an optional `@astryxdesign/cli` peer of `>=0.7.0`, so npm warns in an app with an older CLI.',
             '`npx astryx integration verify` fails a package that needs that peer and does not declare it.',
           ],

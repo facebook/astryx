@@ -130,7 +130,7 @@ npx astryx upgrade --from 0.7.0 --apply`,
         },
         {
           type: 'prose',
-          text: 'Without `--apply`, `upgrade` only reports `Agent docs differ from the installed Astryx and integration configuration.` It refreshes the block even when Core did not change. See {@link command:upgrade}.',
+          text: '`upgrade --apply` prints that line; `init` prints `[ok] AI agent docs installed -> AGENTS.md`. Without `--apply`, `upgrade` only reports `Agent docs differ from the installed Astryx and integration configuration.` It refreshes the block even when Core did not change. See {@link command:upgrade}.',
         },
       ],
     },

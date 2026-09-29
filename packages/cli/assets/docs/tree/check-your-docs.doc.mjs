@@ -52,7 +52,7 @@ export const docs = {
           headers: ['Problem', 'Reported as', 'Exit code'],
           rows: [
             [
-              'A doc that does not load, such as an unknown field or block type',
+              'A doc that does not load, such as an unknown section field or block type',
               '`[fail]` `invalid_doc`',
               '1',
             ],

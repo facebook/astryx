@@ -410,11 +410,11 @@
       "kind": "section",
       "id": "cli/integrations/overview#what-you-can-ship",
       "oldCliRoute": "astryx docs cli/integrations/overview what-you-can-ship",
-      "oldDocsiteUrl": "/docs/cli-integrations-overview#what-an-integration-can-ship",
+      "oldDocsiteUrl": "/docs/cli-integrations-overview#choose-what-to-ship",
       "placement": "namespace:cli/integrations/overview",
       "aliasNeeded": false,
       "evidence": "Moves with cli/integrations/overview.",
-      "rationale": "A section of cli/integrations/overview: What an integration can ship.",
+      "rationale": "A section of cli/integrations/overview: Choose what to ship.",
       "status": "proposed"
     },
     {
@@ -432,11 +432,11 @@
       "kind": "section",
       "id": "cli/integrations/overview#how-apps-load-it",
       "oldCliRoute": "astryx docs cli/integrations/overview how-apps-load-it",
-      "oldDocsiteUrl": "/docs/cli-integrations-overview#how-apps-load-your-package",
+      "oldDocsiteUrl": "/docs/cli-integrations-overview#load-your-package-in-an-app",
       "placement": "namespace:cli/integrations/overview",
       "aliasNeeded": false,
       "evidence": "Moves with cli/integrations/overview.",
-      "rationale": "A section of cli/integrations/overview: How apps load your package.",
+      "rationale": "A section of cli/integrations/overview: Load your package in an app.",
       "status": "proposed"
     },
     {
@@ -674,22 +674,22 @@
       "kind": "section",
       "id": "cli/integrations/templates#competing-replacements",
       "oldCliRoute": "astryx docs cli/integrations/templates competing-replacements",
-      "oldDocsiteUrl": "/docs/cli-integrations-templates#when-packages-replace-the-same-template",
+      "oldDocsiteUrl": "/docs/cli-integrations-templates#choose-which-replacement-wins",
       "placement": "namespace:cli/integrations/templates",
       "aliasNeeded": false,
       "evidence": "Moves with cli/integrations/templates.",
-      "rationale": "A section of cli/integrations/templates: When packages replace the same template.",
+      "rationale": "A section of cli/integrations/templates: Choose which replacement wins.",
       "status": "proposed"
     },
     {
       "kind": "section",
       "id": "cli/integrations/templates#replacements-that-fail-closed",
       "oldCliRoute": "astryx docs cli/integrations/templates replacements-that-fail-closed",
-      "oldDocsiteUrl": "/docs/cli-integrations-templates#replacements-that-fail-closed",
+      "oldDocsiteUrl": "/docs/cli-integrations-templates#fix-a-replacement-that-fails",
       "placement": "namespace:cli/integrations/templates",
       "aliasNeeded": false,
       "evidence": "Moves with cli/integrations/templates.",
-      "rationale": "A section of cli/integrations/templates: Replacements that fail closed.",
+      "rationale": "A section of cli/integrations/templates: Fix a replacement that fails.",
       "status": "proposed"
     },
     {
@@ -751,11 +751,11 @@
       "kind": "section",
       "id": "cli/integrations/themes#themes-on-older-clis",
       "oldCliRoute": "astryx docs cli/integrations/themes themes-on-older-clis",
-      "oldDocsiteUrl": "/docs/cli-integrations-themes#themes-on-older-clis",
+      "oldDocsiteUrl": "/docs/cli-integrations-themes#fix-missing-themes-on-older-clis",
       "placement": "namespace:cli/integrations/themes",
       "aliasNeeded": false,
       "evidence": "Moves with cli/integrations/themes.",
-      "rationale": "A section of cli/integrations/themes: Themes on older CLIs.",
+      "rationale": "A section of cli/integrations/themes: Fix missing themes on older CLIs.",
       "status": "proposed"
     },
     {
@@ -795,11 +795,11 @@
       "kind": "section",
       "id": "cli/integrations/codemods#which-codemods-run",
       "oldCliRoute": "astryx docs cli/integrations/codemods which-codemods-run",
-      "oldDocsiteUrl": "/docs/cli-integrations-codemods#which-codemods-run",
+      "oldDocsiteUrl": "/docs/cli-integrations-codemods#choose-when-a-codemod-runs",
       "placement": "namespace:cli/integrations/codemods",
       "aliasNeeded": false,
       "evidence": "Moves with cli/integrations/codemods.",
-      "rationale": "A section of cli/integrations/codemods: Which codemods run.",
+      "rationale": "A section of cli/integrations/codemods: Choose when a codemod runs.",
       "status": "proposed"
     },
     {
@@ -1015,11 +1015,11 @@
       "kind": "section",
       "id": "cli/integrations/checks#what-integration-verify-does",
       "oldCliRoute": "astryx docs cli/integrations/checks what-integration-verify-does",
-      "oldDocsiteUrl": "/docs/cli-integrations-checks#what-integration-verify-does",
+      "oldDocsiteUrl": "/docs/cli-integrations-checks#verify-the-packed-package",
       "placement": "namespace:cli/integrations/checks",
       "aliasNeeded": false,
       "evidence": "Moves with cli/integrations/checks.",
-      "rationale": "A section of cli/integrations/checks: What integration verify does.",
+      "rationale": "A section of cli/integrations/checks: Verify the packed package.",
       "status": "proposed"
     },
     {
@@ -1081,11 +1081,11 @@
       "kind": "section",
       "id": "cli/integrations/versioning#codemods-and-versions",
       "oldCliRoute": "astryx docs cli/integrations/versioning codemods-and-versions",
-      "oldDocsiteUrl": "/docs/cli-integrations-versioning#codemods-and-versions",
+      "oldDocsiteUrl": "/docs/cli-integrations-versioning#name-codemod-folders-after-core-versions",
       "placement": "namespace:cli/integrations/versioning",
       "aliasNeeded": false,
       "evidence": "Moves with cli/integrations/versioning.",
-      "rationale": "A section of cli/integrations/versioning: Codemods and versions.",
+      "rationale": "A section of cli/integrations/versioning: Name codemod folders after Core versions.",
       "status": "proposed"
     },
     {

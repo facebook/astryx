@@ -163,6 +163,18 @@ describe('integration authoring CLI', () => {
     const flag = await runCli(['integration', 'verify', '--check'], tmpDir);
     expect(flag.status).not.toBe(0);
     expect(flag.stderr).toContain("unknown option '--check'");
+    // A JSON caller of the old spelling gets the same answer as an envelope.
+    const json = await runCli(['integration', 'pack', '--check', '--json'], tmpDir);
+    expect(json.status).not.toBe(0);
+    expect(parseEnvelope(json.stdout)).toMatchObject({
+      code: 'ERR_UNKNOWN_SUBCOMMAND',
+      error: "unknown subcommand 'integration pack'",
+      suggestions: expect.arrayContaining([expect.objectContaining({name: 'verify'})]),
+    });
+    // A flag alone is an unknown option, not an unknown subcommand.
+    const flagOnly = await runCli(['integration', '--bogus'], tmpDir);
+    expect(flagOnly.status).not.toBe(0);
+    expect(flagOnly.stderr).toContain("unknown option '--bogus'");
   });
 
   it('refuses kind-specific options on another kind', async () => {

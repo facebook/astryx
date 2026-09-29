@@ -137,36 +137,23 @@ export const docs = {
             'An unknown field in `astryx.integration.mjs` is ignored with an `unknown_manifest_key` warning, and the rest of the manifest still loads.',
             'A named export that the CLI does not know is ignored with no warning, so `debug` and `gapReport` are safe to add.',
             'A CLI older than 0.7.0 prints each `{@link ...}` as written.',
-            'A CLI older than 0.7.0 cannot read a docs section, a section `id`, a template that sets `replaces`, or a theme folder that `integration add theme` writes. It can then hide every doc topic your package ships, though your components still load.',
+            'A CLI older than 0.7.0 cannot read a docs section, a section `id`, a template that sets `replaces`, or a theme folder that `integration add theme` writes. It can then hide every doc topic your package ships.',
+            'CLI 0.6.3 still loads your components, but 0.6.0 cannot read the component docs that `integration add component` writes: `component AcmeCarousel` fails there.',
           ],
         },
         {
           type: 'prose',
-          text: '`integration verify` requires the CLI peer for a docs section, a placed guide, a template `replaces`, a doc section with an `id`, and a theme: a CLI older than 0.7.0 rejects each of them and hides your docs or themes with no warning.',
+          text: '`integration verify` requires the CLI peer for a docs section, a placed guide, a template `replaces`, a doc section with an `id`, and a theme. A CLI older than 0.7.0 cannot read any of them, and when it hides your topics, `docs` gives no warning.',
         },
       ],
     },
     {
       id: 'codemods-and-versions',
-      title: 'Codemods and versions',
+      title: 'Name codemod folders after Core versions',
       content: [
         {
           type: 'prose',
-          text: "`astryx upgrade` matches your codemod folders against the app's `@astryxdesign/core` versions, not your package's version. Name each folder after the Core version whose upgrade should run it.",
-        },
-        {
-          type: 'list',
-          style: 'unordered',
-          items: [
-            'The app passes `--from`, the Core version it had before. A folder runs when its version is above `--from` and no higher than the installed `@astryxdesign/core`.',
-            'For example, `@acme/astryx-widgets@3.0.0` ships `codemods/0.6.0/` and `codemods/3.0.0/`. In an app with Core 0.6.3, `--from 0.5.0` runs only the `0.6.0` folder.',
-            'Add a codemod with `integration add codemod <id> --to <version>`, and pass the Core version.',
-          ],
-        },
-        {
-          type: 'code',
-          lang: 'text',
-          code: 'Integrations: @acme/astryx-widgets\n5 codemods to run (dry run)\nApplying integration codemods...\n  Rename the AcmeCarousel interval prop (v0.6.0, @acme/astryx-widgets)\n!     ~ src/App.tsx (would change)',
+          text: 'Name each codemod folder after the Core version whose upgrade should run it, not after your package\'s version. Which folders an app runs, and when, is in "Choose when a codemod runs" in {@link generic:codemods}.',
         },
       ],
     },

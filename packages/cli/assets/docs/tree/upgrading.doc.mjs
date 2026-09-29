@@ -28,14 +28,14 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: "# 1. Build and test against the new release\nnpm install -D @astryxdesign/cli@latest @astryxdesign/core@latest\n# 2. Rerun the checks\nnpx astryx doctor integration validate\nnpx astryx doctor integration docs\nnpx astryx integration verify\n# 3. Admit the new Core once the checks pass\nnpm pkg set 'peerDependencies.@astryxdesign/core=^0.6.0 || ^0.7.0'\n# 4. Migrate apps across a change that breaks them\nnpx astryx integration add codemod remove-carousel-autoplay --to 0.7.0",
+          code: "# 1. Build and test against the new release\nnpm install -D @astryxdesign/cli@latest @astryxdesign/core@latest\n# 2. Rerun the checks\nnpx astryx doctor integration validate\nnpx astryx doctor integration docs\nnpx astryx integration verify\n# 3. Admit the new Core once the checks pass\nnpm pkg set 'peerDependencies.@astryxdesign/core=^0.6.0 || ^0.7.0'\n# 4. Migrate apps across a change that breaks them\nnpx astryx integration add codemod rename-delay --to 0.7.0",
         },
         {
           type: 'list',
           style: 'unordered',
           items: [
             'Run every check in {@link generic:checks}, not only the ones shown.',
-            'Name each codemod folder after the Core version whose upgrade should run it; see {@link generic:versioning}.',
+            'Name each codemod folder after the Core version whose upgrade should run it; see {@link generic:codemods}.',
             'Release the result as a new version of your package; see {@link generic:publishing}.',
           ],
         },
@@ -52,12 +52,12 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          code: '# Preview what would change; nothing is written\nnpx astryx upgrade --from 0.5.0 --integration @acme/astryx-widgets\n# Write the changes\nnpx astryx upgrade --from 0.5.0 --integration @acme/astryx-widgets --apply',
+          code: '# Preview what would change; nothing is written\nnpx astryx upgrade --from 0.6.3 --integration @acme/astryx-widgets\n# Write the changes\nnpx astryx upgrade --from 0.6.3 --integration @acme/astryx-widgets --apply',
         },
         {
           type: 'code',
           lang: 'text',
-          code: 'Integrations: @acme/astryx-widgets\n5 codemods to run\nApplying integration codemods...\n  Rename the AcmeCarousel interval prop (v0.6.0, @acme/astryx-widgets)\n[ok]     [ok] src/App.tsx',
+          code: 'Integrations: @acme/astryx-widgets\n1 codemod to run\nApplying integration codemods...\n  Rename AcmeCarousel delay to interval (v0.7.0, @acme/astryx-widgets)\n[ok]     [ok] src/Hero.tsx',
         },
         {
           type: 'list',
@@ -65,6 +65,7 @@ export const docs = {
           items: [
             '`--from` is the `@astryxdesign/core` version the app had before, and the target is the installed Core.',
             '`--integration` names your package. Without it, or an `integrations` entry in `astryx.config`, the upgrade skips your codemods, even when the app has your package installed.',
+            "The count includes Core's codemods for the same versions, which run first.",
             'Put this command in your release notes.',
           ],
         },

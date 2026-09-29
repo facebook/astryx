@@ -317,6 +317,10 @@ describe('search CLI — exit codes + JSON contract', () => {
       const open = await runCli(['--json', 'search', 'make', 'an', 'integration'], empty);
       expect(open.status).toBe(0);
       expect(JSON.parse(open.stdout).data.results[0]).toMatchObject({domain: 'doc'});
+      // The text says the search covered the docs alone.
+      const text = await runCli(['search', 'button'], empty);
+      expect(text.status).toBe(0);
+      expect(text.stdout).toContain('only the docs were searched');
       const json = await runCli(['--json', 'search', 'button', '--type', 'component'], empty);
       expect(json.status).toBe(1);
       expect(JSON.parse(json.stdout)).toMatchObject({code: 'ERR_CORE_NOT_FOUND'});

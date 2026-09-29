@@ -479,6 +479,20 @@ export async function createProgram() {
     const fullName = fullCommandName(actionCommand, program);
     if (JSON_SUPPORTED.has(fullName)) return;
     process.__xdsJsonHandled = true;
+    // A group given a word it does not have reports an unknown subcommand and
+    // lists the ones it has, in JSON as in text: `integration pack --check
+    // --json`, the old spelling of `integration verify`, names `verify`.
+    const extras = actionCommand.commands.length > 0 ? actionCommand.args : [];
+    const unknown = extras.find(arg => !String(arg).startsWith('-'));
+    if (unknown != null) {
+      cliError(`unknown subcommand '${fullName} ${unknown}'`, {
+        code: ERROR_CODES.ERR_UNKNOWN_SUBCOMMAND,
+        suggestions: actionCommand.commands.map(child => ({
+          name: child.name(),
+          reason: 'available subcommand',
+        })),
+      });
+    }
     debug.setOutcome('rejected', {
       exitCode: 1,
       code: ERROR_CODES.ERR_INVALID_OPTION,

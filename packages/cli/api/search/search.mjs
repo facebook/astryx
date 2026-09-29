@@ -36,8 +36,9 @@
  * whole query as a candidate's name or keyword (190-200), then the whole query
  * as a phrase inside a doc's title or one of its headings (170), then a whole
  * title of two words or more inside the query (160-169), then a candidate that
- * matches every word of the query (151-159). Below those sits everything that
- * matches only some words. A section titled "Light/Dark Mode" answers `dark
+ * matches every word of the query, at least one of them by name or keyword
+ * (151-159). Below those sits everything else: a partial match, or every word
+ * matched only in prose or through the components a page renders. A section titled "Light/Dark Mode" answers `dark
  * mode` better than any doc that merely names `mode` in code, however exactly;
  * "Dark mode" answers `how do I add dark mode`; and a guide whose title and
  * description hold both words of `troubleshoot integration` answers it better
@@ -360,10 +361,19 @@ const TITLE_IN_QUERY_SCORE = 160;
  * query, before a bonus of up to 8 for how strong its strongest match is: just
  * above anything that matches only some of the words. The token-sum path tops
  * out near 150 for a partial match (a 100 on one word, the per-word bonus, and
- * the coverage term), so an AND-match always outranks an OR-match, and stays
- * below the title tiers.
+ * the coverage term), so an AND-match with one keyword-strength hit (see
+ * {@link STRONG_TOKEN_SCORE}) always outranks an OR-match, and stays below the
+ * title tiers.
  */
 const FULL_COVERAGE_SCORE = 151;
+
+/**
+ * The strongest single-word hit an every-word match needs to take that tier: a
+ * keyword substring. Two passing mentions in prose, or the components a page
+ * happens to render, are breadth, not relevance; they stay on the token sum,
+ * below an exact name or keyword hit on one of the words.
+ */
+const STRONG_TOKEN_SCORE = 70;
 
 /**
  * The words of a title or query, lowercased, without punctuation or code ticks.
@@ -547,12 +557,14 @@ export function scoreQuery(term, tokens, candidate) {
   // (50 + bonus + coverage = 77) lost to thirty docs that each match
   // `integration` alone, by name or in a code tick (98-108). The reader asked for
   // both; a candidate that has both comes first, ordered among its peers by
-  // how strong its strongest match is.
-  if (matched === tokens.length) {
+  // how strong its strongest match is. It needs one keyword-strength hit:
+  // every word mentioned in prose, or rendered by a page, is breadth, and
+  // stays on the token sum below an exact hit on one word.
+  if (matched === tokens.length && strongest >= STRONG_TOKEN_SCORE) {
     return {
       score:
         FULL_COVERAGE_SCORE +
-        Math.round((strongest - MIN_TOKEN_SCORE) / 6.25),
+        Math.floor((strongest - MIN_TOKEN_SCORE) / 6.25),
       reason,
       matched,
       total,
@@ -592,6 +604,8 @@ export function scoreQuery(term, tokens, candidate) {
  * @param {string} term - Lowercased search term.
  * @param {object} candidate
  * @param {string} candidate.name - Primary identifier (component/hook name, topic, template name).
+ * @param {string} [candidate.domain] - A component, hook, or template name
+ *   also matches typed as words: `command palette` is CommandPalette.
  * @param {string[]} [candidate.keywords] - Authored intent (componentsUsed, category words).
  * @param {string[]} [candidate.weakKeywords] - Derived signal (components a page renders).
  * @param {string} [candidate.description]
@@ -603,6 +617,7 @@ export function scoreCandidate(
   term,
   {
     name,
+    domain,
     keywords = [],
     weakKeywords = [],
     description = '',
@@ -624,12 +639,26 @@ export function scoreCandidate(
   };
 
   const nameLower = name.toLowerCase();
+  // A placed guide's name is its route, and the route's last segment is its
+  // name too, as a flat topic's is: `codemods` is cli/integrations/codemods.
+  const leafLower = nameLower.slice(nameLower.lastIndexOf('/') + 1);
 
   // ── Name signals ────────────────────────────────────────────────
   // A plural of the name is the name: `integration` is the `integrations`
   // guides, `tab` the `tabs` doc.
-  if (nameLower === term || pluralOf(nameLower, term) || pluralOf(term, nameLower)) {
+  // A component, hook, or template name typed as words is its name:
+  // `command palette` is CommandPalette. A doc's name is a route or key,
+  // matched as written.
+  const spelled =
+    domain !== 'doc' &&
+    !/[\s_-]/.test(nameLower) &&
+    nameLower === term.replace(/\s+/g, '');
+  if (nameLower === term || leafLower === term || spelled) {
     consider(100, 'exact name');
+  } else if (pluralOf(nameLower, term) || pluralOf(term, nameLower)) {
+    // One point under the exact spelling, so the doc named `tokens` still
+    // outranks the Token component for `tokens`.
+    consider(99, 'plural of the name');
   } else {
     // Substring (both directions), min 4 chars, >=50% coverage.
     const shorter = term.length < nameLower.length ? term : nameLower;
@@ -1164,12 +1193,16 @@ function topicCandidates(
   const sections = doc?.sections ?? [];
   const docTitle = path || doc?.title || title || name;
   const split = sections.length > 1;
+  // A placed guide also answers to its last route segment's words:
+  // `package setup` is cli/integrations/package-setup.
+  const leaf = name.slice(name.lastIndexOf('/') + 1);
   /** @type {Candidate[]} */
   const out = [
     {
       domain: 'doc',
       name,
       keywords: [
+        ...(leaf !== name ? [leaf.replaceAll('-', ' ')] : []),
         ...(doc?.title || title ? [doc?.title || title] : []),
         ...(Array.isArray(doc?.keywords) ? doc.keywords : []),
       ],

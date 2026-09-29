@@ -195,8 +195,15 @@ describe('error codes: end-to-end JSON envelopes', () => {
     // is rejected at the preAction gate with a stable invalid-option code.
     {
       name: 'json not supported',
-      args: ['theme', 'bogus-sub', '--json'],
+      args: ['theme', '--json'],
       code: 'ERR_INVALID_OPTION',
+    },
+    // A group given a word it does not have names the unknown subcommand,
+    // in JSON as in text.
+    {
+      name: 'unknown subcommand of a group',
+      args: ['theme', 'bogus-sub', '--json'],
+      code: 'ERR_UNKNOWN_SUBCOMMAND',
     },
   ];
 

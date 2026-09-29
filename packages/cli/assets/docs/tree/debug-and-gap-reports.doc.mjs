@@ -23,7 +23,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Export a `debug` function from `astryx.integration.mjs`, and the CLI calls it once for every command run in each app that has your package installed.',
+          text: 'Export a `debug` function from `astryx.integration.mjs`, and the CLI calls it once for each command run in an app that loads your package.',
         },
         {
           type: 'code',
@@ -49,6 +49,10 @@ export default {
         {
           type: 'prose',
           text: "Keep the function synchronous: the CLI calls it as the process exits and never waits for a promise. The app's own `debug` handler runs first, then yours. A handler that throws is skipped, and the command's output and exit code stay the same.",
+        },
+        {
+          type: 'prose',
+          text: "An app records every command only when its `astryx.config` names `integrations` or `debug`, as listing your package does. Otherwise your handler runs only for commands that load the app's project, such as `component` and `docs`, and not for `--version` or a mistyped command. In an app whose config names neither word, each of those commands also prints a warning on stderr.",
         },
         {
           type: 'prose',

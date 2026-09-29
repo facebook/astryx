@@ -170,6 +170,28 @@ describe('build kit — coverage gates the pages group', () => {
     }
   });
 
+  it('does not call a page that only mentions every word a direct match', async () => {
+    // `empty state` and `command palette` name components. A page whose text
+    // mentions both words, or that renders the component, is a layout
+    // reference, not the page the reader asked for.
+    for (const query of ['empty state', 'command palette']) {
+      const r = await build(query, {cwd: REPO});
+      if (r.type !== 'build.kit') throw new Error('expected build.kit');
+      expect(r.data.directMatch, query).toBe(false);
+    }
+  });
+
+  it('keeps the page and component a query names first', async () => {
+    const pageOf = async (/** @type {string} */ query) => {
+      const r = await build(query, {cwd: REPO});
+      if (r.type !== 'build.kit') throw new Error('expected build.kit');
+      return r.data;
+    };
+    expect((await pageOf('checkout flow')).pages[0]).toMatchObject({name: 'checkout-wizard'});
+    expect((await pageOf('sign in with sso')).pages[0]).toMatchObject({name: 'login-sso'});
+    expect((await pageOf('search results')).domain.map(e => e.name)).toContain('PowerSearch');
+  });
+
   it('leaves single-concept queries alone (nothing to cover)', async () => {
     const r = await build('dashboard', {cwd: REPO});
     expect(r.type).toBe('build.kit');

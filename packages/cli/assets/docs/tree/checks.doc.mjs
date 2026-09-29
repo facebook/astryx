@@ -31,7 +31,7 @@ export const docs = {
             [
               '`npx astryx doctor integration validate`',
               'The manifest loads, and each root holds contributions the CLI can read',
-              'A declared root is missing (`missing_root`) or a contribution does not load (`invalid_doc`, `invalid_component`)',
+              'A declared root is missing (`missing_root`), a contribution does not load (`invalid_doc`, `invalid_component`, `invalid_theme`), or two templates in the package replace one Core id (`ambiguous_template_replacement`)',
               'The manifest has a key this CLI does not know (`unknown_manifest_key`). With no `astryx.integration.mjs` it prints a hint and exits 0',
             ],
             [
@@ -83,7 +83,7 @@ export const docs = {
           type: 'list',
           style: 'unordered',
           items: [
-            '`integration verify` runs `validate` but none of the other three: a Core name clash, a topic that takes a Core name, or a hidden guide still passes it.',
+            '`integration verify` runs `validate` but none of the other three: a Core name clash, a `replaces` that names no Core template, a topic that takes a Core name, or a hidden guide still passes it.',
             'Warnings keep exit code 0, so read them before you publish.',
             'Bare `npx astryx doctor` in the package also warns about a doc section over 32 KB, which no check above measures.',
           ],
@@ -92,7 +92,7 @@ export const docs = {
     },
     {
       id: 'what-integration-verify-does',
-      title: 'What integration verify does',
+      title: 'Verify the packed package',
       content: [
         {
           type: 'prose',
@@ -111,7 +111,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Earlier CLIs call this check `integration pack --check`. Its options and exit codes are in {@link command:integration verify}.',
+          text: 'CLI 0.6.3 calls this check `integration pack --check`. Its options and exit codes are in {@link command:integration verify}.',
         },
       ],
     },

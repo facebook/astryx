@@ -80,7 +80,10 @@ function formatTable(headers, rows) {
  * @returns {string}
  */
 function formatTableCompact(headers, rows) {
-  return rows.map(r => r.join(' = ')).join('\n');
+  // An empty cell, such as a Default with none, adds nothing to the line.
+  return rows
+    .map(r => r.filter(cell => String(cell ?? '').trim() !== '').join(' = '))
+    .join('\n');
 }
 
 /**

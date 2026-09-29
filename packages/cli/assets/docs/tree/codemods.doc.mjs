@@ -44,7 +44,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'The loader skips `*.test.*`, `*.spec.*`, and `*.fixture.*` files and everything under `__tests__/` or `__fixtures__/`, so tests can sit beside the codemod. The folder name decides when an app runs the codemod; see "Which codemods run".',
+          text: 'The loader skips `*.test.*`, `*.spec.*`, and `*.fixture.*` files and everything under `__tests__/` or `__fixtures__/`, so tests can sit beside the codemod. The folder name decides when an app runs the codemod; see "Choose when a codemod runs".',
         },
       ],
     },
@@ -88,7 +88,7 @@ export default {
     },
     {
       id: 'which-codemods-run',
-      title: 'Which codemods run',
+      title: 'Choose when a codemod runs',
       content: [
         {
           type: 'prose',
@@ -99,7 +99,7 @@ export default {
           style: 'ordered',
           items: [
             "Version folders are matched against the app's `@astryxdesign/core` versions, not your package's version. `upgrade --from <version>` runs each folder above `--from`, up to and including the Core version installed in the app. With Core 0.7.0 installed, `--from 0.6.3` runs `0.7.0/`, and `--from 0.7.0` runs nothing. A folder named after your own release, such as `1.0.0/`, waits until the app has Core 1.0.0.",
-            '`upgrade` runs your codemods only when the app lists your package in `integrations` in its `astryx.config`, or passes `--integration @acme/astryx-widgets`. Having your package installed is not enough: then the run prints `[ok] No codemods available for this version range.`',
+            '`upgrade` runs your codemods only when the app lists your package in `integrations` in its `astryx.config`, or passes `--integration @acme/astryx-widgets`. Having your package installed is not enough: the run then skips your codemods with no warning.',
           ],
         },
       ],
@@ -128,6 +128,10 @@ npx astryx upgrade --from 0.6.3 --integration @acme/astryx-widgets --apply`,
 Applying integration codemods...
   Rename AcmeCarousel delay to interval (v0.7.0, @acme/astryx-widgets)
 !     ~ src/Hero.tsx (would change)`,
+        },
+        {
+          type: 'prose',
+          text: "The count includes Core's codemods for the same versions, which run first and print above `Integrations:`. To run only yours, as when you test it, add `--codemod rename-delay`.",
         },
         {
           type: 'prose',

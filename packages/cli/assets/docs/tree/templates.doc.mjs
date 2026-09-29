@@ -134,7 +134,7 @@ export default {
     },
     {
       id: 'competing-replacements',
-      title: 'When packages replace the same template',
+      title: 'Choose which replacement wins',
       content: [
         {
           type: 'prose',
@@ -162,7 +162,7 @@ export default {
     },
     {
       id: 'replacements-that-fail-closed',
-      title: 'Replacements that fail closed',
+      title: 'Fix a replacement that fails',
       content: [
         {
           type: 'prose',

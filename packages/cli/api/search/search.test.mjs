@@ -100,13 +100,13 @@ describe('search leaf — docs at the grain a reader reads them', () => {
   it(
     'finds one section of a guide, and a docs-tree leaf by its own name',
     async () => {
-      const guide = await search('which codemods run', {cwd, type: 'doc'});
+      const guide = await search('when a codemod runs', {cwd, type: 'doc'});
       expect(guide.data.results.slice(0, 3)).toContainEqual(
         expect.objectContaining({
           domain: 'doc',
           name: 'cli/integrations/codemods',
           section: 'which-codemods-run',
-          title: 'Astryx CLI › Build an integration › Codemods › Which codemods run',
+          title: 'Astryx CLI › Build an integration › Codemods › Choose when a codemod runs',
           parent: 'astryx docs cli/integrations/codemods --index',
           command: 'astryx docs cli/integrations/codemods which-codemods-run',
         }),
@@ -333,9 +333,12 @@ describe('search leaf — a whole-query phrase in a title or heading is top tier
   });
 
   it('reads a plural of a name as the name, and only a real plural', () => {
-    expect(scoreCandidate('integration', {name: 'integrations'})?.score).toBe(100);
-    expect(scoreCandidate('box', {name: 'boxes'})?.score).toBe(100);
-    expect(scoreCandidate('tabs', {name: 'tab'})?.score).toBe(100);
+    // One point under the exact spelling, so the doc named `tokens` outranks
+    // the Token component for `tokens`.
+    expect(scoreCandidate('integration', {name: 'integrations'})?.score).toBe(99);
+    expect(scoreCandidate('box', {name: 'boxes'})?.score).toBe(99);
+    expect(scoreCandidate('tabs', {name: 'tab'})?.score).toBe(99);
+    expect(scoreCandidate('tokens', {name: 'tokens'})?.score).toBe(100);
     // `es` only follows s, x, z, ch, or sh.
     expect(scoreCandidate('not', {name: 'notes'})?.score ?? 0).toBeLessThan(100);
     expect(scoreCandidate('mod', {name: 'modes'})?.score ?? 0).toBeLessThan(100);
@@ -381,7 +384,7 @@ describe('search leaf — a candidate that matches every word outranks a partial
   });
 
   it('holds for longer queries too, and stays below the title tiers', () => {
-    const all = {name: 'x', description: 'alpha beta gamma delta'};
+    const all = {name: 'x', keywords: ['alphas'], description: 'alpha beta gamma delta'};
     const threeOfFour = {name: 'alpha', keywords: ['beta', 'gamma']};
     const q = 'alpha beta gamma delta';
     expect(score(q, all)).toBeGreaterThan(score(q, threeOfFour));
@@ -391,6 +394,34 @@ describe('search leaf — a candidate that matches every word outranks a partial
       score(q, all),
     );
   });
+
+  it('keeps passing mentions of every word below an exact hit on one word', () => {
+    // Mentions in prose, or the components a page happens to render, are
+    // breadth: a page that says "empty state" is not the EmptyState answer.
+    const mentions = {name: 'ai-chat-landing', description: 'A landing page with an empty state.'};
+    const keyword = {name: 'x', keywords: ['empty']};
+    expect(score('empty state', mentions)).toBeLessThan(score('empty state', keyword));
+  });
+
+  it('finds a component by its name typed as words, and a guide by its route', async () => {
+    for (const [query, name] of [
+      ['command palette', 'CommandPalette'],
+      ['empty state', 'EmptyState'],
+    ]) {
+      const r = await search(query, {cwd});
+      expect(r.data.results[0], query).toMatchObject({domain: 'component', name});
+    }
+    const tokens = await search('tokens', {cwd});
+    expect(tokens.data.results[0]).toMatchObject({domain: 'doc', name: 'tokens'});
+    for (const [query, route] of [
+      ['codemods', 'cli/integrations/codemods'],
+      ['package setup', 'cli/integrations/package-setup'],
+      ['test in an app', 'cli/integrations/test-in-an-app'],
+    ]) {
+      const r = await search(query, {cwd, type: 'doc'});
+      expect(r.data.results[0], query).toMatchObject({name: route});
+    }
+  }, SLOW);
 });
 
 describe('search leaf — error paths (pinned)', () => {

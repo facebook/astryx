@@ -286,7 +286,7 @@ describe('the docs tree, one level at a time', () => {
       'which-codemods-run',
     ]);
     expect(one.status).toBe(0);
-    expect(one.stdout).toMatch(/^## Which codemods run$/m);
+    expect(one.stdout).toMatch(/^## Choose when a codemod runs$/m);
     expect(one.stdout).toMatch(/^Up: .*docs cli\/integrations\/codemods --index$/m);
     expect(one.stdout).toMatch(
       /^Previous: .*docs cli\/integrations\/codemods write-the-transform$/m,

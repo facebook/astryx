@@ -45,7 +45,7 @@ Declare theme root ./themes in astryx.integration.mjs.
         },
         {
           type: 'prose',
-          text: "`oceanTheme.ts` exports `oceanTheme`, a `defineTheme` source. `oceanTheme.doc.mjs` describes it with `type: 'theme'`, `name`, `displayName`, `description`, and `maintained`, which `theme list` shows. Every field is in {@link generic:authoring}.",
+          text: "`oceanTheme.ts` exports `oceanTheme`, a `defineTheme` source. `oceanTheme.doc.mjs` describes it with `type: 'theme'`, `name`, `displayName`, `description`, and `maintained`; `theme list` shows its `name`, `description`, and `maintained`. Every field is in {@link generic:authoring}.",
         },
         {
           type: 'prose',
@@ -175,7 +175,7 @@ npx astryx theme build src/themes/ocean/oceanTheme.ts`,
     },
     {
       id: 'themes-on-older-clis',
-      title: 'Themes on older CLIs',
+      title: 'Fix missing themes on older CLIs',
       content: [
         {
           type: 'prose',

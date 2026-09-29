@@ -24,8 +24,16 @@ import {doc as integrationPackCheckFn} from '../../../api/integration/integratio
  */
 function showGroupOrUnknown(command, label, options, invoked) {
   const extras = invoked?.args ?? [];
-  if (extras.length > 0) {
-    return cliError(`unknown subcommand '${label} ${String(extras[0])}'`, {
+  // allowUnknownOption keeps an unknown flag among the args: a word there is
+  // an unknown subcommand, and a flag alone is an unknown option.
+  const word = extras.find(arg => !String(arg).startsWith('-'));
+  if (word == null && extras.length > 0) {
+    return cliError(`unknown option '${String(extras[0])}'`, {
+      code: ERROR_CODES.ERR_INVALID_OPTION,
+    });
+  }
+  if (word != null) {
+    return cliError(`unknown subcommand '${label} ${String(word)}'`, {
       suggestions: (command.commands ?? []).map(child => ({
         name: child.name(),
         reason: 'available subcommand',
