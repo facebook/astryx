@@ -1065,7 +1065,10 @@ function validateAst(
         if (
           typeof node.url !== 'string' ||
           !isSafeMarkdownParserUrl(node.url) ||
-          typeof node.alt !== 'string'
+          typeof node.alt !== 'string' ||
+          (node.title !== undefined &&
+            node.title !== null &&
+            typeof node.title !== 'string')
         ) {
           return false;
         }
@@ -1376,7 +1379,10 @@ export function adoptMarkdownHelperNodes(
         if (
           typeof node.url !== 'string' ||
           !isSafeMarkdownParserUrl(node.url) ||
-          typeof node.alt !== 'string'
+          typeof node.alt !== 'string' ||
+          (node.title !== undefined &&
+            node.title !== null &&
+            typeof node.title !== 'string')
         ) {
           return false;
         }

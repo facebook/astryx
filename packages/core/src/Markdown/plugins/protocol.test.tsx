@@ -16,6 +16,7 @@ import {
   createIncrementalState,
   parseInline,
   parseMarkdown,
+  parseMarkdownAst,
   parseMarkdownIncremental,
 } from '../parser';
 import type {InlineNode} from '../parser';
@@ -659,6 +660,43 @@ describe('Markdown plugin protocol', () => {
         children: [{type: 'text', content: 'Surviving body.'}],
       },
     ]);
+  });
+
+  it('accepts string image titles and rejects other title values', () => {
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const titledImage = createMarkdownPlugin({
+      name: 'titled-image',
+      apiVersion: 1,
+      transform(root) {
+        return {
+          ...root,
+          children: root.children.map(block =>
+            block.type === 'image' ? {...block, title: 'Updated title'} : block,
+          ),
+        };
+      },
+    });
+    const invalidTitle = createMarkdownPlugin({
+      name: 'invalid-image-title',
+      apiVersion: 1,
+      transform(root) {
+        return {
+          ...root,
+          children: root.children.map(block =>
+            block.type === 'image' ? {...block, title: 42} : block,
+          ),
+        } as never;
+      },
+    });
+    const source = '![alt](/logo.png "Original title")';
+
+    expect(
+      parseMarkdownAst(source, {plugins: [titledImage]}).children[0],
+    ).toMatchObject({type: 'image', title: 'Updated title'});
+    expect(parseMarkdownAst(source, {plugins: [invalidTitle]})).toEqual(
+      parseMarkdownAst(source),
+    );
+    warning.mockRestore();
   });
 
   it('rejects unsafe destinations, forged provenance, and foreign deletion', () => {

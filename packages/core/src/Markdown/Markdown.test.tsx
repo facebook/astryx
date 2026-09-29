@@ -501,6 +501,33 @@ describe('Markdown', () => {
     expect(img!.getAttribute('src')).toBe('image.png');
   });
 
+  it('renders image titles and passes them to custom image renderers', () => {
+    const {rerender} = render(
+      <Markdown>{'![alt text](image.png "Image title")'}</Markdown>,
+    );
+    expect(document.querySelector('img')).toHaveAttribute(
+      'title',
+      'Image title',
+    );
+
+    rerender(
+      <Markdown
+        components={{
+          image: ({src, alt, title}) => (
+            <span data-testid="titled-image" data-src={src} data-title={title}>
+              {alt}
+            </span>
+          ),
+        }}>
+        {'![alt text](image.png "Image title")'}
+      </Markdown>,
+    );
+    expect(screen.getByTestId('titled-image')).toHaveAttribute(
+      'data-title',
+      'Image title',
+    );
+  });
+
   it('uses the components.image override for a standalone (block) image', () => {
     // A standalone image line parses as a block image; its render path must
     // honor components.image just like the inline image path does.

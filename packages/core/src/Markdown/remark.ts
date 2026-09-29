@@ -76,7 +76,6 @@ export interface MarkdownRemarkLink extends MarkdownRemarkNodeBase {
 export interface MarkdownRemarkImage extends MarkdownRemarkNodeBase {
   type: 'image';
   url: string;
-  /** Always `null` on input; a non-empty title cannot round-trip. */
   title?: string | null;
   alt: string;
 }
@@ -706,7 +705,7 @@ function toRemarkNode(node: UnknownRecord, index: OriginIndex): UnknownRecord {
       break;
     case 'image':
       copy.url = node.url;
-      copy.title = null;
+      copy.title = node.title ?? null;
       copy.alt = node.alt;
       break;
     case 'list':
@@ -1100,12 +1099,18 @@ function fromRemarkNode(
       if (!isSafeMarkdownParserUrl(url)) {
         reject('an image source was rejected by the resource owner');
       }
-      requireAbsentText(type, 'title', value.title);
+      const title = value.title;
+      if (title !== undefined && title !== null && typeof title !== 'string') {
+        reject('an image requires a string or null "title"');
+      }
       if (typeof value.alt !== 'string') {
         reject('an image requires its text alternative');
       }
       fields.url = url;
       fields.alt = value.alt;
+      if (title != null) {
+        fields.title = title;
+      }
       break;
     }
     case 'list': {

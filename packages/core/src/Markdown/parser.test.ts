@@ -5,6 +5,7 @@ import {
   createIncrementalState,
   parseInline,
   parseMarkdown,
+  parseMarkdownAst,
   parseMarkdownIncremental,
 } from './parser';
 import type {BlockNode, InlineNode} from './parser';
@@ -666,6 +667,51 @@ describe('parseMarkdown', () => {
       expect(result[0].src).toBe('image.png');
       expect(result[0].alt).toBe('alt text');
     }
+  });
+
+  it.each([
+    ['double-quoted', '![alt](image(1).png "Double title")', 'Double title'],
+    ['single-quoted', "![alt](image.png 'Single title')", 'Single title'],
+    [
+      'parenthesized',
+      '![alt](image.png (Parenthesized title))',
+      'Parenthesized title',
+    ],
+  ])(
+    'preserves a %s direct image title in the canonical AST',
+    (_label, source, title) => {
+      const image = parseMarkdownAst(source).children[0];
+
+      expect(image).toMatchObject({
+        type: 'image',
+        url: source.includes('image(1).png') ? 'image(1).png' : 'image.png',
+        alt: 'alt',
+        title,
+      });
+      expect(parseMarkdown(source)[0]).toEqual({
+        type: 'image',
+        alt: 'alt',
+        src: source.includes('image(1).png') ? 'image(1).png' : 'image.png',
+      });
+    },
+  );
+
+  it.each([
+    ['same line', '![logo][l]\n\n[l]: /logo.png "Logo title"'],
+    ['following line', '![logo][l]\n\n[l]: /logo.png\n  "Logo title"'],
+  ])('preserves a reference image title on the %s', (_label, source) => {
+    const paragraph = parseMarkdownAst(source).children[0];
+    expect(paragraph).toMatchObject({
+      type: 'paragraph',
+      children: [
+        {
+          type: 'image',
+          url: '/logo.png',
+          alt: 'logo',
+          title: 'Logo title',
+        },
+      ],
+    });
   });
 
   it('rejects a standalone image with an unsafe scheme as literal text (XSS prevention)', () => {

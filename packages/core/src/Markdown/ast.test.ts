@@ -257,9 +257,12 @@ describe('canonical Markdown AST', () => {
   });
 
   it('preserves optional legacy keys and insertion order exactly', () => {
-    const [image, list] = parseMarkdown('![Alt](/image.png)\n\n- item');
+    const [image, list] = parseMarkdown(
+      '![Alt](/image.png "Image title")\n\n- item',
+    );
 
     expect(Object.keys(image)).toEqual(['type', 'alt', 'src']);
+    expect(image).toEqual({type: 'image', alt: 'Alt', src: '/image.png'});
     expect(Object.keys(list)).toEqual([
       'type',
       'ordered',

@@ -104,7 +104,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `root`, `paragraph`, `heading`, `blockquote`, `thematicBreak` | Structure and children; heading depth stays Core-owned.                                                                                                         |
 | `text`, `strong`, `emphasis`, `delete`, `inlineCode`, `break` | Values and ordered phrasing children.                                                                                                                           |
-| `link`, `image`                                               | `url` revalidated by the navigation and resource owners; `alt` required; `title` null.                                                                          |
+| `link`, `image`                                               | `url` revalidated by the navigation and resource owners; `alt` required on images; link `title` stays null while image `title` round-trips as string or null.   |
 | `list`, `listItem`                                            | `ordered`, `start`, `spread`, Astryx `delimiter`, and `checked`.                                                                                                |
 | `code`                                                        | `lang` and `meta`, each `null` when absent, plus `value`. The authored info string survives both conversions and the released language projection is preserved. |
 | `math`, `inlineMath`                                          | Present only when the caller enabled math.                                                                                                                      |
@@ -119,7 +119,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | Async, callback-style, registration-only, or processor-state plugin                                                                                         | Last valid document plus one diagnostic; FR1, FR3                 |
 | `html` or any node outside the supported subset (definitions, references, footnotes, frontmatter, directives, MDX)                                          | Last valid document plus one diagnostic; FR4                      |
 | An unsupported field, `hName`, `hProperties`, `hChildren`, or non-JSON node or file data                                                                    | Last valid document plus one diagnostic; FR3, FR4                 |
-| Non-string fence `meta`, a link or image `title`, a loose list item, or a ragged transformed table                                                          | Last valid document plus one diagnostic; FR4                      |
+| Non-string fence `meta`, a link `title`, a non-string image `title`, a loose list item, or a ragged transformed table                                       | Last valid document plus one diagnostic; FR4                      |
 | Reading, writing, defining, or deleting an unsupported file key — `path`, `cwd`, `history`, or any other                                                    | Last valid document plus one diagnostic; FR3                      |
 | An authored, shifted, or removed position on a surviving source-backed node; a rebuilt, retyped, or duplicated source node; or a re-levelled source heading | Last valid document plus one diagnostic; FR5                      |
 | A shifted line or column on an otherwise unchanged offset                                                                                                   | Last valid document plus one diagnostic; FR5                      |
@@ -199,12 +199,12 @@ renders through Markdown's existing parts.
 
 The adapter never approximates. Link titles, loose list items, raw markup,
 unsupported nodes, and metadata Astryx cannot represent — including a
-non-string fence `meta` — have no Astryx meaning, so accepting them would
-silently change or drop what a reader sees. An authored fence info string does
-have a meaning here and round-trips intact; it is rejected only when it is not
-a string. Refusing the rest keeps the last valid document readable and makes
-the gap visible to the builder in one diagnostic instead of to the reader as
-missing content.
+non-string fence `meta` or image `title` — have no Astryx meaning, so accepting
+them would silently change or drop what a reader sees. An authored image title
+and fence info string do have meanings here and round-trip intact; they are
+rejected only when they are not strings. Refusing the rest keeps the last valid
+document readable and makes the gap visible to the builder in one diagnostic
+instead of to the reader as missing content.
 
 ### DEC-2 — Provenance is carried, never inferred
 

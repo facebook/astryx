@@ -115,7 +115,10 @@ running plugins in server or RSC code. The rendered `Markdown` component remains
 client entry: function-bearing plugin entries are not serializable props and cannot
 cross an RSC boundary. `MarkdownAstNodeMap` and `visitMarkdownNodes` provide
 node-kind narrowing. Released parser functions preserve their existing result shape
-through a compatibility projection. Transforms return validated replacement roots
+through a compatibility projection. Canonical image nodes preserve an optional
+authored title; the default image and `components.image` receive it, while released
+`parseMarkdown()` image objects remain limited to `type`, `alt`, and `src`.
+Transforms return validated replacement roots
 without entering parse identity. Every extension node introduced
 by syntax or transformation has complete renderer ownership and a deterministic
 text projection. Text matching, semantic fences, source decoration, and native
@@ -211,7 +214,7 @@ text. Outside a table cell, inline code retains its authored backslashes.
 | Custom block renderers | The replaced Heading, Paragraph, Code block, Blockquote, Divider, or Image lacks the corresponding Markdown target.                                     | Replacement structure and styling.                                                              |
 | Ordered/unordered list | List carries `markdown-list`.                                                                                                                           | Marker kind, start value, item count, and nested content.                                       |
 | Task list              | Each task-marked item carries its own checked state; mixed task/plain items stay in one compatible list and preserve document order and nesting.        | Checked values, item content, and adjacent plain items.                                         |
-| Safe block image       | Default Image carries `markdown-image`, or a custom image renderer replaces it.                                                                         | Source and alternative text.                                                                    |
+| Safe block image       | Default Image carries `markdown-image`, preserves its optional authored title, or a custom image renderer replaces it.                                  | Source, alternative text, and optional title.                                                   |
 | Unsafe block image URL | Markdown renders its fallback Image part with `markdown-image`; no custom image renderer receives the rejected URL.                                     | Alternative text shown by the fallback.                                                         |
 | Inline display         | Document carries `markdown`; no block target renders.                                                                                                   | Inline text, links, code, citations, plugins, and opt-in inline math.                           |
 | Math renderer absent   | Dollar-delimited source follows the released Markdown grammar and no `math` node or renderer output exists.                                             | Currency, unmatched delimiters, and ordinary prose.                                             |

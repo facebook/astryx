@@ -152,7 +152,7 @@ export interface MarkdownComponents {
     id?: string;
   }>;
   paragraph?: React.ComponentType<{children: React.ReactNode}>;
-  image?: React.ComponentType<{src: string; alt: string}>;
+  image?: React.ComponentType<{src: string; alt: string; title?: string}>;
   blockquote?: React.ComponentType<{children: React.ReactNode}>;
   hr?: React.ComponentType<object>;
 }
@@ -1047,14 +1047,23 @@ function renderInline(
         return <span key={index}>[{node.alt}]</span>;
       }
       const ImageComp = components?.image;
+      const title = node.title ?? undefined;
       if (ImageComp) {
-        return <ImageComp key={index} src={safeSrc} alt={node.alt} />;
+        return (
+          <ImageComp
+            key={index}
+            src={safeSrc}
+            alt={node.alt}
+            {...(title === undefined ? {} : {title})}
+          />
+        );
       }
       return (
         <img
           key={index}
           src={safeSrc}
           alt={node.alt}
+          title={title}
           {...stylex.props(styles.image)}
         />
       );
@@ -1815,8 +1824,16 @@ function renderBlock(
         );
       }
       const ImageComp = components?.image;
+      const title = node.title ?? undefined;
       if (ImageComp) {
-        return <ImageComp key={index} src={safeSrc} alt={node.alt} />;
+        return (
+          <ImageComp
+            key={index}
+            src={safeSrc}
+            alt={node.alt}
+            {...(title === undefined ? {} : {title})}
+          />
+        );
       }
       return (
         <div
@@ -1829,7 +1846,12 @@ function renderBlock(
               isLast && styles.noMarginBlockEnd,
             ),
           )}>
-          <img src={safeSrc} alt={node.alt} {...stylex.props(styles.image)} />
+          <img
+            src={safeSrc}
+            alt={node.alt}
+            title={title}
+            {...stylex.props(styles.image)}
+          />
         </div>
       );
     }

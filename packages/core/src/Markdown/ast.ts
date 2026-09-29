@@ -80,6 +80,7 @@ export interface MarkdownAstImage extends MarkdownAstNodeBase {
   readonly type: 'image';
   readonly url: string;
   readonly alt: string;
+  readonly title?: string | null;
 }
 
 export interface MarkdownAstCitation extends MarkdownAstNodeBase {

@@ -523,6 +523,11 @@ type RuntimeParseOptions = CommonParseOptions<
   isFinal?: boolean;
 };
 
+type MarkdownLinkDefinition = Readonly<{
+  destination: string;
+  title?: string;
+}>;
+
 type ResolvedOptions = {
   readonly sourceIds: ReadonlySet<string> | undefined;
   readonly autolink: 'gfm' | undefined;
@@ -551,7 +556,7 @@ type ResolvedOptions = {
    * block parser, never by the public `ParseOptions`. Enables `parseInlineImpl`
    * to resolve full/collapsed/shortcut reference links and images.
    */
-  readonly linkDefs?: ReadonlyMap<string, string>;
+  readonly linkDefs?: ReadonlyMap<string, MarkdownLinkDefinition>;
 };
 
 /**
@@ -782,9 +787,26 @@ function matchDisplayMathBlock(
   return null;
 }
 
-function matchLinkDefinition(
-  line: string,
-): {label: string; destination: string; hasTitle: boolean} | null {
+function parseMarkdownTitle(source: string): string | null {
+  const value = source.trim();
+  const opener = value[0];
+  const closer = opener === '(' ? ')' : opener;
+  if (
+    value.length < 2 ||
+    (opener !== '"' && opener !== "'" && opener !== '(') ||
+    !value.endsWith(closer) ||
+    value.includes('\n')
+  ) {
+    return null;
+  }
+  return value.slice(1, -1);
+}
+
+function matchLinkDefinition(line: string): {
+  label: string;
+  destination: string;
+  title?: string;
+} | null {
   const match = LINK_DEFINITION_RE.exec(line);
   if (match == null) {
     return null;
@@ -797,7 +819,11 @@ function matchLinkDefinition(
   if (label === '' || destination == null) {
     return null;
   }
-  return {label, destination, hasTitle: match[4] != null};
+  if (match[4] == null) {
+    return {label, destination};
+  }
+  const title = parseMarkdownTitle(match[4]);
+  return title == null ? null : {label, destination, title};
 }
 
 /**
@@ -822,7 +848,7 @@ function extractLinkDefinitions(
   input: string,
   math = false,
 ): {
-  defs: ReadonlyMap<string, string>;
+  defs: ReadonlyMap<string, MarkdownLinkDefinition>;
   cleaned: string;
   /**
    * For each line of `cleaned`, the line of `input` it came from. Undefined
@@ -831,7 +857,7 @@ function extractLinkDefinitions(
   lineMap?: number[];
 } {
   const lines = input.split('\n');
-  const defs = new Map<string, string>();
+  const defs = new Map<string, MarkdownLinkDefinition>();
   const keep = new Array<boolean>(lines.length).fill(true);
   let atBoundary = true;
   let inFence = false;
@@ -874,19 +900,24 @@ function extractLinkDefinitions(
     if (atBoundary) {
       const def = matchLinkDefinition(line);
       if (def != null) {
-        if (!defs.has(def.label)) {
-          defs.set(def.label, def.destination);
-        }
+        let title = def.title;
         keep[index] = false;
         // A title-less definition absorbs a title on the following line
         // (CommonMark), which then also produces no output.
         if (
-          !def.hasTitle &&
+          title === undefined &&
           index + 1 < lines.length &&
           LINK_TITLE_ONLY_RE.test(lines[index + 1])
         ) {
+          title = parseMarkdownTitle(lines[index + 1]) ?? undefined;
           keep[index + 1] = false;
           index++;
+        }
+        if (!defs.has(def.label)) {
+          defs.set(def.label, {
+            destination: def.destination,
+            ...(title === undefined ? null : {title}),
+          });
         }
         // Consecutive definitions stay at a block boundary.
         continue;
@@ -919,14 +950,27 @@ function sourceIdsSignature(
     : [...sourceIds].sort().join('\u0000');
 }
 
+function sameLinkDefinition(
+  left: MarkdownLinkDefinition | undefined,
+  right: MarkdownLinkDefinition | undefined,
+): boolean {
+  return (
+    left?.destination === right?.destination && left?.title === right?.title
+  );
+}
+
 /** Order-independent signature of a link-definition set, for cache checks. */
-function linkDefsSignature(defs: ReadonlyMap<string, string>): string {
+function linkDefsSignature(
+  defs: ReadonlyMap<string, MarkdownLinkDefinition>,
+): string {
   if (defs.size === 0) {
     return '';
   }
   return [...defs]
     .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
-    .map(([label, dest]) => `${label}\u0000${dest}`)
+    .map(([label, definition]) =>
+      JSON.stringify([label, definition.destination, definition.title ?? null]),
+    )
     .join('\u0001');
 }
 
@@ -943,7 +987,7 @@ function protectedInlineOptions(opts: ResolvedOptions): ResolvedOptions {
 function matchReferenceLink(
   text: string,
   start: number,
-  linkDefs: ReadonlyMap<string, string>,
+  linkDefs: ReadonlyMap<string, MarkdownLinkDefinition>,
   opts: ResolvedOptions,
   context: 'default' | 'tableCell',
 ): {
@@ -964,12 +1008,15 @@ function matchReferenceLink(
       // label (`[ ]`) is a full reference whose normalized label is empty and
       // matches nothing.
       const label = rawLabel === '' ? linkText : rawLabel;
-      const href = linkDefs.get(normalizeLinkLabel(label));
-      if (href != null && isSafeMarkdownParserUrl(href)) {
+      const definition = linkDefs.get(normalizeLinkLabel(label));
+      if (
+        definition != null &&
+        isSafeMarkdownParserUrl(definition.destination)
+      ) {
         return {
           node: {
             type: 'link',
-            url: href,
+            url: definition.destination,
             children: parseInlineImpl(
               linkText,
               protectedInlineOptions(opts),
@@ -987,14 +1034,14 @@ function matchReferenceLink(
   if (linkText.trim() === '') {
     return null;
   }
-  const href = linkDefs.get(normalizeLinkLabel(linkText));
-  if (href == null || !isSafeMarkdownParserUrl(href)) {
+  const definition = linkDefs.get(normalizeLinkLabel(linkText));
+  if (definition == null || !isSafeMarkdownParserUrl(definition.destination)) {
     return null;
   }
   return {
     node: {
       type: 'link',
-      url: href,
+      url: definition.destination,
       children: parseInlineImpl(
         linkText,
         protectedInlineOptions(opts),
@@ -1009,7 +1056,7 @@ function matchReferenceLink(
 function matchReferenceImage(
   text: string,
   start: number,
-  linkDefs: ReadonlyMap<string, string>,
+  linkDefs: ReadonlyMap<string, MarkdownLinkDefinition>,
 ): {
   node: MarkdownAstPhrasingContent<RuntimeExtensionNode>;
   end: number;
@@ -1024,9 +1071,22 @@ function matchReferenceImage(
     if (labelClose !== -1) {
       const rawLabel = text.slice(altClose + 2, labelClose);
       const label = rawLabel === '' ? alt : rawLabel;
-      const src = linkDefs.get(normalizeLinkLabel(label));
-      if (src != null && isSafeMarkdownParserUrl(src)) {
-        return {node: {type: 'image', url: src, alt}, end: labelClose + 1};
+      const definition = linkDefs.get(normalizeLinkLabel(label));
+      if (
+        definition != null &&
+        isSafeMarkdownParserUrl(definition.destination)
+      ) {
+        return {
+          node: {
+            type: 'image',
+            url: definition.destination,
+            alt,
+            ...(definition.title === undefined
+              ? null
+              : {title: definition.title}),
+          },
+          end: labelClose + 1,
+        };
       }
       // No match — fall back to a shortcut `![alt]`.
     }
@@ -1034,11 +1094,19 @@ function matchReferenceImage(
   if (alt.trim() === '') {
     return null;
   }
-  const src = linkDefs.get(normalizeLinkLabel(alt));
-  if (src == null || !isSafeMarkdownParserUrl(src)) {
+  const definition = linkDefs.get(normalizeLinkLabel(alt));
+  if (definition == null || !isSafeMarkdownParserUrl(definition.destination)) {
     return null;
   }
-  return {node: {type: 'image', url: src, alt}, end: altClose + 1};
+  return {
+    node: {
+      type: 'image',
+      url: definition.destination,
+      alt,
+      ...(definition.title === undefined ? null : {title: definition.title}),
+    },
+    end: altClose + 1,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -1059,6 +1127,124 @@ function findClosingParen(text: string, start: number): number {
     }
   }
   return -1;
+}
+
+type ImageSyntaxMatch = Readonly<{
+  url: string;
+  alt: string;
+  title?: string;
+  end: number;
+}>;
+
+/** Find an image resource's outer `)`, ignoring delimiters inside a title. */
+function findImageResourceClosingParen(text: string, start: number): number {
+  let depth = 1;
+  let quote: '"' | "'" | null = null;
+  for (let index = start; index < text.length; index++) {
+    const character = text[index];
+    if (character === '\n') {
+      return -1;
+    }
+    if (isEscaped(text, index)) {
+      continue;
+    }
+    if (quote != null) {
+      if (character === quote) {
+        quote = null;
+      }
+      continue;
+    }
+    if (
+      depth === 1 &&
+      (character === '"' || character === "'") &&
+      /\s/.test(text[index - 1] ?? '')
+    ) {
+      quote = character;
+      continue;
+    }
+    if (character === '(') {
+      depth++;
+    } else if (character === ')') {
+      depth--;
+      if (depth === 0) {
+        return index;
+      }
+    }
+  }
+  return -1;
+}
+
+function parseImageResource(
+  source: string,
+): Omit<ImageSyntaxMatch, 'alt' | 'end'> | null {
+  const value = source.trim();
+  let destinationEnd = 0;
+  let url: string;
+
+  if (value.startsWith('<')) {
+    const close = value.indexOf('>');
+    if (close === -1) {
+      return null;
+    }
+    url = value.slice(1, close);
+    destinationEnd = close + 1;
+  } else {
+    let depth = 0;
+    for (; destinationEnd < value.length; destinationEnd++) {
+      const character = value[destinationEnd];
+      if (/\s/.test(character) && depth === 0) {
+        break;
+      }
+      if (!isEscaped(value, destinationEnd)) {
+        if (character === '(') {
+          depth++;
+        } else if (character === ')') {
+          if (depth === 0) {
+            return null;
+          }
+          depth--;
+        }
+      }
+    }
+    if (depth !== 0) {
+      return null;
+    }
+    url = value.slice(0, destinationEnd);
+  }
+
+  const titleSource = value.slice(destinationEnd).trim();
+  if (titleSource === '') {
+    return {url};
+  }
+  const title = parseMarkdownTitle(titleSource);
+  return title == null ? null : {url, title};
+}
+
+function matchInlineImageSyntax(
+  text: string,
+  start: number,
+): ImageSyntaxMatch | null {
+  if (text[start] !== '!' || text[start + 1] !== '[') {
+    return null;
+  }
+  const altClose = text.indexOf(']', start + 2);
+  if (altClose === -1 || text[altClose + 1] !== '(') {
+    return null;
+  }
+  const resourceStart = altClose + 2;
+  const resourceClose = findImageResourceClosingParen(text, resourceStart);
+  if (resourceClose === -1) {
+    return null;
+  }
+  const resource = parseImageResource(text.slice(resourceStart, resourceClose));
+  if (resource == null) {
+    return null;
+  }
+  return {
+    ...resource,
+    alt: text.slice(start + 2, altClose),
+    end: resourceClose + 1,
+  };
 }
 
 function isWordChar(ch: string | undefined): boolean {
@@ -1505,26 +1691,23 @@ function parseInlineImpl(
       }
     }
 
-    // --- Image ![alt](src) ---
+    // --- Image ![alt](src "title") ---
     if (text[i] === '!' && text[i + 1] === '[') {
-      const altClose = text.indexOf(']', i + 2);
-      if (altClose !== -1 && text[altClose + 1] === '(') {
-        const srcClose = findClosingParen(text, altClose + 2);
-        if (srcClose !== -1) {
-          const src = text.slice(altClose + 2, srcClose);
-          if (!isSafeMarkdownParserUrl(src)) {
-            // Dangerous scheme — emit as plain text.
-            nodes.push({type: 'text', value: text.slice(i, srcClose + 1)});
-          } else {
-            nodes.push({
-              type: 'image',
-              url: src,
-              alt: text.slice(i + 2, altClose),
-            });
-          }
-          i = srcClose + 1;
-          continue;
+      const image = matchInlineImageSyntax(text, i);
+      if (image != null) {
+        if (!isSafeMarkdownParserUrl(image.url)) {
+          // Dangerous scheme — emit as plain text.
+          nodes.push({type: 'text', value: text.slice(i, image.end)});
+        } else {
+          nodes.push({
+            type: 'image',
+            url: image.url,
+            alt: image.alt,
+            ...(image.title === undefined ? null : {title: image.title}),
+          });
         }
+        i = image.end;
+        continue;
       }
     }
 
@@ -2551,13 +2734,13 @@ function parseMarkdownImpl(
   // parse.
   const {defs, cleaned, lineMap} = extractLinkDefinitions(input, baseOpts.math);
   const inherited = baseOpts.linkDefs;
-  let linkDefs: ReadonlyMap<string, string> | undefined;
+  let linkDefs: ReadonlyMap<string, MarkdownLinkDefinition> | undefined;
   if (defs.size === 0) {
     linkDefs = inherited;
   } else if (inherited == null) {
     linkDefs = defs;
   } else {
-    linkDefs = new Map<string, string>([...defs, ...inherited]);
+    linkDefs = new Map<string, MarkdownLinkDefinition>([...defs, ...inherited]);
   }
   const opts: ResolvedOptions =
     linkDefs != null ? {...baseOpts, linkDefs} : baseOpts;
@@ -2676,13 +2859,18 @@ function parseMarkdownImpl(
     // --- Standalone image ---
     // An unsafe src falls through to the paragraph path and renders as
     // literal text, the same rule the inline image path applies.
-    const imageMatch = line.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
+    const image = matchInlineImageSyntax(line, 0);
     if (
-      imageMatch &&
-      line.trim() === imageMatch[0] &&
-      isSafeMarkdownParserUrl(imageMatch[2])
+      image != null &&
+      line.slice(image.end).trim() === '' &&
+      isSafeMarkdownParserUrl(image.url)
     ) {
-      pushBlock({type: 'image', alt: imageMatch[1], url: imageMatch[2]});
+      pushBlock({
+        type: 'image',
+        alt: image.alt,
+        url: image.url,
+        ...(image.title === undefined ? null : {title: image.title}),
+      });
       index++;
       continue;
     }
@@ -2943,11 +3131,11 @@ type IncrementalCache = {
   /** Character offset immediately after the immutable settled prefix. */
   settledEnd: number;
   /** Definitions whose complete block is in the settled prefix. */
-  settledLinkDefs: Map<string, string>;
+  settledLinkDefs: Map<string, MarkdownLinkDefinition>;
   /** Definitions still in the mutable tail on the preceding call. */
-  tailLinkDefs: ReadonlyMap<string, string>;
+  tailLinkDefs: ReadonlyMap<string, MarkdownLinkDefinition>;
   /** The effective document-global definitions used by slice parses. */
-  linkDefs: ReadonlyMap<string, string>;
+  linkDefs: ReadonlyMap<string, MarkdownLinkDefinition>;
   linkDefsKey: string;
   /** Canonical settled blocks shared by rendering and compatibility projection. */
   settledAstBlocks: MarkdownAstBlockContent<RuntimeExtensionNode>[];
@@ -3643,17 +3831,23 @@ function appendSettledBlocks(
 }
 
 function sameUnsettledDefinitions(
-  previous: ReadonlyMap<string, string>,
-  next: ReadonlyMap<string, string>,
-  settled: ReadonlyMap<string, string>,
+  previous: ReadonlyMap<string, MarkdownLinkDefinition>,
+  next: ReadonlyMap<string, MarkdownLinkDefinition>,
+  settled: ReadonlyMap<string, MarkdownLinkDefinition>,
 ): boolean {
-  for (const [label, destination] of previous) {
-    if (!settled.has(label) && next.get(label) !== destination) {
+  for (const [label, definition] of previous) {
+    if (
+      !settled.has(label) &&
+      !sameLinkDefinition(next.get(label), definition)
+    ) {
       return false;
     }
   }
-  for (const [label, destination] of next) {
-    if (!settled.has(label) && previous.get(label) !== destination) {
+  for (const [label, definition] of next) {
+    if (
+      !settled.has(label) &&
+      !sameLinkDefinition(previous.get(label), definition)
+    ) {
       return false;
     }
   }
@@ -3847,10 +4041,10 @@ function parseMarkdownIncrementalAstBlocks(
   let definitionsChanged = false;
   if (settledDelta !== '') {
     const {defs: deltaDefs} = extractLinkDefinitions(settledDelta, opts.math);
-    for (const [label, destination] of deltaDefs) {
+    for (const [label, definition] of deltaDefs) {
       if (!cache.settledLinkDefs.has(label)) {
-        cache.settledLinkDefs.set(label, destination);
-        if (cache.linkDefs.get(label) !== destination) {
+        cache.settledLinkDefs.set(label, definition);
+        if (!sameLinkDefinition(cache.linkDefs.get(label), definition)) {
           definitionsChanged = true;
         }
       }
