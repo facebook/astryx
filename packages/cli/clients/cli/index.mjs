@@ -480,8 +480,8 @@ export async function createProgram() {
     if (JSON_SUPPORTED.has(fullName)) return;
     process.__xdsJsonHandled = true;
     // A group given a word it does not have reports an unknown subcommand and
-    // lists the ones it has, in JSON as in text: `integration pack --check
-    // --json`, the old spelling of `integration verify`, names `verify`.
+    // lists the ones it has, in JSON as in text: the old spelling of
+    // `integration verify`, a `pack` subcommand with `--check`, names `verify`.
     const extras = actionCommand.commands.length > 0 ? actionCommand.args : [];
     const unknown = extras.find(arg => !String(arg).startsWith('-'));
     if (unknown != null) {

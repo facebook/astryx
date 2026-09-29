@@ -120,7 +120,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'text',
-          code: '- [fail] The package ships a namespace doc or a placed guide but declares no @astryxdesign/cli peer. A CLI older than 0.7.0 does not read the docs tree, and can hide every doc topic the package ships. Declare "@astryxdesign/cli": ">=0.7.0" in peerDependencies (optional in peerDependenciesMeta, if the CLI is not required).',
+          code: '- [fail] The package ships a namespace doc or a placed guide but declares no @astryxdesign/cli peer. A stable CLI before 0.7.0 does not read the docs tree, and can hide every doc topic the package ships. Declare "@astryxdesign/cli": ">=0.7.0" in peerDependencies (optional in peerDependenciesMeta, if the CLI is not required).',
         },
         {
           type: 'list',

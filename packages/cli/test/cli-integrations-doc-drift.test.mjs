@@ -19,6 +19,13 @@ import {resolvePackageDir} from '../foundation/integrations/integrations.mjs';
 import {discoverThemeDirectory} from '../foundation/discovery/theme-discovery.mjs';
 import {integrationAddTheme} from '../api/integration/add-theme.mjs';
 import {themePaletteGenerate} from '../api/theme/palette/generate/generate.mjs';
+import {
+  DOCS_TREE_CLI,
+  docsTreeCliProblem,
+  replacesCliProblem,
+  sectionIdsCliProblem,
+  themesCliProblem,
+} from '../foundation/integrations/cli-requirement.mjs';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -303,7 +310,9 @@ describe('integration guides required content', () => {
   it('documents that upgrade is a dry run by default', () => {
     expect(text).toMatch(/dry run by default/i);
     expect(text).toContain('--apply');
-    expect(upgradeCommandDoc.options.some(o => o.flag === '--apply')).toBe(true);
+    expect(upgradeCommandDoc.options.some(o => o.flag === '--apply')).toBe(
+      true,
+    );
   });
 
   it('documents every ThemeDoc field', () => {
@@ -343,31 +352,67 @@ describe('integration guides required content', () => {
     expect(integrationAddDoc.related).toContain('integration verify');
   });
 
-  it('names the old spelling nowhere else in a shipped doc', () => {
-    // Only the guides that tell an older CLI's check from the new one may say
-    // `pack --check`.
-    const history = new Set([
-      path.join(TREE_DIR, 'checks.doc.mjs'),
-      path.join(TREE_DIR, 'troubleshooting.doc.mjs'),
+  it('names the old command nowhere but its history', () => {
+    // `integration pack --check` became `integration verify` with no alias, so
+    // no text a reader or an agent follows may still name the old command: a
+    // doc the CLI ships, a message or example in the CLI's source (the agent
+    // block it writes, a hint, the manifest), a Markdown file in the repo
+    // (READMEs, AGENTS.md, records, pending changesets, skills), or a docsite
+    // page. Only these lines, which tell an older CLI's check from the new
+    // one, may; released CHANGELOGs and the tests that prove the old spelling
+    // fails keep theirs.
+    const repo = path.join(import.meta.dirname, '..', '..', '..');
+    const history = new Set(
+      [
+        'packages/cli/assets/docs/tree/checks.doc.mjs',
+        'packages/cli/assets/docs/tree/troubleshooting.doc.mjs',
+        '.changeset/integration-verify.md',
+      ].map(file => path.join(repo, file)),
+    );
+    const OLD = /\bintegration[ -]pack(?!age)\b|\bpack --check\b/;
+    const SKIP = new Set([
+      'node_modules',
+      '.git',
+      'dist',
+      '.next',
+      'generated',
+      '__tests__',
+      'coverage',
+      'test',
+      'fixtures',
     ]);
-    const root = path.join(import.meta.dirname, '..');
-    /** @param {string} dir @returns {string[]} */
-    const docFiles = dir =>
+    /**
+     * @param {string} dir
+     * @param {(name: string) => boolean} keep
+     * @returns {string[]}
+     */
+    const walk = (dir, keep) =>
       fs.readdirSync(dir, {withFileTypes: true}).flatMap(entry => {
         const full = path.join(dir, entry.name);
         if (entry.isDirectory())
-          return entry.name === 'node_modules' ? [] : docFiles(full);
-        return /\.doc(\.[a-z]+)?\.mjs$/.test(entry.name) ? [full] : [];
+          return SKIP.has(entry.name) ? [] : walk(full, keep);
+        return entry.isFile() && keep(entry.name) ? [full] : [];
       });
-    const files = ['api', 'assets', 'authoring', 'clients', 'foundation'].flatMap(
-      dir => docFiles(path.join(root, dir)),
+    const cli = path.join(repo, 'packages', 'cli');
+    const files = new Set([
+      ...['api', 'assets', 'authoring', 'clients', 'foundation'].flatMap(dir =>
+        walk(path.join(cli, dir), name => /\.doc(\.[a-z]+)?\.mjs$/.test(name)),
+      ),
+      ...walk(
+        cli,
+        name =>
+          /\.(mjs|js|ts|tsx)$/.test(name) && !/\.(test|spec)\./.test(name),
+      ),
+      ...walk(repo, name => /\.mdx?$/.test(name) && name !== 'CHANGELOG.md'),
+      ...walk(path.join(repo, 'apps', 'docsite', 'src'), name =>
+        /\.(tsx?|mdx?)$/.test(name),
+      ),
+    ]);
+    expect(files.size).toBeGreaterThan(500);
+    const stale = [...files].filter(
+      file => !history.has(file) && OLD.test(fs.readFileSync(file, 'utf8')),
     );
-    expect(files.length).toBeGreaterThan(100);
-    const stale = files.filter(
-      file =>
-        !history.has(file) && fs.readFileSync(file, 'utf8').includes('pack --check'),
-    );
-    expect(stale.map(file => path.relative(root, file))).toEqual([]);
+    expect(stale.map(file => path.relative(repo, file))).toEqual([]);
   });
 
   it('names every CLI-peer failure `integration verify` reports', () => {
@@ -379,6 +424,60 @@ describe('integration guides required content', () => {
     ]) {
       expect(text).toContain(code);
     }
-    expect(text).toContain('>=0.7.0');
+    expect(text).toContain(`>=${DOCS_TREE_CLI}`);
+  });
+
+  it('names the CLI version the verify checks need, from DOCS_TREE_CLI', async () => {
+    // Each guide line that says which CLI reads a docs section, a section id,
+    // a template `replaces`, or a theme names the version `integration verify`
+    // enforces. Change DOCS_TREE_CLI and every copy fails here until it moves.
+    const COPIES = [
+      /"@astryxdesign\/cli":\s*">=(\d+\.\d+\.\d+)"/g,
+      /@astryxdesign\/cli=>=(\d+\.\d+\.\d+)/g,
+      /`>=(\d+\.\d+\.\d+)`/g,
+      /\bolder than (\d+\.\d+\.\d+)/g,
+      /\bstable CLI before (\d+\.\d+\.\d+)/g,
+      /\bstable `@astryxdesign\/cli` before (\d+\.\d+\.\d+)/g,
+      /\bcli`? (\d+\.\d+\.\d+) or later/gi,
+    ];
+    /** @type {string[]} */
+    const found = [];
+    for (const file of fs.readdirSync(TREE_DIR).sort()) {
+      if (!file.endsWith('.doc.mjs')) continue;
+      const {docs: doc} = await import(path.join(TREE_DIR, file));
+      const text = guideText(doc);
+      for (const pattern of COPIES) {
+        for (const m of text.matchAll(pattern)) {
+          found.push(`${file}: ${m[0]} names ${m[1]}`);
+        }
+      }
+    }
+    expect(found.length).toBeGreaterThanOrEqual(20);
+    expect(
+      found.filter(line => !line.endsWith(` names ${DOCS_TREE_CLI}`)),
+    ).toEqual([]);
+  });
+
+  it('quotes the verify failures as the CLI prints them', async () => {
+    const {docs: checkYourDocs} = await import(
+      path.join(TREE_DIR, 'check-your-docs.doc.mjs')
+    );
+    expect(guideText(checkYourDocs)).toContain(
+      `- [fail] ${docsTreeCliProblem({})}`,
+    );
+    // Troubleshooting quotes the first sentence of each, beside its code.
+    const {docs: troubleshooting} = await import(
+      path.join(TREE_DIR, 'troubleshooting.doc.mjs')
+    );
+    const text = guideText(troubleshooting);
+    for (const problem of [
+      docsTreeCliProblem,
+      replacesCliProblem,
+      sectionIdsCliProblem,
+      themesCliProblem,
+    ]) {
+      const message = /** @type {string} */ (problem({}));
+      expect(text).toContain(`${message.split('. ')[0]}.`);
+    }
   });
 });

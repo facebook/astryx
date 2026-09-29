@@ -133,13 +133,13 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Author with `@astryxdesign/cli` 0.7.0 or later, installed as a devDependency so `npx astryx` runs that version. It has every command these guides use.',
+          text: 'Author with the latest `@astryxdesign/cli`, installed as a devDependency so `npx astryx` runs that version. A CLI that lists `verify` under `npx astryx integration --help` has every command these guides use.',
         },
         {
           type: 'list',
           style: 'unordered',
           items: [
-            "Apps need CLI 0.7.0 or later to read a docs section, a placed guide, a doc section `id`, a template's `replaces`, or a theme. An older CLI can hide all of your docs, and it drops each template that sets `replaces` and every theme.",
+            "A stable CLI before 0.7.0 cannot read a docs section, a placed guide, a doc section `id`, a template's `replaces`, or a theme. It can hide all of your docs, and it drops each template that sets `replaces` and every theme.",
             '`npx astryx integration add doc --parent` and `integration add theme` declare an optional `@astryxdesign/cli` peer of `>=0.7.0`, so npm warns in an app with an older CLI.',
             '`npx astryx integration verify` fails a package that needs that peer and does not declare it.',
           ],

@@ -135,7 +135,7 @@ export const docs = {
             ],
             [
               'Your docs section, templates, or themes are missing only in some apps',
-              'Those apps run a CLI older than 0.7.0. Update `@astryxdesign/cli` there, and keep your optional `@astryxdesign/cli` peer so npm warns about an old CLI.',
+              'Those apps run a stable CLI before 0.7.0. Update `@astryxdesign/cli` there, and keep your optional `@astryxdesign/cli` peer so npm warns about an old CLI.',
             ],
           ],
         },

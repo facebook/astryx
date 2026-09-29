@@ -89,7 +89,7 @@ export const docs = {
           style: 'unordered',
           items: [
             'The warning keeps exit code 0, so read the report before you ship; see {@link generic:check-your-docs}.',
-            'A CLI older than 0.7.0 does not read links: it prints each one as written. See {@link generic:versioning}.',
+            'A stable CLI before 0.7.0 does not read links: it prints each one as written. See {@link generic:versioning}.',
           ],
         },
       ],

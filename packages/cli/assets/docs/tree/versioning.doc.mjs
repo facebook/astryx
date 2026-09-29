@@ -118,7 +118,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: '`integration verify` fails a package that needs the CLI peer and lacks it, or whose range admits a CLI older than 0.7.0. `integration add doc --parent` and `integration add theme` write the peer for you.',
+          text: '`integration verify` fails a package that needs the CLI peer and lacks it, or whose range admits a stable CLI before 0.7.0. `integration add doc --parent` and `integration add theme` write the peer for you.',
         },
       ],
     },
@@ -136,14 +136,14 @@ export const docs = {
           items: [
             'An unknown field in `astryx.integration.mjs` is ignored with an `unknown_manifest_key` warning, and the rest of the manifest still loads.',
             'A named export that the CLI does not know is ignored with no warning, so `debug` and `gapReport` are safe to add.',
-            'A CLI older than 0.7.0 prints each `{@link ...}` as written.',
-            'A CLI older than 0.7.0 cannot read a docs section, a section `id`, a template that sets `replaces`, or a theme folder that `integration add theme` writes. It can then hide every doc topic your package ships.',
-            'CLI 0.6.3 still loads your components, but 0.6.0 cannot read the component docs that `integration add component` writes: `component AcmeCarousel` fails there.',
+            'A stable CLI before 0.7.0 prints each `{@link ...}` as written.',
+            'A stable CLI before 0.7.0 cannot read a docs section, a section `id`, a template that sets `replaces`, or a theme folder that `integration add theme` writes. It can then hide every doc topic your package ships.',
+            'Stable 0.6.3 still loads your components, but 0.6.0 cannot read the component docs that `integration add component` writes: `component AcmeCarousel` fails there.',
           ],
         },
         {
           type: 'prose',
-          text: '`integration verify` requires the CLI peer for a docs section, a placed guide, a template `replaces`, a doc section with an `id`, and a theme. A CLI older than 0.7.0 cannot read any of them, and when it hides your topics, `docs` gives no warning.',
+          text: '`integration verify` requires the CLI peer for a docs section, a placed guide, a template `replaces`, a doc section with an `id`, and a theme. A stable CLI before 0.7.0 cannot read any of them, and when it hides your topics, `docs` gives no warning.',
         },
       ],
     },

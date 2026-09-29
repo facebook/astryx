@@ -95,11 +95,11 @@ function cliRangeProblem(pkg, feature, loss) {
   const range = pkg?.peerDependencies?.[CLI_PACKAGE];
   const fix = `"${CLI_PACKAGE}": ">=${DOCS_TREE_CLI}" in peerDependencies (optional in peerDependenciesMeta, if the CLI is not required)`;
   if (typeof range !== 'string') {
-    return `The package ${feature} but declares no ${CLI_PACKAGE} peer. A CLI older than ${DOCS_TREE_CLI} ${loss}. Declare ${fix}.`;
+    return `The package ${feature} but declares no ${CLI_PACKAGE} peer. A stable CLI before ${DOCS_TREE_CLI} ${loss}. Declare ${fix}.`;
   }
   const lowest = lowestAdmitted(range);
   if (lowest == null || semverCompare(lowest, DOCS_TREE_CLI) < 0) {
-    return `The package ${feature}, but its ${CLI_PACKAGE} peer range "${range}" admits a CLI older than ${DOCS_TREE_CLI}, which ${loss}. Declare ${fix}.`;
+    return `The package ${feature}, but its ${CLI_PACKAGE} peer range "${range}" admits a stable CLI before ${DOCS_TREE_CLI}, which ${loss}. Declare ${fix}.`;
   }
   return null;
 }

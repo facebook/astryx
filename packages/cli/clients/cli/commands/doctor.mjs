@@ -31,6 +31,8 @@ import {doc as integrationTemplateConflictsFn} from '../../../api/integration/in
 import {doc as integrationComponentConflictsFn} from '../../../api/integration/integrationComponentConflicts.doc.mjs';
 import {doc as integrationDocConflictsFn} from '../../../api/integration/integrationDocConflicts.doc.mjs';
 import {NO_RESULT_SET} from '../../../foundation/debug/index.mjs';
+import {cliError} from '../lib/cli-error.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 
 const STATUS = {
   pass: '[ok]',
@@ -298,18 +300,56 @@ async function runAuthoringCheck(program, pkg, kind) {
 }
 
 /**
+ * The first word after a command group, which names a subcommand it does not
+ * have, or null.
+ * @param {import('commander').Command | undefined} invoked
+ * @returns {string | null}
+ */
+function unknownWord(invoked) {
+  const word = (invoked?.args ?? []).find(arg => !String(arg).startsWith('-'));
+  return word == null ? null : String(word);
+}
+
+/**
+ * Report an unknown subcommand, in text as in JSON, with the ones the group has.
+ * @param {import('commander').Command} group
+ * @param {string} label the group's full name
+ * @param {string} word
+ */
+function unknownSubcommand(group, label, word) {
+  return cliError(`unknown subcommand '${label} ${word}'`, {
+    suggestions: group.commands.map(child => ({
+      name: child.name(),
+      reason: 'available subcommand',
+    })),
+    code: ERROR_CODES.ERR_UNKNOWN_SUBCOMMAND,
+  });
+}
+
+/**
  * Register `astryx doctor` and its integration-authoring leaves.
  * @param {import('commander').Command} program
  */
 export function registerDoctor(program) {
-  const doctorCmd = defineCommand(program, doctorCommand, {
+  /** @type {import('commander').Command} */
+  let doctorCmd;
+  doctorCmd = defineCommand(program, doctorCommand, {
     fn: doctorFn,
-    action: async () => runProjectDoctor(program),
+    // `doctor integrations` is a mistyped subcommand, not a project check.
+    action: async (options, invoked) => {
+      const word = unknownWord(invoked);
+      if (word != null) return unknownSubcommand(doctorCmd, 'doctor', word);
+      return runProjectDoctor(program);
+    },
   });
   /** @type {import('commander').Command} */
   let integrationCmd;
   integrationCmd = defineCommand(doctorCmd, doctorIntegrationGroup, {
-    action: () => {
+    action: (options, invoked) => {
+      const word = unknownWord(invoked);
+      if (word != null) {
+        return unknownSubcommand(integrationCmd, 'doctor integration', word);
+      }
       integrationCmd.outputHelp();
       return NO_RESULT_SET;
     },

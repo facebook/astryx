@@ -179,14 +179,14 @@ npx astryx theme build src/themes/ocean/oceanTheme.ts`,
       content: [
         {
           type: 'prose',
-          text: 'An app needs `@astryxdesign/cli` 0.7.0 or later to list and add your themes. On an older CLI, the themes are missing:',
+          text: 'A stable `@astryxdesign/cli` before 0.7.0 cannot list or add your themes. On such a CLI, the themes are missing:',
         },
         {
           type: 'list',
           style: 'unordered',
           items: [
             'A CLI from before the `themes` field ignores it with an `unknown_manifest_key` warning and loads the rest of the manifest.',
-            'Some 0.6 CLIs, such as 0.6.3, read `themes` in an older layout. They report `invalid_theme`, and they also hide your doc topics.',
+            'Some stable 0.6 CLIs, such as 0.6.3, read `themes` in an older layout. They report `invalid_theme`, and they also hide your doc topics.',
           ],
         },
         {

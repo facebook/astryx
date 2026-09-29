@@ -171,6 +171,13 @@ describe('integration authoring CLI', () => {
       error: "unknown subcommand 'integration pack'",
       suggestions: expect.arrayContaining([expect.objectContaining({name: 'verify'})]),
     });
+    // The global flag may come first, as agents usually write it.
+    const lead = await runCli(['--json', 'integration', 'pack', '--check'], tmpDir);
+    expect(lead.status).not.toBe(0);
+    expect(parseEnvelope(lead.stdout)).toMatchObject({
+      code: 'ERR_UNKNOWN_SUBCOMMAND',
+      error: "unknown subcommand 'integration pack'",
+    });
     // A flag alone is an unknown option, not an unknown subcommand.
     const flagOnly = await runCli(['integration', '--bogus'], tmpDir);
     expect(flagOnly.status).not.toBe(0);

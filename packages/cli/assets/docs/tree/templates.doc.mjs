@@ -114,7 +114,7 @@ export default {
         },
         {
           type: 'prose',
-          text: 'A page replaces only a Core page, and a block only a Core block. A CLI older than 0.7.0 cannot read `replaces`: it drops that template and hides your doc topics. Declare the newer CLI as an optional peer in package.json; until you do, `integration verify` fails with `replaces_needs_cli`.',
+          text: 'A page replaces only a Core page, and a block only a Core block. A stable CLI before 0.7.0 cannot read `replaces`: it drops that template and hides your doc topics. Declare the newer CLI as an optional peer in package.json; until you do, `integration verify` fails with `replaces_needs_cli`.',
         },
         {
           type: 'code',

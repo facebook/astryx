@@ -256,13 +256,31 @@ describe('error codes: human mode stays clean', () => {
     expect(stdout).not.toContain('ERR_UNKNOWN_COMPONENT');
   });
 
-  it('unknown subcommand exits 1 in human mode (code carried internally)', async () => {
-    // `theme` is not JSON-capable, so this path is human-only; we assert the
-    // failure surfaces with exit 1 and a helpful message. The stable
-    // ERR_UNKNOWN_SUBCOMMAND code rides along on the cliError call.
+  it('unknown subcommand exits 1, with the code in JSON and not in text', async () => {
+    // A group that is not JSON-capable itself still answers an unknown
+    // subcommand in JSON, so a JSON caller learns the subcommands it has.
     const {status, stderr} = await runCli(['theme', 'bogus-sub']);
     expect(status).toBe(1);
     expect(stderr).toContain("unknown subcommand 'theme bogus-sub'");
     expect(stderr).not.toContain('ERR_UNKNOWN_SUBCOMMAND');
+    for (const args of [
+      ['--json', 'theme', 'bogus-sub'],
+      ['theme', 'bogus-sub', '--json'],
+      ['--json', 'doctor', 'integration', 'bogus-sub'],
+    ]) {
+      const json = await runCli(args);
+      expect(json.status, args.join(' ')).toBe(1);
+      expect(JSON.parse(json.stdout), args.join(' ')).toMatchObject({
+        code: 'ERR_UNKNOWN_SUBCOMMAND',
+        suggestions: expect.arrayContaining([expect.objectContaining({reason: 'available subcommand'})]),
+      });
+    }
+    // Text and JSON agree for a group that shows help when run bare.
+    const text = await runCli(['doctor', 'integration', 'bogus-sub']);
+    expect(text.status).toBe(1);
+    expect(text.stderr).toContain("unknown subcommand 'doctor integration bogus-sub'");
+    const doctor = await runCli(['doctor', 'integrations']);
+    expect(doctor.status).toBe(1);
+    expect(doctor.stderr).toContain("unknown subcommand 'doctor integrations'");
   });
 });
