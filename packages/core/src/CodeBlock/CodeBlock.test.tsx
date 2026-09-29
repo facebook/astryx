@@ -215,6 +215,44 @@ describe('CodeBlock', () => {
     expect(header).toHaveAttribute('aria-expanded', 'false');
   });
 
+  it('expands when rerendering removes the collapse control', () => {
+    const {rerender} = render(
+      <CodeBlock
+        code={LONG_CODE}
+        language="javascript"
+        title="example"
+        isCollapsible
+      />,
+    );
+    const header = screen
+      .getAllByRole('button')
+      .find(el => el.hasAttribute('aria-expanded'))!;
+    fireEvent.click(header);
+    expect(screen.getByRole('group').closest('[inert]')).not.toBeNull();
+
+    rerender(<CodeBlock code={LONG_CODE} language="plaintext" isCollapsible />);
+    expect(
+      screen
+        .queryAllByRole('button')
+        .find(el => el.hasAttribute('aria-expanded')),
+    ).toBeUndefined();
+    expect(screen.getByRole('group').closest('[inert]')).toBeNull();
+
+    rerender(
+      <CodeBlock
+        code={LONG_CODE}
+        language="javascript"
+        title="example"
+        isCollapsible
+      />,
+    );
+    expect(
+      screen
+        .getAllByRole('button')
+        .find(el => el.hasAttribute('aria-expanded')),
+    ).toHaveAttribute('aria-expanded', 'true');
+  });
+
   it('links the collapsible header to its code region via aria-controls', () => {
     render(
       <CodeBlock

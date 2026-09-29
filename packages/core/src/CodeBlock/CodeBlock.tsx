@@ -778,8 +778,21 @@ export function CodeBlock({
     hasLanguageLabel && language !== 'plaintext' ? language : null;
   const showHeader = title != null || languageLabel != null;
 
-  const canCollapse = isCollapsible && lines.length >= collapsibleThreshold;
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  // A collapsed body must never outlive the visible header that controls it.
+  const canCollapse =
+    showHeader && isCollapsible && lines.length >= collapsibleThreshold;
+  const collapseControl = useMemo(
+    () => (canCollapse ? {} : null),
+    [canCollapse],
+  );
+  const [collapsedControl, setCollapsedControl] = useState<object | null>(null);
+  const isCollapsed =
+    collapseControl != null && collapsedControl === collapseControl;
+  const toggleCollapsed = useCallback(() => {
+    setCollapsedControl(current =>
+      current === collapseControl ? null : collapseControl,
+    );
+  }, [collapseControl]);
   // Links the collapsible header to the code region it shows/hides so assistive
   // tech can move from the button to its controlled content (disclosure
   // pattern). The region stays mounted when collapsed (CSS grid animation), so
@@ -834,13 +847,13 @@ export function CodeBlock({
         tabIndex={canCollapse ? 0 : undefined}
         aria-expanded={canCollapse ? !isCollapsed : undefined}
         aria-controls={canCollapse ? regionId : undefined}
-        onClick={canCollapse ? () => setIsCollapsed(prev => !prev) : undefined}
+        onClick={canCollapse ? toggleCollapsed : undefined}
         onKeyDown={
           canCollapse
             ? (e: React.KeyboardEvent) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  setIsCollapsed(prev => !prev);
+                  toggleCollapsed();
                 }
               }
             : undefined

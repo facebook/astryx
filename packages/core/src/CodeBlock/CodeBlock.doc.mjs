@@ -104,7 +104,7 @@ export const docs = {
     {
       name: 'isCollapsible',
       type: 'boolean',
-      description: 'Allow collapsing the code body into just the header bar. Starts expanded; the header becomes clickable to toggle. Only shows the toggle when the code exceeds collapsibleThreshold lines.',
+      description: 'Allow collapsing the code body into just the header bar. Starts expanded; a visible header becomes clickable when the code exceeds collapsibleThreshold lines. Headerless blocks never collapse, and removing the header expands a previously collapsed block.',
       default: 'false',
     },
     {
