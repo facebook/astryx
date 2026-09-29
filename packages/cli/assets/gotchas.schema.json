@@ -1,0 +1,63 @@
+{
+  "$id": "./gotchas.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Single-sourced setup gotchas for Astryx agents. Consumed by the generated agent cheat sheet (init --agent); build and doctor may consume it next.",
+  "properties": {
+    "gotchas": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "fix": {
+            "description": "What to do instead. May reference `astryx` commands.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable kebab-case identifier.",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ],
+            "type": "string"
+          },
+          "title": {
+            "description": "Short human-readable name.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "trigger": {
+            "description": "Symptom or condition pattern indicating this gotcha applies.",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "trigger",
+          "fix",
+          "severity"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "version": {
+      "description": "Schema version of this file. Bump when the entry shape changes.",
+      "minimum": 1,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "version",
+    "gotchas"
+  ],
+  "type": "object"
+}
