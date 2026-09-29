@@ -42,6 +42,7 @@ import {
   discoverAgentDocs,
   isAstryxInitialized,
 } from './agent-doc-state.mjs';
+import {loadGotchas, renderGotchaLines} from './gotchas.mjs';
 
 // The agent-doc locations, markers, and the setup-state predicates
 // (discoverAgentDocs, isAstryxInitialized) are the ONE canonical contract. They
@@ -435,9 +436,9 @@ export function generateCompressedIndex(
   lines.push('3. `astryx component <Name>` — props + examples for every component you use.');
   lines.push('');
 
-  // Rules — the top error-preventers.
+  // Rules — workflow rules. Error-preventers live in the GOTCHAS section
+  // below, driven by assets/gotchas.json (single-sourced, not hand-written).
   lines.push('RULES:');
-  lines.push('- No <div> — components do all layout/spacing, page frame included.');
   lines.push('- Frame first: read `astryx docs layout` before writing any page or screen — page frame, region widths, breakpoint behavior.');
   lines.push('- Dense data = rows (Table, List/Item), never Card-wrapped list items; Card is for standalone widgets. Status = StatusDot/Token; Badge = counts only.');
   // Styling guidance tailored to the project's configured system — never
@@ -450,7 +451,6 @@ export function generateCompressedIndex(
   } else {
     lines.push("- Custom styling: component props first; else style/className with tokens — var(--color-*|--spacing-*|--radius-*). No raw hex/px. (No StyleX/Tailwind compiler here — don't use xstyle/utility classes.)");
   }
-  lines.push('- Tokens for every value (`astryx docs tokens`). Brand/accent belongs in the theme (`astryx theme list` / `theme add <slug>`, or `astryx theme template` for a custom one) — never override --color-* in :root.');
   // Self-check — post-generation pass. Validated via vibe tests (internal/vibe-tests/
   // prompt-purity-test): on complex multi-step UIs the rules above alone still leave raw
   // CSS in ~11-13% of runs; a re-read-and-fix pass cuts that ~4x at negligible token cost.
@@ -465,6 +465,19 @@ export function generateCompressedIndex(
   lines.push(
     `- SELF-CHECK before you finish: re-read the file and ${selfCheckFix[stylingSystem] ?? selfCheckFix.css}. If unsure a component/prop exists, run \`astryx component <Name>\` / \`astryx search "<thing>"\`; don't hand-roll CSS.`,
   );
+  lines.push('');
+
+  // Gotchas — setup failure modes, single-sourced from assets/gotchas.json.
+  // Best-effort like the topic list above: a missing/unreadable file omits
+  // the section rather than breaking init; the schema is enforced by tests.
+  lines.push('GOTCHAS — setup failure modes, do not rediscover by failing:');
+  try {
+    for (const line of renderGotchaLines(loadGotchas(CLI_ROOT))) {
+      lines.push(line);
+    }
+  } catch {
+    // Omit the section; validation of the data file happens in tests.
+  }
   lines.push('');
 
   // Command reference — build/template/component are covered in WORKFLOW above.

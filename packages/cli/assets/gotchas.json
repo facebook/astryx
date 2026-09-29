@@ -1,0 +1,90 @@
+{
+  "$schema": "./gotchas.schema.json",
+  "gotchas": [
+    {
+      "fix": "Install and wire a StyleX compiler (@stylexjs/unplugin or your bundler's integration) \u2014 without it no Astryx styles are compiled. Run `astryx doctor` to verify.",
+      "id": "stylex-compiler-setup",
+      "severity": "high",
+      "title": "StyleX compiler not wired",
+      "trigger": "App renders unstyled; stylex.create() styles never apply"
+    },
+    {
+      "fix": "In your app entry import, in order: @astryxdesign/core/reset.css, then astryx.css, then the theme CSS.",
+      "id": "css-import-order",
+      "severity": "high",
+      "title": "Base stylesheets missing or misordered",
+      "trigger": "Components render completely unstyled"
+    },
+    {
+      "fix": "Declare the @layer order explicitly \u2014 unlayered styles and later layers always beat astryx-base. See `astryx docs migration` (Cascade Layer Safety).",
+      "id": "cascade-layer-order",
+      "severity": "high",
+      "title": "Cascade layers unordered",
+      "trigger": "Astryx styles silently lose to project CSS"
+    },
+    {
+      "fix": "Use the SWC-based StyleX transform \u2014 never the Babel plugin.",
+      "id": "swc-vs-babel-stylex",
+      "severity": "high",
+      "title": "Babel StyleX plugin on Next.js",
+      "trigger": "next/font breaks or StyleX fails to compile on Next.js App Router"
+    },
+    {
+      "fix": "Run `astryx theme build` for custom themes (emits CSS + JS + types); use the /built subpaths for bundled themes. Runtime-applied themes flash on hydration.",
+      "id": "ssr-theme-build",
+      "severity": "high",
+      "title": "Theme flashes on hydration (SSR)",
+      "trigger": "Wrong theme or unstyled flash on first paint in SSR/production"
+    },
+    {
+      "fix": "No <div>/<span> for layout \u2014 components own layout and spacing; read `astryx docs layout` before writing pages.",
+      "id": "no-raw-div-layout",
+      "severity": "medium",
+      "title": "Raw div/span layout",
+      "trigger": "Layout or spacing looks off compared to the design"
+    },
+    {
+      "fix": "Use tokens for every value (`astryx docs tokens`); brand/accent belongs in the theme (`astryx theme add <slug>`) \u2014 never override --color-* in :root.",
+      "id": "token-import-paths",
+      "severity": "medium",
+      "title": "Hardcoded colors instead of tokens",
+      "trigger": "Custom colors don't retint with the theme"
+    },
+    {
+      "fix": "Guard every :hover with @media (hover: hover).",
+      "id": "hover-on-touch-guard",
+      "severity": "medium",
+      "title": ":hover without touch guard",
+      "trigger": ":hover styles never apply, or stick on touch devices"
+    },
+    {
+      "fix": "Invoke via `npx @astryxdesign/cli`, or add the astryx script to package.json.",
+      "id": "bare-npx-invocation",
+      "severity": "medium",
+      "title": "Bare npx invocation hits the wrong package",
+      "trigger": "`npx astryx` resolves to an unrelated package"
+    },
+    {
+      "fix": "Pin exact versions; run `astryx upgrade --apply` after any bump (refreshes the agent block and codemods).",
+      "id": "pin-and-upgrade",
+      "severity": "medium",
+      "title": "Breakage after dependency bump",
+      "trigger": "Build breaks after bumping Astryx packages"
+    },
+    {
+      "fix": "Use light-dark() only inside theme files; components consume tokens.",
+      "id": "light-dark-outside-theme",
+      "severity": "low",
+      "title": "light-dark() outside theme files",
+      "trigger": "light-dark() colors ignore the active theme"
+    },
+    {
+      "fix": "Use logical properties (margin-inline-start), not physical ones (margin-left).",
+      "id": "physical-properties",
+      "severity": "low",
+      "title": "Physical CSS properties",
+      "trigger": "RTL layouts break"
+    }
+  ],
+  "version": 1
+}
