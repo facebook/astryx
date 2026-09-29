@@ -8,8 +8,9 @@
  *   `{@link <target>}`; and a resolver that finds the doc a target names.
  * @output The same content with every link resolved: an inline link becomes
  *   the `astryx docs` command that opens its doc, and a block carries a `link`
- *   with the doc's identity, route, title, summary, and command. A link that
- *   names no doc is a problem, never a guess.
+ *   with the doc's identity, route, title, summary, and command. A reference
+ *   block in a topic section also carries the `content` it includes. A link
+ *   that names no doc is a problem, never a guess.
  * @position Pure. The docs adapter owns the resolver (the project's docs tree
  *   and topic catalog) and applies this to every read and every doctor check.
  */
@@ -62,6 +63,16 @@ const CODE_SPAN = /(`[^`]*`)/;
  * @property {string} target the target as written
  * @property {string} message
  * @property {string} [section] the key of the section the link sits in
+ * @property {true} [include] the problem is in a `reference` block, which
+ *   includes content rather than linking to it: a reader loses that content,
+ *   so the authoring check fails on it
+ */
+
+/**
+ * What a `reference` block in a topic section includes of the doc it names:
+ * stable content blocks, with anything it could not include named in
+ * `problems`.
+ * @typedef {(block: any) => Promise<{content: any[], problems: string[]}>} DocIncluder
  */
 
 /**
@@ -119,9 +130,11 @@ export function unlinkText(text) {
  * @param {any[]} blocks
  * @param {LinkResolver} resolve
  * @param {{section?: string}} [at]
+ * @param {DocIncluder} [include] how a `reference` block includes the doc it
+ *   names; without it, the block only carries its `link`
  * @returns {Promise<{content: any[], problems: LinkProblem[]}>}
  */
-export async function linkBlocks(blocks, resolve, at = {}) {
+export async function linkBlocks(blocks, resolve, at = {}, include) {
   /** @type {LinkProblem[]} */
   const problems = [];
   const where = at.section ? {section: at.section} : {};
@@ -195,9 +208,37 @@ export async function linkBlocks(blocks, resolve, at = {}) {
         });
         break;
       }
-      case 'reference':
-        content.push({...block, link: await find(block.target)});
+      case 'reference': {
+        // A reference includes content, so what it cannot include is a
+        // problem the authoring check fails on, not one that prints as written.
+        const found = await resolve(block.target);
+        if ('problem' in found) {
+          problems.push({
+            target: block.target,
+            message: found.problem,
+            include: true,
+            ...where,
+          });
+          content.push({...block, link: null});
+          break;
+        }
+        /** @type {any} */
+        const linked = {...block, link: found};
+        if (include) {
+          const included = await include(block);
+          for (const message of included.problems) {
+            problems.push({
+              target: block.target,
+              message,
+              include: true,
+              ...where,
+            });
+          }
+          linked.content = included.content;
+        }
+        content.push(linked);
         break;
+      }
       case 'workflow': {
         const steps = [];
         for (const step of block.steps ?? []) {

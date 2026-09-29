@@ -1032,13 +1032,17 @@ export async function checkDocsTree(_ctx, options = {}) {
         }
       }
       // Every link between docs names a doc that exists (spec:AST-047 FR9):
-      // typed fields, reference and workflow blocks, and inline links.
+      // typed fields, reference and workflow blocks, and inline links. A
+      // reference block also includes all it names.
       for (const node of tree.nodes.values()) {
         for (const edge of typedEdges(tree, node).unresolved) {
           problems.push(`${node.route}: ${edge}`);
         }
       }
       problems.push(...(await docsLinkProblems(catalog, tree)));
+      problems.push(
+        ...(await docsLinkProblems(catalog, tree, {references: true})),
+      );
     }
     // New findings warn: a project that passed before keeps passing
     // (0.6 compatibility), and the warning names what to fix.

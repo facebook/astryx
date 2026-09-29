@@ -105,6 +105,59 @@ describe('linkBlocks', () => {
     );
   });
 
+  it('includes what a reference block names, and marks what it cannot include', async () => {
+    /** @type {any[]} */
+    const asked = [];
+    const include = async (/** @type {any} */ block) => {
+      asked.push(block.target);
+      return {
+        content: [{type: 'prose', text: 'The doctor command.'}],
+        problems: block.projection ? ['projection.fields: no such field'] : [],
+      };
+    };
+    const {content, problems} = await linkBlocks(
+      [
+        {type: 'reference', target: 'command:doctor'},
+        {
+          type: 'reference',
+          target: 'command:doctor',
+          projection: {fields: ['--nope']},
+        },
+        {type: 'reference', target: 'command:gone'},
+      ],
+      resolve,
+      {section: 'check'},
+      include,
+    );
+    // A target that names no doc is never handed to the includer.
+    expect(asked).toEqual(['command:doctor', 'command:doctor']);
+    expect(content[0]).toMatchObject({
+      link: {command: 'astryx docs cli/commands/doctor'},
+      content: [{type: 'prose', text: 'The doctor command.'}],
+    });
+    expect(content[2]).toEqual({
+      type: 'reference',
+      target: 'command:gone',
+      link: null,
+    });
+    // Both are the authoring check's: the block includes content, where a
+    // link only points at it.
+    expect(problems).toEqual([
+      {
+        target: 'command:doctor',
+        message: 'projection.fields: no such field',
+        include: true,
+        section: 'check',
+      },
+      {
+        target: 'command:gone',
+        message: '"command:gone" names no doc',
+        include: true,
+        section: 'check',
+      },
+    ]);
+  });
+
   it('names every link that finds no doc, and never guesses', async () => {
     const {content, problems} = await linkSections(
       [

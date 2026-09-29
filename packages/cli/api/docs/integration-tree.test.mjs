@@ -151,7 +151,15 @@ describe('integration docs in the docs tree', () => {
         title: 'Broken',
         description: 'A topic whose block no topic may hold.',
         sections: [
-          {title: 'Only', content: [{type: 'reference', target: 'generic:setup'}]},
+          {
+            title: 'Only',
+            content: [
+              {
+                type: 'workflow',
+                steps: [{title: 'Set up', references: ['generic:setup']}],
+              },
+            ],
+          },
         ],
       },
     });
