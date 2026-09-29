@@ -18,6 +18,34 @@ import type {ParseOptions} from './index';
 import {stubMatchMedia} from '../__tests__/stubMatchMedia';
 import {parseOutlineFromMarkdown} from '../Outline/parseOutlineFromMarkdown';
 
+function cssDeclarationsOf(element: Element): string[] {
+  const classes = new Set(element.className.split(/\s+/).filter(Boolean));
+  const declarations: string[] = [];
+
+  for (const sheet of Array.from(document.styleSheets)) {
+    for (const rule of Array.from(sheet.cssRules)) {
+      const text = rule.cssText;
+      const brace = text.indexOf('{');
+      if (brace === -1) {
+        continue;
+      }
+      const selector = text.slice(0, brace).replaceAll(':not(#\\#)', '').trim();
+      const match = /^\.([\w-]+)/.exec(selector);
+      if (match == null || !classes.has(match[1])) {
+        continue;
+      }
+      declarations.push(
+        text
+          .slice(brace + 1, text.lastIndexOf('}'))
+          .trim()
+          .replace(/;$/, ''),
+      );
+    }
+  }
+
+  return declarations;
+}
+
 describe('Markdown', () => {
   it('renders with role="document"', () => {
     render(<Markdown>Hello</Markdown>);
@@ -59,6 +87,85 @@ describe('Markdown', () => {
   it('renders astryx-markdown class name', () => {
     const {container} = render(<Markdown>Hello</Markdown>);
     expect(container.firstElementChild!.className).toContain('astryx-markdown');
+  });
+
+  describe('document presentation', () => {
+    const source =
+      '# Heading\n\nVisit https://example.com.\n\n| A | B |\n| --- | --- |\n| 1 | 2 |';
+
+    it('is opt-in and applies reading typography, centered measure, heading clearance, and grid tables', () => {
+      const {rerender} = render(
+        <Markdown variant="document">{source}</Markdown>,
+      );
+      const documentRoot = screen.getByRole('document');
+      const documentHeading = screen.getByRole('heading');
+      const documentParagraph = screen.getByRole('paragraph');
+      const documentHeaderCell = screen.getAllByRole('columnheader')[0];
+      const rootDeclarations = cssDeclarationsOf(documentRoot).join('\n');
+
+      expect(documentRoot).toHaveAttribute('data-variant', 'document');
+      expect(screen.queryByRole('link')).not.toBeInTheDocument();
+      expect(rootDeclarations).toMatch(/--[^:]+:\s*1rem/);
+      expect(rootDeclarations).toMatch(/--[^:]+:\s*1\.7/);
+      expect(cssDeclarationsOf(documentHeading)).toContain(
+        'scroll-margin-top: 64px',
+      );
+      expect(documentParagraph.getAttribute('style')).toContain('680px');
+      expect(documentParagraph.getAttribute('style')).toContain('auto');
+      const documentHeaderClasses = documentHeaderCell.className;
+
+      rerender(<Markdown>{source}</Markdown>);
+      expect(screen.getByRole('document')).not.toHaveAttribute('data-variant');
+      expect(cssDeclarationsOf(screen.getByRole('heading'))).not.toContain(
+        'scroll-margin-top: 64px',
+      );
+      expect(screen.getAllByRole('columnheader')[0].className).not.toBe(
+        documentHeaderClasses,
+      );
+    });
+
+    it('lets explicit layout, density, and heading props override the preset', () => {
+      const {container, rerender} = render(
+        <Markdown
+          variant="document"
+          contentWidth={512}
+          contentAlign="start"
+          density="compact"
+          headingLevelStart={3}>
+          {'# Heading\n\nBody copy'}
+        </Markdown>,
+      );
+      const paragraph = screen.getByRole('paragraph');
+
+      expect(screen.getByRole('document')).toHaveAttribute(
+        'data-density',
+        'compact',
+      );
+      expect(screen.getByRole('heading').tagName).toBe('H3');
+      expect(paragraph.getAttribute('style')).toContain('512px');
+      expect(paragraph.getAttribute('style')).not.toContain('auto');
+
+      rerender(
+        <Markdown variant="document" contentWidth={0} contentAlign="start">
+          Body copy
+        </Markdown>,
+      );
+      expect(
+        container.querySelector('[role="paragraph"]')?.getAttribute('style'),
+      ).toContain('0px');
+    });
+
+    it('rejects document presentation in inline display', () => {
+      const props = {
+        variant: 'document',
+        display: 'inline',
+        children: 'Inline',
+      } as unknown as ComponentProps<typeof Markdown>;
+
+      expect(() => render(<Markdown {...props} />)).toThrow(
+        'variant="document" supports only block display',
+      );
+    });
   });
 
   it('renders headings', () => {

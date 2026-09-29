@@ -33,6 +33,10 @@ const meta: Meta<typeof Markdown> = {
       control: 'select',
       options: ['default', 'compact'],
     },
+    variant: {
+      control: 'select',
+      options: ['default', 'document'],
+    },
     headingLevelStart: {
       control: 'select',
       options: [1, 2, 3, 4, 5, 6],
@@ -176,6 +180,14 @@ const STREAMING_RESPONSE = [
 export const Default: Story = {
   args: {
     children: SAMPLE_MD,
+  },
+};
+
+export const DocumentPresentation: Story = {
+  name: 'Document Presentation',
+  args: {
+    children: SAMPLE_MD,
+    variant: 'document',
   },
 };
 

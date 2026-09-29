@@ -44,6 +44,7 @@ export {Markdown} from './Markdown';
 export type {
   MarkdownProps,
   MarkdownDocumentProps,
+  MarkdownVariant,
   MarkdownSource,
   MarkdownComponents,
   MarkdownInlinePlugin,

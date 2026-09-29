@@ -12,6 +12,7 @@ owners: [cixzhang]
 review_triggers: [api, theming]
 verified_by:
   [
+    apps/storybook/stories/Markdown.stories.tsx,
     packages/core/src/Markdown/Markdown.test.tsx,
     packages/core/src/Markdown/Markdown.renderBoundary.test.tsx,
     packages/core/src/Markdown/Markdown.public.test.ts,
@@ -48,7 +49,9 @@ system_specs:
 ## Intent
 
 Markdown renders parsed content in a Document with stable default block parts and
-constrained renderer seams. Callers may opt into the canonical plugin protocol for
+constrained renderer seams. Callers may opt into a presentation-only document
+variant for long-form reading without changing the parsed language. Callers may opt
+into the canonical plugin protocol for
 bounded source syntax, immutable document transformation, typed extension
 rendering, and native typed document-start frontmatter. They may separately opt into dollar-delimited math by supplying one typed
 renderer for both inline and display expressions. The parser accepts matching
@@ -60,8 +63,8 @@ remain unchanged when plugins and math are absent.
 - Released default preserved: `yes`
 - Compatibility class: additive, opt-in public API; existing parser nodes, DOM,
   styling, targets, dollar-delimited text, `components`, and `inlinePlugins` remain
-  unchanged unless the caller supplies `plugins`, supplies `components.math`, or
-  passes the matching explicit parser option.
+  unchanged unless the caller supplies `variant="document"`, supplies `plugins`,
+  supplies `components.math`, or passes the matching explicit parser option.
 - Controlled/uncontrolled behavior: not applicable
 - Migration decision: none
 
@@ -76,6 +79,9 @@ Consumer migration instructions belong in consumer docs and release notes.
   Image block presentation and the eight current block targets documented below.
 - Applying block spacing and reflected density (plus Heading level) to those
   targets on the default render path.
+- Applying the opt-in document presentation's reading typography, centered default
+  measure, heading scroll clearance, and stronger table dividers without enabling
+  syntax or navigation behavior.
 - Opt-in recognition of `$…$` inline math and `$$…$$` display math, including
   delimiter boundaries, escape behavior, parser nodes, and streaming parity.
 - Passing each recognized expression as inert text to the caller's one math
@@ -102,6 +108,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 - Executing or sanitizing a renderer's math or plugin output, raw HTML parsing,
   mutable or unrestricted AST plugins, package discovery, or new
   list/table/inline-style override slots.
+- Treating a presentation variant as a grammar, autolink, permalink, or
+  heading-level switch.
 
 ## Public concepts
 
@@ -190,6 +198,7 @@ unions. Enabled calls return the explicit `InlineNodeWithMath` and
 | FR26 | `prepareMarkdownDocument()` runs one block parse, ordered transform pipeline, and heading projection and returns an opaque prepared document with its canonical root and readonly Outline items. `Markdown document` reuses that exact output as a mutually exclusive alternative to string `children`; inline and streaming combinations are excluded by the public type and rejected at runtime. Invalid prepared values also fail explicitly. `Outline` accepts the readonly items without copying.                                                |
 | FR27 | Ordered, unordered, and task lists apply the same `contentWidth` and `contentAlign` treatment to their shared List block.                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | FR28 | Markdown's Table block owns spacing, sizing, alignment, and the `markdown-table` target; the nested Table remains the sole owner of horizontal overflow, its accessible name, and conditional keyboard focusability.                                                                                                                                                                                                                                                                                                                                  |
+| FR29 | `variant="document"` is an opt-in block-only presentation: it reflects on the Document target, uses `1rem`/`1.7` body typography, centers the default 680px prose measure, gives default headings 64px logical scroll clearance, and uses grid table dividers. Explicit `contentWidth`, `contentAlign`, `density`, and `headingLevelStart` win. It enables no syntax, autolinking, navigation control, or replacement structure for custom renderers; omission preserves released output.                                                             |
 
 FR23 includes table-level escaping inside inline-code spans: `\|` keeps the pipe
 inside its authored cell, contributes only `|` to the code value and rendered
@@ -372,6 +381,7 @@ and this change preserves the existing spelling exactly.
 | FR25–FR26              | parser/prepared-document public tests, plugin SSR tests, and package export checks | server/RSC parsing with plugins, synchronous SSR, prepared block composition, suspending renderer streaming boundary                   | A server import gains `use client`, prepared content reparses or re-transforms, plugin execution needs serialization, SSR loses fallback, or direct RSC rendering is misrepresented as supported. |
 | FR27                   | `Markdown.test.tsx`                                                                | ordered, unordered, and task lists with constrained and centered prose                                                                 | A task list ignores `contentWidth` or `contentAlign`, or diverges from ordinary List block layout.                                                                                                |
 | FR28                   | `Markdown.test.tsx` and Table scroll-owner tests                                   | fitting and overflowing Markdown tables                                                                                                | Markdown adds a second scroll viewport/name/focus target, or Table loses conditional focusability.                                                                                                |
+| FR29                   | `Markdown.test.tsx`, public type tests, and the document-presentation story        | omitted/opted-in variants, explicit overrides, inline rejection, table and heading treatment                                           | Omission changes legacy output, presentation enables syntax, an explicit prop loses, or document geometry is absent.                                                                              |
 | Public syntax/types    | `Markdown.public.test.ts`, core typecheck, and `Markdown.doc.mjs`                  | Legacy exhaustive switches, math opt-ins, inferred extension-node unions                                                               | A released union widens, an enabled union loses nodes, or docs drift from declarations.                                                                                                           |
 | Navigation contract    | `parser.test.ts`, `Markdown.test.tsx`, and `Markdown.renderBoundary.test.tsx`      | Parsed and rendered links, including transformed built-in links; accepted ordinary schemes; rejected destinations; links versus images | A blocked destination reaches navigation or a custom link renderer, or resource policy narrows accepted navigation.                                                                               |
 | Security/accessibility | `parser.test.ts`, `Markdown.test.tsx`, and renderer guidance                       | Inert expression strings and renderer-owned semantics                                                                                  | Astryx executes math as HTML or silently claims renderer-owned accessibility.                                                                                                                     |
