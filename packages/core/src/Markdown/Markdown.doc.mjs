@@ -79,6 +79,12 @@ const anatomy = [
     description:
       'Optional terminal-styled CodeBlock produced from an ansi fence; controls are removed from visible and copied text.',
   },
+  {
+    name: 'Shiki-highlighted code',
+    required: false,
+    description:
+      'Optional lazily highlighted CodeBlock for configured fence languages; ordinary CodeBlock output remains while loading and after failure.',
+  },
 ];
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
@@ -290,6 +296,7 @@ export const docs = {
       },
       {className: 'astryx-markdown-mermaid'},
       {className: 'astryx-markdown-ansi'},
+      {className: 'astryx-markdown-shiki'},
     ],
   },
   usage: {
@@ -341,6 +348,11 @@ export const docs = {
         guidance: true,
         description:
           'Import markdownAnsiPlugin from @astryxdesign/core/Markdown/ansi for exact ansi fences. It removes terminal controls, maps SGR styles into safe CodeBlock tokens, and copies plain text; customize colors through its palette instead of embedding HTML.',
+      },
+      {
+        guidance: true,
+        description:
+          'Import markdownShikiPlugin from @astryxdesign/core/Markdown/shiki for lazy, grammar-aware highlighting of common fence languages. Use createMarkdownShikiPlugin to narrow languages, use Astryx syntax colors by default or select one Shiki theme, and bound per-line work; unsupported and failed highlighting stays on the ordinary CodeBlock path.',
       },
       {
         guidance: true,
@@ -539,6 +551,21 @@ const output = '\\u001b[32mPASS\\u001b[0m Build completed';
 
 <Markdown plugins={[markdownAnsiPlugin]}>
   {'\`\`\`ansi title="Build log"\\n' + output + '\\n\`\`\`'}
+</Markdown>;
+`,
+    },
+    {
+      label: 'Shiki highlighting',
+      code: `
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {createMarkdownShikiPlugin} from '@astryxdesign/core/Markdown/shiki';
+
+const shiki = createMarkdownShikiPlugin({
+  languages: ['typescript', 'tsx', 'css'],
+});
+
+<Markdown plugins={[shiki]}>
+  {'\`\`\`typescript title="model.ts"\\nconst answer: number = 42;\\n\`\`\`'}
 </Markdown>;
 `,
     },
@@ -878,6 +905,11 @@ export const docsZh = {
         description:
           '通过可选 ANSI 插件生成的终端输出。可覆盖外层颜色、背景、边框和间距。',
       },
+      {
+        className: 'astryx-markdown-shiki',
+        description:
+          '通过可选 Shiki 插件生成的语法高亮代码。可覆盖外层颜色、背景、边框和间距。',
+      },
     ],
   },
   usage: {
@@ -929,6 +961,11 @@ export const docsZh = {
         guidance: true,
         description:
           'Import markdownAnsiPlugin from @astryxdesign/core/Markdown/ansi for exact ansi fences. It removes terminal controls, maps SGR styles into safe CodeBlock tokens, and copies plain text; customize colors through its palette instead of embedding HTML.',
+      },
+      {
+        guidance: true,
+        description:
+          'Import markdownShikiPlugin from @astryxdesign/core/Markdown/shiki for lazy, grammar-aware highlighting of common fence languages. Use createMarkdownShikiPlugin to narrow languages, use Astryx syntax colors by default or select one Shiki theme, and bound per-line work; unsupported and failed highlighting stays on the ordinary CodeBlock path.',
       },
       {
         guidance: true,
@@ -1036,6 +1073,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Import markdownAnsiPlugin from @astryxdesign/core/Markdown/ansi for exact ansi fences. It removes terminal controls, maps SGR styles into safe CodeBlock tokens, and copies plain text; customize colors through its palette instead of embedding HTML.',
+      },
+      {
+        guidance: true,
+        description:
+          'Import markdownShikiPlugin from @astryxdesign/core/Markdown/shiki for lazy, grammar-aware highlighting of common fence languages. Use createMarkdownShikiPlugin to narrow languages, use Astryx syntax colors by default or select one Shiki theme, and bound per-line work; unsupported and failed highlighting stays on the ordinary CodeBlock path.',
       },
       {
         guidance: true,

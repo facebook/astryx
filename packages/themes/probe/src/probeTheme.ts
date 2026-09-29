@@ -6,7 +6,7 @@
 // test fixture. Regenerate with: pnpm visual:probe-theme
 //
 // defineTheme takes six things and this covers all six:
-//   components  292 targets, 933 selectors (generated from the docs)
+//   components  293 targets, 934 selectors (generated from the docs)
 //   tokens      custom properties, read back off the themed element
 //   icons       every registry entry swapped for a marked glyph
 //   indicators  check / radio / checkbox swapped — the swap that reaches furthest
@@ -3180,6 +3180,14 @@ export const probeTheme = defineTheme({
         color: 'hsl(150.2 82% 12%)',
         borderColor: 'hsl(325.3 91% 25%)',
         outlineColor: 'hsl(158.6 82% 25%)',
+      },
+    },
+    'markdown-shiki': {
+      base: {
+        backgroundColor: 'hsl(110.5 93% 52%)',
+        color: 'hsl(88.4 84% 12%)',
+        borderColor: 'hsl(42.7 77% 25%)',
+        outlineColor: 'hsl(70.3 78% 25%)',
       },
     },
     'markdown-table': {
