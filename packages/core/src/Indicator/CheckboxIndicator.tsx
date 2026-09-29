@@ -159,11 +159,11 @@ const indeterminateSizeStyles = stylex.create({
  * indeterminate bar.
  *
  * Decorative and non-interactive — it renders `aria-hidden` and owns no input,
- * role, or focus behavior. The focus ring lives on the owner's control wrapper
- * (see CheckboxInput), so a theme that replaces this component keeps a visible
- * focus indicator for free. Themes replace it wholesale through
- * `defineTheme({indicators: {checkbox: MyCheckbox}})`, or restyle it through
- * the `checkbox` theme target like any other component.
+ * role, or focus behavior. The owning control keeps focus semantics and paints its
+ * standard focus ring onto this indicator element (see CheckboxInput), so a
+ * replacement's root radius determines the ring shape. Themes replace it
+ * wholesale through `defineTheme({indicators: {checkbox: MyCheckbox}})`, or
+ * restyle it through the canonical `checkbox-indicator` theme target.
  *
  * @example
  * ```
