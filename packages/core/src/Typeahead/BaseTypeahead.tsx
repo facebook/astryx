@@ -30,6 +30,7 @@ import * as stylex from '@stylexjs/stylex';
 import {useBusyIndicatorLane} from './busyIndicatorLane';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
+import {getGutteredPositionTryFallbacks} from '../Layer/useLayer';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useHighlightedOptionScroll} from '../hooks/useHighlightedOptionScroll';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
@@ -250,8 +251,8 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
 // =============================================================================
 
 const TYPEAHEAD_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
-const TYPEAHEAD_POSITION_AREA_MAX_INLINE_SIZE = `calc(100% - max(${TYPEAHEAD_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)))`;
-const TYPEAHEAD_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK = `calc(100% - ${TYPEAHEAD_VIEWPORT_GUTTER})`;
+const TYPEAHEAD_MAX_INLINE_SIZE = `calc(100vi - max(${TYPEAHEAD_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px)) - max(${TYPEAHEAD_VIEWPORT_GUTTER}, env(safe-area-inset-right, 0px)))`;
+const TYPEAHEAD_MAX_INLINE_SIZE_FALLBACK = `calc(100vw - ${TYPEAHEAD_VIEWPORT_GUTTER} - ${TYPEAHEAD_VIEWPORT_GUTTER})`;
 
 const styles = stylex.create({
   input: {
@@ -292,8 +293,8 @@ const styles = stylex.create({
     boxSizing: 'border-box',
     minWidth: 'anchor-size(width)',
     maxInlineSize: stylex.firstThatWorks(
-      TYPEAHEAD_POSITION_AREA_MAX_INLINE_SIZE,
-      TYPEAHEAD_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK,
+      TYPEAHEAD_MAX_INLINE_SIZE,
+      TYPEAHEAD_MAX_INLINE_SIZE_FALLBACK,
     ),
   },
   popoverCustomWidth: (width: number) => ({
@@ -1159,6 +1160,12 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           placement: 'below',
           alignment: 'start',
           offset: spacingVars['--spacing-1'],
+          style: {
+            positionTryFallbacks: getGutteredPositionTryFallbacks(
+              'below',
+              'start',
+            ),
+          },
           xstyle: [
             styles.popover,
             menuWidth != null && styles.popoverCustomWidth(menuWidth),

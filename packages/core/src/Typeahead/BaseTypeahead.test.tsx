@@ -11,6 +11,7 @@ import {afterAll, beforeAll, describe, expect, it, vi} from 'vitest';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import * as stylex from '@stylexjs/stylex';
 import {BaseTypeahead} from './BaseTypeahead';
+import {spacingVars} from '../theme/tokens.stylex';
 import type {SearchSource, SearchableItem} from './types';
 
 const popoverOpenState = new WeakMap<HTMLElement, boolean>();
@@ -61,9 +62,27 @@ const emptySource: SearchSource<SearchableItem> = {
 
 const resultItem: SearchableItem = {id: '1', label: 'Result'};
 
+const TYPEAHEAD_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
+const TYPEAHEAD_MAX_INLINE_SIZE = `calc(100vi - max(${TYPEAHEAD_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px)) - max(${TYPEAHEAD_VIEWPORT_GUTTER}, env(safe-area-inset-right, 0px)))`;
+const TYPEAHEAD_MAX_INLINE_SIZE_FALLBACK = `calc(100vw - ${TYPEAHEAD_VIEWPORT_GUTTER} - ${TYPEAHEAD_VIEWPORT_GUTTER})`;
+
 const testStyles = stylex.create({
   input: {textTransform: 'uppercase'},
+  popover: {
+    maxInlineSize: stylex.firstThatWorks(
+      TYPEAHEAD_MAX_INLINE_SIZE,
+      TYPEAHEAD_MAX_INLINE_SIZE_FALLBACK,
+    ),
+  },
 });
+
+function atomicClasses(
+  style: (typeof testStyles)[keyof typeof testStyles],
+): string[] {
+  return (stylex.props(style).className ?? '')
+    .split(' ')
+    .filter(className => className !== '' && !className.includes('__'));
+}
 
 describe('BaseTypeahead', () => {
   it('forwards supported DOM, styling, and event props to the combobox input', () => {
@@ -171,6 +190,36 @@ describe('BaseTypeahead', () => {
 
     fireEvent.change(input, {target: {value: '😀a'}});
     await waitFor(() => expect(search).toHaveBeenCalledExactlyOnceWith('😀a'));
+  });
+
+  it('keeps requested width until guttered fallbacks are exhausted', async () => {
+    render(
+      <BaseTypeahead
+        searchSource={{
+          search: () => [resultItem],
+          bootstrap: () => [resultItem],
+        }}
+        value={null}
+        onChange={() => {}}
+        aria-label="Find a framework"
+        hasEntriesOnFocus
+        menuWidth={400}
+      />,
+    );
+
+    fireEvent.focus(screen.getByRole('combobox', {name: 'Find a framework'}));
+
+    const listbox = await screen.findByRole('listbox', {hidden: true});
+    const layer = listbox.closest('[popover]') as HTMLElement;
+    expect(layer).not.toBeNull();
+    expect(layer.style.positionTryFallbacks).toContain(
+      '--astryx-layer-block-end-guttered-full-axis',
+    );
+    expect(layer).toHaveStyle({width: 'var(--x-width)'});
+    expect(layer.getAttribute('style')).toContain('--x-width: 400px');
+    for (const className of atomicClasses(testStyles.popover)) {
+      expect(layer).toHaveClass(className);
+    }
   });
 
   it('exposes a completed empty search as a disabled listbox option', async () => {

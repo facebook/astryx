@@ -49,7 +49,7 @@ deciding_specs: [spec:AST-038]
 {
   "scope": "global",
   "triggers": {
-    "layering": ["INV2", "INV5", "INV6", "INV7"]
+    "layering": ["INV2", "INV5", "INV6", "INV7", "INV11"]
   }
 }
 ```
@@ -112,12 +112,51 @@ owns Theme provider behavior; this record owns where a layer's DOM is hosted.
 Anchor names form a list so several layers may share one trigger without
 clobbering one another. Standard placement uses the `self-*` logical keyword
 family so inherited direction controls RTL behavior. Every anchored placement
-can flip across either axis. Centered placements also gain span fallbacks so the
-surface can move along the alignment axis near viewport edges. Clearance is
-applied to both edges of the placement axis so a flip retains the gap.
+can flip across either axis. Centered placements also gain side-span fallbacks,
+and every placement ends with full-axis fallbacks so a surface that fits the
+viewport can shift from any trigger location instead of being resized.
+Clearance is applied to both edges of the placement axis so a flip retains the
+gap.
 
 Popover adds component-specific viewport sizing and overflow behavior above this
-geometry. Those constraints are not universal Layer behavior.
+geometry. Those constraints are not universal Layer behavior. Component-owned
+sizing preserves the ordered geometry fallbacks: a surface keeps its natural or
+requested inline size while any fallback position can fit it within the safe
+viewport, and constrains that size only when no candidate can fit it. A constraint
+based on the current position-area cell must not make that candidate fit early and
+prevent a viable alignment or side fallback. When natural block size fits on
+neither side, the component may choose the roomier side, constrain the surface,
+and expose its overflow through the component's scrolling contract.
+
+Layer also provides package-internal named full-axis tries with physical safe-area
+margins for viewport-constrained owners. Opting into those tries changes only the
+fallback geometry: it does not assign width, maximum size, or scrolling to Layer.
+Each sizing owner combines them with its own safe-viewport constraint. Direct
+`usePopover`/`useLayer` consumers without a candidate-relative size cap, including
+Selector-family surfaces, HoverCard, Tooltip, and keyboard hints, keep the standard
+fallback list and their existing component-owned or intrinsic size.
+
+### Anchored sizing-owner ledger
+
+| Runtime path                                                 | Sizing owner              | Preserve-before-contain responsibility                                                                                                                                                          |
+| ------------------------------------------------------------ | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DropdownMenu root popover                                    | DropdownMenu              | Preserve `menuWidth` or intrinsic width while a safe candidate fits; own menu scrolling and viewport caps.                                                                                      |
+| Popover component                                            | Popover                   | Preserve explicit width or trigger-matched minimum width through ordered fallbacks; own measured overflow and scrolling.                                                                        |
+| BaseTypeahead, including Typeahead and Tokenizer composition | BaseTypeahead             | Preserve intrinsic or numeric result width through ordered fallbacks; own result-list scrolling.                                                                                                |
+| PowerSearch editor                                           | PowerSearch               | Preserve its 400 px editor floor through ordered fallbacks; yield only when the safe viewport cannot contain it.                                                                                |
+| TopNavMegaMenu                                               | TopNavMegaMenu            | Preserve requested block size when either side fits. If neither fits, order candidates by available block size, constrain to the roomier side, and scroll internally on the logical block axis. |
+| Selector, MultiSelector, and ComplexSelector popovers        | Selector-family component | Match the trigger minimum without a candidate-relative cap; inherit Layer fallback order without a separate sizing change. Bottom-sheet presentation is separate.                               |
+| HoverCard, Tooltip, and keyboard hints                       | Owning surface/content    | Keep intrinsic or component-capped content on the ordinary Layer path; no candidate-relative clamp participates.                                                                                |
+
+The same behavior reaches composed callers without another sizing owner:
+Table filtering, ChatEmojiPicker, and TourStep inherit Popover; MoreMenu and
+Schedule's view selector inherit DropdownMenu; Typeahead, Tokenizer, and
+PowerSearch's main result menu inherit BaseTypeahead; Pagination and
+TransferListSelector inherit their Selector-family owner. Date inputs, ordinary
+TopNav/SideNav menus, Chat trigger menus, TabMenu, and Breadcrumbs use direct
+standard popovers but do not impose a candidate-relative size cap. Custom
+anchored geometry, fixed layers, bottom sheets, and submenu-specific geometry
+remain outside this invariant.
 
 ### Current browser support behavior
 
@@ -279,6 +318,12 @@ layers use Layer rendering without joining Escape/platform dismissal.
 - **INV10 — LayerProvider is Toast configuration, not a universal layer host.**
   Trigger-associated layers resolve near their JSX position independently of the
   provider.
+- **INV11 — Position fallbacks precede size containment.** Component-owned sizing
+  preserves a surface's natural or requested size through same-side alignment,
+  opposite-side, and full-axis fallback candidates while any candidate can fit it
+  within the safe viewport. Only after no candidate fits may the component's
+  viewport constraint reduce that size. Layer owns the ordering and reusable
+  guttered full-axis tries; the component still owns size and scrolling.
 
 This record does not make future eligible-owner, branch-association, global-host,
 or browser-support requirements current. It does not own component focus entry or
@@ -313,9 +358,11 @@ be updated only as that work ships.
 - A change to `useLayer` hosting or lifecycle verifies safe inline placement,
   corrective portals, host relocation, show/hide reconciliation, theme
   inheritance, writing context, and reduced-browser behavior.
-- A positioning change verifies all placement/alignment combinations in LTR and
-  RTL, viewport-edge fallbacks, offsets after flips, shared anchors, custom mode,
-  and fixed mode.
+- A positioning or component-owned collision-sizing change verifies all
+  placement/alignment combinations in LTR, RTL, and vertical writing modes,
+  viewport-edge fallbacks, natural/requested size preservation when a fallback
+  fits, containment when no fallback fits, offsets after flips, shared anchors,
+  custom mode, and fixed mode.
 - A Popover lifecycle change verifies programmatic and browser closes, controlled
   state, temporary invoker association, and same-gesture trigger behavior.
 - A dismissal-stack change updates `family:overlay-dismissal` when membership or
@@ -373,14 +420,14 @@ this current architecture record.
 
 ## Verification
 
-| Invariant  | Evidence                                                                                       | Failure signal                                                                                          |
-| ---------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| INV1, INV2 | `useLayer.test.tsx` and `layerHost.test.ts`                                                    | Invalid DOM, stale host, lost theme/writing context, or portal mistaken for top-layer promotion         |
-| INV3–INV5  | `useLayer.test.tsx` and `anchorName.test.ts`                                                   | A mode leaks geometry, RTL resolves from the wrong context, fallback clips, or a sibling anchor is lost |
-| INV6, INV7 | `useLayer.test.tsx`, `Popover.test.tsx`, `DropdownMenu.test.tsx`, and `useMenuHover.test.tsx`  | Duplicate close callback or the same press/re-hover reopens a surface                                   |
-| INV8       | `useLayerDismissal.test.tsx`, `layerDismissalInvariants.test.tsx`, and `useFocusTrap.test.tsx` | Current top registered layer is skipped, two layers close, or a blocker leaks through                   |
-| INV9       | Representative Dialog, ContextMenu, Tooltip/HoverCard, and BottomSheet source/tests            | A current local channel silently changes ownership or policy                                            |
-| INV10      | `LayerProvider.tsx`, `useToast.tsx`, and `ToastViewport.test.tsx`                              | Provider begins relocating ordinary layers or Toast fallback loses its current lifecycle                |
+| Invariant        | Evidence                                                                                                    | Failure signal                                                                                                                                    |
+| ---------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV1, INV2       | `useLayer.test.tsx` and `layerHost.test.ts`                                                                 | Invalid DOM, stale host, lost theme/writing context, or portal mistaken for top-layer promotion                                                   |
+| INV3–INV5, INV11 | `useLayer.test.tsx`, `anchorName.test.ts`, `DropdownMenu.test.tsx`, and real-browser viewport-edge evidence | A mode leaks geometry, RTL resolves from the wrong context, a viable fallback is preempted by sizing, fallback clips, or a sibling anchor is lost |
+| INV6, INV7       | `useLayer.test.tsx`, `Popover.test.tsx`, `DropdownMenu.test.tsx`, and `useMenuHover.test.tsx`               | Duplicate close callback or the same press/re-hover reopens a surface                                                                             |
+| INV8             | `useLayerDismissal.test.tsx`, `layerDismissalInvariants.test.tsx`, and `useFocusTrap.test.tsx`              | Current top registered layer is skipped, two layers close, or a blocker leaks through                                                             |
+| INV9             | Representative Dialog, ContextMenu, Tooltip/HoverCard, and BottomSheet source/tests                         | A current local channel silently changes ownership or policy                                                                                      |
+| INV10            | `LayerProvider.tsx`, `useToast.tsx`, and `ToastViewport.test.tsx`                                           | Provider begins relocating ordinary layers or Toast fallback loses its current lifecycle                                                          |
 
 Current unit coverage proves emitted styles, reducers, state transitions, and DOM
 placement. Native Popover, `<dialog>`, focus, top-layer ordering, and rendered

@@ -13,6 +13,7 @@
  */
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {expect, waitFor} from 'storybook/test';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -755,6 +756,63 @@ export const CategoryTreeSelector: Story = {
           'A second tree-search example showing the same ComplexSelector shell with different hierarchical data and a form action nearby. The custom content relies on TreeList focus behavior and should be checked against WCAG 2.2.',
       },
     },
+  },
+};
+
+export const ConstrainedFallbackSizing: Story = {
+  name: 'Constrained fallback sizing',
+  parameters: {layout: 'fullscreen'},
+  render: () => (
+    <div
+      style={{
+        position: 'fixed',
+        insetInlineEnd: 16,
+        insetBlockStart: 80,
+        width: 240,
+      }}>
+      <ComplexSelector<string>
+        label="View options"
+        value="Comfortable"
+        onChange={() => {}}
+        triggerLabel="Density: Comfortable"
+        width="100%"
+        placement="below"
+        data-testid="complex-selector-fallback-control">
+        {() => (
+          <div
+            data-testid="complex-selector-fallback-content"
+            style={{width: 300, padding: 16}}>
+            Complex selector content
+          </div>
+        )}
+      </ComplexSelector>
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const root = canvasElement.querySelector<HTMLElement>(
+      '[data-testid="complex-selector-fallback-control"]',
+    );
+    const trigger = root?.querySelector<HTMLButtonElement>('button');
+    if (trigger == null) {
+      throw new Error('ComplexSelector fallback trigger did not render');
+    }
+    trigger.click();
+    const content = await waitFor(() => {
+      const found = document.querySelector<HTMLElement>(
+        '[data-testid="complex-selector-fallback-content"]',
+      );
+      expect(found).not.toBeNull();
+      return found;
+    });
+    const layer = content?.closest<HTMLElement>('[popover]');
+    if (layer == null) {
+      throw new Error('ComplexSelector fallback layer did not render');
+    }
+    const triggerRect = trigger.getBoundingClientRect();
+    const layerRect = layer.getBoundingClientRect();
+    expect(layerRect.width).toBeGreaterThanOrEqual(triggerRect.width - 1);
+    expect(layerRect.left).toBeGreaterThanOrEqual(15);
+    expect(layerRect.right).toBeLessThanOrEqual(window.innerWidth - 15);
   },
 };
 

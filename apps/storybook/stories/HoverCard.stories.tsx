@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {expect, userEvent, waitFor} from 'storybook/test';
 import {HoverCard, useHoverCard} from '@astryxdesign/core/HoverCard';
 import {Button} from '@astryxdesign/core/Button';
 import {VStack, HStack} from '@astryxdesign/core/Layout';
@@ -127,6 +128,68 @@ export const AllPlacements: Story = {
       </HoverCard>
     </div>
   ),
+};
+
+export const ViewportFallbackControls: Story = {
+  name: 'Viewport fallback controls',
+  parameters: {layout: 'fullscreen'},
+  render: () => (
+    <div
+      dir="rtl"
+      style={{
+        position: 'fixed',
+        insetInlineEnd: 16,
+        insetBlockStart: 100,
+        writingMode: 'vertical-rl',
+      }}>
+      <HoverCard
+        label="Profile details"
+        placement="below"
+        alignment="start"
+        delay={0}
+        hideDelay={120}
+        focusTrigger="always"
+        content={<ProfileCard />}>
+        <Button label="Profile fallback target">Profile fallback target</Button>
+      </HoverCard>
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const trigger = canvasElement.querySelector<HTMLButtonElement>('button');
+    if (trigger == null) {
+      throw new Error('HoverCard fallback trigger did not render');
+    }
+    await userEvent.hover(trigger);
+    const card = await waitFor(() => {
+      const found = document.querySelector<HTMLElement>(
+        '[role="dialog"][aria-label="Profile details"]',
+      );
+      expect(found).not.toBeNull();
+      return found;
+    });
+    if (card == null) {
+      throw new Error('HoverCard fallback content did not render');
+    }
+    const layer = card.closest<HTMLElement>('[popover]');
+    if (layer == null) {
+      throw new Error('HoverCard fallback layer did not render');
+    }
+    const rect = layer.getBoundingClientRect();
+    // offsetWidth ignores the entry transform while still proving the intrinsic
+    // 200px content width was not narrowed by positioning.
+    expect(layer.offsetWidth).toBeGreaterThanOrEqual(199);
+    expect(rect.left).toBeGreaterThanOrEqual(0);
+    expect(rect.right).toBeLessThanOrEqual(window.innerWidth);
+
+    await userEvent.hover(layer);
+    await new Promise(resolve => setTimeout(resolve, 160));
+    expect(layer.matches(':popover-open')).toBe(true);
+
+    trigger.focus();
+    await userEvent.unhover(layer);
+    await new Promise(resolve => setTimeout(resolve, 160));
+    expect(layer.matches(':popover-open')).toBe(true);
+  },
 };
 
 export const WithHook: Story = {

@@ -22,6 +22,7 @@
  * item reads as pre-selected, and the first ArrowDown then moves to item 1.
  *
  * SYNC: When modified, update these files to stay in sync:
+ * - /packages/core/src/Layer/layerPositionTry.css
  * - /packages/core/src/DropdownMenu/DropdownMenu.doc.mjs
  * - /packages/core/src/DropdownMenu/DropdownMenu.test.tsx
  * - /packages/core/src/DropdownMenu/index.ts
@@ -68,7 +69,11 @@ import {
 import {MenuBottomSheet} from './MenuBottomSheet';
 import {MenuBottomSheetActionList} from './MenuBottomSheetActionList';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
-import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
+import {
+  getGutteredPositionTryFallbacks,
+  type LayerAlignment,
+  type LayerPlacement,
+} from '../Layer/useLayer';
 import {
   spacingVars,
   colorVars,
@@ -91,9 +96,9 @@ const MENU_MAX_INLINE_SIZE = `calc(100vi - max(${MENU_VIEWPORT_GUTTER}, env(safe
 const MENU_MAX_INLINE_SIZE_FALLBACK = `calc(100vw - ${MENU_VIEWPORT_GUTTER} - ${MENU_VIEWPORT_GUTTER})`;
 const MENU_MAX_BLOCK_SIZE = `min(300px, calc(100dvb - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px)) - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))))`;
 const MENU_MAX_BLOCK_SIZE_FALLBACK = `min(300px, calc(100vh - ${MENU_VIEWPORT_GUTTER} - ${MENU_VIEWPORT_GUTTER}))`;
-const MENU_POSITION_AREA_MAX_INLINE_SIZE = `calc(100% - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)))`;
-const MENU_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK = `calc(100% - ${MENU_VIEWPORT_GUTTER})`;
 const MENU_INLINE_EDGE_GUTTER = `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px))`;
+const MENU_BLOCK_START_EDGE_GUTTER = `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px))`;
+const MENU_BLOCK_END_EDGE_GUTTER = `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))`;
 const MENU_TRIGGER_OPEN_BACKGROUND = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
 
 const styles = stylex.create({
@@ -133,15 +138,16 @@ const styles = stylex.create({
   },
   popoverViewport: {
     boxSizing: 'border-box',
+    // Bound the surface to the safe viewport, not the initially requested
+    // position-area cell. A cell-relative cap can make a cramped candidate fit
+    // before CSS anchor positioning gets to try a roomier alignment fallback.
+    maxInlineSize: stylex.firstThatWorks(
+      MENU_MAX_INLINE_SIZE,
+      MENU_MAX_INLINE_SIZE_FALLBACK,
+    ),
     maxBlockSize: stylex.firstThatWorks(
       MENU_MAX_BLOCK_SIZE,
       MENU_MAX_BLOCK_SIZE_FALLBACK,
-    ),
-  },
-  popoverViewportAligned: {
-    maxInlineSize: stylex.firstThatWorks(
-      MENU_POSITION_AREA_MAX_INLINE_SIZE,
-      MENU_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK,
     ),
   },
   popoverViewportStart: {
@@ -151,31 +157,23 @@ const styles = stylex.create({
     marginInlineStart: MENU_INLINE_EDGE_GUTTER,
   },
   popoverViewportBlockStart: {
-    marginBlockEnd: `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))`,
+    marginBlockEnd: MENU_BLOCK_END_EDGE_GUTTER,
   },
   popoverViewportBlockEnd: {
-    marginBlockStart: `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px))`,
+    marginBlockStart: MENU_BLOCK_START_EDGE_GUTTER,
   },
   popoverViewportCentered: {
     marginInlineStart: MENU_INLINE_EDGE_GUTTER,
     marginInlineEnd: MENU_INLINE_EDGE_GUTTER,
-    maxInlineSize: stylex.firstThatWorks(
-      MENU_MAX_INLINE_SIZE,
-      MENU_MAX_INLINE_SIZE_FALLBACK,
-    ),
   },
   popoverViewportBlockCentered: {
-    marginBlockStart: `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px))`,
-    marginBlockEnd: `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))`,
-    maxInlineSize: stylex.firstThatWorks(
-      MENU_MAX_INLINE_SIZE,
-      MENU_MAX_INLINE_SIZE_FALLBACK,
-    ),
+    marginBlockStart: MENU_BLOCK_START_EDGE_GUTTER,
+    marginBlockEnd: MENU_BLOCK_END_EDGE_GUTTER,
   },
   popoverAligned: {
     minWidth: stylex.firstThatWorks(
-      `min(anchor-size(width), ${MENU_POSITION_AREA_MAX_INLINE_SIZE})`,
-      `min(anchor-size(width), ${MENU_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK})`,
+      `min(anchor-size(width), ${MENU_MAX_INLINE_SIZE})`,
+      `min(anchor-size(width), ${MENU_MAX_INLINE_SIZE_FALLBACK})`,
       'anchor-size(width)',
     ),
   },
@@ -287,9 +285,9 @@ interface DropdownMenuBaseProps extends BaseProps {
   isMenuOpen?: boolean;
   onOpenChange?: (isOpen: boolean) => void;
   /**
-   * Minimum popover width. The menu may grow for its content but is capped to
-   * the available viewport space. Ignored by bottom-sheet presentation.
-   * Defaults to the trigger width.
+   * Minimum popover width. The menu may grow for its content and tries a
+   * position fallback before it is capped to the safe viewport width. Ignored
+   * by bottom-sheet presentation. Defaults to the trigger width.
    */
   menuWidth?: number | string;
   onClick?: () => void;
@@ -880,12 +878,8 @@ function DropdownMenuPopover({
       <Icon icon="chevronDown" size="sm" color="inherit" />
     ) : undefined);
 
-  const requestedWidthLimit =
-    alignment === 'center'
-      ? MENU_MAX_INLINE_SIZE_FALLBACK
-      : MENU_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK;
   const resolvedMenuWidth = menuWidth
-    ? resolveMenuWidth(menuWidth, requestedWidthLimit)
+    ? resolveMenuWidth(menuWidth, MENU_MAX_INLINE_SIZE_FALLBACK)
     : null;
   const popoverXstyle = resolvedMenuWidth
     ? resolvedMenuWidth.property === 'inlineSize'
@@ -967,6 +961,12 @@ function DropdownMenuPopover({
           placement,
           alignment,
           offset: spacingVars['--spacing-1'],
+          style: {
+            positionTryFallbacks: getGutteredPositionTryFallbacks(
+              placement,
+              alignment,
+            ),
+          },
           xstyle: [
             styles.popoverViewport,
             alignment === 'center'
@@ -974,7 +974,6 @@ function DropdownMenuPopover({
                 ? styles.popoverViewportBlockCentered
                 : styles.popoverViewportCentered
               : [
-                  styles.popoverViewportAligned,
                   isSidePlacement
                     ? alignment === 'start'
                       ? styles.popoverViewportBlockStart

@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {expect, waitFor} from 'storybook/test';
 import {useState} from 'react';
 import {Button} from '@astryxdesign/core/Button';
 import {MultiSelector} from '@astryxdesign/core/MultiSelector';
@@ -94,6 +95,61 @@ export const BottomSheetPresentation: Story = {
         presentation="bottom-sheet"
       />
     );
+  },
+  play: async ({canvasElement}) => {
+    canvasElement.querySelector<HTMLButtonElement>('button')?.click();
+    await waitFor(() => {
+      const dialog = document.querySelector<HTMLDialogElement>('dialog');
+      expect(dialog).not.toBeNull();
+      expect(dialog?.matches(':modal')).toBe(true);
+    });
+  },
+};
+
+export const ConstrainedFallbackSizing: Story = {
+  name: 'Constrained fallback sizing',
+  parameters: {layout: 'fullscreen'},
+  render: () => {
+    const [value, setValue] = useState<string[]>([]);
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          insetInlineEnd: 16,
+          insetBlockStart: 80,
+          width: 240,
+        }}>
+        <MultiSelector
+          label="Teams"
+          options={['Design', 'Engineering', 'Marketing', 'Operations']}
+          value={value}
+          onChange={setValue}
+          width="100%"
+          isDefaultOpen
+          data-testid="multi-selector-fallback-control"
+        />
+      </div>
+    );
+  },
+  play: async ({canvasElement}) => {
+    const root = canvasElement.querySelector<HTMLElement>(
+      '[data-testid="multi-selector-fallback-control"]',
+    );
+    const trigger = root?.querySelector<HTMLElement>('button');
+    const listbox = await waitFor(() => {
+      const found = document.querySelector<HTMLElement>('[role="listbox"]');
+      expect(found).not.toBeNull();
+      return found;
+    });
+    const layer = listbox?.closest<HTMLElement>('[popover]');
+    if (trigger == null || layer == null) {
+      throw new Error('MultiSelector fallback evidence did not render');
+    }
+    const triggerRect = trigger.getBoundingClientRect();
+    const layerRect = layer.getBoundingClientRect();
+    expect(layerRect.width).toBeGreaterThanOrEqual(triggerRect.width - 1);
+    expect(layerRect.left).toBeGreaterThanOrEqual(15);
+    expect(layerRect.right).toBeLessThanOrEqual(window.innerWidth - 15);
   },
 };
 

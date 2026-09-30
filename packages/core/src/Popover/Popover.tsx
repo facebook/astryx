@@ -29,7 +29,11 @@ import * as stylex from '@stylexjs/stylex';
 import {devWarn} from '../utils/devWarning';
 import type {BaseProps} from '../BaseProps';
 import {usePopover} from './usePopover';
-import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
+import {
+  getGutteredPositionTryFallbacks,
+  type LayerAlignment,
+  type LayerPlacement,
+} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {InteractiveRoleContext} from '../InteractiveRoleContext/InteractiveRoleContext';
@@ -44,8 +48,6 @@ const POPOVER_MAX_INLINE_SIZE = `calc(100vi - max(${POPOVER_VIEWPORT_GUTTER}, en
 const POPOVER_MAX_INLINE_SIZE_FALLBACK = `calc(100vw - ${POPOVER_VIEWPORT_GUTTER} - ${POPOVER_VIEWPORT_GUTTER})`;
 const POPOVER_MAX_BLOCK_SIZE = `calc(100dvb - max(${POPOVER_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px)) - max(${POPOVER_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px)))`;
 const POPOVER_MAX_BLOCK_SIZE_FALLBACK = `calc(100vh - ${POPOVER_VIEWPORT_GUTTER} - ${POPOVER_VIEWPORT_GUTTER})`;
-const POPOVER_POSITION_AREA_MAX_INLINE_SIZE = `calc(100% - max(${POPOVER_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)))`;
-const POPOVER_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK = `calc(100% - ${POPOVER_VIEWPORT_GUTTER})`;
 const POPOVER_INLINE_EDGE_GUTTER = `max(${POPOVER_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px))`;
 
 /**
@@ -263,8 +265,8 @@ const styles = stylex.create({
   },
   viewportAligned: {
     maxInlineSize: stylex.firstThatWorks(
-      POPOVER_POSITION_AREA_MAX_INLINE_SIZE,
-      POPOVER_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK,
+      POPOVER_MAX_INLINE_SIZE,
+      POPOVER_MAX_INLINE_SIZE_FALLBACK,
     ),
   },
   viewportStart: {
@@ -323,8 +325,8 @@ const styles = stylex.create({
   }),
   matchTriggerAligned: {
     minWidth: stylex.firstThatWorks(
-      `min(anchor-size(width), ${POPOVER_POSITION_AREA_MAX_INLINE_SIZE})`,
-      `min(anchor-size(width), ${POPOVER_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK})`,
+      `min(anchor-size(width), ${POPOVER_MAX_INLINE_SIZE})`,
+      `min(anchor-size(width), ${POPOVER_MAX_INLINE_SIZE_FALLBACK})`,
       'anchor-size(width)',
     ),
   },
@@ -687,6 +689,10 @@ export function Popover({
               : styles.viewportEnd,
         ];
 
+  const positionFallbackStyle = {
+    positionTryFallbacks: getGutteredPositionTryFallbacks(placement, alignment),
+  };
+
   // Sibling mode: render only the popover (no wrapper needed)
   if (anchorRef && children == null) {
     return (
@@ -695,6 +701,7 @@ export function Popover({
           placement,
           alignment,
           offset: spacingVars['--spacing-1'],
+          style: positionFallbackStyle,
           xstyle: [
             styles.viewportFit,
             popoverViewportXstyle,
@@ -725,6 +732,7 @@ export function Popover({
           placement,
           alignment,
           offset: spacingVars['--spacing-1'],
+          style: positionFallbackStyle,
           xstyle: [
             styles.viewportFit,
             popoverViewportXstyle,
@@ -748,6 +756,7 @@ export function Popover({
         placement,
         alignment,
         offset: spacingVars['--spacing-1'],
+        style: positionFallbackStyle,
         xstyle: [
           styles.viewportFit,
           popoverViewportXstyle,

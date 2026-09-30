@@ -2,7 +2,8 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {Typeahead} from '@astryxdesign/core/Typeahead';
+import {expect, waitFor} from 'storybook/test';
+import {BaseTypeahead, Typeahead} from '@astryxdesign/core/Typeahead';
 import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 
@@ -413,4 +414,52 @@ export const RtlEndLane: Story = {
     </div>
   ),
   name: 'RTL end lane (selected + clear)',
+};
+
+export const PositionFallbackBeforeSizing: Story = {
+  name: 'Position fallback before sizing',
+  parameters: {layout: 'fullscreen'},
+  render: () => {
+    const [value, setValue] = useState<SearchableItem | null>(null);
+    return (
+      <div style={{minHeight: '100vh', position: 'relative'}}>
+        <div
+          style={{
+            position: 'absolute',
+            insetInlineStart: 500,
+            insetBlockStart: 80,
+            width: 180,
+          }}>
+          <BaseTypeahead
+            aria-label="Fruit"
+            searchSource={fruitSource}
+            value={value}
+            onChange={setValue}
+            hasEntriesOnFocus
+            menuWidth={400}
+          />
+        </div>
+      </div>
+    );
+  },
+  play: async ({canvasElement}) => {
+    const input = canvasElement.querySelector<HTMLInputElement>('input');
+    if (input == null) {
+      throw new Error('Typeahead fallback input did not render');
+    }
+    input.focus();
+    const listbox = await waitFor(() => {
+      const found = document.querySelector<HTMLElement>('[role="listbox"]');
+      expect(found).not.toBeNull();
+      return found;
+    });
+    const layer = listbox?.closest<HTMLElement>('[popover]');
+    if (layer == null) {
+      throw new Error('Typeahead fallback layer did not render');
+    }
+    const rect = layer.getBoundingClientRect();
+    expect(rect.width).toBeGreaterThanOrEqual(399);
+    expect(rect.left).toBeGreaterThanOrEqual(15);
+    expect(rect.right).toBeLessThanOrEqual(window.innerWidth - 15);
+  },
 };

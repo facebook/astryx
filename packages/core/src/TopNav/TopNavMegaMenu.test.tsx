@@ -3,7 +3,7 @@
 /**
  * @file TopNavMegaMenu.test.tsx
  * @input Uses vitest, @testing-library/react, TopNavMegaMenu and sub-components
- * @output Unit tests for TopNavMegaMenu slots API and mobile modes
+ * @output Tests TopNavMegaMenu slots, sizing fallback, and mobile modes
  * @position Testing; validates TopNavMegaMenu behavior
  *
  * SYNC: When TopNavMegaMenu changes, update tests to match new behavior
@@ -17,6 +17,24 @@ import userEvent from '@testing-library/user-event';
 import {TopNavMegaMenu} from './TopNavMegaMenu';
 import {TopNavMegaMenuItem} from './TopNavMegaMenuItem';
 import {TopNavRenderContext} from './TopNavRenderContext';
+import {spacingVars} from '../theme/tokens.stylex';
+
+const TOP_NAV_MEGA_MENU_BLOCK_GUTTER = spacingVars['--spacing-3'];
+const TOP_NAV_MEGA_MENU_SAFE_BLOCK_GUTTER = `max(${TOP_NAV_MEGA_MENU_BLOCK_GUTTER}, env(safe-area-inset-top, 0px), env(safe-area-inset-right, 0px), env(safe-area-inset-bottom, 0px), env(safe-area-inset-left, 0px))`;
+const TOP_NAV_MEGA_MENU_POSITION_AREA_MAX_BLOCK_SIZE = `calc(100% - ${TOP_NAV_MEGA_MENU_SAFE_BLOCK_GUTTER} - ${TOP_NAV_MEGA_MENU_SAFE_BLOCK_GUTTER})`;
+const TOP_NAV_MEGA_MENU_POSITION_AREA_MAX_BLOCK_SIZE_FALLBACK = `calc(100% - ${TOP_NAV_MEGA_MENU_BLOCK_GUTTER} - ${TOP_NAV_MEGA_MENU_BLOCK_GUTTER})`;
+const layerProbe = stylex.create({
+  roomierCandidateFit: {
+    maxBlockSize: stylex.firstThatWorks(
+      TOP_NAV_MEGA_MENU_POSITION_AREA_MAX_BLOCK_SIZE,
+      TOP_NAV_MEGA_MENU_POSITION_AREA_MAX_BLOCK_SIZE_FALLBACK,
+    ),
+  },
+  blockScroll: {
+    overflow: 'auto',
+    overscrollBehavior: 'contain',
+  },
+});
 
 // =============================================================================
 // Popover API mock — jsdom implements no Popover API, so default-mode tests
@@ -83,6 +101,44 @@ describe('TopNavMegaMenu — default mode', () => {
       />,
     );
     expect(screen.getByRole('button', {name: 'Products'})).toBeInTheDocument();
+  });
+
+  it('orders block fallbacks by available room before candidate containment', () => {
+    render(
+      <TopNavMegaMenu
+        label="Products"
+        items={<TopNavMegaMenuItem title="Analytics" href="/analytics" />}
+      />,
+    );
+
+    const group = screen.getByRole('group', {
+      name: 'Products',
+      hidden: true,
+    });
+    const layer = group.closest('[popover]') as HTMLElement;
+    expect(layer).not.toBeNull();
+    expect(layer.style.positionTryFallbacks).toContain(
+      '--astryx-layer-block-end-guttered-full-axis',
+    );
+    expect(layer.style.positionTryOrder).toBe('most-block-size');
+
+    const {className: fitClassName = ''} = stylex.props(
+      layerProbe.roomierCandidateFit,
+    );
+    for (const atomicClass of fitClassName
+      .split(' ')
+      .filter(name => name !== '' && !name.includes('__'))) {
+      expect(layer).toHaveClass(atomicClass);
+    }
+
+    const {className: scrollClassName = ''} = stylex.props(
+      layerProbe.blockScroll,
+    );
+    for (const atomicClass of scrollClassName
+      .split(' ')
+      .filter(name => name !== '' && !name.includes('__'))) {
+      expect(layer).toHaveClass(atomicClass);
+    }
   });
 
   it('trigger has aria-haspopup and aria-expanded attributes', () => {

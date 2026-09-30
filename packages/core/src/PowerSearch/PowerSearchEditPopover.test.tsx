@@ -577,9 +577,22 @@ describe('PowerSearch', () => {
 // (contains "__") is excluded.
 const CHIP_ROW_COLLAPSE = '@container (max-width: 399px)';
 
+const POWER_SEARCH_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
+const POWER_SEARCH_MAX_INLINE_SIZE = `calc(100vi - max(${POWER_SEARCH_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px)) - max(${POWER_SEARCH_VIEWPORT_GUTTER}, env(safe-area-inset-right, 0px)))`;
+const POWER_SEARCH_MAX_INLINE_SIZE_FALLBACK = `calc(100vw - ${POWER_SEARCH_VIEWPORT_GUTTER} - ${POWER_SEARCH_VIEWPORT_GUTTER})`;
+
 const probe = stylex.create({
   responsiveLayerMinWidth: {
-    minWidth: `min(400px, calc(100% - ${spacingVars['--spacing-4']}))`,
+    minWidth: stylex.firstThatWorks(
+      `min(400px, ${POWER_SEARCH_MAX_INLINE_SIZE})`,
+      `min(400px, ${POWER_SEARCH_MAX_INLINE_SIZE_FALLBACK})`,
+    ),
+  },
+  viewportLayerMaxWidth: {
+    maxInlineSize: stylex.firstThatWorks(
+      POWER_SEARCH_MAX_INLINE_SIZE,
+      POWER_SEARCH_MAX_INLINE_SIZE_FALLBACK,
+    ),
   },
   fixedLayerMinWidth: {minWidth: 400},
   queryContainer: {containerType: 'inline-size'},
@@ -755,9 +768,13 @@ describe('narrow-width layout (#4761)', () => {
       .closest('[popover]') as HTMLElement;
     expect(layer).not.toBeNull();
 
-    // The fixed 400px floor is replaced by one clamped to the available
-    // inline space, so the popover never opens wider than the screen.
+    // The 400px floor and viewport cap are resolved against the safe viewport,
+    // not the first candidate cell, so placement fallbacks get a chance first.
     expectProbeClasses(layer, probe.responsiveLayerMinWidth);
+    expectProbeClasses(layer, probe.viewportLayerMaxWidth);
+    expect(layer.style.positionTryFallbacks).toContain(
+      '--astryx-layer-block-end-guttered-full-axis',
+    );
     for (const cls of atomicClasses(probe.fixedLayerMinWidth)) {
       expect(layer).not.toHaveClass(cls);
     }

@@ -3,6 +3,7 @@
 import React from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
+import {expect, waitFor} from 'storybook/test';
 import {BottomSheet} from '@astryxdesign/core/BottomSheet';
 import {Popover} from '@astryxdesign/core/Popover';
 import type {PopoverTriggerRenderProps} from '@astryxdesign/core/Popover';
@@ -793,6 +794,53 @@ export const TallContentOverflow: Story = {
     if (trigger instanceof HTMLElement) {
       trigger.click();
     }
+  },
+};
+
+export const PositionFallbackBeforeSizing: Story = {
+  name: 'Position fallback before sizing',
+  parameters: {layout: 'fullscreen'},
+  render: () => (
+    <div style={{minHeight: '100vh', position: 'relative'}}>
+      <div
+        style={{
+          position: 'absolute',
+          insetInlineStart: 500,
+          insetBlockStart: 80,
+        }}>
+        <Popover
+          placement="below"
+          alignment="start"
+          label="Fallback sizing"
+          width={400}
+          data-testid="fallback-sizing-popover"
+          content={<Text type="body">Preferred width stays 400 pixels.</Text>}>
+          <Button label="Open fallback sizing">Open fallback sizing</Button>
+        </Popover>
+      </div>
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const trigger = canvasElement.querySelector('button');
+    if (!(trigger instanceof HTMLElement)) {
+      throw new Error('Popover fallback trigger did not render');
+    }
+    trigger.click();
+    const content = await waitFor(() => {
+      const found = document.querySelector<HTMLElement>(
+        '[data-testid="fallback-sizing-popover"]',
+      );
+      expect(found).not.toBeNull();
+      return found;
+    });
+    const layer = content?.closest<HTMLElement>('[popover]');
+    if (layer == null) {
+      throw new Error('Popover fallback layer did not render');
+    }
+    const rect = layer.getBoundingClientRect();
+    expect(rect.width).toBeGreaterThanOrEqual(399);
+    expect(rect.left).toBeGreaterThanOrEqual(15);
+    expect(rect.right).toBeLessThanOrEqual(window.innerWidth - 15);
   },
 };
 

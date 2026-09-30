@@ -2,6 +2,7 @@
 
 import React, {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
+import {expect, waitFor} from 'storybook/test';
 import {PowerSearch} from '@astryxdesign/core/PowerSearch';
 import type {
   PowerSearchConfig,
@@ -538,6 +539,57 @@ export const WithPresetFilters: Story = {
     placeholder: 'Add more filters...',
   },
   name: 'Pre-set Filters',
+};
+
+export const PositionFallbackBeforeSizing: Story = {
+  name: 'Position fallback before sizing',
+  parameters: {layout: 'fullscreen'},
+  render: () => {
+    const [filters, setFilters] = useState<PowerSearchFilter[]>([
+      {field: 'status', operator: 'is', value: {type: 'enum', value: 'open'}},
+    ]);
+    return (
+      <div style={{minHeight: '100vh', position: 'relative'}}>
+        <div
+          style={{
+            position: 'absolute',
+            insetInlineStart: 500,
+            insetBlockStart: 80,
+            width: 180,
+          }}>
+          <PowerSearch
+            config={basicConfig}
+            filters={filters}
+            onChange={next => setFilters([...next])}
+          />
+        </div>
+      </div>
+    );
+  },
+  play: async ({canvasElement}) => {
+    const token = Array.from(canvasElement.querySelectorAll('button')).find(
+      button => button.textContent?.includes('Status'),
+    );
+    if (!(token instanceof HTMLElement)) {
+      throw new Error('PowerSearch filter token did not render');
+    }
+    token.click();
+    const layer = await waitFor(() => {
+      const cancel = Array.from(document.querySelectorAll('button')).find(
+        button => button.textContent?.trim() === 'Cancel',
+      );
+      const found = cancel?.closest<HTMLElement>('[popover]') ?? null;
+      expect(found).not.toBeNull();
+      return found;
+    });
+    if (layer == null) {
+      throw new Error('PowerSearch editor layer did not render');
+    }
+    const rect = layer.getBoundingClientRect();
+    expect(rect.width).toBeGreaterThanOrEqual(399);
+    expect(rect.left).toBeGreaterThanOrEqual(15);
+    expect(rect.right).toBeLessThanOrEqual(window.innerWidth - 15);
+  },
 };
 
 export const FullFeatured: Story = {

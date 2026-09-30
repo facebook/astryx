@@ -949,6 +949,56 @@ export const Placements: Story = {
   },
 };
 
+export const ConstrainedFallbackSizing: Story = {
+  name: 'Constrained fallback sizing',
+  parameters: {layout: 'fullscreen'},
+  render: () => {
+    const [value, setValue] = useState<string | undefined>();
+    return (
+      <div
+        dir="rtl"
+        style={{
+          position: 'fixed',
+          insetInlineEnd: 16,
+          insetBlockStart: 80,
+          width: 240,
+        }}>
+        <Selector
+          label="Owner"
+          options={['Alice', 'Bob', 'Charlie']}
+          value={value}
+          onChange={setValue}
+          width="100%"
+          placement="below"
+          isDefaultOpen
+          data-testid="selector-fallback-control"
+        />
+      </div>
+    );
+  },
+  play: async ({canvasElement}) => {
+    const root = canvasElement.querySelector<HTMLElement>(
+      '[data-testid="selector-fallback-control"]',
+    );
+    const trigger = root?.querySelector<HTMLElement>('button');
+    const listbox = await waitFor(() => {
+      const found = document.querySelector<HTMLElement>('[role="listbox"]');
+      expect(found).not.toBeNull();
+      return found;
+    });
+    const layer = listbox?.closest<HTMLElement>('[popover]');
+    if (trigger == null || listbox == null || layer == null) {
+      throw new Error('Selector fallback evidence did not render');
+    }
+    const triggerRect = trigger.getBoundingClientRect();
+    const layerRect = layer.getBoundingClientRect();
+    expect(layerRect.width).toBeGreaterThanOrEqual(triggerRect.width - 1);
+    expect(layerRect.left).toBeGreaterThanOrEqual(15);
+    expect(layerRect.right).toBeLessThanOrEqual(window.innerWidth - 15);
+    expect(getComputedStyle(listbox).direction).toBe('rtl');
+  },
+};
+
 export const StatusVariantComparison: Story = {
   render: () => {
     const [a, setA] = useState<string | undefined>();

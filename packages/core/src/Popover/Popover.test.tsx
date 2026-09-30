@@ -448,7 +448,10 @@ describe('Popover', () => {
     expect(layer?.className).toContain('Popover__styles.viewportAligned');
     expect(layer?.className).toContain('Popover__styles.viewportStart');
     expect(layer).toHaveStyle(
-      'min-width: min(anchor-size(width),calc(100% - max(var(--spacing-4),env(safe-area-inset-left,0px),env(safe-area-inset-right,0px))))',
+      'min-width: min(anchor-size(width),calc(100vi - max(var(--spacing-4),env(safe-area-inset-left,0px)) - max(var(--spacing-4),env(safe-area-inset-right,0px))))',
+    );
+    expect(layer?.getAttribute('style')).toContain(
+      '--astryx-layer-block-end-guttered-full-axis',
     );
   });
 

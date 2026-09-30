@@ -15,19 +15,19 @@
  *
  * This guard closes that gap. It serves the built Storybook, loads each
  * listed story's iframe in Chromium, and listens on the preview channel for
- * the play outcome: `storyRendered` only fires after `play` resolves, and
- * any thrown assertion surfaces as `playFunctionThrewException` (or one of
+ * the play outcome: `storyFinished` fires after `play` settles, and any
+ * thrown assertion surfaces as `playFunctionThrewException` (or one of
  * its sibling error events). No outcome within the timeout also fails —
  * a story that cannot boot must not pass by silence.
  */
 
-const { chromium } = require('playwright');
+const {chromium} = require('playwright');
 const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
 
 const args = process.argv.slice(2);
-const getArg = (name) => {
+const getArg = name => {
   const idx = args.indexOf(`--${name}`);
   return idx !== -1 ? args[idx + 1] : null;
 };
@@ -57,6 +57,129 @@ const TARGETS = [
     guards: 'long metadata stays within the 320px narrow-container fixture',
   },
   {
+    component: 'DropdownMenu',
+    story: 'core-dropdownmenu--position-fallback-before-sizing',
+    viewport: {width: 320, height: 320},
+    guards:
+      'an arbitrary trigger preserves natural menu width before containment ' +
+      'while retaining safe viewport gutters',
+  },
+  {
+    component: 'DropdownMenu',
+    story: 'core-dropdownmenu--position-fallback-rtl',
+    viewport: {width: 320, height: 320},
+    guards: 'RTL logical start flips to the roomier physical side',
+  },
+  {
+    component: 'DropdownMenu',
+    story: 'core-dropdownmenu--position-fallback-vertical-writing',
+    viewport: {width: 320, height: 320},
+    guards:
+      'vertical-rl full-axis fallback keeps logical block-end and gutters',
+  },
+  {
+    component: 'DropdownMenu',
+    story: 'core-dropdownmenu--viewport-fit',
+    viewport: {width: 320, height: 320},
+    guards: 'oversize menu caps to the safe viewport width',
+  },
+  {
+    component: 'Popover',
+    story: 'core-popover--position-fallback-before-sizing',
+    viewport: {width: 800, height: 400},
+    guards:
+      'explicit width survives alignment fallback before viewport clamping',
+  },
+  {
+    component: 'Typeahead',
+    story: 'core-typeahead--position-fallback-before-sizing',
+    viewport: {width: 800, height: 400},
+    guards:
+      'numeric result width survives alignment fallback before viewport clamping',
+  },
+  {
+    component: 'PowerSearch',
+    story: 'core-powersearch--position-fallback-before-sizing',
+    viewport: {width: 800, height: 500},
+    guards:
+      'the 400px editor floor survives alignment fallback before viewport clamping',
+  },
+  {
+    component: 'TopNavMegaMenu',
+    story: 'core-topnavmenu--mega-menu-position-fallback-before-sizing',
+    viewport: {width: 800, height: 600},
+    guards:
+      'an oversize desktop panel chooses the roomier side, constrains, and scrolls internally',
+  },
+  {
+    component: 'TopNavMegaMenu',
+    story: 'core-topnavmenu--mega-menu-oversize-mobile-rtl',
+    viewport: {width: 390, height: 600},
+    guards:
+      'an oversize RTL mobile-width panel chooses the roomier side and keeps every link scrollable',
+  },
+  {
+    component: 'TopNavMegaMenu',
+    story: 'core-topnavmenu--mega-menu-oversize-vertical-writing',
+    viewport: {width: 600, height: 500},
+    guards:
+      'vertical writing uses logical block containment and scrolling within viewport bounds',
+  },
+  {
+    component: 'Selector',
+    story: 'core-selector--constrained-fallback-sizing',
+    viewport: {width: 480, height: 400},
+    guards:
+      'RTL trigger matching stays intact on the standard direct-popover path',
+  },
+  {
+    component: 'MultiSelector',
+    story: 'core-multiselector--constrained-fallback-sizing',
+    viewport: {width: 480, height: 400},
+    guards: 'trigger matching stays intact on the standard direct-popover path',
+  },
+  {
+    component: 'ComplexSelector',
+    story: 'core-complexselector--constrained-fallback-sizing',
+    viewport: {width: 480, height: 400},
+    guards:
+      'rich selector content remains inside the viewport without premature clamping',
+  },
+  {
+    component: 'Selector',
+    story: 'core-selector--indicator-space-bottom-sheet-narrow-end-rtl',
+    viewport: {width: 390, height: 700},
+    guards:
+      'Selector bottom-sheet presentation remains modal and independent of anchor fallbacks',
+  },
+  {
+    component: 'MultiSelector',
+    story: 'core-multiselector--bottom-sheet-presentation',
+    viewport: {width: 390, height: 700},
+    guards:
+      'MultiSelector bottom-sheet presentation remains modal and independent of anchor fallbacks',
+  },
+  {
+    component: 'HoverCard',
+    story: 'core-hovercard--viewport-fallback-controls',
+    viewport: {width: 320, height: 500},
+    guards:
+      'RTL vertical-writing fallback preserves intrinsic width and hover/focus persistence',
+  },
+  {
+    component: 'Tooltip',
+    story: 'core-tooltip--rtl-logical-placement',
+    viewport: {width: 320, height: 320},
+    guards: 'the fixed-width tooltip control remains within the viewport',
+  },
+  {
+    component: 'useKeyboardHint',
+    story: 'core-hooks-usekeyboardhint--default',
+    viewport: {width: 320, height: 320},
+    guards:
+      'the intrinsic keyboard-hint control opens in bounds and dismisses on navigation',
+  },
+  {
     component: 'TabList',
     story: 'core-tablist--full-bleed-geometry',
     guards:
@@ -75,7 +198,7 @@ const CONTENT_TYPES = {
 };
 
 function createServer(dir, listenPort) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const server = http.createServer((req, res) => {
       const filePath = path
         .join(dir, req.url === '/' ? 'index.html' : req.url)
@@ -95,8 +218,7 @@ function createServer(dir, listenPort) {
           return;
         }
         res.writeHead(200, {
-          'Content-Type':
-            CONTENT_TYPES[path.extname(resolved)] || 'text/plain',
+          'Content-Type': CONTENT_TYPES[path.extname(resolved)] || 'text/plain',
         });
         res.end(data);
       });
@@ -110,7 +232,7 @@ function createServer(dir, listenPort) {
 // is emitted only after the play function resolves; every failure mode has
 // its own event. Attached before any preview code runs so no event is missed.
 function recordStoryOutcome() {
-  window.__storyOutcome = { done: false, errors: [] };
+  window.__storyOutcome = {done: false, errors: []};
   const ERROR_EVENTS = [
     'playFunctionThrewException',
     'unhandledErrorsWhilePlaying',
@@ -118,7 +240,7 @@ function recordStoryOutcome() {
     'storyErrored',
     'storyMissing',
   ];
-  const describe = (payload) => {
+  const describe = payload => {
     if (payload == null) return '';
     if (typeof payload === 'string') return payload;
     return [payload.name, payload.title, payload.message, payload.description]
@@ -131,13 +253,13 @@ function recordStoryOutcome() {
       setTimeout(attach, 50);
       return;
     }
-    channel.on('storyRendered', () => {
+    channel.on('storyFinished', () => {
       window.__storyOutcome.done = true;
     });
     for (const event of ERROR_EVENTS) {
-      channel.on(event, (payload) => {
+      channel.on(event, payload => {
         window.__storyOutcome.errors.push(
-          `${event}${describe(payload) ? ` — ${describe(payload)}` : ''}`
+          `${event}${describe(payload) ? ` — ${describe(payload)}` : ''}`,
         );
         window.__storyOutcome.done = true;
       });
@@ -150,12 +272,12 @@ async function probe(page, target) {
   await page.addInitScript(recordStoryOutcome);
   await page.goto(
     `http://localhost:${port}/iframe.html?id=${target.story}&viewMode=story`,
-    { waitUntil: 'domcontentloaded', timeout: 30000 }
+    {waitUntil: 'domcontentloaded', timeout: 30000},
   );
   await page.waitForFunction(
     () => window.__storyOutcome && window.__storyOutcome.done === true,
     null,
-    { timeout: 30000 }
+    {timeout: 30000},
   );
   return page.evaluate(() => window.__storyOutcome);
 }
@@ -173,27 +295,30 @@ async function run() {
 
   try {
     const context = await browser.newContext({
-      viewport: { width: 1280, height: 900 },
+      viewport: {width: 1280, height: 900},
     });
 
     for (const target of TARGETS) {
       const page = await context.newPage();
+      if (target.viewport != null) {
+        await page.setViewportSize(target.viewport);
+      }
       try {
         const outcome = await probe(page, target);
         if (outcome.errors.length > 0) {
           failures++;
           console.error(
-            `✗ ${target.component} (${target.story}):\n    ${outcome.errors.join('\n    ')}`
+            `✗ ${target.component} (${target.story}):\n    ${outcome.errors.join('\n    ')}`,
           );
         } else {
           console.log(
-            `✓ ${target.component} (${target.story}): play passed — ${target.guards}`
+            `✓ ${target.component} (${target.story}): play passed — ${target.guards}`,
           );
         }
       } catch (e) {
         failures++;
         console.error(
-          `✗ ${target.component} (${target.story}): no play outcome — ${e.message}`
+          `✗ ${target.component} (${target.story}): no play outcome — ${e.message}`,
         );
       } finally {
         await page.close();
@@ -205,7 +330,9 @@ async function run() {
   }
 
   if (failures > 0) {
-    console.error(`\nFailing: ${failures} story play function(s) did not pass.`);
+    console.error(
+      `\nFailing: ${failures} story play function(s) did not pass.`,
+    );
     return 1;
   }
   console.log('\nAll story play guards passed.');
@@ -213,10 +340,10 @@ async function run() {
 }
 
 run()
-  .then((code) => {
+  .then(code => {
     process.exitCode = code;
   })
-  .catch((e) => {
+  .catch(e => {
     console.error('Story play guard failed:', e);
     process.exit(1);
   });

@@ -34,6 +34,7 @@ import {TypeaheadItem} from '../Typeahead/TypeaheadItem';
 import {Token} from '../Token';
 import {Avatar} from '../Avatar';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
+import {getGutteredPositionTryFallbacks} from '../Layer/useLayer';
 import {Icon} from '../Icon';
 import type {IconType} from '../Icon';
 import type {IconName} from '../Icon/globalIconRegistry';
@@ -114,15 +115,23 @@ const tokenValueStyles = stylex.create({
   },
 });
 
+const POWER_SEARCH_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
+const POWER_SEARCH_MAX_INLINE_SIZE = `calc(100vi - max(${POWER_SEARCH_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px)) - max(${POWER_SEARCH_VIEWPORT_GUTTER}, env(safe-area-inset-right, 0px)))`;
+const POWER_SEARCH_MAX_INLINE_SIZE_FALLBACK = `calc(100vw - ${POWER_SEARCH_VIEWPORT_GUTTER} - ${POWER_SEARCH_VIEWPORT_GUTTER})`;
+
 const popoverLayerStyles = stylex.create({
   layer: {
     width: 'anchor-size(width)',
-    // Floor for comfortable editing, yielding when the available inline
-    // space cannot fit it, so the editor stays on-screen at narrow viewport
-    // widths (#4761). Percentages resolve against the position-area region
-    // (anchor start edge to viewport end), falling back to the viewport
-    // where area sizing is not honored.
-    minWidth: `min(400px, calc(100% - ${spacingVars['--spacing-4']}))`,
+    // Preserve the 400px editing floor while another safe fallback can fit it;
+    // clamp only when the viewport itself cannot contain the preferred width.
+    minWidth: stylex.firstThatWorks(
+      `min(400px, ${POWER_SEARCH_MAX_INLINE_SIZE})`,
+      `min(400px, ${POWER_SEARCH_MAX_INLINE_SIZE_FALLBACK})`,
+    ),
+    maxInlineSize: stylex.firstThatWorks(
+      POWER_SEARCH_MAX_INLINE_SIZE,
+      POWER_SEARCH_MAX_INLINE_SIZE_FALLBACK,
+    ),
   },
 });
 
@@ -1094,6 +1103,12 @@ export function PowerSearch({
         placement: 'below',
         alignment: 'start',
         offset: spacingVars['--spacing-1'],
+        style: {
+          positionTryFallbacks: getGutteredPositionTryFallbacks(
+            'below',
+            'start',
+          ),
+        },
         xstyle: [popoverLayerStyles.layer, layerAnimations.below],
       })}
     </>

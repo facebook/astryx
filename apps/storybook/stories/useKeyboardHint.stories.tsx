@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {expect, userEvent, waitFor} from 'storybook/test';
 import {useCallback, useRef} from 'react';
 import {useKeyboardHint} from '@astryxdesign/core/hooks';
 import {Toolbar} from '@astryxdesign/core/Toolbar';
@@ -143,6 +144,25 @@ export const Default: Story = {
       </VStack>
     </Card>
   ),
+  play: async () => {
+    await userEvent.tab();
+    const layer = await waitFor(() => {
+      const found = Array.from(
+        document.querySelectorAll<HTMLElement>('[popover]'),
+      ).find(element => element.textContent?.includes('to navigate'));
+      expect(found).not.toBeNull();
+      expect(found?.matches(':popover-open')).toBe(true);
+      return found;
+    });
+    if (layer == null) {
+      throw new Error('Keyboard hint control layer did not render');
+    }
+    const rect = layer.getBoundingClientRect();
+    expect(rect.left).toBeGreaterThanOrEqual(0);
+    expect(rect.right).toBeLessThanOrEqual(window.innerWidth);
+    await userEvent.keyboard('{ArrowRight}');
+    await waitFor(() => expect(layer.matches(':popover-open')).toBe(false));
+  },
 };
 
 /**

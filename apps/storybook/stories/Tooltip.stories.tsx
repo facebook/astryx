@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {expect, waitFor} from 'storybook/test';
 import {Tooltip, useTooltip} from '@astryxdesign/core/Tooltip';
 import {Button} from '@astryxdesign/core/Button';
 import {HStack} from '@astryxdesign/core/Layout';
@@ -76,6 +77,21 @@ export const RTLLogicalPlacement: Story = {
       <Button label="RTL placement target">RTL placement target</Button>
     ),
     isDefaultOpen: true,
+  },
+  play: async () => {
+    const tooltip = await waitFor(() => {
+      const found = document.querySelector<HTMLElement>('[role="tooltip"]');
+      expect(found).not.toBeNull();
+      return found;
+    });
+    const layer = tooltip?.closest<HTMLElement>('[popover]');
+    if (layer == null) {
+      throw new Error('Tooltip control layer did not render');
+    }
+    const rect = layer.getBoundingClientRect();
+    expect(rect.width).toBeLessThanOrEqual(300);
+    expect(rect.left).toBeGreaterThanOrEqual(0);
+    expect(rect.right).toBeLessThanOrEqual(window.innerWidth);
   },
 };
 
