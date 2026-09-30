@@ -223,10 +223,7 @@ export function registerBuild(program) {
                   fields: ['name', 'displayName', 'description', 'command'],
                   format: {command: formatCliCommand},
                 }
-              : {
-                  fields: ['name', 'description', 'command'],
-                  format: {command: formatCliCommand},
-                },
+              : brief(['name', 'description', 'command']),
           ),
         );
         if (start.alternatives.length) {

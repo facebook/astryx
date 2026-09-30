@@ -135,6 +135,10 @@ function chooseStart(ranked, pages, directMatch, catalog) {
   const direct = directMatch ? pages[0].name : null;
   const unready =
     direct && !catalog.some(t => t.name === direct) ? direct : null;
+  // The reason never denies a match the same response reports: a direct
+  // match the ranker outweighed is named, and so are the loose page matches
+  // search listed when the kit falls back to the shell.
+  const loose = pages.map(p => `\`${p.name}\``).join(', ');
   const pick = pickStart(ranked);
   const closest = pick && catalog.find(t => t.name === pick.name);
   if (closest) {
@@ -146,7 +150,9 @@ function chooseStart(ranked, pages, directMatch, catalog) {
         ? 'Matches the idea.'
         : unready
           ? `\`${unready}\` matches but is not ready yet; this is the closest ready template.`
-          : 'The closest template; none is exactly this page.',
+          : direct
+            ? `Search matched \`${direct}\` by name, but this template fits more of the idea.`
+            : 'The closest template; none is exactly this page.',
     };
   }
   for (const id of FALLBACK_STARTS) {
@@ -160,9 +166,13 @@ function chooseStart(ranked, pages, directMatch, catalog) {
         basis: 'fallback',
         reason: unready
           ? `\`${unready}\` matches but is not ready yet, so start from the app shell.`
-          : nearest
-            ? 'No template is a clear match; the app shell is the closest.'
-            : 'No template matched, so start from the app shell.',
+          : direct
+            ? `Search matched \`${direct}\` by name, but too little of the idea fits it, so start from the app shell.`
+            : nearest
+              ? 'No template is a clear match; the app shell is the closest.'
+              : loose
+                ? `Search matched ${loose} only loosely, so start from the app shell.`
+                : 'No template matched, so start from the app shell.',
       };
     }
   }

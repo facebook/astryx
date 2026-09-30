@@ -56,6 +56,19 @@ describe('build kit text fields mirror the JSON keys', () => {
     );
   }, SLOW);
 
+  it("shortens the start's description by default and prints it whole under --verbose", async () => {
+    const json = await runCli(['build', 'quarterly revenue dashboard', '--json'], REPO);
+    const {start} = JSON.parse(json.stdout).data;
+    const first = start.description.slice(0, start.description.indexOf('. ') + 1);
+    expect(first.length).toBeGreaterThan(0);
+    expect(first.length).toBeLessThan(start.description.length);
+    const line = out => out.split('\n').find(l => l.startsWith('description:'));
+    const brief = await runCli(['build', 'quarterly revenue dashboard'], REPO);
+    expect(line(brief.stdout)).toBe(`description: ${first}`);
+    const whole = await runCli(['build', 'quarterly revenue dashboard', '--verbose'], REPO);
+    expect(whole.stdout).toContain(start.description);
+  }, SLOW);
+
   it("names search's page matches in the default text", async () => {
     const json = await runCli(['build', 'contact form', '--json'], REPO);
     const {data} = JSON.parse(json.stdout);

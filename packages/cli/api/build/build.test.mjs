@@ -340,6 +340,32 @@ describe('build kit — every page starts from a template', () => {
     expect(loose.data.start).toMatchObject({name: 'shell-top-nav', basis: 'fallback'});
   });
 
+  it('names a direct match the ranker outweighed in the reason', async () => {
+    const r = await build('dashboard with a login form', {cwd: REPO});
+    if (r.type !== 'build.kit') throw new Error(r.type);
+    expect(r.data.directMatch).toBe(true);
+    expect(r.data.pages[0].name).toBe('login');
+    expect(r.data.start).toMatchObject({name: 'dashboard', basis: 'closest'});
+    expect(r.data.start?.reason).toContain('`login`');
+  });
+
+  it('names the loose page matches when it falls back to the shell', async () => {
+    const r = await build('news feed', {cwd: REPO});
+    if (r.type !== 'build.kit') throw new Error(r.type);
+    expect(r.data.pages.length).toBeGreaterThan(0);
+    expect(r.data.start?.basis).toBe('fallback');
+    for (const page of r.data.pages) expect(r.data.start?.reason).toContain(`\`${page.name}\``);
+  });
+
+  it('never gives a reason that denies a match the response reports', async () => {
+    for (const q of ['news feed', 'dashboard with a login form', 'user profile', 'incident console']) {
+      const r = await build(q, {cwd: REPO});
+      if (r.type !== 'build.kit') throw new Error(r.type);
+      if (r.data.pages.length) expect(r.data.start?.reason).not.toMatch(/No template matched/);
+      if (r.data.directMatch) expect(r.data.start?.reason).not.toMatch(/none is exactly this page/);
+    }
+  });
+
   it('names no start when the kit is narrowed to components', async () => {
     const r = await build('dashboard', {cwd: REPO, type: 'component'});
     expect(r.type).toBe('build.kit');
