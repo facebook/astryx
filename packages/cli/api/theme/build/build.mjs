@@ -2240,6 +2240,7 @@ async function themeBuildInternal(
   // themeBuildFamily checks against the selected members' graph.
   const standaloneIcons = !options.__prepareFamily;
   const iconResolution = {
+    readSource: (/** @type {string} */ file) => fs.readFileSync(file, 'utf8'),
     resolveModule: resolveThemeModule,
     reservedNames: [`${toIdentifier(themeDef.name)}Theme`],
     rawInput: 'extends' in themeDef,

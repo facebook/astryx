@@ -3,12 +3,12 @@
 /**
  * Resolve importable icon registries for the selected theme export.
  *
- * @input Loaded theme export identity, source modules, and the theme loader's resolver.
+ * @input Loaded theme export identity, plus the caller's source reader and the
+ *   theme loader's resolver (this module performs no environment access).
  * @output Import bindings and an expression preserving inherited icon registries.
  * @position Private theme-build packaging helper; never evaluates authored source.
  */
 
-import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {AstryxError} from '../../error.mjs';
@@ -100,13 +100,13 @@ function invalidRegistry(name, reason = '') {
  *
  * @param {string} filePath
  * @param {string | undefined} exportName
- * @param {{hasIcons: boolean, resolveModule: (specifier: string, fromFile: string) => string | Promise<string>, reservedNames?: string[], rawInput?: boolean}} options
+ * @param {{hasIcons: boolean, readSource: (filename: string) => string, resolveModule: (specifier: string, fromFile: string) => string | Promise<string>, reservedNames?: string[], rawInput?: boolean}} options
  * @returns {Promise<IconImports | null>}
  */
 export async function resolveIconImports(
   filePath,
   exportName,
-  {hasIcons, resolveModule, reservedNames = [], rawInput = false},
+  {hasIcons, readSource, resolveModule, reservedNames = [], rawInput = false},
 ) {
   if (exportName === undefined) {
     if (!hasIcons) return null;
@@ -176,7 +176,7 @@ export async function resolveIconImports(
     const j = jscodeshift.withParser(parser);
     let root;
     try {
-      root = j(fs.readFileSync(filename, 'utf8'));
+      root = j(readSource(filename));
     } catch {
       invalidRegistry(
         undefined,
