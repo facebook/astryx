@@ -304,6 +304,7 @@ const markdownTableCellStyles = stylex.create({
     maxWidth: 'none',
     overflow: 'visible',
     overflowWrap: 'break-word',
+    paddingInline: spacingVars['--spacing-2'],
     wordBreak: 'normal',
   },
   headerCell: {
@@ -311,6 +312,7 @@ const markdownTableCellStyles = stylex.create({
     maxWidth: 'none',
     overflow: 'visible',
     overflowWrap: 'break-word',
+    paddingInline: spacingVars['--spacing-2'],
     textOverflow: 'clip',
     whiteSpace: 'normal',
     wordBreak: 'normal',
