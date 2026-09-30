@@ -26,8 +26,9 @@ affects_consumer_docs: [typography, theme]
 
 ## Intent
 
-Record the explorer's desktop-ratio → Pin-target recommendation and calculation.
-This draft changes only the specification; related implementation is [PR #6699][pr].
+The mobile scale MUST raise a desktop base below 16px-reference to 16px-reference
+and choose a pin target from the desktop ratio. The selected role MUST retain
+its desktop size.
 
 ## Non-goals
 
@@ -36,29 +37,22 @@ This draft changes only the specification; related implementation is [PR #6699][
 
 ## Requirements
 
-- **FR1 — Reference.** Inputs are desktop base `B`, ratio `r`, and the [role steps][choice].
-- **FR2 — Base.** `M = max(B, 16)`; 16px-reference is `1rem`, not a document-root change.
-- **FR3 — Activation.** Narrow AND primary-coarse, using the condition below.
-- **FR4 — Pin.** Use the source recommendation and calculation below.
+- **FR1 — Reference scale.** Desktop base `B`, ratio `r`, and raw step `k` define the desktop sizes.
+- **FR2 — Base.** Set `M = max(B, 16)`; 16px-reference is `1rem`, not a document-root change.
+- **FR3 — Activation.** Apply the mobile profile only when narrow AND primary-coarse.
+- **FR4 — Pin.** Choose the target from the table and preserve it in the mobile scale.
 
 ### Pin target
 
-| Desktop ratio r    | Pin target; step a |
-| ------------------ | ------------------ |
-| `r <= 1.25`        | Display 1; `+6`    |
-| `1.25 < r < 1.414` | Heading 2; `+2`    |
-| `r >= 1.414`       | Heading 3; `+1`    |
-
-Verbatim explorer comment, [lines 61–64][choice]:
-
-> Recommended pin anchor for a given desktop ratio. Gentler scales can afford
-> to pin high (the whole ladder is close together, so pinning Display 1 barely
-> tames anything); more dramatic scales need a lower anchor so the display tier
-> doesn't tower over 16px body text on a phone.
+| Desktop ratio r    | Pin target; step a | Design intent                                                                         |
+| ------------------ | ------------------ | ------------------------------------------------------------------------------------- |
+| `r <= 1.25`        | Display 1; `+6`    | Retain the compact scale's display size as the reading base increases.                |
+| `1.25 < r < 1.414` | Heading 2; `+2`    | Preserve Heading 2 while reducing larger display roles relative to body text.         |
+| `r >= 1.414`       | Heading 3; `+1`    | Preserve Heading 3 so the display tier does not dominate body text on narrow screens. |
 
 ### Pin calculation
 
-From the [explorer calculation][calculation]:
+Derive the mobile scale from the desktop inputs and selected step `a`:
 
 ```text
 M = max(B, 16)
@@ -69,7 +63,7 @@ rem = referencePx / 16
 ```
 
 Roles above the pin shrink; below it grow (`B < 16`, before rounding).
-When `B >= 16`, the base and ratio remain unchanged.
+When `B >= 16`, retain the desktop base and ratio.
 
 ### Worked example
 
@@ -80,29 +74,30 @@ heading-2: 25→25px; body: 14→16px; display-1: 79→60px
 
 ### Mobile condition
 
-`(width < 768px) and (pointer: coarse)`, as used in [PR #6699][pr].
+By default, mobile MUST match `(width < 768px) and (pointer: coarse)`.
 Width is the layout viewport; coarse refers to the primary pointer.
-[AST-012][adaptations] defines the effective md breakpoint and inheritance.
+Use the effective `md` breakpoint governed by `spec:AST-012`; the stock value is
+768 CSS px and the upper edge is exclusive.
 
 ### Platform support
 
-- Supported tiers: [AST-013][platform].
-- Unsupported behavior: follow AST-013's fallback requirements.
-- Browser-specific claims require evidence from that browser.
+- Supported browsers follow `spec:AST-013`.
+- Unsupported behavior follows its fallback contract.
+- Browser-specific behavior requires evidence from that browser.
 
 ## Current-state impact
 
-Only this draft record changes. The listed theme architecture surfaces and
-`typography`/`theme` guides are its scope; [AST-012][adaptations] and
-[theme application][application] retain ownership of the mechanisms.
+Theme token, authoring, compilation, and application contracts, and the
+`typography`/`theme` guides, are affected; ownership remains with their existing records.
+This PR changes only the specification; related implementation is [PR #6699][implementation].
 
 ## Verification
 
-| Contract | Verification                         | Representative states                | Mutation or failure expectation |
-| -------- | ------------------------------------ | ------------------------------------ | ------------------------------- |
-| FR1, FR4 | Compare table with source function   | Picker ratios; 1.25/1.414 boundaries | Wrong target or boundary        |
-| FR2, FR4 | Compare formula with generated sizes | Worked example; B>=16                | Changed anchor or base          |
-| FR3      | Compare condition with PR rule       | Narrow/wide × coarse/fine            | Wrong conjunction or boundary   |
+| Contract | Verification                      | Representative states                  | Mutation or failure expectation |
+| -------- | --------------------------------- | -------------------------------------- | ------------------------------- |
+| FR1, FR4 | Check the ratio-to-target mapping | Ratios below, at, and above 1.25/1.414 | Wrong target or boundary        |
+| FR2, FR4 | Check calculated sizes            | Worked example; B>=16                  | Changed anchor or base          |
+| FR3      | Check the activation condition    | Narrow/wide × coarse/fine              | Wrong conjunction or boundary   |
 
 ## Decision log
 
@@ -110,27 +105,22 @@ Only this draft record changes. The listed theme architecture surfaces and
 
 **Reference:** `spec:AST-049/DEC-1`
 **Decider:** Pending human approval.
-**Source:** [Pin calculation][calculation] and [PR #6699][pr].
+**Decision:** Raise bases below 16px-reference without changing the document root.
 
-### DEC-2 — Ratio-to-target recommendation
+### DEC-2 — Ratio-to-target mapping
 
 **Reference:** `spec:AST-049/DEC-2`
 **Decider:** Pending human approval.
-**Source:** [Explorer recommendation][choice].
+**Decision:** Pin Display 1, Heading 2, or Heading 3 according to the desktop ratio.
 
 ### DEC-3 — Narrow and primary-coarse
 
 **Reference:** `spec:AST-049/DEC-3`
 **Decider:** Pending human approval.
-**Source:** [PR #6699][pr] and [AST-012][adaptations].
+**Decision:** Activate the mobile profile only on narrow, primary-coarse viewports.
 
 ## Open questions
 
-- **OQ1 — Apply the recommendation beyond the explorer's eight ratios at B=14?** (human-design)
+- **OQ1 — Which desktop base sizes and ratios must this policy support?** (human-design)
 
-[choice]: https://github.com/facebook/astryx/blob/9057ebe308c1625b587927583654f5a2ef391e80/apps/sandbox/src/app/(sandbox)/pages/mobile-type/page.tsx#L38-L99
-[calculation]: https://github.com/facebook/astryx/blob/9057ebe308c1625b587927583654f5a2ef391e80/apps/sandbox/src/app/(sandbox)/pages/mobile-type/page.tsx#L126-L174
-[pr]: https://github.com/facebook/astryx/pull/6699
-[adaptations]: https://github.com/facebook/astryx/blob/9057ebe308c1625b587927583654f5a2ef391e80/docs/specs/AST-012/spec.md
-[application]: https://github.com/facebook/astryx/blob/9057ebe308c1625b587927583654f5a2ef391e80/docs/architecture/theme-application.md
-[platform]: https://github.com/facebook/astryx/blob/9057ebe308c1625b587927583654f5a2ef391e80/docs/specs/AST-013/spec.md
+[implementation]: https://github.com/facebook/astryx/pull/6699
