@@ -11,11 +11,20 @@ import {
 } from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import type {ComponentProps, ReactNode} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {Markdown} from './Markdown';
 import type {MarkdownComponents, MarkdownInlinePlugin} from './Markdown';
 import type {ParseOptions} from './index';
 import {stubMatchMedia} from '../__tests__/stubMatchMedia';
 import {parseOutlineFromMarkdown} from '../Outline/parseOutlineFromMarkdown';
+import {spacingVars} from '../theme/tokens.stylex';
+
+const tableCellSpacingProbe = stylex.create({
+  cell: {
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-2'],
+  },
+});
 
 describe('Markdown', () => {
   it('renders with role="document"', () => {
@@ -493,6 +502,26 @@ describe('Markdown', () => {
     expect(groups[0]).toHaveAttribute('aria-label', 'Table');
     expect(markdownBlock).not.toHaveAttribute('role');
     expect(markdownBlock).not.toHaveAttribute('tabindex');
+  });
+
+  it('uses spacing-2 on every Markdown table cell edge', () => {
+    const {container} = render(
+      <Markdown>{'| A | B |\n| --- | --- |\n| 1 | 2 |'}</Markdown>,
+    );
+    const spacingClasses = (
+      stylex.props(tableCellSpacingProbe.cell).className ?? ''
+    )
+      .split(' ')
+      .filter(className => className !== '' && !className.includes('__'));
+    const cells = container.querySelectorAll('th, td');
+
+    expect(spacingClasses.length).toBeGreaterThan(0);
+    expect(cells).toHaveLength(4);
+    for (const cell of cells) {
+      for (const className of spacingClasses) {
+        expect(cell).toHaveClass(className);
+      }
+    }
   });
 
   it('floors each table column from its own content, in ch', () => {
