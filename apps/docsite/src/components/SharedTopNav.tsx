@@ -15,6 +15,7 @@ import {
 import {useAppShellMobile} from '@astryxdesign/core/AppShell';
 import {MobileNav} from '@astryxdesign/core/MobileNav';
 import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
 import {HStack} from '@astryxdesign/core/Layout';
 import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {Search, HeartHandshake, Sun, Moon, Menu} from 'lucide-react';
@@ -292,7 +293,14 @@ export function SharedTopNav() {
                   tooltip="Menu"
                   variant="ghost"
                   isIconOnly
-                  icon={<Menu size={20} />}
+                  icon={
+                    isMobileNavEnabled ? (
+                      // Match AppShell's glyph and Button-owned icon size.
+                      <Icon icon="menu" color="inherit" />
+                    ) : (
+                      <Menu size={20} />
+                    )
+                  }
                   aria-expanded={
                     isMobileNavEnabled ? isMobileNavOpen : undefined
                   }
