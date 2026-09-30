@@ -9,6 +9,7 @@
  * @position Core implementation; consumed by index.ts, tested by CheckboxList.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
+ * - /packages/core/src/CheckboxList/CheckboxListItem.doc.mjs
  * - /packages/core/src/CheckboxList/CheckboxList.doc.mjs
  * - /packages/core/src/CheckboxList/CheckboxList.test.tsx
  * - /packages/core/src/CheckboxList/index.ts
@@ -81,8 +82,9 @@ export interface CheckboxListItemProps extends BaseProps<HTMLLIElement> {
    */
   'aria-label'?: string;
   /**
-   * Identity key for collection mode (REQUIRED inside CheckboxList).
-   * Throws a runtime error if missing when used inside CheckboxList.
+   * Identity key for collection mode. Required when the parent CheckboxList
+   * has a `value` array: the item throws without it there. An item inside
+   * List, or inside a CheckboxList without `value`, may omit it.
    */
   value?: string;
   /**
@@ -112,13 +114,16 @@ export interface CheckboxListItemProps extends BaseProps<HTMLLIElement> {
    */
   isLoading?: boolean;
   /**
-   * Direct checked state (standalone mode only).
-   * Ignored when inside CheckboxList.
+   * Direct checked state for standalone mode: an item inside List, or inside
+   * a CheckboxList without `value` (for example, a select-all item). Ignored
+   * when the parent CheckboxList has a `value` array, which then owns the
+   * checked state.
    */
   isChecked?: boolean | 'indeterminate';
   /**
-   * Direct check handler (standalone mode only).
-   * Ignored when inside CheckboxList.
+   * Direct check handler for standalone mode: an item inside List, or inside a
+   * CheckboxList without `value`. Ignored when the parent CheckboxList has a
+   * `value` array; that list's `onChange` receives the change instead.
    */
   onCheck?: (checked: boolean) => void;
   /** Ref forwarded to the root element */
@@ -152,8 +157,9 @@ function DescribedCheckboxInput(
 }
 
 /**
- * A checkbox item for use within CheckboxList (collection mode)
- * or List (standalone mode).
+ * A checkbox item for use within CheckboxList (collection mode, when the list
+ * has a `value` array) or standalone (inside List, or inside a CheckboxList
+ * without `value`).
  *
  * In collection mode, checked state is derived from the parent's value array.
  * In standalone mode, uses isChecked/onCheck props directly.
