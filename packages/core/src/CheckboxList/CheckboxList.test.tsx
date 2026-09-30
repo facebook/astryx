@@ -10,6 +10,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {createRef} from 'react';
 import {
   render,
   screen,
@@ -448,6 +449,58 @@ describe('CheckboxList', () => {
       </CheckboxList>,
     );
     expect(screen.getByText('Choose your preferences')).toBeInTheDocument();
+  });
+
+  it('describes the group with its description and status message', () => {
+    render(
+      <CheckboxList
+        label="Preferences"
+        description="Choose your preferences"
+        status={{type: 'error', message: 'Select at least one'}}
+        value={[]}
+        onChange={() => {}}>
+        <CheckboxListItem label="Option A" value="a" />
+      </CheckboxList>,
+    );
+    expect(
+      screen.getByRole('group', {name: 'Preferences'}),
+    ).toHaveAccessibleDescription(
+      'Choose your preferences Select at least one',
+    );
+  });
+
+  it('forwards ref, className, and style to the field root and the item row', () => {
+    const listRef = createRef<HTMLDivElement>();
+    const itemRef = createRef<HTMLLIElement>();
+    render(
+      <CheckboxList
+        ref={listRef}
+        label="Preferences"
+        className="consumer-list"
+        style={{marginTop: 12}}
+        value={[]}
+        onChange={() => {}}>
+        <CheckboxListItem
+          ref={itemRef}
+          label="Option A"
+          value="a"
+          className="consumer-item"
+          style={{marginTop: 4}}
+        />
+      </CheckboxList>,
+    );
+    expect(listRef.current).toContainElement(
+      screen.getByRole('group', {name: 'Preferences'}),
+    );
+    expect(listRef.current).toHaveClass(
+      'consumer-list',
+      'astryx-checkbox-list',
+    );
+    expect(listRef.current).toHaveStyle({marginTop: '12px'});
+    const row = screen.getByRole('listitem');
+    expect(itemRef.current).toBe(row);
+    expect(row).toHaveClass('consumer-item', 'astryx-list-item');
+    expect(row).toHaveStyle({marginTop: '4px'});
   });
 
   it('supports data-testid on CheckboxList', () => {

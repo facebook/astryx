@@ -4,6 +4,7 @@ import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {CheckboxList, CheckboxListItem} from '@astryxdesign/core/CheckboxList';
 import {List} from '@astryxdesign/core/List';
+import {Badge} from '@astryxdesign/core/Badge';
 import {Card} from '@astryxdesign/core/Card';
 import {Link} from '@astryxdesign/core/Link';
 
@@ -352,19 +353,19 @@ export const WithEndContent: Story = {
           label="Free tier"
           value="free"
           description="Basic features included"
-          endContent={<span style={{color: '#0D8626'}}>$0/mo</span>}
+          endContent={<Badge variant="success" label="$0/mo" />}
         />
         <CheckboxListItem
           label="Pro tier"
           value="pro"
           description="Advanced features"
-          endContent={<span style={{color: '#0064E0'}}>$9/mo</span>}
+          endContent={<Badge variant="info" label="$9/mo" />}
         />
         <CheckboxListItem
           label="Enterprise"
           value="enterprise"
           description="Custom solutions"
-          endContent={<span style={{color: '#5B08D8'}}>Custom</span>}
+          endContent={<Badge variant="purple" label="Custom" />}
         />
       </CheckboxList>
     );
