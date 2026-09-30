@@ -59,13 +59,15 @@ Authoring is the same two-artifact flow a Core author uses; the only difference 
 1. **Component doc** — `src/<Name>/<Name>.doc.mjs` exporting `docs` (props, usage, playground config, `examples`). Picked up automatically on canary; no registration anywhere.
 2. **Runnable demos** — same-stem pairs in `blocks/`: `<BlockName>.tsx` + `<BlockName>.doc.mjs` (a `TemplateDoc` stamped `type: 'block'`). Discovered automatically through this package's `astryx.integration.mjs` (`templates: './blocks'`, declared once for the whole package — nothing per-component). The docsite renders the pair as the component page's showcase/examples and the playground can import anything the package exports.
 
+How a demo reaches a component page: **`exampleFor: '<Component>'` (or `alsoExampleFor`) is what attaches a block** — the page renders every block attributed to it, whatever the block is named. The block's `name` is the demo's display name; component-doc example `labels` are CLI-snippet headings. The two are independent mechanisms.
+
 Conventions the Drawer demos established (follow them for new demos):
 
-- The block descriptor's `name` equals the component doc's example `label` — the docsite pairs them by exact name.
-- `exampleFor: '<Component>'` attributes the block to its component page; exactly one attributed block sets `isShowcase: true` (the hero demo — conventionally the first example).
+- Give the block descriptor the same `name` as the component doc's example `label`, so the snippet and its runnable demo read as one documented set (this naming convention is what the `example-coverage` report keys on — it is not how the docsite attaches demos).
+- Exactly one attributed block sets `isShowcase: true` (the hero demo — conventionally the first example).
 - `displayName` and `description` are required by the docsite build; set `componentsUsed` and `aspectRatio` for the gallery.
 
-A doc example **without** a paired block renders as a CLI/code snippet only — it never becomes a runnable demo on the docsite. That coverage is currently _reported_, not enforced (see the `example-coverage` docsite test output); Core has the same non-guarantee, and whether pairing should gate CI is an open repo-wide decision.
+A doc example with no corresponding block exists only as a CLI/code snippet — the docsite page's demos come solely from blocks. Note the converse does not follow from names alone: an example label with no _same-named_ block does not by itself mean the demo is missing, because the component may render demos under other names (several Core components do). The `example-coverage` docsite test output reports both sides of that pairing; it is a _report_, not a gate — Core has the same non-guarantee, and whether pairing should gate CI is an open repo-wide decision.
 
 > Note: `astryx integration add template` scaffolds a `./templates` root for a package that declares none. This package (like charts and richtext) declares `templates: './blocks'` explicitly — keep the explicit declaration; unifying the two conventions is a pending repo decision.
 

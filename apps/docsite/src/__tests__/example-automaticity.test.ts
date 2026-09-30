@@ -12,11 +12,15 @@
  * SCOPE: this file proves the DISCOVERY seam only — it writes a temporary
  * fixture pair into packages/lab/blocks and asserts the exact CLI API call
  * `generate-data.mjs` makes (`template --list/--show`, same cwd) returns it.
- * It does not re-run generation, so the projection from a discovered entry
- * into blockRegistry/showcaseRegistry/exampleRegistry is covered elsewhere:
- * by the Drawer assertions in data-extraction.test.ts (registry side) and by
- * the authored→generated admission check in example-coverage.test.ts, which
- * together pin that whatever this seam returns for Lab reaches the registries.
+ * It does not re-run generation. Three separate, narrower guarantees exist
+ * around it, and nothing proves more than their sum:
+ *   1. this file — generic CLI discovery of a new authored pair;
+ *   2. example-coverage.test.ts — every CURRENTLY authored, valid Lab block
+ *      appears in the generated blockRegistry (blockRegistry only);
+ *   3. data-extraction.test.ts — Drawer's showcase/example LOADERS project
+ *      correctly (Drawer-specific).
+ * General loader completeness (a future non-Drawer block's showcase/example
+ * projection) is NOT proved by any of these.
  *
  * The fixture files exist only while this file runs (created in beforeAll,
  * removed in afterAll; leftovers from a killed run are cleaned first). The

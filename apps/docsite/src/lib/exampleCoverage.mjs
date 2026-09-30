@@ -4,13 +4,16 @@
  * @file exampleCoverage.mjs
  *
  * Read-only inventory pairing AUTHORED component-doc example labels with
- * AUTHORED runnable block descriptors, per documented package. Starting from
- * the authored files (not the generated registries) is the point: a doc
- * example with no same-named runnable block (it ships as a CLI snippet only),
- * or a block that never survived into the registries, shows up here instead
- * of vanishing silently. An unpaired label is a NAME mismatch, not proof the
- * component has no demos — blocks attach to a page via exampleFor regardless
- * of name; only Drawer follows the name-equality convention today.
+ * AUTHORED runnable block descriptors, per documented package. It reads
+ * authored inputs ONLY — it does not look at the generated registries, so it
+ * cannot detect a block lost between authoring and generation (the Lab
+ * authored→blockRegistry admission check in example-coverage.test.ts covers
+ * that, for blockRegistry only). What it surfaces is authoring-side: a doc
+ * example with no same-named runnable block, a block named after no label,
+ * a descriptor missing its source, a descriptor that fails to load. An
+ * unpaired label is a NAME mismatch, not proof the component has no demos —
+ * blocks attach to a page via exampleFor regardless of name; only Drawer
+ * follows the name-equality convention today.
  *
  * REPORTS, NEVER GATES. Core does not require doc examples to have paired
  * blocks, and integration packages are intentionally no stricter (owner
