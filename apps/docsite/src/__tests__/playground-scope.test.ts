@@ -5,7 +5,8 @@
  *
  * Validates that the generated playground scope includes every public
  * component exported from @astryxdesign/core/package.json, plus the expected
- * non-component scope entries and editor declarations used by page templates.
+ * non-component scope entries and editor declarations used by page templates
+ * and the imports needed by registered integration example blocks.
  *
  * This test reads the generated file as text (rather than importing it)
  * because the scope imports @astryxdesign/core/* which requires a prior build step.
@@ -17,6 +18,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {describe, it, expect, beforeAll} from 'vitest';
+import {blocks} from '../generated/blockRegistry';
 
 const GENERATED_SCOPE_PATH = path.resolve(
   __dirname,
@@ -259,6 +261,24 @@ describe('playground-scope', () => {
   });
 
   // ── What the templates actually import ─────────────────────────────────
+
+  it('resolves every bare import in registered integration example blocks', () => {
+    const scopedModules = getScopeKeys(scopeContent);
+    const missing = new Set<string>();
+    for (const block of blocks.filter(entry => entry.sourcePackage)) {
+      for (const match of block.source.matchAll(IMPORT_RE)) {
+        const id = match[1];
+        if (
+          !id.startsWith('.') &&
+          !ASSET_RE.test(id) &&
+          !scopedModules.has(id.toLowerCase())
+        ) {
+          missing.add(id);
+        }
+      }
+    }
+    expect([...missing].sort()).toEqual([]);
+  });
 
   it('resolves every bare import in the page templates', () => {
     // The assertions above are an allowlist, and an allowlist only covers what

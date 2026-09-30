@@ -4,7 +4,7 @@
  * @file Drawer.doc.mjs
  * @input Drawer props, panel anatomy, overlay playground config, and story-aligned examples
  * @output Consumer documentation and examples for Drawer
- * @position CLI and rendered component documentation
+ * @position CLI and docsite metadata; runnable docsite demos live in packages/lab/blocks
  */
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
@@ -198,6 +198,7 @@ export const docs = {
       },
     ],
   },
+  // CLI snippets. The docsite renders the paired Drawer blocks in ../../blocks.
   examples: [
     {
       label: 'Non-modal inspector (page stays interactive)',

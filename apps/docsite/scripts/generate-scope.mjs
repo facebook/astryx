@@ -4,7 +4,10 @@
 /**
  * Generates apps/docsite/src/generated/playground-scope.ts
  *
- * Maps every Astryx module available in the playground preview iframe.
+ * Maps Core exports and configured canary integrations into the preview iframe.
+ * @input Core package exports, docsite integrations, and the content target
+ * @output The runtime module scope used by copyable Playground examples
+ * @position Build-time companion to component and block registry generation
  * This runs as part of `pnpm generate` (before dev/build) so new components
  * are picked up automatically — no manual maintenance needed.
  *
@@ -14,11 +17,15 @@
 import {readFileSync, writeFileSync, mkdirSync} from 'node:fs';
 import {dirname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import docsiteConfig from '../astryx.config.mjs';
+import {getTarget} from './resolve-content-root.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 const CORE_PKG = resolve(ROOT, '../../packages/core/package.json');
 const OUT = resolve(ROOT, 'src/generated/playground-scope.ts');
+const integrationPackages =
+  getTarget() === 'canary' ? docsiteConfig.integrations : [];
 
 const HEADER = `// Copyright (c) Meta Platforms, Inc. and affiliates.
 
@@ -250,6 +257,13 @@ for (const {specifier, identifier} of nestedModules) {
 }
 lines.push('');
 
+// Use the same configured package roots as the canary component/block catalog.
+// Otherwise an example's import silently resolves to an empty placeholder.
+for (const [index, pkg] of integrationPackages.entries()) {
+  lines.push(`import * as Integration${index} from '${pkg}';`);
+}
+lines.push('');
+
 // ── Theme imports ──────────────────────────────────────────────────────
 for (const t of SCOPE_THEMES) {
   lines.push(`import {${t.name}} from '${t.pkg}${t.subpath}';`);
@@ -346,6 +360,11 @@ lines.push('  stylex: {default: stylexMock, ...stylexMock},');
 // Recharts comes before Astryx so Astryx components win global name collisions.
 lines.push('  recharts: Recharts,');
 
+// Core entries follow these so Core keeps precedence for unqualified globals.
+for (const [index, pkg] of integrationPackages.entries()) {
+  lines.push(`  '${pkg}': Integration${index},`);
+}
+
 // themes
 for (const t of SCOPE_THEMES) {
   lines.push(`  '${t.pkg}': {default: ${t.name}, ${t.name}},`);
@@ -398,6 +417,7 @@ writeFileSync(OUT, lines.join('\n'));
 console.log(`✓ Generated ${OUT}`);
 console.log(`  ${components.length} components`);
 console.log(`  ${nestedModules.length} nested modules`);
+console.log(`  ${integrationPackages.length} integration packages`);
 console.log(`  ${SCOPE_THEMES.length} themes`);
 console.log(
   `  lucide-react icons + ${HEROICON_VARIANTS.length} heroicon variants`,
