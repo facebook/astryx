@@ -610,6 +610,54 @@ describe('CheckboxList', () => {
 });
 
 describe('CheckboxListItem standalone mode', () => {
+  it('ignores isChecked and onCheck when the parent CheckboxList has a value array', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const onCheck = vi.fn();
+    render(
+      <CheckboxList label="Preferences" value={[]} onChange={onChange}>
+        <CheckboxListItem
+          label="Option A"
+          value="a"
+          isChecked
+          onCheck={onCheck}
+        />
+      </CheckboxList>,
+    );
+    const checkbox = screen.getByRole('checkbox', {name: 'Option A'});
+    // The list's value array owns checked state in collection mode.
+    expect(checkbox).not.toBeChecked();
+    await user.click(checkbox);
+    expect(onChange).toHaveBeenCalledWith(['a']);
+    expect(onCheck).not.toHaveBeenCalled();
+  });
+
+  it('renders the sm checkbox at compact density and md otherwise', () => {
+    const {unmount} = render(
+      <CheckboxList
+        label="Preferences"
+        density="compact"
+        value={[]}
+        onChange={() => {}}>
+        <CheckboxListItem label="Option A" value="a" />
+      </CheckboxList>,
+    );
+    const compactField = screen
+      .getByRole('checkbox')
+      .closest('.astryx-checkbox-input');
+    expect(compactField).toHaveAttribute('data-size', 'sm');
+    unmount();
+    render(
+      <List>
+        <CheckboxListItem label="Option A" />
+      </List>,
+    );
+    const balancedField = screen
+      .getByRole('checkbox')
+      .closest('.astryx-checkbox-input');
+    expect(balancedField).toHaveAttribute('data-size', 'md');
+  });
+
   it('uses isChecked/onCheck for standalone control', async () => {
     const user = userEvent.setup();
     const handleCheck = vi.fn();
