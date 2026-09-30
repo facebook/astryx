@@ -18,6 +18,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {describe, it, expect, beforeAll} from 'vitest';
+import docsiteConfig from '../../astryx.config.mjs';
 import {blocks} from '../generated/blockRegistry';
 
 const GENERATED_SCOPE_PATH = path.resolve(
@@ -258,6 +259,56 @@ describe('playground-scope', () => {
   it('includes next/image stub', () => {
     expect(scopeContent).toContain("'next/image':");
     expect(scopeContent).toContain("React.createElement('img', props)");
+  });
+
+  // ── Integration packages (canary whole-package bridge) ─────────────────
+
+  it('maps every configured integration package under its own namespace', () => {
+    // Whole-package admission is the contract: a NEW component exported by a
+    // configured integration is playground-importable with no scope edits.
+    // Each package gets a DISTINCT namespace import, so qualified imports
+    // (`import {Chart} from '@astryxdesign/charts'`) keep package identity
+    // even where packages share export names (@astryxdesign/lab and
+    // @astryxdesign/charts currently share 14, e.g. Chart/ChartAxis/useChart).
+    docsiteConfig.integrations.forEach((pkg: string, index: number) => {
+      expect(scopeContent).toContain(
+        `import * as Integration${index} from '${pkg}';`,
+      );
+      expect(scopeContent).toContain(`'${pkg}': Integration${index},`);
+    });
+  });
+
+  it('orders integration scope entries after recharts, in config order, before Core', () => {
+    // The preview runner builds UNQUALIFIED globals by iterating the scope
+    // map in insertion order with later-wins (runner.ts buildGlobalScope),
+    // so this order IS the collision policy: among integrations the
+    // later-configured package owns a shared unqualified name (charts
+    // shadows lab for their 14 shared exports), and Core's entries shadow
+    // every integration. Qualified imports are unaffected.
+    const mapStart = scopeContent.indexOf('export const scope');
+    expect(mapStart).toBeGreaterThan(-1);
+    const scopeMap = scopeContent.slice(mapStart);
+
+    const integrationPositions = docsiteConfig.integrations.map(
+      (pkg: string, index: number) =>
+        scopeMap.indexOf(`'${pkg}': Integration${index},`),
+    );
+    for (const position of integrationPositions) {
+      expect(position).toBeGreaterThan(-1);
+    }
+    expect([...integrationPositions].sort((a, b) => a - b)).toEqual(
+      integrationPositions,
+    );
+
+    const rechartsPosition = scopeMap.indexOf('recharts: Recharts,');
+    expect(rechartsPosition).toBeGreaterThan(-1);
+    expect(Math.min(...integrationPositions)).toBeGreaterThan(rechartsPosition);
+
+    const firstCorePosition = scopeMap.indexOf("'@astryxdesign/core");
+    expect(firstCorePosition).toBeGreaterThan(-1);
+    expect(firstCorePosition).toBeGreaterThan(
+      Math.max(...integrationPositions),
+    );
   });
 
   // ── What the templates actually import ─────────────────────────────────
