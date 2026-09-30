@@ -99,6 +99,13 @@ const TARGETS = [
       'on a coarse pointer, the compact combobox and full Clear all hit area remain separate in RTL as well',
   },
   {
+    component: 'DialogHeroHeader',
+    story: 'lab-dialogheroheader--media-bleed-geometry',
+    guards:
+      'media reaches the dialog edges at theme-default, 0/2/8 padding, a ' +
+      'theme override, and RTL while the title keeps the cancelled inset',
+  },
+  {
     component: 'TabList',
     story: 'core-tablist--full-bleed-geometry',
     guards:
