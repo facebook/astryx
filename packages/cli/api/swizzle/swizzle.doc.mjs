@@ -4,7 +4,7 @@
  * @file FunctionDoc for `swizzle()` / `astryx swizzle`. Colocated with the API
  * function it documents; the shape source of truth stays in `swizzle.type.mjs`.
  * Documents recursive core copying, flat integration copying, and destination
- * symlink rejection.
+ * symlink and path-shape rejection.
  * @position packages/cli/api/swizzle — function documentation
  */
 
@@ -23,7 +23,9 @@ export const doc = {
     "package's subpaths and flagging whether any copied file uses StyleX. With no name " +
     '(or list) it returns the swizzlable component names instead. Core component ' +
     'directories include nested source files; integration source directories retain ' +
-    'their flat copy behavior. Destination symlinks are rejected before any writes.',
+    'their flat copy behavior. Destination symlinks and paths already taken by the wrong ' +
+    'kind of entry (a file where a directory must go, or a directory where a file must go) ' +
+    'are rejected before any writes.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'swizzle(component?: string, options?: SwizzleOptions): Promise<SwizzleListResponse | SwizzleCopyResponse>',
@@ -102,6 +104,10 @@ export const doc = {
     {
       code: 'ERR_FILE_EXISTS',
       when: 'copying would overwrite existing files and overwrite is not set',
+    },
+    {
+      code: 'ERR_WRITE_FAILED',
+      when: 'an existing destination path segment is not a directory, an existing destination file is a directory or other non-regular file, or a destination path cannot be inspected (e.g. no permission); checked before any write, even with overwrite',
     },
   ],
   examples: [
