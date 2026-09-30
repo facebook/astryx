@@ -75,10 +75,10 @@ heading-2: 25→25px; body: 14→16px; display-1: 79→60px
 
 ### Mobile condition
 
-By default, mobile MUST match `(width < 768px) and (pointer: coarse)`.
+By default, mobile MUST match `(width < 1024px) and (pointer: coarse)`.
 Width is the layout viewport; coarse refers to the primary pointer.
-Use the effective `md` breakpoint governed by `spec:AST-012`; the stock value is
-768 CSS px and the upper edge is exclusive.
+Use the effective `lg` breakpoint governed by `spec:AST-012`; the stock value is
+1024 CSS px and the upper edge is exclusive.
 
 ### Platform support
 
