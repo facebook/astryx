@@ -26,6 +26,14 @@ affects_consumer_docs: [typography, theme]
 
 ## Intent
 
+**Summary**
+
+- This draft PR changes no code, theme definitions, or token values.
+- Only narrow + primary-coarse viewports get a proposed 1rem reading base.
+- Pin preserves Display 1; document-root and desktop typography stay unchanged.
+- Extra 14px secondary / 12px heading-6 floors still need a human decision.
+- Theme implementation context is [PR #6699][PR]; full values are below.
+
 People reading and operating a narrow touch interface should have a comfortable
 body size without unnecessarily enlarging already-prominent display text. This
 proposal gives Astryx's first-party themes a 16px-reference reading base, a
@@ -69,8 +77,9 @@ The intended outcomes are:
   unchanged; custom authors retain the existing override and inheritance model.
 
 `AST-049` is a **provisional draft identifier**, not a reservation. Numbering and
-existing-owner research are recorded in Current-state impact. Concrete files,
-implementation sketches, and execution phases live in the sibling [plan](plan.md).
+existing-owner research are recorded in Current-state impact. The [short
+plan](plan.md) summarizes the decisions and keeps related theme work separate
+from this documentation-only PR.
 
 ## Non-goals
 
@@ -503,8 +512,8 @@ secondary `1.4286` (14/~20), and smallest semantic heading `1.6667` (12/~20).
 The existing final-size calculation targets 1.5 below 20px, 1.4 below 32px, and
 1.25 above that, with a four-reference-pixel line grid and at least four pixels
 of headroom. Snapping means the final ratio need not equal its tier target.
-The plan records the precise reference calculation for reproducibility; the
-observable endpoints above remain the requirement. [Scale][Scale]
+The tables above define the proposed observable endpoints; the source is
+reference evidence, not a mandated private calculation. [Scale][Scale]
 
 A floor changes both size and leading; retaining an incompatible old leading
 while raising only size is not the specified output. Unitless leading scales
@@ -590,9 +599,9 @@ useMediaQuery(query: string, serverDefault = false): boolean
 A diagnostic may observe the exact combined query with the effective `md` and a
 server default of **false**. Its boolean must not decide text content, heading
 levels, or required actions. A one-shot non-React observation guards `window`
-and `matchMedia` and returns false when unavailable. The plan contains an
-optional documentation-local helper, not a proposed core API. This work does
-not extend the existing hook's browser contract to arbitrary DOM shims.
+and `matchMedia` and returns false when unavailable. No new core helper or
+export is proposed. The existing hook's browser contract is not extended
+to arbitrary DOM shims.
 [Hook evidence][Media-hook]
 
 Server rendering must not infer pointer capability from UA. With the correct
@@ -713,11 +722,10 @@ not authority for widening this record's scope.
 | Sandbox/Storybook examples                                    | Show actual first-party Pin-plus-floor profiles, long content, explicit sizes, and representative states     | Generic Lift/Pin/Custom exploration remains separate from product defaults                                                                                |
 | Family and contributing records                               | No new family or contributor policy is proposed                                                              | AST-013, AST-017, and existing contribution rules remain unchanged                                                                                        |
 
-Concrete source/test/output paths and optional helper sketches are in
-[plan.md](plan.md). No core mechanism change is anticipated; that is an
-implementation observation, not a requirement to retain particular filenames or
-helpers. Existing current records must not be edited to depend on this draft
-merely to imply adoption.
+The [short plan](plan.md) is a reading aid and checklist for related theme work.
+This record proposes behavior only; no code, theme definitions, or token values
+change in this spec PR. Existing current records must not be edited to depend on
+this draft merely to imply adoption.
 
 ### Migration, versioning, and risk
 
@@ -795,7 +803,8 @@ labeled separately from source observations and computed projections.
 
 Verification proves the observable claims; it neither adopts this draft nor
 prescribes the private implementation or CI structure producing the evidence.
-The executable path inventory and suggested commands are in [plan.md](plan.md).
+The [concise checklist](plan.md#verification) summarizes validation; the matrix
+below defines the required evidence for the proposed contract.
 
 | Contract   | Verification                                                                                      | Representative states                                                                                     | Mutation or failure expectation                                                                                   |
 | ---------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
