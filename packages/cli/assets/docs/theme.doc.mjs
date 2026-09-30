@@ -41,6 +41,16 @@ export const docs = {
           label: 'Quick start',
           code: 'astryx theme add stone --import   # use an existing theme\nastryx theme eject stone            # fork its source to customize\nastryx theme build src/themes/stone/stoneTheme.ts',
         },
+        {
+          type: 'prose',
+          text: 'For a new coordinated color system, run `astryx theme palette generate palette.config.json --out palette.generated.ts`. Review and commit the generated palette module and receipt, import its `palette` export, then reference stable stops from semantic tokens. Regenerating an accepted palette updates every mapped token that keeps those references; generation does not rewrite the theme.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Map semantic tokens to generated palette stops',
+          code: "import {defineTheme} from '@astryxdesign/core/theme';\nimport {palette} from './palette.generated';\n\nconst myTheme = defineTheme({\n  name: 'my-theme',\n  tokens: {\n    '--color-background-surface': [\n      palette.neutral.light[100],\n      palette.neutral.dark[15],\n    ],\n  },\n});",
+        },
       ],
     },
     {

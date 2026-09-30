@@ -21,7 +21,7 @@ export const docsZh = {
       content: [
         {
           type: 'prose',
-          text: '使用 `defineTheme` 进行令牌覆盖、比例配置和组件样式覆盖。完整指南——调色板生成、主题扩展、自适应、自定义变体和生产构建——请参阅 {@link generic:author-a-theme}。',
+          text: '使用 `defineTheme` 进行令牌覆盖、比例配置和组件样式覆盖。新建完整调色板时，请运行 `astryx theme palette generate palette.config.json --out palette.generated.ts`，审核并提交生成的模块和收据，再使用 `import {palette} from \'./palette.generated\';` 导入调色板，让语义令牌引用稳定的色阶，例如 `palette.neutral.light[100]` 和 `palette.neutral.dark[15]`。重新生成已接受的调色板时，所有保留这些引用的映射令牌会一并更新；生成操作不会自动修改主题。完整指南请参阅 {@link generic:author-a-theme}。',
         },
       ],
     },
