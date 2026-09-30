@@ -7,6 +7,7 @@ import {List} from '@astryxdesign/core/List';
 import {Badge} from '@astryxdesign/core/Badge';
 import {Card} from '@astryxdesign/core/Card';
 import {Link} from '@astryxdesign/core/Link';
+import CheckboxListSelectAllPattern from '../../../packages/cli/assets/templates/blocks/components/CheckboxList/CheckboxListSelectAllPattern';
 
 const meta: Meta<typeof CheckboxList> = {
   title: 'Core/CheckboxList',
@@ -241,6 +242,14 @@ export const SelectAllWithIndeterminate: Story = {
       </CheckboxList>
     );
   },
+};
+
+/**
+ * The select-all block exactly as the CLI ships it, so browser and axe audits
+ * cover the copied template rather than a look-alike.
+ */
+export const SelectAllPatternBlock: Story = {
+  render: () => <CheckboxListSelectAllPattern />,
 };
 
 export const Disabled: Story = {

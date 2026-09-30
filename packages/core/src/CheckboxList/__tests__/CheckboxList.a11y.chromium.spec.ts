@@ -7,9 +7,10 @@
  *   measurements, a contact sheet, and a fail-closed manifest
  * @position Real-browser evidence for the CheckboxList component audit. Sensors
  *   prove that each frame is the intended render; measurements (focus
- *   indicators, row paint, hit targets, wrapping) are recorded for the audit
- *   and never gate. Only frames that prove a shipped remediation gate on its
- *   outcome.
+ *   indicators, row paint, hit targets, wrapping, list structure) are recorded
+ *   for the audit and never gate. Only frames that prove a shipped remediation
+ *   gate on its outcome. The select-all CLI block renders through its own
+ *   story, and its source blob is bound in the manifest.
  */
 
 import {createHash} from 'node:crypto';
@@ -34,6 +35,9 @@ import {
 
 const OUTPUT = path.resolve('test-results/checkbox-list-audit-evidence');
 const PREFIX = 'core-checkboxlist--';
+const BLOCK_DIR =
+  'packages/cli/assets/templates/blocks/components/CheckboxList';
+const BLOCK_SOURCE = `${BLOCK_DIR}/CheckboxListSelectAllPattern.tsx`;
 
 type Mode = 'light' | 'dark';
 type Direction = 'ltr' | 'rtl';
@@ -240,6 +244,21 @@ const CASES: AuditCase[] = [
       rows: [
         {checked: 'mixed'},
         {checked: true},
+        {checked: false},
+        {checked: false},
+      ],
+    },
+  },
+  {
+    key: 'select-all-block',
+    story: 'select-all-pattern-block',
+    modes: BOTH,
+    expect: {
+      groupName: 'Include in export',
+      rows: [
+        {checked: 'mixed'},
+        {checked: true},
+        {checked: false},
         {checked: false},
         {checked: false},
       ],
@@ -496,6 +515,7 @@ const CASES: AuditCase[] = [
 let server: StaticServer | undefined;
 let head = '';
 let storybookHead = '';
+let blockBlob = '';
 let browserVersion = 'unknown';
 const receipts: FrameReceipt[] = [];
 
@@ -933,6 +953,13 @@ async function readPage(page: Page, auditCase: AuditCase) {
         ? (groupRoots[0] ?? null)
         : (storyRoot?.querySelector('ul, ol') ?? null);
       const group = root?.querySelector('[role="group"]') ?? null;
+      const listElement = root?.matches('ul, ol')
+        ? root
+        : (root?.querySelector('ul, ol') ?? null);
+      const listChildren = [...(listElement?.children ?? [])].map(child => ({
+        tag: child.tagName.toLowerCase(),
+        role: child.getAttribute('role'),
+      }));
       const labelNode =
         byIds(group?.getAttribute('aria-labelledby') ?? null)[0] ?? null;
       const describedNodes = byIds(
@@ -1103,6 +1130,7 @@ async function readPage(page: Page, auditCase: AuditCase) {
       return {
         storyId: new URL(location.href).searchParams.get('id'),
         groupRootCount: groupRoots.length,
+        listChildren,
         listCount: storyRoot?.querySelectorAll('ul, ol').length ?? 0,
         rootFound: root != null,
         groupFound: group != null,
@@ -1775,6 +1803,7 @@ async function capture(browser: Browser, auditCase: AuditCase, mode: Mode) {
         })),
         surface: css(actual.surface),
         hoverCapable: actual.hoverCapable,
+        listChildren: actual.listChildren,
       },
       ariaSnapshot,
       image,
@@ -1842,6 +1871,7 @@ test.beforeAll(async () => {
       '--',
       'apps/storybook/stories/CheckboxList.stories.tsx',
       'packages/core/src/CheckboxList',
+      BLOCK_DIR,
     ],
     {encoding: 'utf8'},
   ).trim();
@@ -1853,6 +1883,9 @@ test.beforeAll(async () => {
   if (process.env.ASTRYX_HEAD_SHA && process.env.ASTRYX_HEAD_SHA !== head) {
     throw new Error('PR head differs from the checked out source');
   }
+  blockBlob = execFileSync('git', ['hash-object', BLOCK_SOURCE], {
+    encoding: 'utf8',
+  }).trim();
   fs.mkdirSync(OUTPUT, {recursive: true});
   server = await serveStorybook(
     process.env.ASTRYX_STORYBOOK_DIR ?? DEFAULT_STORYBOOK_DIR,
@@ -1919,6 +1952,7 @@ test('captures the fail-closed CheckboxList state matrix', async ({
         headSha: head,
         storybookSha: storybookHead,
         browser: browserVersion,
+        sources: {block: {path: BLOCK_SOURCE, gitBlob: blockBlob}},
         failClosed: true,
         matrixComplete: failures.length === 0,
         matrixFailures: failures,
