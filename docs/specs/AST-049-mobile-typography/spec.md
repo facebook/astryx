@@ -22,316 +22,198 @@ affects_contributing: []
 affects_consumer_docs: [typography, theme]
 ---
 
-# First-party mobile typography system spec
+# Pin target selection system spec
 
 ## Intent
 
-**Summary**
+**Summary:** Pick the mobile Pin target from the **desktop ratio**:
+**`1 < r <= 1.25` → Display 1 (+6); `1.25 < r < 1.414` → Heading 2 (+2);
+`r >= 1.414` → Heading 3 (+1).** Then derive the mobile ratio from that target.
 
-- This PR changes only this spec. Theme implementation lives in [PR #6699][pr].
-- Propose a 1rem reading base only on narrow, primary-coarse viewports.
-- Pin preserves each theme's Display 1; root and desktop typography stay unchanged.
-- Extra 14px secondary / 12px heading-6 floors are an **open decision**.
-- This record is draft, not approval to change code, themes, or tokens.
-
-People should be able to read a narrow touch interface comfortably without
-unnecessarily enlarging its biggest headings. This record proposes one shared
-first-party profile. [AST-012][adaptations] owns the adaptation mechanism but
-explicitly excludes choosing bundled-theme values. Theme identities and root
-choices remain package-owned; the tables here project those inputs, not replace
-that ownership.
+This is a theme-agnostic authoring rule for geometric scales, not a catalog of
+individual themes. The proposal remains **draft**. This PR changes only this spec;
+related theme implementation is in [PR #6699][pr].
 
 ## Non-goals
 
-- Changing `html`/`:root` font-size, desktop scales, or unthemed core defaults.
-- Changing font families, weights, tracking, layout, spacing, or input safeguards.
-- Adding a mobile API, device detector, or viewport-fluid typography.
-- Automatically enrolling independent custom themes or rewriting consumer copies.
-- Treating numerical floors as accessibility certification.
-- Prescribing private helpers, file layouts, or CI topology; equivalent
-  implementations may satisfy the same observable contract.
+- Per-theme inventories, endpoint tables, or new universal small-text floors.
+- Changing the document root, desktop scale, type identity, or component API.
+- Automatically enrolling themes or inferring targets from device/theme names.
+- Prescribing private implementation structure; equivalent implementations remain valid.
 
 ## Requirements
 
-All requirements below are **proposed**, not current authority.
+### Pick the target from the desktop ratio
 
-- **FR1 — First-party scope.** Cover neutral, chocolate, butter, stone, gothic,
-  matcha, and y2k. The first four have a 14px-reference base; the last three
-  already have a 16px-reference base. Independent custom themes and the
-  unpublished probe fixture are outside this default policy. [Theme sources][themes]
-- **FR2 — Theme base, not document root.** In matching stock themes,
-  `--font-size-base` MUST be `1rem`, with body/label/code/heading-4 at that base.
-  The document root MUST remain unchanged. Reference pixels assume a 16px
-  root; with a 20px user root, `1rem` renders at 20px. Never counter-scale it.
-- **FR3 — Both conditions are required.** Mobile MUST mean narrow AND a coarse
-  primary pointer, using the exact boundary and exclusions below.
-- **FR4 — Discrete Pin outputs.** Use the formula and endpoint tables below.
-  Preserve Display 1 and keep the raw ladder geometric. Do not introduce
-  viewport-driven `clamp()` interpolation or a universal display cap.
-- **FR5 — Additional floors need approval.** OQ1 proposes semantic minima of
-  14px-reference for heading-5/supporting and 12px-reference for heading-6.
-  These are not raw-token clamps. The marked table values are an open extension
-  beyond #6699, not an implementation task or a shipped guarantee.
-- **FR6 — Preserve readable type identity.** Keep existing families, weights,
-  tracking, and semantic HTML. Leading MUST remain unitless and match the proposed
-  final-size endpoints; a size correction must not retain incompatible leading.
-- **FR7 — CSS owns presentation.** Both states MUST work without a typography
-  resize handler or React remount. Initial built CSS MUST select the right state
-  before hydration; server and first-client markup must agree. Runtime style
-  injection alone is not proof of pre-hydration or no-JavaScript behavior.
-- **FR8 — Preserve author intent.** Keep AST-012's ordered rules, nested/portal
-  boundaries, media-surface precedence, and explicit overrides. A later child rule
-  can replace the profile; an empty rule list or root-only override does not erase
-  inherited rules. Explicit customizations may bypass the stock semantic floors.
-- **FR9 — Distribution and observation agree.** Runtime themes, built CSS/modules,
-  and newly copied CLI themes MUST express equivalent output. JavaScript theme
-  token reads remain root-value reads. An optional media-query observer defaults
-  to false on the server and must not select different content or heading levels.
-- **FR10 — Unrelated values stay unchanged.** Preserve nonmatching values,
-  literal component sizes, pixel geometry, and independent input safeguards.
-  Named `Text size` values remain token-backed and may adapt; they are not fixed
-  pixels. The matching supporting-size exceptions are called out below.
-- **FR11 — Accessibility is an outcome.** Preserve text preferences, zoom/reflow,
-  user spacing, labels, headings, and keyboard access. Larger text may reflow,
-  but must not hide essential content or make controls unusable.
-- **FR12 — Compatibility remains separately owned.** Later implementation work
-  follows the existing released-consumer policy. This spec-only PR makes no
-  package change and needs no Changeset.
+**From explorer/code:** the three choices and exact thresholds below come from
+[the recommendation function and its comments, lines 60–77][choice].
 
-### When the profile applies
+| Desktop ratio r    | Pin target; step a | Common ratios in this range | Why this target                                                                                                                          |
+| ------------------ | ------------------ | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `1 < r <= 1.25`    | **Display 1; +6**  | 1.067, 1.125, 1.2, 1.25     | Gentle scales need little reduction. A lower pin would unnecessarily shrink displays and flatten an already gentle hierarchy.            |
+| `1.25 < r < 1.414` | **Heading 2; +2**  | 1.333                       | Hold a mid-heading and let larger roles shrink. +6 leaves the display tier high; +1 compresses it more than this branch recommends.      |
+| `r >= 1.414`       | **Heading 3; +1**  | 1.414, 1.5, 1.618           | Stronger reduction of large headings/displays. A higher pin keeps a steeper mobile ratio, larger displays, and smaller below-base roles. |
 
-For stock themes, use `(width < 768px) and (pointer: coarse)`.
-`narrow` means layout viewport width below the effective `widthBreakpoints.md`.
-The stock value is 768 CSS px; the upper edge is exclusive. An inherited custom
-md value keeps AST-012's meaning. Do not approximate the edge with 767px.
+`1.25` belongs to +6; `1.414` belongs to +1. The second cutoff is the literal
+**1.414**, not √2. Classify the original desktop ratio, never a rounded label or
+the already-derived mobile ratio. The target changes discretely at the cutoffs.
 
-| Narrow | Primary coarse | Profile             |
-| ------ | -------------- | ------------------- |
-| Yes    | Yes            | Pin profile         |
-| Yes    | No             | Original typography |
-| No     | Yes            | Original typography |
-| No     | No             | Original typography |
+**Proposed completion:** admit finite `B > 0` and `r > 1`, subject to the checks
+below. Continue the same branches outside the explorer's 1.067–1.618 picker;
+that wider applicability is not evidence of tested visual suitability (OQ1).
 
-- `hover: none` is neither required nor sufficient; it measures something else.
-- `any-pointer: coarse` can match a secondary touchscreen on a fine-primary laptop.
-- UA, device names, orientation, and last-input history do not override the query.
-- `pointer: none` or a nonmatching pointer query does not activate the profile.
+- **FR1 — Scope.** Use the rule for geometric scales with Astryx's raw-step meanings;
+  it selects a default target, not a theme's identity or adoption status.
+- **FR2 — Base.** Set `M = max(B, 16)`, without changing `html`/`:root` or rem.
+  When `B >= 16`, the ratio and complete scale are unchanged, whatever the target.
+- **FR3 — Activation.** Apply the profile only to narrow AND primary-coarse
+  viewports, as defined below; other environments keep their desktop values.
+- **FR4 — Target.** The default target MUST follow the table. Preserve that target,
+  not Display 1 in every scale. Do not blend targets or interpolate with viewport width.
+- **FR5 — Constraints.** A small-role floor failure MUST NOT silently select a
+  different target. Report it and make any semantic adjustment explicit.
+- **FR6 — Type identity.** Preserve families, weights, tracking, and semantic HTML.
+  Any explicit size correction needs leading derived from its final size.
+- **FR7 — Presentation.** CSS owns environment selection; do not require a resize
+  handler, content remount, or different server/client markup.
+- **FR8 — Overrides.** Keep existing author overrides. A custom target is an explicit
+  departure from the default rule, not a new interpretation of a ratio range.
+- **FR9 — Parity.** Runtime, built, and copied themes must agree on the selected
+  target and resulting tokens. JavaScript token reads remain root-value reads.
+- **FR10 — Precision.** Use unrounded inputs for selection/calculation and validate
+  any serialized ratio against the complete generated output, not just the body.
+- **FR11 — Failure.** Reject an infeasible default profile; do not hide failed
+  hierarchy, floor, or anchor checks behind another target or a raw-token clamp.
+- **FR12 — Compatibility.** Existing [AST-017][compatibility] owns any later package
+  change. This specification makes no package change and needs no Changeset.
 
-A narrow mouse window stays unchanged. A wide touch tablet or 844px phone
-landscape stays unchanged. A 744px coarse-pointer split view matches. All still
-need usable responsive layout; this predicate is not a touch-target policy.
+### Derive and check the scale
 
-### Pin definition and table conventions
+Given reference-pixel base `B` and desktop ratio `r`:
 
-For the root base B, ratio r, and raw step k:
+1. Validate the inputs; select `a` from the table using **desktop r**.
+2. Compute the [explorer's Pin equations, lines 141–174][calculation]:
 
 ```text
 M = max(B, 16)
-r_pin = r * (B / M)^(1/6)       # Display 1 is step +6
-root(k) = Math.round(B * r^k)
+r_pin = r * (B / M)^(1/a)
+desktop(k) = Math.round(B * r^k)
 mobile(k) = Math.round(M * r_pin^k)
 rem = referencePx / 16
 ```
 
-Use positive-number `Math.round` semantics without intermediate rounding.
-The exact ratios are 1.1735887063175583 and 1.2224882357474567; their authored
-1.1736 and 1.2225 forms produce identical token maps with the inspected
-[scale generator][scale]. These equations define public outputs, not a required
-private algorithm; precomputed equivalents are valid.
+3. Check finite outputs and `r_pin > 1`. A flat/inverted unrounded ladder is infeasible;
+   do not silently move the pin. Step 0 must be 16px-reference when `B < 16`.
+4. Check `mobile(a) == desktop(a)` after rounding. Keep full precision during
+   calculation. A four-decimal stored ratio is allowed **only after parity checks**
+   for all generated sizes and leading; otherwise retain more precision.
+5. Check small roles against the product's declared minima. Relative growth is not
+   proof that a minimum was reached. **Do not auto-move the target.** Revise the
+   inputs or explicitly override affected semantic sizes and final-size leading;
+   such corrections are separate from the geometric Pin result.
+6. If the named role is absent, retain its **virtual raw-step anchor**. Do not pick
+   the nearest visible heading: that would make the rule depend on page contents.
 
-Gestalt supports a discrete, role-led scale. Its [typography guidance][gestalt]
-is supporting research, not the source of Astryx's Pin formula.
+Steps 3–6's validation/absence policy is **proposed completion**. The explorer
+floors the base but does not guarantee arbitrary small-role minima. Its manual
+controls are not an automatic floor-repair algorithm.
 
-Each table covers all fourteen semantic roles, grouping identical endpoints.
-Sizes are **desktop → proposed mobile reference px**; divide by 16 for rem.
-Leading is the proposed mobile unitless multiplier, rounded to four decimals.
-`heading-N` refers to the typography role, not a change to HTML heading levels.
+Before integer rounding, mobile/desktop at step `k` is `(M/B)^(1-k/a)`.
+For `M > B`, steps **below a grow**, **a stays fixed**, and **above a shrink**;
+rounding may make a visible change zero. Higher `a` means a larger `r_pin`:
+**less** ratio compression, not more. This is a discrete scale, not fluid `clamp()`.
 
-**† OPEN DECISION:** the marked minima require OQ1 approval and go beyond #6699's
-pure Pin. The tables show the recommended full profile, not a claim that those
-extra values are implemented. All other requirements are also draft proposals.
+### One worked example
 
-### A. Neutral and chocolate
+For `B = 14`, `r = 1.333`, pick **Heading 2 (+2)** and `M = 16`:
+`r_pin = 1.333 * (14/16)^(1/2) = 1.246907324142416`.
+Heading 2 stays **25 → 25px**; body grows **14 → 16px**; Display 1 shrinks
+**79 → 60px**. A stored `1.2469` produces the same generated tokens for this example.
+This illustrates the rule; it is not a theme-specific prescription.
 
-Root `14 / 1.2` → matching `16 / 1.1736`; Display 1 stays **42px**.
+### Base and mobile environment
 
-| Role                         | Desktop → mobile px | Mobile leading |
-| ---------------------------- | ------------------: | -------------: |
-| display-1                    |             42 → 42 |         1.2381 |
-| display-2                    |             35 → 36 |         1.2222 |
-| display-3                    |             29 → 30 |         1.4667 |
-| heading-1                    |             24 → 26 |         1.3846 |
-| heading-2                    |             20 → 22 |         1.4545 |
-| heading-3; large             |             17 → 19 |         1.4737 |
-| heading-4; body; label; code |             14 → 16 |            1.5 |
-| heading-5; supporting        |             12 → 14 |         1.4286 |
-| heading-6                    |             10 → 12 |         1.6667 |
-
-Pure Pin already reaches the proposed small-role minima for these two themes.
-
-### B. Butter and stone
-
-Root `14 / 1.25` → matching `16 / 1.2225`; Display 1 stays **53px**.
-
-| Role                         | Desktop → mobile px | Mobile leading |
-| ---------------------------- | ------------------: | -------------: |
-| display-1                    |             53 → 53 |         1.2830 |
-| display-2                    |             43 → 44 |         1.2727 |
-| display-3                    |             34 → 36 |         1.2222 |
-| heading-1                    |             27 → 29 |         1.3793 |
-| heading-2                    |             22 → 24 |         1.3333 |
-| heading-3; large             |             18 → 20 |            1.4 |
-| heading-4; body; label; code |             14 → 16 |            1.5 |
-| heading-5                    |            11 → 14† |         1.4286 |
-| heading-6                    |             9 → 12† |         1.6667 |
-| supporting                   |            12 → 14† |         1.4286 |
-
-Root supporting is a literal `12px` override, not the raw 11px step.
-Pure Pin yields 13px heading-5/supporting and 11px heading-6; the † corrections
-are the additional decision. Preserve the literal root value when nonmatching.
-
-### C. Gothic, matcha, and y2k
-
-Root and matching ladder remain `16 / 1.25`; Display 1 stays **61px**.
-Only the proposed † semantic floors change.
-
-| Role                         | Desktop → mobile px | Mobile leading |
-| ---------------------------- | ------------------: | -------------: |
-| display-1                    |             61 → 61 |         1.2459 |
-| display-2                    |             49 → 49 |         1.2245 |
-| display-3                    |             39 → 39 |         1.2308 |
-| heading-1                    |             31 → 31 |         1.4194 |
-| heading-2                    |             25 → 25 |           1.44 |
-| heading-3; large             |             20 → 20 |            1.4 |
-| heading-4; body; label; code |             16 → 16 |            1.5 |
-| heading-5                    |            13 → 14† |         1.4286 |
-| heading-6                    |            10 → 12† |         1.6667 |
-| supporting — gothic/matcha   |            13 → 14† |         1.4286 |
-| supporting — y2k             |            12 → 14† |         1.4286 |
-
-Y2K also has a literal `12px` root supporting override. The already-16 base
-alone does not satisfy every proposed semantic floor. #6699 does not change
-these three themes in the inspected source snapshot.
-
-### Role and layout safeguards
-
-- A role's size and leading use `--text-<role>-size` and
-  `--text-<role>-leading`. A floor changes the semantic role, not its raw alias.
-- The key reading endpoints are 16px/24px body, 14px/~20px secondary text,
-  and 12px/~20px heading-6. Keep unitless leading so text preferences scale it.
-- Reserve the smallest heading for brief subordinate headings, not body copy.
-- A pinned display can still wrap. Do not shrink it to force a single line.
-- No mobile-specific tracking or weight changes are proposed.
+- Sixteen is a reference-pixel minimum: step 0 is `1rem` when `M = 16`.
+  Preserve document-root preferences, zoom, reflow, and independent input safeguards.
+- Mobile is `(width < 768px) and (pointer: coarse)`: layout viewport below the
+  effective `widthBreakpoints.md`, exclusive, AND a coarse primary pointer.
+- [AST-012][adaptations] governs custom md and inheritance. No width-only, OR,
+  `hover`, `any-pointer`, or UA substitute. Use identical SSR markup.
 
 ### Platform support
 
-- Inherit [AST-013][platform]: its rolling full/reduced tiers and explicit latest
-  stable desktop Chrome and iOS Safari support. This profile raises no floor.
-- A nonmatching/unavailable predicate leaves normal typography usable. Do not
-  guess a device, throw, hide content, or silently waive supported behavior.
-- Layout, paint, and hydration claims need real-browser evidence. An iOS claim
-  needs actual iOS Safari; Chromium or emulated WebKit does not substitute.
+- Inherit [AST-013][platform]; this rule raises no browser floor.
+- Nonmatching environments retain normal typography; unsupported paths must remain usable.
+- Rendered claims need browser evidence; iOS claims require actual iOS Safari.
 
 ## Current-state impact
 
-This PR adds **one draft specification only**. It changes no code, theme
-source, token values, schema, template, or current authority. Related theme
-implementation is in #6699; this record does not approve or classify that PR.
+The explorer fixes `B = 14` and offers eight ratios (lines 38–46, 96, 405).
+Its recommendation is **advice**, not automatic selection: initial state is
+Lift with pin +3; the [“Recommended” badge and “Use” button][ui]
+expose the lookup separately. Neither initial state overrides this table.
 
-At source snapshot `9057ebe308c1625b587927583654f5a2ef391e80`, #6699 contains
-geometric Pin for neutral/chocolate/butter/stone. It does not contain the proposed
-extra floors for butter/stone or floor-only changes for gothic/matcha/y2k.
-
-If adopted, this policy changes first-party matching defaults and the
-`typography`/`theme` consumer guides. The affected architecture records are
-`architecture:theme-tokens`, `architecture:theme-authoring-contract`,
-`architecture:theme-compilation`, and [theme application][application].
-Their existing ownership and mechanisms remain in force; no family or
-contributing contract changes. Metadata names proposed affected surfaces,
-not code edits made by this PR.
-
-Any later package change follows [AST-017][compatibility]: a compatible `[feat]`
-is patch while 0.x; an actual stable-contract break is `[breaking]`/minor with
-concrete migration. Visual scope alone does not decide the category.
+This draft promotes that recommendation into an authoring default. It leaves
+[theme application][application], token, authoring, and compilation ownership
+intact; only the `typography`/`theme` guides would describe the adopted rule.
+No family/contributing contract, source, theme, token, or current authority changes here.
 
 ## Verification
 
-These are conformance criteria, not claims of completed implementation or device
-testing. Document/schema and numeric checks are separate from rendered evidence.
+| Contract       | Verification                                        | Representative states                                  | Mutation or failure expectation                             |
+| -------------- | --------------------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------------- |
+| FR1–FR4        | Compare target lookup with the source branches      | Eight picker ratios; either side of 1.25/1.414         | Wrong inclusivity, √2 substitution, or fixed +6             |
+| FR2, FR4, FR10 | Compare formula and generated tokens                | Generic B=14; B=16/20; stored vs full precision        | Wrong anchor, base, or serialization drift                  |
+| FR5, FR8, FR11 | Check constraints and missing-role behavior         | Failed minima; absent display; invalid/nonfinite input | Silent re-anchoring, inverted ladder, or hidden failure     |
+| FR3, FR7, FR9  | Check activation, SSR, and distribution parity      | Narrow/wide × coarse/fine; runtime/built/copied        | OR, late correction, changed markup, or inconsistent tokens |
+| FR6, FR12      | Check preserved identity and existing compatibility | Explicit overrides; package changes if any             | Lost author intent or bypassed current ownership            |
 
-| Contract  | Verification                                                              | Representative states                                   | Mutation or failure expectation                                 |
-| --------- | ------------------------------------------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------- |
-| FR1–FR2   | Root/default comparison and computed sizes                                | Seven themes; matching and nonmatching                  | Root, core, or desktop values change                            |
-| FR3       | Exact query and boundary checks                                           | 767/768/769px; coarse/fine; secondary touch             | OR, inclusive edge, hover/UA/any-pointer substitution           |
-| FR4–FR6   | All retained role sizes/leading against the generator and proposed floors | Three scale families; literal supporting exceptions     | Wrong anchor, role, leading, or raw-token clamp                 |
-| FR7, FR9  | Initial built CSS, SSR/hydration, runtime/built/copied-source parity      | With/without JavaScript; predicate changes              | Late correction, differing markup, or missing rules             |
-| FR8, FR10 | Override and scope checks                                                 | Nested/portal; later child rule; literal vs named sizes | Lost author intent, leaked scope, or unrelated geometry changes |
-| FR11      | Browser, script, zoom/reflow, and text-spacing evidence                   | 16/20px root; 200% text; 400% reflow; long labels       | Clipping, lost actions/semantics, or disabled enlargement       |
-| FR12      | Released-consumer compatibility review                                    | Supported usage and companion versions                  | A stable break mislabeled as nonbreaking                        |
-
-Record actual query results and computed typography, not just viewport labels or
-token strings. For iOS input-focus claims, include real Safari evidence. Keep
-font fallback, representative scripts, and keyboard access in the rendered cases.
+These are criteria, not a claim that implementation or device tests ran.
 
 ## Decision log
 
-All entries are **proposed**, not adopted decisions.
-
-### DEC-1 — Keep the root independent
+### DEC-1 — Keep the document root independent
 
 **Reference:** `spec:AST-049/DEC-1`
 **Decider:** Pending human approval.
+Use a theme base minimum; reject a document-root reset.
 
-Propose a matching 1rem reading base without resizing the document root.
-Rejected: fixed-root resets or changing every desktop theme.
-
-### DEC-2 — Pin rather than interpolate
+### DEC-2 — Let desktop ratio choose the target
 
 **Reference:** `spec:AST-049/DEC-2`
 **Decider:** Pending human approval.
+Adopt +6/+2/+1 by the table; reject fixed Display 1 or theme-name special cases.
 
-Propose finite endpoints that preserve Display 1 while improving smaller roles.
-Rejected: fluid viewport sizing, a universal cap, or lifting the whole ladder.
-
-### DEC-3 — Require narrow and primary-coarse together
+### DEC-3 — Keep environment separate from anchor choice
 
 **Reference:** `spec:AST-049/DEC-3`
 **Decider:** Pending human approval.
+Width and primary pointer activate the profile; neither chooses its anchor.
 
-Propose the strict md edge plus primary-pointer capability, not device identity.
-Rejected: width-only, pointer-only, OR, hover, secondary-touch, and UA heuristics.
-
-### DEC-4 — Decide semantic floors explicitly
+### DEC-4 — Report constraints rather than silently re-anchor
 
 **Reference:** `spec:AST-049/DEC-4`
-**Decider:** Pending human design approval; see OQ1.
+**Decider:** Pending human approval.
+Keep the ratio lookup stable; reject automatic target changes to conceal floor failures.
 
-Recommend the marked secondary/small-heading minima without clamping raw tokens.
-Rejected: assuming a 16px base alone makes every semantic role large enough.
-
-### DEC-5 — Keep CSS selection and existing overrides
+### DEC-5 — Keep explicit author intent
 
 **Reference:** `spec:AST-049/DEC-5`
 **Decider:** Pending human approval.
-
-Propose CSS-owned presentation with unchanged markup and ordered author overrides.
-Rejected: a new responsive state owner or server-side device inference.
+Use a virtual step if the named role is absent; alternative targets remain explicit overrides.
 
 ## Open questions
 
-- **OQ1 — Approve the extra semantic floors?** (human-design) Recommend 14px
-  heading-5/supporting and 12px heading-6, including the already-16 themes.
-  Pure Pin is a smaller alternative but does not meet those proposed minima.
-  The † table values must not be assumed approved or implemented.
-- **OQ2 — Does a later implementation break a stable use?** (checkable) Apply
-  AST-017 to the actual package changes and supported version combinations.
-  Use `[feat]`/patch only if compatible; otherwise `[breaking]`/minor and migration.
+- **OQ1 — Adopt the wider input domain?** (human-design) The picker demonstrates
+  eight ratios at B=14, not every possible input. Recommend the same three
+  branches for finite `B > 0`, `r > 1`, with the stated feasibility/parity checks;
+  do not invent extra thresholds without evidence.
 
+[choice]: https://github.com/facebook/astryx/blob/9057ebe308c1625b587927583654f5a2ef391e80/apps/sandbox/src/app/(sandbox)/pages/mobile-type/page.tsx#L38-L99
+[calculation]: https://github.com/facebook/astryx/blob/9057ebe308c1625b587927583654f5a2ef391e80/apps/sandbox/src/app/(sandbox)/pages/mobile-type/page.tsx#L101-L174
+[ui]: https://github.com/facebook/astryx/blob/9057ebe308c1625b587927583654f5a2ef391e80/apps/sandbox/src/app/(sandbox)/pages/mobile-type/page.tsx#L531-L575
 [pr]: https://github.com/facebook/astryx/pull/6699
 [adaptations]: https://github.com/facebook/astryx/blob/9057ebe308c1625b587927583654f5a2ef391e80/docs/specs/AST-012/spec.md
-[themes]: https://github.com/facebook/astryx/tree/9057ebe308c1625b587927583654f5a2ef391e80/packages/themes
 [application]: https://github.com/facebook/astryx/blob/9057ebe308c1625b587927583654f5a2ef391e80/docs/architecture/theme-application.md
-[scale]: https://github.com/facebook/astryx/blob/9057ebe308c1625b587927583654f5a2ef391e80/packages/core/src/theme/expandTypeScale.ts
-[gestalt]: https://github.com/pinterest/gestalt/blob/22874a7522d1803df992fae2bcb31ef42be29519/docs/pages/foundations/typography.tsx
 [platform]: https://github.com/facebook/astryx/blob/9057ebe308c1625b587927583654f5a2ef391e80/docs/specs/AST-013/spec.md
 [compatibility]: https://github.com/facebook/astryx/blob/9057ebe308c1625b587927583654f5a2ef391e80/docs/specs/AST-017/spec.md
