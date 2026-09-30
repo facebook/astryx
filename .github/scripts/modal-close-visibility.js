@@ -16,14 +16,15 @@
  *    layer can paint back inside a transformed ancestor for one frame (#5549).
  *    It must be hidden before the next paint.
  * 3. The non-modal Popover host must preserve `<dialog>`'s observable `close`
- *    event so ref/onClose consumers keep their focus-restoration contract, and
- *    must dispatch it after the drawer's own focus restore: native close events
- *    are task-queued, so a consumer close listener that retargets focus
- *    (master-detail row switching) always had the last word.
+ *    event so ref/onClose consumers keep their focus-restoration contract. The
+ *    companion ordering — the event dispatches after the drawer's own focus
+ *    restore, so a close listener that retargets focus (master-detail row
+ *    switching) has the last word — is covered at unit level: Drawer.test.tsx
+ *    "dispatches the synthetic close after focus restore so a close listener
+ *    owns final focus".
  * 4. A closing top drawer stays on the shared dismissal stack until its visual
  *    exit completes, so a second Escape cannot dismiss the drawer below it.
- * 5. After a completed exit, focus rests on the element focused at open — or on
- *    the element a consumer close listener chose instead (contract 3).
+ * 5. After a completed exit, focus rests on the element focused at open.
  *
  * None of these orderings exists in jsdom: it runs no CSS transition and has no
  * top layer. Runs in Chromium by default; `--browser webkit` runs the same
@@ -72,15 +73,12 @@ const TARGETS = [
   {
     component: 'Drawer (non-modal)',
     story: 'lab-drawer--row-inspector',
-    openButton: 'web-01 / us-east-1',
+    openButton: 'Open drawer',
     host: 'popover',
     transformAncestor: true,
     mustBeHiddenAfterClose: true,
     mustDispatchClose: true,
-    // Exercises contract 3's ordering: the drawer restores web-01 (its
-    // trigger), then this listener must win with the latest selected row.
-    closeListenerFocus: 'web-02 / us-east-1',
-    finalFocus: 'web-02 / us-east-1',
+    finalFocus: 'Open drawer',
   },
   {
     component: 'Drawer (stacked exit)',
@@ -248,22 +246,6 @@ async function probe(page, target) {
     hostSelector,
     {timeout: 5000},
   );
-
-  if (target.closeListenerFocus) {
-    await page.evaluate(
-      ({selector, focusLabel}) => {
-        const dialog = document.querySelector(selector);
-        const retarget = [...document.querySelectorAll('button')].find(
-          button => (button.textContent || '').trim() === focusLabel,
-        );
-        if (!(dialog instanceof HTMLElement) || !retarget) {
-          throw new Error('close-listener focus fixture not found');
-        }
-        dialog.addEventListener('close', () => retarget.focus(), {once: true});
-      },
-      {selector: hostSelector, focusLabel: target.closeListenerFocus},
-    );
-  }
 
   let stackedExitOwned = true;
   if (target.stackedExit) {

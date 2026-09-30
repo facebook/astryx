@@ -1132,6 +1132,50 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # The CheckboxList and CheckboxListItem component audits grade the same
+      # option rows: interactive row paint, focus, busy, disabled, read-only,
+      # status, narrow, forced-colors, and RTL states from exact-head Chromium
+      # receipts. The shared checkbox contract also runs for its
+      # CheckboxListItem bindings, with its own output directory so it cannot
+      # clear the receipts. Each lane runs even when another fails, and the
+      # step still runs after an earlier audit step fails, so a failing-before
+      # head banks complete evidence.
+      - name: Run CheckboxList audit browser evidence
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && (startsWith(github.event.pull_request.title, '[Component Audit] CheckboxList:') || startsWith(github.event.pull_request.title, '[Component Audit] CheckboxListItem:')) }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PLAYWRIGHT_JSON_OUTPUT_NAME: checkbox-list-pattern-results.json
+        run: |
+          status=0
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output checkbox-list-a11y-report.json \
+            --components CheckboxList,CheckboxListItem \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new || status=1
+          pnpm exec playwright test \
+            packages/core/src/CheckboxInput/__tests__/Checkbox.a11y.chromium.spec.ts \
+            --project chromium \
+            --grep 'CheckboxListItem \[' \
+            --output checkbox-list-pattern-output \
+            --reporter=list,json || status=1
+          pnpm exec playwright test \
+            packages/core/src/CheckboxList/__tests__/CheckboxList.a11y.chromium.spec.ts \
+            --project chromium || status=1
+          exit "$status"
+
+      - name: Upload CheckboxList audit evidence
+        if: always() && github.event_name == 'pull_request' && (startsWith(github.event.pull_request.title, '[Component Audit] CheckboxList:') || startsWith(github.event.pull_request.title, '[Component Audit] CheckboxListItem:'))
+        uses: actions/upload-artifact@v7
+        with:
+          name: checkbox-list-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            checkbox-list-a11y-report.json
+            checkbox-list-pattern-results.json
+            test-results/checkbox-list-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # Run the exhaustive contract/fixture matrix at release time. PRs retain
       # scoped axe validation and the fast interaction guards above; they must
       # not pay for every component's browser bindings on every change.

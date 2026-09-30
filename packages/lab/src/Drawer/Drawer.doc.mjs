@@ -1,4 +1,40 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file Drawer.doc.mjs
+ * @input Drawer props, panel anatomy, overlay playground config, and story-aligned examples
+ * @output Consumer documentation and examples for Drawer
+ * @position CLI and rendered component documentation
+ */
+
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Panel',
+    required: true,
+    description:
+      'The root <dialog> element: a full-height surface anchored to the inline start or end edge, flush with three viewport edges (square corners).',
+  },
+  {
+    name: 'Content area',
+    required: true,
+    description:
+      'Full-bleed scrollable region that receives children; compose your own header, body, and footer inside it.',
+  },
+  {
+    name: 'Close button',
+    required: false,
+    description:
+      'Built-in dismissal affordance floating in the top-trailing corner; pass hasCloseButton={false} when the content provides its own.',
+  },
+  {
+    name: 'Scrim',
+    required: false,
+    description:
+      'Backdrop that dims and blocks the page behind a modal drawer (hasScrim, the default); a non-modal drawer renders none.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
@@ -18,6 +54,33 @@ export const docs = {
     'dialog',
     'side drawer',
   ],
+  // No isInline docs-preview prop (the drawer has no inline containment), so
+  // this is the overlay preview: closed on load with an open trigger, knobs
+  // live, and opening renders the real top-layer drawer — see
+  // ComponentPlaygroundConfig.overlay (#3657).
+  playground: {
+    overlay: true,
+    defaults: {
+      isOpen: false,
+      label: 'Details',
+      children: {
+        __element: 'Section',
+        props: {padding: 4},
+        children: {
+          __element: 'VStack',
+          props: {gap: 2},
+          children: [
+            {__element: 'Heading', props: {level: 3}, children: 'Details'},
+            {
+              __element: 'Text',
+              props: {type: 'body'},
+              children: 'Adjust the properties below, then open the preview.',
+            },
+          ],
+        },
+      },
+    },
+  },
   theming: {
     targets: [{className: 'astryx-drawer', visualProps: ['side']}],
   },
@@ -89,8 +152,9 @@ export const docs = {
     },
   ],
   usage: {
+    anatomy,
     description:
-      'A side panel that floats above page content for inspectors and detail views: the "click a table row, see its details" pattern. Unlike a docked panel it overlays the layout instead of reflowing it. Works on desktop and touch: the width budget applies on desktop and the panel preserves a 56px page reveal below 640px without exceeding the width budget. Escape closes the drawer and focus returns to the element that opened it. Entry/exit slide animation respects prefers-reduced-motion. Stacking contract: sibling drawers stack last-opened on top, Escape closes only the topmost, and closing peels innermost-first; render them as siblings, never nested.',
+      'A side panel that floats above page content for inspectors and detail views: the "click a table row, see its details" pattern. Unlike a docked panel it overlays the layout instead of reflowing it. Works on desktop and touch: the width budget applies on desktop and the panel preserves a 56px page reveal below 640px without exceeding the width budget. Escape closes the drawer and focus returns to the element that opened it. Entry/exit slide animation respects prefers-reduced-motion. Stacking contract: sibling drawers stack last-opened on top, Escape closes only the topmost, and closing peels innermost-first; render them as siblings, never nested.\n\nThe content area is full-bleed: compose your own header, body, and footer. A plain recipe is all a drawer needs — Section padding={4} wrapping a VStack with a Heading, body content, and trailing actions; there is no DrawerHeader sub-component. The built-in close button floats above the content in the top-trailing corner, so leave it clearance in a custom header row, or pass hasCloseButton={false} when the content provides its own dismissal. Put data-autofocus on the control that should receive focus on open.\n\nChoosing a surface: use Dialog for a centered decision or short form, Drawer for full-height side detail that keeps the page in sight, BottomSheet for block-axis sheets on touch, and a docked panel (a layout column) when content should reflow the page instead of floating over it.\n\nTheming: the panel is the single stable target (astryx-drawer, with data-side reflecting side). The scrim is the panel\'s native ::backdrop, and the built-in close button is a ghost Button reachable through the astryx-button target.',
     bestPractices: [
       {
         guidance: true,
@@ -136,6 +200,73 @@ export const docs = {
   },
   examples: [
     {
+      label: 'Non-modal inspector (page stays interactive)',
+      code: `const [isOpen, setIsOpen] = useState(false);
+<>
+  <Button label="Open drawer" onClick={() => setIsOpen(true)} />
+  <Drawer
+    isOpen={isOpen}
+    onOpenChange={setIsOpen}
+    label="Details"
+    hasScrim={false}
+    width={360}>
+    <Section padding={4}>
+      <VStack gap={2}>
+        <Heading level={3}>Details</Heading>
+        <Text type="body">The page behind stays interactive.</Text>
+        <Button
+          label="Close"
+          variant="secondary"
+          onClick={() => setIsOpen(false)}
+        />
+      </VStack>
+    </Section>
+  </Drawer>
+</>
+// Non-modal: no scrim, no focus trap. In a real master-detail flow, derive
+// the open state from the selection — isOpen={selected != null} — and clear
+// the selection in onOpenChange.`,
+    },
+    {
+      label: 'Slide in from the start edge',
+      code: `const [isOpen, setIsOpen] = useState(false);
+<Drawer
+  isOpen={isOpen}
+  onOpenChange={setIsOpen}
+  label="Navigation"
+  side="start">
+  <NavPanel />
+</Drawer>
+// 'start' is left in LTR and mirrors under RTL; 'end' (the default) is the
+// inspector convention.`,
+    },
+    {
+      label: 'Width budget: pixels or any CSS length',
+      code: `const [isOpen, setIsOpen] = useState(false);
+<Drawer
+  isOpen={isOpen}
+  onOpenChange={setIsOpen}
+  label="Details"
+  width="50%">
+  <DetailsPanel />
+</Drawer>
+// A number is pixels (width={320}); a string is any CSS length ('32rem',
+// '50%'). The budget also caps the drawer on mobile.`,
+    },
+    {
+      label: 'Mobile: the 56px page reveal (default)',
+      code: `const [isOpen, setIsOpen] = useState(false);
+<Drawer
+  isOpen={isOpen}
+  onOpenChange={setIsOpen}
+  label="Filters"
+  width={360}>
+  <FilterControls />
+</Drawer>
+// Below 640px the panel preserves a 56px reveal of the page behind (still
+// capped by width), so the drawer reads as an overlay, not a navigation.`,
+    },
+    {
       label: 'Wide desktop panel, full-width on mobile',
       code: `const [isOpen, setIsOpen] = useState(false);
 <Drawer
@@ -146,6 +277,26 @@ export const docs = {
   isFullWidthOnMobile>
   <FilterControls />
 </Drawer>`,
+    },
+    {
+      label: 'Modal or non-modal (hasScrim)',
+      code: `const [openModal, setOpenModal] = useState(false);
+const [openPanel, setOpenPanel] = useState(false);
+<>
+  {/* Modal (default): the scrim dims the page, focus is trapped, and a
+      scrim click closes. */}
+  <Drawer isOpen={openModal} onOpenChange={setOpenModal} label="Edit details">
+    <EditForm />
+  </Drawer>
+  {/* Non-modal: no scrim, no focus trap; the page behind stays interactive. */}
+  <Drawer
+    isOpen={openPanel}
+    onOpenChange={setOpenPanel}
+    label="Details"
+    hasScrim={false}>
+    <DetailsPanel />
+  </Drawer>
+</>`,
     },
     {
       label: 'Stacked drill-in (siblings, not nested)',
@@ -175,8 +326,34 @@ const [lineItem, setLineItem] = useState(null);
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
+    anatomy: [
+      {
+        name: 'Panel',
+        required: true,
+        description:
+          '根 <dialog> 元素：锚定于行内起始或结束边缘的全高表面，与三个视口边缘齐平（直角）。',
+      },
+      {
+        name: 'Content area',
+        required: true,
+        description:
+          '不带内边距的可滚动区域，承载 children；页眉、正文、页脚在其中自行组合。',
+      },
+      {
+        name: 'Close button',
+        required: false,
+        description:
+          '内置关闭按钮，悬浮在顶部尾随角；内容自带关闭操作时用 hasCloseButton={false} 移除。',
+      },
+      {
+        name: 'Scrim',
+        required: false,
+        description:
+          '模态抽屉（hasScrim，默认开启）背后调暗并阻止页面交互的背景层；非模态抽屉没有。',
+      },
+    ],
     description:
-      '浮在页面内容之上的侧边面板，用于检查器和详情视图——"点击表格行查看详情"的模式。与停靠面板不同，它覆盖在布局之上，不会挤压页面。桌面端按 width 设定宽度，宽度小于 640px 时保留 56px 的底层页面，并且不超过 width 上限。按 Escape 关闭抽屉，焦点返回到打开它的元素。滑入/滑出动画遵循 prefers-reduced-motion。堆叠约定：同级抽屉后开的在上层，Escape 只关闭最上层的，关闭顺序由内向外——请以同级方式渲染，切勿嵌套。',
+      '浮在页面内容之上的侧边面板，用于检查器和详情视图——"点击表格行查看详情"的模式。与停靠面板不同，它覆盖在布局之上，不会挤压页面。桌面端按 width 设定宽度，宽度小于 640px 时保留 56px 的底层页面，并且不超过 width 上限。按 Escape 关闭抽屉，焦点返回到打开它的元素。滑入/滑出动画遵循 prefers-reduced-motion。堆叠约定：同级抽屉后开的在上层，Escape 只关闭最上层的，关闭顺序由内向外——请以同级方式渲染，切勿嵌套。\n\n内容区域不带内边距：页眉、正文、页脚由你自行组合。一个简单的配方即可——用 Section padding={4} 包裹 VStack，内含 Heading、正文与末尾操作；没有 DrawerHeader 子组件。内置关闭按钮悬浮在顶部尾随角上方，请在自定义页眉行中为它留出空间，或在内容自带关闭操作时传 hasCloseButton={false}。在打开时应获得焦点的控件上加 data-autofocus。\n\n如何选择：居中的决定或短表单用 Dialog；保持页面可见的全高侧边详情用 Drawer；触屏上的块轴面板用 BottomSheet；内容应当把页面挤开重排时用停靠面板（布局分栏），而不是浮层。\n\n主题化：面板是唯一的稳定目标（astryx-drawer，data-side 反映 side 值）；遮罩是面板的原生 ::backdrop；内置关闭按钮是 ghost 变体的 Button，可通过 astryx-button 目标定制。',
     bestPractices: [
       {
         guidance: true,
@@ -227,8 +404,9 @@ export const docsDense = {
   description:
     'side panel floating over content (native <dialog>): start/end edge, full height',
   usage: {
+    anatomy,
     description:
-      'Overlay side panel for inspectors and detail views; floats over content, never reflows it. width = desktop budget; 56px page reveal below 640px, capped by width (isFullWidthOnMobile for all of it). Escape closes topmost; focus restores to the opener. Siblings stack last-opened on top; never nest. Slide animation respects prefers-reduced-motion.',
+      'Overlay side panel for inspectors and detail views; floats over content, never reflows it. width = desktop budget; 56px page reveal below 640px, capped by width (isFullWidthOnMobile for all of it). Escape closes topmost; focus restores to the opener. Siblings stack last-opened on top; never nest. Slide animation respects prefers-reduced-motion. Compose header/body/footer yourself in the full-bleed scroll area (Section padding={4} + VStack; no DrawerHeader; built-in close button floats top-trailing, hasCloseButton={false} to remove; data-autofocus picks the focus target). Choose: Dialog for centered decisions/short forms, Drawer for full-height side detail, BottomSheet for block-axis sheets, docked layout column to reflow instead of float. Theming: single target astryx-drawer (data-side); scrim is its ::backdrop; close button is a ghost Button (astryx-button).',
     bestPractices: [
       {
         guidance: true,

@@ -44,6 +44,24 @@ async function checkState(state: NumberInputA11yRow): Promise<BindingResult> {
   });
 }
 
+function stateFor(id: NumberInputA11yRow['id']): NumberInputA11yRow {
+  const state = NUMBER_INPUT_A11Y_STATES.find(candidate => candidate.id === id);
+  if (state == null) {
+    throw new Error(`NumberInput accessibility inventory has no state "${id}"`);
+  }
+  return state;
+}
+
+function expectationFor(id: string) {
+  const expectation = SPINBUTTON_PATTERN.expectations.find(
+    row => row.id === id,
+  );
+  if (expectation == null) {
+    throw new Error(`Spinbutton contract has no expectation "${id}"`);
+  }
+  return expectation;
+}
+
 describe('the shared Spinbutton pattern, jsdom lane', () => {
   it.each(
     NUMBER_INPUT_A11Y_STATES.map(
@@ -61,6 +79,44 @@ describe('the shared Spinbutton pattern, jsdom lane', () => {
       subject: subjectFor,
       cleanup,
     });
+  });
+
+  it('preserves formatted and disabled-reason coverage without treating disabled as read-only', async () => {
+    const formatted = stateFor('formatted-value');
+    const disabledWithMessage = stateFor('disabled-with-message');
+
+    expect(
+      expectationFor('spinbutton.value-text.exposed').appliesWhen.test(
+        formatted.facts,
+      ),
+    ).toBe(true);
+    expect(disabledWithMessage.facts).toMatchObject({
+      disabled: true,
+      readOnly: false,
+      focusable: true,
+    });
+    expect(
+      [
+        'spinbutton.disabled.exposed',
+        'spinbutton.keyboard.reachable-and-escapable',
+      ].map(id =>
+        expectationFor(id).appliesWhen.test(disabledWithMessage.facts),
+      ),
+    ).toEqual([true, true]);
+    expect(
+      expectationFor('spinbutton.readonly.exposed').appliesWhen.test(
+        disabledWithMessage.facts,
+      ),
+    ).toBe(false);
+
+    const result = await checkState(disabledWithMessage);
+    const status = (id: string) =>
+      result.results.find(row => row.expectation === id)?.status;
+    expect([
+      status('spinbutton.disabled.exposed'),
+      status('spinbutton.keyboard.reachable-and-escapable'),
+      status('spinbutton.readonly.exposed'),
+    ]).toEqual(['unrun', 'unrun', 'not-applicable']);
   });
 
   it('runs DOM expectations and reports browser-owned layers as unrun', async () => {

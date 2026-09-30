@@ -17,20 +17,30 @@
  * component fuzzy resolver in lib/string-utils.mjs:
  *
  *   100  exact name match
+ *    95  name is the term's plural or stem form ("buttons" -> Button)
  *    90  exact keyword match
- *    80  name Levenshtein distance 1
- *    70  keyword substring / distance 1
- *    60  name substring (>=4 chars, >=50% coverage)
+ *    88  keyword is the term's plural or stem form
+ *    80  name Levenshtein distance 1 (one-word lookups, words of 5+ letters)
+ *    70  keyword word prefix / distance 1 (distance: one-word lookups, 5+ letters)
+ *    60  name word prefix (>=4 chars, >=50% coverage)
  *    60  exact weak-keyword match
  *    50  description / prose mentions the term
  *    45  usage guidance mentions the term
- *    40  name Levenshtein distance 2
- *    40  weak-keyword substring
- *    30  keyword Levenshtein distance 2
- *    20  name Levenshtein distance 3
+ *    40  name Levenshtein distance 2 (one-word lookups, 8+ letters)
+ *    40  weak-keyword word prefix
+ *    30  keyword Levenshtein distance 2 (one-word lookups, 8+ letters)
+ *    20  name Levenshtein distance 3 (one-word lookups, 11+ letters)
  *
  * Name + keyword signals always outweigh description/prose, so an exact match
  * sorts above an incidental mention.
+ *
+ * A term matches inside a name or keyword only at the start of one of its
+ * words: "dash" finds "dashboard" and "input" finds "TextInput", but "file"
+ * does not find "profile". Edit distance is typo tolerance, so it applies only
+ * to a one-word lookup, where a typo is the likely explanation, and only to
+ * words long enough that one edit rarely makes another real word. In a
+ * sentence, a near miss is usually a different word: "site" is not "side",
+ * "cable" is not "table".
  *
  * Description and guidance are separate tiers on purpose. A component's own
  * one-line description saying "notification" is a claim about what it IS; the
@@ -115,9 +125,10 @@ import {setResultCoverage} from './coverage.mjs';
  * Synonym / intent map: product-language terms an agent is likely to type,
  * expanded to the catalog's vocabulary so oblique queries still rank. Keys and
  * values are matched bidirectionally (typing any value also pulls in the key
- * and its siblings). Lowercase, single words or short phrases.
+ * and its siblings). Lowercase, single words or short phrases. Exported for
+ * `build`, whose page ranker expands a query with the same vocabulary.
  */
-const SYNONYMS = {
+export const SYNONYMS = {
   dashboard: [
     'overview',
     'analytics',
@@ -189,14 +200,90 @@ export function stem(w) {
   return s;
 }
 
+/**
+ * The forms of a word that count as the same word: itself, its stem, and its
+ * singular when it ends in a plural suffix — so "tables" is "table",
+ * "statuses" is "status", and "filtering" is "filter".
+ * @param {string} w - Lowercase word.
+ * @returns {Set<string>}
+ */
+function wordForms(w) {
+  const forms = new Set([w, stem(w)]);
+  if (w.length > 3 && w.endsWith('s')) forms.add(w.slice(0, -1));
+  if (w.length > 4 && w.endsWith('es')) forms.add(w.slice(0, -2));
+  if (w.length > 4 && w.endsWith('ies')) forms.add(w.slice(0, -3) + 'y');
+  return forms;
+}
+
+/**
+ * Whether two lowercase words are the same word, up to plural and stem form.
+ * @param {string} a
+ * @param {string} b
+ * @returns {boolean}
+ */
+export function sameWord(a, b) {
+  if (a === b) return true;
+  const forms = wordForms(a);
+  for (const f of wordForms(b)) if (forms.has(f)) return true;
+  return false;
+}
+
+/**
+ * The lowercase words of a name or keyword: split at non-alphanumerics and at
+ * camelCase boundaries, so "TextInput" is ["text", "input"] and
+ * "Dashboard - Analytics" is ["dashboard", "analytics"].
+ * @param {string} text
+ * @returns {string[]}
+ */
+function wordsOf(text) {
+  return String(text)
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+}
+
+/**
+ * Whether a term is found inside a name or keyword: it is one of its words, or
+ * the start of one (a truncation), and covers at least half of the whole
+ * string. Four letters minimum, so a short term never matches by accident.
+ * @param {string} term - Lowercase term.
+ * @param {string} text - The name or keyword as authored.
+ * @returns {boolean}
+ */
+function startsAWordOf(term, text) {
+  if (term.length < 4) return false;
+  if (term.length / String(text).length < 0.5) return false;
+  return wordsOf(text).some(w => w.startsWith(term) || sameWord(term, w));
+}
+
+/**
+ * The fewest letters both words need before an edit distance counts as a
+ * typo, by distance. Below them, one edit usually makes a different word.
+ */
+const TYPO_MIN_LENGTH = {1: 5, 2: 8, 3: 11};
+
+/**
+ * @param {string} a
+ * @param {string} b
+ * @param {number} dist
+ */
+const isTypo = (a, b, dist) =>
+  dist > 0 &&
+  dist <= 3 &&
+  Math.min(a.length, b.length) >=
+    TYPO_MIN_LENGTH[/** @type {1 | 2 | 3} */ (dist)];
+
 /** Valid domain filters for `--type`. */
 export const SEARCH_DOMAINS = ['component', 'hook', 'doc', 'template'];
 
 /**
  * Filler words stripped from multi-word queries so natural-language phrasing
  * ("a page where you can see business stats") ranks on its content words.
+ * Exported for `build`, whose page ranker strips the same words.
  */
-const STOPWORDS = new Set([
+export const STOPWORDS = new Set([
   'a',
   'an',
   'the',
@@ -308,14 +395,15 @@ const MIN_TOKEN_SCORE = 50;
  * (synonym hits are discounted so a direct hit always wins).
  * @param {string} tok
  * @param {Candidate} candidate
+ * @param {{fuzzy?: boolean}} [opts]
  * @returns {{score: number, reason: string} | null}
  */
-function bestForToken(tok, candidate) {
-  let best = scoreCandidate(tok, candidate);
+function bestForToken(tok, candidate, opts = {}) {
+  let best = scoreCandidate(tok, candidate, opts);
   const syns = SYNONYM_INDEX.get(tok);
   if (syns) {
     for (const s of syns) {
-      const h = scoreCandidate(s, candidate);
+      const h = scoreCandidate(s, candidate, opts);
       if (h) {
         const score = Math.round(h.score * 0.85);
         if (!best || score > best.score)
@@ -345,14 +433,17 @@ export function scoreQuery(term, tokens, candidate) {
     matched: total,
     total,
   });
-  const full = scoreCandidate(term, candidate);
+  // Typo tolerance is for one-word lookups. In a multi-word query a near miss
+  // is usually a different word, not a typo.
+  const fuzzy = tokens.length <= 1;
+  const full = scoreCandidate(term, candidate, {fuzzy});
 
   // 0–1 content tokens: keep whole-phrase fuzzy matching (typo tolerance for
   // single words), but if stopwords left exactly one DIFFERENT token (e.g.
   // "pricing page" → "pricing"), score that token too and take the stronger.
   if (tokens.length <= 1) {
     const single =
-      tokens.length === 1 ? bestForToken(tokens[0], candidate) : null;
+      tokens.length === 1 ? bestForToken(tokens[0], candidate, {fuzzy}) : null;
     if (full && (!single || full.score >= single.score)) return asFull(full);
     return single ? asFull(single) : null;
   }
@@ -379,7 +470,7 @@ export function scoreQuery(term, tokens, candidate) {
   /** @type {string[]} */
   const hitTerms = [];
   for (const tok of tokens) {
-    const h = bestForToken(tok, candidate);
+    const h = bestForToken(tok, candidate, {fuzzy});
     if (h && h.score >= MIN_TOKEN_SCORE) {
       if (h.score > strongest) strongest = h.score;
       matched++;
@@ -432,6 +523,7 @@ export function scoreQuery(term, tokens, candidate) {
  * @param {string} [candidate.description]
  * @param {string[]} [candidate.prose] - Extra free-text blobs (doc section text, best practices).
  * @param {string[]} [candidate.guidance] - Usage guidance (features, best practices) — scored a tier below description.
+ * @param {{fuzzy?: boolean}} [opts] - `fuzzy`: allow edit-distance (typo) matches. Default true; multi-word queries pass false.
  * @returns {{score: number, reason: string} | null}
  */
 export function scoreCandidate(
@@ -444,6 +536,7 @@ export function scoreCandidate(
     prose = [],
     guidance = [],
   },
+  {fuzzy = true} = {},
 ) {
   let best = 0;
   let reason = '';
@@ -464,20 +557,20 @@ export function scoreCandidate(
   if (nameLower === term) {
     consider(100, 'exact name');
   } else {
-    // Substring (both directions), min 4 chars, >=50% coverage.
-    const shorter = term.length < nameLower.length ? term : nameLower;
-    const longer = term.length < nameLower.length ? nameLower : term;
-    if (
-      shorter.length >= 4 &&
-      longer.includes(shorter) &&
-      shorter.length / longer.length >= 0.5
-    ) {
-      consider(60, `name contains "${shorter}"`);
+    if (sameWord(term, nameLower)) consider(95, `name "${name}"`);
+    // The term is a word of the name, or starts one: "input" in TextInput.
+    else if (startsAWordOf(term, name)) {
+      consider(60, `name contains "${term}"`);
     }
-    const dist = levenshteinDistance(term, nameLower);
-    if (dist === 1) consider(80, `similar name (distance ${dist})`);
-    else if (dist === 2) consider(40, `similar name (distance ${dist})`);
-    else if (dist === 3) consider(20, `similar name (distance ${dist})`);
+    if (fuzzy) {
+      const dist = levenshteinDistance(term, nameLower);
+      if (isTypo(term, nameLower, dist)) {
+        consider(
+          dist === 1 ? 80 : dist === 2 ? 40 : 20,
+          `similar name (distance ${dist})`,
+        );
+      }
+    }
   }
 
   // ── Keyword signals ─────────────────────────────────────────────
@@ -487,14 +580,17 @@ export function scoreCandidate(
       consider(90, `keyword "${kw}"`);
       continue;
     }
-    const s = term.length < kwLower.length ? term : kwLower;
-    const l = term.length < kwLower.length ? kwLower : term;
-    if (s.length >= 4 && l.includes(s) && s.length / l.length >= 0.5) {
-      consider(70, `keyword "${kw}"`);
+    if (sameWord(term, kwLower)) {
+      consider(88, `keyword "${kw}"`);
+      continue;
     }
-    const dist = levenshteinDistance(term, kwLower);
-    if (dist === 1) consider(70, `keyword "${kw}" (distance ${dist})`);
-    else if (dist === 2) consider(30, `keyword "${kw}" (distance ${dist})`);
+    if (startsAWordOf(term, kw)) consider(70, `keyword "${kw}"`);
+    if (fuzzy) {
+      const dist = levenshteinDistance(term, kwLower);
+      if (isTypo(term, kwLower, dist) && dist <= 2) {
+        consider(dist === 1 ? 70 : 30, `keyword "${kw}" (distance ${dist})`);
+      }
+    }
   }
 
   // ── Weak keyword signals (derived, not authored) ─────────────────
@@ -504,15 +600,11 @@ export function scoreCandidate(
   // No Levenshtein tier — fuzzy matching a derived signal is pure noise.
   for (const kw of weakKeywords) {
     const kwLower = String(kw).toLowerCase();
-    if (kwLower === term) {
+    if (kwLower === term || sameWord(term, kwLower)) {
       consider(60, `renders ${kw}`);
       continue;
     }
-    const s = term.length < kwLower.length ? term : kwLower;
-    const l = term.length < kwLower.length ? kwLower : term;
-    if (s.length >= 4 && l.includes(s) && s.length / l.length >= 0.5) {
-      consider(40, `renders ${kw}`);
-    }
+    if (startsAWordOf(term, kw)) consider(40, `renders ${kw}`);
   }
 
   // ── Prose / description / guidance signals (stem-tolerant whole word) ──

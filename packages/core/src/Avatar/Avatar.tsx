@@ -267,11 +267,12 @@ const groupStyles = stylex.create({
     backgroundColor: colorVars['--color-background-surface'],
     boxSizing: 'content-box',
   },
+  // Every avatar takes the overlap, not just `:not(:first-child)`: a
+  // HoverCard or Tooltip wraps its trigger in its own element, which makes
+  // every wrapped avatar a first child. AvatarGroup pads its start edge by the
+  // same amount so the first avatar still sits inside the group's box.
   overlap: {
-    marginInlineStart: {
-      default: null,
-      ':not(:first-child)': 'var(--_avatar-group-overlap)',
-    },
+    marginInlineStart: 'var(--_avatar-group-overlap)',
   },
 });
 

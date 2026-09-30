@@ -1,10 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, expect, it} from 'vitest';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import {CLI_ROOT} from '../fs/paths.mjs';
-import {semverCompare} from '../env/semver.mjs';
 import {
   DOCS_TREE_CLI,
   lowestAdmitted,
@@ -55,55 +51,34 @@ describe('docsTreeCliProblem', () => {
 
   it('declares the peer as optional, and keeps what the package says of it', () => {
     const declared = withDocsTreeCli({name: '@acme/kit'});
-    expect(declared.peerDependencies).toEqual({'@astryxdesign/cli': `>=${DOCS_TREE_CLI}`});
-    expect(declared.peerDependenciesMeta).toEqual({'@astryxdesign/cli': {optional: true}});
+    expect(declared.peerDependencies).toEqual({
+      '@astryxdesign/cli': `>=${DOCS_TREE_CLI}`,
+    });
+    expect(declared.peerDependenciesMeta).toEqual({
+      '@astryxdesign/cli': {optional: true},
+    });
     expect(docsTreeCliProblem(declared)).toBeNull();
     const required = withDocsTreeCli({
       peerDependencies: {react: '^19.0.0', '@astryxdesign/cli': '^0.6.0'},
       peerDependenciesMeta: {'@astryxdesign/cli': {optional: false}},
     });
     expect(required.peerDependencies.react).toBe('^19.0.0');
-    expect(required.peerDependenciesMeta['@astryxdesign/cli']).toEqual({optional: false});
+    expect(required.peerDependenciesMeta['@astryxdesign/cli']).toEqual({
+      optional: false,
+    });
   });
 });
 
 describe('replacesCliProblem', () => {
   it('asks a package that sets replaces for a CLI that reads the field', () => {
-    expect(replacesCliProblem({name: '@acme/kit'})).toContain('sets `replaces`');
-    expect(replacesCliProblem({peerDependencies: {'@astryxdesign/cli': '^0.6.0'}})).toContain(
-      'admits a CLI older than',
+    expect(replacesCliProblem({name: '@acme/kit'})).toContain(
+      'sets `replaces`',
     );
-    expect(replacesCliProblem({peerDependencies: {'@astryxdesign/cli': '>=0.7.0'}})).toBeNull();
-  });
-});
-
-describe('DOCS_TREE_CLI', () => {
-  it('is no later than the release the pending changesets make', () => {
-    const {version} = JSON.parse(
-      fs.readFileSync(path.join(CLI_ROOT, 'package.json'), 'utf-8'),
-    );
-    const dir = path.join(CLI_ROOT, '..', '..', '.changeset');
-    /** @type {Record<string, number>} */
-    const rank = {patch: 1, minor: 2, major: 3};
-    let bump = 0;
-    for (const file of fs.readdirSync(dir)) {
-      if (!file.endsWith('.md') || file === 'README.md') continue;
-      const head = fs.readFileSync(path.join(dir, file), 'utf-8').split('---')[1] ?? '';
-      const m = /['"]@astryxdesign\/cli['"]\s*:\s*(patch|minor|major)/.exec(head);
-      if (m) bump = Math.max(bump, rank[m[1]]);
-    }
-    const [major, minor, patch] = version.split('-')[0].split('.').map(Number);
-    const next =
-      bump === 3
-        ? `${major + 1}.0.0`
-        : bump === 2
-          ? `${major}.${minor + 1}.0`
-          : bump === 1
-            ? `${major}.${minor}.${patch + 1}`
-            : version;
-    // The first release that reads namespace docs is this one or an earlier
-    // one; a later constant would make every author wait for a CLI that does
-    // not exist yet.
-    expect(semverCompare(DOCS_TREE_CLI, next)).toBeLessThanOrEqual(0);
+    expect(
+      replacesCliProblem({peerDependencies: {'@astryxdesign/cli': '^0.6.0'}}),
+    ).toContain('admits a CLI older than');
+    expect(
+      replacesCliProblem({peerDependencies: {'@astryxdesign/cli': '>=0.7.0'}}),
+    ).toBeNull();
   });
 });

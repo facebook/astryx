@@ -259,8 +259,8 @@ export const SPINBUTTON_PATTERN: PatternContract<SpinbuttonStateFacts> =
         sources: [WCAG_4_1_2],
         covers: ['4.1.2-name-role-value'],
         appliesWhen: {
-          condition: 'the binding declares this state read-only',
-          test: facts => facts.readOnly,
+          condition: 'the binding declares this state read-only and available',
+          test: facts => facts.readOnly && !facts.disabled,
         },
         evidenceLayer: 'accessibility-tree',
         enforcement: 'required',

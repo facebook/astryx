@@ -13,8 +13,8 @@
  * mount, unsubscribe on unmount). SSR-safe — window is only touched
  * inside the effect.
  *
- * Skips events that are already handled (defaultPrevented) and events
- * targeting typing surfaces (input, textarea, select, contenteditable)
+ * Skips events that are already handled (defaultPrevented) or during IME composition,
+ * and events targeting typing surfaces (input, textarea, select, contenteditable)
  * unless a hotkey opts in via `allowInInputs`.
  *
  * Platform-aware: `mod` maps to metaKey (⌘) on Apple platforms and
@@ -28,6 +28,7 @@
 
 import {useEffect, useRef} from 'react';
 import {isApplePlatform} from '../utils/isApplePlatform';
+import {isImeKeyEvent} from '../utils/ime';
 
 /**
  * A single keyboard shortcut registration.
@@ -172,7 +173,7 @@ export function useHotkeys(hotkeys: Hotkey[]): void {
     const isApple = isApplePlatform();
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented) {
+      if (event.defaultPrevented || isImeKeyEvent(event)) {
         return;
       }
       const isTyping = isTypingTarget(event.target);

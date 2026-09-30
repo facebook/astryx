@@ -36,6 +36,15 @@ async function run(id: string) {
   });
 }
 
+function inputFor(id: string): HTMLInputElement {
+  document.body.innerHTML = spinbuttonFixture(id).html;
+  const subject = document.querySelector(SPINBUTTON_SUBJECT_SELECTOR);
+  if (!(subject instanceof HTMLInputElement)) {
+    throw new Error(`fixture "${id}" does not render an input subject`);
+  }
+  return subject;
+}
+
 const observableHere = SPINBUTTON_PATTERN.expectations.filter(expectation =>
   requiredLayers(expectation).every(layer => JSDOM_OBSERVES.includes(layer)),
 );
@@ -63,6 +72,38 @@ describe('Spinbutton contract — completeness', () => {
     expect(
       Object.keys(SPINBUTTON_MUTATIONS).filter(id => !ids.has(id)),
     ).toEqual([]);
+  });
+});
+
+describe('Spinbutton contract — fixture semantics', () => {
+  it('renders the formatted value text that the fixture declares', () => {
+    const fixture = spinbuttonFixture('conforming-formatted');
+    const subject = inputFor(fixture.id);
+    expect(subject.value).toBe(fixture.facts.valueText);
+    expect(subject.getAttribute('aria-valuetext')).toBe(
+      fixture.facts.valueText,
+    );
+  });
+
+  it('declares the read-only state through aria-readonly', () => {
+    const subject = inputFor('conforming-readonly');
+    expect(subject.readOnly).toBe(true);
+    expect(subject.getAttribute('aria-readonly')).toBe('true');
+  });
+
+  it('does not apply the read-only expectation to a disabled state', () => {
+    const expectation = SPINBUTTON_PATTERN.expectations.find(
+      candidate => candidate.id === 'spinbutton.readonly.exposed',
+    );
+    if (expectation == null) {
+      throw new Error('Spinbutton contract has no read-only expectation');
+    }
+    expect(
+      expectation.appliesWhen.test({
+        ...spinbuttonFixture('conforming-readonly').facts,
+        disabled: true,
+      }),
+    ).toBe(false);
   });
 });
 

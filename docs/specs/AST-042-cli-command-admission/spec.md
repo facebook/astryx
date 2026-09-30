@@ -38,8 +38,8 @@ function, and the vocabulary that human-readable output may use.
   structure.
 - Discoverability, environment variables, global options, and configuration.
   `spec:AST-017` FR14–FR20 own those rules.
-- Classifying a removal, rename, or behavior change. `spec:AST-017` FR1–FR8 own
-  compatibility.
+- Classifying a removal, rename, behavior change, deprecation, or incompatible fix.
+  [`spec:AST-017`](../AST-017/spec.md) owns compatibility and release lifecycle.
 - The JSON envelope, error codes, and generated help. `architecture:cli-surface`
   INV2, INV3, and INV7 own them.
 - Equivalent internal implementations remain valid when they satisfy this contract.

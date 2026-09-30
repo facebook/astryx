@@ -54,6 +54,9 @@ they are separately named.
 - Add a test-specific or build-specific lane for work already owned by an
   existing surface.
 - Apply changed-surface routing to post-merge `main` CI.
+- Define compatibility semantics or release-pair delta classes. Those belong to
+  [`spec:AST-017`](../AST-017/spec.md); this record routes their checks and owns the
+  exact-main release-check execution boundary.
 - Remove required check names, branch protection, merge-queue coverage, or
   exact-head owner approval.
 - Infer safety from file extensions, directory names, or the absence of a known

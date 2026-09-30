@@ -106,7 +106,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Verify: you can state the reason in one sentence, and the choice still holds if the nav doubles in size. `npx astryx build "<idea>"` names the closest template, and its `--skeleton` shows the pairing already wired up.',
+          text: 'Verify: you can state the reason in one sentence, and the choice still holds if the nav doubles in size. `npx astryx build "<idea>"` names the template to start from; scaffold it and the pairing is already wired up.',
         },
 
         {type: 'heading', level: 3, text: 'Best practices'},

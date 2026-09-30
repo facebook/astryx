@@ -69,9 +69,8 @@ export const NUMBER_INPUT_A11Y_STATES = [
   },
   {
     id: 'disabled-with-message',
-    summary:
-      'an unavailable read-only spinbutton kept focusable for its reason',
-    facts: facts({disabled: true, readOnly: true}),
+    summary: 'an unavailable spinbutton kept focusable for its reason',
+    facts: facts({disabled: true}),
     storyId: story('disabled-with-message'),
   },
   {

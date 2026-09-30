@@ -2,9 +2,16 @@
 
 /**
  * @file Hermetic integration authoring checks against the real Core catalogs.
+ * @input Integration fixtures and the post-0.7 conflict projection.
+ * @output Coverage for replacement validation and public diagnostics.
+ * @position Unit coverage; the 0.6.x compatibility shape has its own fixture.
  */
 
-import {afterEach, beforeEach, describe, expect, it} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+
+vi.mock('../../foundation/discovery/template-conflict-release.mjs', () => ({
+  expandedTemplateConflictSchemaActive: () => true,
+}));
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {discoverCoreTemplates} from '../../foundation/discovery/template-adapter.mjs';
