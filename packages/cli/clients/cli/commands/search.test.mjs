@@ -191,6 +191,18 @@ describe('search CLI — exit codes + JSON contract', () => {
     expect(r.stdout).toContain('No results');
   });
 
+  it('takes every word after `search` as one query', async () => {
+    // Commander took only the first word, so `search dark mode` searched for
+    // "dark" and dropped "mode" without a word.
+    const json = await runCli(['--json', 'search', 'dark', 'mode', '--type', 'doc'], REPO_ROOT);
+    expect(json.status).toBe(0);
+    const env = JSON.parse(json.stdout);
+    expect(env.data.query).toBe('dark mode');
+    expect(env.data.results[0]).toMatchObject({name: 'theme', section: 'light-dark-mode'});
+    const text = await runCli(['search', 'dark', 'mode', '--type', 'doc'], REPO_ROOT);
+    expect(text.stdout).toContain('Results for "dark mode"');
+  }, SCAN_TIMEOUT);
+
   it('exits 1 for an invalid --type', async () => {
     const r = await runCli(['search', 'x', '--type', 'bogus'], REPO_ROOT);
     expect(r.status).toBe(1);
@@ -299,14 +311,19 @@ describe('search CLI — exit codes + JSON contract', () => {
     expect(r.stdout).toContain('reason:');
   });
 
-  it('exits 1 with ERR_CORE_NOT_FOUND when no @astryxdesign/core is reachable', async () => {
+  it('searches the docs when no @astryxdesign/core is reachable, and exits 1 for --type component', async () => {
     const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-search-cli-no-core-'));
     try {
-      const json = await runCli(['--json', 'search', 'button'], empty);
+      const open = await runCli(['--json', 'search', 'make', 'an', 'integration'], empty);
+      expect(open.status).toBe(0);
+      expect(JSON.parse(open.stdout).data.results[0]).toMatchObject({domain: 'doc'});
+      // The text says the search covered the docs alone.
+      const text = await runCli(['search', 'button'], empty);
+      expect(text.status).toBe(0);
+      expect(text.stdout).toContain('only the docs were searched');
+      const json = await runCli(['--json', 'search', 'button', '--type', 'component'], empty);
       expect(json.status).toBe(1);
       expect(JSON.parse(json.stdout)).toMatchObject({code: 'ERR_CORE_NOT_FOUND'});
-      const text = await runCli(['search', 'button'], empty);
-      expect(text.status).toBe(1);
     } finally {
       fs.rmSync(empty, {recursive: true, force: true});
     }

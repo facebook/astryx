@@ -7,7 +7,8 @@
  * open one section by its key, and `--full` prints the whole topic. `--json`
  * keeps the docs() contract: a topic returns its whole doc, and `--index` its
  * sections.
- * Supports --detail (full|compact|brief) and --lang (en|zh|dense).
+ * Supports --detail (full|compact|brief) and --lang (en|zh|dense). A code
+ * block's label prints above its fence, and table cells escape their pipes.
  *
  * Usage:
  *   astryx docs                          List available topics
@@ -43,20 +44,34 @@ import {doc as docsFn} from '../../../api/docs/docs.doc.mjs';
 // ─── Formatting ──────────────────────────────────────────────────────────────
 
 /**
+ * A table cell with its pipes escaped. Columns are separated by ` | `, and a
+ * union type such as `'light' | 'dark'` is spelled with the same character,
+ * so an unescaped cell reads as extra columns. `astryx component` escapes its
+ * prop tables the same way.
+ * @param {string | undefined} cell
+ * @returns {string}
+ */
+function tableCell(cell) {
+  return (cell || '').replaceAll('|', '\\|');
+}
+
+/**
  * @param {string[]} headers
  * @param {string[][]} rows
  * @returns {string}
  */
 function formatTable(headers, rows) {
-  const widths = headers.map((h, i) =>
-    Math.max(h.length, ...rows.map(r => (r[i] || '').length)),
+  const head = headers.map(tableCell);
+  const cells = rows.map(r => r.map(tableCell));
+  const widths = head.map((h, i) =>
+    Math.max(h.length, ...cells.map(r => (r[i] || '').length)),
   );
   const sep = widths.map(w => '-'.repeat(w)).join(' | ');
-  const head = headers.map((h, i) => h.padEnd(widths[i])).join(' | ');
-  const body = rows
-    .map(r => r.map((c, i) => (c || '').padEnd(widths[i])).join(' | '))
+  const top = head.map((h, i) => h.padEnd(widths[i])).join(' | ');
+  const body = cells
+    .map(r => r.map((c, i) => c.padEnd(widths[i])).join(' | '))
     .join('\n');
-  return `${head}\n${sep}\n${body}`;
+  return `${top}\n${sep}\n${body}`;
 }
 
 /**
@@ -65,15 +80,19 @@ function formatTable(headers, rows) {
  * @returns {string}
  */
 function formatTableCompact(headers, rows) {
-  return rows.map(r => r.join(' = ')).join('\n');
+  // An empty cell, such as a Default with none, adds nothing to the line.
+  return rows
+    .map(r => r.filter(cell => String(cell ?? '').trim() !== '').join(' = '))
+    .join('\n');
 }
 
 /**
+ * One content block as text. Exported for its tests.
  * @param {import('@astryxdesign/cli/authoring').ReferenceContentBlock} block
  * @param {'full' | 'compact' | 'brief'} detail
  * @returns {string | null}
  */
-function formatBlock(block, detail) {
+export function formatBlock(block, detail) {
   switch (block.type) {
     case 'prose':
       return block.text;
@@ -84,13 +103,20 @@ function formatBlock(block, detail) {
     case 'code':
       if (detail === 'compact' || detail === 'brief') return null;
       {
-        const label = block.label ? `// ${block.label}\n` : '';
-        return `\`\`\`${block.lang}\n${label}${block.code}\n\`\`\``;
+        // The label names the block, so it prints above the fence, not
+        // inside it: `// label` is not a comment in bash, CSS, JSON, or
+        // HTML, and a reader who copies the block would copy it too.
+        const label = block.label
+          ? `${block.label.replace(/:\s*$/, '')}:\n`
+          : '';
+        return `${label}\`\`\`${block.lang}\n${block.code}\n\`\`\``;
       }
 
     case 'table':
       if (detail === 'brief') {
-        return block.rows.map(r => r.slice(0, 2).join('=')).join(' | ');
+        return block.rows
+          .map(r => r.slice(0, 2).map(tableCell).join('='))
+          .join(' | ');
       }
       if (detail === 'compact') {
         return formatTableCompact(block.headers, block.rows);

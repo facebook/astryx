@@ -17,7 +17,7 @@ export const doc = {
   summary: 'List components or print component docs',
   description:
     'Resolves a component by name across core and integration packages and prints ' +
-    'its authored doc, or lists the catalog grouped by category. Boolean flags narrow ' +
+    'its authored doc, or lists the catalog. Boolean flags narrow ' +
     'a single component to just its props, source, showcase, or example blocks.',
   fn: 'component',
   args: [{name: 'name', param: 'name', required: false}],
@@ -25,12 +25,13 @@ export const doc = {
     {
       flag: '--list',
       param: 'options.list',
-      description: 'List all components grouped by category',
+      description: 'List every component (the same as giving no name)',
     },
     {
       flag: '--category <category>',
       param: 'options.category',
-      description: 'List components in a specific category',
+      description:
+        'List one component group, e.g. --category Layout or --category Avatar (an unknown group lists the valid ones)',
     },
     {
       flag: '--props',
@@ -55,14 +56,14 @@ export const doc = {
     {
       flag: '--package <name>',
       param: 'options.package',
-      description: 'Scope lookup to an external package (e.g. @acme/xds-widgets)',
+      description: 'Scope lookup to an external package (e.g. @acme/widgets)',
     },
   ],
   examples: [
     {label: 'Browse the catalog', cli: 'astryx component --list'},
     {
       label: 'Props table as JSON',
-      cli: 'astryx component XDSButton --props --json',
+      cli: 'astryx component Button --props --json',
     },
   ],
   exitCodes: [

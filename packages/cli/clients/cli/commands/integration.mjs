@@ -12,7 +12,7 @@ import {cliError} from '../lib/cli-error.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {doc as integrationGroup} from './integration.doc.mjs';
 import {doc as integrationAddCommand} from './integration-add.doc.mjs';
-import {doc as integrationPackCommand} from './integration-pack.doc.mjs';
+import {doc as integrationVerifyCommand} from './integration-verify.doc.mjs';
 import {doc as integrationAddFn} from '../../../api/integration/integrationAdd.doc.mjs';
 import {doc as integrationPackCheckFn} from '../../../api/integration/integrationPackCheck.doc.mjs';
 
@@ -24,8 +24,16 @@ import {doc as integrationPackCheckFn} from '../../../api/integration/integratio
  */
 function showGroupOrUnknown(command, label, options, invoked) {
   const extras = invoked?.args ?? [];
-  if (extras.length > 0) {
-    return cliError(`unknown subcommand '${label} ${String(extras[0])}'`, {
+  // allowUnknownOption keeps an unknown flag among the args: a word there is
+  // an unknown subcommand, and a flag alone is an unknown option.
+  const word = extras.find(arg => !String(arg).startsWith('-'));
+  if (word == null && extras.length > 0) {
+    return cliError(`unknown option '${String(extras[0])}'`, {
+      code: ERROR_CODES.ERR_INVALID_OPTION,
+    });
+  }
+  if (word != null) {
+    return cliError(`unknown subcommand '${label} ${String(word)}'`, {
       suggestions: (command.commands ?? []).map(child => ({
         name: child.name(),
         reason: 'available subcommand',
@@ -45,6 +53,10 @@ export function registerIntegration(program) {
     action: (options, command) =>
       showGroupOrUnknown(integration, 'integration', options, command),
   });
+  // The old spelling of `integration verify`, a `pack` subcommand with a
+  // `--check` flag, reports the unknown subcommand and lists `verify`, not the
+  // unknown option. Each subcommand still parses its own options.
+  integration.allowUnknownOption(true);
 
   defineCommand(integration, integrationAddCommand, {
     fn: integrationAddFn,
@@ -102,15 +114,9 @@ export function registerIntegration(program) {
     },
   });
 
-  defineCommand(integration, integrationPackCommand, {
+  defineCommand(integration, integrationVerifyCommand, {
     fn: integrationPackCheckFn,
-    action: async options => {
-      if (!options.check) {
-        return cliError('Pass --check to verify the integration tarball.', {
-          code: ERROR_CODES.ERR_INVALID_ARGUMENT,
-        });
-      }
-
+    action: async () => {
       const result = await integrationPackCheck({cwd: process.cwd()});
       if (program.opts().json) {
         jsonOut(result);

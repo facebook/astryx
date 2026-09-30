@@ -667,10 +667,12 @@ export async function docsLinkProblems(
 /**
  * What \`astryx doctor integration docs\` checks in one integration's docs: the
  * docs tree they build beside the CLI's (namespaces, placements, routes) and
- * every link in them (spec:AST-046, spec:AST-047).
+ * every link in them (spec:AST-046, spec:AST-047). A tree problem hides a doc,
+ * so it is an error; a link that names no doc prints as written, so it is a
+ * warning.
  * @param {{name: string}} integration
  * @param {{records: import('../../foundation/discovery/docs-discovery.mjs').DocsTopicRecord[], namespaces: import('../../foundation/doc-compiler/tree.mjs').TreeNamespaceInput[], guides: import('../../foundation/doc-compiler/tree.mjs').TreeDocInput[]}} discovered
- * @returns {Promise<string[]>}
+ * @returns {Promise<Array<{severity: 'error' | 'warning', message: string}>>}
  */
 export async function packageDocsProblems(integration, discovered) {
   const catalog = DocsCatalog.fromBuiltins();
@@ -680,12 +682,18 @@ export async function packageDocsProblems(integration, discovered) {
     guides: discovered.guides.map(input => ({...input, rank: 1})),
   });
   const tree = await projectTree(catalog);
+  /** @type {Array<{severity: 'error' | 'warning', message: string}>} */
   const problems = tree.diagnostics
     .filter(d => d.severity === 'error' && d.provider === integration.name)
-    .map(d => `${d.source ?? integration.name}: ${d.message}`);
-  problems.push(
-    ...(await docsLinkProblems(catalog, tree, {owner: integration.name})),
-  );
+    .map(d => ({
+      severity: /** @type {const} */ ('error'),
+      message: `${d.source ?? integration.name}: ${d.message}`,
+    }));
+  for (const message of await docsLinkProblems(catalog, tree, {
+    owner: integration.name,
+  })) {
+    problems.push({severity: 'warning', message});
+  }
   return problems;
 }
 

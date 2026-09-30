@@ -36,6 +36,8 @@ function writePackage({
   scripts,
 } = {}) {
   const pkg = {name, version};
+  // A theme needs a CLI that reads typed theme descriptors.
+  if (themes) pkg.peerDependencies = {'@astryxdesign/cli': '>=0.7.0'};
   if (files !== undefined) pkg.files = files;
   if (scripts !== undefined) pkg.scripts = scripts;
   fs.writeFileSync(
@@ -91,6 +93,30 @@ describe('integrationPackCheck', () => {
     );
     expect(result.data.issues.filter(i => i.severity === 'error')).toHaveLength(
       0,
+    );
+  });
+
+  it('fails a package that ships a theme on a CLI range that cannot read it', async () => {
+    writePackage({files: ['astryx.integration.mjs', 'themes']});
+    const pkgFile = path.join(tmpDir, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+    delete pkg.peerDependencies;
+    fs.writeFileSync(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
+
+    const missing = await integrationPackCheck({cwd: tmpDir});
+    expect(missing.data.packable).toBe(false);
+    expect(missing.data.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'themes_need_cli',
+        message: expect.stringContaining('ships a theme'),
+      }),
+    );
+
+    pkg.peerDependencies = {'@astryxdesign/cli': '^0.6.3'};
+    fs.writeFileSync(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
+    const old = await integrationPackCheck({cwd: tmpDir});
+    expect(old.data.issues).toContainEqual(
+      expect.objectContaining({code: 'themes_need_cli'}),
     );
   });
 
@@ -189,6 +215,39 @@ describe('integrationPackCheck', () => {
 
     expect(result.data.packable).toBe(true);
     expect(result.data.issues).not.toContainEqual(
+      expect.objectContaining({code: 'component_export_missing'}),
+    );
+  });
+
+  it('resolves public imports in the packed package, not the source', async () => {
+    // The root export's target is left out of `files`: the source package
+    // resolves it, but an app that installs the tarball cannot.
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      `${JSON.stringify({
+        name: '@acme/widgets',
+        version: '1.0.0',
+        files: ['astryx.integration.mjs'],
+        exports: {'.': './index.mjs'},
+      })}\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'index.mjs'),
+      "export {AcmeWidget} from './components/AcmeWidget.tsx';\n",
+    );
+    await integrationAddComponent('AcmeWidget', {cwd: tmpDir});
+    const docFile = path.join(tmpDir, 'components', 'AcmeWidget.doc.mjs');
+    const doc = fs.readFileSync(docFile, 'utf-8');
+    expect(doc).toContain('@acme/widgets/components/AcmeWidget');
+    fs.writeFileSync(
+      docFile,
+      doc.replace('@acme/widgets/components/AcmeWidget', '@acme/widgets'),
+    );
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    expect(result.data.packable).toBe(false);
+    expect(result.data.issues).toContainEqual(
       expect.objectContaining({code: 'component_export_missing'}),
     );
   });
@@ -334,6 +393,37 @@ describe('integrationPackCheck', () => {
     pkg.peerDependencies = {'@astryxdesign/cli': '>=0.7.0'};
     fs.writeFileSync(file, `${JSON.stringify(pkg, null, 2)}\n`);
     expect(await codes()).not.toContain('docs_tree_needs_cli');
+  }, 120_000);
+
+  it('fails a package whose doc section sets id on a CLI range that rejects the field', async () => {
+    writePackage({manifest: "export default {docs: './docs'};\n", themes: false});
+    fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
+    const topic = (/** @type {string} */ section) =>
+      `export default {type: 'generic', name: 'notes', title: 'Notes', description: 'Notes.', sections: [${section}]};\n`;
+    const file = path.join(tmpDir, 'docs', 'notes.doc.mjs');
+    const codes = async () =>
+      (await integrationPackCheck({cwd: tmpDir})).data.issues.map(
+        (/** @type {{code: string}} */ issue) => issue.code,
+      );
+    fs.writeFileSync(
+      file,
+      topic("{title: 'Take notes', content: [{type: 'prose', text: 'Notes.'}]}"),
+    );
+    expect(await codes()).not.toContain('section_ids_need_cli');
+    // A fresh file name: the module loader caches a path once it is imported.
+    fs.rmSync(file);
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'notes-with-ids.doc.mjs'),
+      topic(
+        "{id: 'take-notes', title: 'Take notes', content: [{type: 'prose', text: 'Notes.'}]}",
+      ),
+    );
+    expect(await codes()).toContain('section_ids_need_cli');
+    const pkgFile = path.join(tmpDir, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
+    pkg.peerDependencies = {'@astryxdesign/cli': '>=0.7.0'};
+    fs.writeFileSync(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
+    expect(await codes()).not.toContain('section_ids_need_cli');
   }, 120_000);
 
   it('fails a package with a template that sets replaces on a CLI range that rejects the field', async () => {

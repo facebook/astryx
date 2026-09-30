@@ -30,7 +30,8 @@ The CLI documents itself, so these commands print what the installed version doe
   `astryx.integration.*` manifest, codemods, and every doc type (`ComponentDoc`,
   `TemplateDoc`, `ThemeDoc`, and the rest). Read one section with
   `astryx docs authoring <section>`, for example `astryx docs authoring config`.
-- `astryx docs cli/integrations`: the guide to building an integration package.
+- `astryx docs cli/integrations`: the guides to building an integration package,
+  from a quick start to publishing.
 - `astryx docs`: every docs topic, including the design-system guides (for
   example `tokens`, `theme`, and `layout`).
 
@@ -101,13 +102,13 @@ Options:
 
 ### Global options
 
-These flags work with any command:
+`--json` works with every command listed in `jsonSupported` (`astryx manifest --json`), which is every command except the bare groups such as `astryx theme`. The other four change only the reads named here; other commands ignore them:
 
 - `--json`: Output as typed JSON envelope: `{ apiVersion, type, data, meta? }` (errors: `{ apiVersion, error, code, suggestions? }`)
-- `--detail <level>`: Detail level for list views, increasing in size: `brief` (names only, default for `--list`) < `compact` (names + 1-line descriptions) < `full` (full docs per entry). Single-item views default to `full`.
-- `--zh`: Output docs in Chinese Simplified
-- `--dense`: Compressed format (token-efficient, useful for AI agents)
-- `--lang <locale>`: Language/format shorthand (`en`, `zh`, `dense`)
+- `--detail <level>`: Detail level for `component`, `hook`, and docs tree reads (such as `astryx docs cli/commands/build`), increasing in size: `brief` (names only, default for lists) < `compact` (names + 1-line descriptions) < `full` (full docs per entry). Single-item views default to `full`.
+- `--zh`: Simplified Chinese for component reads and for docs topics that have a translation (English otherwise)
+- `--dense`: Token-efficient dense text for `astryx component <Name>` and `astryx docs <topic>`
+- `--lang <locale>`: Language or format for component and docs reads: `en` (default), `zh` (as `--zh`), or `dense` (as `--dense`)
 
 ## JSON API
 
@@ -164,9 +165,9 @@ if (isError(result)) {
 | `ERR_UNKNOWN`                     | Fallback for any error without a more specific code.                                                                                                     |
 | `ERR_UNKNOWN_COMMAND`             | A top-level command name was not recognized (e.g. `astryx bogus`).                                                                                       |
 | `ERR_UNKNOWN_SUBCOMMAND`          | A subcommand under a command group was not recognized (e.g. `astryx theme bogus`).                                                                       |
-| `ERR_INVALID_OPTION`              | An unknown flag/option was passed (Commander `unknownOption`).                                                                                           |
-| `ERR_INVALID_ARGUMENT`            | An option/argument had a value Commander's parser rejected.                                                                                              |
-| `ERR_MISSING_ARGUMENT`            | A required positional argument was omitted (Commander `missingArgument`).                                                                                |
+| `ERR_INVALID_OPTION`              | An unknown option was passed, --json was given to a command without JSON output, or layout --form got a value other than compact, outline, or auto.      |
+| `ERR_INVALID_ARGUMENT`            | An argument or option value is invalid: wrong type, out of range, an unknown choice, an extra argument, or a conflicting combination.                    |
+| `ERR_MISSING_ARGUMENT`            | A required argument or option value was omitted.                                                                                                         |
 | `ERR_INVALID_LANG`                | `--lang` was given a value outside its choices (en, zh, dense).                                                                                          |
 | `ERR_INVALID_DETAIL`              | `--detail` was given a value outside its choices (full, compact, brief).                                                                                 |
 | `ERR_NODE_VERSION`                | The running Node.js version is below the supported minimum.                                                                                              |
@@ -184,8 +185,8 @@ if (isError(result)) {
 | `ERR_UNKNOWN_THEME`               | No theme matched the requested slug (theme add).                                                                                                         |
 | `ERR_INTEGRATION_ROOT_CONFLICT`   | An integration manifest already declares a different path for the requested contribution root.                                                           |
 | `ERR_INTEGRATION_EXPORT_CONFLICT` | A package export already maps a generated contribution subpath to a different target.                                                                    |
-| `ERR_UNKNOWN_PACKAGE`             | No package matched the requested name (discover).                                                                                                        |
-| `ERR_UNKNOWN_AGENT`               | An unrecognized `--agent` value was passed to agent-docs/init.                                                                                           |
+| `ERR_UNKNOWN_PACKAGE`             | No package matched the requested name.                                                                                                                   |
+| `ERR_UNKNOWN_AGENT`               | An unrecognized `--agent` value was passed to init.                                                                                                      |
 | `ERR_UNKNOWN_FEATURE`             | An unrecognized `--features` value was passed to init.                                                                                                   |
 | `ERR_UNKNOWN_CODEMOD`             | A `--codemod` value did not match any registered codemod (upgrade).                                                                                      |
 | `ERR_CODEMOD_FAILED`              | One or more codemods failed during an upgrade run.                                                                                                       |
@@ -211,7 +212,7 @@ if (isError(result)) {
 | `ERR_FETCH_FAILED`                | A network fetch (RSS feed or post text) failed.                                                                                                          |
 | `ERR_LAYOUT_PARSE`                | A layout expression failed to parse (syntax error, with line/col).                                                                                       |
 | `ERR_LAYOUT_INVALID`              | A layout expression parsed but failed validation (unknown component/prop/enum/block).                                                                    |
-| `ERR_UNCLASSIFIED_EXIT`           | Recorded in the debug log, never printed: a command exited non-zero without going through cliError/jsonError, so no stable code was available.           |
+| `ERR_UNCLASSIFIED_EXIT`           | Recorded in the debug log, never printed: a command exited non-zero without reporting an error code.                                                     |
 | `ERR_SIGNAL_TERMINATED`           | Recorded in the debug log, never printed: the process was ended by a signal (Ctrl-C, SIGTERM) before the command reached a terminal path.                |
 
 <!-- END GENERATED: error-codes -->
@@ -677,9 +678,10 @@ Warnings go to stderr and never corrupt a `--json` envelope. To inspect problems
 Core identity overlaps before publishing. Bare `astryx doctor` checks overall
 project health.
 
-For the full authoring walkthrough (component doc format, template packaging
-and `exports` requirements, and codemod authoring), see the guide:
+For the full walkthrough, from an empty folder to a published package, see the
+guides:
 
 ```bash
 astryx docs cli/integrations
+astryx docs cli/integrations/quick-start
 ```

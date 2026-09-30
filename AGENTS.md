@@ -218,10 +218,10 @@ astryx component <Name> --dense # props, variants, usage, anatomy for one compon
 astryx template <name> # emit full page source
 astryx template <name> --skeleton # layout skeleton with spatial annotations
 astryx swizzle <Name> # eject component source for deep customization
-astryx upgrade --apply # run version migration codemods
+astryx upgrade --from <old version> --apply # run version migration codemods
 OPTIONS: --detail compact|brief less output | --dense token-efficient | --zh Chinese
 RULE: always run bootstrap on each branch — docs reflect the branch's actual API
 RULE: always run astryx component <Name> --dense before modifying a component
-RULE: after @astryxdesign/core bump, always run astryx upgrade --apply
+RULE: after @astryxdesign/core bump, always run astryx upgrade --from <old version> --apply
 
 <!-- ASTRYX-CLI:END -->

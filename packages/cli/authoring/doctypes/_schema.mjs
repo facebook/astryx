@@ -414,6 +414,9 @@ export const GenericDocKindSchema = z
     ...BaseDocFields,
     type: z.literal('generic'),
     title: nonEmptyString.optional(),
+    // Search terms the title and sections do not use; `astryx search` matches
+    // them as keywords of the whole topic (ReferenceDoc `keywords`).
+    keywords: z.array(z.string()).optional(),
     sections: z.array(ReferenceSectionSchema).min(1).optional(),
     replaces: nonEmptyString.optional(),
     extends: nonEmptyString.optional(),
@@ -730,6 +733,8 @@ const LegacyBaseDocSchema = z.object({
 const LegacyReferenceDocSchema = LegacyBaseDocSchema.extend({
   title: nonEmptyString,
   description: z.string(),
+  // As on the stamped schema: search terms for the whole topic.
+  keywords: z.array(z.string()).optional(),
   sections: z.array(ReferenceSectionSchema).min(1),
   replaces: nonEmptyString.optional(),
   extends: nonEmptyString.optional(),

@@ -18,7 +18,7 @@ namespace doc in an integration's docs directory no longer fails to load, and
 A CLI release that does not read the docs tree can hide every doc topic of a
 package that ships a namespace doc or a placed guide, with nothing saying why,
 so `--parent` declares the CLI that reads them as an optional
-`@astryxdesign/cli` peer, and `astryx integration pack --check` fails a package
+`@astryxdesign/cli` peer, and `astryx integration verify` fails a package
 that ships either one without it.
 
 The CLI keeps its own routes: an integration's flat topic or namespace named
@@ -29,6 +29,6 @@ Every flat topic now sits in `astryx docs unorganized`, under its own name,
 so every doc has a place in the tree with a way up and across. Search hits
 for a topic name the level and the package that wrote it.
 
-New guide: `astryx docs cli/writing-docs`.
+New guides on writing docs for an integration: `astryx docs cli/integrations/docs`.
 
 @josephfarina

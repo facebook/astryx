@@ -36,17 +36,16 @@ export const doc = {
     {
       value: 'ERR_INVALID_OPTION',
       description:
-        'An unknown flag/option was passed (Commander `unknownOption`).',
+        'An unknown option was passed, --json was given to a command without JSON output, or layout --form got a value other than compact, outline, or auto.',
     },
     {
       value: 'ERR_INVALID_ARGUMENT',
       description:
-        "An option/argument had a value Commander's parser rejected.",
+        'An argument or option value is invalid: wrong type, out of range, an unknown choice, an extra argument, or a conflicting combination.',
     },
     {
       value: 'ERR_MISSING_ARGUMENT',
-      description:
-        'A required positional argument was omitted (Commander `missingArgument`).',
+      description: 'A required argument or option value was omitted.',
     },
     {
       value: 'ERR_INVALID_LANG',
@@ -134,12 +133,11 @@ export const doc = {
     },
     {
       value: 'ERR_UNKNOWN_PACKAGE',
-      description: 'No package matched the requested name (discover).',
+      description: 'No package matched the requested name.',
     },
     {
       value: 'ERR_UNKNOWN_AGENT',
-      description:
-        'An unrecognized `--agent` value was passed to agent-docs/init.',
+      description: 'An unrecognized `--agent` value was passed to init.',
     },
     {
       value: 'ERR_UNKNOWN_FEATURE',
@@ -272,7 +270,7 @@ export const doc = {
     {
       value: 'ERR_UNCLASSIFIED_EXIT',
       description:
-        'Recorded in the debug log, never printed: a command exited non-zero without going through cliError/jsonError, so no stable code was available.',
+        'Recorded in the debug log, never printed: a command exited non-zero without reporting an error code.',
     },
     {
       value: 'ERR_SIGNAL_TERMINATED',

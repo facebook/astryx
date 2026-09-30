@@ -3,9 +3,10 @@
 /**
  * @file EnumDoc for the `type` discriminant carried on every --json success
  * envelope. The vocabulary mirrors the RESPONSE_TYPES map (each command's
- * `jsonOut(...)` call sites) in `clients/cli/lib/manifest.mjs`; a consumer
- * switches on `type` to narrow the `data` payload. Descriptions follow the
- * currently published response projection, not a future package-version boundary.
+ * `jsonOut(...)` call sites) plus ROOT_RESPONSE_TYPES (help, version) in
+ * `clients/cli/lib/manifest.mjs`; a consumer switches on `type` to narrow the
+ * `data` payload. Descriptions follow the currently published response
+ * projection, not a future package-version boundary.
  *
  * @input Public response discriminants and their currently released payloads.
  * @output Generated consumer reference for every typed JSON success response.
@@ -35,7 +36,7 @@ export const doc = {
     {
       value: 'component.list',
       description:
-        'The component catalog grouped by category: `detail` (the level: names | compact | full) and `components`, the grouped map of names entries ({name, package, and optional canonical import for integrations}), brief entries, or a full ComponentDoc per entry.',
+        "The component catalog grouped by component group (each component's group field): `detail` (the level: names | compact | full) and `components`, the grouped map of names entries ({name, package, and optional canonical import for integrations}), brief entries, or a full ComponentDoc per entry.",
     },
     {
       value: 'component.detail',
@@ -149,7 +150,7 @@ export const doc = {
     {
       value: 'swizzle.copy',
       description:
-        'An eject receipt: component name, owning package, output directory, files-copied count, the written file names, whether any file uses StyleX, and an optional maintainer note.',
+        'An eject receipt: component name, owning package, output directory, files-copied count, the written file names, whether any file uses StyleX, and, when the owner has an issues URL, feedback ({issuesUrl, ghCommand?}): where to report the gap that led to swizzling.',
     },
 
     // gap reports
@@ -252,6 +253,11 @@ export const doc = {
         'Every available codemod, oldest→newest, as {name, title, version, optional}; returned for --list without running anything.',
     },
     {
+      value: 'upgrade.registry',
+      description:
+        'The copied-composition receipt for --registry: applied, ok, the counts (found, current, wouldUpdate, updated, wouldMerge, merged, wouldRefreshReceipt, receiptsRefreshed, conflicts, missing, invalid, failed), and items.',
+    },
+    {
       value: 'upgrade.status',
       description:
         'A short-circuit outcome with no codemods run (up_to_date, no_codemods, or config_fixable), each carrying the agent-docs summary.',
@@ -269,11 +275,24 @@ export const doc = {
         'The CLI capability manifest: name, version, apiVersion, description, globalOptions, commands (each name, description, arguments, options, json, aliases?, responseTypes?, examples?, exitCodes? as [{code, when}], subcommands?), jsonSupported, and the flat responseTypes index.',
     },
 
+    // help and version, which no single command owns
+    {
+      value: 'help',
+      description:
+        'Help, in one of two shapes. A bare `astryx --json` returns the root manifest: name, version, commands (the command names), jsonSupported, and manifest (the full payload `astryx manifest --json` returns). ' +
+        "`--help --json` on any command, or `astryx help [command] --json`, returns that command's help: command, description, usage, options (each flags, description, and defaultValue and choices when set), and subcommands (each name and description). " +
+        'data.manifest marks the first shape; data.usage marks the second.',
+    },
+    {
+      value: 'version',
+      description: 'The CLI version, for `astryx --version --json`: {version}.',
+    },
+
     // doctor
     {
       value: 'doctor',
       description:
-        'The health-check report: `checks` (each with id, label, status: pass | warn | fail | info, a message, and a fix when not passing) plus a `summary` of counts per status.',
+        'The health-check report: `checks` (each with id, label, status: pass | warn | fail | info, a message, and an optional fix, always present on warn and fail) plus a `summary` of counts per status.',
     },
 
     // integration authoring

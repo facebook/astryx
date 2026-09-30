@@ -14,7 +14,7 @@ export const doc = {
   name: 'template',
   displayName: 'astryx template',
   namespace: 'cli/commands',
-  summary: 'Inject a page or block template',
+  summary: 'List, show, or scaffold page and block templates',
   description:
     'One entry point for the template family: with no name it lists the discovered ' +
     'templates; with a name it shows the source or a layout skeleton, or scaffolds it ' +

@@ -25,6 +25,8 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {
+  headingWithPhrase,
+  titleInQuery,
   search,
   scoreCandidate,
   scoreQuery,
@@ -98,15 +100,15 @@ describe('search leaf — docs at the grain a reader reads them', () => {
   it(
     'finds one section of a guide, and a docs-tree leaf by its own name',
     async () => {
-      const guide = await search('codemod protected files', {cwd, type: 'doc'});
+      const guide = await search('when a codemod runs', {cwd, type: 'doc'});
       expect(guide.data.results.slice(0, 3)).toContainEqual(
         expect.objectContaining({
           domain: 'doc',
-          name: 'cli/integrations',
-          section: 'codemods',
-          title: 'Astryx CLI › CLI Integrations › Codemods',
-          parent: 'astryx docs cli/integrations --index',
-          command: 'astryx docs cli/integrations codemods',
+          name: 'cli/integrations/codemods',
+          section: 'which-codemods-run',
+          title: 'Astryx CLI › Build an integration › Codemods › Choose when a codemod runs',
+          parent: 'astryx docs cli/integrations/codemods --index',
+          command: 'astryx docs cli/integrations/codemods which-codemods-run',
         }),
       );
       const block = await search('token-ref', {cwd});
@@ -123,6 +125,31 @@ describe('search leaf — docs at the grain a reader reads them', () => {
         command: 'astryx docs cli/api/functions/assert-response',
       });
       expect(fn.data.results[0]).not.toHaveProperty('section');
+    },
+    SLOW,
+  );
+
+  it(
+    'finds the integration guides for the ways people ask to make one',
+    async () => {
+      // "make", "build", and "an" are stopwords, so each of the first three
+      // tokenizes to `integration` alone; the phrase still matches the
+      // keywords and the title the guides declare. A namespace's own
+      // keywords count, and a plural name is the name.
+      for (const [query, route] of [
+        ['make an integration', 'cli/integrations'],
+        ['build an integration', 'cli/integrations'],
+        ['create an integration', 'cli/integrations/overview'],
+        ['integration', 'cli/integrations'],
+        ['publish an integration', 'cli/integrations'],
+        ['troubleshoot integration', 'cli/integrations/troubleshooting'],
+      ]) {
+        const r = await search(query, {cwd, type: 'doc'});
+        expect(
+          r.data.results.slice(0, 3).map(result => result.name),
+          query,
+        ).toContain(route);
+      }
     },
     SLOW,
   );
@@ -147,10 +174,10 @@ describe('search leaf — docs at the grain a reader reads them', () => {
   it(
     'points a topic hit at its index, never a whole-topic read',
     async () => {
-      const r = await search('cli/integrations', {cwd, type: 'doc'});
+      const r = await search('cli/integrations/quick-start', {cwd, type: 'doc'});
       expect(r.data.results[0]).toMatchObject({
-        name: 'cli/integrations',
-        command: 'astryx docs cli/integrations --index',
+        name: 'cli/integrations/quick-start',
+        command: 'astryx docs cli/integrations/quick-start --index',
       });
       expect(r.data.results[0]).not.toHaveProperty('section');
     },
@@ -253,6 +280,150 @@ describe('search leaf — exact keyword phrase outranks incidental token matches
   }, SLOW);
 });
 
+describe('search leaf — a whole-query phrase in a title or heading is top tier', () => {
+  /**
+   * @param {string} q
+   * @param {object} candidate
+   * @returns {number}
+   */
+  const score = (q, candidate) => scoreQuery(q, tokenizeQuery(q), candidate)?.score ?? 0;
+
+  it('finds the whole query, in order, inside a title or heading', () => {
+    expect(headingWithPhrase('dark mode', ['Light/Dark Mode'])).toBe('Light/Dark Mode');
+    expect(headingWithPhrase('nested theme', ['Theme Props', 'Nested themes'])).toBe(
+      'Nested themes',
+    );
+    // A plural on either side is the same word.
+    expect(headingWithPhrase('data attributes selector', ['Data attribute selectors'])).toBe(
+      'Data attribute selectors',
+    );
+    // Out of order, split up, or one word: not a phrase.
+    expect(headingWithPhrase('mode dark', ['Light/Dark Mode'])).toBeNull();
+    expect(headingWithPhrase('dark mode', ['Dark sidebar and mode toggle'])).toBeNull();
+    expect(headingWithPhrase('dark', ['Light/Dark Mode'])).toBeNull();
+    expect(headingWithPhrase('dark mode', undefined)).toBeNull();
+  });
+
+  it('ranks a section titled with the phrase above an exact code-tick match of one word', () => {
+    // The reported miss: `search "dark mode"` put "Light/Dark Mode" at #28,
+    // under API enum docs that name `mode` in code ticks.
+    const section = {name: 'light-dark-mode', titles: ['Light/Dark Mode'], keywords: ['Light/Dark Mode']};
+    const enumDoc = {name: 'response-types', keywords: ['mode', 'dark'], description: 'mode'};
+    expect(score('dark mode', section)).toBe(170);
+    expect(score('dark mode', section)).toBeGreaterThan(score('dark mode', enumDoc));
+  });
+
+  it('ranks a question that names a whole title just below that', () => {
+    expect(titleInQuery('how do i add dark mode', ['Dark mode'])).toBe('Dark mode');
+    expect(titleInQuery('how do nested themes work', ['Nested themes'])).toBe('Nested themes');
+    // One-word titles are too common to count, and order still matters.
+    expect(titleInQuery('how do i theme my app', ['Theme'])).toBeNull();
+    expect(titleInQuery('mode dark please', ['Dark mode'])).toBeNull();
+    const section = {name: 'light-dark-mode', titles: ['Dark mode'], keywords: ['Dark mode']};
+    const named = score('how do i add dark mode', section);
+    expect(named).toBeGreaterThanOrEqual(160);
+    expect(named).toBeLessThan(170);
+    // Sections that share a title are ordered by how much of the rest of the
+    // question they answer.
+    const spacing = {name: 'best-practices', titles: ['Best Practices'], prose: ['Use spacing tokens']};
+    const color = {name: 'best-practices', titles: ['Best Practices'], prose: ['Use color tokens']};
+    expect(score('best practices for spacing', spacing)).toBeGreaterThan(
+      score('best practices for spacing', color),
+    );
+  });
+
+  it('reads a plural of a name as the name, and only a real plural', () => {
+    // One point under the exact spelling, so the doc named `tokens` outranks
+    // the Token component for `tokens`.
+    expect(scoreCandidate('integration', {name: 'integrations'})?.score).toBe(99);
+    expect(scoreCandidate('box', {name: 'boxes'})?.score).toBe(99);
+    expect(scoreCandidate('tabs', {name: 'tab'})?.score).toBe(99);
+    expect(scoreCandidate('tokens', {name: 'tokens'})?.score).toBe(100);
+    // `es` only follows s, x, z, ch, or sh.
+    expect(scoreCandidate('not', {name: 'notes'})?.score ?? 0).toBeLessThan(100);
+    expect(scoreCandidate('mod', {name: 'modes'})?.score ?? 0).toBeLessThan(100);
+  });
+
+  it('keeps an exact name or keyword above a title phrase', () => {
+    const titled = {name: 'x', titles: ['Table of contents for long pages']};
+    const keyword = {name: 'Outline', keywords: ['table of contents']};
+    expect(score('table of contents', keyword)).toBeGreaterThan(score('table of contents', titled));
+  });
+
+  it('puts the dark mode section first for a docs search', async () => {
+    for (const query of ['dark mode', 'how do I add dark mode']) {
+      const r = await search(query, {cwd, type: 'doc'});
+      expect(r.data.results[0]).toMatchObject({name: 'theme', section: 'light-dark-mode'});
+    }
+  }, SLOW);
+});
+
+describe('search leaf — a candidate that matches every word outranks a partial match', () => {
+  /**
+   * @param {string} q
+   * @param {object} candidate
+   * @returns {number}
+   */
+  const score = (q, candidate) => scoreQuery(q, tokenizeQuery(q), candidate)?.score ?? 0;
+
+  it('ranks a doc with both words above a doc named after one of them', () => {
+    // The reported regression: `search troubleshoot integration` put the
+    // troubleshooting guide 30th, under docs that each match `integration`
+    // alone (by name, 108; in a code tick, 98).
+    const guide = {
+      name: 'troubleshooting',
+      keywords: ['Troubleshooting'],
+      description: 'What to check when an integration does not load.',
+    };
+    const byName = {name: 'integration', keywords: ['integration-add']};
+    const byCodeTick = {name: 'integration-add', keywords: ['integration']};
+    const q = 'troubleshoot integration';
+    expect(score(q, guide)).toBeGreaterThan(score(q, byName));
+    expect(score(q, guide)).toBeGreaterThan(score(q, byCodeTick));
+    expect(scoreQuery(q, tokenizeQuery(q), guide)).toMatchObject({matched: 2, total: 2});
+  });
+
+  it('holds for longer queries too, and stays below the title tiers', () => {
+    const all = {name: 'x', keywords: ['alphas'], description: 'alpha beta gamma delta'};
+    const threeOfFour = {name: 'alpha', keywords: ['beta', 'gamma']};
+    const q = 'alpha beta gamma delta';
+    expect(score(q, all)).toBeGreaterThan(score(q, threeOfFour));
+    expect(score(q, all)).toBeLessThan(160);
+    // Among candidates that match every word, the stronger match comes first.
+    expect(score(q, {name: 'y', keywords: ['alpha'], description: 'beta gamma delta'})).toBeGreaterThan(
+      score(q, all),
+    );
+  });
+
+  it('keeps passing mentions of every word below an exact hit on one word', () => {
+    // Mentions in prose, or the components a page happens to render, are
+    // breadth: a page that says "empty state" is not the EmptyState answer.
+    const mentions = {name: 'ai-chat-landing', description: 'A landing page with an empty state.'};
+    const keyword = {name: 'x', keywords: ['empty']};
+    expect(score('empty state', mentions)).toBeLessThan(score('empty state', keyword));
+  });
+
+  it('finds a component by its name typed as words, and a guide by its route', async () => {
+    for (const [query, name] of [
+      ['command palette', 'CommandPalette'],
+      ['empty state', 'EmptyState'],
+    ]) {
+      const r = await search(query, {cwd});
+      expect(r.data.results[0], query).toMatchObject({domain: 'component', name});
+    }
+    const tokens = await search('tokens', {cwd});
+    expect(tokens.data.results[0]).toMatchObject({domain: 'doc', name: 'tokens'});
+    for (const [query, route] of [
+      ['codemods', 'cli/integrations/codemods'],
+      ['package setup', 'cli/integrations/package-setup'],
+      ['test in an app', 'cli/integrations/test-in-an-app'],
+    ]) {
+      const r = await search(query, {cwd, type: 'doc'});
+      expect(r.data.results[0], query).toMatchObject({name: route});
+    }
+  }, SLOW);
+});
+
 describe('search leaf — error paths (pinned)', () => {
   it('throws ERR_INVALID_ARGUMENT when the query is empty/whitespace', async () => {
     await expect(search('   ', {cwd})).rejects.toMatchObject({
@@ -267,12 +438,20 @@ describe('search leaf — error paths (pinned)', () => {
     ).rejects.toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
   }, SLOW);
 
-  it('throws ERR_CORE_NOT_FOUND when @astryxdesign/core cannot be found', async () => {
+  it('searches the docs without @astryxdesign/core, and throws for a domain that needs it', async () => {
     const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-search-no-core-'));
     try {
-      await expect(search('button', {cwd: empty})).rejects.toMatchObject({
-        code: 'ERR_CORE_NOT_FOUND',
-      });
+      // An open search outside an app covers the docs, as `astryx docs` does.
+      const open = await search('make an integration', {cwd: empty});
+      expect(open.data.results.length).toBeGreaterThan(0);
+      expect(new Set(open.data.results.map(r => r.domain))).toEqual(
+        new Set(['doc']),
+      );
+      for (const type of ['component', 'hook', 'template']) {
+        await expect(
+          search('button', {cwd: empty, type: /** @type {any} */ (type)}),
+        ).rejects.toMatchObject({code: 'ERR_CORE_NOT_FOUND'});
+      }
     } finally {
       fs.rmSync(empty, {recursive: true, force: true});
     }

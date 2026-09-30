@@ -49,6 +49,23 @@ const nextConfig = {
       ],
     };
   },
+  // The CLI's integration guide became short guides under cli/integrations,
+  // each with its own page (/docs/cli-integrations-<name>). The old guide
+  // pages redirect to where their content now starts.
+  async redirects() {
+    return [
+      {
+        source: '/docs/cli-integrations',
+        destination: '/docs/cli-integrations-overview',
+        permanent: true,
+      },
+      {
+        source: '/docs/cli-writing-docs',
+        destination: '/docs/cli-integrations-docs-add-a-topic',
+        permanent: true,
+      },
+    ];
+  },
   // The playground preview evaluates user-authored code, so it is the one
   // route that must never be embeddable by another site and never a loader of
   // third-party script. The nonce-attested port handshake on its message

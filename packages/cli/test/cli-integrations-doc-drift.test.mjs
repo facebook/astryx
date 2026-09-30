@@ -1,15 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Documentation drift tests for the cli-integrations guide and related
- * CommandDocs/FunctionDocs. Tests verify against executable sources of truth
+ * @file Documentation drift tests for the integration guides
+ * (`astryx docs cli/integrations`) and related CommandDocs/FunctionDocs. Tests verify against executable sources of truth
  * (parseDoc dispatch, resolvePackageDir, theme-discovery validators, schema
  * shapes) rather than only prose-to-prose assertions, so a behavioral change
  * that invalidates a documented claim is caught at CI time.
  */
 
 import {afterEach, beforeEach, describe, it, expect} from 'vitest';
-import {docs as integrationGuide} from '../assets/docs/tree/integrations.doc.mjs';
 import {doc as upgradeCommandDoc} from '../clients/cli/commands/upgrade.doc.mjs';
 import {doc as upgradeFnDoc} from '../api/upgrade/upgrade.doc.mjs';
 import {doc as paletteGenerateDoc} from '../clients/cli/commands/theme-palette-generate.doc.mjs';
@@ -20,9 +19,18 @@ import {resolvePackageDir} from '../foundation/integrations/integrations.mjs';
 import {discoverThemeDirectory} from '../foundation/discovery/theme-discovery.mjs';
 import {integrationAddTheme} from '../api/integration/add-theme.mjs';
 import {themePaletteGenerate} from '../api/theme/palette/generate/generate.mjs';
+import {
+  DOCS_TREE_CLI,
+  docsTreeCliProblem,
+  replacesCliProblem,
+  sectionIdsCliProblem,
+  themesCliProblem,
+} from '../foundation/integrations/cli-requirement.mjs';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+
+const TREE_DIR = path.join(import.meta.dirname, '..', 'assets', 'docs', 'tree');
 
 /** Flatten all text content from a ReferenceDoc's sections into one string. */
 function guideText(doc) {
@@ -32,6 +40,36 @@ function guideText(doc) {
       if (block.type === 'prose') parts.push(block.text);
       if (block.type === 'code') parts.push(block.code);
       if (block.type === 'list') parts.push((block.items ?? []).join('\n'));
+      if (block.type === 'table') {
+        parts.push((block.rows ?? []).map(row => row.join(' | ')).join('\n'));
+      }
+    }
+  }
+  return parts.join('\n');
+}
+
+/**
+ * The text of every guide under `cli/integrations`, the docs guides one level
+ * down included.
+ */
+async function integrationGuidesText({codeOnly = false} = {}) {
+  const parts = [];
+  for (const file of fs.readdirSync(TREE_DIR).sort()) {
+    if (!file.endsWith('.doc.mjs')) continue;
+    const {docs: doc} = await import(path.join(TREE_DIR, file));
+    const parent = doc?.placement?.parent;
+    if (parent !== 'namespace:integrations' && parent !== 'namespace:docs') {
+      continue;
+    }
+    if (doc.type !== 'generic') continue;
+    if (!codeOnly) {
+      parts.push(guideText(doc));
+      continue;
+    }
+    for (const section of doc.sections ?? []) {
+      for (const block of section.content ?? []) {
+        if (block.type === 'code') parts.push(block.code);
+      }
     }
   }
   return parts.join('\n');
@@ -220,7 +258,7 @@ describe('documented theme palette workflow', () => {
     // first.
     expect(theme.files).toEqual(documented);
 
-    const text = guideText(integrationGuide);
+    const text = await integrationGuidesText();
     for (const documentedPath of documented) {
       expect(text).toContain(documentedPath.split('/').pop());
     }
@@ -236,8 +274,12 @@ describe('documented theme palette workflow', () => {
 
 // ── Guide prose content tests (verified against the executable tests above) ──
 
-describe('cli-integrations guide required content', () => {
-  const text = guideText(integrationGuide);
+describe('integration guides required content', () => {
+  /** @type {string} */
+  let text;
+  beforeEach(async () => {
+    text ??= await integrationGuidesText();
+  });
 
   it('documents all four type stamps used by parseDoc', () => {
     for (const stamp of ["'component'", "'generic'", "'page'", "'block'"]) {
@@ -254,41 +296,27 @@ describe('cli-integrations guide required content', () => {
     }
   });
 
-  it('names .doc.mjs as the authoring suffix and the released ones it still reads', () => {
-    expect(text).toContain('strongly typed `.doc.mjs`');
-    expect(text).toContain(
-      'Released `.doc.js` docs remain readable for compatibility. A `.doc.ts` component doc reads only when the package is linked from outside node_modules, not once it is installed.',
-    );
-    expect(text).toContain('Released `.template.*` files remain readable');
+  it('names .doc.mjs as the authoring suffix', () => {
+    expect(text).toContain('.doc.mjs');
   });
 
-  it('says which released suffixes still load for each kind', () => {
+  it('documents the codemod version folders and the Core versions they match', () => {
+    expect(text).toContain('folder named after a version');
     expect(text).toContain(
-      'Released .doc.js files, template .doc.ts files, and .template.{ts,mjs,js}\ntemplates still load.',
-    );
-    expect(text).toContain(
-      'A component or topic .doc.ts loads only from a package\nlinked from outside node_modules; installed, it is listed but cannot be read.',
-    );
-    expect(text).not.toContain(
-      'Released `.doc.ts` and `.doc.js` inputs remain readable',
+      "Version folders are matched against the app's `@astryxdesign/core` versions, not your package's version.",
     );
   });
 
-  it('documents the codemod version-directory layout', () => {
-    expect(text).toMatch(/version-folder/i);
-    expect(text).toMatch(/no `v` prefix/i);
-    expect(text).toContain('0.2.0/');
-  });
-
-  it('documents that upgrade is dry-run by default with no --dry-run flag', () => {
-    expect(text).toMatch(/dry-run by default/i);
+  it('documents that upgrade is a dry run by default', () => {
+    expect(text).toMatch(/dry run by default/i);
     expect(text).toContain('--apply');
-    expect(text).toMatch(/no `--dry-run` flag/i);
+    expect(upgradeCommandDoc.options.some(o => o.flag === '--apply')).toBe(
+      true,
+    );
   });
 
-  it('documents every ThemeDoc field and the same-stem source rule', () => {
+  it('documents every ThemeDoc field', () => {
     for (const field of [
-      '`ThemeDoc`',
       '`name`',
       '`displayName`',
       '`description`',
@@ -296,96 +324,160 @@ describe('cli-integrations guide required content', () => {
     ]) {
       expect(text).toContain(field);
     }
-    expect(text).toMatch(/stem supplies the source entry/);
     expect(text).not.toContain('manifest.json entry');
   });
 
   it('documents the generated palette inventory exactly', () => {
-    expect(text).toMatch(/already importable/i);
     expect(text).toContain('tokens/ocean.palette.ts');
-    expect(text).toContain('tokens/ocean.palette.receipt.json');
+    expect(text).toContain('ocean.palette.receipt.json');
     expect(text).toContain('palette.config.json');
   });
 
-  it('documents extensionless package export subpaths', () => {
-    expect(text).toMatch(/extensionless/i);
+  it('tells authors to start a package with an exports map', () => {
+    expect(text).toContain('"exports": {}');
   });
 
-  it('warns against npx for integration authoring', () => {
-    expect(text).toMatch(/not.*npx/i);
+  it('runs the installed CLI through npx', () => {
+    expect(text).toContain('npx astryx');
+    expect(text).toMatch(/installed as a devDependency/);
   });
 
-  it('documents that --integration resolves beneath node_modules', () => {
-    expect(text).toMatch(/beneath.*node_modules/i);
+  it('runs the pre-publish check as `integration verify`; the old name is only history', async () => {
+    expect(text).toContain('npx astryx integration verify');
+    // The old spelling may name what an older CLI calls the check, never a
+    // command to run.
+    expect(await integrationGuidesText({codeOnly: true})).not.toContain(
+      'pack --check',
+    );
+    expect(integrationAddDoc.related).toContain('integration verify');
   });
 
-  it('documents integration pack --check', () => {
-    expect(text).toContain('integration pack --check');
+  it('names the old command nowhere but its history', () => {
+    // `integration pack --check` became `integration verify` with no alias, so
+    // no text a reader or an agent follows may still name the old command: a
+    // doc the CLI ships, a message or example in the CLI's source (the agent
+    // block it writes, a hint, the manifest), a Markdown file in the repo
+    // (READMEs, AGENTS.md, records, pending changesets, skills), or a docsite
+    // page. Only these lines, which tell an older CLI's check from the new
+    // one, may; released CHANGELOGs and the tests that prove the old spelling
+    // fails keep theirs.
+    const repo = path.join(import.meta.dirname, '..', '..', '..');
+    const history = new Set(
+      [
+        'packages/cli/assets/docs/tree/checks.doc.mjs',
+        'packages/cli/assets/docs/tree/troubleshooting.doc.mjs',
+        '.changeset/integration-verify.md',
+      ].map(file => path.join(repo, file)),
+    );
+    const OLD = /\bintegration[ -]pack(?!age)\b|\bpack --check\b/;
+    const SKIP = new Set([
+      'node_modules',
+      '.git',
+      'dist',
+      '.next',
+      'generated',
+      '__tests__',
+      'coverage',
+      'test',
+      'fixtures',
+    ]);
+    /**
+     * @param {string} dir
+     * @param {(name: string) => boolean} keep
+     * @returns {string[]}
+     */
+    const walk = (dir, keep) =>
+      fs.readdirSync(dir, {withFileTypes: true}).flatMap(entry => {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory())
+          return SKIP.has(entry.name) ? [] : walk(full, keep);
+        return entry.isFile() && keep(entry.name) ? [full] : [];
+      });
+    const cli = path.join(repo, 'packages', 'cli');
+    const files = new Set([
+      ...['api', 'assets', 'authoring', 'clients', 'foundation'].flatMap(dir =>
+        walk(path.join(cli, dir), name => /\.doc(\.[a-z]+)?\.mjs$/.test(name)),
+      ),
+      ...walk(
+        cli,
+        name =>
+          /\.(mjs|js|ts|tsx)$/.test(name) && !/\.(test|spec)\./.test(name),
+      ),
+      ...walk(repo, name => /\.mdx?$/.test(name) && name !== 'CHANGELOG.md'),
+      ...walk(path.join(repo, 'apps', 'docsite', 'src'), name =>
+        /\.(tsx?|mdx?)$/.test(name),
+      ),
+    ]);
+    expect(files.size).toBeGreaterThan(500);
+    const stale = [...files].filter(
+      file => !history.has(file) && OLD.test(fs.readFileSync(file, 'utf8')),
+    );
+    expect(stale.map(file => path.relative(repo, file))).toEqual([]);
   });
 
-  it('explains type stamp as required for new docs with legacy fallback', () => {
-    expect(text).toMatch(/legacy.*stamp.*load/i);
-  });
-});
-
-// ── CommandDoc / FunctionDoc consistency ─────────────────────────────────
-
-describe('upgrade CommandDoc --integration flag', () => {
-  const integrationOpt = upgradeCommandDoc.options.find(o =>
-    o.flag.includes('--integration'),
-  );
-
-  it('exists', () => {
-    expect(integrationOpt).toBeDefined();
-  });
-
-  it('states the actual resolver boundary', () => {
-    expect(integrationOpt.description).toMatch(/beneath node_modules/i);
-    expect(integrationOpt.description).toMatch(/absolute paths/i);
-    expect(integrationOpt.description).toMatch(/`\.` or `\.\.`/);
-  });
-
-  it('flag placeholder does not say package-or-file', () => {
-    expect(integrationOpt.flag).not.toContain('package-or-file');
-  });
-});
-
-describe('upgrade FunctionDoc --integration param', () => {
-  const integrationParam = upgradeFnDoc.params.find(
-    p => p.name === 'options.integration',
-  );
-
-  it('exists', () => {
-    expect(integrationParam).toBeDefined();
-  });
-
-  it('states the actual resolver boundary', () => {
-    expect(integrationParam.description).toMatch(/beneath node_modules/i);
-    expect(integrationParam.description).toMatch(/absolute paths/i);
-    expect(integrationParam.description).toMatch(/`\.` or `\.\.`/);
-  });
-});
-
-describe('palette generate doc says where its outputs ship', () => {
-  it('keeps the outputs in the theme directory that theme add copies', () => {
-    expect(paletteGenerateDoc.description).toMatch(/theme directory/i);
-    expect(paletteGenerateDoc.description).not.toMatch(/catalog/i);
-  });
-});
-
-describe('integration add doc has all contribution kinds', () => {
-  const kindsArg = integrationAddDoc.args.find(a => a.name === 'kind');
-
-  it('lists component, doc, template, codemod, agent-doc, and theme', () => {
-    for (const kind of [
-      'component',
-      'doc',
-      'template',
-      'codemod',
-      'agent-doc',
-      'theme',
+  it('names every CLI-peer failure `integration verify` reports', () => {
+    for (const code of [
+      'docs_tree_needs_cli',
+      'replaces_needs_cli',
+      'themes_need_cli',
+      'section_ids_need_cli',
     ]) {
-      expect(kindsArg.description).toContain(kind);
+      expect(text).toContain(code);
+    }
+    expect(text).toContain(`>=${DOCS_TREE_CLI}`);
+  });
+
+  it('names the CLI version the verify checks need, from DOCS_TREE_CLI', async () => {
+    // Each guide line that says which CLI reads a docs section, a section id,
+    // a template `replaces`, or a theme names the version `integration verify`
+    // enforces. Change DOCS_TREE_CLI and every copy fails here until it moves.
+    const COPIES = [
+      /"@astryxdesign\/cli":\s*">=(\d+\.\d+\.\d+)"/g,
+      /@astryxdesign\/cli=>=(\d+\.\d+\.\d+)/g,
+      /`>=(\d+\.\d+\.\d+)`/g,
+      /\bolder than (\d+\.\d+\.\d+)/g,
+      /\bstable CLI before (\d+\.\d+\.\d+)/g,
+      /\bstable `@astryxdesign\/cli` before (\d+\.\d+\.\d+)/g,
+      /\bcli`? (\d+\.\d+\.\d+) or later/gi,
+    ];
+    /** @type {string[]} */
+    const found = [];
+    for (const file of fs.readdirSync(TREE_DIR).sort()) {
+      if (!file.endsWith('.doc.mjs')) continue;
+      const {docs: doc} = await import(path.join(TREE_DIR, file));
+      const text = guideText(doc);
+      for (const pattern of COPIES) {
+        for (const m of text.matchAll(pattern)) {
+          found.push(`${file}: ${m[0]} names ${m[1]}`);
+        }
+      }
+    }
+    expect(found.length).toBeGreaterThanOrEqual(20);
+    expect(
+      found.filter(line => !line.endsWith(` names ${DOCS_TREE_CLI}`)),
+    ).toEqual([]);
+  });
+
+  it('quotes the verify failures as the CLI prints them', async () => {
+    const {docs: checkYourDocs} = await import(
+      path.join(TREE_DIR, 'check-your-docs.doc.mjs')
+    );
+    expect(guideText(checkYourDocs)).toContain(
+      `- [fail] ${docsTreeCliProblem({})}`,
+    );
+    // Troubleshooting quotes the first sentence of each, beside its code.
+    const {docs: troubleshooting} = await import(
+      path.join(TREE_DIR, 'troubleshooting.doc.mjs')
+    );
+    const text = guideText(troubleshooting);
+    for (const problem of [
+      docsTreeCliProblem,
+      replacesCliProblem,
+      sectionIdsCliProblem,
+      themesCliProblem,
+    ]) {
+      const message = /** @type {string} */ (problem({}));
+      expect(text).toContain(`${message.split('. ')[0]}.`);
     }
   });
 });

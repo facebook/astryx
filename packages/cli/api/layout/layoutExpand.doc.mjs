@@ -14,10 +14,10 @@ export const doc = {
   name: 'layoutExpand',
   namespace: 'cli/api',
   displayName: 'layoutExpand()',
-  summary: 'Expand a validated layout expression into XDS TSX.',
+  summary: 'Expand a validated layout expression into Astryx TSX.',
   description:
     'The generator behind `astryx layout expand`. Parses and validates a compressed XLE/XLO ' +
-    'expression, then expands it into ready-to-use XDS TSX, auto-routing structural children ' +
+    'expression, then expands it into ready-to-use Astryx TSX, auto-routing structural children ' +
     'into the right slots, scaffolding typed useState for interactive controls, and splicing or ' +
     'importing any referenced template blocks. Returns the code (and metadata) in a layout.expand ' +
     'envelope, optionally writing it to a path within cwd.',
@@ -64,6 +64,7 @@ export const doc = {
       type: 'string',
       description:
         'Directory the block catalog, registry, and target path resolve against.',
+      default: 'process.cwd()',
     },
   ],
   returns: [

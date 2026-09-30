@@ -20,7 +20,7 @@ export const doc = {
     'Routes on its arguments: a name resolves that component across core and ' +
     'integration packages and returns its authored ComponentDoc plus ownership ' +
     'metadata; no name (or `list`/`category`) returns the catalog grouped by ' +
-    'category. Boolean flags narrow a single component to just its props, ' +
+    'component group. Boolean flags narrow a single component to just its props, ' +
     'source, showcase, or example blocks.',
   importPath: '@astryxdesign/cli/api',
   signature:
@@ -45,6 +45,7 @@ export const doc = {
       name: 'options.cwd',
       type: 'string',
       description: 'Directory to resolve @astryxdesign/core from.',
+      default: 'process.cwd()',
     },
     {
       name: 'options.list',
@@ -54,13 +55,14 @@ export const doc = {
     {
       name: 'options.category',
       type: 'string',
-      description: 'List only components in this category.',
+      description:
+        "List only the components in this group: a key of the unfiltered list (each component's group field), such as 'Layout' or 'Button'. It is not the category field of a component detail.",
     },
     {
       name: 'options.package',
       type: 'string',
       description:
-        "Scope lookup to a specific external package (e.g. '@acme/xds-widgets').",
+        "Scope lookup to a specific external package (e.g. '@acme/widgets').",
     },
     {
       name: 'options.props',
@@ -87,7 +89,8 @@ export const doc = {
       name: 'options.detail',
       type: "'full' | 'compact' | 'brief'",
       description: 'Detail level for list views.',
-      default: "'full' for a named component, 'brief' for list views",
+      default:
+        "'full' for a named component; 'brief' for lists (returned as data.detail: 'names')",
     },
     {
       name: 'options.lang',
@@ -110,7 +113,7 @@ export const doc = {
     {
       type: 'component.list',
       description:
-        "The catalog grouped by category. data.detail is the level ('names' | 'compact' | 'full') and data.components is the grouped map: names entries with name, package, and an optional canonical import for integration and legacy package components; brief entries; or full ComponentDoc entries.",
+        "The catalog grouped by component group. data.detail is the level ('names' | 'compact' | 'full') and data.components is the grouped map: names entries with name, package, and an optional canonical import for integration and legacy package components; brief entries; or full ComponentDoc entries.",
     },
     {
       type: 'component.detail',
@@ -151,7 +154,7 @@ export const doc = {
     },
     {
       code: 'ERR_UNKNOWN_CATEGORY',
-      when: 'options.category is not a string or matches no known category',
+      when: 'options.category is not a string or matches no component group',
     },
     {
       code: 'ERR_UNKNOWN_COMPONENT',
@@ -159,11 +162,15 @@ export const doc = {
     },
     {
       code: 'ERR_UNKNOWN_PACKAGE',
-      when: 'options.package names a legacy external package that cannot be found',
+      when: 'a name is given and options.package matches no loaded integration and no installed external package',
     },
     {
       code: 'ERR_NO_DOC',
       when: 'the resolved component has no .doc.mjs typed doc file',
+    },
+    {
+      code: 'ERR_INVALID_DOC',
+      when: "the resolved component's .doc.mjs fails to load or validate",
     },
     {
       code: 'ERR_NO_SOURCE',
@@ -181,8 +188,8 @@ export const doc = {
     },
     {label: 'Props only', code: "await component('Button', {props: true});"},
     {
-      label: 'Browse a category',
-      code: "await component(undefined, {category: 'Form', detail: 'compact'});",
+      label: 'Browse one group',
+      code: "await component(undefined, {category: 'Layout', detail: 'compact'});",
     },
   ],
   command: 'component',

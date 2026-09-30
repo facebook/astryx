@@ -158,7 +158,7 @@ and remains available through explicit Core package selection.
   same installed package in place, preserving its configured order while making
   working bytes authoritative.
 - **INV17 — Pack verification examines the artifact consumers receive.**
-  `integration pack --check` runs the package lifecycle through `npm pack`,
+  `integration verify` runs the package lifecycle through `npm pack`,
   compares the required file inventory with the actual tarball, extracts that
   tarball into a scratch consumer, and reruns contribution discovery. It rejects
   advertised component imports ending in `.ts` or `.tsx`, resolves every exact
@@ -281,7 +281,7 @@ updated in the same pull request when it moves an invariant:
   or JSON (INV27);
 - changing an integration writer's receipt, no-clobber/rollback behavior,
   package.json mutation policy, or public subpath spelling;
-- changing what `integration pack --check` executes, resolves, or proves about
+- changing what `integration verify` executes, resolves, or proves about
   the tarball;
 - changing local, configured, or autolinked integration precedence;
 - changing an integration item descriptor, the theme directory boundary, or the consumer copy contract.
