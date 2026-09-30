@@ -102,6 +102,8 @@ interface SensorResult {
 
 interface ContrastPair {
   part: string;
+  /** The component or caller that owns the painted part. */
+  owner: string;
   meaningful: boolean;
   foreground: string;
   backdrop: string;
@@ -565,6 +567,7 @@ function css(color: Rgba | null): string {
 
 function pair(
   part: string,
+  owner: string,
   front: Rgba | null,
   back: Rgba | null,
   threshold: number | null,
@@ -574,6 +577,7 @@ function pair(
   const meaningful = threshold != null && exception == null;
   return {
     part,
+    owner,
     meaningful,
     foreground: css(front),
     backdrop: css(back),
@@ -896,6 +900,17 @@ async function readPage(page: Page, auditCase: AuditCase) {
           : null;
         return (own?.textContent ?? '').replace(/\s+/g, ' ').trim();
       };
+      const effectiveOpacity = (element: Element) => {
+        let opacity = 1;
+        for (
+          let node: Element | null = element;
+          node != null;
+          node = node.parentElement
+        ) {
+          opacity *= Number(getComputedStyle(node).opacity);
+        }
+        return opacity;
+      };
       const outlineOf = (element: Element) => {
         const style = getComputedStyle(element);
         const width = Number.parseFloat(style.outlineWidth);
@@ -903,6 +918,7 @@ async function readPage(page: Page, auditCase: AuditCase) {
           ? {
               className: element.getAttribute('class') ?? '',
               tag: element.tagName,
+              opacity: effectiveOpacity(element),
               color: parse(style.outlineColor),
               width,
               offset: Number.parseFloat(style.outlineOffset),
@@ -1187,18 +1203,47 @@ async function readPage(page: Page, auditCase: AuditCase) {
 
 type PageRead = Awaited<ReturnType<typeof readPage>>;
 
+const INACTIVE = 'WCAG 1.4.3/1.4.11 inactive user interface component';
+
+/** Focus rings that actually paint; an outline on an opacity:0 input does not. */
+function paintedFocusIndicators(actual: PageRead) {
+  return actual.focusIndicators.filter(
+    (indicator): indicator is NonNullable<typeof indicator> =>
+      indicator != null && indicator.opacity > 0,
+  );
+}
+
+function focusOwner(tag: string): string {
+  return tag === 'LI'
+    ? 'component:Item (row focus-within ring)'
+    : tag === 'SPAN'
+      ? 'component:CheckboxInput (indicator ring)'
+      : `unexpected ${tag}`;
+}
+
 function contrastPairs(actual: PageRead, auditCase: AuditCase): ContrastPair[] {
   const pairs: ContrastPair[] = [];
   if (auditCase.forcedColors) {
     return pairs;
   }
+  // A group whose every option is disabled is an inactive component; its
+  // label and description carry the same WCAG exception as the options.
+  const groupInactive =
+    actual.rows.length > 0 &&
+    actual.rows.every(
+      row => row.disabled === 'native' || row.disabled === 'focusable',
+    )
+      ? `${INACTIVE} (every option in the group is disabled)`
+      : null;
   if (actual.groupLabelPaint != null && actual.groupLabelVisible) {
     pairs.push(
       pair(
         'group label',
+        'component:Field',
         actual.groupLabelPaint.color,
         actual.groupLabelPaint.backdrop,
         4.5,
+        groupInactive,
       ),
     );
   }
@@ -1206,21 +1251,24 @@ function contrastPairs(actual: PageRead, auditCase: AuditCase): ContrastPair[] {
     pairs.push(
       pair(
         'group description',
+        'component:Field',
         actual.descriptionPaint.color,
         actual.descriptionPaint.backdrop,
         4.5,
+        groupInactive,
       ),
     );
   }
   for (const row of actual.rows) {
     const inactive =
       row.disabled === 'native' || row.disabled === 'focusable'
-        ? 'WCAG 1.4.3/1.4.11 inactive user interface component'
+        ? INACTIVE
         : null;
     const prefix = `row ${row.index + 1}`;
     pairs.push(
       pair(
         `${prefix} label`,
+        'component:Item',
         row.paint.label,
         row.paint.labelBackdrop,
         4.5,
@@ -1231,6 +1279,7 @@ function contrastPairs(actual: PageRead, auditCase: AuditCase): ContrastPair[] {
       pairs.push(
         pair(
           `${prefix} description`,
+          'component:Item',
           row.paint.description,
           row.paint.descriptionBackdrop,
           4.5,
@@ -1241,7 +1290,8 @@ function contrastPairs(actual: PageRead, auditCase: AuditCase): ContrastPair[] {
     if (row.paint.endText != null) {
       pairs.push(
         pair(
-          `${prefix} end content (caller-supplied story fixture)`,
+          `${prefix} end content`,
+          'caller (story fixture)',
           row.paint.endText,
           row.paint.endBackdrop,
           4.5,
@@ -1253,6 +1303,7 @@ function contrastPairs(actual: PageRead, auditCase: AuditCase): ContrastPair[] {
       pairs.push(
         pair(
           `${prefix} checkbox boundary`,
+          'component:CheckboxIndicator',
           row.paint.indicatorBorder,
           row.paint.indicatorBackdrop,
           3,
@@ -1264,6 +1315,7 @@ function contrastPairs(actual: PageRead, auditCase: AuditCase): ContrastPair[] {
       pairs.push(
         pair(
           `${prefix} checkbox fill`,
+          'component:CheckboxIndicator',
           row.paint.indicatorFill,
           row.paint.indicatorBackdrop,
           3,
@@ -1276,7 +1328,16 @@ function contrastPairs(actual: PageRead, auditCase: AuditCase): ContrastPair[] {
           : row.paint.indicatorFill;
       const mark = row.checked === 'mixed' ? row.paint.dash : row.paint.check;
       if (!row.spinner) {
-        pairs.push(pair(`${prefix} check mark`, mark, fill, 3, inactive));
+        pairs.push(
+          pair(
+            `${prefix} check mark`,
+            'component:CheckboxIndicator',
+            mark,
+            fill,
+            3,
+            inactive,
+          ),
+        );
       }
     }
     if (row.spinner && row.paint.spinner != null) {
@@ -1285,13 +1346,21 @@ function contrastPairs(actual: PageRead, auditCase: AuditCase): ContrastPair[] {
           ? composite(row.paint.indicatorFill, row.paint.indicatorBackdrop)
           : row.paint.indicatorBackdrop;
       pairs.push(
-        pair(`${prefix} busy spinner`, row.paint.spinner, surface, 3, inactive),
+        pair(
+          `${prefix} busy spinner`,
+          'component:Spinner',
+          row.paint.spinner,
+          surface,
+          3,
+          inactive,
+        ),
       );
     }
-    if (row.paint.rowBackdrop != null && row.checked === true) {
+    if (row.checked === true) {
       pairs.push(
         pair(
           `${prefix} checked-row fill`,
+          'component:CheckboxList',
           row.paint.rowBackdrop,
           actual.surface,
           null,
@@ -1302,12 +1371,19 @@ function contrastPairs(actual: PageRead, auditCase: AuditCase): ContrastPair[] {
   }
   if (actual.status != null) {
     pairs.push(
-      pair('status message', actual.status.color, actual.status.backdrop, 4.5),
+      pair(
+        'status message',
+        'component:FieldStatus',
+        actual.status.color,
+        actual.status.backdrop,
+        4.5,
+      ),
     );
     if (actual.status.iconColor != null) {
       pairs.push(
         pair(
           'status icon',
+          'component:FieldStatus',
           actual.status.iconColor,
           actual.status.backdrop,
           null,
@@ -1320,23 +1396,23 @@ function contrastPairs(actual: PageRead, auditCase: AuditCase): ContrastPair[] {
     pairs.push(
       pair(
         'disabled-reason tooltip text',
+        'Tooltip',
         actual.tooltip.color,
         actual.tooltip.backdrop,
         4.5,
       ),
     );
   }
-  actual.focusIndicators.forEach((indicator, index) => {
-    if (indicator != null) {
-      pairs.push(
-        pair(
-          `focus indicator ${index + 1} (${indicator.tag})`,
-          indicator.color,
-          indicator.backdrop,
-          3,
-        ),
-      );
-    }
+  paintedFocusIndicators(actual).forEach((indicator, index) => {
+    pairs.push(
+      pair(
+        `focus indicator ${index + 1} (${indicator.tag})`,
+        focusOwner(indicator.tag),
+        indicator.color,
+        indicator.backdrop,
+        3,
+      ),
+    );
   });
   return pairs;
 }
@@ -1658,17 +1734,23 @@ async function capture(browser: Browser, auditCase: AuditCase, mode: Mode) {
       sensors,
       contrastPairs: pairs,
       measurements: {
-        focusIndicators: actual.focusIndicators.map(indicator =>
-          indicator == null
-            ? null
-            : {
-                tag: indicator.tag,
-                className: indicator.className,
-                color: css(indicator.color),
-                width: indicator.width,
-                offset: indicator.offset,
-              },
+        // Painted rings only; an outline on the opacity:0 native input is
+        // listed separately because it never reaches the screen.
+        paintedFocusIndicators: paintedFocusIndicators(actual).map(
+          indicator => ({
+            tag: indicator.tag,
+            owner: focusOwner(indicator.tag),
+            color: css(indicator.color),
+            width: indicator.width,
+            offset: indicator.offset,
+          }),
         ),
+        unpaintedOutlines: actual.focusIndicators
+          .filter(indicator => indicator != null && indicator.opacity === 0)
+          .map(indicator => ({
+            tag: indicator?.tag,
+            opacity: indicator?.opacity,
+          })),
         groupDescribedBy: actual.groupDescribedBy,
         describedTexts: actual.describedTexts,
         rows: actual.rows.map(candidate => ({
