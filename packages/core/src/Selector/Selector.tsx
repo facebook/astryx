@@ -6,7 +6,7 @@
  * @file Selector.tsx
  * @input Uses React, StyleX, adaptive selection surfaces, theme-resolved
  *   indicators, Field, and InputGroup context
- * @output Exports Selector with content-derived option-mark layout
+ * @output Exports Selector with content-derived option-mark layout and token-sized single-line triggers
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update:
@@ -113,13 +113,10 @@ const styles = stylex.create({
         '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-label-size']})`,
       },
     },
-    // A FIXED line box, not the ratio: the trigger's padding is derived from
-    // one line being `--spacing-5` tall, and a ratio makes the line box track
-    // the font — which the coarse-pointer bump above (and any theme that
-    // changes `--font-size-base`) then moves, taking the control off its size
-    // token. The glyphs still grow for touch; only the box they sit in is
-    // pinned. Item's own rows set their line heights and are unaffected.
-    lineHeight: spacingVars['--spacing-5'],
+    // Keep the line box and padding in step, including the 20px clear
+    // control and 1rem icons when the spacing scale is compact. A fixed
+    // length also keeps the iOS font floor from changing trigger height.
+    lineHeight: `max(${spacingVars['--spacing-5']}, 20px, 1rem)`,
     color: colorVars['--color-text-primary'],
     cursor: {
       default: 'pointer',
@@ -409,9 +406,8 @@ const styles = stylex.create({
 // and inputs beside it. No prop picks the height — the content does, and it
 // can only land on the grid.
 //
-// `--spacing-5` is one line here because `triggerContainer` pins its
-// line-height to exactly that; the two must stay in step, which is why both
-// read the same token rather than one hardcoding 20px.
+// Match triggerContainer's line box, which also accommodates the fixed-size
+// clear control and icons independently of the theme's spacing scale.
 // Keep these calculations inline: a consumer's Babel preset can lower a
 // module-scope helper to a function expression before StyleX evaluates this
 // object, and StyleX cannot constant-evaluate that transformed helper.
@@ -419,15 +415,15 @@ const styles = stylex.create({
 const sizeStyles = stylex.create({
   sm: {
     minHeight: sizeVars['--size-element-sm'],
-    paddingBlock: `calc((${sizeVars['--size-element-sm']} - ${spacingVars['--spacing-5']} - 2 * ${borderVars['--border-width']}) / 2)`,
+    paddingBlock: `calc((${sizeVars['--size-element-sm']} - max(${spacingVars['--spacing-5']}, 20px, 1rem) - 2 * ${borderVars['--border-width']}) / 2)`,
   },
   md: {
     minHeight: sizeVars['--size-element-md'],
-    paddingBlock: `calc((${sizeVars['--size-element-md']} - ${spacingVars['--spacing-5']} - 2 * ${borderVars['--border-width']}) / 2)`,
+    paddingBlock: `calc((${sizeVars['--size-element-md']} - max(${spacingVars['--spacing-5']}, 20px, 1rem) - 2 * ${borderVars['--border-width']}) / 2)`,
   },
   lg: {
     minHeight: sizeVars['--size-element-lg'],
-    paddingBlock: `calc((${sizeVars['--size-element-lg']} - ${spacingVars['--spacing-5']} - 2 * ${borderVars['--border-width']}) / 2)`,
+    paddingBlock: `calc((${sizeVars['--size-element-lg']} - max(${spacingVars['--spacing-5']}, 20px, 1rem) - 2 * ${borderVars['--border-width']}) / 2)`,
   },
 });
 

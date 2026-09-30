@@ -39,6 +39,16 @@ const port = Number(getArg('port') || 6010);
 // whole cost of promoting its play function into required CI.
 const TARGETS = [
   {
+    component: 'Selector',
+    story: 'core-selector--size-variants',
+    guards: 'compact trigger variants match their size tokens and multiline values grow',
+  },
+  {
+    component: 'MultiSelector',
+    story: 'core-multiselector--sizes',
+    guards: 'compact trigger variants match their size tokens',
+  },
+  {
     component: 'ChartTooltip',
     story: 'charts-chrome-tooltip--modal-layering',
     guards:
