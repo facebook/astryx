@@ -882,6 +882,9 @@ importers:
       '@types/babel__core':
         specifier: ^7.20.5
         version: 7.20.5
+      tailwindcss:
+        specifier: ^4.3.2
+        version: 4.3.2
 
   packages/lab:
     dependencies:
