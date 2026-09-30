@@ -15,7 +15,10 @@
  */
 
 import {getCliInvocation} from '../../foundation/env/package-manager.mjs';
-import {packageDocsProblems} from '../docs/_adapter.mjs';
+import {
+  packageDocsProblems,
+  packageReferenceProblems,
+} from '../docs/_adapter.mjs';
 import {findCoreDir} from '../../foundation/fs/paths.mjs';
 import {
   discoverIntegrationComponents,
@@ -370,6 +373,16 @@ export async function integrationDocConflicts(pkg, options = {}) {
       discovered,
     )) {
       issues.push({code: 'invalid_doc_graph', severity: 'warning', message});
+    }
+
+    // A reference block includes content rather than linking to it, so one
+    // that cannot include what it names loses that content for every reader:
+    // an error, where a link that names no doc still prints as written.
+    for (const message of await packageReferenceProblems(
+      /** @type {{name: string}} */ (resolved.integration),
+      discovered,
+    )) {
+      issues.push({code: 'invalid_doc_reference', severity: 'error', message});
     }
   }
 

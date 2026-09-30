@@ -71,9 +71,11 @@ export function indexView(node) {
 }
 
 /**
- * `docs.detail.section`: one section with its token references inlined. A
- * referenced section's content takes the reference's place; the section takes
- * the preview type of the last reference that has one, unless it has its own.
+ * `docs.detail.section`: one section with its token references and reference
+ * blocks inlined, so a read returns only the stable block kinds. A referenced
+ * section's content takes the token reference's place; the section takes the
+ * preview type of the last reference that has one, unless it has its own. A
+ * reference block becomes the content it includes (see referenceView).
  * @param {import('./compile.mjs').CompiledReferenceNode} node
  * @param {any} section a linked section of `node`
  * @returns {any}
@@ -84,6 +86,10 @@ export function sectionView(node, section) {
   /** @type {string | null} */
   let previewType = null;
   for (const block of section.content) {
+    if (block?.type === 'reference') {
+      content.push(...referenceView(node, block));
+      continue;
+    }
     if (block?.type !== 'token-ref') {
       content.push(structuredClone(block));
       continue;
@@ -125,4 +131,43 @@ export function sectionView(node, section) {
   );
   view.content = content;
   return withSourceTitle(view, authoredTitle(node, section));
+}
+
+/**
+ * A reference block as a read shows it (spec:AST-047 FR9): the content it
+ * includes, then where that content comes from and the command that opens it.
+ * A reference that includes nothing (a summary, or a doc that is not included
+ * whole) shows the doc's title and summary; one whose doc is missing says so
+ * where its content would be, as a token reference does.
+ * @param {import('./compile.mjs').CompiledReferenceNode} node
+ * @param {any} block a linked reference block
+ * @returns {any[]}
+ */
+function referenceView(node, block) {
+  if (!('link' in block)) {
+    throw new Error(
+      `The reference to "${block.target}" in "${node.id}" was read before it was linked.`,
+    );
+  }
+  const link = block.link;
+  if (link == null) {
+    return [
+      {type: 'prose', text: `[reference: "${block.target}" names no doc]`},
+    ];
+  }
+  const included = (block.content ?? []).map((/** @type {any} */ each) =>
+    structuredClone(each),
+  );
+  if (included.length === 0) {
+    const summary = String(link.summary ?? '').trim();
+    const lead =
+      summary === ''
+        ? link.title
+        : `${link.title}: ${summary}${/[.!?]$/.test(summary) ? '' : '.'}`;
+    return [{type: 'prose', text: `${lead} Read it with \`${link.command}\`.`}];
+  }
+  return [
+    ...included,
+    {type: 'prose', text: `From ${link.title}: \`${link.command}\``},
+  ];
 }

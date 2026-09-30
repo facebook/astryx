@@ -82,15 +82,20 @@ describe('what the authoring docs say about the docs tree', () => {
     expect(graphFieldsDoc.description).toMatch(/not built yet/);
   });
 
-  it('keeps graph blocks behind the separate GraphContentBlock type', () => {
+  it('keeps graph blocks behind the separate GraphContentBlock type, and a section takes a reference block', () => {
     const content = referenceDoc.fields
       .flatMap(field => [field, ...(field.fields ?? [])])
       .find(field => field.name === 'sections[].content');
-    expect(content.type).toBe('ReferenceContentBlock[]');
+    expect(content.type).toBe('(ReferenceContentBlock | ReferenceDocBlock)[]');
     expect(content.description).toContain('GraphContentBlock');
     for (const type of GRAPH_BLOCK_TYPES) {
       expect(content.description).toContain(type);
     }
+    // A section's reference block reads as the doc it includes.
+    expect(GRAPH_BLOCK_TYPES.has('reference')).toBe(false);
+    expect(content.description).toMatch(
+      /A `reference` block .* includes another doc/,
+    );
   });
 
   it('says where namespace docs live: the CLI tree, and each integration', () => {

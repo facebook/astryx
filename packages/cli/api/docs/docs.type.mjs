@@ -56,15 +56,31 @@
  * astryx --json docs <topic>
  * @typedef {object} DocsDetailResponse
  * @property {'docs.detail'} type
- * @property {import('@astryxdesign/cli/authoring').ReferenceDoc & {links: DocsLinks}} data
+ * @property {DocsReadDoc & {links: DocsLinks}} data
  *   the whole doc, and the moves from it
  */
 
 /**
+ * A topic section as a read returns it. A read inlines each token reference
+ * and each `reference` block the author wrote, so its content holds only the
+ * stable ReferenceContentBlock kinds.
+ * @typedef {Omit<import('@astryxdesign/cli/authoring').ReferenceSection, 'content'>
+ *   & {content: import('@astryxdesign/cli/authoring').ReferenceContentBlock[]}} DocsReadSection
+ */
+
+/**
+ * A topic as a read returns it: every section a {@link DocsReadSection}.
+ * @typedef {Omit<import('@astryxdesign/cli/authoring').ReferenceDoc, 'sections'>
+ *   & {sections: DocsReadSection[]}} DocsReadDoc
+ */
+
+/**
  * The doc a link opens (spec:AST-047 FR9). A docs read resolves every link:
- * an inline `{@link <target>}` reads as `link.command`, a `reference` block
- * carries `link` (null when the target names no doc), and each `workflow` step
- * carries `links`, one per reference.
+ * an inline `{@link <target>}` reads as `link.command`, a `reference` block in
+ * a namespace doc carries `link` (null when the target names no doc), and each
+ * `workflow` step carries `links`, one per reference. A topic read inlines a
+ * section's `reference` block as the doc it includes, then a line naming where
+ * that comes from and the command that opens it.
  * @typedef {import('../../foundation/doc-compiler/links.mjs').DocLink} DocLink
  */
 
@@ -110,7 +126,7 @@
  * astryx --json docs <topic> <section>
  * @typedef {object} DocsDetailSectionResponse
  * @property {'docs.detail.section'} type
- * @property {import('@astryxdesign/cli/authoring').ReferenceSection & {links: DocsLinks}} data
+ * @property {DocsReadSection & {links: DocsLinks}} data
  *   the section, and the moves from it: up to its topic's index, and across to
  *   the sections before and after it
  */

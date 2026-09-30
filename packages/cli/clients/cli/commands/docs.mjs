@@ -115,7 +115,7 @@ function formatBlock(block, detail) {
 }
 
 /**
- * @param {import('@astryxdesign/cli/authoring').ReferenceSection} section
+ * @param {import('../../../api/docs/docs.type.mjs').DocsReadSection} section
  * @param {'full' | 'compact' | 'brief'} detail
  * @returns {string}
  */
@@ -135,7 +135,7 @@ function formatSection(section, detail) {
 }
 
 /**
- * @param {import('@astryxdesign/cli/authoring').ReferenceDoc} docs
+ * @param {import('../../../api/docs/docs.type.mjs').DocsReadDoc} docs
  * @param {'full' | 'compact' | 'brief'} detail
  * @returns {string}
  */
