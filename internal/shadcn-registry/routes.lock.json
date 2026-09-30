@@ -552,6 +552,11 @@
       "aliases": []
     },
     {
+      "name": "component-lab-dialog-hero-header",
+      "path": "components/lab/dialog-hero-header",
+      "aliases": []
+    },
+    {
       "name": "component-lab-drawer",
       "path": "components/lab/drawer",
       "aliases": []
@@ -4223,6 +4228,11 @@
     {
       "name": "showcase-dialog-header-default",
       "path": "showcases/dialog-header/default",
+      "aliases": []
+    },
+    {
+      "name": "showcase-dialog-hero-header-default",
+      "path": "showcases/dialog-hero-header/default",
       "aliases": []
     },
     {
