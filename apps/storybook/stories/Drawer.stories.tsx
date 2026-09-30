@@ -51,12 +51,6 @@ const meta: Meta<typeof Drawer> = {
 export default meta;
 type Story = StoryObj<typeof Drawer>;
 
-const HOSTS = [
-  {id: 'web-01', region: 'us-east-1', status: 'Healthy', cpu: '32%'},
-  {id: 'web-02', region: 'us-east-1', status: 'Healthy', cpu: '41%'},
-  {id: 'worker-01', region: 'eu-west-1', status: 'Degraded', cpu: '87%'},
-];
-
 const REGIONS = ['us-east-1', 'eu-west-1', 'ap-south-1'];
 
 export const Showcase: Story = {
@@ -97,45 +91,30 @@ export const Showcase: Story = {
   },
 };
 
+/**
+ * Non-modal inspector: no scrim, no focus trap, and the page behind stays
+ * interactive. In a real master-detail flow, derive the open state from the
+ * selection (`isOpen={selected != null}`) and clear it in `onOpenChange`.
+ */
 export const RowInspector: Story = {
   render: () => {
-    const [selected, setSelected] = useState(HOSTS[0]);
     const [isOpen, setIsOpen] = useState(false);
     return (
       <>
-        <VStack gap={1}>
-          {HOSTS.map(host => (
-            <Button
-              key={host.id}
-              variant="ghost"
-              label={`${host.id} / ${host.region}`}
-              onClick={() => {
-                setSelected(host);
-                setIsOpen(true);
-              }}
-            />
-          ))}
-        </VStack>
+        <Button label="Open drawer" onClick={() => setIsOpen(true)} />
         <Drawer
           isOpen={isOpen}
           onOpenChange={setIsOpen}
-          label={`Host details: ${selected.id}`}
+          label="Details"
           hasScrim={false}
           width={360}>
           <Section padding={4}>
             <VStack gap={4}>
               <VStack gap={1}>
-                <Heading level={3}>{selected.id}</Heading>
+                <Heading level={3}>Details</Heading>
                 <Text type="supporting" color="secondary">
-                  {selected.region}
+                  The page behind stays interactive.
                 </Text>
-              </VStack>
-              <Divider />
-              <VStack gap={2}>
-                <Text type="label">Status</Text>
-                <Text type="body">{selected.status}</Text>
-                <Text type="label">CPU</Text>
-                <Text type="body">{selected.cpu}</Text>
               </VStack>
               <Button
                 label="Close inspector"
