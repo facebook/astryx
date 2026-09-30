@@ -3,11 +3,13 @@
 /**
  * @file DialogHeroHeader.stories.tsx
  * @input DialogHeroHeader and its Dialog, Layout, Heading, and media composition
- * @output Inline visual states and an interactive modal example
- * @position Storybook coverage for the experimental hero header
+ * @output Inline visual states, an interactive modal example, and a media
+ *   bleed geometry guard across Dialog paddings and RTL
+ * @position Storybook coverage for the experimental hero header; the geometry
+ *   story's play function is required CI via story-play-guard.js
  */
 
-import {useId, useState} from 'react';
+import {useId, useState, type ComponentProps, type CSSProperties} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {DialogHeroHeader} from '@astryxdesign/lab';
 import {Dialog} from '@astryxdesign/core/Dialog';
@@ -327,4 +329,190 @@ export const RightToLeft: Story = {
       </Dialog>
     </div>
   ),
+};
+
+type MediaBleedFixture = {
+  id: string;
+  dir: 'ltr' | 'rtl';
+  padding?: ComponentProps<typeof Dialog>['padding'];
+  /** Public theme property set on an ancestor instead of the `padding` prop. */
+  themePadding?: number;
+};
+
+/**
+ * Representative Dialog paddings: the theme default, the zero and small/large
+ * `padding` steps, a public theme override that is not a spacing step, and the
+ * same large and theme paths under RTL.
+ */
+const MEDIA_BLEED_FIXTURES: MediaBleedFixture[] = [
+  {id: 'theme-default', dir: 'ltr'},
+  {id: 'padding-0', dir: 'ltr', padding: 0},
+  {id: 'padding-2', dir: 'ltr', padding: 2},
+  {id: 'padding-8', dir: 'ltr', padding: 8},
+  {id: 'theme-override', dir: 'ltr', themePadding: 20},
+  {id: 'rtl-padding-8', dir: 'rtl', padding: 8},
+  {id: 'rtl-theme-override', dir: 'rtl', themePadding: 20},
+];
+
+/** Sets Dialog's public theme padding the way a theme would. */
+function themePaddingStyle(
+  padding: number | undefined,
+): (CSSProperties & {'--astryx-dialog-padding': string}) | undefined {
+  if (padding == null) {
+    return undefined;
+  }
+  return {'--astryx-dialog-padding': `${padding}px`};
+}
+
+function assertBleedGeometry(label: string, actual: number, expected: number) {
+  if (Math.abs(actual - expected) > 0.5) {
+    throw new Error(
+      `${label}: expected ${expected.toFixed(2)}px, received ${actual.toFixed(2)}px`,
+    );
+  }
+}
+
+/**
+ * Browser geometry guard for the media's edge compensation, run in CI by
+ * `.github/scripts/story-play-guard.js`. In every fixture the media area must
+ * reach the dialog surface's inline-start, inline-end, and block-start edges
+ * while the title stays inset by the header padding the media cancels. Edges
+ * are measured logically, so the RTL fixtures prove the same contract with
+ * inline-start on the right. Expected insets are read back from the rendered
+ * DOM; only the theme override's declared value is restated.
+ */
+export const MediaBleedGeometry: Story = {
+  render: () => (
+    <div style={{display: 'flex', flexWrap: 'wrap', gap: 24}}>
+      {MEDIA_BLEED_FIXTURES.map(({id, dir, padding, themePadding}) => (
+        <div
+          key={id}
+          dir={dir}
+          data-media-bleed-fixture={id}
+          style={themePaddingStyle(themePadding)}>
+          <Dialog
+            isOpen
+            isInline
+            onOpenChange={() => {}}
+            padding={padding}
+            width={320}
+            data-media-bleed-surface="">
+            <Layout
+              header={
+                <DialogHeroHeader
+                  title={id}
+                  media={<HeroMedia mode="dark" />}
+                  mediaMode="dark"
+                  onOpenChange={() => {}}
+                />
+              }
+              content={
+                <LayoutContent>
+                  <Text type="body">Media bleed fixture</Text>
+                </LayoutContent>
+              }
+            />
+          </Dialog>
+        </div>
+      ))}
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    await document.fonts.ready;
+    await new Promise<void>(resolve =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+
+    const insets = new Map<string, number>();
+    for (const {id, dir, themePadding} of MEDIA_BLEED_FIXTURES) {
+      const fixture = canvasElement.querySelector<HTMLElement>(
+        `[data-media-bleed-fixture="${id}"]`,
+      );
+      const surface = fixture?.querySelector<HTMLElement>(
+        '[data-media-bleed-surface]',
+      );
+      const mediaArea = fixture?.querySelector('svg')?.parentElement;
+      const headerBox = mediaArea?.parentElement;
+      const title = fixture?.querySelector<HTMLElement>('h2');
+      if (!surface || !mediaArea || !headerBox || !title) {
+        throw new Error(`${id}: media bleed fixture did not render`);
+      }
+
+      const surfaceRect = surface.getBoundingClientRect();
+      const fromStart = (x: number) =>
+        dir === 'rtl' ? surfaceRect.right - x : x - surfaceRect.left;
+      const fromEnd = (x: number) =>
+        dir === 'rtl' ? x - surfaceRect.left : surfaceRect.right - x;
+      const startEdge = (rect: DOMRect) =>
+        dir === 'rtl' ? rect.right : rect.left;
+      const endEdge = (rect: DOMRect) =>
+        dir === 'rtl' ? rect.left : rect.right;
+
+      const mediaRect = mediaArea.getBoundingClientRect();
+      const headerRect = headerBox.getBoundingClientRect();
+      const titleRect = title.getBoundingClientRect();
+      const headerStyle = getComputedStyle(headerBox);
+      const inset =
+        fromStart(startEdge(headerRect)) +
+        Number.parseFloat(headerStyle.paddingInlineStart);
+      const endInset =
+        fromEnd(endEdge(headerRect)) +
+        Number.parseFloat(headerStyle.paddingInlineEnd);
+      const blockInset =
+        headerRect.top -
+        surfaceRect.top +
+        Number.parseFloat(headerStyle.paddingBlockStart);
+
+      // The media cancels exactly the padding around it on its three edges.
+      assertBleedGeometry(
+        `${id} media inline-start`,
+        fromStart(startEdge(mediaRect)),
+        0,
+      );
+      assertBleedGeometry(
+        `${id} media inline-end`,
+        fromEnd(endEdge(mediaRect)),
+        0,
+      );
+      assertBleedGeometry(
+        `${id} media block-start`,
+        mediaRect.top - surfaceRect.top,
+        0,
+      );
+      // ...while the title keeps that padding, so the fixture is not vacuous.
+      assertBleedGeometry(
+        `${id} title inline-start`,
+        fromStart(startEdge(titleRect)),
+        inset,
+      );
+      if (
+        id !== 'padding-0' &&
+        (inset <= 0 || endInset <= 0 || blockInset <= 0)
+      ) {
+        throw new Error(
+          `${id}: expected nonzero header padding to cancel, received ${inset}/${endInset}/${blockInset}px`,
+        );
+      }
+      if (themePadding != null) {
+        assertBleedGeometry(`${id} theme inset`, inset, themePadding);
+      }
+      insets.set(id, inset);
+    }
+
+    // Padding steps must actually move the inset the media cancels.
+    const zero = insets.get('padding-0') ?? Number.NaN;
+    const small = insets.get('padding-2') ?? Number.NaN;
+    const large = insets.get('padding-8') ?? Number.NaN;
+    assertBleedGeometry('padding-0 inset', zero, 0);
+    if (!(small > zero && large > small)) {
+      throw new Error(
+        `padding steps did not order the insets: 0=${zero}, 2=${small}, 8=${large}`,
+      );
+    }
+    assertBleedGeometry(
+      'rtl padding-8 mirrors ltr',
+      insets.get('rtl-padding-8') ?? Number.NaN,
+      large,
+    );
+  },
 };
