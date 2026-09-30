@@ -19,13 +19,18 @@ import {dirname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import docsiteConfig from '../astryx.config.mjs';
 import {getTarget} from './resolve-content-root.mjs';
+import {integrationPackagesForTarget} from '../src/lib/integrationTargets.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 const CORE_PKG = resolve(ROOT, '../../packages/core/package.json');
 const OUT = resolve(ROOT, 'src/generated/playground-scope.ts');
-const integrationPackages =
-  getTarget() === 'canary' ? docsiteConfig.integrations : [];
+// Shared with generate-data.mjs so the canary-only admission rule for
+// integration packages cannot drift between the two generators.
+const integrationPackages = integrationPackagesForTarget(
+  getTarget(),
+  docsiteConfig,
+);
 
 const HEADER = `// Copyright (c) Meta Platforms, Inc. and affiliates.
 
@@ -361,6 +366,19 @@ lines.push('  stylex: {default: stylexMock, ...stylexMock},');
 lines.push('  recharts: Recharts,');
 
 // Core entries follow these so Core keeps precedence for unqualified globals.
+//
+// Whole-package admission is deliberate (owner-ratified): every export of a
+// configured integration is available so a NEW integration component needs no
+// scope edits. Each package keeps its own namespace entry, so QUALIFIED
+// imports (`import {Chart} from '@astryxdesign/charts'`) always resolve to
+// their own package. For UNQUALIFIED globals the preview runner iterates this
+// map in insertion order with later-wins (see runner.ts buildGlobalScope), so
+// on shared export names a later-configured integration shadows an earlier
+// one — @astryxdesign/lab and @astryxdesign/charts currently share 14 names
+// (Chart, ChartAxis, ChartGrid, ChartTooltip, ChartLegend, useChart,
+// useChartColors, getChartColors, getChartColorsFromResolver, compactNumber,
+// currency, percent, shortDate, monthYear), which charts wins — and the Core
+// entries below shadow every integration. Covered by playground-scope.test.ts.
 for (const [index, pkg] of integrationPackages.entries()) {
   lines.push(`  '${pkg}': Integration${index},`);
 }

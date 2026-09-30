@@ -30,6 +30,7 @@ import {
   template as queryTemplates,
 } from '@astryxdesign/cli/api';
 import docsiteConfig from '../astryx.config.mjs';
+import {integrationContentEnabled} from '../src/lib/integrationTargets.mjs';
 import {expandWorkspaceDirs} from '../../../scripts/lib/workspace-globs.mjs';
 import {
   buildTypeDefinitionIndex,
@@ -92,7 +93,9 @@ function writeRegistry(filename, content) {
  * published package snapshot and never loads workspace integrations.
  */
 function discoverConfiguredComponentPackages() {
-  if (DOCSITE_TARGET !== 'canary') {
+  // Same gate as generate-scope.mjs (src/lib/integrationTargets.mjs): only the
+  // canary target ever loads workspace integration packages.
+  if (!integrationContentEnabled(DOCSITE_TARGET)) {
     return new Set();
   }
 
@@ -1480,7 +1483,7 @@ async function generateBlockRegistry() {
     });
   }
 
-  if (DOCSITE_TARGET === 'canary') {
+  if (integrationContentEnabled(DOCSITE_TARGET)) {
     const templateList = await queryTemplates(undefined, {
       list: true,
       type: 'block',
