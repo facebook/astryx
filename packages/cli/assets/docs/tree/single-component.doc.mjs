@@ -20,25 +20,6 @@ export const docs = {
     'Write the default component doc: explain when to use the component, document every public prop, and add focused examples.',
   sections: [
     {
-      id: 'treat-the-doc-as-public-api',
-      title: 'Treat the doc as public API',
-      content: [
-        {
-          type: 'prose',
-          text: 'A component\'s `.doc.mjs` is part of the integration\'s public contract, not optional commentary. Astryx uses it for CLI output and search. People and agents use it to decide whether the component fits and how to use it. Its accuracy directly affects whether the integration is discovered and used correctly.',
-        },
-        {
-          type: 'list',
-          style: 'unordered',
-          items: [
-            'Change the source and its `.doc.mjs` together.',
-            'Update the doc whenever the public name, import, behavior, props, defaults, examples, or accessibility requirements change.',
-            '`integration verify` checks the doc shape and packed import, but it cannot prove that the prose still matches the component.',
-          ],
-        },
-      ],
-    },
-    {
       id: 'start-from-the-generated-doc',
       title: 'Start from the generated doc',
       content: [

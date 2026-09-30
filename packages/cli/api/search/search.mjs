@@ -478,7 +478,7 @@ function phraseWords(text) {
  * @param {string} a
  * @param {string} b
  */
-function sameWord(a, b) {
+function samePhraseWord(a, b) {
   return (
     a === b ||
     `${a}s` === b ||
@@ -514,7 +514,8 @@ export function headingWithPhrase(term, titles) {
   for (const title of titles) {
     const words = phraseWords(String(title ?? ''));
     for (let i = 0; i + query.length <= words.length; i++) {
-      if (query.every((word, j) => sameWord(words[i + j], word))) return title;
+      if (query.every((word, j) => samePhraseWord(words[i + j], word)))
+        return title;
     }
   }
   return null;
@@ -535,7 +536,8 @@ export function titleInQuery(term, titles) {
     const words = phraseWords(String(title ?? ''));
     if (words.length < 2 || words.length > query.length) continue;
     for (let i = 0; i + words.length <= query.length; i++) {
-      if (words.every((word, j) => sameWord(query[i + j], word))) return title;
+      if (words.every((word, j) => samePhraseWord(query[i + j], word)))
+        return title;
     }
   }
   return null;
@@ -1286,7 +1288,7 @@ function topicCandidates(
   const docTitle = path || doc?.title || title || name;
   const split = sections.length > 1;
   // A placed guide also answers to its last route segment's words:
-  // `make a package` is cli/integrations/make-a-package.
+  // `quick start` is cli/integrations/quick-start.
   const leaf = name.slice(name.lastIndexOf('/') + 1);
   /** @type {Candidate[]} */
   const out = [
