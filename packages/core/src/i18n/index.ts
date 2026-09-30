@@ -14,7 +14,8 @@
  *   - useCollator                 — provider-bound locale-aware comparison
  *   - useDirection                — hook returning the ambient text direction
  *   - getLocaleDirection          — server-safe locale → direction helper
- *   - Translator                  — interface for consumer-injected runtimes
+ *   - Translator                  — interface for consumer-injected runtimes,
+ *                                   passed as the provider's `translator` prop
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/index.ts

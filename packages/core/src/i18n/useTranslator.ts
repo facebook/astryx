@@ -16,7 +16,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/i18n/index.ts
- * - /packages/core/src/i18n/t.client.ts
+ * - /packages/core/src/i18n/resolve.ts
  */
 
 import {use} from 'react';
