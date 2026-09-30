@@ -834,6 +834,43 @@ describe('CheckboxListItem ARIA props', () => {
     expect(changeAction).toHaveBeenCalledWith(['a']);
   });
 
+  it('keeps an earlier toggled item busy and locked while its changeAction is still pending', async () => {
+    // Never-resolving actions keep both toggles pending for the assertions.
+    const changeAction = vi.fn(async () => {
+      await new Promise<void>(() => {});
+    });
+    const onChange = vi.fn();
+    render(
+      <CheckboxList
+        label="Prefs"
+        value={[]}
+        onChange={onChange}
+        changeAction={changeAction}>
+        <CheckboxListItem label="Option A" value="a" />
+        <CheckboxListItem label="Option B" value="b" />
+      </CheckboxList>,
+    );
+
+    const [itemA, itemB] = screen.getAllByRole('listitem');
+    fireEvent.click(within(itemA).getByRole('checkbox'));
+    await waitFor(() => expect(itemA).toHaveAttribute('aria-busy', 'true'));
+
+    // Other items stay interactive, and toggling one must not clear the
+    // pending state of the item that is still saving.
+    fireEvent.click(within(itemB).getByRole('checkbox'));
+    await waitFor(() => expect(itemB).toHaveAttribute('aria-busy', 'true'));
+    expect(itemA).toHaveAttribute('aria-busy', 'true');
+    expect(
+      within(itemA).getByRole('status', {hidden: true}),
+    ).toBeInTheDocument();
+
+    // Re-toggling the still-pending item stays blocked.
+    fireEvent.click(within(itemA).getByRole('checkbox'));
+    expect(onChange).toHaveBeenCalledTimes(2);
+    expect(changeAction).toHaveBeenCalledTimes(2);
+    expect(changeAction).toHaveBeenLastCalledWith(['a', 'b']);
+  });
+
   it('forwards arbitrary aria attributes to the list item, but aria-label names the checkbox', () => {
     render(
       <List>

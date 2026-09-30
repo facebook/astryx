@@ -30,10 +30,11 @@ export interface CheckboxListContextValue {
   hasDisabledMessage?: boolean;
   isReadOnly: boolean;
   /**
-   * The value of the item with a pending `changeAction`, or null when idle.
-   * The matching item renders an in-checkbox spinner and blocks re-toggling.
+   * Values of the items whose `changeAction` is pending. Each matching item
+   * renders an in-checkbox spinner and blocks re-toggling; the list is empty
+   * when idle.
    */
-  loadingValue?: string | null;
+  loadingValues?: ReadonlyArray<string>;
 }
 
 export const CheckboxListContext =

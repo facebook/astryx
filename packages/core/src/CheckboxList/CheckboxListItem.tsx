@@ -220,13 +220,11 @@ export function CheckboxListItem({
   // Disabled: parent-level OR item-level
   const effectiveDisabled = (ctx?.isDisabled ?? false) || isItemDisabled;
   const effectiveReadOnly = ctx?.isReadOnly ?? false;
-  // Loading is per-item: explicit item prop OR (collection mode) the item
+  // Loading is per-item: explicit item prop OR (collection mode) an item
   // whose `changeAction` is currently pending in the parent.
   const isBusy =
     isItemLoading ||
-    (ctx?.loadingValue != null && value !== undefined
-      ? ctx.loadingValue === value
-      : false);
+    (value !== undefined && (ctx?.loadingValues?.includes(value) ?? false));
 
   // Resolve checked state:
   // 1. Collection mode (inside CheckboxList with value[])

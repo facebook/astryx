@@ -174,9 +174,15 @@ export function CheckboxList({
   const isCollectionMode = value !== undefined;
   const effectiveValue = value ?? EMPTY_ARRAY;
   const [optimisticValue, setOptimisticValue] = useOptimistic(effectiveValue);
-  // Tracks which item has a pending `changeAction`. Auto-reverts to null when
-  // the transition settles, so the spinner clears without manual cleanup.
-  const [loadingValue, setLoadingValue] = useOptimistic<string | null>(null);
+  // Values whose `changeAction` is pending. React settles concurrent
+  // transitions together, so each toggled value stays listed until they all
+  // finish, then reverts to empty without manual cleanup.
+  const [loadingValues, addLoadingValue] = useOptimistic<
+    ReadonlyArray<string>,
+    string
+  >(EMPTY_ARRAY, (pending, toggled) =>
+    pending.includes(toggled) ? pending : [...pending, toggled],
+  );
 
   // Disabled-reason tooltip. Applies to the whole-group disabled state. Disabled
   // controls swallow pointer events, so the tooltip listeners attach to the
@@ -198,7 +204,7 @@ export function CheckboxList({
         startTransition(async () => {
           setOptimisticValue(newValues);
           if (toggledValue !== undefined) {
-            setLoadingValue(toggledValue);
+            addLoadingValue(toggledValue);
           }
           await changeAction(newValues);
         });
@@ -209,7 +215,7 @@ export function CheckboxList({
       changeAction,
       startTransition,
       setOptimisticValue,
-      setLoadingValue,
+      addLoadingValue,
     ],
   );
 
@@ -220,7 +226,7 @@ export function CheckboxList({
       isDisabled,
       hasDisabledMessage: showsDisabledMessage,
       isReadOnly,
-      loadingValue,
+      loadingValues,
     }),
     [
       isCollectionMode,
@@ -229,7 +235,7 @@ export function CheckboxList({
       isDisabled,
       showsDisabledMessage,
       isReadOnly,
-      loadingValue,
+      loadingValues,
     ],
   );
 
