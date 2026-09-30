@@ -1135,8 +1135,9 @@ jobs:
       # CheckboxList's component audit grades interactive row paint, focus,
       # busy, disabled, read-only, status, narrow, forced-colors, and RTL states
       # from exact-head Chromium receipts. The shared checkbox contract also runs
-      # for its CheckboxListItem bindings. Each lane runs even when another
-      # fails, so a failing-before head still banks complete evidence.
+      # for its CheckboxListItem bindings, with its own output directory so it
+      # cannot clear the receipts. Each lane runs even when another fails, so a
+      # failing-before head still banks complete evidence.
       - name: Run CheckboxList audit browser evidence
         if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] CheckboxList:')
         env:
@@ -1151,13 +1152,14 @@ jobs:
             --baseline .github/a11y-baseline.json \
             --fail-on-new || status=1
           pnpm exec playwright test \
-            packages/core/src/CheckboxList/__tests__/CheckboxList.a11y.chromium.spec.ts \
-            --project chromium || status=1
-          pnpm exec playwright test \
             packages/core/src/CheckboxInput/__tests__/Checkbox.a11y.chromium.spec.ts \
             --project chromium \
             --grep 'CheckboxListItem \[' \
+            --output checkbox-list-pattern-output \
             --reporter=list,json || status=1
+          pnpm exec playwright test \
+            packages/core/src/CheckboxList/__tests__/CheckboxList.a11y.chromium.spec.ts \
+            --project chromium || status=1
           exit "$status"
 
       - name: Upload CheckboxList audit evidence
