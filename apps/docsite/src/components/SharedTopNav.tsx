@@ -44,10 +44,11 @@ const GitHubIcon = ({
   </svg>
 );
 
-// Responsive helpers. The desktop links and the mobile hamburger both live in
-// the DOM at all times; a pure CSS @media query decides which is visible so the
-// server-rendered HTML is correct on first paint (no post-hydration flip).
-const MOBILE_BREAKPOINT = '@media (max-width: 768px)';
+// Responsive helpers. Keep a CSS-controlled hamburger in the server HTML;
+// when AppShell switches to mobile-bar mode, its automatic toggle takes over.
+// Match AppShell's default md breakpoint: equality belongs to desktop.
+// Negate min-width so StyleX does not lower '<' to a rounded 767.99px bound.
+const MOBILE_BREAKPOINT = '@media not (min-width: 768px)';
 
 const styles = stylex.create({
   desktopNav: {
@@ -109,9 +110,15 @@ export function SharedTopNav() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
   const {mode, themeMode, toggleMode} = useThemeMode();
-  // When AppShell owns the mobile drawer (docs, which has a sideNav) we defer
-  // to its single hamburger; otherwise we render our own.
-  const {isMobileNavEnabled, closeMobileNav} = useAppShellMobile();
+  // Enabled describes drawer ownership, not whether its automatic hamburger
+  // has rendered yet. During SSR AppShell still renders the desktop top bar.
+  const {
+    isMobileNavEnabled,
+    isMobileNavOpen,
+    mobileNavId,
+    openMobileNav,
+    closeMobileNav,
+  } = useAppShellMobile();
   const renderMode = useTopNavRenderMode();
 
   useEffect(() => {
@@ -278,15 +285,23 @@ export function SharedTopNav() {
                 trackClickCta({page: 'landing', target: 'get_started'})
               }
             />
-            {!isMobileNavEnabled && (
+            {(!isMobileNavEnabled || renderMode === 'default') && (
               <div {...stylex.props(styles.mobileToggle)}>
                 <Button
-                  label="Open menu"
+                  label={isMobileNavEnabled ? 'Open navigation' : 'Open menu'}
                   tooltip="Menu"
                   variant="ghost"
                   isIconOnly
                   icon={<Menu size={20} />}
-                  onClick={() => setIsMenuOpen(true)}
+                  aria-expanded={
+                    isMobileNavEnabled ? isMobileNavOpen : undefined
+                  }
+                  aria-controls={isMobileNavEnabled ? mobileNavId : undefined}
+                  onClick={
+                    isMobileNavEnabled
+                      ? openMobileNav
+                      : () => setIsMenuOpen(true)
+                  }
                 />
               </div>
             )}

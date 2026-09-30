@@ -91,8 +91,9 @@ body:has([data-home-page]) #astryx-app-shell-main {
    server-side (desktop HTML), so below the mobile breakpoint we hide it with
    pure CSS — it never paints on a phone, no JS flip. The :where(:not(...))
    guard scopes this to the OUTERMOST AppShell so sidenavs inside nested
-   AppShell examples/previews keep their own responsive behavior. */
-@media (max-width: 768px) {
+   AppShell examples/previews keep their own responsive behavior. Match
+   AppShell's default md breakpoint: equality belongs to the desktop layout. */
+@media (width < 768px) {
   .astryx-app-shell-sidenav:where(:not(.astryx-app-shell .astryx-app-shell *)) {
     display: none;
   }

@@ -4,9 +4,17 @@
 
 import type {ReactNode} from 'react';
 import {useLayoutEffect, useRef} from 'react';
-import {render, screen, waitFor} from '@testing-library/react';
+import {renderToString} from 'react-dom/server';
+import {cleanup, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+
+const navigation = vi.hoisted(() => ({
+  isMobileNavEnabled: false,
+  renderMode: 'default',
+  openMobileNav: vi.fn(),
+  closeMobileNav: vi.fn(),
+}));
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/templates',
@@ -20,8 +28,9 @@ vi.mock('@stylexjs/stylex', () => ({
 
 vi.mock('@astryxdesign/core/AppShell', () => ({
   useAppShellMobile: () => ({
-    isMobileNavEnabled: false,
-    closeMobileNav: vi.fn(),
+    ...navigation,
+    mobileNavId: 'docs-navigation',
+    isMobileNavOpen: false,
   }),
 }));
 
@@ -36,7 +45,7 @@ vi.mock('@astryxdesign/core/TopNav', () => ({
   TopNavHeading: ({logo}: {logo: ReactNode}) => <>{logo}</>,
   TopNavItem: ({label}: {label: string}) => <a href="#">{label}</a>,
   TopNavRenderContext: ({children}: {children: ReactNode}) => <>{children}</>,
-  useTopNavRenderMode: () => 'topnav',
+  useTopNavRenderMode: () => navigation.renderMode,
 }));
 
 vi.mock('@astryxdesign/core/Button', () => ({
@@ -112,7 +121,44 @@ vi.mock('../components/SearchPalette', () => ({
 
 import {SharedTopNav} from '../components/SharedTopNav';
 
-describe('SharedTopNav search lifecycle', () => {
+beforeEach(() => {
+  navigation.isMobileNavEnabled = false;
+  navigation.renderMode = 'default';
+  vi.clearAllMocks();
+});
+
+afterEach(cleanup);
+
+describe('SharedTopNav navigation and search lifecycle', () => {
+  it('prerenders a CSS-controlled toggle when AppShell owns the drawer', () => {
+    navigation.isMobileNavEnabled = true;
+    const html = renderToString(<SharedTopNav />);
+    expect(html).toContain('Open navigation');
+    expect(html).not.toContain('Open menu');
+  });
+
+  it('routes the initial toggle to AppShell and defers to its hydrated toggle', async () => {
+    navigation.isMobileNavEnabled = true;
+    const user = userEvent.setup();
+    const {rerender} = render(<SharedTopNav />);
+    await user.click(screen.getByRole('button', {name: 'Open navigation'}));
+    expect(navigation.openMobileNav).toHaveBeenCalledTimes(1);
+
+    navigation.renderMode = 'mobile-bar';
+    rerender(<SharedTopNav />);
+    // TopNav supplies the automatic toggle in this mode; SharedTopNav must
+    // not add a second one. The real combined drawer is covered in Chromium.
+    expect(
+      screen.queryByRole('button', {name: /Open (menu|navigation)/}),
+    ).toBeNull();
+  });
+
+  it('preserves the standalone menu without an AppShell drawer', () => {
+    const html = renderToString(<SharedTopNav />);
+    expect(html).toContain('Open menu');
+    expect(html).not.toContain('Open navigation');
+  });
+
   it('keeps Search mounted through close so focus returns to its trigger', async () => {
     const user = userEvent.setup();
     render(<SharedTopNav />);
