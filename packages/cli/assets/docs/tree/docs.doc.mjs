@@ -10,7 +10,7 @@
 export const docs = {
   type: 'namespace',
   name: 'docs',
-  placement: {parent: 'namespace:contribute', slot: 'guides', order: 40},
+  placement: {parent: 'namespace:building-blocks', slot: 'guides', order: 40},
   title: 'Docs',
   summary:
     'Write docs that ship with your package and that people and agents find by search or one level at a time.',

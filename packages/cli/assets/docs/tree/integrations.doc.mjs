@@ -26,7 +26,7 @@ export const docs = {
   blocks: [
     {
       type: 'prose',
-      text: 'An integration is a way to share things with Astryx users: a package you own and maintain, built on a framework Astryx gives you. Publish one, many, or any mix, and people install it in one step. It works with the Astryx CLI alongside Core. See each kind under {@link namespace:contribute}.',
+      text: 'An integration is a way to share things with Astryx users: a package you own and maintain, built on a framework Astryx gives you. Publish one, many, or any mix, and people install it in one step. It works with the Astryx CLI alongside Core. See each kind under {@link namespace:building-blocks}.',
     },
     {
       type: 'prose',
