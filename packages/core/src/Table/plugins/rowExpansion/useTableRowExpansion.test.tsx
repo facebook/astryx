@@ -58,10 +58,12 @@ function Harness({
   initialExpanded = EMPTY_KEYS,
   isItemExpandable,
   renderExpanded = defaultRenderExpanded,
+  getRowLabel,
 }: {
   initialExpanded?: Set<string>;
   isItemExpandable?: (item: Row) => boolean;
   renderExpanded?: (item: Row) => React.ReactNode;
+  getRowLabel?: (item: Row) => string;
 }) {
   const [expandedKeys, setExpandedKeys] = useState(initialExpanded);
   const expansion = useTableRowExpansion<Row>({
@@ -79,6 +81,7 @@ function Harness({
     getRowKey: item => item.id,
     renderExpanded,
     getIsItemExpandable: isItemExpandable,
+    getRowLabel,
   });
   return (
     <Table data={rows} columns={columns} idKey="id" plugins={{expansion}} />
@@ -91,6 +94,50 @@ describe('useTableRowExpansion (detail panel)', () => {
     expect(screen.getAllByRole('button', {name: /expand row/i})).toHaveLength(
       3,
     );
+  });
+
+  it('names each expansion control when getRowLabel is provided', () => {
+    render(<Harness getRowLabel={item => item.name} />);
+
+    expect(
+      screen.getByRole('button', {name: 'Expand Ada'}),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Expand Bo'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Expand Cy'})).toBeInTheDocument();
+  });
+
+  it('keeps the row identity when the expansion state changes', () => {
+    render(
+      <Harness
+        initialExpanded={new Set(['a'])}
+        getRowLabel={item => item.name}
+      />,
+    );
+
+    expect(screen.getByRole('button', {name: 'Collapse Ada'})).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(screen.getByRole('button', {name: 'Expand Bo'})).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
+  it('falls back to the generic label when getRowLabel returns blank text', () => {
+    render(<Harness getRowLabel={() => '   '} />);
+
+    expect(screen.getAllByRole('button', {name: 'Expand row'})).toHaveLength(3);
+  });
+
+  it('keeps the context-menu action generic when row-specific labels are enabled', () => {
+    render(<Harness getRowLabel={item => item.name} />);
+
+    fireEvent.contextMenu(screen.getByText('Ada'));
+    expect(
+      screen.getAllByRole('menuitem', {name: 'Expand row', hidden: true})
+        .length,
+    ).toBeGreaterThan(0);
   });
 
   it('does not render the detail panel while collapsed', () => {
