@@ -9,7 +9,7 @@ superseded_by: null
 approved_by: null
 approved_at: null
 phase: proposed
-owners: [imdreamrunner]
+owners: [imdreamrunner, rubyycheung]
 affects_architecture:
   [
     architecture:theme-tokens,
