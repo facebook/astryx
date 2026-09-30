@@ -9,7 +9,7 @@ export const docs = {
   placement: {parent: 'namespace:integrations', slot: 'guides', order: 20},
   title: 'Building Blocks',
   summary:
-    'Add components, templates, themes, docs, codemods, and agent guidance.',
+    'Add components, templates, themes, docs, and codemods, and configure how it behaves.',
   keywords: [
     'building blocks',
     'contribute',
@@ -17,12 +17,8 @@ export const docs = {
     'contribution kinds',
   ],
   slots: {
-    types: {
-      title: 'Types',
-      accepts: {kinds: ['generic', 'namespace']},
-    },
-    configuration: {
-      title: 'Configuration',
+    guides: {
+      title: 'Building Blocks',
       accepts: {kinds: ['generic', 'namespace']},
     },
   },

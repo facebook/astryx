@@ -9,7 +9,7 @@
 export const docs = {
   type: 'generic',
   name: 'themes',
-  placement: {parent: 'namespace:building-blocks', slot: 'types', order: 30},
+  placement: {parent: 'namespace:building-blocks', slot: 'guides', order: 30},
   title: 'Themes',
   category: 'guide',
   keywords: ['integration theme', 'ship a theme'],

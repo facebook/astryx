@@ -10,7 +10,7 @@
 export const docs = {
   type: 'generic',
   name: 'debug-and-gap-reports',
-  placement: {parent: 'namespace:building-blocks', slot: 'configuration', order: 20},
+  placement: {parent: 'namespace:configuration', slot: 'guides', order: 20},
   title: 'Debug and gap reports',
   category: 'guide',
   keywords: ['gap report', 'debug handler'],

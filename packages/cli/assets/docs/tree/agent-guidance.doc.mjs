@@ -9,7 +9,7 @@
 export const docs = {
   type: 'generic',
   name: 'agent-guidance',
-  placement: {parent: 'namespace:building-blocks', slot: 'configuration', order: 10},
+  placement: {parent: 'namespace:configuration', slot: 'guides', order: 10},
   title: 'Agent guidance',
   category: 'guide',
   keywords: ['agent docs', 'agents.md'],
