@@ -76,12 +76,14 @@ Consumer migration instructions belong in consumer docs and release notes.
   description, status, and disabled-reason relationships.
 - Collection state shared with CheckboxListItem: checked membership, change
   ordering, optimistic pending values, and group-level availability.
-- CheckboxListItem's option composition: one CheckboxInput per row, row-surface
-  click delegation, naming and description relationships, and the checked-row
-  fill.
 
 **Does not own / non-goals**
 
+- Each option's row composition — its checkbox, naming and description
+  relationships, row-surface delegation and `onClick` routing, standalone mode,
+  and checked-row fill — owned by `component:CheckboxListItem`. The option rows
+  below (FR3, FR5, FR8, FR11, FR12, GAP1, GAP2, GAP5, GAP6) observe that
+  composition inside the group.
 - List and option-row presentation — owned by `component:List`; its
   `list-item` target reaches only the row root.
 - Standard option-label and option-description wrappers — rendered as separate,
@@ -282,6 +284,8 @@ row surface, but not a checked-row state (GAP2).
   non-editable values.
 - `spec:AST-038/FR7` stops CheckboxList context at a layer boundary; an item
   inside a layer needs its own provider.
+- `component:CheckboxListItem` owns the per-option contract this group
+  composes.
 - List, CheckboxInput, Field, FieldStatus, Spinner, and Tooltip retain their
   existing public target and behavior contracts when composed by CheckboxList.
 
