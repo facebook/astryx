@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Tests for the build API (playbook + composition kit).
+ * @file Tests for the build API (playbook + the template-first kit).
  */
 
 import {describe, it, expect, vi} from 'vitest';
@@ -35,6 +35,15 @@ describe('build API', () => {
     // Bare subcommands: the caller adds its own invocation.
     const commands = [...r.data.steps.flatMap(s => s.commands), ...r.data.related];
     for (const {command} of commands) expect(command).not.toMatch(/^(astryx|npx|pnpm|yarn|bunx?)\b/);
+  });
+
+  it('the playbook scaffolds the named template before composing', async () => {
+    const r = await build();
+    if (r.type !== 'build.help') throw new Error(r.type);
+    const commands = r.data.steps.map(s => s.commands.map(c => c.command));
+    expect(commands[0][0]).toMatch(/^build /);
+    expect(commands[1]).toContain('template <name> <path>');
+    expect(JSON.stringify(r.data)).not.toMatch(/--skeleton|reference code/);
   });
 
   it('query → build.kit with raw entries + static frame/foundation', async () => {
@@ -76,10 +85,10 @@ describe('build API', () => {
     expect(blocks.length).toBeLessThanOrEqual(5);
     expect(domain.length).toBeLessThanOrEqual(6);
 
-    // Score floors: pages ≥ PAGE_FLOOR(50); blocks/domain ≥ DOMAIN_FLOOR(55).
+    // Score floors: pages ≥ PAGE_FLOOR(50); blocks/domain ≥ DOMAIN_FLOOR(60).
     for (const p of pages) expect(p.score).toBeGreaterThanOrEqual(50);
-    for (const b of blocks) expect(b.score).toBeGreaterThanOrEqual(55);
-    for (const d of domain) expect(d.score).toBeGreaterThanOrEqual(55);
+    for (const b of blocks) expect(b.score).toBeGreaterThanOrEqual(60);
+    for (const d of domain) expect(d.score).toBeGreaterThanOrEqual(60);
 
     // directMatch iff the top page is a confident match (PAGE_DIRECT = 95).
     expect(directMatch).toBe(pages.length > 0 && pages[0].score >= 95);
@@ -201,7 +210,7 @@ describe('build kit — a thin kit says what to try next', () => {
   it('hints for a matched-then-filtered query: hasResults true, nothing offerable', async () => {
     // The case most likely to be misread, and the reason the threshold counts
     // what SURVIVED the floors rather than what search returned.
-    const r = await build('blockchain', {cwd: REPO});
+    const r = await build('hydration', {cwd: REPO});
     expect(r.type).toBe('build.kit');
     if (r.type !== 'build.kit') return;
     expect(r.data.hasResults).toBe(true);
@@ -224,12 +233,28 @@ describe('build kit — a thin kit says what to try next', () => {
     }
   });
 
+  it('still starts from the closest page on a loose match, and scaffolds it', async () => {
+    // A skeleton is a 35-line excerpt: a reader who studies it and composes
+    // the rest loses the spacing the template exists to carry. A loose match
+    // is still the best start there is, so `start` scaffolds it.
+    const r = await build('executive summary', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    expect(r.data.directMatch).toBe(false);
+    expect(r.data.start).toMatchObject({
+      name: 'dashboard-scorecard',
+      basis: 'closest',
+      command: 'astryx template dashboard-scorecard --type page <path>',
+    });
+  });
+
   it('recommends scaffolding on a direct match', async () => {
     const r = await build('contact form', {cwd: REPO});
     expect(r.type).toBe('build.kit');
     if (r.type !== 'build.kit') return;
     expect(r.data.directMatch).toBe(true);
     expect(r.data.pages.length).toBeGreaterThan(0);
+    expect(r.data.start).toMatchObject({name: r.data.pages[0].name, basis: 'direct'});
     for (const page of r.data.pages) {
       expect(page.command).not.toMatch(/--skeleton/);
     }
@@ -238,12 +263,13 @@ describe('build kit — a thin kit says what to try next', () => {
   it('keeps the recommendation package-manager-agnostic', async () => {
     // Appending a flag must not turn into prefixing an invocation; that stays
     // the renderer's job.
-    const r = await build('notifications', {cwd: REPO});
+    const r = await build('executive summary', {cwd: REPO});
     expect(r.type).toBe('build.kit');
     if (r.type !== 'build.kit') return;
     for (const page of r.data.pages) {
       expect(page.command).not.toMatch(/^(pnpm|npm|yarn|bun|npx)\b/);
     }
+    expect(r.data.start?.command).not.toMatch(/^(pnpm|npm|yarn|bun|npx)\b/);
   });
 
   it('keeps recovery commands bare, for the caller to render', async () => {
@@ -256,5 +282,131 @@ describe('build kit — a thin kit says what to try next', () => {
       expect(c).not.toMatch(/^astryx\b/);
       expect(c).not.toMatch(/pnpm|npx|yarn|bun/);
     }
+  });
+});
+
+describe('build kit — every page starts from a template', () => {
+  it('falls back to the app shell when no page template matches', async () => {
+    // Before, an unmatched idea got "compose from AppShell": the one path
+    // with no frame, no spacing, and no section rhythm.
+    const r = await build('zzznomatch99', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    expect(r.data.hasResults).toBe(false);
+    expect(r.data.start).toMatchObject({
+      name: 'shell-top-nav',
+      basis: 'fallback',
+      command: 'astryx template shell-top-nav --type page <path>',
+    });
+    expect(r.data.start?.description).toBeTruthy();
+  });
+
+  it('starts a long idea from the family its words name', async () => {
+    // The coverage gate cannot tell layout words from subject matter: every
+    // dashboard covers one term of three, so search offers no page at all.
+    // The ranker still starts the page from the dashboard.
+    const r = await build('quarterly revenue dashboard', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    expect(r.data.start).toMatchObject({name: 'dashboard', basis: 'closest'});
+    expect(r.data.directMatch).toBe(false);
+  });
+
+  it('does not start from a direct match that is not ready yet, and says so', async () => {
+    const r = await build('incident console', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    expect(r.data.directMatch).toBe(true);
+    expect(r.data.pages[0].name).toBe('incident-console');
+    expect(r.data.start?.name).not.toBe('incident-console');
+    expect(r.data.start?.reason).toMatch(/`incident-console` matches but is not ready yet/);
+  });
+
+  it('does not start from a page that matched one incidental word', async () => {
+    // A work-item detail page mentions a feed in its description. That is a
+    // worse start for a news feed than the app shell.
+    const r = await build('news feed', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    expect(r.data.start?.basis).toBe('fallback');
+  });
+
+  it('starts a part from the page it is placed in, else from the app shell', async () => {
+    const placed = await build('an empty state for a settings page', {cwd: REPO});
+    if (placed.type !== 'build.kit') throw new Error(placed.type);
+    expect(placed.data.start).toMatchObject({name: 'settings', basis: 'closest'});
+    const loose = await build('a date range picker', {cwd: REPO});
+    if (loose.type !== 'build.kit') throw new Error(loose.type);
+    expect(loose.data.start).toMatchObject({name: 'shell-top-nav', basis: 'fallback'});
+  });
+
+  it('names no start when the kit is narrowed to components', async () => {
+    const r = await build('dashboard', {cwd: REPO, type: 'component'});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    expect(r.data.start).toBeNull();
+  });
+
+
+
+  it('keeps incidental description matches out of blocks and components', async () => {
+    // Toast, Popover and TextInput all say "brief" somewhere in their
+    // descriptions; none of them is part of a brief.
+    const r = await build('weekly brief', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    const names = [...r.data.blocks, ...r.data.domain].map(e => e.name);
+    for (const noise of ['Toast', 'Popover', 'TextInput']) expect(names).not.toContain(noise);
+  });
+
+  it('names the ranker\'s next two templates beside every start', async () => {
+    for (const idea of ['quarterly revenue dashboard', 'contact form']) {
+      const r = await build(idea, {cwd: REPO});
+      expect(r.type).toBe('build.kit');
+      if (r.type !== 'build.kit') return;
+      const alternatives = r.data.start?.alternatives ?? [];
+      expect(alternatives.length).toBeGreaterThan(0);
+      expect(alternatives.length).toBeLessThanOrEqual(2);
+      for (const alt of alternatives) {
+        expect(alt.name).not.toBe(r.data.start?.name);
+        expect(alt.description).toBeTruthy();
+        expect(alt.command).toBe(`astryx template ${alt.name} --type page <path>`);
+      }
+    }
+  });
+
+  it('calls a start direct only when search and the ranker agree', async () => {
+    const r = await build('contact form', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    expect(r.data.directMatch).toBe(true);
+    expect(r.data.start).toMatchObject({name: r.data.pages[0].name, basis: 'direct'});
+  });
+
+  it('never lets a noisy search match pick the start', async () => {
+    // Search once matched "site" to the gallery's "side" and started a
+    // navigation bar from a gallery. The ranker alone picks the start now.
+    const r = await build('horizontal site navigation with a current section indicator', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    expect(r.data.start?.name).toBe('shell-top-nav');
+    expect(r.data.pages.map(p => p.name)).not.toContain('side-gallery');
+  });
+
+  it('starts a component in a container from a template with that frame', async () => {
+    // "in a modal": the modal is the frame, so the dialog template leads
+    // instead of the app shell.
+    const r = await build('saved drafts in a modal with resume and delete row actions', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    expect(r.data.start?.name).toBe('settings-dialog');
+  });
+
+  it('does not start from a template named only by a word that modifies another', async () => {
+    // "product" describes the response; it is not a product page.
+    const r = await build('an interactive command catalog with side-by-side product response and trace', {cwd: REPO});
+    expect(r.type).toBe('build.kit');
+    if (r.type !== 'build.kit') return;
+    expect(r.data.start?.name).not.toMatch(/^product-/);
   });
 });

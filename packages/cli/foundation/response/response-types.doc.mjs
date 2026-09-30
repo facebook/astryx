@@ -137,7 +137,7 @@ export const doc = {
     {
       value: 'build.kit',
       description:
-        'The composition kit: echoed query, hasResults, matchCount (total matched, never a cap), directMatch, pages (closest templates), blocks (drop-in patterns) and domain (idea components/hooks) as SearchResultEntry[], frame and foundation name arrays, and hint {reason, commands} when thin.',
+        "The template to start from and its kit: query, hasResults, matchCount (never a cap), directMatch, start {name, command, basis, reason, alternatives, ...}, pages (search's closest templates), blocks and domain as SearchResultEntry[], frame, foundation, and hint {reason, commands} when thin.",
     },
 
     // swizzle

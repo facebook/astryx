@@ -1271,3 +1271,53 @@ describe('integration template discovery', () => {
     expect(fs.existsSync(path.join(tmpDir, 'dest', 'hero.tsx'))).toBe(true);
   });
 });
+
+describe('build names a start its command selects', () => {
+  it('scaffolds an integration replacement through the Core id it replaces', async () => {
+    const pkgDir = installWidgets(tmpDir);
+    writeTemplate(pkgDir, 'acme-app-shell', {
+      kind: 'page',
+      body: "export default {type: 'page', name: 'Acme App Shell', category: 'Shell - Acme Sidebar', description: 'Acme application frame with a left sidebar navigation. Shell, frame, or sidebar navigation.'};\n",
+    });
+    declareReplaces(pkgDir, {'acme-app-shell': 'shell-side-nav'});
+
+    const kit = await build('acme application frame with sidebar navigation', {
+      cwd: tmpDir,
+    });
+    expect(kit.type).toBe('build.kit');
+    if (kit.type !== 'build.kit') throw new Error('expected build.kit');
+    expect(kit.data.start).toMatchObject({
+      name: 'acme-app-shell',
+      command: 'astryx template shell-side-nav --type page <path>',
+    });
+    const selected = await template('shell-side-nav', {
+      type: 'page',
+      show: true,
+      cwd: tmpDir,
+    });
+    expect(selected.data.template).toBe('acme-app-shell');
+  });
+
+  it('keeps the start command unambiguous when a block shares the id', async () => {
+    const pkgDir = installWidgets(tmpDir);
+    writeTemplate(pkgDir, 'contact-form', {kind: 'block'});
+
+    const kit = await build('contact form', {cwd: tmpDir});
+    expect(kit.type).toBe('build.kit');
+    if (kit.type !== 'build.kit') throw new Error('expected build.kit');
+    expect(kit.data.start).toMatchObject({
+      name: 'contact-form',
+      command: 'astryx template contact-form --type page <path>',
+    });
+    const selected = await template('contact-form', {
+      type: 'page',
+      show: true,
+      cwd: tmpDir,
+    });
+    expect(selected.data.template).toBe('contact-form');
+    // The bare id is ambiguous here, which is why the command carries --type.
+    await expect(
+      template('contact-form', {show: true, cwd: tmpDir}),
+    ).rejects.toMatchObject({code: 'ERR_AMBIGUOUS_TEMPLATE'});
+  });
+});
