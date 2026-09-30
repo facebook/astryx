@@ -2,7 +2,7 @@
 '@astryxdesign/cli': patch
 ---
 
-[feat] `astryx build "<idea>"` now always names a page template to start from.
+[feat] `astryx build "<idea>"` now always names a page template to start from (#6707).
 
 A page template carries the page frame, the spacing, and the section rhythm. A page composed from components has to rediscover them. Before, the kit recommended scaffolding only when a template matched almost by name. Other ideas got "use it as a layout reference", which pointed at a 35-line `--skeleton`, and an idea that no template matched got "frame with AppShell, then compose". Now:
 

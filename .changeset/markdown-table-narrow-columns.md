@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] Markdown: table columns keep a content-derived width floor and headers stop truncating.
+[fix] Markdown: table columns keep a content-derived width floor and headers stop truncating (#6708).
 
 A Markdown table in a narrow reading column no longer squashes every column to a
 few characters. Each column keeps a floor derived from its own content, measured

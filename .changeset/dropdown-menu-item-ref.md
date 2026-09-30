@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[feat] `DropdownMenuItem`, `DropdownMenuCheckboxItem` and `DropdownMenuRadioItem` forward a `ref` to the row root.
+[feat] `DropdownMenuItem`, `DropdownMenuCheckboxItem` and `DropdownMenuRadioItem` forward a `ref` to the row root (#6687).
 
 The ref reaches the element carrying `role="menuitem"` (or `menuitemcheckbox`
 / `menuitemradio`), the way `Item` and `DropdownMenuDivider` already forward

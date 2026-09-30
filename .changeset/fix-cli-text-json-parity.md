@@ -2,7 +2,7 @@
 '@astryxdesign/cli': patch
 ---
 
-[fix] Make every command's text output match its --json data
+[fix] Make every command's text output match its --json data (#6616)
 
 `upgrade --list` text now renders each codemod from the JSON result (name,
 title, version, optional) instead of the API logger, with no `(undefined)`
