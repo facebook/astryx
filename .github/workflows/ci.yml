@@ -1136,10 +1136,11 @@ jobs:
       # busy, disabled, read-only, status, narrow, forced-colors, and RTL states
       # from exact-head Chromium receipts. The shared checkbox contract also runs
       # for its CheckboxListItem bindings, with its own output directory so it
-      # cannot clear the receipts. Each lane runs even when another fails, so a
-      # failing-before head still banks complete evidence.
+      # cannot clear the receipts. Each lane runs even when another fails, and
+      # the step still runs after an earlier audit step fails, so a
+      # failing-before head banks complete evidence.
       - name: Run CheckboxList audit browser evidence
-        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] CheckboxList:')
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] CheckboxList:') }}
         env:
           ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PLAYWRIGHT_JSON_OUTPUT_NAME: checkbox-list-pattern-results.json
