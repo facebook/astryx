@@ -118,9 +118,10 @@ the docsite onto the tree.
   namespaces under it. Every command doc MUST have a route under
   `cli/commands`, and every function, schema, and enum doc in the `cli/api`
   group a route under `cli/api/<kind>s`. The integration guide's route MUST be
-  `cli/integrations`; its old flat name `cli-integrations` is gone. A CLI route
-  or name MAY change like this when every reference changes with it: links name
-  docs by identity (`spec:AST-047` FR9), and the graph walk fails on a reference
+  `cli/integrations`; its old flat name `cli-integrations` is gone. Under
+  `spec:AST-017/FR45`, a CLI route or name MAY change like this when every
+  reference changes with it: links name docs by identity (`spec:AST-047` FR9),
+  and the graph walk fails on a reference
   left behind (`spec:AST-047` FR11, FR12).
 - **FR10 — Search finds the smallest part that answers.** `astryx search` MUST
   index each section of each topic and placed guide, and each namespace and

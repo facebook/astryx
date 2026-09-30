@@ -45,6 +45,7 @@ affects_consumer_docs: [release-process, templates]
       "DEC-11",
       "DEC-12",
       "DEC-13",
+      "DEC-14",
       "FR3",
       "FR4",
       "FR5",
@@ -79,7 +80,8 @@ affects_consumer_docs: [release-process, templates]
       "FR41",
       "FR42",
       "FR43",
-      "FR44"
+      "FR44",
+      "FR45"
     ]
   }
 }
@@ -360,10 +362,11 @@ independent for each invocation.
 - **FR25 — Stable Core and every published stable package default to compatibility.**
   Outside approved cleanup, changes to behavior, types, exports, CSS or tokens,
   documented markup or selectors, accessibility semantics, persistence, CLI,
-  configuration, schemas, build tooling, docs routes, and package files MUST be
-  additive, implementation-equivalent, or a victim-free contract restoration under
-  FR5. An internal label, low adoption, or lack of a source-level API change does not
-  weaken this rule.
+  configuration, schemas, build tooling, contractual documentation operations, and
+  package files MUST be additive, implementation-equivalent, or a victim-free
+  contract restoration under FR5. Documentation catalog names and routes follow
+  FR45. An internal label, low adoption, or lack of a source-level API change does
+  not weaken this rule.
 - **FR26 — Public lifecycle state is explicit.** Each public surface is
   `experimental`, `stable`, `correction-transition`, `deprecated`,
   `cleanup-approved`, or `removed`; private and unreleased surfaces remain outside the
@@ -512,6 +515,15 @@ independent for each invocation.
   forward with a compatible patch that restores aliases or the prior safe
   compatibility mode; critical-harm recovery follows FR35 and never restores the
   harmful behavior.
+- **FR45 — Documentation catalog display names and routes are mutable data.** A
+  display name or docs-tree route identifies an entry in the current documentation
+  catalog; it is not a contractual CLI operation or machine-readable schema. Renaming
+  or moving an entry is nonbreaking even when its former value stops resolving, and
+  requires no compatibility alias or codemod. Release metadata identifies the
+  replacement value. The `docs` command name, options, exit behavior, and response
+  schemas remain contractual under FR3 and FR13. Template identifiers, slugs, display
+  names, and names are outside this requirement and remain governed separately by FR9,
+  FR11, and applicable registry identity contracts.
 
 ### Platform support
 
@@ -590,7 +602,9 @@ lifecycle around it:
   cleanup, closed release metadata, and independently patch-compatible fixes;
 - minor frequency remains planning guidance and creates no deprecation or pair wait;
 - contributor declarations preserve established Changeset tags while adding semantic
-  lifecycle metadata and require no migration of existing Changesets; and
+  lifecycle metadata and require no migration of existing Changesets;
+- documentation catalog display names and routes remain mutable data while the stable
+  `docs` command and machine-readable schemas stay contractual; and
 - exact-main release comparison rejects unclassified deltas.
 
 These are specification changes only. They do not alter a published package and need
@@ -617,6 +631,7 @@ they land, maintainers apply these requirements in review and release approval.
 | FR32–FR35 | Latest-stable victim fixture, pre-existing authority, owner reviews, correction record, record-to-surface state mapping, and emergency attestation | victim-free `[fix]`, `[fix]` plus incompatible-fix metadata, coexistence, cleanup transition, critical-harm emergency                                  | A released victim uses bare `[fix]`, a new Changeset tag replaces metadata, a correction record disagrees with its public-surface state, or urgency bypasses migration                                         |
 | FR36–FR40 | Minor plan, locked final-patch receipt, three-way delta classification, and separated release notes                                                | ordinary cadence, immediate pair, cleanup, release metadata, pre/post-lock compatible fix                                                              | Cadence becomes eligibility, the final patch is recut for bookkeeping, a feature or incompatible fix enters the incidental-fix lane, or release notes merge cleanup with fixes                                 |
 | FR41–FR44 | Schema validation, PR declaration, semantic stable/base/head comparisons, exact-main gate, and immutable publish/rollback receipt                  | duplicate ids, missing evidence, route/schema removal, old-client metadata, partial publish, safe rollback                                             | A label passes without semantics, a delta maps zero or multiple times, fixed-group membership drifts, or a release rebuilds under one identity                                                                 |
+| FR45      | Docs route inventory, repository-reference checks, and Changeset review                                                                            | catalog entry rename, former-route miss, stable command and JSON schema                                                                                | Catalog routing is frozen as API, or a rename silently changes the contractual command or response schema                                                                                                      |
 
 ## Decision log
 
@@ -866,6 +881,26 @@ the final patch and paired minor. A ready, authorized pair may publish sequentia
 Rejected: an inferred elapsed-time gate, a special exception merely to publish a
 ready pair, and using cadence to waive replacement, migration, cleanup, or exact-main
 evidence.
+
+### DEC-14 — Documentation catalog display names and routes are mutable data
+
+**Reference:** `spec:AST-017/DEC-14`
+**Decider:** `josephfarina`, `2026-09-29`
+
+Treat a documentation catalog display name or tree route as data identifying a current
+entry. It may change in a patch release even when its former value stops resolving.
+Release metadata identifies the replacement; no compatibility alias or codemod is
+required.
+
+Keep the surrounding operation contractual: incompatible changes to the `docs`
+command, its options, exit behavior, or machine-readable response schemas still
+follow FR1–FR8 and FR13. Template identifiers, slugs, display names, and names remain
+outside this documentation rule and follow FR9, FR11, and applicable registry identity
+contracts.
+
+Rejected: treating every route-shaped positional value as stable CLI API. That would
+freeze documentation organization rather than protect the command and schema
+contracts readers and automation rely on.
 
 ## Open questions
 
