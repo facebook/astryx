@@ -6,10 +6,12 @@
  * subpaths. The copy walks core component directories recursively, so nested
  * source subdirectories (e.g. Table/plugins/*) are preserved in the output;
  * the overwrite pre-flight and the reported file list share the same
- * recursive file set. Every destination segment is checked for symlinks before
- * any directory or file is written, even when overwrite is enabled. Integration
- * source directories retain their existing flat copy behavior: their discovery
- * contract identifies an entry file, not an exclusively owned directory tree.
+ * recursive file set. Every destination segment is checked before any
+ * directory or file is written, even when overwrite is enabled: no symlinks,
+ * existing directory segments must be directories, and existing file targets
+ * must be regular files. Integration source directories retain their existing
+ * flat copy behavior (sorted, like the core walk): their discovery contract
+ * identifies an entry file, not an exclusively owned directory tree.
  *
  * Side-effecting: writes files and returns a `swizzle.copy` receipt describing
  * what it did. Shared core discovery + component listing come from
@@ -230,29 +232,66 @@ function collectSourceFiles(dir, prefix = '') {
 }
 
 /**
- * Reject symlinks in every destination segment below cwd, including the final
- * file. lstat also sees dangling links, which existsSync would miss. Check the
- * complete plan before writing so a bad nested path cannot leave partial output.
- * The caller has already confined outputDir to cwd with assertWithin.
+ * Validate every destination segment below cwd before any directory or file is
+ * written, regardless of overwrite, so a bad path late in the sorted plan
+ * cannot leave earlier files already replaced. No segment may be a symlink
+ * (ERR_PATH_TRAVERSAL); lstat also sees dangling links, which existsSync would
+ * miss. An existing directory segment (outputDir, its ancestors, a nested
+ * source directory) must be a directory, and an existing file target must be
+ * a regular file (ERR_WRITE_FAILED). Parents are checked before children, so a
+ * lstat below a non-directory never raises a raw ENOTDIR. Messages name paths
+ * relative to cwd. The caller has already confined outputDir to cwd; with no
+ * symlink below cwd, no planned file can resolve outside it either, so this
+ * also covers the per-file confinement.
  * @param {string} cwd
  * @param {string} outputDir
- * @param {string[]} files
+ * @param {string[]} files Paths relative to outputDir.
  */
 function checkDestinationPaths(cwd, outputDir, files) {
   const root = path.resolve(cwd);
+  /** @type {Set<string>} */
   const checked = new Set();
-  for (const target of [outputDir, ...files.map(file => path.join(outputDir, file))]) {
+  /** @param {string} message */
+  const refuseWrite = message =>
+    new AstryxError(`${message} Nothing was written.`, [], ERROR_CODES.ERR_WRITE_FAILED);
+  /** @type {Array<[string, boolean]>} */
+  const targets = [
+    [outputDir, false],
+    ...files.map(file => /** @type {[string, boolean]} */ ([path.join(outputDir, file), true])),
+  ];
+  for (const [target, isFile] of targets) {
+    const parts = path.relative(root, target).split(path.sep);
     let segment = root;
-    for (const part of path.relative(root, target).split(path.sep)) {
+    for (const [i, part] of parts.entries()) {
       segment = path.join(segment, part);
       if (checked.has(segment)) continue;
       checked.add(segment);
-      if (fs.lstatSync(segment, {throwIfNoEntry: false})?.isSymbolicLink()) {
+      const rel = path.relative(root, segment);
+      let stat;
+      try {
+        stat = fs.lstatSync(segment, {throwIfNoEntry: false});
+      } catch (err) {
+        const errno = /** @type {NodeJS.ErrnoException} */ (err).code;
+        if (typeof errno !== 'string') throw err;
+        throw refuseWrite(`Could not write ${rel}: ${errno}.`);
+      }
+      // Nothing exists here yet, so nothing deeper can exist either.
+      if (!stat) break;
+      if (stat.isSymbolicLink()) {
         throw new AstryxError(
-          `Refusing to write through destination symlink "${path.relative(root, segment)}".`,
+          `Refusing to write through destination symlink "${rel}".`,
           [],
           ERROR_CODES.ERR_PATH_TRAVERSAL,
         );
+      }
+      if (isFile && i === parts.length - 1) {
+        if (!stat.isFile()) {
+          throw refuseWrite(
+            `Could not write ${rel}: it exists and is ${stat.isDirectory() ? 'a directory' : 'not a regular file'}.`,
+          );
+        }
+      } else if (!stat.isDirectory()) {
+        throw refuseWrite(`Could not write into ${rel}: it exists and is not a directory.`);
       }
     }
   }
@@ -341,13 +380,14 @@ export async function swizzleCopy(component, options = {}) {
   const outputDir = path.join(outputBase, dirName);
 
   // Pre-flight path and overwrite checks before any mkdir/writeFile. The same
-  // file set drives these checks, the copy loop, and the reported files, so
-  // nested core source (e.g. Table/plugins/*) is visible to all of them.
+  // sorted file set drives these checks, the copy loop, and the reported
+  // files, so nested core source (e.g. Table/plugins/*) is visible to all of
+  // them and the receipt order does not depend on readdir order.
   const sourceFiles = owner.package === CORE_PACKAGE
     ? collectSourceFiles(componentDir)
     : fs.readdirSync(componentDir).filter(file =>
       !isExcludedFromCopy(file) && fs.statSync(path.join(componentDir, file)).isFile(),
-    );
+    ).sort();
   checkDestinationPaths(cwd, outputDir, sourceFiles);
   const existingFiles = sourceFiles.filter(f =>
     fs.existsSync(path.join(outputDir, f)),

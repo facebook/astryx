@@ -4,8 +4,9 @@
  * @file Colocated tests for the swizzle.copy leaf — path-safety + overwrite +
  * recursive nested-source copy (#3506). The copy leaf writes files, so the
  * output base AND the component name (which becomes a path segment) must both
- * be confined to cwd. Every destination segment, including dangling symlinks,
- * is checked before any output is written.
+ * be confined to cwd. Every destination segment, including dangling symlinks
+ * and wrong-kind entries (a file where a directory goes, or the reverse), is
+ * checked before any output is written.
  */
 
 import {describe, it, expect, afterEach} from 'vitest';
@@ -71,6 +72,93 @@ describe('swizzle.copy — destination symlinks', () => {
     });
     expect(fs.readdirSync(path.join(fixture, 'consumer-files'))).toEqual([]);
   });
+});
+
+describe('swizzle.copy — destination shape', () => {
+  // Sorted plan: Table.tsx, plugins/nested.ts, types.ts. A blocker late in the
+  // plan must be caught before the earlier files are written.
+  const PLAN = ['Table.tsx', 'plugins/nested.ts', 'types.ts'];
+  let fixture;
+  afterEach(() => {
+    if (fixture) fs.rmSync(fixture, {recursive: true, force: true});
+  });
+
+  /** A fake core Table with nested source, in a fresh consumer project. */
+  function buildProject() {
+    fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-swizzle-shape-'));
+    const source = path.join(fixture, 'node_modules/@astryxdesign/core/src/Table');
+    for (const file of PLAN) {
+      fs.mkdirSync(path.dirname(path.join(source, file)), {recursive: true});
+      fs.writeFileSync(path.join(source, file), 'export const x = 1;');
+    }
+    fs.writeFileSync(path.join(fixture, 'package.json'), '{"name":"consumer"}');
+    return fixture;
+  }
+
+  /** Every path under `dir` (outside node_modules) with its file contents. */
+  function snapshot(dir, prefix = '') {
+    return fs.readdirSync(dir, {withFileTypes: true}).flatMap(entry => {
+      const rel = prefix + entry.name;
+      if (rel === 'node_modules') return [];
+      const abs = path.join(dir, entry.name);
+      return entry.isDirectory()
+        ? [`${rel}/`, ...snapshot(abs, `${rel}/`)]
+        : [`${rel}: ${fs.readFileSync(abs, 'utf8')}`];
+    });
+  }
+
+  it.each([
+    ['out', 'file'],
+    ['out/Table', 'file'],
+    ['out/Table/plugins', 'file'],
+    ['out/Table/plugins/nested.ts', 'directory'],
+    ['out/Table/types.ts', 'directory'],
+  ])('rejects an existing %s %s before writing, with or without overwrite', async (blocker, kind) => {
+    const cwd = buildProject();
+    // Consumer edits at every planned destination the blocker leaves room for.
+    for (const file of PLAN) {
+      const dest = `out/Table/${file}`;
+      if (`${dest}/`.startsWith(`${blocker}/`) || `${blocker}/`.startsWith(`${dest}/`)) continue;
+      fs.mkdirSync(path.dirname(path.join(cwd, dest)), {recursive: true});
+      fs.writeFileSync(path.join(cwd, dest), '// consumer edit');
+    }
+    fs.mkdirSync(path.dirname(path.join(cwd, blocker)), {recursive: true});
+    if (kind === 'file') {
+      fs.writeFileSync(path.join(cwd, blocker), '// blocker');
+    } else {
+      fs.mkdirSync(path.join(cwd, blocker));
+      fs.writeFileSync(path.join(cwd, blocker, 'keep.txt'), '// kept');
+    }
+    const before = snapshot(cwd);
+
+    for (const overwrite of [false, true]) {
+      const err = await swizzle('Table', {cwd, output: './out', overwrite}).catch(e => e);
+      expect(err).toMatchObject({code: 'ERR_WRITE_FAILED'});
+      expect(err.message).toContain(path.normalize(blocker));
+      expect(err.message).not.toContain(cwd);
+      expect(snapshot(cwd)).toEqual(before);
+    }
+  });
+
+  it.skipIf(process.platform === 'win32' || process.getuid?.() === 0)(
+    'reports an uninspectable destination as ERR_WRITE_FAILED without writing',
+    async () => {
+      const cwd = buildProject();
+      const locked = path.join(cwd, 'out/Table');
+      fs.mkdirSync(locked, {recursive: true});
+      fs.chmodSync(locked, 0o000);
+      let err;
+      try {
+        err = await swizzle('Table', {cwd, output: './out', overwrite: true}).catch(e => e);
+      } finally {
+        fs.chmodSync(locked, 0o700);
+      }
+      expect(err).toMatchObject({code: 'ERR_WRITE_FAILED'});
+      expect(err.message).toContain('EACCES');
+      expect(err.message).not.toContain(cwd);
+      expect(fs.readdirSync(locked)).toEqual([]);
+    },
+  );
 });
 
 describe('swizzle.copy — path safety', () => {
