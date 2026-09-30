@@ -9,6 +9,10 @@ export const docs = {
   isHiddenFromOverview: true,
   description:
     'Individual checkbox item with label, description, and end content slot. Works in collection mode (inside CheckboxList) or standalone mode (inside List).',
+  // Own playground so this page doesn't inherit CheckboxList's multi-item defaults.
+  playground: {
+    defaults: {label: 'Email', value: 'email'},
+  },
   props: [
     {
       name: 'label',

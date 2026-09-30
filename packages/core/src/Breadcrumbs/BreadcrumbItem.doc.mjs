@@ -12,6 +12,10 @@ export const docs = {
     description:
       'BreadcrumbItem represents one destination, action, current location, or sibling-menu trigger inside a Breadcrumbs trail.',
   },
+  // Own playground so this page doesn't inherit Breadcrumbs' multi-item defaults.
+  playground: {
+    defaults: {children: 'Home', href: '#'},
+  },
   props: [
     {
       name: 'children',

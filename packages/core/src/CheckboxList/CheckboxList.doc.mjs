@@ -75,6 +75,17 @@ export const docs = {
     'multiselect',
     'checklist',
   ],
+  playground: {
+    defaults: {
+      label: 'Notifications',
+      value: ['email'],
+      children: [
+        {__element: 'CheckboxListItem', props: {label: 'Email', value: 'email'}},
+        {__element: 'CheckboxListItem', props: {label: 'SMS', value: 'sms'}},
+        {__element: 'CheckboxListItem', props: {label: 'Push', value: 'push'}},
+      ],
+    },
+  },
   description:
     'Checkbox group container with field integration for label, description, and status.',
   props: [

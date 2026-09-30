@@ -8,6 +8,14 @@ export const docs = {
   group: 'List',
   category: 'Table & List',
   keywords: ["list","listitem","listbox","menu","collection","items","ul","navlist"],
+  playground: {
+    defaults: {
+      children: [
+        {__element: 'ListItem', props: {label: 'Notifications', description: 'Manage your alerts'}},
+        {__element: 'ListItem', props: {label: 'Privacy', description: 'Control your data'}},
+      ],
+    },
+  },
   theming: {
     targets: [
       {className: 'astryx-list', visualProps: ['density', 'listStyle']},
