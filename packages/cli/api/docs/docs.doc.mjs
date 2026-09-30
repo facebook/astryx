@@ -27,7 +27,7 @@ export const doc = {
     'A route opens a node of the docs tree instead: a namespace such as ' +
     "`cli/api` returns its children one level down, a typed doc such as " +
     "`cli/api/functions/search` returns its content, and a guide the tree " +
-    'places (`cli/integrations/quick-start`) reads like any topic. ' +
+    'places (`cli/integrations/make-a-package`) reads like any topic. ' +
     'Every read but the list carries `links`, the commands that move from it: ' +
     '`up` to the level it sits in, `previous` and `next` to its neighbors, and, ' +
     'for a typed doc, `related` to the docs it names (its command or function, ' +
@@ -137,7 +137,7 @@ export const doc = {
     {label: 'One API function', code: "await docs('cli/api/functions/search');"},
     {
       label: 'A whole guide from the docs tree',
-      code: "await docs('cli/integrations/quick-start');",
+      code: "await docs('cli/integrations/make-a-package');",
     },
     {label: 'One section by key', code: "await docs('tokens', 'spacing');"},
   ],

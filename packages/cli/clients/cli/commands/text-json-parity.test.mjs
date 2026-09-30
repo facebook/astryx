@@ -377,6 +377,12 @@ const CASES = [
     // Needs a packable project; pack itself may exit differently.
     skipFieldChecks: true,
   },
+  {
+    // The deprecated alias of `integration verify`.
+    name: 'integration pack',
+    args: ['integration', 'pack', '--check'],
+    skipFieldChecks: true,
+  },
   // ── Layout command: remove these cases when the layout command is deleted ──
   {
     name: 'layout check',

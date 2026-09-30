@@ -13,6 +13,7 @@ import {defineCommand} from '../lib/define-command.mjs';
 import {doc as integrationGroup} from './integration.doc.mjs';
 import {doc as integrationAddCommand} from './integration-add.doc.mjs';
 import {doc as integrationVerifyCommand} from './integration-verify.doc.mjs';
+import {doc as integrationPackCommand} from './integration-pack.doc.mjs';
 import {doc as integrationAddFn} from '../../../api/integration/integrationAdd.doc.mjs';
 import {doc as integrationPackCheckFn} from '../../../api/integration/integrationPackCheck.doc.mjs';
 
@@ -45,6 +46,48 @@ function showGroupOrUnknown(command, label, options, invoked) {
   return NO_RESULT_SET;
 }
 
+/**
+ * Run `integration verify` and print its result, as text or JSON.
+ * @param {import('commander').Command} program
+ */
+async function verifyPackage(program) {
+  const result = await integrationPackCheck({cwd: process.cwd()});
+  if (program.opts().json) {
+    jsonOut(result);
+  } else {
+    const {name, version, packable, tarball, inventory, issues} = result.data;
+    const identity = [name, version].filter(Boolean).join('@');
+    const blocks = [
+      section(
+        packable
+          ? 'Integration package ready'
+          : 'Integration package check failed',
+      ),
+      text(`${packable ? '[ok]' : '[fail]'} ${identity || 'local package'}`),
+    ];
+    if (tarball != null) {
+      blocks.push(
+        text(
+          `${tarball.fileCount} packed files; ${inventory.packedFiles}/${inventory.expectedFiles} required files present.`,
+        ),
+      );
+    }
+    if (issues.length > 0) {
+      blocks.push(
+        list(
+          issues.map(
+            issue =>
+              `[${issue.severity === 'error' ? 'fail' : 'warn'}] ${issue.message}`,
+          ),
+        ),
+      );
+    }
+    emit(...blocks);
+  }
+  if (!result.data.packable) process.exitCode = 1;
+  return NO_RESULT_SET;
+}
+
 /** @param {import('commander').Command} program */
 export function registerIntegration(program) {
   /** @type {import('commander').Command} */
@@ -53,9 +96,9 @@ export function registerIntegration(program) {
     action: (options, command) =>
       showGroupOrUnknown(integration, 'integration', options, command),
   });
-  // The old spelling of `integration verify`, a `pack` subcommand with a
-  // `--check` flag, reports the unknown subcommand and lists `verify`, not the
-  // unknown option. Each subcommand still parses its own options.
+  // An unknown subcommand given with a flag reports the unknown subcommand
+  // and lists the ones the group has, not the unknown option. Each subcommand
+  // still parses its own options.
   integration.allowUnknownOption(true);
 
   defineCommand(integration, integrationAddCommand, {
@@ -116,45 +159,27 @@ export function registerIntegration(program) {
 
   defineCommand(integration, integrationVerifyCommand, {
     fn: integrationPackCheckFn,
-    action: async () => {
-      const result = await integrationPackCheck({cwd: process.cwd()});
-      if (program.opts().json) {
-        jsonOut(result);
-      } else {
-        const {name, version, packable, tarball, inventory, issues} =
-          result.data;
-        const identity = [name, version].filter(Boolean).join('@');
-        const blocks = [
-          section(
-            packable
-              ? 'Integration package ready'
-              : 'Integration package check failed',
-          ),
-          text(
-            `${packable ? '[ok]' : '[fail]'} ${identity || 'local package'}`,
-          ),
-        ];
-        if (tarball != null) {
-          blocks.push(
-            text(
-              `${tarball.fileCount} packed files; ${inventory.packedFiles}/${inventory.expectedFiles} required files present.`,
-            ),
-          );
-        }
-        if (issues.length > 0) {
-          blocks.push(
-            list(
-              issues.map(
-                issue =>
-                  `[${issue.severity === 'error' ? 'fail' : 'warn'}] ${issue.message}`,
-              ),
-            ),
-          );
-        }
-        emit(...blocks);
+    action: async () => verifyPackage(program),
+  });
+  // The name this check had before `integration verify`. It stays as a
+  // deprecated alias, listed as one in help, so scripts that call it keep
+  // working; it runs the same check with the same output and exit codes.
+  defineCommand(integration, integrationPackCommand, {
+    fn: integrationPackCheckFn,
+    action: async options => {
+      if (!options.check) {
+        return cliError(
+          'Pass --check to verify the integration tarball, or run `astryx integration verify`.',
+          {code: ERROR_CODES.ERR_INVALID_ARGUMENT},
+        );
       }
-      if (!result.data.packable) process.exitCode = 1;
-      return NO_RESULT_SET;
+      // stderr, and only in text: JSON callers get the same envelope as verify.
+      if (!program.opts().json) {
+        console.error(
+          'Note: `integration pack --check` is deprecated. Run `astryx integration verify`: it runs the same check.',
+        );
+      }
+      return verifyPackage(program);
     },
   });
 }

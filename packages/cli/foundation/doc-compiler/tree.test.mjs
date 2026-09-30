@@ -500,14 +500,14 @@ describe("the CLI's own docs tree", () => {
         ['guides', ['cli/integrations']],
         ['reference', ['cli/commands', 'cli/api']],
       ]);
-      // The integration guides: one short guide per task, in four slots, and
-      // the docs guides one level down.
+      // The integration guides: one short guide per task, in four slots, with
+      // nested namespaces for deeper authoring topics.
       expect(
         tree
           .get('cli/integrations')
           ?.slots.map(slot => [slot.name, slot.children.length]),
       ).toEqual([
-        ['start', 3],
+        ['start', 2],
         ['contribute', 7],
         ['ship', 5],
         ['help', 1],
@@ -519,6 +519,34 @@ describe("the CLI's own docs tree", () => {
         'cli/integrations/docs/extend-or-replace',
         'cli/integrations/docs/short-and-findable',
         'cli/integrations/docs/check-your-docs',
+      ]);
+      expect(
+        tree
+          .get('cli/integrations/components')
+          ?.slots.map(slot => [slot.name, slot.children]),
+      ).toEqual([
+        [
+          'build',
+          [
+            'cli/integrations/components/add-a-component',
+            'cli/integrations/components/describe-the-component',
+            'cli/integrations/components/component-imports',
+            'cli/integrations/components/see-it-in-an-app',
+          ],
+        ],
+        [
+          'advanced',
+          ['cli/integrations/components/replace-a-core-component'],
+        ],
+      ]);
+      expect(
+        tree.get('cli/integrations/components/describe-the-component')?.slots[0]
+          .children,
+      ).toEqual([
+        'cli/integrations/components/describe-the-component/component-doc-overview',
+        'cli/integrations/components/describe-the-component/single-component',
+        'cli/integrations/components/describe-the-component/component-family',
+        'cli/integrations/components/describe-the-component/subcomponent',
       ]);
       expect(tree.get('cli/api')?.slots[0].children).toEqual([
         'cli/api/functions',
@@ -582,17 +610,31 @@ describe("the CLI's own docs tree", () => {
       expect(inputs.diagnostics).toEqual([]);
       expect(inputs.namespaces.map(n => n.doc.name).sort()).toEqual([
         'api',
+        'build-the-template',
         'cli',
         'commands',
+        'components',
+        'describe-the-component',
         'docs',
+        'document-the-template',
         'integrations',
+        'package-and-test',
+        'template-assets',
+        'templates',
       ]);
       const parents = new Set(inputs.docs.map(d => d.placement?.parent));
       expect([...parents].sort()).toEqual([
+        'namespace:build-the-template',
+        'namespace:components',
+        'namespace:describe-the-component',
         'namespace:docs',
+        'namespace:document-the-template',
         'namespace:integrations',
+        'namespace:package-and-test',
+        'namespace:template-assets',
+        'namespace:templates',
       ]);
-      expect(inputs.docs.length).toBe(21);
+      expect(inputs.docs.length).toBe(43);
     },
     SLOW,
   );

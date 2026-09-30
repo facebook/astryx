@@ -1286,7 +1286,7 @@ function topicCandidates(
   const docTitle = path || doc?.title || title || name;
   const split = sections.length > 1;
   // A placed guide also answers to its last route segment's words:
-  // `package setup` is cli/integrations/package-setup.
+  // `make a package` is cli/integrations/make-a-package.
   const leaf = name.slice(name.lastIndexOf('/') + 1);
   /** @type {Candidate[]} */
   const out = [

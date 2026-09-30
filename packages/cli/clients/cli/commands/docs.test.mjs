@@ -225,12 +225,21 @@ describe('the docs tree, one level at a time', () => {
     expect(stdout).toMatch(/^search +search\(\): Unified ranked search/m);
   }, SLOW);
 
+  it('wraps namespace summaries without discarding searchable words', async () => {
+    const {status, stdout} = await runCli(['docs', 'cli/integrations/templates']);
+    expect(status).toBe(0);
+    expect(stdout).toMatch(/^start-a-template +Help others build apps faster/m);
+    expect(stdout).not.toMatch(/^start-a-template +Start a template:/m);
+    expect(stdout).toMatch(/full page or page\s+section\./);
+    expect(widest(stdout)).toBeLessThanOrEqual(120);
+  }, SLOW);
+
   it('prints a namespace: each slot, its children, and how to go down and up', async () => {
     const {status, stdout} = await runCli(['docs', 'cli/api']);
     expect(status).toBe(0);
     expect(stdout).toMatch(/^API$/m);
     expect(stdout).toMatch(/^Reference$/m);
-    expect(stdout).toMatch(/^functions +Functions: Every function/m);
+    expect(stdout).toMatch(/^functions +Every function/m);
     expect(stdout).toMatch(/^schemas +/m);
     expect(stdout).toMatch(/^enums +/m);
     // One level only: no function is listed on the api page.
@@ -267,7 +276,7 @@ describe('the docs tree, one level at a time', () => {
     const level = await runCli(['docs', 'cli/integrations']);
     expect(level.status).toBe(0);
     expect(level.stdout).toMatch(/^Start$/m);
-    expect(level.stdout).toMatch(/^quick-start +Quick start: /m);
+    expect(level.stdout).toMatch(/^overview +An integration is /m);
     const guide = await runCli(['docs', 'cli/integrations/codemods', '--index']);
     expect(guide.status).toBe(0);
     expect(guide.stdout).toMatch(

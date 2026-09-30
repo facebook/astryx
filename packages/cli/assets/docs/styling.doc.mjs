@@ -217,7 +217,9 @@ const overrides = stylex.create({
       ],
     },
     {
-      id: 'data-attributes',
+      // The key it had in 0.6, so `astryx docs styling
+      // preferred-selector-surface-data-attributes` keeps working.
+      id: 'preferred-selector-surface-data-attributes',
       title: 'Data attribute selectors',
   category: 'guide',
       content: [

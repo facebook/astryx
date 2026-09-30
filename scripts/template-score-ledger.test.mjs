@@ -15,6 +15,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import {describe, expect, it} from 'vitest';
+import {TEMPLATE_RUBRIC} from '../packages/cli/assets/docs/tree/template-quality.doc.mjs';
 
 import {
   TEMPLATE_CATEGORIES,
@@ -101,9 +102,16 @@ describe('the public ledger contract', () => {
   });
 
   it('uses the rubric grade boundaries', () => {
+    expect(TEMPLATE_RUBRIC.version).toBe('1.4');
     expect(
       [100, 90, 89.9, 75, 74.9, 60, 59.9, 40, 39.9, 0].map(templateGrade),
     ).toEqual(['A', 'A', 'B', 'B', 'C', 'C', 'D', 'D', 'F', 'F']);
+  });
+
+  it('reads category ids and weights from the shipped rubric doc', () => {
+    expect(TEMPLATE_CATEGORIES).toEqual(
+      TEMPLATE_RUBRIC.categories.map(({id, title, max}) => ({id, title, max})),
+    );
   });
 
   it('carries the complete 100-point category vocabulary', () => {

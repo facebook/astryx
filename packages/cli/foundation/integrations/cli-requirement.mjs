@@ -20,7 +20,7 @@ export const CLI_PACKAGE = '@astryxdesign/cli';
  * and placed guides), its templates' `replaces`, and its typed theme
  * descriptors. A release before it can hide every doc topic a package with a
  * namespace doc or a placed guide ships, with no warning; it rejects
- * `replaces` and can drop the package's templates and hide its doc topics; and it
+ * `replaces`, drops that template, and hides the package's doc topics; and it
  * rejects a themes root without the `manifest.json` catalog the CLI no longer
  * writes, withholding the package's themes and doc topics.
  */
@@ -132,7 +132,7 @@ export function replacesCliProblem(pkg) {
   return cliRangeProblem(
     pkg,
     'has a template that sets `replaces`',
-    "rejects the field, and can drop the package's templates and hide its doc topics",
+    "rejects the field, drops that template, and hides the package's doc topics",
   );
 }
 

@@ -646,7 +646,7 @@ export async function integrationPackCheck(options = {}) {
     }
   }
   // A template that sets `replaces` needs a CLI that reads the field
-  // (spec:AST-035): an older CLI withholds the package's templates and docs.
+  // (spec:AST-035): an older CLI drops that template and hides the package's docs.
   if (loaded.templates) {
     const found = await discoverIntegrationTemplatesForOne(loaded).catch(
       () => ({templates: [], errors: []}),

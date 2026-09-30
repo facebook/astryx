@@ -187,6 +187,7 @@ const RUNNERS = {
       'import ../../../api/integration/integrationAdd.doc.mjs',
       'import ../../../api/integration/integrationPackCheck.doc.mjs',
       'import ./integration-add.doc.mjs',
+      'import ./integration-pack.doc.mjs',
       'import ./integration-verify.doc.mjs',
       'import ./integration.doc.mjs',
     ],

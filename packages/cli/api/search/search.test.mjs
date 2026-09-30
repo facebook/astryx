@@ -174,10 +174,10 @@ describe('search leaf — docs at the grain a reader reads them', () => {
   it(
     'points a topic hit at its index, never a whole-topic read',
     async () => {
-      const r = await search('cli/integrations/quick-start', {cwd, type: 'doc'});
+      const r = await search('cli/integrations/make-a-package', {cwd, type: 'doc'});
       expect(r.data.results[0]).toMatchObject({
-        name: 'cli/integrations/quick-start',
-        command: 'astryx docs cli/integrations/quick-start --index',
+        name: 'cli/integrations/make-a-package',
+        command: 'astryx docs cli/integrations/make-a-package --index',
       });
       expect(r.data.results[0]).not.toHaveProperty('section');
     },
@@ -415,7 +415,7 @@ describe('search leaf — a candidate that matches every word outranks a partial
     expect(tokens.data.results[0]).toMatchObject({domain: 'doc', name: 'tokens'});
     for (const [query, route] of [
       ['codemods', 'cli/integrations/codemods'],
-      ['package setup', 'cli/integrations/package-setup'],
+      ['make a package', 'cli/integrations/make-a-package'],
       ['test in an app', 'cli/integrations/test-in-an-app'],
     ]) {
       const r = await search(query, {cwd, type: 'doc'});

@@ -1,12 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, expect, it} from 'vitest';
-import {docs as templatesGuide} from './templates.doc.mjs';
+import {docs as replacementGuide} from './replace-a-core-template.doc.mjs';
 import {doc as integrationSchema} from '../../../authoring/integration/integration.doc.mjs';
 import {doc as templateSchema} from '../../../authoring/doctypes/template/template.doc.mjs';
 
 function guideText() {
-  return templatesGuide.sections
+  return replacementGuide.sections
     .flatMap(section => section.content)
     .flatMap(block => {
       if (block.type === 'prose') return [block.text];

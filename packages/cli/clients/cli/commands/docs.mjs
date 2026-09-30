@@ -228,16 +228,23 @@ function emitIndex(index, run) {
 }
 
 /**
- * One child row of a namespace: its route name, then the doc's own title when
- * it is not the route name (`assertResponse()`, `search()`), then its summary.
+ * One child row of a namespace. Namespace and guide route names are already
+ * readable, so repeating their titles adds noise (`start-a-template  Start a
+ * template`). Typed docs keep a distinct title when it carries the real symbol
+ * name (`assert-response  assertResponse()`).
  * @param {import('../../../api/docs/docs.type.mjs').DocsNodeChild} child
  * @returns {{name: string, summary: string}}
  */
 function childRow(child) {
+  const titleAddsIdentity =
+    child.kind !== 'namespace' &&
+    child.kind !== 'generic' &&
+    child.title !== child.name;
   return {
     name: child.name,
-    summary:
-      child.title === child.name ? child.summary : `${child.title}: ${child.summary}`,
+    summary: titleAddsIdentity
+      ? `${child.title}: ${child.summary}`
+      : child.summary,
   };
 }
 
@@ -261,7 +268,6 @@ function emitNode(node, detail, run) {
         records(slot.children.map(childRow), {
           fields: ['name', 'summary'],
           layout: 'inline',
-          overflow: 'truncate',
         }),
       ]),
       text(

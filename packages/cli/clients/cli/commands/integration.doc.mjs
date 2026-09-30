@@ -9,7 +9,7 @@ export const doc = {
   summary: 'Author and verify an Astryx integration package',
   description:
     'Add contributions to your package, then check the packed package the way an app receives it. The guides start at {@link generic:overview}.',
-  subcommands: ['add', 'verify'],
+  subcommands: ['add', 'verify', 'pack'],
   examples: [
     {
       label: 'Add a component',

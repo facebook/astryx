@@ -46,8 +46,8 @@ export const docs = {
               'Your CLI is older than `integration verify`. Run `npm install -D @astryxdesign/cli@latest`. On the older CLI, the same check is `integration pack --check`.',
             ],
             [
-              "`Error: unknown subcommand 'integration pack'`",
-              'Run `npx astryx integration verify`. It replaced `integration pack --check`.',
+              'Note: `integration pack --check` is deprecated.',
+              'The old name still runs the same check. Switch to `npx astryx integration verify`; the old name will be removed in a later release.',
             ],
           ],
         },

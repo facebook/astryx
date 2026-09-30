@@ -127,10 +127,7 @@ describe('integration authoring CLI', () => {
     );
     expect(added.status).toBe(0);
 
-    const checked = await runCli(
-      ['integration', 'verify', '--json'],
-      tmpDir,
-    );
+    const checked = await runCli(['integration', 'verify', '--json'], tmpDir);
     // Without an exports map, the extensionless import cannot resolve —
     // pack-check must fail, not false-green.
     expect(checked.status).not.toBe(0);
@@ -150,33 +147,62 @@ describe('integration authoring CLI', () => {
     );
   });
 
-  it('names the pre-publish check `integration verify`, with no `pack` alias', async () => {
-    const result = await runCli(['integration', 'pack'], tmpDir);
-    expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain("unknown subcommand 'integration pack'");
-    expect(result.stderr).toMatch(/verify\s+\(available subcommand\)/);
-    // The old spelling, with its flag, names the subcommand too.
-    const old = await runCli(['integration', 'pack', '--check'], tmpDir);
-    expect(old.status).not.toBe(0);
-    expect(old.stderr).toContain("unknown subcommand 'integration pack'");
-    expect(old.stderr).toMatch(/verify\s+\(available subcommand\)/);
+  it('keeps `integration pack --check` as a deprecated alias of `integration verify`', async () => {
+    // The old spelling runs the same check: the same JSON, the same exit code.
+    const verify = await runCli(['integration', 'verify', '--json'], tmpDir);
+    const old = await runCli(
+      ['integration', 'pack', '--check', '--json'],
+      tmpDir,
+    );
+    expect(old.status).toBe(verify.status);
+    const verifyEnvelope = parseEnvelope(verify.stdout);
+    const oldEnvelope = parseEnvelope(old.stdout);
+    expect(oldEnvelope.type).toBe('integration.pack-check');
+    expect(oldEnvelope.type).toBe(verifyEnvelope.type);
+    expect(oldEnvelope.data.packable).toBe(verifyEnvelope.data.packable);
+    expect(oldEnvelope.data.issues).toEqual(verifyEnvelope.data.issues);
+    // The global flag may come first, as agents usually write it.
+    const lead = await runCli(
+      ['--json', 'integration', 'pack', '--check'],
+      tmpDir,
+    );
+    expect(parseEnvelope(lead.stdout).type).toBe('integration.pack-check');
+    // In text, it says to use the new name, on stderr, so stdout is the same.
+    const text = await runCli(['integration', 'pack', '--check'], tmpDir);
+    const verifyText = await runCli(['integration', 'verify'], tmpDir);
+    expect(text.status).toBe(verifyText.status);
+    expect(text.stdout).toBe(verifyText.stdout);
+    expect(text.stderr).toContain('`integration pack --check` is deprecated');
+    expect(text.stderr).toContain('astryx integration verify');
+    // Without --check it fails, as it did, and names both spellings.
+    const bare = await runCli(['integration', 'pack'], tmpDir);
+    expect(bare.status).not.toBe(0);
+    expect(bare.stderr).toContain('--check');
+    expect(bare.stderr).toContain('astryx integration verify');
+    // Help lists it, marked deprecated: nothing is hidden.
+    const help = await runCli(['integration', '--help'], tmpDir);
+    expect(help.stdout).toMatch(
+      /pack .*Deprecated: the old name of `integration verify`/,
+    );
+    // `verify` itself takes no --check.
     const flag = await runCli(['integration', 'verify', '--check'], tmpDir);
     expect(flag.status).not.toBe(0);
     expect(flag.stderr).toContain("unknown option '--check'");
-    // A JSON caller of the old spelling gets the same answer as an envelope.
-    const json = await runCli(['integration', 'pack', '--check', '--json'], tmpDir);
-    expect(json.status).not.toBe(0);
-    expect(parseEnvelope(json.stdout)).toMatchObject({
+    // An unknown subcommand with a flag names the subcommand, in text and JSON.
+    const unknown = await runCli(['integration', 'bogus', '--check'], tmpDir);
+    expect(unknown.status).not.toBe(0);
+    expect(unknown.stderr).toContain("unknown subcommand 'integration bogus'");
+    expect(unknown.stderr).toMatch(/verify\s+\(available subcommand\)/);
+    const unknownJson = await runCli(
+      ['integration', 'bogus', '--check', '--json'],
+      tmpDir,
+    );
+    expect(parseEnvelope(unknownJson.stdout)).toMatchObject({
       code: 'ERR_UNKNOWN_SUBCOMMAND',
-      error: "unknown subcommand 'integration pack'",
-      suggestions: expect.arrayContaining([expect.objectContaining({name: 'verify'})]),
-    });
-    // The global flag may come first, as agents usually write it.
-    const lead = await runCli(['--json', 'integration', 'pack', '--check'], tmpDir);
-    expect(lead.status).not.toBe(0);
-    expect(parseEnvelope(lead.stdout)).toMatchObject({
-      code: 'ERR_UNKNOWN_SUBCOMMAND',
-      error: "unknown subcommand 'integration pack'",
+      error: "unknown subcommand 'integration bogus'",
+      suggestions: expect.arrayContaining([
+        expect.objectContaining({name: 'verify'}),
+      ]),
     });
     // A flag alone is an unknown option, not an unknown subcommand.
     const flagOnly = await runCli(['integration', '--bogus'], tmpDir);

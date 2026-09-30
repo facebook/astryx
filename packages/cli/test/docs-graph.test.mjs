@@ -254,7 +254,7 @@ function problemWith(shown, {commands, groups, global}) {
   }
   if (name == null) return `unknown command "${rest[i]}"`;
   // A group takes a subcommand, so a word after it names one it lacks:
-  // `astryx integration pack` is the old spelling of `integration verify`.
+  // `astryx integration bogus` names a subcommand `integration` lacks.
   if (groups.has(name) && i < rest.length && /^[a-z]/.test(rest[i])) {
     return `\`astryx ${name}\` has no subcommand ${rest[i]}`;
   }

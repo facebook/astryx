@@ -111,7 +111,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'The stable 0.6.3 release calls this check `integration pack --check`. Its options and exit codes are in {@link command:integration verify}.',
+          text: '`integration pack --check`, the name this check had in 0.6, still runs it and prints a note; it will be removed in a later release. The options and exit codes are in {@link command:integration verify}.',
         },
       ],
     },

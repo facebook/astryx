@@ -92,6 +92,7 @@ export const RESPONSE_TYPES = {
   'theme palette generate': ['theme.palette.generate'],
   'integration add': ['integration.add'],
   'integration verify': ['integration.pack-check'],
+  'integration pack': ['integration.pack-check'],
   upgrade: ['upgrade.list', 'upgrade.registry', 'upgrade.status', 'upgrade.run'],
   manifest: ['manifest'],
   doctor: ['doctor'],
@@ -127,7 +128,7 @@ const EXAMPLES = {
     'astryx docs spacing --json',
     'astryx docs theme',
     'astryx docs theme quick-start',
-    'astryx docs cli/integrations/quick-start --full',
+    'astryx docs cli/integrations/make-a-package --full',
   ],
   discover: ['astryx discover --json'],
   search: [

@@ -49,19 +49,46 @@ function guideText(doc) {
 }
 
 /**
- * The text of every guide under `cli/integrations`, the docs guides one level
- * down included.
+ * The text of every guide beneath `cli/integrations`, at any namespace depth.
  */
 async function integrationGuidesText({codeOnly = false} = {}) {
-  const parts = [];
+  const authored = [];
   for (const file of fs.readdirSync(TREE_DIR).sort()) {
     if (!file.endsWith('.doc.mjs')) continue;
     const {docs: doc} = await import(path.join(TREE_DIR, file));
+    authored.push(doc);
+  }
+
+  const namespaces = new Set(['integrations']);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const doc of authored) {
+      const parent = doc?.placement?.parent;
+      if (
+        doc.type === 'namespace' &&
+        typeof parent === 'string' &&
+        parent.startsWith('namespace:') &&
+        namespaces.has(parent.slice('namespace:'.length)) &&
+        !namespaces.has(doc.name)
+      ) {
+        namespaces.add(doc.name);
+        grew = true;
+      }
+    }
+  }
+
+  const parts = [];
+  for (const doc of authored) {
     const parent = doc?.placement?.parent;
-    if (parent !== 'namespace:integrations' && parent !== 'namespace:docs') {
+    if (
+      doc.type !== 'generic' ||
+      typeof parent !== 'string' ||
+      !parent.startsWith('namespace:') ||
+      !namespaces.has(parent.slice('namespace:'.length))
+    ) {
       continue;
     }
-    if (doc.type !== 'generic') continue;
     if (!codeOnly) {
       parts.push(guideText(doc));
       continue;
@@ -358,17 +385,30 @@ describe('integration guides required content', () => {
     // doc the CLI ships, a message or example in the CLI's source (the agent
     // block it writes, a hint, the manifest), a Markdown file in the repo
     // (READMEs, AGENTS.md, records, pending changesets, skills), or a docsite
-    // page. Only these lines, which tell an older CLI's check from the new
-    // one, may; released CHANGELOGs and the tests that prove the old spelling
-    // fails keep theirs.
+    // page. Only the deprecated alias itself (its doc and the lines that
+    // register it) and the guides that name it as history may; released
+    // CHANGELOGs and the tests of the alias keep theirs.
     const repo = path.join(import.meta.dirname, '..', '..', '..');
     const history = new Set(
       [
         'packages/cli/assets/docs/tree/checks.doc.mjs',
         'packages/cli/assets/docs/tree/troubleshooting.doc.mjs',
         '.changeset/integration-verify.md',
+        'packages/cli/clients/cli/commands/integration-pack.doc.mjs',
       ].map(file => path.join(repo, file)),
     );
+    // Lines that define the alias, and nothing else in their files.
+    /** @type {Record<string, string[]>} */
+    const aliasLines = {
+      'packages/cli/clients/cli/commands/integration.mjs': [
+        "import {doc as integrationPackCommand} from './integration-pack.doc.mjs';",
+        "'Note: `integration pack --check` is deprecated. Run `astryx integration verify`: it runs the same check.',",
+      ],
+      'packages/cli/clients/cli/lib/manifest.mjs': [
+        "'integration pack': ['integration.pack-check'],",
+      ],
+      'packages/cli/clients/cli/index.mjs': ["'integration pack',"],
+    };
     const OLD = /\bintegration[ -]pack(?!age)\b|\bpack --check\b/;
     const SKIP = new Set([
       'node_modules',
@@ -389,8 +429,12 @@ describe('integration guides required content', () => {
     const walk = (dir, keep) =>
       fs.readdirSync(dir, {withFileTypes: true}).flatMap(entry => {
         const full = path.join(dir, entry.name);
+        // Other tests make scratch packages in `.astryx-*` folders while this
+        // one reads the tree; they are not the repo's text.
         if (entry.isDirectory())
-          return SKIP.has(entry.name) ? [] : walk(full, keep);
+          return SKIP.has(entry.name) || entry.name.startsWith('.astryx-')
+            ? []
+            : walk(full, keep);
         return entry.isFile() && keep(entry.name) ? [full] : [];
       });
     const cli = path.join(repo, 'packages', 'cli');
@@ -409,9 +453,21 @@ describe('integration guides required content', () => {
       ),
     ]);
     expect(files.size).toBeGreaterThan(500);
-    const stale = [...files].filter(
-      file => !history.has(file) && OLD.test(fs.readFileSync(file, 'utf8')),
-    );
+    const stale = [...files].filter(file => {
+      if (history.has(file)) return false;
+      const allowed = new Set(aliasLines[path.relative(repo, file)] ?? []);
+      let text;
+      try {
+        text = fs.readFileSync(file, 'utf8');
+      } catch (error) {
+        // A scratch file another test removed between the walk and the read.
+        if (/** @type {any} */ (error).code === 'ENOENT') return false;
+        throw error;
+      }
+      return text
+        .split('\n')
+        .some(line => OLD.test(line) && !allowed.has(line.trim()));
+    });
     expect(stale.map(file => path.relative(repo, file))).toEqual([]);
   });
 
@@ -452,7 +508,9 @@ describe('integration guides required content', () => {
         }
       }
     }
-    expect(found.length).toBeGreaterThanOrEqual(20);
+    // A floor, not a count: it proves the patterns still match real copies.
+    // Removing a duplicated copy lowers the count, which is the goal.
+    expect(found.length).toBeGreaterThanOrEqual(10);
     expect(
       found.filter(line => !line.endsWith(` names ${DOCS_TREE_CLI}`)),
     ).toEqual([]);
