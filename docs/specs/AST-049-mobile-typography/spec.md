@@ -26,9 +26,10 @@ affects_consumer_docs: [typography, theme]
 
 ## Intent
 
-The mobile scale MUST raise a desktop base below 16px-reference to 16px-reference
-and choose a pin target from the desktop ratio. The selected role MUST retain
-its desktop size.
+To balance the rest of the text styles with inputs' automatic 16px-reference
+minimum on coarse-pointer iOS devices, the mobile scale MUST raise a desktop
+base below 16px-reference to 16px-reference and choose a pin target from the
+desktop ratio. The selected role MUST retain its desktop size.
 
 ## Non-goals
 
