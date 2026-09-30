@@ -7,6 +7,7 @@ import {CLI_ROOT} from '../fs/paths.mjs';
 import {semverCompare} from '../env/semver.mjs';
 import {
   DOCS_TREE_CLI,
+  REPLACES_CLI,
   lowestAdmitted,
   docsTreeCliProblem,
   replacesCliProblem,
@@ -47,7 +48,7 @@ describe('docsTreeCliProblem', () => {
     },
   );
 
-  it.each(['>=0.7.0', '^0.7.2', '>=0.7.0 <2'])('accepts %s', range => {
+  it.each(['>=0.6.4', '^0.6.4', '>=0.7.0 <2'])('accepts %s', range => {
     expect(
       docsTreeCliProblem({peerDependencies: {'@astryxdesign/cli': range}}),
     ).toBeNull();
@@ -55,25 +56,40 @@ describe('docsTreeCliProblem', () => {
 
   it('declares the peer as optional, and keeps what the package says of it', () => {
     const declared = withDocsTreeCli({name: '@acme/kit'});
-    expect(declared.peerDependencies).toEqual({'@astryxdesign/cli': `>=${DOCS_TREE_CLI}`});
-    expect(declared.peerDependenciesMeta).toEqual({'@astryxdesign/cli': {optional: true}});
+    expect(declared.peerDependencies).toEqual({
+      '@astryxdesign/cli': `>=${DOCS_TREE_CLI}`,
+    });
+    expect(declared.peerDependenciesMeta).toEqual({
+      '@astryxdesign/cli': {optional: true},
+    });
     expect(docsTreeCliProblem(declared)).toBeNull();
     const required = withDocsTreeCli({
       peerDependencies: {react: '^19.0.0', '@astryxdesign/cli': '^0.6.0'},
       peerDependenciesMeta: {'@astryxdesign/cli': {optional: false}},
     });
     expect(required.peerDependencies.react).toBe('^19.0.0');
-    expect(required.peerDependenciesMeta['@astryxdesign/cli']).toEqual({optional: false});
+    expect(required.peerDependenciesMeta['@astryxdesign/cli']).toEqual({
+      optional: false,
+    });
   });
 });
 
 describe('replacesCliProblem', () => {
   it('asks a package that sets replaces for a CLI that reads the field', () => {
-    expect(replacesCliProblem({name: '@acme/kit'})).toContain('sets `replaces`');
-    expect(replacesCliProblem({peerDependencies: {'@astryxdesign/cli': '^0.6.0'}})).toContain(
-      'admits a CLI older than',
+    expect(replacesCliProblem({name: '@acme/kit'})).toContain(
+      'sets `replaces`',
     );
-    expect(replacesCliProblem({peerDependencies: {'@astryxdesign/cli': '>=0.7.0'}})).toBeNull();
+    expect(
+      replacesCliProblem({peerDependencies: {'@astryxdesign/cli': '^0.6.0'}}),
+    ).toContain('admits a CLI older than');
+    expect(
+      replacesCliProblem({peerDependencies: {'@astryxdesign/cli': '>=0.6.4'}}),
+    ).toContain('admits a CLI older than');
+    expect(
+      replacesCliProblem({
+        peerDependencies: {'@astryxdesign/cli': `>=${REPLACES_CLI}`},
+      }),
+    ).toBeNull();
   });
 });
 
@@ -88,8 +104,11 @@ describe('DOCS_TREE_CLI', () => {
     let bump = 0;
     for (const file of fs.readdirSync(dir)) {
       if (!file.endsWith('.md') || file === 'README.md') continue;
-      const head = fs.readFileSync(path.join(dir, file), 'utf-8').split('---')[1] ?? '';
-      const m = /['"]@astryxdesign\/cli['"]\s*:\s*(patch|minor|major)/.exec(head);
+      const head =
+        fs.readFileSync(path.join(dir, file), 'utf-8').split('---')[1] ?? '';
+      const m = /['"]@astryxdesign\/cli['"]\s*:\s*(patch|minor|major)/.exec(
+        head,
+      );
       if (m) bump = Math.max(bump, rank[m[1]]);
     }
     const [major, minor, patch] = version.split('-')[0].split('.').map(Number);

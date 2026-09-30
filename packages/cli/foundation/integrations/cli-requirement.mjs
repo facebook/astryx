@@ -5,7 +5,8 @@
  *
  * @input A package.json object.
  * @output Whether its `peerDependencies` range for `@astryxdesign/cli` admits
- *   only CLIs that read namespace docs, and the package.json that declares it.
+ *   only CLIs that read namespace docs or template replacements, and the
+ *   package.json that declares the docs-tree requirement.
  * @position foundation/integrations; read by `integration add doc --parent`,
  *   which declares the peer, and `integration pack --check`, which requires it.
  */
@@ -16,14 +17,20 @@ export const CLI_PACKAGE = '@astryxdesign/cli';
 
 /**
  * The first CLI release that reads an integration's docs tree (namespace docs
- * and placed guides) and its templates' `replaces`. A release before it can
- * hide every doc topic a package with a namespace doc or a placed guide
- * ships, with no warning, and it rejects `replaces` and withholds the
- * package's templates and doc topics.
+ * and placed guides). A release before it can hide every doc topic a package
+ * with a namespace doc or a placed guide ships, with no warning.
  */
-export const DOCS_TREE_CLI = '0.7.0';
+export const DOCS_TREE_CLI = '0.6.4';
 
-const VERSION_RE = /^v?(\d+|[xX*])(?:\.(\d+|[xX*]))?(?:\.(\d+|[xX*]))?(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+/**
+ * The first supported CLI release that reads a template's `replaces` field.
+ * Earlier releases reject the field and withhold the package's templates and
+ * doc topics.
+ */
+export const REPLACES_CLI = '0.7.0';
+
+const VERSION_RE =
+  /^v?(\d+|[xX*])(?:\.(\d+|[xX*]))?(?:\.(\d+|[xX*]))?(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 
 /**
  * A version or partial version as MAJOR.MINOR.PATCH, a wildcard part as 0.
@@ -84,19 +91,20 @@ export function lowestAdmitted(range) {
  * Why a package that uses a feature an older CLI cannot read would lose it,
  * or null when its declared CLI range admits only CLIs that read it.
  * @param {any} pkg package.json
+ * @param {string} requiredVersion first CLI release that supports the feature
  * @param {string} feature what the package does, e.g. "ships a namespace doc"
  * @param {string} loss what an older CLI does with it
  * @returns {string | null}
  */
-function cliRangeProblem(pkg, feature, loss) {
+function cliRangeProblem(pkg, requiredVersion, feature, loss) {
   const range = pkg?.peerDependencies?.[CLI_PACKAGE];
-  const fix = `"${CLI_PACKAGE}": ">=${DOCS_TREE_CLI}" in peerDependencies (optional in peerDependenciesMeta, if the CLI is not required)`;
+  const fix = `"${CLI_PACKAGE}": ">=${requiredVersion}" in peerDependencies (optional in peerDependenciesMeta, if the CLI is not required)`;
   if (typeof range !== 'string') {
-    return `The package ${feature} but declares no ${CLI_PACKAGE} peer. A CLI older than ${DOCS_TREE_CLI} ${loss}. Declare ${fix}.`;
+    return `The package ${feature} but declares no ${CLI_PACKAGE} peer. A CLI older than ${requiredVersion} ${loss}. Declare ${fix}.`;
   }
   const lowest = lowestAdmitted(range);
-  if (lowest == null || semverCompare(lowest, DOCS_TREE_CLI) < 0) {
-    return `The package ${feature}, but its ${CLI_PACKAGE} peer range "${range}" admits a CLI older than ${DOCS_TREE_CLI}, which ${loss}. Declare ${fix}.`;
+  if (lowest == null || semverCompare(lowest, requiredVersion) < 0) {
+    return `The package ${feature}, but its ${CLI_PACKAGE} peer range "${range}" admits a CLI older than ${requiredVersion}, which ${loss}. Declare ${fix}.`;
   }
   return null;
 }
@@ -113,6 +121,7 @@ function cliRangeProblem(pkg, feature, loss) {
 export function docsTreeCliProblem(pkg) {
   return cliRangeProblem(
     pkg,
+    DOCS_TREE_CLI,
     'ships a namespace doc or a placed guide',
     'does not read the docs tree, and can hide every doc topic the package ships',
   );
@@ -128,6 +137,7 @@ export function docsTreeCliProblem(pkg) {
 export function replacesCliProblem(pkg) {
   return cliRangeProblem(
     pkg,
+    REPLACES_CLI,
     'has a template that sets `replaces`',
     "rejects the field, and withholds the package's templates and doc topics",
   );
