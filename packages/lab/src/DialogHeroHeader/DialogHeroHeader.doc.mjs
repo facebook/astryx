@@ -35,7 +35,7 @@ export const docs = {
       name: 'title',
       type: 'string | ReactElement',
       description:
-        'Dialog title. A string is wrapped in a level 2 Heading (matching DialogHeader); pass a pre-styled Heading element to customize the treatment. Provides the accessible label for the parent Dialog via aria-labelledby unless the Dialog has an explicit label. The visible title is the default initial focus target; another eligible descendant autofocus request takes priority.',
+        'Dialog title. A string is wrapped in a level 2 Heading (matching DialogHeader); pass a pre-styled Heading element to customize the treatment. Provides the accessible label for the parent Dialog via aria-labelledby unless the Dialog has an explicit label. The visible title is the default initial focus target; another eligible descendant autofocus request takes priority. A custom Heading receives the label and focus on its own element; if it sets its own id, name the Dialog with aria-labelledby.',
       required: true,
     },
     {

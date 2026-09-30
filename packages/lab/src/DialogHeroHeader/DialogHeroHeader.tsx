@@ -30,8 +30,11 @@
  * The title alone carries Dialog's title id. A visible title declares default
  * focus intent; Dialog applies it after opening, with explicit descendant
  * focus requests taking priority. Hidden, inline, and standalone headers do
- * not request focus. MediaTheme stays mounted across media-mode changes so
- * the close button retains DOM identity and keyboard focus.
+ * not request focus. A caller-provided heading receives the same handshake on
+ * its own rendered element (never on a wrapper, so the focus target keeps its
+ * heading role); attributes the caller already set are left untouched.
+ * MediaTheme stays mounted across media-mode changes so the close button
+ * retains DOM identity and keyboard focus.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/lab/src/DialogHeroHeader/DialogHeroHeader.doc.mjs (props, usage)
@@ -40,7 +43,12 @@
  * - /apps/storybook/stories/DialogHeroHeader.stories.tsx (examples)
  */
 
-import type {ReactElement, ReactNode} from 'react';
+import {
+  useLayoutEffect,
+  useRef,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '@astryxdesign/core';
 import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
@@ -93,7 +101,61 @@ const styles = stylex.create({
     minWidth: 0,
     outline: 'none',
   },
+  // Layout-only slot around a caller-provided heading. It never takes the
+  // title id or focus; those land on the heading itself.
+  customTitleSlot: {
+    minWidth: 0,
+  },
 });
+
+const HEADING_SELECTOR = 'h1, h2, h3, h4, h5, h6, [role="heading"]';
+
+/**
+ * Applies Dialog's title handshake to the rendered element of a
+ * caller-provided heading without cloning or inspecting it. Only attributes
+ * the element does not already carry are added, and cleanup removes only
+ * values that are still ours, so a caller-owned id or tabIndex always wins.
+ * Runs as a layout effect so the id and focus marker exist before Dialog
+ * resolves its default name and initial focus in the same commit.
+ */
+function useCustomTitleHandshake(
+  slotRef: React.RefObject<HTMLDivElement | null>,
+  title: string | ReactElement,
+  titleId: string | undefined,
+  shouldAutoFocus: boolean,
+) {
+  useLayoutEffect(() => {
+    const slot = slotRef.current;
+    const heading =
+      slot?.querySelector<HTMLElement>(HEADING_SELECTOR) ??
+      (slot?.firstElementChild as HTMLElement | null | undefined);
+    if (!heading) {
+      return;
+    }
+    const added: Array<[name: string, value: string]> = [];
+    const addIfAbsent = (name: string, value: string) => {
+      if (!heading.hasAttribute(name)) {
+        heading.setAttribute(name, value);
+        added.push([name, value]);
+      }
+    };
+    if (titleId != null) {
+      addIfAbsent('id', titleId);
+    }
+    if (shouldAutoFocus) {
+      addIfAbsent('tabindex', '-1');
+      // Private coordination with Dialog, which owns modal focus timing.
+      addIfAbsent('data-autofocus', 'dialog-title');
+    }
+    return () => {
+      for (const [name, value] of added) {
+        if (heading.getAttribute(name) === value) {
+          heading.removeAttribute(name);
+        }
+      }
+    };
+  }, [slotRef, title, titleId, shouldAutoFocus]);
+}
 
 /**
  * Luminance of the media surface, forwarded to MediaTheme for content
@@ -112,6 +174,8 @@ export interface DialogHeroHeaderProps extends BaseProps<HTMLDivElement> {
    * Dialog via aria-labelledby (unless the Dialog receives an explicit
    * aria-label/aria-labelledby). The visible title is the default initial
    * focus target after the modal opens; an explicit descendant request wins.
+   * A custom heading receives the label and focus on its own element; if it
+   * sets its own `id`, name the Dialog with `aria-labelledby` instead.
    */
   title: string | ReactElement;
 
@@ -214,12 +278,8 @@ export function DialogHeroHeader({
   const dialogContext = useDialogContext();
   const shouldAutoFocus = dialogContext?.isInline === false && !isTitleHidden;
   const titleId = dialogContext?.titleId;
-  const titleProps = {
-    id: titleId,
-    tabIndex: shouldAutoFocus ? -1 : undefined,
-    // Private coordination with Dialog, which owns modal focus timing.
-    'data-autofocus': shouldAutoFocus ? 'dialog-title' : undefined,
-  };
+  const customTitleSlotRef = useRef<HTMLDivElement>(null);
+  useCustomTitleHandshake(customTitleSlotRef, title, titleId, shouldAutoFocus);
 
   const closeButton = onOpenChange != null && (
     <Button
@@ -235,8 +295,9 @@ export function DialogHeroHeader({
     />
   );
 
-  // Custom headings keep their own props. Their wrapper supplies the title
-  // handshake without introspection and without naming the start-content slot.
+  // Custom headings keep their own props; useCustomTitleHandshake wires the
+  // title id and focus request onto the rendered heading, never the slot and
+  // never the start-content, so neither leaks into the dialog's name.
   const titleRow = (
     <div {...stylex.props(styles.titleRow)}>
       {startContent != null && (
@@ -244,14 +305,17 @@ export function DialogHeroHeader({
       )}
       {typeof title === 'string' ? (
         <Heading
-          {...titleProps}
+          id={titleId}
+          tabIndex={shouldAutoFocus ? -1 : undefined}
+          // Private coordination with Dialog, which owns modal focus timing.
+          data-autofocus={shouldAutoFocus ? 'dialog-title' : undefined}
           level={2}
           maxLines={maxLines}
           xstyle={styles.titleHeading}>
           {title}
         </Heading>
       ) : (
-        <div {...titleProps} {...stylex.props(styles.titleHeading)}>
+        <div ref={customTitleSlotRef} {...stylex.props(styles.customTitleSlot)}>
           {title}
         </div>
       )}
