@@ -31,14 +31,14 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: '`integration verify` runs `npm pack`, including lifecycle scripts, unpacks the tarball into a temporary app without installing its dependencies, and checks the unpacked integration. It publishes nothing and removes the tarball and the temporary app.',
+          text: '`integration verify` runs `npm pack`, including lifecycle scripts, unpacks the `.tgz` file into a temporary app without installing its dependencies, and checks the unpacked integration. It publishes nothing and removes the `.tgz` file and the temporary app.',
         },
         {
           type: 'list',
           style: 'ordered',
           items: [
             'It validates the manifest, every template doc, its source file, and the templates directory.',
-            'It checks that the manifest and every template file are in the tarball.',
+            'It checks that the manifest and every template file are in the `.tgz` file.',
             'It checks that each packed template keeps the same id, type, `name`, and `replaces` as your working copy. It does not compare template source or other doc fields.',
             'It resolves each template through its public package path in the unpacked package.',
             'It checks that the resolved template module has a default export.',

@@ -46,7 +46,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'With no `files` list, npm packs every file your ignore files do not exclude, including an old tarball or an `.env` file. List what ships instead.',
+          text: 'With no `files` list, npm packs every file your ignore files do not exclude, including an old `.tgz` file or an `.env` file. List what ships instead.',
         },
         {
           type: 'code',
@@ -94,7 +94,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Install the version you published in a clean app, and run the same commands you ran against the tarball.',
+          text: 'Install the version you published in a clean app, and run the same commands you ran against the `.tgz` file.',
         },
         {
           type: 'code',

@@ -55,7 +55,7 @@ export const docs = {
             [
               '`npx astryx integration verify`',
               'The packed package holds every file, shows the same contributions, resolves every public import, and declares the CLI it needs',
-              'Anything `validate` fails on, no manifest, a file left out of the tarball, an import that does not resolve, or a missing CLI peer',
+              'Anything `validate` fails on, no manifest, a file left out of the `.tgz` file, an import that does not resolve, or a missing CLI peer',
               'Anything `validate` warns about',
             ],
           ],
@@ -96,14 +96,14 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: '`integration verify` packs your package with npm, unpacks it into a temporary app, and checks that the app sees everything your source has. It publishes nothing and leaves no tarball or temporary folder behind.',
+          text: '`integration verify` packs your package with npm, unpacks it into a temporary app, and checks that the app sees everything your source has. It publishes nothing and leaves no `.tgz` file or temporary folder behind.',
         },
         {
           type: 'list',
           style: 'ordered',
           items: [
             'It runs `npm pack` the way `npm publish` would, including your `prepack` script.',
-            'It checks that every contribution file is in the tarball. A root missing from `files` fails with `Add "templates" to "files" in package.json.`',
+            'It checks that every contribution file is in the `.tgz` file. A root missing from `files` fails with `Add "templates" to "files" in package.json.`',
             'It lists the components, templates, themes, docs, and codemods the temporary app sees, and compares them with your source.',
             "It resolves each component's `import`, and each template's public import, the way Node does, and checks that the module exports the component, or a default export for a template.",
             'It fails a package that ships a docs section, a placed guide, a template `replaces`, a doc section with an `id`, or a theme without an `@astryxdesign/cli` peer of `>=0.7.0`.',

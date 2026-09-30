@@ -93,7 +93,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Run `integration verify` to check that an app would see the component, then make the tarball you install next. `--pack-destination ..` writes it beside the package folder, so the next pack does not ship it.',
+          text: 'Run `integration verify` to check that an app would see the component, then make the `.tgz` file you install next. `--pack-destination ..` writes it beside the package folder, so the next pack does not ship it.',
         },
         {
           type: 'code',
@@ -107,7 +107,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: '`integration verify` packs the package, unpacks it into a temporary app, and checks that the component resolves through its public import there. It publishes nothing and leaves no tarball, so `npm pack` writes `../acme-astryx-widgets-1.0.0.tgz` for the next step.',
+          text: '`integration verify` packs the package, unpacks it into a temporary app, and checks that the component resolves through its public import there. It publishes nothing and leaves no `.tgz` file, so `npm pack` writes `../acme-astryx-widgets-1.0.0.tgz` for the next step.',
         },
         {
           type: 'heading',
@@ -116,7 +116,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Install Core, the CLI, and your tarball in a new app. The app loads your package because it is a dependency, with no config.',
+          text: 'Install Core, the CLI, and your `.tgz` file in a new app. The app loads your package because it is a dependency, with no config.',
         },
         {
           type: 'code',

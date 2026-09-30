@@ -17,12 +17,12 @@ export const docs = {
     'Install your packed package in an app and run the commands its users will run.',
   sections: [
     {
-      id: 'install-the-tarball',
-      title: 'Install the tarball in an app',
+      id: 'install-the-packed-package',
+      title: 'Install the packed package in an app',
       content: [
         {
           type: 'prose',
-          text: 'Pack the package beside its folder, so the next pack does not ship the tarball, then install it in an app together with Core and the CLI. The app loads your package because it is a dependency.',
+          text: 'Pack the package beside its folder, so the next pack does not ship it, then install it in an app together with Core and the CLI. The app loads your package because it is a dependency.',
         },
         {
           type: 'code',
