@@ -8,7 +8,7 @@ export const doc = {
   namespace: 'cli/commands',
   summary: 'Add one working contribution to an integration package',
   description:
-    'Writes the files one contribution needs, creates the integration manifest on first use, and declares a root only after a contribution the CLI can read exists behind it. A component or template import also needs an `exports` entry: add writes one only when package.json already has an `exports` map, so start a new package with `"exports": {}`. See {@link generic:make-a-package}.',
+    'Writes the files one contribution needs, creates the integration manifest on first use, and declares a root only after a contribution the CLI can read exists behind it. A component or template import also needs an `exports` entry: add writes one only when package.json already has an `exports` map, so start a new package with `"exports": {}`. See {@link generic:quick-start}.',
   fn: 'integrationAdd',
   args: [
     {

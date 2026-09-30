@@ -3,15 +3,16 @@
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
 export const docs = {
   type: 'generic',
-  name: 'make-a-package',
+  name: 'quick-start',
   placement: {
     parent: 'namespace:integrations',
-    slot: 'start',
-    order: 20,
+    slot: 'guides',
+    order: 10,
   },
-  title: 'Make a package',
+  title: 'Quick Start',
   category: 'guide',
   keywords: [
+    'make a package',
     'make an integration',
     'first integration',
     'integration tutorial',

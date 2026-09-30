@@ -1,11 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/**
- * @file `astryx docs cli/integrations`: the guides to building an integration
- * package, one short guide per task (spec:AST-046). A namespace declares its
- * slots and never lists its children: each guide places itself here with
- * `placement`.
- */
+/** @file astryx docs cli/integrations — build an integration package. */
 
 /** @type {import('@astryxdesign/cli/authoring').NamespaceDoc} */
 export const docs = {
@@ -23,9 +18,23 @@ export const docs = {
     'integration authoring',
   ],
   slots: {
-    start: {title: 'Start', accepts: {kinds: ['generic']}},
-    contribute: {title: 'Contribute', accepts: {kinds: ['generic', 'namespace']}},
-    ship: {title: 'Ship', accepts: {kinds: ['generic']}},
-    help: {title: 'Help', accepts: {kinds: ['generic']}},
+    guides: {
+      title: 'Build an integration',
+      accepts: {kinds: ['generic', 'namespace']},
+    },
   },
+  blocks: [
+    {
+      type: 'prose',
+      text: 'An integration is a way to share things with Astryx users: a package you own and maintain, built on a framework Astryx gives you. Publish one, many, or any mix, and people install it in one step. It works with the Astryx CLI alongside Core. See each kind under {@link namespace:contribute}.',
+    },
+    {
+      type: 'prose',
+      text: 'For example, ship a carousel as an integration. Any app that installs it can find it with `npx astryx search carousel`, and the CLI uses it like any Astryx Core component.',
+    },
+    {
+      type: 'prose',
+      text: 'An integration can also replace a built-in template or doc. To start, install `@astryxdesign/cli` and open {@link generic:quick-start}.',
+    },
+  ],
 };

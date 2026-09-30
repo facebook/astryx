@@ -10,7 +10,7 @@
 export const docs = {
   type: 'generic',
   name: 'upgrading',
-  placement: {parent: 'namespace:integrations', slot: 'ship', order: 50},
+  placement: {parent: 'namespace:ship', slot: 'guides', order: 50},
   title: 'Upgrading',
   category: 'guide',
   keywords: ['upgrade apps', 'release notes'],

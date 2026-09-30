@@ -67,7 +67,7 @@ Declare component root ./components in astryx.integration.mjs.
         },
         {
           type: 'prose',
-          text: 'Add never overwrites a file, and `--dry-run` shows what it would write. Component commands read Core, so install `@astryxdesign/core` in the package first ({@link generic:make-a-package}).',
+          text: 'Add never overwrites a file, and `--dry-run` shows what it would write. Component commands read Core, so install `@astryxdesign/core` in the package first ({@link generic:quick-start}).',
         },
       ],
     },

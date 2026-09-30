@@ -428,6 +428,7 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
         slot: home?.slot ?? null,
         order: home?.order ?? null,
         generated: false,
+        ref: {selfDoc: input.doc},
         slots: Object.entries(input.doc.slots).map(([name, slot]) => ({
           name,
           title: slot.title,

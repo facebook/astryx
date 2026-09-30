@@ -413,6 +413,12 @@ export function cliDocSection(doc, index) {
   if (doc.type === 'command') return commandSection(doc, index);
   if (doc.type === 'function') return functionSection(doc, index);
   if (doc.type === 'enum') return enumSection(doc);
+  if (doc.type === 'namespace')
+    return {
+      id: routeSegment(doc.name),
+      title: doc.title,
+      content: doc.blocks ?? [],
+    };
   return {...selfDocSection(doc), id: routeSegment(doc.name)};
 }
 

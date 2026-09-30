@@ -10,7 +10,7 @@
 export const docs = {
   type: 'generic',
   name: 'versioning',
-  placement: {parent: 'namespace:integrations', slot: 'ship', order: 30},
+  placement: {parent: 'namespace:ship', slot: 'guides', order: 30},
   title: 'Versioning',
   category: 'guide',
   keywords: ['peer dependency', 'semver', 'cli version'],

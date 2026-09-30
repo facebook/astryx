@@ -9,7 +9,7 @@
 export const docs = {
   type: 'generic',
   name: 'agent-guidance',
-  placement: {parent: 'namespace:integrations', slot: 'contribute', order: 60},
+  placement: {parent: 'namespace:contribute', slot: 'guides', order: 60},
   title: 'Agent guidance',
   category: 'guide',
   keywords: ['agent docs', 'agents.md'],

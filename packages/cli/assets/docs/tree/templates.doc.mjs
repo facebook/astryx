@@ -9,7 +9,7 @@
 export const docs = {
   type: 'namespace',
   name: 'templates',
-  placement: {parent: 'namespace:integrations', slot: 'contribute', order: 20},
+  placement: {parent: 'namespace:contribute', slot: 'guides', order: 20},
   title: 'Templates',
   summary:
     'Templates are ready-made UI pages or page sections built with Astryx. Apps copy them into their code and adapt them to their product.',

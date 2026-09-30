@@ -8,7 +8,7 @@ export const doc = {
   namespace: 'cli/commands',
   summary: 'Author and verify an Astryx integration package',
   description:
-    'Add contributions to your package, then check the packed package the way an app receives it. The guides start at {@link generic:overview}.',
+    'Add contributions to your package, then check the packed package the way an app receives it. The guides start at {@link namespace:integrations}.',
   subcommands: ['add', 'verify', 'pack'],
   examples: [
     {

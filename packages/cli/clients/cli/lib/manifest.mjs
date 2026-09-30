@@ -128,7 +128,7 @@ const EXAMPLES = {
     'astryx docs spacing --json',
     'astryx docs theme',
     'astryx docs theme quick-start',
-    'astryx docs cli/integrations/make-a-package --full',
+    'astryx docs cli/integrations/quick-start --full',
   ],
   discover: ['astryx discover --json'],
   search: [

@@ -9,7 +9,7 @@
 export const docs = {
   type: 'generic',
   name: 'codemods',
-  placement: {parent: 'namespace:integrations', slot: 'contribute', order: 50},
+  placement: {parent: 'namespace:contribute', slot: 'guides', order: 50},
   title: 'Codemods',
   category: 'guide',
   keywords: ['breaking change', 'migrate apps', 'integration codemod'],

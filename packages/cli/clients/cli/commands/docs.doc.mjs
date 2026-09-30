@@ -47,7 +47,7 @@ export const doc = {
     {label: 'One section', cli: 'astryx docs theme quick-start'},
     {label: 'The CLI docs tree', cli: 'astryx docs cli'},
     {label: 'One API function', cli: 'astryx docs cli/api/functions/search'},
-    {label: 'A whole guide', cli: 'astryx docs cli/integrations/make-a-package --full'},
+    {label: 'A whole guide', cli: 'astryx docs cli/integrations/quick-start --full'},
   ],
   exitCodes: [
     {code: 0, when: 'success'},

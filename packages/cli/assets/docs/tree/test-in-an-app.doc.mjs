@@ -9,7 +9,7 @@
 export const docs = {
   type: 'generic',
   name: 'test-in-an-app',
-  placement: {parent: 'namespace:integrations', slot: 'ship', order: 10},
+  placement: {parent: 'namespace:ship', slot: 'guides', order: 10},
   title: 'Test an integration in an app',
   category: 'guide',
   keywords: ['test an integration locally', 'try an integration in an app'],

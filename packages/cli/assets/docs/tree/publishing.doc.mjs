@@ -9,7 +9,7 @@
 export const docs = {
   type: 'generic',
   name: 'publishing',
-  placement: {parent: 'namespace:integrations', slot: 'ship', order: 40},
+  placement: {parent: 'namespace:ship', slot: 'guides', order: 40},
   title: 'Publish an integration',
   category: 'guide',
   keywords: ['publish an integration', 'npm publish', 'release'],

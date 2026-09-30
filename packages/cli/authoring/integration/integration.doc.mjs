@@ -23,48 +23,49 @@ export const doc = {
       name: 'providerId',
       type: 'string',
       description:
-        'Stable logical provider ID. Omit to use package.json#name; set it to the prior package name only when an explicit rename must preserve artifact IDs. If two packages claim the same ID, the package being authored is used, otherwise the first-loaded one, and the CLI warns about the other.',
+        'The name that marks this package as the source of everything it contributes. Leave it out to use the package name from package.json. Set it to the old name only during a rename, so the IDs of what the package already contributed stay the same. If two packages use the same name here, the one you are working on wins; otherwise the one the CLI reads first wins, and the CLI warns about the other.',
       example: "'@acme/widgets'",
     },
     {
       name: 'components',
       type: 'string',
       description:
-        'Relative path to the components/docs root (resolved to absolute).',
+        'The folder that holds your components and their docs, relative to package.json.',
       example: "'./src/components'",
     },
     {
       name: 'templates',
       type: 'string',
       description:
-        'Relative path to the templates root (resolved to absolute).',
+        'The folder that holds your templates, relative to package.json.',
       example: "'./src/templates'",
     },
     {
       name: 'codemods',
       type: 'string',
-      description: 'Relative path to the codemods root (resolved to absolute).',
+      description:
+        'The folder that holds your codemods, relative to package.json.',
       example: "'./codemods'",
     },
     {
       name: 'docs',
       type: 'string',
       description:
-        'Relative path to the reference-docs (topics) root (resolved to absolute). Every {topic}.doc.{ts,mjs,js} under it is served by `astryx docs` beside the built-in topics; a topic may also declare `replaces` or `extends` to take the place of a built-in one or merge onto it.',
+        'The folder that holds your doc topics, relative to package.json. Every {topic}.doc.{ts,mjs,js} in it shows up in `astryx docs` next to the built-in topics; a topic can also set `replaces` or `extends` to take over a built-in topic or add to it.',
       example: "'./docs'",
     },
     {
       name: 'themes',
       type: 'string',
       description:
-        'Relative path to a source-theme root with one directory per theme slug. Each directory contains a source module and mandatory same-stem, strongly typed .doc.mjs descriptor. Installed themes appear in `astryx theme list` and can be copied with `astryx theme add`.',
+        'The folder that holds your themes, relative to package.json, with one folder per theme. Each theme folder has the theme source and a matching .doc.mjs file with the same name. Installed themes show up in `astryx theme list` and can be copied with `astryx theme add`.',
       example: "'./themes'",
     },
     {
       name: 'agentDocs',
       type: '{ append?: readonly string[] }',
       description:
-        'Static package guidance appended to the end of the managed agent block. The CLI owns the section heading, package labels, bullets, target files, and writes.',
+        'Lines of guidance your package adds to the end of the agent instructions the CLI manages. The CLI owns the heading, labels, bullets, and which files it writes.',
       example: "{ append: ['Run acme verify.'] }",
     },
     {
@@ -94,9 +95,10 @@ export const doc = {
     {
       type: 'prose',
       text:
-        'Provider identity defaults to package.json#name. During an explicit ' +
-        'package rename, set `providerId` to the prior canonical package name so ' +
-        'existing artifact IDs remain stable. Package version always comes from package.json.',
+        'The provider name defaults to the package name in package.json. ' +
+        'During a rename, set `providerId` to the old package name so the IDs ' +
+        'of what the package already contributed stay the same. The package ' +
+        'version always comes from package.json.',
     },
     {
       type: 'prose',

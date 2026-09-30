@@ -260,6 +260,17 @@ function emitNode(node, detail, run) {
   if (node.kind === 'namespace') {
     emit(
       section(node.title, wrapText(node.summary)),
+      // A namespace may author intro `blocks`; they render above its children.
+      ...(node.content?.length
+        ? [
+            text(
+              node.content
+                .map(b => formatBlock(b, detail))
+                .filter(Boolean)
+                .join('\n\n'),
+            ),
+          ]
+        : []),
       ...node.slots.flatMap(slot => [
         // A namespace with one slot titled like itself needs no second heading.
         ...(node.slots.length === 1 && slot.title === node.title

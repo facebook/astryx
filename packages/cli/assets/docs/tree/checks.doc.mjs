@@ -9,7 +9,7 @@
 export const docs = {
   type: 'generic',
   name: 'checks',
-  placement: {parent: 'namespace:integrations', slot: 'ship', order: 20},
+  placement: {parent: 'namespace:ship', slot: 'guides', order: 20},
   title: 'Check an integration',
   category: 'guide',
   keywords: ['check before publishing', 'validate an integration', 'ci'],

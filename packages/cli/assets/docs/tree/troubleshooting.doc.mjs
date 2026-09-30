@@ -10,7 +10,7 @@
 export const docs = {
   type: 'generic',
   name: 'troubleshooting',
-  placement: {parent: 'namespace:integrations', slot: 'help', order: 10},
+  placement: {parent: 'namespace:help', slot: 'guides', order: 10},
   title: 'Troubleshooting',
   category: 'guide',
   keywords: ['integration error', 'integration not loading'],
