@@ -256,6 +256,99 @@ describe('DialogHeroHeader', () => {
       );
     });
 
+    it('focuses and labels a custom heading element itself after opening', () => {
+      render(
+        <Dialog isOpen onOpenChange={() => {}}>
+          <DialogHeroHeader
+            title={<Heading level={1}>Custom</Heading>}
+            startContent={<span>New</span>}
+            media={<div>media</div>}
+          />
+        </Dialog>,
+      );
+      const heading = screen.getByRole('heading', {level: 1, name: 'Custom'});
+      // Post-open focus lands on the heading, so it keeps its role and name.
+      expect(document.activeElement).toBe(heading);
+      expect(screen.getByRole('dialog')).toHaveAttribute(
+        'aria-labelledby',
+        heading.id,
+      );
+      expect(screen.getByRole('dialog')).toHaveAccessibleName('Custom');
+      // The layout slot around the heading takes no part in the handshake.
+      const slot = heading.parentElement as HTMLElement;
+      expect(slot).not.toHaveAttribute('id');
+      expect(slot).not.toHaveAttribute('tabindex');
+      expect(slot).not.toHaveAttribute('data-autofocus');
+    });
+
+    it("keeps a custom heading's own id and tabIndex", () => {
+      render(
+        <Dialog isOpen onOpenChange={() => {}} aria-labelledby="own-title">
+          <DialogHeroHeader
+            title={
+              <Heading level={2} id="own-title" tabIndex={0}>
+                Own
+              </Heading>
+            }
+            media={<div>media</div>}
+          />
+        </Dialog>,
+      );
+      const heading = screen.getByRole('heading', {name: 'Own'});
+      expect(heading).toHaveAttribute('id', 'own-title');
+      expect(heading).toHaveAttribute('tabindex', '0');
+      expect(heading).toHaveFocus();
+      expect(screen.getByRole('dialog')).toHaveAccessibleName('Own');
+    });
+
+    it.each([
+      ['inline', {isInline: true}, {}],
+      ['hidden', {}, {isTitleHidden: true}],
+    ] as const)(
+      'does not request focus for a custom heading when %s',
+      (_, dialogProps, headerProps) => {
+        render(
+          <Dialog isOpen onOpenChange={() => {}} {...dialogProps}>
+            <DialogHeroHeader
+              title={<Heading level={3}>Custom</Heading>}
+              media={<div>media</div>}
+              {...headerProps}
+            />
+          </Dialog>,
+        );
+        const heading = screen.getByRole('heading', {level: 3});
+        expect(heading).not.toHaveFocus();
+        expect(heading).not.toHaveAttribute('tabindex');
+        expect(heading).not.toHaveAttribute('data-autofocus');
+        expect(heading).toHaveAttribute('id');
+      },
+    );
+
+    it('moves the handshake to a replacement custom heading', () => {
+      const {rerender} = render(
+        <Dialog isOpen onOpenChange={() => {}}>
+          <DialogHeroHeader
+            title={<Heading level={3}>First</Heading>}
+            media={<div>media</div>}
+          />
+        </Dialog>,
+      );
+      const first = screen.getByRole('heading', {name: 'First'});
+      rerender(
+        <Dialog isOpen onOpenChange={() => {}}>
+          <DialogHeroHeader
+            title={<Heading level={2}>Second</Heading>}
+            media={<div>media</div>}
+          />
+        </Dialog>,
+      );
+      const second = screen.getByRole('heading', {name: 'Second'});
+      expect(second).not.toBe(first);
+      expect(second).toHaveAttribute('tabindex', '-1');
+      expect(second).toHaveAttribute('data-autofocus', 'dialog-title');
+      expect(screen.getByRole('dialog')).toHaveAccessibleName('Second');
+    });
+
     it('honors an explicit descendant focus request before the default title', () => {
       render(
         <Dialog isOpen onOpenChange={() => {}}>
