@@ -9,7 +9,7 @@
 export const docs = {
   type: 'namespace',
   name: 'components',
-  placement: {parent: 'namespace:building-blocks', slot: 'guides', order: 10},
+  placement: {parent: 'namespace:building-blocks', slot: 'types', order: 10},
   title: 'Components',
   summary:
     'Add components to an integration, document their public contract, and make them work in every app that installs the package.',

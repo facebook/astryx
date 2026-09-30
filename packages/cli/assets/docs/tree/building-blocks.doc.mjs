@@ -17,8 +17,12 @@ export const docs = {
     'contribution kinds',
   ],
   slots: {
-    guides: {
-      title: 'Building Blocks',
+    types: {
+      title: 'Types',
+      accepts: {kinds: ['generic', 'namespace']},
+    },
+    configuration: {
+      title: 'Configuration',
       accepts: {kinds: ['generic', 'namespace']},
     },
   },
