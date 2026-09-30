@@ -50,6 +50,25 @@ import '@astryxdesign/lab/lab.css';
 
 > Canary builds track the latest commit on `main` (`0.x.y-canary.<sha>`). They can break between any two versions — pin an exact version if you need stability.
 
+## Documenting a Lab component (canary docsite)
+
+Lab appears **only on the canary docsite** — the production site documents the published stable release and never loads this package (see the target gates in `apps/docsite/scripts/` and the exclusion tests in `apps/docsite/src/__tests__/integration-targets.test.ts`).
+
+Authoring is the same two-artifact flow a Core author uses; the only difference is where the runnable demos live (Core keeps its blocks centrally in `packages/cli/assets/templates/blocks/`, Lab owns its own `blocks/` directory here):
+
+1. **Component doc** — `src/<Name>/<Name>.doc.mjs` exporting `docs` (props, usage, playground config, `examples`). Picked up automatically on canary; no registration anywhere.
+2. **Runnable demos** — same-stem pairs in `blocks/`: `<BlockName>.tsx` + `<BlockName>.doc.mjs` (a `TemplateDoc` stamped `type: 'block'`). Discovered automatically through this package's `astryx.integration.mjs` (`templates: './blocks'`, declared once for the whole package — nothing per-component). The docsite renders the pair as the component page's showcase/examples and the playground can import anything the package exports.
+
+Conventions the Drawer demos established (follow them for new demos):
+
+- The block descriptor's `name` equals the component doc's example `label` — the docsite pairs them by exact name.
+- `exampleFor: '<Component>'` attributes the block to its component page; exactly one attributed block sets `isShowcase: true` (the hero demo — conventionally the first example).
+- `displayName` and `description` are required by the docsite build; set `componentsUsed` and `aspectRatio` for the gallery.
+
+A doc example **without** a paired block renders as a CLI/code snippet only — it never becomes a runnable demo on the docsite. That coverage is currently _reported_, not enforced (see the `example-coverage` docsite test output); Core has the same non-guarantee, and whether pairing should gate CI is an open repo-wide decision.
+
+> Note: `astryx integration add template` scaffolds a `./templates` root for a package that declares none. This package (like charts and richtext) declares `templates: './blocks'` explicitly — keep the explicit declaration; unifying the two conventions is a pending repo decision.
+
 ## Why no stable release?
 
 `package.json` keeps `"private": true` plus an `"astryx": { "canaryOnly": true }` marker. The release workflow's stable (`latest`) job skips both private and `canaryOnly` packages, while the canary job strips `private` in its ephemeral CI checkout only (never in git) to publish the `@canary` tag. The committed `private: true` is npm's hard guarantee that no stable publish can ever happen — **do not remove it.**
