@@ -499,6 +499,48 @@ export const InsideCardWithDividers: Story = {
   },
 };
 
+// Long option content in a sized field. String labels and descriptions stay on
+// one line with an ellipsis (the full string still names the checkbox); rich
+// labels and descriptions wrap. `width` sizes the label, list, and status
+// together.
+export const LongContent: Story = {
+  render: args => {
+    const [value, setValue] = useState<string[]>(['comments']);
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
+    return (
+      <CheckboxList {...restArgs} value={value} onChange={setValue}>
+        <CheckboxListItem
+          label="Comments, mentions, and replies across every shared workspace"
+          value="comments"
+          description="Delivered to the primary address listed in your account settings"
+        />
+        <CheckboxListItem
+          label={
+            <span>
+              Security alerts for new sign-ins on phones, tablets, and desktops
+            </span>
+          }
+          value="security"
+          description={
+            <span>
+              Includes a weekly summary of every device that accessed your
+              account
+            </span>
+          }
+        />
+        <CheckboxListItem label="SMS" value="sms" />
+      </CheckboxList>
+    );
+  },
+  args: {
+    label: 'Notification channels for workspace activity and account security',
+    description:
+      'Choose every channel that should receive these notifications. You can change this at any time.',
+    width: 280,
+    hasDividers: true,
+  },
+};
+
 // Disabled with an explanation tooltip. Hover or keyboard-focus the group to see
 // why it's disabled — the reason is announced to assistive tech via
 // aria-describedby, and the checkboxes stay focusable (toggling is still
