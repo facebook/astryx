@@ -248,6 +248,18 @@ export function CheckboxListItem({
   const checkboxRef = useRef<HTMLInputElement | null>(null);
   const hasRowInteraction = isInteractive || onClickProp != null;
 
+  // A read-only checkbox carries aria-readonly, which the row's clickable
+  // container treats as a non-interactive target, so a click on it would be
+  // delegated straight back to the checkbox without end. Stop that click at
+  // the checkbox; the consumer onClick still fires once per click.
+  const handleCheckboxClick: typeof onClickProp =
+    effectiveReadOnly && onClickProp != null
+      ? event => {
+          onClickProp(event);
+          event.stopPropagation();
+        }
+      : onClickProp;
+
   const handleToggle = () => {
     if (effectiveDisabled || effectiveReadOnly || isBusy) {
       return;
@@ -306,7 +318,7 @@ export function CheckboxListItem({
           isLabelHidden
           value={resolvedChecked}
           onChange={() => handleToggle()}
-          onClick={onClickProp}
+          onClick={handleCheckboxClick}
           isDisabled={effectiveDisabled}
           isReadOnly={effectiveReadOnly}
           isLoading={isBusy}

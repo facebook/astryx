@@ -887,6 +887,43 @@ describe('CheckboxListItem ARIA props', () => {
     expect(changeAction).toHaveBeenCalledWith(['a']);
   });
 
+  it('keeps a read-only item onClick while refusing every toggle', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const onItemClick = vi.fn();
+    render(
+      <CheckboxList label="Prefs" value={[]} onChange={onChange} isReadOnly>
+        <CheckboxListItem label="Option A" value="a" onClick={onItemClick} />
+        <CheckboxListItem label="Option B" value="b" />
+      </CheckboxList>,
+    );
+    const [itemA, itemB] = screen.getAllByRole('listitem');
+    const checkboxA = within(itemA).getByRole('checkbox');
+    const checkboxB = within(itemB).getByRole('checkbox');
+
+    // With an onClick, a row-surface click still delegates to the checkbox.
+    // The text also exists in the checkbox's visually hidden <label>; target
+    // the row's label <span> to click the row surface.
+    fireEvent.click(within(itemA).getByText('Option A', {selector: 'span'}));
+    expect(onItemClick).toHaveBeenCalledTimes(1);
+    fireEvent.click(checkboxA);
+    expect(onItemClick).toHaveBeenCalledTimes(2);
+    checkboxA.focus();
+    await user.keyboard(' ');
+    expect(onItemClick).toHaveBeenCalledTimes(3);
+    expect(checkboxA).toHaveAttribute('aria-readonly', 'true');
+    expect(checkboxA).not.toBeChecked();
+
+    // Without one, the read-only row does not delegate at all.
+    const delegated = vi.fn();
+    checkboxB.addEventListener('click', delegated);
+    fireEvent.click(within(itemB).getByText('Option B', {selector: 'span'}));
+    expect(delegated).not.toHaveBeenCalled();
+    fireEvent.click(checkboxB);
+    expect(checkboxB).not.toBeChecked();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('keeps an earlier toggled item busy and locked while its changeAction is still pending', async () => {
     // Never-resolving actions keep both toggles pending for the assertions.
     const changeAction = vi.fn(async () => {
