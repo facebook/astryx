@@ -461,9 +461,10 @@ export async function resolveIconImports(
             ref.binding.importedName === '*' && ref.members.length === 1,
         };
     }
+    // Spreads merge in order. An object adding no entries, such as `{}`, is no
+    // local registry: a child keeps its inherited icons and a root emits none.
     if (
       node?.type === 'ObjectExpression' &&
-      node.properties.length > 0 &&
       node.properties.every((/** @type {any} */ item) =>
         ['SpreadElement', 'SpreadProperty'].includes(item.type),
       )
@@ -475,7 +476,7 @@ export async function resolveIconImports(
         if (next)
           result = result ? {kind: 'merge', base: result, own: next} : next;
       }
-      if (result) return result;
+      return result;
     }
     invalidRegistry(preferredName ?? rootIdentifier(node) ?? undefined);
   }

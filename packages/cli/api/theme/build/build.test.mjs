@@ -657,7 +657,7 @@ describe('themeBuild() — icon registry detection', () => {
         ` * carried \`import { ghostIcons } from './icons'\` — which Node\n` +
         ` * cannot resolve.\n` +
         ` */\n` +
-        `const ghostIcons = {};\n` +
+        `const ghostIcons = {close: 'inline'};\n` +
         `export default {name: 'commented', icons: ghostIcons, tokens: {'--color-bg': '#fff'}};\n`,
     );
 

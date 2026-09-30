@@ -246,6 +246,34 @@ export default {name: 'inline', tokens: {'--color-bg': '#fff'}, icons: inlineIco
     }
     expect(fs.readdirSync(tmpDir).sort()).toEqual(['icons.mjs', 'inline.ts']);
   });
+
+  it.each([
+    ['an empty object', '{}'],
+    ['only empty spreads', '{...null, ...undefined}'],
+  ])(
+    'builds a root theme whose registry is %s without an icon import or field',
+    async (_label, registry) => {
+      write(
+        'empty.mjs',
+        `import {defineTheme} from '@astryxdesign/core/theme';
+export default defineTheme({
+  name: 'empty', tokens: {'--color-bg': '#fff'}, icons: ${registry},
+});
+`,
+      );
+
+      const fresh = await themeBuild('empty.mjs', {check: true}, {cwd: tmpDir});
+      expect(fresh?.data.upToDate).toBe(false);
+      await buildAndCheck('empty.mjs');
+
+      const generated = fs.readFileSync(path.join(tmpDir, 'empty.js'), 'utf8');
+      expect(generated).not.toMatch(/^import /m);
+      expect(generated).not.toContain('icons');
+      expect(
+        fs.readFileSync(path.join(tmpDir, 'empty.d.ts'), 'utf8'),
+      ).not.toContain('IconRegistry');
+    },
+  );
 });
 
 describe.each([false, true])('fake icon imports (check: %s)', check => {
@@ -335,6 +363,28 @@ export default defineTheme({name: 'child', extends: baseTheme, tokens: {}});
 `,
       );
 
+      await buildAndCheck('child.mjs');
+
+      expect(readBuiltIcons('child')).toEqual({
+        close: 'base-close',
+        check: 'base-check',
+      });
+    });
+
+    it('keeps all base icons when the child sets an empty registry', async () => {
+      const baseSpecifier = await writeBase();
+      write(
+        'child.mjs',
+        `import {defineTheme} from '@astryxdesign/core/theme';
+import {baseTheme} from '${baseSpecifier}';
+export default defineTheme({
+  name: 'child', extends: baseTheme, tokens: {}, icons: {},
+});
+`,
+      );
+
+      const fresh = await themeBuild('child.mjs', {check: true}, {cwd: tmpDir});
+      expect(fresh?.data.upToDate).toBe(false);
       await buildAndCheck('child.mjs');
 
       expect(readBuiltIcons('child')).toEqual({
