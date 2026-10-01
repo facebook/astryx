@@ -396,11 +396,36 @@ export function MobileTokenizer<T extends SearchableItem>({
           onActiveSheetChange={id => setActiveSheet(id as SheetId | null)}>
           <BottomSheet sheetId="manage" label={label} height="tall">
             <div {...stylex.props(styles.sheetBody)}>
+              <div {...stylex.props(styles.segmentedControlRow)}>
+                <SegmentedControl
+                  value={activeView}
+                  onChange={nextView => {
+                    lastLoadScrollHeightRef.current = null;
+                    setRenderedItemCount(LIST_RENDER_BATCH_SIZE);
+                    setQuery('');
+                    onChangeQuery?.('');
+                    setActiveView(nextView as ItemView);
+                  }}
+                  label={`${label} items`}
+                  layout="fill"
+                  size="lg">
+                  <SegmentedControlItem value="selected" label="Selected" />
+                  <SegmentedControlItem value="available" label="Available" />
+                </SegmentedControl>
+              </div>
               <div {...stylex.props(styles.filterRow)}>
                 <TextInput
-                  label={`Search ${label}`}
+                  label={
+                    activeView === 'selected'
+                      ? `Search selected ${label}`
+                      : `Search available ${label}`
+                  }
                   isLabelHidden
-                  placeholder="Search..."
+                  placeholder={
+                    activeView === 'selected'
+                      ? 'Search selected...'
+                      : 'Search available...'
+                  }
                   startIcon="search"
                   value={query}
                   size="lg"
@@ -414,21 +439,6 @@ export function MobileTokenizer<T extends SearchableItem>({
                   }}
                   xstyle={styles.filterInput}
                 />
-              </div>
-              <div {...stylex.props(styles.segmentedControlRow)}>
-                <SegmentedControl
-                  value={activeView}
-                  onChange={nextView => {
-                    lastLoadScrollHeightRef.current = null;
-                    setRenderedItemCount(LIST_RENDER_BATCH_SIZE);
-                    setActiveView(nextView as ItemView);
-                  }}
-                  label={`${label} items`}
-                  layout="fill"
-                  size="lg">
-                  <SegmentedControlItem value="selected" label="Selected" />
-                  <SegmentedControlItem value="available" label="Available" />
-                </SegmentedControl>
               </div>
               <div
                 {...stylex.props(styles.list)}

@@ -121,7 +121,12 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
     const list = await screen.findByTestId('mobile-tokenizer-list');
     expect(list).toHaveTextContent('Design');
     expect(list).not.toHaveTextContent('Engineer');
-    const search = screen.getByLabelText('Search Tags');
+    const search = screen.getByLabelText('Search selected Tags');
+    const segments = screen.getByRole('radiogroup', {name: 'Tags items'});
+    expect(segments.compareDocumentPosition(search)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(search).toHaveAttribute('placeholder', 'Search selected...');
     expect(
       search.closest('.astryx-text-input')?.querySelector('.astryx-icon'),
     ).toBeInTheDocument();
@@ -141,7 +146,15 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
       'lg',
     );
 
-    fireEvent.click(screen.getByRole('radio', {name: 'Available'}));
+    await act(async () => {
+      fireEvent.change(search, {target: {value: 'Design'}});
+    });
+    expect(search).toHaveValue('Design');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('radio', {name: 'Available'}));
+    });
+    expect(search).toHaveValue('');
+    expect(search).toHaveAttribute('placeholder', 'Search available...');
     expect(screen.getByRole('radio', {name: 'Available'})).toBeChecked();
     expect(
       screen.getByTestId('mobile-tokenizer-available-section'),
@@ -178,7 +191,7 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
     const trigger = screen.getByRole('button', {name: /Tags/});
     fireEvent.click(screen.getByRole('button', {name: /Tags/}));
     fireEvent.click(screen.getByRole('radio', {name: 'Available'}));
-    const search = await screen.findByLabelText('Search Tags');
+    const search = await screen.findByLabelText('Search available Tags');
     fireEvent.change(search, {target: {value: 'Custom'}});
 
     expect(
@@ -285,7 +298,7 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
       120,
     );
 
-    fireEvent.change(screen.getByLabelText('Search Items'), {
+    fireEvent.change(screen.getByLabelText('Search available Items'), {
       target: {value: 'Item'},
     });
     await waitFor(() =>
@@ -329,7 +342,7 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
     render(<Harness />);
     fireEvent.click(screen.getByRole('button', {name: /Tags/}));
     fireEvent.click(screen.getByRole('radio', {name: 'Available'}));
-    const search = await screen.findByLabelText('Search Tags');
+    const search = await screen.findByLabelText('Search available Tags');
     fireEvent.change(search, {target: {value: 'zzz'}});
 
     const title = await screen.findByRole('heading', {
