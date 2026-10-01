@@ -88,9 +88,17 @@ jobs:
           MODE: ${{ github.event_name == 'workflow_dispatch' && 'check' || 'pr' }}
         run: |
           set -eu
-          ACTIVE_BRANCHES=$(node scripts/release/active-release.mjs list-active)
+          TRUSTED_POLICY="$RUNNER_TEMP/release-policy"
+          mkdir -p "$TRUSTED_POLICY/scripts/release" "$TRUSTED_POLICY/scripts/lib"
+          git show "origin/$RELEASE_BRANCH:scripts/release/active-release.mjs" \
+            > "$TRUSTED_POLICY/scripts/release/active-release.mjs"
+          git show "origin/$RELEASE_BRANCH:scripts/lib/workspace-globs.mjs" \
+            > "$TRUSTED_POLICY/scripts/lib/workspace-globs.mjs"
+          VALIDATOR="$TRUSTED_POLICY/scripts/release/active-release.mjs"
+          ACTIVE_BRANCHES=$(node "$VALIDATOR" list-active --root "$GITHUB_WORKSPACE")
           ARGS=(
             validate
+            --root "$GITHUB_WORKSPACE"
             --mode "$MODE"
             --release-branch "$RELEASE_BRANCH"
             --expected-head "$EXPECTED_HEAD"
@@ -102,7 +110,7 @@ jobs:
             REMOTE_HEAD=$(git ls-remote origin "refs/heads/$RELEASE_BRANCH" | awk '{print $1}')
             ARGS+=(--remote-head "$REMOTE_HEAD")
           fi
-          node scripts/release/active-release.mjs "${ARGS[@]}"
+          node "$VALIDATOR" "${ARGS[@]}"
 
       - name: Fetch base branch
         if: github.event_name == 'pull_request'
@@ -162,25 +170,34 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
-      - name: Fetch release refs and base
+      - name: Fetch release refs, base, and trusted release policy
         run: |
           git fetch origin '+refs/heads/release/v*:refs/remotes/origin/release/v*'
           git fetch origin "${{ github.base_ref }}" --depth=50
+          TRUSTED_POLICY="$RUNNER_TEMP/release-policy"
+          mkdir -p "$TRUSTED_POLICY/scripts/release" "$TRUSTED_POLICY/scripts/lib"
+          git show "origin/${{ github.base_ref }}:scripts/release/active-release.mjs" \
+            > "$TRUSTED_POLICY/scripts/release/active-release.mjs"
+          git show "origin/${{ github.base_ref }}:scripts/lib/workspace-globs.mjs" \
+            > "$TRUSTED_POLICY/scripts/lib/workspace-globs.mjs"
 
       - name: Setup Node and pnpm
         uses: ./.github/actions/setup
 
       - name: Require generated-only release bookkeeping
         run: |
-          node scripts/release/active-release.mjs validate-diff \
+          node "$RUNNER_TEMP/release-policy/scripts/release/active-release.mjs" validate-diff \
+            --root "$GITHUB_WORKSPACE" \
             --base "origin/${{ github.base_ref }}" \
             --head "${{ github.event.pull_request.head.sha }}"
 
       - name: Validate branch, head, plan, versions, and Changeset consumption
         run: |
           set -eu
-          ACTIVE_BRANCHES=$(node scripts/release/active-release.mjs list-active)
-          node scripts/release/active-release.mjs validate \
+          VALIDATOR="$RUNNER_TEMP/release-policy/scripts/release/active-release.mjs"
+          ACTIVE_BRANCHES=$(node "$VALIDATOR" list-active --root "$GITHUB_WORKSPACE")
+          node "$VALIDATOR" validate \
+            --root "$GITHUB_WORKSPACE" \
             --mode pr \
             --release-branch "${{ github.base_ref }}" \
             --expected-head "${{ github.event.pull_request.head.sha }}" \

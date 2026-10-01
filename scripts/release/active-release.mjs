@@ -256,15 +256,23 @@ function validateReleaseDiff(entries) {
     /^pnpm-lock\.yaml$/,
   ];
   for (const entry of entries) {
-    const [status, file] = entry.split('\t');
-    if (!status || !file) {
+    const [status, ...files] = entry.split('\t');
+    const isMove = status?.startsWith('R') || status?.startsWith('C');
+    const expectedPaths = isMove ? 2 : 1;
+    if (
+      !status ||
+      files.length !== expectedPaths ||
+      files.some(file => !file)
+    ) {
       errors.push(`invalid diff entry: ${entry}`);
       continue;
     }
-    if (!allowed.some(pattern => pattern.test(file)))
-      errors.push(`release bump contains a non-generated path: ${file}`);
-    if (file.startsWith('.changeset/') && status !== 'D')
-      errors.push(`release bump may only delete planned Changesets: ${file}`);
+    for (const file of files) {
+      if (!allowed.some(pattern => pattern.test(file)))
+        errors.push(`release bump contains a non-generated path: ${file}`);
+      if (file.startsWith('.changeset/') && status !== 'D')
+        errors.push(`release bump may only delete planned Changesets: ${file}`);
+    }
   }
   return errors;
 }

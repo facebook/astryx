@@ -161,6 +161,25 @@ describe('active release branch authority', () => {
     expect(validateReleaseDiff(['A\t.changeset/post-cut.md'])).toContain(
       'release bump may only delete planned Changesets: .changeset/post-cut.md',
     );
+    expect(
+      validateReleaseDiff([
+        'R100\tpackages/core/CHANGELOG.md\tpackages/core/src/release.ts',
+      ]),
+    ).toContain(
+      'release bump contains a non-generated path: packages/core/src/release.ts',
+    );
+    expect(
+      validateReleaseDiff([
+        'R100\tpackages/core/src/release.ts\tpackages/core/CHANGELOG.md',
+      ]),
+    ).toContain(
+      'release bump contains a non-generated path: packages/core/src/release.ts',
+    );
+    expect(
+      validateReleaseDiff([
+        'R100\tpackages/core/CHANGELOG.md\tpackages/cli/CHANGELOG.md',
+      ]),
+    ).toEqual([]);
   });
 
   it('binds the plan to the exact Changesets recorded at cut', () => {
