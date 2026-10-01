@@ -5,11 +5,10 @@
 /**
  * @file MobileTokenizer.tsx
  * @input Uses public @astryxdesign/core components only (AlertDialog,
- *   BottomSheet, BottomSheetSwitcher, Button, CheckboxIndicator, EmptyState,
- *   Field, Icon, Text, TextInput, Token)
+ *   BottomSheet, BottomSheetSwitcher, Button, EmptyState, Field, Icon,
+ *   IconButton, SegmentedControl, Text, TextInput, Token)
  * @output Exports MobileTokenizer — Lab prototype of the touch Tokenizer
- *   flow with a single searchable sheet, stable in-session checkbox ordering,
- *   and progressive long-list rendering
+ *   flow with segmented Selected/Available views and progressive rendering
  * @position Lab (canary) stack layer 1: validates the design before the
  *   Core promotion (Tokenizer presentation="bottom-sheet").
  *
@@ -37,7 +36,11 @@ import {Button} from '@astryxdesign/core/Button';
 import {EmptyState} from '@astryxdesign/core/EmptyState';
 import {Field} from '@astryxdesign/core/Field';
 import {Icon} from '@astryxdesign/core/Icon';
-import {CheckboxIndicator} from '@astryxdesign/core/Indicator';
+import {IconButton} from '@astryxdesign/core/IconButton';
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from '@astryxdesign/core/SegmentedControl';
 import {Text} from '@astryxdesign/core/Text';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {Token} from '@astryxdesign/core/Token';
@@ -77,6 +80,7 @@ export interface MobileTokenizerProps<T extends SearchableItem> extends Omit<
 }
 
 type SheetId = 'manage';
+type ItemView = 'selected' | 'available';
 const CREATABLE_ID_PREFIX = '__xds_create__';
 const LIST_RENDER_BATCH_SIZE = 50;
 const LIST_LOAD_MORE_THRESHOLD_PX = 200;
@@ -93,6 +97,20 @@ function ListBulletIcon(props: SVGProps<SVGSVGElement>) {
       <circle cx="4.5" cy="6" r="1" fill="currentColor" />
       <circle cx="4.5" cy="12" r="1" fill="currentColor" />
       <circle cx="4.5" cy="18" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+function PlusIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      {...props}>
+      <path d="M5 12h14M12 5v14" />
     </svg>
   );
 }
@@ -139,39 +157,24 @@ const styles = stylex.create({
     overflowY: 'auto',
     minHeight: 0,
   },
+  section: {
+    display: 'flex',
+    flexDirection: 'column',
+    flexGrow: 1,
+  },
+  segmentedControlRow: {
+    paddingBlockEnd: spacingVars['--spacing-3'],
+  },
   row: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: spacingVars['--spacing-2'],
     width: '100%',
-    minHeight: 44,
-    paddingBlock: spacingVars['--spacing-2'],
+    minHeight: sizeVars['--size-element-lg'],
+    paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-1'],
-    borderWidth: 0,
-    borderRadius: radiusVars['--radius-element'],
-    backgroundColor: 'transparent',
-    color: colorVars['--color-text-primary'],
-    textAlign: 'start',
-    cursor: {
-      default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'default',
-    },
   },
   rowLabel: {
-    flexGrow: 1,
-    minWidth: 0,
-  },
-  createRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-2'],
-    width: '100%',
-    minHeight: 44,
-    paddingBlock: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-1'],
-  },
-  createLabel: {
     flexGrow: 1,
     minWidth: 0,
   },
@@ -226,6 +229,7 @@ export function MobileTokenizer<T extends SearchableItem>({
 }: MobileTokenizerProps<T>) {
   const triggerId = useId();
   const [activeSheet, setActiveSheet] = useState<SheetId | null>(null);
+  const [activeView, setActiveView] = useState<ItemView>('selected');
   const [isClearConfirmationOpen, setIsClearConfirmationOpen] = useState(false);
   const selectedIds = useMemo(() => new Set(value.map(v => v.id)), [value]);
   const isAtMax = maxEntries != null && value.length >= maxEntries;
@@ -270,7 +274,6 @@ export function MobileTokenizer<T extends SearchableItem>({
   );
   const seqRef = useRef(0);
   const lastLoadScrollHeightRef = useRef<number | null>(null);
-  const [selectedItemsAtOpen, setSelectedItemsAtOpen] = useState<T[]>(value);
   const isSheetOpen = activeSheet === 'manage';
   useEffect(() => {
     if (!isSheetOpen) {
@@ -318,31 +321,23 @@ export function MobileTokenizer<T extends SearchableItem>({
 
   const visibleItems = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    const matchesQuery = (item: T) =>
-      normalizedQuery === '' ||
-      item.label.toLowerCase().includes(normalizedQuery);
-    const selectedAtOpenMatches = selectedItemsAtOpen.filter(matchesQuery);
-    const selectedAtOpenIds = new Set(
-      selectedAtOpenMatches.map(item => item.id),
-    );
-    const resultIds = new Set(results.map(item => item.id));
-    const selectedItemsMissingFromResults = value.filter(
+    const selectedMatches = value.filter(
       item =>
-        !selectedAtOpenIds.has(item.id) &&
-        !resultIds.has(item.id) &&
-        matchesQuery(item),
+        normalizedQuery === '' ||
+        item.label.toLowerCase().includes(normalizedQuery),
     );
-
-    // Selection changes update checkbox state without moving an existing row.
-    // The next open snapshots the latest value and applies selected-first order.
+    const selectedMatchIds = new Set(selectedMatches.map(item => item.id));
     return [
-      ...selectedAtOpenMatches,
-      ...selectedItemsMissingFromResults,
-      ...results.filter(item => !selectedAtOpenIds.has(item.id)),
+      ...selectedMatches,
+      ...results.filter(item => !selectedMatchIds.has(item.id)),
     ];
-  }, [query, results, selectedItemsAtOpen, value]);
+  }, [query, results, value]);
 
-  const renderedItems = visibleItems.slice(0, renderedItemCount);
+  const selectedItems = visibleItems.filter(item => selectedIds.has(item.id));
+  const availableItems = visibleItems.filter(item => !selectedIds.has(item.id));
+  const activeItems =
+    activeView === 'selected' ? selectedItems : availableItems;
+  const renderedItems = activeItems.slice(0, renderedItemCount);
 
   const createItem = useMemo<T | null>(() => {
     const trimmed = query.trim();
@@ -378,9 +373,9 @@ export function MobileTokenizer<T extends SearchableItem>({
         aria-label={label}
         disabled={isDisabled}
         onClick={() => {
-          setSelectedItemsAtOpen(value);
           lastLoadScrollHeightRef.current = null;
           setRenderedItemCount(LIST_RENDER_BATCH_SIZE);
+          setActiveView('selected');
           setActiveSheet('manage');
         }}
         {...stylex.props(styles.trigger)}>
@@ -420,13 +415,28 @@ export function MobileTokenizer<T extends SearchableItem>({
                   xstyle={styles.filterInput}
                 />
               </div>
+              <div {...stylex.props(styles.segmentedControlRow)}>
+                <SegmentedControl
+                  value={activeView}
+                  onChange={nextView => {
+                    lastLoadScrollHeightRef.current = null;
+                    setRenderedItemCount(LIST_RENDER_BATCH_SIZE);
+                    setActiveView(nextView as ItemView);
+                  }}
+                  label={`${label} items`}
+                  layout="fill"
+                  size="lg">
+                  <SegmentedControlItem value="selected" label="Selected" />
+                  <SegmentedControlItem value="available" label="Available" />
+                </SegmentedControl>
+              </div>
               <div
                 {...stylex.props(styles.list)}
                 role="group"
                 aria-label={label}
                 data-testid="mobile-tokenizer-list"
                 data-rendered-count={renderedItems.length}
-                data-total-count={visibleItems.length}
+                data-total-count={activeItems.length}
                 onScroll={event => {
                   const list = event.currentTarget;
                   const distanceFromBottom =
@@ -439,83 +449,127 @@ export function MobileTokenizer<T extends SearchableItem>({
                     setRenderedItemCount(current =>
                       Math.min(
                         current + LIST_RENDER_BATCH_SIZE,
-                        visibleItems.length,
+                        activeItems.length,
                       ),
                     );
                   }
                 }}>
-                {createItem != null && (
+                {activeView === 'selected' ? (
                   <div
-                    data-testid="mobile-tokenizer-create-row"
-                    {...stylex.props(styles.createRow)}>
-                    <span {...stylex.props(styles.createLabel)}>
-                      <Text type="body">{createItem.label}</Text>
-                    </span>
-                    <Button
-                      label="Add"
-                      aria-label={`Add ${query.trim()}`}
-                      variant="secondary"
-                      size="lg"
-                      onClick={() => {
-                        handleAdd(createItem);
-                        lastLoadScrollHeightRef.current = null;
-                        setRenderedItemCount(LIST_RENDER_BATCH_SIZE);
-                        setQuery('');
-                      }}
-                    />
-                  </div>
-                )}
-                {!isSearching &&
-                visibleItems.length === 0 &&
-                createItem == null ? (
-                  <EmptyState
-                    icon={
-                      <Icon
-                        icon={query.trim() === '' ? ListBulletIcon : 'search'}
-                        size="lg"
-                        color="secondary"
-                      />
-                    }
-                    title={
-                      query.trim() === ''
-                        ? 'No items available'
-                        : emptySearchResultsText
-                    }
-                    description={
-                      query.trim() === ''
-                        ? 'There are no items to choose from.'
-                        : 'Try a different search.'
-                    }
-                    isCompact
-                    xstyle={styles.empty}
-                  />
-                ) : (
-                  renderedItems.map(item => {
-                    const isSelected = selectedIds.has(item.id);
-                    const rowDisabled = !isSelected && isAtMax;
-                    return (
-                      <button
+                    data-testid="mobile-tokenizer-selected-section"
+                    {...stylex.props(styles.section)}>
+                    {renderedItems.map(item => (
+                      <div
                         key={item.id}
-                        type="button"
-                        role="checkbox"
-                        aria-checked={isSelected}
-                        aria-label={item.label}
-                        disabled={rowDisabled}
-                        onClick={() =>
-                          isSelected ? handleRemove(item) : handleAdd(item)
-                        }
+                        data-testid="mobile-tokenizer-selected-row"
                         {...stylex.props(styles.row)}>
                         <span {...stylex.props(styles.rowLabel)}>
                           <Text type="body">{item.label}</Text>
                         </span>
-                        <CheckboxIndicator
-                          state={isSelected ? 'checked' : 'unchecked'}
-                          size="md"
-                          isDisabled={rowDisabled}
+                        <IconButton
+                          label={`Remove ${item.label}`}
+                          icon={<Icon icon="close" />}
+                          variant="ghost"
+                          size="lg"
+                          onClick={() => handleRemove(item)}
                         />
-                      </button>
-                    );
-                  })
+                      </div>
+                    ))}
+                    {!isSearching && activeItems.length === 0 && (
+                      <EmptyState
+                        icon={
+                          <Icon
+                            icon={
+                              query.trim() === '' ? ListBulletIcon : 'search'
+                            }
+                            size="lg"
+                            color="secondary"
+                          />
+                        }
+                        title={
+                          query.trim() === ''
+                            ? 'No selected items'
+                            : 'No selected matches'
+                        }
+                        description={
+                          query.trim() === ''
+                            ? 'Items you add will appear here.'
+                            : 'Try a different search.'
+                        }
+                        isCompact
+                        xstyle={styles.empty}
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <div
+                    data-testid="mobile-tokenizer-available-section"
+                    {...stylex.props(styles.section)}>
+                    {createItem != null && (
+                      <div
+                        data-testid="mobile-tokenizer-create-row"
+                        {...stylex.props(styles.row)}>
+                        <span {...stylex.props(styles.rowLabel)}>
+                          <Text type="body">{createItem.label}</Text>
+                        </span>
+                        <IconButton
+                          label={`Add ${query.trim()}`}
+                          icon={<Icon icon={PlusIcon} />}
+                          variant="ghost"
+                          size="lg"
+                          onClick={() => {
+                            handleAdd(createItem);
+                            lastLoadScrollHeightRef.current = null;
+                            setRenderedItemCount(LIST_RENDER_BATCH_SIZE);
+                            setQuery('');
+                          }}
+                        />
+                      </div>
+                    )}
+                    {renderedItems.map(item => (
+                      <div
+                        key={item.id}
+                        data-testid="mobile-tokenizer-available-row"
+                        {...stylex.props(styles.row)}>
+                        <span {...stylex.props(styles.rowLabel)}>
+                          <Text type="body">{item.label}</Text>
+                        </span>
+                        <IconButton
+                          label={`Add ${item.label}`}
+                          icon={<Icon icon={PlusIcon} />}
+                          variant="ghost"
+                          size="lg"
+                          isDisabled={isAtMax}
+                          onClick={() => handleAdd(item)}
+                        />
+                      </div>
+                    ))}
+                    {!isSearching &&
+                      activeItems.length === 0 &&
+                      createItem == null && (
+                        <EmptyState
+                          icon={
+                            <Icon
+                              icon={query.trim() === '' ? 'check' : 'search'}
+                              size="lg"
+                              color="secondary"
+                            />
+                          }
+                          title={
+                            query.trim() === ''
+                              ? 'No available items'
+                              : emptySearchResultsText
+                          }
+                          description={
+                            query.trim() === ''
+                              ? 'All available items have been selected.'
+                              : 'Try a different search.'
+                          }
+                          isCompact
+                          xstyle={styles.empty}
+                        />
+                      )}
+                  </div>
                 )}
               </div>
               {query.trim() === '' && (

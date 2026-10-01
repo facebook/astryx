@@ -2,9 +2,8 @@
 /**
  * @file MobileTokenizer.stories.tsx
  * @input Uses MobileTokenizer (Lab) with a 1,000-entry searchable dataset
- * @output Storybook try-it story at 390px: one searchable management sheet
- *   with stable checkbox rows and enough entries to evaluate progressive
- *   list rendering
+ * @output Storybook try-it story at 390px: one searchable sheet with a large
+ *   Selected/Available segmented control and progressive list rendering
  * @position Lab story; single-sheet touch-flow prototype
  */
 import {useState} from 'react';
@@ -55,5 +54,5 @@ export const TouchFlow: Story = {
       </div>
     );
   },
-  name: 'Touch flow (single searchable management sheet)',
+  name: 'Touch flow (segmented Selected and Available views)',
 };

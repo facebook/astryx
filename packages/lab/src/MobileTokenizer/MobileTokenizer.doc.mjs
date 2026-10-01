@@ -18,14 +18,14 @@ export const docs = {
   ],
   usage: {
     description:
-      'Lab prototype for trying the touch Tokenizer flow: tap the field to open one searchable sheet where selected and available items share a full-row checkbox list. Selected items are grouped first when the sheet opens, while checkbox changes keep every existing row in place until the sheet closes; the latest selection is regrouped the next time it opens. Selected custom values stay in the list, and long result sets render progressively in 50-item batches. Custom text uses a trailing Add action, and guarded Clear all plus Done actions finish the unfiltered flow. The footer is hidden while searching.',
+      'Lab prototype for trying the touch Tokenizer flow: tap the field to open one searchable sheet with a large segmented control that switches between Selected and Available items. Both views use explicit trailing remove/add actions and contextual empty states; custom text uses the Available view’s add action, and long result sets render progressively in 50-item batches. Guarded Clear all plus Done actions finish the unfiltered flow. The footer is hidden while searching.',
     bestPractices: [
       {guidance: true, description: 'Try this in Lab/canary to validate the flow; graduate via Core Tokenizer presentation="adaptive" when it ships.'},
       {guidance: false, description: 'Do not ship stable product on this Lab API; it has no theming, i18n, or spec contract yet.'},
     ],
     anatomy: [
       {name: 'Trigger field', required: true, description: 'Button showing tokens as a summary.'},
-      {name: 'Management sheet', required: true, description: 'One searchable list with trailing checkboxes for existing items, a trailing Add action for custom text, and equal-width Clear all and Done footer actions when unfiltered. Clear all requires confirmation; the footer is hidden while searching.'},
+      {name: 'Management sheet', required: true, description: 'One searchable sheet with a large Selected/Available segmented control, trailing remove/add actions, contextual empty states, and equal-width Clear all and Done footer actions when unfiltered. Clear all requires confirmation; the footer is hidden while searching.'},
     ],
   },
 };
