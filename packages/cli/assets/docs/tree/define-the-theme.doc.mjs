@@ -21,7 +21,11 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Import the palette in `oceanTheme.ts` and point theme tokens at its stops. Each token takes a `[light, dark]` pair.',
+          text: 'A theme token is a named slot that Astryx components read for a value — `--color-accent` for the accent color, and so on. Components never read your palette directly; they read tokens. Defining a theme means pointing each token at a palette shade, so the components wear your colors.',
+        },
+        {
+          type: 'prose',
+          text: 'Import the palette in `oceanTheme.ts` and point your tokens at its stops. Each token takes a `[light, dark]` pair — the shade to use in light mode and the one in dark mode.',
         },
         {
           type: 'code',
