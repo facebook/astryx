@@ -22,6 +22,9 @@
  *
  * Both modes use useListFocus for DOM-based keyboard navigation.
  * Open state is managed internally — right-click opens, click-outside/Escape closes.
+ * The trigger wrapper is a `div` by default; `triggerAs` makes it an inline
+ * `span` or a box-less `contents` span, so a reference inside prose can own a
+ * context menu without breaking the text flow.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/ContextMenu/ContextMenu.doc.mjs
@@ -106,6 +109,13 @@ const styles = stylex.create({
     WebkitTouchCallout: 'none',
     WebkitUserSelect: 'none',
     userSelect: 'none',
+  },
+  // `triggerAs="contents"`: the trigger owns no box, so an inline reference in
+  // prose keeps its text flow; the cursor anchor then positions against the
+  // nearest positioned ancestor and the local point is computed from it.
+  triggerContents: {
+    display: 'contents',
+    position: 'static',
   },
   // Zero-size anchor placed at the cursor point within the trigger. The menu
   // is anchored to this element, so it sits under the cursor yet is positioned
@@ -198,7 +208,15 @@ export type ContextMenuOption = DropdownMenuOption;
 
 interface ContextMenuBaseProps extends BaseProps {
   /** Ref forwarded to the trigger wrapper element. */
-  ref?: React.Ref<HTMLDivElement>;
+  ref?: React.Ref<HTMLElement>;
+  /**
+   * The element the trigger wrapper renders as. `div` is a block; `span` an
+   * inline wrapper, so a reference inside prose can own a context menu without
+   * breaking the text flow; `contents` a span with no box of its own, so the
+   * children lay out exactly as they would without the menu.
+   * @default 'div'
+   */
+  triggerAs?: 'div' | 'span' | 'contents';
   /**
    * Styles applied to the trigger wrapper element (the right-click target).
    * By default the trigger is a plain block that hugs its content — pass a
@@ -282,6 +300,7 @@ export function ContextMenu({
   isDisabled = false,
   onOpenChange,
   presentation = 'popover',
+  triggerAs = 'div',
   ref,
   className,
   style,
@@ -316,7 +335,7 @@ export function ContextMenu({
   // — it scrolls with the content instead of sitting at a fixed viewport point.
   const positionRef = useRef({x: 0, y: 0});
   const cursorAnchorRef = useRef<HTMLSpanElement>(null);
-  const triggerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLElement>(null);
   // Element focused before the menu opened, restored when it closes so focus
   // does not fall to <body> after Escape or outside-click dismissal.
   const triggerFocusRef = useRef<HTMLElement | null>(null);
@@ -528,14 +547,23 @@ export function ContextMenu({
     [layer, focusFirst, updateOpenState, usesBottomSheet],
   );
 
+  // The box the cursor anchor's offsets are measured from: the trigger, which
+  // is its containing block — or, for a box-less `contents` trigger, whatever
+  // positioned ancestor the anchor falls back to.
+  const getAnchorBaseRect = useCallback((): DOMRect | undefined => {
+    if (triggerAs === 'contents') {
+      return cursorAnchorRef.current?.offsetParent?.getBoundingClientRect();
+    }
+    return triggerRef.current?.getBoundingClientRect();
+  }, [triggerAs]);
+
   const handleContextMenu = useCallback(
     (e: React.MouseEvent) => {
       if (isDisabled) {
         return;
       }
       e.preventDefault();
-      const trigger = triggerRef.current;
-      const rect = trigger?.getBoundingClientRect();
+      const rect = getAnchorBaseRect();
       // A keyboard-initiated contextmenu (Shift+F10 / the Menu key) fires a
       // `contextmenu` event whose coordinates are (0, 0) in several browsers.
       // Detect that and anchor the menu to the trigger's bottom-left instead,
@@ -549,7 +577,7 @@ export function ContextMenu({
         isKeyboardInvoked || !rect ? (rect?.height ?? 0) : e.clientY - rect.top;
       openAtLocalPoint(localX, localY, e.currentTarget as HTMLElement);
     },
-    [isDisabled, openAtLocalPoint],
+    [isDisabled, openAtLocalPoint, getAnchorBaseRect],
   );
 
   // Touch long-press invocation (menus-8). iOS Safari never synthesizes a
@@ -560,14 +588,14 @@ export function ContextMenu({
     disabled: isDisabled,
     onLongPress: useCallback(
       (point: {x: number; y: number}) => {
-        const rect = triggerRef.current?.getBoundingClientRect();
+        const rect = getAnchorBaseRect();
         openAtLocalPoint(
           rect ? point.x - rect.left : point.x,
           rect ? point.y - rect.top : point.y,
           triggerRef.current,
         );
       },
-      [openAtLocalPoint],
+      [openAtLocalPoint, getAnchorBaseRect],
     ),
   });
 
@@ -673,9 +701,13 @@ export function ContextMenu({
       renderedMenu
     );
 
+  // An inline trigger (`span`, `contents`) lets prose own a context menu
+  // without breaking its flow.
+  const TriggerElement = triggerAs === 'div' ? 'div' : 'span';
+
   return (
     <>
-      <div
+      <TriggerElement
         ref={useMergedRefs(ref, triggerRef)}
         {...triggerProps}
         onContextMenu={handleContextMenu}
@@ -683,6 +715,7 @@ export function ContextMenu({
         data-testid={testId}
         {...stylex.props(
           styles.trigger,
+          triggerAs === 'contents' && styles.triggerContents,
           ...(triggerXstyle
             ? Array.isArray(triggerXstyle)
               ? triggerXstyle
@@ -700,7 +733,7 @@ export function ContextMenu({
             },
           })}
         />
-      </div>
+      </TriggerElement>
 
       {usesBottomSheet ? (
         <Suspense fallback={null}>

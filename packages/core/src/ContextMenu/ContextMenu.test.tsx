@@ -1063,3 +1063,57 @@ describe('ContextMenu press model', () => {
     expect(onCut).not.toHaveBeenCalled();
   });
 });
+
+describe('ContextMenu inline trigger (triggerAs)', () => {
+  it('an inline trigger keeps its flow', () => {
+    render(
+      <p>
+        Filed under{' '}
+        <ContextMenu
+          triggerAs="span"
+          data-testid="ref"
+          items={[{label: 'Open', onClick: () => {}}]}>
+          T123
+        </ContextMenu>{' '}
+        yesterday.
+      </p>,
+    );
+    const trigger = screen.getByTestId('ref');
+    expect(trigger.tagName).toBe('SPAN');
+    expect(trigger.parentElement?.tagName).toBe('P');
+    expect(trigger).not.toHaveStyle({display: 'block'});
+    fireEvent.contextMenu(trigger, {clientX: 20, clientY: 10, detail: 1});
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+  });
+
+  it('triggerAs="contents" renders no box of its own', () => {
+    render(
+      <p>
+        <ContextMenu
+          triggerAs="contents"
+          data-testid="ref"
+          items={[{label: 'Open', onClick: () => {}}]}>
+          <a href="/t/123">T123</a>
+        </ContextMenu>
+      </p>,
+    );
+    const trigger = screen.getByTestId('ref');
+    expect(trigger.tagName).toBe('SPAN');
+    expect(trigger).toHaveStyle({display: 'contents'});
+    fireEvent.contextMenu(screen.getByRole('link', {name: 'T123'}), {
+      clientX: 20,
+      clientY: 10,
+      detail: 1,
+    });
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+  });
+
+  it('defaults to a block trigger', () => {
+    render(
+      <ContextMenu data-testid="area" items={[{label: 'Open'}]}>
+        Area
+      </ContextMenu>,
+    );
+    expect(screen.getByTestId('area').tagName).toBe('DIV');
+  });
+});

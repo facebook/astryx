@@ -478,3 +478,40 @@ export const AdaptivePresentation: Story = {
     </div>
   ),
 };
+
+export const InlineTrigger: Story = {
+  name: 'Inline trigger in prose (triggerAs)',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A reference inside running text owns a context menu without breaking the flow: `triggerAs="span"` wraps it inline, `triggerAs="contents"` adds no box at all. Right-click, a held press or Shift+F10 on the reference opens the menu at the pointer.',
+      },
+    },
+  },
+  render: () => (
+    <p style={{maxWidth: 480, lineHeight: 1.6}}>
+      The regression was tracked in{' '}
+      <ContextMenu
+        triggerAs="contents"
+        label="Task actions"
+        items={[
+          {label: 'Open', onClick: () => {}},
+          {label: 'Copy link', onClick: () => {}},
+        ]}>
+        <a href="/tasks/123">T123</a>
+      </ContextMenu>{' '}
+      and fixed by{' '}
+      <ContextMenu
+        triggerAs="span"
+        label="Diff actions"
+        items={[
+          {label: 'Open', onClick: () => {}},
+          {label: 'Copy link', onClick: () => {}},
+        ]}>
+        <a href="/diff/456">D456</a>
+      </ContextMenu>{' '}
+      the same afternoon.
+    </p>
+  ),
+};
