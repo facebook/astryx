@@ -2,7 +2,7 @@
 
 /**
  * @file `astryx docs cli/integrations/building-blocks/themes/fonts-and-assets`:
- * ship a theme's fonts and keyframes so they load when an app applies it.
+ * name a theme's fonts, and have the app load them (Astryx never loads a font).
  */
 
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
@@ -10,25 +10,61 @@ export const docs = {
   type: 'generic',
   name: 'fonts-and-assets',
   placement: {parent: 'namespace:themes', slot: 'guides', order: 35},
-  title: 'Ship fonts and assets',
+  title: 'Fonts',
   category: 'guide',
   description:
-    "Ship a theme's fonts and keyframes so they load when an app installs the package and applies the theme.",
+    'Name your theme\'s fonts in its tokens, then have the app load them — Astryx never loads a font file.',
   sections: [
     {
-      id: 'ship-the-fonts',
-      title: 'Ship the fonts',
+      id: 'name-the-font',
+      title: 'Name the font',
       content: [
         {
           type: 'prose',
-          text: 'If your theme uses a custom typeface, ship the font files in your package and declare their `@font-face` with the theme. An app then gets them by installing the package and applying the theme — nothing extra to set up in the app.',
+          text: 'A theme names its typefaces in `typography`: `body`, `heading`, and `code`, each with a `family` and `fallbacks`. These set the `--font-family-*` tokens every component reads. Always give real `fallbacks` so text stays readable before the font loads, or if it never does. `heading` inherits `family` and `fallbacks` from `body` when you omit them.',
+        },
+        {
+          type: 'code',
+          lang: 'ts',
+          code: `// themes/ocean/oceanTheme.ts
+export const oceanTheme = defineTheme({
+  name: 'ocean',
+  typography: {
+    body: {family: 'Acme Sans', fallbacks: 'system-ui, sans-serif'},
+    code: {family: 'Acme Mono', fallbacks: 'ui-monospace, monospace'},
+  },
+  // ...your tokens
+});`,
+        },
+        {
+          type: 'prose',
+          text: 'The full type scale and font roles are in {@link generic:theme}.',
+        },
+      ],
+    },
+    {
+      id: 'load-the-font-in-the-app',
+      title: 'Load the font in the app',
+      content: [
+        {
+          type: 'prose',
+          text: 'Naming a family does not load it — Astryx never downloads a font file. The app that uses your theme loads the font itself, so your job is to tell your users which families and weights to load, in your theme\'s docs ({@link generic:document-the-theme}). An app loads a font one of two ways:',
+        },
+        {
+          type: 'list',
+          style: 'unordered',
+          items: [
+            'Link a hosted stylesheet in the app\'s `<head>` — for example a Google Fonts `<link>` covering every weight the UI uses.',
+            'Self-host: serve the font files and add an `@font-face` for each weight and style to the app\'s global CSS.',
+          ],
         },
         {
           type: 'code',
           lang: 'css',
-          code: `@font-face {
+          code: `/* In the app's global CSS, when self-hosting */
+@font-face {
   font-family: 'Acme Sans';
-  src: url('./fonts/acme-sans.woff2') format('woff2');
+  src: url('/fonts/acme-sans.woff2') format('woff2');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -39,28 +75,11 @@ export const docs = {
           type: 'list',
           style: 'unordered',
           items: [
-            'Declare every weight and style the theme uses. Do not rely on the browser to synthesize bold or italic from a missing file — ship the italic face with the same `unicode-range`s as the roman.',
-            'Set a `unicode-range` on each face so the browser downloads only the subsets it needs.',
-            'Use `font-display: swap` unless a measured performance need justifies another value.',
-            'Confirm the font license permits redistribution in your package.',
-            'Ship WOFF2; add another format only when a supported browser needs it.',
-            'Include the font files in the package `files` so they actually ship.',
+            'Load every weight and style the theme uses. Do not let the browser synthesize bold or italic — include the italic face, with the same `unicode-range`s as the roman.',
+            'Set a `unicode-range` per face so the browser downloads only the subsets it needs.',
+            'Use `font-display: swap` unless a measured need justifies another value.',
+            'Serve WOFF2; add another format only when a target browser needs it.',
           ],
-        },
-      ],
-    },
-    {
-      id: 'keyframes-and-side-effects',
-      title: 'Keyframes and side-effect CSS',
-      content: [
-        {
-          type: 'prose',
-          text: 'A theme that animates ships its `@keyframes` with the theme the same way. Any stylesheet the theme relies on is a side effect, so list the CSS in `sideEffects` or a bundler may drop it from the production build.',
-        },
-        {
-          type: 'code',
-          lang: 'json',
-          code: `"sideEffects": ["**/*.css"]`,
         },
       ],
     },
@@ -70,16 +89,15 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Before publishing, install the package in a clean app, apply the theme, and check it in the browser. The source and the applied result are not the same thing until you look.',
+          text: 'Before publishing, install the package in a clean app, apply the theme, load the fonts, and open it in a browser. The source and the applied result are not the same thing until you look.',
         },
         {
           type: 'list',
           style: 'unordered',
           items: [
-            'Text renders in the theme typeface at every weight and style the UI uses — `<em>` resolves to the italic face, not a synthesized slant.',
-            'Every font request succeeds; nothing falls back to a system font.',
-            'Animations run, and the theme holds up in light and dark mode.',
-            'Color pairs still meet contrast in every mode you support.',
+            'Text renders in the named families at every weight and style — the italic face resolves, not a synthesized slant.',
+            'Every font request succeeds; nothing silently falls back to a system font.',
+            'Color pairs still meet contrast in both light and dark mode.',
           ],
         },
       ],
