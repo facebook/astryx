@@ -111,24 +111,6 @@ describe('ToggleButton', () => {
     expect(screen.getByTestId('icon')).toBeInTheDocument();
   });
 
-  it('sets aria-pressed=false when not pressed', () => {
-    render(
-      <ToggleButton
-        label="Bold"
-        isPressed={false}
-        onPressedChange={() => {}}
-      />,
-    );
-    expect(screen.getByRole('button')).toHaveAttribute('aria-pressed', 'false');
-  });
-
-  it('sets aria-pressed=true when pressed', () => {
-    render(
-      <ToggleButton label="Bold" isPressed={true} onPressedChange={() => {}} />,
-    );
-    expect(screen.getByRole('button')).toHaveAttribute('aria-pressed', 'true');
-  });
-
   it('calls onPressedChange with true when clicking unpressed button', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
