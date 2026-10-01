@@ -5,7 +5,7 @@
  * give an agent the canonical rubric and require a reproducible template grade.
  */
 
-import {TEMPLATE_RUBRIC} from './template-quality.doc.mjs';
+import {TEMPLATE_RUBRIC} from './template-grading-rubric.doc.mjs';
 
 const scorecardRows = TEMPLATE_RUBRIC.categories
   .map(({title, max}) => `| ${title} | X | ${max} | |`)
@@ -15,7 +15,7 @@ const scorecardRows = TEMPLATE_RUBRIC.categories
 export const docs = {
   type: 'generic',
   name: 'grade-template-with-agent',
-  placement: {parent: 'namespace:templates', slot: 'quality', order: 30},
+  placement: {parent: 'namespace:write-good-templates', slot: 'guides', order: 20},
   title: 'Grade and improve with an agent',
   category: 'guide',
   description:
@@ -36,8 +36,8 @@ export const docs = {
           code: `Grade integration template <id> from <package> at <revision>.
 
 Before scoring:
-1. Read \`npx astryx docs cli/integrations/building-blocks/templates/template-quality --full\`.
-2. Read \`npx astryx docs cli/integrations/building-blocks/templates/template-grading-rubric --full\` and every guide it links.
+1. Read \`npx astryx docs cli/integrations/building-blocks/templates/write-good-templates --full\`.
+2. Read \`npx astryx docs cli/integrations/building-blocks/templates/write-good-templates/template-grading-rubric --full\` and every guide it links.
 3. Inspect the template source, its matching .doc.mjs file, package.json exports and files, and astryx.integration.mjs.
 4. Run \`npx astryx integration verify\` in the package.
 5. Follow \`npx astryx docs cli/integrations/building-blocks/templates/build-the-template/package-and-test/test-template-in-app --full\`: install the packed package in the clean app, copy the template, build the app, and render the behavior matrix.

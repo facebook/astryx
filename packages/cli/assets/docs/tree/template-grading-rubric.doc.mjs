@@ -5,18 +5,132 @@
  * complete scoring rules for page and block template quality.
  */
 
-import {TEMPLATE_RUBRIC} from './template-quality.doc.mjs';
+/**
+ * The single source of rubric version, grade bands, category ids, and weights.
+ * The agent-grading guide and any grading tool import this constant; the
+ * detailed scoring rules live in the sections below.
+ */
+export const TEMPLATE_RUBRIC = Object.freeze({
+  version: '1.4',
+  minimumScore: 75,
+  minimumGrade: 'B',
+  grades: Object.freeze([
+    Object.freeze({
+      grade: 'A',
+      min: 90,
+      max: 100,
+      meaning: 'Exemplary. Copy-ready with no known quality problems.',
+    }),
+    Object.freeze({
+      grade: 'B',
+      min: 75,
+      max: 89,
+      meaning: 'Good. Minor issues may remain, but the template is usable.',
+    }),
+    Object.freeze({
+      grade: 'C',
+      min: 60,
+      max: 74,
+      meaning: 'Needs work before publication.',
+    }),
+    Object.freeze({
+      grade: 'D',
+      min: 40,
+      max: 59,
+      meaning: 'Poor. Significant rewrites are needed.',
+    }),
+    Object.freeze({
+      grade: 'F',
+      min: 0,
+      max: 39,
+      meaning: 'Failing. The template teaches or produces bad patterns.',
+    }),
+  ]),
+  categories: Object.freeze([
+    Object.freeze({
+      id: 'component_purity',
+      title: 'Astryx component purity',
+      max: 30,
+      guide: 'template-grading-rubric',
+    }),
+    Object.freeze({
+      id: 'icon_purity',
+      title: 'Icon purity',
+      max: 15,
+      guide: 'template-grading-rubric',
+    }),
+    Object.freeze({
+      id: 'custom_css',
+      title: 'Custom CSS',
+      max: 15,
+      guide: 'template-grading-rubric',
+    }),
+    Object.freeze({
+      id: 'layout_structure',
+      title: 'Layout & structure',
+      max: 15,
+      guide: 'template-grading-rubric',
+    }),
+    Object.freeze({
+      id: 'doc_metadata',
+      title: 'Doc metadata',
+      max: 10,
+      guide: 'template-grading-rubric',
+    }),
+    Object.freeze({
+      id: 'image_handling',
+      title: 'Image handling',
+      max: 5,
+      guide: 'template-grading-rubric',
+    }),
+    Object.freeze({
+      id: 'code_quality',
+      title: 'Code quality',
+      max: 10,
+      guide: 'template-grading-rubric',
+    }),
+  ]),
+});
+
+const gradeRows = TEMPLATE_RUBRIC.grades.map(({grade, min, max, meaning}) => [
+  grade,
+  `${min}-${max}`,
+  meaning,
+]);
 
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
 export const docs = {
   type: 'generic',
   name: 'template-grading-rubric',
-  placement: {parent: 'namespace:templates', slot: 'quality', order: 20},
+  placement: {parent: 'namespace:write-good-templates', slot: 'guides', order: 10},
   title: 'Full grading rubric',
   category: 'guide',
   description:
     'Use a shared set of heuristics to score template quality consistently across Astryx usage, icons, CSS, layout, metadata, images, and code quality.',
   sections: [
+    {
+      id: 'understand-the-score',
+      title: 'Understand the score',
+      content: [
+        {
+          type: 'prose',
+          text: `Template rubric ${TEMPLATE_RUBRIC.version} scores seven categories for 100 points. Aim for 100; ${TEMPLATE_RUBRIC.minimumGrade} (${TEMPLATE_RUBRIC.minimumScore}) is the publication floor, not the target. Each category below lists its weight. Never award points for anything you did not inspect.`,
+        },
+        {
+          type: 'table',
+          headers: ['Grade', 'Score', 'Meaning'],
+          rows: gradeRows,
+        },
+        {
+          type: 'prose',
+          text: 'Keep improving while a deduction has a reasonable fix. A score below 100 is fine only when the remaining tradeoff is intentional and recorded. A template is not ready if the copied file fails to build or a required asset is missing, whatever its score.',
+        },
+        {
+          type: 'prose',
+          text: `Version ${TEMPLATE_RUBRIC.version} counts public integration components as Astryx components and grades assets and imports after the copy. Record the version with every score so results stay comparable.`,
+        },
+      ],
+    },
     {
       id: 'component-purity',
       title: 'Astryx component purity: 30 points',

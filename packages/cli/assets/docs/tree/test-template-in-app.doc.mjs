@@ -120,7 +120,7 @@ npm run build`,
       content: [
         {
           type: 'prose',
-          text: 'Grade the exact packed revision using the evidence from this test ({@link generic:template-quality}).',
+          text: 'Grade the exact packed revision using the evidence from this test ({@link namespace:write-good-templates}).',
         },
       ],
     },

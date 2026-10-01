@@ -28,7 +28,7 @@ export const docs = {
     },
     quality: {
       title: 'Quality',
-      accepts: {kinds: ['generic']},
+      accepts: {kinds: ['namespace']},
     },
   },
 };
