@@ -42,7 +42,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'By default this creates `AGENTS.md` (the tool-agnostic standard most agents read). To target a specific tool\'s file instead:',
+          text: "By default this creates `AGENTS.md` (the tool-agnostic standard most agents read). To target a specific tool's file instead:",
         },
         {
           type: 'code',
@@ -82,7 +82,7 @@ npx @astryxdesign/cli init --features agents --agent muse      # AGENTS.md (Muse
       content: [
         {
           type: 'prose',
-          text: 'Cursor project rules aren\'t always picked up; it selects which rules to apply based on relevance. For reliable inclusion, install the design system context as a User Rule instead. User Rules live at ~/.cursor/rules/ and apply across all projects.',
+          text: "Cursor project rules aren't always picked up; it selects which rules to apply based on relevance. For reliable inclusion, install the design system context as a User Rule instead. User Rules live at ~/.cursor/rules/ and apply across all projects.",
         },
         {
           type: 'code',
@@ -98,7 +98,7 @@ npx @astryxdesign/cli init --features agents --agent-docs-path ~/.cursor/rules/x
       content: [
         {
           type: 'prose',
-          text: 'Paste this into your AI before writing any component code. These three questions have a 0% pass rate without docs; models confidently guess wrong on all of them. If your AI can\'t answer them, it\'ll know to install the agent docs first.',
+          text: "Paste this into your AI before writing any component code. These three questions have a 0% pass rate without docs; models confidently guess wrong on all of them. If your AI can't answer them, it'll know to install the agent docs first.",
         },
         {
           type: 'code',
@@ -174,20 +174,59 @@ astryx docs tokens --dense`,
         },
         {
           type: 'prose',
-          text: 'Add the server to your MCP config file. This works with any MCP-compatible tool: Claude Desktop (claude_desktop_config.json), Cursor (.cursor/mcp.json), Windsurf (.windsurf/mcp.json), Cline, and others.',
+          text: 'Add the server to your MCP config file. The entry is a remote HTTP server, and the exact shape differs per client, so use the snippet for the tool you run. An entry with an unrecognized transport is skipped with a warning rather than an error, which reads as a server that connects but exposes no tools.',
         },
         {
           type: 'code',
           lang: 'json',
-          label: 'MCP config (same for all tools)',
+          label: 'Claude Code (.mcp.json)',
           code: `{
   "mcpServers": {
     "astryx": {
-      "type": "url",
+      "type": "http",
       "url": "https://astryx.atmeta.com/mcp"
     }
   }
 }`,
+        },
+        {
+          type: 'prose',
+          text: 'Claude Code can also write that entry from the terminal:',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          code: `claude mcp add --transport http astryx https://astryx.atmeta.com/mcp`,
+        },
+        {
+          type: 'code',
+          lang: 'json',
+          label: 'Cline (cline_mcp_settings.json) - type is streamableHttp',
+          code: `{
+  "mcpServers": {
+    "astryx": {
+      "type": "streamableHttp",
+      "url": "https://astryx.atmeta.com/mcp"
+    }
+  }
+}`,
+        },
+        {
+          type: 'code',
+          lang: 'json',
+          label:
+            'Cursor (.cursor/mcp.json) - remote servers take no type field',
+          code: `{
+  "mcpServers": {
+    "astryx": {
+      "url": "https://astryx.atmeta.com/mcp"
+    }
+  }
+}`,
+        },
+        {
+          type: 'prose',
+          text: 'Claude Desktop is the exception: claude_desktop_config.json holds local stdio servers, so a remote server is added through Settings, then Connectors, then Add custom connector, pasting the URL above.',
         },
         {
           type: 'prose',
