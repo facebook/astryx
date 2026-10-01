@@ -2244,3 +2244,89 @@ describe('DropdownMenu data/compound parity', () => {
     expect(item).toHaveAccessibleName('Rename');
   });
 });
+
+describe('DropdownMenu keyboard', () => {
+  const items = [{label: 'Edit'}, {label: 'Duplicate'}, {label: 'Delete'}];
+  const item = (name: string | RegExp) =>
+    screen.getByRole('menuitem', {name, hidden: true});
+
+  it('ArrowDown on the last row wraps to the first, ArrowUp on the first to the last', async () => {
+    const user = userEvent.setup();
+    render(<DropdownMenu button={{label: 'Actions'}} items={items} />);
+    screen.getByRole('button', {name: /Actions/}).focus();
+    await user.keyboard('{Enter}');
+    await waitFor(() => expect(item('Edit')).toHaveFocus());
+    const menu = screen.getByRole('menu', {hidden: true});
+    fireEvent.keyDown(menu, {key: 'ArrowUp'});
+    expect(item('Delete')).toHaveFocus();
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(item('Edit')).toHaveFocus();
+  });
+
+  it('ArrowUp on the trigger opens with the last row highlighted', async () => {
+    const user = userEvent.setup();
+    render(<DropdownMenu button={{label: 'Actions'}} items={items} />);
+    screen.getByRole('button', {name: /Actions/}).focus();
+    await user.keyboard('{ArrowUp}');
+    await waitFor(() => expect(item('Delete')).toHaveFocus());
+  });
+
+  it('PageDown moves to the last row and PageUp back to the first', async () => {
+    const user = userEvent.setup();
+    render(<DropdownMenu button={{label: 'Actions'}} items={items} />);
+    screen.getByRole('button', {name: /Actions/}).focus();
+    await user.keyboard('{Enter}');
+    await waitFor(() => expect(item('Edit')).toHaveFocus());
+    const menu = screen.getByRole('menu', {hidden: true});
+    fireEvent.keyDown(menu, {key: 'PageDown'});
+    expect(item('Delete')).toHaveFocus();
+    fireEvent.keyDown(menu, {key: 'PageDown'});
+    expect(item('Delete')).toHaveFocus();
+    fireEvent.keyDown(menu, {key: 'PageUp'});
+    expect(item('Edit')).toHaveFocus();
+  });
+
+  it("the opening key's auto-repeat does not act on the highlighted row", async () => {
+    const onClick = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Edit', onClick}]}
+      />,
+    );
+    screen.getByRole('button', {name: /Actions/}).focus();
+    await user.keyboard('{Enter>}');
+    await waitFor(() => expect(item('Edit')).toHaveFocus());
+    fireEvent.keyDown(item('Edit'), {key: 'Enter', repeat: true});
+    fireEvent.keyDown(item('Edit'), {key: 'Enter', repeat: true});
+    fireEvent.keyUp(item('Edit'), {key: 'Enter'});
+    expect(onClick).not.toHaveBeenCalled();
+    fireEvent.keyDown(item('Edit'), {key: 'Enter'});
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('typeahead reads the label alone, never the icon slot or description', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Duplicate" onClick={() => {}} />
+        <DropdownMenuItem
+          label="Edit"
+          icon={<span>Zap</span>}
+          description="Zero risk"
+          onClick={() => {}}
+        />
+        <DropdownMenuItem label="Zoom" onClick={() => {}} />
+      </DropdownMenu>,
+    );
+    screen.getByRole('button', {name: /Actions/}).focus();
+    await user.keyboard('{Enter}');
+    await waitFor(() => expect(item(/Duplicate/)).toHaveFocus());
+    const menu = screen.getByRole('menu', {hidden: true});
+    // "z" must skip Edit — its icon slot reads "Zap" and its description
+    // "Zero risk", but its LABEL starts with "E" — and land on Zoom.
+    fireEvent.keyDown(menu, {key: 'z'});
+    expect(item(/Zoom/)).toHaveFocus();
+  });
+});

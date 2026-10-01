@@ -29,3 +29,19 @@ export const MENU_ITEM_SELECTOR: string = [...MENU_ITEM_ROLES]
  * level scopes item collection and key handling to its own container.
  */
 export const MENU_BOUNDARY_SELECTOR = '[role="menu"]';
+
+/**
+ * Marks the label element inside a menu row. Typeahead reads a row's label
+ * from this element alone — never its description, shortcut or badge.
+ * `Item` stamps it on its label; a custom row can stamp its own.
+ */
+export const MENU_ITEM_LABEL_ATTR = 'data-astryx-item-label';
+
+/**
+ * The text typeahead matches for a menu row: its marked label when it has
+ * one, else the row's whole text.
+ */
+export function getMenuItemLabel(row: HTMLElement): string | null {
+  const label = row.querySelector(`[${MENU_ITEM_LABEL_ATTR}]`);
+  return (label ?? row).textContent;
+}

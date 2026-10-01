@@ -50,6 +50,7 @@ import {
   MENU_ITEM_ROLES,
   MENU_ITEM_SELECTOR,
   MENU_BOUNDARY_SELECTOR,
+  getMenuItemLabel,
 } from './menuItemRoles';
 import {
   DropdownMenuContext,
@@ -644,6 +645,8 @@ function DropdownMenuPopover({
   // if pre-selected (#4477). Reset to 'keyboard' after every open so
   // programmatic controlled opens keep the item-focus behavior.
   const openModalityRef = useRef<'keyboard' | 'pointer'>('keyboard');
+  // ArrowUp opens with the LAST enabled row highlighted.
+  const focusLastOnOpenRef = useRef(false);
 
   const handleLayerShow = useCallback(() => {
     acceptedOpenRef.current = true;
@@ -680,21 +683,26 @@ function DropdownMenuPopover({
     listRef,
     handleKeyDown: listNavKeyDown,
     focusFirst,
+    focusLast,
     focusItem,
     ownsEvent,
     getItems: getMenuItems,
   } = useListFocus<HTMLDivElement>({
     itemSelector: MENU_ITEM_SELECTOR,
     boundarySelector: MENU_BOUNDARY_SELECTOR,
-    wrap: false,
+    // Menus wrap from the last row to the first and back, as macOS menus do;
+    // a picker's list clamps instead.
+    wrap: true,
+    hasPaging: true,
     onEscape: closeMenu,
   });
 
-  // First-character typeahead over the (enabled) menu items — jump to the next
-  // item whose label starts with the typed text (menus-11). Reuses the hook's
-  // scoped item collection so an inline submenu flyout's items aren't swept in.
+  // Typeahead over the (enabled) menu items — jump to the next item whose
+  // LABEL starts with the typed text, never its description, shortcut or
+  // badge. Reuses the hook's scoped item collection so an inline submenu
+  // flyout's items aren't swept in.
   const typeahead = useTypeahead({
-    getItemLabels: () => getMenuItems().map(el => el.textContent),
+    getItemLabels: () => getMenuItems().map(getMenuItemLabel),
     onMatch: focusItem,
     getCurrentIndex: () =>
       getMenuItems().findIndex(
@@ -750,12 +758,14 @@ function DropdownMenuPopover({
     }
     shouldFocusOnOpenRef.current = false;
     requestAnimationFrame(() => {
-      if (openModalityRef.current === 'pointer' || !focusFirst()) {
+      const focusEnd = focusLastOnOpenRef.current ? focusLast : focusFirst;
+      focusLastOnOpenRef.current = false;
+      if (openModalityRef.current === 'pointer' || !focusEnd()) {
         listRef.current?.focus();
       }
       openModalityRef.current = 'keyboard';
     });
-  }, [popover.isOpen, focusFirst, listRef]);
+  }, [popover.isOpen, focusFirst, focusLast, listRef]);
 
   // Extend useListFocus with Enter/Space activation + typeahead
   const listKeyDown = useCallback(
@@ -767,6 +777,11 @@ function DropdownMenuPopover({
       }
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
+        // The key that opened the menu, held down, auto-repeats into the menu
+        // once focus has moved there; a repeat is never an activation.
+        if (e.repeat) {
+          return;
+        }
         const focused = document.activeElement as HTMLElement | null;
         if (
           focused &&
@@ -851,8 +866,17 @@ function DropdownMenuPopover({
   const handleButtonKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (!popover.isOpen) {
-        if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+        if (
+          e.key === 'ArrowDown' ||
+          e.key === 'ArrowUp' ||
+          e.key === 'Enter' ||
+          e.key === ' '
+        ) {
           e.preventDefault();
+          if (e.repeat) {
+            return;
+          }
+          focusLastOnOpenRef.current = e.key === 'ArrowUp';
           openAndFocus();
         }
         return;

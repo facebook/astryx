@@ -1032,3 +1032,23 @@ describe('ContextMenu keyboard access for menuitemradio/menuitemcheckbox (#3829)
     ).toHaveFocus();
   });
 });
+
+describe('ContextMenu keyboard', () => {
+  const item = (name: string) =>
+    screen.getByRole('menuitem', {name, hidden: true});
+
+  it('wraps arrow navigation at the ends', () => {
+    render(
+      <ContextMenu items={[{label: 'Cut'}, {label: 'Copy'}, {label: 'Paste'}]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    const menu = screen.getByRole('menu', {hidden: true});
+    item('Paste').focus();
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(item('Cut')).toHaveFocus();
+    fireEvent.keyDown(menu, {key: 'ArrowUp'});
+    expect(item('Paste')).toHaveFocus();
+  });
+});

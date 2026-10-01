@@ -76,6 +76,7 @@ import {
   MENU_ITEM_ROLES,
   MENU_ITEM_SELECTOR,
   MENU_BOUNDARY_SELECTOR,
+  getMenuItemLabel,
 } from './menuItemRoles';
 import {
   DropdownMenuContext,
@@ -329,13 +330,15 @@ export function DropdownMenuSubMenu(
   } = useListFocus<HTMLDivElement>({
     itemSelector: MENU_ITEM_SELECTOR,
     boundarySelector: MENU_BOUNDARY_SELECTOR,
-    wrap: false,
+    // Menus wrap.
+    wrap: true,
+    hasPaging: true,
     onEscape: () => close({focusTrigger: true}),
   });
   const hasOverflow = useMenuOverflow(menuRef, children, isOpen);
 
   const typeahead = useTypeahead({
-    getItemLabels: () => getItems().map(el => el.textContent),
+    getItemLabels: () => getItems().map(getMenuItemLabel),
     onMatch: focusItem,
     getCurrentIndex: () =>
       getItems().findIndex(
@@ -474,6 +477,10 @@ export function DropdownMenuSubMenu(
       }
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
+        // A held key's auto-repeat never activates.
+        if (e.repeat) {
+          return;
+        }
         const focused = document.activeElement as HTMLElement | null;
         if (
           focused &&

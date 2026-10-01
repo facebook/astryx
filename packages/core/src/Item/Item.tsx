@@ -481,6 +481,8 @@ export function Item({
   const labelAndDescription = (
     <>
       <span
+        // The label alone is what a menu's typeahead reads.
+        data-astryx-item-label=""
         {...stylex.props(
           styles.label,
           isInline && styles.inlineLabel,

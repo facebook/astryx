@@ -57,6 +57,7 @@ import {
   MENU_ITEM_ROLES,
   MENU_ITEM_SELECTOR,
   MENU_BOUNDARY_SELECTOR,
+  getMenuItemLabel,
 } from '../DropdownMenu/menuItemRoles';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
@@ -389,15 +390,17 @@ export function ContextMenu({
   } = useListFocus<HTMLDivElement>({
     itemSelector: MENU_ITEM_SELECTOR,
     boundarySelector: MENU_BOUNDARY_SELECTOR,
-    wrap: false,
+    // Menus wrap from the last row to the first and back.
+    wrap: true,
+    hasPaging: true,
     onEscape: closeMenu,
   });
 
-  // First-character typeahead over the enabled menu items (menus-11). Reuses
-  // the hook's scoped item collection so an inline submenu flyout's items
-  // aren't swept in.
+  // Typeahead over the enabled menu items, matched on each row's LABEL alone.
+  // Reuses the hook's scoped item collection so an inline submenu flyout's
+  // items aren't swept in.
   const typeahead = useTypeahead({
-    getItemLabels: () => getMenuItems().map(el => el.textContent),
+    getItemLabels: () => getMenuItems().map(getMenuItemLabel),
     onMatch: focusItem,
     getCurrentIndex: () =>
       getMenuItems().findIndex(
@@ -461,6 +464,10 @@ export function ContextMenu({
       }
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
+        // A held key's auto-repeat never activates.
+        if (e.repeat) {
+          return;
+        }
         const focused = document.activeElement as HTMLElement | null;
         if (
           focused &&
