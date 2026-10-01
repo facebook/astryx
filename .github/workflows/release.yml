@@ -15,10 +15,11 @@
 # Two jobs, selected by trigger:
 #   - publish (stable): workflow_dispatch only. Publishes the `latest` dist-tag.
 #     The release flow is:
-#       1. Land the changesets "Version Packages" PR on main (`pnpm
-#          version-packages` → PR → merge). This bumps versions; it never touches
-#          the registry.
-#       2. Run this workflow to publish the bumped versions.
+#       1. Cut and mark one release/vX.Y.Z branch from exact window-time main.
+#       2. Target the generated Version Packages PR to that branch.
+#       3. Run the final exact-head release checks, tag the merged bump commit,
+#          and dispatch this workflow from that immutable tag with the recorded
+#          release branch and head. Stable publication from main is rejected.
 #     Version-gated and idempotent: any version already on the registry is
 #     skipped, so re-running (or a `dry-run` first) is safe.
 #   - canary: push to main only. Publishes 0.x.y-canary.<short-sha> to the
@@ -49,6 +50,14 @@ on:
         description: 'Build and resolve what would publish, but do not publish'
         type: boolean
         default: false
+      release-branch:
+        description: 'Single marked release/vX.Y.Z branch'
+        type: string
+        required: true
+      expected-head:
+        description: 'Exact full release branch SHA carried by this tag'
+        type: string
+        required: true
   push:
     branches: [main]
 
@@ -68,8 +77,48 @@ jobs:
       contents: read
       id-token: write # npm OIDC trusted publishing + provenance
     steps:
-      - name: Checkout
+      - name: Checkout immutable release tag
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Validate marked release branch, tag commit, and plan
+        env:
+          RELEASE_BRANCH: ${{ inputs['release-branch'] }}
+          EXPECTED_HEAD: ${{ inputs['expected-head'] }}
+        run: |
+          set -eu
+          git fetch origin '+refs/heads/release/v*:refs/remotes/origin/release/v*'
+          ACTIVE_BRANCHES=$(node scripts/release/active-release.mjs list-active)
+          REMOTE_HEAD=$(git ls-remote origin "refs/heads/$RELEASE_BRANCH" | awk '{print $1}')
+          node scripts/release/active-release.mjs validate \
+            --mode publish \
+            --release-branch "$RELEASE_BRANCH" \
+            --expected-head "$EXPECTED_HEAD" \
+            --checkout-sha "$GITHUB_SHA" \
+            --remote-head "$REMOTE_HEAD" \
+            --ref-name "$GITHUB_REF_NAME" \
+            --active-branches "$ACTIVE_BRANCHES" \
+            | tee release-publish-receipt.json
+
+      - name: Upload exact release authority receipt
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-publish-receipt-${{ inputs['expected-head'] }}
+          path: release-publish-receipt.json
+          retention-days: 90
+
+      - name: Record release authority summary
+        run: |
+          PLAN_DIGEST=$(node -p "require('./.release/active.json').planDigest")
+          {
+            echo '## Stable release authority'
+            echo
+            echo "- Branch: ${{ inputs['release-branch'] }}"
+            echo "- Head: ${{ inputs['expected-head'] }}"
+            echo "- Tag: $GITHUB_REF_NAME"
+            echo "- Plan digest: $PLAN_DIGEST"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       # registry-url makes setup-node write the auth config `npm publish` reads.
       # The Node line in .nvmrc must stay >= 24 so npm >= 11.5.1 ships with it,
