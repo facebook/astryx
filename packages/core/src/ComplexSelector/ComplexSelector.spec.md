@@ -38,8 +38,10 @@ styling, targets, or public API.
 ## Compatibility and migration
 
 - Released default preserved: `yes`
-- Compatibility class: additive documentation only; runtime, DOM, styling,
-  targets, and public API remain unchanged
+- Compatibility class: additive. `trigger` is absent by default; when omitted,
+  runtime, DOM, styling, targets, and public API remain unchanged. With
+  `trigger`, the caller-rendered control replaces the Field shell, Trigger, and
+  Indicator icon by the caller's choice.
 - Controlled/uncontrolled behavior: unchanged
 - Migration decision: none
 
@@ -68,17 +70,21 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-No new public concept is introduced. Consumer props and usage remain documented
-in `ComplexSelector.doc.mjs`.
+One additive concept: anchored mode, selected by the `trigger` render prop
+(absent by default). The caller renders the control the popup hangs off and
+spreads the given props (`ref`, `id`, `onClick`, `onKeyDown`, `aria-haspopup`,
+`aria-expanded`, `aria-controls`, `aria-busy`) onto it. Consumer props and usage
+remain documented in `ComplexSelector.doc.mjs`.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                                       | Basis                           | Draft review state                                 |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | -------------------------------------------------- |
-| FR1 | The current render contains a Field, Trigger, Indicator icon, and mounted Popup; one optional start slot may contain either an Icon-rendered start icon or caller-rendered start content. | Current source, docs, and tests | Verified current behavior; no new behavior decided |
-| FR2 | Trigger, Indicator icon, and Popup carry `complex-selector`, `complex-selector-indicator-icon`, and `complex-selector-popup`, respectively.                                               | Current source, docs, and tests | Verified current behavior; no target change        |
-| FR3 | Field delegates to Field's `field` target, and a semantic name or icon component in the start slot delegates to Icon's `icon` target.                                                     | Current source and owner tests  | Verified current behavior; no target change        |
-| FR4 | Arbitrary ReactNode start content renders directly and carries no ComplexSelector-owned target.                                                                                           | Current source                  | Verified current behavior; no target change        |
+| ID  | Candidate invariant                                                                                                                                                                                                                                                                                                            | Basis                           | Draft review state                                 |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------- | -------------------------------------------------- |
+| FR1 | The current render contains a Field, Trigger, Indicator icon, and mounted Popup; one optional start slot may contain either an Icon-rendered start icon or caller-rendered start content.                                                                                                                                      | Current source, docs, and tests | Verified current behavior; no new behavior decided |
+| FR2 | Trigger, Indicator icon, and Popup carry `complex-selector`, `complex-selector-indicator-icon`, and `complex-selector-popup`, respectively.                                                                                                                                                                                    | Current source, docs, and tests | Verified current behavior; no target change        |
+| FR3 | Field delegates to Field's `field` target, and a semantic name or icon component in the start slot delegates to Icon's `icon` target.                                                                                                                                                                                          | Current source and owner tests  | Verified current behavior; no target change        |
+| FR4 | Arbitrary ReactNode start content renders directly and carries no ComplexSelector-owned target.                                                                                                                                                                                                                                | Current source                  | Verified current behavior; no target change        |
+| FR5 | With `trigger`, the caller-rendered control is the popup's anchor and focus-return target, carries `aria-haspopup="dialog"`, `aria-expanded`, and `aria-controls` for the Popup, and opens it on click or ArrowDown; no Field, Trigger, or Indicator icon renders. `handleRef` and `onOpenChange` behave as without a trigger. | DEC-1, docs, and tests          | Proposed; awaiting owner approval                  |
 
 ### Allowed variation
 
@@ -107,8 +113,11 @@ in `ComplexSelector.doc.mjs`.
 
 ## Accessibility contract
 
-This draft does not change or extend ComplexSelector's existing field, trigger,
-dialog, focus, or keyboard behavior.
+Without `trigger`, existing field, trigger, dialog, focus, and keyboard behavior
+is unchanged. With `trigger`, the caller's control carries the disclosure state
+(`aria-haspopup="dialog"`, `aria-expanded`, `aria-controls`), the Popup keeps
+its dialog label from `label`, focus returns to that control on close, and
+ArrowDown on it opens the popup as it does on the built-in trigger.
 
 ## Design relationships
 
@@ -160,12 +169,13 @@ content remains outside the owned anatomy inventory.
 
 ## Verification map
 
-| Contract            | Verification                                                               | Representative states                            | Mutation or failure expectation                                                               | Audit section                   |
-| ------------------- | -------------------------------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------- | ------------------------------- |
-| FR1                 | `ComplexSelector.test.tsx` render, ghost-trigger, and popup suites         | Default closed, ghost start branches, open Popup | Removing a documented part fails existing role, content, or structure assertions.             | `audit:ComplexSelector/anatomy` |
-| FR2                 | Component target suites, source inspection, and theming target inventories | Closed/open Popup; expanded Indicator icon       | Removing or renaming a current local target fails component assertions or target inventories. | `audit:ComplexSelector/theming` |
-| FR3, FR4            | Icon owner tests and `renderIconSlot` source inspection                    | Semantic/component icon; arbitrary ReactNode     | A branch gains the wrong owner, loses its target, or receives an invented local target.       | `audit:ComplexSelector/theming` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                              | Canonical anatomy and current local targets      | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.    | `audit:ComplexSelector/theming` |
+| Contract            | Verification                                                               | Representative states                                    | Mutation or failure expectation                                                                                   | Audit section                         |
+| ------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| FR1                 | `ComplexSelector.test.tsx` render, ghost-trigger, and popup suites         | Default closed, ghost start branches, open Popup         | Removing a documented part fails existing role, content, or structure assertions.                                 | `audit:ComplexSelector/anatomy`       |
+| FR2                 | Component target suites, source inspection, and theming target inventories | Closed/open Popup; expanded Indicator icon               | Removing or renaming a current local target fails component assertions or target inventories.                     | `audit:ComplexSelector/theming`       |
+| FR3, FR4            | Icon owner tests and `renderIconSlot` source inspection                    | Semantic/component icon; arbitrary ReactNode             | A branch gains the wrong owner, loses its target, or receives an invented local target.                           | `audit:ComplexSelector/theming`       |
+| FR5                 | `ComplexSelector.test.tsx` "trigger render prop" suite                     | Caller control closed/open; ArrowDown open; focus return | Field chrome renders with a trigger, the control lacks disclosure state, or focus does not return to it on close. | `audit:ComplexSelector/accessibility` |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                              | Canonical anatomy and current local targets              | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.                        | `audit:ComplexSelector/theming`       |
 
 Current component tests directly assert the Trigger and Popup targets. Source
 inspection confirms that non-lazy `useLayer` keeps the Popup mounted while
@@ -176,8 +186,13 @@ caller-owned ReactNode content.
 
 ## Decision log
 
-None. This draft records current facts and introduces no component-local design,
-API, theming, or layer-system decision.
+- **DEC-1 — Anchored mode through `trigger`.** A picker anchored in a row the
+  caller owns cannot host the Field shell or a nested button. The caller
+  renders the control and spreads the given props; the component keeps owning
+  open state through the existing `handleRef`/`onOpenChange`. Rejected: an
+  `anchorRef` plus a controlled `isOpen`, per the rule already written on
+  `ComplexSelectorHandle`. Proposed in a pull request; FR5 becomes policy only
+  when an owner approves this record.
 
 ## Open questions
 
