@@ -1,7 +1,7 @@
 [
   {
     "component": "core/Banner",
-    "reason": "Banner renders a single wrap-capable flex header row — status icon, title/description column, and an end area pushed over with `marginInlineStart: 'auto'` — above an optional content panel. Its status, close and expand glyphs (`info`, `warning`, `error`, `success`, `close`, `chevronDown`) are all radially symmetric or vertical, and the expanded state rotates the chevron 180° about the block axis. Every inset, corner radius and border it draws is a logical property, so the whole banner mirrors under RTL with nothing positioned, ordered or animated along the inline axis for the audit to assert.",
+    "reason": "Banner renders a single wrap-capable flex header row \u2014 status icon, title/description column, and an end area pushed over with `marginInlineStart: 'auto'` \u2014 above an optional content panel. Its status, close and expand glyphs (`info`, `warning`, `error`, `success`, `close`, `chevronDown`) are all radially symmetric or vertical, and the expanded state rotates the chevron 180\u00b0 about the block axis. Every inset, corner radius and border it draws is a logical property, so the whole banner mirrors under RTL with nothing positioned, ordered or animated along the inline axis for the audit to assert.",
     "evidence": {
       "apps/storybook/stories/Banner.stories.tsx": "sha256:15792a91bf7a7df1d6e15085cc42b9fc7f4df05135d09b6360b2a24ca2a6db5d",
       "packages/core/src/Banner/Banner.tsx": "sha256:d69e58bc792b8c8802311aacd7b629c890915424f5b575d3bb3f71645db9c77f",
@@ -10,7 +10,7 @@
   },
   {
     "component": "core/ToggleButton",
-    "reason": "ToggleButton stories lay out label and optional icon in an inline flex row with logical gap only — no directional glyphs (the toolbar icons are non-directional), no side-specific placement, order, inset, or offset, no scrolling, dragging, or overlays. Elevation is a symmetric box-shadow, direction-independent by construction, so the LTR and RTL renders are mirror-identical."
+    "reason": "ToggleButton stories lay out label and optional icon in an inline flex row with logical gap only \u2014 no directional glyphs (the toolbar icons are non-directional), no side-specific placement, order, inset, or offset, no scrolling, dragging, or overlays. Elevation is a symmetric box-shadow, direction-independent by construction, so the LTR and RTL renders are mirror-identical."
   },
   {
     "component": "core/Field",
@@ -30,7 +30,7 @@
   },
   {
     "component": "core/Spinner",
-    "reason": "No direction-sensitive visual, layout, or behavior. The ring is a concentric SVG — two <circle> elements sharing one center, sized by diameter and stroke, with no physical inset, offset, or asymmetry to mirror. Its only layout is the optional label wrapper, which is flexDirection: column + alignItems: center, so the label stacks below the ring on both axes' terms rather than beside it. The rotation keyframe (0deg to 360deg) is deliberately absolute: a loading spinner turns the same way in every locale, and mirroring it would be a bug, not RTL support."
+    "reason": "No direction-sensitive visual, layout, or behavior. The ring is a concentric SVG \u2014 two <circle> elements sharing one center, sized by diameter and stroke, with no physical inset, offset, or asymmetry to mirror. Its only layout is the optional label wrapper, which is flexDirection: column + alignItems: center, so the label stacks below the ring on both axes' terms rather than beside it. The rotation keyframe (0deg to 360deg) is deliberately absolute: a loading spinner turns the same way in every locale, and mirroring it would be a bug, not RTL support."
   },
   {
     "component": "core/Table",
@@ -38,7 +38,7 @@
   },
   {
     "component": "core/Text",
-    "reason": "Text sets typography — size, weight, colour, line-height, wrapping, truncation — and nothing else. Its one alignment prop is `justify`, which compiles to the logical `text-align: start | center | end` and defaults to `start`, so text hangs off the correct edge in either direction without a component-side branch. Truncation is `text-overflow: ellipsis` and `-webkit-line-clamp`, both of which put the ellipsis at the reading end on their own, and the tooltip that accompanies a clamped string is placed with the logical `above`/`below`/`start`/`end` vocabulary. Nothing is positioned, nothing is transformed, and the component renders no glyph, separator, or control."
+    "reason": "Text sets typography \u2014 size, weight, colour, line-height, wrapping, truncation \u2014 and nothing else. Its one alignment prop is `justify`, which compiles to the logical `text-align: start | center | end` and defaults to `start`, so text hangs off the correct edge in either direction without a component-side branch. Truncation is `text-overflow: ellipsis` and `-webkit-line-clamp`, both of which put the ellipsis at the reading end on their own, and the tooltip that accompanies a clamped string is placed with the logical `above`/`below`/`start`/`end` vocabulary. Nothing is positioned, nothing is transformed, and the component renders no glyph, separator, or control."
   },
   {
     "component": "core/Timestamp",
@@ -85,16 +85,8 @@
     "reason": "VegaChart renders a caller-owned Vega or Vega-Lite data-space specification. Axes, marks, scales, pointer signals, and physical chart coordinates intentionally remain defined by that specification rather than document direction; the React wrapper owns no directional glyph, logical control order, overlay placement, or horizontal keyboard behavior."
   },
   {
-    "component": "unknown/ThreeD",
-    "reason": "The ThreeD documentation family renders Cartesian x/y/z data visualizations in SVG and WebGL. Its axes and pointer-drag rotation are physical data-space interactions that intentionally remain invariant across writing directions; it has no reading-order controls, inline-start/end placement, directional glyphs, or overlays to mirror."
-  },
-  {
-    "component": "core/Button",
-    "reason": "Button lays out icon, label, and end content in an inline flex row with logical gap and `paddingInline` only; its source carries no physical `left`/`right`, margin, padding, border, or inset anywhere, and the loading overlay is pinned with `insetInlineStart`/`insetInlineEnd`. Nothing is side-specific, nothing scrolls or drags, and the only positioned affordance is the disabled-reason tooltip, which sits on the block axis (above) rather than to a side. The icon slot mirrors with the flex row by construction, and the glyphs the stories use are non-directional. Verified by the audit's own detectors over every Button and IconButton story: D1 icon-mirror, D5 positional-mirror, and the decoration pass all returned N-A with zero not-RTL findings."
-  },
-  {
     "component": "core/IconButton",
-    "reason": "IconButton is a thin wrapper that renders Button with `isIconOnly`, adding no layout, no positioning, and no directional affordance of its own, so it inherits `core/Button`'s verification above exactly. Its single icon is centred in a square control, which has no reading direction to mirror."
+    "reason": "IconButton is a thin wrapper that renders Button with `isIconOnly`, adding no layout or positioning of its own. Its single icon is centered in a square control, which has no reading direction to mirror; directional meaning remains caller-owned."
   },
   {
     "component": "core/SelectableCard",
@@ -107,7 +99,7 @@
   },
   {
     "component": "core/ClickableCard",
-    "reason": "ClickableCard composes Card and adds only an interactive layer: a hover/active overlay pinned with `inset: 0`, a bordered variant whose padding is expressed through the logical `--container-padding-inline-*`/`--container-padding-block-*` variables, and a visually-hidden role-bearing control clipped to 1×1. Neither its source nor Card's carries a physical `left`/`right`, margin, padding, or border anywhere; nothing scrolls, drags, or sits to one side. The stories render text, a price, and an Astryx Button with no directional glyph. Verified by the audit's own detectors over every ClickableCard story: D1 icon-mirror, D5 positional-mirror, and the decoration pass all returned N-A with zero not-RTL findings."
+    "reason": "ClickableCard composes Card and adds only an interactive layer: a hover/active overlay pinned with `inset: 0`, a bordered variant whose padding is expressed through the logical `--container-padding-inline-*`/`--container-padding-block-*` variables, and a visually-hidden role-bearing control clipped to 1\u00d71. Neither its source nor Card's carries a physical `left`/`right`, margin, padding, or border anywhere; nothing scrolls, drags, or sits to one side. The stories render text, a price, and an Astryx Button with no directional glyph. Verified by the audit's own detectors over every ClickableCard story: D1 icon-mirror, D5 positional-mirror, and the decoration pass all returned N-A with zero not-RTL findings."
   },
   {
     "component": "core/AspectRatio",
@@ -149,6 +141,10 @@
   {
     "component": "core/Link",
     "reason": "Link is inline text in normal document flow with a logical gap for optional decoration. It owns no left/right glyph, physical inline placement, ordering algorithm, scrolling, dragging, overlay, or directional keyboard behavior."
+  },
+  {
+    "component": "core/link-navigation",
+    "reason": "The Link Navigation Storybook fixture exercises destination plumbing across native anchors, LinkProvider, router adapters, ClickableCard, Citation, Markdown, and imperative click handlers. It adds no visual layout or directional affordance of its own: link text follows normal bidi flow, child components retain their own RTL contracts, and navigation semantics are direction-independent."
   },
   {
     "component": "core/List",
@@ -318,5 +314,61 @@
       "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb",
       "packages/core/src/Divider/Divider.tsx": "sha256:f302b5c9eecde40b486c09d49c71cb7dab158e2fcedcb38c0145671c45d9cf8d"
     }
+  },
+  {
+    "component": "core/CheckboxIndicator",
+    "reason": "CheckboxIndicator is a decorative, non-interactive square whose centered checkmark and horizontal indeterminate bar are direction-neutral. Its state transitions change only color and visibility; it owns no inline placement, ordering, scrolling, dragging, overlay, or keyboard behavior."
+  },
+  {
+    "component": "core/CheckIndicator",
+    "reason": "CheckIndicator is a decorative, non-interactive centered selection mark. Its check glyph communicates selection rather than direction, and its optional busy child occupies the same symmetric slot; it owns no inline placement, ordering, scrolling, dragging, overlay, or keyboard behavior."
+  },
+  {
+    "component": "core/ContextMenuItem",
+    "reason": "ContextMenuItem is a public alias of DropdownMenuItem and adds no implementation of its own. DropdownMenuItem composes the independently verified Item primitive for start content, label, description, and end content, while its own styling is symmetric or logical and its parent menu owns keyboard navigation and overlay placement."
+  },
+  {
+    "component": "core/LayerProvider",
+    "reason": "LayerProvider only supplies layer configuration and mounts ToastViewport around caller content. It renders no component-owned directional glyph, inline ordering, physical positioning, scrolling, dragging, overlay-placement algorithm, or keyboard behavior; the configured toast surface is owned by Toast."
+  },
+  {
+    "component": "core/MobileNavToggle",
+    "reason": "MobileNavToggle delegates its complete visual and interaction surface to Button and renders a centered, direction-neutral menu glyph by default. It only reads AppShell state and toggles the drawer, adding no inline placement, ordering, transform, scrolling, dragging, overlay, or directional keyboard behavior."
+  },
+  {
+    "component": "core/NavHeadingMenu",
+    "reason": "NavHeadingMenu is a vertical flex menu container with symmetric width and spacing. It delegates row layout to NavHeadingMenuItem and uses only vertical menu navigation plus Home, End, Enter, Space, Escape, and typeahead; it owns no directional glyph, inline placement, horizontal scrolling, dragging, or overlay positioning."
+  },
+  {
+    "component": "core/RadioIndicator",
+    "reason": "RadioIndicator is a decorative, non-interactive circle with a centered circular selected mark. Its state transitions change only color and visibility; it owns no inline placement, ordering, scrolling, dragging, overlay, or keyboard behavior."
+  },
+  {
+    "component": "core/StackItem",
+    "reason": "StackItem controls only flex growth, shrinkage, cross-axis alignment, minimum size, and optional overflow. It does not choose the parent stack's inline direction or child order and owns no directional glyph, physical placement, transform, drag, overlay, or keyboard behavior."
+  },
+  {
+    "component": "core/Timer",
+    "reason": "Timer renders elapsed duration text in a semantic time element with inherited typography and tabular numerals. Text follows the surrounding bidi context; the component owns no directional glyph, inline placement, ordering, scrolling, dragging, overlay, or keyboard behavior."
+  },
+  {
+    "component": "core/VStack",
+    "reason": "VStack is a thin Stack wrapper that fixes the main axis to block-direction vertical flow and only maps alignment aliases. It adds no inline-axis ordering, directional glyph, physical positioning, transform, horizontal scrolling or dragging, overlay, or keyboard behavior."
+  },
+  {
+    "component": "lab/ThreeDBar",
+    "reason": "ThreeDBar projects caller data into Cartesian x/y/z coordinates and paints symmetric SVG polygons in depth order. Its front, right, and top faces belong to the physical data space and intentionally do not follow document direction; it owns no reading-order control, directional glyph, overlay, scroll, or keyboard behavior."
+  },
+  {
+    "component": "lab/ThreeDScatter",
+    "reason": "ThreeDScatter projects caller data into Cartesian x/y/z coordinates and paints centered SVG circles in depth order. The plot remains a physical data space independent of document direction, and the component owns no text flow, directional glyph, overlay, scroll, drag, or keyboard behavior."
+  },
+  {
+    "component": "lab/ThreeDScatterGL",
+    "reason": "ThreeDScatterGL projects caller data into a WebGL Cartesian coordinate system and paints centered point sprites on a physical canvas. Its projection is intentionally invariant across writing directions, and it owns no reading-order control, directional glyph, logical overlay, scroll, drag, or keyboard behavior."
+  },
+  {
+    "component": "lab/ThreeDSurface",
+    "reason": "ThreeDSurface triangulates caller data in Cartesian x/y/z coordinates and paints SVG polygons in depth order. Its mesh is a physical data-space visualization independent of document direction, with no text flow, directional glyph, overlay, scroll, drag, or keyboard behavior."
   }
 ]

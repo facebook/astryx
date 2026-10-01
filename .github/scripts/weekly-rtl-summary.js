@@ -4,20 +4,20 @@
 /**
  * @description Summarizes a full-suite RTL audit report for the weekly RTL
  *   scan workflow. Reads the JSON report produced by rtl-audit.mjs, writes a
- *   markdown summary (used for both the GitHub step summary and the tracking
- *   issue body), and emits step outputs (status, total_findings,
- *   components_audited, stories_scanned, coverage_gaps, verified_na) so the
- *   workflow can decide whether to open-or-update the tracking issue and
- *   whether to fail the job.
+ *   Markdown summary, and emits step outputs (status, total_findings,
+ *   components_audited, stories_scanned, coverage_gaps,
+ *   known_coverage_gaps, and verified_na) so the workflow can decide whether to
+ *   open or update the tracking issue and whether to fail the job.
  * @input --report <file> --audit-outcome <success|failure> --summary-output <file>
  *   [--github-output <file>]
  * @output Markdown summary file + GitHub Actions step outputs
  *
  * Status semantics:
- *   clean: report present with zero behavior findings or coverage gaps
- *   findings: report present with a D1/D5/D6/curated finding, an unexplained
- *              all-N/A component, or a stale verified-N/A declaration
- *   crashed  — no usable report (the audit died before writing one)
+ *   clean: report present with zero behavior findings, new gaps, or known debt
+ *   debt: report has only pre-existing known coverage gaps
+ *   findings: report has a D1/D5/D6/curated finding, new coverage gap, stale
+ *              baseline/N-A entry, or registry error
+ *   crashed: no usable report (the audit died before writing one)
  *
  * Unlike accessibility-audit.js, rtl-audit.mjs exits non-zero on ANY finding,
  * so status comes from the report's contents; --audit-outcome is only used to
@@ -68,7 +68,15 @@ function curatedFailuresOf(report) {
 
 function coverageFindingsOf(report) {
   return (report?.coverage?.results || []).filter(result =>
-    ['coverage-gap', 'stale-verified-na'].includes(result.status),
+    ['coverage-gap', 'stale-known-coverage-gap', 'stale-verified-na'].includes(
+      result.status,
+    ),
+  );
+}
+
+function knownCoverageDebtOf(report) {
+  return (report?.coverage?.results || []).filter(
+    result => result.status === 'known-coverage-gap',
   );
 }
 
@@ -86,14 +94,18 @@ function countFindings(report) {
 function computeStatus(report) {
   if (!report || report.error) return 'crashed';
   if (!report.autoDiscovery && !report.positionalMirror) return 'crashed';
-  return countFindings(report) > 0 ? 'findings' : 'clean';
+  if (countFindings(report) > 0) return 'findings';
+  return knownCoverageDebtOf(report).length > 0 ? 'debt' : 'clean';
 }
 
-function truncateRows(rows) {
+function truncateRows(rows, columnCount = 3) {
   if (rows.length <= MAX_ROWS) return rows;
+  const emptyCells = Array.from({length: columnCount - 1}, () => '').join(
+    ' | ',
+  );
   return [
     ...rows.slice(0, MAX_ROWS),
-    `| _…${rows.length - MAX_ROWS} more — see the \`rtl-weekly-report\` artifact_ | | | |`,
+    `| _…${rows.length - MAX_ROWS} more — see the \`rtl-weekly-report\` artifact_ | ${emptyCells} |`,
   ];
 }
 
@@ -139,7 +151,7 @@ function buildSummary(report, status) {
     `**D1 icon-mirror:** ${auto.pass ?? 0} pass · ${auto.fail ?? 0} not-RTL · ${auto.na ?? 0} N-A.`,
     `**D5 positional-mirror:** ${pm.pass ?? 0} pass · ${pm.fail ?? 0} FAIL · ${pm.na ?? 0} N-A (tolerance ${pm.tolerancePx ?? '?'}px).`,
     `**D6 directional-decoration:** ${decorations.pass ?? 0} pass · ${decorations.fail ?? 0} FAIL · ${decorations.na ?? 0} N-A.`,
-    `**Applicability:** ${coverage.measured ?? 0} measured · ${coverage.verifiedNa ?? 0} verified N-A · ${coverage.gaps ?? 0} coverage gap · ${coverage.staleVerifiedNa ?? 0} stale verified N-A.`,
+    `**Applicability:** ${coverage.measured ?? 0} measured · ${coverage.verifiedNa ?? 0} verified N-A · ${coverage.knownGaps ?? 0} known debt · ${coverage.gaps ?? 0} new gap · ${coverage.staleKnownGaps ?? 0} stale known gap · ${coverage.staleVerifiedNa ?? 0} stale verified N-A.`,
     '',
   );
 
@@ -181,7 +193,7 @@ function buildSummary(report, status) {
         );
       }
     }
-    lines.push(...truncateRows(rows), '');
+    lines.push(...truncateRows(rows, 5), '');
   }
 
   const decorationFails = failuresOf(decorations);
@@ -209,7 +221,7 @@ function buildSummary(report, status) {
     );
   }
   if (coverageFindings.length) {
-    lines.push('### RTL coverage gaps', '');
+    lines.push('### New or stale RTL coverage gaps', '');
     lines.push(
       '| Component | Status | Detail |',
       '|-----------|--------|--------|',
@@ -221,6 +233,25 @@ function buildSummary(report, status) {
             result.note || result.reason || 'unexplained all-N/A result';
           return `| ${result.component} | ${result.status} | ${detail} |`;
         }),
+      ),
+      '',
+    );
+  }
+
+  const knownDebt = knownCoverageDebtOf(report);
+  if (knownDebt.length) {
+    lines.push('### Known RTL coverage debt', '');
+    lines.push(
+      `${knownDebt.length} pre-existing all-N/A component(s) remain in the checked-in baseline. ` +
+        'They stay visible but are not new findings.',
+      '',
+      '| Component | Status | Detail |',
+      '|-----------|--------|--------|',
+      ...truncateRows(
+        knownDebt.map(
+          result =>
+            `| ${result.component} | ${result.status} | ${result.note || 'pre-existing all-N/A coverage debt'} |`,
+        ),
       ),
       '',
     );
@@ -252,9 +283,14 @@ function buildSummary(report, status) {
 
   if (status === 'clean') {
     lines.push(
-      `_No findings. ${curated.length} curated target(s) checked; ${coverage.measured ?? 0} component(s) measured and ${coverage.verifiedNa ?? 0} verified N-A, with 0 coverage gaps._`,
+      `_No findings. ${curated.length} curated target(s) checked; ${coverage.measured ?? 0} component(s) measured and ${coverage.verifiedNa ?? 0} verified N-A, with no known or new coverage gaps._`,
       '',
       'RTL-ready across the full library for every applicable or explicitly non-applicable component.',
+      '',
+    );
+  } else if (status === 'debt') {
+    lines.push(
+      `_No new RTL findings. ${coverage.knownGaps ?? 0} pre-existing coverage gap(s) remain in the explicit debt baseline._`,
       '',
     );
   }
@@ -275,6 +311,7 @@ function writeOutputs(status, report) {
     `components_audited=${report?.coverage?.total ?? report?.autoDiscovery?.total ?? 0}`,
     `stories_scanned=${report?.positionalMirror?.total ?? 0}`,
     `coverage_gaps=${report?.coverage?.gaps ?? 0}`,
+    `known_coverage_gaps=${report?.coverage?.knownGaps ?? 0}`,
     `verified_na=${report?.coverage?.verifiedNa ?? 0}`,
   ];
   if (githubOutputFile)

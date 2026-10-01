@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
+import * as stylex from '@stylexjs/stylex';
 import {
   Fragment,
   type ReactElement,
@@ -16,6 +17,7 @@ import {
   type IconShapeRole,
 } from '@astryxdesign/lab';
 import {Stack, Text} from '@astryxdesign/core';
+import {rtlStyles} from '@astryxdesign/core/utils';
 import {defaultIcons} from '../../../packages/core/src/Icon/defaultIcons';
 
 // =============================================================================
@@ -238,6 +240,13 @@ const VARIATIONS: SVGIconVariation[] = [
   'broken',
 ];
 
+const DIRECTIONAL_ICON_NAMES = new Set([
+  'chevronLeft',
+  'chevronRight',
+  'chevronsLeft',
+  'chevronsRight',
+]);
+
 export const DefaultRegistryIcons: StoryObj = {
   render: () => {
     const converted: Array<{name: string; def: SVGIconDef}> = [];
@@ -250,9 +259,7 @@ export const DefaultRegistryIcons: StoryObj = {
 
     return (
       <Stack direction="vertical" gap={3}>
-        <Text type="large">
-          Default Registry Icons \u2192 SVGIcon System
-        </Text>
+        <Text type="large">Default Registry Icons \u2192 SVGIcon System</Text>
         <Text type="supporting">
           {converted.length} icons auto-converted. Heuristic: containment-based
           layer classification (only elements fully contained within a larger
@@ -285,6 +292,9 @@ export const DefaultRegistryIcons: StoryObj = {
               {VARIATIONS.map(v => (
                 <div
                   key={`${name}-${v}`}
+                  {...stylex.props(
+                    DIRECTIONAL_ICON_NAMES.has(name) && rtlStyles.mirror,
+                  )}
                   style={{display: 'flex', justifyContent: 'center'}}>
                   <SVGIcon icon={def} variation={v} size="lg" />
                 </div>

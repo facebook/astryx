@@ -23,13 +23,14 @@
  *         D8 (logical inline-edge mirroring), and D9 (logical grouped corners):
  *         the geometry/behavior dims that genuinely need hand-written selectors.
  *     (C) APPLICABILITY: every component is measured, explicitly verified N/A,
- *         or reported as a coverage gap. An all-N/A result is never called clean.
+ *         recorded as pre-existing coverage debt, or reported as a new gap.
  * @input --storybook-dir <path> --output <file> [--targets <path>]
- *   [--verified-not-applicable <path>] [--filter <csv>] [--packages <csv>]
- *   [--auto-only] [--curated-only]
- * @output JSON scorecard: D1/D5/D6 auto verdicts, curated D2/D3/D4/D7/D8/D9
- *   results, exact planned/completed scan counts, and a component coverage
- *   rollup. Mirrors the pr-a11y accessibility-audit harness.
+ *   [--verified-not-applicable <path>] [--known-coverage-gaps <path>]
+ *   [--removed-components <csv>] [--filter <csv>] [--packages <csv>]
+ *   [--check-known-gap-roster] [--auto-only] [--curated-only]
+ * @output JSON scorecard: D1/D5/D6 auto verdicts, curated
+ *   D2/D3/D4/D7/D8/D9 results, exact planned/completed scan counts, and a
+ *   component coverage rollup. Mirrors the pr-a11y accessibility-audit harness.
  * @position internal test harness; run by the soft-gated `pr-rtl` CI job and
  *   locally via `pnpm -F @astryxdesign/storybook rtl-audit`.
  *
@@ -58,8 +59,12 @@ import {
   classifyLogicalInlinePair,
   collectDirectionalDecorations,
   componentFromTarget,
+  coverageHasFindings,
   evaluateDirectionalDecorations,
   filterStoryRoutesByPackages,
+  validateKnownCoverageGaps,
+  validateRemovedComponents,
+  validateVerifiedNotApplicable,
 } from './rtl-audit-coverage.mjs';
 
 const {
@@ -82,6 +87,8 @@ const TARGETS_PATH = getArg('targets') || path.join(HERE, 'targets.json');
 const VERIFIED_NA_PATH =
   getArg('verified-not-applicable') ||
   path.join(HERE, 'verified-not-applicable.json');
+const KNOWN_GAPS_PATH =
+  getArg('known-coverage-gaps') || path.join(HERE, 'known-coverage-gaps.json');
 const FILTER = (getArg('filter') || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 const PACKAGE_FILTER = (getArg('packages') || '')
   .split(',')
@@ -96,6 +103,10 @@ if (invalidPackages.length > 0) {
 const ACTIVE_PACKAGE_NAMES = PACKAGE_FILTER.length > 0
   ? PACKAGE_FILTER
   : AUDITED_PACKAGE_NAMES;
+const REMOVED_COMPONENTS = validateRemovedComponents(
+  (getArg('removed-components') || '').split(',').map(s => s.trim()).filter(Boolean),
+);
+const CHECK_KNOWN_GAP_ROSTER = hasFlag('check-known-gap-roster');
 const AUTO_ONLY = hasFlag('auto-only');
 const CURATED_ONLY = hasFlag('curated-only');
 // Story-id prefixes the auto-discovery layer sweeps come from the same
@@ -1078,6 +1089,14 @@ async function cleanupRuntime() {
   if (scopedStoryRoutes.length === 0) {
     throw new Error(`no runnable stories resolved for ${ACTIVE_PACKAGE_NAMES.join(',')} scope`);
   }
+  const currentComponentKeys = new Set(
+    [...sourceComponents, ...storyRoutes.map(route => route.component)].map(
+      component => component.toLowerCase(),
+    ),
+  );
+  const removedFromRoster = REMOVED_COMPONENTS.filter(
+    component => !currentComponentKeys.has(component.toLowerCase()),
+  );
   const auditedComponents = buildAuditedComponentRoster({
     sourceComponents,
     storyComponents: scopedStoryRoutes.map(route => route.component),
@@ -1200,13 +1219,22 @@ async function cleanupRuntime() {
   }
 
   let verifiedNa = [];
-  let verifiedNaError = null;
+  const registryErrors = [];
   try {
-    const parsed = JSON.parse(fs.readFileSync(VERIFIED_NA_PATH, 'utf8'));
-    if (!Array.isArray(parsed)) throw new Error('verified-not-applicable registry must be a JSON array');
-    verifiedNa = parsed;
+    verifiedNa = validateVerifiedNotApplicable(
+      JSON.parse(fs.readFileSync(VERIFIED_NA_PATH, 'utf8')),
+    );
   } catch (error) {
-    verifiedNaError = String(error).slice(0, 200);
+    registryErrors.push(String(error).slice(0, 200));
+  }
+
+  let knownGaps = [];
+  try {
+    knownGaps = validateKnownCoverageGaps(
+      JSON.parse(fs.readFileSync(KNOWN_GAPS_PATH, 'utf8')),
+    );
+  } catch (error) {
+    registryErrors.push(String(error).slice(0, 200));
   }
 
   const coverage = buildComponentCoverage({
@@ -1216,11 +1244,17 @@ async function cleanupRuntime() {
     decorationResults,
     curatedResults,
     verifiedNa,
+    knownGaps,
+    removedFromRoster,
+    knownGapRosterComponents: [...currentComponentKeys],
+    checkKnownGapRoster: FILTER.length === 0 || CHECK_KNOWN_GAP_ROSTER,
     // Partial modes intentionally omit dimensions, so they report but do not
     // enforce applicability gaps.
     enforced: !AUTO_ONLY && !CURATED_ONLY,
   });
-  if (verifiedNaError) coverage.registryError = verifiedNaError;
+  if (registryErrors.length > 0) {
+    coverage.registryError = registryErrors.join('; ');
+  }
 
   const autoFails = autoResults.filter(r => r.verdict === 'fail' || r.verdict === 'ERROR');
   // No allowlist: every not-RTL component is a surprise. The RTL migration is
@@ -1295,14 +1329,14 @@ async function cleanupRuntime() {
   console.error(`AUTO: ${report.autoDiscovery.pass} pass / ${report.autoDiscovery.fail} fail (${surprises.length} surprise) / ${report.autoDiscovery.na} N-A`);
   console.error(`PM  : ${report.positionalMirror.pass} pass / ${report.positionalMirror.fail} fail / ${report.positionalMirror.na} N-A (tol ${PM_TOL}px)`);
   console.error(`DEC : ${report.directionalDecorations.pass} pass / ${report.directionalDecorations.fail} fail / ${report.directionalDecorations.na} N-A`);
-  console.error(`COV : ${coverage.measured} measured / ${coverage.verifiedNa} verified N-A / ${coverage.gaps} gap / ${coverage.staleVerifiedNa} stale`);
-  // Non-zero exit only signals CI (which is soft/continue-on-error). Surface a
-  // signal but never let it hard-block during the stability window.
+  console.error(`COV : ${coverage.measured} measured / ${coverage.verifiedNa} verified N-A / ${coverage.removedComponents} removed / ${coverage.knownGaps} known gap / ${coverage.gaps} new gap / ${coverage.staleKnownGaps} stale known / ${coverage.staleVerifiedNa} stale N-A`);
+  // Known coverage debt remains visible without turning an unrelated component
+  // change red. New gaps and stale baseline/verified entries still fail closed.
   const anySignal =
     autoFails.length > 0 ||
     pmFails.length > 0 ||
     decorationFails.length > 0 ||
-    (coverage.enforced && (coverage.gaps > 0 || coverage.staleVerifiedNa > 0 || coverage.registryError != null)) ||
+    coverageHasFindings(coverage) ||
     curatedResults.some(r => r.rollup === 'not-RTL' || r.rollup === 'ERROR' || r.rollup === 'MISSING-STORY');
   process.exitCode = anySignal ? 1 : 0;
 })()

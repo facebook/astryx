@@ -494,6 +494,56 @@
     "dims": []
   },
   {
+    "component": "Collapsible",
+    "storyId": "core-collapsible--single-mode",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": ".astryx-collapsible-trigger > :first-child",
+      "next": ".astryx-collapsible-trigger > :nth-child(2)"
+    }
+  },
+  {
+    "component": "HStack",
+    "storyId": "core-stack--horizontal",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": ".astryx-stack > :first-child",
+      "next": ".astryx-stack > :last-child"
+    }
+  },
+  {
+    "component": "ResizeHandle",
+    "storyId": "core-resizable--horizontal-split",
+    "dims": ["D4"],
+    "selectors": {
+      "overlay": ".astryx-resize-handle",
+      "overlayRoot": ".astryx-layout"
+    }
+  },
+  {
+    "component": "TourStep",
+    "storyId": "lab-tour--placement",
+    "dims": ["D4"],
+    "setup": {
+      "args": {
+        "placement": "start"
+      }
+    },
+    "selectors": {
+      "overlay": ".astryx-popover",
+      "overlayRoot": "button:has-text(\"Target\")"
+    }
+  },
+  {
+    "component": "MobileTokenizer",
+    "storyId": "lab-mobiletokenizer--touch-flow",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": "button[aria-label=\"Tags\"] > .astryx-token:first-child",
+      "next": "button[aria-label=\"Tags\"] > span:last-child"
+    }
+  },
+  {
     "component": "AvatarGroupOverflow",
     "storyId": "core-avatargroupoverflow--default",
     "dims": ["D2"],

@@ -41,6 +41,7 @@ jobs:
       components_audited: ${{ steps.summarize.outputs.components_audited }}
       stories_scanned: ${{ steps.summarize.outputs.stories_scanned }}
       coverage_gaps: ${{ steps.summarize.outputs.coverage_gaps }}
+      known_coverage_gaps: ${{ steps.summarize.outputs.known_coverage_gaps }}
       verified_na: ${{ steps.summarize.outputs.verified_na }}
     steps:
       - name: Checkout
@@ -102,7 +103,7 @@ jobs:
           echo "::error::Weekly RTL scan status: crashed"
           exit 1
 
-  # Open-or-update the tracking issue whenever the scan is not clean.
+  # Open-or-update the tracking issue for new findings or known coverage debt.
   # Modeled on a11y-weekly.yml's report-issue job (least-privilege
   # github-script issue creation with title-based dedup). Runs even when the
   # audit job failed — a crashed scan should be visible as an issue, not just
