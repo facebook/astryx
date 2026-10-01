@@ -438,8 +438,7 @@ and invariants.
 
 **Reference:** `component:Popover/DEC-4`
 
-**Decider:** pending owner review (proposed in PR #6686 for agentcloud Client
-spec 365 Phase 4, gap kt-u812)
+**Decider:** pending owner review (proposed in PR #6686)
 
 A persistent bar floating over one viewport edge — a phone navigation bar fixed
 over the bottom, a docked toolbar — contributes no layout height, so a surface
