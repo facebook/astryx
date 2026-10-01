@@ -16,6 +16,9 @@
  *
  * Both modes use useListFocus for DOM-based keyboard navigation.
  *
+ * A sub-menu drills in on a phone through the view stack useMenuDrillIn
+ * keeps; the root shows the drilled view in place of its rows.
+ *
  * Initial focus on open follows the input modality: a keyboard open
  * (Enter / Space / ArrowDown on the trigger) focuses the first enabled item
  * (APG menu-button); a pointer open focuses the menu container itself so no
@@ -61,6 +64,7 @@ import {useMenuPress} from '../hooks/useMenuPress';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
 import {useMenuOverflow} from './useMenuOverflow';
+import {useMenuDrillIn} from './useMenuDrillIn';
 import {resolveMenuWidth} from './menuWidth';
 import {
   useAdaptivePresentation,
@@ -941,15 +945,22 @@ function DropdownMenuPopover({
       ? styles.popoverCentered
       : styles.popoverAligned;
   const isSidePlacement = placement === 'start' || placement === 'end';
+
+  // The drill-in view stack for sub-menus on a phone.
+  const {drillIn, wrapContent} = useMenuDrillIn(isOpen);
+  // The name a drilled-in view's Back row returns to.
+  const menuLabel = typeof button.label === 'string' ? button.label : undefined;
+
   // Context for compound items
   const contextValue = useMemo<DropdownMenuContextValue>(
-    () => ({closeMenu, menuSize}),
-    [closeMenu, menuSize],
+    () => ({closeMenu, menuSize, drillIn, menuLabel}),
+    [closeMenu, menuSize, drillIn, menuLabel],
   );
 
   // Resolve menu content: data-driven items become components
-  const menuContent =
-    props.items !== undefined ? renderDropdownItems(items) : children;
+  const menuContent = wrapContent(
+    props.items !== undefined ? renderDropdownItems(items) : children,
+  );
   const hasOverflow = useMenuOverflow(listRef, menuContent, popover.isOpen);
 
   return (

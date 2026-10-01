@@ -53,10 +53,12 @@ export {
 } from './DropdownMenuRadioItem';
 
 // Submenu — a single menu row that reveals a nested flyout of its own
-// children/items. Data mode via DropdownMenuItemData.items.
+// children/items, or drills in on a phone. Data mode via
+// DropdownMenuItemData.items.
 export {
   DropdownMenuSubMenu,
   type DropdownMenuSubMenuProps,
+  type DropdownMenuSubMenuPresentation,
 } from './DropdownMenuSubMenu';
 
 // Menu-coordination context — public so consumers can build custom menu items
@@ -65,5 +67,6 @@ export {
   DropdownMenuContext,
   useDropdownMenuContext,
   type DropdownMenuContextValue,
+  type DropdownMenuDrillIn,
   type DropdownMenuSize,
 } from './DropdownMenuContext';

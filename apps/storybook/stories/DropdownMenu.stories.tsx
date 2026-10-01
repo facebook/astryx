@@ -1270,3 +1270,60 @@ export const SubmenuViewportFit: Story = {
     }
   },
 };
+
+export const SubmenuDrillIn: Story = {
+  name: 'Submenu / drill-in on a phone',
+  parameters: {
+    viewport: {defaultViewport: 'mobile1'},
+    docs: {
+      description: {
+        story:
+          'On a phone (a coarse pointer, decided when the menu opened) a sub-menu row drills in: its rows replace the menu\'s rows in the same box, led by a "Back to <parent>" row; Back, Escape or ArrowLeft return to the row. `presentation="drill-in"` forces it, `"flyout"` keeps the flyout; the default `"adaptive"` follows the pointer.',
+      },
+    },
+  },
+  render: () => (
+    <DropdownMenu button={{label: 'Actions'}}>
+      <DropdownMenuItem icon={PencilIcon} label="Rename" onClick={() => {}} />
+      <DropdownMenuSubMenu
+        icon={FolderPlusIcon}
+        label="Move to"
+        presentation="drill-in">
+        <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        <DropdownMenuItem label="Folder B" onClick={() => {}} />
+        <DropdownMenuSubMenu icon={ArchiveBoxIcon} label="Archive">
+          <DropdownMenuItem label="2025" onClick={() => {}} />
+          <DropdownMenuItem label="2024" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenuSubMenu>
+      <DropdownMenuItem icon={TrashIcon} label="Delete" onClick={() => {}} />
+    </DropdownMenu>
+  ),
+};
+
+/**
+ * Browser-evidence fixture for the drill-in contract (component:DropdownMenu
+ * FR12): the sub-menu keeps the default `adaptive` presentation, so what the
+ * Chromium spec exercises is the pointer decision itself — a coarse pointer
+ * drills in, a fine one flies out. Driven by
+ * `packages/core/src/DropdownMenu/__tests__/DropdownMenuDrillIn.a11y.chromium.spec.ts`.
+ */
+export const SubmenuAdaptiveFixture: Story = {
+  name: 'Submenu / adaptive fixture',
+  parameters: {docs: {disable: true}},
+  render: () => (
+    <div data-testid="drill-in-fixture" style={{padding: 16}}>
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem icon={PencilIcon} label="Rename" onClick={() => {}} />
+        <DropdownMenuSubMenu icon={FolderPlusIcon} label="Move to">
+          <DropdownMenuItem label="Folder A" onClick={() => {}} />
+          <DropdownMenuItem label="Folder B" onClick={() => {}} />
+          <DropdownMenuSubMenu icon={ArchiveBoxIcon} label="Archive">
+            <DropdownMenuItem label="2025" onClick={() => {}} />
+          </DropdownMenuSubMenu>
+        </DropdownMenuSubMenu>
+        <DropdownMenuItem icon={TrashIcon} label="Delete" onClick={() => {}} />
+      </DropdownMenu>
+    </div>
+  ),
+};
