@@ -181,6 +181,63 @@ describe('BaseTypeahead', () => {
     ).toBeInTheDocument();
   });
 
+  it('refreshes nonempty cached results after source replacement on a focused-input click', async () => {
+    const user = userEvent.setup();
+    const originalSource: SearchSource<SearchableItem> = {
+      search: () => [],
+      bootstrap: () => [resultItem],
+    };
+    const updatedSource: SearchSource<SearchableItem> = {
+      search: () => [],
+      bootstrap: () => [{id: '2', label: 'Updated result'}],
+    };
+    const {rerender} = render(
+      <BaseTypeahead
+        searchSource={originalSource}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    await user.click(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+    expect(
+      screen.getByRole('option', {name: 'Result', hidden: true}),
+    ).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    rerender(
+      <BaseTypeahead
+        searchSource={updatedSource}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+      />,
+    );
+    expect(input).toHaveFocus();
+    expect(input).toHaveValue('');
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+    expect(
+      screen.getByRole('option', {name: 'Result', hidden: true}),
+    ).toBeInTheDocument();
+
+    await user.click(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+      expect(
+        screen.getByRole('option', {name: 'Updated result', hidden: true}),
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.queryByRole('option', {name: 'Result', hidden: true}),
+    ).not.toBeInTheDocument();
+    expect(input).toHaveFocus();
+  });
+
   it('counts grapheme clusters when enforcing minQueryLength', async () => {
     const search = vi.fn(() => [resultItem]);
     render(
