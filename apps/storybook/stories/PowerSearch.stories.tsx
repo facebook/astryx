@@ -637,6 +637,21 @@ export const NearFullTokenRow: Story = {
         `Fixture tokens wrapped before the empty combobox check: first token top ${firstTokenRect.top.toFixed(2)}, final token top ${tokenRect.top.toFixed(2)}`,
       );
     }
+    // Fail closed if token metrics drift: the row is only "nearly full" while
+    // the ordinary in-flow editing input (the typed-query layout) cannot fit
+    // beside the final token. Without a placeholder the input never matches
+    // :placeholder-shown, so it lays out exactly as it does once typing starts.
+    const placeholderAttribute = input.getAttribute('placeholder');
+    input.removeAttribute('placeholder');
+    const inFlowInputTop = input.getBoundingClientRect().top;
+    if (placeholderAttribute !== null) {
+      input.setAttribute('placeholder', placeholderAttribute);
+    }
+    if (inFlowInputTop < tokenRect.bottom) {
+      throw new Error(
+        `Fixture is no longer a nearly full token row: the in-flow editing input still fits beside the final token (input top ${inFlowInputTop.toFixed(2)}, final token bottom ${tokenRect.bottom.toFixed(2)})`,
+      );
+    }
     if (inputRect.top >= tokenRect.bottom) {
       throw new Error(
         `Empty combobox wrapped onto a blank row: input top ${inputRect.top.toFixed(2)}, final token bottom ${tokenRect.bottom.toFixed(2)}`,
