@@ -414,10 +414,13 @@ const styles = stylex.create({
 // icons. When that row would not fit inside the size token's borders, it is
 // capped at what the token holds, so a spacing scale taller than the token
 // cannot push a one-line trigger past it. The cap never goes below 1.5em of
-// the trigger's own font — the type scale's loosest target leading, above any
-// label's glyph extent — so label text too large for the token keeps the
-// uncapped row instead of being clipped. Line box and padding read the same
-// value; nothing changes wherever the row already fit.
+// the trigger's own font — the type scale's loosest target leading, a
+// conservative bound above a label's glyph extent — so label text too large
+// for the token keeps room rather than being clipped. Line box and padding
+// read the same value; nothing changes wherever the row already fit. Ghost and
+// grouped triggers keep the uncapped line box. `renderValue` content inherits
+// this row like the built-in label; content that sets a larger font should set
+// its own line height, as it must at any spacing scale.
 // Keep these calculations inline: a consumer's Babel preset can lower a
 // module-scope helper to a function expression before StyleX evaluates this
 // object, and StyleX cannot constant-evaluate that transformed helper.

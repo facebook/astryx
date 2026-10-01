@@ -604,6 +604,14 @@ const largeTextSizingTheme = defineTheme({
   tokens: {'--spacing-5': '40px', '--text-label-size': '32px'},
 });
 
+// Wide spacing with the default size ramp and label: a built-in one-line value
+// lands on its token, and a caller-rendered value that sets a larger font with
+// its own line height grows the trigger to fit.
+const wideSpacingDefaultSizesTheme = defineTheme({
+  name: 'selector-wide-spacing-default-sizes',
+  tokens: {'--spacing-5': '40px'},
+});
+
 export const SizeVariants: Story = {
   render: () => {
     const [value1, setValue1] = useState<string | undefined>();
@@ -740,6 +748,26 @@ export const SizeVariants: Story = {
             onChange={() => {}}
           />
         </Theme>
+        <Theme theme={wideSpacingDefaultSizesTheme}>
+          <Selector
+            label="Wide spacing default small"
+            size="sm"
+            options={['Apple']}
+            value="Apple"
+            onChange={() => {}}
+          />
+          <Selector
+            label="Wide spacing large custom value"
+            data-testid="large-custom"
+            size="sm"
+            options={['Ågypj']}
+            value="Ågypj"
+            onChange={() => {}}
+            renderValue={option => (
+              <div style={{fontSize: 32, lineHeight: 1.25}}>{option.label}</div>
+            )}
+          />
+        </Theme>
       </div>
     );
   },
@@ -748,15 +776,18 @@ export const SizeVariants: Story = {
     await document.fonts.ready;
     const triggers =
       canvasElement.querySelectorAll<HTMLElement>('.astryx-selector');
-    expect(triggers).toHaveLength(43);
+    expect(triggers).toHaveLength(45);
     for (const trigger of triggers) {
       const styles = getComputedStyle(trigger);
       const size = Number.parseFloat(
         styles.getPropertyValue(`--size-element-${trigger.dataset.size}`),
       );
       const height = trigger.getBoundingClientRect().height;
-      if (trigger.dataset.testid === 'large-text') {
-        // The text's box must stay inside the label's clipping box.
+      if (
+        trigger.dataset.testid === 'large-text' ||
+        trigger.dataset.testid === 'large-custom'
+      ) {
+        // Text larger than the token can hold keeps its whole line box.
         const walker = document.createTreeWalker(trigger, NodeFilter.SHOW_TEXT);
         let text: Node | null = walker.nextNode();
         while (text && !text.textContent?.includes('Ågypj')) {
@@ -775,9 +806,16 @@ export const SizeVariants: Story = {
         expect(textBox.bottom).toBeLessThanOrEqual(clip.bottom + 0.5);
         expect(height).toBeGreaterThan(size);
       } else if (trigger.dataset.testid?.endsWith('-multiline')) {
-        // A second line adds exactly one text row to the one-line height.
+        // Two text rows, plus whatever padding remains once the first row
+        // fills the token (padding never goes below zero).
         const row = Number.parseFloat(styles.lineHeight);
-        expect(height, trigger.textContent ?? '').toBeCloseTo(size + row, 1);
+        const borders =
+          Number.parseFloat(styles.borderTopWidth) +
+          Number.parseFloat(styles.borderBottomWidth);
+        expect(height, trigger.textContent ?? '').toBeCloseTo(
+          Math.max(size + row, 2 * row + borders),
+          1,
+        );
       } else {
         expect(height, trigger.textContent ?? '').toBeCloseTo(size, 1);
       }
