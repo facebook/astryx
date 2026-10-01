@@ -28,11 +28,11 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'A template is a ready-made UI page or page section built with Astryx components. An app copies it into its own code and adapts it to its product.',
+          text: 'Unlike a component, a template becomes app code: an app copies it into its own code and adapts it to its product.',
         },
         {
           type: 'prose',
-          text: "A component stays a package dependency and updates with the package. A template becomes app code when it is copied, so updating the package does not rewrite the app's copy.",
+          text: "A component stays a package dependency and updates with the package. A copied template does not, so updating the package never rewrites the app's copy.",
         },
         {
           type: 'code',
