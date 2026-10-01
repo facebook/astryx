@@ -2,7 +2,7 @@
 
 /**
  * @file `astryx docs cli/integrations/building-blocks/themes/generate-a-palette`:
- * turn a palette request into light and dark color ramps.
+ * turn a few seed colors into a full light and dark color palette.
  */
 
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
@@ -13,7 +13,7 @@ export const docs = {
   title: 'Generate a palette',
   category: 'guide',
   description:
-    'Turn a palette request into light and dark color ramps inside the theme folder.',
+    'Turn a few seed colors into full light and dark color ramps, saved in the theme folder.',
   sections: [
     {
       id: 'generate-a-palette',
@@ -21,11 +21,15 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Write a palette request, and `theme palette generate` turns it into light and dark color ramps. Keep the request and the output inside the theme folder.',
+          text: 'A theme needs dozens of related colors — shades of each brand color for backgrounds, borders, text, and states, in both light and dark mode. A palette is that full set of shades. Rather than hand-pick every one, you name a few seed colors and generate the rest, so the shades stay consistent and keep enough contrast to read.',
         },
         {
           type: 'prose',
-          text: 'The smallest request names one color family and its seed color. Save it as `themes/ocean/palette.config.json`:',
+          text: 'You write a short config naming each color family and its seed, then run `theme palette generate`. It expands each seed into a full light and dark ramp — the scale of shades — and writes the result into the theme folder, where your theme tokens point at it (see {@link generic:define-the-theme}). Keep the config and the generated palette together in that folder.',
+        },
+        {
+          type: 'prose',
+          text: 'The smallest config is one color family: an `id` to name it and a `seed` color to grow it from. Save it as `themes/ocean/palette.config.json`:',
         },
         {
           type: 'code',
@@ -50,11 +54,11 @@ npx astryx theme palette generate themes/ocean/palette.config.json \\
         },
         {
           type: 'prose',
-          text: '`ocean.palette.ts` exports `black`, `white`, and `palette`, which holds 21 stops from `0` to `100` for `light` and `dark`. The receipt records how to make the same palette again. A second run leaves both files alone unless you pass `--overwrite`.',
+          text: 'The command writes two files. `ocean.palette.ts` is the palette your theme tokens will read: it exports `black`, `white`, and `palette` — a ramp of 21 shades (stops `0` to `100`) for both `light` and `dark`. The `.receipt.json` beside it records the exact seeds and settings, so you can regenerate the same palette later. A second run leaves both files alone unless you pass `--overwrite`.',
         },
         {
           type: 'prose',
-          text: '`--preview <file>.html` also writes a page for reviewing the colors; write it outside `themes/` so it does not ship in your package. Other request options are in {@link command:theme palette generate}.',
+          text: 'Add `--preview <file>.html` to also get a web page showing every shade, so you can eyeball the palette in a browser. Write it outside `themes/` so it does not ship in your package. The full list of config fields and options is in {@link command:theme palette generate}.',
         },
       ],
     },
