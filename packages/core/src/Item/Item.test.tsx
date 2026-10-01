@@ -725,12 +725,32 @@ describe('swipeActions', () => {
   const isClipping = (container: Element) =>
     rulesDeclaredFor(container).some(rule => rule.includes('overflow: hidden'));
 
-  it('renders nothing that moves at rest: the panel waits at zero width and the row is untransformed', () => {
+  /** Is the panel hidden (at rest) or shown (while a drag owns the row)? */
+  const panelVisibility = (panel: Element) =>
+    rulesDeclaredFor(panel)
+      .map(rule => rule.match(/visibility: (\w+)/)?.[1])
+      .filter(Boolean)
+      .at(-1);
+
+  it('renders nothing that moves at rest: the panel waits hidden at zero width and the row is untransformed', () => {
     const {row, container} = renderRow();
     expect(panelFor('Archive')).toBeInTheDocument();
     expect(panelFor('Archive').style.width).toBe('');
+    // Hidden, not merely empty: at zero width the box is still as wide as its
+    // padding, and a visible panel would paint a sliver of its tone.
+    expect(panelVisibility(panelFor('Archive'))).toBe('hidden');
     expect(row.style.transform).toBe('');
     expect(isClipping(container)).toBe(false);
+  });
+
+  it('shows the panel only while a drag owns the row', () => {
+    const {container} = renderRow();
+    touch(container, 'pointerDown', 10);
+    touch(container, 'pointerMove', 40);
+    expect(panelVisibility(panelFor('Archive'))).toBe('visible');
+    touch(container, 'pointerUp', 40);
+    void act(() => vi.advanceTimersByTime(250));
+    expect(panelVisibility(panelFor('Archive'))).toBe('hidden');
   });
 
   it('claims a horizontal drag, reveals the leading action and fires it past the commit point', () => {

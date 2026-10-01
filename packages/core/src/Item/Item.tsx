@@ -387,12 +387,19 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-supporting-size'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     whiteSpace: 'nowrap',
+    // Hidden until a drag claims the row: at zero width the box is still as
+    // wide as its padding, and a painted sliver of the tone would show at the
+    // row's edge at rest.
+    visibility: 'hidden',
     // Below the commit point the panel is provisional; past it, it reads as
     // "let go now".
     opacity: 0.7,
     transitionProperty: 'opacity',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  swipePanelRevealed: {
+    visibility: 'visible',
   },
   swipePanelArmed: {
     opacity: 1,
@@ -812,6 +819,7 @@ export function Item({
               ? styles.swipePanelTrailing
               : styles.swipePanelLeading,
             swipeToneStyles[revealed.tone ?? 'accent'],
+            isSwiping && styles.swipePanelRevealed,
             swipe.state.isArmed && styles.swipePanelArmed,
           )}>
           <span {...stylex.props(styles.swipePanelContent)}>
