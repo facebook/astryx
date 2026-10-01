@@ -53,7 +53,7 @@ const anatomy = [
     name: 'Pointer section heading',
     required: false,
     description:
-      'Heading that labels a data-driven section in an anchored menu.',
+      'Heading that labels a group of rows in an anchored menu: a data-driven section or a compound DropdownMenuGroup.',
   },
   {
     name: 'Pointer divider',

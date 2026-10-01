@@ -65,6 +65,7 @@
     "DropdownMenu",
     "DropdownMenuCheckboxItem",
     "DropdownMenuDivider",
+    "DropdownMenuGroup",
     "DropdownMenuItem",
     "DropdownMenuRadioGroup",
     "DropdownMenuRadioItem",

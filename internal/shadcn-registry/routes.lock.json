@@ -362,6 +362,11 @@
       "aliases": []
     },
     {
+      "name": "component-dropdown-menu-group",
+      "path": "components/dropdown-menu-group",
+      "aliases": []
+    },
+    {
       "name": "component-dropdown-menu-item",
       "path": "components/dropdown-menu-item",
       "aliases": []

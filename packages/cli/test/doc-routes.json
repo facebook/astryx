@@ -2348,7 +2348,7 @@
       "kind": "component",
       "id": "@astryxdesign/core/component",
       "provider": "@astryxdesign/core",
-      "count": 176,
+      "count": 177,
       "oldCliRoute": "astryx component <id>",
       "oldDocsiteUrl": "/components/<id>",
       "docsiteExceptions": {

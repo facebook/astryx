@@ -8,6 +8,7 @@ import {
   DropdownMenu,
   DropdownMenuItem,
   DropdownMenuDivider,
+  DropdownMenuGroup,
   DropdownMenuCheckboxItem,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
@@ -671,6 +672,38 @@ export const CompoundWithDescriptions: Story = {
         description="carol.williams@example.com"
         onClick={() => console.log('Carol')}
       />
+    </DropdownMenu>
+  ),
+};
+
+export const CompoundWithGroups: Story = {
+  render: () => (
+    <DropdownMenu button={{label: 'Version'}}>
+      <DropdownMenuGroup title="Version history">
+        <DropdownMenuItem
+          icon={ArrowDownTrayIcon}
+          label="Restore this version"
+          onClick={() => console.log('Restore')}
+        />
+        <DropdownMenuItem
+          icon={DocumentDuplicateIcon}
+          label="Compare with current"
+          onClick={() => console.log('Compare')}
+        />
+      </DropdownMenuGroup>
+      <DropdownMenuDivider />
+      <DropdownMenuGroup title="Add to message">
+        <DropdownMenuItem
+          icon={ShareIcon}
+          label="As a link"
+          onClick={() => console.log('Link')}
+        />
+        <DropdownMenuItem
+          icon={DocumentPlusIcon}
+          label="As a snippet"
+          onClick={() => console.log('Snippet')}
+        />
+      </DropdownMenuGroup>
     </DropdownMenu>
   ),
 };

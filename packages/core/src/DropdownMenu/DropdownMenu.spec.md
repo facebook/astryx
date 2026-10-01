@@ -46,8 +46,10 @@ reachability without changing runtime behavior, styling, targets, or public API.
 ## Compatibility and migration
 
 - Released default preserved: `yes`
-- Compatibility class: additive documentation only; runtime, DOM, styling,
-  targets, and public API remain unchanged
+- Compatibility class: additive. `DropdownMenuGroup` (aliased
+  `ContextMenuGroup`, `BreadcrumbMenuGroup`) is a new compound-mode
+  subcomponent. Existing compound menus and the data-mode section are
+  unchanged in DOM, naming, styling, and targets.
 - Controlled/uncontrolled behavior: unchanged
 - Migration decision: none
 
@@ -76,7 +78,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-No new public concept is introduced. Consumer props, item shapes,
+One additive concept: a titled group of pointer rows written in compound mode
+as `DropdownMenuGroup` (`title`, `children`, `ref`), the peer of the data
+mode's `{type: 'section', title, items}`. Consumer props, item shapes,
 subcomponents, and presentation policy remain documented in
 `DropdownMenu.doc.mjs` and the subcomponent docs.
 
@@ -88,6 +92,7 @@ subcomponents, and presentation policy remain documented in
 | FR2 | The six current local targets are `dropdown-menu`, `dropdown-menu-item`, `dropdown-menu-radio`, `dropdown-menu-section-heading`, `dropdown-menu-divider`, and `dropdown-menu-indicator-icon`; every target remains on its current painted element.                                                                                            | Current source, docs, and tests | Verified current inventory; no target change       |
 | FR3 | Button owns the Trigger button, BottomSheet owns the Touch sheet frame, List owns the Touch action list and Touch action rows, Indicator owns checkbox chrome, and Icon owns ordinary rendered icons.                                                                                                                                         | Current source and owner docs   | Verified current delegation; no ownership change   |
 | FR4 | The same `dropdown-menu` target reaches the alternative Pointer menu surface and Touch menu surface. Pointer action rows retain `dropdown-menu-item`; touch action rows instead use List's `list-item` target.                                                                                                                                | Current source and tests        | Verified modality split; no target change          |
+| FR5 | A compound `DropdownMenuGroup` is one `role="group"` named by its heading through `aria-labelledby`; the heading carries `dropdown-menu-section-heading`, is plain text rather than a menu item, and is skipped by roving focus and typeahead. An untitled group is an unnamed `role="group"`.                                                | DEC-1, docs, and tests          | Proposed; awaiting owner approval                  |
 
 ### Allowed variation
 
@@ -121,9 +126,12 @@ subcomponents, and presentation policy remain documented in
 
 ## Accessibility contract
 
-This draft does not change or extend DropdownMenu's existing trigger naming,
-menu and dialog roles, focus movement, keyboard navigation, item semantics, or
-dismissal behavior.
+Existing trigger naming, menu and dialog roles, focus movement, keyboard
+navigation, item semantics, and dismissal behavior are unchanged. A titled
+group is a `role="group"` inside the `role="menu"`, named by its visible
+heading through `aria-labelledby`; the heading has no role and is never a stop
+in arrow-key order or a typeahead match, so a heading whose first letter matches
+a row's never steals the jump. The data-mode section is unchanged.
 
 ## Design relationships
 
@@ -229,11 +237,23 @@ than adding a DropdownMenu-owned heading target.
 | FR3                 | `DropdownMenuSelectable.test.tsx` plus BottomSheet, List, Indicator, Icon, and Divider owner tests        | Trigger, touch actions, icons, checkbox, radio     | A composed part loses its owner target or is documented as a new local target.                   | `audit:DropdownMenu/theming`  |
 | Layer relationships | `DropdownMenu.test.tsx`, `DropdownMenuSubMenu.test.tsx`, and current layer/dismissal architecture records | Light dismiss, nested flyout, sheet dismissal      | Documentation claims a shared owner where current source retains local behavior, or the reverse. | `audit:DropdownMenu/behavior` |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                             | Canonical anatomy and current target inventory     | Missing, extra, prefixed, stale, or unclassified mappings fail repository validation.            | `audit:DropdownMenu/theming`  |
+| FR5                 | `DropdownMenu.test.tsx` "DropdownMenuGroup (compound mode)" suite                                         | Titled and untitled group                          | The group loses its name, the heading gains a role or a focus stop, or typeahead lands on it.    | `audit:DropdownMenu/behavior` |
 
 ## Decision log
 
-None. This draft records current facts and introduces no component-local design,
-API, theming, modality, or layer-system decision.
+- **DEC-1 — A compound group component named by its heading.** Compound
+  menus (checkbox rows, radio groups, rows mounted only while open) could not
+  title a group; the data mode could. `DropdownMenuGroup` is the compound peer
+  of `{type: 'section'}`: same heading typography and theme target. The group
+  is named through `aria-labelledby` the visible heading, so the heading a
+  sighted user reads is the name assistive technology hears, and a `ReactNode`
+  title needs no string copy. Named `Group` — the role it renders — because
+  `DropdownMenuSection` is already the exported data type. Rejected: a
+  heading-only `DropdownMenuSectionHeading` with no group wrapper, which cannot
+  name a group; routing the data-mode section through the new component, which
+  would change a released naming mechanism and is a separate decision.
+  Proposed in `github:facebook/astryx#6684`; FR5 becomes policy only when an
+  owner approves this record.
 
 ## Open questions
 
