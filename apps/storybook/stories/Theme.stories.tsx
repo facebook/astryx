@@ -7,6 +7,13 @@ import {Card} from '@astryxdesign/core/Card';
 import {Stack} from '@astryxdesign/core/Stack';
 import {Heading} from '@astryxdesign/core/Text';
 import {Badge} from '@astryxdesign/core/Badge';
+import {Button} from '@astryxdesign/core/Button';
+import {Grid} from '@astryxdesign/core/Grid';
+import {Selector} from '@astryxdesign/core/Selector';
+import {StatusDot} from '@astryxdesign/core/StatusDot';
+import {Table, pixel, proportional} from '@astryxdesign/core/Table';
+import {Text} from '@astryxdesign/core/Text';
+import {TextInput} from '@astryxdesign/core/TextInput';
 import {neutralTheme} from '@astryxdesign/theme-neutral';
 
 // =============================================================================
@@ -424,5 +431,183 @@ export const TokenInspectorStory: StoryObj = {
         <TokenInspector />
       </Theme>
     </div>
+  ),
+};
+
+// =============================================================================
+// Density
+// =============================================================================
+
+const DENSITY_ISSUES = [
+  {
+    id: 'ENG-1402',
+    title: 'Login redirect loops when the session cookie expires',
+    status: 'error',
+    label: 'Blocked',
+    owner: 'Ada Park',
+  },
+  {
+    id: 'ENG-1398',
+    title: 'CSV export drops unicode column headers',
+    status: 'warning',
+    label: 'In progress',
+    owner: 'Ben Ortiz',
+  },
+  {
+    id: 'ENG-1391',
+    title: 'Webhook retries ignore the backoff header',
+    status: 'accent',
+    label: 'Open',
+    owner: 'Chen Wu',
+  },
+  {
+    id: 'ENG-1388',
+    title: 'Search results paginate past the last page',
+    status: 'success',
+    label: 'Done',
+    owner: 'Dana Lee',
+  },
+] as const;
+
+const DENSITY_COLUMNS = [
+  {key: 'id' as const, header: 'ID', width: pixel(96)},
+  {key: 'title' as const, header: 'Title', width: proportional(3)},
+  {
+    key: 'status' as const,
+    header: 'Status',
+    width: pixel(128),
+    renderCell: (row: (typeof DENSITY_ISSUES)[number]) => (
+      <StatusDot variant={row.status} label={row.label} />
+    ),
+  },
+  {key: 'owner' as const, header: 'Owner', width: pixel(112)},
+];
+
+function DenseTool() {
+  const [query, setQuery] = React.useState('');
+  const [status, setStatus] = React.useState('all');
+  return (
+    <Stack direction="vertical" gap={4}>
+      <Stack direction="vertical" gap={1}>
+        <Heading level={3}>Issues</Heading>
+        <Text type="supporting" color="secondary">
+          4 open across 2 projects
+        </Text>
+      </Stack>
+      <Grid columns={{minWidth: 120, max: 3}} gap={3}>
+        {['Open 12', 'Blocked 3', 'Done this week 18'].map(stat => (
+          <Card key={stat} padding={4}>
+            <Text type="supporting" color="secondary">
+              {stat}
+            </Text>
+          </Card>
+        ))}
+      </Grid>
+      <Stack direction="horizontal" gap={2} wrap="wrap">
+        <TextInput
+          label="Search issues"
+          isLabelHidden
+          placeholder="Search issues"
+          value={query}
+          onChange={setQuery}
+          width={200}
+        />
+        <Selector
+          label="Status"
+          isLabelHidden
+          value={status}
+          onChange={value => setStatus(value ?? 'all')}
+          options={[
+            {value: 'all', label: 'All statuses'},
+            {value: 'open', label: 'Open'},
+          ]}
+        />
+        <Button label="New issue" />
+      </Stack>
+      <Table data={[...DENSITY_ISSUES]} columns={DENSITY_COLUMNS} idKey="id" />
+    </Stack>
+  );
+}
+
+function DensityFrame({
+  label,
+  width,
+  children,
+}: {
+  label: string;
+  width?: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <div style={{width, minWidth: 0}}>
+      <Text type="supporting" color="secondary">
+        {label}
+      </Text>
+      <div style={{marginTop: 8, padding: 16, outline: '1px dashed #ccc'}}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * `density="compact"` makes a whole tool dense with one prop: spacing steps
+ * 3–12 shrink to 0.75×, body text steps to 13px, controls render at 28px, and
+ * table and nav rows use their compact size. The same tool is shown with the
+ * default and compact density, wide and in 390px phone frames. The last frame
+ * nests `density="default"` inside a compact region to restore the reading
+ * scale.
+ */
+export const Density: StoryObj = {
+  name: 'Density: default vs compact',
+  render: () => (
+    <Theme theme={neutralTheme} mode="light">
+      <div style={{display: 'grid', gap: 24}}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))',
+            gap: 24,
+          }}>
+          <DensityFrame label="Default">
+            <DenseTool />
+          </DensityFrame>
+          <DensityFrame label='density="compact"'>
+            <Theme theme={neutralTheme} density="compact">
+              <DenseTool />
+            </Theme>
+          </DensityFrame>
+        </div>
+        <div style={{display: 'flex', flexWrap: 'wrap', gap: 24}}>
+          <DensityFrame label="Default, 390px" width={390}>
+            <DenseTool />
+          </DensityFrame>
+          <DensityFrame label='density="compact", 390px' width={390}>
+            <Theme theme={neutralTheme} density="compact">
+              <DenseTool />
+            </Theme>
+          </DensityFrame>
+          <DensityFrame
+            label='compact with a nested density="default" article, 390px'
+            width={390}>
+            <Theme theme={neutralTheme} density="compact">
+              <Stack direction="vertical" gap={4}>
+                <Text type="body">Compact queue · 13px body</Text>
+                <Theme theme={neutralTheme} density="default">
+                  <Stack direction="vertical" gap={2}>
+                    <Heading level={3}>Refund timelines</Heading>
+                    <Text type="body">
+                      Card refunds post within 5–10 business days after
+                      approval. This article keeps the default 14px reading
+                      scale.
+                    </Text>
+                  </Stack>
+                </Theme>
+              </Stack>
+            </Theme>
+          </DensityFrame>
+        </div>
+      </div>
+    </Theme>
   ),
 };

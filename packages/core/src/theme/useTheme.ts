@@ -15,7 +15,9 @@
  * MutationObservers before assuming OS preference/default tokens. Provider-path
  * consumers subscribe to no-op stores instead, so mounting under a Theme never
  * creates an observer. Token resolution is shared with the server-safe helpers
- * in ./tokens.ts.
+ * in ./tokens.ts. Inside a `<Theme density="compact">` region the compact
+ * spacing and type values (./density.ts) overlay the resolved map, so
+ * non-CSS consumers read the same values the region's CSS uses.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/theme/index.ts
@@ -31,6 +33,7 @@ import {
 import type {ThemeMode} from './types';
 import type {DefinedTheme} from './defineTheme';
 import {resolveThemeTokens} from './tokens';
+import {DensityContext, resolveDensityTokens} from './density';
 import {getRegisteredTheme} from './themeRegistry';
 import {dataAttr} from '../naming';
 import {useMediaQuery} from '../hooks/useMediaQuery';
@@ -293,11 +296,17 @@ export function useTheme(): UseThemeReturn {
   const effectiveMode: 'light' | 'dark' =
     mode === 'system' ? (prefersDark ? 'dark' : 'light') : mode;
 
-  // Build the full resolved map, memoized on theme + effective mode
-  const tokens = useMemo(
-    () => resolveThemeTokens(theme, {mode: effectiveMode}),
-    [theme, effectiveMode],
-  );
+  // Only a provider path carries density; a detached consumer sees the root
+  // theme's default scale.
+  const density = use(DensityContext);
+
+  // Build the full resolved map, memoized on theme + effective mode + density
+  const tokens = useMemo(() => {
+    const resolved = resolveThemeTokens(theme, {mode: effectiveMode});
+    return theme != null && density === 'compact'
+      ? {...resolved, ...resolveDensityTokens(theme, 'compact')}
+      : resolved;
+  }, [theme, effectiveMode, density]);
 
   const token = useCallback(
     (name: string): string => tokens[name] ?? '',

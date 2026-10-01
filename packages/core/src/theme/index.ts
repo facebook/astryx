@@ -16,6 +16,7 @@
  */
 
 export {Theme} from './Theme';
+export type {ThemeDensity} from './density';
 export {MediaTheme} from './MediaTheme';
 export type {MediaThemeProps, MediaThemeMode} from './MediaTheme';
 export {

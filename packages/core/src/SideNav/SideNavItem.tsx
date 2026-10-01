@@ -54,6 +54,7 @@ import type {BaseProps} from '../BaseProps';
 import {Tooltip} from '../Tooltip';
 import {navItemStyles, type NavItemSize} from '../NavItem/navItemStyles.stylex';
 import {SizeProvider} from '../SizeContext/SizeContext';
+import {useThemeDensity} from '../theme/density';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {
@@ -384,7 +385,8 @@ export interface SideNavItemProps extends BaseProps<HTMLElement> {
         onCollapsedChange?: (isCollapsed: boolean) => void;
       };
   /**
-   * Size variant for the nav item.
+   * Size variant for the nav item. Unset, it is `sm` inside
+   * `<Theme density="compact">`.
    * @default 'md'
    */
   size?: NavItemSize;
@@ -437,12 +439,18 @@ export function SideNavItem({
   actions,
   children,
   collapsible: itemCollapsible,
-  size = 'md',
+  size: sizeProp,
   'data-testid': testId,
   ref,
   xstyle,
   ...rest
 }: SideNavItemProps) {
+  // A compact Theme region makes the small row the default; an explicit
+  // `size` always wins. Nav items read the Theme density rather than the
+  // generic size cascade, so other SizeProviders do not resize them.
+  const themeDensity = useThemeDensity();
+  const size: NavItemSize =
+    sizeProp ?? (themeDensity === 'compact' ? 'sm' : 'md');
   const t = useTranslator();
   const {isCollapsed} = useSideNavCollapse();
   const renderMode = useSideNavRenderMode();

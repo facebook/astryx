@@ -156,7 +156,7 @@ export const docs = {
     {
       name: 'density',
       type: "'compact' | 'balanced' | 'spacious'",
-      description: 'Row density controlling cell padding and font size.',
+      description: 'Row density controlling cell padding and font size. Unset, it is `compact` inside `<Theme density="compact">` and `balanced` elsewhere.',
       default: "'balanced'",
     },
     {

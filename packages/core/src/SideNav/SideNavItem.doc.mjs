@@ -109,7 +109,8 @@ export const docs = {
     {
       name: 'size',
       type: "'sm' | 'md' | 'lg'",
-      description: 'Size variant for the nav item row.',
+      description:
+        'Size variant for the nav item row. Unset, it is `sm` inside `<Theme density="compact">`.',
       default: "'md'",
     },
   ],
@@ -189,7 +190,8 @@ export const docsZh = {
     {
       name: 'size',
       type: "'sm' | 'md' | 'lg'",
-      description: '导航项的尺寸变体。',
+      description:
+        '导航项的尺寸变体。未设置时，在 `<Theme density="compact">` 内为 `sm`。',
       default: "'md'",
     },
   ],

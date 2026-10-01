@@ -32,6 +32,7 @@ import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {useTopNavRenderMode} from './TopNavRenderContext';
 import {navItemStyles, type NavItemSize} from '../NavItem/navItemStyles.stylex';
+import {useThemeDensity} from '../theme/density';
 import {mergeProps} from '../utils';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {themeProps} from '../utils/themeProps';
@@ -133,7 +134,8 @@ export interface TopNavItemProps extends BaseProps<HTMLAnchorElement> {
   children?: ReactNode;
   /**
    * Size variant for the nav item. Has no effect in horizontal mode;
-   * controls height/padding in drawer mode.
+   * controls height/padding in drawer mode. Unset, it is `sm` inside
+   * `<Theme density="compact">`.
    * @default 'md'
    */
   size?: NavItemSize;
@@ -178,13 +180,19 @@ export function TopNavItem({
   isIconOnly = false,
   icon,
   children,
-  size = 'md',
+  size: sizeProp,
   xstyle,
   className,
   style,
   ref,
   ...props
 }: TopNavItemProps) {
+  // A compact Theme region makes the small drawer row the default; an
+  // explicit `size` always wins. Reads the Theme density, not the generic
+  // size cascade, so other SizeProviders do not resize nav items.
+  const themeDensity = useThemeDensity();
+  const size: NavItemSize =
+    sizeProp ?? (themeDensity === 'compact' ? 'sm' : 'md');
   const LinkComponent = useLinkComponent(as);
   const renderMode = useTopNavRenderMode();
   const {closeMobileNav} = useAppShellMobile();

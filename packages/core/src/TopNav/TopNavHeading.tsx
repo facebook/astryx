@@ -24,6 +24,7 @@ import {useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
+  sizeVars,
   spacingVars,
   fontWeightVars,
   radiusVars,
@@ -42,6 +43,12 @@ import {NavHeadingCloseContext} from '../NavMenu/NavMenuContext';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
+// Hit-box floors: the spacing step they have always used, but never below the
+// small control size, so a compact Theme (which tightens spacing) cannot
+// shrink the heading link or its menu button under a 28px target.
+const TARGET_8 = `max(${spacingVars['--spacing-8']}, ${sizeVars['--size-element-sm']})`;
+const TARGET_7 = `max(${spacingVars['--spacing-7']}, ${sizeVars['--size-element-sm']})`;
+
 // =============================================================================
 // Styles
 // =============================================================================
@@ -51,7 +58,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-    minHeight: spacingVars['--spacing-8'],
+    minHeight: TARGET_8,
     paddingInlineStart: {
       default: spacingVars['--spacing-2'],
       ':has(.astryx-nav-icon)': 0,
@@ -152,8 +159,8 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: spacingVars['--spacing-7'],
-    minHeight: spacingVars['--spacing-7'],
+    minWidth: TARGET_7,
+    minHeight: TARGET_7,
     color: colorVars['--color-icon-secondary'],
   },
   // The registry chevron is a 1em SVG, so it has always rendered at the
@@ -188,7 +195,7 @@ const styles = stylex.create({
     fontSize: 'inherit',
     color: 'inherit',
     textAlign: 'start',
-    minHeight: spacingVars['--spacing-8'],
+    minHeight: TARGET_8,
     paddingInlineStart: {
       default: spacingVars['--spacing-2'],
       ':has(.astryx-nav-icon)': 0,

@@ -71,6 +71,17 @@ describe('generateCompressedIndex', () => {
     expect(result).toMatch(/don't hand-roll CSS/);
   });
 
+  it('names compact Theme density for dense tools as one RULES line', () => {
+    for (const stylingSystem of /** @type {const} */ (['css', 'stylex', 'tailwind'])) {
+      const lines = generateCompressedIndex('1.0.0', {stylingSystem}).split('\n');
+      const rule = lines.find(l => l.startsWith('- Dense tools'));
+      expect(rule).toBe('- Dense tools (trackers, consoles, dashboards) → <Theme density="compact">.');
+      const at = lines.indexOf(/** @type {string} */ (rule));
+      expect(at).toBeGreaterThan(lines.indexOf('RULES:'));
+      expect(at).toBeLessThan(lines.findIndex(l => l.startsWith('- SELF-CHECK')));
+    }
+  });
+
   it('tailors the self-check to the styling system (xstyle for StyleX, not className for Tailwind)', () => {
     // StyleX path: className/inline style are veers; the fix is the xstyle prop + a token
     const stylex = generateCompressedIndex('1.0.0', {stylingSystem: 'stylex'});

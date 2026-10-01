@@ -34,6 +34,7 @@ import type {
 } from './types';
 import type {StyleXStyles} from '../theme/types';
 import {useTranslator} from '../i18n';
+import {useThemeDensity} from '../theme/density';
 
 // =============================================================================
 // Table Types
@@ -62,7 +63,7 @@ export interface TableProps<T extends Record<string, unknown>> extends Omit<
   BaseTableProps<T>,
   'plugins' | 'components'
 > {
-  /** Row density. @default 'balanced' */
+  /** Row density. @default 'balanced' ('compact' inside `<Theme density="compact">`) */
   density?: TableDensity;
   /** Divider style. @default 'rows' */
   dividers?: TableDividers;
@@ -210,7 +211,7 @@ function buildTableStylePlugin<
 // =============================================================================
 
 function TableInner<T extends Record<string, unknown>>({
-  density = 'balanced',
+  density: densityProp,
   dividers = 'rows',
   isStriped = false,
   hasHover = false,
@@ -222,6 +223,12 @@ function TableInner<T extends Record<string, unknown>>({
   ref,
   ...rest
 }: TableProps<T> & {ref?: Ref<HTMLTableElement>}): ReactElement {
+  // A compact Theme region makes compact rows the default; an explicit
+  // `density` prop always wins.
+  const themeDensity = useThemeDensity();
+  const density: TableDensity =
+    densityProp ?? (themeDensity === 'compact' ? 'compact' : 'balanced');
+
   // Table-level styling plugin (just adds font/color to <table>)
   const tablePlugin = useMemo(() => buildTableStylePlugin<T>(), []);
   const basePlugins = useMemo(() => [tablePlugin], [tablePlugin]);

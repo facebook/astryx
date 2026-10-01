@@ -18,6 +18,10 @@
  * - `data-astryx-theme` — enables @scope'd theme CSS to reach elements rendered
  *   outside the Theme wrapper (portals, toast fallback viewports).
  *
+ * Density: `density="compact"` writes a tightened spacing scale and a
+ * stepped-down type ramp as custom properties on the Theme root (derived from
+ * the theme's own tokens, see ./density.ts) and cascades SizeProvider `sm`.
+ *
  * For RSC / SSR, set `data-theme` on `<html>` in your root server layout
  * to avoid a flash of wrong theme before hydration:
  *
@@ -46,6 +50,12 @@ import {registerTheme} from './themeRegistry';
 import {dataAttr} from '../naming';
 import {ThemeContext} from './useTheme';
 import {warnOnce} from '../utils/devWarning';
+import {SizeProvider} from '../SizeContext/SizeContext';
+import {
+  DensityContext,
+  resolveDensityTokens,
+  type ThemeDensity,
+} from './density';
 
 /**
  * Theme provider props
@@ -55,6 +65,14 @@ interface ThemeProps {
   theme: DefinedTheme;
   /** Color mode - 'system' follows OS preference */
   mode?: ThemeMode;
+  /**
+   * Region density. `compact` tightens spacing steps 3–12 (×0.75), steps the
+   * type ramp down about one step (body 14→13px), and gives descendant
+   * controls, table rows, and nav items the small size. Omit to inherit the
+   * enclosing Theme's density (`default` at the root); pass `default` to
+   * restore the standard scale inside a compact region.
+   */
+  density?: ThemeDensity;
   /** Children to render */
   children: React.ReactNode;
 }
@@ -273,9 +291,12 @@ function useRootThemeSync(
 export function Theme({
   theme,
   mode = 'system',
+  density,
   children,
 }: ThemeProps): React.ReactElement {
   const isNested = use(ThemeNestingContext);
+  const parentDensity = use(DensityContext);
+  const effectiveDensity = density ?? parentDensity;
 
   registerTheme(theme);
 
@@ -293,16 +314,51 @@ export function Theme({
   // Memoize the context value to prevent unnecessary re-renders
   const ctxValue = useMemo(() => ({theme, mode}), [theme, mode]);
 
+  // Density is written as custom properties on this root, so it is part of the
+  // server HTML and wins over the theme's own token block on the same element.
+  // A compact region re-derives its values here from this theme's tokens (a
+  // nested theme's token block would otherwise reset them); an explicit
+  // `default` inside a compact region restores this theme's own values. The
+  // default density everywhere else writes nothing.
+  const isCompact = effectiveDensity === 'compact';
+  const restoresDefault = !isCompact && parentDensity === 'compact';
+  const densityTokens = useMemo(
+    () =>
+      isCompact
+        ? resolveDensityTokens(theme, 'compact')
+        : restoresDefault
+          ? resolveDensityTokens(theme, 'default')
+          : undefined,
+    [theme, isCompact, restoresDefault],
+  );
+
+  const {style: wrapperStyle, ...wrapperProps} = stylex.props(
+    wrapperStyles.base,
+    colorSchemeStyle,
+  );
+
+  let content: React.ReactNode = (
+    <div
+      {...wrapperProps}
+      style={densityTokens ? {...wrapperStyle, ...densityTokens} : wrapperStyle}
+      data-astryx-theme={theme.name}
+      data-theme={mode === 'system' ? undefined : mode}
+      data-astryx-density={isCompact ? 'compact' : undefined}>
+      {children}
+    </div>
+  );
+
+  if (isCompact || restoresDefault) {
+    content = (
+      <DensityContext value={effectiveDensity}>
+        <SizeProvider value={isCompact ? 'sm' : null}>{content}</SizeProvider>
+      </DensityContext>
+    );
+  }
+
   return (
     <ThemeContext value={ctxValue}>
-      <ThemeNestingContext value={true}>
-        <div
-          {...stylex.props(wrapperStyles.base, colorSchemeStyle)}
-          data-astryx-theme={theme.name}
-          data-theme={mode === 'system' ? undefined : mode}>
-          {children}
-        </div>
-      </ThemeNestingContext>
+      <ThemeNestingContext value={true}>{content}</ThemeNestingContext>
     </ThemeContext>
   );
 }

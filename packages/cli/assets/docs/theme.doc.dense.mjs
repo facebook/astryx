@@ -166,6 +166,21 @@ export const docsDense = {
       ],
     },
     {
+      section: 'Density',
+      title: 'Density',
+      content: [
+        {
+          type: 'prose',
+          text: 'dense tools (trackers, consoles, inboxes, dashboards) → <Theme … density="compact">: spacing 3–12 ×0.75, type ~1 step down (body 13px, supporting 11px), sm controls, compact Table rows. From theme tokens; light+dark; SSR-safe. Marketing/reading pages keep default.',
+        },
+        null,
+        {
+          type: 'prose',
+          text: 'nested Theme inherits density; density="default" restores. explicit size / Table density wins.',
+        },
+      ],
+    },
+    {
       section: 'Nesting Themes',
       title: 'Nesting',
       content: [

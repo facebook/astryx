@@ -131,6 +131,12 @@ function App() {
               "'system'",
               'Color mode. system follows OS preference.',
             ],
+            [
+              'density',
+              "'default' | 'compact'",
+              'inherit',
+              'compact for dense tools (trackers, consoles, inboxes, dashboards): spacing steps 3–12 ×0.75, type ramp about one step down (body 13px), small controls, compact table rows. Unset inherits the enclosing Theme (default at the root).',
+            ],
             ['children', 'ReactNode', '-', 'App content'],
           ],
         },
@@ -702,6 +708,31 @@ import './themes/ocean.css';
     onClick={() => setMode(m => (m === 'light' ? 'dark' : 'light'))}
   />
 </Theme>;`,
+        },
+      ],
+    },
+    {
+      title: 'Density',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'Dense tools (issue trackers, ops consoles, inboxes, dashboards) set `density="compact"` on their Theme. In one step it tightens spacing steps 3–12 to about 0.75× (`--spacing-0` … `--spacing-2` stay), steps the type ramp down about one step (body 14→13px, supporting 12→11px, headings proportionally), and gives controls, table rows, and nav items their small size (28px controls). Values come from the active theme\'s own tokens, work in light and dark, and are written on the Theme root so server HTML already carries them. Marketing and reading pages keep the default.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'A dense tool, with a reading region restored',
+          code: `<Theme theme={neutralTheme} density="compact">
+  <IssueTracker />
+  <Theme theme={neutralTheme} density="default">
+    <HelpArticle />
+  </Theme>
+</Theme>`,
+        },
+        {
+          type: 'prose',
+          text: 'A nested Theme without `density` inherits the enclosing density. An explicit `size` on a control, or `density` on a Table, still wins.',
         },
       ],
     },

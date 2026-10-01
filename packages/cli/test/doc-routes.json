@@ -1890,6 +1890,16 @@
     },
     {
       "kind": "section",
+      "id": "theme#density",
+      "oldCliRoute": "astryx docs theme density",
+      "oldDocsiteUrl": "/docs/theme#density",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of theme under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
       "id": "theme#nesting-themes",
       "oldCliRoute": "astryx docs theme nesting-themes",
       "oldDocsiteUrl": "/docs/theme#nesting-themes",
