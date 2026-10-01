@@ -123,7 +123,7 @@
  * @property {string[]} [data.modifiedFiles] Project-relative files changed or previewed.
  * @property {ProtectedCodemodFile[]} [data.protectedFiles] Protected files that still require a codemod change after regeneration.
  * @property {Array<{file: string, location?: string, reason: string}>} [data.declinedCandidates] Candidates left unchanged because proof was insufficient.
- * @property {number} [data.transformsApplied] Total (codemod, file) changes: the same file changed by four codemods counts four times.
+ * @property {number} [data.transformsApplied] Total codemod changes. A code or config codemod counts once for each file it changed, so one file changed by four of them counts four times; a project codemod counts once, however many files it writes.
  * @property {Array<{file: string, codemod: string, error: string}>} [data.errors] Per-codemod errors, when any codemod failed.
  */
 

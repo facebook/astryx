@@ -131,3 +131,33 @@ describe('integration codemod runner — filesChanged counts files', () => {
     expect(new Set(result.changedFiles).size).toBe(1);
   });
 });
+
+describe('core codemod runner — a project codemod', () => {
+  it('counts every file it writes, and one change', async () => {
+    const result = await runCodemods(
+      [
+        {
+          version: '0.0.2',
+          transforms: [
+            {
+              name: 'project-plan',
+              meta: {title: 'project plan', codemodType: 'project'},
+              transform: async root => ({
+                writes: [
+                  {path: path.join(root, 'a.ts'), contents: 'a\n'},
+                  {path: path.join(root, 'b.ts'), contents: 'b\n'},
+                ],
+                deletes: [],
+                problems: [],
+              }),
+            },
+          ],
+        },
+      ],
+      {apply: true, path: dir, root: dir, codemod: undefined, skipCodemods: new Set(), silent: true},
+    );
+
+    expect(result.totalFilesChanged).toBe(2);
+    expect(result.totalTransformsApplied).toBe(1);
+  });
+});

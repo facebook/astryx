@@ -626,8 +626,9 @@ export async function runCodemods(
     );
   }
 
-  // A file several codemods changed is one file. `totalTransformsApplied`
-  // still counts each (codemod, file) change: the two answer different questions.
+  // A file several codemods changed is one file. `totalTransformsApplied` is
+  // unchanged: a code or config codemod counts each file it changed, and a
+  // project codemod counts once. The two answer different questions.
   const totalFilesChanged = new Set(changedFiles).size;
 
   if (protectedFiles.length > 0) {
