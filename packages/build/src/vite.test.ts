@@ -12,7 +12,8 @@ import {mkdtempSync, mkdirSync, rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
-import {astryxStylex} from './vite';
+import stylex from '@stylexjs/unplugin';
+import {astryxStylex, LIGHTNINGCSS_TARGETS} from './vite';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -50,6 +51,44 @@ describe('astryxStylex layer order (legacy API)', () => {
   it('uses the astryx-* layer names (theme layer is astryx-theme)', () => {
     const order = getLayerOrder(astryxStylex({stylexOptions: {}}));
     expect(order).toBe('@layer reset, astryx-base, astryx-theme, product;');
+  });
+});
+
+describe('astryxStylex Lightning CSS defaults (modern API)', () => {
+  type StylexOptions = {
+    lightningcssOptions: {
+      targets: Record<string, number>;
+      drafts?: {nesting: boolean};
+    };
+  };
+
+  function getStylexOptions(
+    options: Parameters<typeof astryxStylex>[0] = {},
+  ): StylexOptions {
+    const vite = vi.spyOn(stylex, 'vite');
+    try {
+      astryxStylex(options);
+      return vite.mock.calls.at(-1)?.[0] as StylexOptions;
+    } finally {
+      vite.mockRestore();
+    }
+  }
+
+  it('preserves native light-dark() at the supported browser floor', () => {
+    expect(getStylexOptions().lightningcssOptions.targets).toEqual(
+      LIGHTNINGCSS_TARGETS,
+    );
+  });
+
+  it('keeps the floor when a consumer supplies another Lightning CSS option', () => {
+    const options = getStylexOptions({
+      stylexOverrides: {lightningcssOptions: {drafts: {nesting: true}}},
+    }).lightningcssOptions;
+
+    expect(options).toEqual({
+      targets: LIGHTNINGCSS_TARGETS,
+      drafts: {nesting: true},
+    });
   });
 });
 
