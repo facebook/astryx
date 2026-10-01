@@ -29,7 +29,7 @@ interface InjectedRule {
   media: string | null;
 }
 
-function injectedRules(): InjectedRule[] {
+function _injectedRules(): InjectedRule[] {
   const walk = (rules: CSSRuleList, condition: string | null): InjectedRule[] =>
     [...rules].flatMap((rule): InjectedRule[] => {
       const {selectorText} = rule as CSSStyleRule;
@@ -315,6 +315,23 @@ describe('CheckboxInput', () => {
     );
     const label = screen.getByText('Accept terms');
     expect(label).toBeVisible();
+  });
+
+  it('places the indicator on the logical end while keeping the full row labeled', () => {
+    render(
+      <CheckboxInput
+        label="Design"
+        value={true}
+        onChange={() => {}}
+        indicatorPosition="end"
+        width="100%"
+      />,
+    );
+    const input = screen.getByRole('checkbox', {name: 'Design'});
+    const row = input.closest('.astryx-checkbox-input')?.firstElementChild;
+    expect(row).not.toBeNull();
+    expect(window.getComputedStyle(row!).flexDirection).toBe('row-reverse');
+    expect(window.getComputedStyle(row!).justifyContent).toBe('space-between');
   });
 
   it('sets aria-busy when loading', () => {

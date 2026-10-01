@@ -14,19 +14,17 @@ export const docs = {
     {name: 'placeholder', type: 'string', description: 'Trigger text when nothing is selected.'},
     {name: 'hasCreate', type: 'boolean', description: 'Offer Create "<query>" for unmatched free text.', default: 'false'},
     {name: 'maxEntries', type: 'number', description: 'Cap selections; add rows disable at the cap.'},
-    {name: 'renderItem', type: '(item: T) => ReactNode', description: 'Custom add-sheet row content.'},
   ],
   usage: {
     description:
-      'Lab prototype for trying the touch Tokenizer flow: tap the field to open the manage sheet (review, remove, Clear all, Add item), tap Add item for the stacked search sheet (results above, filter + Done in the bottom row above the keyboard, tap +/check to toggle immediately).',
+      'Lab prototype for trying the touch Tokenizer flow: tap the field to open one searchable sheet where selected and available items share a full-row checkbox list, selected custom values stay in that list, custom text uses a trailing Add action, and guarded Clear all plus Done actions finish the unfiltered flow. The footer is hidden while searching.',
     bestPractices: [
       {guidance: true, description: 'Try this in Lab/canary to validate the flow; graduate via Core Tokenizer presentation="adaptive" when it ships.'},
       {guidance: false, description: 'Do not ship stable product on this Lab API; it has no theming, i18n, or spec contract yet.'},
     ],
     anatomy: [
       {name: 'Trigger field', required: true, description: 'Button showing tokens as a summary.'},
-      {name: 'Manage sheet', required: true, description: 'Selected rows with remove controls, guided empty states, and equal-width footer actions.'},
-      {name: 'Add sheet', required: true, description: 'Stacked sheet: result rows with +/check toggles, bottom filter + Done row.'},
+      {name: 'Management sheet', required: true, description: 'One searchable list with trailing checkboxes for existing items, a trailing Add action for custom text, and equal-width Clear all and Done footer actions when unfiltered. Clear all requires confirmation; the footer is hidden while searching.'},
     ],
   },
 };

@@ -34,6 +34,11 @@ const meta: Meta<typeof CheckboxInput> = {
       description:
         'Whether the checkbox is checked, unchecked, or indeterminate',
     },
+    indicatorPosition: {
+      control: 'select',
+      options: ['start', 'end'],
+      description: 'Logical edge that carries the checkbox indicator',
+    },
     isDisabled: {
       control: 'boolean',
       description: 'Whether the checkbox is disabled',
@@ -74,6 +79,30 @@ export const Default: Story = {
   },
   args: {
     label: 'Accept terms and conditions',
+  },
+};
+
+export const TrailingIndicator: Story = {
+  render: args => {
+    const [value, setValue] = useState<boolean | 'indeterminate'>(
+      args.value ?? true,
+    );
+    const {value: _, onChange: __, ...restArgs} = args;
+    return (
+      <div style={{width: 320}}>
+        <CheckboxInput
+          {...restArgs}
+          value={value}
+          onChange={checked => setValue(checked)}
+        />
+      </div>
+    );
+  },
+  args: {
+    label: 'Design',
+    value: true,
+    width: '100%',
+    indicatorPosition: 'end',
   },
 };
 

@@ -2,9 +2,8 @@
 /**
  * @file MobileTokenizer.stories.tsx
  * @input Uses MobileTokenizer (Lab) with the sketch's Design/Eng data
- * @output Storybook try-it story at 390px: field -> manage -> add sheets,
- *   including custom item creation
- * @position Lab story; stack layer 1 try-it surface
+ * @output Storybook try-it story at 390px: one searchable management sheet
+ * @position Lab story; single-sheet touch-flow prototype
  */
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
@@ -47,5 +46,5 @@ export const TouchFlow: Story = {
       </div>
     );
   },
-  name: 'Touch flow (sketch: manage + stacked add, bottom filter)',
+  name: 'Touch flow (single searchable management sheet)',
 };

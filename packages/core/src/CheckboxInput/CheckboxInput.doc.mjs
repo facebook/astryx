@@ -101,6 +101,12 @@ export const docs = {
       default: "'md'",
     },
     {
+      name: 'indicatorPosition',
+      type: "'start' | 'end'",
+      description: 'Logical edge that carries the checkbox indicator. Use end for full-width selection rows.',
+      default: "'start'",
+    },
+    {
       name: 'onFocus',
       type: '(e: FocusEvent<HTMLInputElement>) => void',
       description: 'Callback fired when the checkbox receives focus.',
@@ -203,6 +209,7 @@ export const docsZh = {
     {name: 'isOptional', type: 'boolean', description: '字段是否可选。与 isRequired 互斥。', default: 'false'},
     {name: 'isRequired', type: 'boolean', description: '复选框是否必填。与 isOptional 互斥。', default: 'false'},
     {name: 'size', type: "'sm' | 'md'", description: '复选框尺寸。sm 用于紧凑布局，md 为默认。', default: "'md'"},
+    {name: 'indicatorPosition', type: "'start' | 'end'", description: '复选框指示器所在的逻辑边缘。全宽选择行使用 end。', default: "'start'"},
     {name: 'onFocus', type: '(e: FocusEvent<HTMLInputElement>) => void', description: '复选框获得焦点时触发的回调。'},
     {name: 'onBlur', type: '(e: FocusEvent<HTMLInputElement>) => void', description: '复选框失去焦点时触发的回调。'},
     {name: 'labelIcon', type: 'ReactNode | IconType', description: '标签文本前显示的语义图标名称或自定义内容。'},
@@ -218,6 +225,7 @@ export const docsZh = {
         className: 'astryx-checkbox-input',
         visualProps: [
           'size',
+          'indicatorPosition',
         ],
       },
       {className: 'astryx-checkbox-indicator', visualProps: ['size'], states: ['checked', 'disabled']},
@@ -255,6 +263,7 @@ export const docsDense = {
     isOptional: 'mark field as optional (mutually exclusive w/ isRequired)',
     isRequired: 'mark field as required (mutually exclusive w/ isOptional)',
     size: 'sm (compact) or md (default)',
+    indicatorPosition: 'logical edge for the checkbox indicator; use end for full-width selection rows',
     onFocus: 'callback on focus',
     onBlur: 'callback on blur',
     labelIcon: 'semantic icon name or custom content before label text',
