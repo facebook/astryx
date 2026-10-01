@@ -380,6 +380,7 @@ export function MobileTokenizer<T extends SearchableItem>({
                   width="100%"
                   hasClear
                   onChange={next => {
+                    lastLoadScrollHeightRef.current = null;
                     setRenderedItemCount(LIST_RENDER_BATCH_SIZE);
                     setQuery(next);
                     onChangeQuery?.(next);
@@ -425,6 +426,7 @@ export function MobileTokenizer<T extends SearchableItem>({
                       size="lg"
                       onClick={() => {
                         handleAdd(createItem);
+                        lastLoadScrollHeightRef.current = null;
                         setRenderedItemCount(LIST_RENDER_BATCH_SIZE);
                         setQuery('');
                       }}

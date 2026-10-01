@@ -250,6 +250,10 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
       expect(list).toHaveAttribute('data-rendered-count', '50'),
     );
     expect(screen.getAllByRole('checkbox')).toHaveLength(50);
+
+    fireEvent.scroll(list);
+    expect(list).toHaveAttribute('data-rendered-count', '100');
+    expect(screen.getAllByRole('checkbox')).toHaveLength(100);
   });
 
   it('searches within the same sheet and centers the no-results state', async () => {
