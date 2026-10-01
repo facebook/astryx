@@ -41,25 +41,10 @@ function writeThemePackage(scripts) {
     "import {defineTheme} from '@astryxdesign/core/theme';\n\nexport const oceanTheme = defineTheme({name: 'ocean'});\n",
   );
   fs.writeFileSync(
-    path.join(root, 'manifest.json'),
-    `${JSON.stringify(
-      {
-        version: 1,
-        themes: [
-          {
-            slug: 'ocean',
-            displayName: 'Ocean',
-            description: 'Ocean theme.',
-            maintained: true,
-            entry: 'oceanTheme.ts',
-            exportName: 'oceanTheme',
-            files: ['oceanTheme.ts'],
-          },
-        ],
-      },
-      null,
-      2,
-    )}\n`,
+    path.join(root, 'ocean', 'oceanTheme.doc.mjs'),
+    `/** @type {import('@astryxdesign/cli/authoring').ThemeDoc} */
+export default {type: 'theme', name: 'ocean', displayName: 'Ocean', description: 'Ocean theme.', maintained: true};
+`,
   );
 }
 
@@ -86,10 +71,10 @@ describe('integrationPackCheck with lifecycle script output', () => {
       "console.log('renaming ocean to storm')",
       "const fs=require('fs')",
       "fs.renameSync('themes/ocean','themes/storm')",
-      "const p='themes/manifest.json'",
-      'const x=JSON.parse(fs.readFileSync(p))',
-      "x.themes[0].slug='storm'",
-      'fs.writeFileSync(p,JSON.stringify(x))',
+      "const p='themes/storm/oceanTheme.doc.mjs'",
+      "let x=fs.readFileSync(p,'utf8')",
+      "x=x.replace(/name: 'ocean'/, 'name: '+String.fromCharCode(39)+'storm'+String.fromCharCode(39))",
+      'fs.writeFileSync(p,x)',
     ].join(';');
     writeThemePackage({prepack: `node -e "${renameTheme}"`});
 
