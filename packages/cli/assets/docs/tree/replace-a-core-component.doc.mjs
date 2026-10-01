@@ -95,7 +95,7 @@ export default {
           style: 'unordered',
           items: [
             'A missing target, invalid value, second replacement for one target in the same package, or a replacement named after a different Core component is an error.',
-            'When several integrations replace one target, explicit configuration beats autolinking. Among explicitly configured integrations, the later package wins and Doctor warns.',
+            'When several integrations replace one target, explicit configuration beats the automatic pick. Among explicitly configured integrations, the later package wins and Doctor warns.',
           ],
         },
       ],

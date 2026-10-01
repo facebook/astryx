@@ -307,6 +307,7 @@ const ComponentBaseSchema = z
     theming: z.unknown().optional(),
     playground: z.unknown().optional(),
     examples: z.array(z.unknown()).optional(),
+    replaces: z.string().min(1).optional(),
   })
   .passthrough();
 
