@@ -51,6 +51,7 @@ import {isRenderable, mergeProps} from '../utils';
 import {composeEventHandlers} from '../utils/composeEventHandlers';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 
@@ -134,7 +135,13 @@ const styles = stylex.create({
       'background-image, background-color, color, opacity, transform',
     transform: {
       default: 'scale(1)',
-      ':active': 'scale(0.98)',
+      // A mouse press; under a coarse pointer the touch press model writes
+      // `data-pressed` instead (see interactionOverlay.stylex.ts).
+      ':active': {
+        default: 'scale(0.98)',
+        '@media (pointer: coarse)': 'scale(1)',
+      },
+      '[data-pressed="on"]': 'scale(0.98)',
     },
   },
   triggerGhostDisabled: {
@@ -142,6 +149,7 @@ const styles = stylex.create({
     transform: {
       default: 'none',
       ':active': 'none',
+      '[data-pressed="on"]': 'none',
     },
   },
   // Only what Icon does not already provide: `sm` gives the 16px box and
@@ -360,6 +368,7 @@ export function ComplexSelector<Value>({
   ...props
 }: ComplexSelectorProps<Value>) {
   const t = useTranslator();
+  const pressable = usePressFeedback();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder = placeholderFromProps ?? t('@astryx.selector.placeholder');
   const effectiveStatusVariant =
@@ -483,6 +492,7 @@ export function ComplexSelector<Value>({
       <div
         ref={popover.triggerRef}
         data-testid={testId}
+        {...pressable}
         {...props}
         onClick={composeEventHandlers(onClickProp, handleTriggerClick)}
         {...mergeProps(

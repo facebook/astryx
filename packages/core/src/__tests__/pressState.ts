@@ -2,8 +2,10 @@
 
 /**
  * @file pressState.ts
- * @input Uses document.styleSheets (populated by StyleX runtime injection)
- * @output Exports rulesDeclaredFor and expectPressedArm test helpers
+ * @input Uses document.styleSheets (populated by StyleX runtime injection) and
+ *   the press machine's release clock (utils/pressGesture.ts)
+ * @output Exports rulesDeclaredFor, rulesWithSelector, hasPressedArm,
+ *   declaresPressedOverlay, readsPressStrength and hasReleaseFade test helpers
  * @position Shared test helper for asserting a control paints a pressed state
  *
  * jsdom does not compute `:active` (there is no real pointer), so a component
@@ -13,10 +15,19 @@
  * deliberately not pinned — a press may be read off the element itself
  * (`.x:active`) or off an ancestor scope marker (`.x:where(.marker:active *)`).
  *
+ * The touch arms are asserted the same way: the paint reads the press's
+ * strength (`--astryx-press-alpha`, see utils/interactionOverlay.stylex.ts)
+ * and the element the controller writes to runs the release animation on the
+ * machine's own clock.
+ *
  * SYNC: When modified, update this header.
  */
 
+import {PRESS_FADE_MS} from '../utils/pressGesture';
+
 const PRESSED_TOKEN = '--color-overlay-pressed';
+const PRESS_STRENGTH = '--astryx-press-alpha';
+const FADING_ARM = '[data-pressed="fading"]';
 
 function walk(list: CSSRuleList, visit: (rule: CSSRule) => void): void {
   for (const rule of Array.from(list)) {
@@ -90,4 +101,51 @@ export function declaresPressedOverlay(el: Element): boolean {
       .replaceAll(':not(#\\#)', '');
     return !selector.includes(':') && rule.includes(PRESSED_TOKEN);
   });
+}
+
+/**
+ * Does the element paint the touch press through the press's strength while
+ * `arm` matches — the pressed token at `var(--astryx-press-alpha)`? That one
+ * declaration is the instant onset (strength 1 on the on arm) and the fade
+ * (the release animates it to 0), so it is asserted on both arms; `arm`
+ * defaults to the release's.
+ */
+export function readsPressStrength(el: Element, arm = FADING_ARM): boolean {
+  return rulesWithSelector(el, arm).some(
+    rule => rule.includes(PRESSED_TOKEN) && rule.includes(PRESS_STRENGTH),
+  );
+}
+
+/** `.2s`, `200ms`, `0.2s` → 200. */
+export function durationToMs(value: string): number {
+  const match = value.trim().match(/^([\d.]+)(ms|s)$/);
+  if (match == null) {
+    return Number.NaN;
+  }
+  return Number(match[1]) * (match[2] === 's' ? 1000 : 1);
+}
+
+/**
+ * Does the element run the release animation on the fading arm, for exactly
+ * the machine's release clock ({@link PRESS_FADE_MS}), with no animation on
+ * the on arm (the onset is instant)? Asserted on the element the controller
+ * writes to — the one that composes `pressedAlpha` or an overlay variant — not
+ * on a descendant that merely reads the strength.
+ */
+export function hasReleaseFade(el: Element): boolean {
+  const fading = rulesWithSelector(el, FADING_ARM);
+  const durations = fading.flatMap(rule => {
+    const match = rule.match(/animation-duration:\s*([^;}]+)/);
+    return match == null ? [] : [durationToMs(match[1])];
+  });
+  const named = fading.some(rule => /animation-name:\s*(?!none)/.test(rule));
+  const onArmAnimates = rulesWithSelector(el, '[data-pressed="on"]').some(
+    rule => rule.includes('animation'),
+  );
+  return (
+    named &&
+    durations.length === 1 &&
+    durations[0] === PRESS_FADE_MS &&
+    !onArmAnimates
+  );
 }

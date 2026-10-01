@@ -26,10 +26,20 @@ import {RadioListContext} from './RadioList';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {mergeProps, isRenderable, rtlStyles} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
+import {pressVars} from '../utils/interactionOverlay.stylex';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useIndicator} from '../Indicator';
 import {Item} from '../Item';
 import {themeProps} from '../utils/themeProps';
+
+// The touch press's paint: the pressed token at the strength the row's
+// `pressedAlpha` arms set (1 while on, 1 → 0 over the release), inherited by
+// the indicator wrapper's overlay layer. Same shape as `pressedOverlayImage`
+// in interactionOverlay.stylex.ts, rebuilt here because StyleX resolves
+// imported `defineVars` and nothing else.
+const pressedOverlayColor = `color-mix(in srgb, ${colorVars['--color-overlay-pressed']} calc(${pressVars['--astryx-press-alpha']} * 100%), transparent)`;
+const pressedOverlayImage = `linear-gradient(${pressedOverlayColor}, ${pressedOverlayColor})`;
 
 const styles = stylex.create({
   radioWrapper: {
@@ -43,6 +53,12 @@ const styles = stylex.create({
   // The row remains the large press target, but nested links and buttons keep
   // their independent action and do not make the radio appear pressed. This
   // owner-drawn layer also survives a theme replacing the indicator component.
+  // Two pointers, two press models (see interactionOverlay.stylex.ts): a
+  // mouse keeps `:active`; under a coarse pointer that arm is dropped and the
+  // touch press controller writes `data-pressed` on the row, which this layer
+  // reads off the same scope marker as the hover tint. The controller paints
+  // the innermost pressable, so a nested link or button takes the press
+  // itself and the row never carries the attribute for it.
   indicatorPressOverlay: {
     '::after': {
       content: '""',
@@ -55,7 +71,25 @@ const styles = stylex.create({
         [stylex.when.ancestor(
           ':active:not(:has(a:active,button:active,[role="button"]:active,[role="link"]:active))',
           indicatorScope,
-        )]: colorVars['--color-overlay-pressed'],
+        )]: {
+          default: colorVars['--color-overlay-pressed'],
+          '@media (pointer: coarse)': 'transparent',
+        },
+      },
+      // The touch press, as an image layer over the colour: an image change is
+      // discrete, so no transition can delay the onset, and the strength the
+      // row's `pressedAlpha` arms own (1 while on, 1 → 0 over the release) is
+      // what moves. Coarse pointers only, like the drop above.
+      backgroundImage: {
+        default: null,
+        [stylex.when.ancestor('[data-pressed="on"]', indicatorScope)]: {
+          default: null,
+          '@media (pointer: coarse)': pressedOverlayImage,
+        },
+        [stylex.when.ancestor('[data-pressed="fading"]', indicatorScope)]: {
+          default: null,
+          '@media (pointer: coarse)': pressedOverlayImage,
+        },
       },
     },
   },
@@ -114,6 +148,11 @@ const rowStyles = stylex.create({
     // Suppress Item's interactive hover/press background so the resting and
     // hovered row look identical by default (a theme can restyle either).
     backgroundColor: 'transparent',
+    // ...and the touch press's overlay image, for the same reason: under a
+    // finger only the radio circle paints, as under a mouse. The press's
+    // strength still lands on the row, which is where the layer over the
+    // circle reads it.
+    backgroundImage: 'none',
   },
 });
 
@@ -201,6 +240,11 @@ export function RadioListItem({
   onClick,
   ...rest
 }: RadioListItemProps) {
+  // Item marks itself as a pressable surface (the row delegates to the radio,
+  // so it is interactive); naming the row here as well keeps the overlay's
+  // pressed arm, which reads the row's scope marker, verifiably reachable by
+  // the touch press controller (pressableCoverage.test.ts).
+  const pressable = usePressFeedback();
   const context = use(RadioListContext);
   if (!context) {
     throw new Error('RadioListItem must be used within an RadioList');
@@ -309,6 +353,7 @@ export function RadioListItem({
   return (
     <Item
       ref={ref}
+      {...(isDisabled ? undefined : pressable)}
       startContent={mediaContent}
       // Delegate row-surface clicks (label text, description, and the empty
       // hover area) to the radio input. The input stays the option's sole

@@ -34,6 +34,7 @@ import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 
 export interface SegmentedControlItemProps extends BaseProps<HTMLButtonElement> {
   ref?: React.Ref<HTMLButtonElement>;
@@ -186,6 +187,7 @@ export function SegmentedControlItem({
   xstyle,
   ...rest
 }: SegmentedControlItemProps) {
+  const pressable = usePressFeedback();
   const ctx = useSegmentedControlContext();
 
   const isSelected = ctx.value === value;
@@ -221,6 +223,7 @@ export function SegmentedControlItem({
       aria-disabled={isItemDisabled || undefined}
       aria-label={isLabelHidden ? label : undefined}
       data-value={value}
+      {...(!isSelected && !isItemDisabled ? pressable : undefined)}
       // Disabled items (including when the whole group is disabled) are not tab
       // stops — otherwise the selected segment stays keyboard-focusable but is
       // silently dead (arrows and activation are no-ops) (navigation-13). The
