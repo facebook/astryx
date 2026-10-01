@@ -81,6 +81,11 @@ async function runState(
       await holdMotionStill(page);
       const subject = page.locator(SUBJECT_SELECTOR);
       await subject.waitFor({state: 'attached'});
+      if (state.facts.currentPage) {
+        await subject.locator('[aria-current="page"]').waitFor({
+          state: 'attached',
+        });
+      }
       return createChromiumHarness({
         page,
         cdp,
