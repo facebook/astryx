@@ -497,13 +497,29 @@ export function MobileTokenizer<T extends SearchableItem>({
                         </div>
                       ))}
                       {!hasSelectedItems && (
-                        <div {...stylex.props(styles.emptySection)}>
-                          <Text type="supporting" color="secondary">
-                            {query.trim() === ''
-                              ? 'No selected items.'
-                              : 'No selected matches.'}
-                          </Text>
-                        </div>
+                        <EmptyState
+                          icon={
+                            <Icon
+                              icon={
+                                query.trim() === '' ? ListBulletIcon : 'search'
+                              }
+                              size="lg"
+                              color="secondary"
+                            />
+                          }
+                          title={
+                            query.trim() === ''
+                              ? 'No selected items'
+                              : 'No selected matches'
+                          }
+                          description={
+                            query.trim() === ''
+                              ? 'Items you add will appear here.'
+                              : 'Try a different search.'
+                          }
+                          isCompact
+                          xstyle={styles.emptySection}
+                        />
                       )}
                     </div>
 
@@ -553,13 +569,27 @@ export function MobileTokenizer<T extends SearchableItem>({
                         </div>
                       ))}
                       {!hasAvailableItems && createItem == null && (
-                        <div {...stylex.props(styles.emptySection)}>
-                          <Text type="supporting" color="secondary">
-                            {query.trim() === ''
-                              ? 'No available items.'
-                              : 'No available matches.'}
-                          </Text>
-                        </div>
+                        <EmptyState
+                          icon={
+                            <Icon
+                              icon={query.trim() === '' ? 'check' : 'search'}
+                              size="lg"
+                              color="secondary"
+                            />
+                          }
+                          title={
+                            query.trim() === ''
+                              ? 'No available items'
+                              : 'No available matches'
+                          }
+                          description={
+                            query.trim() === ''
+                              ? 'All available items have been selected.'
+                              : 'Try a different search.'
+                          }
+                          isCompact
+                          xstyle={styles.emptySection}
+                        />
                       )}
                     </div>
                   </>

@@ -227,6 +227,16 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
       expect(list).toHaveAttribute('data-total-count', '120');
     });
     expect(screen.getAllByRole('button', {name: /^Add Item/})).toHaveLength(50);
+    const selectedEmptyState = screen
+      .getByRole('heading', {name: 'No selected items'})
+      .closest('[role="status"]');
+    expect(selectedEmptyState).toHaveTextContent(
+      'Items you add will appear here.',
+    );
+    expect(selectedEmptyState?.querySelector('.astryx-icon')).toHaveAttribute(
+      'data-size',
+      'lg',
+    );
     expect(
       screen.queryByRole('button', {name: 'Add Item 051'}),
     ).not.toBeInTheDocument();
@@ -271,6 +281,30 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
     expect(list).toHaveAttribute('data-rendered-count', '100');
     expect(screen.getAllByRole('button', {name: /^Add Item/})).toHaveLength(
       100,
+    );
+  });
+
+  it('uses an EmptyState when every item is selected', async () => {
+    render(
+      <MobileTokenizer
+        label="Tags"
+        searchSource={source}
+        value={[...ITEMS]}
+        debounceMs={0}
+        onChange={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', {name: /Tags/}));
+
+    const availableEmptyState = (
+      await screen.findByRole('heading', {name: 'No available items'})
+    ).closest('[role="status"]');
+    expect(availableEmptyState).toHaveTextContent(
+      'All available items have been selected.',
+    );
+    expect(availableEmptyState?.querySelector('.astryx-icon')).toHaveAttribute(
+      'data-size',
+      'lg',
     );
   });
 
