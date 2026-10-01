@@ -500,53 +500,47 @@ describe("the CLI's own docs tree", () => {
         ['guides', ['cli/integrations']],
         ['reference', ['cli/commands', 'cli/api']],
       ]);
-      // The integration guides: one short guide per task, in four slots, with
-      // nested namespaces for deeper authoring topics.
+      // The integration guides: Quick Start, Building Blocks, Ship, and Help,
+      // with nested namespaces for deeper authoring topics.
       expect(
         tree
           .get('cli/integrations')
           ?.slots.map(slot => [slot.name, slot.children.length]),
+      ).toEqual([['guides', 4]]);
+      expect(
+        tree.get('cli/integrations/building-blocks/docs')?.slots[0].children,
       ).toEqual([
-        ['start', 2],
-        ['contribute', 7],
-        ['ship', 5],
-        ['help', 1],
-      ]);
-      expect(tree.get('cli/integrations/docs')?.slots[0].children).toEqual([
-        'cli/integrations/docs/add-a-topic',
-        'cli/integrations/docs/sections-and-placement',
-        'cli/integrations/docs/links',
-        'cli/integrations/docs/extend-or-replace',
-        'cli/integrations/docs/short-and-findable',
-        'cli/integrations/docs/check-your-docs',
+        'cli/integrations/building-blocks/docs/add-a-topic',
+        'cli/integrations/building-blocks/docs/sections-and-placement',
+        'cli/integrations/building-blocks/docs/links',
+        'cli/integrations/building-blocks/docs/extend-or-replace',
+        'cli/integrations/building-blocks/docs/short-and-findable',
+        'cli/integrations/building-blocks/docs/check-your-docs',
       ]);
       expect(
         tree
-          .get('cli/integrations/components')
+          .get('cli/integrations/building-blocks/components')
           ?.slots.map(slot => [slot.name, slot.children]),
       ).toEqual([
         [
-          'build',
+          'guides',
           [
-            'cli/integrations/components/add-a-component',
-            'cli/integrations/components/describe-the-component',
-            'cli/integrations/components/component-imports',
-            'cli/integrations/components/see-it-in-an-app',
+            'cli/integrations/building-blocks/components/add-a-component',
+            'cli/integrations/building-blocks/components/describe-the-component',
+            'cli/integrations/building-blocks/components/component-imports',
+            'cli/integrations/building-blocks/components/see-it-in-an-app',
+            'cli/integrations/building-blocks/components/replace-a-core-component',
           ],
-        ],
-        [
-          'advanced',
-          ['cli/integrations/components/replace-a-core-component'],
         ],
       ]);
       expect(
-        tree.get('cli/integrations/components/describe-the-component')?.slots[0]
-          .children,
+        tree.get(
+          'cli/integrations/building-blocks/components/describe-the-component',
+        )?.slots[0].children,
       ).toEqual([
-        'cli/integrations/components/describe-the-component/component-doc-overview',
-        'cli/integrations/components/describe-the-component/single-component',
-        'cli/integrations/components/describe-the-component/component-family',
-        'cli/integrations/components/describe-the-component/subcomponent',
+        'cli/integrations/building-blocks/components/describe-the-component/single-component',
+        'cli/integrations/building-blocks/components/describe-the-component/component-family',
+        'cli/integrations/building-blocks/components/describe-the-component/subcomponent',
       ]);
       expect(tree.get('cli/api')?.slots[0].children).toEqual([
         'cli/api/functions',
@@ -611,30 +605,38 @@ describe("the CLI's own docs tree", () => {
       expect(inputs.namespaces.map(n => n.doc.name).sort()).toEqual([
         'api',
         'build-the-template',
+        'building-blocks',
         'cli',
         'commands',
         'components',
+        'configuration',
         'describe-the-component',
         'docs',
         'document-the-template',
+        'help',
         'integrations',
         'package-and-test',
+        'ship',
         'template-assets',
         'templates',
       ]);
       const parents = new Set(inputs.docs.map(d => d.placement?.parent));
       expect([...parents].sort()).toEqual([
         'namespace:build-the-template',
+        'namespace:building-blocks',
         'namespace:components',
+        'namespace:configuration',
         'namespace:describe-the-component',
         'namespace:docs',
         'namespace:document-the-template',
+        'namespace:help',
         'namespace:integrations',
         'namespace:package-and-test',
+        'namespace:ship',
         'namespace:template-assets',
         'namespace:templates',
       ]);
-      expect(inputs.docs.length).toBe(43);
+      expect(inputs.docs.length).toBe(41);
     },
     SLOW,
   );

@@ -226,7 +226,10 @@ describe('the docs tree, one level at a time', () => {
   }, SLOW);
 
   it('wraps namespace summaries without discarding searchable words', async () => {
-    const {status, stdout} = await runCli(['docs', 'cli/integrations/templates']);
+    const {status, stdout} = await runCli([
+      'docs',
+      'cli/integrations/building-blocks/templates',
+    ]);
     expect(status).toBe(0);
     expect(stdout).toMatch(/^start-a-template +Help others build apps faster/m);
     expect(stdout).not.toMatch(/^start-a-template +Start a template:/m);
@@ -275,35 +278,50 @@ describe('the docs tree, one level at a time', () => {
     // cli/integrations is a namespace: one level, its guides by slot.
     const level = await runCli(['docs', 'cli/integrations']);
     expect(level.status).toBe(0);
-    expect(level.stdout).toMatch(/^Start$/m);
-    expect(level.stdout).toMatch(/^overview +An integration is /m);
-    const guide = await runCli(['docs', 'cli/integrations/codemods', '--index']);
+    expect(level.stdout).toMatch(
+      /^quick-start +Create a new integration package/m,
+    );
+    expect(level.stdout).toMatch(/^building-blocks +/m);
+    const guide = await runCli([
+      'docs',
+      'cli/integrations/building-blocks/codemods',
+      '--index',
+    ]);
     expect(guide.status).toBe(0);
     expect(guide.stdout).toMatch(
-      /Read one section: .*docs cli\/integrations\/codemods <section>/,
+      /Read one section: .*docs cli\/integrations\/building-blocks\/codemods <section>/,
     );
     // A bare read is one level too: the sections, and how to read it all.
-    const bare = await runCli(['docs', 'cli/integrations/codemods']);
+    const bare = await runCli([
+      'docs',
+      'cli/integrations/building-blocks/codemods',
+    ]);
     expect(bare.status).toBe(0);
     expect(bare.stdout).toBe(guide.stdout);
     expect(bare.stdout).toMatch(
-      /Read everything: +.*docs cli\/integrations\/codemods --full$/m,
+      /Read everything: +.*docs cli\/integrations\/building-blocks\/codemods --full$/m,
     );
     const one = await runCli([
       'docs',
-      'cli/integrations/codemods',
+      'cli/integrations/building-blocks/codemods',
       'which-codemods-run',
     ]);
     expect(one.status).toBe(0);
     expect(one.stdout).toMatch(/^## Choose when a codemod runs$/m);
-    expect(one.stdout).toMatch(/^Up: .*docs cli\/integrations\/codemods --index$/m);
     expect(one.stdout).toMatch(
-      /^Previous: .*docs cli\/integrations\/codemods write-the-transform$/m,
+      /^Up: .*docs cli\/integrations\/building-blocks\/codemods --index$/m,
     );
     expect(one.stdout).toMatch(
-      /^Next: .*docs cli\/integrations\/codemods run-codemods-in-an-app$/m,
+      /^Previous: .*docs cli\/integrations\/building-blocks\/codemods write-the-transform$/m,
     );
-    const full = await runCli(['docs', 'cli/integrations/codemods', '--full']);
+    expect(one.stdout).toMatch(
+      /^Next: .*docs cli\/integrations\/building-blocks\/codemods run-codemods-in-an-app$/m,
+    );
+    const full = await runCli([
+      'docs',
+      'cli/integrations/building-blocks/codemods',
+      '--full',
+    ]);
     expect(full.status).toBe(0);
     expect(full.stdout).toMatch(/^## Add a codemod$/m);
     expect(full.stdout.length).toBeGreaterThan(bare.stdout.length * 2);

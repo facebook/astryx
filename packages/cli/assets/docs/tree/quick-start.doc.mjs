@@ -46,7 +46,7 @@ export const docs = {
           style: 'unordered',
           items: [
             'Start with `"exports": {}`: each component and template you add then writes the public import that `integration verify` resolves.',
-            'Run the CLI as `npx astryx`, which runs the version you installed.',
+            'Run the CLI as `npx astryx`, which runs the `@astryxdesign/cli` you installed as a devDependency.',
             'Component commands read Core, so they need `@astryxdesign/core` installed.',
           ],
         },
