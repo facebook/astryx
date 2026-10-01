@@ -2,6 +2,7 @@
 
 import {beforeEach, describe, it, expect, vi} from 'vitest';
 import {act, render, fireEvent} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {useEffect, useRef} from 'react';
 import {ChatComposer} from './ChatComposer';
 import {useChatComposerContext} from './ChatContext';
@@ -118,6 +119,36 @@ describe('ChatComposer focus indication', () => {
   });
 });
 
+describe('ChatComposer disabled contract', () => {
+  it('exposes disabled state on the default textbox and clears it when enabled', () => {
+    const {getByRole, rerender} = render(
+      <ChatComposer onSubmit={() => {}} isDisabled />,
+    );
+
+    expect(getByRole('textbox')).toHaveAttribute('aria-disabled', 'true');
+
+    rerender(<ChatComposer onSubmit={() => {}} />);
+    expect(getByRole('textbox')).not.toHaveAttribute('aria-disabled');
+  });
+
+  it('keeps the Stop action pointer-operable while editing is disabled', async () => {
+    const user = userEvent.setup();
+    const onStop = vi.fn();
+    const {getByRole} = render(
+      <ChatComposer
+        onSubmit={() => {}}
+        onStop={onStop}
+        isDisabled
+        isStopShown
+      />,
+    );
+
+    await user.click(getByRole('button', {name: 'Stop'}));
+
+    expect(onStop).toHaveBeenCalledTimes(1);
+  });
+});
+
 // A custom input that participates in the composer's composition contract:
 // reads value/submit from the exported context, and registers a focus control
 // so the shell can drive body-click-to-focus without knowing its DOM shape.
@@ -151,7 +182,33 @@ function CustomContextInput({focusSpy}: {focusSpy: () => void}) {
   );
 }
 
+function ContextSubmitButton() {
+  const ctx = useChatComposerContext();
+  return (
+    <button
+      type="button"
+      onClick={() => ctx?.onSubmit('  custom input draft  ')}>
+      Submit custom input
+    </button>
+  );
+}
+
 describe('ChatComposer input composition contract', () => {
+  it('submits the value supplied through the public context operation', () => {
+    const onSubmit = vi.fn();
+    const {getByRole} = render(
+      <ChatComposer
+        onSubmit={onSubmit}
+        value="captured composer draft"
+        input={<ContextSubmitButton />}
+      />,
+    );
+
+    fireEvent.click(getByRole('button', {name: 'Submit custom input'}));
+
+    expect(onSubmit).toHaveBeenCalledWith('custom input draft');
+  });
+
   it('exposes value/onChange/placeholder/isDisabled to a custom input via context', () => {
     const {getByTestId} = render(
       <ChatComposer

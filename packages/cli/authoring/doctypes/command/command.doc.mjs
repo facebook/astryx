@@ -54,7 +54,7 @@ export const doc = {
       name: 'namespace',
       type: 'string',
       description:
-        "Docs namespace path. Defaults to 'cli' when applied by the docs index.",
+        "Optional in the type, but every doc the CLI ships declares it. The group that reads this doc. The CLI's commands use 'cli/commands', which the docs tree adopts: each is the leaf `cli/commands/<name>`. Every command doc the CLI ships declares one, and `astryx doctor` fails on one that is missing or that nothing reads.",
     },
     {
       name: 'aliases',
@@ -135,8 +135,9 @@ export const doc = {
         },
         {
           name: 'options[].default',
-          type: 'string',
-          description: 'Default value as a string.',
+          type: 'string | boolean | string[]',
+          description:
+            'Default value: a string, a boolean, or a list of strings.',
         },
         {
           name: 'options[].cliOnly',

@@ -3,7 +3,9 @@
 /**
  * @file contract.test.ts
  * @input Uses ./contract and ./checklist
- * @output Proof that `definePattern` refuses a contract nobody could audit.
+ * @output Proof that `definePattern` refuses contracts nobody could audit and
+ *   accepts native patterns grounded in versioned web standards without
+ *   misrepresenting them as APG patterns.
  * @position Schema self-test. Each case here is a way an expectation could look
  *   finished and prove nothing.
  *
@@ -21,6 +23,7 @@ import {
   type AstryxRecord,
   type Expectation,
   type PatternContract,
+  type WebStandardRequirement,
 } from './contract';
 import {CHECKLIST_DIMENSIONS} from './checklist';
 import type {EvidenceLayer} from './harness';
@@ -73,6 +76,32 @@ function pattern(
 describe('definePattern', () => {
   it('accepts a traceable, applicable, layered, enforceable expectation', () => {
     expect(pattern()).not.toThrow();
+  });
+
+  it('cites a versioned web-standard requirement without pretending it is APG', () => {
+    const source: WebStandardRequirement = {
+      standard: 'web-standard',
+      specification: 'WAI-ARIA 1.2',
+      requirement:
+        'A textbox is an input that allows free-form text as its value.',
+      url: 'https://www.w3.org/TR/wai-aria-1.2/#textbox',
+    };
+
+    expect(citeSource(source)).toBe(
+      'WAI-ARIA 1.2: A textbox is an input that allows free-form text as its value.',
+    );
+    expect(
+      pattern({expectations: [expectation({sources: [WCAG_4_1_2, source]})]}),
+    ).not.toThrow();
+  });
+
+  it('accepts a hyphenated adopted-pattern slug in an expectation id', () => {
+    expect(
+      pattern({
+        pattern: 'modal-dialog',
+        expectations: [expectation({id: 'modal-dialog.name.exposed'})],
+      }),
+    ).not.toThrow();
   });
 
   it('refuses an expectation with no user outcome', () => {

@@ -9,23 +9,25 @@
  * - Claude Code: CLAUDE.md (root) or .claude/CLAUDE.md
  * - Cursor: .cursorrules
  * - Codex/generic: AGENTS.md
+ * - Muse: AGENTS.md
  * - Hermes Agent: .hermes.md or HERMES.md (existing), else AGENTS.md
  *
  * Auto-detect: discovers existing files and updates them in place.
  * Default (no existing files): creates AGENTS.md (the tool-agnostic standard).
  *
- * --agent <tool>: target a specific tool preset (claude, cursor, codex, hermes, all)
+ * --agent <tool>: target a specific tool preset (claude, cursor, codex, hermes, muse, all)
  * --agent-docs-path <path>: explicit file path(s)
  */
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {findCoreDir, CLI_ROOT} from '../fs/paths.mjs';
-import {assertWithin} from '../fs/path-safety.mjs';
+import {assertWithin, PathSafetyError} from '../fs/path-safety.mjs';
 import {getCliInvocation} from '../env/package-manager.mjs';
 import {discoverComponents} from '../discovery/component-discovery.mjs';
 import {Project} from '../config/project.mjs';
 import {humanLog} from '../response/json.mjs';
+import {ERROR_CODES} from '../response/error-codes.mjs';
 import {
   AGENTS_MD,
   CLAUDE_MD,
@@ -181,6 +183,7 @@ const AGENT_PRESETS = {
   cursor: [CURSOR_RULES, AGENTS_MD],
   codex: [AGENTS_MD],
   hermes: [HERMES_DOT_MD, HERMES_MD, AGENTS_MD],
+  muse: [AGENTS_MD],
 };
 
 /**
@@ -280,7 +283,7 @@ export function inspectAgentDocs(targetDir, installedVersion, expectedBlock) {
  * Searches for existing files first, falls back to default creation path.
  *
  * @param {string} targetDir
- * @param {string} agent - Preset name: 'claude', 'cursor', 'codex', 'hermes', 'all'
+ * @param {string} agent - Preset name: 'claude', 'cursor', 'codex', 'hermes', 'muse', 'all'
  * @returns {{inject: string[], create: string[]}} Files to inject into vs create fresh
  */
 export function resolveAgentPaths(targetDir, agent) {
@@ -351,8 +354,9 @@ export function detectStylingSystem(targetDir) {
  * Generate the agent cheat sheet from live CLI metadata.
  *
  * Structured as: workflow (behavioral) → rules (error prevention) → CLI reference.
- * Templates are positioned first in the workflow to teach agents the
- * "look at reference code" reflex before writing any UI.
+ * Templates lead the workflow: every page starts from a scaffolded template,
+ * because the template already carries the frame and spacing that an agent
+ * composing from components would have to re-derive, and usually gets wrong.
  *
  * `stylingSystem` tailors the custom-styling guidance to what the project has
  * configured (see {@link detectStylingSystem}) so the agent never reaches for a
@@ -425,17 +429,19 @@ export function generateCompressedIndex(
   lines.push('  import "@astryxdesign/core/astryx.css";');
   lines.push('');
 
-  // Workflow — `build` is the front door; discover before writing UI.
-  lines.push("WORKFLOW — discover, don't guess. Before writing UI:");
-  lines.push('1. `astryx build "<idea>"` — START HERE: returns a kit (closest [page] + [block]s + [component]s). No args = full playbook.');
-  lines.push('2. `astryx template <name> [--skeleton]` — scaffold the [page]/[block]s it named, or study their layout. Templates are reference code.');
-  lines.push('3. `astryx component <Name>` — props + examples for every component you use.');
+  // Workflow — `build` is the front door, and every page starts from the
+  // template it names.
+  lines.push('WORKFLOW — start every page from a template. Never lay out a page from scratch:');
+  lines.push('1. `astryx build "<idea>"` — START HERE: names the [page] template to start from (always one: the closest match, or the app shell), two other templates, and the [block]s + [component]s for parts it lacks. No args = full playbook.');
+  lines.push('2. `astryx template <name> <path>` — scaffold that template into your project. Keep its frame, gap and padding; replace its data, copy and sections; delete sections you do not need.');
+  lines.push('3. `astryx template <Block>` for a part the template lacks; `astryx component <Name>` for props + examples before you use or change a component.');
+  lines.push('Changing a page you already have? Keep it: skip step 2 and add blocks and components inside its sections.');
   lines.push('');
 
   // Rules — the top error-preventers.
   lines.push('RULES:');
   lines.push('- No <div> — components do all layout/spacing, page frame included.');
-  lines.push('- Frame first: read `astryx docs layout` before writing any page or screen — page frame, region widths, breakpoint behavior.');
+  lines.push('- Frame first: the template you scaffold sets the page frame. Read `astryx docs layout` before you change it — region widths, breakpoint behavior.');
   lines.push('- Dense data = rows (Table, List/Item), never Card-wrapped list items; Card is for standalone widgets. Status = StatusDot/Token; Badge = counts only.');
   // Styling guidance tailored to the project's configured system — never
   // recommend a path that isn't compiled here (xstyle needs the StyleX compiler;
@@ -460,7 +466,7 @@ export function generateCompressedIndex(
     css: 'replace any raw <div>/<span> layout, imported .css/@apply, or hardcoded value (#hex, 16px) with the component or a token (var(--color-*|--spacing-*|…))',
   };
   lines.push(
-    `- SELF-CHECK before you finish: re-read the file and ${selfCheckFix[stylingSystem] ?? selfCheckFix.css}. If unsure a component/prop exists, run \`astryx component <Name>\` / \`astryx search "<thing>"\`; don't hand-roll CSS.`,
+    `- SELF-CHECK before you finish: re-read the file and ${selfCheckFix[stylingSystem] ?? selfCheckFix.css}. Confirm the page kept its template's frame, gap and padding. If unsure a component/prop exists, run \`astryx component <Name>\` / \`astryx search "<thing>"\`; don't hand-roll CSS.`,
   );
   lines.push('');
 
@@ -483,6 +489,7 @@ export function generateCompressedIndex(
   if (resolvedTopics.length > 0) {
     lines.push(`  docs <topic>       ${resolvedTopics.join(', ')}`);
   }
+  lines.push('  docs cli           commands, API reference, integration authoring (one level at a time)');
   lines.push('  swizzle <Name>     eject component source for deep customization');
   lines.push('  upgrade --apply    run after any Astryx or integration dependency bump');
   const appendCount = agentDocs.reduce(
@@ -704,11 +711,64 @@ export function removeXdsBlock(filePath, {deleteIfEmpty = false} = {}) {
 }
 
 /**
+ * Whether an agent-doc file already carries a managed-block marker.
+ * @param {string} filePath
+ * @returns {boolean}
+ */
+function hasManagedMarker(filePath) {
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    return content.includes(MARKER_START) || content.includes(LEGACY_MARKER_START);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Whether `removeXdsBlock` would change `filePath`: it holds one well-formed
+ * managed block.
+ * @param {string} filePath
+ * @returns {boolean}
+ */
+function hasRemovableBlock(filePath) {
+  try {
+    return findManagedBlock(fs.readFileSync(filePath, 'utf-8')) != null;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Every file a run writes must resolve inside `targetDir`, symlinks
+ * included. Checked for the whole write set before the first write, so an
+ * escape writes nothing.
+ * @param {string} targetDir
+ * @param {Iterable<string>} relPaths
+ */
+function assertTargetsWithin(targetDir, relPaths) {
+  for (const p of relPaths) {
+    assertWithin(p, targetDir, {label: 'agent docs path'});
+  }
+}
+
+/**
  * Remove Astryx section from all known agent doc files.
  * @param {string} targetDir
+ * @throws {PathSafetyError} `ERR_PATH_TRAVERSAL` when a file it would change
+ *   resolves outside `targetDir`; nothing is changed.
  */
 export function removeAgentDocs(targetDir) {
   const allPaths = discoverAgentDocs(targetDir);
+  try {
+    assertTargetsWithin(
+      targetDir,
+      allPaths.filter(p => hasRemovableBlock(path.join(targetDir, p))),
+    );
+  } catch (err) {
+    // The code reaches the error envelope as is, so it must be registered.
+    if (!(err instanceof PathSafetyError)) throw err;
+    throw new PathSafetyError(err.message, ERROR_CODES.ERR_PATH_TRAVERSAL);
+  }
 
   for (const p of allPaths) {
     const filePath = path.join(targetDir, p);
@@ -716,9 +776,9 @@ export function removeAgentDocs(targetDir) {
     const deleteIfEmpty = p === AGENTS_MD || p === CLAUDE_DIR_MD;
     if (removeXdsBlock(filePath, {deleteIfEmpty})) {
       if (!fs.existsSync(filePath)) {
-        humanLog(`✓ Removed empty ${p}`);
+        humanLog(`[ok] Removed empty ${p}`);
       } else {
-        humanLog(`✓ Removed design system section from ${p}`);
+        humanLog(`[ok] Removed design system section from ${p}`);
       }
     }
   }
@@ -739,7 +799,7 @@ export function removeAgentDocs(targetDir) {
  * @param {object} [options]
  * @param {boolean} [options.zh]
  * @param {string} [options.lang]
- * @param {string} [options.agent] - Tool preset: 'claude', 'cursor', 'codex', 'hermes', 'all'
+ * @param {string} [options.agent] - Tool preset: 'claude', 'cursor', 'codex', 'hermes', 'muse', 'all'
  * @param {string[]} [options.paths] - Explicit paths (overrides agent/auto-detect)
  * @param {boolean} [options.onlyReplace] - Only update files that already have Astryx markers (for upgrades)
  * @param {string[]} [options.topics] - Doc topics to list in the block; defaults
@@ -748,6 +808,8 @@ export function removeAgentDocs(targetDir) {
  * @param {string} [options.renderedBlock] - Fully rendered expected block. Init
  *   and upgrade pass one shared block to every target.
  * @returns {string[]} List of files written
+ * @throws {import('../fs/path-safety.mjs').PathSafetyError} when a file it would
+ *   write resolves outside `targetDir`; nothing is written.
  */
 export function installAgentDocs(
   targetDir,
@@ -804,6 +866,7 @@ export function installAgentDocs(
   // Agent preset
   if (agent) {
     const {inject, create} = resolveAgentPaths(targetDir, agent);
+    assertTargetsWithin(targetDir, [...inject, ...create]);
     for (const p of inject) {
       injectXdsBlock(path.join(targetDir, p), compressedIndex);
       written.push(p);
@@ -831,6 +894,14 @@ export function installAgentDocs(
   if (existing.length > 0) {
     const wrappers = discoverAgentDocWrappers(targetDir, existing);
     const targets = existing.filter(p => !wrappers.has(p));
+    // A refresh skips unmarked files and a wrapper is only written when it
+    // carries a block, so only the files this run writes are checked.
+    /** @param {string} p */
+    const marked = p => hasManagedMarker(path.join(targetDir, p));
+    assertTargetsWithin(targetDir, [
+      ...targets.filter(p => !onlyReplace || marked(p)),
+      ...[...wrappers].filter(marked),
+    ]);
 
     for (const p of targets) {
       const didWrite = injectXdsBlock(path.join(targetDir, p), compressedIndex, {onlyReplace});
@@ -852,12 +923,13 @@ export function installAgentDocs(
   }
 
   // Nothing exists — create root AGENTS.md as the default (skip if onlyReplace).
-  // AGENTS.md is the tool-agnostic standard (Codex/Copilot, Cursor, and most
-  // agents read it), so it's the safe default. Claude-specific output is opt-in
-  // via `--agent claude` (→ .claude/CLAUDE.md); `--agent all` writes both.
+  // AGENTS.md is the tool-agnostic standard (Codex/Copilot, Cursor, Muse, and
+  // most agents read it), so it's the safe default. Claude-specific output is
+  // opt-in via `--agent claude` (→ .claude/CLAUDE.md); `--agent all` writes both.
   if (onlyReplace) return written;
 
   const defaultPath = AGENTS_MD;
+  assertTargetsWithin(targetDir, [defaultPath]);
   injectXdsBlock(path.join(targetDir, defaultPath), compressedIndex, {
     createIfMissing: true,
     header: `# AGENTS.md\n\nProject-specific guidance for AI coding agents.`,

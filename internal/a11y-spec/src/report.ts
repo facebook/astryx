@@ -2,7 +2,7 @@
 
 /**
  * @file report.ts
- * @input Uses ./run (BindingResult) and ./contract (PatternContract)
+ * @input Uses ./check (BindingResult) and ./contract (PatternContract)
  * @output `summarize` and `formatReport` — the facts a reader needs, kept as
  *   separate facts — plus `blockingResults`, the gate over them, and
  *   `formatFailures`, the reader-legible failure block bindings assert on.
@@ -15,11 +15,11 @@
  * A pattern with one required failure is not "mostly conformant", and there is
  * no number in this file that could be mistaken for saying it is.
  *
- * SYNC: When ./run.ts gains a status, add it here and to the README table.
+ * SYNC: When ./check.ts gains a status, add it here and to the README table.
  */
 
 import type {PatternContract} from './contract';
-import type {BindingResult, ExpectationResult} from './run';
+import type {BindingResult, ExpectationResult} from './check';
 
 export interface ReportCounts {
   readonly pass: number;

@@ -113,7 +113,6 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-accent-muted'],
   },
   invisibleButton: {
-    all: 'unset',
     cursor: {
       default: 'inherit',
       ':is(:disabled,[aria-disabled="true"])': 'default',
@@ -129,7 +128,6 @@ const styles = stylex.create({
     outline: 'none',
   },
   invisibleAnchor: {
-    all: 'unset',
     cursor: {
       default: 'inherit',
       ':is(:disabled,[aria-disabled="true"])': 'default',
@@ -181,8 +179,9 @@ const styles = stylex.create({
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
-    border: 'none',
-    background: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
     padding: 0,
     color: colorVars['--color-icon-secondary'],
     borderRadius: radiusVars['--radius-inner'],
@@ -190,7 +189,6 @@ const styles = stylex.create({
     marginInlineEnd: `calc(${spacingVars['--spacing-1']} * -1)`,
   },
   chevronButton: {
-    all: 'unset',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -292,6 +290,10 @@ export interface TreeListItemInternalProps {
   target?: string;
   isDisabled?: boolean;
   isSelected?: boolean;
+  /** Consumer styles for the row element. See `TreeListItemData`. */
+  xstyle?: stylex.StyleXStyles;
+  className?: string;
+  style?: React.CSSProperties;
   hasChildren: boolean;
   /**
    * Whether the tree contains at least one expandable item anywhere (i.e. a
@@ -339,6 +341,9 @@ export function TreeListItem({
   description,
   startContent,
   endContent,
+  xstyle,
+  className,
+  style,
   onClick,
   href,
   target,
@@ -589,15 +594,22 @@ export function TreeListItem({
                   interactionOverlayStyles.backgroundImage,
                   isDisabled && styles.disabled,
                   isSelected && styles.selected,
+                  xstyle,
                 )
               : stylex.props(
                   styles.contentWrapper,
                   densityStyles[density],
                   isDisabled && styles.disabled,
                   isSelected && styles.selected,
+                  xstyle,
                 ),
+            // Consumer row props are merged last so useContainerReveal can
+            // publish both its classes and inline custom properties. Seed the
+            // private indent first, then preserve the standard inline-style
+            // precedence promised by the TreeList contract.
+            className,
+            {...indentStyle, ...style},
           )}
-          style={indentStyle}
           onClick={handleClick}>
           {innerContent}
         </div>

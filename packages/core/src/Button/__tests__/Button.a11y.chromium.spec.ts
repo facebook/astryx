@@ -21,7 +21,13 @@
  *   ./Button.a11y.known-failures.ts, both shared with the jsdom lane.
  */
 
-import {expect, test, type CDPSession, type Page} from '@playwright/test';
+import {
+  expect,
+  test,
+  type CDPSession,
+  type Locator,
+  type Page,
+} from '@playwright/test';
 import {
   BUTTON_PATTERN,
   blockingResults,
@@ -29,7 +35,7 @@ import {
   formatReport,
   neverExercised,
   unmatchedKnownFailures,
-  runBinding,
+  checkAccessibilitySpec,
   spokenWords,
   summarize,
   type BindingResult,
@@ -93,13 +99,21 @@ async function activationsOn(page: Page): Promise<number> {
   return Number(raw ?? '0');
 }
 
+function pointerTargetFor(
+  page: Page,
+  state: ButtonBindingRow,
+): Locator | undefined {
+  const selector = (state as ButtonBindingState).pointerTargetSelector;
+  return selector == null ? undefined : page.locator(selector).first();
+}
+
 async function runState(
   page: Page,
   cdp: CDPSession,
   state: ButtonBindingRow,
 ): Promise<BindingResult> {
-  return runBinding({
-    contract: BUTTON_PATTERN,
+  return checkAccessibilitySpec({
+    spec: BUTTON_PATTERN,
     binding: state.binding,
     state: state.id,
     facts: state.facts,
@@ -111,6 +125,7 @@ async function runState(
       return createChromiumHarness({
         page,
         subject: page.locator('#storybook-root').getByRole('button').first(),
+        pointerTarget: pointerTargetFor(page, state),
         cdp,
       });
     },
@@ -134,7 +149,7 @@ function namesTheSameLabel(rendered: string, claimed: string): boolean {
 
 /**
  * The inventory AST-021 FR2 asks for, checked against the page rather than
- * trusted. Deliberately NOT part of the shared contract: a wrong entry here is a
+ * trusted. Deliberately NOT part of the shared spec: a wrong entry here is a
  * stale inventory, and reporting it as a WCAG 2.5.3 failure would put a metadata
  * typo and a real accessibility defect in the same bucket.
  */
@@ -289,8 +304,8 @@ test('every expectation is exercised by at least one bound state', async ({
     // would turn a ten-second check into a ten-minute one for no extra truth.
     let mounted = false;
     results.push(
-      await runBinding({
-        contract: BUTTON_PATTERN,
+      await checkAccessibilitySpec({
+        spec: BUTTON_PATTERN,
         binding: state.binding,
         state: state.id,
         facts: state.facts,
@@ -306,6 +321,7 @@ test('every expectation is exercised by at least one bound state', async ({
               .locator('#storybook-root')
               .getByRole('button')
               .first(),
+            pointerTarget: pointerTargetFor(page, state),
             cdp,
           });
         },

@@ -13,7 +13,7 @@ export const doc = {
   type: 'command',
   name: 'discover',
   displayName: 'astryx discover',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Discover external packages and components',
   description:
     'Explores components contributed by configured external packages and integrations. ' +
@@ -25,18 +25,20 @@ export const doc = {
     {
       flag: '--components',
       param: 'options.components',
-      description: 'List components only',
+      description:
+        'In the package list, print every component of each package instead of the first 10 and a "+N more" count. No effect on --json output or on a package, component, or search query.',
     },
   ],
   examples: [
     {label: 'List packages', cli: 'astryx discover --json'},
+    {label: 'List every component of each package', cli: 'astryx discover --components'},
     {label: 'Browse a package', cli: 'astryx discover @acme/ui'},
   ],
   exitCodes: [
     {code: 0, when: 'success'},
     {
       code: 1,
-      when: 'unknown package or component, a malformed doc, or an empty free-text query',
+      when: 'unknown package or component, a malformed doc, or a blank query when packages are discovered',
     },
   ],
   related: ['component', 'search', 'template'],

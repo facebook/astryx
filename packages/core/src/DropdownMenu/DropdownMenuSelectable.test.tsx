@@ -3,14 +3,14 @@
 /**
  * @file DropdownMenuSelectable.test.tsx
  * @input vitest, @testing-library/react, DropdownMenu + selectable items
- * @output Unit tests for DropdownMenuCheckboxItem / RadioGroup / RadioItem (#3829)
- * @position Component-local callback and composition coverage; shared checkbox
- *   role, name, state, and interaction outcomes live in the reusable contract.
+ * @output Component-local callback, composition, and marker styling tests for
+ *   DropdownMenuCheckboxItem / RadioGroup / RadioItem (#3829)
+ * @position Shared checkbox and radio-group role, name, state, and interaction
+ *   outcomes live in their reusable contracts; Menu retains navigation.
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import {useState} from 'react';
 import userEvent from '@testing-library/user-event';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuCheckboxItem} from './DropdownMenuCheckboxItem';
@@ -120,61 +120,6 @@ describe('DropdownMenuCheckboxItem', () => {
 });
 
 describe('DropdownMenuRadioGroup / RadioItem', () => {
-  it('keeps option-2 unchecked until it is activated', async () => {
-    const user = userEvent.setup();
-
-    function RadioPreview() {
-      const [value, setValue] = useState('option-1');
-      return (
-        <DropdownMenu button={{label: 'Sort'}}>
-          <DropdownMenuRadioGroup
-            value={value}
-            onChange={setValue}
-            label="Radio group">
-            <DropdownMenuRadioItem value="option-2" label="Option 2" />
-          </DropdownMenuRadioGroup>
-        </DropdownMenu>
-      );
-    }
-
-    render(<RadioPreview />);
-    await user.click(screen.getByRole('button', {name: /Sort/}));
-
-    const option = screen.getByRole('menuitemradio', {
-      name: 'Option 2',
-      hidden: true,
-    });
-    expect(option).toHaveAttribute('aria-checked', 'false');
-
-    await user.click(option);
-    expect(option).toHaveAttribute('aria-checked', 'true');
-  });
-
-  it('renders a named group with radios reflecting the selected value', async () => {
-    const user = userEvent.setup();
-    render(
-      <DropdownMenu button={{label: 'Sort'}}>
-        <DropdownMenuRadioGroup
-          value="newest"
-          onChange={() => {}}
-          label="Sort by">
-          <DropdownMenuRadioItem value="newest" label="Newest" />
-          <DropdownMenuRadioItem value="oldest" label="Oldest" />
-        </DropdownMenuRadioGroup>
-      </DropdownMenu>,
-    );
-    await user.click(screen.getByRole('button', {name: /Sort/}));
-    expect(
-      screen.getByRole('menuitemradio', {name: 'Newest', hidden: true}),
-    ).toHaveAttribute('aria-checked', 'true');
-    expect(
-      screen.getByRole('menuitemradio', {name: 'Oldest', hidden: true}),
-    ).toHaveAttribute('aria-checked', 'false');
-    expect(
-      screen.getByRole('group', {name: 'Sort by', hidden: true}),
-    ).toBeInTheDocument();
-  });
-
   it('renders the shared radio indicator in the menu marker', async () => {
     const user = userEvent.setup();
     render(
@@ -236,24 +181,6 @@ describe('DropdownMenuRadioGroup / RadioItem', () => {
     expect(onChange).toHaveBeenCalledWith('oldest');
   });
 
-  it('names the group from the required label prop', async () => {
-    const user = userEvent.setup();
-    render(
-      <DropdownMenu button={{label: 'Sort'}}>
-        <DropdownMenuRadioGroup
-          value="newest"
-          onChange={() => {}}
-          label="Sort by">
-          <DropdownMenuRadioItem value="newest" label="Newest" />
-        </DropdownMenuRadioGroup>
-      </DropdownMenu>,
-    );
-    await user.click(screen.getByRole('button', {name: /Sort/}));
-    expect(
-      screen.getByRole('group', {name: 'Sort by', hidden: true}),
-    ).toBeInTheDocument();
-  });
-
   it('throws when a radio item is used outside a group', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(() =>
@@ -264,5 +191,45 @@ describe('DropdownMenuRadioGroup / RadioItem', () => {
       ),
     ).toThrow(/DropdownMenuRadioGroup/);
     spy.mockRestore();
+  });
+});
+
+describe('selectable item refs', () => {
+  it('a ref reaches the menuitemcheckbox element', () => {
+    const ref = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'View'}}>
+        <DropdownMenuCheckboxItem
+          label="Show archived"
+          value={false}
+          onChange={() => {}}
+          ref={ref}
+        />
+      </DropdownMenu>,
+    );
+    expect(ref).toHaveBeenCalledWith(
+      screen.getByRole('menuitemcheckbox', {
+        name: 'Show archived',
+        hidden: true,
+      }),
+    );
+  });
+
+  it('a ref reaches the menuitemradio element', () => {
+    const ref = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'Sort'}}>
+        <DropdownMenuRadioGroup
+          label="Sort by"
+          value="newest"
+          onChange={() => {}}>
+          <DropdownMenuRadioItem value="newest" label="Newest" ref={ref} />
+          <DropdownMenuRadioItem value="oldest" label="Oldest" />
+        </DropdownMenuRadioGroup>
+      </DropdownMenu>,
+    );
+    expect(ref).toHaveBeenCalledWith(
+      screen.getByRole('menuitemradio', {name: 'Newest', hidden: true}),
+    );
   });
 });

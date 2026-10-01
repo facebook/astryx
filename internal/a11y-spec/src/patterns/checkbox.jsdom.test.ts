@@ -4,7 +4,7 @@
 /**
  * @file checkbox.jsdom.test.ts
  * @input Uses ./checkbox (the contract), ./checkbox.fixtures (conforming and
- *   violating fixtures), ../harness/jsdom, ../run
+ *   violating fixtures), ../harness/jsdom, ../check
  * @output The contract's own proof at the DOM layer: every expectation passes
  *   against a conforming fixture, fails against a fixture that removes its
  *   outcome, and reports `unrun` when this harness cannot observe its layer.
@@ -28,7 +28,7 @@ import {
   unansweredDimensions,
 } from '../contract';
 import {JSDOM_OBSERVES, createJsdomHarness} from '../harness/jsdom';
-import {runBinding, type ExpectationResult} from '../run';
+import {checkAccessibilitySpec, type ExpectationResult} from '../check';
 import {CHECKBOX_PATTERN} from './checkbox';
 import {
   CONFORMING_FIXTURES,
@@ -50,8 +50,8 @@ afterEach(() => {
 async function resultsFor(target: CheckboxFixture) {
   const container = document.createElement('div');
   document.body.append(container);
-  const result = await runBinding({
-    contract: CHECKBOX_PATTERN,
+  const result = await checkAccessibilitySpec({
+    spec: CHECKBOX_PATTERN,
     binding: 'fixture',
     state: target.id,
     facts: target.facts,

@@ -134,7 +134,8 @@ const styles = stylex.create({
     minWidth: 0,
     // Reset default <button> appearance for the collapsible title control.
     padding: 0,
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     backgroundColor: 'transparent',
     color: 'inherit',
     font: 'inherit',
@@ -930,8 +931,8 @@ export function CodeBlock({
         themeProps(
           'code-block',
           {size, language, container},
-          // `codeblock` ran the compound name together; themes styling it keep
-          // working until the next major.
+          // `codeblock` ran the compound name together; keep it emitted so
+          // existing themes continue to work.
           {legacyNames: ['codeblock']},
         ),
         stylex.props(

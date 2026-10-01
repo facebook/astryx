@@ -3,7 +3,7 @@
 /**
  * @file checkbox.chromium.spec.ts
  * @input Uses @playwright/test, ./checkbox (the contract), ./checkbox.fixtures,
- *   ../harness/chromium, ../run
+ *   ../harness/chromium, ../check
  * @output The contract's own proof in a real engine: every expectation passes
  *   against a conforming fixture and fails against each fixture that removes
  *   its outcome.
@@ -27,7 +27,7 @@ import {
   createChromiumHarness,
   holdMotionStill,
 } from '../harness/chromium';
-import {runBinding, type ExpectationResult} from '../run';
+import {checkAccessibilitySpec, type ExpectationResult} from '../check';
 import {CHECKBOX_PATTERN} from './checkbox';
 import {
   CONFORMING_FIXTURES,
@@ -53,8 +53,8 @@ async function results(
   target: CheckboxFixture,
   only?: readonly string[],
 ): Promise<readonly ExpectationResult[]> {
-  const run = await runBinding({
-    contract: CHECKBOX_PATTERN,
+  const run = await checkAccessibilitySpec({
+    spec: CHECKBOX_PATTERN,
     binding: 'fixture',
     state: target.id,
     facts: target.facts,

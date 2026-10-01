@@ -86,6 +86,18 @@ describe('manifest: drift guards', () => {
     }
   });
 
+  it('exposes integration authoring only under doctor', () => {
+    expect(allNames.has('validate-integration')).toBe(false);
+    for (const name of [
+      'doctor integration validate',
+      'doctor integration templates',
+      'doctor integration components',
+      'doctor integration docs',
+    ]) {
+      expect(allNames.has(name), name).toBe(true);
+    }
+  });
+
   it('sorts subcommands by name (stable, agent-facing order)', () => {
     for (const entry of allEntries) {
       if (!entry.subcommands) continue;
@@ -182,5 +194,22 @@ describe('manifest: e2e', () => {
     expect(parsed.data.manifest).toBeDefined();
     expect(parsed.data.manifest.commands.find((c) => c.name === 'component').responseTypes)
       .toContain('component.list');
+  });
+});
+
+describe('manifest: text projection', () => {
+  it('astryx manifest (text) uses the JSON entry keys as its field names', async () => {
+    const text = await runCli(['manifest']);
+    expect(text.status).toBe(0);
+    const json = JSON.parse((await runCli(['manifest', '--json'])).stdout);
+    const jsonKeys = new Set(json.data.commands.flatMap((c) => Object.keys(c)));
+    const textKeys = new Set(
+      text.stdout
+        .split('\n')
+        .map((line) => /^([A-Za-z]+):\s/.exec(line)?.[1])
+        .filter(Boolean),
+    );
+    expect(textKeys).toContain('name');
+    for (const key of textKeys) expect(jsonKeys).toContain(key);
   });
 });

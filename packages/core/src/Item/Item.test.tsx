@@ -9,11 +9,12 @@
  * SYNC: When Item component changes, update tests to match new behavior
  */
 
-import {useRef} from 'react';
+import {use, useRef} from 'react';
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Item} from './Item';
+import {ItemDescriptionContext} from './ItemDescriptionContext';
 
 /**
  * Item in delegation mode: `interactiveRef` points at a nested control that
@@ -42,6 +43,44 @@ describe('Item', () => {
   // ===========================================================================
   // Basic rendering
   // ===========================================================================
+
+  it('ids the rendered description and publishes it to slot content', () => {
+    function Probe() {
+      const describedBy = use(ItemDescriptionContext);
+      return <span data-testid="probe">{describedBy ?? 'none'}</span>;
+    }
+    render(
+      <Item
+        label="Email"
+        description="Receive notifications by email"
+        startContent={<Probe />}
+      />,
+    );
+    const description = screen.getByText('Receive notifications by email');
+    expect(description.id).not.toBe('');
+    expect(screen.getByTestId('probe')).toHaveTextContent(description.id);
+    // The string description stays Item's own element. Wrapping it to carry an
+    // id would make it a ReactNode and drop the single-line truncation.
+    expect(description.children).toHaveLength(0);
+  });
+
+  it('publishes no description id when the description renders nothing', () => {
+    function Probe() {
+      const describedBy = use(ItemDescriptionContext);
+      return <span data-testid="probe">{describedBy ?? 'none'}</span>;
+    }
+    for (const description of ['', false] as const) {
+      const {unmount} = render(
+        <Item
+          label="Email"
+          description={description}
+          startContent={<Probe />}
+        />,
+      );
+      expect(screen.getByTestId('probe')).toHaveTextContent('none');
+      unmount();
+    }
+  });
 
   it('renders label text', () => {
     render(<Item label="Contact Name" />);
@@ -442,7 +481,10 @@ describe('Item', () => {
   it('renders with balanced density by default', () => {
     render(<Item label="Item" data-testid="item" />);
     expect(screen.getByTestId('item')).toBeInTheDocument();
-    expect(screen.getByTestId('item').className).toContain('balanced');
+    expect(screen.getByTestId('item')).toHaveAttribute(
+      'data-density',
+      'balanced',
+    );
   });
 
   it('renders with compact density', () => {
@@ -453,7 +495,10 @@ describe('Item', () => {
   it('renders with spacious density', () => {
     render(<Item label="Item" density="spacious" data-testid="item" />);
     expect(screen.getByTestId('item')).toBeInTheDocument();
-    expect(screen.getByTestId('item').className).toContain('spacious');
+    expect(screen.getByTestId('item')).toHaveAttribute(
+      'data-density',
+      'spacious',
+    );
   });
 
   // ===========================================================================

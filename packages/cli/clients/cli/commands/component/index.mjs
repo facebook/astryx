@@ -26,7 +26,6 @@ import {defineCommand} from '../../lib/define-command.mjs';
 import {resultSet} from '../../../../foundation/debug/index.mjs';
 import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
 import {component as componentApi} from '../../../../api/component/component.mjs';
-import {findRelatedBlocks} from '../../../../api/template/template.mjs';
 import {Project} from '../../../../foundation/config/project.mjs';
 import {warnOnIntegrationIssues} from '../../../../foundation/integrations/integration-warnings.mjs';
 import {doc as componentCommand} from '../component.doc.mjs';
@@ -109,10 +108,10 @@ export function registerComponent(program) {
 
       // Non-blocking nudge: if any configured integration has validation
       // issues, print one compact line to stderr pointing at
-      // validate-integration. Best-effort; suppressed in --json mode.
+      // doctor integration validate. Best-effort; suppressed in --json mode.
       try {
         const project = await Project.load(process.cwd());
-        await warnOnIntegrationIssues(project.loadedIntegrations, {json});
+        await warnOnIntegrationIssues(project, {json});
       } catch {
         // Never let the nudge break the command.
       }
@@ -205,7 +204,10 @@ export function registerComponent(program) {
           }
           /** @param {import('../../../../api/component/component.type.mjs').ComponentListEntry} item */
           const importCell = item => {
-            const importPath = resolveImportPath(coreDir, item.name);
+            // Use a precomputed import when the API supplies one (integration
+            // components carry it); only fall back to the core resolver for
+            // core components.
+            const importPath = item.import ?? resolveImportPath(coreDir, item.name);
             const qualify =
               item.package !== CORE_PKG || (nameCounts.get(item.name)?.size ?? 0) > 1;
             return qualify ? `${importPath}  [${item.package}]` : importPath;
@@ -231,19 +233,15 @@ export function registerComponent(program) {
 
         case 'component.detail': {
           const resolvedName = (name || '').replace(/^XDS/, '');
-          const importHint = resolveImportPath(coreDir, resolvedName);
+          const importHint = result.data.import;
+          if (result.data.parentDoc) emit(record(result.data, {fields: ['parentDoc']}));
           const doc =
             detail === 'brief'
               ? code(formatBrief(result.data, resolvedName, importHint, {themeData}))
               : detail === 'compact'
                 ? code(formatCompact(result.data, resolvedName, importHint))
                 : code(formatFull(result.data, {themeData, importHint}));
-          const related = await findRelatedBlocks(resolvedName);
-          emit(
-            doc,
-            related.length > 0 && section('Related block templates'),
-            related.length > 0 && records(related, {fields: ['dirName', 'description']}),
-          );
+          emit(doc);
           break;
         }
 

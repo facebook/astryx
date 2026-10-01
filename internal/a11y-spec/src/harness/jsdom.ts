@@ -20,6 +20,7 @@
  */
 
 import {
+  MissingHarnessRelation,
   UnobservableError,
   type Harness,
   type Subject,
@@ -54,11 +55,73 @@ function createSubject(element: Element): Subject {
           return target == null ? null : (target.textContent ?? '').trim();
         });
     },
+    visibleIdReferences: async () =>
+      unobservable(
+        'real-browser',
+        'whether referenced text is visibly rendered',
+      ),
+    labelText: async () => {
+      const labelledBy = element.getAttribute('aria-labelledby');
+      if (labelledBy != null && labelledBy.trim() !== '') {
+        const text = (
+          await Promise.all(
+            labelledBy
+              .split(/\s+/)
+              .filter(Boolean)
+              .map(
+                async id =>
+                  element.ownerDocument.getElementById(id)?.textContent ?? '',
+              ),
+          )
+        )
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        return text === '' ? null : text;
+      }
+      const ariaLabel = element.getAttribute('aria-label')?.trim();
+      if (ariaLabel != null && ariaLabel !== '') {
+        return ariaLabel;
+      }
+      if (
+        element instanceof HTMLInputElement ||
+        element instanceof HTMLTextAreaElement
+      ) {
+        const text = Array.from(element.labels ?? [])
+          .map(label => label.textContent ?? '')
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        return text === '' ? null : text;
+      }
+      return null;
+    },
+    textValue: async () => {
+      if (
+        element instanceof HTMLInputElement ||
+        element instanceof HTMLTextAreaElement
+      ) {
+        return element.value;
+      }
+      return null;
+    },
+    textContent: async () =>
+      (element.textContent ?? '').replace(/\s+/g, ' ').trim(),
+    currentExists: async () => element.isConnected,
+    isConnected: async () => element.isConnected,
     computed: async () =>
       unobservable('accessibility-tree', 'a computed accessibility node'),
     visibleLabelText: async () =>
       unobservable('real-browser', 'what a label actually renders as'),
+    isVisible: async () =>
+      unobservable('real-browser', 'whether a node is rendered and visible'),
     isFocused: async () => unobservable('real-browser', 'real focus'),
+    containsFocus: async () =>
+      unobservable('real-browser', 'whether focus is inside a subject'),
+    isModal: async () =>
+      unobservable('real-browser', 'native modal top-layer state'),
+    canReceivePointer: async () =>
+      unobservable('real-browser', 'pointer reachability'),
     focus: async () => unobservable('real-browser', 'real focus'),
   };
 }
@@ -71,18 +134,70 @@ export interface JsdomHarnessOptions {
    * the expectation under test instead of making the subject unfindable.
    */
   readonly subject: Element;
+  /** Public-semantic elements participating in a relationship expectation. */
+  readonly related?: Readonly<Record<string, Element>>;
 }
 
 export function createJsdomHarness(options: JsdomHarnessOptions): Harness {
+  const elements = new WeakMap<Subject, Element>();
   const subject = createSubject(options.subject);
+  elements.set(subject, options.subject);
+  const relatedSubjects = new Map<string, Subject>();
+  for (const [name, element] of Object.entries(options.related ?? {})) {
+    const related = createSubject(element);
+    elements.set(related, element);
+    relatedSubjects.set(name, related);
+  }
   return {
     name: HARNESS,
     observes: JSDOM_OBSERVES,
     subject: async () => subject,
+    related: async name => {
+      const related = relatedSubjects.get(name);
+      if (related == null) {
+        throw new MissingHarnessRelation(HARNESS, name);
+      }
+      return related;
+    },
+    contains: async (container, candidate) => {
+      const containerElement = elements.get(container);
+      const candidateElement = elements.get(candidate);
+      if (containerElement == null || candidateElement == null) {
+        throw new Error(
+          'the jsdom harness was asked to compare a subject it did not create',
+        );
+      }
+      return containerElement.contains(candidateElement);
+    },
+    containsSemantically: async () =>
+      unobservable(
+        'accessibility-tree',
+        'whether one subject semantically owns another',
+      ),
+    references: async (source, attribute, target) => {
+      const sourceElement = elements.get(source);
+      const targetElement = elements.get(target);
+      if (sourceElement == null || targetElement == null) {
+        throw new Error(
+          'the jsdom harness was asked to compare a subject it did not create',
+        );
+      }
+      return (sourceElement.getAttribute(attribute) ?? '')
+        .split(/\s+/)
+        .filter(Boolean)
+        .some(
+          id =>
+            sourceElement.ownerDocument.getElementById(id) === targetElement,
+        );
+    },
     click: async () =>
       unobservable('real-browser', 'a real pointer activation'),
     abortedPress: async () =>
       unobservable('real-browser', 'a real pointer press'),
+    typeText: async () =>
+      unobservable('real-browser', 'real keyboard text entry'),
+    clearText: async () =>
+      unobservable('real-browser', 'real keyboard text deletion'),
     press: async () => unobservable('real-browser', 'a real key press'),
     resetFocus: async () => unobservable('real-browser', 'real focus'),
   };

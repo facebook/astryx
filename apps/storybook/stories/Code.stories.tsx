@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {Code} from '@astryxdesign/core/CodeBlock';
+import {Code} from '@astryxdesign/core/Code';
 import {Text} from '@astryxdesign/core/Text';
 import {Stack} from '@astryxdesign/core/Stack';
 import {Link} from '@astryxdesign/core/Link';
@@ -22,6 +22,7 @@ export default meta;
 type Story = StoryObj<typeof Code>;
 
 export const Default: Story = {
+  tags: ['visual-baseline'],
   args: {
     children: 'const x = 1',
   },
@@ -31,10 +32,9 @@ export const InParagraph: Story = {
   name: 'Inline in paragraph',
   render: () => (
     <Text type="body">
-      Use <Code>useState</Code> for local state and{' '}
-      <Code>useEffect</Code> for side effects. If you need shared state
-      across components, consider <Code>useContext</Code> or a state
-      management library.
+      Use <Code>useState</Code> for local state and <Code>useEffect</Code> for
+      side effects. If you need shared state across components, consider{' '}
+      <Code>useContext</Code> or a state management library.
     </Text>
   ),
 };
@@ -44,13 +44,12 @@ export const InstructionalParagraph: Story = {
   render: () => (
     <Stack gap={3}>
       <Text type="body">
-        Install the package with <Code>npm install @astryxdesign/core</Code>, then
-        import the component:
+        Install the package with <Code>npm install @astryxdesign/core</Code>,
+        then import the component:
       </Text>
       <Text type="body">
-        Add <Code>{'<Button label="Save">Save</Button>'}</Code> to
-        your JSX. The <Code>label</Code> prop is required for
-        accessibility.
+        Add <Code>{'<Button label="Save">Save</Button>'}</Code> to your JSX. The{' '}
+        <Code>label</Code> prop is required for accessibility.
       </Text>
     </Stack>
   ),
@@ -60,13 +59,13 @@ export const MixedInline: Story = {
   name: 'Mixed with links and emphasis',
   render: () => (
     <Text type="body">
-      The <Code>ThemeProvider</Code> component wraps your app and
-      supplies design tokens. See the{' '}
+      The <Code>ThemeProvider</Code> component wraps your app and supplies
+      design tokens. See the{' '}
       <Link href="/docs/theme" isExternalLink={false}>
         theme docs
       </Link>{' '}
-      for setup. Set <Code>colorScheme=&quot;dark&quot;</Code> to enable
-      dark mode.
+      for setup. Set <Code>colorScheme=&quot;dark&quot;</Code> to enable dark
+      mode.
     </Text>
   ),
 };

@@ -43,6 +43,7 @@ export * from './CheckboxList';
 export * from './Collapsible';
 export * from './RadioList';
 export * from './Resizable';
+export * from './ScrollableArea';
 export * from './Divider';
 export * from './VisuallyHidden';
 export * from './EmptyState';
@@ -159,6 +160,9 @@ export * from './Spinner';
 
 // Timestamp display
 export * from './Timestamp';
+
+// Elapsed timer display
+export * from './Timer';
 
 // Overlay
 export * from './Overlay';

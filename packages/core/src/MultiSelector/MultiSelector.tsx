@@ -318,7 +318,8 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     outline: 'none',
   },
   itemHighlighted: {
@@ -1241,18 +1242,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     listboxId,
   });
 
-  // Keep the highlighted option visible during keyboard navigation. The
-  // listbox is a fixed-height scroll container, so without this the virtual
-  // cursor walks off-screen once navigation passes the visible window. Mirrors
-  // CommandPaletteItem's scrollIntoView({block: 'nearest'}) behavior.
-  useEffect(() => {
-    if (!surface.isOpen || highlightedIndex < 0) {
-      return;
-    }
-    document
-      .getElementById(getItemId(highlightedIndex))
-      ?.scrollIntoView?.({block: 'nearest'});
-  }, [surface.isOpen, highlightedIndex, getItemId]);
+  // Highlight scrolling (and its hover/keyboard split) lives in useMultiCombobox.
 
   // Build trigger display content
   const selectedItems = useMemo(() => {

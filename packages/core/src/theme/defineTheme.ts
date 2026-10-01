@@ -3,6 +3,9 @@
 /**
  * defineTheme — Create an Astryx theme from a flat token map.
  *
+ * Adaptations resolve against the effective root axes and components, retaining
+ * authored component pins without repeating root typography defaults.
+ *
  * Two distribution modes:
  * - Unbuilt: Theme generates CSS and injects a <style> tag at runtime
  * - Built: `astryx theme build` pre-compiles to a CSS file; Theme just
@@ -308,12 +311,8 @@ export interface DefineThemeInput {
    *  Values can be a string or [light, dark] tuple.
    *  Only include tokens you want to override; defaults fill the rest. */
   tokens?: Partial<Record<TokenName, TokenValue>>;
-  /**
-   * Theme-family-local CSS custom properties. Keys use the complete
-   * `--astryx-theme-${name}-...` spelling and values follow `TokenValue`.
-   * These names are available only to this enrolled theme lineage and do not
-   * become portable `TokenName` values.
-   */
+  /** Theme-family-local values keyed by any valid CSS custom-property name;
+   *  prefixes do not establish ownership. */
   localTokens?: Record<string, TokenValue>;
   /**
    * Component style overrides — keyed by component name (lowercase).
@@ -581,9 +580,7 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
     input,
     base,
     tokens,
-    components,
-    __onDark,
-    __onLight,
+    tokenDefaults,
   );
 
   // Adaptations inherit their breakpoint map and ordered rules. Every rule is
@@ -601,6 +598,7 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
     __axes,
     tokens,
     localTokenContract?.localTokens,
+    components,
   );
 
   // Icons — input icons override base icons

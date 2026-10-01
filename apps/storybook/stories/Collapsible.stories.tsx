@@ -345,3 +345,31 @@ export const FAQ: Story = {
     </CollapsibleGroup>
   ),
 };
+
+export const PressedState: Story = {
+  name: 'Pressed state',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Press and hold the enabled trigger to paint the system's `--color-overlay-pressed` layer across its row. The disabled trigger remains visually unchanged and cannot expand or collapse.",
+      },
+    },
+  },
+  render: () => (
+    <VStack gap={2}>
+      <Card>
+        <Collapsible trigger="Details — press and hold">
+          <p {...stylex.props(styles.text)}>
+            The pressed overlay covers the trigger row.
+          </p>
+        </Collapsible>
+      </Card>
+      <Card>
+        <Collapsible trigger="Unavailable — no pressed state" isDisabled>
+          <p {...stylex.props(styles.text)}>Never opens.</p>
+        </Collapsible>
+      </Card>
+    </VStack>
+  ),
+};

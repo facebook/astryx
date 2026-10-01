@@ -55,14 +55,14 @@ export const doc = {
       name: 'replaces',
       type: 'string',
       description:
-        "Name of an existing topic this doc takes the place of. Authored by an integration that serves its own guide instead of the built-in one: on a doc of the same name it swaps the content, and on a doc of another name it also leaves the old name as an alias so `astryx docs <old>` still resolves. Exclusive with `extends`.",
+        'Name of an existing topic this doc takes the place of. Authored by an integration that serves its own guide instead of the built-in one: on a doc of the same name it swaps the content, and on a doc of another name it also leaves the old name as an alias so `astryx docs <old>` still resolves. Exclusive with `extends`.',
       example: "'getting-started'",
     },
     {
       name: 'extends',
       type: 'string',
       description:
-        'Name of an existing topic this doc merges onto, section by section: a section whose title matches one in the base replaces it, a section the base does not have is appended. For correcting or adding to a topic rather than owning it. Exclusive with `replaces`.',
+        "Name of an existing topic this doc merges onto, section by section: a section whose title matches one in the base replaces it, a section the base does not have is appended. The topic keeps the base's title and description. For correcting or adding to a topic rather than owning it. Exclusive with `replaces`.",
       example: "'theme'",
     },
     {
@@ -72,6 +72,12 @@ export const doc = {
         'Ordered sections that make up the doc. Each becomes an h2 in full output and can be retrieved via `astryx docs <topic> <section>`.',
       required: true,
       fields: [
+        {
+          name: 'sections[].id',
+          type: 'string',
+          description:
+            'Stable section anchor. New docs should set this instead of relying on a mutable title.',
+        },
         {
           name: 'sections[].title',
           type: 'string',
@@ -87,9 +93,9 @@ export const doc = {
         },
         {
           name: 'sections[].content',
-          type: 'ReferenceContentBlock[]',
+          type: '(ReferenceContentBlock | ReferenceDocBlock)[]',
           description:
-            'Ordered content blocks. Mix prose, code, tables, and lists freely.',
+            "Ordered content blocks: prose, heading, code, table, list, token-ref, and reference. A `reference` block (`{type: 'reference', target, projection?, presentation?}`) includes another doc from its canonical source instead of a copy: a schema, command, function, or enum doc as `astryx docs` prints it, then the command that opens it. `projection.fields` keeps only those fields of a schema; `presentation` is `full` (the default), `compact` (no code blocks), or `summary` (only the doc's title, summary, and command). Any other doc shows as a summary. Graph-only workflow and collection blocks are available through GraphContentBlock on NamespaceDoc, without widening the stable ReferenceContentBlock union. Inside text, `{@link <target>}` links another doc by identity (`[<provider>:]<kind>:<name>`): the CLI prints the command that opens it, and `astryx doctor` warns on one that names no doc.",
           required: true,
         },
         {
@@ -134,7 +140,31 @@ export const docs = {
   notes: [
     {
       type: 'prose',
-      text: 'Each `sections[].content` is an ordered array of ReferenceContentBlock, a discriminated union. New block types can be added without breaking existing docs. The same union is reused by the `notes` field on SchemaDoc and CommandDoc.',
+      text: 'A stamped generic doc without `title`, `description` or `sections` still loads, as older codemod output does; its title falls back to `displayName` or `name`. Without a description and sections it is not a usable topic, and `astryx doctor` reports it.',
+    },
+    {
+      type: 'prose',
+      text: 'Each `sections[].content` is an ordered array of ReferenceContentBlock, the stable discriminated union of prose, heading, code, table, list, and token-ref, plus the reference block (ReferenceDocBlock). A read inlines a reference block the way it inlines a token-ref, so `astryx docs`, in text and in `--json`, returns only the stable block kinds. Docs-graph-only workflow and collection blocks are exported separately as GraphContentBlock and accepted by NamespaceDoc. choice, callout, and checklist remain invalid. ReferenceContentBlock is also reused by the `notes` field on SchemaDoc and CommandDoc. Inside text, `{@link <target>}` links another doc by identity (`[<provider>:]<kind>:<name>`): the CLI prints the command that opens it, and `astryx doctor` warns on one that names no doc.',
+    },
+    {
+      type: 'prose',
+      text: "A reference block includes content, where a link only points at it: `astryx doctor integration docs` fails when its target names no doc, when `projection.fields` names a field the schema does not have, or when the doc cannot take the projection or presentation it sets, and a read marks the missing content. A target without a provider names a doc of the package that wrote it, so an integration names the CLI's docs with the CLI's provider, as in `@astryxdesign/cli:schema:integration`.",
+    },
+    {
+      type: 'code',
+      lang: 'js',
+      label: 'A section that includes two fields of the integration manifest',
+      code: `{
+  title: 'Point the manifest at your folders',
+  content: [
+    {type: 'prose', text: 'Add these fields to astryx.integration.mjs.'},
+    {
+      type: 'reference',
+      target: '@astryxdesign/cli:schema:integration',
+      projection: {fields: ['components', 'docs']},
+    },
+  ],
+}`,
     },
     {
       type: 'code',
@@ -146,7 +176,19 @@ export const docs = {
   | { type: 'code'; lang: string; code: string; label?: string }
   | { type: 'table'; headers: string[]; rows: string[][] }
   | { type: 'list'; style: 'ordered' | 'unordered' | 'do' | 'dont'; items: string[] }
-  | { type: 'token-ref'; topic: string; section: string };`,
+  | { type: 'token-ref'; topic: string; section: string };
+
+type ReferenceDocBlock = {
+  type: 'reference';
+  target: string;
+  projection?: { fields?: string[]; sections?: string[] };
+  presentation?: 'summary' | 'compact' | 'full';
+};
+
+type GraphContentBlock =
+  | { type: 'workflow'; title?: string; steps: WorkflowStep[] }
+  | { type: 'collection'; source: {slot: string}; presentation?: 'list' | 'cards' | 'compact'; whenEmpty?: 'show' | 'omit' }
+  | ReferenceDocBlock;`,
     },
     {
       type: 'prose',

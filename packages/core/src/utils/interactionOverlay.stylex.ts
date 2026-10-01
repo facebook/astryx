@@ -10,6 +10,11 @@
  * @output Exports reusable background-color and background-image state styles
  * @position Internal styling utility for interactive core surfaces
  *
+ * Every surface that paints a press composes one of these (or carries its own
+ * `:active` rule), so a change to how the system answers a press is made here
+ * once. `pressedBackgroundColor` is the press without the hover, for controls
+ * whose hover is a colour or nothing.
+ *
  * Keep the enabled guard outside the individual states. StyleX assigns an
  * extra priority bucket (and generated selector specificity) to media-nested
  * rules. Repeating `:active` inside the hover-capable branch gives hover and
@@ -68,6 +73,21 @@ export const interactionOverlayStyles = stylex.create({
           ':hover': `${hoverImage}, ${neutralImage}`,
           ':active': `${pressedImage}, ${neutralImage}`,
         },
+      },
+    },
+  },
+  /**
+   * The pressed arm alone, for a control whose hover answer is its own — a
+   * text link changes colour, a disclosure row has none — so a press paints
+   * the system's pressed overlay without adding a hover surface the control
+   * never had. Same enabled guard as the paired states above.
+   */
+  pressedBackgroundColor: {
+    backgroundColor: {
+      default: null,
+      [ENABLED]: {
+        default: null,
+        ':active': colorVars['--color-overlay-pressed'],
       },
     },
   },

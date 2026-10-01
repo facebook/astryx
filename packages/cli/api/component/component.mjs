@@ -34,6 +34,11 @@ import {componentDetailSource} from './detail/source/source.mjs';
 import {componentDetailShowcase} from './detail/showcase/showcase.mjs';
 import {componentDetailBlocks} from './detail/blocks/blocks.mjs';
 
+/** @type {ReadonlyArray<string>} */
+const DETAIL_LEVELS = ['full', 'compact', 'brief'];
+/** @type {ReadonlyArray<string>} */
+const LANGS = ['en', 'zh', 'dense'];
+
 /**
  * @param {string} [name]
  * @param {object} [options]
@@ -81,6 +86,23 @@ export async function component(name, options = {}) {
   const isListView = list || category != null || !name;
   const detail = detailOption ?? (isListView ? 'brief' : 'full');
 
+  // Same accepted values and codes as the CLI's --detail and --lang, checked
+  // first as the CLI parser does.
+  if (!DETAIL_LEVELS.includes(detail)) {
+    throw new AstryxError(
+      `Invalid detail "${String(detail)}". Valid levels: ${DETAIL_LEVELS.join(', ')}`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_DETAIL,
+    );
+  }
+  if (lang != null && !LANGS.includes(lang)) {
+    throw new AstryxError(
+      `Invalid lang "${String(lang)}". Valid values: ${LANGS.join(', ')}`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_LANG,
+    );
+  }
+
   const coreDir = requireCoreDir(cwd);
 
   // A public API caller could pass a non-string category; the list leaf does
@@ -121,14 +143,20 @@ export async function component(name, options = {}) {
   // Searches that package first — critical for names that exist in both core
   // and an external package (AppShell, Button, SideNav).
   if (packageScope) {
-    const scoped = classifyScope(packageScope, {owners, loadedIntegrations, cwd, name});
+    const scoped = classifyScope(packageScope, {
+      owners,
+      loadedIntegrations,
+      cwd,
+      name,
+    });
 
     if (scoped.kind === 'core' || scoped.kind === 'integration') {
       const owner = scoped.owner;
       if (source) {
         return componentDetailSource(dirName, owner.sourcePath, {
           name,
-          notFoundInPackage: scoped.kind === 'integration' ? packageScope : null,
+          notFoundInPackage:
+            scoped.kind === 'integration' ? packageScope : null,
         });
       }
       // showcase/blocks were previously dropped on the scoped path — a
@@ -143,7 +171,7 @@ export async function component(name, options = {}) {
           : componentDetailShowcase(dirName, {cwd, name, resolve: false});
       }
       if (blocks) {
-        return componentDetailBlocks(dirName);
+        return componentDetailBlocks(dirName, cwd);
       }
       const docs = await loadComponentDoc(owner.docPath, docOpts);
       if (props) return componentDetailProps(docs);
@@ -156,19 +184,57 @@ export async function component(name, options = {}) {
     }
     const extDocPath = resolveLegacyExternalDoc(scoped.ext, dirName);
     if (extDocPath) {
+      // Legacy packages ship docs, never source.
+      if (source) {
+        return componentDetailSource(dirName, null, {name, notFoundInPackage: packageScope});
+      }
+      if (blocks) {
+        return componentDetailBlocks(dirName, cwd);
+      }
       const docs = await loadComponentDoc(extDocPath, docOpts);
       if (props) return componentDetailProps(docs);
-      return componentDetail(docs, {package: scoped.ext.name, sourcePath: null}, dirName, coreDir);
+      return componentDetail(
+        docs,
+        {package: scoped.ext.name, sourcePath: null},
+        dirName,
+        coreDir,
+      );
     }
-    throw new AstryxError(`No component "${name}" in package "${packageScope}"`, undefined, ERROR_CODES.ERR_UNKNOWN_COMPONENT);
+    throw new AstryxError(
+      `No component "${name}" in package "${packageScope}"`,
+      undefined,
+      ERROR_CODES.ERR_UNKNOWN_COMPONENT,
+    );
   }
 
-  // ── Ambiguity: owned by MORE THAN ONE package, no --package ─────
-  assertUnambiguousOwners(owners, dirName);
+  // Invalid integration metadata does not create ambiguity against a valid
+  // owner. Keep raw owners only when no doc owner is valid, so an integration-
+  // only component still exposes its source and returns ERR_INVALID_DOC for
+  // detail instead of degrading to an unrelated unknown-component error.
+  const validOwners = [];
+  for (const owner of owners) {
+    if (owner.package === CORE_PACKAGE) {
+      validOwners.push(owner);
+      continue;
+    }
+    try {
+      await loadComponentDoc(owner.docPath);
+      validOwners.push(owner);
+    } catch {
+      // Project/Doctor report invalid metadata; it is not an effective owner.
+    }
+  }
+  const effectiveOwners = validOwners.length > 0 ? validOwners : owners;
+
+  // ── Ambiguity: owned by MORE THAN ONE valid package, no --package ──
+  assertUnambiguousOwners(effectiveOwners, dirName);
 
   // ── Single non-core owner (an integration provides it, core does not) ──
-  if (owners.length === 1 && owners[0].package !== CORE_PACKAGE) {
-    const owner = owners[0];
+  if (
+    effectiveOwners.length === 1 &&
+    effectiveOwners[0].package !== CORE_PACKAGE
+  ) {
+    const owner = effectiveOwners[0];
     if (source) {
       return componentDetailSource(dirName, owner.sourcePath, {name});
     }
@@ -184,7 +250,11 @@ export async function component(name, options = {}) {
   // ── No-scope core path ─────────────────────────────────────────
   // `--source` reads core directly (no external/fuzzy fallback).
   if (source) {
-    return componentDetailSource(dirName, resolveCoreSourcePath(coreDir, dirName), {name});
+    return componentDetailSource(
+      dirName,
+      resolveCoreSourcePath(coreDir, dirName),
+      {name},
+    );
   }
   if (showcase) {
     return componentDetailShowcase(dirName, {cwd, name});
@@ -195,7 +265,7 @@ export async function component(name, options = {}) {
 
   // ── Blocks mode ──────────────────────────────────────────────
   if (blocks) {
-    return componentDetailBlocks(dirName);
+    return componentDetailBlocks(dirName, cwd);
   }
 
   // ── Sub-component scoping ────────────────────────────────────
@@ -203,10 +273,14 @@ export async function component(name, options = {}) {
   // scope the response to just the matching sub-component.
   const sub = scopeSubComponent(docs, dirName, coreDir);
   if (sub) {
-    if (props) return componentDetailProps({props: sub.matchingComponent.props});
+    if (props)
+      return componentDetailProps({props: sub.matchingComponent.props});
     return componentDetail(
       sub.scoped,
-      {package: resolved.resolvedOwnerPackage, sourcePath: resolved.resolvedSourcePath},
+      {
+        package: resolved.resolvedOwnerPackage,
+        sourcePath: resolved.resolvedSourcePath,
+      },
       dirName,
       coreDir,
     );
@@ -215,7 +289,10 @@ export async function component(name, options = {}) {
   if (props) return componentDetailProps(docs);
   return componentDetail(
     docs,
-    {package: resolved.resolvedOwnerPackage, sourcePath: resolved.resolvedSourcePath},
+    {
+      package: resolved.resolvedOwnerPackage,
+      sourcePath: resolved.resolvedSourcePath,
+    },
     resolved.resolvedName,
     coreDir,
   );

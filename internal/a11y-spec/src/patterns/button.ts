@@ -565,6 +565,13 @@ export const BUTTON_PATTERN: PatternContract<ButtonStateFacts> =
         reason:
           'A button is a single control; the order it is read in relative to other content is decided by whatever composes it.',
       },
+      '1.3.5-identify-input-purpose': {
+        owner: 'the composing form and caller content',
+        verifiedBy:
+          'form integration review for any user-information input composed with this action',
+        reason:
+          'A button performs an action and does not itself collect user information whose purpose can be identified by an autocomplete token.',
+      },
       '1.4.1-use-of-color': {
         owner: 'the binding component and the theme',
         verifiedBy:

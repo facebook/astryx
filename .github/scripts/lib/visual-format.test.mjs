@@ -247,25 +247,21 @@ describe('buildVisualSection', () => {
           },
         ],
       }),
-      'https://facebook.github.io/astryx/pr/123/visual/head/run/',
-      'https://raw.githubusercontent.com/facebook/astryx/gh-pages/pr/123/visual/head/run/',
+      'https://evidence.example/pr/123/visual/head/run/',
+      'https://evidence.example/pr/123/visual/head/run/',
     );
     expect(section).toContain(
-      'https://raw.githubusercontent.com/facebook/astryx/gh-pages/pr/123/visual/head/run/before/core-button--primary__y2k-light.png',
+      'https://evidence.example/pr/123/visual/head/run/before/core-button--primary__y2k-light.png',
     );
     expect(section).toContain(
-      'raw.githubusercontent.com/facebook/astryx/gh-pages/pr/123/visual/head/run/after/core-button--primary__y2k-light.png',
+      'https://evidence.example/pr/123/visual/head/run/after/core-button--primary__y2k-light.png',
     );
     expect(section).toContain(
-      'raw.githubusercontent.com/facebook/astryx/gh-pages/pr/123/visual/head/run/diff/core-button--primary__y2k-light.png',
+      'https://evidence.example/pr/123/visual/head/run/diff/core-button--primary__y2k-light.png',
     );
     expect(section).toContain('<th>Before</th><th>After</th><th>Diff</th>');
-    expect(section).toContain(
-      'A repository maintainer can accept these exact frames',
-    );
-    expect(section).toContain(
-      '/accept-visual 123456/2 <why every changed frame is correct>',
-    );
+    expect(section).toContain('Record that review on the PR');
+    expect(section).not.toContain('/accept-visual');
   });
 
   it('does not offer acceptance before immutable evidence is published', () => {

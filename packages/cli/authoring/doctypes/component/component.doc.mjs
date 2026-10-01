@@ -30,7 +30,7 @@ export const doc = {
       name: 'name',
       type: 'string',
       description:
-        "Directory name without the Astryx prefix, PascalCase. e.g. 'Button', 'TextInput', 'AppShell'.",
+        "Stable machine identity and directory name without the Astryx prefix, PascalCase. e.g. 'Button', 'TextInput', 'AppShell'. Change `displayName`, not `name`, to edit the visible label; registry URLs derive from this identity by default.",
       required: true,
     },
     {
@@ -41,10 +41,22 @@ export const doc = {
       required: true,
     },
     {
+      name: 'registry',
+      type: 'RegistryDocIdentity',
+      description:
+        'Optional public registry identity. The converter derives a stable kebab-case slug from `name`; set `slug` only to override it, and keep prior relative paths in `aliases` after a published rename.',
+    },
+    {
+      name: 'import',
+      type: 'string',
+      description:
+        'Exact public package specifier consumers use to import an integration-owned component. The packed-package gate resolves this specifier and verifies it exports the component name.',
+    },
+    {
       name: 'keywords',
       type: 'string[]',
       description:
-        'Search keywords for CLI discovery: synonyms and related UI concepts from other design systems (MUI, Chakra, Radix, shadcn). Lowercase. Used by `astryx component <term>` fuzzy matching.',
+        'Search keywords for CLI discovery: synonyms and related UI concepts from other design systems (MUI, Chakra, Radix, and others). Lowercase. Used by `astryx component <term>` fuzzy matching.',
     },
     {
       name: 'hiddenComponents',
@@ -112,8 +124,7 @@ export const doc = {
       name: 'usage',
       type: 'UsageDoc',
       description:
-        'Component usage documentation: concise summary, best practices, component-specific accessibility requirements, and optional visual anatomy. (Optional on SubComponentDoc, where the sub-component description is used instead.)',
-      required: true,
+        'Component usage documentation: concise summary, best practices, component-specific accessibility requirements, and optional visual anatomy. Required on a component doc; optional on a sub-component doc (`subComponentOf`), which uses its description instead.',
       fields: [
         {
           name: 'usage.description',
@@ -230,6 +241,10 @@ export const docs = {
     },
   ],
   notes: [
+    {
+      type: 'prose',
+      text: "When it loads, a stamped component doc is checked as loosely as an unstamped one, so adding `type: 'component'` to an existing doc never breaks it: `displayName` may be missing, `category` may be any string, and `usage`, `theming`, `playground` and `examples` are not checked. Each entry in a group doc's `components` must have a `name`. Write to the type anyway; it is the contract.",
+    },
     {
       type: 'prose',
       text: 'ComponentDoc is a discriminated union of three shapes that all extend ComponentBaseDoc. Pick the variant by which key you set: `props` (single), `components` (multi), or `subComponentOf` (sub).',

@@ -281,7 +281,7 @@ export const CHECKBOX_STATE_RENDERS: Record<
       description="Receive notifications by email"
     />
   ),
-  'list-item-rich-label-missing-name': () => (
+  'list-item-rich-label-visible-name': () => (
     <StandaloneListItem initial={false} label="Pro plan" omitAriaLabel />
   ),
   'list-item-disabled': () => (

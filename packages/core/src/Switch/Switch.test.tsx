@@ -30,31 +30,8 @@ import {
   getAllInjectedCss,
   getForcedColorsRules,
 } from '../__tests__/forcedColors';
+import {hasPressedArm} from '../__tests__/pressState';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
-
-interface InjectedRule {
-  selector: string;
-  text: string;
-  media: string | null;
-}
-
-function injectedRules(): InjectedRule[] {
-  const walk = (rules: CSSRuleList, condition: string | null): InjectedRule[] =>
-    [...rules].flatMap((rule): InjectedRule[] => {
-      const {selectorText} = rule as CSSStyleRule;
-      if (typeof selectorText === 'string') {
-        return [{selector: selectorText, text: rule.cssText, media: condition}];
-      }
-      const nested = (rule as CSSGroupingRule).cssRules;
-      if (nested == null) {
-        return [];
-      }
-      const own = (rule as CSSMediaRule).media?.mediaText;
-      return walk(nested, own != null && own !== '' ? own : condition);
-    });
-
-  return [...document.styleSheets].flatMap(sheet => walk(sheet.cssRules, null));
-}
 
 afterEach(() => {
   __resetLiveRegionsForTest();
@@ -603,7 +580,10 @@ describe('Switch', () => {
         'data-label-spacing',
         'spread',
       );
-      expect(getField(container).className).toContain('spread');
+      expect(getField(container)).toHaveAttribute(
+        'data-label-spacing',
+        'spread',
+      );
     });
 
     it('renders explicit hug the same as the default', () => {
@@ -773,6 +753,21 @@ describe('Switch', () => {
       expect(root).not.toBeNull();
       expect(root).toHaveAttribute('id', 'switch-1');
       expect(root).toHaveAttribute('aria-label', 'Toggle notifications');
+    });
+  });
+
+  describe('pressed state', () => {
+    it('paints the pressed overlay on the track and the thumb while the row is pressed', () => {
+      const {container} = render(
+        <Switch label="Notifications" value={false} onChange={() => {}} />,
+      );
+      const track = container.querySelector('.astryx-switch');
+      const thumb = container.querySelector('.astryx-switch-thumb');
+      if (track == null || thumb == null) {
+        throw new Error('the switch has no track or thumb to press');
+      }
+      expect(hasPressedArm(track)).toBe(true);
+      expect(hasPressedArm(thumb)).toBe(true);
     });
   });
 

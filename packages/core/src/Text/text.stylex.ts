@@ -101,8 +101,7 @@ export const defaultWeightByTypeStyles = stylex.create({
 // Baseline Size/Leading by Type (from type-scale tokens)
 //
 // These ensure Text renders with correct sizing even without a theme.
-// Theme component overrides (.astryx-text.body { ... } today, plus data-type
-// reflection on rendered text elements) win when present
+// Theme component overrides (`.astryx-text[data-type="body"]`, etc.) win when
 // because they have higher specificity via @scope.
 // =============================================================================
 

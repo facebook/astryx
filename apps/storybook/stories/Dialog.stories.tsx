@@ -954,6 +954,54 @@ export const ReadinessNarrowViewport: Story = {
   },
 };
 
+/** Visual reference for DialogHeader's default and explicit end-slot compensation. */
+export const HeaderEndEdgeCompensation: Story = {
+  name: 'Header / end edge compensation',
+  render: () => (
+    <VStack gap={4}>
+      <Dialog isOpen isInline onOpenChange={() => {}} width={400}>
+        <Layout
+          header={
+            <DialogHeader
+              title="Automatic end-content compensation"
+              endContent={<Button label="Help" variant="ghost" />}
+              onOpenChange={() => {}}
+            />
+          }
+          content={
+            <LayoutContent>
+              <Text type="body">
+                Omission preserves the released block and logical inline-end
+                compensation whenever the close action renders.
+              </Text>
+            </LayoutContent>
+          }
+        />
+      </Dialog>
+      <Dialog isOpen isInline onOpenChange={() => {}} width={400}>
+        <Layout
+          header={
+            <DialogHeader
+              title="Inline-only end-content compensation"
+              endContent={<Button label="Help" variant="ghost" />}
+              endContentEdgeCompensation="inline"
+              onOpenChange={() => {}}
+            />
+          }
+          content={
+            <LayoutContent>
+              <Text type="body">
+                The anatomy-targeted prop keeps logical inline-end alignment
+                while leaving the slot inside the header's block edges.
+              </Text>
+            </LayoutContent>
+          }
+        />
+      </Dialog>
+    </VStack>
+  ),
+};
+
 type PresentationChoiceProps = {
   presentation: 'dialog' | 'fullscreen' | 'bottom-sheet';
 };

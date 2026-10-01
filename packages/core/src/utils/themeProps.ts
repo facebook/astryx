@@ -7,23 +7,24 @@ export type ClassProps = Record<string, ClassValue>;
 export type ThemeDataAttributes = Record<`data-${string}`, string | undefined>;
 export type ThemeProps = {className: string} & ThemeDataAttributes;
 
-function toDataAttributeName(prop: string): `data-${string}` {
+export function themeDataAttributeName(prop: string): `data-${string}` {
   return `data-${prop.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()}`;
 }
 
-function classTokenForPropValue(prop: string, value: string): string {
-  // CSS classes can't start with a digit — prefix with prop name.
+function legacyClassTokenForPropValue(prop: string, value: string): string {
+  // CSS classes cannot start with a digit, so preserve the released prop prefix.
   return /^\d/.test(value) ? `${prop}-${value}` : value;
 }
 
 /**
- * Build the astryx-* class name string for a component.
+ * Build the stable astryx-* class name string for a component.
  *
- * Every component renders a stable base class (`astryx-button`, `astryx-card`,
- * etc.) plus variant classes derived from visual props. Components also reflect
- * those visual props as data attributes via `themeProps()` (`data-variant`,
- * `data-size`, `data-level`, etc.) so consumers target stable data-attribute
- * selectors rather than collision-prone bare class names.
+ * Every component renders one stable target class (`astryx-button`,
+ * `astryx-card`, etc.). Visual props and runtime states use explicit data
+ * attributes (`data-variant`, `data-size`, `data-selected`, etc.) as their
+ * canonical selector surface. Released bare value/state classes remain on the
+ * same element as deprecated compatibility aliases until their 0.7.0 removal
+ * window.
  *
  * The `astryx-` prefix comes from the centralized naming module
  * (`packages/core/src/naming.ts`) so the namespace lives in one place.
@@ -31,25 +32,9 @@ function classTokenForPropValue(prop: string, value: string): string {
  * <!-- SYNC: packages/core/src/naming.ts (namespace prefix source of truth) -->
  * <!-- SYNC: packages/core/src/utils/parseStyleKey.ts -->
  *
- * Values starting with a digit get prefixed with the prop name since
- * CSS class names can't start with a number (e.g. level=1 → "level-1").
- * Data attributes keep the literal value (e.g. `data-level="1"`).
- *
  * @param component - Component name in lowercase (e.g. 'button', 'card')
- * @param props - Visual prop values to include as variant classes
- * @returns Class name string (e.g. "astryx-button secondary sm")
- *
- * @example
- * ```ts
- * buildClassName('button', { variant: 'secondary', size: 'sm' })
- * // → "astryx-button secondary sm"
- *
- * buildClassName('heading', { level: 1 })
- * // → "astryx-heading level-1"
- *
- * buildClassName('card')
- * // → "astryx-card"
- * ```
+ * @param props - Visual prop values whose released bare classes remain aliases
+ * @returns Stable target and deprecated compatibility classes
  */
 function buildClassName(component: string, props?: ClassProps): string {
   const classes = [stableClassName(component)];
@@ -59,7 +44,7 @@ function buildClassName(component: string, props?: ClassProps): string {
       if (value == null) {
         continue;
       }
-      classes.push(classTokenForPropValue(prop, String(value)));
+      classes.push(legacyClassTokenForPropValue(prop, String(value)));
     }
   }
 
@@ -81,7 +66,7 @@ export function themeDataAttributes(props?: ClassProps): ThemeDataAttributes {
       if (value == null) {
         continue;
       }
-      attrs[toDataAttributeName(prop)] = String(value);
+      attrs[themeDataAttributeName(prop)] = String(value);
     }
   }
 
@@ -92,8 +77,9 @@ export function themeDataAttributes(props?: ClassProps): ThemeDataAttributes {
  * Build the props object components should spread onto the same element that
  * receives the stable Astryx class name.
  *
- * This emits the stable astryx class plus the data-attribute reflection
- * surface. For example:
+ * This emits one stable Astryx target, deprecated bare compatibility classes,
+ * and canonical data-attribute reflection for visual props and runtime states.
+ * For example:
  *
  * ```ts
  * themeProps('button', { variant: 'primary', size: 'sm' })
@@ -105,17 +91,16 @@ export function themeDataAttributes(props?: ClassProps): ThemeDataAttributes {
  */
 export type ThemePropsOptions = {
   /**
-   * Stable class names to emit ALONGSIDE the component's own, for targets that
-   * have been renamed.
+   * Stable target names to emit alongside the canonical target for backwards
+   * compatibility.
    *
    * A theme target is public API: renaming one silently breaks every theme
-   * that styles it. Emitting the old name beside the new one keeps those
-   * themes working through a deprecation window, at the cost of one extra
-   * class on the element until the old name is dropped in a major.
+   * that styles it. Keep aliases emitted unless a separate compatibility
+   * decision explicitly retires them.
    *
    * Pass plain string literals — the theming guards scan for them statically.
-   * Document the old name with `deprecated` in the component's
-   * `theming.targets` so the docsite says which to use.
+   * Document each old name with `deprecatedFor` in the component's
+   * `theming.targets` so discovery and diagnostics name the replacement.
    */
   legacyNames?: ReadonlyArray<string>;
 };

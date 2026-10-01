@@ -324,7 +324,7 @@ export const stoneTheme = defineTheme({
     // the same color family as the matching status surface). Dark = T70.
     // Hexes from the preview Tonal Palettes ramp. accent (default) +
     // indeterminate both route to blue for the in-progress / loading look.
-    'progressbar-fill': {
+    'progress-bar-fill': {
       'variant:accent': {
         backgroundColor: 'light-dark(#d7e4f5, #a0acbc)', // Blue T90 / T70
       },
@@ -341,7 +341,7 @@ export const stoneTheme = defineTheme({
 
     // Track default --color-background-muted reads near-body in stone;
     // redirect to --color-skeleton so the channel stays visible.
-    'progressbar-track': {
+    'progress-bar-track': {
       base: {
         backgroundColor: 'var(--color-skeleton)',
       },
@@ -373,7 +373,7 @@ export const stoneTheme = defineTheme({
     // Input status borders + icons across all 9 input components share the
     // same softer T60/T70 redirection. See INPUT_STATUS_VARS above.
     'text-input': INPUT_STATUS_VARS,
-    textarea: INPUT_STATUS_VARS,
+    'text-area': INPUT_STATUS_VARS,
     'number-input': INPUT_STATUS_VARS,
     'date-input': INPUT_STATUS_VARS,
     'time-input': INPUT_STATUS_VARS,

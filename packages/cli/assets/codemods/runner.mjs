@@ -12,7 +12,8 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as p from './term-log.mjs';
 import {humanLog} from '../../foundation/response/json.mjs';
-import {runConfigCodemod} from './run-codemod.mjs';
+import {runCodeCodemod, runConfigCodemod} from './run-codemod.mjs';
+import {createFileProtectionResolver} from '../../foundation/fs/file-protection.mjs';
 
 // Known corruption patterns that indicate a broken transform.
 // Each entry: [regex, human-readable description]
@@ -46,19 +47,29 @@ export function fixDirectiveCorruption(code) {
 }
 
 /**
- * Directories a source scan must never descend into: dependencies, VCS, and
- * generated build output (codemods rewrite source, not artifacts).
+ * Directories a source scan must never descend into. Generated-looking names
+ * are intentionally absent: protection comes from checkout declarations, not a
+ * directory-name heuristic.
  */
 const IGNORED_DIRS = new Set([
   'node_modules',
+  'bower_components',
+  'jspm_packages',
   '.git',
-  'dist',
-  'build',
-  'out',
-  '.next',
-  'coverage',
+  '.hg',
+  '.sl',
 ]);
 export {IGNORED_DIRS};
+
+/** @param {string} root @param {string} fullPath @param {string} name */
+export function isIgnoredDirectory(root, fullPath, name) {
+  if (IGNORED_DIRS.has(name)) return true;
+  const parts = path.relative(root, fullPath).split(path.sep);
+  return (
+    parts[0] === '.yarn' &&
+    ['__virtual__', 'cache', 'sdks', 'unplugged'].includes(parts[1])
+  );
+}
 
 /**
  * Recursively find all source files in a directory.
@@ -81,8 +92,17 @@ function findSourceFiles(dir) {
     '.less',
   ]);
 
-  /** @param {string} currentDir */
-  function walk(currentDir) {
+  /** @param {string} currentDir @param {Set<string>} [ancestors] */
+  function walk(currentDir, ancestors = new Set()) {
+    let realDirectory;
+    try {
+      realDirectory = fs.realpathSync(currentDir);
+    } catch {
+      return;
+    }
+    if (ancestors.has(realDirectory)) return;
+    const nextAncestors = new Set(ancestors);
+    nextAncestors.add(realDirectory);
     let entries;
     try {
       entries = fs.readdirSync(currentDir, {withFileTypes: true});
@@ -91,16 +111,27 @@ function findSourceFiles(dir) {
     }
     for (const entry of entries) {
       const fullPath = path.join(currentDir, entry.name);
-      // Never follow symlinks: readFileSync/writeFileSync would traverse a
-      // symlinked file and rewrite its target OUTSIDE the scan tree (e.g. into
-      // node_modules or anywhere on disk). A codemod must only edit real files
-      // it reaches directly under the scanned path.
-      if (entry.isSymbolicLink()) continue;
+      // Symlinked files and descendants remain read-only candidates so a
+      // required change can be reported. Real-path ancestors prevent cycles.
+      if (entry.isSymbolicLink()) {
+        try {
+          const target = fs.statSync(fullPath);
+          if (target.isFile() && extensions.has(path.extname(entry.name))) {
+            results.push(fullPath);
+          } else if (target.isDirectory()) {
+            walk(fullPath, nextAncestors);
+          }
+        } catch {
+          // Broken links have no source bytes to evaluate.
+        }
+        continue;
+      }
       if (entry.isDirectory()) {
-        // Skip dependency, VCS, and generated-output dirs — codemods rewrite
-        // source, not build artifacts.
-        if (IGNORED_DIRS.has(entry.name)) continue;
-        walk(fullPath);
+        // Only hard boundaries are skipped by name. Generated and vendored
+        // content is discovered, transformed in memory, and classified by the
+        // shared protection resolver so required changes can be reported.
+        if (isIgnoredDirectory(dir, fullPath, entry.name)) continue;
+        walk(fullPath, nextAncestors);
       } else if (extensions.has(path.extname(entry.name))) {
         results.push(fullPath);
       }
@@ -195,6 +226,187 @@ function toUnifiedEntry(transformEntry, version) {
 }
 
 /**
+ * What a core PROJECT codemod plans: whole files to write and delete under the
+ * project root, or the problems that stop it. Paths in `writes` and `deletes`
+ * are absolute; `problems` name package-relative files.
+ *
+ * @typedef {object} ProjectCodemodPlan
+ * @property {Array<{path: string, contents: string}>} writes
+ * @property {string[]} deletes
+ * @property {Array<{file: string, message: string}>} problems
+ */
+
+/**
+ * Run one core PROJECT codemod (`meta.codemodType === 'project'`): instead of
+ * rewriting the files it is handed, it reads the project and plans whole-file
+ * writes and deletions, which this applies (or previews) as one unit. A plan
+ * that names a problem changes nothing. Core-only: integration codemods keep
+ * the file contract.
+ *
+ * @param {{name: string, transform: unknown}} transformEntry
+ * @param {{apply: boolean, root: string, protection: {root: string, classify: (file: string) => import('../../foundation/fs/file-protection.mjs').FileProtection[]}, log: {success: (m: string) => void, warn: (m: string) => void, error: (m: string) => void}}} options
+ * @returns {Promise<import('../../authoring/codemod/type').CodemodRunResult & {stagedOverrides?: Map<string, string|null>}>}
+ */
+async function runProjectCodemod(
+  {name, transform},
+  {apply, root, protection, log},
+) {
+  /** @param {string} file */
+  const rel = file => path.relative(root, file).split(path.sep).join('/');
+  /** @type {ProjectCodemodPlan} */
+  let plan;
+  try {
+    plan = await /** @type {(root: string) => Promise<ProjectCodemodPlan>} */ (
+      transform
+    )(root);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    log.error(`    ✗ ${message}`);
+    return {
+      filesChanged: 0,
+      changedFiles: [],
+      writtenFiles: [],
+      protectedFiles: [],
+      errors: [{file: '.', codemod: name, error: message}],
+    };
+  }
+  if (plan.problems.length > 0) {
+    for (const {file, message} of plan.problems) {
+      log.error(`    ✗ ${file} — ${message}`);
+    }
+    return {
+      filesChanged: 0,
+      changedFiles: [],
+      writtenFiles: [],
+      protectedFiles: [],
+      errors: plan.problems.map(({file, message}) => ({
+        file,
+        codemod: name,
+        error: message,
+      })),
+    };
+  }
+
+  const candidates = [
+    ...plan.writes.map(write => ({
+      file: write.path,
+      existing: fs.existsSync(write.path),
+    })),
+    ...plan.deletes.map(file => ({file, existing: true})),
+  ];
+  /** @param {{file: string, existing: boolean}} candidate */
+  const currentDeclarations = candidate =>
+    protection
+      .classify(candidate.file)
+      .filter(
+        item =>
+          candidate.existing ||
+          ['outside-root', 'dependency', 'vcs', 'symlink'].includes(
+            item.reason,
+          ),
+      );
+  const currentlyBlocked = new Set(
+    candidates
+      .filter(candidate => currentDeclarations(candidate).length > 0)
+      .map(candidate => candidate.file),
+  );
+  /** @type {Map<string, string|null>} */
+  const stagedOverrides = new Map();
+  for (const write of plan.writes) {
+    if (!currentlyBlocked.has(write.path)) {
+      stagedOverrides.set(write.path, write.contents);
+    }
+  }
+  for (const file of plan.deletes) {
+    if (!currentlyBlocked.has(file)) stagedOverrides.set(file, null);
+  }
+  // A plan cannot introduce a protection declaration and then overwrite the
+  // file it protects in the same transaction. Only declarations whose own
+  // writes are allowed participate in the staged view.
+  const stagedProtection = createFileProtectionResolver(root, {
+    overrides: stagedOverrides,
+  });
+  /** @type {import('../../authoring/codemod/type').CodemodRunResult['protectedFiles']} */
+  const protectedFiles = [];
+  const blocked = new Set();
+  for (const candidate of candidates) {
+    const file = candidate.file;
+    const declarations = [
+      ...currentDeclarations(candidate),
+      ...stagedProtection.classify(file),
+    ]
+      .filter(
+        item =>
+          candidate.existing ||
+          ['outside-root', 'dependency', 'vcs', 'symlink'].includes(
+            item.reason,
+          ),
+      )
+      .filter(
+        (item, index, all) =>
+          all.findIndex(
+            candidate =>
+              candidate.file === item.file &&
+              candidate.reason === item.reason &&
+              candidate.declaration === item.declaration,
+          ) === index,
+      );
+    if (declarations.length === 0) continue;
+    blocked.add(file);
+    const rows = declarations.map(item => ({
+      file: item.file,
+      codemod: name,
+      reason: item.reason,
+      declaration: item.declaration,
+      generated: item.reason === 'generated',
+      ...(item.command ? {command: item.command} : {}),
+    }));
+    protectedFiles.push(...rows);
+    log.warn(
+      `    ! ${rel(file)} — protected by ${rows.map(item => item.declaration).join('; ')}`,
+    );
+  }
+
+  const writes = plan.writes.filter(write => !blocked.has(write.path));
+  const deletes = plan.deletes.filter(file => !blocked.has(file));
+  const changedFiles = [...writes.map(write => write.path), ...deletes];
+  /** @type {string[]} */
+  const writtenFiles = [];
+  for (const write of writes) {
+    if (apply) {
+      fs.mkdirSync(path.dirname(write.path), {recursive: true});
+      fs.writeFileSync(write.path, write.contents, 'utf-8');
+      writtenFiles.push(write.path);
+      log.success(`    ✓ ${rel(write.path)}`);
+    } else {
+      log.warn(`    ~ ${rel(write.path)} (would write)`);
+    }
+  }
+  // Deletions go last, so a failed write leaves a state a rerun completes.
+  for (const file of deletes) {
+    if (apply) {
+      fs.rmSync(file);
+      writtenFiles.push(file);
+      log.success(`    ✓ ${rel(file)} (removed)`);
+    } else {
+      log.warn(`    ~ ${rel(file)} (would remove)`);
+    }
+  }
+  /** @type {Map<string, string|null>} */
+  const appliedOverrides = new Map();
+  for (const write of writes) appliedOverrides.set(write.path, write.contents);
+  for (const file of deletes) appliedOverrides.set(file, null);
+  return {
+    filesChanged: changedFiles.length,
+    changedFiles,
+    writtenFiles,
+    protectedFiles,
+    stagedOverrides: appliedOverrides,
+    errors: [],
+  };
+}
+
+/**
  * Run codemods against source files.
  *
  * @param {Array<{version: string, transforms: Array<{name: string, transform: import('../../authoring/codemod/type').CodemodTransform, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, optional?: boolean}>}>} versionManifests
@@ -204,11 +416,21 @@ function toUnifiedEntry(transformEntry, version) {
  * @param {string|undefined} options.codemod - Run only this specific transform
  * @param {Set<string>} [options.skipCodemods] - Transform names to exclude
  * @param {boolean} [options.silent] - Suppress all human-facing output (for --json)
- * @returns {Promise<{totalFilesChanged: number, totalTransformsApplied: number, totalValidationBlocked: number, writtenFiles: string[], errors: Array<{file: string, codemod: string, error: string}>, skippedOptional: Array<{name: string, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, version: string}>} | {ok: false, reason: string, resolvedPath: string}>}
+ * @param {string} [options.root] - Project root a project codemod reads (default: the process cwd)
+ * @param {{root: string, classify: (file: string) => import('../../foundation/fs/file-protection.mjs').FileProtection[]}} [options.protection] - Preloaded protection resolver
+ * @returns {Promise<{totalFilesChanged: number, totalTransformsApplied: number, totalValidationBlocked: number, changedFiles: string[], writtenFiles: string[], stagedContents: Map<string, string>, protectedFiles: import('../../authoring/codemod/type').CodemodRunResult['protectedFiles'], errors: Array<{file: string, codemod: string, error: string}>, skippedOptional: Array<{name: string, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, version: string}>} | {ok: false, reason: string, resolvedPath: string}>}
  */
 export async function runCodemods(
   versionManifests,
-  {apply, path: srcPath, codemod, skipCodemods, silent = false},
+  {
+    apply,
+    path: srcPath,
+    codemod,
+    skipCodemods,
+    silent = false,
+    root = process.cwd(),
+    protection: providedProtection,
+  },
 ) {
   // No-op stub object so silent mode skips log output entirely without
   // littering the body with `if (!silent)` guards.
@@ -220,12 +442,22 @@ export async function runCodemods(
   };
 
   const resolvedPath = path.resolve(srcPath);
+  // Eager construction is the fail-closed barrier: every working-tree
+  // declaration is read and parsed before the first codemod can write.
+  let protection =
+    providedProtection ?? createFileProtectionResolver(path.resolve(root));
+  /** @type {Map<string, string|null>} */
+  const protectionOverrides = new Map();
+  let protectionWriteCount = 0;
 
-  // Config codemods target the consumer's astryx.config.* and never read
-  // source files, so a missing --path should not block them. Only hard-fail
-  // on a missing source path when there is at least one CODE codemod to run.
+  // Config and project codemods never read the files under --path, so a
+  // missing --path should not block them. Only hard-fail on a missing source
+  // path when there is at least one CODE codemod to run.
   const hasCodeCodemod = versionManifests.some(({transforms}) =>
-    transforms.some(t => t.meta?.codemodType !== 'config'),
+    transforms.some(
+      t =>
+        t.meta?.codemodType !== 'config' && t.meta?.codemodType !== 'project',
+    ),
   );
   const sourcePathExists = fs.existsSync(resolvedPath);
 
@@ -259,8 +491,14 @@ export async function runCodemods(
   let totalValidationBlocked = 0;
   /** @type {Array<{file: string, codemod: string, error: string}>} */
   const errors = [];
+  /** In-memory pipeline state keeps ordered dry-runs equivalent to apply. */
+  const virtualContents = new Map();
+  /** @type {string[]} */
+  const changedFiles = [];
   /** @type {string[]} */
   const writtenFiles = [];
+  /** @type {import('../../authoring/codemod/type').CodemodRunResult['protectedFiles']} */
+  const protectedFiles = [];
   /** @type {Array<{name: string, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, version: string}>} */
   const skippedOptional = [];
   for (const {version, transforms} of versionManifests) {
@@ -272,15 +510,19 @@ export async function runCodemods(
       // Exclude explicitly skipped codemods (by transform name).
       if (skipCodemods?.has(transformEntry.name)) continue;
 
-      const {name, transform, meta, optional} = transformEntry;
-      const transformExtensions = new Set(
-        meta.fileExtensions ?? ['.tsx', '.ts', '.jsx', '.js', '.mjs', '.cjs'],
-      );
+      const {name, meta, optional} = transformEntry;
 
       // Skip optional codemods unless explicitly requested via --codemod
       if (optional && !codemod) {
         skippedOptional.push({name, meta, version});
         continue;
+      }
+
+      if (apply && writtenFiles.length !== protectionWriteCount) {
+        protection = createFileProtectionResolver(path.resolve(root), {
+          overrides: protectionOverrides,
+        });
+        protectionWriteCount = writtenFiles.length;
       }
 
       log.info(`  ${meta.title}`);
@@ -290,90 +532,78 @@ export async function runCodemods(
       // `(file, api)` contract and targets the consumer's astryx.config.*.
       // A core entry signals "config" via `meta.codemodType === 'config'`
       // (see toUnifiedEntry).
-      if (meta?.codemodType === 'config') {
-        const result = runConfigCodemod(toUnifiedEntry(transformEntry, version), {
+      if (meta?.codemodType === 'project') {
+        const result = await runProjectCodemod(transformEntry, {
           apply,
+          root,
+          protection,
           log,
-          jscodeshift,
         });
-        if (result.errors.length > 0) {
-          errors.push(...result.errors);
-        } else if (result.filesChanged > 0) {
+        errors.push(...result.errors);
+        protectedFiles.push(...result.protectedFiles);
+        changedFiles.push(...result.changedFiles);
+        writtenFiles.push(...result.writtenFiles);
+        if (result.stagedOverrides) {
+          for (const [file, contents] of result.stagedOverrides) {
+            protectionOverrides.set(file, contents);
+            if (contents !== null) virtualContents.set(file, contents);
+          }
+          protection = createFileProtectionResolver(path.resolve(root), {
+            overrides: protectionOverrides,
+          });
+          protectionWriteCount = writtenFiles.length;
+        }
+        if (result.filesChanged > 0) {
           totalFilesChanged += result.filesChanged;
-          totalTransformsApplied += result.filesChanged;
-          writtenFiles.push(...result.writtenFiles);
+          totalTransformsApplied += 1;
         }
         continue;
       }
 
-      let filesChanged = 0;
-
-      for (const filePath of files) {
-        const relativePath = path.relative(process.cwd(), filePath);
-
-        try {
-          const ext = path.extname(filePath);
-          if (!transformExtensions.has(ext)) {
-            continue;
-          }
-
-          const source = fs.readFileSync(filePath, 'utf-8');
-          // Configure parser based on file extension
-          const parser = ext === '.tsx' || ext === '.ts' ? 'tsx' : 'babel';
-          const j = jscodeshift.withParser(parser);
-          const api = {
-            jscodeshift: j,
-            stats: () => {},
-            report: () => {},
-          };
-          const file = {source, path: filePath};
-
-          let result = transform(file, api);
-
-          if (result != null && result !== source) {
-            // Fix known jscodeshift output corruption before validation
-            result = fixDirectiveCorruption(result);
-
-            // Validate output before writing
-            const validation = validateOutput(result, source, j, {
-              parse: ['.tsx', '.ts', '.jsx', '.js', '.mjs', '.cjs'].includes(
-                ext,
-              ),
-            });
-            if (!validation.valid) {
-              totalValidationBlocked++;
-              log.error(`    ✗ ${relativePath} — ${validation.reason}`);
-              errors.push({
-                file: relativePath,
-                codemod: name,
-                error: validation.reason,
-              });
-              continue;
-            }
-
-            filesChanged++;
-            totalFilesChanged++;
-            totalTransformsApplied++;
-
-            if (apply) {
-              fs.writeFileSync(filePath, result, 'utf-8');
-              writtenFiles.push(filePath);
-              log.success(`    ✓ ${relativePath}`);
-            } else {
-              log.warn(`    ~ ${relativePath} (would change)`);
-            }
-          }
-        } catch (err) {
-          const message = /** @type {any} */ (err).message;
-          log.error(`    ✗ ${relativePath} — ${message}`);
-          errors.push({file: relativePath, codemod: name, error: message});
+      if (meta?.codemodType === 'config') {
+        const result = runConfigCodemod(
+          toUnifiedEntry(transformEntry, version),
+          {
+            apply,
+            log,
+            jscodeshift,
+            root,
+            protection,
+            contents: virtualContents,
+          },
+        );
+        errors.push(...result.errors);
+        protectedFiles.push(...result.protectedFiles);
+        changedFiles.push(...result.changedFiles);
+        writtenFiles.push(...result.writtenFiles);
+        if (result.filesChanged > 0) {
+          totalFilesChanged += result.filesChanged;
+          totalTransformsApplied += result.filesChanged;
         }
+        continue;
       }
 
-      if (filesChanged > 0) {
+      const result = runCodeCodemod(
+        toUnifiedEntry(transformEntry, version),
+        files,
+        {apply, log, jscodeshift, root, protection, contents: virtualContents},
+      );
+      errors.push(...result.errors);
+      protectedFiles.push(...result.protectedFiles);
+      changedFiles.push(...result.changedFiles);
+      writtenFiles.push(...result.writtenFiles);
+      totalFilesChanged += result.filesChanged;
+      totalTransformsApplied += result.filesChanged;
+      totalValidationBlocked += result.errors.filter(
+        error =>
+          error.error.startsWith('transform produced unparseable output') ||
+          error.error.startsWith('detected corruption:'),
+      ).length;
+
+      if (result.filesChanged > 0) {
         const verb = apply ? 'Updated' : 'Would update';
         log.info(
-          `  ${verb} ${filesChanged} file${filesChanged === 1 ? '' : 's'}`,
+          `  ${verb} ${result.filesChanged} file${result.filesChanged === 1 ? '' : 's'}`,
         );
       }
     }
@@ -400,8 +630,23 @@ export async function runCodemods(
     );
   }
 
-  if (totalFilesChanged === 0 && errors.length === 0) {
+  if (protectedFiles.length > 0) {
+    const files = [...new Set(protectedFiles.map(item => item.file))];
+    log.warn(
+      `${files.length} protected file${files.length === 1 ? '' : 's'} require${files.length === 1 ? 's' : ''} regeneration or manual review.`,
+    );
+  }
+
+  if (
+    totalFilesChanged === 0 &&
+    errors.length === 0 &&
+    protectedFiles.length === 0
+  ) {
     log.success('No changes needed — your code is already up to date!');
+  } else if (apply && protectedFiles.length > 0) {
+    log.warn(
+      `Applied ${totalTransformsApplied} owned change${totalTransformsApplied === 1 ? '' : 's'} across ${totalFilesChanged} file${totalFilesChanged === 1 ? '' : 's'}; protected changes remain.`,
+    );
   } else if (apply) {
     log.success(
       `Done! Applied ${totalTransformsApplied} change${totalTransformsApplied === 1 ? '' : 's'} across ${totalFilesChanged} file${totalFilesChanged === 1 ? '' : 's'}.`,
@@ -438,7 +683,10 @@ export async function runCodemods(
     totalFilesChanged,
     totalTransformsApplied,
     totalValidationBlocked,
+    changedFiles,
     writtenFiles,
+    protectedFiles,
+    stagedContents: virtualContents,
     errors,
     skippedOptional,
   };

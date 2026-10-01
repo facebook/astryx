@@ -188,12 +188,12 @@ export const docs = {
     },
     {
       name: 'onFocus',
-      type: '(e: FocusEvent<HTMLInputElement>) => void',
+      type: '(e: React.FocusEvent) => void',
       description: 'Fires when focus enters the search input.',
     },
     {
       name: 'onBlur',
-      type: '(e: FocusEvent<HTMLInputElement>) => void',
+      type: '(e: React.FocusEvent) => void',
       description: 'Fires when focus leaves the search input.',
     },
     {

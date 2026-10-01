@@ -4,7 +4,7 @@ import type {SearchableItem} from '@astryxdesign/core/Typeahead';
 import type {ComponentEntry} from '../generated/componentRegistry';
 import type {PackageMeta} from '../generated/packageRegistry';
 import type {DocTopic} from '../generated/docsRegistry';
-import type {TemplateEntry} from '../generated/templateRegistry';
+import type {TemplateMetadataEntry} from '../generated/templateMetadataRegistry';
 import {flattenComponentSidebarEntries} from './componentSidebarData';
 
 export interface SearchItemAuxiliaryData {
@@ -23,7 +23,7 @@ interface SearchPaletteDataInput {
   components: Record<string, ComponentEntry[]>;
   packages: PackageMeta[];
   docTopics: DocTopic[];
-  templates: TemplateEntry[];
+  templates: TemplateMetadataEntry[];
 }
 
 function uniqueKeywords(keywords: Array<string | null | undefined>): string[] {

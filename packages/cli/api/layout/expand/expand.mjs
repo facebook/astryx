@@ -120,18 +120,20 @@ export async function layoutExpand(expression, options = {}) {
 
   let written = null;
   if (targetPath) {
-    let resolved;
+    // The guard sees the file that will be written, not only its directory:
+    // a symlink at that name would otherwise carry the write outside the root.
+    const fileTarget = isFilePathArg(targetPath)
+      ? targetPath
+      : path.join(targetPath, `${componentName}.tsx`);
+    let filePath;
     try {
-      resolved = assertWithin(targetPath, cwd, {label: 'layout target path'});
+      filePath = assertWithin(fileTarget, cwd, {label: 'layout target path'});
     } catch (err) {
       if (err instanceof PathSafetyError) {
         throw new AstryxError(err.message, undefined, ERROR_CODES.ERR_PATH_TRAVERSAL);
       }
       throw err;
     }
-    const filePath = isFilePathArg(targetPath)
-      ? resolved
-      : path.join(resolved, `${componentName}.tsx`);
     fs.mkdirSync(path.dirname(filePath), {recursive: true});
     fs.writeFileSync(filePath, result.code);
     written = path.relative(cwd, filePath);

@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-08-30
+approved_at: 2026-09-23
 owners: [cixzhang, imdreamrunner]
 applies_to:
   [
@@ -39,6 +39,17 @@ deciding_specs:
 ---
 
 # Theme compilation
+
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "theming": ["INV2", "INV3", "INV4", "INV6", "INV9", "INV10"]
+  }
+}
+```
 
 This record defines how one theme definition becomes usable styles.
 
@@ -117,14 +128,40 @@ Platform-specific details stay inside that compiler.
 - **INV10 — Shared intent keeps the same meaning.** A token or supported component
   override means the same thing across outputs. Platform-only features have an
   explicit support boundary.
-- **INV11 — Theme-local names remain exact.** For an enrolled theme, the compiler
-  emits the normalized `localTokens` map beside portable declarations without
-  rewriting names or values. Runtime and static output use the same rules, and
-  invalid enrolled input is rejected before either path writes partial CSS.
+- **INV11 — Theme-local names remain exact and prefix-independent.** For an enrolled
+  theme, the compiler emits the normalized `localTokens` map beside portable
+  declarations without rewriting names or values. A prefix neither grants nor
+  restricts ownership. Exact references to effective enrolled declarations retain
+  owner, lineage, collision, and cycle validation; non-exact references remain
+  external. Runtime and static output use the same rules, and invalid enrolled input
+  is rejected before either path writes partial CSS.
 - **INV12 — Adaptation order is observable.** Root declarations emit first,
-  adaptation blocks remain separate in authored order, and media-surface
-  overrides emit last. Duplicate conditions and later root-restoring writes are
-  preserved exactly; runtime and static output use the same blocks.
+  adaptation blocks remain separate in authored order, and media-surface overrides
+  emit last. Duplicate conditions and later root-restoring writes are preserved
+  exactly; runtime and static output use the same blocks.
+
+- **INV13 — A declaration stays inside its boundary.** The web compiler rejects
+  only an authored property name or value that would escape or invalidate its CSS
+  declaration/rule boundary. It drops that declaration and continues generating the
+  rest of the theme, including inherited and conditional surfaces. The boundary
+  check preserves valid authored CSS bytes, including quoted semicolons/braces,
+  data URLs, escapes, closed comments, nested functions, vendor-prefixed names, and
+  `!important`. It is not a property-value grammar validator. Legacy unenrolled
+  token values retain their historical string interpolation; this check must not
+  introduce a crash for values such as `null`. Existing construction validation,
+  including atomic enrolled local-token validation, remains separate and unchanged.
+- **INV14 — Reporting does not change compilation.** Dropped declarations produce
+  runtime warnings and appear in the existing static-build receipt's `warnings`.
+  The existing `generateThemeRules`, `generateThemeRulesSplit`, `generateThemeCSS`,
+  `generateOnMediaCSS`, and `generateAdaptationCSS` operations may accept one
+  optional `warnings?: string[]` collector. Supplying it only appends warning text
+  instead of writing that text to the console; it does not change generated CSS,
+  clear existing array entries, change validation, or mutate the theme. Omission
+  retains normal runtime warning behavior. This transport does not introduce a
+  callback API, exported diagnostics/options types, theme metadata, or a structured
+  diagnostics schema. A CLI paired with an older core retains that core's existing
+  compilation behavior; it does not pretend to detect drops the older core cannot
+  report.
 
 This record does not own:
 
@@ -184,6 +221,11 @@ This record does not own:
 - Adding a platform compiler names the shared concepts it supports and tests
   that they keep the same meaning. Unsupported concepts fail clearly instead of
   disappearing.
+- Declaration-boundary changes verify positive and negative scanner cases, local
+  dropping with surviving neighbors, legacy token generation, and runtime/build
+  parity across tokens, local tokens, variants, pseudo states, media surfaces,
+  adaptations, inheritance, and Heading fallback rules. Collector tests verify
+  append-only text, unchanged CSS with/without a collector, and build receipts.
 - Build packaging may change without changing compiled theme behavior.
 
 ## Owning code
@@ -210,30 +252,43 @@ This record does not own:
 
 ## Deciding specs
 
-AST-006 decisions 2 and 4 establish exact local-token output and atomic shared
-validation for enrolled themes. AST-012 decisions 3 and 4 establish ordered
-adaptation blocks and source/built metadata parity. The system owner separately
-selected one definition with platform-specific outputs and the guaranteed,
-best-effort, public-semantic, and private implementation tiers.
+AST-006 decisions 2 and 4, as amended on 2026-09-12, establish
+prefix-independent local-token names and atomic shared validation for enrolled themes.
+AST-012 decisions 3 and 4 establish ordered adaptation blocks and source/built metadata
+parity. The system owner separately selected one definition with platform-specific
+outputs and the guaranteed, best-effort, public-semantic, and private implementation
+tiers.
 
 ## Verification
 
-| Invariant        | Evidence                                                           | Failure signal                                                                                  |
-| ---------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| INV1, INV2, INV3 | Compiler imports and runtime/build comparison fixtures             | Runtime and build use different theme-to-CSS logic or produce different web rules               |
-| INV4             | `generateThemeRules.test.ts` and source/distribution cascade tests | Scope or layer order differs by output path                                                     |
-| INV5             | Existing per-property fixtures (partial; gap below)                | A guaranteed property compiles but does not produce its promised observable effect              |
-| INV6, INV7       | Existing registry and CLI public-variable tests (partial)          | Private variables become authorable, or a reviewed public semantic variable fails build/runtime |
-| INV8             | Component target metadata and compatibility review                 | Successful generic emission is treated as a guaranteed public behavior                          |
-| INV9, INV10      | Platform compiler tests when another compiler ships                | CSS details enter shared authoring, or shared theme intent silently disappears                  |
-| INV11            | `defineTheme.test.ts` and `build.test.mjs` local-token fixtures    | Runtime/static output rewrites a local name, disagrees, or leaves partial output after failure  |
-| INV12            | `themeAdaptations.test.ts` and CLI adaptation build fixtures       | Rule blocks merge/reorder/drop, surfaces lose precedence, or runtime/static CSS diverges        |
-| Built themes     | Theme and CLI build tests                                          | Runtime recompiles a built theme, or built output omits canonical rules                         |
+| Invariant        | Evidence                                                                                                        | Failure signal                                                                                                          |
+| ---------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| INV1, INV2, INV3 | Compiler imports and runtime/build comparison fixtures                                                          | Runtime and build use different theme-to-CSS logic or produce different web rules                                       |
+| INV4             | `generateThemeRules.test.ts` and source/distribution cascade tests                                              | Scope or layer order differs by output path                                                                             |
+| INV5             | Existing per-property fixtures (partial; gap below)                                                             | A guaranteed property compiles but does not produce its promised observable effect                                      |
+| INV6, INV7       | Existing registry and CLI public-variable tests (partial)                                                       | Private variables become authorable, or a reviewed public semantic variable fails build/runtime                         |
+| INV8             | Component target metadata and compatibility review                                                              | Successful generic emission is treated as a guaranteed public behavior                                                  |
+| INV9, INV10      | Platform compiler tests when another compiler ships                                                             | CSS details enter shared authoring, or shared theme intent silently disappears                                          |
+| INV11            | `defineTheme.test.ts` and `build.test.mjs` local-token fixtures                                                 | Runtime/static output rewrites a local name, disagrees, or leaves partial output after failure                          |
+| INV12            | `themeAdaptations.test.ts` and CLI adaptation build fixtures                                                    | Rule blocks merge/reorder/drop, surfaces lose precedence, or runtime/static CSS diverges                                |
+| INV13, INV14     | Declaration scanner, generator, Theme mounting, CLI receipt tests, and the existing theme-family Chromium guard | One unsafe declaration corrupts neighbors, valid CSS changes, legacy token generation crashes, or reporting changes CSS |
+| Built themes     | Theme and CLI build tests                                                                                       | Runtime recompiles a built theme, or built output omits canonical rules                                                 |
 
 ## Known conformance and verification gaps
 
-The invariants above are the approved current contract. The following shipped
-behavior does not yet conform and must not be treated as enforcement:
+Declaration-boundary enforcement and the warnings-array collector in INV13–INV14
+are accepted but not yet shipped. Their verification obligations above describe
+implementation acceptance, not existing enforcement.
+
+Prefix-independent `localTokens` key acceptance is accepted but unshipped. The current
+compiler still requires the original theme-derived prefix and uses that prefix to
+classify local references. Until implementation lands, INV11's prefix-independent
+clauses are current authority but not enforcement; exact-name emission and the existing
+enrollment, owner, lineage, collision, cycle, and legacy-unenrolled behavior remain
+shipped.
+
+The remaining invariants above describe the approved current contract. The following
+shipped behavior does not yet conform and must not be treated as enforcement:
 
 - **Private author input is not rejected end to end.** `themeBuild` reports direct
   `--_*` values as errors in its receipt/log, but continues compiling and emits

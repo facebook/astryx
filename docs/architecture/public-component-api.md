@@ -35,6 +35,28 @@ deciding_specs:
 
 # Public component API
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "public-api": [
+      "INV1",
+      "INV2",
+      "INV3",
+      "INV4",
+      "INV5",
+      "INV6",
+      "INV7",
+      "INV8",
+      "INV9",
+      "INV12"
+    ]
+  }
+}
+```
+
 This record defines the shared public API contract for stable Astryx components.
 
 ## Purpose
@@ -91,8 +113,9 @@ guidance owns the process used to propose and test APIs.
 - **INV8 — Refs follow React 19.** A public DOM component accepts `ref` as a prop
   and connects it to the element promised by its contract.
 - **INV9 — Released APIs change deliberately.** A released prop, type, export,
-  default, or observable behavior is not removed, renamed, or retyped without an
-  explicit compatibility decision and migration.
+  default, or observable behavior is not removed, renamed, retyped, deprecated, or
+  corrected incompatibly without the lifecycle, evidence, and migration required by
+  [`spec:AST-017`](../specs/AST-017/spec.md).
 - **INV10 — Shared subcontracts are linked, not copied.** Input Actions, layer
   behavior, theming, and family-specific rules stay with their owning records.
 - **INV11 — Public theme seams pass API admission.** A public semantic CSS custom

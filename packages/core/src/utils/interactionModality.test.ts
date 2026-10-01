@@ -3,7 +3,7 @@
 /**
  * @file interactionModality.test.ts
  * @input The interaction-modality utility loaded more than once
- * @output Verifies document-wide listener and modality state continuity
+ * @output Verifies document-wide continuity and shared Shift-key modality policy
  * @position Unit coverage for interactionModality.ts
  */
 
@@ -22,6 +22,23 @@ afterEach(() => {
 });
 
 describe('interactionModality', () => {
+  it.each(['Shift', 'Tab', 'ArrowRight'])(
+    'counts %s with Shift held as keyboard input',
+    async key => {
+      const targetDocument = document.implementation.createHTMLDocument();
+      vi.stubGlobal('document', targetDocument);
+      const tracker = await loadTracker();
+      tracker.__startInteractionModalityTrackingForTest();
+      targetDocument.dispatchEvent(new Event('pointerdown'));
+      expect(tracker.getInteractionModality()).toBe('pointer');
+
+      targetDocument.dispatchEvent(
+        new KeyboardEvent('keydown', {key, shiftKey: true}),
+      );
+      expect(tracker.getInteractionModality()).toBe('keyboard');
+    },
+  );
+
   it('does not touch the document when the module loads', async () => {
     vi.stubGlobal('document', isolatedDocument);
     const addEventListener = vi.spyOn(isolatedDocument, 'addEventListener');

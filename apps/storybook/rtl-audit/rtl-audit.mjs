@@ -19,16 +19,17 @@
  *           - D6 (directional-decoration): single-glyph, aria-hidden decorations
  *             in repeated-item or between-sibling contexts mirror exactly once.
  *     (B) CURATED PRECISION — targets.json entries add D2 (order-flip),
- *         D3 (behavior-flip), D4 (overlay-side): the geometry/behavior dims that
- *         genuinely need hand-written selectors.
+ *         D3 (behavior-flip), D4 (overlay-side), D7 (coarse hit alignment),
+ *         D8 (logical inline-edge mirroring), and D9 (logical grouped corners):
+ *         the geometry/behavior dims that genuinely need hand-written selectors.
  *     (C) APPLICABILITY: every component is measured, explicitly verified N/A,
  *         or reported as a coverage gap. An all-N/A result is never called clean.
  * @input --storybook-dir <path> --output <file> [--targets <path>]
- *   [--verified-not-applicable <path>] [--filter <csv>] [--auto-only]
- *   [--curated-only]
- * @output JSON scorecard: D1/D5/D6 auto verdicts, curated D2/D3/D4 results,
- *   and a component coverage rollup. Mirrors the pr-a11y accessibility-audit
- *   harness.
+ *   [--verified-not-applicable <path>] [--filter <csv>] [--packages <csv>]
+ *   [--auto-only] [--curated-only]
+ * @output JSON scorecard: D1/D5/D6 auto verdicts, curated D2/D3/D4/D7/D8/D9
+ *   results, exact planned/completed scan counts, and a component coverage
+ *   rollup. Mirrors the pr-a11y accessibility-audit harness.
  * @position internal test harness; run by the soft-gated `pr-rtl` CI job and
  *   locally via `pnpm -F @astryxdesign/storybook rtl-audit`.
  *
@@ -46,13 +47,26 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {discoverComponents} from '../../../packages/cli/foundation/discovery/component-discovery.mjs';
+import componentPackages from '../../../scripts/component-packages.cjs';
 import {
+  AUDITED_PACKAGE_NAMES,
+  AUDITED_STORY_PREFIXES,
   buildAuditedComponentRoster,
   buildComponentCoverage,
+  buildStoryComponentRoutes,
+  classifyLogicalGroupedCorners,
+  classifyLogicalInlinePair,
   collectDirectionalDecorations,
+  componentFromTarget,
   evaluateDirectionalDecorations,
+  filterStoryRoutesByPackages,
 } from './rtl-audit-coverage.mjs';
+
+const {
+  componentPackage,
+  flatPackageComponentNames,
+  nestedPackageComponentNames,
+} = componentPackages;
 
 const args = process.argv.slice(2);
 const getArg = name => {
@@ -69,14 +83,23 @@ const VERIFIED_NA_PATH =
   getArg('verified-not-applicable') ||
   path.join(HERE, 'verified-not-applicable.json');
 const FILTER = (getArg('filter') || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+const PACKAGE_FILTER = (getArg('packages') || '')
+  .split(',')
+  .map(value => value.trim().toLowerCase())
+  .filter(Boolean);
+const invalidPackages = PACKAGE_FILTER.filter(
+  packageName => !AUDITED_PACKAGE_NAMES.includes(packageName),
+);
+if (invalidPackages.length > 0) {
+  throw new Error(`unknown audited package(s): ${invalidPackages.join(', ')}`);
+}
+const ACTIVE_PACKAGE_NAMES = PACKAGE_FILTER.length > 0
+  ? PACKAGE_FILTER
+  : AUDITED_PACKAGE_NAMES;
 const AUTO_ONLY = hasFlag('auto-only');
 const CURATED_ONLY = hasFlag('curated-only');
-// Story-id prefixes the auto-discovery layer sweeps. These mirror the
-// publishable component packages in analyze-pr.js — a component the PR job can
-// name in --filter must also be discoverable here, or the audit silently
-// reports zero targets. Lab stories (`lab-*`) were excluded until this list
-// existed, so no lab component had ever been RTL-audited.
-const AUDITED_STORY_PREFIXES = ['core-', 'lab-'];
+// Story-id prefixes the auto-discovery layer sweeps come from the same
+// canonical package registry used for source discovery below.
 const AUDITED_STORY_PREFIX = new RegExp(`^(?:${AUDITED_STORY_PREFIXES.join('|')})`);
 // Worker pool size. Each worker owns its own Playwright page; stories are
 // independent, and the run is dominated by page-load latency rather than CPU.
@@ -156,6 +179,23 @@ async function settle(page) {
 }
 
 async function doSetup(page, t) {
+  if (t?.setup?.args) {
+    await page
+      .waitForFunction(() => window.__STORYBOOK_ADDONS_CHANNEL__ != null)
+      .catch(() => {});
+    await page
+      .evaluate(
+        ({storyId, updatedArgs}) => {
+          window.__STORYBOOK_ADDONS_CHANNEL__?.emit('updateStoryArgs', {
+            storyId,
+            updatedArgs,
+          });
+        },
+        {storyId: t.storyId, updatedArgs: t.setup.args},
+      )
+      .catch(() => {});
+    await page.waitForTimeout(250);
+  }
   if (t?.setup?.click) {
     for (const sel of [].concat(t.setup.click)) {
       await page.locator(sel).first().click({timeout: 2500}).catch(() => {});
@@ -668,7 +708,7 @@ async function autoD1(page, port, storyId, component) {
 }
 
 // ===========================================================================
-// CURATED precision dims (D2/D3/D4) — hand selectors from targets.json
+// CURATED precision dims (D2/D3/D4/D7/D8/D9) — hand selectors from targets.json
 // ===========================================================================
 async function checkD2(page, port, t, card) {
   const {prev, next} = t.selectors;
@@ -782,6 +822,137 @@ async function checkD7CoarseHit(page, port, t, card) {
   card.notes.push(`D7 coarse hit-target center: ${results.map(result => `${result.rtl ? 'RTL' : 'LTR'} ${result.size}:${result.centers.map(formatTarget).join(',')}`).join('; ')}`);
 }
 
+async function measureLogicalInlineSubject(page, subject) {
+  const subjects = page.locator(subject);
+  const count = await subjects.count();
+  if (count !== 1) return {count, visible: false};
+  return subjects.first().evaluate(element => {
+    const style = getComputedStyle(element);
+    const rect = element.getBoundingClientRect();
+    const number = value => Number.parseFloat(value);
+    const visible = typeof element.checkVisibility === 'function'
+      ? element.checkVisibility({checkOpacity: true, checkVisibilityCSS: true})
+      : style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) !== 0;
+    return {
+      count: 1, visible, width: rect.width, height: rect.height,
+      direction: style.direction,
+      writingMode: style.writingMode,
+      inlineStart: number(style.paddingInlineStart),
+      inlineEnd: number(style.paddingInlineEnd),
+      top: number(style.paddingTop), right: number(style.paddingRight),
+      bottom: number(style.paddingBottom), left: number(style.paddingLeft),
+    };
+  }).catch(() => null);
+}
+
+async function verifyD8BrowserContract(page) {
+  await page.setContent(`
+    <div id="d8-horizontal" dir="ltr" style="box-sizing:border-box;width:160px;height:40px;padding-block:4px 12px;padding-inline-start:8px;padding-inline-end:24px">horizontal</div>
+    <div id="d8-vertical" dir="ltr" style="box-sizing:border-box;width:160px;height:80px;writing-mode:vertical-rl;padding-block:4px 12px;padding-inline-start:8px;padding-inline-end:24px">vertical</div>
+  `);
+  const verifyPair = async subject => {
+    const ltr = await measureLogicalInlineSubject(page, subject);
+    await page.locator(subject).evaluate(element => { element.dir = 'rtl'; });
+    const rtl = await measureLogicalInlineSubject(page, subject);
+    return {ltr, rtl, result: classifyLogicalInlinePair(ltr, rtl)};
+  };
+  const horizontal = await verifyPair('#d8-horizontal');
+  const vertical = await verifyPair('#d8-vertical');
+  await page.locator('#d8-horizontal').evaluate(element => { element.style.display = 'none'; });
+  const hidden = await measureLogicalInlineSubject(page, '#d8-horizontal');
+  const hiddenVerdict = classifyLogicalInlinePair(hidden, hidden);
+  if (
+    horizontal.result.verdict !== 'pass' ||
+    vertical.result.verdict !== 'pass' ||
+    hiddenVerdict.verdict !== 'fail'
+  ) {
+    throw new Error(
+      `D8 browser contract failed: ${JSON.stringify({horizontal, vertical, hidden: {measurement: hidden, result: hiddenVerdict}})}`,
+    );
+  }
+  return {
+    horizontal,
+    vertical,
+    hidden: {measurement: hidden, result: hiddenVerdict},
+  };
+}
+
+async function checkD8LogicalInline(page, port, t, card) {
+  const subject = t.selectors?.subject;
+  if (!subject) { card.dims.D8 = 'N-A'; card.notes.push('D8: no subject selector configured'); return; }
+  const run = async rtl => {
+    await page.goto(storyUrl(port, t.storyId, rtl), {waitUntil: 'domcontentloaded'});
+    await settle(page); await doSetup(page, t);
+    return measureLogicalInlineSubject(page, subject);
+  };
+  const ltr = await run(false), rtl = await run(true);
+  if (ltr == null || rtl == null) { card.dims.D8 = 'N-A'; card.notes.push('D8: logical inline-edge subject was not measurable'); return; }
+  const result = classifyLogicalInlinePair(ltr, rtl);
+  card.dims.D8 = result.verdict;
+  const formatPhysical = measurement =>
+    `${measurement.top}/${measurement.right}/${measurement.bottom}/${measurement.left}px`;
+  card.notes.push(
+    `D8 logical inline edges: ${result.reason}; writing-mode ${ltr.writingMode}; ` +
+    `LTR start/end ${ltr.inlineStart}/${ltr.inlineEnd}px T/R/B/L ${formatPhysical(ltr)}; ` +
+    `RTL start/end ${rtl.inlineStart}/${rtl.inlineEnd}px T/R/B/L ${formatPhysical(rtl)}`,
+  );
+}
+
+async function measureGroupedCorners(page, group) {
+  return page.evaluate(({first, middle, last}) => {
+    const selectors = [first, middle, last];
+    const boxes = selectors.map(selector => {
+      const elements = document.querySelectorAll(selector);
+      if (elements.length !== 1) return null;
+      const element = elements[0];
+      const style = getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      const number = value => Number.parseFloat(value);
+      const visible = typeof element.checkVisibility === 'function'
+        ? element.checkVisibility({checkOpacity: true, checkVisibilityCSS: true})
+        : style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) !== 0;
+      return {
+        visible, width: rect.width, height: rect.height,
+        direction: style.direction, writingMode: style.writingMode,
+        corners: {
+          topLeft: number(style.borderTopLeftRadius),
+          topRight: number(style.borderTopRightRadius),
+          bottomRight: number(style.borderBottomRightRadius),
+          bottomLeft: number(style.borderBottomLeftRadius),
+        },
+      };
+    });
+    return {
+      direction: boxes.find(Boolean)?.direction ?? null,
+      writingMode: boxes.find(Boolean)?.writingMode ?? null,
+      boxes,
+    };
+  }, group).catch(() => null);
+}
+
+async function checkD9GroupedCorners(page, port, t, card) {
+  const groups = t.selectors?.groups;
+  if (!Array.isArray(groups) || groups.length === 0) {
+    card.dims.D9 = 'N-A';
+    card.notes.push('D9: no grouped-corner selectors configured');
+    return;
+  }
+  const run = async rtl => {
+    await page.goto(storyUrl(port, t.storyId, rtl), {waitUntil: 'domcontentloaded'});
+    await settle(page); await doSetup(page, t);
+    return Promise.all(groups.map(group => measureGroupedCorners(page, group)));
+  };
+  const ltr = await run(false), rtl = await run(true);
+  const results = groups.map((group, index) => ({
+    name: group.name,
+    logicalSide: group.logicalSide,
+    ...classifyLogicalGroupedCorners(ltr[index], rtl[index], group.logicalSide),
+  }));
+  card.dims.D9 = results.every(result => result.verdict === 'pass') ? 'pass' : 'fail';
+  card.notes.push(...results.map(result => `D9 ${result.name ?? result.logicalSide}: ${result.reason}`));
+  card.groupedCorners = results;
+}
+
 async function scoreCurated(page, coarsePage, port, t) {
   const card = {component: t.component, storyId: t.storyId, dims: {}, notes: []};
   for (const dim of t.dims) {
@@ -790,6 +961,8 @@ async function scoreCurated(page, coarsePage, port, t) {
       else if (dim === 'D3') await checkD3Scroll(page, port, t, card);
       else if (dim === 'D4') await checkD4(page, port, t, card);
       else if (dim === 'D7') await checkD7CoarseHit(coarsePage, port, t, card);
+      else if (dim === 'D8') await checkD8LogicalInline(page, port, t, card);
+      else if (dim === 'D9') await checkD9GroupedCorners(page, port, t, card);
       // D1 is handled by auto-discovery; ignore any stray D1 in curated entries.
     } catch (e) {
       card.dims[dim] = 'ERROR';
@@ -804,17 +977,14 @@ async function scoreCurated(page, coarsePage, port, t) {
 }
 
 // ---------------------------------------------------------------------------
-function componentFromId(id) {
-  // core-tabletree--default -> core/tabletree (best-effort display name)
-  // lab-listinput--tag-options -> lab/listinput
-  const packageName = id.startsWith('lab-') ? 'lab' : 'core';
-  const seg = id.replace(AUDITED_STORY_PREFIX, '').split('--')[0];
-  return `${packageName}/${seg}`;
+function matchesFilter(component) {
+  const normalized = component.toLowerCase();
+  const name = normalized.split('/').at(-1) ?? normalized;
+  return !FILTER.length || FILTER.includes(normalized) || FILTER.includes(name);
 }
 
-function matchesFilter(component) {
-  const name = component.split('/').at(-1)?.toLowerCase() ?? component;
-  return !FILTER.length || FILTER.includes(name);
+function belongsToActivePackage(route) {
+  return filterStoryRoutesByPackages([route], ACTIVE_PACKAGE_NAMES).length === 1;
 }
 
 // Run `fn` over `items` with `pages.length` workers, each pinned to its own
@@ -834,30 +1004,41 @@ async function mapPool(items, pages, fn) {
   return out;
 }
 
-(async () => {
-  const {server, port} = await serve(path.resolve(DIST));
-  const browser = await chromium.launch();
-  const pages = await Promise.all(
-    Array.from({length: CONCURRENCY}, () =>
-      browser.newPage({viewport: {width: 1100, height: 760}, deviceScaleFactor: 1}),
-    ),
-  );
-  const page = pages[0]; // curated dims run serially on the first page
-  const coarseContext = await browser.newContext({
-    viewport: {width: 1100, height: 760},
-    deviceScaleFactor: 1,
-    hasTouch: true,
-    isMobile: true,
-  });
-  const coarsePage = await coarseContext.newPage();
+const runtime = {
+  server: null,
+  browser: null,
+  pages: [],
+  coarseContext: null,
+};
 
-  let entries = {};
-  try {
-    entries = JSON.parse(fs.readFileSync(path.join(DIST, 'index.json'), 'utf8')).entries || {};
-  } catch (e) {
-    console.error('FATAL: cannot read index.json:', String(e).slice(0, 120));
-    process.exit(2);
+async function cleanupRuntime() {
+  await Promise.all(runtime.pages.map(page => page.close().catch(() => {})));
+  await runtime.coarseContext?.close().catch(() => {});
+  await runtime.browser?.close().catch(() => {});
+  if (runtime.server) {
+    await new Promise(resolve => runtime.server.close(() => resolve()));
   }
+}
+
+(async () => {
+  // A failed invocation must never leave an earlier successful report behind.
+  fs.rmSync(OUT, {force: true});
+
+  let entries;
+  try {
+    const index = JSON.parse(fs.readFileSync(path.join(DIST, 'index.json'), 'utf8'));
+    entries = index.entries ?? index.stories;
+  } catch (error) {
+    throw new Error(`cannot read index.json: ${String(error).slice(0, 120)}`, {
+      cause: error,
+    });
+  }
+  if (entries == null || typeof entries !== 'object' || Array.isArray(entries)) {
+    throw new Error('index.json does not contain a Storybook entries object');
+  }
+
+  let targets = [];
+  try { targets = JSON.parse(fs.readFileSync(TARGETS_PATH, 'utf8')); } catch {}
 
   const storyIds = Object.keys(entries).filter(
     id =>
@@ -865,42 +1046,80 @@ async function mapPool(items, pages, fn) {
       AUDITED_STORY_PREFIX.test(id) &&
       !/--docs$/.test(id),
   );
+  if (storyIds.length === 0) {
+    throw new Error('index.json contains no runnable audited stories');
+  }
+
+  const publicComponentsByPackage = {};
   const sourceComponents = [];
-  for (const packageName of ['core', 'lab']) {
+  for (const packageName of AUDITED_PACKAGE_NAMES) {
     try {
-      const grouped = discoverComponents(path.join(PROJECT_ROOT, 'packages', packageName));
-      sourceComponents.push(
-        ...Object.values(grouped)
-          .flat()
-          .map(component => `${packageName}/${component}`),
-      );
+      const pkg = componentPackage(packageName);
+      if (!pkg) throw new Error('package is missing from component registry');
+      const componentNames = pkg.layout === 'flat'
+        ? flatPackageComponentNames(PROJECT_ROOT, pkg)
+        : nestedPackageComponentNames(PROJECT_ROOT, pkg);
+      publicComponentsByPackage[packageName] = componentNames;
+      if (ACTIVE_PACKAGE_NAMES.includes(packageName)) {
+        sourceComponents.push(
+          ...componentNames.map(component => `${packageName}/${component}`),
+        );
+      }
     } catch (error) {
       console.error(`WARN: cannot discover ${packageName} component roster: ${String(error).slice(0, 120)}`);
     }
   }
+  const storyRoutes = buildStoryComponentRoutes({
+    stories: storyIds.map(id => ({id, title: entries[id].title})),
+    targets,
+    publicComponentsByPackage,
+  }).filter(belongsToActivePackage);
+  const scopedStoryRoutes = storyRoutes.filter(route => matchesFilter(route.component));
+  if (scopedStoryRoutes.length === 0) {
+    throw new Error(`no runnable stories resolved for ${ACTIVE_PACKAGE_NAMES.join(',')} scope`);
+  }
   const auditedComponents = buildAuditedComponentRoster({
     sourceComponents,
-    storyComponents: storyIds.map(componentFromId),
+    storyComponents: scopedStoryRoutes.map(route => route.component),
     filters: FILTER,
   });
+
+  const {server, port} = await serve(path.resolve(DIST));
+  runtime.server = server;
+  const browser = await chromium.launch();
+  runtime.browser = browser;
+  const pages = await Promise.all(
+    Array.from({length: CONCURRENCY}, () =>
+      browser.newPage({viewport: {width: 1100, height: 760}, deviceScaleFactor: 1}),
+    ),
+  );
+  runtime.pages = pages;
+  const page = pages[0]; // curated dims run serially on the first page
+  const d8BrowserContract = await verifyD8BrowserContract(page);
+  const coarseContext = await browser.newContext({
+    viewport: {width: 1100, height: 760},
+    deviceScaleFactor: 1,
+    hasTouch: true,
+    isMobile: true,
+  });
+  runtime.coarseContext = coarseContext;
+  const coarsePage = await coarseContext.newPage();
 
   // ---- (A) auto-discovery over every audited-package story ----
   const autoResults = []; // D1 icon-mirror
   const pmResults = []; // D5 positional-mirror
   const decorationResults = []; // D6 contextual directional decoration
+  const perComponent = new Map();
+  for (const {component, id} of scopedStoryRoutes) {
+    if (!perComponent.has(component)) perComponent.set(component, id);
+  }
+  const d1Targets = [...perComponent]
+    .map(([component, id]) => ({comp: component, id}));
   if (!CURATED_ONLY) {
     // D1 runs one representative story per component (extra stories add little
     // D1 signal). D5 (positional-mirror) runs over EVERY core story — a
     // positioned bug can be story-specific (only a `withStatus` variant mounts
     // the offending element), so we don't collapse to one-per-component.
-    const perComponent = new Map();
-    for (const id of storyIds) {
-      const comp = componentFromId(id);
-      if (!perComponent.has(comp)) perComponent.set(comp, id);
-    }
-    const d1Targets = [...perComponent]
-      .filter(([comp]) => matchesFilter(comp))
-      .map(([comp, id]) => ({comp, id}));
     autoResults.push(
       ...(await mapPool(d1Targets, pages, async ({comp, id}, workerPage) => {
         try {
@@ -916,9 +1135,7 @@ async function mapPool(items, pages, fn) {
       })),
     );
     // D5 positional-mirror over every audited story.
-    const pmTargets = storyIds
-      .map(id => ({id, comp: componentFromId(id)}))
-      .filter(({comp}) => matchesFilter(comp));
+    const pmTargets = scopedStoryRoutes.map(({id, component}) => ({id, comp: component}));
     pmResults.push(
       ...(await mapPool(pmTargets, pages, async ({id, comp}, workerPage) => {
         try {
@@ -957,10 +1174,13 @@ async function mapPool(items, pages, fn) {
   // machine under load is more likely to change behaviour than to save time.
   const curatedResults = [];
   if (!AUTO_ONLY) {
-    let targets = [];
-    try { targets = JSON.parse(fs.readFileSync(TARGETS_PATH, 'utf8')); } catch {}
     for (const t of targets) {
-      const component = componentFromId(t.storyId);
+      const component = componentFromTarget(
+        t,
+        AUDITED_PACKAGE_NAMES,
+        publicComponentsByPackage,
+      );
+      if (!belongsToActivePackage({component, id: t.storyId})) continue;
       if (!matchesFilter(component)) continue;
       if (!entries[t.storyId]) {
         curatedResults.push({component, storyId: t.storyId, rollup: 'MISSING-STORY', dims: {}, notes: ['story not in index.json']});
@@ -1002,11 +1222,6 @@ async function mapPool(items, pages, fn) {
   });
   if (verifiedNaError) coverage.registryError = verifiedNaError;
 
-  await Promise.all(pages.map(p => p.close().catch(() => {})));
-  await coarseContext.close().catch(() => {});
-  await browser.close();
-  server.close();
-
   const autoFails = autoResults.filter(r => r.verdict === 'fail' || r.verdict === 'ERROR');
   // No allowlist: every not-RTL component is a surprise. The RTL migration is
   // complete, so any directional icon that fails to mirror is a real regression.
@@ -1015,7 +1230,36 @@ async function mapPool(items, pages, fn) {
   const decorationFails = decorationResults.filter(r => r.verdict === 'fail' || r.verdict === 'ERROR');
   const report = {
     generatedAt: new Date().toISOString(),
+    scope: {
+      packages: ACTIVE_PACKAGE_NAMES,
+      filters: FILTER,
+    },
+    completion: {
+      plannedComponentScans: new Set(scopedStoryRoutes.map(route => route.component)).size,
+      completedComponentScans: autoResults.length,
+      plannedStoryScans: scopedStoryRoutes.length,
+      completedPositionalScans: pmResults.length,
+      completedDecorationScans: decorationResults.length,
+      plannedComponentIdentities: [
+        ...new Set(scopedStoryRoutes.map(route => route.component)),
+      ].sort(),
+      completedComponentIdentities: autoResults.map(result => result.component).sort(),
+      plannedD1Identities: d1Targets.map(target => `${target.comp}::${target.id}`).sort(),
+      completedD1Identities: autoResults
+        .map(result => `${result.component}::${result.storyId}`)
+        .sort(),
+      plannedStoryIdentities: scopedStoryRoutes
+        .map(route => `${route.component}::${route.id}`)
+        .sort(),
+      completedPositionalIdentities: pmResults
+        .map(result => `${result.component}::${result.storyId}`)
+        .sort(),
+      completedDecorationIdentities: decorationResults
+        .map(result => `${result.component}::${result.storyId}`)
+        .sort(),
+    },
     dist: DIST,
+    selfChecks: {d8LogicalInline: d8BrowserContract},
     autoDiscovery: {
       total: autoResults.length,
       applicable: autoResults.filter(r => r.verdict !== 'N-A').length,
@@ -1060,5 +1304,10 @@ async function mapPool(items, pages, fn) {
     decorationFails.length > 0 ||
     (coverage.enforced && (coverage.gaps > 0 || coverage.staleVerifiedNa > 0 || coverage.registryError != null)) ||
     curatedResults.some(r => r.rollup === 'not-RTL' || r.rollup === 'ERROR' || r.rollup === 'MISSING-STORY');
-  process.exit(anySignal ? 1 : 0);
-})();
+  process.exitCode = anySignal ? 1 : 0;
+})()
+  .catch(error => {
+    console.error(`FATAL: ${error.message}`);
+    process.exitCode = 2;
+  })
+  .finally(cleanupRuntime);

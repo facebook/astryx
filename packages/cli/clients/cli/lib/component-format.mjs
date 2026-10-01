@@ -26,6 +26,15 @@ function targetKey(target) {
   return target.className.replace(/^astryx-/, '');
 }
 
+/**
+ * Keep deprecated targets visible in reference tables while excluding them from
+ * snippets readers copy into newly authored themes.
+ * @param {import('@astryxdesign/cli/authoring').ComponentThemingTarget[]} targets
+ */
+function canonicalTargets(targets) {
+  return targets.filter(target => target.deprecatedFor == null);
+}
+
 /** @param {string} name @returns {string} */
 function dataAttrForName(name) {
   return `data-${name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()}`;
@@ -62,7 +71,7 @@ function formatPropsTable(props) {
   lines.push('| Prop | Type | Default | Description |');
   lines.push('|------|------|---------|-------------|');
   for (const p of props) {
-    const def = p.default ? `\`${mdCell(p.default)}\`` : '—';
+    const def = p.default ? `\`${mdCell(p.default)}\`` : '-';
     const req = p.required ? ' **(required)**' : '';
     lines.push(
       `| \`${mdCell(p.name)}\` | \`${mdCell(p.type)}\` | ${def} | ${mdCell(p.description)}${req} |`,
@@ -181,14 +190,17 @@ function formatTargetsTable(docs, themeData) {
       ...themeVariants.map((/** @type {string} */ v) => `${v}*`),
     ];
 
-    const variantsStr = variantParts.length > 0 ? variantParts.join(', ') : '—';
-    const statesStr = states.length > 0 ? states.join(', ') : '—';
+    const variantsStr = variantParts.length > 0 ? variantParts.join(', ') : '-';
+    const statesStr = states.length > 0 ? states.join(', ') : '-';
     const dataAttrs = getTargetDataAttributes(target);
     const dataAttrsStr =
-      dataAttrs.length > 0 ? dataAttrs.map(attr => `\`${attr}\``).join(', ') : '—';
+      dataAttrs.length > 0 ? dataAttrs.map(attr => `\`${attr}\``).join(', ') : '-';
 
+    const className = target.deprecatedFor
+      ? `\`${target.className}\` _(deprecated; use \`${target.deprecatedFor}\`)_`
+      : `\`${target.className}\``;
     lines.push(
-      `| \`${target.className}\` | ${dataAttrsStr} | ${variantsStr} | ${statesStr} |`,
+      `| ${className} | ${dataAttrsStr} | ${variantsStr} | ${statesStr} |`,
     );
   }
 
@@ -287,35 +299,37 @@ export function formatFull(docs, options = {}) {
         }
       }
 
-      // Generate defineTheme example with component selector targeting
-      const exampleLines = ['Override in defineTheme:\n```ts\ncomponents: {'];
-      const rootTarget = docs.theming.targets[0];
-      const rootKey = targetKey(rootTarget);
-      exampleLines.push(`  '${rootKey}': {`);
-      exampleLines.push(`    base: { /* CSS properties */ },`);
-      if (rootTarget.visualProps?.length) {
-        const firstVariant = rootTarget.visualProps[0];
-        exampleLines.push(`    '${firstVariant}:value': { /* variant-specific */ },`);
-      }
-      if (rootTarget.states?.length) {
-        const firstState = rootTarget.states[0];
-        exampleLines.push(`    '${firstState}': { /* state-specific */ },`);
-      }
-      exampleLines.push(`  },`);
-      // Show sub-element example if there are multiple targets
-      if (docs.theming.targets.length > 1) {
-        const subTarget = docs.theming.targets[1];
-        const subKey = targetKey(subTarget);
-        exampleLines.push(`  '${subKey}': {`);
+      // Generate defineTheme example with canonical component selectors only.
+      const exampleTargets = canonicalTargets(docs.theming.targets);
+      if (exampleTargets.length > 0) {
+        const exampleLines = ['Override in defineTheme:\n```ts\ncomponents: {'];
+        const rootTarget = exampleTargets[0];
+        const rootKey = targetKey(rootTarget);
+        exampleLines.push(`  '${rootKey}': {`);
         exampleLines.push(`    base: { /* CSS properties */ },`);
-        if (subTarget.states?.length) {
-          const firstState = subTarget.states[0];
+        if (rootTarget.visualProps?.length) {
+          const firstVariant = rootTarget.visualProps[0];
+          exampleLines.push(`    '${firstVariant}:value': { /* variant-specific */ },`);
+        }
+        if (rootTarget.states?.length) {
+          const firstState = rootTarget.states[0];
           exampleLines.push(`    '${firstState}': { /* state-specific */ },`);
         }
         exampleLines.push(`  },`);
+        if (exampleTargets.length > 1) {
+          const subTarget = exampleTargets[1];
+          const subKey = targetKey(subTarget);
+          exampleLines.push(`  '${subKey}': {`);
+          exampleLines.push(`    base: { /* CSS properties */ },`);
+          if (subTarget.states?.length) {
+            const firstState = subTarget.states[0];
+            exampleLines.push(`    '${firstState}': { /* state-specific */ },`);
+          }
+          exampleLines.push(`  },`);
+        }
+        exampleLines.push('}\n```\n');
+        sections.push(exampleLines.join('\n'));
       }
-      exampleLines.push('}\n```\n');
-      sections.push(exampleLines.join('\n'));
     }
 
     // Legacy componentKey (for backward compatibility)
@@ -328,7 +342,7 @@ export function formatFull(docs, options = {}) {
       const publicVars = docs.theming.vars.filter((/** @type {any} */ v) => !v.private && !v.derived);
 
       if (publicVars.length > 0) {
-        sections.push('**Themeable CSS variables** — additional properties that can be overridden in `defineTheme` component overrides.\n');
+        sections.push('**Themeable CSS variables** - additional properties that can be overridden in `defineTheme` component overrides.\n');
         const varLines = [];
         varLines.push('| CSS Variable | Default | Description |');
         varLines.push('|-------------|---------|-------------|');
@@ -342,7 +356,8 @@ export function formatFull(docs, options = {}) {
 
       // Show derived property examples — the recommended way to theme
       if (docs.theming?.derived?.length) {
-        const varsKey = docs.theming.targets?.length ? targetKey(docs.theming.targets[0]) : docs.theming.componentKey || '';
+        const canonical = canonicalTargets(docs.theming.targets || []);
+        const varsKey = canonical.length ? targetKey(canonical[0]) : docs.theming.componentKey || '';
         const derivedExamples = docs.theming.derived
           .filter((/** @type {any} */ d) => d.vars?.length)
           .map((/** @type {any} */ d) => `      ${d.property}: '...',`)
@@ -529,7 +544,7 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
     signatureProps.length > 0
       ? `${displayName}(${signatureProps.join(', ')})`
       : displayName;
-  output.push(importHint ? `${sigStr}  ← from '${importHint}'` : sigStr);
+  output.push(importHint ? `${sigStr}  <- from '${importHint}'` : sigStr);
 
   // Description (shortened)
   if (description) {
@@ -554,7 +569,7 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
   // Derived properties (if any)
   if (docs.theming?.derived?.length) {
     const derivedNames = docs.theming.derived
-      .map((/** @type {any} */ d) => d.expand === 'container' ? `${d.property} → container tokens` : `${d.property} → ${(d.vars || []).join(', ')}`)
+      .map((/** @type {any} */ d) => d.expand === 'container' ? `${d.property} -> container tokens` : `${d.property} -> ${(d.vars || []).join(', ')}`)
       .join('; ');
     output.push(`  Derived: ${derivedNames}`);
   }
@@ -564,6 +579,7 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
     const { themeData = null } = options;
     const targetParts = docs.theming.targets.map((/** @type {any} */ t) => {
       const parts = [t.className];
+      if (t.deprecatedFor) parts.push(`deprecated->${t.deprecatedFor}`);
       const dataAttrs = getTargetDataAttributes(t);
       if (dataAttrs.length) parts.push(`preferred attrs: ${dataAttrs.join(', ')}`);
       if (t.visualProps?.length) parts.push(`variants: ${t.visualProps.join(', ')}`);
@@ -579,7 +595,7 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
 
   // Other props
   if (otherProps.length > 0) {
-    output.push(`  ${otherProps.join(' · ')}`);
+    output.push(`  ${otherProps.join(', ')}`);
   }
 
   // First code example

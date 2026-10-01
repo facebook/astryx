@@ -23,7 +23,7 @@ export const docs = {
     ],
     anatomy: [
       {name: 'Photo', required: false, description: 'The profile image, loaded from the src URL. Shown when available.'},
-      {name: 'Initials', required: false, description: 'One or two letters extracted from the name. Shown when no photo is available.'},
+      {name: 'Initials', required: false, description: 'The first letter, digit or emoji of the first and last words of the name; punctuation is skipped. Shown when no photo is available. A name with no letters, digits or emoji shows the default icon instead.'},
       {name: 'Default icon', required: false, description: 'A generic person silhouette. Shown when there is no photo or name.'},
       {name: 'Status dot', required: false, description: 'A small indicator in the bottom-right corner showing availability (online, away, busy). Each variant pairs colour with a distinct shape so status does not rely on colour alone.'},
     ],
@@ -36,7 +36,7 @@ export const docs = {
       {className: 'astryx-avatar-status-dot-glyph', visualProps: ['shape']},
     ],
     vars: [
-      {name: '--_avatar-group-overlap', description: 'Negative inline offset applied to every avatar after the first when avatars are stacked in an AvatarGroup. Set from the group size; a more negative value tightens the stack.', default: 'set at runtime from the group avatar size (px)', private: true},
+      {name: '--_avatar-group-overlap', description: 'Negative inline offset applied to every avatar stacked in an AvatarGroup; the group pads its start edge by the same amount so the first avatar stays inside it. Set from the group size; a more negative value tightens the stack.', default: 'set at runtime from the group avatar size (px)', private: true},
       {name: '--_avatar-radius', description: 'Border radius of the avatar wrapper, content, focus ring, and the AvatarGroupOverflow "+N" chip. Set per shape variant by shapeStyles.', default: 'var(--radius-full)', private: true},
     ],
     derived: [

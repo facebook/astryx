@@ -7,30 +7,22 @@
  * this file into the resolved version folder.
  */
 
-import moveImeHelperImport, {
-  meta as moveImeHelperImportMeta,
-} from './move-ime-helper-import.mjs';
-import removeFocusIsrtlOption, {
-  meta as removeFocusIsrtlOptionMeta,
-} from './remove-focus-isrtl-option.mjs';
-import renameResizablePixelBounds, {
-  meta as renameResizablePixelBoundsMeta,
-} from './rename-resizable-pixel-bounds.mjs';
+import migrateThemeCatalogToDescriptors, {
+  meta as migrateThemeCatalogToDescriptorsMeta,
+} from './migrate-theme-catalog-to-descriptors.mjs';
+import migrateNativePickerToPresentation, {
+  meta as migrateNativePickerToPresentationMeta,
+} from './migrate-native-picker-to-presentation.mjs';
 
 export default [
   {
-    name: 'move-ime-helper-import',
-    transform: moveImeHelperImport,
-    meta: moveImeHelperImportMeta,
+    name: 'migrate-theme-catalog-to-descriptors',
+    transform: migrateThemeCatalogToDescriptors,
+    meta: migrateThemeCatalogToDescriptorsMeta,
   },
   {
-    name: 'remove-focus-isrtl-option',
-    transform: removeFocusIsrtlOption,
-    meta: removeFocusIsrtlOptionMeta,
-  },
-  {
-    name: 'rename-resizable-pixel-bounds',
-    transform: renameResizablePixelBounds,
-    meta: renameResizablePixelBoundsMeta,
+    name: 'migrate-native-picker-to-presentation',
+    transform: migrateNativePickerToPresentation,
+    meta: migrateNativePickerToPresentationMeta,
   },
 ];

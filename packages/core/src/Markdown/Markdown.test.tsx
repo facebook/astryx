@@ -1,12 +1,30 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  expectTypeOf,
+  vi,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import type {ReactNode} from 'react';
+import type {ComponentProps, ReactNode} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {Markdown} from './Markdown';
-import type {MarkdownInlinePlugin} from './Markdown';
+import type {MarkdownComponents, MarkdownInlinePlugin} from './Markdown';
+import type {ParseOptions} from './index';
 import {stubMatchMedia} from '../__tests__/stubMatchMedia';
 import {parseOutlineFromMarkdown} from '../Outline/parseOutlineFromMarkdown';
+import {spacingVars} from '../theme/tokens.stylex';
+
+const tableCellSpacingProbe = stylex.create({
+  cell: {
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-2'],
+  },
+});
 
 describe('Markdown', () => {
   it('renders with role="document"', () => {
@@ -69,6 +87,17 @@ describe('Markdown', () => {
         expect(target!.tagName).toMatch(/^H[1-6]$/);
         expect(target!.textContent?.trim()).toBe(item.label);
       }
+    });
+
+    it('keeps citation markers out of released heading ids', () => {
+      render(
+        <Markdown sources={{cite: {title: 'Citation'}}}>
+          {'# Before [cite] after'}
+        </Markdown>,
+      );
+      expect(
+        screen.getByRole('heading', {name: /Before.*after/}),
+      ).toHaveAttribute('id', 'before-after');
     });
 
     it('passes the generated id to a custom heading component', () => {
@@ -277,9 +306,13 @@ describe('Markdown', () => {
     expect(screen.getByText('struck').tagName).toBe('DEL');
   });
 
-  it('renders inline code with Code', () => {
-    render(<Markdown>{'Use `code` here'}</Markdown>);
-    expect(screen.getByText('code').tagName).toBe('CODE');
+  it('renders inline code as delimiter-free <code> content', () => {
+    const {container} = render(<Markdown>{'Use `code` here'}</Markdown>);
+    const code = container.querySelector('code');
+    expect(code).toBeInTheDocument();
+    expect(code).toHaveTextContent('code');
+    expect(code?.textContent).toBe('code');
+    expect(container.textContent).toBe('Use code here');
   });
 
   it('renders code blocks with CodeBlock', () => {
@@ -352,6 +385,21 @@ describe('Markdown', () => {
     expect(bq).toBeInTheDocument();
   });
 
+  it('renders lazy continuations in the owning nested containers', () => {
+    const {container} = render(
+      <Markdown>{'> 1. > Quoted **text**\ncontinued lazily'}</Markdown>,
+    );
+    const root = container.querySelector('.astryx-markdown');
+    const outerQuote = root?.querySelector('blockquote');
+    const nestedQuote = outerQuote?.querySelector('ol blockquote');
+
+    expect(root?.children).toHaveLength(1);
+    expect(root?.querySelectorAll('blockquote')).toHaveLength(2);
+    expect(root?.querySelectorAll('ol')).toHaveLength(1);
+    expect(nestedQuote).toHaveTextContent('Quoted text');
+    expect(nestedQuote).toHaveTextContent('continued lazily');
+  });
+
   it('renders unordered lists', () => {
     render(<Markdown>{'- A\n- B\n- C'}</Markdown>);
     const ul = document.querySelector('ul');
@@ -420,15 +468,149 @@ describe('Markdown', () => {
     expect(document.querySelectorAll('td')).toHaveLength(2);
   });
 
-  it('makes the table scroll wrapper keyboard-focusable', () => {
-    render(<Markdown>{'| A | B |\n| --- | --- |\n| 1 | 2 |'}</Markdown>);
-    const table = document.querySelector('table');
+  it('renders escaped table pipes without exposing the escape in code spans', () => {
+    render(
+      <Markdown>
+        {
+          '| Concept | TypeScript |\n| --- | --- |\n| Null safety | `T \\| null` |'
+        }
+      </Markdown>,
+    );
+
+    const cells = document.querySelectorAll('tbody td');
+    expect(Array.from(cells).map(cell => cell.textContent)).toEqual([
+      'Null safety',
+      'T | null',
+    ]);
+    expect(cells[1].querySelector('code')).toHaveTextContent('T | null');
+  });
+
+  it('delegates table scrolling and focus to the Table-owned viewport', () => {
+    const {container} = render(
+      <Markdown>{'| A | B |\n| --- | --- |\n| 1 | 2 |'}</Markdown>,
+    );
+    const table = container.querySelector('table');
+    const markdownBlock = container.querySelector('.astryx-markdown-table');
+    const groups = container.querySelectorAll('[role="group"]');
+
     expect(table).toBeInTheDocument();
-    // The GFM table's outer overflow wrapper is keyboard-focusable so keyboard
-    // users can horizontally scroll a wide table.
-    const wrapper = table!.closest('[role="group"][tabindex="0"]');
-    expect(wrapper).toBeTruthy();
-    expect(wrapper).toHaveAttribute('aria-label', 'Table');
+    // Exactly one scroll region: Table's own, which also owns the name and
+    // (when it actually overflows) the tab stop. Markdown's block carries
+    // spacing and sizing only.
+    expect(groups).toHaveLength(1);
+    expect(groups[0]).toContainElement(table);
+    expect(groups[0]).toHaveAttribute('aria-label', 'Table');
+    expect(markdownBlock).not.toHaveAttribute('role');
+    expect(markdownBlock).not.toHaveAttribute('tabindex');
+  });
+
+  it('uses spacing-2 on every Markdown table cell edge', () => {
+    const {container} = render(
+      <Markdown>{'| A | B |\n| --- | --- |\n| 1 | 2 |'}</Markdown>,
+    );
+    const spacingClasses = (
+      stylex.props(tableCellSpacingProbe.cell).className ?? ''
+    )
+      .split(' ')
+      .filter(className => className !== '' && !className.includes('__'));
+    const cells = container.querySelectorAll('th, td');
+
+    expect(spacingClasses.length).toBeGreaterThan(0);
+    expect(cells).toHaveLength(4);
+    for (const cell of cells) {
+      for (const className of spacingClasses) {
+        expect(cell).toHaveClass(className);
+      }
+    }
+  });
+
+  it('floors each table column from its own content, in ch', () => {
+    // The floor algorithm: max(4, ceil(longest cell / 2), min(header, 20)),
+    // capped at 24, expressed in `ch` so it follows the reader's font size.
+    // That the floor then survives cell padding and actually widens the
+    // column is geometry, and is proved in MarkdownTable.a11y.chromium.spec.ts.
+    const long = 'x'.repeat(120);
+    render(
+      <Markdown>
+        {`| Key | Meaning | Note |\n| --- | --- | --- |\n| id | Stable identifier never reused | ${long} |`}
+      </Markdown>,
+    );
+    const floors = Array.from(document.querySelectorAll('th')).map(th =>
+      th.getAttribute('style'),
+    );
+    expect(floors[0]).toMatch(/\b4ch\b/); // "Key" / "id" — short, min floor
+    expect(floors[1]).toMatch(/\b15ch\b/); // 30 chars → ceil(30 / 2)
+    expect(floors[2]).toMatch(/\b24ch\b/); // 120 chars → capped
+    // No fixed pixel bucket survives anywhere in the column floors.
+    expect(floors.join(' ')).not.toMatch(/\d+px/);
+  });
+
+  it('floors a short-bodied column from its header label, up to the cap', () => {
+    render(
+      <Markdown>
+        {
+          '| Component name | Accessibility status and remediation owner | X |\n| --- | --- | --- |\n| Button | Pass | 1 |'
+        }
+      </Markdown>,
+    );
+    const ths = Array.from(document.querySelectorAll('th'));
+    // 14-char label: the header floor (14ch) beats the body floor (3ch).
+    expect(ths[0].getAttribute('style')).toMatch(/\b14ch\b/);
+    // 42-char label: the header floor caps at 20ch, so the body floor
+    // (ceil(42 / 2) = 21ch) is what the column keeps.
+    expect(ths[1].getAttribute('style')).toMatch(/\b21ch\b/);
+  });
+
+  it('floors a header-only table from its labels alone', () => {
+    // No body rows: the body floor is computed over nothing, so the header
+    // label has to carry the column by itself rather than collapsing to the
+    // minimum (or throwing on an absent row).
+    render(<Markdown>{'| Status | Owner |\n| --- | --- |'}</Markdown>);
+    const ths = Array.from(document.querySelectorAll('th'));
+    expect(ths.map(th => th.textContent)).toEqual(['Status', 'Owner']);
+    expect(document.querySelectorAll('tbody tr')).toHaveLength(0);
+    expect(ths[0].getAttribute('style')).toMatch(/\b6ch\b/);
+    expect(ths[1].getAttribute('style')).toMatch(/\b5ch\b/);
+  });
+
+  it('floors a column of empty cells at the minimum', () => {
+    render(
+      <Markdown>
+        {'| A | B | C |\n| --- | --- | --- |\n|  | middle only |  |'}
+      </Markdown>,
+    );
+    const ths = Array.from(document.querySelectorAll('th'));
+    // Empty body cells contribute nothing; a one-character header still
+    // leaves the column at the 4ch minimum rather than at zero.
+    expect(ths[0].getAttribute('style')).toMatch(/\b4ch\b/);
+    expect(ths[2].getAttribute('style')).toMatch(/\b4ch\b/);
+    // 11 chars in the middle column → ceil(11 / 2) = 6ch.
+    expect(ths[1].getAttribute('style')).toMatch(/\b6ch\b/);
+  });
+
+  it('keeps inline code inside a table cell on the default Code part', () => {
+    render(
+      <Markdown>
+        {'| Status |\n| --- |\n| `needs_revision_before_landing_v2` |'}
+      </Markdown>,
+    );
+    const code = document.querySelector('tbody td code');
+    expect(code).toHaveTextContent('needs_revision_before_landing_v2');
+  });
+
+  it('lets a supplied inlineCode renderer own code inside table cells', () => {
+    const components: Partial<MarkdownComponents> = {
+      inlineCode: ({children}) => <kbd data-custom>{children}</kbd>,
+    };
+    render(
+      <Markdown components={components}>
+        {'| Status |\n| --- |\n| `x` |'}
+      </Markdown>,
+    );
+    expect(
+      document.querySelector('tbody td kbd[data-custom]'),
+    ).toHaveTextContent('x');
+    expect(document.querySelector('tbody td code')).toBeNull();
   });
 
   it('renders horizontal rules', () => {
@@ -570,7 +752,10 @@ describe('Markdown', () => {
     const {container} = render(
       <Markdown density="compact">{'Hello'}</Markdown>,
     );
-    expect(container.firstElementChild!.className).toContain('compact');
+    expect(container.firstElementChild).toHaveAttribute(
+      'data-density',
+      'compact',
+    );
   });
 
   it('supports data-testid', () => {
@@ -611,6 +796,105 @@ describe('Markdown', () => {
     expect(links).toHaveLength(2);
     expect(links[0].getAttribute('href')).toBe('https://example.com');
     expect(links[1].getAttribute('href')).toBe('/page');
+  });
+
+  describe('link destinations follow the shared navigation rule', () => {
+    // The same matrix Core's link plumbing and imperative navigation apply
+    // (utils/safeUrl.ts): only executable document schemes are blocked.
+    const blocked = [
+      'javascript:alert(1)',
+      'JaVaScRiPt:alert(1)',
+      'vbscript:MsgBox(1)',
+      'data:text/html,<script>alert(1)</script>',
+      'java\nscript:alert(1)',
+    ];
+    const accepted = [
+      'https://example.com',
+      '/page',
+      '#section',
+      '//example.com/x',
+      'mailto:a@example.com',
+      'tel:+15555550100',
+      'data:image/png;base64,iVBORw0KGgo=',
+    ];
+
+    it.each(blocked)('renders %s as text, not a link', destination => {
+      const {container} = render(
+        <Markdown>{`[click](${destination})`}</Markdown>,
+      );
+      expect(container.querySelector('a')).toBeNull();
+      expect(container.textContent).toContain('click');
+    });
+
+    it.each(accepted)('renders %s as a link', destination => {
+      const {container} = render(
+        <Markdown>{`[click](${destination})`}</Markdown>,
+      );
+      const link = container.querySelector('a');
+      expect(link).not.toBeNull();
+      expect(link?.getAttribute('href')).toBe(destination);
+    });
+
+    it('a data:image link is navigation and is accepted, while a data:image image stays rejected by the resource policy', () => {
+      const {container} = render(
+        <Markdown>
+          {
+            '[view](data:image/png;base64,iVBORw0KGgo=)\n\n![pic](data:image/png;base64,iVBORw0KGgo=)'
+          }
+        </Markdown>,
+      );
+      expect(container.querySelector('a')?.getAttribute('href')).toBe(
+        'data:image/png;base64,iVBORw0KGgo=',
+      );
+      expect(container.querySelector('img')).toBeNull();
+    });
+  });
+
+  it('preserves dollar-delimited text when no math renderer is supplied', () => {
+    const {container} = render(
+      <Markdown>{'Total $5 and formula $x_1 + *y*$.'}</Markdown>,
+    );
+    expect(container.textContent).toBe('Total $5 and formula $x_1 + y$.');
+    expect(container.querySelector('em')).toHaveTextContent('y');
+    expect(container.querySelector('[role="math"]')).toBeNull();
+  });
+
+  it('passes inline and display expressions to the custom math renderer', () => {
+    type MathRendererProps = ComponentProps<
+      NonNullable<MarkdownComponents['math']>
+    >;
+    function MathRenderer({value, display}: MathRendererProps) {
+      const Tag = display === 'block' ? 'div' : 'span';
+      return (
+        <Tag
+          role="math"
+          aria-label={`Formula: ${value}`}
+          data-testid={`${display}-math`}>
+          {value}
+        </Tag>
+      );
+    }
+
+    render(
+      <Markdown components={{math: MathRenderer}}>
+        {'Inline $x_1 + *y*$ here.\n\n$$\n\\sum_i x_i\n$$'}
+      </Markdown>,
+    );
+
+    expect(screen.getByTestId('inline-math')).toHaveTextContent('x_1 + *y*');
+    expect(screen.getByTestId('block-math')).toHaveTextContent('\\sum_i x_i');
+    expect(screen.getAllByRole('math')).toHaveLength(2);
+  });
+
+  it('exports the math renderer and parser option types', () => {
+    type MathRendererProps = ComponentProps<
+      NonNullable<MarkdownComponents['math']>
+    >;
+    expectTypeOf<MathRendererProps>().toEqualTypeOf<{
+      value: string;
+      display: 'inline' | 'block';
+    }>();
+    expectTypeOf<ParseOptions>().toMatchTypeOf<{math?: boolean}>();
   });
 });
 
@@ -662,6 +946,54 @@ describe('inlinePlugins', () => {
       'https://issues.example.com/browse/PROJ-123',
     );
     expect(link!.textContent).toBe('PROJ-123');
+  });
+
+  it('autolinks generic prefixed-number entities without rewriting source', () => {
+    const entityPlugin: MarkdownInlinePlugin = {
+      pattern: /\b([A-Z][A-Z0-9]+-\d+)\b/g,
+      render: (match, key) => (
+        <a key={key} href={`/entities/${match[1]}`} data-testid="entity-link">
+          {match[0]}
+        </a>
+      ),
+    };
+    const {container} = render(
+      <Markdown inlinePlugins={[entityPlugin]}>
+        {'See DOC-2048, but keep `DOC-9999` literal.'}
+      </Markdown>,
+    );
+    const link = screen.getByTestId('entity-link');
+    expect(link).toHaveAttribute('href', '/entities/DOC-2048');
+    expect(link).toHaveTextContent('DOC-2048');
+    expect(container.querySelector('code')).toHaveTextContent('DOC-9999');
+    expect(
+      container.querySelectorAll('[data-testid="entity-link"]'),
+    ).toHaveLength(1);
+  });
+
+  it('keeps math opaque to entity plugins while transforming surrounding prose', () => {
+    const entityPlugin: MarkdownInlinePlugin = {
+      pattern: /\b(DOC-\d+)\b/g,
+      render: (match, key) => (
+        <a key={key} href={`/entities/${match[1]}`} data-testid="entity-link">
+          {match[0]}
+        </a>
+      ),
+    };
+    const MathRenderer: NonNullable<MarkdownComponents['math']> = ({value}) => (
+      <span role="math">{value}</span>
+    );
+    render(
+      <Markdown
+        components={{math: MathRenderer}}
+        inlinePlugins={[entityPlugin]}>
+        {'DOC-1 and $DOC-2 + x$ and `DOC-3`'}
+      </Markdown>,
+    );
+    expect(screen.getAllByTestId('entity-link')).toHaveLength(1);
+    expect(screen.getByTestId('entity-link')).toHaveTextContent('DOC-1');
+    expect(screen.getByRole('math')).toHaveTextContent('DOC-2 + x');
+    expect(screen.getByText('DOC-3').tagName).toBe('CODE');
   });
 
   it('supports multiple plugins', () => {

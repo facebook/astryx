@@ -5,6 +5,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'themePaletteGenerate',
+  namespace: 'cli/api',
   displayName: 'themePaletteGenerate()',
   summary: 'Generate an author-reviewable palette candidate from JSON input.',
   description:

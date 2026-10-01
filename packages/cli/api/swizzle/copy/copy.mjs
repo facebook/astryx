@@ -159,6 +159,24 @@ function resolveOwners(coreDir, loadedIntegrations, name, coreIssuesUrl) {
   return owners;
 }
 
+/**
+ * `assertWithin`, with an escape reported as ERR_PATH_TRAVERSAL.
+ * @param {string} target
+ * @param {string} cwd
+ * @param {{allowAbsolute?: boolean, label: string}} options
+ * @returns {string}
+ */
+function confineWrite(target, cwd, options) {
+  try {
+    return assertWithin(target, cwd, options);
+  } catch (err) {
+    if (err instanceof PathSafetyError) {
+      throw new AstryxError(err.message, [], ERROR_CODES.ERR_PATH_TRAVERSAL);
+    }
+    throw err;
+  }
+}
+
 /** @param {string} file */
 function isExcludedFromCopy(file) {
   return (
@@ -243,23 +261,22 @@ export async function swizzleCopy(component, options = {}) {
 
   const componentDir = owner.sourceDir;
 
-  // Path-safety: --output must resolve inside cwd.
-  let outputBase;
-  try {
-    outputBase = assertWithin(output, cwd, {label: 'output directory'});
-  } catch (err) {
-    if (err instanceof PathSafetyError) {
-      throw new AstryxError(err.message, [], ERROR_CODES.ERR_PATH_TRAVERSAL);
-    }
-    throw err;
-  }
+  // Path-safety: every write target resolves inside cwd, not just --output. An
+  // existing component directory or file may be a symlink out of cwd.
+  const outputBase = confineWrite(output, cwd, {label: 'output directory'});
   const outputDir = path.join(outputBase, dirName);
 
-  // Pre-flight overwrite check before any mkdir/writeFile.
+  // Pre-flight path and overwrite checks before any mkdir/writeFile.
   const sourceFiles = fs.readdirSync(componentDir).filter(file => {
     if (isExcludedFromCopy(file)) return false;
     return fs.statSync(path.join(componentDir, file)).isFile();
   });
+  for (const file of sourceFiles) {
+    confineWrite(path.join(outputDir, file), cwd, {
+      allowAbsolute: true,
+      label: 'output file',
+    });
+  }
   const existingFiles = sourceFiles.filter(f =>
     fs.existsSync(path.join(outputDir, f)),
   );

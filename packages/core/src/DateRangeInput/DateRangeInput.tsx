@@ -54,6 +54,7 @@ import {
   type DayOfWeek,
   type DayOfWeekName,
 } from '../Calendar';
+import {useCalendarConstraints} from '../Calendar/hooks';
 import {usePopover} from '../Popover';
 import {useTooltip} from '../Tooltip';
 import {mergeProps} from '../utils';
@@ -91,9 +92,14 @@ const styles = stylex.create({
     borderStyle: 'none',
     padding: 0,
     fontFamily: typographyVars['--font-family-body'],
+    // The 16px floor is iOS-only: iOS Safari zooms the page when a focused
+    // control sits under 16px, and only iOS WebKit implements
+    // -webkit-touch-callout to key the coarse-pointer floor to it.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-primary'],
@@ -376,6 +382,9 @@ export interface DateRangeInputProps extends Omit<
 
   /**
    * Preset date ranges shown as quick-select options beside the calendar.
+   * A preset is disabled when either endpoint violates `min`, `max`, or
+   * `dateConstraints`, or when its span violates `minRangeSpan` or
+   * `maxRangeSpan`.
    */
   presets?: ReadonlyArray<DateRangePreset>;
 
@@ -542,6 +551,11 @@ export function DateRangeInput({
     dialogLabel: t('@astryx.dateRangeInput.dialogLabel'),
     closeButtonLabel: t('@astryx.dateInput.closeCalendar'),
   });
+  const {isDateDisabled} = useCalendarConstraints({
+    min,
+    max,
+    dateConstraints,
+  });
 
   const fireChange = useCallback(
     (newValue: DateRange | null) => {
@@ -572,14 +586,6 @@ export function DateRangeInput({
   const handleRangeSelect = useCallback(
     (range: DateRange) => {
       fireChange(range);
-      popover.hide();
-    },
-    [fireChange, popover],
-  );
-
-  const handlePresetClick = useCallback(
-    (preset: DateRangePreset) => {
-      fireChange(preset.getRange());
       popover.hide();
     },
     [fireChange, popover],
@@ -713,15 +719,17 @@ export function DateRangeInput({
             <div
               role="group"
               aria-label={t('@astryx.dateRangeInput.presetDateRanges')}
-              {...stylex.props(styles.presetSidebar)}>
+              {...mergeProps(
+                themeProps('date-range-input-presets'),
+                stylex.props(styles.presetSidebar),
+              )}>
               {presets.map(preset => {
                 const presetRange = preset.getRange();
                 const isActive = isRangeEqual(value, presetRange);
-                const isPresetDisabled = !isRangeWithinSpan(
-                  presetRange,
-                  maxRangeSpan,
-                  minRangeSpan,
-                );
+                const isPresetDisabled =
+                  !isRangeWithinSpan(presetRange, maxRangeSpan, minRangeSpan) ||
+                  isDateDisabled(plainDateFromISO(presetRange.start)) ||
+                  isDateDisabled(plainDateFromISO(presetRange.end));
                 return (
                   <button
                     key={preset.label}
@@ -733,12 +741,18 @@ export function DateRangeInput({
                     // concept that contradicted the Tab interaction) (forms-5).
                     aria-current={isActive ? 'true' : undefined}
                     disabled={isPresetDisabled}
-                    onClick={() => handlePresetClick(preset)}
-                    {...stylex.props(
-                      focusOutlineStyles.focusVisible,
-                      styles.presetButton,
-                      isActive && styles.presetButtonActive,
-                      isPresetDisabled && styles.presetButtonDisabled,
+                    onClick={() => handleRangeSelect(presetRange)}
+                    {...mergeProps(
+                      themeProps('date-range-input-preset', {
+                        selected: isActive ? 'selected' : null,
+                        disabled: isPresetDisabled ? 'disabled' : null,
+                      }),
+                      stylex.props(
+                        focusOutlineStyles.focusVisible,
+                        styles.presetButton,
+                        isActive && styles.presetButtonActive,
+                        isPresetDisabled && styles.presetButtonDisabled,
+                      ),
                     )}>
                     {preset.label}
                   </button>

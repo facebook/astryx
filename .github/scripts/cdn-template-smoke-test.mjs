@@ -29,6 +29,7 @@ import * as http from 'node:http';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {resolvePublishedCdnVersion} from './lib/cdn-version.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const CLI = path.join(ROOT, 'packages/cli/clients/cli/bin/astryx.mjs');
@@ -65,19 +66,18 @@ console.log(`scaffolded ${PAGE} pinned to ${pinned}`);
 // The pin is the version in this checkout, which is unpublished for the whole
 // life of a release PR (`changeset version` bumps package.json before npm has
 // the tarball). Gating every PR on that would make the release PR unmergeable,
-// so on an unpublished pin we re-point the page at the newest published version
-// and still assert the recipe.
-const published = await fetch('https://registry.npmjs.org/@astryxdesign/core')
+// so on an unpublished pin we re-point the page at npm's stable `latest`
+// dist-tag and still assert the recipe. Registry `versions` keys are not a
+// version-ordered API: the final key can be a canary that esm.sh has not built.
+const metadata = await fetch('https://registry.npmjs.org/@astryxdesign/core')
   .then(r => r.json())
-  .then(j => Object.keys(j.versions ?? {}))
-  .catch(() => []);
-if (published.length === 0) {
-  fail('could not reach the npm registry to resolve a published version');
+  .catch(() => null);
+const rendered = resolvePublishedCdnVersion(metadata, pinned);
+if (rendered == null) {
+  fail('could not resolve a published stable version from the npm registry');
   process.exit(1);
 }
-let rendered = pinned;
-if (!published.includes(pinned)) {
-  rendered = published[published.length - 1];
+if (rendered !== pinned) {
   console.log(`  note  ${pinned} is not published yet — rendering against ${rendered}`);
   fs.writeFileSync(
     pagePath,

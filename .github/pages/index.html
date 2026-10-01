@@ -1,0 +1,124 @@
+<!-- Copyright (c) Meta Platforms, Inc. and affiliates. -->
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, follow" />
+    <link rel="canonical" href="https://astryx.atmeta.com/" />
+    <title>Astryx has moved</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        background: light-dark(#f7f7f8, #171719);
+        color: light-dark(#18181b, #fafafa);
+      }
+      main {
+        width: min(100% - 2rem, 32rem);
+        padding: clamp(1.5rem, 6vw, 3rem);
+        border: 1px solid light-dark(#dedee3, #3f3f46);
+        border-radius: 1rem;
+        background: light-dark(#fff, #242427);
+        box-shadow: 0 1rem 3rem rgb(0 0 0 / 12%);
+      }
+      h1 {
+        margin: 0 0 0.75rem;
+        font-size: clamp(2rem, 9vw, 3rem);
+        line-height: 1;
+      }
+      p {
+        margin: 0 0 1.5rem;
+        color: light-dark(#52525b, #d4d4d8);
+        line-height: 1.5;
+      }
+      nav {
+        display: grid;
+        gap: 0.75rem;
+      }
+      a {
+        display: block;
+        padding: 1rem;
+        border: 1px solid light-dark(#d4d4d8, #52525b);
+        border-radius: 0.75rem;
+        color: inherit;
+        text-decoration: none;
+      }
+      a:hover {
+        border-color: #4b57b5;
+      }
+      a:focus-visible {
+        outline: 3px solid #4b57b5;
+        outline-offset: 3px;
+      }
+      a.primary {
+        border-color: #4b57b5;
+        background: #4b57b5;
+        color: #fff;
+        font-weight: 700;
+      }
+      strong,
+      small {
+        display: block;
+      }
+      small {
+        margin-top: 0.25rem;
+        color: inherit;
+        opacity: 0.8;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Astryx has moved</h1>
+      <p>
+        The canonical documentation, Storybook, and Sandbox now live together on
+        the Astryx docsite.
+      </p>
+      <nav aria-label="Astryx destinations">
+        <a class="primary" href="https://astryx.atmeta.com/">
+          <strong>Astryx documentation</strong>
+          <small>Canonical site</small>
+        </a>
+        <a id="storybook" href="https://astryx.atmeta.com/storybook/">
+          <strong>Storybook</strong>
+          <small>Components, props, and interactive examples</small>
+        </a>
+        <a id="sandbox" href="https://astryx.atmeta.com/sandbox/">
+          <strong>Sandbox</strong>
+          <small>Full app examples and developer tools</small>
+        </a>
+      </nav>
+    </main>
+    <script>
+      (() => {
+        const path = location.pathname.replace(/^\/astryx(?=\/|$)/, '') || '/';
+        for (const surface of ['storybook', 'sandbox']) {
+          if (path === `/${surface}` || path.startsWith(`/${surface}/`)) {
+            const target = new URL(path, 'https://astryx.atmeta.com');
+            target.search = location.search;
+            target.hash = location.hash;
+            document.getElementById(surface).href = target.href;
+          }
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -38,7 +38,7 @@ export const docsDense = {
       content: [
         {
           type: 'prose',
-          text: '`theme list` + `theme add <slug>` to start from a shipped theme, or defineTheme from scratch. only override tokens that differ.',
+          text: '`theme list` + `theme add <slug>` to start from a bundled or installed integration theme; use `--package` for a shared slug. Or defineTheme from scratch. only override tokens that differ.',
         },
         null,
         {
@@ -53,7 +53,7 @@ export const docsDense = {
       content: [
         {
           type: 'prose',
-          text: 'scale configs (color, typography, radius, motion) + explicit token overrides + component overrides. color derives full palette from accent via HCT; accent = hex or [light, dark] tuple (per-scheme palettes). tokens overrides win token-by-token; --color-on-accent stays baked from color.accent, so prefer a tuple accent over overriding --color-accent.',
+          text: 'scale configs (color, typography, radius, motion) + explicit token overrides + component overrides. color derives full palette from accent via HCT; accent = hex or [light, dark] tuple (per-scheme palettes). tokens overrides win token-by-token; --color-on-accent stays baked from color.accent, so prefer a tuple accent over overriding --color-accent. localTokens accepts any valid CSS custom-property name; prefixes do not establish ownership.',
         },
         null,
         null,
@@ -109,6 +109,33 @@ export const docsDense = {
         },
         null,
         null,
+        null,
+        {
+          type: 'prose',
+          text: 'current build detects named imports used by icons:. registry module is not compiled. inline/local registries accepted by defineTheme are omitted from built output; move them to a separate module and import by name.',
+        },
+        null,
+        {
+          type: 'prose',
+          text: '--out dist/theme.css --icons-specifier ./icons.mjs requires dist/icons.mjs. skipping its compilation can leave theme build successful but breaks loading and bundling. flag changes the import; it does not create/verify the file. keep react + icon library external.',
+        },
+        {
+          type: 'prose',
+          text: 'without --icons-specifier, source import is copied unchanged. default flow without --out: bundlers can resolve ./icons to neighboring icons.tsx; Node ESM fails with ERR_MODULE_NOT_FOUND. moving output changes relative import resolution.',
+        },
+        null,
+        null,
+        null,
+      ],
+    },
+    {
+      section: 'Building a Theme Family',
+      title: 'Family Build',
+      content: [
+        {
+          type: 'prose',
+          text: 'theme build --family <base> <descendants...> --family-key <key> emits one keyed .css + .js + .d.ts beside the root; key must differ from every member name. load CSS once; import ESM separately; switch by theme identity only. all members download eagerly. --check compares the trio. use standalone build for one theme.',
+        },
         null,
         null,
       ],

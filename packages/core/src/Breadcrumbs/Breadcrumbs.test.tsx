@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor, fireEvent} from '@testing-library/react';
+import {render, screen, waitFor, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Breadcrumbs} from './Breadcrumbs';
 import {BreadcrumbItem} from './BreadcrumbItem';
@@ -427,6 +427,24 @@ describe('BreadcrumbItem menu', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
+  it('labels the menu from non-string trigger content', async () => {
+    const user = userEvent.setup();
+    render(
+      <Breadcrumbs>
+        <BreadcrumbItem menu={items}>
+          <span>Teams</span>
+        </BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Overview</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Teams'}));
+
+    expect(screen.getByRole('menu', {hidden: true})).toHaveAccessibleName(
+      'Teams',
+    );
+  });
+
   it('portability: a DropdownMenuOption[] renders its items on open', async () => {
     const user = userEvent.setup();
     render(
@@ -437,7 +455,7 @@ describe('BreadcrumbItem menu', () => {
     );
     await user.click(screen.getByRole('button', {name: 'Teams'}));
     const menu = screen.getByRole('menu', {hidden: true});
-    expect(menu).toHaveAttribute('aria-label', 'Teams');
+    expect(menu).toHaveAccessibleName('Teams');
     expect(
       screen.getByRole('menuitem', {name: 'Design', hidden: true}),
     ).toBeInTheDocument();
@@ -576,6 +594,35 @@ describe('BreadcrumbItem menu', () => {
     expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
     await waitFor(() => {
       expect(trigger).toHaveFocus();
+    });
+  });
+
+  it('preserves outside focus after a browser light dismiss', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <Breadcrumbs>
+          <BreadcrumbItem menu={items}>Teams</BreadcrumbItem>
+          <BreadcrumbItem isCurrent>Overview</BreadcrumbItem>
+        </Breadcrumbs>
+        <button type="button">Outside action</button>
+      </>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Teams'});
+    await user.click(trigger);
+    const menu = screen.getByRole('menu', {hidden: true});
+    const outside = screen.getByRole('button', {name: 'Outside action'});
+
+    outside.focus();
+    expect(outside).toHaveFocus();
+    const popover = menu.closest('[popover]');
+    expect(popover).not.toBeNull();
+    await act(async () => {
+      (popover as HTMLElement).hidePopover();
+    });
+
+    await waitFor(() => {
+      expect(outside).toHaveFocus();
     });
   });
 

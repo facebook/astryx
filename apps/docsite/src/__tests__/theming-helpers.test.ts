@@ -97,6 +97,21 @@ describe('theming helpers — buildDefineThemeExample', () => {
     expect(example).toContain("'status': {");
   });
 
+  it('excludes deprecated targets from copyable examples', () => {
+    const theming: ThemingDoc = {
+      targets: [
+        {
+          className: 'astryx-progressbar-fill',
+          deprecatedFor: 'progress-bar-fill',
+        },
+        {className: 'astryx-progress-bar-fill'},
+      ],
+    };
+    const example = buildDefineThemeExample(theming);
+    expect(example).not.toContain("'progressbar-fill'");
+    expect(example).toContain("'progress-bar-fill'");
+  });
+
   it('returns empty string with no targets', () => {
     expect(buildDefineThemeExample({targets: []})).toBe('');
   });

@@ -4,7 +4,7 @@
 
 /**
  * @file NavMenuContext.tsx
- * @input Uses React createContext/use
+ * @input Layer-scoped React context/use
  * @output Exports NavHeadingCloseContext, NavHeadingMenuContext, and hooks
  * @position Context providers; consumed by NavHeadingMenu and NavHeadingMenuItem
  *
@@ -13,6 +13,7 @@
  */
 
 import {createContext, use} from 'react';
+import {createLayerScopedContext} from '../Layer/layerScopedContext';
 
 export type NavHeadingMenuSize = 'sm' | 'md' | 'lg';
 
@@ -43,7 +44,7 @@ export interface NavHeadingMenuContextValue {
 }
 
 export const NavHeadingMenuContext =
-  createContext<NavHeadingMenuContextValue | null>(null);
+  createLayerScopedContext<NavHeadingMenuContextValue | null>(null);
 NavHeadingMenuContext.displayName = 'NavHeadingMenuContext';
 
 export function useNavHeadingMenuContext(): NavHeadingMenuContextValue | null {

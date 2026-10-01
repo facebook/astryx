@@ -14,6 +14,7 @@ applies_to:
     packages/core/src/Layer/,
     packages/core/src/Popover/,
     packages/core/src/Dialog/,
+    packages/lab/src/Drawer/,
     packages/core/src/DropdownMenu/,
     packages/core/src/Tooltip/,
     packages/core/src/HoverCard/,
@@ -32,14 +33,26 @@ verified_by:
     packages/core/src/Popover/Popover.test.tsx,
     packages/core/src/DropdownMenu/DropdownMenu.test.tsx,
     packages/core/src/DropdownMenu/DropdownMenuSubMenu.test.tsx,
+    packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx,
     packages/core/src/hooks/useFocusTrap.test.tsx,
     packages/core/src/hooks/useMenuHover.test.tsx,
     packages/core/src/Toast/ToastViewport.test.tsx,
   ]
-deciding_specs: []
+deciding_specs: [spec:AST-038]
 ---
 
 # Layer runtime
+
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "layering": ["INV2", "INV5", "INV6", "INV7"]
+  }
+}
+```
 
 This record describes the layer runtime shipped on current `main`. Accepted but
 unimplemented changes live in `spec:AST-003`; they are not current architecture.
@@ -149,15 +162,16 @@ can perform its own action without closing the layer.
 `family:overlay-dismissal` owns the shipped Escape/platform-close membership
 contract. The current shared stack registers present layers with `close` or
 `block` behavior and orders them by logical depth, DOM containment, then stable
-registration sequence. `useFocusTrap` adapts an active trap with `onEscape` into
+active-cycle registration sequence. `useFocusTrap` adapts an active trap with `onEscape` into
 that stack.
 
-Tooltip, HoverCard, Dialog, Popover, DropdownMenu, Lightbox, and MobileNav all
-register with the shared stack. Tooltip and HoverCard report current DOM presence;
-Popover and DropdownMenu register through `useFocusTrap`; Dialog, Lightbox, and
-MobileNav additionally ask `shouldDismissOnCloseRequest()` before acting on native
-platform close requests. Other family members still use local Escape handling as
-listed in `family:overlay-dismissal`.
+Tooltip, HoverCard, Dialog, Lab Drawer, Popover, DropdownMenu, Lightbox,
+MobileNav, and BottomSheetSwitcher all register with the shared stack. Tooltip
+and HoverCard report current DOM presence; Popover and DropdownMenu register
+through `useFocusTrap`; Dialog, Lightbox, MobileNav, BottomSheetSwitcher, and
+Lab Drawer additionally ask `shouldDismissOnCloseRequest()` before acting on
+native platform close requests. Other family members still use local Escape
+handling as listed in `family:overlay-dismissal`.
 
 Outside interaction is not coordinated by the shared stack. Current paths are
 independent:
@@ -174,6 +188,47 @@ The shared stack exposes `isTopmostLayer()`, but current outside, backdrop, touc
 and swipe paths do not use it. There is no shared interaction-owner role,
 association graph, branch registry, or outside-branch resolution operation on
 current `main`.
+
+### Layer content boundary — AST-038 implementation projection
+
+[AST-038](../specs/AST-038-layer-text-boundary/spec.md) owns the reading baseline
+and surface/group boundary. This implementation resets layer-root text and whole
+React contexts carrying surface/group membership; structural CSS isolation is
+incomplete.
+
+The shared private text baseline is applied in both `useLayer` renderers and the
+Dialog, Lightbox, MobileNav, BottomSheetPanel, and ToastViewport content roots.
+Component and caller styling remains stronger. Existing padding normalization,
+hosting, theme inheritance, and writing context remain unchanged.
+
+`createLayerScopedContext` creates surface-scoped contexts whose complete default
+value is provided by `LayerContentBoundary`. Membership-owned disabled state,
+selection, callbacks, and labels stop together with presentation defaults.
+Existing context shapes and public hooks are unchanged. Content-local providers
+remain owners; consumers requiring a group need its complete provider inside the
+new surface. Menus already establish their own content-local owner and close
+chain. Unrelated application state, collection protocols, semantic DOM selection,
+and interaction coordination continue through ordinary React contexts.
+
+Each boundary snapshots its provider chain at mount so later lazy imports cannot
+remount live content or discard state/focus. Existing native depth-provider seams
+retain their original depth values; raw Layer, sheet panels, and toast content
+use the private content boundary directly. Toast page children stay outside it.
+
+Lab Drawer uses the equivalent package-local text baseline and retains its
+existing hosting, dismissal depth, and ancestor React contexts. Whole-context
+isolation for Drawer is not implemented: the private Core boundary is not
+available across that package boundary. This is a remaining package-architecture
+gap, not a claim of complete provider isolation.
+
+Structural custom-property channels remain outside this implementation. A layer
+opened from supported `Step.children` content can contain an inner Stepper that
+still inherits the outer `--step-connector-gap`. React membership ends, but this
+connector-layout inheritance remains a structural isolation gap.
+
+Existing component behavior checks cover membership exit, explicit inner owners,
+unrelated context continuity, and state/focus retention. Browser evidence covers
+text inheritance and visual appearance.
 
 ### Current global and nonparticipating surfaces
 
@@ -296,6 +351,8 @@ be updated only as that work ships.
   menu-cascade parent-close chain.
 - Dialog families own native modal/backdrop presentation and their local channel
   policies.
+- Lab Drawer owns modal `showModal()` and non-modal `showPopover()` hosting while
+  the shared dismissal stack owns Escape and platform close routing.
 - `LayerProvider`, `ToastContext`, `useToast`, and `ToastViewport` own current
   notification state, dispatch, and viewport rendering.
 - CommandPalette owns command search and selection; Dialog owns its native modal
@@ -307,7 +364,8 @@ be updated only as that work ships.
 
 ## Deciding specs
 
-No system spec changes the shipped runtime described here.
+`spec:AST-038` governs the layer content boundary projected above. It does not
+change the hosting runtime described here.
 
 `spec:AST-003` is accepted but unimplemented. It defines the approved next
 runtime and must move to `shipped` before its requirements are incorporated into

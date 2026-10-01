@@ -48,6 +48,7 @@ import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 
 const styles = stylex.create({
   root: {
@@ -60,7 +61,6 @@ const styles = stylex.create({
   // content via the `astryx-collapsible-trigger` target — e.g. a heading font
   // on the trigger while the content stays on the body font.
   trigger: {
-    all: 'unset',
     boxSizing: 'border-box',
     display: 'flex',
     alignItems: 'center',
@@ -76,8 +76,8 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     textAlign: 'start',
     paddingBlock: 0,
-    // `all: unset` above wipes the UA focus outline; restore a keyboard-only
-    // focus ring using the standard token/offset (WCAG 2.4.7).
+    // Restore a keyboard-only focus ring using the standard token/offset
+    // (WCAG 2.4.7).
   },
   // Capsize: trim leading from text triggers
   triggerLabel: {
@@ -95,8 +95,7 @@ const styles = stylex.create({
     flexGrow: 1,
   },
   // Disabled trigger — non-interactive, dimmed. Native `disabled` on the
-  // button blocks click + keyboard activation; these styles restore the
-  // visual affordance that `all: unset` wipes.
+  // button blocks click + keyboard activation.
   triggerDisabled: {
     cursor: 'default',
     opacity: 0.5,
@@ -411,6 +410,10 @@ export function Collapsible({
           focusOutlineProps.focusVisible(
             styles.trigger,
             density != null && triggerDensity[density],
+            // The system's pressed overlay on the disclosure row. The trigger
+            // has no hover surface of its own, so this is the one background
+            // it paints, and only while it is pressed.
+            !isDisabled && interactionOverlayStyles.pressedBackgroundColor,
             isDisabled && styles.triggerDisabled,
           ),
         )}>

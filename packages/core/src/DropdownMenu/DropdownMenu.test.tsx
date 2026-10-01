@@ -3,7 +3,7 @@
 /**
  * @file DropdownMenu.test.tsx
  * @input Uses vitest, @testing-library/react, DropdownMenu component
- * @output Unit tests for DropdownMenu component behavior
+ * @output Unit tests for DropdownMenu behavior and derived bottom-sheet item padding
  * @position Testing; validates DropdownMenu.tsx implementation
  *
  * SYNC: When DropdownMenu.tsx changes, update tests to match new behavior
@@ -165,7 +165,33 @@ describe('DropdownMenu', () => {
     });
     expect(
       screen.getByRole('button', {name: 'Edit project'}).closest('li'),
-    ).toHaveStyle({paddingInline: 'var(--spacing-3)'});
+    ).toHaveStyle({
+      paddingInline: 'var(--_item-inset-inline)',
+      '--_item-inset-inline': 'var(--spacing-3)',
+    });
+  });
+
+  it('keeps bottom-sheet section groups inside semantic list items', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <DropdownMenu
+        button={{label: 'File actions'}}
+        presentation="bottom-sheet"
+        items={[
+          {
+            type: 'section',
+            title: 'Create',
+            items: [{label: 'New file'}],
+          },
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /File actions/}));
+
+    const group = screen.getByRole('group', {name: 'Create'});
+    expect(group.parentElement).toHaveRole('listitem');
   });
 
   it('drills into nested data items in bottom-sheet presentation', async () => {
@@ -1358,6 +1384,34 @@ describe('DropdownMenu sections', () => {
   });
 });
 
+describe('DropdownMenuItem ref', () => {
+  it('a ref reaches the menuitem element', () => {
+    const ref = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} ref={ref} />
+      </DropdownMenu>,
+    );
+    const row = screen.getByRole('menuitem', {name: 'Edit', hidden: true});
+    expect(ref).toHaveBeenCalledWith(row);
+    // The row root, not a child of it: what the ref sees is the element the
+    // menu's roving focus and role structure are built on.
+    expect(ref.mock.calls[0][0]).toBe(row);
+  });
+
+  it('a ref object holds the menuitem element', () => {
+    const ref = {current: null as HTMLElement | null};
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} ref={ref} />
+      </DropdownMenu>,
+    );
+    expect(ref.current).toBe(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    );
+  });
+});
+
 describe('DropdownMenu dividers', () => {
   it('renders dividers between items', () => {
     render(
@@ -1870,9 +1924,14 @@ describe('DropdownMenu keyboard access for menuitemradio/menuitemcheckbox (#3829
 
     // A mouse hover over another item moves focus to it, so the single
     // focus-driven highlight follows the pointer instead of leaving two.
+    // Focus must be scroll-free: scrolling the focused item into view moves
+    // the next item under the stationary pointer, which re-highlights and
+    // scrolls again — a runaway auto-scroll loop.
+    const focusSpy = vi.spyOn(del, 'focus');
     fireEvent.pointerMove(del, {pointerType: 'mouse'});
     expect(del).toHaveFocus();
     expect(edit).not.toHaveFocus();
+    expect(focusSpy).toHaveBeenCalledWith({preventScroll: true});
   });
 
   it('does not move focus on hover for a disabled item', async () => {
