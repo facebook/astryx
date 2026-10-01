@@ -10,6 +10,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'gapReport',
+  namespace: 'cli/api',
   displayName: 'gapReport()',
   summary: 'Route a design-system gap through the fan-out handler composition.',
   description:

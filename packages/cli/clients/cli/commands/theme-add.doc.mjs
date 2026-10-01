@@ -13,7 +13,7 @@ export const doc = {
   type: 'command',
   name: 'theme add',
   displayName: 'astryx theme add',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Scaffold a theme into your project as editable source',
   description:
     "Copies a bundled or installed integration theme's source into your project so you own it. " +
@@ -49,7 +49,7 @@ export const doc = {
     {code: 0, when: 'success'},
     {
       code: 1,
-      when: 'unknown or ambiguous theme, a path escape, a missing catalog file, or an existing file without --overwrite',
+      when: 'unknown or ambiguous theme, a path escape, a missing descriptor or source, or an existing file without --overwrite',
     },
   ],
   related: ['theme list', 'theme build'],

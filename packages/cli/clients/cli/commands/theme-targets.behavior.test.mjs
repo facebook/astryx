@@ -17,8 +17,9 @@ describe('astryx theme targets', () => {
     const {status, stdout} = await runCli(['theme', 'targets', 'Switch']);
 
     expect(status).toBe(0);
-    expect(stdout).toMatch(/^switch\s+Switch\s+size\s+checked, disabled$/m);
-    expect(stdout).toMatch(/^switch-thumb\s+Switch\s+size\s+checked$/m);
+    // Inline layout: key  component - props - states - className
+    expect(stdout).toMatch(/^switch\s+Switch - size - checked, disabled - astryx-switch$/m);
+    expect(stdout).toMatch(/^switch-thumb\s+Switch - size - checked - astryx-switch-thumb$/m);
     expect(stdout).toMatch(/4 across 1 component/);
   });
 
@@ -28,7 +29,7 @@ describe('astryx theme targets', () => {
     expect(status).toBe(0);
     expect(stdout).toMatch(/^popover\s{2,}Popover/m);
     expect(stdout).toMatch(
-      /^popover-surface \[deprecated; use popover\]\s{2,}Popover/m,
+      /^popover-surface\s{2,}Popover - astryx-popover-surface - deprecated; use popover$/m,
     );
   });
 

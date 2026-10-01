@@ -38,8 +38,8 @@ function, and the vocabulary that human-readable output may use.
   structure.
 - Discoverability, environment variables, global options, and configuration.
   `spec:AST-017` FR14–FR20 own those rules.
-- Classifying a removal, rename, or behavior change. `spec:AST-017` FR1–FR8 own
-  compatibility.
+- Classifying a removal, rename, behavior change, deprecation, or incompatible fix.
+  [`spec:AST-017`](../AST-017/spec.md) owns compatibility and release lifecycle.
 - The JSON envelope, error codes, and generated help. `architecture:cli-surface`
   INV2, INV3, and INV7 own them.
 - Equivalent internal implementations remain valid when they satisfy this contract.
@@ -132,8 +132,6 @@ The CLI has 17 top-level commands. The command docs of 28 commands and
 subcommands name the function they call. Known gaps, for which this record does
 not assign migrations:
 
-- `theme template` calls a function that `@astryxdesign/cli/api` does not
-  export (FR1);
 - the component, discover, layout, search, template, and theme handlers read
   project state or files themselves (FR1);
 - the theme handler draws its target table from characters, and the docs

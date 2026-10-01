@@ -572,6 +572,11 @@
       "aliases": []
     },
     {
+      "name": "component-lab-mobile-tokenizer",
+      "path": "components/lab/mobile-tokenizer",
+      "aliases": []
+    },
+    {
       "name": "component-lab-radial-chart",
       "path": "components/lab/radial-chart",
       "aliases": []
@@ -969,6 +974,11 @@
     {
       "name": "component-table-row",
       "path": "components/table-row",
+      "aliases": []
+    },
+    {
+      "name": "component-table-selection-toolbar",
+      "path": "components/table-selection-toolbar",
       "aliases": []
     },
     {
@@ -1971,6 +1981,31 @@
       "aliases": []
     },
     {
+      "name": "example-drawer-mobile-the-56px-page-reveal-default",
+      "path": "examples/drawer/mobile-the-56px-page-reveal-default",
+      "aliases": []
+    },
+    {
+      "name": "example-drawer-modal-or-non-modal-has-scrim",
+      "path": "examples/drawer/modal-or-non-modal-has-scrim",
+      "aliases": []
+    },
+    {
+      "name": "example-drawer-slide-in-from-the-start-edge",
+      "path": "examples/drawer/slide-in-from-the-start-edge",
+      "aliases": []
+    },
+    {
+      "name": "example-drawer-wide-desktop-panel-full-width-on-mobile",
+      "path": "examples/drawer/wide-desktop-panel-full-width-on-mobile",
+      "aliases": []
+    },
+    {
+      "name": "example-drawer-width-budget-pixels-or-any-css-length",
+      "path": "examples/drawer/width-budget-pixels-or-any-css-length",
+      "aliases": []
+    },
+    {
       "name": "example-dropdown-menu-item-basic",
       "path": "examples/dropdown-menu-item/basic",
       "aliases": []
@@ -2193,6 +2228,11 @@
     {
       "name": "example-item-basic",
       "path": "examples/item/basic",
+      "aliases": []
+    },
+    {
+      "name": "example-item-document-tabs",
+      "path": "examples/item/document-tabs",
       "aliases": []
     },
     {
@@ -3561,6 +3601,16 @@
       "aliases": []
     },
     {
+      "name": "example-use-table-selection-table-bulk-actions",
+      "path": "examples/use-table-selection/table-bulk-actions",
+      "aliases": []
+    },
+    {
+      "name": "example-use-table-selection-table-floating-bulk-actions",
+      "path": "examples/use-table-selection/table-floating-bulk-actions",
+      "aliases": []
+    },
+    {
       "name": "example-use-table-sticky-columns-pinned-columns",
       "path": "examples/use-table-sticky-columns/pinned-columns",
       "aliases": []
@@ -4173,6 +4223,11 @@
     {
       "name": "showcase-divider-variants",
       "path": "showcases/divider/variants",
+      "aliases": []
+    },
+    {
+      "name": "showcase-drawer-basic",
+      "path": "showcases/drawer/basic",
       "aliases": []
     },
     {

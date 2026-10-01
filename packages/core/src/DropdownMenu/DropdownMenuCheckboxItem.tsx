@@ -118,6 +118,8 @@ export interface DropdownMenuCheckboxItemProps extends Omit<
    * @default false
    */
   hasCloseOnSelect?: boolean;
+  /** Ref forwarded to the row root — the element carrying `role="menuitemcheckbox"`. */
+  ref?: React.Ref<HTMLElement>;
   /**
    * Content to render after the label and description, such as a keyboard
    * shortcut hint or badge.

@@ -5,6 +5,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'integrationAddComponent',
+  namespace: 'cli/api',
   displayName: 'integrationAddComponent()',
   summary: 'Add a complete component contribution.',
   description:

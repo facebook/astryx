@@ -220,8 +220,10 @@ A public API proposal is admitted only when it passes both gates:
 
 For every public API or public behavior delta, identify the canonical owner and
 apply the routing defined by `architecture:knowledge-contracts`. This spec owns
-API admission and semantic-shape requirements; it does not copy review outcomes
-or pull-request disposition.
+API admission and semantic-shape requirements; the
+[Release compatibility and versioning spec](../AST-017/spec.md) owns lifecycle,
+classification, deprecation, correction, and release treatment. Neither record copies
+review outcomes or pull-request disposition.
 
 A draft record may provide context and route the unresolved question, but it
 cannot clear current authority. Exact-head owner discussion supplies decision

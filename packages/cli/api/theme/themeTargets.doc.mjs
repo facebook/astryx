@@ -12,6 +12,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'themeTargets',
+  namespace: 'cli/api',
   displayName: 'themeTargets()',
   summary: 'List every component theming target a theme can override.',
   description:

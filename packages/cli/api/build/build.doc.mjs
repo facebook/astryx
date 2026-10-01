@@ -11,15 +11,19 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'build',
+  namespace: 'cli/api',
   displayName: 'build()',
   summary:
-    'Page-building assistant: the how-to-build playbook, or a composition kit for an idea.',
+    'Page-building assistant: the how-to-build playbook, or the page template to start from for an idea.',
   description:
-    'The "assemble a page" entry point. Called with no query it returns the ' +
+    'The "build a page" entry point. Called with no query it returns the ' +
     'how-to-build-a-page playbook as data: the workflow steps with their ' +
-    'commands, the on-system rules, and related lookups. Called with a query it runs the unified search and groups the ' +
-    'hits into a composition KIT: the closest page templates, drop-in blocks, ' +
-    'and idea-specific components/hooks, plus the always-on frame + foundation.',
+    'commands, the on-system rules, and related lookups. Called with a query it names the page template to ' +
+    'START from (always one: the page template a ranker built for long descriptions puts first, else the app ' +
+    'shell) and the next two templates, ' +
+    'and the unified search grouped around it: the other close page templates, drop-in blocks, and ' +
+    'idea-specific components/hooks, plus the always-on frame + foundation. A template carries the page ' +
+    'frame and spacing, so the kit never recommends composing a page from components.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'build(query?: string, options?: BuildOptions): Promise<BuildHelpResponse | BuildKitResponse>',
@@ -59,7 +63,7 @@ export const doc = {
     {
       type: 'build.kit',
       description:
-        'The grouped composition kit: the echoed query, hasResults/matchCount/directMatch fields, the closest page templates (≤3), drop-in block patterns (≤5), idea-specific components/hooks (≤6), and the always-on frame + foundation component-name arrays. Carries `hint` only when the kit came back thin — what to try instead, so a caller does not read a near-empty kit as "the package has nothing".',
+        "The page template to start from and the kit around it: the echoed query, hasResults/matchCount/directMatch fields, `start` (the template to scaffold, the `template <id> --type page <path>` command that selects it, whether the page ranker's pick is also search's direct match, the closest page, or the fallback app shell, and the ranker's next two `alternatives`), search's closest page templates (≤3), drop-in block patterns (≤5), idea-specific components/hooks (≤6), and the always-on frame + foundation component-name arrays. Carries `hint` only when the kit came back thin — what to try instead, so a caller does not read a near-empty kit as \"the package has nothing\".",
     },
   ],
   throws: [
@@ -70,7 +74,10 @@ export const doc = {
   ],
   examples: [
     {label: 'Get the playbook', code: 'const r = await build();'},
-    {label: 'Compose a page', code: "await build('analytics dashboard');"},
+    {
+      label: 'Find the template to start from',
+      code: "const {data} = await build('analytics dashboard');\n// data.start.command: 'astryx template dashboard --type page <path>'",
+    },
     {
       label: 'Restrict + limit',
       code: "await build('pricing', {type: 'template', limit: 10});",

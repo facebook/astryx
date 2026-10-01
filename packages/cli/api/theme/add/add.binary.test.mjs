@@ -37,21 +37,10 @@ beforeEach(() => {
     "export default {themes: './themes'};\n",
   );
   fs.writeFileSync(
-    path.join(packageDir, 'themes', 'manifest.json'),
-    JSON.stringify({
-      version: 1,
-      themes: [
-        {
-          slug: 'ocean',
-          displayName: 'Ocean',
-          description: 'Integration theme that ships a font.',
-          maintained: true,
-          entry: 'oceanTheme.ts',
-          exportName: 'oceanTheme',
-          files: ['oceanTheme.ts', 'fonts/ocean.woff2'],
-        },
-      ],
-    }),
+    path.join(themeDir, 'oceanTheme.doc.mjs'),
+    `/** @type {import('@astryxdesign/cli/authoring').ThemeDoc} */
+export default {type: 'theme', name: 'ocean', displayName: 'Ocean', description: 'Integration theme that ships a font.', maintained: true};
+`,
   );
   fs.writeFileSync(
     path.join(themeDir, 'oceanTheme.ts'),
@@ -64,14 +53,18 @@ afterEach(() => {
   fs.rmSync(tmpDir, {recursive: true, force: true});
 });
 
-describe('themeAdd copies every listed file', () => {
+describe('themeAdd copies every file of the theme', () => {
   it('copies a binary file byte for byte', async () => {
     const result = await themeAdd('ocean', {
       cwd: tmpDir,
       package: '@acme/themes',
     });
 
-    expect(result.data.files).toEqual(['oceanTheme.ts', 'fonts/ocean.woff2']);
+    expect(result.data.files).toEqual([
+      'oceanTheme.ts',
+      'fonts/ocean.woff2',
+      'oceanTheme.doc.mjs',
+    ]);
     const copied = fs.readFileSync(
       path.join(tmpDir, 'src', 'themes', 'ocean', 'fonts', 'ocean.woff2'),
     );

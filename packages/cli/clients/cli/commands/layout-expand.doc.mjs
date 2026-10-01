@@ -13,7 +13,7 @@ export const doc = {
   type: 'command',
   name: 'layout expand',
   displayName: 'astryx layout expand',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Expand a layout expression into validated XDS TSX',
   description:
     'Parses and validates a compressed XLE/XLO expression, then expands it into ' +

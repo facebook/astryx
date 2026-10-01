@@ -7,6 +7,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'integrationComponentConflicts',
+  namespace: 'cli/api',
   displayName: 'integrationComponentConflicts()',
   summary: 'Find integration component names that also exist in Core.',
   description:

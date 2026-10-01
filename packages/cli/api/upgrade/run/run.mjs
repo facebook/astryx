@@ -17,6 +17,7 @@
  * integration; execution errors abort before the agent-doc write.
  */
 
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
   detectInstalledTargetVersion,
@@ -47,7 +48,58 @@ import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../../error.mjs';
 import {logger} from '../../logger.mjs';
-import {assertWithin, PathSafetyError} from '../../../foundation/fs/path-safety.mjs';
+import {
+  assertWithin,
+  PathSafetyError,
+} from '../../../foundation/fs/path-safety.mjs';
+import {createFileProtectionResolver} from '../../../foundation/fs/file-protection.mjs';
+
+/**
+ * Collapse per-codemod protection hits into one stable row per file.
+ * @param {Array<{file: string, codemod: string, reason: string, declaration: string, generated: boolean, command?: string}>} rows
+ */
+function summarizeProtectedFiles(rows) {
+  const byFile = new Map();
+  for (const row of rows) {
+    const current = byFile.get(row.file) ?? {
+      file: row.file,
+      codemods: new Set(),
+      reasons: new Set(),
+      declarations: new Set(),
+      commands: new Set(),
+    };
+    current.codemods.add(row.codemod);
+    current.reasons.add(row.reason);
+    current.declarations.add(row.declaration);
+    if (row.command) current.commands.add(row.command);
+    byFile.set(row.file, current);
+  }
+  return [...byFile.values()]
+    .map(item => ({
+      file: item.file,
+      codemods: [...item.codemods].sort(),
+      reasons: [...item.reasons].sort(),
+      declarations: [...item.declarations].sort(),
+      commands: [...item.commands].sort(),
+    }))
+    .sort((a, b) => a.file.localeCompare(b.file));
+}
+
+/** @param {string} cwd */
+function loadFileProtection(cwd) {
+  try {
+    return createFileProtectionResolver(cwd);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    logger.error(message);
+    logger.log('Upgrade failed\n');
+    throw new AstryxError(
+      message,
+      undefined,
+      ERROR_CODES.ERR_CODEMOD_PROTECTION_SOURCE,
+    );
+  }
+}
 
 /**
  * Run the upgrade pipeline for a validated, non-list invocation. Returns the
@@ -75,7 +127,11 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     if (err instanceof PathSafetyError) {
       logger.error(err.message);
       logger.log('Aborted\n');
-      throw new AstryxError(err.message, undefined, ERROR_CODES.ERR_PATH_TRAVERSAL);
+      throw new AstryxError(
+        err.message,
+        undefined,
+        ERROR_CODES.ERR_PATH_TRAVERSAL,
+      );
     }
     throw err;
   }
@@ -133,7 +189,10 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     });
   }
 
-  const versionManifests = await getCoreVersionManifests(currentVersion, targetVersion);
+  const versionManifests = await getCoreVersionManifests(
+    currentVersion,
+    targetVersion,
+  );
 
   const coreConfigCodemodNames = [];
   for (const {transforms} of versionManifests) {
@@ -157,6 +216,11 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     }
   }
 
+  // Read and parse all working-tree protection declarations before any
+  // dependency installation or codemod write. Core and integration runners
+  // share this exact snapshot.
+  let protection = loadFileProtection(cwd);
+
   const ready = await ensureCodemodDeps({installDeps: options.installDeps});
   if (!ready) {
     const msg = 'jscodeshift is required but could not be installed.';
@@ -171,34 +235,82 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     path: path_,
     codemod: options.codemod,
     skipCodemods,
+    root: cwd,
+    protection,
   });
-  const coreResult = codemodResult && 'totalFilesChanged' in codemodResult ? codemodResult : null;
+  const coreResult =
+    codemodResult && 'totalFilesChanged' in codemodResult
+      ? codemodResult
+      : null;
 
   /** @type {Array<import('../../../foundation/integrations/integrations.mjs').LoadedIntegration>} */
   let integrations;
   /** @type {import('../../../authoring/config/type').PostCodemodHook[]} */
   let postCodemodHooks;
   try {
-    const projectContext = await loadProjectContext(cwd, options.integration ?? []);
+    const projectContext = await loadProjectContext(
+      cwd,
+      options.integration ?? [],
+    );
     postCodemodHooks = projectContext.postCodemodHooks;
     integrations = projectContext.integrations;
   } catch (err) {
     const configErr = /** @type {Error} */ (err);
+    const allProtected = coreResult?.protectedFiles ?? [];
+    if (allProtected.length > 0) {
+      const protectedFiles = summarizeProtectedFiles(allProtected);
+      logger.error(
+        `${ERROR_CODES.ERR_CODEMOD_PROTECTED}: protected codemod changes remain while loading the Astryx config.`,
+      );
+      for (const item of protectedFiles) {
+        logger.error(`  ${item.file} — ${item.declarations.join('; ')}`);
+      }
+      logger.log('Upgrade incomplete: protected changes remain\n');
+      return {
+        type: 'upgrade.run',
+        data: {
+          from: currentVersion,
+          to: targetVersion,
+          codemods: totalTransforms,
+          integrations: [],
+          agentDocsRefreshed: false,
+          agentDocs: {
+            status: 'current',
+            installedVersion: targetVersion,
+            fromVersions: [],
+            files: [],
+            refreshed: false,
+            action: 'none',
+          },
+          filesChanged: coreResult?.totalFilesChanged ?? 0,
+          transformsApplied: coreResult?.totalTransformsApplied ?? 0,
+          modifiedFiles: uniqueFiles(coreResult?.changedFiles).map(file =>
+            path.relative(cwd, file).split(path.sep).join('/'),
+          ),
+          protectedFiles,
+          declinedCandidates: [],
+          complete: false,
+          errorCode: 'ERR_CODEMOD_PROTECTED',
+          errors: coreResult?.errors ?? [],
+        },
+      };
+    }
     // Graceful dry-run catch: a config that fails strict validation is expected
     // & fixable ONLY when dry-run AND a pending core config codemod previewed a
     // change (the codemod that would repair it).
-    const codemodWouldFixConfig = hasCoreConfigCodemod && (coreResult?.totalFilesChanged ?? 0) > 0;
+    const codemodWouldFixConfig =
+      hasCoreConfigCodemod && (coreResult?.totalFilesChanged ?? 0) > 0;
     if (!apply && codemodWouldFixConfig) {
       // Lightweight inspection — no config/Project load (config is still broken
       // in dry-run; the codemod previewed a fix but did not write it).
       const inspection = inspectAgentDocs(cwd, targetVersion);
-      return statusConfigFixable(
-        {
-          from: currentVersion,
-          to: targetVersion,
-          configError: configErr.message,
-          configCodemods: coreConfigCodemodNames,
-          agentDocs: /** @type {import('../upgrade.type.mjs').AgentDocsSummary} */ ({
+      return statusConfigFixable({
+        from: currentVersion,
+        to: targetVersion,
+        configError: configErr.message,
+        configCodemods: coreConfigCodemodNames,
+        agentDocs:
+          /** @type {import('../upgrade.type.mjs').AgentDocsSummary} */ ({
             status: inspection.status,
             installedVersion: targetVersion,
             fromVersions: inspection.blockVersions,
@@ -206,17 +318,22 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
             refreshed: false,
             action: inspection.status === 'missing' ? 'nudge-init' : 'none',
           }),
-        },
-      );
+      });
     }
     // Genuine config error: abort.
     logger.error(configErr.message);
     logger.log('Aborted\n');
-    throw new AstryxError(configErr.message, undefined, ERROR_CODES.ERR_INVALID_ARGUMENT);
+    throw new AstryxError(
+      configErr.message,
+      undefined,
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
   }
 
   if (integrations.length > 0) {
-    logger.log(`Integrations: ${integrations.map(i => i.name ?? i.__spec).join(', ')}`);
+    logger.log(
+      `Integrations: ${integrations.map(i => i.name ?? i.__spec).join(', ')}`,
+    );
   }
 
   // Non-blocking nudge for integration validation issues (suppressed for
@@ -228,7 +345,9 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     currentVersion,
     targetVersion,
   );
-  const hasIntegrationCodemods = integrationVersionGroups.some(g => g.codemods.length > 0);
+  const hasIntegrationCodemods = integrationVersionGroups.some(
+    g => g.codemods.length > 0,
+  );
 
   for (const {codemods} of integrationVersionGroups) {
     for (const c of codemods) {
@@ -266,14 +385,14 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
   }
 
   if (totalTransforms > 0) {
-    logger.log(`${totalTransforms} codemod${totalTransforms === 1 ? '' : 's'} to run${apply ? '' : ' (dry run)'}`);
+    logger.log(
+      `${totalTransforms} codemod${totalTransforms === 1 ? '' : 's'} to run${apply ? '' : ' (dry run)'}`,
+    );
   } else {
     logger.log('No automatic codemods to run for this version range.');
   }
 
-  /**
-   * @type {{from: string, to: string, codemods: number, integrations: string[], agentDocsRefreshed: boolean, agentDocs: import('../upgrade.type.mjs').AgentDocsSummary, registryCompositions?: import('../upgrade.type.mjs').RegistryCompositionSummary, filesChanged?: number, transformsApplied?: number, errors?: Array<{file: string, codemod: string, error: string}>}}
-   */
+  /** @type {import('../upgrade.type.mjs').UpgradeRunResponse['data']} */
   const receipt = {
     from: currentVersion,
     to: targetVersion,
@@ -281,85 +400,259 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
     integrations: integrations.map(i => i.name ?? i.__spec),
     agentDocsRefreshed: false,
     agentDocs: /** @type {import('../upgrade.type.mjs').AgentDocsSummary} */ ({
-      status: 'current', installedVersion: targetVersion,
-      fromVersions: [], files: [], refreshed: false, action: 'none',
+      status: 'current',
+      installedVersion: targetVersion,
+      fromVersions: [],
+      files: [],
+      refreshed: false,
+      action: 'none',
     }),
   };
 
   let integrationResult = null;
   if (hasIntegrationCodemods) {
+    const coreStagedContents = coreResult?.stagedContents;
+    if (
+      (coreResult?.writtenFiles.length ?? 0) > 0 ||
+      (coreStagedContents?.size ?? 0) > 0
+    ) {
+      protection = createFileProtectionResolver(cwd, {
+        overrides: coreStagedContents,
+      });
+    }
     logger.log('Applying integration codemods...');
-    integrationResult = await runIntegrationCodemodsStep(integrationVersionGroups, {
-      apply,
-      path: path_,
-      codemod: options.codemod,
-      skipCodemods,
-    });
+    integrationResult = await runIntegrationCodemodsStep(
+      integrationVersionGroups,
+      {
+        apply,
+        path: path_,
+        codemod: options.codemod,
+        skipCodemods,
+        root: cwd,
+        protection,
+        contents: coreStagedContents,
+      },
+    );
   }
 
   const registryResult = await reconcileCompositions();
 
   // A file a core codemod AND an integration codemod both changed is one file.
-  // `transformsApplied` stays the count of (codemod, file) changes — the two
-  // numbers are different questions, and they used to be the same number.
   const mergedFilesChanged = new Set([
     ...(coreResult?.changedFiles ?? []),
     ...(integrationResult?.changedFiles ?? []),
   ]).size;
-  const mergedTransformsApplied = (coreResult?.totalTransformsApplied ?? 0) + (integrationResult?.totalTransformsApplied ?? 0);
-  const mergedWrittenFiles = [
-    ...(coreResult?.writtenFiles ?? []),
-    ...(integrationResult?.writtenFiles ?? []),
+  const mergedTransformsApplied =
+    (coreResult?.totalTransformsApplied ?? 0) +
+    (integrationResult?.totalTransformsApplied ?? 0);
+  const mergedChangedFiles = [
+    ...(coreResult?.changedFiles ?? []),
+    ...(integrationResult?.changedFiles ?? []),
     ...(registryResult?.writtenFiles ?? []),
   ];
-  const mergedErrors = [...(coreResult?.errors ?? []), ...(integrationResult?.errors ?? [])];
+  const mergedErrors = [
+    ...(coreResult?.errors ?? []),
+    ...(integrationResult?.errors ?? []),
+  ];
+  let finalErrors = mergedErrors;
+  /** @type {string|undefined} */
+  let hookFailure;
+  const initialProtected = [
+    ...(coreResult?.protectedFiles ?? []),
+    ...(integrationResult?.protectedFiles ?? []),
+  ];
   const registryFilesChanged = registryResult?.writtenFiles.length ?? 0;
+  const generatedChangeBlocked = initialProtected.some(item => item.generated);
+  const shouldRunHooks =
+    postCodemodHooks.length > 0 &&
+    (mergedFilesChanged > 0 ||
+      registryFilesChanged > 0 ||
+      generatedChangeBlocked);
+  /** @type {Map<string, Buffer>} */
+  const protectedBeforeHooks = new Map();
+  if (apply && shouldRunHooks) {
+    for (const item of initialProtected) {
+      const absolute = path.resolve(cwd, item.file);
+      const relative = path.relative(cwd, absolute);
+      if (
+        relative.startsWith(`..${path.sep}`) ||
+        relative === '..' ||
+        path.isAbsolute(relative)
+      )
+        continue;
+      try {
+        if (fs.lstatSync(absolute).isFile()) {
+          protectedBeforeHooks.set(absolute, fs.readFileSync(absolute));
+        }
+      } catch {
+        // A candidate can disappear between planning and regeneration.
+      }
+    }
+  }
+  /** @type {string[]} */
+  const hookModifiedFiles = [];
 
-  if (postCodemodHooks.length > 0 && (mergedFilesChanged > 0 || registryFilesChanged > 0)) {
-    const files = uniqueFiles(mergedWrittenFiles).map(file => path.relative(cwd, file));
+  if (shouldRunHooks) {
+    const files = uniqueFiles(mergedChangedFiles).map(file =>
+      path.relative(cwd, file),
+    );
     try {
-      await runPostCodemodHooks(postCodemodHooks, {packageDir: cwd, files, apply: apply || false});
+      await runPostCodemodHooks(postCodemodHooks, {
+        packageDir: cwd,
+        files,
+        apply: apply || false,
+      });
     } catch (err) {
       const hookErr = /** @type {Error} */ (err);
       const msg = `Post-codemod hook failed: ${hookErr.message}`;
       logger.error(msg);
-      logger.log('Upgrade failed\n');
-      throw new AstryxError(msg, undefined, ERROR_CODES.ERR_CODEMOD_FAILED);
+      if (initialProtected.length === 0) {
+        logger.log('Upgrade failed\n');
+        throw new AstryxError(msg, undefined, ERROR_CODES.ERR_CODEMOD_FAILED);
+      }
+      hookFailure = msg;
+      finalErrors = [
+        ...mergedErrors,
+        {file: '.', codemod: 'post-codemod-hook', error: msg},
+      ];
+      logger.log('Regeneration failed; protected changes remain\n');
+    }
+    if (apply) {
+      for (const [file, before] of protectedBeforeHooks) {
+        try {
+          if (!before.equals(fs.readFileSync(file)))
+            hookModifiedFiles.push(file);
+        } catch {
+          hookModifiedFiles.push(file);
+        }
+      }
     }
   }
 
+  // A successful apply hook may have regenerated protected outputs. Rerun the
+  // selected codemods in preview mode against fresh bytes and fresh declarations
+  // to distinguish resolved outputs from changes that remain blocked.
+  let remainingProtected = initialProtected;
+  if (apply && shouldRunHooks && !hookFailure) {
+    const refreshedProtection = loadFileProtection(cwd);
+    const coreCheck = await runCoreCodemods(versionManifests, {
+      apply: false,
+      path: path_,
+      codemod: options.codemod,
+      skipCodemods,
+      root: cwd,
+      protection: refreshedProtection,
+      silent: true,
+    });
+    const checkedCore =
+      coreCheck && 'totalFilesChanged' in coreCheck ? coreCheck : null;
+    const recheckProtection =
+      (checkedCore?.stagedContents.size ?? 0) > 0
+        ? createFileProtectionResolver(cwd, {
+            overrides: checkedCore?.stagedContents,
+          })
+        : refreshedProtection;
+    const integrationCheck = hasIntegrationCodemods
+      ? await runIntegrationCodemodsStep(integrationVersionGroups, {
+          apply: false,
+          path: path_,
+          codemod: options.codemod,
+          skipCodemods,
+          root: cwd,
+          protection: recheckProtection,
+          contents: checkedCore?.stagedContents,
+          silent: true,
+        })
+      : null;
+    const recheckedProtected = [
+      ...(checkedCore?.protectedFiles ?? []),
+      ...(integrationCheck?.protectedFiles ?? []),
+    ];
+    const recheckedChangedFiles = [
+      ...(checkedCore?.changedFiles ?? []),
+      ...(integrationCheck?.changedFiles ?? []),
+    ].map(file => path.relative(cwd, file).split(path.sep).join('/'));
+    const initialByFile = new Map();
+    for (const item of initialProtected) {
+      const rows = initialByFile.get(item.file) ?? [];
+      rows.push(item);
+      initialByFile.set(item.file, rows);
+    }
+    // A hook that removes a protection marker without regenerating the bytes
+    // does not make the required change disappear. Retain the original
+    // declaration for that still-pending file.
+    for (const file of recheckedChangedFiles) {
+      recheckedProtected.push(...(initialByFile.get(file) ?? []));
+    }
+    remainingProtected = recheckedProtected;
+    finalErrors = [
+      ...mergedErrors,
+      ...(checkedCore?.errors ?? []),
+      ...(integrationCheck?.errors ?? []),
+    ];
+  }
+
+  const protectedFiles = summarizeProtectedFiles(remainingProtected);
   receipt.filesChanged = mergedFilesChanged;
   receipt.transformsApplied = mergedTransformsApplied;
-  receipt.errors = mergedErrors;
+  receipt.modifiedFiles = uniqueFiles([
+    ...mergedChangedFiles,
+    ...hookModifiedFiles,
+  ]).map(file => path.relative(cwd, file).split(path.sep).join('/'));
+  receipt.protectedFiles = protectedFiles;
+  receipt.declinedCandidates = [];
+  receipt.complete = protectedFiles.length === 0;
+  if (!receipt.complete) {
+    receipt.errorCode = 'ERR_CODEMOD_PROTECTED';
+  }
+  receipt.errors = finalErrors;
   if (registryResult) receipt.registryCompositions = registryResult.summary;
 
-  if (receipt.errors?.length > 0) {
+  if (protectedFiles.length > 0) {
+    logger.error(
+      `${ERROR_CODES.ERR_CODEMOD_PROTECTED}: ${protectedFiles.length} protected file${protectedFiles.length === 1 ? '' : 's'} still require${protectedFiles.length === 1 ? 's' : ''} a codemod change:`,
+    );
+    for (const item of protectedFiles) {
+      logger.error(`  ${item.file} — ${item.declarations.join('; ')}`);
+      for (const command of item.commands) {
+        logger.log(`  Regenerate with: ${command}`);
+      }
+    }
+  }
+
+  if (receipt.errors?.length > 0 && protectedFiles.length === 0) {
     const msg = `Upgrade completed with ${receipt.errors.length} codemod error${receipt.errors.length === 1 ? '' : 's'}.`;
     logger.log('Upgrade failed\n');
     throw new AstryxError(msg, undefined, ERROR_CODES.ERR_CODEMOD_FAILED);
   }
 
-  // All codemods + hooks succeeded — render from final post-upgrade state.
-  const agentDocsPlan = await prepareAgentDocsRefresh({
-    cwd,
-    installedVersion: targetVersion,
-    apply,
-    fresh: true,
-  });
-  const completedAgentDocs = apply
-    ? applyAgentDocsRefresh(agentDocsPlan)
-    : agentDocsPlan.summary;
-  receipt.agentDocs = completedAgentDocs;
-  receipt.agentDocsRefreshed = completedAgentDocs.refreshed;
+  // Only refresh managed docs after all required codemod changes are complete.
+  if (protectedFiles.length === 0) {
+    const agentDocsPlan = await prepareAgentDocsRefresh({
+      cwd,
+      installedVersion: targetVersion,
+      apply,
+      fresh: true,
+    });
+    const completedAgentDocs = apply
+      ? applyAgentDocsRefresh(agentDocsPlan)
+      : agentDocsPlan.summary;
+    receipt.agentDocs = completedAgentDocs;
+    receipt.agentDocsRefreshed = completedAgentDocs.refreshed;
+  }
 
   const registryOk = receipt.registryCompositions?.ok ?? true;
   logger.log(
-    registryOk
-      ? (apply ? 'Upgrade complete' : 'Dry run complete') + '\n'
-      : 'Upgrade finished with unresolved registry items\n',
+    protectedFiles.length > 0
+      ? 'Upgrade incomplete: protected changes remain\n'
+      : registryOk
+        ? (apply ? 'Upgrade complete' : 'Dry run complete') + '\n'
+        : 'Upgrade finished with unresolved registry items\n',
   );
   return {
     type: 'upgrade.run',
-    data: /** @type {import('../upgrade.type.mjs').UpgradeRunResponse['data']} */ (/** @type {unknown} */ (receipt)),
+    data: /** @type {import('../upgrade.type.mjs').UpgradeRunResponse['data']} */ (
+      /** @type {unknown} */ (receipt)
+    ),
   };
 }

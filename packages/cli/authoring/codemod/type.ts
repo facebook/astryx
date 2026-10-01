@@ -127,15 +127,20 @@ export interface CodemodEntry {
 
 /** The result of running a single codemod over one or more files. */
 export interface CodemodRunResult {
-  /** How many files THIS codemod changed. */
   filesChanged: number;
-  /**
-   * Absolute paths of the files this codemod changed, dry run included.
-   * `writtenFiles` is apply-only; a caller totalling distinct files across
-   * several codemods needs the identities, not a count it would double.
-   */
+  /** Existing owned files changed or previewed by this codemod. */
   changedFiles: string[];
+  /** Files actually written; empty during a dry run. */
   writtenFiles: string[];
+  /** Existing files that require the change but are protected. */
+  protectedFiles: Array<{
+    file: string;
+    codemod: string;
+    reason: string;
+    declaration: string;
+    generated: boolean;
+    command?: string;
+  }>;
   errors: Array<{file: string; codemod: string; error: string}>;
 }
 

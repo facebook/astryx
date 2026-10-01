@@ -12,6 +12,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'themeBuild',
+  namespace: 'cli/api',
   displayName: 'themeBuild()',
   summary: 'Compile a defineTheme file to CSS + JS + type declarations.',
   description:

@@ -49,7 +49,7 @@ describe('docs.index leaf', () => {
 });
 
 describe('docs() topic reads', () => {
-  it('returns the whole topic by default, as before', async () => {
+  it('returns the whole topic by default', async () => {
     const res = await docs('theme');
     expect(res.type).toBe('docs.detail');
     expect(res.data.sections[0].content.length).toBeGreaterThan(0);

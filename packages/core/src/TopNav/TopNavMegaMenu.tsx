@@ -93,7 +93,8 @@ const styles = stylex.create({
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     fontFamily: 'inherit',
   },
   triggerOpen: {
@@ -209,8 +210,9 @@ const styles = stylex.create({
   // base layout/colors come from navItemStyles.item
   drawerHeader: {
     justifyContent: 'space-between',
-    border: 'none',
-    background: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
   },
   drawerChevron: {
     display: 'inline-flex',

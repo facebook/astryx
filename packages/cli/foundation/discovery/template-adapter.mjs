@@ -24,9 +24,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {createRequire} from 'node:module';
-import {createJiti} from 'jiti';
-import {loadModuleWithParser} from '../fs/module-loader.mjs';
-import {parseTemplate} from '../../authoring/doctypes/template/parse.mjs';
+import {readDocView} from '../doc-compiler/read.mjs';
+import {importDocModule} from '../doc-compiler/import.mjs';
 import {CLI_ROOT, discoverExternalPackages} from '../fs/paths.mjs';
 import {CORE_PROVIDER_ID} from '../identity/providers.mjs';
 import {Project} from '../config/project.mjs';
@@ -44,6 +43,53 @@ const CORE_PACKAGE = CORE_PROVIDER_ID;
  */
 export function pkgOf(t) {
   return t.package ?? CORE_PACKAGE;
+}
+
+/**
+ * Every id that should resolve to a discovered template. Replacements keep
+ * their own integration id and also own the Core id they replace.
+ * @param {{dirName: string, replaces?: string}} template
+ * @returns {string[]}
+ */
+export function templateLookupIds(template) {
+  if (template.replaces && template.replaces !== template.dirName) {
+    return [template.dirName, template.replaces];
+  }
+  return [template.dirName];
+}
+
+/**
+ * Remove entries shadowed in the default discovery view while retaining them in
+ * package-scoped views. An active replacement owns its target id. A rejected
+ * same-id declaration falls back to Core when a Core template of the same kind
+ * owns that id; otherwise the integration template remains available by kind.
+ * @param {DiscoveredTemplate[]} templates
+ * @returns {DiscoveredTemplate[]}
+ */
+export function effectiveTemplateDiscovery(templates) {
+  const activeTargets = new Set(
+    templates
+      .filter(template => template.replaces != null)
+      .map(template => `${template.type}:${template.replaces}`),
+  );
+  const coreIds = new Set(
+    templates
+      .filter(template => pkgOf(template) === CORE_PACKAGE)
+      .map(template => `${template.type}:${template.dirName}`),
+  );
+  return templates.filter(template => {
+    if (
+      template.replacementRejected &&
+      template.replacementTarget === template.dirName &&
+      coreIds.has(`${template.type}:${template.dirName}`)
+    ) {
+      return false;
+    }
+    return (
+      !activeTargets.has(`${template.type}:${template.dirName}`) ||
+      template.replaces != null
+    );
+  });
 }
 
 /**
@@ -68,6 +114,11 @@ export function pkgOf(t) {
  * @property {string} filePath
  * @property {string} docPath
  * @property {string} [package]
+ * @property {boolean} [autolinked] whether the owning integration was discovered
+ *   from package.json rather than named in astryx.config
+ * @property {string} [replaces] active Core template id this integration template replaces
+ * @property {boolean} [replacementRejected] whether an invalid declaration was disabled
+ * @property {string} [replacementTarget] disabled declaration target
  */
 
 /**
@@ -76,6 +127,15 @@ export function pkgOf(t) {
  * @property {string} package
  * @property {string} [template]
  * @property {string} message
+ * @property {string} [code]
+ * @property {'warning' | 'error'} [severity]
+ * @property {string} [replacementTarget] Core target whose replacement set is invalid
+ * @property {boolean} [autolinked] whether the declaration came from an autolinked integration
+ */
+
+/**
+ * A semantic error in an integration template replacement declaration.
+ * @typedef {TemplateDiscoveryError & {code: 'missing_template_replacement_target' | 'ambiguous_template_replacement' | 'invalid_template_replacement', severity: 'warning' | 'error'}} TemplateReplacementError
  */
 
 /**
@@ -84,31 +144,28 @@ export function pkgOf(t) {
  */
 
 /**
- * Canonical basename suffixes for template-spec files, in precedence order.
- * A template spec is a scaffoldable TEMPLATE (a plain object stamped with a
- * `type` of `'page'` or `'block'`), so `.template.*` is the descriptive family
- * name.
+ * Released compatibility suffixes, in precedence order. Stable 0.6.0
+ * documented `.template.*`, so discovery keeps reading those files while all
+ * new authoring uses `.doc.mjs`.
  */
 const TEMPLATE_SUFFIXES = ['.template.ts', '.template.mjs', '.template.js'];
 
 /**
- * Legacy basename suffixes for template-spec files, in precedence order.
- * `.doc.*` was inherited from the component-doc convention before templates
- * had their own name; it is still accepted during the transition window.
+ * Descriptor suffixes for templates, in precedence order. New authoring always
+ * emits `.doc.mjs`; the TypeScript and JavaScript variants remain readable.
  */
 const DOC_SUFFIXES = ['.doc.ts', '.doc.mjs', '.doc.js'];
 
 /**
- * The union of canonical + legacy template-spec suffixes, canonical first so
- * `.template.*` wins over `.doc.*` when both stems exist. All template
- * discovery matches this union so a `Foo.template.ts` file is treated exactly
- * like a legacy `Foo.doc.mjs`.
+ * Every template-spec suffix, in the released precedence a core page directory
+ * uses to pick one file. Integration discovery never picks: every match is a
+ * template, so two specs for one stem list twice and read as ambiguous.
  */
 const ALL_TEMPLATE_SUFFIXES = [...TEMPLATE_SUFFIXES, ...DOC_SUFFIXES];
 
 /**
  * The template-spec suffix present on `file`, or null if none matches.
- * Recognizes both the canonical `.template.*` and legacy `.doc.*` families.
+ * Recognizes both the canonical `.doc.*` and released `.template.*` families.
  * @param {string} file
  * @returns {string | null}
  */
@@ -122,16 +179,6 @@ function matchedTemplateSuffix(file) {
  */
 const TEMPLATE_SUFFIX_RE = /\.(template|doc)\.(ts|mjs|js)$/;
 
-/** @type {ReturnType<typeof createJiti> | undefined} */
-let jitiInstance;
-/** Lazily-created jiti for loading `.ts` template specs (JSX-capable). */
-function getJiti() {
-  if (!jitiInstance) {
-    jitiInstance = createJiti(import.meta.url, {jsx: true});
-  }
-  return jitiInstance;
-}
-
 /**
  * Load an integration template doc module and validate it against the template
  * envelope at the load boundary. Default export only — `.ts` via jiti,
@@ -144,7 +191,13 @@ function getJiti() {
  * @param {string} [label]
  */
 async function loadIntegrationDoc(file, label) {
-  return loadModuleWithParser(file, parseTemplate, {label});
+  return readDocView(file, {
+    root: 'templates',
+    exports: ['default'],
+    label: label ?? file,
+    strict: true,
+    value: 'parsed',
+  });
 }
 
 const TEMPLATES_DIR = path.join(CLI_ROOT, 'assets', 'templates');
@@ -492,12 +545,11 @@ function unsafeFixtureReference(source, at, reason) {
 /**
  * Load a template-spec module and return its metadata object. Supports both
  * families of suffix:
- *   - Legacy `.doc.*` core/external specs export `export const doc = {...}`.
- *   - Canonical `.template.*` specs export the stamped object (`type: 'page' |
- *     'block'`) as the default export.
- * Prefers the default export, falling back to the named `doc` export, so a
- * `Foo.template.ts` (default export) is read identically to a legacy
- * `Foo.doc.mjs` (`doc` export). `.ts` is loaded via jiti; `.mjs`/`.js` via a
+ *   - Canonical `.doc.*` specs may export the stamped object (`type: 'page' |
+ *     'block'`) as the default export or use the historical named `doc` export.
+ *   - Released `.template.*` compatibility specs use the same object shape.
+ * Prefers the default export, falling back to the named `doc` export. `.ts` is
+ * loaded via jiti; `.mjs`/`.js` via a
  * native dynamic import. Returns null if the file does not exist.
  *
  * @param {string} docPath absolute path to the spec file
@@ -505,10 +557,7 @@ function unsafeFixtureReference(source, at, reason) {
  */
 async function loadDocModule(docPath) {
   if (!fs.existsSync(docPath)) return null;
-  const docModule = docPath.endsWith('.ts')
-    ? await getJiti().import(docPath)
-    : await import(`file://${docPath}`);
-  return docModule.default ?? docModule.doc;
+  return readDocView(docPath, {root: 'templates', loader: 'template'});
 }
 
 /**
@@ -553,11 +602,11 @@ function findDocFiles(dir, pattern) {
 
 /**
  * Resolve the template-spec file for a core page directory: the first existing
- * `template.<suffix>` in canonical-then-legacy precedence, or null.
+ * metadata file in {@link ALL_TEMPLATE_SUFFIXES} precedence, or null.
  * @param {string} dirPath
  * @returns {string | null}
  */
-function findPageDocFile(dirPath) {
+export function findPageDocFile(dirPath) {
   for (const suffix of ALL_TEMPLATE_SUFFIXES) {
     const candidate = path.join(dirPath, `template${suffix}`);
     if (fs.existsSync(candidate)) return candidate;
@@ -696,44 +745,297 @@ export async function discoverCoreTemplates() {
 }
 
 /**
- * @param {string} [cwd]
- * @returns {Promise<DiscoveredTemplate[]>}
+ * Apply valid integration replacements to a raw template set.
+ *
+ * One declaration owns its Core target. When different configured packages
+ * replace the same target, the later package wins and discovery returns a
+ * warning, matching integration-doc replacement order. Multiple declarations
+ * inside one package are invalid and fail closed. Missing targets and kind
+ * mismatches also fail closed: Core stays selected and every integration
+ * template remains addressable by its own id.
+ *
+ * @param {DiscoveredTemplate[]} templates
+ * @param {TemplateDiscoveryError[]} [declarationErrors]
+ * @returns {{templates: DiscoveredTemplate[], errors: TemplateReplacementError[]}}
  */
-export async function discoverAll(cwd = process.cwd()) {
+export function applyTemplateReplacements(templates, declarationErrors = []) {
+  /** @type {Map<string, DiscoveredTemplate[]>} */
+  const coreById = new Map();
+  /** @type {Map<string, DiscoveredTemplate[]>} */
+  const replacementsByTarget = new Map();
+
+  for (const template of templates) {
+    if (pkgOf(template) === CORE_PACKAGE) {
+      const matches = coreById.get(template.dirName) ?? [];
+      matches.push(template);
+      coreById.set(template.dirName, matches);
+    }
+    if (template.replaces != null) {
+      const replacements = replacementsByTarget.get(template.replaces) ?? [];
+      replacements.push(template);
+      replacementsByTarget.set(template.replaces, replacements);
+    }
+  }
+
+  const activeReplacements = new Set();
+  const replacedCore = new Set();
+  /** @type {TemplateReplacementError[]} */
+  const errors = declarationErrors.map(error => ({
+    ...error,
+    code: /** @type {TemplateReplacementError['code']} */ (
+      error.code ?? 'invalid_template_replacement'
+    ),
+    severity: error.severity ?? 'error',
+  }));
+  /** @param {TemplateReplacementError} error */
+  const pushError = error => {
+    if (
+      errors.some(
+        existing =>
+          existing.code === error.code &&
+          existing.package === error.package &&
+          existing.template === error.template &&
+          existing.message === error.message,
+      )
+    ) {
+      return;
+    }
+    errors.push(error);
+  };
+  for (const [target, replacements] of replacementsByTarget) {
+    const targetErrors = errors.filter(
+      error => error.replacementTarget === target,
+    );
+    const hasExplicitIntent =
+      replacements.some(replacement => !replacement.autolinked) ||
+      targetErrors.some(error => !error.autolinked);
+    const contenders = hasExplicitIntent
+      ? replacements.filter(replacement => !replacement.autolinked)
+      : replacements;
+    let targetInvalid = targetErrors.some(
+      error =>
+        error.severity === 'error' && (!hasExplicitIntent || !error.autolinked),
+    );
+
+    /** @type {Map<string, DiscoveredTemplate[]>} */
+    const byPackage = new Map();
+    for (const replacement of replacements) {
+      const pkg = pkgOf(replacement);
+      const fromPackage = byPackage.get(pkg) ?? [];
+      fromPackage.push(replacement);
+      byPackage.set(pkg, fromPackage);
+    }
+    for (const [pkg, declarations] of byPackage) {
+      if (declarations.length < 2) continue;
+      if (!hasExplicitIntent || !declarations[0].autolinked) {
+        targetInvalid = true;
+      }
+      const message =
+        `${pkg} declares ${declarations.length} templates as replacements for Core ` +
+        `template "${target}" (${declarations.map(template => template.dirName).join(', ')}). ` +
+        'One package must declare at most one replacement for a Core target.';
+      for (const declaration of declarations) {
+        pushError({
+          code: 'ambiguous_template_replacement',
+          severity: 'error',
+          package: pkg,
+          template: declaration.dirName,
+          replacementTarget: target,
+          autolinked: declaration.autolinked,
+          message,
+        });
+      }
+    }
+
+    const coreMatches = coreById.get(target) ?? [];
+    /** @type {Map<DiscoveredTemplate, DiscoveredTemplate>} */
+    const coreMatchByReplacement = new Map();
+    for (const replacement of replacements) {
+      const invalidAffectsTarget =
+        !hasExplicitIntent || !replacement.autolinked;
+      if (coreMatches.length === 0) {
+        if (invalidAffectsTarget) targetInvalid = true;
+        pushError({
+          code: 'missing_template_replacement_target',
+          severity: 'error',
+          package: pkgOf(replacement),
+          template: replacement.dirName,
+          replacementTarget: target,
+          autolinked: replacement.autolinked,
+          message: `Template "${replacement.dirName}" replaces "${target}", which is not a Core template id.`,
+        });
+        continue;
+      }
+      const sameType = coreMatches.filter(
+        core => core.type === replacement.type,
+      );
+      if (sameType.length !== 1) {
+        if (invalidAffectsTarget) targetInvalid = true;
+        const kinds = coreMatches.map(core => core.type).join(', ');
+        pushError({
+          code: 'invalid_template_replacement',
+          severity: 'error',
+          package: pkgOf(replacement),
+          template: replacement.dirName,
+          replacementTarget: target,
+          autolinked: replacement.autolinked,
+          message:
+            `Template "${replacement.dirName}" is a ${replacement.type} template, but Core ` +
+            `template "${target}" is ${kinds || 'not available'}. A replacement must have the same type.`,
+        });
+        continue;
+      }
+      coreMatchByReplacement.set(replacement, sameType[0]);
+    }
+
+    const validContenders = contenders.filter(replacement =>
+      coreMatchByReplacement.has(replacement),
+    );
+    if (targetInvalid || validContenders.length === 0) continue;
+
+    const replacement = validContenders[validContenders.length - 1];
+    const validReplacements = replacements.filter(candidate =>
+      coreMatchByReplacement.has(candidate),
+    );
+    if (validReplacements.length > 1) {
+      const autolinkedLost =
+        hasExplicitIntent &&
+        validReplacements.some(candidate => candidate.autolinked);
+      const allAutolinked = validReplacements.every(
+        candidate => candidate.autolinked,
+      );
+      pushError({
+        code: 'ambiguous_template_replacement',
+        severity: 'warning',
+        package: pkgOf(replacement),
+        template: replacement.dirName,
+        replacementTarget: target,
+        autolinked: replacement.autolinked,
+        message: autolinkedLost
+          ? `Core template "${target}" is replaced by ${validReplacements.map(candidate => pkgOf(candidate)).join(', ')}. ${pkgOf(replacement)} is explicitly configured, so it wins over autolinked integrations.`
+          : allAutolinked
+            ? `Core template "${target}" is replaced by autolinked dependencies ${validReplacements.map(candidate => pkgOf(candidate)).join(', ')}. ${pkgOf(replacement)} is listed later in package.json dependencies, so it wins. Add the intended package to astryx.config integrations to make precedence explicit.`
+            : `Core template "${target}" is replaced by ${validReplacements.map(candidate => pkgOf(candidate)).join(', ')}. ${pkgOf(replacement)} is configured later, so it wins.`,
+      });
+    }
+
+    activeReplacements.add(replacement);
+    const coreMatch = coreMatchByReplacement.get(replacement);
+    if (coreMatch) replacedCore.add(coreMatch);
+  }
+
+  const effective = templates.flatMap(template => {
+    if (replacedCore.has(template)) return [];
+    if (template.replaces != null && !activeReplacements.has(template)) {
+      const fallback = {
+        ...template,
+        replacementRejected: true,
+        replacementTarget: template.replaces,
+      };
+      delete fallback.replaces;
+      return [fallback];
+    }
+    return [template];
+  });
+
+  return {
+    templates: effective.sort((a, b) => a.name.localeCompare(b.name)),
+    errors,
+  };
+}
+
+/**
+ * Discover the raw Core, external, and integration template set before
+ * replacement declarations are applied.
+ * @param {string} [cwd]
+ * @returns {Promise<{templates: DiscoveredTemplate[], errors: TemplateDiscoveryError[]}>}
+ */
+async function discoverAllSources(cwd = process.cwd()) {
   const [core, external, integration] = await Promise.all([
     discoverCoreTemplates(),
     discoverExternalBlocks(cwd),
     discoverIntegrationTemplates(cwd),
   ]);
-  return [...core, ...external, ...integration.templates].sort((a, b) =>
+  return {
+    templates: [...core, ...external, ...integration.templates],
+    errors: integration.errors,
+  };
+}
+
+/**
+ * Discover every template without hiding replaced Core originals. Internal
+ * package-qualified selection uses this view.
+ * @param {string} [cwd]
+ * @returns {Promise<DiscoveredTemplate[]>}
+ */
+export async function discoverAllUnresolved(cwd = process.cwd()) {
+  return (await discoverAllSources(cwd)).templates.sort((a, b) =>
     a.name.localeCompare(b.name),
   );
 }
 
 /**
- * Like {@link discoverAll} but also returns integration-template discovery
- * errors (missing same-stem source, missing `type`, load failure). Use this
- * when the caller wants to warn about malformed integration templates.
+ * Resolve replacement declarations while retaining package-addressable entries
+ * that are shadowed or rejected in the default discovery view.
+ * @param {string} [cwd]
+ * @returns {Promise<{templates: DiscoveredTemplate[], errors: Array<TemplateDiscoveryError | TemplateReplacementError>}>}
+ */
+async function resolveAllSources(cwd = process.cwd()) {
+  const discovered = await discoverAllSources(cwd);
+  const replacementErrors = discovered.errors.filter(
+    error => error.replacementTarget != null,
+  );
+  const resolved = applyTemplateReplacements(
+    discovered.templates,
+    replacementErrors,
+  );
+  return {
+    templates: resolved.templates,
+    errors: [
+      ...discovered.errors.filter(error => error.replacementTarget == null),
+      ...resolved.errors,
+    ],
+  };
+}
+
+/**
+ * Discover the resolved catalog before default-view shadowing. Internal
+ * package-qualified selection uses this view.
+ * @param {string} [cwd]
+ * @returns {Promise<DiscoveredTemplate[]>}
+ */
+export async function discoverAllResolved(cwd = process.cwd()) {
+  return (await resolveAllSources(cwd)).templates;
+}
+
+/**
+ * @param {string} [cwd]
+ * @returns {Promise<DiscoveredTemplate[]>}
+ */
+export async function discoverAll(cwd = process.cwd()) {
+  return effectiveTemplateDiscovery(await discoverAllResolved(cwd));
+}
+
+/**
+ * Like {@link discoverAll} but also returns integration-template discovery and
+ * replacement-declaration errors. Use this when the caller wants to warn about
+ * malformed integration templates or inactive replacement declarations.
  *
  * @param {string} [cwd]
- * @returns {Promise<{templates: DiscoveredTemplate[], errors: TemplateDiscoveryError[]}>}
+ * @returns {Promise<{templates: DiscoveredTemplate[], errors: Array<TemplateDiscoveryError | TemplateReplacementError>}>}
  */
 export async function discoverAllWithErrors(cwd = process.cwd()) {
-  const [pages, blocks, integration] = await Promise.all([
-    discoverPages(),
-    discoverAllBlocks(cwd),
-    discoverIntegrationTemplates(cwd),
-  ]);
-  const templates = [...pages, ...blocks, ...integration.templates].sort(
-    (a, b) => a.name.localeCompare(b.name),
-  );
-  return {templates, errors: integration.errors};
+  const resolved = await resolveAllSources(cwd);
+  return {
+    templates: effectiveTemplateDiscovery(resolved.templates),
+    errors: resolved.errors,
+  };
 }
 
 /**
  * Recursively collect integration template-spec files under `root`.
  * Returns absolute paths to files ending in one of ALL_TEMPLATE_SUFFIXES
- * (canonical `.template.*` or legacy `.doc.*`).
+ * (canonical `.doc.*` or released `.template.*` compatibility files).
  *
  * @param {string} root
  * @returns {string[]}
@@ -763,7 +1065,7 @@ function findIntegrationDocFiles(root) {
  * Discover templates contributed by configured integrations.
  *
  * For each integration with a resolved `templates` root, every
- * `<id>.template.{ts,mjs,js}` (or legacy `<id>.doc.{ts,mjs,js}`) file is a
+ * canonical `<id>.doc.{mjs,ts,js}` (or released `<id>.template.{ts,mjs,js}`) file is a
  * template whose id is its path relative to the templates root with the
  * matched suffix stripped (kebab-case, may be nested). The doc's `type`
  * (page|block) decides scaffolding — there is no `/pages` vs `/blocks`
@@ -821,12 +1123,50 @@ async function discoverIntegrationTemplates(cwd = process.cwd()) {
 }
 
 /**
+ * Report replacement declarations that cannot hold inside one package: two of
+ * its templates replacing the same Core target. Cross-package precedence and
+ * target checks happen in {@link applyTemplateReplacements}.
+ * @param {string} pkg
+ * @param {boolean | undefined} autolinked
+ * @param {DiscoveredTemplate[]} templates
+ * @param {TemplateDiscoveryError[]} errors
+ */
+function reportSamePackageReplacements(pkg, autolinked, templates, errors) {
+  /** @type {Map<string, string[]>} */
+  const idsByTarget = new Map();
+  for (const template of templates) {
+    if (template.replaces == null) continue;
+    const ids = idsByTarget.get(template.replaces) ?? [];
+    ids.push(template.dirName);
+    idsByTarget.set(template.replaces, ids);
+  }
+  for (const [target, ids] of idsByTarget) {
+    if (ids.length < 2) continue;
+    const message =
+      `${pkg} declares ${ids.length} templates as replacements for Core template ` +
+      `"${target}" (${ids.join(', ')}). One package must declare at most one ` +
+      'replacement for a Core target.';
+    for (const template of ids) {
+      errors.push({
+        code: 'ambiguous_template_replacement',
+        severity: 'error',
+        package: pkg,
+        autolinked,
+        template,
+        replacementTarget: target,
+        message,
+      });
+    }
+  }
+}
+
+/**
  * Discover the templates contributed by a SINGLE integration. Same per-template
  * rules as {@link discoverIntegrationTemplates} (same-stem source required,
  * page|block type required); broken templates are recorded in `errors` rather
  * than thrown. Exposed for `doctor integration validate` and template authoring checks.
  *
- * @param {{name?: string, __spec?: string, templates?: string}} integration
+ * @param {{name?: string, __spec?: string, __autolinked?: boolean, templates?: string}} integration
  * @returns {Promise<{templates: DiscoveredTemplate[], errors: TemplateDiscoveryError[]}>}
  */
 export async function discoverIntegrationTemplatesForOne(integration) {
@@ -855,6 +1195,20 @@ export async function discoverIntegrationTemplatesForOne(integration) {
         template: id,
         message: `Template "${id}" is missing its same-stem source file ${path.basename(sourcePath)}.`,
       });
+      // A replacement this unusable template declares still counts, so its
+      // target fails closed instead of going to a sibling.
+      const declared = await declaredReplacement(docPath, id);
+      if (declared != null) {
+        errors.push({
+          code: 'invalid_template_replacement',
+          severity: 'error',
+          package: pkgLabel,
+          autolinked: integration.__autolinked,
+          template: id,
+          replacementTarget: declared,
+          message: `Template "${id}" replaces "${declared}", but it cannot be used: it is missing its same-stem source file ${path.basename(sourcePath)}.`,
+        });
+      }
       continue;
     }
 
@@ -867,6 +1221,20 @@ export async function discoverIntegrationTemplatesForOne(integration) {
         template: id,
         message: `Template "${id}" failed to load: ${/** @type {any} */ (err).message}`,
       });
+      // A replacement this unusable template declares still counts, so its
+      // target fails closed instead of going to a sibling (spec:AST-035 FR4).
+      const declared = await declaredReplacement(docPath, id);
+      if (declared != null) {
+        errors.push({
+          code: 'invalid_template_replacement',
+          severity: 'error',
+          package: pkgLabel,
+          autolinked: integration.__autolinked,
+          template: id,
+          replacementTarget: declared,
+          message: `Template "${id}" replaces "${declared}", but it cannot be used: its metadata does not load.`,
+        });
+      }
       continue;
     }
 
@@ -880,6 +1248,18 @@ export async function discoverIntegrationTemplatesForOne(integration) {
         template: id,
         message: `Template "${id}" is missing a "type" of "page" or "block". Stamp the default export with type: 'page' or type: 'block'.`,
       });
+      const declared = doc?.replaces ?? (await declaredReplacement(docPath, id));
+      if (declared != null) {
+        errors.push({
+          code: 'invalid_template_replacement',
+          severity: 'error',
+          package: pkgLabel,
+          autolinked: integration.__autolinked,
+          template: id,
+          replacementTarget: declared,
+          message: `Template "${id}" replaces "${declared}", but it cannot be used: it has no "type".`,
+        });
+      }
       continue;
     }
 
@@ -907,10 +1287,53 @@ export async function discoverIntegrationTemplatesForOne(integration) {
       filePath: sourcePath,
       docPath,
       package: pkgLabel,
+      autolinked: integration.__autolinked,
+      replaces: doc?.replaces,
     });
   }
 
+  reportSamePackageReplacements(
+    pkgLabel,
+    integration.__autolinked,
+    templates,
+    errors,
+  );
   return {templates, errors};
+}
+
+/**
+ * The replacement a template doc declares, even when the doc does not validate
+ * or load: an unusable template's declaration still counts, so its target
+ * fails closed (spec:AST-035 FR4). Null when it declares none.
+ * @param {string} docPath
+ * @param {string} id
+ * @returns {Promise<string | null>}
+ */
+async function declaredReplacement(docPath, id) {
+  try {
+    const doc = await loadIntegrationDoc(docPath, `Template "${id}"`);
+    return doc?.replaces ?? null;
+  } catch {
+    // The doc does not validate; read what it declares without validating.
+  }
+  try {
+    // The guarded importer: anything the doc writes to stdout as it loads
+    // goes to stderr, so `--json` output stays clean.
+    const raw = (await importDocModule(docPath))?.default;
+    if (raw != null && typeof raw === 'object') {
+      return typeof raw.replaces === 'string' ? raw.replaces : null;
+    }
+  } catch {
+    // The module does not load at all; its text may still name a target.
+  }
+  try {
+    const match = /\breplaces\s*:\s*['"]([^'"\n]+)['"]/u.exec(
+      fs.readFileSync(docPath, 'utf8'),
+    );
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
 }
 
 /**

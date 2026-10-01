@@ -12,7 +12,7 @@ export const doc = {
   type: 'command',
   name: 'search',
   displayName: 'astryx search',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Search components, hooks, docs, and templates in one ranked list',
   description:
     'Terminal front-end to search(): prints one ranked, greppable list across ' +

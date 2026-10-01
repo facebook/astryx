@@ -25,8 +25,12 @@ import {execFileSync} from 'node:child_process';
 import {createRequire} from 'node:module';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {resolveContentRoot} from './resolve-content-root.mjs';
-import {template as queryTemplates} from '@astryxdesign/cli/api';
+import {
+  docs as readDocs,
+  template as queryTemplates,
+} from '@astryxdesign/cli/api';
 import docsiteConfig from '../astryx.config.mjs';
+import {integrationContentEnabled} from '../src/lib/integrationTargets.mjs';
 import {expandWorkspaceDirs} from '../../../scripts/lib/workspace-globs.mjs';
 import {
   buildTypeDefinitionIndex,
@@ -89,7 +93,9 @@ function writeRegistry(filename, content) {
  * published package snapshot and never loads workspace integrations.
  */
 function discoverConfiguredComponentPackages() {
-  if (DOCSITE_TARGET !== 'canary') {
+  // Same gate as generate-scope.mjs (src/lib/integrationTargets.mjs): only the
+  // canary target ever loads workspace integration packages.
+  if (!integrationContentEnabled(DOCSITE_TARGET)) {
     return new Set();
   }
 
@@ -1477,7 +1483,7 @@ async function generateBlockRegistry() {
     });
   }
 
-  if (DOCSITE_TARGET === 'canary') {
+  if (integrationContentEnabled(DOCSITE_TARGET)) {
     const templateList = await queryTemplates(undefined, {
       list: true,
       type: 'block',
@@ -1674,6 +1680,41 @@ export const templateMetadataCount = ${templateMetadata.length};
 
 // ── 5. Docs Registry ──────────────────────────────────────────────────
 
+/**
+ * Every guide in the CLI's docs tree, read through the CLI's public docs API:
+ * walk down from each top-level namespace and read each guide by its route.
+ * @returns {Promise<Array<{topic: string, title: string, description: string, category: string | null, sections: unknown[]}>>}
+ */
+async function docsTreeGuides() {
+  const guides = [];
+  const list = await readDocs();
+  const pending = (list.meta?.namespaces ?? []).map(entry => entry.topic);
+  while (pending.length > 0) {
+    const route = pending.shift();
+    const read = await readDocs(route);
+    if (read.type !== 'docs.node') continue;
+    for (const slot of read.data.slots) {
+      for (const child of slot.children) {
+        if (child.kind === 'namespace') {
+          pending.push(child.route);
+        } else if (child.kind === 'generic' && child.route.includes('/')) {
+          // A flat topic in the Unorganized level keeps its own name, and the
+          // flat registry above already has its page.
+          const doc = (await readDocs(child.route)).data;
+          guides.push({
+            topic: child.route.replaceAll('/', '-'),
+            title: doc.title || child.title,
+            description: doc.description || '',
+            category: doc.category || null,
+            sections: doc.sections || [],
+          });
+        }
+      }
+    }
+  }
+  return guides;
+}
+
 async function generateDocsRegistry() {
   console.log('Generating docs registry...');
 
@@ -1714,6 +1755,22 @@ async function generateDocsRegistry() {
       const meta = readDocMeta(docPath);
       description = meta.description;
     }
+    if (sections.length > 0) {
+      // Read the sections through the CLI's docs API, so each link between
+      // docs (`{@link <target>}`) reads as the command that opens its doc, as
+      // it does in `astryx docs`. Only the CLI's own topics are read here, so
+      // the read runs from the CLI package. The docsite renders token tables
+      // itself, so a resolved token reference is not copied into the registry.
+      const read = await readDocs(topic, undefined, {cwd: CLI_ROOT});
+      sections = read.data.sections.map(section => ({
+        ...section,
+        content: section.content.map(block => {
+          if (block?.type !== 'token-ref') return block;
+          const {resolved: _resolved, ...authored} = block;
+          return authored;
+        }),
+      }));
+    }
 
     docTopics.push({
       topic,
@@ -1722,6 +1779,14 @@ async function generateDocsRegistry() {
       category: category || null,
       sections,
     });
+  }
+
+  // Guides the CLI's docs tree places (spec:AST-046) are not topic files: the
+  // CLI reads them only by route. Until the site renders the tree itself, each
+  // keeps a flat page whose slug is its route with "/" as "-", so
+  // `cli/integrations` stays at /docs/cli-integrations.
+  for (const guide of await docsTreeGuides()) {
+    docTopics.push(guide);
   }
 
   docTopics.sort((a, b) => a.topic.localeCompare(b.topic));

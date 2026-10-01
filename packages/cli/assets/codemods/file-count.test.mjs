@@ -54,12 +54,12 @@ describe('core codemod runner — filesChanged counts files', () => {
           ],
         },
       ],
-      {apply: true, path: dir, codemod: undefined, skipCodemods: new Set(), silent: true},
+      {apply: true, path: dir, root: dir, codemod: undefined, skipCodemods: new Set(), silent: true},
     );
 
     expect(result.totalTransformsApplied).toBe(4);
     expect(result.totalFilesChanged).toBe(1);
-    expect(result.changedFiles).toHaveLength(1);
+    expect(new Set(result.changedFiles).size).toBe(1);
   });
 
   it('still counts two files as two', async () => {
@@ -74,7 +74,7 @@ describe('core codemod runner — filesChanged counts files', () => {
           ],
         },
       ],
-      {apply: true, path: dir, codemod: undefined, skipCodemods: new Set(), silent: true},
+      {apply: true, path: dir, root: dir, codemod: undefined, skipCodemods: new Set(), silent: true},
     );
 
     expect(result.totalTransformsApplied).toBe(2);
@@ -93,7 +93,7 @@ describe('core codemod runner — filesChanged counts files', () => {
           ],
         },
       ],
-      {apply: true, path: dir, codemod: undefined, skipCodemods: new Set(), silent: true},
+      {apply: true, path: dir, root: dir, codemod: undefined, skipCodemods: new Set(), silent: true},
     );
 
     expect(result.totalFilesChanged).toBe(0);
@@ -123,11 +123,11 @@ describe('integration codemod runner — filesChanged counts files', () => {
           ],
         },
       ],
-      {apply: true, path: dir, skipCodemods: new Set(), jscodeshift, silent: true},
+      {apply: true, path: dir, root: dir, skipCodemods: new Set(), jscodeshift, silent: true},
     );
 
     expect(result.totalTransformsApplied).toBe(3);
     expect(result.totalFilesChanged).toBe(1);
-    expect(result.changedFiles).toHaveLength(1);
+    expect(new Set(result.changedFiles).size).toBe(1);
   });
 });

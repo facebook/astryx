@@ -86,6 +86,13 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     whiteSpace: 'nowrap',
+    // One line by construction, so a label wider than the space available
+    // has to truncate. As a flex item the automatic minimum size would hold
+    // the button at its full label width (and `nowrap` lets an inline button
+    // run past its container), so the label's ellipsis never engaged. These
+    // let a row shrink the button and cap it at its container.
+    minWidth: 0,
+    maxWidth: '100%',
     cursor: {
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
@@ -129,6 +136,10 @@ const styles = stylex.create({
     aspectRatio: 'var(--button-icon-only-aspect)',
     paddingInline: 0,
     paddingBlock: 0,
+    // An icon-only button has no label to truncate: keep it square rather
+    // than letting a crowded row squeeze it.
+    flexShrink: 0,
+    maxWidth: 'none',
   },
   endContentWrapper: {
     display: 'inline-flex',
@@ -434,7 +445,7 @@ const loadingStyles = stylex.create({
  * The leading edge still uses `:first-child` — a member's button always precedes
  * its own layer, so the first button is genuinely `:first-child`.
  */
-const IS_LAST_ITEM = ':not(:has(~ *:not([popover]):not(template)))';
+const IS_LAST_ITEM = ':not(:has(~ *:not([popover]):not(template):not(dialog)))';
 
 const groupStyles = stylex.create({
   horizontal: {

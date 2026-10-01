@@ -21,6 +21,9 @@
  *   #### Breaking Changes          (h4 category sections, canonical order)
  *   - Stack element -> as (#2441)
  *
+ *   #### Experimental APIs
+ *   - Rename an experimental callback (#2442)
+ *
  *   #### Fixes
  *   - XDSButton: spinner contrast (#2717)
  *
