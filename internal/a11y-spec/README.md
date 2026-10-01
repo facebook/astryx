@@ -48,22 +48,41 @@ src/
     ├── modal-dialog.*       the native modal-dialog pattern, same four files
     ├── status-message.*     live-region and progress status mechanics
     ├── tabs.*               explicit horizontal ARIA Tabs semantics
-    └── listbox.*            listbox, group, and option semantics
+    ├── listbox.*            listbox, group, and option semantics
+    ├── spinbutton.*         numeric role, value, bounds, state, and arrow stepping
+    └── disclosure.*         standalone disclosure state/content semantics
 ```
 
 ## The patterns
 
-| Pattern          | Adopted from                                                                                 | Bound by                                                                         |
-| ---------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `radio-group`    | [APG radio group](https://www.w3.org/WAI/ARIA/apg/patterns/radio/)                           | RadioList, SegmentedControl; role/state portions of DropdownMenu radio items     |
-| `checkbox`       | [APG checkbox](https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/)                           | CheckboxInput, CheckboxListItem, DropdownMenuCheckboxItem, SelectableCard        |
-| `switch`         | [APG switch](https://www.w3.org/WAI/ARIA/apg/patterns/switch/)                               | Switch                                                                           |
-| `button`         | [APG button](https://www.w3.org/WAI/ARIA/apg/patterns/button/)                               | Button, IconButton, ClickableCard, SideNavCollapseButton, ChatSendButton         |
-| `text-input`     | Native HTML controls and [WAI-ARIA textbox](https://www.w3.org/TR/wai-aria-1.2/#textbox)     | TextInput, TextArea                                                              |
-| `modal-dialog`   | [APG dialog (modal)](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)                 | Dialog                                                                           |
-| `status-message` | [WCAG 2.2 Status Messages](https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html) | Toast, FieldStatus, Spinner, ChatSystemMessage, ChatTypingIndicator, ProgressBar |
-| `tabs`           | [APG Tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)                                   | Explicit `role="tablist"` TabList, Tab, and caller-authored tabpanels            |
-| `listbox`        | [WAI-ARIA 1.2 Listbox](https://www.w3.org/TR/wai-aria-1.2/#listbox) and WCAG 2.2 semantics   | Selector and MultiSelector popup listbox, group, and option parts                |
+| Pattern          | Adopted from                                                                                  | Bound by                                                                         |
+| ---------------- | --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `radio-group`    | [APG radio group](https://www.w3.org/WAI/ARIA/apg/patterns/radio/)                            | RadioList, SegmentedControl; role/state portions of DropdownMenu radio items     |
+| `checkbox`       | [APG checkbox](https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/)                            | CheckboxInput, CheckboxListItem, DropdownMenuCheckboxItem, SelectableCard        |
+| `switch`         | [APG switch](https://www.w3.org/WAI/ARIA/apg/patterns/switch/)                                | Switch                                                                           |
+| `button`         | [APG button](https://www.w3.org/WAI/ARIA/apg/patterns/button/)                                | Button, IconButton, ClickableCard, SideNavCollapseButton, ChatSendButton         |
+| `text-input`     | Native HTML controls and [WAI-ARIA textbox](https://www.w3.org/TR/wai-aria-1.2/#textbox)      | TextInput, TextArea                                                              |
+| `modal-dialog`   | [APG dialog (modal)](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)                  | Dialog                                                                           |
+| `status-message` | [WCAG 2.2 Status Messages](https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html)  | Toast, FieldStatus, Spinner, ChatSystemMessage, ChatTypingIndicator, ProgressBar |
+| `tabs`           | [APG Tabs](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)                                    | Explicit `role="tablist"` TabList, Tab, and caller-authored tabpanels            |
+| `listbox`        | [WAI-ARIA 1.2 Listbox](https://www.w3.org/TR/wai-aria-1.2/#listbox) and WCAG 2.2 semantics    | Selector and MultiSelector popup listbox, group, and option parts                |
+| `spinbutton`     | WCAG 2.2 semantics and [APG Spinbutton](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/) | NumberInput                                                                      |
+| `disclosure`     | [APG Disclosure](https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/)                        | Standalone Collapsible triggers and their controlled content                     |
+
+The `spinbutton` contract owns NumberInput's required role, persistent name,
+committed numeric value, optional bounds and formatted value text, disabled and
+read-only exposure, and keyboard reachability. ArrowUp and ArrowDown stepping
+are recorded as advisory APG evidence because no current Astryx authority
+adopts those mechanics as a shared requirement. Typed draft parsing,
+formatting, commit/clamp policy, callbacks, optional buttons, and date/time
+segments keep their existing owners.
+
+The disclosure contract owns only the disclosure-specific state, optional
+trigger-to-content relationship, synchronized visibility, and complete pointer,
+Enter, and Space transitions. Generic role, naming, focus navigation, and
+unavailable-button semantics remain in the existing `button` contract. This first
+migration binds standalone Collapsible states only; CollapsibleGroup coordination
+and Accordion, Table, and SideNav adoption remain outside this contract.
 
 The `listbox` contract is a bounded semantic migration, not blanket APG
 interaction adoption. Its first bindings cover 21 existing scenarios across

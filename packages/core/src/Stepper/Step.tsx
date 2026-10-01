@@ -693,7 +693,6 @@ const styles = stylex.create({
 
   // Button reset for clickable steps
   buttonReset: {
-    all: 'unset',
     textAlign: 'start',
     alignItems: 'stretch',
     display: 'flex',
@@ -734,10 +733,8 @@ const styles = stylex.create({
 
   // Interactive wrapper (indicator + label act as one click target).
   otInteractive: {
-    all: 'unset',
     boxSizing: 'border-box',
-    // `all: unset` leaves the <button> UA default of centered text; force
-    // start so vertical labels/descriptions read left-aligned. Horizontal
+    // Force start alignment so vertical labels/descriptions read left-aligned. Horizontal
     // labels re-center via otLabelWrapH (a deeper element).
     textAlign: 'start',
     cursor: {

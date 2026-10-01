@@ -13,7 +13,7 @@ export const doc = {
   type: 'command',
   name: 'discover',
   displayName: 'astryx discover',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Discover external packages and components',
   description:
     'Explores components contributed by configured external packages and integrations. ' +

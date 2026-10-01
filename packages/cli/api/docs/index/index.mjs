@@ -15,7 +15,7 @@
  */
 
 import {indexView} from '../../../foundation/doc-compiler/lenses.mjs';
-import {resolveTopicDocs} from '../_adapter.mjs';
+import {resolveTopicDocs, topicLinks} from '../_adapter.mjs';
 
 /**
  * @param {string} topic
@@ -27,6 +27,14 @@ import {resolveTopicDocs} from '../_adapter.mjs';
  * @returns {Promise<import('../docs.type.mjs').DocsIndexResponse>}
  */
 export async function index(topic, options = {}) {
-  const {node} = await resolveTopicDocs(topic, options);
-  return {type: 'docs.index', data: indexView(node)};
+  const {node, entry, catalog} = await resolveTopicDocs(topic, options);
+  const view = indexView(node);
+  /** @type {import('../docs.type.mjs').DocsIndex} */
+  const data = {
+    ...view,
+    // A guide the docs tree places is read by its route, not its doc name.
+    name: entry.tree ? entry.name : view.name,
+    links: await topicLinks(catalog, entry),
+  };
+  return {type: 'docs.index', data};
 }

@@ -28,15 +28,17 @@
  */
 
 /*
- * `@theme inline` registers theme variables that Tailwind uses to generate
- * utility classes, WITHOUT emitting CSS declarations. The actual values come
+ * `@theme reference inline` registers theme variables that Tailwind uses to
+ * generate utility classes. `reference` prevents Tailwind from emitting those
+ * variables as runtime declarations, while `inline` places the mapped system
+ * custom property directly in each generated utility. The actual values come
  * from the system CSS custom properties (set by astryx.css / theme packages).
  *
  * This means theme switching just works — when system tokens change (e.g. dark
  * mode, custom theme), Tailwind utilities automatically resolve to the new
  * values because they reference the same CSS custom properties.
  */
-@theme inline {
+@theme reference inline {
   /* =========================================================================
    * Colors — Semantic
    *
@@ -181,6 +183,12 @@
   --text-3xl: var(--font-size-3xl);
   --text-4xl: var(--font-size-4xl);
   --text-5xl: var(--font-size-5xl);
+
+  /* --- Font weights --- */
+  --font-weight-normal: var(--font-weight-normal);
+  --font-weight-medium: var(--font-weight-medium);
+  --font-weight-semibold: var(--font-weight-semibold);
+  --font-weight-bold: var(--font-weight-bold);
 
   /* =========================================================================
    * Border radius

@@ -2,23 +2,10 @@
 '@astryxdesign/cli': patch
 ---
 
-[fix] `astryx doctor` now validates the integrations it reports on.
+[fix] `astryx doctor` no longer reports an integration it could not check as absent or complete (#6619)
 
-Doctor reported `fail: 0` over integrations it had never validated. A package
-whose `astryx.integration.*` could not be parsed appeared on no doctor surface
-at all; a package whose declared roots did not exist was described as
-"contributing components, templates, themes, docs" when it contributes nothing.
-
-The validators that catch all of this already existed — `Project` runs them to
-build `issues()`, and `doctor integration validate <package>` reports them.
-Doctor now reports what they find, in a new `integrations` check, with the
-validators' own severities: any error is a FAIL, warnings alone are a WARN.
-The `implicit-integrations` line now names only roots that resolve on disk, and
-`provider-identity` says how many integrations it could not read instead of
-quietly counting a subset.
-
-An installed dependency whose manifest cannot be loaded is still kept out of the
-loaded set — a dependency the project never named must not be able to break it —
-but it is no longer discarded: doctor reports it as a warning.
+- An installed dependency whose `astryx.integration.*` manifest cannot be loaded is still kept out of the loaded set, but `implicit-integrations` now names it and says it contributes nothing. Before, doctor said that no installed dependency ships a manifest. The check stays informational, and `astryx doctor integration validate <package>` gives the details.
+- `implicit-integrations` lists only the roots that exist on disk. A package whose declared roots are missing is reported as contributing nothing, with the missing roots named. Before, it listed every root the manifest declared.
+- `provider-identity` says how many loaded integrations it could not read, instead of counting only the readable ones.
 
 @josephfarina

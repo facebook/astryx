@@ -126,7 +126,7 @@ describe('integration add control definitions', () => {
     );
     expect(page.status).toBe(0);
     expect(
-      fs.readFileSync(path.join(tmpDir, 'templates', 'acme-page.template.mjs'), 'utf-8'),
+      fs.readFileSync(path.join(tmpDir, 'templates', 'acme-page.doc.mjs'), 'utf-8'),
     ).toContain("type: 'page'");
   });
 });

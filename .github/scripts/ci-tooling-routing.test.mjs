@@ -192,15 +192,14 @@ describe('Node-tooling CI routing', () => {
     expect(buildJoin).toContain('needs.build-sandbox.result');
   });
 
-  it('keeps privileged preview publication off the tooling lane', () => {
+  it('keeps removed preview publication out of the tooling lane', () => {
     expect(prComment.jobs.resolve.outputs.tooling_only).toContain(
       'steps.identity.outputs.tooling_only',
     );
-    for (const name of ['deploy-preview', 'comment']) {
-      expect(prComment.jobs[name].if, name).toContain(
-        "needs.resolve.outputs.tooling_only != 'true'",
-      );
-    }
+    expect(prComment.jobs['deploy-preview']).toBeUndefined();
+    expect(prComment.jobs.comment.if).toContain(
+      "needs.resolve.outputs.tooling_only != 'true'",
+    );
     expect(prComment.jobs['spec-only-reconcile'].if).toContain(
       "needs.resolve.outputs.tooling_only == 'true'",
     );

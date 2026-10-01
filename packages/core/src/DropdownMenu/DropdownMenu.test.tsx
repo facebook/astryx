@@ -171,6 +171,29 @@ describe('DropdownMenu', () => {
     });
   });
 
+  it('keeps bottom-sheet section groups inside semantic list items', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <DropdownMenu
+        button={{label: 'File actions'}}
+        presentation="bottom-sheet"
+        items={[
+          {
+            type: 'section',
+            title: 'Create',
+            items: [{label: 'New file'}],
+          },
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: /File actions/}));
+
+    const group = screen.getByRole('group', {name: 'Create'});
+    expect(group.parentElement).toHaveRole('listitem');
+  });
+
   it('drills into nested data items in bottom-sheet presentation', async () => {
     const user = userEvent.setup();
 
@@ -1358,6 +1381,34 @@ describe('DropdownMenu sections', () => {
 
     const group = screen.getByRole('group', {name: 'My Section', hidden: true});
     expect(group).toBeInTheDocument();
+  });
+});
+
+describe('DropdownMenuItem ref', () => {
+  it('a ref reaches the menuitem element', () => {
+    const ref = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} ref={ref} />
+      </DropdownMenu>,
+    );
+    const row = screen.getByRole('menuitem', {name: 'Edit', hidden: true});
+    expect(ref).toHaveBeenCalledWith(row);
+    // The row root, not a child of it: what the ref sees is the element the
+    // menu's roving focus and role structure are built on.
+    expect(ref.mock.calls[0][0]).toBe(row);
+  });
+
+  it('a ref object holds the menuitem element', () => {
+    const ref = {current: null as HTMLElement | null};
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} ref={ref} />
+      </DropdownMenu>,
+    );
+    expect(ref.current).toBe(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    );
   });
 });
 

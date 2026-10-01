@@ -57,7 +57,13 @@ export const RESPONSE_TYPES = {
     'component.detail.showcase',
     'component.detail.blocks',
   ],
-  docs: ['docs.list', 'docs.index', 'docs.detail', 'docs.detail.section'],
+  docs: [
+    'docs.list',
+    'docs.index',
+    'docs.detail',
+    'docs.detail.section',
+    'docs.node',
+  ],
   blog: ['blog.list', 'blog.detail'],
   discover: [
     'discover.list',
@@ -110,8 +116,9 @@ const EXAMPLES = {
   docs: [
     'astryx docs',
     'astryx docs spacing --json',
-    'astryx docs theme --index',
+    'astryx docs theme',
     'astryx docs theme quick-start',
+    'astryx docs cli/integrations --full',
   ],
   discover: ['astryx discover --json'],
   search: [

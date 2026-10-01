@@ -247,12 +247,10 @@ const styles = stylex.create({
     opacity: 0.5,
   },
   invisibleButton: {
-    all: 'unset',
     cursor: {
       default: 'inherit',
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
-    font: 'inherit',
     color: 'inherit',
     display: 'flex',
     flexDirection: 'column',
@@ -262,12 +260,10 @@ const styles = stylex.create({
     outline: 'none',
   },
   invisibleAnchor: {
-    all: 'unset',
     cursor: {
       default: 'inherit',
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
-    font: 'inherit',
     color: 'inherit',
     display: 'flex',
     flexDirection: 'column',

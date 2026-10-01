@@ -13,7 +13,7 @@ export const doc = {
   type: 'command',
   name: 'layout check',
   displayName: 'astryx layout check',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary:
     'Validate a layout expression and echo canonical compact/outline forms',
   description:

@@ -1,0 +1,10 @@
+Acme guide
+How zorblax cards fit together.
+
+start   Start - Install the kit.
+colors  Colors - Cards use the core tokens.
+
+Read one section: pnpm exec astryx docs acme-guide <section>
+Read everything:  pnpm exec astryx docs acme-guide --full
+Up: pnpm exec astryx docs unorganized
+Previous: pnpm exec astryx docs working-with-ai

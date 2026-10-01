@@ -58,6 +58,7 @@ export function registerIntegration(program) {
           templateType: options.type,
           replaces: options.replaces,
           extends: options.extends,
+          parent: options.parent,
           to: options.to,
         });
       } catch (error) {

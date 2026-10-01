@@ -4,7 +4,7 @@
 
 /**
  * @file Lightbox.tsx
- * @input Uses React, native dialog, StyleX, IconButton, theme tokens
+ * @input Uses React, native dialog, StyleX, IconButton, theme tokens, layerTextReset
  * @output Exports Lightbox component, LightboxProps, LightboxMedia
  * @position Core implementation; consumed by index.ts
  *
@@ -37,6 +37,8 @@ import {mergeProps, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {layerTextReset} from '../Layer/layerTextReset.stylex';
+import {LayerContentBoundary} from '../Layer/layerScopedContext';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
@@ -123,7 +125,8 @@ const styles = stylex.create({
     maxHeight: 'none',
     margin: 0,
     padding: 0,
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     backgroundColor: 'transparent',
     overflow: 'hidden',
     outline: 'none',
@@ -616,118 +619,140 @@ export function Lightbox({
       aria-label={currentItem.alt || t('@astryx.lightbox.mediaViewer')}
       {...mergeProps(
         themeProps('lightbox'),
-        stylex.props(styles.dialog, overlayPaddingReset.reset, xstyle),
+        stylex.props(
+          layerTextReset.reset,
+          styles.dialog,
+          overlayPaddingReset.reset,
+          xstyle,
+        ),
         className,
         style,
       )}
       {...props}>
       <LayerDepthProvider>
-        <div ref={containerRef} {...stylex.props(styles.container)}>
-          {/* Close button */}
-          <IconButton
-            icon={<Icon icon="close" size="sm" color="inherit" />}
-            label={t('@astryx.lightbox.close')}
-            variant="ghost"
-            onClick={handleClose}
-            xstyle={[styles.closeButton, styles.controlButton]}
-          />
+        <LayerContentBoundary>
+          <div ref={containerRef} {...stylex.props(styles.container)}>
+            {/* Close button */}
+            <IconButton
+              icon={<Icon icon="close" size="sm" color="inherit" />}
+              label={t('@astryx.lightbox.close')}
+              variant="ghost"
+              onClick={handleClose}
+              xstyle={[styles.closeButton, styles.controlButton]}
+            />
 
-          {/* Gallery nav: prev — stays mounted and is disabled at the start of
+            {/* Gallery nav: prev — stays mounted and is disabled at the start of
             the range so pressing/arrowing to the boundary doesn't unmount the
             focused control and drop focus to <body>. */}
-          {isGallery && (
-            <IconButton
-              icon={
-                <Icon
-                  icon="chevronLeft"
-                  size="sm"
-                  color="inherit"
-                  xstyle={rtlStyles.mirror}
-                />
-              }
-              label={t('@astryx.lightbox.previous')}
-              variant="ghost"
-              isDisabled={!canPrev}
-              onClick={goToPrev}
-              xstyle={[styles.navButton, styles.navPrev, styles.controlButton]}
-            />
-          )}
+            {isGallery && (
+              <IconButton
+                icon={
+                  <Icon
+                    icon="chevronLeft"
+                    size="sm"
+                    color="inherit"
+                    xstyle={rtlStyles.mirror}
+                  />
+                }
+                label={t('@astryx.lightbox.previous')}
+                variant="ghost"
+                isDisabled={!canPrev}
+                onClick={goToPrev}
+                xstyle={[
+                  styles.navButton,
+                  styles.navPrev,
+                  styles.controlButton,
+                ]}
+              />
+            )}
 
-          {/* Media + caption group (centered together) */}
-          <div {...stylex.props(styles.mediaGroup)}>
-            <div
-              ref={imageWrapperRef}
-              // The wrapper is a keyboard-operable zoom toggle when zoom is
-              // enabled: Enter/Space toggles, aria-pressed reflects state.
-              role={isZoomTarget ? 'button' : undefined}
-              tabIndex={isZoomTarget ? 0 : undefined}
-              aria-pressed={isZoomTarget ? isZoomed : undefined}
-              aria-label={isZoomTarget ? t('@astryx.lightbox.zoom') : undefined}
-              {...stylex.props(
-                styles.imageWrapper,
-                isZoomTarget && focusOutlineStyles.focusVisible,
-                !isVideo && hasZoom && !isZoomed && styles.imageWrapperZoomable,
-                !isVideo && isZoomed && styles.imageWrapperZoomed,
-                !isVideo && isDragging && styles.imageWrapperDragging,
-              )}
-              onDoubleClick={isVideo ? undefined : handleDoubleClick}
-              onKeyDown={isZoomTarget ? handleImageKeyDown : undefined}
-              onPointerDown={isVideo ? undefined : handlePointerDown}>
-              {isVideo ? (
-                <video
-                  src={currentItem.src}
-                  aria-label={currentItem.alt}
-                  controls
-                  autoPlay={hasAutoPlay}
-                  {...stylex.props(styles.video)}
-                />
-              ) : (
-                <img
-                  src={currentItem.src}
-                  alt={currentItem.alt}
-                  draggable={false}
-                  {...stylex.props(
-                    styles.image,
-                    isDragging && styles.imageDragging,
-                    imageTransform != null &&
-                      dynamicStyles.imageTransform(imageTransform),
-                  )}
-                />
+            {/* Media + caption group (centered together) */}
+            <div {...stylex.props(styles.mediaGroup)}>
+              <div
+                ref={imageWrapperRef}
+                // The wrapper is a keyboard-operable zoom toggle when zoom is
+                // enabled: Enter/Space toggles, aria-pressed reflects state.
+                role={isZoomTarget ? 'button' : undefined}
+                tabIndex={isZoomTarget ? 0 : undefined}
+                aria-pressed={isZoomTarget ? isZoomed : undefined}
+                aria-label={
+                  isZoomTarget ? t('@astryx.lightbox.zoom') : undefined
+                }
+                {...stylex.props(
+                  styles.imageWrapper,
+                  isZoomTarget && focusOutlineStyles.focusVisible,
+                  !isVideo &&
+                    hasZoom &&
+                    !isZoomed &&
+                    styles.imageWrapperZoomable,
+                  !isVideo && isZoomed && styles.imageWrapperZoomed,
+                  !isVideo && isDragging && styles.imageWrapperDragging,
+                )}
+                onDoubleClick={isVideo ? undefined : handleDoubleClick}
+                onKeyDown={isZoomTarget ? handleImageKeyDown : undefined}
+                onPointerDown={isVideo ? undefined : handlePointerDown}>
+                {isVideo ? (
+                  <video
+                    src={currentItem.src}
+                    aria-label={currentItem.alt}
+                    controls
+                    autoPlay={hasAutoPlay}
+                    {...stylex.props(styles.video)}
+                  />
+                ) : (
+                  <img
+                    src={currentItem.src}
+                    alt={currentItem.alt}
+                    draggable={false}
+                    {...stylex.props(
+                      styles.image,
+                      isDragging && styles.imageDragging,
+                      imageTransform != null &&
+                        dynamicStyles.imageTransform(imageTransform),
+                    )}
+                  />
+                )}
+              </div>
+
+              {currentItem.caption && (
+                <div {...stylex.props(styles.caption)}>
+                  {currentItem.caption}
+                </div>
               )}
             </div>
 
-            {currentItem.caption && (
-              <div {...stylex.props(styles.caption)}>{currentItem.caption}</div>
+            {/* Gallery nav: next — see "prev" above; stays mounted and disabled at
+            the end of the range instead of unmounting. */}
+            {isGallery && (
+              <IconButton
+                icon={
+                  <Icon
+                    icon="chevronRight"
+                    size="sm"
+                    color="inherit"
+                    xstyle={rtlStyles.mirror}
+                  />
+                }
+                label={t('@astryx.lightbox.next')}
+                variant="ghost"
+                isDisabled={!canNext}
+                onClick={goToNext}
+                xstyle={[
+                  styles.navButton,
+                  styles.navNext,
+                  styles.controlButton,
+                ]}
+              />
+            )}
+
+            {/* Gallery counter */}
+            {isGallery && mediaArray.length > 1 && (
+              <div {...stylex.props(styles.counter)}>
+                {index + 1} / {mediaArray.length}
+              </div>
             )}
           </div>
-
-          {/* Gallery nav: next — see "prev" above; stays mounted and disabled at
-            the end of the range instead of unmounting. */}
-          {isGallery && (
-            <IconButton
-              icon={
-                <Icon
-                  icon="chevronRight"
-                  size="sm"
-                  color="inherit"
-                  xstyle={rtlStyles.mirror}
-                />
-              }
-              label={t('@astryx.lightbox.next')}
-              variant="ghost"
-              isDisabled={!canNext}
-              onClick={goToNext}
-              xstyle={[styles.navButton, styles.navNext, styles.controlButton]}
-            />
-          )}
-
-          {/* Gallery counter */}
-          {isGallery && mediaArray.length > 1 && (
-            <div {...stylex.props(styles.counter)}>
-              {index + 1} / {mediaArray.length}
-            </div>
-          )}
-        </div>
+        </LayerContentBoundary>
       </LayerDepthProvider>
     </dialog>
   );

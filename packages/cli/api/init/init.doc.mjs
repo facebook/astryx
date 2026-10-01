@@ -11,6 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'init',
+  namespace: 'cli/api',
   displayName: 'init()',
   summary:
     'Non-interactive project setup: install agent docs and point at the theme + build workflows.',
@@ -101,5 +102,5 @@ export const doc = {
     {label: 'Remove agent docs', code: 'await init({removeAgents: true});'},
   ],
   command: 'init',
-  related: ['doctor', 'upgrade', 'build', 'theme'],
+  related: ['doctor', 'upgrade', 'build', 'themeTemplate'],
 };

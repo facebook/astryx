@@ -10,7 +10,7 @@ export const doc = {
   type: 'command',
   name: 'gap-report',
   displayName: 'astryx gap-report',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Route a design-system gap to its owning package',
   description:
     'Reports a missing component, variant, layout, styling, accessibility, API, or documentation capability. The command selects an explicit package first, then a unique component owner, then Core. The report fans out to every effective handler: project config first, then each loaded integration in config order. Public handlers require --confirm-public per handler; internal handlers always run. A handler failure is isolated and does not prevent later handlers.',

@@ -5,6 +5,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'integrationAdd',
+  namespace: 'cli/api',
   displayName: 'integrationAdd()',
   summary: 'Add one working contribution to an integration package.',
   description:
@@ -65,6 +66,12 @@ export const doc = {
       type: 'string',
       description:
         'Existing topic to extend. Only valid for doc, and not with options.replaces.',
+    },
+    {
+      name: 'options.parent',
+      type: 'string',
+      description:
+        "Namespace of this package to place the doc in, as a guide in its `guides` slot; the namespace doc is written when missing. Only valid for doc, and not with options.replaces or options.extends.",
     },
     {
       name: 'options.to',

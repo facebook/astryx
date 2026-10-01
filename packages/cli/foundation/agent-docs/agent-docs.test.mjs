@@ -55,6 +55,15 @@ describe('generateCompressedIndex', () => {
     expect(frameRule).not.toMatch(/https?:/);
   });
 
+  it('starts every page from a template before any component', () => {
+    const lines = generateCompressedIndex('1.0.0').split('\n');
+    const workflow = lines.findIndex(l => l.startsWith('WORKFLOW'));
+    expect(lines[workflow]).toMatch(/start every page from a template/);
+    expect(lines[workflow + 1]).toMatch(/^1\. `astryx build /);
+    expect(lines[workflow + 2]).toMatch(/^2\. `astryx template <name> <path>`/);
+    expect(lines.join('\n')).not.toMatch(/reference code/);
+  });
+
   it('includes the post-generation self-check rule', () => {
     const result = generateCompressedIndex('1.0.0');
     expect(result).toContain('SELF-CHECK before you finish');
@@ -134,13 +143,22 @@ describe('generateCompressedIndex', () => {
     const line = topicLine(generateCompressedIndex('1.0.0'));
     for (const topic of [
       'getting-started',
-      'cli-integrations',
       'browser-support',
       'styling-libraries',
       'working-with-ai',
     ]) {
       expect(line).toContain(topic);
     }
+  });
+
+  it('points to the CLI docs tree on a line of its own', () => {
+    // The integration guide lives in the docs tree now (cli/integrations), so
+    // the topic line no longer names it; the tree's entry point does.
+    const block = generateCompressedIndex('1.0.0');
+    expect(block).toContain(
+      '  docs cli           commands, API reference, integration authoring (one level at a time)',
+    );
+    expect(topicLine(block)).not.toContain('cli-integrations');
   });
 
   it('lists the topics it is given, so an integration’s reach the agent', () => {

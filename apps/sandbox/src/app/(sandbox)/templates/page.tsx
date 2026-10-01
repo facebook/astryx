@@ -11,7 +11,7 @@
 
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import NextLink from 'next/link';
+import NextLink from '../../../router';
 
 import {Badge} from '@astryxdesign/core/Badge';
 import type {BadgeVariant} from '@astryxdesign/core/Badge';

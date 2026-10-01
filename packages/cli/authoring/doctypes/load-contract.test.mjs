@@ -49,7 +49,7 @@ const EXAMPLES = Object.fromEntries(
 
 describe('load check vs published type', () => {
   it('locks every doc kind', () => {
-    const source = ['_schema.mjs', 'template/parse.mjs']
+    const source = ['_schema.mjs', 'template/parse.mjs', 'theme/parse.mjs']
       .map(file => fs.readFileSync(path.join(HERE, file), 'utf8'))
       .join('\n');
     expect(Object.keys(LOCKS).sort()).toEqual([...KINDS].sort());
@@ -57,6 +57,7 @@ describe('load check vs published type', () => {
       ...Object.values(LOCKS),
       '_AuthoredDocKindDriftLock',
       '_HookDocIsFunctionDocLock',
+      '_ThemeDocDriftLock',
     ];
     for (const lock of locks) {
       expect(source, `${lock} is missing`).toMatch(
@@ -70,7 +71,7 @@ describe('load check vs published type', () => {
       expect(() => parseDoc(EXAMPLES[kind], `${kind}.doc.mjs`)).not.toThrow();
     }
     expect(() => parseDoc({type: 'widget', name: 'x'}, 'x.doc.mjs')).toThrow(
-      /unsupported type "widget"/,
+      /x\.doc\.mjs is invalid/u,
     );
   });
 });
@@ -179,6 +180,31 @@ describe('unknown fields', () => {
     expect(named(refused).filter(kind => KINDS.includes(kind))).toEqual(
       KINDS.filter(kind => !keeps.includes(kind)).sort(),
     );
+  });
+
+  it("are refused inside a section's reference block, which a section takes", () => {
+    const [section] = EXAMPLES.generic.sections;
+    const reference = {
+      type: 'reference',
+      target: '@astryxdesign/cli:schema:integration',
+      projection: {fields: ['docs']},
+      presentation: 'compact',
+    };
+    /** @param {object} block */
+    const withBlock = block =>
+      parseDoc(
+        {...EXAMPLES.generic, sections: [{...section, content: [block]}]},
+        'r.doc.mjs',
+      );
+    expect(() => withBlock(reference)).not.toThrow();
+    expect(() => withBlock({...reference, notAField: true})).toThrow();
+    expect(() =>
+      withBlock({...reference, projection: {fields: ['docs'], rows: []}}),
+    ).toThrow();
+    // Workflow and collection blocks belong to a namespace doc.
+    expect(() =>
+      withBlock({type: 'collection', source: {slot: 'guides'}}),
+    ).toThrow();
   });
 
   it('are refused inside sections and content blocks', () => {

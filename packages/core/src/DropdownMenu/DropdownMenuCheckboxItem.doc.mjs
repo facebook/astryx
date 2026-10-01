@@ -51,6 +51,12 @@ export const docs = {
         'Whether toggling the item closes the menu. Checkbox items default to staying open so several can be toggled in a single session.',
     },
     {
+      name: 'ref',
+      type: 'React.Ref<HTMLElement>',
+      description:
+        'Ref forwarded to the row root, the element carrying role="menuitemcheckbox". Register the row with an element-keyed observer or overlay.',
+    },
+    {
       name: 'endContent',
       type: 'ReactNode',
       description:
@@ -73,6 +79,7 @@ export const docsZh = {
     onChange: '切换该项时以下一个勾选状态触发的回调。',
     isDisabled: '该项是否禁用。',
     hasCloseOnSelect: '切换该项是否关闭菜单。默认保持打开。',
+    ref: '转发到行根元素（带 role="menuitemcheckbox" 的元素）的 ref。',
     endContent: '在标签和描述之后渲染的内容。',
   },
 };
@@ -90,6 +97,7 @@ export const docsDense = {
     onChange: 'fired w/ next checked state on toggle',
     isDisabled: 'disabled; stays focusable via aria-disabled',
     hasCloseOnSelect: 'close menu on toggle (default false, stays open)',
+    ref: 'forwarded to the row root (the role="menuitemcheckbox" element)',
     endContent: 'content after label+description',
   },
 };

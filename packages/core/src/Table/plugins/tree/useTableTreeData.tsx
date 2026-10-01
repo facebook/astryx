@@ -239,8 +239,9 @@ const treeStyles = stylex.create({
     justifyContent: 'center',
     width: '24px',
     height: '24px',
-    background: 'transparent',
-    border: 'none',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderStyle: 'none',
     borderRadius: radiusVars['--radius-inner'],
     cursor: {
       default: 'pointer',

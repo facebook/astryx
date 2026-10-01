@@ -18,7 +18,7 @@ export const doc = {
     "(type: 'page') for full page templates and BlockTemplateDoc (type: 'block') for " +
     'editable compositions. A block can stand alone or use `exampleFor` to attach ' +
     'to one component; `isShowcase` requires that component ownership.',
-  appliesTo: '<Name>.template.mjs',
+  appliesTo: '<Name>.doc.mjs',
   fields: [
     {
       name: 'type',
@@ -51,6 +51,12 @@ export const doc = {
       name: 'description',
       type: 'string',
       description: 'One-sentence description of what the template provides.',
+    },
+    {
+      name: 'replaces',
+      type: 'string',
+      description:
+        "Integration templates only: the exact id of the Core template this one replaces for unqualified lookup. Find it with `astryx --json template --list --package @astryxdesign/core`; the Core original stays selectable with `--package @astryxdesign/core`. A page replaces only a Core page and a block only a Core block. Needs @astryxdesign/cli 0.7.0 or later: earlier CLIs reject the field and withhold the package's templates and doc topics.",
     },
     {
       name: 'isReady',
@@ -123,7 +129,7 @@ export const doc = {
     {
       label: 'Page template',
       code: `/** @type {import('@astryxdesign/cli/authoring').TemplateDoc} */
-export const doc = {
+export default {
   type: 'page',
   name: 'Dashboard',
   displayName: 'Dashboard',
@@ -135,7 +141,7 @@ export const doc = {
     {
       label: 'Block template (component example)',
       code: `/** @type {import('@astryxdesign/cli/authoring').TemplateDoc} */
-export const doc = {
+export default {
   type: 'block',
   name: 'ButtonGroupExample',
   displayName: 'Button Group Example',

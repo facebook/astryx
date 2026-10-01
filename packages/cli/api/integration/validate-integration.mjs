@@ -33,8 +33,19 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import jscodeshift from 'jscodeshift';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
+import {
+  THEME_SLUG_RE,
+  unreadThemeFolders,
+} from '../../foundation/discovery/theme-discovery.mjs';
+import {
+  createFixContext,
+  DOC_CANDIDATE_RE,
+  pathIsInside,
+  stampOf,
+  TEMPLATE_CANDIDATE_RE,
+  unreachableFix,
+} from '../../foundation/integrations/contribution-fixes.mjs';
 import {
   findManifestPaths,
   loadManifest,
@@ -90,106 +101,35 @@ const UNREACHABLE_SKIP_DIRS = new Set([
   '.next',
   'out',
 ]);
-const DOC_CANDIDATE_RE = /\.doc\.(?:ts|mjs|js)$/u;
-const TEMPLATE_CANDIDATE_RE = /\.template\.(?:ts|mjs|js)$/u;
-const STATIC_DOC_TYPES = new Set(['component', 'generic', 'page', 'block']);
-const STATIC_TEMPLATE_TYPES = new Set(['page', 'block']);
-const j = jscodeshift.withParser('tsx');
-
-/** @param {any} node @returns {any} */
-function unwrapStaticExpression(node) {
-  let current = node;
-  while (
-    current &&
-    [
-      'TSSatisfiesExpression',
-      'TSAsExpression',
-      'TypeCastExpression',
-      'ParenthesizedExpression',
-    ].includes(current.type)
-  ) {
-    current = current.expression;
-  }
-  if (current?.type === 'CallExpression' && current.arguments.length > 0) {
-    current = unwrapStaticExpression(current.arguments[0]);
-  }
-  return current;
-}
-
-/** @param {any} property @param {string} name */
-function staticPropertyNamed(property, name) {
-  if (
-    !property ||
-    !['ObjectProperty', 'Property'].includes(property.type) ||
-    property.computed
-  ) {
-    return false;
-  }
-  return (
-    (property.key?.type === 'Identifier' && property.key.name === name) ||
-    (['Literal', 'StringLiteral'].includes(property.key?.type) &&
-      property.key.value === name)
-  );
-}
-
 /**
- * Identify contribution metadata without importing it. Doctor scans files that
- * the manifest does not declare, so executing those files would run code the
- * package never asked Astryx to load.
- *
- * @param {string} file
- * @param {boolean} templateOnly
+ * A warning for each folder under the themes root that holds modules but is
+ * not read as a theme. Either branch of its fix leaves nothing to warn about:
+ * the folder becomes a theme, or a dot-folder discovery skips.
+ * @param {string} packageDir
+ * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration} loaded
+ * @returns {Issue[]}
  */
-function isStaticContributionMetadata(file, templateOnly) {
-  let ast;
-  try {
-    ast = j(fs.readFileSync(file, 'utf-8'));
-  } catch {
-    return false;
-  }
-  /** @type {any[]} */
-  const candidates = [];
-  ast
-    .find(j.ExportDefaultDeclaration)
-    .forEach((/** @type {any} */ exportPath) => {
-      candidates.push(exportPath.value.declaration);
-    });
-  ast
-    .find(j.ExportNamedDeclaration)
-    .forEach((/** @type {any} */ exportPath) => {
-      const declaration = exportPath.value.declaration;
-      if (declaration?.type !== 'VariableDeclaration') return;
-      for (const declarator of declaration.declarations) {
-        if (
-          declarator.id?.type === 'Identifier' &&
-          declarator.id.name === 'docs'
-        ) {
-          candidates.push(declarator.init);
-        }
-      }
-    });
-
-  const allowedTypes = templateOnly ? STATIC_TEMPLATE_TYPES : STATIC_DOC_TYPES;
-  for (const candidate of candidates) {
-    const object = unwrapStaticExpression(candidate);
-    if (object?.type !== 'ObjectExpression') continue;
-    const typeProperty = object.properties.find((/** @type {any} */ property) =>
-      staticPropertyNamed(property, 'type'),
-    );
-    const value = unwrapStaticExpression(typeProperty?.value);
-    if (
-      ['Literal', 'StringLiteral'].includes(value?.type) &&
-      allowedTypes.has(value.value)
-    ) {
-      return true;
+function unreadThemeFolderIssues(packageDir, loaded) {
+  const themes = /** @type {string} */ (loaded.themes);
+  return unreadThemeFolders(themes, {
+    packageDir,
+    packageName: loaded.name,
+  }).map(folder => {
+    const name = path.basename(folder);
+    const shown = `${path.relative(packageDir, folder).split(path.sep).join('/')}/`;
+    const hide = `rename it to .${name} so Astryx skips it`;
+    let fix;
+    if (THEME_SLUG_RE.test(name)) {
+      const stem = `${name.replace(/-([a-z0-9])/gu, (_, character) => character.toUpperCase())}Theme`;
+      fix = `if it is a theme, add ${stem}.ts and ${stem}.doc.mjs to it (\`astryx integration add theme ${name}\` writes both) and move its code into ${stem}.ts; if not, ${hide}.`;
+    } else {
+      fix = `${hide}; a theme folder needs a lower-kebab name.`;
     }
-  }
-  return false;
-}
-
-/** @param {string} candidate @param {string} root */
-function pathIsInside(candidate, root) {
-  return candidate === root || candidate.startsWith(`${root}${path.sep}`);
+    return warning(
+      'unread_theme_folder',
+      `Folder "${shown}" holds modules but no <name>Theme source or .doc.mjs descriptor, so Astryx does not read it as a theme. Fix: ${fix}`,
+    );
+  });
 }
 
 /**
@@ -214,6 +154,7 @@ async function findUnreachableContributionIssues(packageDir, loaded) {
   );
   /** @type {Issue[]} */
   const issues = [];
+  const context = createFixContext(packageDir, loaded);
   let scanned = 0;
   let truncated = false;
 
@@ -237,13 +178,18 @@ async function findUnreachableContributionIssues(packageDir, loaded) {
         truncated = true;
         return;
       }
-      const isTemplate = TEMPLATE_CANDIDATE_RE.test(entry.name);
-      if (!isTemplate && !DOC_CANDIDATE_RE.test(entry.name)) continue;
-      if (!isStaticContributionMetadata(full, isTemplate)) continue;
+      if (
+        !TEMPLATE_CANDIDATE_RE.test(entry.name) &&
+        !DOC_CANDIDATE_RE.test(entry.name)
+      ) {
+        continue;
+      }
+      const stamp = stampOf(context, full);
+      if (stamp == null) continue;
       issues.push(
         warning(
           'unreachable_contribution',
-          `Found contribution metadata "${path.relative(packageDir, full)}" outside every declared integration root, so it contributes nothing. Move it under the matching root or update the manifest root.`,
+          `Found contribution metadata "${path.relative(packageDir, full)}" outside every declared integration root, so it contributes nothing. ${unreachableFix(context, full, stamp)}`,
         ),
       );
     }
@@ -366,6 +312,8 @@ async function validateAtPackageDir(
   // Roots + contribution checks are shared with validateLoadedIntegration so
   // the everyday-command nudge runs the exact same validators.
   issues.push(...(await validateLoadedIntegration(loaded)));
+  if (loaded.themes)
+    issues.push(...unreadThemeFolderIssues(packageDir, loaded));
   if (scanUnreachable) {
     issues.push(
       ...(await findUnreachableContributionIssues(packageDir, loaded)),
