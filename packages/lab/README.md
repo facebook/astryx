@@ -50,6 +50,29 @@ import '@astryxdesign/lab/lab.css';
 
 > Canary builds track the latest commit on `main` (`0.x.y-canary.<sha>`). They can break between any two versions — pin an exact version if you need stability.
 
+## Documenting a Lab component (canary docsite)
+
+Lab appears **only on the canary docsite** — the production site documents the published stable release and never loads this package (see the target gates in `apps/docsite/scripts/` and the exclusion tests in `apps/docsite/src/__tests__/integration-targets.test.ts`).
+
+Authoring is the same two-artifact flow a Core author uses; the only difference is where the runnable demos live (Core keeps its blocks centrally in `packages/cli/assets/templates/blocks/`, Lab owns its own `blocks/` directory here):
+
+1. **Component doc** — `src/<Name>/<Name>.doc.mjs` exporting `docs` (props, usage, playground config, `examples`). Picked up automatically on canary; no registration anywhere.
+2. **Runnable demos** — same-stem pairs in `blocks/`: `<BlockName>.tsx` + `<BlockName>.doc.mjs` (a `TemplateDoc` stamped `type: 'block'`). Discovered automatically once this package declares the directory — nothing per-component. The docsite renders the pair as the component page's showcase/examples and the playground can import anything the package exports.
+
+**First block only:** the pull request that adds Lab's first block also adds `templates: './blocks'` to `astryx.integration.mjs` and `"blocks"` to the `files` list in `package.json`. Declaring the root earlier would fail `astryx integration pack --check`, which rejects a declared root with no contributions. After that one-time step, a new demo is just its block pair.
+
+How a demo reaches a component page: **`exampleFor: '<Component>'` (or `alsoExampleFor`) is what attaches a block** — the page renders every block attributed to it, whatever the block is named. The block's `name` is the demo's display name; component-doc example `labels` are CLI-snippet headings. The two are independent mechanisms.
+
+Use these conventions for new demos:
+
+- Give the block descriptor the same `name` as the component doc's example `label`, so the snippet and its runnable demo read as one documented set (this naming convention is what the `example-coverage` report keys on — it is not how the docsite attaches demos).
+- Exactly one attributed block sets `isShowcase: true` (the hero demo — conventionally the first example).
+- `displayName` and `description` are required by the docsite build; set `componentsUsed` and `aspectRatio` for the gallery.
+
+A doc example with no corresponding block exists only as a CLI/code snippet — the docsite page's demos come solely from blocks. Note the converse does not follow from names alone: an example label with no _same-named_ block does not by itself mean the demo is missing, because the component may render demos under other names (several Core components do). The `example-coverage` docsite test output reports both sides of that pairing; it is a _report_, not a gate — Core has the same non-guarantee, and whether pairing should gate CI is an open repo-wide decision.
+
+> Note: `astryx integration add template` scaffolds a `./templates` root for a package that declares none. Declare `templates: './blocks'` explicitly instead, matching charts and richtext; unifying the two conventions is a pending repo decision.
+
 ## Why no stable release?
 
 `package.json` keeps `"private": true` plus an `"astryx": { "canaryOnly": true }` marker. The release workflow's stable (`latest`) job skips both private and `canaryOnly` packages, while the canary job strips `private` in its ephemeral CI checkout only (never in git) to publish the `@canary` tag. The committed `private: true` is npm's hard guarantee that no stable publish can ever happen — **do not remove it.**
