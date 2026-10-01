@@ -5,7 +5,21 @@ export const doc = {
   type: 'page',
   name: 'Grouped Table',
   displayName: 'Grouped Table',
-  description: 'Row collection bundled into collapsible sections with per-group counts, so a long list reads as a handful of blocks that expand and collapse. Query filtering and a resizable inspector for the selected row. Table, list, rows, records, grid, or grouped dataset.',
+  description:
+    'Row collection bundled into collapsible sections with per-group counts, so a long list reads as a handful of blocks that expand and collapse. Query filtering and a resizable inspector for the selected row.',
+  keywords: [
+    'table',
+    'list',
+    'rows',
+    'records',
+    'grid',
+    'grouped dataset',
+    'to-do list',
+    'todo',
+    'priorities',
+    'completed items',
+    'checkboxes',
+  ],
   isReady: true,
   category: 'Table - Grouped',
 };

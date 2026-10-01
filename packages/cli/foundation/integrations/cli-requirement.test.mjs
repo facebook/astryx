@@ -10,6 +10,7 @@ import {
   THEMES_CLI,
   lowestAdmitted,
   docsTreeCliProblem,
+  keywordsCliProblem,
   replacesCliProblem,
   sectionIdsCliProblem,
   themesCliProblem,
@@ -117,7 +118,7 @@ describe('themesCliProblem and sectionIdsCliProblem', () => {
     }
   });
 
-  it('keeps 0.7.0 for the docs tree and for replaces', () => {
+  it('keeps 0.7.0 for the docs tree, replaces, and keywords', () => {
     const pkg = {peerDependencies: {'@astryxdesign/cli': '>=0.6.4'}};
     expect(docsTreeCliProblem(pkg)).toContain(
       'admits a stable CLI before 0.7.0',
@@ -125,6 +126,12 @@ describe('themesCliProblem and sectionIdsCliProblem', () => {
     expect(replacesCliProblem(pkg)).toContain(
       'admits a stable CLI before 0.7.0',
     );
+    expect(keywordsCliProblem(pkg)).toContain(
+      'admits a stable CLI before 0.7.0',
+    );
+    expect(
+      keywordsCliProblem({peerDependencies: {'@astryxdesign/cli': '>=0.7.0'}}),
+    ).toBeNull();
   });
 
   it('names a released CLI for a feature that already shipped', () => {

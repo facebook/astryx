@@ -19,10 +19,10 @@ export const CLI_PACKAGE = '@astryxdesign/cli';
 
 /**
  * The first CLI release that reads an integration's docs tree (namespace docs
- * and placed guides) and its templates' `replaces`. A release before it can
- * hide every doc topic a package with a namespace doc or a placed guide ships,
- * with no warning; and it rejects `replaces`, drops that template, and hides
- * the package's doc topics.
+ * and placed guides) and its templates' `replaces` and `keywords`. A release
+ * before it can hide every doc topic a package with a namespace doc or a
+ * placed guide ships, with no warning; and it rejects `replaces` or
+ * `keywords`, drops that template, and hides the package's doc topics.
  */
 export const DOCS_TREE_CLI = '0.7.0';
 
@@ -194,6 +194,23 @@ export function themesCliProblem(pkg) {
     'ships a theme',
     "cannot read typed theme descriptors, and can drop the package's themes and hide its doc topics",
     THEMES_CLI,
+  );
+}
+
+/**
+ * Why a package with a template that sets `keywords` would lose that template
+ * and its doc topics on an older CLI, or null when its declared CLI range
+ * admits only CLIs that read the field. Published 0.6.3 rejects the field,
+ * drops that template, and hides the package's doc topics.
+ * @param {any} pkg package.json
+ * @returns {string | null}
+ */
+export function keywordsCliProblem(pkg) {
+  return cliRangeProblem(
+    pkg,
+    'has a template that sets `keywords`',
+    "rejects the field, drops that template, and hides the package's doc topics",
+    DOCS_TREE_CLI,
   );
 }
 

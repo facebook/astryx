@@ -94,6 +94,10 @@ export const docs = {
               'Same fix: an older CLI rejects `replaces`, drops that template, and hides your doc topics.',
             ],
             [
+              '`keywords_needs_cli`: The package has a template that sets `keywords` but declares no @astryxdesign/cli peer.',
+              'Same fix: an older CLI rejects `keywords`, drops that template, and hides your doc topics.',
+            ],
+            [
               '`themes_need_cli`: The package ships a theme but declares no @astryxdesign/cli peer.',
               "Run `npm pkg set 'peerDependencies.@astryxdesign/cli=>=0.6.4'` and `npm pkg set 'peerDependenciesMeta.@astryxdesign/cli.optional=true' --json`. A stable CLI before 0.6.4 cannot read typed theme descriptors, so it drops your themes and can hide your doc topics.",
             ],
@@ -135,7 +139,7 @@ export const docs = {
             ],
             [
               'Your docs section, templates, or themes are missing only in some apps',
-              'Those apps run a CLI too old to read them: a stable CLI before 0.7.0 for a docs section or a template that sets `replaces`, or before 0.6.4 for a theme. Update `@astryxdesign/cli` there, and keep your optional `@astryxdesign/cli` peer so npm warns about an old CLI.',
+              'Those apps run a CLI too old to read them: a stable CLI before 0.7.0 for a docs section or a template that sets `replaces` or `keywords`, or before 0.6.4 for a theme. Update `@astryxdesign/cli` there, and keep your optional `@astryxdesign/cli` peer so npm warns about an old CLI.',
             ],
           ],
         },
