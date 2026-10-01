@@ -1940,6 +1940,16 @@
     },
     {
       "kind": "section",
+      "id": "tokens#data-color-tokens",
+      "oldCliRoute": "astryx docs tokens data-color-tokens",
+      "oldDocsiteUrl": "/docs/tokens#data-color-tokens",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of tokens under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
       "id": "tokens#spacing-tokens",
       "oldCliRoute": "astryx docs tokens spacing-tokens",
       "oldDocsiteUrl": "/docs/tokens#spacing-tokens",

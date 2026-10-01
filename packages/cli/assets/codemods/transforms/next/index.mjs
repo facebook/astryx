@@ -13,8 +13,16 @@ import migrateThemeCatalogToDescriptors, {
 import migrateNativePickerToPresentation, {
   meta as migrateNativePickerToPresentationMeta,
 } from './migrate-native-picker-to-presentation.mjs';
+import validateDataTokenOwnership, {
+  meta as validateDataTokenOwnershipMeta,
+} from './validate-data-token-ownership.mjs';
 
 export default [
+  {
+    name: 'validate-data-token-ownership',
+    transform: validateDataTokenOwnership,
+    meta: validateDataTokenOwnershipMeta,
+  },
   {
     name: 'migrate-theme-catalog-to-descriptors',
     transform: migrateThemeCatalogToDescriptors,

@@ -85,7 +85,7 @@ const groups = [
     source: 'data',
     title: 'Data Color Tokens',
     description:
-      'Categorical colors, a neutral, and sequential ramps for charts and data visualization. Import their public StyleX variables from @astryxdesign/core/theme/dataTokens.stylex.',
+      'Categorical colors, a neutral, and sequential ramps for charts and data visualization. Import dataVars from @astryxdesign/core/theme/dataTokens.stylex for CSS-capable code. Retaining any member emits the complete 56-variable group; an unused graph emits none.',
     headers: ['Token', 'Light', 'Dark'],
     formatRow(name, value) {
       const ldMatch = value.match(/^light-dark\(([^,]+),\s*([^)]+)\)$/);
@@ -261,7 +261,7 @@ const styles = stylex.create({
     },
     {
       type: 'prose',
-      text: 'See {@link generic:styling} for how to apply tokens via xstyle, className, and compound component patterns. See {@link generic:theme} for overriding tokens with defineTheme.',
+      text: 'Use `dataVars` for StyleX, DOM styles, and SVG presentation attributes. Canvas and other APIs that require concrete mode-resolved values use `resolveThemeToken()` or `useTheme().token()` instead. Raw CSS may use the stable custom-property names only when compiled dataVars output is guaranteed or the declaration carries an explicit fallback. See {@link generic:styling} for xstyle, className, and compound component patterns, and {@link generic:theme} for overriding tokens with defineTheme.',
     },
   ],
 });

@@ -78,14 +78,12 @@ import {generateFamilyCSS, resolveThemeFamily} from './family.mjs';
 // capability instead, required only by a theme that actually uses it:
 // requiring it unconditionally made every theme build — adaptations or not —
 // fail against an older published core. This is a targeted allowance for that
-// one capability, not a general scheme; the other two optional reads below
-// (`generateOnMediaCSS`, `dataTokenDefaults`) both exist in every core that
-// ships adaptations' predecessor surface.
+// one capability, not a general scheme; `generateOnMediaCSS` exists in every
+// core that ships adaptations' predecessor surface.
 /** @type {any} */ let _defineTheme = null;
 /** @type {any} */ let _generateThemeRulesSplit = null;
 /** @type {any} */ let _generateOnMediaCSS = null;
 /** @type {any} */ let _generateAdaptationCSS = null;
-/** @type {any} */ let _dataTokenDefaults = null;
 /**
  * The whole `@astryxdesign/core/theme` namespace. A theme file handed a
  * wrapped core must still get every export the installed one has, including
@@ -108,7 +106,6 @@ try {
   _generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
   _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
   _generateAdaptationCSS = coreTheme.generateAdaptationCSS;
-  _dataTokenDefaults = coreTheme.dataTokenDefaults;
   try {
     _coreRootModule = await import('@astryxdesign/core');
   } catch {
@@ -2457,26 +2454,8 @@ async function themeBuildInternal(
       logger.log('No overrides found; nothing to build.');
       return null;
     }
-    // The data-token defaults are theme-independent and go in @layer
-    // astryx-base, below the theme's own overrides. Formatted here from the
-    // public `dataTokenDefaults` export, byte for byte as the `<Theme>`
-    // runtime emits it — build-theme.data-tokens.test.mjs is the drift guard.
-    // Placed after the reset block and before the theme block: a layer's order
-    // is fixed by where it is first declared, so emitting it anywhere else in
-    // the file would invert reset < astryx-base < astryx-theme for a consumer
-    // who imports this stylesheet on its own.
-    const baseCss = _dataTokenDefaults
-      ? `:root {\n${Object.entries(_dataTokenDefaults)
-          .map(([name, value]) => `  ${name}: ${value};`)
-          .join('\n')}\n}`
-      : '';
-    if (baseCss) {
-      cssParts.splice(
-        prose.length > 0 ? 1 : 0,
-        0,
-        `@layer astryx-base {\n${baseCss}\n}`,
-      );
-    }
+    cssParts.unshift('@layer reset, astryx-base, astryx-theme;');
+    const baseCss = '';
     cssPlan = {
       base: baseCss,
       prose,

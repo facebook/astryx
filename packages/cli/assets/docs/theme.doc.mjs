@@ -780,7 +780,7 @@ const chartTheme = {
       content: [
         {
           type: 'prose',
-          text: '`useTheme()` uses the same token resolution as `resolveThemeTokens()`, but reads the nearest Theme and effective color mode from React context and media query state. Use it inside client components for SVG, canvas, charts, maps, and third-party configuration objects that need token values in JavaScript instead of `var(...)` references.',
+          text: '`useTheme()` uses the same token resolution as `resolveThemeTokens()`, but reads the nearest Theme and effective color mode from React context and media query state. Prefer `dataVars` for CSS-capable SVG and DOM values. Use this hook for canvas, charts, maps, third-party configuration objects, or an SVG API that requires a concrete JavaScript color instead of a `var(...)` reference.',
         },
         {
           type: 'code',

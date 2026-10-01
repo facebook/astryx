@@ -80,6 +80,7 @@ const run = (apply, srcPath = root) =>
 describe('migrate-theme-catalog-to-descriptors', () => {
   it('is staged for the next release as a project codemod', () => {
     expect(manifest.map(t => [t.name, t.meta.codemodType])).toEqual([
+      ['validate-data-token-ownership', undefined],
       ['migrate-theme-catalog-to-descriptors', 'project'],
       ['migrate-native-picker-to-presentation', undefined],
     ]);

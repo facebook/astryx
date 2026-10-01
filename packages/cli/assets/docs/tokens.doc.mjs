@@ -433,7 +433,7 @@ export const docs = {
       "content": [
         {
           "type": "prose",
-          "text": "Categorical colors, a neutral, and sequential ramps for charts and data visualization. Import their public StyleX variables from @astryxdesign/core/theme/dataTokens.stylex."
+          "text": "Categorical colors, a neutral, and sequential ramps for charts and data visualization. Import dataVars from @astryxdesign/core/theme/dataTokens.stylex for CSS-capable code. Retaining any member emits the complete 56-variable group; an unused graph emits none."
         },
         {
           "type": "table",
@@ -1402,7 +1402,7 @@ export const docs = {
         },
         {
           "type": "prose",
-          "text": "See {@link generic:styling} for how to apply tokens via xstyle, className, and compound component patterns. See {@link generic:theme} for overriding tokens with defineTheme."
+          "text": "Use `dataVars` for StyleX, DOM styles, and SVG presentation attributes. Canvas and other APIs that require concrete mode-resolved values use `resolveThemeToken()` or `useTheme().token()` instead. Raw CSS may use the stable custom-property names only when compiled dataVars output is guaranteed or the declaration carries an explicit fallback. See {@link generic:styling} for xstyle, className, and compound component patterns, and {@link generic:theme} for overriding tokens with defineTheme."
         }
       ]
     }
