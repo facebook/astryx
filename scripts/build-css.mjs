@@ -93,19 +93,123 @@ function parseTarget() {
   return {name, ...target};
 }
 
-async function collectStyleXCSS(target) {
+function staticStyleXImports(source) {
+  const specifiers = [];
+  const pattern =
+    /\b(?:import|export)\s+([^'";]*?\sfrom\s*)?['"]([^'"]+\.stylex)['"]/g;
+  for (const match of source.matchAll(pattern)) {
+    const clause = (match[1] ?? '').replace(/\s+from\s*$/, '').trim();
+    if (/^type(?:\s|\*|\{)/.test(clause)) {
+      continue;
+    }
+
+    // TypeScript also permits `import {type Foo}` and
+    // `export {type Foo}`. Keep a mixed list when any runtime binding remains,
+    // but do not make an all-type list retain a variable module.
+    const named = /^\{([^}]*)\}$/.exec(clause);
+    if (
+      named &&
+      named[1]
+        .split(',')
+        .map(specifier => specifier.trim())
+        .filter(Boolean)
+        .every(specifier => /^type\b/.test(specifier))
+    ) {
+      continue;
+    }
+
+    specifiers.push(match[2]);
+  }
+  return specifiers;
+}
+
+async function firstExistingModule(basePath) {
+  const candidates = [
+    basePath,
+    `${basePath}.ts`,
+    `${basePath}.tsx`,
+    `${basePath}.js`,
+    `${basePath}.mjs`,
+    path.join(basePath, 'index.ts'),
+    path.join(basePath, 'index.tsx'),
+  ];
+  for (const candidate of candidates) {
+    try {
+      const stat = await fs.stat(candidate);
+      if (stat.isFile()) {
+        return candidate;
+      }
+    } catch {
+      // Try the next supported source spelling.
+    }
+  }
+  return null;
+}
+
+async function resolveStyleXImport(specifier, importer, aliases) {
+  if (specifier.startsWith('.')) {
+    return firstExistingModule(path.resolve(path.dirname(importer), specifier));
+  }
+
+  for (const [pattern, replacements] of Object.entries(aliases)) {
+    const wildcard = pattern.indexOf('*');
+    const prefix = wildcard === -1 ? pattern : pattern.slice(0, wildcard);
+    const suffix = wildcard === -1 ? '' : pattern.slice(wildcard + 1);
+    if (!specifier.startsWith(prefix) || !specifier.endsWith(suffix)) {
+      continue;
+    }
+    const matched = specifier.slice(
+      prefix.length,
+      suffix ? -suffix.length : undefined,
+    );
+    for (const replacement of replacements) {
+      const candidate = replacement.replace('*', matched);
+      const resolved = await firstExistingModule(candidate);
+      if (resolved) {
+        return resolved;
+      }
+    }
+  }
+  return null;
+}
+
+export async function collectStyleXCSS(target) {
   const files = await glob('**/*.{ts,tsx}', {
     cwd: target.src,
     absolute: true,
     ignore: ['**/*.test.*', '**/*.d.ts', '**/node_modules/**'],
   });
 
-  console.log(`Processing ${files.length} source files...`);
-
+  // Non-StyleX source files are the package's all-component entry set. Variable
+  // modules are compiled only when one of those files imports them, so a public
+  // defineVars module can remain absent from packages that never consume it.
+  const queue = files.filter(file => !/\.stylex\.[cm]?[jt]sx?$/.test(file));
+  const visited = new Set();
   const allRules = [];
 
-  for (const file of files) {
+  console.log(`Processing ${queue.length} source entries...`);
+
+  while (queue.length > 0) {
+    const file = queue.shift();
+    if (visited.has(file)) {
+      continue;
+    }
+    visited.add(file);
+
     const code = await fs.readFile(file, 'utf8');
+    for (const specifier of staticStyleXImports(code)) {
+      const dependency = await resolveStyleXImport(
+        specifier,
+        file,
+        target.aliases,
+      );
+      if (!dependency) {
+        throw new Error(
+          `Could not resolve StyleX dependency "${specifier}" from ${path.relative(ROOT, file)}`,
+        );
+      }
+      queue.push(dependency);
+    }
 
     if (!code.includes('@stylexjs/stylex')) {
       continue;
@@ -141,14 +245,16 @@ async function collectStyleXCSS(target) {
         allRules.push(...result.metadata.stylex);
       }
     } catch (err) {
-      console.warn(
-        `  Warning: Could not process ${path.relative(ROOT, file)}: ${err.message}`,
+      throw new Error(
+        `Could not process ${path.relative(ROOT, file)}: ${err.message}`,
+        {cause: err},
       );
     }
   }
 
-  console.log(`Collected ${allRules.length} StyleX rules`);
-
+  console.log(
+    `Collected ${allRules.length} StyleX rules from ${visited.size} reachable files`,
+  );
   return allRules;
 }
 
@@ -171,10 +277,14 @@ async function main() {
     .map(line => '  ' + line)
     .join('\n')}\n}\n`;
   await fs.writeFile(outPath, combinedFileContents, 'utf8');
-  console.log(`${target.outFile}: ${(combinedCSS.length / 1024).toFixed(1)} KB`);
+  console.log(
+    `${target.outFile}: ${(combinedCSS.length / 1024).toFixed(1)} KB`,
+  );
 }
 
-main().catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+if (fileURLToPath(import.meta.url) === process.argv[1]) {
+  main().catch(err => {
+    console.error(err);
+    process.exit(1);
+  });
+}

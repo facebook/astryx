@@ -19,26 +19,36 @@ import {fileURLToPath} from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
-const TOKENS_SRC = resolve(ROOT, 'packages/core/src/theme/tokens.stylex.ts');
+const CORE_TOKENS_SRC = resolve(
+  ROOT,
+  'packages/core/src/theme/tokens.stylex.ts',
+);
+const DATA_TOKENS_SRC = resolve(
+  ROOT,
+  'packages/core/src/theme/dataTokens.stylex.ts',
+);
 const TOKENS_DOC = resolve(ROOT, 'packages/cli/assets/docs/tokens.doc.mjs');
 
 // ---------------------------------------------------------------------------
 // 1. Parse token groups from source
 // ---------------------------------------------------------------------------
 
-const src = readFileSync(TOKENS_SRC, 'utf-8');
+const sources = {
+  core: readFileSync(CORE_TOKENS_SRC, 'utf-8'),
+  data: readFileSync(DATA_TOKENS_SRC, 'utf-8'),
+};
 
 /**
  * Extract key-value pairs from a `const xxxDefaults = { ... } as const;` block.
  * Returns array of [tokenName, defaultValue].
  */
-function extractDefaults(name) {
-  // Match: `export const <name> = {` ... `} as const;`
+function extractDefaults(name, source = 'core') {
+  // Match: `[export] const <name> = {` ... `} as const;`
   const re = new RegExp(
-    `export const ${name}\\s*=\\s*\\{([^}]+(?:\\{[^}]*\\}[^}]*)*)\\}\\s*as const`,
+    `(?:export\\s+)?const ${name}\\s*=\\s*\\{([^}]+(?:\\{[^}]*\\}[^}]*)*)\\}\\s*as const`,
     's',
   );
-  const m = src.match(re);
+  const m = sources[source].match(re);
   if (!m) return [];
 
   const body = m[1];
@@ -61,6 +71,21 @@ const groups = [
     title: 'Color Tokens',
     description:
       'Semantic colors for consistent theming. All colors use light-dark() for automatic mode switching.',
+    headers: ['Token', 'Light', 'Dark'],
+    formatRow(name, value) {
+      const ldMatch = value.match(/^light-dark\(([^,]+),\s*([^)]+)\)$/);
+      if (ldMatch) return [name, ldMatch[1].trim(), ldMatch[2].trim()];
+      return [name, value, value];
+    },
+  },
+  {
+    key: 'dataColor',
+    previewType: 'swatch',
+    exportName: 'dataTokenDefaults',
+    source: 'data',
+    title: 'Data Color Tokens',
+    description:
+      'Categorical colors, a neutral, and sequential ramps for charts and data visualization. Import their public StyleX variables from @astryxdesign/core/theme/dataTokens.stylex.',
     headers: ['Token', 'Light', 'Dark'],
     formatRow(name, value) {
       const ldMatch = value.match(/^light-dark\(([^,]+),\s*([^)]+)\)$/);
@@ -192,7 +217,7 @@ const groups = [
 const sections = [];
 
 for (const group of groups) {
-  const pairs = extractDefaults(group.exportName);
+  const pairs = extractDefaults(group.exportName, group.source);
   if (pairs.length === 0) continue;
 
   const rows = pairs.map(([name, value]) => group.formatRow(name, value));
@@ -218,12 +243,16 @@ sections.push({
       label: 'Using token imports',
       code: `import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, sizeVars, radiusVars} from '@astryxdesign/core';
+import {dataVars} from '@astryxdesign/core/theme/dataTokens.stylex';
 
 const styles = stylex.create({
   card: {
     padding: spacingVars['--spacing-4'],
     backgroundColor: colorVars['--color-background-surface'],
     borderRadius: radiusVars['--radius-container'],
+  },
+  series: {
+    color: dataVars['--color-data-categorical-blue'],
   },
   button: {
     height: sizeVars['--size-element-md'],
@@ -245,7 +274,7 @@ const isCheck = process.argv.includes('--check');
 
 // Count total tokens for the header comment
 const totalTokens = groups.reduce(
-  (sum, g) => sum + extractDefaults(g.exportName).length,
+  (sum, g) => sum + extractDefaults(g.exportName, g.source).length,
   0,
 );
 
@@ -253,7 +282,7 @@ const output = `\
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 // AUTO-GENERATED — do not edit manually.
-// Source: packages/core/src/theme/tokens.stylex.ts
+// Sources: packages/core/src/theme/tokens.stylex.ts and dataTokens.stylex.ts
 // Run: node scripts/generate-token-docs.mjs
 // Total: ${totalTokens} tokens across ${groups.length} categories.
 
@@ -265,7 +294,7 @@ export const docs = ${JSON.stringify(
     title: 'All Tokens',
     category: 'foundations',
     description:
-      'Complete reference for spacing, color, radius, typography, shadow, motion, and size tokens.',
+      'Complete reference for spacing, UI color, data color, radius, typography, shadow, motion, and size tokens.',
     sections,
   },
   null,
