@@ -46,7 +46,7 @@ function gitTry(dir, args) {
 /**
  * Build the synthetic repo and return the shallow clone dir:
  *   upstream/: branch point, 60 churn commits on main, feature off the point
- *             touching Core, Rich Text, and Vega components.
+ *             changing Card runtime plus Button docs/tests, Rich Text, and Vega.
  *   clone/   : --depth=5 --single-branch of feature (no merge base with main).
  */
 function buildFixture() {
@@ -73,6 +73,14 @@ function buildFixture() {
   fs.writeFileSync(path.join(upstream, 'packages/core/src/Card/Card.doc.mjs'), "export default {name: 'Card'};\n");
   fs.writeFileSync(path.join(upstream, 'packages/core/src/Card/index.ts'), "export {Card} from './Card';\n");
   fs.writeFileSync(path.join(upstream, 'packages/core/src/Button/index.ts'), 'export {}\n');
+  fs.writeFileSync(
+    path.join(upstream, 'packages/core/src/Button/Button.doc.mjs'),
+    'export const docs = {}\n',
+  );
+  fs.writeFileSync(
+    path.join(upstream, 'packages/core/src/Button/Button.test.tsx'),
+    'export {}\n',
+  );
   fs.writeFileSync(path.join(upstream, 'packages/core/src/Line/index.ts'), 'export {}\n');
   fs.writeFileSync(
     path.join(upstream, 'packages/richtext/src/RichTextEditor.tsx'),
@@ -128,6 +136,14 @@ function buildFixture() {
   git(upstream, ['branch', 'feature', branchPoint]);
   git(upstream, ['checkout', '-q', 'feature']);
   fs.appendFileSync(path.join(upstream, 'packages/core/src/Card/index.ts'), 'export const Card = {}\n');
+  fs.appendFileSync(
+    path.join(upstream, 'packages/core/src/Button/Button.doc.mjs'),
+    '// docs only\n',
+  );
+  fs.appendFileSync(
+    path.join(upstream, 'packages/core/src/Button/Button.test.tsx'),
+    '// test only\n',
+  );
   fs.appendFileSync(
     path.join(upstream, 'packages/richtext/src/RichTextEditor.tsx'),
     'export const richTextChanged = true\n',
@@ -196,6 +212,10 @@ describe('analyze-pr shallow-clone recovery', () => {
       ]);
       expect(analysis.modifiedComponentOwners).not.toContain('core/InteractiveRoleContext');
       expect(analysis.modifiedComponentOwners).not.toContain('lab/Sankey');
+      // Button's only feature-branch changes are in .doc.mjs and .test.tsx,
+      // which the doc/test exclusion filter keeps out of modifiedComponents.
+      expect(analysis.modifiedComponents).not.toContain('Button');
+      expect(analysis.modifiedComponentOwners).not.toContain('core/Button');
       expect(analysis.forceFullComponentAudits).toBe(true);
       expect(analysis.unresolvedComponentSources).toEqual(
         expect.arrayContaining(['core/InteractiveRoleContext', 'lab/Sankey']),

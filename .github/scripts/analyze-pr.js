@@ -552,6 +552,11 @@ function analyze() {
       changedPackages.add(pkg.name);
 
       const relativePath = file.replace(prefix, '');
+      // Tests and consumer docs do not change the shipped component. Keep them
+      // in changedPackages, but do not fan out runtime, visual, RTL, or a11y
+      // checks through modifiedComponents. This matches visual-scope.mjs.
+      if (/\.(test|doc)\./.test(relativePath)) continue;
+
       const componentName =
         pkg.layout === 'flat'
           ? relativePath.replace(/\.tsx?$/, '').split('/')[0]

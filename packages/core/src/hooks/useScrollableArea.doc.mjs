@@ -1,6 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
+ * Generated CLI guidance for AI agents. Run:
+ * `npx @astryxdesign/cli search "useScrollableArea"`
+ * for current props, examples, and usage guidance.
+ */
+
+/**
  * @file useScrollableArea.doc.mjs
  * @input Shared scroll hook's fixed and entry-time keyboard policies
  * @output Consumer guidance for named viewports and safe focus delegation

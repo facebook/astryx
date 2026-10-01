@@ -1,6 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
+ * Generated CLI guidance for AI agents. Run:
+ * `npx @astryxdesign/cli search "ComplexSelector"`
+ * for current props, examples, and usage guidance.
+ */
+
+/**
  * @file ComplexSelector.doc.mjs
  * @input ComplexSelector public API and composition contract
  * @output Exports full and dense component documentation
