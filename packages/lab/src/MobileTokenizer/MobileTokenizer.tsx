@@ -119,11 +119,6 @@ const styles = stylex.create({
   triggerPlaceholder: {
     color: colorVars['--color-text-secondary'],
   },
-  chevron: {
-    marginInlineStart: 'auto',
-    display: 'flex',
-    flexShrink: 0,
-  },
   sheetBody: {
     display: 'flex',
     flexDirection: 'column',
@@ -341,9 +336,6 @@ export function MobileTokenizer<T extends SearchableItem>({
             {placeholder ?? ''}
           </span>
         )}
-        <span {...stylex.props(styles.chevron)} aria-hidden="true">
-          <Icon icon="chevronDown" size="sm" color="secondary" />
-        </span>
       </button>
 
       {!isDisabled && (

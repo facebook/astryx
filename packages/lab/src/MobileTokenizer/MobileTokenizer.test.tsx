@@ -35,6 +35,7 @@ function Harness({
       label="Tags"
       searchSource={source}
       value={value}
+      hasCreate
       debounceMs={0}
       placeholder="Add tags"
       onChange={(items, change) => {
@@ -63,18 +64,16 @@ beforeEach(() => {
   }
   vi.stubGlobal(
     'matchMedia',
-    vi
-      .fn()
-      .mockReturnValue({
-        matches: false,
-        media: '',
-        onchange: null,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      }),
+    vi.fn().mockReturnValue({
+      matches: false,
+      media: '',
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }),
   );
   vi.stubGlobal(
     'requestAnimationFrame',
@@ -116,6 +115,31 @@ describe('MobileTokenizer (Lab, sketch flow)', () => {
       (await screen.findByTestId('mobile-tokenizer-manage-list')).textContent,
     ).toContain('Engineer');
   });
+  it('creates custom items and shows them in the field and manage sheet', async () => {
+    const spy = vi.fn();
+    render(<Harness spy={spy} />);
+    const trigger = screen.getByRole('button', {name: /Tags/});
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole('button', {name: 'Add item'}));
+    const search = await screen.findByLabelText('Search Tags');
+    fireEvent.change(search, {target: {value: 'Custom'}});
+
+    const create = await screen.findByRole('button', {
+      name: 'Create "Custom"',
+    });
+    fireEvent.click(create);
+    expect(spy).toHaveBeenCalledWith(
+      [ITEMS[0], ITEMS[1], {id: 'Custom', label: 'Custom'}],
+      expect.objectContaining({type: 'create'}),
+    );
+    await waitFor(() => expect(trigger).toHaveTextContent('Custom'));
+
+    fireEvent.click(screen.getByRole('button', {name: 'Done'}));
+    expect(
+      await screen.findByTestId('mobile-tokenizer-manage-list'),
+    ).toHaveTextContent('Custom');
+  });
+
   it('uses guided empty states and large actions', async () => {
     render(
       <MobileTokenizer
