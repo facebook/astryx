@@ -54,7 +54,7 @@ npx astryx theme palette generate themes/ocean/palette.config.json \\
         },
         {
           type: 'prose',
-          text: '`--preview <file>.html` also writes a page for reviewing the colors; write it outside `themes/` so apps do not copy it. Other request options are in {@link command:theme palette generate}.',
+          text: '`--preview <file>.html` also writes a page for reviewing the colors; write it outside `themes/` so it does not ship in your package. Other request options are in {@link command:theme palette generate}.',
         },
       ],
     },
