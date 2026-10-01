@@ -2312,3 +2312,35 @@ describe('DropdownMenu press model', () => {
     expect(menu).not.toHaveClass(hash(touchStyles.panY));
   });
 });
+
+describe('DropdownMenu menuMaxHeight', () => {
+  it('a menu taller than the cap keeps the height it is given', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        menuMaxHeight={528}
+        items={Array.from({length: 12}, (_, i) => ({label: `Row ${i + 1}`}))}
+      />,
+    );
+    const menu = screen.getByRole('menu', {hidden: true});
+    // The cap is lifted to the given height, still bounded by the viewport.
+    expect(menu).toHaveStyle({maxHeight: 'var(--x-maxHeight)'});
+    expect(menu.getAttribute('style')).toContain('min(528px, calc(100dvb');
+    expect(menu.getAttribute('style')).not.toContain('min(300px');
+    // The popover viewport that holds the menu lifts its cap with it.
+    const popover = menu.closest('[popover]');
+    expect(popover?.getAttribute('style')).toContain('min(528px, calc(100dvb');
+  });
+
+  it('takes a CSS length for menuMaxHeight', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        menuMaxHeight="80dvh"
+        items={[{label: 'Row'}]}
+      />,
+    );
+    const menu = screen.getByRole('menu', {hidden: true});
+    expect(menu.getAttribute('style')).toContain('min(80dvh, calc(100dvb');
+  });
+});
