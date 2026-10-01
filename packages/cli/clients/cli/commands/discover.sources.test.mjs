@@ -199,6 +199,18 @@ describe('astryx discover with a discover source', () => {
     ).toBe(false);
   });
 
+  it('says which item is missing from a package only a source lists', async () => {
+    const {status, stdout} = await runCli(
+      ['discover', '@test/charts/Nope', '--json'],
+      {cwd: project},
+    );
+
+    expect(status).toBe(1);
+    const {code, error} = JSON.parse(stdout);
+    expect(code).toBe('ERR_UNKNOWN_COMPONENT');
+    expect(error).toBe('"Nope" not found in @test/charts');
+  });
+
   it('searches every kind in every source', async () => {
     const {status, stdout} = await runCli(['discover', 'report', '--json'], {
       cwd: project,

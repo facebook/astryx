@@ -44,6 +44,7 @@ import {item} from './detail/item/item.mjs';
 import {search} from './search/search.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
+import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {DISCOVER_KINDS} from '../../authoring/discover/parse.mjs';
 
 const DEFAULT_LIMIT = 20;
@@ -112,6 +113,35 @@ function checkOptions({type, installed, available, limit}) {
       ERROR_CODES.ERR_INVALID_OPTION,
     );
   }
+}
+
+/**
+ * Items a source lists for a package that look like the one asked for: names
+ * that contain it, else the closest few by spelling.
+ * @param {import('../../authoring/discover/type.js').DiscoverPackage} entry
+ * @param {string} wanted
+ * @returns {Array<{name: string, reason: string}>}
+ */
+function similarItems(entry, wanted) {
+  const lower = wanted.toLowerCase();
+  const names = [...new Set(entry.contributions.map(c => c.name))];
+  const hits = names.filter(name => name.toLowerCase().includes(lower));
+  const picked =
+    hits.length > 0
+      ? hits.slice(0, 5)
+      : names
+          .map(name => ({
+            name,
+            distance: levenshteinDistance(lower, name.toLowerCase()),
+          }))
+          .filter(m => m.distance <= 3)
+          .sort((a, b) => a.distance - b.distance)
+          .slice(0, 5)
+          .map(m => m.name);
+  return picked.map(name => ({
+    name: `${entry.package}/${name}`,
+    reason: 'similar name',
+  }));
 }
 
 /**
@@ -185,6 +215,15 @@ export async function discover(query, options = {}) {
     if (!target.item) return detail(packages, target.name, context);
     const found = item(packages, target.name, target.item, context);
     if (found) return found;
+    // Only an installed package has docs to fall back to. For one that is
+    // only in a source, the item is what is unknown, not the package.
+    if (entry && !packages.some(p => p.name === target.name)) {
+      throw new AstryxError(
+        `"${target.item}" not found in ${target.name}`,
+        similarItems(entry, target.item),
+        ERROR_CODES.ERR_UNKNOWN_COMPONENT,
+      );
+    }
     return await doc(packages, target.name, target.item, {lang, zh});
   };
 
