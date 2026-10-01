@@ -8,8 +8,8 @@
  * `<Name>.tsx` + `<Name>.doc.mjs` pair in that root — and ZERO edits anywhere
  * else (no astryx.config change, no generator change, no hand-maintained
  * catalog). The probe uses @astryxdesign/charts, whose `templates: './blocks'`
- * root already holds real blocks; Lab declares its root together with its
- * first block, because `integration pack --check` rejects an empty root.
+ * root already holds real blocks. A package declares its root together with
+ * its first block, because `integration pack --check` rejects an empty root.
  *
  * SCOPE: this file proves the DISCOVERY seam only — it writes a temporary
  * fixture pair into packages/charts/blocks and asserts the exact CLI API call

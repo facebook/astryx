@@ -104,9 +104,7 @@ describe('example coverage (report-only)', () => {
     // packages/lab/blocks that never reaches blockRegistry would be a silent
     // drop in the plumbing (as opposed to an authoring choice, which the
     // report above covers). Lab currently has no broken descriptors, so every
-    // authored block must appear, attributed to the package. With no Lab
-    // blocks authored yet this loop is vacuous; it becomes the admission
-    // regression as soon as the first block lands.
+    // authored block must appear, attributed to the package.
     const lab = await inventoryIntegration('@astryxdesign/lab');
     const registeredLabNames = new Set(
       registeredBlocks

@@ -108,10 +108,11 @@ describe('production-exclusion invariants (asserted on canary artifacts)', () =>
 
   it('documents @astryxdesign/lab on canary (presence proof for the exclusion tests)', () => {
     // The latest-target run proves absence; this proves the same pipeline
-    // genuinely admits Lab components on canary, so the absence is exclusion,
-    // not a silently empty catalog. Lab block admission is covered generically
-    // once a Lab block is authored; this setup change does not add one.
+    // genuinely admits Lab components and blocks on canary, so the absence is
+    // exclusion, not a silently empty catalog.
     expect(Object.keys(components)).toContain('@astryxdesign/lab');
-    expect(blocks.some(block => block.sourcePackage != null)).toBe(true);
+    expect(
+      blocks.some(block => block.sourcePackage === '@astryxdesign/lab'),
+    ).toBe(true);
   });
 });
