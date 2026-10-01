@@ -358,6 +358,19 @@ const styles = stylex.create({
   },
 
   // Empty state
+  // A row that carries a secondary action: the option and its action sit side
+  // by side in a role="none" wrapper, so the action is never inside the
+  // option's click target.
+  optionRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+  },
+  optionWithAction: {
+    flexGrow: 1,
+    flexShrink: 1,
+    minWidth: 0,
+  },
   emptyState: {
     padding: spacingVars['--spacing-3'],
     textAlign: 'center',
@@ -683,6 +696,16 @@ export interface MultiSelectorProps<
   renderOption?: (option: MultiSelectorOptionData) => ReactNode;
 
   /**
+   * Renders a secondary action beside an option — an Edit button for a
+   * carried label. The action is placed OUTSIDE the option: the option row
+   * and the action are siblings inside a `role="none"` wrapper, so the
+   * `role="option"` element stays a single click target and the action is a
+   * real, Tab-reachable control. Return `null` for a row without one. Not
+   * called for the select-all row.
+   */
+  renderOptionAction?: (option: MultiSelectorOptionData) => ReactNode;
+
+  /**
    * Which edge of the option row carries the checkbox.
    *
    * @default 'start'
@@ -787,6 +810,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   formatValue,
   maxBadges = 3,
   renderOption,
+  renderOptionAction,
   indicatorPosition = 'start',
   presentation = 'popover',
   isDefaultOpen = false,
@@ -1225,6 +1249,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     onClear: hasClear ? clearValues : undefined,
     hasValue,
     listboxId,
+    hasTabbableContent: renderOptionAction != null,
   });
 
   // Highlight scrolling (and its hover/keyboard split) lives in useMultiCombobox.
@@ -1428,7 +1453,10 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         </div>
       );
 
-      return (
+      const action =
+        renderOptionAction && !isSelectAll ? renderOptionAction(item) : null;
+
+      const row = (
         <div
           key={item.value}
           id={getItemId(flatIndex)}
@@ -1465,6 +1493,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               isSelectAll && styles.selectAllWrapper,
               isHighlighted && styles.itemHighlighted,
               item.disabled && styles.itemDisabled,
+              action != null && styles.optionWithAction,
             ),
           )}>
           {indicatorPosition === 'start' && checkbox}
@@ -1478,9 +1507,23 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           {indicatorPosition === 'end' && checkbox}
         </div>
       );
+
+      if (action == null) {
+        return row;
+      }
+      // The action is a sibling of the option, never inside it: a control
+      // inside `role="option"` would be an interactive element inside the
+      // option's click target (List places an Item's end action the same way).
+      return (
+        <div key={item.value} role="none" {...stylex.props(styles.optionRow)}>
+          {row}
+          {action}
+        </div>
+      );
     },
     [
       renderOption,
+      renderOptionAction,
       indicatorPosition,
       highlightedIndex,
       optimisticValue,

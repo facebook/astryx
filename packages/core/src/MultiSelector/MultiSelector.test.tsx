@@ -3228,3 +3228,119 @@ describe('MultiSelector popup theme target', () => {
     );
   });
 });
+
+describe('MultiSelector renderOptionAction', () => {
+  const OPTIONS = [
+    {value: 'bug', label: 'Bug'},
+    {value: 'feature', label: 'Feature'},
+    {value: 'docs', label: 'Docs'},
+  ];
+
+  it('renders the action as a sibling of the option, not inside it', async () => {
+    const user = userEvent.setup();
+    const onEdit = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={onChange}
+        renderOptionAction={option =>
+          option.value === 'bug' ? (
+            <button
+              type="button"
+              onClick={() => {
+                onEdit(option.value);
+              }}>
+              Edit Bug
+            </button>
+          ) : null
+        }
+      />,
+    );
+    await user.click(screen.getByRole('combobox', {name: 'Labels'}));
+
+    const option = screen.getByRole('option', {name: 'Bug', ...h});
+    const action = screen.getByRole('button', {name: 'Edit Bug', ...h});
+    expect(option).not.toContainElement(action);
+    expect(action.parentElement).toBe(option.parentElement);
+    expect(option.parentElement).toHaveAttribute('role', 'none');
+    expect(option.parentElement!.parentElement).toBe(
+      screen.getByRole('listbox', h),
+    );
+    // Rows without an action keep their plain shape.
+    expect(
+      screen.getByRole('option', {name: 'Feature', ...h}).parentElement,
+    ).toBe(screen.getByRole('listbox', h));
+
+    await user.click(action);
+    expect(onEdit).toHaveBeenCalledWith('bug');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('is not called for the select-all row', async () => {
+    const user = userEvent.setup();
+    const renderOptionAction = vi.fn((_option: {value: string}) => null);
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSelectAll
+        renderOptionAction={renderOptionAction}
+      />,
+    );
+    await user.click(screen.getByRole('combobox', {name: 'Labels'}));
+    const values = renderOptionAction.mock.calls.map(
+      ([option]) => option.value,
+    );
+    expect(values).toEqual(expect.arrayContaining(['bug', 'feature', 'docs']));
+    expect(values.every(v => ['bug', 'feature', 'docs'].includes(v))).toBe(
+      true,
+    );
+  });
+
+  it('Tab moves into the panel instead of closing it when rows carry actions', async () => {
+    const user = userEvent.setup();
+    const {rerender} = render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    // Baseline: without actions, Tab from the trigger dismisses the panel.
+    const trigger = screen.getByRole('combobox', {name: 'Labels'});
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.keyDown(trigger, {key: 'Tab'});
+    await waitFor(() => {
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    rerender(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        renderOptionAction={option => (
+          <button type="button">{`Edit ${option.label}`}</button>
+        )}
+      />,
+    );
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    // The action is a plain, tabbable control: the browser's Tab lands on
+    // it (jsdom cannot walk into a popover, so the stop is asserted by
+    // shape), and the panel stays open for it.
+    const action = screen.getByRole('button', {name: 'Edit Bug', ...h});
+    expect(action).not.toHaveAttribute('tabindex', '-1');
+    expect(action).not.toBeDisabled();
+    fireEvent.keyDown(trigger, {key: 'Tab'});
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+});

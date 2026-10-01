@@ -36,6 +36,12 @@ interface UseMultiComboboxOptions {
    */
   hasValue?: boolean;
   listboxId: string;
+  /**
+   * Whether the open panel holds focusable content besides the options (a
+   * per-row action button). Tab then moves into that content instead of
+   * closing the panel.
+   */
+  hasTabbableContent?: boolean;
 }
 
 interface UseMultiComboboxResult {
@@ -64,6 +70,7 @@ export function useMultiCombobox({
   onClear,
   hasValue = false,
   listboxId,
+  hasTabbableContent = false,
 }: UseMultiComboboxOptions): UseMultiComboboxResult {
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
   const [typeahead, setTypeahead] = useState('');
@@ -178,7 +185,7 @@ export function useMultiCombobox({
           break;
 
         case 'Tab':
-          if (isOpen) {
+          if (isOpen && !hasTabbableContent) {
             closeAndReset();
           }
           break;
@@ -272,6 +279,7 @@ export function useMultiCombobox({
       hasSearch,
       onClear,
       hasValue,
+      hasTabbableContent,
     ],
   );
 
