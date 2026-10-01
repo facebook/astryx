@@ -54,7 +54,10 @@ function buildFakeCore(project) {
  * @param {string} project
  * @param {{issuesUrl?: string|null, componentName?: string}} [opts]
  */
-function buildIntegration(project, {issuesUrl, componentName = 'MetaAppShell'} = {}) {
+function buildIntegration(
+  project,
+  {issuesUrl, componentName = 'MetaAppShell'} = {},
+) {
   const intDir = path.join(project, 'node_modules', '@test', 'meta');
   const compRoot = path.join(intDir, 'components');
   const compDir = path.join(compRoot, componentName);
@@ -78,10 +81,7 @@ function buildIntegration(project, {issuesUrl, componentName = 'MetaAppShell'} =
       '',
     ].join('\n'),
   );
-  fs.writeFileSync(
-    path.join(compDir, 'sibling.ts'),
-    `export const sib = 1;\n`,
-  );
+  fs.writeFileSync(path.join(compDir, 'sibling.ts'), `export const sib = 1;\n`);
   fs.writeFileSync(
     path.join(compDir, `${componentName}.doc.mjs`),
     `export const docs = {name: '${componentName}', usage: {description: 'x'}};\n`,
@@ -129,7 +129,9 @@ describe('swizzle — core feedback routing via config', () => {
     const env = JSON.parse(result.stdout);
     expect(env.type).toBe('swizzle.copy');
     expect(env.data.package).toBe('@astryxdesign/core');
-    expect(env.data.feedback.issuesUrl).toBe('https://github.com/acme/ds/issues');
+    expect(env.data.feedback.issuesUrl).toBe(
+      'https://github.com/acme/ds/issues',
+    );
     // Escaping import rewritten to core; sibling import preserved.
     const out = fs.readFileSync(
       path.join(project, 'components', 'astryx', 'Button', 'Button.tsx'),
@@ -158,7 +160,10 @@ describe('swizzle — integration-owned components', () => {
     writeProjectPackageJson(project);
     buildIntegration(project, {issuesUrl: 'https://example.com/meta/issues'});
 
-    const result = await runCli(['--json', 'swizzle', 'MetaAppShell', '-f'], project);
+    const result = await runCli(
+      ['--json', 'swizzle', 'MetaAppShell', '-f'],
+      project,
+    );
     expect(result.code).toBe(0);
     const env = JSON.parse(result.stdout);
     expect(env.type).toBe('swizzle.copy');
@@ -172,7 +177,9 @@ describe('swizzle — integration-owned components', () => {
     expect(env.data.feedback.issuesUrl).toBe('https://example.com/meta/issues');
 
     const outDir = path.join(project, 'components', 'astryx', 'MetaAppShell');
-    expect(fs.existsSync(path.join(outDir, 'MetaAppShell.doc.mjs'))).toBe(false);
+    expect(fs.existsSync(path.join(outDir, 'MetaAppShell.doc.mjs'))).toBe(
+      false,
+    );
     const out = fs.readFileSync(path.join(outDir, 'MetaAppShell.tsx'), 'utf-8');
     expect(out).toContain(`from '@test/meta/utils'`);
     expect(out).toContain(`from './sibling'`);
@@ -183,7 +190,10 @@ describe('swizzle — integration-owned components', () => {
     writeProjectPackageJson(project);
     buildIntegration(project, {issuesUrl: null});
 
-    const result = await runCli(['--json', 'swizzle', 'MetaAppShell', '-f'], project);
+    const result = await runCli(
+      ['--json', 'swizzle', 'MetaAppShell', '-f'],
+      project,
+    );
     expect(result.code).toBe(0);
     const env = JSON.parse(result.stdout);
     expect(env.type).toBe('swizzle.copy');
@@ -294,17 +304,22 @@ describe('swizzle — StyleX build setup note (#3373)', () => {
     writeProjectPackageJson(project);
 
     // JSON payload carries the machine-readable flag.
-    const jsonResult = await runCli(['--json', 'swizzle', 'Styled', '-f'], project);
+    const jsonResult = await runCli(
+      ['--json', 'swizzle', 'Styled', '-f'],
+      project,
+    );
     expect(jsonResult.code).toBe(0);
     const env = JSON.parse(jsonResult.stdout);
     expect(env.data.usesStyleX).toBe(true);
 
-    // Human output surfaces the compiler requirement + Next.js caveat.
+    // Human output surfaces the compiler requirement + current Next.js path.
     const humanResult = await runCli(['swizzle', 'Styled', '-f'], project);
     expect(humanResult.code).toBe(0);
     expect(humanResult.stdout).toMatch(/StyleX compiler/i);
     expect(humanResult.stdout).toMatch(/unstyled/i);
-    expect(humanResult.stdout).toMatch(/next\/font/i);
+    expect(humanResult.stdout).toMatch(/Next\.js 16\.0\.3\+/i);
+    expect(humanResult.stdout).toMatch(/Turbopack/i);
+    expect(humanResult.stdout).toMatch(/product-owned source/i);
     expect(humanResult.stdout).toMatch(/astryx docs styling/);
   });
 
@@ -312,7 +327,10 @@ describe('swizzle — StyleX build setup note (#3373)', () => {
     buildStyleXCore(project);
     writeProjectPackageJson(project);
 
-    const jsonResult = await runCli(['--json', 'swizzle', 'Plain', '-f'], project);
+    const jsonResult = await runCli(
+      ['--json', 'swizzle', 'Plain', '-f'],
+      project,
+    );
     expect(jsonResult.code).toBe(0);
     const env = JSON.parse(jsonResult.stdout);
     expect(env.data.usesStyleX).toBe(false);

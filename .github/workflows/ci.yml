@@ -1192,11 +1192,12 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-  # Build package test owner. The plugin's production CSS partition is a Build
-  # integration contract: source inspection cannot prove which declaration
-  # paints after Vite emits the final bundle. The `test-build` name makes that
-  # package ownership explicit; the historical `test` join above projects its
-  # result. Until runtime:build has a specialized route, broad CI dispatches it.
+  # Build package and framework-integration test owner. Production CSS
+  # partitioning and the standalone Next.js consumer both need final-bundle and
+  # real-browser evidence; source inspection cannot prove cascade order, HMR,
+  # or Turbopack's Babel/PostCSS handoff. The historical `test` join above
+  # projects this result. Until runtime:build has a specialized route, broad CI
+  # dispatches it.
   test-build:
     needs: [check-scope]
     if: github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
@@ -1213,6 +1214,20 @@ jobs:
 
       - name: Install Playwright
         run: npx playwright install chromium
+
+      - name: Verify Next.js StyleX Turbopack consumer
+        run: |
+          pnpm --dir apps/example-nextjs-stylex install --frozen-lockfile
+          node .github/scripts/next-stylex-example-contract.mjs apps/example-nextjs-stylex
+
+      - name: Upload Next.js StyleX browser evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: next-stylex-browser-evidence
+          path: test-results/next-stylex/example-nextjs-stylex/
+          if-no-files-found: warn
+          retention-days: 7
 
       # The guard imports the plugin's build artifact, the same one a consumer
       # installs.

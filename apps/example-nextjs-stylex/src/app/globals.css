@@ -1,10 +1,11 @@
 /* Copyright (c) Meta Platforms, Inc. and affiliates. */
 
-@import "@astryxdesign/core/reset.css";
-@import "@astryxdesign/core/astryx.css";
-@import "@astryxdesign/theme-neutral/theme.css";
+@import './layers.css';
+@import '@astryxdesign/core/reset.css';
+@import '@astryxdesign/core/astryx.css';
+@import '@astryxdesign/theme-neutral/theme.css';
 
-/* StyleX app styles are injected here. The postcss plugin declares
-   reset, astryx-base, and astryx-theme as layersBefore so the full layer order
-   is: reset < astryx-base < astryx-theme < stylex app layers. */
+/* Product StyleX is injected here. The strict PostCSS include scans this
+   app only and prefixes its layers with product; layers.css declares:
+   reset < astryx-base < astryx-theme < product.*. */
 @stylex;

@@ -26,7 +26,10 @@ import {NO_RESULT_SET, resultSet} from '../../../foundation/debug/index.mjs';
 export function registerSwizzle(program) {
   defineCommand(program, swizzleCommand, {
     fn: swizzleFn,
-    action: async (/** @type {string | undefined} */ component, /** @type {{output: string, package?: string, list?: boolean, overwrite?: boolean}} */ options) => {
+    action: async (
+      /** @type {string | undefined} */ component,
+      /** @type {{output: string, package?: string, list?: boolean, overwrite?: boolean}} */ options,
+    ) => {
       const json = program.opts().json || false;
       const run = getCliInvocation();
 
@@ -41,8 +44,12 @@ export function registerSwizzle(program) {
           overwrite: options.overwrite,
         });
       } catch (e) {
-        const err = /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
-        return cliError(err.message, {suggestions: err.suggestions, code: err.code});
+        const err =
+          /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
+        return cliError(err.message, {
+          suggestions: err.suggestions,
+          code: err.code,
+        });
       }
 
       // `--list` answers with the components you could eject; ejecting one is
@@ -73,8 +80,13 @@ export function registerSwizzle(program) {
         return answered;
       }
 
-      const {package: ownerPackage, outputDir, filesCopied, usesStyleX, feedback} =
-        result.data;
+      const {
+        package: ownerPackage,
+        outputDir,
+        filesCopied,
+        usesStyleX,
+        feedback,
+      } = result.data;
 
       /** @type {import('../formatters/index.mjs').Block[]} */
       const out = [
@@ -96,8 +108,8 @@ export function registerSwizzle(program) {
               `${WARN} These components use StyleX and require a StyleX compiler in your build.`,
               '  Without one they render unstyled (no error). See setup per framework:',
               `  ${run} docs styling`,
-              '  Next.js note: the StyleX Babel plugin disables SWC and breaks next/font -',
-              '  use an SWC-based StyleX transform instead (covered in the guide).',
+              '  Next.js 16.0.3+: use the official Babel + PostCSS setup with Turbopack,',
+              '  and keep its include scoped to your copied and product-owned source.',
             ].join('\n'),
           ),
         );

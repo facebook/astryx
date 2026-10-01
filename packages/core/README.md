@@ -229,15 +229,27 @@ Use the pre-built dist alongside StyleX for your own styles.
 
 ```bash
 npm install @astryxdesign/core @astryxdesign/theme-neutral @stylexjs/stylex
+npm install --save-dev @stylexjs/babel-plugin @stylexjs/postcss-plugin
+```
+
+**`src/app/layers.css`**
+
+```css
+@layer reset, astryx-base, astryx-theme, product;
 ```
 
 **`src/app/globals.css`**
 
 ```css
+@import './layers.css';
 @import '@astryxdesign/core/reset.css';
 @import '@astryxdesign/core/astryx.css';
 @import '@astryxdesign/theme-neutral/theme.css';
+
+@stylex;
 ```
+
+Use StyleX's [official Next.js Babel + PostCSS setup](https://stylexjs.com/docs/learn/installation/nextjs) with Next.js 16.0.3 or newer. Keep the PostCSS `include` limited to product source and exclude Astryx package source; Astryx already ships compiled CSS. The complete Turbopack example is [`apps/example-nextjs-stylex`](../../apps/example-nextjs-stylex/).
 
 Providers and layout are the same as the Tailwind example (use `@astryxdesign/theme-neutral/built`).
 

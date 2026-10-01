@@ -348,7 +348,7 @@ const styles = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'Astryx components ship pre-compiled, so consuming the published package needs no StyleX setup. But `astryx swizzle <Component>` copies the raw StyleX *source* into your app, and StyleX source requires a build-time StyleX compiler to produce atomic CSS. Without one the component compiles but renders completely unstyled: no error, no warning. If a swizzled component looks unstyled, a missing StyleX compiler is almost always why. The same applies if you author your own StyleX with `stylex.create()`.',
+          text: 'Astryx components ship precompiled JavaScript and CSS, so consuming the published package needs no StyleX compilation. Add the official StyleX compiler only when your product authors StyleX with `stylex.create()`. Keep that transform scoped to product-owned source; never add installed or repository Astryx package source to the scan.',
         },
         {
           type: 'table',
@@ -357,40 +357,50 @@ const styles = stylex.create({
             ['Webpack', '@stylexjs/webpack-plugin'],
             ['Vite / Rollup', '@stylexjs/rollup-plugin (or a community Vite plugin)'],
             ['Babel (any bundler)', '@stylexjs/babel-plugin + @stylexjs/postcss-plugin'],
-            ['Next.js (App Router, SWC)', 'An SWC-based transform; see the Next.js note below'],
+            ['Next.js 16 (App Router)', '@stylexjs/babel-plugin + @stylexjs/postcss-plugin'],
           ],
         },
         {
           type: 'prose',
-          text: 'Next.js (App Router) is the sharp edge. StyleX\'s canonical compiler is a Babel plugin, but introducing a Babel config in Next.js disables the SWC compiler, which in turn breaks SWC-dependent features like `next/font`. So the "obvious" Babel setup is actively incompatible with a standard Next 15 App Router app.',
+          text: 'Next.js 16.0.3 and newer support StyleX\'s official Babel + PostCSS setup with both Turbopack and webpack. Keep Astryx outside that compiler path: import the published reset.css, astryx.css, and selected theme CSS, and limit StyleX scanning to product source. Next 15 is below this compatibility floor. See apps/example-nextjs-stylex for the complete configuration.',
         },
         {
           type: 'prose',
-          text: 'The working path on Next.js is an SWC-based StyleX transform (e.g. the community `@stylexswc/nextjs-plugin`) wired into `next.config`, which keeps SWC and `next/font` intact. See the example app `apps/example-nextjs-stylex` in the repo for a complete, working Next.js + StyleX + SWC configuration.',
+          text: 'The compiler boundary is intentional. Turbopack keeps installed published packages outside its Babel transform; PostCSS uses a strict product-source include and explicit exclusions for node_modules and repository package source. Product classes use their own prefix and product CSS layers follow reset, astryx-base, and astryx-theme.',
         },
         {
           type: 'code',
           lang: 'js',
-          label: 'next.config.mjs: SWC-based StyleX transform (keeps next/font working)',
-          code: `import stylexPlugin from '@stylexswc/nextjs-plugin';
+          label: 'postcss.config.js: product-only extraction',
+          code: `const babelConfig = require('./babel.config');
 
-export default stylexPlugin({
-  rsOptions: {
-    // Resolve @astryxdesign/core's StyleX so swizzled component source compiles.
-    aliases: {'@/*': ['./src/*']},
-    unstable_moduleResolution: {type: 'commonJS'},
+module.exports = {
+  plugins: {
+    '@stylexjs/postcss-plugin': {
+      cwd: __dirname,
+      include: ['src/app/**/*.{js,jsx,ts,tsx}'],
+      exclude: ['**/node_modules/**', '**/*.test.*', '**/*.stories.*'],
+      useCSSLayers: {
+        before: ['reset', 'astryx-base', 'astryx-theme'],
+        prefix: 'product',
+      },
+      babelConfig: {
+        babelrc: false,
+        configFile: false,
+        parserOpts: {plugins: ['typescript', 'jsx']},
+        plugins: babelConfig.plugins,
+      },
+    },
   },
-})({
-  // your existing Next.js config
-});`,
+};`,
         },
         {
           type: 'list',
           style: 'unordered',
           items: [
-            'Symptom of a missing compiler: swizzled component renders with no styles, but no build or runtime error.',
-            'Do NOT add @stylexjs/babel-plugin to a Next.js App Router app; it disables SWC and breaks next/font.',
-            'Pure theming (defineTheme + astryx theme build) needs NO StyleX compiler; only swizzled/authored StyleX source does.',
+            'Use Next.js 16.0.3 or newer; the official Babel + PostCSS path is Turbopack-compatible from that release.',
+            'Keep Astryx package source outside Babel and PostCSS. Consume its precompiled CSS instead.',
+            'The PostCSS path emits one app-wide StyleX sheet from every matched include; it does not promise route-level tree shaking.',
           ],
         },
       ],

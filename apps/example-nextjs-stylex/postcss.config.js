@@ -1,24 +1,28 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/* global module, require */
+/* global module, require, __dirname */
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const babelConfig = require('./babel.config');
+const stylexConfig = require('./stylex.config');
+const {astryxSourceExcludes, productSourceGlob, stylexPlugin} = stylexConfig;
 
 module.exports = {
   plugins: {
     '@stylexjs/postcss-plugin': {
-      include: ['src/**/*.{js,jsx,ts,tsx}'],
+      cwd: __dirname,
+      include: [productSourceGlob],
+      exclude: astryxSourceExcludes,
+      importSources: ['@stylexjs/stylex'],
       babelConfig: {
         babelrc: false,
+        configFile: false,
         parserOpts: {
           plugins: ['typescript', 'jsx'],
         },
-        plugins: babelConfig.plugins,
+        plugins: [stylexPlugin],
       },
       useCSSLayers: {
-        // Declare Astryx dist layers before StyleX app layers so
-        // product styles always win over component defaults.
         before: ['reset', 'astryx-base', 'astryx-theme'],
+        prefix: 'product',
       },
     },
     autoprefixer: {},

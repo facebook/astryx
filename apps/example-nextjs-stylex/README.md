@@ -1,108 +1,13 @@
-# Astryx Example: Next.js + StyleX (Dist)
+# Astryx Example: Next.js + StyleX
 
-Reference application for consuming **@astryxdesign/core** as a pre-built dist package with **StyleX** for product-level styles.
+Reference application for Next.js 16 with Turbopack, precompiled Astryx CSS, and StyleX for product-owned source.
 
-Astryx component CSS comes pre-built; there is no need to compile Astryx source. StyleX is only used for your own app-level layout and custom styles, compiled at build time via the PostCSS plugin.
+## Architecture
 
-## CSS Layer Integration
-
-This example uses StyleX's `useCSSLayers.before` option to declare Astryx dist layers before the StyleX app layers:
-
-```js
-// postcss.config.js
-useCSSLayers: {
-  before: ['reset', 'astryx-base', 'astryx-theme'],
-}
-```
-
-This produces a layer order of:
-
-```
-reset < astryx-base < astryx-theme < stylex.base < stylex.1 < stylex.2 < ...
-```
-
-Product-level StyleX styles always win over Astryx component defaults without needing `!important` or extra specificity.
-
-## Key Difference from Source Build
-
-|                     | This example (dist + StyleX)                            | Source build                                        |
-| ------------------- | ------------------------------------------------------- | --------------------------------------------------- |
-| Astryx CSS          | Pre-built via `@import "@astryxdesign/core/astryx.css"` | Compiled from source via StyleX babel plugin        |
-| PostCSS `include`   | `src/**/*` only (your code)                             | `src/**/*` + `node_modules/@astryxdesign/core/**/*` |
-| StyleX `aliases`    | Not needed                                              | Required for `createTheme` resolution               |
-| `transpilePackages` | Not needed                                              | Required in next.config                             |
-| Layer ordering      | `useCSSLayers.before` declares Astryx layers            | `useCSSLayers: true` (Astryx layers mixed in)       |
-
-## Setup Steps
-
-### 1. Install dependencies
-
-```bash
-npm install @stylexjs/stylex @astryxdesign/core @astryxdesign/theme-neutral next react react-dom
-npm install --save-dev @stylexjs/babel-plugin @stylexjs/postcss-plugin \
-  @babel/preset-react @babel/preset-typescript typescript @types/react @types/react-dom
-```
-
-### 2. Browserslist
-
-```json
-{
-  "browserslist": ["last 1 Chrome version"]
-}
-```
-
-### 3. Babel config
-
-`babel.config.js`: StyleX for app-level styles only:
-
-```js
-module.exports = {
-  presets: ['next/babel'],
-  plugins: [
-    [
-      '@stylexjs/babel-plugin',
-      {
-        dev: process.env.NODE_ENV === 'development',
-        runtimeInjection: false,
-        genConditionalClasses: true,
-        treeshakeCompensation: true,
-        unstable_moduleResolution: {
-          type: 'commonJS',
-          rootDir: __dirname,
-        },
-      },
-    ],
-  ],
-};
-```
-
-> No `aliases` config needed; we're not compiling Astryx source.
-
-### 4. PostCSS config
-
-`postcss.config.js`: scan your app source, declare Astryx layers before StyleX layers:
-
-```js
-module.exports = {
-  plugins: {
-    '@stylexjs/postcss-plugin': {
-      include: ['src/**/*.{js,jsx,ts,tsx}'],
-      babelConfig: {
-        /* ... */
-      },
-      useCSSLayers: {
-        before: ['reset', 'astryx-base', 'astryx-theme'],
-      },
-    },
-  },
-};
-```
-
-### 5. CSS entry point
-
-`src/app/globals.css`:
+Astryx stays outside the app compiler:
 
 ```css
+@import './layers.css'; /* reset, astryx-base, astryx-theme, product */
 @import '@astryxdesign/core/reset.css';
 @import '@astryxdesign/core/astryx.css';
 @import '@astryxdesign/theme-neutral/theme.css';
@@ -110,25 +15,26 @@ module.exports = {
 @stylex;
 ```
 
-### 6. Theme + Link provider
+- `reset.css`, `astryx.css`, and `theme.css` are public, precompiled package outputs.
+- `layers.css` is imported first so the four cascade bands are declared before any rules.
+- Babel transforms app files only; Turbopack keeps published `node_modules` packages foreign.
+- PostCSS scans only `src/app/**/*.{js,jsx,ts,tsx}` and explicitly excludes all `node_modules` plus this repository's `packages/` tree.
+- Product classes use the `p` prefix. Product CSS layers use the `product.*` namespace.
+- `pnpm check:stylex` fails if Astryx resolves through a workspace symlink, Astryx rules leak into product layers, CSS is duplicated, or layer order changes.
 
-```tsx
-'use client';
-import Link from 'next/link';
-import {Theme} from '@astryxdesign/core/theme';
-import {LinkProvider} from '@astryxdesign/core/Link';
-import {neutralTheme} from '@astryxdesign/theme-neutral/built';
+This is the [official StyleX Babel + PostCSS path for Next.js](https://stylexjs.com/docs/learn/installation/nextjs). It works with both Turbopack and webpack beginning in Next.js 16.0.3. This example uses ordinary `next dev` and `next build`, so Next.js 16 selects Turbopack without a custom webpack hook.
 
-export function Providers({children}) {
-  return (
-    <Theme theme={neutralTheme}>
-      <LinkProvider component={Link}>{children}</LinkProvider>
-    </Theme>
-  );
-}
+## Install and run
+
+```bash
+pnpm install
+pnpm dev
 ```
 
-## Related
+The home and `/details` route files remain React Server Components. Each composes a client component that owns product StyleX, matching the official integration's client-side transform boundary while keeping routing and data work on the server.
 
-- [Plain dist example](../example-nextjs/): no CSS framework, inline styles for layout
-- [Dist + Tailwind example](../example-nextjs-tailwind/): Tailwind for layout styles
+## CSS output limitation
+
+The official PostCSS integration scans every file matched by `include` and replaces the single `@stylex` directive with one app-wide StyleX sheet. It does **not** promise route-level CSS splitting or import-graph tree shaking: a matching file can contribute CSS even when no route imports it. Keep `include` narrow and do not describe this output as per-route or tree-shaken.
+
+Astryx CSS is intentionally complete rather than component-tree-shaken. Import each Astryx stylesheet once; never add Astryx package source to either compiler scan.
