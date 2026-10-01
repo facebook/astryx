@@ -5,9 +5,9 @@ import './globals.css';
 import {Providers} from './providers';
 
 export const metadata: Metadata = {
-  title: 'Astryx Example — Next.js (Source)',
+  title: 'Astryx Example — Next.js (Precompiled)',
   description:
-    'Reference example compiling @astryxdesign/core from source with StyleX',
+    'Reference migration from Astryx source compilation to precompiled CSS',
 };
 
 export default function RootLayout({children}: {children: React.ReactNode}) {

@@ -1229,6 +1229,20 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+      - name: Verify migrated Next.js source consumer
+        run: |
+          pnpm --dir apps/example-nextjs-source install --frozen-lockfile
+          node .github/scripts/next-stylex-example-contract.mjs apps/example-nextjs-source
+
+      - name: Upload migrated Next.js source browser evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: next-source-browser-evidence
+          path: test-results/next-stylex/example-nextjs-source/
+          if-no-files-found: warn
+          retention-days: 7
+
       # The guard imports the plugin's build artifact, the same one a consumer
       # installs.
       - name: Build the Vite plugin

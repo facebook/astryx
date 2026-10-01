@@ -284,5 +284,5 @@ Unsupported declarations fail the build by default with StyleX's replacement gui
 
 ## Related
 
-- [example-nextjs-source](../../apps/example-nextjs-source/): full Next.js source build example
+- [example-nextjs-source](../../apps/example-nextjs-source/): migration from this webpack-only source build to precompiled Astryx CSS and product-only StyleX on Turbopack
 - [`@stylexjs/babel-plugin`](https://github.com/facebook/stylex): the underlying StyleX compiler

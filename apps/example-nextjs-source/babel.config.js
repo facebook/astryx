@@ -1,5 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/* global module, __dirname */
-const {babel} = require('@astryxdesign/build');
-module.exports = babel(__dirname);
+/* global module, require */
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const {stylexPlugin} = require('./stylex.config');
+
+module.exports = {
+  presets: ['next/babel'],
+  plugins: [stylexPlugin],
+};
