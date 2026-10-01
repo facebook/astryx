@@ -11,7 +11,7 @@ const anatomy = [
     name: 'Trigger indicator icon',
     required: false,
     description:
-      'Optional trailing chevron shown by a labeled trigger when hasChevron is enabled.',
+      'Optional trailing chevron shown when hasChevron is enabled, including on a trigger whose label is visually hidden.',
   },
   {
     name: 'Pointer menu surface',
@@ -180,7 +180,7 @@ export const docs = {
       name: 'button',
       type: 'DropdownMenuButtonProps',
       description:
-        'Props for the trigger button (Button props except onClick).',
+        'Props for the trigger button (Button props except onClick). Pass icon and isIconOnly here for a label-hidden icon trigger; the default chevron remains visible unless button.endContent replaces it or hasChevron is false.',
       default: "{ label: 'Menu' }",
     },
     {
@@ -238,7 +238,7 @@ export const docs = {
       name: 'hasChevron',
       type: 'boolean',
       description:
-        'Whether to show a chevron icon on the trigger button. Set to false for icon-only triggers.',
+        'Whether to show the default chevron on the trigger button when button.endContent is omitted, including when button.isIconOnly is true.',
       default: 'true',
     },
     {

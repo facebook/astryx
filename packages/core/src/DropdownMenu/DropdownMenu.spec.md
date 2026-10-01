@@ -41,13 +41,14 @@ system_specs: []
 DropdownMenu presents actions from a visible Button trigger in either an
 anchored pointer menu or a BottomSheet-hosted touch action list. This draft
 records current consumer anatomy, presentation-specific ownership, and theming
-reachability without changing runtime behavior, styling, targets, or public API.
+reachability. The trigger delegates label-hidden icon-plus-chevron rendering to
+Button and applies `hasChevron` consistently across both presentations.
 
 ## Compatibility and migration
 
 - Released default preserved: `yes`
-- Compatibility class: additive documentation only; runtime, DOM, styling,
-  targets, and public API remain unchanged
+- Compatibility class: additive behavior for the existing `button.icon`,
+  `button.isIconOnly`, and `hasChevron` combination; no new prop or type
 - Controlled/uncontrolled behavior: unchanged
 - Migration decision: none
 
@@ -127,25 +128,25 @@ dismissal behavior.
 
 ## Design relationships
 
-| Anatomy or state                   | Design requirement                                                            | Representation authority       | Hierarchy role    | Component contract |
-| ---------------------------------- | ----------------------------------------------------------------------------- | ------------------------------ | ----------------- | ------------------ |
-| Trigger button                     | Provides the visible control that opens and closes the selected presentation. | `component:Button`             | Supporting        | FR1, FR3           |
-| Trigger indicator icon             | Communicates disclosure on labeled triggers when enabled.                     | `component:Icon`               | Supporting        | FR1, FR3           |
-| Pointer menu surface               | Paints the anchored root or nested pointer menu panel.                        | Current source and public docs | Prominent         | FR1, FR2, FR4      |
-| Pointer action row                 | Presents one action, selectable option, or nested-menu entry.                 | Current source and public docs | Prominent         | FR1, FR2, FR4      |
-| Icon-rendered item icon            | Adds an optional semantic or component icon to an action row through Icon.    | `component:Icon`               | Supporting        | FR1, FR3           |
-| Caller-rendered item start content | Presents arbitrary React content directly in an action-row start slot.        | Caller-supplied content        | Context-dependent | FR1, FR3           |
-| Checkbox indicator                 | Draws the decorative checkbox state for a checkbox action row.                | `component:Indicator`          | Supporting        | FR1, FR3           |
-| Radio indicator                    | Draws shared radio chrome with the current menu-specific radio target.        | Current source and Indicator   | Supporting        | FR1, FR2, FR3      |
-| Pointer section heading            | Labels a grouped set of pointer action rows.                                  | Current source and public docs | Supporting        | FR1, FR2           |
-| Pointer divider                    | Separates groups of pointer action rows.                                      | Current source and public docs | Supporting        | FR1, FR2           |
-| Pointer submenu indicator icon     | Identifies a pointer action row that opens a nested flyout.                   | Current source and public docs | Supporting        | FR1, FR2           |
-| Touch sheet frame                  | Supplies the touch panel, scrolling area, handle, and optional scrim.         | `component:BottomSheet`        | Prominent         | FR1, FR3           |
-| Touch menu surface                 | Arranges menu-owned heading and action content inside the sheet.              | Current source and public docs | Prominent         | FR1, FR2, FR4      |
-| Touch heading                      | Names the current root or drill-in action view.                               | Current source and tests       | Supporting        | FR1                |
-| Touch action list                  | Groups touch actions using the spacious List presentation.                    | `component:List`               | Prominent         | FR1, FR3           |
-| Touch action row                   | Presents one touch action or drill-in entry using ListItem.                   | `component:List`               | Prominent         | FR1, FR3, FR4      |
-| Touch divider                      | Separates groups in the touch action list.                                    | `component:Divider`            | Supporting        | FR1, FR3           |
+| Anatomy or state                   | Design requirement                                                                           | Representation authority       | Hierarchy role    | Component contract |
+| ---------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------ | ----------------- | ------------------ |
+| Trigger button                     | Provides the visible control that opens and closes the selected presentation.                | `component:Button`             | Supporting        | FR1, FR3           |
+| Trigger indicator icon             | Communicates disclosure when enabled, including on a trigger whose label is visually hidden. | `component:Icon`               | Supporting        | FR1, FR3           |
+| Pointer menu surface               | Paints the anchored root or nested pointer menu panel.                                       | Current source and public docs | Prominent         | FR1, FR2, FR4      |
+| Pointer action row                 | Presents one action, selectable option, or nested-menu entry.                                | Current source and public docs | Prominent         | FR1, FR2, FR4      |
+| Icon-rendered item icon            | Adds an optional semantic or component icon to an action row through Icon.                   | `component:Icon`               | Supporting        | FR1, FR3           |
+| Caller-rendered item start content | Presents arbitrary React content directly in an action-row start slot.                       | Caller-supplied content        | Context-dependent | FR1, FR3           |
+| Checkbox indicator                 | Draws the decorative checkbox state for a checkbox action row.                               | `component:Indicator`          | Supporting        | FR1, FR3           |
+| Radio indicator                    | Draws shared radio chrome with the current menu-specific radio target.                       | Current source and Indicator   | Supporting        | FR1, FR2, FR3      |
+| Pointer section heading            | Labels a grouped set of pointer action rows.                                                 | Current source and public docs | Supporting        | FR1, FR2           |
+| Pointer divider                    | Separates groups of pointer action rows.                                                     | Current source and public docs | Supporting        | FR1, FR2           |
+| Pointer submenu indicator icon     | Identifies a pointer action row that opens a nested flyout.                                  | Current source and public docs | Supporting        | FR1, FR2           |
+| Touch sheet frame                  | Supplies the touch panel, scrolling area, handle, and optional scrim.                        | `component:BottomSheet`        | Prominent         | FR1, FR3           |
+| Touch menu surface                 | Arranges menu-owned heading and action content inside the sheet.                             | Current source and public docs | Prominent         | FR1, FR2, FR4      |
+| Touch heading                      | Names the current root or drill-in action view.                                              | Current source and tests       | Supporting        | FR1                |
+| Touch action list                  | Groups touch actions using the spacious List presentation.                                   | `component:List`               | Prominent         | FR1, FR3           |
+| Touch action row                   | Presents one touch action or drill-in entry using ListItem.                                  | `component:List`               | Prominent         | FR1, FR3, FR4      |
+| Touch divider                      | Separates groups in the touch action list.                                                   | `component:Divider`            | Supporting        | FR1, FR3           |
 
 The `dropdown-menu` target intentionally appears on both alternative menu
 surfaces. The radio element also carries Indicator's shared radio target, and

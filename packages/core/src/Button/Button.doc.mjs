@@ -92,7 +92,7 @@ export const docs = {
       name: 'label',
       type: 'string',
       description:
-        'Accessible label. Rendered as visible text by default; used as aria-label when isIconOnly is true.',
+        'Accessible label. Rendered as visible text by default; used as aria-label when isIconOnly is true and icon is renderable.',
       required: true,
     },
     {
@@ -164,7 +164,7 @@ export const docs = {
       name: 'isIconOnly',
       type: 'boolean',
       description:
-        'When true, renders as a square icon-only button with label as aria-label. Requires icon. Tip: for a dedicated icon-only button component, use IconButton from \'@astryxdesign/core/IconButton\' instead.',
+        'When true, hides the visible label and uses label as aria-label. A button with only icon remains square; adding endContent expands it to fit both visual elements. Without a renderable icon, the button falls back to its visible label. Requires icon. Tip: for a dedicated single-icon button, use IconButton from \'@astryxdesign/core/IconButton\' instead.',
       default: 'false',
     },
     {
@@ -183,7 +183,7 @@ export const docs = {
       name: 'endContent',
       type: 'ReactElement<IconProps> | ReactElement<BadgeProps>',
       description:
-        'Trailing icon or badge rendered after the label. Ignored when isIconOnly is true. Color is inherited from the button variant.',
+        'Trailing icon or badge rendered after the label or leading icon. Remains visible when isIconOnly hides the label; in that mode it is decorative, so include any meaning it conveys in label. Color is inherited from the button variant.',
       slotElements: [
         {__element: 'Icon', props: {icon: 'chevronDown', size: 'sm'}},
         {__element: 'Badge', props: {label: '3'}},
@@ -301,7 +301,7 @@ export const docsZh = {
       name: 'endContent',
       type: 'ReactElement<IconProps> | ReactElement<BadgeProps>',
       description:
-        '标签后方渲染的尾部图标或徽章。仅接受 <Icon> 或 <Badge>。纯图标按钮时忽略。颜色继承自按钮变体。',
+        '标签或前置图标后方渲染的尾部图标或徽章。isIconOnly 隐藏标签时仍会显示，并视为装饰内容；请在 label 中包含它表达的含义。颜色继承自按钮变体。',
     },
     {name: 'tooltip', type: 'string', description: '悬停时显示的提示文本。'},
     {name: 'onClick', type: '(e: MouseEvent) => void', description: '标准点击处理函数（从 ButtonHTMLAttributes 透传）。'},
@@ -351,7 +351,7 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    label: 'accessible label; visible text by default, aria-label when isIconOnly',
+    label: 'accessible label; visible text by default, aria-label when isIconOnly and icon is renderable',
     variant: 'visual style variant',
     size: 'size variant',
     elevation: 'resting shadow depth for floating buttons/FABs: none|low|med|high; ignored inside ButtonGroup',
@@ -362,10 +362,10 @@ export const docsDense = {
     form: 'associates button with form element by ID',
     isLoading: 'shows spinner+disables interaction; announces via live region',
     icon: 'icon element rendered before label text; unsized Astryx Icon defaults to sm for sm/md buttons and md for lg',
-    isIconOnly: 'when true, renders square icon-only button; label becomes aria-label',
+    isIconOnly: 'hides visible label and uses label as aria-label; single-icon buttons stay square, endContent expands the button, and a missing icon falls back to visible label',
     width: "Width of button. Numbers=pixels, strings=as-is (e.g. '100%' for full-width).",
     children: 'optional visible override; label is still required for a11y. Prefer <Button label="Save" /> over using children',
-    endContent: 'trailing icon/badge after label; ignored when isIconOnly; color inherited',
+    endContent: 'trailing icon/badge after label or leading icon; remains visible with isIconOnly as decorative content; color inherited',
     tooltip: 'tooltip on hover',
     onClick: 'standard click handler; fires before clickAction',
     clickAction: 'async click handler; shows loading while promise pending',

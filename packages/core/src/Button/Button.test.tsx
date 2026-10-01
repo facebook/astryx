@@ -225,17 +225,39 @@ describe('Button', () => {
     expect(screen.getByTestId('end')).toBeInTheDocument();
   });
 
-  it('does not render endContent for icon-only buttons', () => {
+  it('renders decorative endContent while keeping the label hidden for icon-only buttons', () => {
     render(
       <Button
-        label="Settings"
+        label="Settings menu"
         icon={<span data-testid="icon">⚙</span>}
-        endContent={<Badge data-testid="end" label={3} />}
+        endContent={<span data-testid="end">⌄</span>}
         isIconOnly
       />,
     );
+    const button = screen.getByRole('button', {name: 'Settings menu'});
     expect(screen.getByTestId('icon')).toBeInTheDocument();
-    expect(screen.queryByTestId('end')).not.toBeInTheDocument();
+    expect(screen.getByTestId('end')).toBeInTheDocument();
+    expect(screen.getByTestId('end').parentElement).toHaveAttribute(
+      'aria-hidden',
+      'true',
+    );
+    expect(button).not.toHaveTextContent('Settings menu');
+  });
+
+  it('falls back to a visible label when isIconOnly has no renderable icon', () => {
+    render(
+      <Button
+        label="Settings"
+        endContent={<span data-testid="end">⌄</span>}
+        isIconOnly
+      />,
+    );
+    const button = screen.getByRole('button', {name: 'Settings ⌄'});
+    expect(button).toHaveTextContent('Settings');
+    expect(button).not.toHaveAttribute('aria-label');
+    expect(screen.getByTestId('end').parentElement).not.toHaveAttribute(
+      'aria-hidden',
+    );
   });
 
   it('wraps endContent in a container for color inheritance', () => {

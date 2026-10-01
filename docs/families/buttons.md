@@ -93,15 +93,15 @@ Membership follows public responsibility, not an import of Button or a rendered
 
 ## Canonical concepts
 
-| Concept          | Values or states                                                        | Default semantics                                                                   | Stability                                           |
-| ---------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------- |
-| activation model | momentary action, navigation, persistent press                          | Button and IconButton activate once; ToggleButton represents retained pressed state | shipped distinction                                 |
-| content mode     | visible label, custom visible content, icon-only                        | every control has a required accessible `label`; icon-only hides it visually        | shipped family rule                                 |
-| size             | `sm`, `md`, `lg`                                                        | `md`; explicit member size wins over an inherited group size                        | shipped family axis                                 |
-| visual state     | rest, hover, focus, active, disabled, loading; pressed where applicable | states preserve control geometry and accessible purpose                             | shipped family rule                                 |
-| async action     | absent, fire-once, interruptible persistent action                      | ordinary actions deduplicate while pending; persistent toggles remain reversible    | shipped family distinction                          |
-| elevation        | `none`, `low`, `med`, `high`                                            | `none`; the element painting the visible surface owns the shadow                    | shipped family axis; ToggleButton adoption approved |
-| grouping         | standalone, spaced set, connected surface                               | semantics and painted containment decide ownership; grouping alone does not         | family rule                                         |
+| Concept          | Values or states                                                        | Default semantics                                                                                  | Stability                                           |
+| ---------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| activation model | momentary action, navigation, persistent press                          | Button and IconButton activate once; ToggleButton represents retained pressed state                | shipped distinction                                 |
+| content mode     | visible label, custom visible content, label-hidden                     | every control has a required accessible `label`; label-hidden mode exposes it through `aria-label` | shipped family rule                                 |
+| size             | `sm`, `md`, `lg`                                                        | `md`; explicit member size wins over an inherited group size                                       | shipped family axis                                 |
+| visual state     | rest, hover, focus, active, disabled, loading; pressed where applicable | states preserve control geometry and accessible purpose                                            | shipped family rule                                 |
+| async action     | absent, fire-once, interruptible persistent action                      | ordinary actions deduplicate while pending; persistent toggles remain reversible                   | shipped family distinction                          |
+| elevation        | `none`, `low`, `med`, `high`                                            | `none`; the element painting the visible surface owns the shadow                                   | shipped family axis; ToggleButton adoption approved |
+| grouping         | standalone, spaced set, connected surface                               | semantics and painted containment decide ownership; grouping alone does not                        | family rule                                         |
 
 ## Cross-component invariants
 
@@ -137,12 +137,14 @@ Membership follows public responsibility, not an import of Button or a rendered
   value on activation. Pending state may be optimistic, but a new activation MUST
   derive from the effective in-flight value rather than a stale committed value.
 - **FR7 — Shared size preserves family geometry.** Members using the family size
-  axis MUST map `sm`, `md`, and `lg` to the same control-height contract. An
-  icon-only member is square at the resolved size. Button and IconButton MUST
-  default an Astryx Icon in their owned icon slot to `sm` for `sm` and `md`
-  controls and to `md` for `lg` controls; an explicit Icon size MUST win. Label
-  weight, pressed state, loading, or icon replacement MUST NOT change the outer
-  control dimensions.
+  axis MUST map `sm`, `md`, and `lg` to the same control-height contract. A
+  member that renders a single icon with no other visible content is square at
+  the resolved size. A label-hidden Button with `endContent` may expand inline
+  to fit its leading icon and trailing content while preserving that height.
+  Button and IconButton MUST default an Astryx Icon in their owned icon slot to
+  `sm` for `sm` and `md` controls and to `md` for `lg` controls; an explicit
+  Icon size MUST win. Label weight, pressed state, loading, or icon replacement
+  MUST NOT change the outer control dimensions.
 - **FR8 — Elevation belongs to the painted surface.** A standalone member that
   paints its visible surface owns its resting elevation. A connected group that
   paints one continuous surface owns one shared elevation and its members paint
@@ -176,10 +178,12 @@ Membership follows public responsibility, not an import of Button or a rendered
 - **AV1 — Momentary versus persistent action.** Button and IconButton do not
   retain pressed state. ToggleButton owns `isPressed`, `onPressedChange`,
   `pressedChangeAction`, and pressed-state presentation.
-- **AV2 — Visible versus icon-only content.** Button may render a visible label,
-  custom visible content, a leading icon, and end content. IconButton always
-  renders one required icon with no visible label. ToggleButton may use either
-  visible or icon-only content and may replace its icon when pressed.
+- **AV2 — Visible versus label-hidden content.** Button may render a visible
+  label, custom visible content, a leading icon, and end content. With
+  `isIconOnly`, Button hides its label but may still render `endContent` after
+  the required leading icon. IconButton always renders one required icon with
+  no visible label. ToggleButton may use either visible or single-icon content
+  and may replace its icon when pressed.
 - **AV3 — Visual emphasis.** Button and IconButton expose the Button variant map.
   ToggleButton owns its selected/depressed treatment instead of inventing a
   momentary-action hierarchy. Themes may vary appearance without changing these
