@@ -102,6 +102,30 @@ const readinessStyles = stylex.create({
     display: 'flex',
     justifyContent: 'flex-end',
   },
+  // Width-overhang geometry: a 320px panel at the viewport's inline-start edge
+  // with a 40px trigger whose far edge sits 45px from the panel's far edge, so
+  // the span of viewport on the trigger's end side is 320 - 45 = 275px.
+  overhangCanvas: {
+    boxSizing: 'border-box',
+    inlineSize: '100%',
+    minBlockSize: '100dvh',
+    paddingBlockStart: spacingVars['--spacing-4'],
+  },
+  overhangPanel: {
+    boxSizing: 'border-box',
+    inlineSize: 320,
+    borderInlineEndWidth: 1,
+    borderInlineEndStyle: 'solid',
+    borderInlineEndColor: 'currentColor',
+    display: 'flex',
+    justifyContent: 'flex-end',
+    paddingInlineEnd: 45,
+  },
+  overhangTrigger: {
+    inlineSize: 40,
+    blockSize: 40,
+    padding: 0,
+  },
   oversizedTrigger: {
     inlineSize: 640,
   },
@@ -723,6 +747,94 @@ export const ViewportFit: Story = {
     const trigger = canvasElement.querySelector('button');
     if (trigger instanceof HTMLElement) {
       trigger.click();
+    }
+  },
+};
+
+export const WidthOverhang: Story = {
+  name: 'Width Overhang',
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      story: {inline: false, height: '480px'},
+      description: {
+        story:
+          'An end-aligned 352px popover on a 40px trigger 45px from the far edge of a 320px panel. The span of viewport beside the trigger is 275px; the popover must still render 352px wide and stay on-screen, hanging past the trigger rather than shrinking to the span.',
+      },
+    },
+  },
+  render: () => (
+    <div {...stylex.props(readinessStyles.overhangCanvas)}>
+      <div
+        data-overhang-fixture="panel"
+        {...stylex.props(readinessStyles.overhangPanel)}>
+        <Popover
+          placement="below"
+          alignment="end"
+          label="Scope"
+          width={352}
+          data-testid="overhang-popover"
+          content={
+            <VStack gap={2}>
+              <Text type="body">Sessions you own</Text>
+              <Text type="supporting">
+                Shows only the sessions where you are the owner.
+              </Text>
+            </VStack>
+          }>
+          <button
+            type="button"
+            aria-label="Scope"
+            {...stylex.props(readinessStyles.overhangTrigger)}>
+            ◐
+          </button>
+        </Popover>
+      </div>
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    await document.fonts.ready;
+    const trigger = canvasElement.querySelector<HTMLElement>('button');
+    if (!trigger) {
+      throw new Error('Width overhang fixture did not render its trigger');
+    }
+    trigger.click();
+    await new Promise<void>(resolve =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+    const layer = document.querySelector<HTMLElement>('[popover]');
+    if (!layer || !layer.matches(':popover-open')) {
+      throw new Error('Width overhang popover did not open');
+    }
+    const layerRect = layer.getBoundingClientRect();
+    const triggerRect = trigger.getBoundingClientRect();
+    const viewportWidth = document.documentElement.clientWidth;
+    // The span of viewport on the trigger's end side is narrower than the
+    // requested width; the released percentage cap shrank the layer to it.
+    const endSpan = triggerRect.right;
+    if (endSpan >= 352) {
+      throw new Error(
+        `Fixture is not narrow enough to prove the overhang: end span ${endSpan}px`,
+      );
+    }
+    if (Math.abs(layerRect.width - 352) > 1) {
+      throw new Error(
+        `Explicit width was not honoured: layer is ${layerRect.width}px wide, ` +
+          `end span ${endSpan}px, viewport ${viewportWidth}px`,
+      );
+    }
+    if (layerRect.left < 0 || layerRect.right > viewportWidth) {
+      throw new Error(
+        `Layer left the viewport: ${layerRect.left}..${layerRect.right} of ${viewportWidth}`,
+      );
+    }
+    // Wider than the span beside the trigger, so it must reach past the
+    // trigger on one side or the other.
+    if (
+      layerRect.right <= triggerRect.right + 1 &&
+      layerRect.left >= triggerRect.left - 1
+    ) {
+      throw new Error('Layer did not overhang the trigger');
     }
   },
 };

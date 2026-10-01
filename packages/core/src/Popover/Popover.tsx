@@ -29,7 +29,11 @@ import * as stylex from '@stylexjs/stylex';
 import {devWarn} from '../utils/devWarning';
 import type {BaseProps} from '../BaseProps';
 import {usePopover} from './usePopover';
-import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
+import {
+  getPositionTryFallbacks,
+  type LayerAlignment,
+  type LayerPlacement,
+} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {InteractiveRoleContext} from '../InteractiveRoleContext/InteractiveRoleContext';
@@ -164,6 +168,17 @@ export interface PopoverProps extends Pick<
   /**
    * Width of the popover container.
    * Numbers are px, strings used as-is.
+   *
+   * An explicit width is honoured up to the viewport (minus the gutters),
+   * not up to the span of viewport on the aligned side of the trigger: an
+   * end-aligned 352px menu under a button near a panel edge renders 352px
+   * and overhangs past the trigger's other side rather than shrinking to the
+   * span beside the button. When neither side of the trigger fits the width,
+   * a layer placed above or below centers on the trigger and slides into
+   * view; a side-placed layer flips to the trigger's other side.
+   *
+   * Without a width the popover sizes to its content and caps to the span
+   * on its aligned side, as before.
    * @default 'auto'
    */
   width?: number | string;
@@ -261,10 +276,26 @@ const styles = stylex.create({
       POPOVER_MAX_BLOCK_SIZE_FALLBACK,
     ),
   },
+  // The no-width cap for an aligned layer: `100%` here is the anchor's
+  // inset-modified containing block — the span of viewport on the aligned
+  // side of the trigger — which is exactly what a content-sized layer should
+  // fit into.
   viewportAligned: {
     maxInlineSize: stylex.firstThatWorks(
       POPOVER_POSITION_AREA_MAX_INLINE_SIZE,
       POPOVER_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK,
+    ),
+  },
+  // The cap for an aligned layer WITH an explicit width: the viewport minus
+  // both gutters. The percentage cap above would shrink a requested width to
+  // the span beside the trigger (an end-aligned 352px menu under a button
+  // 45px from a panel edge rendered 259px); a requested width may instead
+  // overhang past the trigger's other side, which the layer's flip and
+  // span-all fallbacks arrange (see `overflowStyle` below).
+  viewportWidthClamp: {
+    maxInlineSize: stylex.firstThatWorks(
+      POPOVER_MAX_INLINE_SIZE,
+      POPOVER_MAX_INLINE_SIZE_FALLBACK,
     ),
   },
   viewportStart: {
@@ -671,13 +702,32 @@ export function Popover({
       ? styles.matchTriggerCentered
       : styles.matchTriggerAligned;
   const isSidePlacement = placement === 'start' || placement === 'end';
+  const hasExplicitWidth = Boolean(width) && width !== 'auto';
+  // An explicit width on an aligned layer may exceed the span beside the
+  // trigger; the flips move it to the other side and, when neither side
+  // fits, a `span-all` last resort centers it on the trigger and the browser
+  // slides it into view instead of clipping it at the viewport edge — the
+  // released percentage cap hid that case by shrinking the layer. Only a block
+  // placement aligns along the inline axis; for a side placement the
+  // alignment axis is the block axis, where a span cannot rescue a width, so
+  // the inline overflow there is left to `flip-inline` alone. Authored here
+  // through the render props' `style`, which the runtime merges after its own
+  // placement styles; the runtime's fallback list is unchanged.
+  const overflowStyle: React.CSSProperties | undefined =
+    hasExplicitWidth && alignment !== 'center' && !isSidePlacement
+      ? {
+          positionTryFallbacks: `${getPositionTryFallbacks(placement, alignment)}, ${
+            placement === 'above' ? 'top' : 'bottom'
+          } span-all, ${placement === 'above' ? 'bottom' : 'top'} span-all`,
+        }
+      : undefined;
   const popoverViewportXstyle =
     alignment === 'center'
       ? isSidePlacement
         ? styles.viewportBlockCentered
         : styles.viewportCentered
       : [
-          styles.viewportAligned,
+          hasExplicitWidth ? styles.viewportWidthClamp : styles.viewportAligned,
           isSidePlacement
             ? alignment === 'start'
               ? styles.viewportBlockStart
@@ -694,6 +744,7 @@ export function Popover({
         {popover.render(<div data-testid={testId}>{content}</div>, {
           placement,
           alignment,
+          style: overflowStyle,
           offset: spacingVars['--spacing-1'],
           xstyle: [
             styles.viewportFit,
@@ -724,6 +775,7 @@ export function Popover({
         {popover.render(<div data-testid={testId}>{content}</div>, {
           placement,
           alignment,
+          style: overflowStyle,
           offset: spacingVars['--spacing-1'],
           xstyle: [
             styles.viewportFit,
@@ -747,6 +799,7 @@ export function Popover({
       {popover.render(<div data-testid={testId}>{content}</div>, {
         placement,
         alignment,
+        style: overflowStyle,
         offset: spacingVars['--spacing-1'],
         xstyle: [
           styles.viewportFit,

@@ -86,7 +86,7 @@ export const docs = {
           name: 'width',
           type: 'number | string',
           description:
-            'Width of the popover container. The layer still caps to the viewport with alignment-aware safe-area gutters before scrolling long content.',
+            'Width of the popover container. An explicit width is honoured up to the viewport minus its gutters, not up to the span of viewport beside the trigger: an end-aligned 352px menu under a button near a panel edge renders 352px and overhangs past the trigger, flipping to the other side, or (placed above or below) centering on the trigger when neither side fits. Without a width the popover sizes to its content and caps to the span on its aligned side. Long content scrolls inside the surface either way.',
           default: "'auto'",
         },
         {
@@ -309,7 +309,7 @@ export const docsZh = {
           name: 'width',
           type: 'number | string',
           description:
-            '弹出框容器的宽度。弹出层仍会限制在视口和安全区域留白内，长内容再滚动。',
+            '弹出框容器的宽度。显式宽度以视口（减去留白）为上限，而不是触发器旁的可用区间：靠近面板边缘的按钮下方、右对齐的 352px 菜单仍渲染为 352px，并越过触发器另一侧；一侧放不下时翻转或居中于触发器。未设置宽度时按内容尺寸并限制在对齐一侧的区间内。长内容在表面内滚动。',
           default: "'auto'",
         },
         {

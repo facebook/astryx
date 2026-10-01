@@ -67,6 +67,14 @@ const TARGETS = [
     guards: 'long metadata stays within the 320px narrow-container fixture',
   },
   {
+    component: 'Popover',
+    story: 'core-popover--width-overhang',
+    guards:
+      'an explicit 352px width on an end-aligned trigger 45px from a panel ' +
+      'edge renders 352px and stays on-screen instead of shrinking to the ' +
+      '275px span beside the trigger',
+  },
+  {
     component: 'TabList',
     story: 'core-tablist--full-bleed-geometry',
     guards:
