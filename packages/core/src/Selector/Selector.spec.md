@@ -82,15 +82,16 @@ connection between the closed trigger and its selection surface.
 This table names semantic concepts reviewers need. Prop syntax, complete defaults,
 and examples remain in `Selector.doc.mjs`.
 
-| Concept                | Closed values or states                | Meaning                                                  | Availability by variant/orientation/state | Default   | Owner    | Stability | Invalid-value behavior          |
-| ---------------------- | -------------------------------------- | -------------------------------------------------------- | ----------------------------------------- | --------- | -------- | --------- | ------------------------------- |
-| trigger variant        | `input`, `ghost`                       | Form-field or toolbar presentation                       | All trigger states                        | `input`   | Selector | released  | TypeScript rejects other values |
-| size                   | `sm`, `md`, `lg`                       | Trigger and option-row density                           | All presentations                         | `md`      | Selector | released  | TypeScript rejects other values |
-| selected-mark position | `start`, `end`                         | Logical edge containing a rendered selection mark        | Every option row                          | `end`     | Selector | released  | TypeScript rejects other values |
-| presentation           | `popover`, `bottom-sheet`, `adaptive`  | Anchored pointer surface or modal compact-touch surface  | All trigger variants                      | `popover` | Selector | released  | TypeScript rejects other values |
-| popup semantics        | `listbox`; modal dialog containing one | Semantics follow the active presentation                 | Popover; bottom sheet                     | `listbox` | Selector | released  | No separate role prop is public |
-| option-row state       | `selected`, `disabled`                 | Stable theming state on each option row                  | Every rendered option                     | neither   | Selector | released  | Unknown states are not emitted  |
-| read-only state        | `false`, `true`                        | Preserves and submits value without selection affordance | Closed trigger                            | `false`   | Caller   | additive  | Boolean normalization           |
+| Concept                | Closed values or states                | Meaning                                                                                                       | Availability by variant/orientation/state | Default   | Owner    | Stability       | Invalid-value behavior          |
+| ---------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | --------- | -------- | --------------- | ------------------------------- |
+| trigger variant        | `input`, `ghost`                       | Form-field or toolbar presentation                                                                            | All trigger states                        | `input`   | Selector | released        | TypeScript rejects other values |
+| size                   | `sm`, `md`, `lg`                       | Trigger and option-row density                                                                                | All presentations                         | `md`      | Selector | released        | TypeScript rejects other values |
+| selected-mark position | `start`, `end`                         | Logical edge containing a rendered selection mark                                                             | Every option row                          | `end`     | Selector | released        | TypeScript rejects other values |
+| presentation           | `popover`, `bottom-sheet`, `adaptive`  | Anchored pointer surface or modal compact-touch surface                                                       | All trigger variants                      | `popover` | Selector | released        | TypeScript rejects other values |
+| popup semantics        | `listbox`; modal dialog containing one | Semantics follow the active presentation                                                                      | Popover; bottom sheet                     | `listbox` | Selector | released        | No separate role prop is public |
+| option-row state       | `selected`, `disabled`                 | Stable theming state on each option row                                                                       | Every rendered option                     | neither   | Selector | released        | Unknown states are not emitted  |
+| read-only state        | `false`, `true`                        | Preserves and submits value without selection affordance                                                      | Closed trigger                            | `false`   | Caller   | additive        | Boolean normalization           |
+| focus on open          | `true`, `false`                        | Whether an open moves focus into the search control (`hasAutoFocusOnOpen`); the trigger keeps focus otherwise | Search presentation; every open path      | `true`    | Selector | additive, DEC-1 | Non-boolean reads as `true`     |
 
 ## Behavioral and layout contract
 
@@ -105,6 +106,7 @@ These requirements describe shipped behavior on current `main`.
 | FR5 | While `isLoading` is true, the trigger exposes busy state and the listbox suppresses empty and no-results output.                                                                                                                                                                                                                                                                                                                                                                      | Loading, empty-state, and announcement tests                              |
 | FR6 | While `isReadOnly` is true, the selected value remains focusable and form-submittable, while the selection surface, clear action, disclosure indicator, and every value-change path are unavailable.                                                                                                                                                                                                                                                                                   | Read-only interaction, form, and accessibility tests                      |
 | FR7 | The listbox carries `data-astryx-menu-press` and follows `module:DropdownMenu/useMenuPress` FR1–FR3, FR5 and AR2: the option under a pointer's release is the one selected, the highlight follows a held pointer through `aria-activedescendant` while DOM focus stays on the combobox, a mouse released outside closes the list and a finger leaves it open, and the browser's stray click never selects. Trigger opening, arrow clamping and closed-trigger typeahead are unchanged. | `module:DropdownMenu/useMenuPress`; `Selector.test.tsx` press model suite |
+| FR8 | With `hasAutoFocusOnOpen={false}` an open MUST NOT move DOM focus into the search control; typing on the closed trigger still seeds and focuses it, the listbox still answers the arrows from the trigger, and the closed-trigger keyboard contract (Space/Enter/ArrowDown/ArrowUp open; a printable key commits without opening) is unchanged.                                                                                                                                        | `component:Selector/DEC-1`                                                | Proposed; verified in jsdom; owner to confirm DEC-1 |
 
 ### Allowed variation
 
@@ -290,12 +292,26 @@ new theming target.
 | FR5                   | loading, empty-state, and live-region tests                                                                          | empty options, unmatched search, loading                                                | Empty/no-results output appears or is announced while loading                                                                           | `audit:Selector/behavior`        |
 | FR6, AR4              | read-only interaction, form, ARIA, and theme-state tests                                                             | search/non-search, clearable, open→read-only, disabled precedence                       | A value changes, popup or edit affordance remains, form value disappears, or read-only semantics are absent                             | `audit:Selector/accessibility`   |
 | FR7                   | `Selector.test.tsx` press model suite                                                                                | finger release over another option, finger/mouse release outside, listbox marker        | The press option is selected, the listbox takes focus, a finger release outside closes the list, or the stray click selects             | `audit:Selector/behavior`        |
+| FR8                   | `Selector.test.tsx` "hasAutoFocusOnOpen" and existing closed-trigger typeahead suites                                | search open with focus kept; closed printable key                                       | Focus reaching the search input on an opt-out open, or a letter opening the list, fails.                                                | `audit:Selector/behavior`        |
 | source-build contract | `Selector.source-build.test.mjs`                                                                                     | package source compiled by consumer Babel                                               | Moving evaluated StyleX values outside the supported source form fails compilation                                                      | `audit:Selector/code-health`     |
 
 ## Decision log
 
-No component-local future decision is recorded here. FR3 implements the
-system decision owned by `spec:AST-004/DEC-1`.
+FR3 implements the system decision owned by `spec:AST-004/DEC-1`.
+
+### DEC-1 — Opening may leave focus where it is
+
+**Reference:** `component:Selector/DEC-1`
+
+**Decider:** vjeux, 2026-09-27 (FR29; owner
+confirmation pending — this record is `current`, so the row stays proposed
+until the owner accepts it)
+
+A searchable picker that unfolds on hover beside a text field must not pull the
+caret out of the field. `hasAutoFocusOnOpen={false}` skips only the open-time
+move into the search control; the closed trigger's keyboard contract (FR20 of
+the app spec, `DEC-10` there: a printable key commits without opening) is
+untouched. The same prop exists on `DropdownMenu` and `ComplexSelector`.
 
 ## Open questions
 

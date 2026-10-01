@@ -216,6 +216,13 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'hasAutoFocusOnOpen',
+      type: 'boolean',
+      description:
+        "Whether opening moves focus into the popup (the search input, with hasSearch). The trigger keeps focus otherwise, as a combobox's does. Set false for an open that must leave focus where it is, such as a hover-open beside a text field the user is typing in.",
+      default: 'true',
+    },
+    {
       name: 'searchPlaceholder',
       type: 'string',
       description: 'Placeholder text for the search input.',

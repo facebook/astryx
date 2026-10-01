@@ -1292,3 +1292,40 @@ export const TallMenu: Story = {
     },
   },
 };
+
+export const KeepsFocusOnOpen: Story = {
+  name: 'hasAutoFocusOnOpen={false}',
+  render: function KeepsFocusOnOpenStory() {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <div
+        style={{display: 'flex', gap: 12, alignItems: 'flex-start'}}
+        onMouseLeave={() => setIsOpen(false)}>
+        <textarea
+          aria-label="Composer"
+          placeholder="Keep typing here while the menu is open…"
+          rows={3}
+          style={{width: 320}}
+          onFocus={() => setIsOpen(true)}
+        />
+        <DropdownMenu
+          button={{label: 'Model'}}
+          isMenuOpen={isOpen}
+          onOpenChange={setIsOpen}
+          hasAutoFocusOnOpen={false}>
+          <DropdownMenuItem label="Opus" onClick={() => {}} />
+          <DropdownMenuItem label="Sonnet" onClick={() => {}} />
+          <DropdownMenuItem label="Haiku" onClick={() => {}} />
+        </DropdownMenu>
+      </div>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'An open that must leave focus where it is: focusing the composer opens the menu beside it without stealing the caret. ArrowDown on the trigger, or a click in the menu, moves focus in.',
+      },
+    },
+  },
+};

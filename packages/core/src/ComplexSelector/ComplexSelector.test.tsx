@@ -601,3 +601,50 @@ describe('ComplexSelector onOpenChange', () => {
     expect(onOpenChange.mock.calls).toEqual([[true]]);
   });
 });
+
+describe('ComplexSelector hasAutoFocusOnOpen', () => {
+  function renderRig(hasAutoFocusOnOpen?: boolean) {
+    const handleRef = React.createRef<ComplexSelectorHandle>();
+    render(
+      <>
+        <textarea aria-label="Composer" />
+        <ComplexSelector
+          label="Model"
+          value="opus"
+          handleRef={handleRef}
+          hasAutoFocusOnOpen={hasAutoFocusOnOpen}>
+          {(_value, _onChange, close) => (
+            <button type="button" onClick={close}>
+              Opus
+            </button>
+          )}
+        </ComplexSelector>
+      </>,
+    );
+    return handleRef;
+  }
+
+  async function settle() {
+    await act(async () => {
+      await new Promise(resolve => requestAnimationFrame(resolve));
+    });
+  }
+
+  it('an open that keeps focus leaves the active element alone', async () => {
+    const handleRef = renderRig(false);
+    const composer = screen.getByRole('textbox', {name: 'Composer'});
+    composer.focus();
+    act(() => handleRef.current?.open());
+    await settle();
+    expect(handleRef.current?.isOpen()).toBe(true);
+    expect(composer).toHaveFocus();
+    expect(screen.getByRole('button', {name: 'Opus', ...h})).not.toHaveFocus();
+  });
+
+  it('moves focus into the popup by default', async () => {
+    const handleRef = renderRig();
+    act(() => handleRef.current?.open());
+    await settle();
+    expect(screen.getByRole('button', {name: 'Opus', ...h})).toHaveFocus();
+  });
+});

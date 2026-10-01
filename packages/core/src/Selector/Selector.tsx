@@ -700,6 +700,15 @@ interface SelectorPropsBase<
   hasSearch?: boolean;
 
   /**
+   * Whether opening moves focus into the popup (the search input, when
+   * `hasSearch`). The trigger keeps focus otherwise, as a combobox's does. Set
+   * `false` for an open that must leave focus where it is — a hover-open
+   * beside a text field the user is typing in.
+   * @default true
+   */
+  hasAutoFocusOnOpen?: boolean;
+
+  /**
    * Placeholder text for the search input.
    * @default 'Search...'
    */
@@ -880,6 +889,7 @@ export function Selector<T extends SelectorOptionType>(
     renderValue,
     indicatorPosition = 'end',
     hasSearch = false,
+    hasAutoFocusOnOpen = true,
     searchPlaceholder: searchPlaceholderFromProps,
     emptyText: emptyTextFromProps,
     emptySearchText: emptySearchTextFromProps,
@@ -1021,7 +1031,9 @@ export function Selector<T extends SelectorOptionType>(
   }, [announce]);
 
   const handleLayerShow = useCallback(() => {
-    if (hasSearch) {
+    // An open that keeps focus leaves the search input alone; typing
+    // on the trigger still seeds and focuses it through the keyboard path.
+    if (hasSearch && hasAutoFocusOnOpen) {
       requestAnimationFrame(() => {
         const input = searchRef.current;
         if (input) {
@@ -1032,7 +1044,7 @@ export function Selector<T extends SelectorOptionType>(
         }
       });
     }
-  }, [hasSearch]);
+  }, [hasSearch, hasAutoFocusOnOpen]);
 
   const surface = useSelectorPresentation({
     presentation,

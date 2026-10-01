@@ -221,6 +221,13 @@ export const docs = {
         'Maximum height in pixels for the popover presentation, for a menu that must fit its rows. Lifts the default 300px cap; the viewport still bounds it.',
     },
     {
+      name: 'hasAutoFocusOnOpen',
+      type: 'boolean',
+      description:
+        'Whether opening moves focus into the menu (the first row from the keyboard, the menu itself from a pointer). Set false for an open that must leave focus where it is, such as a hover-open beside a text field the user is typing in; ArrowDown on the trigger or a click in the menu then moves focus in.',
+      default: 'true',
+    },
+    {
       name: 'placement',
       type: "'above' | 'below' | 'start' | 'end'",
       description:

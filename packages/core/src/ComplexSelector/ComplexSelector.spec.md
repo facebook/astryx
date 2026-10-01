@@ -9,7 +9,7 @@ superseded_by: null
 approved_by: null
 approved_at: null
 owners: [cixzhang]
-review_triggers: [theming]
+review_triggers: [theming, public-api, behavior, accessibility]
 verified_by:
   [
     packages/core/src/ComplexSelector/ComplexSelector.test.tsx,
@@ -68,17 +68,22 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-No new public concept is introduced. Consumer props and usage remain documented
-in `ComplexSelector.doc.mjs`.
+Consumer props and usage remain documented in `ComplexSelector.doc.mjs`. One
+component-local concept is added by `component:ComplexSelector/DEC-1`:
+
+| Concept       | Closed values or states | Meaning                                                                                                                                                              | Availability by variant/orientation/state                  | Default | Owner                       | Stability | Invalid-value behavior             |
+| ------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------- | --------------------------- | --------- | ---------------------------------- |
+| Focus on open | `true`, `false`         | Whether opening the Popup moves focus into it (`hasAutoFocusOnOpen`). `false` leaves focus where it was, for a hover-open beside a text field the user is typing in. | Every variant; every open path (trigger, keyboard, handle) | `true`  | `component:ComplexSelector` | stable    | Non-boolean values read as `true`. |
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                                       | Basis                           | Draft review state                                 |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | -------------------------------------------------- |
-| FR1 | The current render contains a Field, Trigger, Indicator icon, and mounted Popup; one optional start slot may contain either an Icon-rendered start icon or caller-rendered start content. | Current source, docs, and tests | Verified current behavior; no new behavior decided |
-| FR2 | Trigger, Indicator icon, and Popup carry `complex-selector`, `complex-selector-indicator-icon`, and `complex-selector-popup`, respectively.                                               | Current source, docs, and tests | Verified current behavior; no target change        |
-| FR3 | Field delegates to Field's `field` target, and a semantic name or icon component in the start slot delegates to Icon's `icon` target.                                                     | Current source and owner tests  | Verified current behavior; no target change        |
-| FR4 | Arbitrary ReactNode start content renders directly and carries no ComplexSelector-owned target.                                                                                           | Current source                  | Verified current behavior; no target change        |
+| ID  | Candidate invariant                                                                                                                                                                                                                                                       | Basis                             | Draft review state                                 |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- | -------------------------------------------------- |
+| FR1 | The current render contains a Field, Trigger, Indicator icon, and mounted Popup; one optional start slot may contain either an Icon-rendered start icon or caller-rendered start content.                                                                                 | Current source, docs, and tests   | Verified current behavior; no new behavior decided |
+| FR2 | Trigger, Indicator icon, and Popup carry `complex-selector`, `complex-selector-indicator-icon`, and `complex-selector-popup`, respectively.                                                                                                                               | Current source, docs, and tests   | Verified current behavior; no target change        |
+| FR3 | Field delegates to Field's `field` target, and a semantic name or icon component in the start slot delegates to Icon's `icon` target.                                                                                                                                     | Current source and owner tests    | Verified current behavior; no target change        |
+| FR4 | Arbitrary ReactNode start content renders directly and carries no ComplexSelector-owned target.                                                                                                                                                                           | Current source                    | Verified current behavior; no target change        |
+| FR5 | With `hasAutoFocusOnOpen={false}`, opening the Popup MUST NOT move DOM focus: the element that had focus keeps it, and the Popup still closes on Escape, light dismiss and `close()`. With the default `true`, opening moves focus to the Popup's first control as today. | `component:ComplexSelector/DEC-1` | Human decision: owner to confirm DEC-1             |
 
 ### Allowed variation
 
@@ -107,8 +112,14 @@ in `ComplexSelector.doc.mjs`.
 
 ## Accessibility contract
 
-This draft does not change or extend ComplexSelector's existing field, trigger,
-dialog, focus, or keyboard behavior.
+This draft does not change ComplexSelector's existing field, trigger, dialog or
+keyboard behavior. It adds one focus rule:
+
+- **AR1 — An open that keeps focus is still reachable.** When
+  `hasAutoFocusOnOpen` is `false`, the Popup keeps `aria-expanded` on the
+  trigger, keeps its dialog name, and Tab or a click moves focus into it; the
+  opt-out changes where focus lands on open, never whether the Popup is
+  reachable or dismissible.
 
 ## Design relationships
 
@@ -160,12 +171,13 @@ content remains outside the owned anatomy inventory.
 
 ## Verification map
 
-| Contract            | Verification                                                               | Representative states                            | Mutation or failure expectation                                                               | Audit section                   |
-| ------------------- | -------------------------------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------- | ------------------------------- |
-| FR1                 | `ComplexSelector.test.tsx` render, ghost-trigger, and popup suites         | Default closed, ghost start branches, open Popup | Removing a documented part fails existing role, content, or structure assertions.             | `audit:ComplexSelector/anatomy` |
-| FR2                 | Component target suites, source inspection, and theming target inventories | Closed/open Popup; expanded Indicator icon       | Removing or renaming a current local target fails component assertions or target inventories. | `audit:ComplexSelector/theming` |
-| FR3, FR4            | Icon owner tests and `renderIconSlot` source inspection                    | Semantic/component icon; arbitrary ReactNode     | A branch gains the wrong owner, loses its target, or receives an invented local target.       | `audit:ComplexSelector/theming` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                              | Canonical anatomy and current local targets      | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.    | `audit:ComplexSelector/theming` |
+| Contract            | Verification                                                               | Representative states                            | Mutation or failure expectation                                                                | Audit section                    |
+| ------------------- | -------------------------------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------- | -------------------------------- |
+| FR1                 | `ComplexSelector.test.tsx` render, ghost-trigger, and popup suites         | Default closed, ghost start branches, open Popup | Removing a documented part fails existing role, content, or structure assertions.              | `audit:ComplexSelector/anatomy`  |
+| FR2                 | Component target suites, source inspection, and theming target inventories | Closed/open Popup; expanded Indicator icon       | Removing or renaming a current local target fails component assertions or target inventories.  | `audit:ComplexSelector/theming`  |
+| FR3, FR4            | Icon owner tests and `renderIconSlot` source inspection                    | Semantic/component icon; arbitrary ReactNode     | A branch gains the wrong owner, loses its target, or receives an invented local target.        | `audit:ComplexSelector/theming`  |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                              | Canonical anatomy and current local targets      | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.     | `audit:ComplexSelector/theming`  |
+| FR5, AR1            | `ComplexSelector.test.tsx` "hasAutoFocusOnOpen" suite                      | Open with focus kept; default open               | Moving focus on an opt-out open, or failing to move it by default, fails the focus assertions. | `audit:ComplexSelector/behavior` |
 
 Current component tests directly assert the Trigger and Popup targets. Source
 inspection confirms that non-lazy `useLayer` keeps the Popup mounted while
@@ -176,8 +188,23 @@ caller-owned ReactNode content.
 
 ## Decision log
 
-None. This draft records current facts and introduces no component-local design,
-API, theming, or layer-system decision.
+### DEC-1 — Opening may leave focus where it is
+
+**Reference:** `component:ComplexSelector/DEC-1`
+
+**Decider:** vjeux, 2026-09-27 (FR29, DEC-8;
+owner confirmation pending)
+
+A picker that unfolds on hover beside a text field must not pull the caret out
+of the field the person is typing in; the app otherwise has to reimplement the
+picker to get that. `hasAutoFocusOnOpen={false}` is a per-instance opt-out on
+the existing `usePopover` `hasAutoFocus` seam; the default stays `true`, so no
+released consumer changes. The same prop, with the same meaning, exists on
+`Selector` (its search input) and `DropdownMenu` (its first row / menu).
+
+Rejected: a hover-open mode built into ComplexSelector — the opening policy is
+the app's (hover before a session, click in one); the picker only needs to not
+steal focus.
 
 ## Open questions
 

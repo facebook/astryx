@@ -323,6 +323,15 @@ interface DropdownMenuBaseProps extends BaseProps {
    * bottom-sheet presentation.
    */
   menuMaxHeight?: number;
+  /**
+   * Whether opening moves focus into the menu (the first row from the
+   * keyboard, the menu itself from a pointer). Set `false` for an open that
+   * must leave focus where it is — a hover-open beside a text field the user
+   * is typing in. The menu still answers the keyboard once focus is moved
+   * into it.
+   * @default true
+   */
+  hasAutoFocusOnOpen?: boolean;
   onClick?: () => void;
   hasChevron?: boolean;
   /**
@@ -405,6 +414,7 @@ function DropdownMenuBottomSheet({
   presentation: _presentation,
   menuWidth: _menuWidth,
   menuMaxHeight: _menuMaxHeight,
+  hasAutoFocusOnOpen: _hasAutoFocusOnOpen,
   placement: _placement,
   alignment: _alignment,
   className,
@@ -605,6 +615,7 @@ function DropdownMenuPopover({
   onOpenChange,
   menuWidth,
   menuMaxHeight,
+  hasAutoFocusOnOpen = true,
   onClick,
   hasChevron = true,
   placement = 'below',
@@ -805,13 +816,20 @@ function DropdownMenuPopover({
       return;
     }
     shouldFocusOnOpenRef.current = false;
+    if (!hasAutoFocusOnOpen) {
+      // An open that keeps focus where it is: a text field beside the menu
+      // keeps its caret; ArrowDown on the trigger, or a click in the menu,
+      // moves in.
+      openModalityRef.current = 'keyboard';
+      return;
+    }
     requestAnimationFrame(() => {
       if (openModalityRef.current === 'pointer' || !focusFirst()) {
         listRef.current?.focus();
       }
       openModalityRef.current = 'keyboard';
     });
-  }, [popover.isOpen, focusFirst, listRef]);
+  }, [popover.isOpen, hasAutoFocusOnOpen, focusFirst, listRef]);
 
   // Extend useListFocus with Enter/Space activation + typeahead
   const listKeyDown = useCallback(

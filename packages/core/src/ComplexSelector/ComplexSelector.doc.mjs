@@ -190,6 +190,13 @@ export const docs = {
             'Called whenever the surface opens or closes, however it happened — trigger, keyboard, light dismiss, Escape, close(), or the imperative handle.',
         },
         {
+          name: 'hasAutoFocusOnOpen',
+          type: 'boolean',
+          description:
+            'Whether opening moves focus into the popup (its first control). Set false for an open that must leave focus where it is, such as a hover-open beside a text field the user is typing in; Tab or a click then moves in.',
+          default: 'true',
+        },
+        {
           name: 'contentXstyle',
           type: 'StyleXStyles',
           description: 'StyleX styles for the popup content container.',
@@ -323,6 +330,8 @@ export const docsDense = {
     alignment: 'Popup alignment.',
     handleRef: 'Imperative open/close/toggle handle.',
     onOpenChange: 'Notified on every open and close, whatever caused it.',
+    hasAutoFocusOnOpen:
+      'false keeps focus where it is on open (hover-open beside a text field).',
     accessibility:
       'Custom content must provide its own accessible structure. Use focus hooks and evaluate against WCAG 2.2.',
   },

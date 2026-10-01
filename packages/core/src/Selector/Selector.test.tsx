@@ -4615,3 +4615,30 @@ describe('Selector press model', () => {
     );
   });
 });
+
+describe('Selector hasAutoFocusOnOpen', () => {
+  it('a searchable list opened with hasAutoFocusOnOpen={false} leaves focus where it is', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <textarea aria-label="Composer" />
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          hasSearch
+          hasAutoFocusOnOpen={false}
+        />
+      </>,
+    );
+    const trigger = screen.getByRole('button', {name: /Fruit/});
+    await user.click(trigger);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+    await act(async () => {
+      await new Promise(resolve => requestAnimationFrame(resolve));
+    });
+    expect(screen.getByPlaceholderText('Search…')).not.toHaveFocus();
+    expect(trigger).toHaveFocus();
+  });
+});

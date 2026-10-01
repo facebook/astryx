@@ -9,7 +9,7 @@ superseded_by: null
 approved_by: null
 approved_at: null
 owners: [cixzhang]
-review_triggers: [theming, public-api, layout]
+review_triggers: [theming, public-api, layout, behavior, accessibility]
 verified_by:
   [
     packages/core/src/DropdownMenu/DropdownMenu.test.tsx,
@@ -82,11 +82,12 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 Consumer props, item shapes, subcomponents, and presentation policy remain
 documented in `DropdownMenu.doc.mjs` and the subcomponent docs. One
-component-local concept is added by DEC-3; it keeps its released default.
+component-local concepts are added by DEC-2 and DEC-3; each keeps its released default.
 
-| Concept         | Closed values or states             | Meaning                                                                              | Availability by variant/orientation/state | Default | Owner                    | Stability | Invalid-value behavior      |
-| --------------- | ----------------------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------- | ------- | ------------------------ | --------- | --------------------------- |
-| Menu height cap | `menuMaxHeight`: a number of pixels | Lifts the 300px cap for a menu that must fit its rows; the viewport still bounds it. | Pointer presentation                      | `300px` | `component:DropdownMenu` | stable    | Ignored by the touch sheet. |
+| Concept         | Closed values or states               | Meaning                                                                                                                              | Availability by variant/orientation/state | Default | Owner                    | Stability | Invalid-value behavior             |
+| --------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------- | ------- | ------------------------ | --------- | ---------------------------------- |
+| Menu height cap | `menuMaxHeight`: a number of pixels   | Lifts the 300px cap for a menu that must fit its rows; the viewport still bounds it.                                                 | Pointer presentation                      | `300px` | `component:DropdownMenu` | stable    | Ignored by the touch sheet.        |
+| Focus on open   | `hasAutoFocusOnOpen`: `true`, `false` | Whether opening moves focus into the menu (first row from the keyboard, the menu from a pointer). `false` leaves focus where it was. | Pointer presentation                      | `true`  | `component:DropdownMenu` | stable    | Non-boolean values read as `true`. |
 
 ## Behavioral and layout contract
 
@@ -99,6 +100,7 @@ component-local concept is added by DEC-3; it keeps its released default.
 | FR5 | Both menu surfaces carry `data-astryx-menu-press` and follow `module:DropdownMenu/useMenuPress` FR1–FR7: the row under the release acts, the highlight follows a held pointer, a mouse released outside closes and a finger leaves the menu open, the browser's stray click never acts, and the Pointer menu surface declares `touch-action` by overflow. Trigger opening and keyboard navigation are unchanged. | `module:DropdownMenu/useMenuPress`; `DropdownMenu.test.tsx` press model suite                            | Proposed; verified in jsdom and real Chromium       |
 | FR6 | When the pointer menu closes, focus returns to the Trigger button with a visible ring only when the menu was driven by keyboard; a press outside that landed on a focusable control keeps focus there.                                                                                                                                                                                                           | `architecture:interaction-modality` INV1; proposed in this change; `DropdownMenu.test.tsx` closing suite | Proposed; verified in jsdom, pending owner review   |
 | FR7 | `menuMaxHeight` MUST replace the 300px term of the menu's and its popover viewport's block-size cap while the viewport gutters still bound both; the touch sheet ignores it.                                                                                                                                                                                                                                     | `component:DropdownMenu/DEC-3`                                                                           | Proposed; verified in jsdom; owner to confirm DEC-3 |
+| FR8 | With `hasAutoFocusOnOpen={false}`, opening MUST NOT move DOM focus, by any path (click, keyboard, controlled open); the menu MUST still answer ArrowDown on the trigger, Escape, and a click on a row. The default `true` keeps FR6/FR7's landing.                                                                                                                                                               | `component:DropdownMenu/DEC-3`                                                                           | Proposed; verified in jsdom; owner to confirm DEC-4 |
 
 ### Allowed variation
 
@@ -138,6 +140,10 @@ pointer is held, the highlight is DOM focus per
 `module:DropdownMenu/useMenuPress` AR1. Focus return on close follows FR6 and
 `architecture:interaction-modality` INV1 through the shared focus-return
 visibility helper.
+
+- **AR1 — An open that keeps focus stays reachable.** With
+  `hasAutoFocusOnOpen={false}` the trigger keeps `aria-expanded`, and ArrowDown
+  on it moves into the menu.
 
 ## Design relationships
 
@@ -246,6 +252,7 @@ than adding a DropdownMenu-owned heading target.
 | FR6                 | `DropdownMenu.test.tsx` dismissal and closing suites                                                                                                                         | keyboard dismissal, pointer dismissal, press outside on a control, pointer pick, closed menu | Focus left on the body after a pointer pick, or a ring after pointer input, fails.                          | `audit:DropdownMenu/behavior` |
 | FR7                 | `menuMaxHeight` MUST replace the 300px term of the menu's and its popover viewport's block-size cap while the viewport gutters still bound both; the touch sheet ignores it. | `component:DropdownMenu/DEC-3`                                                               | Proposed; verified in jsdom; owner to confirm DEC-3                                                         |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                                                                                | Canonical anatomy and current target inventory                                               | Missing, extra, prefixed, stale, or unclassified mappings fail repository validation.                       | `audit:DropdownMenu/theming`  |
+| FR8, AR1            | `DropdownMenu.test.tsx` "DropdownMenu hasAutoFocusOnOpen" suite                                                                                                              | Controlled open beside a textarea, keyboard open                                             | Focus leaving the active element on open fails.                                                             | `audit:DropdownMenu/behavior` |
 
 ## Decision log
 
@@ -280,6 +287,17 @@ The value is a number of pixels. Rejected: an arbitrary CSS length (`50vh`,
 `calc(...)`), which is product-shaped tuning on a shared component that
 `spec:AST-002` does not admit, and which lets a caller write a cap the
 viewport term cannot reason about.
+
+### DEC-3 — Opening may leave focus where it is
+
+**Reference:** `component:DropdownMenu/DEC-3`
+
+**Decider:** vjeux, 2026-09-27 (owner confirmation pending)
+
+A menu that unfolds on hover beside a text field must not pull the caret out of
+the field. `hasAutoFocusOnOpen={false}` skips the open-time focus move on every
+open path; the trigger's ArrowDown, a click in the menu or Tab still move in.
+The same prop exists on `Selector` and `ComplexSelector`.
 
 ## Open questions
 

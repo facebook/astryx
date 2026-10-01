@@ -293,6 +293,14 @@ export interface ComplexSelectorProps<Value> extends Omit<
    * surface from outside without mirroring its state.
    */
   onOpenChange?: (isOpen: boolean) => void;
+  /**
+   * Whether opening moves focus into the popup (its first control). Set
+   * `false` for an open that must leave focus where it is — a hover-open
+   * beside a text field the user is typing in; Tab or a click then
+   * moves in.
+   * @default true
+   */
+  hasAutoFocusOnOpen?: boolean;
   /** StyleX styles for the popup content container. */
   contentXstyle?: StyleXStyles;
   /** Test ID for the trigger container. */
@@ -351,6 +359,7 @@ export function ComplexSelector<Value>({
   alignment = 'start',
   handleRef,
   onOpenChange,
+  hasAutoFocusOnOpen = true,
   contentXstyle,
   xstyle,
   className,
@@ -400,7 +409,7 @@ export function ComplexSelector<Value>({
   const popover = usePopover({
     dialogLabel: label,
     hasCloseButton: false,
-    hasAutoFocus: true,
+    hasAutoFocus: hasAutoFocusOnOpen,
     surfaceTarget: 'complex-selector-popup',
     onShow: handlePopoverShow,
     onHide: handlePopoverHide,

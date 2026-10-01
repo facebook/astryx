@@ -2444,3 +2444,65 @@ describe('DropdownMenu focus return after a pointer pick', () => {
     );
   });
 });
+
+describe('DropdownMenu hasAutoFocusOnOpen', () => {
+  it('an open that keeps focus leaves the active element alone', async () => {
+    function Rig() {
+      const [isOpen, setIsOpen] = useState(false);
+      return (
+        <>
+          <textarea aria-label="Composer" />
+          <DropdownMenu
+            button={{label: 'Model'}}
+            isMenuOpen={isOpen}
+            onOpenChange={setIsOpen}
+            hasAutoFocusOnOpen={false}>
+            <DropdownMenuItem label="Opus" onClick={() => {}} />
+          </DropdownMenu>
+          <button type="button" onClick={() => setIsOpen(true)}>
+            Hover open
+          </button>
+        </>
+      );
+    }
+    render(<Rig />);
+    const composer = screen.getByRole('textbox', {name: 'Composer'});
+    composer.focus();
+    // A programmatic open standing in for the hover policy.
+    fireEvent.click(screen.getByRole('button', {name: 'Hover open'}));
+    // Keep focus where the user left it after the click.
+    composer.focus();
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: /Model/})).toHaveAttribute(
+        'aria-expanded',
+        'true',
+      ),
+    );
+    await act(async () => {
+      await new Promise(resolve => requestAnimationFrame(resolve));
+    });
+    expect(composer).toHaveFocus();
+    expect(
+      screen.getByRole('menuitem', {name: 'Opus', hidden: true}),
+    ).not.toHaveFocus();
+  });
+
+  it('an open that keeps focus still opens from the keyboard without moving it', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Model'}} hasAutoFocusOnOpen={false}>
+        <DropdownMenuItem label="Opus" onClick={() => {}} />
+      </DropdownMenu>,
+    );
+    const trigger = screen.getByRole('button', {name: /Model/});
+    trigger.focus();
+    await user.keyboard('{Enter}');
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+    await act(async () => {
+      await new Promise(resolve => requestAnimationFrame(resolve));
+    });
+    expect(trigger).toHaveFocus();
+  });
+});
