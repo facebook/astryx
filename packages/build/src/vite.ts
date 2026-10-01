@@ -15,9 +15,11 @@ const LIBRARY_PATTERN = 'node_modules/@astryxdesign/';
 const STYLEX_CSS_PATH = '/virtual:stylex.css';
 
 /**
- * Browser targets for lightningcss (opt-in).
- * Only needed if your StyleX version lowers light-dark() without them.
- * Exported for consumers who want to opt in explicitly.
+ * Browser targets matching Astryx's native `light-dark()` support floor.
+ *
+ * These are the source-build default so Lightning CSS preserves
+ * `light-dark()` instead of lowering it into helper variables. Consumers may
+ * supply a stricter supported floor when their product requires one.
  */
 export const LIGHTNINGCSS_TARGETS = {
   chrome: 123 << 16,
@@ -70,10 +72,12 @@ export interface AstryxVitePluginOptions {
   };
 
   /**
-   * LightningCSS browser targets. Only needed if your StyleX version
-   * lowers light-dark() without them. Most recent versions preserve
-   * light-dark() by default.
-   * @default undefined (no targets set)
+   * Lightning CSS browser targets.
+   *
+   * Defaults to Astryx's native `light-dark()` support floor. Older targets
+   * may lower `light-dark()` and are outside the supported theme contract.
+   *
+   * @default LIGHTNINGCSS_TARGETS
    */
   lightningcssTargets?: Record<string, number>;
 
@@ -125,7 +129,7 @@ export function astryxStylex(
     rootDir = process.cwd(),
     libraryPattern = LIBRARY_PATTERN,
     layers = {},
-    lightningcssTargets,
+    lightningcssTargets = LIGHTNINGCSS_TARGETS,
     stylexPrefix = 'astryx',
     stylexOverrides = {},
   } = opts;
@@ -133,7 +137,13 @@ export function astryxStylex(
   const libraryLayer = layers.library ?? 'astryx-base';
   const productLayer = layers.product ?? 'product';
 
-  // Build StyleX options with sensible defaults
+  const overrideLightningcssOptions = (
+    stylexOverrides as {lightningcssOptions?: Record<string, unknown>}
+  ).lightningcssOptions;
+
+  // Build StyleX options with sensible defaults. Merge Lightning CSS options
+  // separately so an unrelated override cannot silently discard the browser
+  // floor that keeps theme values native.
   const stylexOptions: Record<string, unknown> = {
     dev,
     runtimeInjection: false,
@@ -143,10 +153,11 @@ export function astryxStylex(
       type: 'commonJS',
       rootDir,
     },
-    ...(lightningcssTargets && {
-      lightningcssOptions: {targets: lightningcssTargets},
-    }),
     ...stylexOverrides,
+    lightningcssOptions: {
+      targets: lightningcssTargets,
+      ...overrideLightningcssOptions,
+    },
   };
 
   // Inject our babel wrapper as a user plugin — it runs before the
@@ -570,9 +581,16 @@ function astryxStylexLegacy(options: AstryxVitePluginLegacyOptions): Plugin[] {
   const libraryLayer = layers.library ?? 'astryx-base';
   const productLayer = layers.product ?? 'product';
 
+  const legacyLightningcssOptions = (
+    stylexOptions as {lightningcssOptions?: Record<string, unknown>}
+  ).lightningcssOptions;
   const validatedStylexOptions = {
     propertyValidationMode: 'throw',
     ...(stylexOptions as any),
+    lightningcssOptions: {
+      targets: LIGHTNINGCSS_TARGETS,
+      ...legacyLightningcssOptions,
+    },
   };
   const astryxBabelPlugin = path.resolve(__dirname, 'babel.js');
   const existingPlugins = validatedStylexOptions.babelConfig?.plugins ?? [];
@@ -656,8 +674,9 @@ function astryxStylexLegacy(options: AstryxVitePluginLegacyOptions): Plugin[] {
       libraryPattern,
       libraryLayer,
       productLayer,
-      lightningcssOptions: (stylexOptions as {lightningcssOptions?: unknown})
-        ?.lightningcssOptions,
+      lightningcssOptions: (
+        validatedStylexOptions as {lightningcssOptions?: unknown}
+      ).lightningcssOptions,
     }),
   ];
 }
