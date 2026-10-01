@@ -174,15 +174,16 @@ function docTopics() {
 // ---------------------------------------------------------------------------
 
 /**
- * Top-level keys the template sets, plus the optional ones it shows commented
- * out (`// syntax: dracula,`). A commented field must carry a value, so an
- * ordinary prose comment is not mistaken for one.
+ * Top-level keys the template sets, plus optional fields shown commented out.
+ * A commented field must carry either a same-line value (`// syntax: dracula,`)
+ * or open a commented object block (`// adaptations: {`), so ordinary prose is
+ * not mistaken for a field.
  */
 function templateFields() {
   const set = [...template.matchAll(/^ {2}(\w+):/gm)].map(m => m[1]);
-  const commented = [...template.matchAll(/^ {2}\/\/ (\w+): .+,$/gm)].map(
-    m => m[1],
-  );
+  const commented = [
+    ...template.matchAll(/^ {2}\/\/ (\w+): (?:.+,|\{)$/gm),
+  ].map(m => m[1]);
   return [...new Set([...set, ...commented])];
 }
 

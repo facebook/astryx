@@ -14,6 +14,9 @@ verified_by:
   [
     packages/core/src/BottomSheet/BottomSheet.test.tsx,
     packages/core/src/BottomSheet/BottomSheetPanel.test.tsx,
+    packages/core/src/BottomSheet/BottomSheetKeyboard.test.tsx,
+    packages/core/src/BottomSheet/__tests__/BottomSheetKeyboard.a11y.browser.spec.ts,
+    apps/storybook/stories/BottomSheet.stories.tsx,
     scripts/check-knowledge.mjs,
   ]
 modules: []
@@ -22,7 +25,7 @@ design_specs: []
 architecture:
   [architecture:component-theming-surface, architecture:layer-runtime]
 contributing: []
-system_specs: []
+system_specs: [spec:AST-025]
 ---
 
 # BottomSheet component contract
@@ -30,14 +33,15 @@ system_specs: []
 ## Intent
 
 BottomSheet presents caller-provided content in a panel that rises from the
-bottom edge. This draft records current consumer anatomy and theming reachability
-without changing runtime behavior, styling, targets, or public API.
+bottom edge. This draft records current consumer anatomy, keyboard-reachable
+scrolling, and theming reachability without changing public API.
 
 ## Compatibility and migration
 
 - Released default preserved: `yes`
-- Compatibility class: additive documentation only; runtime, DOM, styling,
-  targets, and public API remain unchanged
+- Compatibility class: additive internal content box and shared scroll behavior;
+  public props, defaults, targets, and caller child ordering inside the content box
+  remain unchanged
 - Controlled/uncontrolled behavior: unchanged
 - Migration decision: none
 
@@ -48,7 +52,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 **Owns**
 
 - The visual Sheet panel and its current `bottom-sheet` target.
-- The scrolling Content area and decorative Handle inside the panel.
+- The scrolling Content area, its shared viewport/content-box integration, and
+  automatic keyboard-path selection.
 - Standalone sheet presentation, including its optional native-dialog Scrim.
 
 **Does not own / non-goals**
@@ -67,10 +72,11 @@ in `BottomSheet.doc.mjs`.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                | Basis                           | Draft review state                                 |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------- | -------------------------------------------------- |
-| FR1 | The current presented sheet contains one Sheet panel, one scrolling Content area, and one decorative Handle; a Scrim is present only in scrim-backed presentation. | Current source, docs, and tests | Verified current behavior; no new behavior decided |
-| FR2 | The Sheet panel carries `bottom-sheet`; Content area, Handle, and Scrim carry no BottomSheet public target.                                                        | Current source, docs, and tests | Verified current behavior; no target change        |
+| ID  | Candidate invariant                                                                                                                                                                                                                         | Basis                              | Draft review state                                 |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | -------------------------------------------------- |
+| FR1 | The current presented sheet contains one Sheet panel, one scrolling Content area, and one decorative Handle; a Scrim is present only in scrim-backed presentation.                                                                          | Current source, docs, and tests    | Verified current behavior; no new behavior decided |
+| FR2 | The Sheet panel carries `bottom-sheet`; Content area, Handle, and Scrim carry no BottomSheet public target.                                                                                                                                 | Current source, docs, and tests    | Verified current behavior; no target change        |
+| FR3 | Content renders in one real observed content box. Effective overflow, containment, and keyboard access come from `useScrollableArea`; the named overflowing body delegates forward Tab entry to a safe first sequential native link/button. | `spec:AST-025`; issue #5207; tests | Focus-time prototype for owner review              |
 
 ### Allowed variation
 
@@ -96,8 +102,14 @@ in `BottomSheet.doc.mjs`.
 
 ## Accessibility contract
 
-This draft does not change or extend BottomSheet's existing dialog naming,
-focus, Handle, keyboard, or dismissal behavior.
+- **AR1 — Keyboard scroll path.** The named body is a tab stop while effectively
+  overflowing. On forward Tab entry, the shared hook may delegate to the first
+  sequential native link/button outside navigation-key-owning surfaces. It keeps
+  the body stop for excluded content and skips the body on reverse traversal
+  from the delegated first child.
+- **AR2 — Focus continuity.** Content, overflow, or eligibility changes MUST NOT
+  move focus. Pointer/programmatic body focus never delegates. A focused body
+  losing overflow remains programmatically focusable.
 
 ## Design relationships
 
@@ -143,18 +155,20 @@ a decision that they must remain unthemeable.
   mapping, and factual `none` dispositions.
 - `architecture:layer-runtime` owns the current native-dialog host distinction
   and records that sheets retain local scrim and swipe behavior.
+- `spec:AST-025` owns effective scroll measurement, overflow and containment,
+  automatic keyboard-owner selection, and focus continuity.
 - `family:overlay-dismissal` owns shared Escape and platform-close ordering and
   records BottomSheet's current local-only adoption gap. This anatomy backfill
   does not migrate that runtime behavior.
 
 ## Verification map
 
-| Contract            | Verification                                                              | Representative states                          | Mutation or failure expectation                                                                 | Audit section               |
-| ------------------- | ------------------------------------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------- |
-| FR1                 | `BottomSheet.test.tsx` render, content, Handle, and scrim behavior suites | Modal, non-modal, and switcher presentations   | Removing a documented part fails existing content, structure, or dismissal assertions.          | `audit:BottomSheet/anatomy` |
-| FR2                 | Panel target assertion, source inspection, and theming target inventories | Sheet panel, Content area, Handle, and Scrim   | Removing the panel target or documenting an unshipped child target fails evidence or inventory. | `audit:BottomSheet/theming` |
-| Layout evidence     | `BottomSheetPanel.test.tsx`                                               | Floating Handle and scrolling Content area     | Reordering or merging the stable parts fails existing panel structure and style assertions.     | `audit:BottomSheet/anatomy` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                             | Canonical anatomy and current target inventory | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.      | `audit:BottomSheet/theming` |
+| Contract            | Verification                                                                                       | Representative states                                                    | Mutation or failure expectation                                                                         | Audit section                     |
+| ------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| FR1                 | `BottomSheet.test.tsx` render, content, Handle, and scrim behavior suites                          | Modal, non-modal, and switcher presentations                             | Removing a documented part fails existing content, structure, or dismissal assertions.                  | `audit:BottomSheet/anatomy`       |
+| FR2                 | Panel target assertion, source inspection, and theming target inventories                          | Sheet panel, Content area, Handle, and Scrim                             | Removing the panel target or documenting an unshipped child target fails evidence or inventory.         | `audit:BottomSheet/theming`       |
+| FR3, AR1–AR2        | `BottomSheetKeyboard.test.tsx`; `BottomSheetKeyboard.a11y.browser.spec.ts`; open Storybook stories | fitting/overflow, plain text, usable/unusable/dynamic descendants, focus | Missing/duplicate keyboard access, stale ownership, focus movement, or broken content-box layout fails. | `audit:BottomSheet/accessibility` |     | Layout evidence | `BottomSheetPanel.test.tsx` | Floating Handle and scrolling Content area | Reordering or merging the stable parts fails existing panel structure and style assertions. | `audit:BottomSheet/anatomy` |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                      | Canonical anatomy and current target inventory                           | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.              | `audit:BottomSheet/theming`       |
 
 Existing tests directly assert the Sheet panel target, Content area placement,
 Handle structure, and scrim behavior. Source and public target metadata confirm
@@ -162,8 +176,20 @@ that the other three parts have no public target.
 
 ## Decision log
 
-None. This draft records current facts and introduces no component-local design,
-API, theming, or layer-system decision.
+### DEC-1 — BottomSheet adopts automatic shared keyboard ownership
+
+**Reference:** `component:BottomSheet/DEC-1`
+**Decider:** cixzhang, 2026-09-13
+
+BottomSheet supplies its existing label to
+`keyboardAccess.owner="contentOrViewport"`. The shared hook keeps the overflowing
+body named and tabbable, delegating forward keyboard entry to a safe first native
+link/button. Pointer/programmatic focus and excluded content keep the body path. BottomSheet retains `stickyContainment="always"` because the
+body deliberately remains the sheet-local Sticky boundary.
+
+A real flow-root content box supplies the hook's observation seam while preserving
+representative margin, float, percentage-height, flex/grid-child, and hug-height
+behavior.
 
 ## Open questions
 

@@ -22,6 +22,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
+import changeScope from './change-scope.cjs';
+
 const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '../..',
@@ -55,7 +57,18 @@ export function classifyVisualScope(files, repoRoot = ROOT, manifests = {}) {
   const stableThemes = new Set();
   const stableComponents = new Set();
   const canaryPackages = new Set();
-  let broadStableVisual = false;
+  // Reuse the accepted surface taxonomy: unknown/shared inputs and the build
+  // pipeline cannot rely on a daily backup once this is the only visual owner.
+  const {surfaces} = changeScope.classifyChanges(paths);
+  const stableVisualInfrastructure =
+    paths.length === 0 ||
+    surfaces.some(surface =>
+      ['shared-or-unknown', 'storybook-visual', 'runtime:build'].includes(
+        surface,
+      ),
+    ) ||
+    paths.includes('packages/core/package.json');
+  let broadStableVisual = stableVisualInfrastructure;
 
   for (const file of stableCoreFiles) {
     const match = file.match(/^packages\/core\/src\/([^/]+)\//);
@@ -117,7 +130,10 @@ export function classifyVisualScope(files, repoRoot = ROOT, manifests = {}) {
   }
 
   return {
-    hasStableVisual: stableCoreFiles.length > 0 || stableThemes.size > 0,
+    hasStableVisual:
+      stableVisualInfrastructure ||
+      stableCoreFiles.length > 0 ||
+      stableThemes.size > 0,
     broadStableVisual,
     stableComponents: [...stableComponents].sort(),
     stableCoreFiles,
@@ -150,6 +166,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         `stable_themes=${outputValue(result.stableThemes)}`,
         `canary_packages=${outputValue(result.canaryPackages)}`,
         `has_stable_visual=${result.hasStableVisual}`,
+        `broad_stable_visual=${result.broadStableVisual}`,
       ].join('\n') + '\n',
     );
   }

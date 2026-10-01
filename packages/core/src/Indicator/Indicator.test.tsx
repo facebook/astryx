@@ -344,7 +344,7 @@ describe('useIndicator', () => {
  * A theme target is public API. Renaming one to follow the
  * `<component>-kebab` convention (`checkbox` → `checkbox-indicator`) would
  * silently break every theme styling the old name — the CSS still compiles, it
- * just stops matching. So both names are emitted for a deprecation window, and
+ * just stops matching. So both names remain emitted for compatibility, and
  * these tests pin that promise from both ends: the new name exists, and the
  * old one has not quietly disappeared.
  */

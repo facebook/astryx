@@ -75,8 +75,9 @@ const expansionStyles = stylex.create({
     justifyContent: 'center',
     width: spacingVars['--spacing-6'],
     height: spacingVars['--spacing-6'],
-    background: 'transparent',
-    border: 'none',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderStyle: 'none',
     borderRadius: radiusVars['--radius-inner'],
     cursor: {
       default: 'pointer',

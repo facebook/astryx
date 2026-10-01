@@ -1,11 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file build command — thin wrapper with stable result telemetry.
+ * @file build command — thin wrapper with a stable result summary.
  *
  *   astryx build                  → the PLAYBOOK (how to build a page)
- *   astryx build "<what>"         → a COMPOSITION KIT (closest page template,
- *                                   blocks, components) with a recommended START.
+ *   astryx build "<what>"         → the TEMPLATE to start from (always one: the
+ *                                   closest page, or the app shell), other
+ *                                   templates, then blocks and components.
  *
  * All grouping/scoring lives in api/build; this file only parses flags and
  * renders. Command strings are prefixed for the caller's package manager here
@@ -17,62 +18,50 @@ import {
   formatCliCommand,
 } from '../../../foundation/env/package-manager.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {recordResultSummary} from '../../../foundation/debug/index.mjs';
+import {resultSet, resultSetOf} from '../../../foundation/debug/index.mjs';
 import {
   emit,
   section,
   text,
+  list,
   record,
   records,
-  ARROW,
 } from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
+import {firstSentence} from '../../../foundation/text/string-utils.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {build as buildApi} from '../../../api/build/build.mjs';
 import {doc as buildCommand} from './build.doc.mjs';
 import {doc as buildFn} from '../../../api/build/build.doc.mjs';
 
 /**
- * Emit the build playbook (shown when `build` is run with no query).
- * @param {string} run - The CLI invocation prefix (e.g. `npx astryx`).
+ * Playbook commands as records whose field names are the JSON keys, so a
+ * reader can grep `^command:`. The command is run with the caller's invocation.
+ * @type {import('../formatters/index.mjs').RecordOptions}
  */
-function printPlaybook(run) {
+const COMMAND_RECORDS = {
+  fields: ['command', 'purpose'],
+  format: {command: command => formatCliCommand(command)},
+};
+
+/**
+ * Emit the build playbook (shown when `build` is run with no query) — a
+ * projection of the `build.help` data, so text and JSON carry the same steps.
+ * @param {import('../../../api/build/build.type.mjs').BuildHelpResponse['data']} playbook
+ */
+function printPlaybook(playbook) {
   emit(
-    section('How to build a page with Astryx'),
-    text(
-      [
-        "1. Find a starting point for what you're building:",
-        `     ${run} build "<what you're building>"`,
-        `   ${ARROW} returns the closest [page] template, the [block]s that cover parts,`,
-        '     and the [component]s to fill the gaps, with a "Compose:" suggestion.',
-      ].join('\n'),
-    ),
-    text(
-      [
-        `2. If a [page] template matches ${ARROW} scaffold it and adapt:`,
-        `     ${run} template <name> [path]`,
-      ].join('\n'),
-    ),
-    text(
-      [
-        `3. If nothing matches exactly ${ARROW} compose:`,
-        `     ${run} template <name> --skeleton   # study a close page's layout`,
-        `     ${run} template <BlockName>         # drop in each block from the kit`,
-        `     ${run} component <Name>             # fill remaining gaps (read props)`,
-      ].join('\n'),
-    ),
-    text(
-      [
-        '4. Rules (keep it on-system):',
-        '   - No <div>/raw HTML for layout — use VStack/HStack/Grid/Stack/Card etc.',
-        `   - No style={{}} — use component props; design tokens via \`${run} docs tokens\`.`,
-        '   - Wrap the app in <Theme theme={...}> and import core reset.css + astryx.css.',
-      ].join('\n'),
-    ),
-    text(
-      `Tip: \`${run} build "<idea>"\` is the fastest way in. For a neutral ` +
-        `lookup of any component/doc/template, use \`${run} search <query>\`.`,
-    ),
+    section(playbook.title),
+    ...playbook.steps.flatMap((step, i) => [
+      section(`${i + 1}. ${step.title}`),
+      records(step.commands, COMMAND_RECORDS),
+      step.returns ? record({returns: step.returns}) : null,
+    ]),
+    section(`${playbook.steps.length + 1}. Rules (keep it on-system)`),
+    list(playbook.rules),
+    ...(playbook.related.length > 0
+      ? [section('Related'), records(playbook.related, COMMAND_RECORDS)]
+      : []),
   );
 }
 
@@ -91,10 +80,20 @@ export function registerBuild(program) {
 
       // No query → the playbook. Still routed through the API for the envelope.
       if (!query || !String(query).trim()) {
-        const result = await buildApi(undefined, {cwd: process.cwd()});
-        if (json) return jsonOut(result);
-        printPlaybook(run);
-        return;
+        const result =
+          /** @type {import('../../../api/build/build.type.mjs').BuildHelpResponse} */ (
+            await buildApi(undefined, {cwd: process.cwd()})
+          );
+        // The playbook is a document, not a lookup: one doc, always the same
+        // one. Counting it as a result keeps "what did this run answer with"
+        // true for the no-argument form too.
+        const playbook = resultSet({count: 1, resultKind: 'doc'});
+        if (json) {
+          jsonOut(result);
+          return playbook;
+        }
+        printPlaybook(result.data);
+        return playbook;
       }
 
       // Arg validation stays in the CLI.
@@ -118,8 +117,10 @@ export function registerBuild(program) {
       } catch (e) {
         const err =
           /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
-        cliError(err.message, {suggestions: err.suggestions, code: err.code});
-        return;
+        return cliError(err.message, {
+          suggestions: err.suggestions,
+          code: err.code,
+        });
       }
 
       const {
@@ -127,6 +128,7 @@ export function registerBuild(program) {
         hasResults,
         matchCount,
         directMatch,
+        start,
         pages,
         blocks,
         domain,
@@ -134,113 +136,150 @@ export function registerBuild(program) {
         foundation,
         hint,
       } = result.data;
-      recordResultSummary([...pages, ...blocks, ...domain], {
+      // The kit spans domains, so its kind comes from the pieces themselves.
+      // `start` (which may be the fallback shell), `frame` and `foundation`
+      // are deliberately excluded: they are not what the query matched.
+      const answered = resultSetOf([...pages, ...blocks, ...domain], {
+        count: matchCount,
+        empty: !hasResults,
         directMatch,
-        resultCount: matchCount,
-        emptyResult: !hasResults,
+        fallbackKind: options.type ?? 'mixed',
       });
 
-      if (json) return jsonOut(result);
+      if (json) {
+        jsonOut(result);
+        return answered;
+      }
 
-      if (!hasResults) {
+      if (!hasResults && !start) {
         emit(
           text(`No matches for "${q}".`),
           text(`Try a broader term, or browse: ${run} component --list`),
         );
-        return;
+        return answered;
       }
 
-      // Same JSON->text projection as search, but leaner: the section header
-      // already says the kind, so drop `domain`/`import` by default (they're in
-      // --json and under --verbose). Keeps each item to name/displayName/desc/cmd.
-      const fields = options.verbose
-        ? [
-            'name',
-            'domain',
-            'displayName',
-            'score',
-            'reason',
-            'import',
-            'description',
-            'command',
-          ]
-        : ['name', 'displayName', 'description', 'command'];
+      // Four sections, one job each: the TEMPLATE to scaffold, OTHER
+      // TEMPLATES if its layout is wrong, BLOCKS for parts it lacks, and
+      // COMPONENTS for the rest. Descriptions stop at their first sentence and
+      // blocks and components share one command line in their heading; the
+      // JSON and --verbose carry everything.
+      const verbose = Boolean(options.verbose);
       /** @type {import('../formatters/index.mjs').RecordOptions} */
-      const recordOpts = {fields, format: {command: formatCliCommand}};
-
-      // `template <name> <path>` scaffolds into your project; <path> is the file
-      // (or folder) to write it to — a placeholder, since we can't know your
-      // layout. `--skeleton` and `component <Name>` just print, so no path.
-      const startCmd = directMatch
-        ? `${run} template ${pages[0].name} <path>`
-        : pages.length
-          ? `${run} template ${pages[0].name} --skeleton`
-          : `${run} component AppShell`;
-      const startNote = directMatch
-        ? `This \`${pages[0].name}\` page template appears to be the closest to what you want, so we recommend scaffolding it into your project — replace \`<path>\` with the file (or folder) to write it to — then adapting. Otherwise, browse PAGE TEMPLATES first, then BLOCKS and DOMAIN COMPONENTS below.`
-        : pages.length
-          ? `No exact match, but \`${pages[0].name}\` is the closest page template — run the above to print its layout as a reference, then compose. Otherwise, browse PAGE TEMPLATES first, then BLOCKS and DOMAIN COMPONENTS below.`
-          : 'No page template fits — frame with AppShell, then compose from BLOCKS and DOMAIN COMPONENTS below.';
-
-      // A short legend up top: what this output is, how to use it, and the exact
-      // order of the sections below (only the ones actually present) so it reads
-      // clearly and parses predictably.
-      const sectionsOrder = ['RECOMMENDED START'];
-      if (pages.length) sectionsOrder.push('PAGE TEMPLATES');
-      if (blocks.length) sectionsOrder.push('BLOCKS');
-      if (domain.length) sectionsOrder.push('DOMAIN COMPONENTS');
-      sectionsOrder.push('FRAME + FOUNDATION');
-      // The legend promises the complete order, so a section emitted after it
-      // has to be in it.
-      if (hint) sectionsOrder.push('FEW MATCHES');
+      const full = {
+        fields: [
+          'name',
+          'domain',
+          'displayName',
+          'score',
+          'reason',
+          'import',
+          'description',
+          'command',
+        ],
+        format: {command: formatCliCommand},
+      };
+      /** @param {string[]} fields */
+      const brief = fields => ({
+        fields,
+        format: {command: formatCliCommand, description: firstSentence},
+      });
+      // Blocks and components are extras: the text names the top few, and
+      // says how many more the JSON and --verbose carry.
+      const TOP = 3;
+      /** @param {unknown[]} items */
+      const shown = items => (verbose ? items : items.slice(0, TOP));
+      /** @param {unknown[]} items */
+      const more = items =>
+        !verbose && items.length > TOP
+          ? ` (top ${TOP} of ${items.length}; --verbose for all)`
+          : '';
 
       /** @type {import('../formatters/index.mjs').Block[]} */
       const out = [
         section(`Build kit for "${q}"`),
         text(
-          'A recommended set of pieces to assemble this page, in the order to use them. ' +
-            'Begin with RECOMMENDED START, then pull from the sections below — each ' +
-            'recommended item includes a `command:` to run next.\n' +
-            `Sections in order: ${sectionsOrder.join(', ')}.`,
+          start
+            ? 'Start from the TEMPLATE, fill it with BLOCKS, and use COMPONENTS only for what is left.\n' +
+                'Changing a page you already have? Keep it, and use only the blocks and components.'
+            : 'This kit is narrowed by --type, so it names no template.',
         ),
-        section('RECOMMENDED START', `${startNote}\n${startCmd}`),
       ];
 
-      if (pages.length) {
+      if (start) {
         out.push(
           section(
-            'PAGE TEMPLATES',
-            directMatch
-              ? 'Closest full-page templates — scaffold one, then adapt it.'
-              : 'Closest full-page templates — use as a layout reference.',
+            'TEMPLATE',
+            `${start.reason} ${
+              start.basis === 'fallback'
+                ? 'Scaffold it, then put blocks inside it.'
+                : 'Scaffold it, then replace its content. Keep its layout and spacing.'
+            }`,
           ),
-          records(pages, recordOpts),
+          record(
+            start,
+            verbose
+              ? {
+                  fields: ['name', 'displayName', 'description', 'command'],
+                  format: {command: formatCliCommand},
+                }
+              : brief(['name', 'description', 'command']),
+          ),
         );
+        if (start.alternatives.length) {
+          out.push(
+            section(
+              'OTHER TEMPLATES',
+              `If the layout is wrong, scaffold one of these instead. All page templates: ${formatCliCommand('template --list --type page')}`,
+            ),
+            records(
+              start.alternatives,
+              verbose ? full : brief(['name', 'description', 'command']),
+            ),
+          );
+        }
+      }
+      // Search's own page matches, so the text carries every field the JSON
+      // does: one line by default, the full entries under --verbose.
+      if (pages.length) {
+        out.push(
+          verbose
+            ? section(
+                'SEARCH MATCHES',
+                'Page templates keyword search matched, best first.',
+              )
+            : text(
+                `Keyword search matched these page templates: ${pages.map(p => p.name).join(', ')}.`,
+              ),
+        );
+        if (verbose) out.push(records(pages, full));
       }
       if (blocks.length) {
         out.push(
-          section('BLOCKS', 'Drop-in patterns that cover parts of the page.'),
-          records(blocks, recordOpts),
+          section(
+            'BLOCKS',
+            `Ready-made sections for parts the template lacks${more(blocks)}. Print one: ${formatCliCommand('template <name>')}`,
+          ),
+          records(
+            shown(blocks),
+            verbose ? full : brief(['name', 'description']),
+          ),
         );
       }
-      if (domain.length) {
-        out.push(
-          section('DOMAIN COMPONENTS', 'Components specific to this idea.'),
-          records(domain, recordOpts),
-        );
-      }
-
       out.push(
         section(
-          'FRAME + FOUNDATION',
-          'Always-available shell + layout/text/action primitives.',
+          'COMPONENTS',
+          `For what the template and blocks do not cover${more(domain)}. Read one: ${formatCliCommand('component <name>')}`,
         ),
-        record({
-          frame,
-          foundation,
-          setup:
-            'import "@astryxdesign/core/reset.css" + "astryx.css"; no <div>/style for layout — use Stack/Grid + tokens',
-        }),
+        ...(domain.length
+          ? [
+              records(
+                shown(domain),
+                verbose ? full : brief(['name', 'description']),
+              ),
+            ]
+          : []),
+        record({frame, foundation}),
       );
 
       // Last, so it is the line the reader leaves with — and only when the kit
@@ -259,6 +298,7 @@ export function registerBuild(program) {
       }
 
       emit(...out);
+      return answered;
     },
   });
 }

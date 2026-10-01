@@ -58,6 +58,7 @@ const THEME_BUILD_PATTERNS = [
 const NODE_TOOLING_PATHS = new Set([
   'scripts/score-ledger.mjs',
   'scripts/score-ledger.test.mjs',
+  '.github/workflows/crowdin-upload.yml',
 ]);
 
 const THEME_DOC_CANDIDATE = /^docs\/themes\/(?!README\.md$)[^/]+\.md$/;
@@ -103,7 +104,9 @@ function isKnowledgeRecordPath(filePath) {
 }
 
 function isNodeToolingPath(filePath) {
-  return NODE_TOOLING_PATHS.has(filePath);
+  return (
+    NODE_TOOLING_PATHS.has(filePath) || filePath.startsWith('internal/scripts/')
+  );
 }
 
 function surfacesForPath(filePath) {
@@ -127,11 +130,12 @@ function surfacesForPath(filePath) {
 
 function normalizeChange(change) {
   if (typeof change === 'string') {
-    return {filename: change, previous_filename: null};
+    return {filename: change, previous_filename: null, status: null};
   }
   return {
     filename: change.filename,
     previous_filename: change.previous_filename ?? null,
+    status: change.status ?? null,
   };
 }
 
@@ -170,12 +174,26 @@ function classifyChanges(changes, {expectedCount} = {}) {
     filePath.startsWith('docs/design/assets/'),
   );
   const hasSpecRecord = allPaths.some(isSpecRecordPath);
-  const hasChangeset = allPaths.some(filePath =>
-    CHANGESET_PATTERN.test(filePath),
-  );
+  // Only an exact in-place M can represent correcting already-pending release
+  // metadata. Added, deleted, renamed (in either direction), or status-unknown
+  // Changesets stay fail-closed so a spec-only change cannot create, remove, or
+  // park a package release.
+  const hasNonModificationChangeset = normalized.some(change => {
+    const touchesChangeset =
+      CHANGESET_PATTERN.test(change.filename) ||
+      (change.previous_filename != null &&
+        CHANGESET_PATTERN.test(change.previous_filename));
+    return (
+      touchesChangeset &&
+      (change.status !== 'M' || change.previous_filename != null)
+    );
+  });
   const hasPackageReleaseChange = allPaths.some(isPackageReleasePath);
   const specChangesetConflict =
-    complete && hasSpecRecord && hasChangeset && !hasPackageReleaseChange;
+    complete &&
+    hasSpecRecord &&
+    hasNonModificationChangeset &&
+    !hasPackageReleaseChange;
   const exactSurface = surface =>
     complete && surfaces.length === 1 && surfaces[0] === surface;
   const specOnly = exactSurface(SURFACES.KNOWLEDGE);
@@ -213,9 +231,10 @@ function parseNameStatus(input) {
         return {
           filename: fields[2],
           previous_filename: fields[1],
+          status,
         };
       }
-      return {filename: fields[1] ?? fields[0]};
+      return {filename: fields[1] ?? fields[0], status};
     });
 }
 

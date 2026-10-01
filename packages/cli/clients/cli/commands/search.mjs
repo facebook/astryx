@@ -16,7 +16,7 @@
  *   astryx search button                 Ranked results across all domains
  *   astryx search modal --type component Filter to a single domain
  *   astryx search forms --limit 5        Cap the result count
- *   astryx search button --verbose       Verbose (include import / reason)
+ *   astryx search button --verbose       Also print score / reason
  *   astryx search button --json          Typed JSON envelope
  */
 
@@ -25,7 +25,7 @@ import {
   formatCliCommand,
 } from '../../../foundation/env/package-manager.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {recordResultSummary} from '../../../foundation/debug/index.mjs';
+import {resultSetOf} from '../../../foundation/debug/index.mjs';
 import {emit, section, text, records} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
@@ -49,16 +49,15 @@ export function registerSearch(program) {
 
       try {
         const project = await Project.load(process.cwd());
-        await warnOnIntegrationIssues(project.loadedIntegrations, {json});
+        await warnOnIntegrationIssues(project, {json});
       } catch {
         // Never let the nudge break the command.
       }
 
-      // Parse --limit to a number; the API validates it (positive integer) and
-      // throws ERR_INVALID_ARGUMENT, so we pass NaN through rather than
-      // pre-rejecting with a generic code here.
-      const limit =
-        options.limit != null ? Number.parseInt(options.limit, 10) : 20;
+      // Number(), not parseInt(): parseInt truncates `1.5` and `5abc` into
+      // integers the API would reject. The API validates the value, so the
+      // flag and `search({limit})` accept and refuse the same inputs.
+      const limit = options.limit != null ? Number(options.limit) : 20;
 
       /** @type {import('../../../api/search/search.type.mjs').SearchResponse} */
       let result;
@@ -74,19 +73,28 @@ export function registerSearch(program) {
       } catch (e) {
         const err =
           /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
-        cliError(err.message, {suggestions: err.suggestions, code: err.code});
-        return;
+        return cliError(err.message, {
+          suggestions: err.suggestions,
+          code: err.code,
+        });
       }
 
-      // The recorded count is the number of MATCHES, not the number that
-      // survived `--limit`. Recording `results.length` would file the cap as
+      // The reported count is the number of MATCHES, not the number that
+      // survived `--limit`. Reporting `results.length` would file the cap as
       // the answer, so "20 matches" and "200 matches, showing 20" would be the
       // same row in every usage query. The delivered payload stays bounded.
-      recordResultSummary(result.data.results, {
-        resultCount: result.data.matchCount,
-        emptyResult: result.data.matchCount === 0,
+      const answered = resultSetOf(result.data.results, {
+        count: result.data.matchCount,
+        empty: result.data.matchCount === 0,
+        // Nothing matched, so the results cannot say what was searched for —
+        // the `--type` filter can, and an open search really did span them all.
+        fallbackKind: options.type ?? 'mixed',
       });
-      if (json) return jsonOut(result);
+
+      if (json) {
+        jsonOut(result);
+        return answered;
+      }
 
       // ── Text output ──────────────────────────────────────────────
       const run = getCliInvocation();
@@ -98,7 +106,7 @@ export function registerSearch(program) {
           text(`No results for "${q}".`),
           text(`Try a broader term, or browse: ${run} component --list`),
         );
-        return;
+        return answered;
       }
 
       // The text view is just a projection of the JSON: one record per result,
@@ -107,15 +115,32 @@ export function registerSearch(program) {
       const fields = options.verbose
         ? [
             'name',
+            'section',
             'domain',
+            'package',
+            'title',
             'displayName',
+            'kind',
             'score',
             'reason',
             'import',
             'description',
             'command',
+            'parent',
           ]
-        : ['name', 'domain', 'displayName', 'import', 'description', 'command'];
+        : [
+            'name',
+            'section',
+            'domain',
+            'package',
+            'title',
+            'displayName',
+            'kind',
+            'import',
+            'description',
+            'command',
+            'parent',
+          ];
 
       // The heading mirrors the JSON: `matchCount` is what matched, and the
       // records below are the slice `--limit` allowed. Saying only "(20)" when
@@ -126,8 +151,12 @@ export function registerSearch(program) {
             ? `Results for "${q}" (${results.length} of ${matchCount})`
             : `Results for "${q}" (${results.length})`,
         ),
-        records(results, {fields, format: {command: formatCliCommand}}),
+        records(results, {
+          fields,
+          format: {command: formatCliCommand, parent: formatCliCommand},
+        }),
       );
+      return answered;
     },
   });
 }

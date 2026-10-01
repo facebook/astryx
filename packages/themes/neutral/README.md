@@ -1,6 +1,6 @@
 # @astryxdesign/theme-neutral
 
-Muted, minimal aesthetic with system fonts. Uses [Lucide](https://lucide.dev) icons.
+Muted, minimal aesthetic with Figtree typography. Uses [Lucide](https://lucide.dev) icons.
 
 ## Install
 
@@ -40,6 +40,19 @@ theme-local import. Neutral currently uses 21 numbered stops in each light and
 dark ramp, but that layout is a Neutral decision rather than a requirement for
 other themes.
 
+Exact solid endpoints use the same stable palette namespace as the tonal
+families: `neutralPalettes.black` and `neutralPalettes.white`. Theme definitions
+can assign those values directly to semantic tokens without treating a neutral
+ramp endpoint as the named color.
+
+```ts
+import {neutralPalettes} from '@astryxdesign/theme-neutral';
+
+const tokens = {
+  '--color-background-inverted': [neutralPalettes.black, neutralPalettes.white],
+};
+```
+
 Neutral opts into a muted dark edge for chromatic families. Stops 5 through 25
 use 50% of their realized chroma, then recover smoothly to the standard dark
 recipe at stop 60. Yellow uses a gentler 65% edge multiplier. Light ramps,
@@ -69,7 +82,29 @@ Add the theme CSS to your stylesheet:
 
 This is required for component-level theme overrides (colors, radii, typography) to take effect.
 
-This theme uses system fonts; no external font loading is required.
+## Fonts
+
+This theme uses a custom typeface:
+
+| Role    | Font                        |
+| ------- | --------------------------- |
+| Body    | Figtree                     |
+| Heading | Figtree                     |
+| Code    | System monospace (built in) |
+
+**Figtree must be loaded separately.** The theme references it by name but does not bundle the font files.
+
+Add this to your HTML `<head>`:
+
+```html
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" />
+```
+
+Without this, the theme falls back to system fonts. If you'd rather avoid external font requests entirely (offline apps, no-third-party-request policies), that fallback is a supported choice — the system stack is designed to hold up on its own.
 
 ## Related Packages
 

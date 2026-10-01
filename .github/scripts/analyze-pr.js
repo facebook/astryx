@@ -11,6 +11,12 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { execSync } = require('node:child_process');
+const {
+  COMPONENT_PACKAGES,
+  documentedComponentNames,
+  flatPackageComponentNames,
+  nestedPackageComponentNames,
+} = require('../../scripts/component-packages.cjs');
 
 const args = process.argv.slice(2);
 const getArg = (name) => {
@@ -24,51 +30,39 @@ const outputFile = getArg('output') || 'analysis.json';
 
 const STORYBOOK_STORIES = 'apps/storybook/stories';
 
-// The publishable component packages the report covers. Each PR is attributed
-// to the package(s) it actually touches — the report is no longer hardcoded to
-// `core` (which silently mislabelled every lab/charts PR).
-//
-// layout:
-//   'nested' — components live in per-component dirs: src/<Name>/... (core, lab)
-//   'flat'   — components live as single files:       src/<Name>.tsx (charts,
-//              richtext). The score-ledger's canonical predicate narrows a flat
-//              package to its documented component(s) downstream, so listing
-//              the internal helpers here is harmless — they get filtered out.
-const PACKAGES = [
-  { name: '@astryxdesign/core', dir: 'packages/core', layout: 'nested' },
-  { name: '@astryxdesign/lab', dir: 'packages/lab', layout: 'nested' },
-  { name: '@astryxdesign/charts', dir: 'packages/charts', layout: 'flat' },
-  { name: '@astryxdesign/richtext', dir: 'packages/richtext', layout: 'flat' },
-];
+// Project the canonical component-package registry into the analyzer's existing
+// shape. Package participation and layouts have one checked-in owner; this file
+// only adds the published package name and derives its package directory.
+const PACKAGES = COMPONENT_PACKAGES.map(pkg => ({
+  ...pkg,
+  packageName: pkg.name,
+  name: `@astryxdesign/${pkg.name}`,
+  dir: path.dirname(pkg.src),
+}));
 
-const pkgSrc = (pkg) => `${pkg.dir}/src`;
+const pkgSrc = (pkg) => pkg.src;
 const pkgDist = (pkg) => `${pkg.dir}/dist`;
 
-// Directories under a package's src that are not components.
-const EXCLUDED_DIRS = ['hooks', 'theme', 'utils', 'i18n', '__tests__'];
-
-// Get list of component names for a package, honoring its src layout.
+// Get canonical direct public component names for a package. Nested family,
+// context, and shared directories deliberately stay unresolved so audits widen.
 function getComponentNames(pkg) {
-  const srcPath = path.join(process.cwd(), pkgSrc(pkg));
+  if (pkg.layout === 'flat') {
+    return flatPackageComponentNames(process.cwd(), pkg);
+  }
+  const canonical = new Set(nestedPackageComponentNames(process.cwd(), pkg));
+  const sourceDir = path.join(process.cwd(), pkgSrc(pkg));
   try {
-    const entries = fs.readdirSync(srcPath, { withFileTypes: true });
-    if (pkg.layout === 'flat') {
-      // Flat: each PascalCase *.tsx (not a test/story/context) is a component.
-      return entries
-        .filter(
-          (e) =>
-            e.isFile() &&
-            /^[A-Z]\w+\.tsx$/.test(e.name) &&
-            !e.name.includes('.test.') &&
-            !e.name.includes('.stories.') &&
-            !e.name.endsWith('Context.tsx'),
-        )
-        .map((e) => e.name.replace(/\.tsx$/, ''));
-    }
-    // Nested: each non-excluded directory is a component.
-    return entries
-      .filter((e) => e.isDirectory() && !EXCLUDED_DIRS.includes(e.name))
-      .map((e) => e.name);
+    return fs
+      .readdirSync(sourceDir, {withFileTypes: true})
+      .filter(entry => entry.isDirectory())
+      .filter(entry => {
+        const names = documentedComponentNames(
+          path.join(sourceDir, entry.name),
+        ).filter(name => canonical.has(name));
+        return names.length === 1 && names[0] === entry.name;
+      })
+      .map(entry => entry.name)
+      .sort();
   } catch {
     return [];
   }
@@ -529,6 +523,9 @@ function analyze() {
 
   const newComponents = [];
   const modifiedComponents = [];
+  const newComponentOwners = [];
+  const modifiedComponentOwners = [];
+  const unresolvedComponentSources = [];
   const componentStats = {};
   const changedPackages = new Set();
 
@@ -560,13 +557,27 @@ function analyze() {
           ? relativePath.replace(/\.tsx?$/, '').split('/')[0]
           : relativePath.split('/')[0];
 
-      if (!allComponents.includes(componentName)) continue;
+      if (!allComponents.includes(componentName)) {
+        const source = `${pkg.packageName}/${componentName}`;
+        if (!unresolvedComponentSources.includes(source)) {
+          unresolvedComponentSources.push(source);
+        }
+        continue;
+      }
+      const existsInBase = componentExistsInBase(pkg, componentName);
+      const owner = `${pkg.packageName}/${componentName}`;
+      const owners = existsInBase ? modifiedComponentOwners : newComponentOwners;
+      if (!owners.includes(owner)) owners.push(owner);
+
+      // Keep the legacy bare-name shape for existing report consumers. The
+      // package-qualified owner arrays below are the routing identity used by
+      // browser audits and cannot collide across packages.
       const key = componentName;
       if (componentStats[key]) continue;
 
       const stats = getComponentStats(pkg, componentName);
       componentStats[key] = stats;
-      if (componentExistsInBase(pkg, componentName)) {
+      if (existsInBase) {
         modifiedComponents.push(key);
       } else {
         newComponents.push(key);
@@ -577,6 +588,9 @@ function analyze() {
   console.log(`Changed packages: ${[...changedPackages].join(', ') || 'none'}`);
   console.log(`New components: ${newComponents.join(', ') || 'none'}`);
   console.log(`Modified components: ${modifiedComponents.join(', ') || 'none'}`);
+  console.log(
+    `Component owners: ${[...newComponentOwners, ...modifiedComponentOwners].join(', ') || 'none'}`,
+  );
 
   // Detect new exports in modified components (a dir may be "modified" yet add
   // brand-new exports alongside existing ones).
@@ -602,6 +616,10 @@ function analyze() {
   const result = {
     newComponents,
     modifiedComponents,
+    newComponentOwners,
+    modifiedComponentOwners,
+    unresolvedComponentSources,
+    forceFullComponentAudits: unresolvedComponentSources.length > 0,
     newExports,
     componentStats,
     changedPackages: [...changedPackages],

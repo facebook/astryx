@@ -538,4 +538,46 @@ describe('Field', () => {
       expect(labelWrapper.querySelector('label')).not.toBeNull();
     });
   });
+
+  describe('local stacking ownership', () => {
+    // Input wrappers paint their surface above the attached status message
+    // box through a local z-index, so that layer must be contained by a
+    // Field-owned isolation boundary. Otherwise a detached or tooltip field
+    // — whose input wrapper renders outside the attached-status wrapper —
+    // competes with page-level stacking (AppShell sticky header, later
+    // siblings) and can paint over unrelated chrome (#5689).
+    it.each(['attached', 'detached', 'tooltip'] as const)(
+      'isolates the field surface for the %s status variant',
+      variant => {
+        render(
+          <Field
+            label="Name"
+            inputID="name-input"
+            status={{type: 'error', message: 'Required'}}
+            statusVariant={variant}
+            data-testid="field">
+            <input id="name-input" data-testid="control" />
+          </Field>,
+        );
+        const field = screen.getByTestId('field');
+        // The Field root is the isolation owner: it stays at its normal
+        // parent paint level (it carries no positioning or z-index of its
+        // own) while containing every local layer — the input wrapper's 1
+        // and the attached status -1.
+        expect(getComputedStyle(field).isolation).toBe('isolate');
+        // Unpositioned and unranked — the owner never competes itself.
+        expect(getComputedStyle(field).zIndex).toBe('');
+      },
+    );
+
+    it('keeps a custom control without status isolated too', () => {
+      render(
+        <Field label="Name" inputID="name-input" data-testid="field">
+          <input id="name-input" data-testid="control" />
+        </Field>,
+      );
+      const field = screen.getByTestId('field');
+      expect(getComputedStyle(field).isolation).toBe('isolate');
+    });
+  });
 });

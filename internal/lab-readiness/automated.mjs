@@ -24,6 +24,7 @@ import path from 'node:path';
 const LAB_SRC = 'packages/lab/src';
 const STORIES_DIR = 'apps/storybook/stories';
 const CI_WORKFLOW = '.github/workflows/ci.yml';
+const COMPONENT_REGISTRY = 'scripts/component-packages.cjs';
 const RTL_AUDIT = 'apps/storybook/rtl-audit/rtl-audit.mjs';
 
 /** Read a repo-relative file, or null when it does not exist. */
@@ -98,6 +99,17 @@ function a11yComponentFromTitle(title) {
 function ciComponentRoots(repoRoot) {
   const ci = read(repoRoot, CI_WORKFLOW);
   if (!ci) return [];
+  const registry = read(repoRoot, COMPONENT_REGISTRY);
+  const projectsRegistry =
+    /COMPONENT_PACKAGES/.test(ci) ||
+    (/component-audit-scope\.cjs/.test(ci) &&
+      /scripts\/component-packages\.cjs/.test(ci));
+  if (registry && projectsRegistry) {
+    const roots = [...registry.matchAll(/\bsrc:\s*['"]([^'"]+)['"]/g)].map(
+      match => `${match[1]}/`,
+    );
+    if (roots.length > 0) return roots;
+  }
   const pathspec = ci.match(/git diff --name-only [^\n]*?\.\.\.HEAD --([^|\n]+)/);
   if (pathspec) return pathspec[1].trim().split(/\s+/).filter(Boolean);
   const filtered = ci.match(/grep -E ['"]\^packages\/\(([^)]+)\)\/src\/['"]/);
@@ -106,6 +118,17 @@ function ciComponentRoots(repoRoot) {
 
 /** Story-id prefixes the RTL auto-discovery sweep covers. */
 function rtlAuditedPrefixes(repoRoot) {
+  const registry = read(repoRoot, COMPONENT_REGISTRY);
+  const registryPrefixes = registry
+    ? [...registry.matchAll(/\bstoryPrefixes:\s*\[([^\]]*)\]/g)].flatMap(
+        block => [...block[1].matchAll(/['"]([^'"]+)['"]/g)].map(match => match[1]),
+      )
+    : [];
+  if (registryPrefixes.length > 0) {
+    return [...new Set(registryPrefixes)];
+  }
+
+  // Older/scratch repositories keep the prefixes directly in rtl-audit.mjs.
   const rtl = read(repoRoot, RTL_AUDIT);
   if (!rtl) return [];
   const match = rtl.match(/AUDITED_STORY_PREFIXES\s*=\s*\[([^\]]+)\]/);

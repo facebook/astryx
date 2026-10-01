@@ -28,17 +28,20 @@ describe('Code', () => {
 
   it('defaults color to primary', () => {
     render(<Code>code</Code>);
-    expect(screen.getByText('code')).toHaveClass('astryx-code', 'primary');
+    expect(screen.getByText('code')).toHaveClass('astryx-code');
+    expect(screen.getByText('code')).toHaveAttribute('data-color', 'primary');
   });
 
   it('applies the secondary color', () => {
     render(<Code color="secondary">code</Code>);
-    expect(screen.getByText('code')).toHaveClass('astryx-code', 'secondary');
+    expect(screen.getByText('code')).toHaveClass('astryx-code');
+    expect(screen.getByText('code')).toHaveAttribute('data-color', 'secondary');
   });
 
   it('applies the inherit color', () => {
     render(<Code color="inherit">code</Code>);
-    expect(screen.getByText('code')).toHaveClass('astryx-code', 'inherit');
+    expect(screen.getByText('code')).toHaveClass('astryx-code');
+    expect(screen.getByText('code')).toHaveAttribute('data-color', 'inherit');
   });
 
   it('adds a size class when size="inherit" (font-size + line-height inherit)', () => {

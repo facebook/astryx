@@ -240,8 +240,9 @@ export interface UsePopoverOptions {
    * or radius rule paints the wrong box. Name the surface through this option
    * and document the class in the component's `theming.targets`.
    *
-   * The shared `astryx-popover-surface` class is always present alongside it,
-   * so a theme can style every popup surface at once.
+   * The canonical `astryx-popover` target and deprecated
+   * `astryx-popover-surface` compatibility alias are always present alongside
+   * any component-owned refinement target.
    */
   surfaceTarget?: string;
 }
@@ -485,9 +486,11 @@ function usePopoverImplementation(
       // `mergeProps` is positional — a third OBJECT argument is read as
       // `style`, not as more props — so the surface's classes are composed
       // into one props object before merging with the StyleX result.
-      const surfaceProps = themeProps('popover-surface');
+      const surfaceProps = themeProps('popover', undefined, {
+        legacyNames: ['popover-surface'],
+      });
       const surfaceClassName =
-        surfaceTarget != null
+        surfaceTarget != null && surfaceTarget !== 'popover'
           ? `${surfaceProps.className} ${stableClassName(surfaceTarget)}`
           : surfaceProps.className;
 

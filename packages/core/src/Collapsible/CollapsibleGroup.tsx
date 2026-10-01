@@ -34,6 +34,7 @@ import {
   CollapsibleGroupPresentationContext,
 } from './CollapsibleGroupContext';
 import type {
+  CollapsibleChevronPosition,
   CollapsibleGroupContextValue,
   CollapsibleGroupDensity,
   CollapsibleGroupPresentationValue,
@@ -95,6 +96,14 @@ export interface CollapsibleGroupProps extends Omit<
    * keep their default unpadded look.
    */
   density?: CollapsibleGroupDensity;
+
+  /**
+   * Logical position of the items' disclosure chevrons. Set this on the group
+   * when its direct items should share one position; an individual Collapsible
+   * can still override it.
+   * @default 'end'
+   */
+  chevronPosition?: CollapsibleChevronPosition;
 
   /**
    * Children — any components that support isCollapsible + value.
@@ -175,6 +184,7 @@ export function CollapsibleGroup({
   onChange,
   hasDividers = false,
   density,
+  chevronPosition,
   children,
   ref,
   xstyle,
@@ -234,8 +244,12 @@ export function CollapsibleGroup({
   const resolvedDensity = density ?? (hasDividers ? 'balanced' : null);
 
   const presentationValue = useMemo<CollapsibleGroupPresentationValue>(
-    () => ({hasDividers, density: resolvedDensity}),
-    [hasDividers, resolvedDensity],
+    () => ({
+      hasDividers,
+      density: resolvedDensity,
+      chevronPosition: chevronPosition ?? null,
+    }),
+    [hasDividers, resolvedDensity, chevronPosition],
   );
 
   // The wrapper anchors divider chrome: it makes the items' :first-child

@@ -6,8 +6,8 @@ import React from 'react';
 
 /**
  * @file AppShell.tsx
- * @input Uses React, Layout, LayoutHeader, LayoutPanel, LayoutContent, StyleX
- * @output Exports AppShell component and AppShellProps type
+ * @input Uses React, Theme-resolved breakpoints, Layout, navigation slots, and StyleX
+ * @output Exports AppShell component and AppShellProps with SSR-safe mobile layout
  * @position Page shell for an application — the top-level wrapper for any app.
  *   Composes Layout internally to provide header, sideNav, and main content areas.
  *   Use for any app that needs a top nav, side navigation, and scrollable content.
@@ -56,6 +56,11 @@ import {useMediaQuery} from '../hooks/useMediaQuery';
 import {observeResize} from '../utils/sharedResizeObserver';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import {useThemeDefinition} from '../theme/useTheme';
+import {
+  DEFAULT_WIDTH_BREAKPOINTS,
+  type WidthBreakpointName,
+} from '../theme/themeAdaptations';
 import type {AppShellVariantMap} from './index';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
@@ -74,13 +79,6 @@ const ActivityWrapper = HasActivity
 // Constants
 // =============================================================================
 
-const BREAKPOINT_VALUES: Record<AppShellBreakpoint, number> = {
-  sm: 640,
-  md: 768,
-  lg: 1024,
-  none: 0,
-};
-
 const MAIN_CONTENT_ID = 'astryx-app-shell-main';
 
 // =============================================================================
@@ -88,13 +86,10 @@ const MAIN_CONTENT_ID = 'astryx-app-shell-main';
 // =============================================================================
 
 /**
- * SideNav breakpoint options.
- * - `sm`: 640px
- * - `md`: 768px
- * - `lg`: 1024px
- * - `none`: Never auto-collapse
+ * SideNav breakpoint options. Named points resolve through the nearest Theme;
+ * without an active theme they use Astryx's default width-breakpoint map.
  */
-export type AppShellBreakpoint = 'sm' | 'md' | 'lg' | 'none';
+export type AppShellBreakpoint = WidthBreakpointName | 'none';
 
 /**
  * Navigation background style:
@@ -141,7 +136,10 @@ export interface MobileNavConfig {
   content?: ReactNode;
 
   /**
-   * Breakpoint below which mobile nav activates.
+   * Named Theme width point below which mobile nav activates. `sm`, `md`,
+   * `lg`, `xl`, and `2xl` resolve through the nearest Theme's effective
+   * `adaptations.widthBreakpoints`; equality belongs to the wider layout.
+   * Use `none` to disable automatic mobile mode.
    * @default 'md'
    */
   breakpoint?: AppShellBreakpoint;
@@ -149,7 +147,8 @@ export interface MobileNavConfig {
   /**
    * SSR hint: whether the initial render should assume mobile layout.
    * Seeds the breakpoint state so the server-rendered HTML matches
-   * the client on mobile devices, avoiding a layout flash.
+   * the client on mobile devices, avoiding a layout flash. Ignored when
+   * `breakpoint` is `none`, which is always non-mobile.
    *
    * Derive from the User-Agent header or a device-detection cookie
    * in a server component, then pass down.
@@ -396,7 +395,10 @@ const styles = stylex.create({
     height: spacingVars['--spacing-12'],
     paddingInline: spacingVars['--spacing-2'],
   },
-  // Sticky header for auto height mode
+  // Sticky header for auto height mode. The header stays at its local
+  // stacking level — Field-owned input surfaces contain their own local
+  // z-index layers (AST-027), so no escalated page-level value is needed
+  // for the header to paint above scrolled content.
   headerSticky: {
     position: 'sticky',
     top: 0,
@@ -469,6 +471,7 @@ export function AppShell({
   ...rest
 }: AppShellProps) {
   const t = useTranslator();
+  const activeTheme = useThemeDefinition();
   // =========================================================================
   // Parse mobileNav prop — normalize to config, custom element, or disabled
   // =========================================================================
@@ -504,13 +507,17 @@ export function AppShell({
   // =========================================================================
   // Mobile nav open state (controlled + uncontrolled)
   // =========================================================================
+  const activeWidthBreakpoints = activeTheme?.__adaptations?.widthBreakpoints;
   const breakpointQuery =
     sideNavBreakpoint === 'none'
-      ? '(max-width: 0px)'
-      : `(max-width: ${BREAKPOINT_VALUES[sideNavBreakpoint]}px)`;
+      ? '(width < 0px)'
+      : `(width < ${
+          activeWidthBreakpoints?.[sideNavBreakpoint] ??
+          DEFAULT_WIDTH_BREAKPOINTS[sideNavBreakpoint]
+        }px)`;
   const isBelowBreakpoint = useMediaQuery(
     breakpointQuery,
-    mobileNavConfig?.defaultIsMobile,
+    sideNavBreakpoint === 'none' ? false : mobileNavConfig?.defaultIsMobile,
   );
   const [uncontrolledMobileOpen, setUncontrolledMobileOpen] = useState(false);
   const isMobileNavOpen = mobileNavConfig?.isOpen ?? uncontrolledMobileOpen;

@@ -63,7 +63,7 @@ import type {BaseProps} from '../BaseProps';
 import {Icon} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useTranslator} from '../i18n';
-import {useStepperContext} from './StepperContext';
+import {useStepperInternalContext} from './StepperContext';
 import {stepMarker} from './stepper.stylex';
 import type {StepStatus} from './StepStatus';
 
@@ -693,7 +693,6 @@ const styles = stylex.create({
 
   // Button reset for clickable steps
   buttonReset: {
-    all: 'unset',
     textAlign: 'start',
     alignItems: 'stretch',
     display: 'flex',
@@ -734,10 +733,8 @@ const styles = stylex.create({
 
   // Interactive wrapper (indicator + label act as one click target).
   otInteractive: {
-    all: 'unset',
     boxSizing: 'border-box',
-    // `all: unset` leaves the <button> UA default of centered text; force
-    // start so vertical labels/descriptions read left-aligned. Horizontal
+    // Force start alignment so vertical labels/descriptions read left-aligned. Horizontal
     // labels re-center via otLabelWrapH (a deeper element).
     textAlign: 'start',
     cursor: {
@@ -962,18 +959,6 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-0-5'],
     minWidth: 0,
   },
-  // The browser resolves Stepper's public threshold on this box. It lives in
-  // the active <li> so CSS custom properties applied to the public <ol> inherit
-  // into it. Fixed and invisible, it cannot affect layout or scrollable size.
-  minStepWidthMeasure: {
-    position: 'fixed',
-    insetBlockStart: 0,
-    insetInlineStart: 0,
-    height: 0,
-    overflow: 'hidden',
-    pointerEvents: 'none',
-    visibility: 'hidden',
-  },
 });
 
 /**
@@ -1017,7 +1002,7 @@ export function Step({
   ...rest
 }: StepProps) {
   const t = useTranslator();
-  const ctx = useStepperContext();
+  const ctx = useStepperInternalContext();
   const {
     activeStep,
     previousActiveStep,
@@ -1028,20 +1013,19 @@ export function Step({
     registerStep,
     isCompact,
     summarySlot,
-    minimumStepWidth,
-    minStepWidthMeasureRef,
   } = ctx;
 
-  // Register this step index with the parent Stepper, which uses the tally
-  // both to warn about duplicate indices and to work out how much width each
-  // step is getting.
+  // Register this step index with the parent Stepper, which uses the tally to
+  // warn about duplicate indices and work out how much width each step gets.
+  // The optional getter keeps disabled state owned by this Step while compact
+  // navigation can read its latest registration.
   //
   // A layout effect, not an effect: the width each step has is the stepper's
   // width divided by this count, so a stepper narrow enough to collapse can
   // only know it once every step is counted. Running after paint would show
   // the full stepper for a frame and then snap it shut.
   useLayoutEffect(
-    () => registerStep(step, isDisabled),
+    () => registerStep(step, {getIsDisabled: () => isDisabled}),
     [registerStep, step, isDisabled],
   );
 
@@ -1427,23 +1411,6 @@ export function Step({
     </>
   ) : null;
 
-  // Keep the CSS-length probe on the first logical step rather than the active
-  // one. `activeStep === stepCount` is the supported all-complete state, where
-  // no step is active, but the Stepper still needs to resolve a custom compact
-  // threshold. Step indices are zero-based, so step 0 is a stable single host
-  // whose position inside the public list also preserves CSS-variable
-  // inheritance from that root.
-  const minStepWidthMeasureNode =
-    !isVertical && step === 0 ? (
-      <div
-        ref={minStepWidthMeasureRef}
-        aria-hidden="true"
-        {...mergeProps(stylex.props(styles.minStepWidthMeasure), {
-          style: {width: minimumStepWidth},
-        })}
-      />
-    ) : null;
-
   // ======= ON-TRACK: indicator is a node on the connector =======
   if (indicatorPosition === 'on-track') {
     // Connector fill is purely progress-based (matches the separated bar):
@@ -1742,7 +1709,6 @@ export function Step({
         {compactNameNode}
         {otContentNode}
         {summaryNode}
-        {minStepWidthMeasureNode}
       </li>
     );
   }
@@ -1874,7 +1840,6 @@ export function Step({
       )}
       {contentNode}
       {summaryNode}
-      {minStepWidthMeasureNode}
     </li>
   );
 }

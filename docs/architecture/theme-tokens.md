@@ -30,6 +30,17 @@ deciding_specs: [spec:AST-006/DEC-1, spec:AST-006/DEC-5]
 
 # Theme token architecture
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "tokens": ["INV1", "INV3", "INV4", "INV6", "INV8"]
+  }
+}
+```
+
 This record defines the semantic token vocabulary that components, themes,
 documentation, and non-CSS consumers share.
 

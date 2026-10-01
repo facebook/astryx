@@ -9,6 +9,8 @@ import {
 } from './parser';
 import type {BlockNode, ParseOptions} from './parser';
 
+type PerfParseOptions = ParseOptions;
+
 function generateAIResponse(paragraphs: number): string {
   const sections: string[] = [];
   for (let i = 0; i < paragraphs; i++) {
@@ -81,7 +83,7 @@ function simulateStreamingIncremental(
 function blocksBuiltPerChunk(
   fullText: string,
   chunkSize: number,
-  options?: ParseOptions,
+  options?: PerfParseOptions,
 ): number[] {
   const state = createIncrementalState();
   let previous: ReadonlySet<BlockNode> = new Set();

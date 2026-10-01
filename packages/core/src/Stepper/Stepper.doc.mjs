@@ -196,9 +196,9 @@ export const docs = {
         },
         {
           name: 'horizontalOptions',
-          type: "{ minimumStepWidth: number | string; collapsedVariant: 'withLabelAndControls' | 'withLabel' | 'hiddenLabel' }",
+          type: "{ minimumStepWidth: number; collapsedVariant: 'withLabelAndControls' | 'withLabel' | 'hiddenLabel' }",
           description:
-            'Options for horizontal collapse. minimumStepWidth is the per-step threshold: numbers are pixels and strings accept CSS lengths such as 7rem, calc(6rem + 8px), or var(--step-width). collapsedVariant selects a label with controls, the label alone, or a bare progress track with no compact row. Controls appear only for withLabelAndControls when onStepClick is set, and every step keeps its accessible name.',
+            'Options for horizontal collapse. minimumStepWidth is the per-step threshold in pixels. collapsedVariant selects a label with controls, the label alone, or a bare progress track with no compact row. Controls appear only for withLabelAndControls when onStepClick is set, and every step keeps its accessible name.',
           default:
             "{ minimumStepWidth: 112, collapsedVariant: 'withLabelAndControls' }",
         },
@@ -405,9 +405,9 @@ export const docsZh = {
         },
         {
           name: 'horizontalOptions',
-          type: "{ minimumStepWidth: number | string; collapsedVariant: 'withLabelAndControls' | 'withLabel' | 'hiddenLabel' }",
+          type: "{ minimumStepWidth: number; collapsedVariant: 'withLabelAndControls' | 'withLabel' | 'hiddenLabel' }",
           description:
-            '水平布局的收起选项。minimumStepWidth 是每个步骤的阈值：数字按像素处理，字符串接受 7rem、calc(6rem + 8px) 或 var(--step-width) 等 CSS 长度。collapsedVariant 可选择显示标签和控件、仅显示标签，或只显示裸进度轨道而不显示紧凑行。仅当 collapsedVariant 为 withLabelAndControls 且设置 onStepClick 时显示控件，每个步骤始终保留无障碍名称。',
+            '水平布局的收起选项。minimumStepWidth 是每个步骤的像素阈值。collapsedVariant 可选择显示标签和控件、仅显示标签，或只显示裸进度轨道而不显示紧凑行。仅当 collapsedVariant 为 withLabelAndControls 且设置 onStepClick 时显示控件，每个步骤始终保留无障碍名称。',
           default:
             "{ minimumStepWidth: 112, collapsedVariant: 'withLabelAndControls' }",
         },

@@ -25,7 +25,7 @@ export const docsDense = {
         },
         {
           type: 'prose',
-          text: 'decides layout, not component APIs. npx astryx build "<idea>" = closest template for your app type. npx astryx component <Name> = props.',
+          text: 'decides layout, not component APIs. npx astryx build "<idea>" = the template to start from for your app type. npx astryx component <Name> = props.',
         },
       ],
     },
@@ -71,7 +71,7 @@ export const docsDense = {
         null,
         {
           type: 'prose',
-          text: 'verify: you can state the reason in one sentence, and it still holds if the nav doubles. npx astryx build "<idea>" names the closest template, --skeleton shows the pairing wired up.',
+          text: 'verify: you can state the reason in one sentence, and it still holds if the nav doubles. npx astryx build "<idea>" names the template to start from; scaffold it and the pairing is wired up.',
         },
         // Best practices
         null,

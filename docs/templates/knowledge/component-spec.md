@@ -1,6 +1,6 @@
 ---
 schema_version: 3
-template_version: 4
+template_version: 6
 kind: component
 id: component:<Name>
 authority: draft
@@ -20,6 +20,22 @@ system_specs: [spec:AST-000/DEC-0]
 ---
 
 # <Name> component contract
+
+## Contract at a glance
+
+| Area                    | Contract                                                                                                                                           |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | `<Exact public API, concept, or syntax delta; write “None” when none changes.>`                                                                    |
+| Behavior                | `<Observable governing behavior, including the decisive default, boundary, or precedence rule.>`                                                   |
+| End-user impact         | `<Who is affected, in what state, and what improves, worsens, or remains unchanged.>`                                                              |
+| Builder impact          | `<Migration and each new caller choice; write “None” when there is no new burden.>`                                                                |
+| Compatibility/readiness | `<Default compatibility; additive/breaking status; authority and implementation state; material evidence still pending.>`                          |
+| Review checks           | `<Reject specific contradictions, invalid states, wrong-owner APIs, or lost boundaries/precedence/evidence distinctions already forbidden below.>` |
+| Governing rules         | `<Canonical owners and only the current clauses needed to justify this projection.>`                                                               |
+
+This table is a review projection; the body below is authoritative.
+
+<!-- Keep each cell compact. Review checks project settled body rules; they do not create policy. Link AST-002 list-item clauses with an exact visible label and the canonical file URL, never an invented fragment. -->
 
 ## Intent
 
@@ -102,6 +118,20 @@ durable constraints and their verification target.
 The component implements design requirements without copying their rationale.
 An `unsettled` representation remains a human decision; principles do not let an
 agent invent the answer.
+
+Use the optional table below only for durable component-local visual intent that
+a future redesign must reconsider. Reuse or amend an existing row before adding
+one. Exact pixel tuning normally stays in code and visual evidence. Put shared or
+cross-component rules in `docs/design/` and link them from the relationship table
+above. Use `DD1`, `DD2`, and so on; IDs remain stable and unique within this
+record.
+
+### Design decisions
+
+<!-- design-decisions:v1 -->
+
+| ID  | Decision | Intent or reason | Applies to | Allowed variation |
+| --- | -------- | ---------------- | ---------- | ----------------- |
 
 ### Theming anatomy
 

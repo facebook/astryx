@@ -1,12 +1,24 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import type {ComponentStyleMap, DefinedTheme, TokenValue} from './defineTheme';
-import type {ResolvedOnMedia} from './onMediaTokens';
+/**
+ * @file localTokens.ts
+ * @input Root and adaptation theme-local token declarations and references
+ * @output Validated exact-name ownership metadata plus normalized conditional writes
+ * @position Theme-local ownership boundary; final adaptation-cycle validation is
+ *   performed after the reachable ordered cascade is assembled.
+ */
 
-const LOCAL_TOKEN_PREFIX = '--astryx-theme-';
-const THEME_NAME_PATTERN = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
-const LOCAL_TOKEN_SUFFIX_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const CSS_VAR_PATTERN = /var\(\s*(--[^,\s)]+)/gi;
+import type {DefinedTheme, TokenValue} from './defineTheme';
+
+const CSS_NAME_CHARACTER = String.raw`(?:[-_a-zA-Z0-9]|\P{ASCII}|\\(?:[0-9a-fA-F]{1,6}[ \t\r\n\f]?|[^\r\n\f]))`;
+const CSS_CUSTOM_PROPERTY_NAME_PATTERN = new RegExp(
+  `^--${CSS_NAME_CHARACTER}*$`,
+  'u',
+);
+const CSS_VAR_PATTERN = new RegExp(
+  `var\\(\\s*(--${CSS_NAME_CHARACTER}*)(?=\\s*(?:,|\\)))`,
+  'giu',
+);
 
 export interface ResolvedLocalTokenContract {
   localTokens: Record<string, string>;
@@ -18,12 +30,8 @@ function hasOwn(object: object, key: PropertyKey): boolean {
   return Object.prototype.hasOwnProperty.call(object, key);
 }
 
-function isExactLocalTokenName(name: string, owner: string): boolean {
-  const prefix = `${LOCAL_TOKEN_PREFIX}${owner}-`;
-  return (
-    name.startsWith(prefix) &&
-    LOCAL_TOKEN_SUFFIX_PATTERN.test(name.slice(prefix.length))
-  );
+function isValidCSSCustomPropertyName(name: string): boolean {
+  return !name.includes('\0') && CSS_CUSTOM_PROPERTY_NAME_PATTERN.test(name);
 }
 
 function resolveTokenValue(value: TokenValue, path: string): string {
@@ -43,7 +51,10 @@ function resolveTokenValue(value: TokenValue, path: string): string {
   );
 }
 
-function collectLocalReferences(value: unknown, refs: Set<string>): void {
+function collectCustomPropertyReferences(
+  value: unknown,
+  refs: Set<string>,
+): void {
   if (typeof value === 'string') {
     CSS_VAR_PATTERN.lastIndex = 0;
     for (
@@ -51,78 +62,133 @@ function collectLocalReferences(value: unknown, refs: Set<string>): void {
       match;
       match = CSS_VAR_PATTERN.exec(value)
     ) {
-      const name = match[1];
-      if (name.startsWith(LOCAL_TOKEN_PREFIX)) {
-        refs.add(name);
-      }
+      refs.add(match[1]);
     }
     return;
   }
   if (Array.isArray(value)) {
     for (const item of value) {
-      collectLocalReferences(item, refs);
+      collectCustomPropertyReferences(item, refs);
     }
     return;
   }
   if (value && typeof value === 'object') {
     for (const nested of Object.values(value)) {
-      collectLocalReferences(nested, refs);
+      collectCustomPropertyReferences(nested, refs);
     }
   }
 }
 
-function assertNoLocalTokenCycles(localTokens: Record<string, string>): void {
+export function assertNoTokenCycles(
+  tokenValues: Record<string, string>,
+  context?: string,
+  relevantNames?: ReadonlySet<string>,
+): void {
   const dependencies = new Map<string, string[]>();
-  for (const [name, value] of Object.entries(localTokens)) {
+  for (const [name, value] of Object.entries(tokenValues)) {
     const refs = new Set<string>();
-    collectLocalReferences(value, refs);
+    collectCustomPropertyReferences(value, refs);
     dependencies.set(
       name,
-      [...refs].filter(reference => hasOwn(localTokens, reference)),
+      [...refs].filter(reference => hasOwn(tokenValues, reference)),
     );
   }
 
-  const visiting = new Set<string>();
-  const visited = new Set<string>();
-  const visit = (name: string, path: string[]): void => {
-    if (visiting.has(name)) {
-      const start = path.indexOf(name);
-      const cycle = [...path.slice(start), name].join(' -> ');
-      throw new Error(`Theme-local token cycle detected: ${cycle}.`);
-    }
-    if (visited.has(name)) {
-      return;
-    }
-    visiting.add(name);
-    for (const dependency of dependencies.get(name) ?? []) {
-      visit(dependency, [...path, name]);
-    }
-    visiting.delete(name);
-    visited.add(name);
+  const findCyclePath = (
+    start: string,
+    component: ReadonlySet<string>,
+  ): string[] => {
+    const path = [start];
+    const onPath = new Set(path);
+    const search = (name: string): boolean => {
+      for (const dependency of dependencies.get(name) ?? []) {
+        if (!component.has(dependency)) {
+          continue;
+        }
+        if (dependency === start) {
+          path.push(start);
+          return true;
+        }
+        if (onPath.has(dependency)) {
+          continue;
+        }
+        path.push(dependency);
+        onPath.add(dependency);
+        if (search(dependency)) {
+          return true;
+        }
+        onPath.delete(dependency);
+        path.pop();
+      }
+      return false;
+    };
+    search(start);
+    return path;
   };
 
-  for (const name of Object.keys(localTokens)) {
-    visit(name, []);
-  }
-}
+  let nextIndex = 0;
+  const indexes = new Map<string, number>();
+  const lowlinks = new Map<string, number>();
+  const stack: string[] = [];
+  const onStack = new Set<string>();
 
-function assertDeclaredReferences(
-  localTokens: Record<string, string>,
-  components: ComponentStyleMap | undefined,
-  onDark: ResolvedOnMedia | undefined,
-  onLight: ResolvedOnMedia | undefined,
-): void {
-  const refs = new Set<string>();
-  collectLocalReferences(localTokens, refs);
-  collectLocalReferences(components, refs);
-  collectLocalReferences(onDark?.components, refs);
-  collectLocalReferences(onLight?.components, refs);
+  const visit = (name: string): void => {
+    const index = nextIndex++;
+    indexes.set(name, index);
+    lowlinks.set(name, index);
+    stack.push(name);
+    onStack.add(name);
 
-  for (const reference of refs) {
-    if (!hasOwn(localTokens, reference)) {
-      throw new Error(
-        `Theme-local token reference "${reference}" has no declaration in the enrolled theme lineage.`,
-      );
+    for (const dependency of dependencies.get(name) ?? []) {
+      if (!indexes.has(dependency)) {
+        visit(dependency);
+        lowlinks.set(
+          name,
+          Math.min(lowlinks.get(name) ?? index, lowlinks.get(dependency) ?? 0),
+        );
+      } else if (onStack.has(dependency)) {
+        lowlinks.set(
+          name,
+          Math.min(lowlinks.get(name) ?? index, indexes.get(dependency) ?? 0),
+        );
+      }
+    }
+
+    if (lowlinks.get(name) !== index) {
+      return;
+    }
+
+    const component: string[] = [];
+    let member: string;
+    do {
+      member = stack.pop() ?? name;
+      onStack.delete(member);
+      component.push(member);
+    } while (member !== name);
+
+    const hasCycle =
+      component.length > 1 ||
+      (dependencies.get(component[0]) ?? []).includes(component[0]);
+    if (
+      !hasCycle ||
+      (relevantNames &&
+        !component.some(componentName => relevantNames.has(componentName)))
+    ) {
+      return;
+    }
+
+    const start =
+      component.find(componentName => relevantNames?.has(componentName)) ??
+      component[0];
+    const cycle = findCyclePath(start, new Set(component)).join(' -> ');
+    throw new Error(
+      `${context ? `${context}: ` : ''}Theme token cycle detected: ${cycle}.`,
+    );
+  };
+
+  for (const name of Object.keys(tokenValues)) {
+    if (!indexes.has(name)) {
+      visit(name);
     }
   }
 }
@@ -165,7 +231,7 @@ function assertInheritedContract(
       typeof value !== 'string' ||
       !owner ||
       !lineage.includes(owner) ||
-      !isExactLocalTokenName(name, owner)
+      !isValidCSSCustomPropertyName(name)
     ) {
       throw new Error(
         `defineTheme("${themeName}"): inherited local token "${name}" does not match its exact lineage metadata.`,
@@ -185,7 +251,7 @@ function assertInheritedContract(
  * Resolve and validate the opt-in theme-local token contract.
  *
  * Themes that omit `localTokens` and do not extend an enrolled base bypass this
- * function's reserved-namespace checks so legacy token behavior stays intact.
+ * function's exact owner and lineage checks so legacy token behavior stays intact.
  */
 export function resolveLocalTokenContract(
   input: {
@@ -194,21 +260,13 @@ export function resolveLocalTokenContract(
   },
   base: DefinedTheme | undefined,
   tokens: Record<string, string>,
-  components: ComponentStyleMap | undefined,
-  onDark: ResolvedOnMedia | undefined,
-  onLight: ResolvedOnMedia | undefined,
+  portableTokens: Readonly<Record<string, string>>,
 ): ResolvedLocalTokenContract | undefined {
   const directlyEnrolled = hasOwn(input, 'localTokens');
   const inherited = base?.__localTokenLineage !== undefined;
 
   if (!directlyEnrolled && !inherited) {
     return undefined;
-  }
-
-  if (directlyEnrolled && !THEME_NAME_PATTERN.test(input.name)) {
-    throw new Error(
-      `defineTheme("${input.name}"): themes using localTokens require a stable lower-kebab name.`,
-    );
   }
 
   if (inherited && base) {
@@ -233,13 +291,12 @@ export function resolveLocalTokenContract(
 
   for (const [name, value] of Object.entries(declarations ?? {})) {
     const inheritedOwner = owners[name];
+    if (!isValidCSSCustomPropertyName(name)) {
+      throw new Error(
+        `defineTheme("${input.name}"): local token "${name}" must be a valid CSS custom-property name.`,
+      );
+    }
     if (!inheritedOwner) {
-      const expectedPrefix = `${LOCAL_TOKEN_PREFIX}${input.name}-`;
-      if (!isExactLocalTokenName(name, input.name)) {
-        throw new Error(
-          `defineTheme("${input.name}"): local token "${name}" must use the exact namespace "${expectedPrefix}" followed by a lowercase kebab-case purpose.`,
-        );
-      }
       owners[name] = input.name;
     }
     localTokens[name] = resolveTokenValue(
@@ -254,19 +311,56 @@ export function resolveLocalTokenContract(
         `defineTheme("${input.name}"): inherited local token "${name}" has no owner metadata.`,
       );
     }
-    if (hasOwn(tokens, name)) {
+    if (hasOwn(tokens, name) || hasOwn(portableTokens, name)) {
       throw new Error(
         `defineTheme("${input.name}"): token "${name}" cannot be declared in both tokens and localTokens.`,
       );
     }
   }
 
-  assertDeclaredReferences(localTokens, components, onDark, onLight);
-  assertNoLocalTokenCycles(localTokens);
+  assertNoTokenCycles(localTokens, `defineTheme("${input.name}").localTokens`);
 
   return {
     localTokens,
     owners,
     lineage: [...(base?.__localTokenLineage ?? []), input.name],
   };
+}
+
+/**
+ * Resolve theme-local values written by one adaptation rule.
+ *
+ * Adaptations may replace names already enrolled by the root theme lineage, but
+ * they never enroll names of their own. Cycle validation waits until all
+ * co-matching writes have cascaded in order.
+ */
+export function resolveAdaptationLocalTokens(
+  themeName: string,
+  ruleIndex: number,
+  declarations: Record<string, TokenValue> | undefined,
+  rootLocalTokens: Record<string, string> | undefined,
+): Record<string, string> | undefined {
+  const path = `defineTheme("${themeName}").adaptations.rules[${ruleIndex}].value.localTokens`;
+  if (declarations === undefined) {
+    return undefined;
+  }
+  if (
+    declarations === null ||
+    typeof declarations !== 'object' ||
+    Array.isArray(declarations)
+  ) {
+    throw new Error(`${path} must be a token map.`);
+  }
+
+  const resolved: Record<string, string> = {};
+  for (const [name, value] of Object.entries(declarations)) {
+    if (!rootLocalTokens || !hasOwn(rootLocalTokens, name)) {
+      throw new Error(
+        `${path}["${name}"] cannot enroll a theme-local token. Declare it in the root theme or an exact enrolled base first.`,
+      );
+    }
+    resolved[name] = resolveTokenValue(value, `${path}["${name}"]`);
+  }
+
+  return Object.keys(resolved).length > 0 ? resolved : undefined;
 }

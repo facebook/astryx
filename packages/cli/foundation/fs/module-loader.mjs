@@ -7,7 +7,8 @@
  * user-authored module (`.ts` via jiti, `.mjs`/`.js` via native dynamic
  * import) and (b) find conventional files by basename in a fixed
  * load-precedence order. These helpers centralize that so the two callers stay
- * in lockstep.
+ * in lockstep. A module's stdout writes go to stderr while it loads, so
+ * project code that prints cannot corrupt a `--json` envelope.
  *
  * `loadModuleWithParser` builds on these primitives to provide the single
  * load/validation boundary shared by config, integration, codemod, and
@@ -16,12 +17,16 @@
  */
 
 import * as path from 'node:path';
+import {AsyncLocalStorage} from 'node:async_hooks';
+import {createRequire} from 'node:module';
 import {pathToFileURL} from 'node:url';
 import * as fs from 'node:fs';
 import {createJiti} from 'jiti';
 
 /** @type {ReturnType<typeof createJiti> | undefined} */
 let jitiInstance;
+let freshImportNonce = 0;
+const requireFromHere = createRequire(import.meta.url);
 function getJiti() {
   if (!jitiInstance) {
     jitiInstance = createJiti(import.meta.url);
@@ -30,16 +35,118 @@ function getJiti() {
 }
 
 /**
- * Import a user-authored module. `.ts` is loaded via jiti; `.mjs`/`.js` via
- * native dynamic import (file:// URL). Returns the full module namespace.
+ * Node treats `.js` as ESM only inside the nearest package scope whose
+ * package.json declares `"type": "module"`; no package.json defaults to
+ * CommonJS.
+ * @param {string} file
+ * @returns {boolean}
+ */
+function isCommonJsFile(file) {
+  let dir = path.dirname(file);
+  for (;;) {
+    const packageJson = path.join(dir, 'package.json');
+    if (fs.existsSync(packageJson)) {
+      try {
+        return JSON.parse(fs.readFileSync(packageJson, 'utf-8')).type !== 'module';
+      } catch {
+        return true;
+      }
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) return true;
+    dir = parent;
+  }
+}
+
+let loadsInFlight = 0;
+/** @type {typeof process.stdout.write | undefined} */
+let realStdoutWrite;
+/** Set in the async context of a module load, and only there. */
+const moduleLoad = new AsyncLocalStorage();
+
+/**
+ * Run a module load with the stdout writes made in its async context sent to
+ * stderr. Writes from any other context pass through, so the CLI's own output
+ * stays on stdout even while an abandoned load is still in flight. The gate
+ * is installed for the first overlapping load and removed after the last.
+ * @template T
+ * @param {() => Promise<T>} load
+ * @returns {Promise<T>}
+ */
+async function withStdoutOnStderr(load) {
+  if (loadsInFlight++ === 0) {
+    const write = process.stdout.write;
+    realStdoutWrite = write;
+    process.stdout.write = /** @type {any} */ (
+      function (/** @type {any} */ chunk, /** @type {any[]} */ ...rest) {
+        return moduleLoad.getStore()
+          ? process.stderr.write(chunk, ...rest)
+          : write.call(process.stdout, chunk, ...rest);
+      }
+    );
+  }
+  try {
+    return await moduleLoad.run(true, load);
+  } finally {
+    if (--loadsInFlight === 0 && realStdoutWrite) {
+      process.stdout.write = realStdoutWrite;
+      realStdoutWrite = undefined;
+    }
+  }
+}
+
+/**
+ * Import a user-authored module. `.ts` is loaded via jiti; `.mjs`/`.js` use
+ * native dynamic import for ordinary cached reads. A fresh `.ts` read uses a
+ * no-cache jiti instance. A fresh CommonJS `.js` read evicts and reloads through
+ * `require`; an ESM `.js` or `.mjs` read uses a cache-busted file URL. The
+ * nearest package.json `type` decides `.js`, matching Node's package scopes.
+ * Normal loads retain module caching. `fresh` is an explicit migration-only
+ * escape hatch for rereading files that a codemod changed during this process.
+ * Anything the module writes to stdout while it loads goes to stderr.
+ *
  * @param {string} file absolute path
+ * @param {{fresh?: boolean}} [options]
  * @returns {Promise<Record<string, unknown>>}
  */
-export async function importUserModule(file) {
+export async function importUserModule(file, {fresh = false} = {}) {
+  return await withStdoutOnStderr(() => importModule(file, fresh));
+}
+
+/**
+ * @param {string} file absolute path
+ * @param {boolean} fresh
+ * @returns {Promise<Record<string, unknown>>}
+ */
+async function importModule(file, fresh) {
+  if (fresh && file.endsWith('.ts')) {
+    return await createJiti(import.meta.url, {moduleCache: false}).import(file);
+  }
+  if (fresh && file.endsWith('.js') && isCommonJsFile(file)) {
+    const resolved = requireFromHere.resolve(file);
+    delete requireFromHere.cache[resolved];
+    const value = requireFromHere(file);
+    if (
+      value != null &&
+      typeof value === 'object' &&
+      value.__esModule === true &&
+      Object.prototype.hasOwnProperty.call(value, 'default')
+    ) {
+      return value;
+    }
+    return {
+      ...(value != null && typeof value === 'object' ? value : {}),
+      default: value,
+    };
+  }
   if (file.endsWith('.ts')) {
     return await getJiti().import(file);
   }
-  return await import(pathToFileURL(file).href);
+  const url = pathToFileURL(file);
+  if (fresh) {
+    url.searchParams.set('astryx-fresh', String(++freshImportNonce));
+  }
+  return await import(url.href);
 }
 
 /**
@@ -67,10 +174,15 @@ export function findPresentFiles(dir, basenames) {
  * @param {string} file absolute path
  * @param {(input: unknown, label?: string) => T} parse an authoring parser
  *   (parseConfig, parseIntegration, parseCodemod, parseTemplate)
- * @param {{label?: string}} [opts] label used in error messages
+ * @param {{label?: string, fresh?: boolean}} [opts] label used in error messages;
+ *   `fresh` bypasses the module cache after an in-process codemod write
  * @returns {Promise<T>} parsed + typed value
  */
-export async function loadModuleWithParser(file, parse, {label} = {}) {
-  const mod = await importUserModule(file);
+export async function loadModuleWithParser(
+  file,
+  parse,
+  {label, fresh = false} = {},
+) {
+  const mod = await importUserModule(file, {fresh});
   return parse(mod?.default, label ?? file);
 }

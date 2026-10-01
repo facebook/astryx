@@ -38,6 +38,8 @@ import {
 } from '../theme/tokens.stylex';
 import {Spinner} from '../Spinner';
 import {VisuallyHidden} from '../VisuallyHidden';
+import {IconDefaultSizeProvider} from '../Icon/IconDefaultSizeContext';
+import {iconBoxSizeStyles, type IconSize} from '../Icon/IconSize.stylex';
 
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {useSize} from '../SizeContext/SizeContext';
@@ -84,6 +86,13 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     whiteSpace: 'nowrap',
+    // One line by construction, so a label wider than the space available
+    // has to truncate. As a flex item the automatic minimum size would hold
+    // the button at its full label width (and `nowrap` lets an inline button
+    // run past its container), so the label's ellipsis never engaged. These
+    // let a row shrink the button and cap it at its container.
+    minWidth: 0,
+    maxWidth: '100%',
     cursor: {
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
@@ -127,6 +136,10 @@ const styles = stylex.create({
     aspectRatio: 'var(--button-icon-only-aspect)',
     paddingInline: 0,
     paddingBlock: 0,
+    // An icon-only button has no label to truncate: keep it square rather
+    // than letting a crowded row squeeze it.
+    flexShrink: 0,
+    maxWidth: 'none',
   },
   endContentWrapper: {
     display: 'inline-flex',
@@ -168,17 +181,6 @@ const sizeStyles = stylex.create({
   lg: {
     height: sizeVars['--size-element-lg'],
   },
-});
-
-/**
- * Icon size per button size.
- * Matches Icon sizing: sm/md=16px, lg=20px.
- * fontSize is set so emoji and text-based icons scale correctly.
- */
-const iconSizeStyles = stylex.create({
-  sm: {width: 16, height: 16, fontSize: 16},
-  md: {width: 16, height: 16, fontSize: 16},
-  lg: {width: 20, height: 20, fontSize: 20},
 });
 
 /**
@@ -232,6 +234,12 @@ export type ButtonVariant = keyof ButtonVariantMap;
  * Button size type derived from the sizeStyles StyleX object
  */
 export type ButtonSize = keyof typeof sizeStyles;
+
+const iconSizeByButtonSize = {
+  sm: 'sm',
+  md: 'sm',
+  lg: 'md',
+} satisfies Record<ButtonSize, IconSize>;
 
 export interface ButtonProps extends BaseProps<HTMLButtonElement> {
   /** Ref forwarded to the root element */
@@ -437,7 +445,7 @@ const loadingStyles = stylex.create({
  * The leading edge still uses `:first-child` — a member's button always precedes
  * its own layer, so the first button is genuinely `:first-child`.
  */
-const IS_LAST_ITEM = ':not(:has(~ *:not([popover]):not(template)))';
+const IS_LAST_ITEM = ':not(:has(~ *:not([popover]):not(template):not(dialog)))';
 
 const groupStyles = stylex.create({
   horizontal: {
@@ -683,6 +691,8 @@ export function Button({
     style,
   );
 
+  const iconSize = iconSizeByButtonSize[size];
+
   const buttonContent = (
     <>
       {isLoadingState && (
@@ -705,8 +715,11 @@ export function Button({
         )}
         aria-hidden={isLoadingState || undefined}>
         {icon && (
-          <span {...stylex.props(styles.iconWrapper, iconSizeStyles[size])}>
-            {icon}
+          <span
+            {...stylex.props(styles.iconWrapper, iconBoxSizeStyles[iconSize])}>
+            <IconDefaultSizeProvider value={iconSize}>
+              {icon}
+            </IconDefaultSizeProvider>
           </span>
         )}
         {isIconOnly ? null : (

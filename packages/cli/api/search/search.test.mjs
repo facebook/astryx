@@ -21,6 +21,7 @@
 
 import {describe, it, expect} from 'vitest';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {
@@ -68,6 +69,111 @@ describe('search leaf — envelope + ranking', () => {
     const r = await search('button', {cwd, limit: 2});
     expect(r.data.results.length).toBeLessThanOrEqual(2);
   }, SLOW);
+});
+
+describe('search leaf — per-domain result fields', () => {
+  it('carries import for components and hooks, title for docs, displayName and kind for templates', async () => {
+    const r = await search('theme', {cwd, limit: 60});
+    expect(new Set(r.data.results.map(res => res.domain))).toEqual(
+      new Set(SEARCH_DOMAINS),
+    );
+    for (const res of r.data.results) {
+      expect(typeof res.command).toBe('string');
+      expect(typeof res.description).toBe('string');
+      if (res.domain === 'component' || res.domain === 'hook') {
+        expect(res.import).toMatch(/\S/);
+      } else if (res.domain === 'doc') {
+        expect(res.title).toMatch(/\S/);
+        const read = `astryx docs ${res.name}`;
+        expect([read, `${read} --index`, `${read} ${res.section}`]).toContain(res.command);
+      } else {
+        expect(res.displayName).toMatch(/\S/);
+        expect(['page', 'block']).toContain(res.kind);
+      }
+    }
+  }, SLOW);
+});
+
+describe('search leaf — docs at the grain a reader reads them', () => {
+  it(
+    'finds one section of a guide, and a docs-tree leaf by its own name',
+    async () => {
+      const guide = await search('codemod protected files', {cwd, type: 'doc'});
+      expect(guide.data.results.slice(0, 3)).toContainEqual(
+        expect.objectContaining({
+          domain: 'doc',
+          name: 'cli/integrations',
+          section: 'codemods',
+          title: 'Astryx CLI › CLI Integrations › Codemods',
+          parent: 'astryx docs cli/integrations --index',
+          command: 'astryx docs cli/integrations codemods',
+        }),
+      );
+      const block = await search('token-ref', {cwd});
+      expect(block.data.results[0]).toMatchObject({
+        name: 'authoring',
+        section: 'reference-doc',
+        command: 'astryx docs authoring reference-doc',
+      });
+      const fn = await search('assertResponse', {cwd, type: 'doc'});
+      expect(fn.data.results[0]).toMatchObject({
+        name: 'cli/api/functions/assert-response',
+        title: 'Astryx CLI › API › Functions › assertResponse()',
+        parent: 'astryx docs cli/api/functions',
+        command: 'astryx docs cli/api/functions/assert-response',
+      });
+      expect(fn.data.results[0]).not.toHaveProperty('section');
+    },
+    SLOW,
+  );
+
+  it(
+    'gives a top-level namespace hit the topic list as its parent',
+    async () => {
+      for (const [query, route] of [['unorganized', 'unorganized'], ['Astryx CLI', 'cli']]) {
+        const r = await search(query, {cwd, type: 'doc'});
+        expect(r.data.results).toContainEqual(
+          expect.objectContaining({
+            name: route,
+            command: `astryx docs ${route}`,
+            parent: 'astryx docs',
+          }),
+        );
+      }
+    },
+    SLOW,
+  );
+
+  it(
+    'points a topic hit at its index, never a whole-topic read',
+    async () => {
+      const r = await search('cli/integrations', {cwd, type: 'doc'});
+      expect(r.data.results[0]).toMatchObject({
+        name: 'cli/integrations',
+        command: 'astryx docs cli/integrations --index',
+      });
+      expect(r.data.results[0]).not.toHaveProperty('section');
+    },
+    SLOW,
+  );
+
+  it(
+    'searches docs where @astryxdesign/core is not installed',
+    async () => {
+      const bare = fs.mkdtempSync(
+        path.join(os.tmpdir(), 'astryx-search-bare-'),
+      );
+      try {
+        const r = await search('assertResponse', {cwd: bare, type: 'doc'});
+        expect(r.data.results[0].name).toBe(
+          'cli/api/functions/assert-response',
+        );
+      } finally {
+        fs.rmSync(bare, {recursive: true, force: true});
+      }
+    },
+    SLOW,
+  );
 });
 
 describe('search leaf — matchCount is the total, not the cap', () => {
@@ -160,6 +266,17 @@ describe('search leaf — error paths (pinned)', () => {
       search('button', {cwd, type: /** @type {any} */ ('bogus')}),
     ).rejects.toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
   }, SLOW);
+
+  it('throws ERR_CORE_NOT_FOUND when @astryxdesign/core cannot be found', async () => {
+    const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-search-no-core-'));
+    try {
+      await expect(search('button', {cwd: empty})).rejects.toMatchObject({
+        code: 'ERR_CORE_NOT_FOUND',
+      });
+    } finally {
+      fs.rmSync(empty, {recursive: true, force: true});
+    }
+  }, SLOW);
 });
 
 describe('search leaf — limit validation (API matches the CLI contract)', () => {
@@ -213,11 +330,17 @@ describe('search leaf — integration components', () => {
     );
     fs.writeFileSync(
       path.join(widgetsDir, 'components', 'FancyGizmo.doc.mjs'),
-      `export const docs = {
+      `export default {
+        type: 'component',
         name: 'FancyGizmo',
         keywords: ['gizmo', 'widget'],
         usage: {description: 'A fancy gizmo widget.'},
+        props: [],
       };\n`,
+    );
+    fs.writeFileSync(
+      path.join(widgetsDir, 'components', 'FancyGizmo.tsx'),
+      `export function FancyGizmo() { return null; }\n`,
     );
 
     return dir;

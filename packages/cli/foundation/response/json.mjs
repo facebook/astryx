@@ -28,7 +28,7 @@
  * Version of the JSON envelope contract. Bump on breaking shape changes so
  * consumers can negotiate. Exposed on every envelope as `apiVersion`.
  */
-import {ERROR_CODES} from './error-codes.mjs';
+import {ERROR_CODES, isErrorCode} from './error-codes.mjs';
 import {recordEnvelope, setOutcome} from '../debug/index.mjs';
 
 export const API_VERSION = 1;
@@ -118,8 +118,10 @@ export function jsonOut(response) {
  *
  * The `code` is resolved in priority order: an explicit `code` argument,
  * then a `code` property carried on a thrown Error/AstryxError, then the
- * generic `ERR_UNKNOWN` fallback. It always appears on the envelope so
- * consumers can branch on it unconditionally.
+ * generic `ERR_UNKNOWN` fallback. Only a registered code (error-codes.mjs) is
+ * taken from either source, so a Node system error's `ENOENT` never reaches
+ * the envelope. It always appears on the envelope so consumers can branch on
+ * it unconditionally.
  *
  * @param {unknown} err
  * @param {import('./base').Suggestion[]} [suggestions]
@@ -130,13 +132,9 @@ export function jsonOut(response) {
 export function toErrorEnvelope(err, suggestions, code) {
   const message =
     err instanceof Error ? err.message : typeof err === 'string' ? err : String(err);
-  const resolvedCode =
-    code ||
-    (err && typeof err === 'object' &&
-    typeof (/** @type {any} */ (err).code) === 'string'
-      ? /** @type {any} */ (err).code
-      : undefined) ||
-    ERROR_CODES.ERR_UNKNOWN;
+  const carried =
+    err && typeof err === 'object' ? /** @type {any} */ (err).code : undefined;
+  const resolvedCode = [code, carried].find(isErrorCode) ?? ERROR_CODES.ERR_UNKNOWN;
   /** @type {any} */
   const env = {apiVersion: API_VERSION, error: message, code: resolvedCode};
   if (Array.isArray(suggestions) && suggestions.length) env.suggestions = suggestions;

@@ -162,19 +162,16 @@ const styles = stylex.create({
     borderWidth: 0,
   },
   invisibleButton: {
-    all: 'unset',
     cursor: {
       default: 'inherit',
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
-    font: 'inherit',
     color: 'inherit',
     outline: 'none',
     overflow: 'hidden',
     minWidth: 0,
   },
   removeButton: {
-    all: 'unset',
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',

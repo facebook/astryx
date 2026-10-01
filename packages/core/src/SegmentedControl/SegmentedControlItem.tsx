@@ -33,6 +33,7 @@ import {mergeProps, composeEventHandlers} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 
 export interface SegmentedControlItemProps extends BaseProps<HTMLButtonElement> {
   ref?: React.Ref<HTMLButtonElement>;
@@ -87,17 +88,12 @@ const styles = stylex.create({
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     whiteSpace: 'nowrap',
+    // In both layouts a segment may be narrower than its label, so the
+    // label's ellipsis can engage when the control is capped by its container.
+    minWidth: 0,
     transitionProperty: 'color, background-color, box-shadow',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-  },
-  hover: {
-    backgroundColor: {
-      default: null,
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': colorVars['--color-overlay-hover'],
-      },
-    },
   },
   selected: {
     // Forced colors (Windows High Contrast) strips the painted surface fill
@@ -131,6 +127,10 @@ const styles = stylex.create({
     flex: 1,
     minWidth: 0,
     justifyContent: 'center',
+  },
+  // An icon-only segment has no label to truncate, so it keeps its size.
+  iconOnly: {
+    flexShrink: 0,
   },
   icon: {
     display: 'inline-flex',
@@ -247,8 +247,13 @@ export function SegmentedControlItem({
           styles.base,
           sizeStyles[size],
           isFill && styles.fill,
+          isLabelHidden && styles.iconOnly,
           isSelected && styles.selected,
-          !isSelected && !isItemDisabled && styles.hover,
+          // The shared hover and pressed overlay, on the segments a press can
+          // change: the selected segment keeps its raised surface as it is.
+          !isSelected &&
+            !isItemDisabled &&
+            interactionOverlayStyles.backgroundColor,
           isItemDisabled && styles.disabled,
           xstyle,
         ),

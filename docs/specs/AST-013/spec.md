@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 4
 template_version: 1
 kind: system-spec
 id: spec:AST-013
@@ -18,6 +18,27 @@ affects_consumer_docs: [browser-support, useLayer, Popover, Toast, Dialog]
 ---
 
 # Browser and platform support system spec
+
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "platform": [
+      "FR1",
+      "FR3",
+      "FR5",
+      "FR6",
+      "FR7",
+      "FR8",
+      "FR9",
+      "FR10",
+      "FR12"
+    ]
+  }
+}
+```
 
 ## Intent
 
@@ -104,8 +125,9 @@ requirements. Assistive-technology evidence remains separately owned.
 
 - **FR11 — Raising the floor is compatibility work.** Removing a supported browser,
   moving it from full behavior to reduced fallback, or removing a documented
-  fallback requires owner approval, a Changeset, user-impact and migration notes,
-  updated generated rows, actual-browser evidence for the browsers affected by the
+  fallback requires owner approval, the classification and lifecycle required by
+  [`spec:AST-017`](../AST-017/spec.md), user-impact and migration notes, updated
+  generated rows, actual-browser evidence for the browsers affected by the
   compatibility claim, and evidence that every remaining full-support and named
   explicit support row still receives full required behavior.
 - **FR12 — Component specs inherit the baseline.** Component specs link

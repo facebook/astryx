@@ -619,6 +619,10 @@ function EnumListEditor({
       placeholder={t('@astryx.powersearch.valueEditor.selectValuesPlaceholder')}
       hasEntriesOnFocus
       debounceMs={0}
+      // A closed vocabulary: every value is a valid choice, so the menu shows
+      // all of them instead of BaseTypeahead's 10-suggestion default, which
+      // would silently drop valid choices with no way to reach them.
+      maxMenuItems={items.length}
     />
   );
 }

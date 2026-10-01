@@ -39,15 +39,16 @@ system_specs: []
 Layout is a general layout primitive that arranges five optional named slots:
 Header, logical-start Panel, Content area, logical-end Panel, and Footer. It can
 structure regions within a page or bounded container, while AppShell owns the
-page shell. This draft records the current aggregate consumer anatomy and
-theming ownership without changing runtime behavior, DOM, styling, targets, or
-public API.
+page shell. This draft records the aggregate consumer anatomy, theming ownership,
+and content-width behavior without adding a public API or changing internal
+parent/child communication.
 
 ## Compatibility and migration
 
 - Released default preserved: `yes`
-- Compatibility class: additive documentation only; runtime, DOM, styling,
-  targets, aliases, and public API remain unchanged
+- Compatibility class: bug fix; LayoutContent keeps the same root, direct-child
+  DOM, props, overflow behavior, padding ownership, and default. Context-aware
+  inline insets align content while the root scrollport stays full width.
 - Controlled/uncontrolled behavior: not applicable
 - Migration decision: none
 
@@ -77,7 +78,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 - Correcting current container-padding publication mismatches or preventing two
   adjacent divider owners from both painting; those remain current gaps and
   caller obligations recorded below.
-- New runtime behavior, API, target, alias, or region wrapper.
+- New public API, target, alias, slot-level region wrapper, or parent-to-child
+  context communication.
 
 ## Public concepts
 
@@ -97,14 +99,15 @@ the broader container system shared with Section, Table, Toolbar, and Divider.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                                                                                                              | Basis                                     | Draft review state                                 |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | -------------------------------------------------- |
-| FR1 | Layout renders one general Layout container carrying the current `layout` target and places arbitrary caller-provided ReactNode content in the `header`, `start`, `content`, `end`, and `footer` slots. Slot placement alone adds no region component or target. | Current source, docs, and tests           | Verified current behavior; no new behavior decided |
-| FR2 | When the caller supplies LayoutHeader, LayoutContent, or LayoutFooter, that component carries its current `layout-header`, `layout-content`, or `layout-footer` target; Layout does not add those targets to arbitrary slot content.                             | Current source and target metadata        | Verified current inventory; no target change       |
-| FR3 | LayoutPanel instances supplied to logical start or end share one aggregate Panel anatomy part and the current `layout-panel` target; slot position does not create a second anatomy part or target.                                                              | Current source, docs, tests, and family   | Verified current ownership; no API change          |
-| FR4 | `Layout.doc.mjs` is the canonical aggregate consumer document for the five current `layout*` targets and maps each target once; region subcomponent docs continue to document their own props and usage.                                                         | Current documentation organization        | Verified current ownership                         |
-| FR5 | LayoutContent and LayoutPanel retain their shipped automatic container-padding publication behavior, including the mismatches recorded by `architecture:container-padding`; this documentation does not claim exact parity.                                      | Current source and architecture record    | Current conformance gap; not fixed here            |
-| FR6 | When an adjacent ResizeHandle owns a panel divider, the caller must keep `LayoutPanel hasDivider={false}`; current composition does not prevent both components from painting the same boundary.                                                                 | Current source, docs, and family contract | Current caller obligation; not fixed here          |
+| ID  | Candidate invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Basis                                        | Draft review state                                 |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- | -------------------------------------------------- |
+| FR1 | Layout renders one general Layout container carrying the current `layout` target and places arbitrary caller-provided ReactNode content in the `header`, `start`, `content`, `end`, and `footer` slots. Slot placement alone adds no region component or target.                                                                                                                                                                                                                                                                                                                                                                                                          | Current source, docs, and tests              | Verified current behavior; no new behavior decided |
+| FR2 | When the caller supplies LayoutHeader, LayoutContent, or LayoutFooter, that component carries its current `layout-header`, `layout-content`, or `layout-footer` target; Layout does not add those targets to arbitrary slot content.                                                                                                                                                                                                                                                                                                                                                                                                                                      | Current source and target metadata           | Verified current inventory; no target change       |
+| FR3 | LayoutPanel instances supplied to logical start or end share one aggregate Panel anatomy part and the current `layout-panel` target; slot position does not create a second anatomy part or target.                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Current source, docs, tests, and family      | Verified current ownership; no API change          |
+| FR4 | `Layout.doc.mjs` is the canonical aggregate consumer document for the five current `layout*` targets and maps each target once; region subcomponent docs continue to document their own props and usage.                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Current documentation organization           | Verified current ownership                         |
+| FR5 | LayoutContent and LayoutPanel retain their shipped automatic container-padding publication behavior, including the mismatches recorded by `architecture:container-padding`; this documentation does not claim exact parity.                                                                                                                                                                                                                                                                                                                                                                                                                                               | Current source and architecture record       | Current conformance gap; not fixed here            |
+| FR6 | When an adjacent ResizeHandle owns a panel divider, the caller must keep `LayoutPanel hasDivider={false}`; current composition does not prevent both components from painting the same boundary.                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Current source, docs, and family contract    | Current caller obligation; not fixed here          |
+| FR7 | When `contentWidth` is set without panels, LayoutContent spans the available middle area and aligns its direct children through context-aware inline insets. With exactly one panel, the panel stays aligned while LayoutContent extends through the opposite open side; logical start and end mirror. With both panels, or a percentage (including percentage-bearing CSS math), intrinsic, or bare-variable width that cannot safely share one CSS arithmetic basis, the complete middle composition remains constrained. A guaranteed length-valued variable uses `calc(var(...))`. LayoutContent's root remains the scroll, padding, styling, and direct-child owner. | Current family contract and browser evidence | Proposed bug fix; no API or context change         |
 
 ### Current evidence and gaps
 
@@ -134,18 +137,26 @@ the broader container system shared with Section, Table, Toolbar, and Divider.
 
 ### Representative states
 
-| State                          | Required invariant                                                                         | Allowed variation                                      |
-| ------------------------------ | ------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
-| Arbitrary content only         | Layout container carries `layout`; arbitrary content gains no region target from its slot. | Caller content and current height/width configuration. |
-| Composed header/content/footer | Supplied Layout region components retain their own anatomy and targets.                    | Any region may instead be absent or arbitrary content. |
-| Start or end LayoutPanel       | Either logical position uses the one Panel anatomy part and `layout-panel` target.         | Position, width, scrolling, padding, and caller role.  |
-| Two LayoutPanels               | Both instances remain repetitions of the same Panel anatomy part and target.               | Independent content, width, and local configuration.   |
-| ResizeHandle-adjacent          | Divider ownership follows the current caller obligation in FR6.                            | Resize state remains owned by the resize components.   |
+| State                          | Required invariant                                                                         | Allowed variation                                                                   |
+| ------------------------------ | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| Arbitrary content only         | Layout container carries `layout`; arbitrary content gains no region target from its slot. | Caller content and current height/width configuration.                              |
+| Composed header/content/footer | Supplied Layout region components retain their own anatomy and targets.                    | Without panels, contentWidth aligns inside the full-width LayoutContent scrollport. |
+| Start or end LayoutPanel       | Either logical position uses the one Panel anatomy part and `layout-panel` target.         | Position, width, scrolling, padding, caller role, and content-area edge scrolling.  |
+| Two LayoutPanels               | Both instances remain repetitions of the same Panel anatomy part and target.               | The constrained content scrollbar remains between the two panels.                   |
+| ResizeHandle-adjacent          | Divider ownership follows the current caller obligation in FR6.                            | Resize state remains owned by the resize components.                                |
 
 ### Transformation and precedence order
 
-- No new slot, padding, content-width, divider, scrolling, sizing, or styling
-  precedence rule is introduced.
+- `contentWidth` keeps LayoutContent's root scrollport full width without panels.
+  With exactly one panel, the root extends through the opposite open side; the
+  panel and LayoutContent's direct children stay aligned through inline insets.
+  Start and end mirror. With both panels, or with a percentage (including
+  percentage-bearing CSS math), intrinsic, or bare variable that cannot safely
+  share one CSS arithmetic basis, the complete middle composition stays constrained. A guaranteed length-valued variable
+  uses `calc(var(...))`. Layout does not add a context field or inspect/mutate
+  the child.
+- No new slot, padding, divider, scrolling, sizing, or public styling precedence
+  rule is introduced.
 
 ### Performance and resources
 
@@ -210,6 +221,7 @@ end, or both. It does not map the `start` and `end` slots themselves.
 | FR4           | `scripts/check-knowledge.mjs`                                                                  | Canonical aggregate doc and exact five-target map                                  | Missing, extra, prefixed, or stale target mappings fail repository validation.                                                                                                    | `audit:Layout/theming`       |
 | FR5           | Source inspection plus `architecture:container-padding` verification evidence                  | Automatic outer-edge Content area and Panel paths                                  | This draft adds no parity assertion; a runtime correction requires separate compatibility evidence.                                                                               | `audit:Layout/layout`        |
 | FR6           | LayoutPanel source/docs plus `family:layout-regions` verification evidence                     | Panel beside a divider-owning ResizeHandle                                         | This draft adds no prevention assertion; changing ownership requires separate runtime coverage.                                                                                   | `audit:Layout/layout`        |
+| FR7           | `contentWidth.test.tsx` plus the Storybook scrollbar-placement matrix                          | No panels, start only, start and end, end only                                     | Removing the full-width no-panel content scrollport or moving any scrollbar away from its content-area edge fails focused structure or browser geometry checks.                   | `audit:Layout/layout`        |
 | Accessibility | `LayoutSlots.test.tsx` landmark assertions                                                     | Header, Content area, Footer, and Panel roles                                      | Supplied role or label no longer reaches the region element.                                                                                                                      | `audit:Layout/accessibility` |
 
 ## Decision log

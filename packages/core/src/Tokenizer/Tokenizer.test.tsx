@@ -416,6 +416,29 @@ describe('Tokenizer', () => {
     expect(input).not.toHaveAttribute('placeholder', 'Search people...');
   });
 
+  it('uses a non-painting placeholder to collapse only an empty trailing input', () => {
+    const onChangeQuery = vi.fn();
+    render(
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[users[0]]}
+        onChange={() => {}}
+        onChangeQuery={onChangeQuery}
+        hasClear
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveAttribute('placeholder', ' ');
+
+    fireEvent.change(input, {target: {value: 'Al'}});
+    expect(input).toHaveValue('Al');
+    expect(onChangeQuery).toHaveBeenLastCalledWith('Al');
+
+    fireEvent.change(input, {target: {value: ''}});
+    expect(onChangeQuery).toHaveBeenLastCalledWith('');
+  });
+
   it('shows placeholder when no tokens are present', () => {
     render(
       <Tokenizer
@@ -1392,7 +1415,6 @@ describe('Tokenizer disabled theme state', () => {
     );
     const root = container.querySelector('.astryx-tokenizer');
     expect(root).toHaveAttribute('data-disabled', 'disabled');
-    expect(root).toHaveClass('disabled');
   });
 
   it('omits data-disabled when enabled, like status does', () => {

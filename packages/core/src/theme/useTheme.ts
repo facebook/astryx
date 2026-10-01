@@ -5,7 +5,7 @@
 /**
  * @file useTheme.ts
  * @input ThemeContext provided by Theme
- * @output Exports useTheme and useThemeName hooks for programmatic theme access
+ * @output Exports useTheme, useThemeName, and internal theme-object access
  * @position Theme hook; used by data viz, canvas, and non-CSS consumers
  *
  * Provides synchronous access to theme token values resolved for the
@@ -235,6 +235,18 @@ export function useThemeName(): string | null {
   const rootThemeName = useRootThemeNameAttr(hasCtx);
 
   return ctx?.theme.name ?? rootThemeName;
+}
+
+/**
+ * Return the nearest theme object, falling back to the registered root theme
+ * only when no provider context is available.
+ * @internal
+ */
+export function useThemeDefinition(): DefinedTheme | undefined {
+  const ctx = use(ThemeContext);
+  const hasCtx = ctx != null;
+  const rootThemeName = useRootThemeNameAttr(hasCtx);
+  return ctx?.theme ?? getRegisteredTheme(rootThemeName) ?? undefined;
 }
 
 /**

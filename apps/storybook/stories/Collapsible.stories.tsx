@@ -61,9 +61,12 @@ export default meta;
 type Story = StoryObj<typeof CollapsibleGroup>;
 
 export const SingleMode: Story = {
-  name: 'Single Mode (default)',
+  name: 'Single Mode — Leading Chevron',
   render: () => (
-    <CollapsibleGroup type="single" defaultValue="general">
+    <CollapsibleGroup
+      type="single"
+      defaultValue="general"
+      chevronPosition="start">
       <VStack gap={2}>
         <Card>
           <Collapsible trigger="General Settings" value="general">
@@ -340,5 +343,33 @@ export const FAQ: Story = {
         </Card>
       </VStack>
     </CollapsibleGroup>
+  ),
+};
+
+export const PressedState: Story = {
+  name: 'Pressed state',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Press and hold the enabled trigger to paint the system's `--color-overlay-pressed` layer across its row. The disabled trigger remains visually unchanged and cannot expand or collapse.",
+      },
+    },
+  },
+  render: () => (
+    <VStack gap={2}>
+      <Card>
+        <Collapsible trigger="Details — press and hold">
+          <p {...stylex.props(styles.text)}>
+            The pressed overlay covers the trigger row.
+          </p>
+        </Collapsible>
+      </Card>
+      <Card>
+        <Collapsible trigger="Unavailable — no pressed state" isDisabled>
+          <p {...stylex.props(styles.text)}>Never opens.</p>
+        </Collapsible>
+      </Card>
+    </VStack>
   ),
 };

@@ -55,7 +55,8 @@ if (!isNodeVersionSupported(process.versions.node)) {
 
 // Imports that transitively load `styleText` must happen AFTER the gate above,
 // so they are dynamically imported here rather than at the top of the module.
-const {program, loadProjectDebugHandler} = await importSrc('index.mjs');
+const {program, loadProjectDebugHandler, handleVersionJsonPreflight} =
+  await importSrc('index.mjs');
 const {isJsonMode, toErrorEnvelope} = await importSrc('../../foundation/response/json.mjs');
 const {handleCommanderError} = await importSrc('lib/json-shim.mjs');
 const {setOutcome} = await importSrc('../../foundation/debug/index.mjs');
@@ -106,6 +107,10 @@ process.on('uncaughtException', handleFatal);
 // Pick up the project's `debug` function before parsing, so parse errors and
 // `--help` — which short-circuit before any hook runs — are reported too.
 await loadProjectDebugHandler();
+
+// `--version --json` answers and exits without Commander, so it runs here —
+// after the handler exists, or the run would go unrecorded.
+handleVersionJsonPreflight();
 
 try {
   await program.parseAsync(process.argv);

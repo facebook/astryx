@@ -159,7 +159,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'Headless hook for click-triggered popovers with focus trapping. Combines useLayer with useFocusTrap, auto-focus, light dismiss, Escape handling, and an optional hidden close button for accessible dialog-like popover behavior. Use for custom interactive floating content that needs keyboard navigation. The canonical broad surface target is popover; automatic hook-wide emission is separate migration work, so current direct compositions needing a distinct stable seam should pass and document their own surfaceTarget instead of depending on deprecated popover-surface.',
+      'Headless hook for click-triggered popovers with focus trapping. Combines useLayer with useFocusTrap, auto-focus, light dismiss, Escape handling, and an optional hidden close button for accessible dialog-like popover behavior. Every painted surface emits the canonical popover target and deprecated popover-surface compatibility alias. A custom composition needing a distinct stable seam should pass and document its own surfaceTarget.',
     bestPractices: [
       {
         guidance: true,
@@ -174,7 +174,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use popover as the broad surface target. During migration, popover-surface remains compatibility output only; do not create new theme dependencies on it.',
+          'Use popover as the broad surface target. Popover-surface remains supported compatibility output, but new theme source uses the canonical key.',
       },
       {
         guidance: true,
@@ -197,7 +197,7 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description:
-    'Headless click-triggered popovers w/ focus trap, auto-focus, light dismiss, Escape, optional hidden close button. Canonical broad target is popover; automatic hook-wide emission is separate migration work. Current direct compositions needing a distinct seam pass/document an owned surfaceTarget; do not depend on deprecated popover-surface.',
+    'Headless click-triggered popovers w/ focus trap, auto-focus, light dismiss, Escape, optional hidden close button. Every surface emits canonical popover plus deprecated popover-surface compatibility output. Custom compositions needing a distinct seam pass/document an owned surfaceTarget.',
   paramDescriptions: {
     onShow: 'fires when popover becomes visible.',
     onHide: 'fires when popover hides; use to return focus when needed.',
@@ -230,7 +230,7 @@ export const docsDense = {
   },
   usage: {
     description:
-      'Headless click-triggered popovers w/ focus trap, auto-focus, light dismiss, Escape, optional hidden close button. Canonical broad target is popover; automatic hook-wide emission is separate migration work. Current direct compositions needing a distinct seam pass/document an owned surfaceTarget; do not depend on deprecated popover-surface.',
+      'Headless click-triggered popovers w/ focus trap, auto-focus, light dismiss, Escape, optional hidden close button. Every surface emits canonical popover plus deprecated popover-surface compatibility output. Custom compositions needing a distinct seam pass/document an owned surfaceTarget.',
     bestPractices: [
       {
         guidance: true,

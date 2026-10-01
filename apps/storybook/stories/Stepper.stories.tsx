@@ -1123,7 +1123,7 @@ export const NarrowCollapse: Story = {
     docs: {
       description: {
         story:
-          "A horizontal stepper measures its own width and collapses once a step has less than `horizontalOptions.minimumStepWidth` (112px by default), so the breakpoint follows the step count rather than the viewport. Pass a number for pixels or a CSS length string such as `7rem`. `horizontalOptions.collapsedVariant` selects `'withLabelAndControls'`, `'withLabel'`, or `'hiddenLabel'`; the last renders only the bare progress track with no compact row. The two indicator positions collapse differently on purpose: `separated` drops its indicators with the labels and repeats the active indicator beside the compact label, while `on-track` keeps its indicators as presentational nodes on the rail and does not repeat the active one beside the label. Controls appear only for `withLabelAndControls` when `onStepClick` is set.",
+          "A horizontal stepper measures its own width and collapses once a step has less than `horizontalOptions.minimumStepWidth` pixels (112 by default), so the breakpoint follows the step count rather than the viewport. `horizontalOptions.collapsedVariant` selects `'withLabelAndControls'`, `'withLabel'`, or `'hiddenLabel'`; the last renders only the bare progress track with no compact row. The two indicator positions collapse differently on purpose: `separated` drops its indicators with the labels and repeats the active indicator beside the compact label, while `on-track` keeps its indicators as presentational nodes on the rail and does not repeat the active one beside the label. Controls appear only for `withLabelAndControls` when `onStepClick` is set.",
       },
     },
   },
@@ -1151,12 +1151,12 @@ export const NarrowCollapse: Story = {
           </Stepper>
         </div>
         <div style={{maxWidth: 320}}>
-          <Text type="label">320px — custom 4rem threshold stays expanded</Text>
+          <Text type="label">320px — custom 64px threshold stays expanded</Text>
           <Stepper
             activeStep={a}
             onStepClick={setA}
             horizontalOptions={{
-              minimumStepWidth: '4rem',
+              minimumStepWidth: 64,
               collapsedVariant: 'withLabelAndControls',
             }}
             label="Checkout">

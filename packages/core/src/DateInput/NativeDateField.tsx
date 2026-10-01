@@ -100,10 +100,14 @@ const styles = stylex.create({
     borderStyle: 'none',
     padding: 0,
     fontFamily: typographyVars['--font-family-body'],
-    // Below 16px iOS zooms the page when the field takes focus.
+    // Below 16px iOS zooms the page when the field takes focus. Only iOS
+    // WebKit implements -webkit-touch-callout, so the coarse-pointer floor is
+    // keyed to iOS alone.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-primary'],
@@ -112,11 +116,20 @@ const styles = stylex.create({
     // A date control's intrinsic height comes from its inner edit fields, not
     // from `line-height`, so it renders ~2px taller than a text input and its
     // value sits off the shared baseline inside the same flex row. One line
-    // box is exactly what the text field occupies.
-    height: stylex.firstThatWorks(
-      '1lh',
-      `calc(max(1rem, ${typeScaleVars['--text-body-size']}) * ${typeScaleVars['--text-body-leading']})`,
-    ),
+    // box is exactly what the text field occupies. The calc fallback mirrors
+    // the iOS-only floor above; browsers with `1lh` track it for free.
+    height: {
+      default: stylex.firstThatWorks(
+        '1lh',
+        `calc(${typeScaleVars['--text-body-size']} * ${typeScaleVars['--text-body-leading']})`,
+      ),
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': stylex.firstThatWorks(
+          '1lh',
+          `calc(max(1rem, ${typeScaleVars['--text-body-size']}) * ${typeScaleVars['--text-body-leading']})`,
+        ),
+      },
+    },
     // iOS gives date controls their own button-like chrome, with inner
     // spacing and a centred value that no reset of ours can reach.
     WebkitAppearance: 'none',
@@ -187,9 +200,12 @@ const styles = stylex.create({
     // covers — one line of that leading fills its height exactly, which puts
     // the glyphs on the input's own baseline.
     display: 'block',
+    // ...with the input's own iOS floor, so the two baselines stay shared.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-body-leading'],
     // A tap has to reach the control underneath — that is what raises the

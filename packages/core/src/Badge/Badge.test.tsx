@@ -50,7 +50,7 @@ describe('Badge', () => {
     const {container} = render(<Badge variant="purple" label="Tag" />);
     const root = container.firstElementChild!;
     expect(root.className).toContain('astryx-badge');
-    expect(root.className).toContain('purple');
+    expect(root).toHaveAttribute('data-variant', 'purple');
   });
 
   it('renders with icon', () => {
@@ -107,6 +107,6 @@ describe('Badge', () => {
     const {container} = render(<Badge variant="success" label="Active" />);
     const root = container.firstElementChild!;
     expect(root.className).toContain('astryx-badge');
-    expect(root.className).toContain('success');
+    expect(root).toHaveAttribute('data-variant', 'success');
   });
 });

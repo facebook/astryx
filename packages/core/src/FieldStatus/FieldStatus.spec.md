@@ -13,6 +13,8 @@ review_triggers: [public-api, behavior, theming, accessibility]
 verified_by:
   [
     packages/core/src/FieldStatus/FieldStatus.test.tsx,
+    packages/core/src/FieldStatus/__tests__/StatusMessage.a11y.test.tsx,
+    packages/core/src/FieldStatus/__tests__/StatusMessage.a11y.chromium.spec.ts,
     scripts/check-knowledge.mjs,
   ]
 modules: []
@@ -20,7 +22,7 @@ families: []
 design_specs: []
 architecture: [architecture:component-theming-surface]
 contributing: []
-system_specs: []
+system_specs: [spec:AST-009, spec:AST-020, spec:AST-021]
 ---
 
 # FieldStatus component contract
@@ -116,23 +118,28 @@ intentional decision.
 
 ### Performance and resources
 
-- **PR1 — Announcement work.** A message change schedules only the persistent
-  live-region announcement; FieldStatus owns no global event listeners,
-  observers, or measurements.
+- **PR1 — Channel-update work.** A message change schedules only the persistent
+  live-region update; FieldStatus owns no global event listeners, observers, or
+  measurements.
 
 ## Accessibility contract
 
-- **AR1 — Announcement channel.** Errors MUST announce through the persistent
-  assertive region; warnings and successes MUST announce through the persistent
-  polite region, including on first mount and when message or type changes.
+- **AR1 — Programmatic announcement channel.** Errors MUST update the persistent
+  assertive region; warnings and successes MUST update the persistent polite
+  region, including on first mount and when message or type changes, without
+  moving focus.
+- **AR5 — Assistive-technology output.** Claims about whether, when, or how the
+  message is spoken or presented in braille MUST be verified through the real-AT
+  evidence process in `spec:AST-009`; DOM and accessibility-tree checks prove
+  only programmatic exposure and routing.
 - **AR2 — Visible description.** The rendered message box MUST remain available
   to assistive technology for `aria-describedby` association and MUST NOT become
   its own newly mounted live region.
 - **AR3 — Non-color cue.** Detached status MUST include a leading status glyph so
   status is not conveyed only by color or position.
 - **AR4 — Redundant glyph.** The detached glyph MUST remain hidden from assistive
-  technology because the visible message already conveys and announces the
-  status.
+  technology because the visible message already conveys the status in text;
+  announcement output remains owned by AR5.
 
 ## Design relationships
 
@@ -140,7 +147,7 @@ intentional decision.
 | ---------------- | ---------------------------------------------------------- | ----------------------------------------------- | -------------- | ------------------ |
 | Message box      | Carries the visible validation treatment.                  | Current behavior and approved component intent. | Supporting     | FR1, FR3           |
 | Detached icon    | Adds a non-color status cue only in detached presentation. | Current behavior and approved component intent. | Supporting     | FR2, FR4, AR3      |
-| Message text     | Communicates the validation result in words.               | Current behavior and approved component intent. | Prominent      | FR1, AR1, AR2      |
+| Message text     | Communicates the validation result in words.               | Current behavior and approved component intent. | Prominent      | FR1, AR1, AR2, AR5 |
 
 Current behavior renders the detached icon before message text. The intended
 public theming ownership is the exact map below; it does not add a target or
@@ -167,13 +174,16 @@ change either presentation.
 
 ## Verification map
 
-| Contract            | Verification                                              | Representative states                             | Mutation or failure expectation                                                         | Audit section                     |
-| ------------------- | --------------------------------------------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------- | --------------------------------- |
-| FR1, FR2, AR3, AR4  | `FieldStatus.test.tsx` rendering and detached-icon suites | Attached and detached; all status types           | Removing or reordering presentation parts fails DOM and accessibility assertions.       | `audit:FieldStatus/anatomy`       |
-| FR3, FR4            | `FieldStatus.test.tsx` theme target suites                | Attached/detached; error/warning/success          | Removing a target or status reflection fails class/data-attribute assertions.           | `audit:FieldStatus/theming`       |
-| FR5, FR6            | `FieldStatus.test.tsx` forwarding and update suites       | Initial render and rerender                       | Breaking the released root or update behavior fails compatibility assertions.           | `audit:FieldStatus/behavior`      |
-| AR1, AR2            | `FieldStatus.test.tsx` announcement suites                | Mount, message update, type update, empty message | Reintroducing a local live region or misrouting severity fails announcement assertions. | `audit:FieldStatus/accessibility` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                             | Consumer anatomy and current targets              | Missing, extra, duplicated, prefixed, or stale mappings fail repository validation.     | `audit:FieldStatus/theming`       |
+| Contract            | Verification                                                            | Representative states                                         | Mutation or failure expectation                                                                                                       | Audit section                     |
+| ------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| FR1, FR2, AR3, AR4  | `FieldStatus.test.tsx` rendering and detached-icon suites               | Attached and detached; all status types                       | Removing or reordering presentation parts fails DOM and accessibility assertions.                                                     | `audit:FieldStatus/anatomy`       |
+| FR3, FR4            | `FieldStatus.test.tsx` theme target suites                              | Attached/detached; error/warning/success                      | Removing a target or status reflection fails class/data-attribute assertions.                                                         | `audit:FieldStatus/theming`       |
+| FR5, FR6            | `FieldStatus.test.tsx` forwarding and update suites                     | Initial render and rerender                                   | Breaking the released root or update behavior fails compatibility assertions.                                                         | `audit:FieldStatus/behavior`      |
+| AR1                 | `StatusMessage.a11y.test.tsx` and `StatusMessage.a11y.chromium.spec.ts` | Error, warning, and success; post-mount message replacement   | Removing the persistent channel, changing its role/urgency, or dropping a post-mount update fails the shared status-message contract. | `audit:FieldStatus/accessibility` |
+| AR1                 | `FieldStatus.test.tsx` channel-routing suite                            | First non-empty mount; same-instance message and type changes | Breaking FieldStatus's first-use hook call or severity rerouting fails component-specific assertions.                                 | `audit:FieldStatus/accessibility` |
+| AR5                 | Pending/unverified real-AT evidence governed by `spec:AST-009`          | First mount; message replacement; type/urgency change         | Spoken and braille output remain unverified until a durable named AT/browser receipt exists.                                          | `audit:FieldStatus/accessibility` |
+| AR2                 | `FieldStatus.test.tsx`                                                  | Attached/detached visible message and empty message           | The visible description becomes a second live region or is hidden from assistive technology.                                          | `audit:FieldStatus/accessibility` |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                           | Consumer anatomy and current targets                          | Missing, extra, duplicated, prefixed, or stale mappings fail repository validation.                                                   | `audit:FieldStatus/theming`       |
 
 ## Decision log
 

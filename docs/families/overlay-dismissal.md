@@ -15,7 +15,9 @@ verified_by:
     packages/core/src/Layer/useLayerDismissal.test.tsx,
     packages/core/src/Layer/layerDismissalInvariants.test.tsx,
     packages/core/src/Layer/layerDismissalFamilies.test.tsx,
+    packages/lab/src/Drawer/Drawer.test.tsx,
     packages/core/src/hooks/useFocusTrap.test.tsx,
+    packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx,
   ]
 members:
   [
@@ -63,6 +65,17 @@ deciding_specs: []
 ---
 
 # Overlay dismissal family contract
+
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "layering": ["FR1", "FR2", "FR3", "FR6"]
+  }
+}
+```
 
 ## Intent
 
@@ -145,9 +158,9 @@ this record's current membership snapshot must be updated with it.
 - **FR4 — Available nesting signals outrank host placement.** When a member
   provides `LayerDepthProvider`, React-tree depth orders its descendant layers
   ahead of the member even when both mount in the same commit. DOM containment
-  may resolve equal-depth nesting; stable registration order resolves unrelated
-  surfaces. A member without the provider does not guarantee this ordering for
-  descendant content that is no longer DOM-contained.
+  may resolve equal-depth nesting; stable active-cycle registration order resolves
+  unrelated surfaces. A member without the provider does not guarantee this
+  ordering for descendant content that is no longer DOM-contained.
 - **FR5 — Content may claim Escape first.** The shared listener runs in the
   bubble phase and stands down when content has already handled the event.
 - **FR6 — Text composition is not layer dismissal.** Escape used to cancel an
@@ -181,19 +194,19 @@ this record's current membership snapshot must be updated with it.
 | Lightbox or MobileNav above a required Dialog | Top member handles the request                 | Required Dialog uses `block` only when it is topmost                          |
 | Required Dialog alone                         | Request is consumed without closing            | Dialog purpose selects `block` behavior                                       |
 | Self-owned input popup                        | Popup participates while present               | Input owns selection, focus, open state, positioning, and outside dismissal   |
-| Two unrelated registered surfaces             | Later stable registration is topmost           | Neither surface is treated as nested                                          |
+| Two unrelated registered surfaces             | Later active-cycle registration is topmost     | Neither surface is treated as nested                                          |
 | Platform close request sent to a lower Dialog | Lower Dialog stays open                        | The platform targets a host; the shared check decides whether it may close    |
 
 ## Adoption and exceptions
 
 | Components or surface                                                                                                                                                                                                                                                                              | Adoption                                                      | Current deviation or limitation                                                                                                                                                                                                        |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dialog, AlertDialog, Popover, DropdownMenu root, MoreMenu, Lightbox, MobileNav                                                                                                                                                                                                                     | shared owner                                                  | none                                                                                                                                                                                                                                   |
+| Dialog, AlertDialog, Popover, DropdownMenu root, MoreMenu, Lightbox, MobileNav, Lab Drawer                                                                                                                                                                                                         | shared owner                                                  | none                                                                                                                                                                                                                                   |
 | Tooltip, HoverCard                                                                                                                                                                                                                                                                                 | shared owner with DOM presence reporting                      | Neither provides nesting depth to descendant layers                                                                                                                                                                                    |
 | Focus traps with `onEscape`                                                                                                                                                                                                                                                                        | shared owner through `useFocusTrap`                           | They provide DOM containment, not descendant depth                                                                                                                                                                                     |
 | BreadcrumbItem, ChatComposerInput, ComplexSelector, DateInput, DateRangeInput, DateTimeInput, Selector, MultiSelector, PowerSearch, BaseTypeahead, Typeahead, Tokenizer, SideNavHeading, SideNavItem, TabMenu, TopNavHeading, TopNavMenu, TopNavMegaMenu, Table, Lab TourStep, Lab ChatEmojiPicker | shared owner through `usePopover` or a composed Popover owner | Adaptive BottomSheet paths inherit BottomSheet's adoption gap; Table filtering owns controlled Popover state and discards its draft on close; TourStep routes Popover close to the Tour; ChatEmojiPicker owns controlled Popover state |
-| BottomSheetSwitcher                                                                                                                                                                                                                                                                                | partial                                                       | Modal mode registers through `useFocusTrap`; non-modal mode retains local Escape handling                                                                                                                                              |
-| BottomSheet, CommandPalette, ContextMenu, DropdownMenuSubMenu, PowerSearchEditPopover, Lab Drawer                                                                                                                                                                                                  | local only                                                    | Must migrate from component-specific listeners or registries to the shared owner                                                                                                                                                       |
+| BottomSheetSwitcher                                                                                                                                                                                                                                                                                | shared owner                                                  | none                                                                                                                                                                                                                                   |
+| BottomSheet, CommandPalette, ContextMenu, DropdownMenuSubMenu, PowerSearchEditPopover                                                                                                                                                                                                              | local only                                                    | Must migrate from component-specific listeners or registries to the shared owner                                                                                                                                                       |
 
 The rows marked partial or local are current adoption gaps against FR1. They are
 not approved exceptions. Migration must preserve each component's existing focus,
@@ -201,12 +214,12 @@ modality, positioning, outside-dismissal, and open-state contracts.
 
 ## Verification map
 
-| Contract           | Verification                        | Representative members and states                                                                    | Mutation or failure expectation                                                                   |
-| ------------------ | ----------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| FR1, FR2, FR4, FR5 | `useLayerDismissal.test.tsx`        | synthetic provider depth, same-DOM containment, unrelated, blocking, content-handled, present/absent | Removing depth, presence filtering, or event deferral sends Escape to the wrong surface           |
-| FR2, FR3, FR4, FR6 | `layerDismissalInvariants.test.tsx` | nested same-DOM Dialogs, Lightbox over Dialog, platform cancel, IME                                  | One request closes two surfaces, closes a host before its child, or dismisses during composition  |
-| FR1, FR2, FR3, FR7 | `layerDismissalFamilies.test.tsx`   | Dialog, Lightbox, MobileNav, Tooltip, HoverCard; controlled and blocking states                      | A family bypasses the stack, a lower member handles a request, or controlled ownership is ignored |
-| FR1                | `useFocusTrap.test.tsx`             | active, nested, and deactivated traps with `onEscape`                                                | A dismissible trap stays off the shared stack or nested traps respond together                    |
+| Contract           | Verification                                                 | Representative members and states                                                                                                | Mutation or failure expectation                                                                   |
+| ------------------ | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| FR1, FR2, FR4, FR5 | `useLayerDismissal.test.tsx`; `BottomSheetSwitcher.test.tsx` | synthetic provider depth, same-DOM containment, non-modal switcher nesting, unrelated, blocking, content-handled, present/absent | Removing depth, presence filtering, or event deferral sends Escape to the wrong surface           |
+| FR2, FR3, FR4, FR6 | `layerDismissalInvariants.test.tsx`                          | nested same-DOM Dialogs, Lightbox over Dialog, platform cancel, IME                                                              | One request closes two surfaces, closes a host before its child, or dismisses during composition  |
+| FR1, FR2, FR3, FR7 | `layerDismissalFamilies.test.tsx`                            | Dialog, Lightbox, MobileNav, Tooltip, HoverCard; controlled and blocking states                                                  | A family bypasses the stack, a lower member handles a request, or controlled ownership is ignored |
+| FR1                | `useFocusTrap.test.tsx`                                      | active, nested, and deactivated traps with `onEscape`                                                                            | A dismissible trap stays off the shared stack or nested traps respond together                    |
 
 ## Decision links
 

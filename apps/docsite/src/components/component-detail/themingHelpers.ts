@@ -75,13 +75,17 @@ export function targetPropValues(
   return target.visualProps;
 }
 
+export function canonicalTargets(theming: ThemingDoc): ThemingTarget[] {
+  return theming.targets.filter(target => !target.deprecatedFor);
+}
+
 /**
  * Build the `defineTheme` `components` example, showing the root target's
  * `base` + a representative prop/state key, plus one sub-element target if the
  * component exposes more than one. Mirrors the CLI's generated snippet.
  */
 export function buildDefineThemeExample(theming: ThemingDoc): string {
-  const targets = theming.targets;
+  const targets = canonicalTargets(theming);
   if (!targets.length) {
     return '';
   }

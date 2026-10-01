@@ -11,7 +11,11 @@ approved_at: 2026-09-02
 owners: [cixzhang]
 review_triggers: [public-api, theming, layout]
 verified_by:
-  [packages/core/src/Stepper/Stepper.test.tsx, scripts/check-knowledge.mjs]
+  [
+    packages/core/src/Stepper/Stepper.test.tsx,
+    packages/core/src/Stepper/Stepper.public.test.ts,
+    scripts/check-knowledge.mjs,
+  ]
 modules: []
 families: []
 design_specs: []
@@ -33,16 +37,24 @@ ownership.
 ## Compatibility and migration
 
 - Released default preserved: `yes` — `horizontalOptions.minimumStepWidth`
-  defaults to `112`, and `collapsedVariant` defaults to
-  `withLabelAndControls`, matching the existing behavior
-- Compatibility class: additive relative to the released Stepper API. The
-  horizontal options proposed in the unlanded stack are consolidated before
-  release rather than shipping three independent top-level props
-- Semantic delta: fixed horizontal behavior → one `horizontalOptions` object
-  configuring its per-step threshold and compact label/control presentation
-- Review classification: additive public API; owner review required for FR14
+  still defaults to `112`, and `collapsedVariant` defaults to
+  `withLabelAndControls`
+- Compatibility class: breaking API narrowing relative to `0.5.3`.
+  `minimumStepWidth` now accepts pixel numbers only, `registerStep` replaces its
+  disabled boolean with an optional options object, and `StepperContextValue`
+  no longer names step count, compact state, the summary portal, or threshold
+  measurement details
+- Semantic delta: CSS-length collapse thresholds → numeric pixel thresholds;
+  disabled snapshots passed to registration → an optional `getIsDisabled`
+  callback; the context hook's public return → the same state, registration,
+  and transition history without compact-layout implementation fields
+- Review classification: owner-approved breaking simplification for FR14 and
+  the public context boundary
 - Controlled/uncontrolled behavior: not applicable
-- Migration decision: none
+- Migration decision: convert CSS lengths to their intended pixel number,
+  replace `registerStep(index, isDisabled)` with
+  `registerStep(index, {getIsDisabled})` or omit the options, and stop reading
+  the five removed context fields
 
 Consumer migration instructions belong in consumer docs and release notes.
 
@@ -56,9 +68,8 @@ Consumer migration instructions belong in consumer docs and release notes.
   background) and the accent fill (an absolutely placed `::before`) — and the
   single clip that holds both off the indicator.
 - Which pieces an on-track connector is drawn from, and how many.
-- Resolution of `horizontalOptions.minimumStepWidth` through browser layout and
-  the compact state derived from that resolved length, the Stepper width, and
-  registered steps.
+- Reading `horizontalOptions.minimumStepWidth` as a pixel number and deriving
+  compact state from that threshold, the Stepper width, and registered steps.
 - Label and Description paint and the target ownership defined by FR9–FR11.
 
 **Does not own / non-goals**
@@ -71,33 +82,35 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-| Concept                              | Closed values or states                            | Meaning                                                                                                                                                                                    | Availability by variant/orientation/state                                                                     | Default                                                    | Owner               | Stability | Invalid-value behavior                                                                                    |
-| ------------------------------------ | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------------- | --------- | --------------------------------------------------------------------------------------------------------- |
-| `--step-connector-gap`               | Any CSS `<length-percentage>`                      | How far the track stops short of the indicator, on the side facing it                                                                                                                      | `indicatorPosition="on-track"`, both orientations and both directions, only on steps that render an indicator | `0px`                                                      | `component:Stepper` | stable    | Clamped, never rejected: values below `0` resolve to `0`, values above `--spacing-2` cap at `--spacing-2` |
-| `horizontalOptions.minimumStepWidth` | `number \| string`                                 | Required within `horizontalOptions`; per-step width below which a horizontal Stepper uses its compact presentation; numbers are pixels and strings are CSS lengths resolved by the browser | Horizontal orientation                                                                                        | `112` when `horizontalOptions` is omitted                  | Caller              | stable    | Invalid CSS follows platform width parsing; use a valid CSS length or a number                            |
-| `horizontalOptions.collapsedVariant` | `withLabelAndControls \| withLabel \| hiddenLabel` | Required within `horizontalOptions`; whether compact mode shows a label with navigation controls, a label alone, or only the bare progress track                                           | Compact horizontal orientation; controls require `withLabelAndControls` and `onStepClick`                     | `withLabelAndControls` when `horizontalOptions` is omitted | Caller              | stable    | TypeScript rejects unknown variants                                                                       |
+| Concept                              | Closed values or states                            | Meaning                                                                                                                                                           | Availability by variant/orientation/state                                                                     | Default                                                    | Owner               | Stability | Invalid-value behavior                                                                                    |
+| ------------------------------------ | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------------- | --------- | --------------------------------------------------------------------------------------------------------- |
+| `--step-connector-gap`               | Any CSS `<length-percentage>`                      | How far the track stops short of the indicator, on the side facing it                                                                                             | `indicatorPosition="on-track"`, both orientations and both directions, only on steps that render an indicator | `0px`                                                      | `component:Stepper` | stable    | Clamped, never rejected: values below `0` resolve to `0`, values above `--spacing-2` cap at `--spacing-2` |
+| `horizontalOptions.minimumStepWidth` | `number`                                           | Required within `horizontalOptions`; per-step width in pixels below which a horizontal Stepper uses its compact presentation                                      | Horizontal orientation                                                                                        | `112` when `horizontalOptions` is omitted                  | Caller              | stable    | TypeScript rejects non-numeric values; numbers are interpreted as pixels                                  |
+| `useStepperContext` return           | `StepperContextValue`                              | Stepper state, transition history, and registration for descendant content; excludes step count, compact state, summary portal, and threshold measurement details | Descendants of `Stepper`                                                                                      | Current provider value                                     | Component           | stable    | Throws outside `Stepper`; TypeScript and runtime omit unsupported layout-coordination fields              |
+| `horizontalOptions.collapsedVariant` | `withLabelAndControls \| withLabel \| hiddenLabel` | Required within `horizontalOptions`; whether compact mode shows a label with navigation controls, a label alone, or only the bare progress track                  | Compact horizontal orientation; controls require `withLabelAndControls` and `onStepClick`                     | `withLabelAndControls` when `horizontalOptions` is omitted | Caller              | stable    | TypeScript rejects unknown variants                                                                       |
 
 Consumer syntax and description remain in `Stepper.doc.mjs` `theming.vars`.
 
 ## Behavioral and layout contract
 
-| ID   | Candidate invariant                                                                                                                                                                                                                                   | Basis                                | Draft review state        |
-| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ------------------------- |
-| FR1  | `--step-connector-gap` falls back to `0px` where each connector consumes it and honors values inherited from an ancestor or supplied through the `stepper` theming target.                                                                            | Reviewed defect (PR #5495)           | Settled                   |
-| FR2  | The gap is applied to the ONE edge each segment faces the indicator from, mirrored per axis, so the pair leaves a hole centred on the node.                                                                                                           | Current source and browser probe     | Settled                   |
-| FR3  | One declaration covers both connector paint layers. A clip on the segment clips its `::before` with it, against one reference box, so the two cannot disagree.                                                                                        | Current source and browser probe     | Settled                   |
-| FR4  | The resolved value is clamped to `max(0px, min(value, --spacing-2))` before use.                                                                                                                                                                      | Reviewed defect (PR #5495)           | Settled                   |
-| FR5  | A step rendering no indicator (`indicator="none"`) applies no clip, leaving its track continuous.                                                                                                                                                     | Current source and browser probe     | Settled                   |
-| FR6  | No accepted value changes the Stepper's outer size, in either orientation. A clip cannot affect layout.                                                                                                                                               | Current source and browser probe     | Settled                   |
-| FR7  | The horizontal clip mirrors under `dir="rtl"`, so the hole stays at the indicator rather than moving to the join between steps.                                                                                                                       | Reviewed defect (PR #5495)           | Settled                   |
-| FR8  | The pieces an on-track connector is drawn from are not public: no `data-segment`, and no bare `lead`/`rail`/`content` class is emitted.                                                                                                               | `component:Stepper/DEC-1`            | Settled                   |
-| FR9  | In both indicator positions, each rendered Label and Description carries its own target and reflects `progress` and `status`.                                                                                                                         | Current source, docs, and tests      | Settled                   |
-| FR10 | Label alone reflects `disabled`, because only Label owns disabled paint. Description and the other targets do not gain the selector for symmetry.                                                                                                     | Current source, docs, and tests      | Settled                   |
-| FR11 | Label and Description each declare `font-size`, `line-height`, and `color`. Those declarations outrank values inherited from `step`, so only direct targets can expose that paint to themes.                                                          | Current source and Chromium probe    | Settled                   |
-| FR12 | A compact horizontal summary sits directly beneath its track without an additional frame gap.                                                                                                                                                         | Reviewed narrow-layout feedback      | Settled                   |
-| FR13 | In compact `on-track`, indicators remain on the rail and the active indicator is not repeated beside the summary label; compact `separated` retains the active indicator beside its label.                                                            | Reviewed narrow-layout feedback      | Settled                   |
-| FR14 | `horizontalOptions.minimumStepWidth` accepts pixel numbers and CSS lengths. Its invisible browser-resolved probe remains mounted in every progress state, including all-complete, and recomputes compact state whenever its resolved width changes.   | Configurable collapse threshold      | Proposed for owner review |
-| FR15 | `horizontalOptions.collapsedVariant` keeps horizontal-only configuration together: `withLabelAndControls` shows the label and controls, `withLabel` shows only the label, and `hiddenLabel` renders only the bare progress track with no compact row. | Collapsed presentation consolidation | Proposed for owner review |
+| ID   | Candidate invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Basis                                | Draft review state        |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ------------------------- |
+| FR1  | `--step-connector-gap` falls back to `0px` where each connector consumes it and honors values inherited from an ancestor or supplied through the `stepper` theming target.                                                                                                                                                                                                                                                                                                                   | Reviewed defect (PR #5495)           | Settled                   |
+| FR2  | The gap is applied to the ONE edge each segment faces the indicator from, mirrored per axis, so the pair leaves a hole centred on the node.                                                                                                                                                                                                                                                                                                                                                  | Current source and browser probe     | Settled                   |
+| FR3  | One declaration covers both connector paint layers. A clip on the segment clips its `::before` with it, against one reference box, so the two cannot disagree.                                                                                                                                                                                                                                                                                                                               | Current source and browser probe     | Settled                   |
+| FR4  | The resolved value is clamped to `max(0px, min(value, --spacing-2))` before use.                                                                                                                                                                                                                                                                                                                                                                                                             | Reviewed defect (PR #5495)           | Settled                   |
+| FR5  | A step rendering no indicator (`indicator="none"`) applies no clip, leaving its track continuous.                                                                                                                                                                                                                                                                                                                                                                                            | Current source and browser probe     | Settled                   |
+| FR6  | No accepted value changes the Stepper's outer size, in either orientation. A clip cannot affect layout.                                                                                                                                                                                                                                                                                                                                                                                      | Current source and browser probe     | Settled                   |
+| FR7  | The horizontal clip mirrors under `dir="rtl"`, so the hole stays at the indicator rather than moving to the join between steps.                                                                                                                                                                                                                                                                                                                                                              | Reviewed defect (PR #5495)           | Settled                   |
+| FR8  | The pieces an on-track connector is drawn from are not public: no `data-segment`, and no bare `lead`/`rail`/`content` class is emitted.                                                                                                                                                                                                                                                                                                                                                      | `component:Stepper/DEC-1`            | Settled                   |
+| FR9  | In both indicator positions, each rendered Label and Description carries its own target and reflects `progress` and `status`.                                                                                                                                                                                                                                                                                                                                                                | Current source, docs, and tests      | Settled                   |
+| FR10 | Label alone reflects `disabled`, because only Label owns disabled paint. Description and the other targets do not gain the selector for symmetry.                                                                                                                                                                                                                                                                                                                                            | Current source, docs, and tests      | Settled                   |
+| FR11 | Label and Description each declare `font-size`, `line-height`, and `color`. Those declarations outrank values inherited from `step`, so only direct targets can expose that paint to themes.                                                                                                                                                                                                                                                                                                 | Current source and Chromium probe    | Settled                   |
+| FR12 | A compact horizontal summary sits directly beneath its track without an additional frame gap.                                                                                                                                                                                                                                                                                                                                                                                                | Reviewed narrow-layout feedback      | Settled                   |
+| FR13 | In compact `on-track`, indicators remain on the rail and the active indicator is not repeated beside the summary label; compact `separated` retains the active indicator beside its label.                                                                                                                                                                                                                                                                                                   | Reviewed narrow-layout feedback      | Settled                   |
+| FR14 | `horizontalOptions.minimumStepWidth` accepts a number interpreted as pixels. Compact state compares the registered per-step width directly with that number; no threshold measurement element or observer is rendered.                                                                                                                                                                                                                                                                       | Configurable collapse threshold      | Settled                   |
+| FR15 | `horizontalOptions.collapsedVariant` keeps horizontal-only configuration together: `withLabelAndControls` shows the label and controls, `withLabel` shows only the label, and `hiddenLabel` renders only the bare progress track with no compact row.                                                                                                                                                                                                                                        | Collapsed presentation consolidation | Proposed for owner review |
+| FR16 | `useStepperContext` preserves Stepper state, transition history, and `registerStep`, while omitting `stepCount`, `isCompact`, `summarySlot`, `minimumStepWidth`, and `minStepWidthMeasureRef` from both its TypeScript type and runtime object. `registerStep(index, options?)` accepts an optional `getIsDisabled` callback instead of a disabled boolean, and compact navigation reads that callback again when a control activates so a stale render cannot select a newly disabled step. | Public context boundary              | Settled                   |
 
 `status` on Label and Description is a selector seam. It does not claim that
 Astryx paints either text part by status.
@@ -113,19 +126,19 @@ Astryx paints either text part by status.
 
 ### Representative states
 
-| State                                                           | Required invariant | Allowed variation |
-| --------------------------------------------------------------- | ------------------ | ----------------- |
-| vertical, on-track, indicator                                   | FR2, FR3, FR6      | AV1, AV2          |
-| horizontal, on-track, indicator                                 | FR2, FR3, FR6, FR7 | AV1, AV2          |
-| `dir="rtl"`, horizontal                                         | FR7                | AV1               |
-| `indicator="none"`                                              | FR5                | —                 |
-| value below `0` or above the cap                                | FR4, FR6           | —                 |
-| both indicator positions; each progress/status; disabled Label  | FR9–FR11           | —                 |
-| compact horizontal summary                                      | FR12               | —                 |
-| compact `on-track` and `separated` indicators                   | FR13               | —                 |
-| numeric, `rem`, `calc()`, or custom-property collapse threshold | FR14               | —                 |
-| all-complete with a custom collapse threshold                   | FR14               | —                 |
-| each `collapsedVariant`, with and without `onStepClick`         | FR15               | —                 |
+| State                                                          | Required invariant | Allowed variation |
+| -------------------------------------------------------------- | ------------------ | ----------------- |
+| vertical, on-track, indicator                                  | FR2, FR3, FR6      | AV1, AV2          |
+| horizontal, on-track, indicator                                | FR2, FR3, FR6, FR7 | AV1, AV2          |
+| `dir="rtl"`, horizontal                                        | FR7                | AV1               |
+| `indicator="none"`                                             | FR5                | —                 |
+| value below `0` or above the cap                               | FR4, FR6           | —                 |
+| both indicator positions; each progress/status; disabled Label | FR9–FR11           | —                 |
+| compact horizontal summary                                     | FR12               | —                 |
+| compact `on-track` and `separated` indicators                  | FR13               | —                 |
+| custom numeric pixel collapse threshold                        | FR14               | —                 |
+| public context read versus internal layout coordination        | FR16               | —                 |
+| each `collapsedVariant`, with and without `onStepClick`        | FR15               | —                 |
 
 ### Transformation and precedence order
 
@@ -138,15 +151,14 @@ Astryx paints either text part by status.
 
 ### Performance and resources
 
-- Horizontal Stepper instances register their list and one invisible threshold
-  probe with the shared ResizeObserver. The probe lets browser layout resolve CSS
-  lengths and updates compact state when that resolved value changes.
+- Horizontal Stepper instances register their list with the shared
+  `ResizeObserver`. Numeric pixel thresholds are compared directly, so no second
+  observer or measurement element is required.
 
 ## Accessibility contract
 
-The threshold probe is empty and `aria-hidden`; it adds no accessible content or
-focus stop. Compact layout preserves the ordered-list role and `aria-current`
-handling while moving optional navigation to the summary controls.
+Compact layout preserves the ordered-list role and `aria-current` handling while
+moving optional navigation to the summary controls.
 
 ## Design relationships
 
@@ -199,21 +211,22 @@ parts. Their own typography and color declarations make `inherits: step` false;
 
 ## Verification map
 
-| Contract            | Verification                                             | Representative states                                    | Mutation or failure expectation                                                          | Audit section           |
-| ------------------- | -------------------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ----------------------- |
-| FR1                 | `Stepper.test.tsx` fallback and inheritance assertions   | vertical and horizontal on-track                         | Declaring a default on the list blocks values inherited from its horizontal frame.       | `audit:Stepper/theming` |
-| FR2, FR3            | `Stepper.test.tsx` clip assertions                       | vertical and horizontal on-track                         | Clipping the wrong edge, or per-layer copies of the value, fails the suite.              | `audit:Stepper/theming` |
-| FR4, FR6            | `Stepper.test.tsx` clamp assertion                       | values below `0` and above the cap                       | Removing the floor lets a negative inset through; removing the cap unbounds the hole.    | `audit:Stepper/theming` |
-| FR5                 | `Stepper.test.tsx` no-indicator assertion                | `indicator="none"`                                       | Applying the clip unconditionally puts holes in a track with no node in them.            | `audit:Stepper/theming` |
-| FR7                 | `Stepper.test.tsx` RTL assertion                         | `dir="rtl"`, horizontal                                  | Dropping the mirror moves the hole to the join between steps; caught by the assertion.   | `audit:Stepper/theming` |
-| FR8                 | `Stepper.test.tsx` vocabulary guard                      | vertical on-track                                        | Re-adding `data-segment` or a bare role class fails the guard.                           | `audit:Stepper/theming` |
-| FR9, FR10           | `Stepper.test.tsx` target and generated-theme assertions | Both indicator positions; progress, status, and disabled | Removing a target or state, or moving it off the painted span, fails focused tests.      | `audit:Stepper/theming` |
-| FR11                | Exact-head Chromium probe                                | Themed `step`, Label, and Description                    | If inheritance reaches the text, the Step target's probe color appears there.            | `audit:Stepper/theming` |
-| FR12                | `Stepper.test.tsx` compact frame gap assertion           | Compact horizontal summary                               | Restoring frame spacing separates the summary from the track and fails the suite.        | `audit:Stepper/layout`  |
-| FR13                | `Stepper.test.tsx` compact indicator assertions          | Compact `separated` and `on-track`                       | Repeating the on-track active indicator, or dropping the separated one, fails the suite. | `audit:Stepper/layout`  |
-| FR14                | `Stepper.test.tsx` threshold measurement assertions      | Default, pixel number, CSS length, resolved-value change | Parsing a CSS string in JavaScript or observing only the list fails the suite.           | `audit:Stepper/layout`  |
-| FR15                | `Stepper.test.tsx` collapsed-variant assertions          | Three variants, with and without navigation              | A variant shows an unrequested label/control or changes the accessible sequence.         | `audit:Stepper/layout`  |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                            | Canonical anatomy and the nine current targets           | A target with no anatomy owner, or a stale/extra part, fails repository validation.      | `audit:Stepper/theming` |
+| Contract            | Verification                                                                          | Representative states                                         | Mutation or failure expectation                                                                                          | Audit section           |
+| ------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------- |
+| FR1                 | `Stepper.test.tsx` fallback and inheritance assertions                                | vertical and horizontal on-track                              | Declaring a default on the list blocks values inherited from its horizontal frame.                                       | `audit:Stepper/theming` |
+| FR2, FR3            | `Stepper.test.tsx` clip assertions                                                    | vertical and horizontal on-track                              | Clipping the wrong edge, or per-layer copies of the value, fails the suite.                                              | `audit:Stepper/theming` |
+| FR4, FR6            | `Stepper.test.tsx` clamp assertion                                                    | values below `0` and above the cap                            | Removing the floor lets a negative inset through; removing the cap unbounds the hole.                                    | `audit:Stepper/theming` |
+| FR5                 | `Stepper.test.tsx` no-indicator assertion                                             | `indicator="none"`                                            | Applying the clip unconditionally puts holes in a track with no node in them.                                            | `audit:Stepper/theming` |
+| FR7                 | `Stepper.test.tsx` RTL assertion                                                      | `dir="rtl"`, horizontal                                       | Dropping the mirror moves the hole to the join between steps; caught by the assertion.                                   | `audit:Stepper/theming` |
+| FR8                 | `Stepper.test.tsx` vocabulary guard                                                   | vertical on-track                                             | Re-adding `data-segment` or a bare role class fails the guard.                                                           | `audit:Stepper/theming` |
+| FR9, FR10           | `Stepper.test.tsx` target and generated-theme assertions                              | Both indicator positions; progress, status, and disabled      | Removing a target or state, or moving it off the painted span, fails focused tests.                                      | `audit:Stepper/theming` |
+| FR11                | Exact-head Chromium probe                                                             | Themed `step`, Label, and Description                         | If inheritance reaches the text, the Step target's probe color appears there.                                            | `audit:Stepper/theming` |
+| FR12                | `Stepper.test.tsx` compact frame gap assertion                                        | Compact horizontal summary                                    | Restoring frame spacing separates the summary from the track and fails the suite.                                        | `audit:Stepper/layout`  |
+| FR13                | `Stepper.test.tsx` compact indicator assertions                                       | Compact `separated` and `on-track`                            | Repeating the on-track active indicator, or dropping the separated one, fails the suite.                                 | `audit:Stepper/layout`  |
+| FR14                | `Stepper.test.tsx` threshold assertions                                               | Default and custom pixel number                               | Reintroducing threshold measurement or CSS-length support fails the runtime/type guards.                                 | `audit:Stepper/layout`  |
+| FR15                | `Stepper.test.tsx` collapsed-variant assertions                                       | Three variants, with and without navigation                   | A variant shows an unrequested label/control or changes the accessible sequence.                                         | `audit:Stepper/layout`  |
+| FR16                | `Stepper.public.test.ts` type assertions and `Stepper.test.tsx` runtime key assertion | Public hook/type and separate public/internal provider values | A named layout-coordination field reaches the public type/runtime object, or transition history/registration disappears. | `audit:Stepper/api`     |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                                         | Canonical anatomy and the nine current targets                | A target with no anatomy owner, or a stale/extra part, fails repository validation.                                      | `audit:Stepper/theming` |
 
 ## Decision log
 
@@ -278,17 +291,35 @@ content rather than paint alone.
 
 `horizontalOptions` keeps these horizontal-only decisions out of the Stepper's
 top-level API. `minimumStepWidth` names the per-step space the caller is
-guaranteeing. A number is pixels, following other Astryx size props; a string is
-a CSS length. The browser resolves strings on an invisible descendant of the
-public list, so relative units and inherited custom properties keep their CSS
-meaning without a partial JavaScript length parser. `collapsedVariant` is one
-closed choice because its values describe the complete compact presentation and
-avoid conflicting boolean combinations.
+guaranteeing. It is a pixel number, following other Astryx size props, so the
+Stepper compares it directly without a browser-resolved probe or a second
+observer. `collapsedVariant` is one closed choice because its values describe
+the complete compact presentation and avoid conflicting boolean combinations.
+
+### DEC-4 — Public context excludes compact-layout implementation fields
+
+**Reference:** `component:Stepper/DEC-4`
+**Decider:** `imdreamrunner`, `2026-09-06`
+
+`useStepperContext` preserves the existing Stepper state and transition history.
+Its `registerStep` contract replaces the disabled boolean with an optional
+options object whose `getIsDisabled` callback lets compact navigation read the
+Step's current state. Separate public and package-internal contexts make the
+runtime boundary match the type boundary: the public provider contains exactly
+the supported keys, while the internal provider adds `stepCount`, `isCompact`,
+and `summarySlot` for the built-in `Step`. `minimumStepWidth` and
+`minStepWidthMeasureRef` disappear entirely with the pixel-only threshold
+implementation.
+
+Rejected: returning the package-internal provider value from
+`useStepperContext()` with only a narrower TypeScript return type. JavaScript
+could still read the removed fields, making the runtime API contradict the
+public contract.
 
 ## Open questions
 
-- Owner review of FR14–FR15 and the `horizontalOptions` public API admission
-  argument.
+- Owner review of FR15 and the `horizontalOptions.collapsedVariant` public API
+  admission argument.
 
 ## Content boundary
 

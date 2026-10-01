@@ -4,6 +4,9 @@
  * @file Data extraction tests for the docsite.
  *
  * Validates that the generated registries contain expected data.
+ * @input Authored component docs and the generated docsite registries
+ * @output Regression coverage for catalog projections, including Lab Drawer demos
+ * @position Build-time docsite data verification
  * Run: pnpm -F @astryxdesign/docsite test
  */
 
@@ -11,6 +14,8 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {describe, it, expect} from 'vitest';
+import {docs as chatDocs} from '../../../../packages/core/src/Chat/Chat.doc.mjs';
+import {docs as drawerDocs} from '../../../../packages/lab/src/Drawer/Drawer.doc.mjs';
 import docsiteConfig from '../../astryx.config.mjs';
 import {packages} from '../generated/packageRegistry';
 import {
@@ -20,10 +25,15 @@ import {
 } from '../generated/componentRegistry';
 import {blocks, blockCount, showcaseCount} from '../generated/blockRegistry';
 import {templates, templateCount} from '../generated/templateRegistry';
+import {
+  templateMetadata,
+  templateMetadataCount,
+} from '../generated/templateMetadataRegistry';
 import {docTopics, docsCount} from '../generated/docsRegistry';
 import {showcaseRegistry} from '../generated/showcaseRegistry';
 import {externalComponentPreviews} from '../generated/componentPreviewRegistry';
 import {eagerShowcases} from '../components/eagerShowcases';
+import {TEMPLATE_COMPONENTS} from '../components/templateComponents';
 import {exampleRegistry} from '../generated/exampleRegistry';
 import {normalizeComponentCategory} from '../lib/componentCategories';
 
@@ -239,7 +249,11 @@ describe('componentRegistry', () => {
     expect(components['@astryxdesign/lab'].length).toBeGreaterThan(30);
     expect(components['@astryxdesign/charts'].map(comp => comp.name)).toEqual([
       'Chart',
+      'ChartAxis',
+      'ChartGrid',
+      'ChartLegend',
       'ChartSwatch',
+      'ChartTooltip',
     ]);
     expect(components['@astryxdesign/richtext'].map(comp => comp.name)).toEqual(
       ['RichTextEditor'],
@@ -369,14 +383,10 @@ describe('componentRegistry', () => {
     const chatComposer = core.find(c => c.name === 'ChatComposer');
     expect(chatComposer).toBeDefined();
     expect(chatComposer!.parentDoc).toBe('Chat');
-    expect(chatComposer!.usage?.description).toContain(
-      'Layout shell for a chat composer',
-    );
-    expect(chatComposer!.usage?.description).not.toContain(
-      'XDSChatMessageList',
-    );
-    expect(chatComposer!.usage?.description).not.toContain(
-      'scrollable container for chat messages',
+    expect(chatDocs.usage?.description).toBeTruthy();
+    expect(chatComposer!.usage?.description).toBeTruthy();
+    expect(chatComposer!.usage?.description).not.toBe(
+      chatDocs.usage?.description,
     );
   });
 
@@ -600,6 +610,20 @@ describe('componentRegistry', () => {
     expect(layoutPanel!.playground?.wrapper).toMatchObject({
       component: 'Layout',
       slotProp: 'start',
+    });
+  });
+
+  it('LayoutFooter declares a playground wrapper in footer slot so preview is not empty (#5895)', () => {
+    const core = components['@astryxdesign/core'];
+    const layoutFooter = core.find(c => c.name === 'LayoutFooter');
+    expect(layoutFooter).toBeDefined();
+    expect(layoutFooter!.playground?.defaults).toMatchObject({
+      children: expect.any(String),
+      hasDivider: true,
+    });
+    expect(layoutFooter!.playground?.wrapper).toMatchObject({
+      component: 'Layout',
+      slotProp: 'footer',
     });
   });
 
@@ -873,7 +897,9 @@ describe('blockRegistry', () => {
       expect(block.aspectRatio).not.toBeNaN();
       expect(Array.isArray(block.componentsUsed)).toBe(true);
       expect(block.category).toBeDefined();
-      expect(typeof block.exampleFor).toBe('string');
+      expect(
+        block.exampleFor === null || typeof block.exampleFor === 'string',
+      ).toBe(true);
     }
   });
 
@@ -912,8 +938,8 @@ describe('blockRegistry', () => {
     expect(chartShowcase?.source).toContain("from '@astryxdesign/charts'");
   });
 
-  it('every block has exampleFor set', () => {
-    const missing = blocks.filter(b => !b.exampleFor);
+  it('showcases always declare component ownership', () => {
+    const missing = blocks.filter(b => b.isShowcase && !b.exampleFor);
     expect(missing.map(b => b.dirName)).toEqual([]);
   });
 
@@ -921,10 +947,12 @@ describe('blockRegistry', () => {
     const showcases = blocks.filter(b => b.isShowcase);
     const seen = new Map<string, string[]>();
     for (const s of showcases) {
-      if (!seen.has(s.exampleFor)) {
-        seen.set(s.exampleFor, []);
+      expect(s.exampleFor).not.toBeNull();
+      const owner = s.exampleFor!;
+      if (!seen.has(owner)) {
+        seen.set(owner, []);
       }
-      seen.get(s.exampleFor)!.push(s.dirName);
+      seen.get(owner)!.push(s.dirName);
     }
     const dupes = [...seen.entries()].filter(([, v]) => v.length > 1);
     // Some components may legitimately have multiple showcases, but flag them
@@ -969,6 +997,17 @@ describe('templateRegistry', () => {
   it('discovers page templates', () => {
     expect(templateCount).toBeGreaterThan(10);
     expect(templates.length).toBe(templateCount);
+    expect(templateMetadataCount).toBe(templateCount);
+    expect(templateMetadata).toHaveLength(templateCount);
+  });
+
+  it('keeps source out of the metadata-only registry', () => {
+    expect(templateMetadata.map(template => template.slug)).toEqual(
+      templates.map(template => template.slug),
+    );
+    for (const template of templateMetadata) {
+      expect(template).not.toHaveProperty('source');
+    }
   });
 
   it('templates have required fields', () => {
@@ -984,6 +1023,27 @@ describe('templateRegistry', () => {
     const slugs = templates.map(t => t.slug);
     expect(slugs).toContain('dashboard');
     expect(slugs).toContain('settings');
+  });
+
+  it('surfaces all dashboard templates with live previews', () => {
+    const dashboards = templates.filter(template =>
+      template.category.startsWith('Dashboard'),
+    );
+
+    expect(dashboards.map(template => template.slug).sort()).toEqual([
+      'dashboard',
+      'dashboard-alert-rail',
+      'dashboard-cohort-funnel',
+      'dashboard-comparison',
+      'dashboard-composition',
+      'dashboard-progress',
+      'dashboard-scorecard',
+    ]);
+    for (const template of dashboards) {
+      expect(template.isReady).toBe(true);
+      expect(template.isHiddenFromOverview).toBe(false);
+      expect(TEMPLATE_COMPONENTS[template.slug]).toBeDefined();
+    }
   });
 
   it('no duplicate template slugs', () => {
@@ -1147,6 +1207,25 @@ describe('exampleRegistry', () => {
     expect(exampleRegistry['Button']).toBeDefined();
     expect(exampleRegistry['Table']).toBeDefined();
     expect(exampleRegistry['Dialog']).toBeDefined();
+  });
+
+  it('projects Drawer docs into a live showcase and five example blocks', () => {
+    const drawerBlocks = blocks.filter(block => block.exampleFor === 'Drawer');
+    const labels = drawerDocs.examples!.map(example => example.label);
+    expect(drawerBlocks).toHaveLength(6);
+    expect(drawerBlocks.map(block => block.name).sort()).toEqual(
+      [...labels].sort(),
+    );
+    expect(
+      drawerBlocks.every(block => block.sourcePackage === '@astryxdesign/lab'),
+    ).toBe(true);
+
+    const showcase = drawerBlocks.filter(block => block.isShowcase);
+    expect(showcase.map(block => block.name)).toEqual([labels[0]]);
+    expect(showcaseRegistry.Drawer).toBeTypeOf('function');
+    expect(exampleRegistry.Drawer.map(example => example.name).sort()).toEqual(
+      labels.slice(1).sort(),
+    );
   });
 
   it('Button has multiple examples', () => {

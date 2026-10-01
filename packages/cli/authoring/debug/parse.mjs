@@ -22,7 +22,7 @@
 import {z} from 'zod';
 import {formatZodError} from '../_shared/errors.mjs';
 
-/** @typedef {import('./type').DebugEvent} DebugEvent */
+/** @typedef {import('./type.js').DebugEvent} DebugEvent */
 
 const outcomeSchema = z.enum([
   'ok',
@@ -43,10 +43,15 @@ const optionSourceSchema = z.enum([
 
 const resultKindSchema = z.enum([
   'component',
-  'template',
-  'doc',
   'hook',
+  'doc',
+  'template',
+  'theme',
+  'integration',
+  'migration',
+  'command',
   'mixed',
+  'none',
 ]);
 
 const invocationSourceSchema = z.enum(['human', 'ai', 'automation', 'unknown']);
@@ -118,7 +123,7 @@ const eventSchema = z
     // records before the raw session id was retired, and refusing to read them
     // back would make the privacy change look like data loss. What each version
     // is ALLOWED to contain differs — see the refinement below.
-    schemaVersion: z.union([z.literal(1), z.literal(2)]),
+    schemaVersion: z.union([z.literal(1), z.literal(2), z.literal(3)]),
     id: z.string(),
     startedAt: z.string(),
     endedAt: z.string(),
@@ -164,8 +169,8 @@ const eventSchema = z
  * `Expect<false>` fails the `tsconfig.authoring-contract.json` typecheck —
  * so a field added to the recorder without being published here breaks CI.
  *
- * @typedef {import('../_shared/contract').Expect<
- *   import('../_shared/contract').MutuallyAssignable<z.infer<typeof eventSchema>, DebugEvent>
+ * @typedef {import('../_shared/contract.js').Expect<
+ *   import('../_shared/contract.js').MutuallyAssignable<z.infer<typeof eventSchema>, DebugEvent>
  * >} _DebugEventDriftLock
  */
 

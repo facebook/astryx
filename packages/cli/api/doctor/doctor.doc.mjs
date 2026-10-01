@@ -11,12 +11,14 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'doctor',
+  namespace: 'cli/api',
   displayName: 'doctor()',
   summary: 'Read-only project + environment health check.',
   description:
     'Runs a series of side-effect-free diagnostics: Node version, ' +
     '@astryxdesign/core install and version alignment with the CLI, installed ' +
-    'themes and wiring, astryx.config validity, agent docs, core peer ' +
+    'themes and wiring, astryx.config validity, integrations linked from ' +
+    'package.json without a config entry, agent docs, core peer ' +
     'dependencies, and the detected package manager, and returns a structured ' +
     'report. It only reads (never installs, writes, or mutates), so it is safe ' +
     'as a CI gate and for agents to invoke.',

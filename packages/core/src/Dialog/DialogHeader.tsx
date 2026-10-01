@@ -4,7 +4,7 @@
 
 /**
  * @file DialogHeader.tsx
- * @input Uses React, useEffect, useRef, LayoutHeader, Button, Icon, Heading, Text, DialogContext
+ * @input Uses React, StyleX, LayoutHeader, Button, Icon, Heading, Text, DialogContext, mergeProps, themeProps
  * @output Exports DialogHeader component and DialogHeaderProps
  * @position Dialog header component; used with Dialog and Layout
  *
@@ -25,6 +25,8 @@ import {Icon} from '../Icon';
 import {Heading} from '../Heading/Heading';
 import {Text} from '../Text/Text';
 import type {BaseProps} from '../BaseProps';
+import {mergeProps} from '../utils';
+import {themeProps} from '../utils/themeProps';
 import {useDialogContext} from './DialogContext';
 import {useTranslator} from '../i18n';
 
@@ -35,12 +37,17 @@ const styles = stylex.create({
     justifyContent: 'space-between',
     gap: spacingVars['--spacing-3'],
   },
-  // Compensate for the icon button's visual padding on the actions area
-  actionsCompensation: {
+  // Compensate for the medium icon button's visual padding on the end slot.
+  endBlockEdgeCompensation: {
     marginBlock: `calc(-1 * ${spacingVars['--spacing-2']})`,
+  },
+  endInlineEdgeCompensation: {
     marginInlineEnd: `calc(-1 * ${spacingVars['--spacing-2']})`,
   },
   titleWrapper: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-0'],
     flex: 1,
     minWidth: 0,
     // Visual centering: align title center with close button center
@@ -65,16 +72,23 @@ export interface DialogHeaderProps extends BaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
   /**
    * The title of the dialog.
+   * Rendered inside the dialog's focusable h2, so rich inline content (for
+   * example a styled span) keeps the heading semantics. Keep it inline,
+   * non-interactive, and non-empty: its text becomes the dialog's name.
    * This title receives focus when the dialog opens for screen reader
    * accessibility, and names the parent Dialog via aria-labelledby unless the
-   * consumer passes an explicit aria-label/aria-labelledby to the Dialog.
+   * consumer passes an explicit aria-label/aria-labelledby to the Dialog. The
+   * accessible name is the rendered title's text content.
    */
-  title: string;
+  title: ReactNode;
 
   /**
    * Optional subtitle displayed below the title in smaller, secondary text.
+   * Accepts inline content such as a Link; it renders inside a span, so
+   * avoid block elements. Nothing renders for `null`, `undefined`, booleans,
+   * or an empty string.
    */
-  subtitle?: string;
+  subtitle?: ReactNode;
 
   /**
    * Callback fired when the dialog visibility changes.
@@ -92,6 +106,14 @@ export interface DialogHeaderProps extends BaseProps<HTMLDivElement> {
    * Content to render after the title, before the close button (e.g., action buttons).
    */
   endContent?: ReactNode;
+
+  /**
+   * Overrides automatic end-slot compensation. When omitted, the slot keeps its
+   * existing behavior: rendering the close action applies block and logical
+   * inline-end compensation. Use `inline`, `block`, or `all` to select the axes
+   * explicitly.
+   */
+  endContentEdgeCompensation?: 'inline' | 'block' | 'all';
 
   /**
    * Adds a themed border at the bottom edge.
@@ -129,6 +151,7 @@ export function DialogHeader({
   onOpenChange,
   startContent,
   endContent,
+  endContentEdgeCompensation,
   hasDivider,
   xstyle,
   className,
@@ -141,6 +164,20 @@ export function DialogHeader({
   const dialogContext = useDialogContext();
   const shouldAutoFocus = dialogContext?.isInline !== true;
   const titleId = dialogContext?.titleId;
+  // A node subtitle may be `0`: render it inside Text instead of letting a
+  // truthiness check leak a bare text node, and skip only empty values.
+  const hasSubtitle =
+    subtitle != null && typeof subtitle !== 'boolean' && subtitle !== '';
+  const shouldCompensateEndBlock =
+    endContentEdgeCompensation == null
+      ? onOpenChange != null
+      : endContentEdgeCompensation === 'block' ||
+        endContentEdgeCompensation === 'all';
+  const shouldCompensateEndInline =
+    endContentEdgeCompensation == null
+      ? onOpenChange != null
+      : endContentEdgeCompensation === 'inline' ||
+        endContentEdgeCompensation === 'all';
 
   // Auto-focus the title when mounted for screen reader accessibility.
   // Inline dialogs are documentation/showcase previews, so suppress focus to
@@ -161,11 +198,25 @@ export function DialogHeader({
       className={className}
       style={style}
       {...rest}>
-      <div {...stylex.props(styles.container)}>
+      <div
+        {...mergeProps(
+          themeProps('dialog-header'),
+          stylex.props(styles.container),
+        )}>
         {startContent && (
-          <div {...stylex.props(styles.actions)}>{startContent}</div>
+          <div
+            {...mergeProps(
+              themeProps('dialog-header-start-content'),
+              stylex.props(styles.actions),
+            )}>
+            {startContent}
+          </div>
         )}
-        <div {...stylex.props(styles.titleWrapper)}>
+        <div
+          {...mergeProps(
+            themeProps('dialog-header-title-block'),
+            stylex.props(styles.titleWrapper),
+          )}>
           <Heading
             ref={titleRef}
             id={titleId}
@@ -174,7 +225,7 @@ export function DialogHeader({
             xstyle={styles.titleFocusable}>
             {title}
           </Heading>
-          {subtitle && (
+          {hasSubtitle && (
             <Text type="body" size="sm" color="secondary">
               {subtitle}
             </Text>
@@ -182,9 +233,13 @@ export function DialogHeader({
         </div>
         {(endContent || onOpenChange) && (
           <div
-            {...stylex.props(
-              styles.actions,
-              onOpenChange && styles.actionsCompensation,
+            {...mergeProps(
+              themeProps('dialog-header-end-content'),
+              stylex.props(
+                styles.actions,
+                shouldCompensateEndBlock && styles.endBlockEdgeCompensation,
+                shouldCompensateEndInline && styles.endInlineEdgeCompensation,
+              ),
             )}>
             {endContent}
             {onOpenChange && (
@@ -192,7 +247,13 @@ export function DialogHeader({
                 variant="ghost"
                 label={t('@astryx.dialog.close')}
                 tooltip={t('@astryx.dialog.close')}
-                icon={<Icon icon="close" color="inherit" />}
+                icon={
+                  <Icon
+                    icon="close"
+                    color="inherit"
+                    {...themeProps('dialog-header-close-icon')}
+                  />
+                }
                 onClick={() => {
                   onOpenChange?.(false);
                 }}

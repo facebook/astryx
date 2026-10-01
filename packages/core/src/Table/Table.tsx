@@ -11,6 +11,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Table/Table.doc.mjs (props table, features, usage examples)
  * - /packages/core/src/Table/Table.test.tsx (tests for new/changed behavior)
+ * - /packages/core/src/Table/__tests__/TableScroll.a11y.chromium.spec.ts (browser scroll behavior)
  * - /packages/core/src/Table/index.ts (exports if types change)
  * - /apps/storybook/stories/Table.stories.tsx (storybook stories)
  * - /packages/cli/assets/templates/blocks/components/Table/ (showcase blocks)
@@ -22,6 +23,7 @@ import {colorVars} from '../theme/tokens.stylex';
 import {BaseTable} from './BaseTable';
 import {TableContext} from './TableContext';
 import {useBaseTablePlugins} from './useBaseTablePlugins';
+import {useScrollableArea} from '../hooks/useScrollableArea';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import type {
@@ -149,30 +151,36 @@ function TableScrollWrapper({
   afterTable?: React.ReactNode;
 }) {
   const t = useTranslator();
+  const label = t('@astryx.table.label');
+  const {getViewportProps, getContentProps, state} = useScrollableArea({
+    axis: 'inline',
+    keyboardAccess: {owner: 'content'},
+    overscroll: 'contain',
+  });
   const {ref, ...restHtmlProps} = htmlProps ?? {};
+  const viewportProps = getViewportProps<HTMLDivElement>({
+    role: 'group',
+    'aria-label': label,
+    ...(state.inline.isScrollable ? {tabIndex: 0} : {}),
+    ...restHtmlProps,
+    ref,
+    ...mergeProps(
+      themeProps('table-scroll-wrapper'),
+      stylex.props(
+        scrollWrapperStyles.base,
+        scrollWrapperStyles.containerBleed,
+        ...(pluginStyles ?? []),
+      ),
+    ),
+  });
+
   return (
-    <div
-      ref={ref}
-      // Keyboard-focusable so keyboard users can scroll a horizontally
-      // overflowing table. Uses role="group" (not "region") so multiple
-      // tables on a page don't create duplicate same-named landmarks
-      // (axe: landmark-unique). Callers may override role/aria-label via
-      // htmlProps.
-      tabIndex={0}
-      role="group"
-      aria-label={t('@astryx.table.label')}
-      {...restHtmlProps}
-      {...mergeProps(
-        themeProps('table-scroll-wrapper'),
-        stylex.props(
-          scrollWrapperStyles.base,
-          scrollWrapperStyles.containerBleed,
-          ...(pluginStyles ?? []),
-        ),
-      )}>
-      {beforeTable}
-      {children}
-      {afterTable}
+    <div {...viewportProps}>
+      <div {...getContentProps<HTMLDivElement>()}>
+        {beforeTable}
+        {children}
+        {afterTable}
+      </div>
     </div>
   );
 }

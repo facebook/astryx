@@ -17,13 +17,34 @@ nested `AGENTS.md`.
   `packages/cli/assets/docs/`.
 - Contributors: read `CONTRIBUTING.md` and the relevant guidance linked from
   `docs/README.md`.
-- Component work: read the component's `{Name}.spec.md` when one exists, then
-  any `module:*` records it lists for the public module being changed, followed by
-  consumer docs, tests, and implementation.
+- Pull requests: choose one primary intent and use its template under
+  `.github/PULL_REQUEST_TEMPLATE/`; read `docs/contributing/pull-requests.md`
+  before opening or reviewing a mixed change.
+- Component work: derive the review's semantic triggers, load matching `current`
+  global baseline claims with `node scripts/review-global-baselines.mjs
+--authority-commit <base-sha> --review-head <head-sha> --triggers
+<comma-separated-triggers>`, then read
+  the component's `{Name}.spec.md` when one exists and any `module:*` records it
+  lists. Load global records before narrower owners, but resolve the direct
+  component or family owner first when it governs the exact delta. A global
+  route exposes only the listed claim; it never makes the whole record govern
+  the component or change. Preserve each matched record, claim, trigger, and
+  match reason in the review receipt.
+- Component-local visual intent: reuse or amend the optional `Design decisions`
+  table in the current component/module spec only when durable local intent must
+  survive future redesigns. Keep exact tuning in code/evidence and shared rules
+  in `docs/design/`. DESIGNOWNER authors may include that local intent with the
+  pixels and evidence in one atomic appearance-only PR. External contributors
+  follow the normal contribution flow and are never asked to author specs;
+  maintainers own missing authority.
 - Cross-component work: read the relevant contract under `docs/families/`,
   applicable design spec under `docs/design/`, and current architecture under
   `docs/architecture/`.
 - Consequential shared-system changes: use a record under `docs/specs/`.
+- Integration contribution work: read `docs/specs/AST-039/spec.md`. Every new
+  discoverable item owns a strongly typed, same-stem `.doc.mjs`; root manifests
+  locate directories and never catalog their items. No catalog file (like
+  `themes/manifest.json`) and no per-item map in the manifest, ever.
 
 ## Authority
 
@@ -144,7 +165,7 @@ Documentation lives in two places:
 
 <!-- STYLEX-CAPS:START -->
 
-[StyleX v0.17.5 CSS Support]|Use CSS-native solutions. Don't build JS workarounds for supported features.
+[StyleX v0.19.0 CSS Support]|Use CSS-native solutions. Don't build JS workarounds for supported features.
 |AT-RULES: @media, @supports, @container (+named), @starting-style, @scope — YES
 |AT-RULES: @layer, @property (explicit) — NO (compiles but invalid CSS output)
 |PSEUDO-CLS: :hover, :focus, :focus-visible, :focus-within, :active, :disabled — YES
@@ -153,10 +174,11 @@ Documentation lives in two places:
 |PSEUDO-EL: ::before, ::after, ::placeholder, ::selection, ::backdrop, ::marker, ::view-transition-_ — YES
 |COMPOUND: ::backdrop+condition, RTL :is([dir="rtl"] _), nested @media+pseudo — YES
 |VALUES: var(), calc(), clamp(), light-dark(), color-mix(), container-type/name — YES
-|ANIM: transition (shorthand+individual), transitionBehavior:allow-discrete, animation, stylex.keyframes — YES
+|ANIM: transition (shorthand+individual), transitionBehavior:allow-discrete, animation longhands, stylex.keyframes — YES
+|ANIM: animation shorthand — NO (use animationName/duration/timingFunction/etc.)
 |WHEN: stylex.when.ancestor(':hover'/':focus-within'/':active'/':disabled') — YES
 |WHEN: stylex.when.descendant(':hover'), siblingBefore(':checked'), siblingAfter(':checked'), anySibling(':hover') — YES
-|WHEN: stylex.when.ancestor('[data-attr]') — NO (pseudo selectors only, must start with ":")
+|WHEN: stylex.when.ancestor('[data-attr]') — YES
 |NESTING: CSS nesting with & — NO (use stylex.when.ancestor/descendant/sibling for parent-child state)
 |API: stylex.firstThatWorks() for CSS fallbacks (e.g. display: grid with flex fallback) — YES
 |API: stylex.positionTry() for anchor positioning @position-try — YES
@@ -191,6 +213,8 @@ astryx docs theme --dense # theme provider, light/dark, overrides
 astryx component --list # all components grouped by category
 astryx template --list # available page templates
 ON DEMAND:
+astryx docs <topic> --index # section index: one line per section, with its key
+astryx docs <topic> <section> # one section, by key or title
 astryx component <Name> --dense # props, variants, usage, anatomy for one component
 astryx template <name> # emit full page source
 astryx template <name> --skeleton # layout skeleton with spatial annotations
