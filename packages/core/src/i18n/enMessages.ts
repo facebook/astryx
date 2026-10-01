@@ -7,7 +7,7 @@
  * @output EN_MESSAGES — the shipped English catalog as key → message.
  * @position The runtime half of en.json. The JSON keeps a `description`
  *   beside every message for translators; the runtime reads only the
- *   message, so this projection is what `resolve.ts` ships, about a tenth
+ *   message, so this projection is what `resolve.ts` ships, about a quarter
  *   of the JSON. Edit en.json, then run `pnpm -F @astryxdesign/core build:i18n`;
  *   `check:i18n-catalog` fails when the two drift.
  *
