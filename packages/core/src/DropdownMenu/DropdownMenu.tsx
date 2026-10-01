@@ -79,10 +79,7 @@ import {
 import {mergeProps, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
-import {
-  getInteractionModality,
-  useInteractionModalityTracking,
-} from '../utils/interactionModality';
+import {useInteractionModalityTracking} from '../utils/interactionModality';
 import {useTranslator} from '../i18n';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 
@@ -611,11 +608,20 @@ function DropdownMenuPopover({
   const suppressControlledRollbackHideRef = useRef(false);
 
   useInteractionModalityTracking();
+  const {
+    isFocusRingSuppressed,
+    onFocusReturnTargetFocus,
+    prepareFocusReturn,
+    resetFocusReturn,
+  } = useFocusReturnVisibility();
+  const contentRef = useRef<HTMLDivElement | null>(null);
 
-  // Keyboard dismissal returns focus to the trigger. Pointer dismissal leaves
-  // focus where the browser put it; Safari can otherwise paint a focus-visible
-  // ring on the trigger after a touch selection. Native popover restoration
-  // can happen before `toggle`, so explicitly blur that pointer-restored case.
+  // Focus lands somewhere stated when the menu closes. A press outside that
+  // landed on a focusable control has already moved focus there; leave it.
+  // Otherwise — a row acted, Escape, a press on nothing — focus returns to
+  // the trigger, with a visible ring only when the menu was driven by
+  // keyboard (the modality tracker decides; the suppressed style hides the
+  // pointer case, which Safari would otherwise paint after a touch pick).
   const handleLayerHide = useCallback(() => {
     if (suppressControlledRollbackHideRef.current) {
       suppressControlledRollbackHideRef.current = false;
@@ -627,12 +633,21 @@ function DropdownMenuPopover({
       setInternalIsOpen(false);
     }
     const trigger = buttonRef.current;
-    if (getInteractionModality() === 'keyboard') {
-      trigger?.focus();
-    } else if (document.activeElement === trigger) {
-      trigger?.blur();
+    if (!trigger) {
+      return;
     }
-  }, [isControlled, onOpenChange]);
+    const active = document.activeElement;
+    const focusLandedElsewhere =
+      active instanceof HTMLElement &&
+      active !== document.body &&
+      active !== trigger &&
+      !contentRef.current?.contains(active);
+    if (focusLandedElsewhere) {
+      return;
+    }
+    prepareFocusReturn();
+    trigger.focus({preventScroll: true});
+  }, [isControlled, onOpenChange, prepareFocusReturn]);
 
   // Defer item focus until the layer has committed open, so focus restore
   // captures the trigger instead of the first menu item.
@@ -647,6 +662,7 @@ function DropdownMenuPopover({
 
   const handleLayerShow = useCallback(() => {
     acceptedOpenRef.current = true;
+    resetFocusReturn();
     if (notifyClickOnShowRef.current) {
       notifyClickOnShowRef.current = false;
       onClick?.();
@@ -655,7 +671,7 @@ function DropdownMenuPopover({
     if (!isControlled) {
       setInternalIsOpen(true);
     }
-  }, [isControlled, onClick, onOpenChange]);
+  }, [isControlled, onClick, onOpenChange, resetFocusReturn]);
 
   const popover = usePopover({
     onHide: handleLayerHide,
@@ -922,11 +938,19 @@ function DropdownMenuPopover({
             /* eslint-enable react-compiler/react-compiler */
           }
         }}
-        xstyle={[isOpen && styles.triggerOpen, button.xstyle]}
+        xstyle={[
+          isOpen && styles.triggerOpen,
+          button.xstyle,
+          isFocusRingSuppressed && focusOutlineStyles.suppressed,
+        ]}
         tooltip={isOpen ? undefined : button.tooltip}
         endContent={resolvedEndContent}
         onClick={handleButtonClick}
         onKeyDown={handleButtonKeyDown}
+        onFocus={event => {
+          button.onFocus?.(event);
+          onFocusReturnTargetFocus();
+        }}
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-controls={menuId}
@@ -936,7 +960,11 @@ function DropdownMenuPopover({
       {popover.render(
         <div
           {...rest}
-          ref={listRef}
+          ref={el => {
+            listRef.current = el;
+            contentRef.current =
+              el?.closest<HTMLDivElement>('[popover]') ?? null;
+          }}
           id={menuId}
           role="menu"
           // Pointer opens focus the container so arrows, typeahead, Escape and

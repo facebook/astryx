@@ -82,12 +82,13 @@ subcomponents, and presentation policy remain documented in
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                                                                                                                                                                                           | Basis                           | Draft review state                                 |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | -------------------------------------------------- |
-| FR1 | Every current render contains a Trigger button. Pointer presentation renders a Pointer menu surface with pointer-owned rows and optional pointer headings, dividers, indicators, and nested flyouts. Touch presentation renders a Touch sheet frame containing a Touch menu surface, Touch heading, Touch action list, and Touch action rows. | Current source, docs, and tests | Verified current behavior; no new behavior decided |
-| FR2 | The six current local targets are `dropdown-menu`, `dropdown-menu-item`, `dropdown-menu-radio`, `dropdown-menu-section-heading`, `dropdown-menu-divider`, and `dropdown-menu-indicator-icon`; every target remains on its current painted element.                                                                                            | Current source, docs, and tests | Verified current inventory; no target change       |
-| FR3 | Button owns the Trigger button, BottomSheet owns the Touch sheet frame, List owns the Touch action list and Touch action rows, Indicator owns checkbox chrome, and Icon owns ordinary rendered icons.                                                                                                                                         | Current source and owner docs   | Verified current delegation; no ownership change   |
-| FR4 | The same `dropdown-menu` target reaches the alternative Pointer menu surface and Touch menu surface. Pointer action rows retain `dropdown-menu-item`; touch action rows instead use List's `list-item` target.                                                                                                                                | Current source and tests        | Verified modality split; no target change          |
+| ID  | Candidate invariant                                                                                                                                                                                                                                                                                                                           | Basis                                                                                                    | Draft review state                                 |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| FR1 | Every current render contains a Trigger button. Pointer presentation renders a Pointer menu surface with pointer-owned rows and optional pointer headings, dividers, indicators, and nested flyouts. Touch presentation renders a Touch sheet frame containing a Touch menu surface, Touch heading, Touch action list, and Touch action rows. | Current source, docs, and tests                                                                          | Verified current behavior; no new behavior decided |
+| FR2 | The six current local targets are `dropdown-menu`, `dropdown-menu-item`, `dropdown-menu-radio`, `dropdown-menu-section-heading`, `dropdown-menu-divider`, and `dropdown-menu-indicator-icon`; every target remains on its current painted element.                                                                                            | Current source, docs, and tests                                                                          | Verified current inventory; no target change       |
+| FR3 | Button owns the Trigger button, BottomSheet owns the Touch sheet frame, List owns the Touch action list and Touch action rows, Indicator owns checkbox chrome, and Icon owns ordinary rendered icons.                                                                                                                                         | Current source and owner docs                                                                            | Verified current delegation; no ownership change   |
+| FR4 | The same `dropdown-menu` target reaches the alternative Pointer menu surface and Touch menu surface. Pointer action rows retain `dropdown-menu-item`; touch action rows instead use List's `list-item` target.                                                                                                                                | Current source and tests                                                                                 | Verified modality split; no target change          |
+| FR9 | When the pointer menu closes, focus returns to the Trigger button with a visible ring only when the menu was driven by keyboard; a press outside that landed on a focusable control keeps focus there.                                                                                                                                        | `architecture:interaction-modality` INV1; proposed in this change; `DropdownMenu.test.tsx` closing suite | Proposed; verified in jsdom, pending owner review  |
 
 ### Allowed variation
 
@@ -121,9 +122,10 @@ subcomponents, and presentation policy remain documented in
 
 ## Accessibility contract
 
-This draft does not change or extend DropdownMenu's existing trigger naming,
-menu and dialog roles, focus movement, keyboard navigation, item semantics, or
-dismissal behavior.
+This draft does not change DropdownMenu's trigger naming, menu and dialog
+roles, keyboard navigation, item semantics, or dismissal ordering. Focus
+return on close follows FR9 and `architecture:interaction-modality` INV1
+through the shared focus-return visibility helper.
 
 ## Design relationships
 
@@ -222,18 +224,28 @@ than adding a DropdownMenu-owned heading target.
 
 ## Verification map
 
-| Contract            | Verification                                                                                              | Representative states                              | Mutation or failure expectation                                                                  | Audit section                 |
-| ------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------- |
-| FR1, FR4            | `DropdownMenu.test.tsx` pointer, bottom-sheet, adaptive, section, divider, and drill-in suites            | Root pointer, nested pointer, root touch, drill-in | Collapsing presentation-specific parts or owners fails structure, target, or role assertions.    | `audit:DropdownMenu/anatomy`  |
-| FR2                 | DropdownMenu target suites, source inspection, and theming target inventories                             | All six local targets                              | Removing, renaming, or assigning a current target to the wrong part fails evidence or inventory. | `audit:DropdownMenu/theming`  |
-| FR3                 | `DropdownMenuSelectable.test.tsx` plus BottomSheet, List, Indicator, Icon, and Divider owner tests        | Trigger, touch actions, icons, checkbox, radio     | A composed part loses its owner target or is documented as a new local target.                   | `audit:DropdownMenu/theming`  |
-| Layer relationships | `DropdownMenu.test.tsx`, `DropdownMenuSubMenu.test.tsx`, and current layer/dismissal architecture records | Light dismiss, nested flyout, sheet dismissal      | Documentation claims a shared owner where current source retains local behavior, or the reverse. | `audit:DropdownMenu/behavior` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                             | Canonical anatomy and current target inventory     | Missing, extra, prefixed, stale, or unclassified mappings fail repository validation.            | `audit:DropdownMenu/theming`  |
+| Contract            | Verification                                                                                              | Representative states                                                                        | Mutation or failure expectation                                                                  | Audit section                 |
+| ------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------- |
+| FR1, FR4            | `DropdownMenu.test.tsx` pointer, bottom-sheet, adaptive, section, divider, and drill-in suites            | Root pointer, nested pointer, root touch, drill-in                                           | Collapsing presentation-specific parts or owners fails structure, target, or role assertions.    | `audit:DropdownMenu/anatomy`  |
+| FR2                 | DropdownMenu target suites, source inspection, and theming target inventories                             | All six local targets                                                                        | Removing, renaming, or assigning a current target to the wrong part fails evidence or inventory. | `audit:DropdownMenu/theming`  |
+| FR3                 | `DropdownMenuSelectable.test.tsx` plus BottomSheet, List, Indicator, Icon, and Divider owner tests        | Trigger, touch actions, icons, checkbox, radio                                               | A composed part loses its owner target or is documented as a new local target.                   | `audit:DropdownMenu/theming`  |
+| Layer relationships | `DropdownMenu.test.tsx`, `DropdownMenuSubMenu.test.tsx`, and current layer/dismissal architecture records | Light dismiss, nested flyout, sheet dismissal                                                | Documentation claims a shared owner where current source retains local behavior, or the reverse. | `audit:DropdownMenu/behavior` |
+| FR9                 | `DropdownMenu.test.tsx` dismissal and closing suites                                                      | keyboard dismissal, pointer dismissal, press outside on a control, pointer pick, closed menu | Focus left on the body after a pointer pick, or a ring after pointer input, fails.               | `audit:DropdownMenu/behavior` |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                             | Canonical anatomy and current target inventory                                               | Missing, extra, prefixed, stale, or unclassified mappings fail repository validation.            | `audit:DropdownMenu/theming`  |
 
 ## Decision log
 
-None. This draft records current facts and introduces no component-local design,
-API, theming, modality, or layer-system decision.
+### DEC-3 — Pointer dismissal returns focus to the trigger, ring suppressed
+
+**Reference:** `component:DropdownMenu/DEC-3`
+**Decider:** pending owner review
+
+The shipped behavior blurred the trigger after a pointer dismissal so Safari
+would not paint a ring after a touch pick. Focus falling to the page loses a
+keyboard user who reaches for the arrows next. Focus now returns to the
+trigger and the shared focus-return visibility helper suppresses the ring
+after pointer input (`architecture:interaction-modality` INV1), as the
+bottom-sheet presentation already did.
 
 ## Open questions
 
