@@ -3,10 +3,10 @@
 /** @type {import('@astryxdesign/cli/authoring').TemplateDoc} */
 export default {
   type: 'block',
-  name: 'Non-modal inspector (page stays interactive)',
-  displayName: 'Non-modal inspector (page stays interactive)',
+  name: 'Basic',
+  displayName: 'Basic',
   description:
-    'Open a non-modal inspector while keeping the page behind it interactive. In a master-detail flow, derive isOpen from the selection and retain the last content during close.',
+    'Open a modal drawer from a single trigger. The scrim dims the page; Escape, a scrim click, or the built-in close button closes it, and focus returns to the trigger.',
   exampleFor: 'Drawer',
   isReady: true,
   isShowcase: true,

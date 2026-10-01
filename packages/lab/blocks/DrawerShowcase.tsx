@@ -3,8 +3,8 @@
 'use client';
 
 /**
- * @input Controlled open state for a non-modal Drawer
- * @output A single-trigger inspector with the page behind it available
+ * @input Controlled open state for a modal Drawer
+ * @output A single-trigger drawer with a scrim and the built-in close button
  * @position Lab Drawer's docsite showcase and copyable CLI block
  */
 
@@ -25,17 +25,13 @@ export default function DrawerShowcase() {
         isOpen={isOpen}
         onOpenChange={setIsOpen}
         label="Details"
-        hasScrim={false}
         width={360}>
         <Section padding={4}>
           <VStack gap={2}>
             <Heading level={3}>Details</Heading>
-            <Text type="body">The page behind stays interactive.</Text>
-            <Button
-              label="Close"
-              variant="secondary"
-              onClick={() => setIsOpen(false)}
-            />
+            <Text type="body">
+              Close with Escape, the scrim, or the close button.
+            </Text>
           </VStack>
         </Section>
       </Drawer>

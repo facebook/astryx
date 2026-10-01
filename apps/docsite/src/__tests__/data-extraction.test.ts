@@ -1209,10 +1209,10 @@ describe('exampleRegistry', () => {
     expect(exampleRegistry['Dialog']).toBeDefined();
   });
 
-  it('projects Drawer docs into a live showcase and six example blocks', () => {
+  it('projects Drawer docs into a live showcase and five example blocks', () => {
     const drawerBlocks = blocks.filter(block => block.exampleFor === 'Drawer');
     const labels = drawerDocs.examples!.map(example => example.label);
-    expect(drawerBlocks).toHaveLength(7);
+    expect(drawerBlocks).toHaveLength(6);
     expect(drawerBlocks.map(block => block.name).sort()).toEqual(
       [...labels].sort(),
     );

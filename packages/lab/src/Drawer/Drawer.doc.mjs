@@ -201,7 +201,7 @@ export const docs = {
   // CLI snippets. The docsite renders the paired Drawer blocks in ../../blocks.
   examples: [
     {
-      label: 'Non-modal inspector (page stays interactive)',
+      label: 'Basic',
       code: `const [isOpen, setIsOpen] = useState(false);
 <>
   <Button label="Open drawer" onClick={() => setIsOpen(true)} />
@@ -209,24 +209,18 @@ export const docs = {
     isOpen={isOpen}
     onOpenChange={setIsOpen}
     label="Details"
-    hasScrim={false}
     width={360}>
     <Section padding={4}>
       <VStack gap={2}>
         <Heading level={3}>Details</Heading>
-        <Text type="body">The page behind stays interactive.</Text>
-        <Button
-          label="Close"
-          variant="secondary"
-          onClick={() => setIsOpen(false)}
-        />
+        <Text type="body">Close with Escape, the scrim, or the close button.</Text>
       </VStack>
     </Section>
   </Drawer>
 </>
-// Non-modal: no scrim, no focus trap. In a real master-detail flow, derive
-// the open state from the selection — isOpen={selected != null} — and clear
-// the selection in onOpenChange.`,
+// Modal by default: the scrim dims the page and focus is trapped. Escape, a
+// scrim click, or the built-in close button closes it, and focus returns to
+// the trigger.`,
     },
     {
       label: 'Slide in from the start edge',
@@ -298,28 +292,6 @@ const [openPanel, setOpenPanel] = useState(false);
     <DetailsPanel />
   </Drawer>
 </>`,
-    },
-    {
-      label: 'Stacked drill-in (siblings, not nested)',
-      code: `const [order, setOrder] = useState(null);
-const [lineItem, setLineItem] = useState(null);
-<>
-  <Drawer
-    isOpen={order != null}
-    onOpenChange={isOpen => !isOpen && setOrder(null)}
-    label="Order details"
-    hasScrim={false}>
-    <OrderDetails order={order} onSelectLineItem={setLineItem} />
-  </Drawer>
-  <Drawer
-    isOpen={lineItem != null}
-    onOpenChange={isOpen => !isOpen && setLineItem(null)}
-    label="Line item"
-    hasScrim={false}>
-    <LineItemDetails item={lineItem} />
-  </Drawer>
-</>
-// Last-opened stacks on top; Escape closes the line item first.`,
     },
   ],
 };

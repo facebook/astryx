@@ -1996,11 +1996,6 @@
       "aliases": []
     },
     {
-      "name": "example-drawer-stacked-drill-in-siblings-not-nested",
-      "path": "examples/drawer/stacked-drill-in-siblings-not-nested",
-      "aliases": []
-    },
-    {
       "name": "example-drawer-wide-desktop-panel-full-width-on-mobile",
       "path": "examples/drawer/wide-desktop-panel-full-width-on-mobile",
       "aliases": []
@@ -4231,8 +4226,8 @@
       "aliases": []
     },
     {
-      "name": "showcase-drawer-non-modal-inspector-page-stays-interactive",
-      "path": "showcases/drawer/non-modal-inspector-page-stays-interactive",
+      "name": "showcase-drawer-basic",
+      "path": "showcases/drawer/basic",
       "aliases": []
     },
     {
