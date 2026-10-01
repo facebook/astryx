@@ -274,3 +274,49 @@ export const AlignStart: Story = {
     />
   ),
 };
+
+/**
+ * Swipe actions, touch only. Drag a row toward the inline end (rightward in
+ * LTR) to reveal Archive, toward the inline start to reveal Delete; release
+ * past a third of the row (or fling) to fire it, short of it to spring back.
+ * A vertical drag scrolls the list as usual. View with a coarse pointer
+ * (DevTools device toolbar, or a phone).
+ */
+export const SwipeActions: Story = {
+  render: () => {
+    const [rows, setRows] = useState(() =>
+      Array.from({length: 8}, (_, index) => ({
+        id: index,
+        label: `Message ${index + 1}`,
+      })),
+    );
+    const remove = (id: number) =>
+      setRows(current => current.filter(row => row.id !== id));
+    return (
+      <Stack gap={0}>
+        {rows.map(row => (
+          <Item
+            key={row.id}
+            label={row.label}
+            description="Swipe toward the end to archive, toward the start to delete"
+            onClick={() => {}}
+            swipeActions={{
+              leading: {
+                label: 'Archive',
+                icon: <Icon icon={DocumentIcon} size="sm" />,
+                onAction: () => remove(row.id),
+                tone: 'success',
+              },
+              trailing: {
+                label: 'Delete',
+                onAction: () => remove(row.id),
+                tone: 'error',
+              },
+            }}
+          />
+        ))}
+        {rows.length === 0 && <Text>All done.</Text>}
+      </Stack>
+    );
+  },
+};

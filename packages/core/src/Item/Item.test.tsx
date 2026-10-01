@@ -10,8 +10,9 @@
  */
 
 import {use, useRef} from 'react';
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {afterEach, beforeEach, describe, it, expect, vi} from 'vitest';
+import {act, cleanup, fireEvent, render, screen} from '@testing-library/react';
+import {rulesDeclaredFor} from '../__tests__/pressState';
 import userEvent from '@testing-library/user-event';
 import {Item} from './Item';
 import {ItemDescriptionContext} from './ItemDescriptionContext';
@@ -602,5 +603,297 @@ describe('Item', () => {
   it('ignores inline layout when there is no description', () => {
     render(<Item label="Private" layout="inline" />);
     expect(screen.getByText('Private')).toBeInTheDocument();
+  });
+});
+
+describe('rest-prop passthrough to the root', () => {
+  it('lands role, aria-*, draggable and the drag handlers on the row element', () => {
+    const onDragStart = vi.fn();
+    const onDragEnd = vi.fn();
+    const onDragOver = vi.fn();
+    const onDrop = vi.fn();
+    render(
+      <Item
+        label="Row"
+        role="listitem"
+        aria-label="A row"
+        aria-describedby="hint"
+        aria-posinset={2}
+        aria-setsize={5}
+        draggable
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+        data-testid="row"
+      />,
+    );
+    const root = screen.getByTestId('row');
+    expect(root).toHaveAttribute('role', 'listitem');
+    expect(root).toHaveAttribute('aria-label', 'A row');
+    expect(root).toHaveAttribute('aria-describedby', 'hint');
+    expect(root).toHaveAttribute('aria-posinset', '2');
+    expect(root).toHaveAttribute('aria-setsize', '5');
+    expect(root).toHaveAttribute('draggable', 'true');
+    fireEvent.dragStart(root);
+    fireEvent.dragOver(root);
+    fireEvent.drop(root);
+    fireEvent.dragEnd(root);
+    expect(onDragStart).toHaveBeenCalledTimes(1);
+    expect(onDragOver).toHaveBeenCalledTimes(1);
+    expect(onDrop).toHaveBeenCalledTimes(1);
+    expect(onDragEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps them on the row when swipe actions wrap it', () => {
+    const onDragStart = vi.fn();
+    render(
+      <Item
+        label="Row"
+        role="listitem"
+        aria-label="A row"
+        draggable
+        onDragStart={onDragStart}
+        data-testid="row"
+        swipeActions={{leading: {label: 'Archive', onAction: vi.fn()}}}
+      />,
+    );
+    const root = screen.getByTestId('row');
+    expect(root).toHaveAttribute('role', 'listitem');
+    expect(root).toHaveAttribute('aria-label', 'A row');
+    expect(root).toHaveAttribute('draggable', 'true');
+    fireEvent.dragStart(root);
+    expect(onDragStart).toHaveBeenCalledTimes(1);
+    // The wrapper is a plain clipping container with no semantics.
+    expect(root.parentElement).not.toHaveAttribute('role');
+  });
+});
+
+describe('swipeActions', () => {
+  beforeEach(() => {
+    // The gesture reads the clock for its fling test and its settle timers:
+    // fake both, and space the moves out the way a finger does.
+    vi.useFakeTimers({
+      toFake: ['setTimeout', 'clearTimeout', 'Date', 'performance'],
+    });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function touch(
+    element: Element,
+    type: 'pointerDown' | 'pointerMove' | 'pointerUp' | 'pointerCancel',
+    x: number,
+    y = 10,
+  ) {
+    vi.advanceTimersByTime(50);
+    fireEvent[type](element, {
+      clientX: x,
+      clientY: y,
+      pointerId: 7,
+      pointerType: 'touch',
+    });
+  }
+
+  function renderRow(onAction = vi.fn(), onTrailing?: () => void) {
+    render(
+      <Item
+        label="Conversation"
+        onClick={vi.fn()}
+        data-testid="row"
+        swipeActions={{
+          leading: {label: 'Archive', onAction, tone: 'success'},
+          ...(onTrailing != null
+            ? {trailing: {label: 'Delete', onAction: onTrailing, tone: 'error'}}
+            : {}),
+        }}
+      />,
+    );
+    const row = screen.getByTestId('row');
+    const container = row.parentElement as HTMLElement;
+    Object.defineProperty(container, 'clientWidth', {
+      configurable: true,
+      value: 300,
+    });
+    return {row, container, onAction};
+  }
+
+  /** The revealed panel: decorative, and clipped to the revealed width. */
+  const panelFor = (label: string) =>
+    screen.getByText(label).closest('[aria-hidden="true"]') as HTMLElement;
+  const isClipping = (container: Element) =>
+    rulesDeclaredFor(container).some(rule => rule.includes('overflow: hidden'));
+
+  it('renders nothing that moves at rest: the panel waits at zero width and the row is untransformed', () => {
+    const {row, container} = renderRow();
+    expect(panelFor('Archive')).toBeInTheDocument();
+    expect(panelFor('Archive').style.width).toBe('');
+    expect(row.style.transform).toBe('');
+    expect(isClipping(container)).toBe(false);
+  });
+
+  it('claims a horizontal drag, reveals the leading action and fires it past the commit point', () => {
+    const {row, container, onAction} = renderRow();
+    touch(container, 'pointerDown', 10);
+    // Past the axis lock, clearly horizontal: the row is now swiping.
+    touch(container, 'pointerMove', 40);
+    expect(isClipping(container)).toBe(true);
+    // A third of a 300px row is 96px: past it, letting go fires.
+    touch(container, 'pointerMove', 130);
+    touch(container, 'pointerUp', 130);
+    expect(onAction).not.toHaveBeenCalled();
+    void act(() => vi.advanceTimersByTime(250));
+    expect(onAction).toHaveBeenCalledTimes(1);
+    // Settled: the row is back and nothing is clipping.
+    expect(row.style.transform).toBe('');
+    expect(isClipping(container)).toBe(false);
+  });
+
+  it('springs back without firing when released short of the commit point', () => {
+    const {container, onAction} = renderRow();
+    touch(container, 'pointerDown', 10);
+    touch(container, 'pointerMove', 40);
+    touch(container, 'pointerMove', 60);
+    touch(container, 'pointerUp', 60);
+    void act(() => vi.advanceTimersByTime(250));
+    expect(onAction).not.toHaveBeenCalled();
+    expect(isClipping(container)).toBe(false);
+  });
+
+  it('leaves a mostly vertical drag to the scroller', () => {
+    const {container, onAction} = renderRow();
+    touch(container, 'pointerDown', 10, 10);
+    touch(container, 'pointerMove', 20, 60);
+    touch(container, 'pointerMove', 120, 200);
+    expect(isClipping(container)).toBe(false);
+    touch(container, 'pointerUp', 120, 200);
+    void act(() => vi.advanceTimersByTime(250));
+    expect(onAction).not.toHaveBeenCalled();
+  });
+
+  it('does not move toward the inline start without a trailing action, and reveals it when there is one', () => {
+    const {container} = renderRow();
+    touch(container, 'pointerDown', 200);
+    touch(container, 'pointerMove', 150);
+    expect(isClipping(container)).toBe(false);
+    touch(container, 'pointerUp', 150);
+    cleanup();
+
+    const onTrailing = vi.fn();
+    const withTrailing = renderRow(vi.fn(), onTrailing);
+    touch(withTrailing.container, 'pointerDown', 200);
+    touch(withTrailing.container, 'pointerMove', 150);
+    expect(isClipping(withTrailing.container)).toBe(true);
+    expect(panelFor('Delete')).toBeInTheDocument();
+    touch(withTrailing.container, 'pointerMove', 60);
+    touch(withTrailing.container, 'pointerUp', 60);
+    void act(() => vi.advanceTimersByTime(250));
+    expect(onTrailing).toHaveBeenCalledTimes(1);
+  });
+
+  it('reads the direction logically under RTL: the leading action is toward the inline end', () => {
+    // jsdom resolves `direction` only on the element that carries `dir`; a
+    // browser inherits it down to the container, so resolve that inheritance
+    // by hand for this test.
+    const original = window.getComputedStyle.bind(window);
+    const spy = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockImplementation((element, pseudo) => {
+        const style = original(element, pseudo ?? undefined);
+        if (element.closest('[dir="rtl"]') != null) {
+          Object.defineProperty(style, 'direction', {
+            configurable: true,
+            value: 'rtl',
+          });
+        }
+        return style;
+      });
+    try {
+      const onAction = vi.fn();
+      render(
+        <div dir="rtl">
+          <Item
+            label="Conversation"
+            onClick={vi.fn()}
+            data-testid="row"
+            swipeActions={{leading: {label: 'Archive', onAction}}}
+          />
+        </div>,
+      );
+      const container = screen.getByTestId('row').parentElement as HTMLElement;
+      Object.defineProperty(container, 'clientWidth', {
+        configurable: true,
+        value: 300,
+      });
+      // Rightward is toward the inline START under RTL: the trailing side,
+      // and this row has no trailing action, so the drag is not claimed.
+      touch(container, 'pointerDown', 100);
+      touch(container, 'pointerMove', 150);
+      expect(isClipping(container)).toBe(false);
+      touch(container, 'pointerUp', 150);
+      // Leftward is toward the inline END: the leading action, revealed at
+      // the inline-start edge the panel sits on, and fired past the commit
+      // point.
+      touch(container, 'pointerDown', 250);
+      touch(container, 'pointerMove', 220);
+      expect(isClipping(container)).toBe(true);
+      expect(panelFor('Archive')).toBeInTheDocument();
+      touch(container, 'pointerMove', 120);
+      touch(container, 'pointerUp', 120);
+      void act(() => vi.advanceTimersByTime(250));
+      expect(onAction).toHaveBeenCalledTimes(1);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('ignores a mouse: the gesture is touch only', () => {
+    const {container, onAction} = renderRow();
+    const mouse = {clientY: 10, pointerId: 1, pointerType: 'mouse'};
+    fireEvent.pointerDown(container, {...mouse, clientX: 10});
+    fireEvent.pointerMove(container, {...mouse, clientX: 200});
+    fireEvent.pointerUp(container, {...mouse, clientX: 200});
+    void act(() => vi.advanceTimersByTime(250));
+    expect(isClipping(container)).toBe(false);
+    expect(onAction).not.toHaveBeenCalled();
+  });
+
+  it('does not swipe a disabled row, and renders no panel for it', () => {
+    render(
+      <Item
+        label="Conversation"
+        isDisabled
+        data-testid="row"
+        swipeActions={{leading: {label: 'Archive', onAction: vi.fn()}}}
+      />,
+    );
+    const container = screen.getByTestId('row').parentElement as HTMLElement;
+    expect(screen.queryByText('Archive')).toBeNull();
+    touch(container, 'pointerDown', 10);
+    touch(container, 'pointerMove', 80);
+    expect(isClipping(container)).toBe(false);
+  });
+
+  it("keeps a swipeable li as its list's direct child, with the row inside it", () => {
+    render(
+      <ul>
+        <Item
+          as="li"
+          label="Row"
+          onClick={vi.fn()}
+          data-testid="row"
+          swipeActions={{leading: {label: 'Archive', onAction: vi.fn()}}}
+        />
+      </ul>,
+    );
+    const row = screen.getByTestId('row');
+    const list = row.closest('ul') as HTMLElement;
+    // The `as` element is the clipping container, so the list's child is
+    // still an li; the row it wraps is a div.
+    expect(list.children).toHaveLength(1);
+    expect(list.children[0].tagName).toBe('LI');
+    expect(list.children[0]).toBe(row.parentElement);
+    expect(row.tagName).toBe('DIV');
   });
 });
