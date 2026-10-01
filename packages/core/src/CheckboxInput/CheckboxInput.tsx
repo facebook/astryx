@@ -62,11 +62,6 @@ const styles = stylex.create({
   containerLabelHidden: {
     gap: 0,
   },
-  containerIndicatorEnd: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
   checkboxWrapper: {
     position: 'relative',
     display: 'flex',
@@ -243,11 +238,6 @@ export interface CheckboxInputProps extends Omit<BaseProps, 'onChange'> {
    */
   size?: CheckboxInputSize;
   /**
-   * Which logical edge carries the checkbox indicator.
-   * @default 'start'
-   */
-  indicatorPosition?: 'start' | 'end';
-  /**
    * Callback fired when the checkbox receives focus.
    */
   onFocus?: (e: FocusEvent<HTMLInputElement>) => void;
@@ -304,7 +294,6 @@ export function CheckboxInput({
   isOptional = false,
   isRequired = false,
   size = 'md',
-  indicatorPosition = 'start',
   onFocus,
   onBlur,
   labelIcon,
@@ -421,7 +410,6 @@ export function CheckboxInput({
         {...stylex.props(
           styles.container,
           isLabelHidden && styles.containerLabelHidden,
-          indicatorPosition === 'end' && styles.containerIndicatorEnd,
           // Hover and focus reach the checkbox visual through this ancestor
           // marker rather than props, so the whole row drives it.
           !isDisabled && indicatorScope,

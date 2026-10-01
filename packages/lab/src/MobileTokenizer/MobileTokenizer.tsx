@@ -5,8 +5,8 @@
 /**
  * @file MobileTokenizer.tsx
  * @input Uses public @astryxdesign/core components only (AlertDialog,
- *   BottomSheet, BottomSheetSwitcher, Button, CheckboxInput, EmptyState, Field,
- *   Icon, Text, TextInput, Token)
+ *   BottomSheet, BottomSheetSwitcher, Button, CheckboxIndicator, EmptyState,
+ *   Field, Icon, Text, TextInput, Token)
  * @output Exports MobileTokenizer — Lab prototype of the touch Tokenizer
  *   flow with a single searchable sheet and progressive long-list rendering
  * @position Lab (canary) stack layer 1: validates the design before the
@@ -33,10 +33,10 @@ import {AlertDialog} from '@astryxdesign/core/AlertDialog';
 import {BottomSheet} from '@astryxdesign/core/BottomSheet';
 import {BottomSheetSwitcher} from '@astryxdesign/core/BottomSheet';
 import {Button} from '@astryxdesign/core/Button';
-import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
 import {EmptyState} from '@astryxdesign/core/EmptyState';
 import {Field} from '@astryxdesign/core/Field';
 import {Icon} from '@astryxdesign/core/Icon';
+import {CheckboxIndicator} from '@astryxdesign/core/Indicator';
 import {Text} from '@astryxdesign/core/Text';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {Token} from '@astryxdesign/core/Token';
@@ -139,10 +139,27 @@ const styles = stylex.create({
     minHeight: 0,
   },
   row: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacingVars['--spacing-2'],
     width: '100%',
     minHeight: 44,
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-1'],
+    borderWidth: 0,
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: 'transparent',
+    color: colorVars['--color-text-primary'],
+    textAlign: 'start',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
+  },
+  rowLabel: {
+    flexGrow: 1,
+    minWidth: 0,
   },
   createRow: {
     display: 'flex',
@@ -462,18 +479,26 @@ export function MobileTokenizer<T extends SearchableItem>({
                     const isSelected = selectedIds.has(item.id);
                     const rowDisabled = !isSelected && isAtMax;
                     return (
-                      <CheckboxInput
+                      <button
                         key={item.id}
-                        label={item.label}
-                        value={isSelected}
-                        width="100%"
-                        indicatorPosition="end"
-                        xstyle={styles.row}
-                        isDisabled={rowDisabled}
-                        onChange={checked =>
-                          checked ? handleAdd(item) : handleRemove(item)
+                        type="button"
+                        role="checkbox"
+                        aria-checked={isSelected}
+                        aria-label={item.label}
+                        disabled={rowDisabled}
+                        onClick={() =>
+                          isSelected ? handleRemove(item) : handleAdd(item)
                         }
-                      />
+                        {...stylex.props(styles.row)}>
+                        <span {...stylex.props(styles.rowLabel)}>
+                          <Text type="body">{item.label}</Text>
+                        </span>
+                        <CheckboxIndicator
+                          state={isSelected ? 'checked' : 'unchecked'}
+                          size="md"
+                          isDisabled={rowDisabled}
+                        />
+                      </button>
                     );
                   })
                 )}

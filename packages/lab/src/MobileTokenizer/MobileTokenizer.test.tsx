@@ -127,7 +127,10 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
     expect(
       screen.queryByRole('button', {name: 'Add item'}),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('checkbox', {name: 'Design'})).toBeChecked();
+    const design = screen.getByRole('checkbox', {name: 'Design'});
+    expect(design).toBeChecked();
+    expect(design.lastElementChild).toHaveAttribute('aria-hidden', 'true');
+    expect(design.lastElementChild).toHaveAttribute('data-size', 'md');
 
     fireEvent.click(screen.getByText('Engineer'));
     expect(spy).toHaveBeenCalledWith(
