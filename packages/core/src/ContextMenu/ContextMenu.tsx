@@ -57,6 +57,7 @@ import {
   MENU_ITEM_ROLES,
   MENU_ITEM_SELECTOR,
   MENU_BOUNDARY_SELECTOR,
+  activateMenuItem,
 } from '../DropdownMenu/menuItemRoles';
 import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
 import {useListFocus} from '../hooks/useListFocus';
@@ -368,11 +369,11 @@ export function ContextMenu({
   }, [layer, updateOpenState, usesBottomSheet]);
 
   const handleBottomSheetSelect = useCallback(
-    (item: ContextMenuItemData) => {
+    (item: ContextMenuItemData, event: React.MouseEvent) => {
       if (item.isDisabled) {
         return;
       }
-      item.onClick?.();
+      item.onClick?.(event);
       if (item.hasCloseOnSelect !== false) {
         closeMenu();
       }
@@ -477,7 +478,9 @@ export function ContextMenu({
           focused &&
           MENU_ITEM_ROLES.has(focused.getAttribute('role') ?? '')
         ) {
-          focused.click();
+          // The synthesized click keeps the key's modifiers, so a modified
+          // Enter on a link row opens the way a modified click would.
+          activateMenuItem(focused, e);
         }
         return;
       }

@@ -5,7 +5,9 @@
 /**
  * @file Item.tsx
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, useClickableContainer
- * @output Exports Item component, ItemProps type; publishes the shared inline inset
+ * @output Exports Item component, ItemProps type; publishes the shared inline inset;
+ *   a row with a role and an href renders its root through the LinkProvider
+ *   component
  * @position Core layout primitive; consumed by index.ts, tested by Item.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -50,7 +52,8 @@ export interface ItemProps extends BaseProps<HTMLElement> {
   ref?: React.Ref<HTMLElement>;
 
   /**
-   * HTML element to render as the root.
+   * HTML element to render as the root. Ignored when the row has both a
+   * `role` and an `href`: that row's root is the link itself.
    * @default 'div'
    */
   as?: 'div' | 'li' | 'span';
@@ -138,7 +141,11 @@ export interface ItemProps extends BaseProps<HTMLElement> {
   interactiveRef?: React.RefObject<HTMLElement | null>;
 
   /**
-   * Link URL. Makes the item a link via an invisible anchor element.
+   * Link URL. Makes the item a link via an invisible anchor element. With a
+   * `role` (a menu row, where the parent owns keyboard access) the ROOT
+   * renders as the link instead — through the `LinkProvider` component, so a
+   * `role="menuitem"` row with an address is a real anchor: a modified click
+   * and a middle click keep the browser's meaning.
    */
   href?: string;
 
@@ -242,6 +249,11 @@ const styles = stylex.create({
   disabled: {
     cursor: 'default',
     pointerEvents: 'none' as const,
+  },
+  // A row whose root is the link: the browser's anchor paint stays out of it.
+  linkRoot: {
+    color: 'inherit',
+    textDecoration: 'none',
   },
   disabledContent: {
     opacity: 0.5,
@@ -438,6 +450,19 @@ export function Item({
   // handles keyboard access. Skip the invisible button/anchor and put
   // onClick directly on the root element instead.
   const hasParentRole = role != null;
+  // A row with a role AND an address is itself the link: the root
+  // renders through the LinkProvider component, so the anchor carries the
+  // role, the focus and the click — one control, the browser's own link.
+  const isLinkRoot = hasParentRole && href != null && !isDelegate;
+  const Root: React.ElementType = isLinkRoot ? LinkComponent : Component;
+  const linkRootProps = isLinkRoot
+    ? {
+        // A disabled row keeps its place in the tree but goes nowhere.
+        href: isDisabled ? undefined : href,
+        target: isDisabled ? undefined : target,
+        rel: isDisabled ? undefined : rel,
+      }
+    : null;
   // aria-selected is only valid on selectable roles (option, tab, treeitem,
   // grid cells). On the default div/li root the attribute is invalid ARIA
   // (axe: aria-allowed-attr), so selection stays visual-only there — callers
@@ -590,9 +615,10 @@ export function Item({
   const mergedRef = useMergedRefs(ref, containerRef);
 
   return (
-    <Component
+    <Root
       ref={(isDelegate ? mergedRef : ref) as React.Ref<never>}
       {...restProps}
+      {...linkRootProps}
       aria-selected={(allowsAriaSelected && isSelected) || undefined}
       // aria-selected is invalid on roles that don't permit it (listitem, a
       // bare div, etc.). For those, convey selection via aria-current — valid
@@ -611,6 +637,7 @@ export function Item({
           align === 'start' && styles.alignStart,
           isInteractive && styles.interactive,
           isInteractive && interactionOverlayStyles.backgroundColor,
+          isLinkRoot && styles.linkRoot,
           isHighlighted && styles.highlighted,
           isSelected && styles.selected,
           isDisabled && !hasParentRole && styles.disabled,
@@ -633,7 +660,7 @@ export function Item({
         value={hasRenderableDescription ? descriptionID : null}>
         {innerContent}
       </ItemDescriptionContext>
-    </Component>
+    </Root>
   );
 }
 

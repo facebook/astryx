@@ -2409,3 +2409,152 @@ describe('DropdownMenu focus return after a pointer pick', () => {
     );
   });
 });
+
+describe('DropdownMenuItem href', () => {
+  it('renders an anchor when given href', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'Places'}}>
+        <DropdownMenuItem
+          label="Inbox"
+          href="/inbox"
+          target="_blank"
+          onClick={onClick}
+        />
+      </DropdownMenu>,
+    );
+    const row = screen.getByRole('menuitem', {name: 'Inbox', hidden: true});
+    expect(row.tagName).toBe('A');
+    expect(row).toHaveAttribute('href', '/inbox');
+    expect(row).toHaveAttribute('target', '_blank');
+    expect(row).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(row).toHaveAttribute('tabindex', '-1');
+    // The anchor IS the row: no inner anchor or button doubles the control.
+    expect(row.querySelector('a, button')).toBeNull();
+
+    await user.click(screen.getByRole('button', {name: /Places/}));
+    // onClick runs on the row's click, before the browser navigates, and the
+    // row closes the menu after it.
+    const order: string[] = [];
+    onClick.mockImplementation(() => order.push('onClick'));
+    (HTMLElement.prototype.hidePopover as ReturnType<typeof vi.fn>).mockClear();
+    fireEvent.click(row);
+    expect(order).toEqual(['onClick']);
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+  });
+
+  it('a modified click is left to the browser', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'Places'}}>
+        <DropdownMenuItem label="Inbox" href="/inbox" onClick={onClick} />
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Places/}));
+    const row = screen.getByRole('menuitem', {name: 'Inbox', hidden: true});
+
+    const event = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      metaKey: true,
+    });
+    row.dispatchEvent(event);
+    // Nothing prevents the browser's meaning of a ⌘-click (a new tab), and
+    // the row's own handler stays out of it — the browser is acting.
+    expect(event.defaultPrevented).toBe(false);
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('Enter on an href row synthesizes a click that keeps the key modifiers', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Places'}}>
+        <DropdownMenuItem label="Inbox" href="/inbox" />
+      </DropdownMenu>,
+    );
+    const trigger = screen.getByRole('button', {name: /Places/});
+    trigger.focus();
+    await user.keyboard('{Enter}');
+    const row = screen.getByRole('menuitem', {name: 'Inbox', hidden: true});
+    await waitFor(() => expect(row).toHaveFocus());
+
+    const clicks: MouseEvent[] = [];
+    row.addEventListener('click', e => {
+      clicks.push(e);
+      e.preventDefault();
+    });
+    fireEvent.keyDown(row, {key: 'Enter', metaKey: true, shiftKey: true});
+    expect(clicks).toHaveLength(1);
+    expect(clicks[0].metaKey).toBe(true);
+    expect(clicks[0].shiftKey).toBe(true);
+    expect(clicks[0].ctrlKey).toBe(false);
+  });
+
+  it('a data item with href is a real link in the bottom sheet and still closes it', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    render(
+      <DropdownMenu
+        button={{label: 'Places'}}
+        presentation="bottom-sheet"
+        items={[
+          {label: 'Inbox', href: '/inbox', target: '_blank', onClick},
+          {label: 'Rename', onClick: () => {}},
+        ]}
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: /Places/});
+    await user.click(trigger);
+    const row = await screen.findByRole('link', {name: 'Inbox'});
+    expect(row).toHaveAttribute('href', '/inbox');
+    expect(row).toHaveAttribute('target', '_blank');
+    expect(row).toHaveAttribute('rel', 'noopener noreferrer');
+    // The plain row stays a button.
+    expect(screen.getByRole('button', {name: 'Rename'})).toBeInTheDocument();
+
+    // A plain click runs onClick and closes the sheet (the browser navigates).
+    const plain = new MouseEvent('click', {bubbles: true, cancelable: true});
+    row.dispatchEvent(plain);
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(plain.defaultPrevented).toBe(false);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+    );
+  });
+
+  it('a modified click on a bottom-sheet link row is left to the browser', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    render(
+      <DropdownMenu
+        button={{label: 'Places'}}
+        presentation="bottom-sheet"
+        items={[{label: 'Inbox', href: '/inbox', onClick}]}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: /Places/}));
+    const row = await screen.findByRole('link', {name: 'Inbox'});
+    const event = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      metaKey: true,
+    });
+    row.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('a disabled href row renders no address', () => {
+    render(
+      <DropdownMenu button={{label: 'Places'}}>
+        <DropdownMenuItem label="Inbox" href="/inbox" isDisabled />
+      </DropdownMenu>,
+    );
+    const row = screen.getByRole('menuitem', {name: 'Inbox', hidden: true});
+    expect(row.tagName).toBe('A');
+    expect(row).not.toHaveAttribute('href');
+    expect(row).toHaveAttribute('aria-disabled', 'true');
+  });
+});

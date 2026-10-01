@@ -77,6 +77,7 @@ import {
   MENU_ITEM_ROLES,
   MENU_ITEM_SELECTOR,
   MENU_BOUNDARY_SELECTOR,
+  activateMenuItem,
 } from './menuItemRoles';
 import {
   DropdownMenuContext,
@@ -492,7 +493,9 @@ export function DropdownMenuSubMenu(
           focused &&
           MENU_ITEM_ROLES.has(focused.getAttribute('role') ?? '')
         ) {
-          focused.click();
+          // The synthesized click keeps the key's modifiers, so a modified
+          // Enter on a link row opens the way a modified click would.
+          activateMenuItem(focused, e);
         }
         return;
       }

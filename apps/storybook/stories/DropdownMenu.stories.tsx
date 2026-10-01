@@ -1270,3 +1270,40 @@ export const SubmenuViewportFit: Story = {
     }
   },
 };
+
+export const LinkRows: Story = {
+  name: 'Rows that navigate (href)',
+  render: () => (
+    <DropdownMenu button={{label: 'Places'}}>
+      <DropdownMenuItem icon={UserIcon} label="Profile" href="/profile" />
+      <DropdownMenuItem
+        icon={Cog6ToothIcon}
+        label="Settings"
+        href="/settings"
+        onClick={() => console.log('leaving for settings')}
+      />
+      <DropdownMenuItem
+        icon={ShareIcon}
+        label="Help center"
+        description="Opens in a new tab"
+        href="https://example.com/help"
+        target="_blank"
+      />
+      <DropdownMenuDivider />
+      <DropdownMenuItem
+        icon={TrashIcon}
+        label="Delete"
+        variant="destructive"
+        onClick={() => {}}
+      />
+    </DropdownMenu>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A row whose act is navigation takes an `href` and renders as a real anchor with role="menuitem", routed through LinkProvider. A ⌘-click, Ctrl-click or middle click keeps the browser\'s meaning (a new tab) and skips `onClick`; a plain click runs `onClick`, closes the menu and navigates. Enter and Space synthesize a click that keeps the key\'s modifiers.',
+      },
+    },
+  },
+};

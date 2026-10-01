@@ -13,6 +13,7 @@
  * Composes Item for the shared start content + label + description + end content layout.
  * Passes role="menuitem" so Item puts onClick on the root div instead of
  * creating an invisible button (keyboard access is provided by the parent menu).
+ * With an `href` the root is a real anchor carrying the role.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/DropdownMenu/DropdownMenu.doc.mjs
@@ -23,7 +24,12 @@
  * - /packages/cli/assets/templates/blocks/components/DropdownMenu/ (showcase blocks)
  */
 
-import {useCallback, type PointerEvent, type ReactNode} from 'react';
+import {
+  useCallback,
+  type MouseEvent,
+  type PointerEvent,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {renderIconSlot, type IconType} from '../Icon';
 import {Item} from '../Item';
@@ -37,6 +43,7 @@ import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {useDropdownMenuContext} from './DropdownMenuContext';
 import {focusMenuItemOnHover} from './menuItemHover';
+import {isModifiedClick} from './menuItemRoles';
 import {themeProps} from '../utils/themeProps';
 
 const menuItemStyles = stylex.create({
@@ -106,8 +113,27 @@ export interface DropdownMenuItemProps extends Pick<
   label: ReactNode;
   /** Secondary description text displayed below the label. */
   description?: ReactNode;
-  /** Callback when the item is selected. */
-  onClick?: () => void;
+  /**
+   * Callback when the item is selected. Receives the activating click; a
+   * keyboard activation (Enter / Space) arrives as a synthesized click that
+   * carries the key's modifiers. On a row with an `href` it runs before the
+   * browser navigates, and is skipped for a modified click (⌘, Ctrl, Shift,
+   * Alt, a middle button), which is left to the browser.
+   */
+  onClick?: (event: MouseEvent) => void;
+  /**
+   * Address the row navigates to. The row then renders as a real anchor with
+   * `role="menuitem"` — a modified click and a middle click keep the
+   * browser's meaning (a new tab), and `LinkProvider` routes it.
+   */
+  href?: string;
+  /** Link target. Only used with `href`. */
+  target?: '_blank' | '_self';
+  /**
+   * Link relationship. `noopener noreferrer` is added for `target="_blank"`.
+   * Only used with `href`.
+   */
+  rel?: string;
   /** Whether the item is disabled. @default false */
   isDisabled?: boolean;
   /** Additional content to render after the label/description. */
@@ -153,6 +179,9 @@ export function DropdownMenuItem({
   label,
   description,
   onClick,
+  href,
+  target,
+  rel,
   isDisabled = false,
   endContent,
   hasCloseOnSelect = true,
@@ -165,15 +194,27 @@ export function DropdownMenuItem({
   const ctx = useDropdownMenuContext();
   const menuSize = ctx?.menuSize ?? 'md';
 
-  const handleClick = useCallback(() => {
-    if (isDisabled) {
-      return;
-    }
-    onClick?.();
-    if (hasCloseOnSelect) {
-      ctx?.closeMenu();
-    }
-  }, [isDisabled, onClick, hasCloseOnSelect, ctx]);
+  const handleClick = useCallback(
+    (event: MouseEvent) => {
+      if (isDisabled) {
+        // A disabled link row has no href, but a stray click must still not
+        // navigate anywhere.
+        event.preventDefault();
+        return;
+      }
+      // A modified click on a link row is the browser's: it opens the
+      // address its own way, so the row's handler stays out of it.
+      // The menu still closes: the row acted.
+      const isBrowserNavigation = href != null && isModifiedClick(event);
+      if (!isBrowserNavigation) {
+        onClick?.(event);
+      }
+      if (hasCloseOnSelect) {
+        ctx?.closeMenu();
+      }
+    },
+    [isDisabled, href, onClick, hasCloseOnSelect, ctx],
+  );
 
   const handlePointerMove = useCallback(
     (e: PointerEvent<HTMLElement>) => focusMenuItemOnHover(e, isDisabled),
@@ -200,6 +241,9 @@ export function DropdownMenuItem({
       description={description}
       endContent={endContent}
       onClick={handleClick}
+      href={href}
+      target={target}
+      rel={rel}
       isDisabled={isDisabled}
       xstyle={[
         menuItemStyles.root,
