@@ -3,12 +3,13 @@
 /**
  * @file BaseTypeahead.test.tsx
  * @input BaseTypeahead public props and a synchronous SearchSource
- * @output Focused contract tests for the public combobox engine
+ * @output Combobox contract tests, including menu reopening after selection
  * @position Colocated verification for BaseTypeahead
  */
 
 import {afterAll, beforeAll, describe, expect, it, vi} from 'vitest';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import * as stylex from '@stylexjs/stylex';
 import {BaseTypeahead} from './BaseTypeahead';
 import type {SearchSource, SearchableItem} from './types';
@@ -149,6 +150,35 @@ describe('BaseTypeahead', () => {
     expect(input).toHaveAttribute('aria-describedby', 'legacy-description');
     expect(input).toHaveAttribute('aria-labelledby', 'legacy-label');
     expect(input).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('reopens the menu when clicked after selection leaves the input focused', async () => {
+    const user = userEvent.setup();
+    render(
+      <BaseTypeahead
+        searchSource={{search: () => [], bootstrap: () => [resultItem]}}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    await user.click(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+    await user.keyboard('{Enter}');
+    expect(input).toHaveFocus();
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+    expect(
+      screen.getByRole('option', {name: 'Result', hidden: true}),
+    ).toBeInTheDocument();
   });
 
   it('counts grapheme clusters when enforcing minQueryLength', async () => {

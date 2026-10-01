@@ -5,7 +5,7 @@
 /**
  * @file BaseTypeahead.tsx
  * @input Uses React, StyleX, usePopover, TypeaheadItem
- * @output Exports BaseTypeahead combobox engine component
+ * @output Exports BaseTypeahead with focused-input menu reactivation
  * @position Core implementation; used by Typeahead and Tokenizer
  *
  * Pure combobox engine: input, search, keyboard navigation, dropdown.
@@ -1037,7 +1037,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         tabIndex={resolvedInputTabIndex}
         value={query}
         onChange={handleInputChange}
-        onPointerDown={composeEventHandlers(() => {
+        onPointerDown={composeEventHandlers(e => {
           pointerActiveRef.current = true;
           document.addEventListener(
             'click',
@@ -1046,6 +1046,23 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
             },
             {once: true},
           );
+
+          if (
+            !isDisabled &&
+            e.button === 0 &&
+            e.currentTarget === document.activeElement &&
+            !popover.isOpen
+          ) {
+            if (
+              hasEntriesOnFocus &&
+              query.length === 0 &&
+              resultsGenRef.current !== searchGenRef.current
+            ) {
+              void performBootstrap();
+            } else {
+              handleFocus();
+            }
+          }
         }, onPointerDownProp)}
         onFocus={composeEventHandlers(handleFocus, onFocusProp)}
         onBlur={composeEventHandlers(handleBlur, onBlurProp)}
