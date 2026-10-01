@@ -131,17 +131,17 @@ When this ships:
 
 ## Verification
 
-| Contract   | Verification                  | Representative states                                                                  | Mutation or failure expectation                                                   |
-| ---------- | ----------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| FR1, FR2   | Build kit tests               | a request that names a template; a loose request; a request no template fits           | A page build with no start, or a start that is not a page template                |
-| FR3        | Build kit tests               | a part placed in a page; a part with no page; a change to an existing page             | A part with no page starting from a page template                                 |
-| FR4        | Build kit tests               | search's direct match is not ready                                                     | An unready template as the start or an alternative, or a reason that hides it     |
-| FR5        | Template integration tests    | an integration template that replaces a Core one; a block sharing a page template's id | A start or alternative command that selects another template, or none             |
-| FR6, FR7   | Build kit tests               | direct, closest, and fallback starts                                                   | A start without a basis or reason, or without its alternatives                    |
-| FR8, FR12  | Text field tests              | default and `--verbose` text for a build with every field populated                    | A response field the text never shows, or text out of the required order          |
-| FR9        | CLI text tests                | any page build                                                                         | Text without the keep-your-page line                                              |
-| FR10, FR11 | Response type and build tests | the canonical response type, the response docs, and existing fields on a page build    | A missing recommendation field, or an existing field whose shape changes          |
-| FR13       | Playbook and agent docs tests | the playbook steps and the generated agent docs block                                  | A surface that tells builders to compose a page from primitives before a template |
+| Contract   | Verification                  | Representative states                                                                  | Mutation or failure expectation                                                                                       |
+| ---------- | ----------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| FR1, FR2   | Build kit tests               | a request that names a template; a loose request; a request no template fits           | A page build with no start, or a start that is not a page template                                                    |
+| FR3        | Build kit tests               | a part placed in a page; a part with no page; a change to an existing page             | A part with no page starting from a page template, or a change to an existing page starting from that page's template |
+| FR4        | Build kit tests               | search's direct match is not ready                                                     | An unready template as the start or an alternative, or a reason that hides it                                         |
+| FR5        | Template integration tests    | an integration template that replaces a Core one; a block sharing a page template's id | A start or alternative command that selects another template, or none                                                 |
+| FR6, FR7   | Build kit tests               | direct, closest, and fallback starts                                                   | A start without a basis or reason, or without its alternatives                                                        |
+| FR8, FR12  | Text field tests              | default and `--verbose` text for a build with every field populated                    | A response field the text never shows, or text out of the required order                                              |
+| FR9        | CLI text tests                | any page build                                                                         | Text without the keep-your-page line                                                                                  |
+| FR10, FR11 | Response type and build tests | the canonical response type, the response docs, and existing fields on a page build    | A missing recommendation field, or an existing field whose shape changes                                              |
+| FR13       | Playbook and agent docs tests | the playbook steps and the generated agent docs block                                  | A surface that tells builders to compose a page from primitives before a template                                     |
 
 ## Decision log
 
