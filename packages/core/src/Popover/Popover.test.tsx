@@ -448,7 +448,7 @@ describe('Popover', () => {
     expect(layer?.className).toContain('Popover__styles.viewportAligned');
     expect(layer?.className).toContain('Popover__styles.viewportStart');
     expect(layer).toHaveStyle(
-      'min-width: min(anchor-size(width),calc(100% - max(var(--spacing-4),env(safe-area-inset-left,0px),env(safe-area-inset-right,0px))))',
+      `min-width: min(anchor-size(width),calc(100% - calc(max(var(--spacing-4), env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)) + max(var(--astryx-layer-inset-inline-start, 0px), var(--astryx-layer-inset-inline-end, 0px)))))`,
     );
   });
 
@@ -480,7 +480,7 @@ describe('Popover', () => {
     expect(layer?.className).toContain('Popover__styles.viewportCentered');
     expect(layer?.className).not.toContain('Popover__styles.viewportAligned');
     expect(layer).toHaveStyle(
-      'min-width: min(anchor-size(width),calc(100vi - max(var(--spacing-4),env(safe-area-inset-left,0px)) - max(var(--spacing-4),env(safe-area-inset-right,0px))))',
+      `min-width: min(anchor-size(width),calc(100vi - calc(max(var(--spacing-4), env(safe-area-inset-left, 0px)) + var(--astryx-layer-inset-inline-start, 0px)) - calc(max(var(--spacing-4), env(safe-area-inset-right, 0px)) + var(--astryx-layer-inset-inline-end, 0px))))`,
     );
   });
 
@@ -500,6 +500,66 @@ describe('Popover', () => {
     const layer = document.querySelector('[popover]');
     expect(layer?.className).toContain('Popover__styles.viewportBlockStart');
     expect(layer?.className).not.toContain('Popover__styles.viewportStart');
+  });
+
+  describe('per-edge viewport inset (a persistent bar floating over the viewport)', () => {
+    const popoverSource = readFileSync(
+      'packages/core/src/Popover/Popover.tsx',
+      'utf8',
+    );
+
+    it('subtracts the block insets from the max block size the layer fits to', () => {
+      // jsdom lays out no anchor positioning, so the contract is the emitted
+      // expression: the block-end gutter the layer ends at is the safe-area
+      // gutter plus the app's block-end inset, which reads 0px unless set.
+      expect(popoverSource).toMatch(
+        /const POPOVER_MAX_BLOCK_SIZE = `calc\(100dvb - \$\{layerViewportGutter\.blockStart\} - \$\{layerViewportGutter\.blockEnd\}\)`/,
+      );
+      expect(popoverSource).toMatch(
+        /const POPOVER_MAX_BLOCK_SIZE_FALLBACK = `calc\(100vh - \$\{layerViewportGutterFallback\.blockStart\} - \$\{layerViewportGutterFallback\.blockEnd\}\)`/,
+      );
+      expect(popoverSource).not.toMatch(/env\(safe-area-inset-/);
+    });
+
+    it('ends a side-placed layer above the block-end inset', () => {
+      render(
+        <Popover
+          content={<span>Content</span>}
+          label="Test"
+          placement="end"
+          alignment="start">
+          <button type="button">Open</button>
+        </Popover>,
+      );
+
+      fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+
+      // jsdom computes no logical block margins, so the class the layer
+      // carries is checked against the declaration it maps to in source.
+      const layer = document.querySelector('[popover]');
+      expect(layer?.className).toContain('Popover__styles.viewportBlockStart');
+      expect(popoverSource).toMatch(
+        /viewportBlockStart: \{\s*marginBlockEnd: layerViewportGutter\.blockEnd,/,
+      );
+      expect(popoverSource).toMatch(
+        /viewportBlockEnd: \{\s*marginBlockStart: layerViewportGutter\.blockStart,/,
+      );
+    });
+
+    it('keeps the inline insets in the aligned gutter', () => {
+      render(
+        <Popover content={<span>Content</span>} label="Test" alignment="end">
+          <button type="button">Open</button>
+        </Popover>,
+      );
+
+      fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+
+      const layer = document.querySelector('[popover]');
+      expect(layer).toHaveStyle(
+        `margin-inline-start: calc(max(var(--spacing-4), env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)) + max(var(--astryx-layer-inset-inline-start, 0px), var(--astryx-layer-inset-inline-end, 0px)))`,
+      );
+    });
   });
 
   it('preserves the dialog aria-haspopup contract for render-prop triggers', () => {

@@ -54,6 +54,10 @@ import {Spinner} from '../Spinner';
 import {Item} from '../Item';
 import {useLayer} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
+import {
+  layerViewportGutter,
+  layerViewportGutterFallback,
+} from '../Layer/layerViewportInset.stylex';
 import {useListFocus} from '../hooks/useListFocus';
 import {useMenuHover} from '../hooks/useMenuHover';
 import {useTypeahead} from '../hooks/useTypeahead';
@@ -84,13 +88,14 @@ import {
 } from './DropdownMenuContext';
 import {focusMenuItemOnHover} from './menuItemHover';
 
-const MENU_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
 // `useLayer` adds 4px of anchor clearance. An 8px collision margin resolves
 // to a 4px visible gap after the browser flips the flyout.
-const MENU_MAX_INLINE_SIZE = `calc(100vi - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px)) - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-right, 0px)))`;
-const MENU_MAX_INLINE_SIZE_FALLBACK = `calc(100vw - ${MENU_VIEWPORT_GUTTER} - ${MENU_VIEWPORT_GUTTER})`;
-const MENU_MAX_BLOCK_SIZE = `min(300px, calc(100dvb - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px)) - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))))`;
-const MENU_MAX_BLOCK_SIZE_FALLBACK = `min(300px, calc(100vh - ${MENU_VIEWPORT_GUTTER} - ${MENU_VIEWPORT_GUTTER}))`;
+// Gutters read the app's per-edge inset custom properties; see
+// Layer/layerViewportInset.stylex.ts.
+const MENU_MAX_INLINE_SIZE = `calc(100vi - ${layerViewportGutter.inlineStart} - ${layerViewportGutter.inlineEnd})`;
+const MENU_MAX_INLINE_SIZE_FALLBACK = `calc(100vw - ${layerViewportGutterFallback.inlineStart} - ${layerViewportGutterFallback.inlineEnd})`;
+const MENU_MAX_BLOCK_SIZE = `min(300px, calc(100dvb - ${layerViewportGutter.blockStart} - ${layerViewportGutter.blockEnd}))`;
+const MENU_MAX_BLOCK_SIZE_FALLBACK = `min(300px, calc(100vh - ${layerViewportGutterFallback.blockStart} - ${layerViewportGutterFallback.blockEnd}))`;
 
 const triggerStyles = stylex.create({
   root: {

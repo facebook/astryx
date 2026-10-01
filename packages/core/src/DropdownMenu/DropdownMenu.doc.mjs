@@ -257,6 +257,11 @@ export const docs = {
       {
         guidance: true,
         description:
+          'Declare a persistent bar floating over the viewport once, on :root, through --astryx-layer-inset-block-end (see Layer): the menu and its submenus then fit above the bar.',
+      },
+      {
+        guidance: true,
+        description:
           'Keep menu items concise and action-oriented so users can scan options quickly.',
       },
       {

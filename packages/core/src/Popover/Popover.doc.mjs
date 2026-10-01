@@ -151,6 +151,21 @@ export const docs = {
       ],
     },
   ],
+  examples: [
+    {
+      label: 'A persistent bar floating over the viewport',
+      code: `/* Once, in the app's stylesheet: the phone nav bar is fixed over
+   the bottom of the viewport and takes no layout height. */
+:root {
+  --astryx-layer-inset-block-end: var(--app-nav-bar-height, 0px);
+}
+
+/* Every popover now ends above the bar. */
+<Popover label="Filters" content={<FilterForm />} placement="above">
+  <Button label="Filters" variant="secondary" />
+</Popover>`,
+    },
+  ],
   playground: {
     defaults: {
       content: {
@@ -203,6 +218,11 @@ export const docs = {
         guidance: true,
         description:
           'Theme the painted surface through popover. Existing popover-surface overrides remain supported for compatibility, while new themes use the canonical target.',
+      },
+      {
+        guidance: true,
+        description:
+          'Declare a persistent bar floating over the viewport once, on :root, through --astryx-layer-inset-block-end (or the matching edge property): every popover then fits above the bar. The bar contributes no layout height, so without the inset a correctly fitted popover still ends underneath it.',
       },
       {
         guidance: false,
@@ -408,6 +428,11 @@ export const docsZh = {
           'Theme the painted surface through popover. Existing popover-surface overrides remain supported for compatibility, while new themes use the canonical target.',
       },
       {
+        guidance: true,
+        description:
+          'Declare a persistent bar floating over the viewport once, on :root, through --astryx-layer-inset-block-end (or the matching edge property): every popover then fits above the bar. The bar contributes no layout height, so without the inset a correctly fitted popover still ends underneath it.',
+      },
+      {
         guidance: false,
         description:
           'Nest popovers inside other popovers; it creates confusing focus and navigation.',
@@ -473,6 +498,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Theme the painted surface through popover. Existing popover-surface overrides remain supported for compatibility, while new themes use the canonical target.',
+      },
+      {
+        guidance: true,
+        description:
+          'Declare a persistent bar floating over the viewport once, on :root, through --astryx-layer-inset-block-end (or the matching edge property): every popover then fits above the bar. The bar contributes no layout height, so without the inset a correctly fitted popover still ends underneath it.',
       },
       {
         guidance: false,
