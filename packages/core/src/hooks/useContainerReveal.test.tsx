@@ -3,10 +3,10 @@
 /**
  * @file useContainerReveal.test.tsx
  * @input Uses vitest, @testing-library/react, useContainerReveal
- * @output Unit tests for the enabled/disabled contract, the dynamic isEnabled
- *   prop, the container options (hoverDelay, forceState), the per-element
- *   option → style-block mapping, and the promise that a large flat list
- *   mounts without dev warnings.
+ * @output Unit tests for the enabled/disabled contract, the immediate default,
+ *   the dynamic isEnabled prop, the container options (hoverDelay, forceState),
+ *   the per-element option → style-block mapping, and the promise that a large
+ *   flat list mounts without dev warnings.
  * @position Testing; validates useContainerReveal.ts.
  *
  * Nesting isolation is a cascade behavior jsdom does not implement, so it is
@@ -19,7 +19,7 @@
  */
 
 import {describe, it, expect, vi, afterEach} from 'vitest';
-import {renderHook, render} from '@testing-library/react';
+import {renderHook, render, screen} from '@testing-library/react';
 import {useContainerReveal} from './useContainerReveal';
 
 afterEach(() => {
@@ -33,6 +33,50 @@ describe('useContainerReveal', () => {
     const content = result.current.getContentRevealProps();
     expect(typeof container.className).toBe('string');
     expect(typeof content.className).toBe('string');
+  });
+
+  it('applies no motion or delay by default', () => {
+    function Example() {
+      const {getContainerProps, getContentRevealProps} = useContainerReveal();
+      return (
+        <div data-testid="container" {...getContainerProps()}>
+          <span data-testid="reveal" {...getContentRevealProps()}>
+            reveal
+          </span>
+          <span
+            data-testid="reveal-preserved"
+            {...getContentRevealProps({isLayoutPreserved: true})}>
+            reveal preserved
+          </span>
+          <span
+            data-testid="conceal"
+            {...getContentRevealProps({isRevealInverted: true})}>
+            conceal
+          </span>
+          <span
+            data-testid="conceal-preserved"
+            {...getContentRevealProps({
+              isLayoutPreserved: true,
+              isRevealInverted: true,
+            })}>
+            conceal preserved
+          </span>
+        </div>
+      );
+    }
+
+    render(<Example />);
+    const containerStyle = getComputedStyle(screen.getByTestId('container'));
+    expect(containerStyle.getPropertyValue('--_reveal-delay')).toBe('0s,0s');
+    expect(containerStyle.getPropertyValue('--_fade-delay')).toBe('0s');
+    expect(
+      getComputedStyle(screen.getByTestId('reveal')).transitionDuration,
+    ).toBe('');
+    for (const testID of ['reveal-preserved', 'conceal', 'conceal-preserved']) {
+      expect(
+        getComputedStyle(screen.getByTestId(testID)).transitionDuration,
+      ).toBe('');
+    }
   });
 
   it('is inert when disabled: no container class, empty content props', () => {

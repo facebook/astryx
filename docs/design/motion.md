@@ -3,15 +3,20 @@ schema_version: 1
 template_version: 1
 kind: design
 id: design:motion
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
+approved_by: ernestt
+approved_at: 2026-10-01
 owners: [ernestt, cixzhang]
 review_triggers: [visual, interaction, accessibility, motion]
-verified_by: []
-architecture: [architecture:theme-tokens]
+verified_by:
+  [
+    .github/scripts/story-play-guard.js,
+    packages/core/src/hooks/useContainerReveal.test.tsx,
+    scripts/build-css.test.mjs,
+  ]
+architecture: [architecture:interaction-modality]
 components: []
 families: []
 deciding_specs: []
@@ -19,84 +24,119 @@ deciding_specs: []
 
 # Motion design specification
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "motion": ["DR1", "DR2", "DR3"]
+  }
+}
+```
+
 ## User intent
 
-Movement should clarify what changed and where content came from without making a
-surface feel theatrical or sluggish. Every state change should remain understandable
-when motion is reduced.
+People should be able to scan, point, focus, and repeat common actions without
+replaying a visual transition on every state change. Feedback that occurs many
+times during ordinary traversal should feel direct rather than accumulate into
+motion, distraction, or perceived latency.
 
 ## Design principles
 
-- **DR1 — Motion carries meaning.** Animation MUST explain response, continuity,
-  entry, exit, or spatial change rather than decorate otherwise static content.
-- **DR2 — Weight determines timing.** Small local feedback SHOULD feel faster
-  than large entrances, exits, or continuous movement.
-- **DR3 — Movement settles naturally.** Easing SHOULD communicate controlled
-  deceleration rather than ornamental bounce or elasticity.
-- **DR4 — Stable content stays stable.** Motion SHOULD avoid unnecessary layout
-  disruption and preserve reading and interaction context.
-- **DR5 — Reduced motion preserves meaning.** Every animated transition MUST have
-  an immediate or minimally moving form that communicates the same state change.
+- **DR1 — Frequent triggers do not animate.** A visual state change expected to
+  recur repeatedly during ordinary traversal or repeated operation MUST update
+  without animated interpolation, fading, travel, scaling, or exit sequencing.
+- **DR2 — Intent gates remain timing, not motion.** An explicit dwell or intent
+  gate MAY postpone pointer activation when a caller requests it. Once the gate
+  accepts the interaction, the visual state MUST update without animation.
+- **DR3 — Returning to rest is immediate too.** A frequent trigger's exit or
+  cancellation MUST NOT add an animation or an exit-only delay. Leaving the
+  trigger returns the surface to its resting state immediately.
 
 ## Anatomy and hierarchy
 
-| Role                | Purpose                                     | Required relationship                               |
-| ------------------- | ------------------------------------------- | --------------------------------------------------- |
-| origin state        | Establishes what is changing                | Remains identifiable until continuity is clear      |
-| transition cue      | Connects origin and destination             | Uses only the movement needed to explain the change |
-| destination state   | Shows the completed result                  | Settles without residual decorative activity        |
-| reduced-motion path | Communicates the same result without travel | Preserves timing and status meaning where needed    |
+| Role                 | Purpose                                                 | Required relationship                                           |
+| -------------------- | ------------------------------------------------------- | --------------------------------------------------------------- |
+| frequent trigger     | Repeats during normal traversal or high-cadence action  | Does not start an animation                                     |
+| optional intent gate | Filters accidental pointer entry before accepting state | Delays acceptance only; does not animate the accepted state     |
+| accepted state       | Communicates the current result                         | Appears immediately once accepted                               |
+| resting state        | Restores the surface after exit or cancellation         | Returns immediately, without exit sequencing or residual motion |
 
 ## State representation
 
-Hover and press use the lightest useful response; entrances and exits may use a
-more visible transition; large or continuous movement requires stronger user
-justification. Loading and status MUST remain understandable without animation.
+| State                | Required representation                                  | Allowed variation                                                  |
+| -------------------- | -------------------------------------------------------- | ------------------------------------------------------------------ |
+| resting              | Stable content with no transition still running          | Component-owned color, opacity, visibility, position, and anatomy  |
+| frequent trigger     | Destination state appears immediately                    | The destination treatment itself remains component-owned           |
+| explicit intent gate | Resting state remains until the gate accepts the pointer | Caller-owned dwell duration; no animated interpolation afterward   |
+| exit or cancellation | Resting state returns immediately                        | No exit-only delay, fade, travel, scale, or position sequencing    |
+| reduced-motion mode  | Same immediate result as the default path                | No separate substitute is needed because the default has no motion |
 
 ## Responsive and input behavior
 
-The source wiki does not establish responsive-path, interruption, or
-input-specific motion rules beyond the principles above. Those concerns remain
-open for separately evidenced decisions.
+Frequency follows the user task rather than a viewport. The rule applies to
+pointer, keyboard, and touch-driven states when the same state is expected to
+repeat during ordinary traversal or operation. An input modality MAY omit an
+unsupported trigger entirely; it MUST NOT add animation to the equivalent
+frequent state.
 
 ## Accessibility intent
 
-Motion must not be required to perceive status, hierarchy, or completion. Reduced
-motion should suppress unnecessary travel while preserving feedback. Animated
-content should not repeatedly steal attention from reading or input.
+Repeated feedback should not continually pull attention away from reading or
+input. Motion is never required to perceive the accepted state, and people who
+prefer reduced motion receive the same immediate default rather than a separate,
+less expressive fallback.
 
 ## Representative examples
 
-- A pressed control responds immediately without launching decorative movement.
-- A surface entrance explains where new content belongs, then settles quietly.
-- Reduced-motion mode shows the same completed state without spatial travel.
+- Row actions revealed while a pointer moves through a list appear and disappear
+  immediately instead of fading on every row.
+- `useContainerReveal({hoverDelay: 250})` may wait for the requested dwell, then
+  reveals immediately; leaving the row restores the resting state immediately.
+- Pressed feedback on a repeatedly used control paints and clears with the
+  interaction instead of animating between the two states.
 
 ## Visual references
 
-No normative assets are included. Micro-interaction, entrance/exit, and
-reduced-motion pairs should be added under `docs/design/assets/motion/` before
-promotion.
+No normative image is required for this bounded decision. The absence of motion
+is verified in real Chromium by exercising entry, accepted state, and exit while
+reading the resolved duration, delay, opacity, and position.
 
 ## Component contract links
 
-No component links are asserted in this seed draft.
+`useContainerReveal` is the first implementation of DR1–DR3. Its focused unit,
+generated-CSS, and Chromium timing checks are listed in `verified_by`. Future
+component and family records cite these requirement IDs rather than copying the
+frequency rationale.
 
 ## Decision log
 
-No repository design decision has approved this record yet. It distills motion
-intent from the public Design Conventions wiki without copying duration values,
-CSS properties, or audit mechanics.
+### DEC-1 — Frequent triggers have no animation
+
+**Reference:** `design:motion/DEC-1`
+**Decider:** `ernestt`, 2026-10-01
+
+Animation compounds when a state fires across many rows or throughout a repeated
+task. Even a short fade replays continuously, makes direct feedback feel latent,
+and can require exit sequencing that outlives the interaction. Frequent triggers
+therefore update immediately by default. A caller-requested intent gate remains
+allowed because it filters accidental activation before the state is accepted;
+it does not animate the accepted result.
+
+Rejected: retaining a system "fast" fade, because shorter animation is still
+repeated animation; and limiting the immediate path to reduced-motion mode,
+because high-cadence feedback should be direct for everyone.
 
 ## Open questions
 
-- **OQ1 — Reference transitions.** Which component interactions should be the
-  normative examples for local, entrance/exit, and large movement?
-- **OQ2 — Interruption and reflow.** What requirements should govern reversing,
-  cancelling, replacing, or responsively reflowing an active transition?
-- **OQ3 — Allowed expressive motion.** Which product contexts, if any, justify a
-  deliberately expressive treatment beyond functional continuity?
+- **OQ1 — Infrequent and spatial motion.** Entrances, exits, spatial continuity,
+  gesture tracking, duration hierarchy, easing, and expressive motion remain
+  outside this bounded decision and require separately approved intent.
 
 ## Content boundary
 
-This file defines motion intent. It does not define duration or easing tokens,
-CSS properties, animation APIs, component behavior, or audit checks.
+This file defines only the no-animation rule for frequent triggers and the
+allowed timing-only intent gate. It does not define prop syntax, CSS structure,
+motion-token values, infrequent transition design, gesture behavior, current
+audit scores, or consumer examples. Those remain with their canonical owners.

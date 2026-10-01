@@ -83,13 +83,13 @@ const meta: Meta = {
 export default meta;
 type Story = StoryObj;
 
-/** Hover or tab into a row to reveal its actions. */
+/** Hover or tab into a row to reveal its actions immediately. */
 export const Reveal: Story = {
   render: () => (
     <div {...stylex.props(styles.stack)}>
       <p {...stylex.props(styles.hint)}>
-        Hover a row — or press Tab to focus into it — to reveal its actions. On
-        touch devices the actions are always visible.
+        Hover a row — or press Tab to focus into it — to reveal its actions
+        immediately. On touch devices the actions are always visible.
       </p>
       <RevealRow label="report.pdf" />
       <RevealRow label="budget.xlsx" />
@@ -99,8 +99,8 @@ export const Reveal: Story = {
 };
 
 /**
- * Inverted: content is visible at rest and fades OUT on hover. Mouse-only —
- * it never hides on keyboard focus and stays visible on touch.
+ * Inverted: content is visible at rest and disappears immediately on hover.
+ * Mouse-only — it never hides on keyboard focus and stays visible on touch.
  */
 export const InvertedConceal: Story = {
   render: () => {
@@ -122,8 +122,8 @@ export const InvertedConceal: Story = {
     return (
       <div {...stylex.props(styles.stack)}>
         <p {...stylex.props(styles.hint)}>
-          The timestamp shows at rest and fades out on mouse hover (a visual
-          declutter). It stays put for keyboard and touch users.
+          The timestamp shows at rest and disappears immediately on mouse hover
+          (a visual declutter). It stays put for keyboard and touch users.
         </p>
         <ConcealRow label="report.pdf" />
         <ConcealRow label="budget.xlsx" />
@@ -162,7 +162,7 @@ export const PreserveLayout: Story = {
       <div {...stylex.props(styles.stack)}>
         <p {...stylex.props(styles.hint)}>
           The action's space is reserved even while hidden — no reflow when it
-          fades in.
+          appears immediately.
         </p>
         <PreserveRow label="report.pdf" />
         <PreserveRow label="budget.xlsx" />
@@ -259,7 +259,7 @@ export const ToggleEnabled: Story = {
 
 /**
  * `hoverDelay` gates the reveal on dwell: sweep the pointer down the list and
- * nothing paints in its wake, but rest on a row and its actions fade in.
+ * nothing paints in its wake, but rest on a row and its actions appear.
  */
 export const HoverIntentDelay: Story = {
   render: () => {

@@ -2,11 +2,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @description Runs listed stories' play functions in real Chromium and fails when one throws
+ * @description Runs listed stories' play functions and direct probes in real Chromium
  * @input --storybook-dir <path> [--port <n>]
- * @output One line per story; exit 1 if a play function threw, the story errored, or it never finished
+ * @output One line per story; exit 1 if its play function, probe, or render fails
  *
- * A story's play function is the only place a geometry assertion can live —
+ * A story's play function is the usual place a geometry assertion lives —
  * getBoundingClientRect needs a real layout engine — but on its own it is
  * observed by nothing that can fail: Vitest collects only `*.test.*` files,
  * and the visual gate loads each story waiting for rendered DOM without
@@ -17,8 +17,10 @@
  * listed story's iframe in Chromium, and listens on the preview channel for
  * the play outcome: `storyRendered` only fires after `play` resolves, and
  * any thrown assertion surfaces as `playFunctionThrewException` (or one of
- * its sibling error events). No outcome within the timeout also fails —
- * a story that cannot boot must not pass by silence.
+ * its sibling error events). A target can also define a direct browser probe
+ * for state that synthetic story events cannot create, such as CSS `:hover`.
+ * No outcome within the timeout also fails — a story that cannot boot must not
+ * pass by silence.
  */
 
 const {chromium} = require('playwright');
@@ -35,13 +37,27 @@ const getArg = name => {
 const storybookDir = getArg('storybook-dir') || 'apps/storybook/dist';
 const port = Number(getArg('port') || 6010);
 
-// Stories whose play assertions are load-bearing. Adding a story here is the
-// whole cost of promoting its play function into required CI.
+// Stories whose play assertions or direct Chromium probes are load-bearing.
+// Adding a target here is the whole cost of promoting it into required CI.
 const TARGETS = [
+  {
+    component: 'useContainerReveal',
+    story: 'core-hooks-usecontainerreveal--reveal',
+    guards: 'default reveal and exit have no transition duration or delay',
+    browserProbe: probeContainerRevealDefault,
+  },
+  {
+    component: 'useContainerReveal',
+    story: 'core-hooks-usecontainerreveal--hover-intent-delay',
+    guards:
+      'explicit hoverDelay postpones pointer entry while exit stays immediate',
+    browserProbe: probeContainerRevealDelay,
+  },
   {
     component: 'Selector',
     story: 'core-selector--size-variants',
-    guards: 'compact trigger variants match their size tokens and multiline values grow',
+    guards:
+      'compact trigger variants match their size tokens and multiline values grow',
   },
   {
     component: 'MultiSelector',
@@ -97,6 +113,135 @@ const CONTENT_TYPES = {
   '.png': 'image/png',
   '.svg': 'image/svg+xml',
 };
+
+function parseTransitionTimes(value) {
+  const times = value.split(',').map(part => {
+    const time = part.trim();
+    const number = Number.parseFloat(time);
+    if (!Number.isFinite(number)) {
+      throw new Error(`Invalid transition time: ${JSON.stringify(value)}`);
+    }
+    return time.endsWith('ms') ? number / 1000 : number;
+  });
+  return times;
+}
+
+function assertTransitionTimes(value, expected, label) {
+  const times = parseTransitionTimes(value);
+  if (
+    times.length === 0 ||
+    times.some(time => Math.abs(time - expected) > 0.001)
+  ) {
+    throw new Error(
+      `${label}: expected every transition time to be ${expected}s, received ${value}`,
+    );
+  }
+}
+
+function assertRevealState(state, expected, label) {
+  if (
+    state.opacity !== expected.opacity ||
+    state.position !== expected.position
+  ) {
+    throw new Error(
+      `${label}: expected opacity ${expected.opacity} and position ${expected.position}, ` +
+        `received opacity ${state.opacity} and position ${state.position}`,
+    );
+  }
+}
+
+async function getRevealFixture(page, label) {
+  const editButton = page.getByRole('button', {name: `Edit ${label}`});
+  await editButton.waitFor();
+  const actions = editButton.locator('xpath=..');
+  const row = actions.locator('xpath=..');
+  return {actions, row};
+}
+
+async function readRevealState(actions) {
+  return actions.evaluate(element => {
+    const style = getComputedStyle(element);
+    return {
+      opacity: style.opacity,
+      position: style.position,
+      transitionDelay: style.transitionDelay,
+      transitionDuration: style.transitionDuration,
+    };
+  });
+}
+
+async function movePointerAway(page, row) {
+  await page.mouse.move(1279, 899);
+  if (await row.evaluate(element => element.matches(':hover'))) {
+    throw new Error('pointer did not leave the reveal container');
+  }
+}
+
+async function probeContainerRevealDefault(page) {
+  const {actions, row} = await getRevealFixture(page, 'report.pdf');
+  const resting = await readRevealState(actions);
+  assertTransitionTimes(resting.transitionDuration, 0, 'default duration');
+  assertTransitionTimes(resting.transitionDelay, 0, 'default delay');
+  assertRevealState(
+    resting,
+    {opacity: '0', position: 'absolute'},
+    'default rest state',
+  );
+
+  await row.hover();
+  const hovered = await readRevealState(actions);
+  assertTransitionTimes(hovered.transitionDuration, 0, 'hover duration');
+  assertTransitionTimes(hovered.transitionDelay, 0, 'hover delay');
+  assertRevealState(
+    hovered,
+    {opacity: '1', position: 'static'},
+    'default hover state',
+  );
+
+  await movePointerAway(page, row);
+  assertRevealState(
+    await readRevealState(actions),
+    {opacity: '0', position: 'absolute'},
+    'default exit state',
+  );
+}
+
+async function probeContainerRevealDelay(page) {
+  const {actions, row} = await getRevealFixture(page, 'file-1.txt');
+  const hoverDelay = await row.evaluate(element =>
+    getComputedStyle(element).getPropertyValue('--_hover-delay'),
+  );
+  assertTransitionTimes(hoverDelay, 0.25, 'hoverDelay option');
+
+  await row.hover();
+  const waiting = await readRevealState(actions);
+  assertTransitionTimes(waiting.transitionDuration, 0, 'delayed duration');
+  assertTransitionTimes(waiting.transitionDelay, 0.25, 'delayed entry');
+  assertRevealState(
+    waiting,
+    {opacity: '0', position: 'absolute'},
+    'delayed entry state',
+  );
+
+  const actionsHandle = await actions.elementHandle();
+  await page.waitForFunction(
+    element => {
+      const style = getComputedStyle(element);
+      return style.opacity === '1' && style.position === 'static';
+    },
+    actionsHandle,
+    {timeout: 1500},
+  );
+
+  await movePointerAway(page, row);
+  const exited = await readRevealState(actions);
+  assertTransitionTimes(exited.transitionDelay, 0, 'delayed exit');
+  assertRevealState(
+    exited,
+    {opacity: '0', position: 'absolute'},
+    'delayed exit state',
+  );
+}
 
 function createServer(dir, listenPort) {
   return new Promise(resolve => {
@@ -181,7 +326,17 @@ async function probe(page, target) {
     null,
     {timeout: 30000},
   );
-  return page.evaluate(() => window.__storyOutcome);
+  const outcome = await page.evaluate(() => window.__storyOutcome);
+  if (outcome.errors.length === 0 && target.browserProbe) {
+    try {
+      await target.browserProbe(page);
+    } catch (error) {
+      outcome.errors.push(
+        `browserProbe — ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+  return outcome;
 }
 
 async function run() {
@@ -211,13 +366,14 @@ async function run() {
           );
         } else {
           console.log(
-            `✓ ${target.component} (${target.story}): play passed — ${target.guards}`,
+            `✓ ${target.component} (${target.story}): ` +
+              `${target.browserProbe ? 'browser probe' : 'play'} passed — ${target.guards}`,
           );
         }
       } catch (e) {
         failures++;
         console.error(
-          `✗ ${target.component} (${target.story}): no play outcome — ${e.message}`,
+          `✗ ${target.component} (${target.story}): no browser outcome — ${e.message}`,
         );
       } finally {
         await page.close();
@@ -231,11 +387,11 @@ async function run() {
 
   if (failures > 0) {
     console.error(
-      `\nFailing: ${failures} story play function(s) did not pass.`,
+      `\nFailing: ${failures} story browser guard(s) did not pass.`,
     );
     return 1;
   }
-  console.log('\nAll story play guards passed.');
+  console.log('\nAll story browser guards passed.');
   return 0;
 }
 

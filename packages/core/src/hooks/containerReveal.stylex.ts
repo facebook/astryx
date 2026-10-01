@@ -2,10 +2,10 @@
 
 /**
  * @file containerReveal.stylex.ts
- * @input Uses StyleX, theme tokens
- * @output The container style that publishes the reveal state, the suspended
- *   and hover-delay container variants, and the four content style blocks
- *   (reveal / conceal, each with a layout-preserved variant) that read it.
+ * @input Uses StyleX
+ * @output The container style that publishes the reveal state, the forced-state
+ *   and opt-in hover-delay variants, and the four instantaneous content style
+ *   blocks (reveal / conceal, each with a layout-preserved variant) that read it.
  * @position Internal to useContainerReveal.
  *
  * HOW THE SCOPING WORKS: the container declares its own reveal state as
@@ -18,12 +18,9 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {durationVars, easeVars} from '../theme/tokens.stylex';
 
-const REST_DELAY = '0s, ' + durationVars['--duration-fast'];
-
-// The hover-intent gate: how long the pointer must dwell before the hover
-// branch takes effect. Declared on every container so a nested one never
+// The optional hover-intent gate: how long the pointer must dwell before the
+// hover branch takes effect. Declared on every container so a nested one never
 // inherits its ancestor's dwell.
 const HOVER_DELAY = 'var(--_hover-delay, 0s)';
 
@@ -46,22 +43,10 @@ export const styles = stylex.create({
       ':focus-within': 'static',
       '@media (any-pointer: coarse)': 'static',
     },
-    // The position flip is discrete, so it transitions with allow-discrete and
-    // a state-conditional delay: the dwell on entry (flips into flow when the
-    // gate opens, then fades in) and the fade duration on exit (stays in flow
-    // until the fade finishes, then snaps out) — without the exit half the
-    // content would snap out of flow at full opacity and flicker.
+    // State changes are immediate by default. An explicit hoverDelay postpones
+    // both opacity and position on pointer entry; exit, keyboard focus, and
+    // coarse pointers remain immediate.
     '--_reveal-delay': {
-      default: REST_DELAY,
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': HOVER_DELAY + ', ' + HOVER_DELAY,
-      },
-      ':focus-within': '0s, 0s',
-      '@media (any-pointer: coarse)': '0s, 0s',
-    },
-    // Reduced motion drops the exit sequencing (there is no fade left to wait
-    // for) but keeps the dwell: an intent gate is timing, not motion.
-    '--_reveal-delay-reduced': {
       default: '0s, 0s',
       ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': HOVER_DELAY + ', ' + HOVER_DELAY,
@@ -114,14 +99,6 @@ export const styles = stylex.create({
       '@media (any-pointer: coarse)': 'static',
     },
     '--_reveal-delay': {
-      default: REST_DELAY,
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': REST_DELAY,
-      },
-      ':focus-within': '0s, 0s',
-      '@media (any-pointer: coarse)': '0s, 0s',
-    },
-    '--_reveal-delay-reduced': {
       default: '0s, 0s',
       ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
         '@media (hover: hover)': '0s, 0s',
@@ -172,14 +149,6 @@ export const styles = stylex.create({
       ':focus-within': '0s, 0s',
       '@media (any-pointer: coarse)': '0s, 0s',
     },
-    '--_reveal-delay-reduced': {
-      default: '0s, 0s',
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
-        '@media (hover: hover)': '0s, 0s',
-      },
-      ':focus-within': '0s, 0s',
-      '@media (any-pointer: coarse)': '0s, 0s',
-    },
     '--_conceal-opacity': {
       default: 0,
       ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
@@ -196,51 +165,31 @@ export const styles = stylex.create({
     },
   },
   hoverDelay: (delay: string) => ({'--_hover-delay': delay}),
+  // transition-duration is intentionally omitted: its CSS initial value is 0s,
+  // so default state changes are immediate while an explicit hoverDelay can
+  // still postpone them. Position keeps allow-discrete so the delay gates both
+  // properties.
   // The fallbacks make content spread outside a reveal container fail visible
   // rather than invisible.
   reveal: {
     transitionProperty: 'opacity, position',
-    transitionDuration: {
-      default: durationVars['--duration-fast'] + ', 0s',
-      '@media (prefers-reduced-motion: reduce)': '0s, 0s',
-    },
-    transitionTimingFunction: easeVars['--ease-standard'],
     transitionBehavior: 'allow-discrete',
-    transitionDelay: {
-      default: 'var(--_reveal-delay, 0s, 0s)',
-      '@media (prefers-reduced-motion: reduce)':
-        'var(--_reveal-delay-reduced, 0s, 0s)',
-    },
+    transitionDelay: 'var(--_reveal-delay, 0s, 0s)',
     opacity: 'var(--_reveal-opacity, 1)',
     position: 'var(--_reveal-position, static)',
   },
   revealLayoutPreserved: {
     transitionProperty: 'opacity',
-    transitionDuration: {
-      default: durationVars['--duration-fast'],
-      '@media (prefers-reduced-motion: reduce)': '0s',
-    },
-    transitionTimingFunction: easeVars['--ease-standard'],
     transitionDelay: 'var(--_fade-delay, 0s)',
     opacity: 'var(--_reveal-opacity, 1)',
   },
   conceal: {
     transitionProperty: 'opacity',
-    transitionDuration: {
-      default: durationVars['--duration-fast'],
-      '@media (prefers-reduced-motion: reduce)': '0s',
-    },
-    transitionTimingFunction: easeVars['--ease-standard'],
     transitionDelay: 'var(--_fade-delay, 0s)',
     opacity: 'var(--_conceal-opacity, 1)',
   },
   concealLayoutPreserved: {
     transitionProperty: 'opacity',
-    transitionDuration: {
-      default: durationVars['--duration-fast'],
-      '@media (prefers-reduced-motion: reduce)': '0s',
-    },
-    transitionTimingFunction: easeVars['--ease-standard'],
     transitionDelay: 'var(--_fade-delay, 0s)',
     opacity: 'var(--_conceal-opacity, 1)',
   },

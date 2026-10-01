@@ -20,14 +20,14 @@
  * container shadows its ancestor's state for its own subtree. See
  * containerReveal.stylex.ts.
  *
- * Two levers sit on top of the pointer, both still CSS-only. On the container:
- * `hoverDelay` (dwell before the reveal starts — the Tooltip / HoverCard
- * intent gate applied to a reveal) and `forceState` (pin the trigger state a
- * caller owns: a motion gate, a scroll, an open menu). On a single piece of
- * content: `forceVisibility`, which pins how THAT element looks. State belongs
- * to the container because one container feeds children whose looks are
- * opposite; appearance belongs to the element, where it is unambiguous.
- * Neither lever can hide content from a keyboard user — see ACCESSIBILITY.
+ * Two controls sit on top of the pointer, both still CSS-only. On the container:
+ * `hoverDelay` (an opt-in dwell before the reveal starts) and `forceState` (pin
+ * the trigger state a caller owns: a motion gate, a scroll, an open menu). On a
+ * single piece of content: `forceVisibility`, which pins how THAT element looks.
+ * State belongs to the container because one container feeds children whose
+ * looks are opposite; appearance belongs to the element, where it is
+ * unambiguous. Neither control can hide content from a keyboard user — see
+ * ACCESSIBILITY.
  *
  * ACCESSIBILITY (WCAG 2.2 by construction):
  * - Revealed content is visually hidden at rest via position + opacity, so it
@@ -39,7 +39,7 @@
  * - Concealed (inverted) content is a mouse-only visual swap: it ignores
  *   :focus-within (a keyboard user must never watch content vanish) and stays
  *   visible on touch and in the a11y tree.
- * - Motion: honors prefers-reduced-motion.
+ * - Timing: state changes are immediate by default; hover delay is opt-in.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts (export)
@@ -68,8 +68,8 @@ export interface ContainerRevealOptions {
    * default — to leave the container on hover and focus.
    *
    * State, not appearance: what each child then looks like is the child's own
-   * business (revealed content fades in on `'active'`, inverted content fades
-   * out). This is the lever for state a caller owns — a motion gate over a
+   * business (revealed content is shown on `'active'`, inverted content is
+   * hidden). This is the lever for state a caller owns — a motion gate over a
    * list, a scroll in progress, a row whose menu is open and must stay lit.
    *
    * `'inactive'` never overrides keyboard focus or a coarse pointer: the
@@ -78,14 +78,14 @@ export interface ContainerRevealOptions {
    */
   forceState?: 'active' | 'inactive';
   /**
-   * Hover-intent gate, in milliseconds: how long the pointer must rest on the
-   * container before the reveal starts. A pointer that passes through leaves
-   * nothing painted behind it, which is what keeps a list of rows quiet while
-   * the cursor sweeps across it.
+   * Optional hover-intent gate, in milliseconds: how long the pointer must
+   * rest on the container before the reveal starts. A pointer that passes
+   * through leaves nothing painted behind it, which is what keeps a list of
+   * rows quiet while the cursor sweeps across it.
    *
    * Mouse-only, like Tooltip's and HoverCard's `delay`: keyboard focus and
-   * touch reveal immediately. It survives `prefers-reduced-motion` — an intent
-   * gate is timing, not motion.
+   * touch reveal immediately. It is timing rather than motion, so it remains
+   * active when reduced motion is preferred.
    * @default 0
    */
   hoverDelay?: number;
@@ -94,8 +94,8 @@ export interface ContainerRevealOptions {
 export interface ContentRevealOptions {
   /**
    * Conceal-on-hover instead of reveal-on-hover: content is visible at rest
-   * and fades out while the container is hovered. Mouse-only and visual —
-   * stays in the a11y tree, ignores focus-within, stays visible on touch.
+   * and is hidden while the container is hovered. Mouse-only and visual — it
+   * stays in the a11y tree, ignores focus-within, and stays visible on touch.
    * @default false
    */
   isRevealInverted?: boolean;
