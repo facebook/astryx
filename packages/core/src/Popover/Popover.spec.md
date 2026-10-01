@@ -437,8 +437,7 @@ and invariants.
 
 **Reference:** `component:Popover/DEC-4`
 
-**Decider:** pending owner review (proposed in PR #6683 for agentcloud Client
-spec 365 Phase 4, gap kt-47gf)
+**Decider:** pending owner review (proposed in PR #6683)
 
 The surface padding becomes a public concept: `Popover` takes `padding` on the
 shared spacing scale (`0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10`, the same
