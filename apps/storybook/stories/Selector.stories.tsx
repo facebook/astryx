@@ -793,7 +793,16 @@ export const SizeVariants: Story = {
         while (text && !text.textContent?.includes('Ågypj')) {
           text = walker.nextNode();
         }
-        const clipElement = text?.parentElement;
+        // The nearest ancestor that clips: the built-in label, or the
+        // renderValue wrapper around caller content.
+        let clipElement = text?.parentElement ?? null;
+        while (
+          clipElement &&
+          clipElement !== trigger &&
+          getComputedStyle(clipElement).overflowY === 'visible'
+        ) {
+          clipElement = clipElement.parentElement;
+        }
         expect(clipElement).toBeTruthy();
         if (!text || !clipElement) {
           continue;
