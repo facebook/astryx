@@ -3,7 +3,15 @@
 /**
  * @file swizzle.copy leaf — copy a component's source into the consumer project
  * for customization, rewriting escaping relative imports to the OWNER package's
- * subpaths.
+ * subpaths. The copy walks core component directories recursively, so nested
+ * source subdirectories (e.g. Table/plugins/*) are preserved in the output;
+ * the overwrite pre-flight and the reported file list share the same
+ * recursive file set. Every destination segment is checked before any
+ * directory or file is written, even when overwrite is enabled: no symlinks,
+ * existing directory segments must be directories, and existing file targets
+ * must be regular files. Integration source directories retain their existing
+ * flat copy behavior (sorted, like the core walk): their discovery contract
+ * identifies an entry file, not an exclusively owned directory tree.
  *
  * Side-effecting: writes files and returns a `swizzle.copy` receipt describing
  * what it did. Shared core discovery + component listing come from
@@ -32,8 +40,12 @@ const DEFAULT_ISSUES_URL = 'https://github.com/facebook/astryx/issues/new';
 
 /**
  * Rewrite relative imports that point outside the component directory to use
- * the OWNER package's subpaths. Imports within the copied directory (./x) are
- * left untouched.
+ * the OWNER package's subpaths. Imports within the copied directory are left
+ * untouched: `./x` always stays, and for a file `depth` levels below the
+ * component root an `../` chain only escapes once it has MORE than `depth`
+ * leading `../` segments. E.g. in `Table/plugins/selection/x.tsx` (depth 2),
+ * `../../types` still resolves inside the copied tree and stays as-is, while
+ * `../../../Icon` escapes and is rewritten to `<pkg>/Icon`.
  *
  * e.g. with ownerPackage '@astryxdesign/core':
  *      '../theme/tokens.stylex' -> '@astryxdesign/core/theme/tokens.stylex'
@@ -55,8 +67,11 @@ const DEFAULT_ISSUES_URL = 'https://github.com/facebook/astryx/issues/new';
  *
  * @param {string} content
  * @param {string} [ownerPackage]
+ * @param {number} [depth] Directory levels the file sits below the component
+ *   root (0 for a top-level file like `Table/index.ts`, 2 for
+ *   `Table/plugins/selection/index.ts`).
  */
-export function rewriteImports(content, ownerPackage = CORE_PACKAGE) {
+export function rewriteImports(content, ownerPackage = CORE_PACKAGE, depth = 0) {
   /** @param {string} importPath */
   const mapTarget = importPath => {
     // Strip ALL leading `../` so a two-levels-up path never yields `<pkg>/..`.
@@ -73,17 +88,22 @@ export function rewriteImports(content, ownerPackage = CORE_PACKAGE) {
     }
     return `${ownerPackage}/${parts[0]}`;
   };
+  /**
+   * Rewrite only when the `../` chain climbs past the file's own depth below
+   * the component root; shallower chains resolve inside the copied tree.
+   * @param {string} _m
+   * @param {string} prefix
+   * @param {string} importPath
+   * @param {string} suffix
+   */
+  const rewriteEscaping = (_m, prefix, importPath, suffix) => {
+    const up = (importPath.match(/^(?:\.\.\/)+/)?.[0].length ?? 0) / '../'.length;
+    if (up <= depth) return `${prefix}${importPath}${suffix}`;
+    return `${prefix}${mapTarget(importPath)}${suffix}`;
+  };
   return content
-    .replace(
-      /(from\s+['"])(\.\.\/[^'"]+)(['"])/g,
-      (_m, prefix, importPath, suffix) =>
-        `${prefix}${mapTarget(importPath)}${suffix}`,
-    )
-    .replace(
-      /(import\(\s*['"])(\.\.\/[^'"]+)(['"])/g,
-      (_m, prefix, importPath, suffix) =>
-        `${prefix}${mapTarget(importPath)}${suffix}`,
-    );
+    .replace(/(from\s+['"])(\.\.\/[^'"]+)(['"])/g, rewriteEscaping)
+    .replace(/(import\(\s*['"])(\.\.\/[^'"]+)(['"])/g, rewriteEscaping);
 }
 
 /**
@@ -185,6 +205,99 @@ function isExcludedFromCopy(file) {
 }
 
 /**
+ * Recursively collect a component's copyable source files as POSIX-style paths
+ * relative to `dir`, preserving nested directory structure (e.g. Table's
+ * `plugins/selection/index.ts`). Only files are filtered
+ * (isExcludedFromCopy, applied to the basename); directories are always
+ * descended into. A directory whose files are all excluded (e.g. `__tests__/`,
+ * `__snapshots__/` — every file matches `.test.`) contributes nothing, and the
+ * copy loop creates directories on demand per file, so it never appears in the
+ * output.
+ * @param {string} dir Absolute directory to walk.
+ * @param {string} [prefix] Relative path of `dir` below the component root.
+ * @returns {string[]} Sorted relative file paths.
+ */
+function collectSourceFiles(dir, prefix = '') {
+  /** @type {string[]} */
+  const files = [];
+  for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+    const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      files.push(...collectSourceFiles(path.join(dir, entry.name), rel));
+    } else if (entry.isFile() && !isExcludedFromCopy(entry.name)) {
+      files.push(rel);
+    }
+  }
+  return files.sort();
+}
+
+/**
+ * Validate every destination segment below cwd before any directory or file is
+ * written, regardless of overwrite, so a bad path late in the sorted plan
+ * cannot leave earlier files already replaced. No segment may be a symlink
+ * (ERR_PATH_TRAVERSAL); lstat also sees dangling links, which existsSync would
+ * miss. An existing directory segment (outputDir, its ancestors, a nested
+ * source directory) must be a directory, and an existing file target must be
+ * a regular file (ERR_WRITE_FAILED). Parents are checked before children, so a
+ * lstat below a non-directory never raises a raw ENOTDIR. Messages name paths
+ * relative to cwd. The caller has already confined outputDir to cwd; with no
+ * symlink below cwd, no planned file can resolve outside it either, so this
+ * also covers the per-file confinement.
+ * @param {string} cwd
+ * @param {string} outputDir
+ * @param {string[]} files Paths relative to outputDir.
+ */
+function checkDestinationPaths(cwd, outputDir, files) {
+  const root = path.resolve(cwd);
+  /** @type {Set<string>} */
+  const checked = new Set();
+  /** @param {string} message */
+  const refuseWrite = message =>
+    new AstryxError(`${message} Nothing was written.`, [], ERROR_CODES.ERR_WRITE_FAILED);
+  /** @type {Array<[string, boolean]>} */
+  const targets = [
+    [outputDir, false],
+    ...files.map(file => /** @type {[string, boolean]} */ ([path.join(outputDir, file), true])),
+  ];
+  for (const [target, isFile] of targets) {
+    const parts = path.relative(root, target).split(path.sep);
+    let segment = root;
+    for (const [i, part] of parts.entries()) {
+      segment = path.join(segment, part);
+      if (checked.has(segment)) continue;
+      checked.add(segment);
+      const rel = path.relative(root, segment);
+      let stat;
+      try {
+        stat = fs.lstatSync(segment, {throwIfNoEntry: false});
+      } catch (err) {
+        const errno = /** @type {NodeJS.ErrnoException} */ (err).code;
+        if (typeof errno !== 'string') throw err;
+        throw refuseWrite(`Could not write ${rel}: ${errno}.`);
+      }
+      // Nothing exists here yet, so nothing deeper can exist either.
+      if (!stat) break;
+      if (stat.isSymbolicLink()) {
+        throw new AstryxError(
+          `Refusing to write through destination symlink "${rel}".`,
+          [],
+          ERROR_CODES.ERR_PATH_TRAVERSAL,
+        );
+      }
+      if (isFile && i === parts.length - 1) {
+        if (!stat.isFile()) {
+          throw refuseWrite(
+            `Could not write ${rel}: it exists and is ${stat.isDirectory() ? 'a directory' : 'not a regular file'}.`,
+          );
+        }
+      } else if (!stat.isDirectory()) {
+        throw refuseWrite(`Could not write into ${rel}: it exists and is not a directory.`);
+      }
+    }
+  }
+}
+
+/**
  * Copy one component's source into the consumer project for customization,
  * rewriting escaping relative imports to the owner package's subpaths.
  *
@@ -266,17 +379,16 @@ export async function swizzleCopy(component, options = {}) {
   const outputBase = confineWrite(output, cwd, {label: 'output directory'});
   const outputDir = path.join(outputBase, dirName);
 
-  // Pre-flight path and overwrite checks before any mkdir/writeFile.
-  const sourceFiles = fs.readdirSync(componentDir).filter(file => {
-    if (isExcludedFromCopy(file)) return false;
-    return fs.statSync(path.join(componentDir, file)).isFile();
-  });
-  for (const file of sourceFiles) {
-    confineWrite(path.join(outputDir, file), cwd, {
-      allowAbsolute: true,
-      label: 'output file',
-    });
-  }
+  // Pre-flight path and overwrite checks before any mkdir/writeFile. The same
+  // sorted file set drives these checks, the copy loop, and the reported
+  // files, so nested core source (e.g. Table/plugins/*) is visible to all of
+  // them and the receipt order does not depend on readdir order.
+  const sourceFiles = owner.package === CORE_PACKAGE
+    ? collectSourceFiles(componentDir)
+    : fs.readdirSync(componentDir).filter(file =>
+      !isExcludedFromCopy(file) && fs.statSync(path.join(componentDir, file)).isFile(),
+    ).sort();
+  checkDestinationPaths(cwd, outputDir, sourceFiles);
   const existingFiles = sourceFiles.filter(f =>
     fs.existsSync(path.join(outputDir, f)),
   );
@@ -292,16 +404,18 @@ export async function swizzleCopy(component, options = {}) {
 
   fs.mkdirSync(outputDir, {recursive: true});
 
-  const files = fs.readdirSync(componentDir);
-  let copied = 0;
   let usesStyleX = false;
-  for (const file of files) {
-    if (isExcludedFromCopy(file)) continue;
+  for (const file of sourceFiles) {
     const srcPath = path.join(componentDir, file);
-    if (!fs.statSync(srcPath).isFile()) continue;
     let content = fs.readFileSync(srcPath, 'utf-8');
     if (file.endsWith('.ts') || file.endsWith('.tsx')) {
-      content = rewriteImports(content, owner.ownerPackage);
+      // The file's depth below the component root decides which `../` chains
+      // escape the copied tree and need rewriting to the owner package.
+      content = rewriteImports(
+        content,
+        owner.ownerPackage,
+        file.split('/').length - 1,
+      );
     }
     if (
       (file.endsWith('.ts') || file.endsWith('.tsx')) &&
@@ -309,16 +423,12 @@ export async function swizzleCopy(component, options = {}) {
     ) {
       usesStyleX = true;
     }
-    fs.writeFileSync(path.join(outputDir, file), content);
-    copied++;
+    const destPath = path.join(outputDir, file);
+    fs.mkdirSync(path.dirname(destPath), {recursive: true});
+    fs.writeFileSync(destPath, content);
   }
 
   const relOutput = path.relative(cwd, outputDir);
-  const copiedFiles = files.filter(
-    f =>
-      !isExcludedFromCopy(f) &&
-      fs.statSync(path.join(componentDir, f)).isFile(),
-  );
   const feedback = buildFeedback(dirName, owner.issuesUrl);
 
   /** @type {import('../swizzle.type.mjs').SwizzleCopyResponse['data']} */
@@ -326,8 +436,8 @@ export async function swizzleCopy(component, options = {}) {
     component: dirName,
     package: owner.package,
     outputDir: relOutput,
-    filesCopied: copied,
-    files: copiedFiles.map(f => f),
+    filesCopied: sourceFiles.length,
+    files: sourceFiles,
     usesStyleX,
   };
   if (feedback) data.feedback = feedback;
