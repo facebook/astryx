@@ -17,7 +17,10 @@ import migrateNativePickerToPresentation, {
 export default [
   {
     name: 'migrate-theme-catalog-to-descriptors',
-    transform: migrateThemeCatalogToDescriptors,
+    transform:
+      /** @type {import('../../../../authoring/codemod/type').CodemodTransform} */ (
+        /** @type {unknown} */ (migrateThemeCatalogToDescriptors)
+      ),
     meta: migrateThemeCatalogToDescriptorsMeta,
   },
   {
