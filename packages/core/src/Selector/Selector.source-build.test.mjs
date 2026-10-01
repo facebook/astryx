@@ -19,9 +19,9 @@ const ROOT = path.resolve(__dirname, '../../../..');
 const SELECTOR_SOURCE = path.join(__dirname, 'Selector.tsx');
 
 const EXPECTED_PADDING_DECLARATIONS = [
-  'padding-block:calc((var(--size-element-sm) - max(round(var(--text-label-size) * var(--text-label-leading),1px),20px,1rem) - 2 * var(--border-width)) / 2)',
-  'padding-block:calc((var(--size-element-md) - max(round(var(--text-label-size) * var(--text-label-leading),1px),20px,1rem) - 2 * var(--border-width)) / 2)',
-  'padding-block:calc((var(--size-element-lg) - max(round(var(--text-label-size) * var(--text-label-leading),1px),20px,1rem) - 2 * var(--border-width)) / 2)',
+  'padding-block:calc((var(--size-element-sm) - max(min(var(--spacing-5),var(--size-element-sm) - 2 * var(--border-width)),20px,1rem) - 2 * var(--border-width)) / 2)',
+  'padding-block:calc((var(--size-element-md) - max(min(var(--spacing-5),var(--size-element-md) - 2 * var(--border-width)),20px,1rem) - 2 * var(--border-width)) / 2)',
+  'padding-block:calc((var(--size-element-lg) - max(min(var(--spacing-5),var(--size-element-lg) - 2 * var(--border-width)),20px,1rem) - 2 * var(--border-width)) / 2)',
 ];
 
 describe('Selector source-build compatibility (#5464)', () => {

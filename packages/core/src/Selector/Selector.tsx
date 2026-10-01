@@ -113,14 +113,8 @@ const styles = stylex.create({
         '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-label-size']})`,
       },
     },
-    // The line box is one label-text line — the label size times its leading,
-    // the same line Button and MultiSelector use, rounded to a whole pixel so
-    // the unitless leading's 4-decimal precision adds no sub-pixel drift —
-    // floored at the 20px clear control and 1rem icons. Padding below derives
-    // from the same value, so a one-line trigger lands on its size token
-    // whatever the spacing scale. A fixed length also keeps the iOS font floor
-    // from changing trigger height.
-    lineHeight: `max(round(${typeScaleVars['--text-label-size']} * ${typeScaleVars['--text-label-leading']}, 1px), 20px, 1rem)`,
+    // The line box is set per size in sizeStyles below, where it can be capped
+    // to what that size token holds.
     color: colorVars['--color-text-primary'],
     cursor: {
       default: 'pointer',
@@ -172,10 +166,13 @@ const styles = stylex.create({
   // trigger stops asserting a floor of its own — otherwise a control sized
   // above its group (`<InputGroup size="md"><Selector size="lg">`) grows the
   // row it was supposed to sit in. The padding goes with it: the row is
-  // already the size token, and the value box is centred in it.
+  // already the size token, and the value box is centred in it. The line box
+  // likewise stops reading the control's own size token (sizeStyles caps it
+  // there), so grouped triggers keep one line box whatever their `size`.
   triggerInGroup: {
     minHeight: 0,
     paddingBlock: 0,
+    lineHeight: `max(${spacingVars['--spacing-5']}, 20px, 1rem)`,
   },
   // Wrapper for `renderValue` output. Takes the free width and clips
   // horizontally so a long value ellipsizes rather than widening the trigger;
@@ -406,15 +403,17 @@ const styles = stylex.create({
 
 // The trigger is sized by PADDING, not by a fixed height, so it is the size
 // token plus one text line for each extra line the value uses: 28/32/36 for
-// one line, 48/52/56 for two with the default tokens. The token and a text
-// line are both multiples of 4 there, so every trigger lands on the 4px rhythm
-// and lines up with the Buttons and inputs beside it. No prop picks the
-// height — the content does.
+// one line, 48/52/56 for two. The token and a text line are both multiples of
+// 4, so every trigger lands on the 4px rhythm and lines up with the Buttons
+// and inputs beside it. No prop picks the height — the content does, and it
+// can only land on the grid.
 //
-// Match triggerContainer's line box: one label-text line, floored for the
-// fixed-size clear control and icons. It deliberately does not read the
-// spacing scale, which can be larger than the text and would push a one-line
-// trigger past its token.
+// The line box is `--spacing-5`, capped at what the size token can hold inside
+// the trigger's borders, then floored at the 20px clear control and 1rem
+// icons. The cap keeps a spacing scale taller than the token from pushing a
+// one-line trigger past it; the floors still win, so content is never clipped
+// to reach a token. Line box and padding read the same value, and a fixed
+// length keeps the iOS font floor from changing trigger height.
 // Keep these calculations inline: a consumer's Babel preset can lower a
 // module-scope helper to a function expression before StyleX evaluates this
 // object, and StyleX cannot constant-evaluate that transformed helper.
@@ -422,15 +421,18 @@ const styles = stylex.create({
 const sizeStyles = stylex.create({
   sm: {
     minHeight: sizeVars['--size-element-sm'],
-    paddingBlock: `calc((${sizeVars['--size-element-sm']} - max(round(${typeScaleVars['--text-label-size']} * ${typeScaleVars['--text-label-leading']}, 1px), 20px, 1rem) - 2 * ${borderVars['--border-width']}) / 2)`,
+    lineHeight: `max(min(${spacingVars['--spacing-5']}, ${sizeVars['--size-element-sm']} - 2 * ${borderVars['--border-width']}), 20px, 1rem)`,
+    paddingBlock: `calc((${sizeVars['--size-element-sm']} - max(min(${spacingVars['--spacing-5']}, ${sizeVars['--size-element-sm']} - 2 * ${borderVars['--border-width']}), 20px, 1rem) - 2 * ${borderVars['--border-width']}) / 2)`,
   },
   md: {
     minHeight: sizeVars['--size-element-md'],
-    paddingBlock: `calc((${sizeVars['--size-element-md']} - max(round(${typeScaleVars['--text-label-size']} * ${typeScaleVars['--text-label-leading']}, 1px), 20px, 1rem) - 2 * ${borderVars['--border-width']}) / 2)`,
+    lineHeight: `max(min(${spacingVars['--spacing-5']}, ${sizeVars['--size-element-md']} - 2 * ${borderVars['--border-width']}), 20px, 1rem)`,
+    paddingBlock: `calc((${sizeVars['--size-element-md']} - max(min(${spacingVars['--spacing-5']}, ${sizeVars['--size-element-md']} - 2 * ${borderVars['--border-width']}), 20px, 1rem) - 2 * ${borderVars['--border-width']}) / 2)`,
   },
   lg: {
     minHeight: sizeVars['--size-element-lg'],
-    paddingBlock: `calc((${sizeVars['--size-element-lg']} - max(round(${typeScaleVars['--text-label-size']} * ${typeScaleVars['--text-label-leading']}, 1px), 20px, 1rem) - 2 * ${borderVars['--border-width']}) / 2)`,
+    lineHeight: `max(min(${spacingVars['--spacing-5']}, ${sizeVars['--size-element-lg']} - 2 * ${borderVars['--border-width']}), 20px, 1rem)`,
+    paddingBlock: `calc((${sizeVars['--size-element-lg']} - max(min(${spacingVars['--spacing-5']}, ${sizeVars['--size-element-lg']} - 2 * ${borderVars['--border-width']}), 20px, 1rem) - 2 * ${borderVars['--border-width']}) / 2)`,
   },
 });
 

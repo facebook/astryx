@@ -583,9 +583,9 @@ const compactSizingTheme = defineTheme({
   },
 });
 
-// A spacing scale larger than the label text, like the docsite Playground's
-// largest preset: `--spacing-5` (40px) is as tall as the small size token, so a
-// trigger that sized its text row from spacing would overshoot that token.
+// A spacing scale taller than the small token can hold, like the docsite
+// Playground's largest preset: `--spacing-5` (40px) equals the small size
+// token, so an uncapped spacing row plus borders would overshoot it.
 const wideSpacingSizingTheme = defineTheme({
   name: 'selector-wide-spacing-sizing',
   typography: {scale: {base: 18, ratio: 1.414}},

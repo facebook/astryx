@@ -324,7 +324,7 @@ export const docs = {
       name: 'renderValue',
       type: '(option: SelectorOptionData) => ReactNode',
       description:
-        'Custom render function for the selected option inside the closed trigger. A one-line value follows the active size token at any spacing scale, including compact spacing with icons or a clear control. Padding accommodates the trigger line box, one label-text line, and each extra line grows the control by one such line (28/32/36 for one line and 48/52/56 for two with the default tokens). Inside an InputGroup the group owns the row height: a SelectorOption folds onto one line and ellipsizes, and any taller node is cut off at the row.',
+        'Custom render function for the selected option inside the closed trigger. A one-line value follows the active size token, including compact or wide spacing scales with icons or a clear control. Padding accommodates the trigger line box, and each extra line grows the control by one line (28/32/36 for one line and 48/52/56 for two with the default tokens). Inside an InputGroup the group owns the row height: a SelectorOption folds onto one line and ellipsizes, and any taller node is cut off at the row.',
     },
     {
       name: 'indicatorPosition',
