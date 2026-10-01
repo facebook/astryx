@@ -25,8 +25,16 @@ on:
         description: 'Marked release/vX.Y.Z branch; required for release-check'
         type: string
         required: false
+      release-version:
+        description: 'Exact X.Y.Z version recorded by the active marker; required for release-check'
+        type: string
+        required: false
       expected-head:
         description: 'Exact full release branch SHA; required for release-check'
+        type: string
+        required: false
+      plan-digest:
+        description: 'Exact SHA-256 digest recorded by the active marker; required for release-check'
         type: string
         required: false
 
@@ -82,7 +90,9 @@ jobs:
           (github.event_name == 'pull_request' && startsWith(github.base_ref, 'release/v'))
         env:
           RELEASE_BRANCH: ${{ github.event_name == 'workflow_dispatch' && inputs['release-branch'] || github.base_ref }}
+          RELEASE_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs['release-version'] || '' }}
           EXPECTED_HEAD: ${{ github.event_name == 'workflow_dispatch' && inputs['expected-head'] || github.event.pull_request.head.sha }}
+          PLAN_DIGEST: ${{ github.event_name == 'workflow_dispatch' && inputs['plan-digest'] || '' }}
           RECEIPT_HEAD: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.pull_request.head.sha }}
           REF_NAME: ${{ github.event_name == 'workflow_dispatch' && github.ref_name || github.base_ref }}
           MODE: ${{ github.event_name == 'workflow_dispatch' && 'check' || 'pr' }}
@@ -107,6 +117,7 @@ jobs:
             --active-branches "$ACTIVE_BRANCHES"
           )
           if [ "$MODE" = check ]; then
+            ARGS+=(--release-version "$RELEASE_VERSION" --plan-digest "$PLAN_DIGEST")
             REMOTE_HEAD=$(git ls-remote origin "refs/heads/$RELEASE_BRANCH" | awk '{print $1}')
             ARGS+=(--remote-head "$REMOTE_HEAD")
           fi
@@ -221,6 +232,94 @@ jobs:
           name: release-bump-receipt-${{ github.event.pull_request.head.sha }}
           path: release-bump-receipt.json
           retention-days: 30
+
+  release-sync:
+    name: release-sync
+    if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout sync candidate
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Detect and require the release-sync branch contract
+        id: release-sync-scope
+        env:
+          SYNC_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -eu
+          git fetch origin main
+          BASE_VERSION=$(git show origin/main:packages/core/package.json | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s).version))")
+          HEAD_VERSION=$(node -p "require('./packages/core/package.json').version")
+          case "$SYNC_BRANCH" in
+            chore/sync-v*-to-main)
+              VERSION=${SYNC_BRANCH#chore/sync-v}
+              VERSION=${VERSION%-to-main}
+              printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'
+              test "$HEAD_VERSION" = "$VERSION"
+              echo 'required=true' >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              if [ "$HEAD_VERSION" != "$BASE_VERSION" ]; then
+                echo 'A stable package-version change on main must use chore/sync-vX.Y.Z-to-main and pass release-sync.'
+                exit 1
+              fi
+              echo 'required=false' >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+      - name: Fetch release authority and trusted validator
+        if: steps.release-sync-scope.outputs.required == 'true'
+        run: |
+          set -eu
+          git fetch origin main 'refs/tags/v*:refs/tags/v*' '+refs/heads/release/v*:refs/remotes/origin/release/v*'
+          TRUSTED_POLICY="$RUNNER_TEMP/release-policy"
+          mkdir -p "$TRUSTED_POLICY/scripts/release" "$TRUSTED_POLICY/scripts/lib"
+          git show origin/main:scripts/release/active-release.mjs \
+            > "$TRUSTED_POLICY/scripts/release/active-release.mjs"
+          git show origin/main:scripts/lib/workspace-globs.mjs \
+            > "$TRUSTED_POLICY/scripts/lib/workspace-globs.mjs"
+
+      - name: Validate published bytes and consumed-only Changeset sync
+        if: steps.release-sync-scope.outputs.required == 'true'
+        env:
+          SYNC_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -eu
+          VERSION=${SYNC_BRANCH#chore/sync-v}
+          VERSION=${VERSION%-to-main}
+          printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'
+          VALIDATOR="$RUNNER_TEMP/release-policy/scripts/release/active-release.mjs"
+          ACTIVE_BRANCHES=$(node "$VALIDATOR" list-active --root "$GITHUB_WORKSPACE")
+          node "$VALIDATOR" validate-sync \
+            --root "$GITHUB_WORKSPACE" \
+            --base origin/main \
+            --release-ref "v$VERSION" \
+            --active-branches "$ACTIVE_BRANCHES"
+
+      - name: Setup Node and pnpm for published-byte verification
+        if: steps.release-sync-scope.outputs.required == 'true'
+        uses: ./.github/actions/setup
+        with:
+          install: 'false'
+
+      - name: Verify immutable tag package bytes match npm
+        if: steps.release-sync-scope.outputs.required == 'true'
+        env:
+          SYNC_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -eu
+          VERSION=${SYNC_BRANCH#chore/sync-v}
+          VERSION=${VERSION%-to-main}
+          TAG_ROOT="$RUNNER_TEMP/release-tag"
+          git worktree add --detach "$TAG_ROOT" "v$VERSION"
+          cd "$TAG_ROOT"
+          pnpm install --frozen-lockfile
+          pnpm build
+          node scripts/release/verify-published.mjs --version "$VERSION"
 
   # Required docsite owner: data tests plus the production browser contract.
   docsite-test:

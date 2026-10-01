@@ -143,6 +143,9 @@ function validateReleaseState({
   plan,
   mode,
   releaseBranch,
+  releaseVersion,
+  releaseTag,
+  expectedPlanDigest,
   refName,
   expectedHead,
   checkoutSha,
@@ -152,6 +155,15 @@ function validateReleaseState({
   const errors = validateIdentity(marker, plan);
   if (releaseBranch !== marker.branch)
     errors.push('release-branch input does not match marker');
+  if (releaseVersion !== undefined && releaseVersion !== marker.version)
+    errors.push('release-version input does not match marker');
+  if (releaseTag !== undefined && releaseTag !== `v${marker.version}`)
+    errors.push('release-tag input does not match marker version');
+  if (
+    expectedPlanDigest !== undefined &&
+    expectedPlanDigest !== marker.planDigest
+  )
+    errors.push('plan-digest input does not match marker');
   if (activeBranches.length !== 1 || activeBranches[0] !== marker.branch)
     errors.push(
       `exactly one active release branch is required; found ${activeBranches.join(',') || 'none'}`,
@@ -165,9 +177,24 @@ function validateReleaseState({
   if (remoteHead && remoteHead !== expectedHead)
     errors.push('release branch moved after the expected head was recorded');
 
+  if (mode === 'check') {
+    if (releaseVersion === undefined)
+      errors.push('release check requires release-version');
+    if (expectedPlanDigest === undefined)
+      errors.push('release check requires plan-digest');
+  }
+
   if (mode === 'publish') {
+    if (releaseVersion === undefined)
+      errors.push('stable publish requires release-version');
+    if (releaseTag === undefined)
+      errors.push('stable publish requires release-tag');
+    if (expectedPlanDigest === undefined)
+      errors.push('stable publish requires plan-digest');
     if (refName !== `v${marker.version}`)
       errors.push('stable publish must run from the version tag');
+    if (releaseTag !== undefined && refName !== releaseTag)
+      errors.push('checked-out tag does not match release-tag input');
   } else if (refName !== marker.branch) {
     errors.push('release validation must run from the marked release branch');
   }
@@ -197,6 +224,65 @@ function validateReleaseState({
 
 function git(root, args) {
   return execFileSync('git', args, {cwd: root, encoding: 'utf8'}).trim();
+}
+
+function fileDigestAtRef(root, ref, file) {
+  try {
+    return sha256(execFileSync('git', ['show', `${ref}:${file}`], {cwd: root}));
+  } catch {
+    return null;
+  }
+}
+
+function changesetMapAtRef(root, ref) {
+  const files = git(root, [
+    'ls-tree',
+    '-r',
+    '--name-only',
+    ref,
+    '--',
+    '.changeset',
+  ]);
+  return new Map(
+    files
+      .split('\n')
+      .filter(
+        file =>
+          file.startsWith('.changeset/') &&
+          file.endsWith('.md') &&
+          file !== '.changeset/README.md',
+      )
+      .map(file => [file, fileDigestAtRef(root, ref, file)]),
+  );
+}
+
+function releaseOutputMapAtRef(root, plan, releaseRef) {
+  const files = git(root, [
+    'diff',
+    '--name-only',
+    plan.cutSha,
+    releaseRef,
+    '--',
+  ]);
+  return new Map(
+    files
+      .split('\n')
+      .filter(Boolean)
+      .filter(isReleaseOutputPath)
+      .map(file => [file, fileDigestAtRef(root, releaseRef, file)]),
+  );
+}
+
+function currentOutputMap(root, files) {
+  return new Map(
+    [...files].map(file => {
+      const absolute = path.join(root, file);
+      return [
+        file,
+        fs.existsSync(absolute) ? sha256(fs.readFileSync(absolute)) : null,
+      ];
+    }),
+  );
 }
 
 function markerAtRef(root, ref) {
@@ -244,17 +330,25 @@ function listActiveBranches(root) {
   return active.sort();
 }
 
-function validateReleaseDiff(entries) {
+const RELEASE_OUTPUT_PATTERNS = [
+  /^packages\/(?:[^/]+|themes\/[^/]+)\/package\.json$/,
+  /^packages\/(?:[^/]+|themes\/[^/]+)\/CHANGELOG\.md$/,
+  /^packages\/cli\/assets\/codemods\/registry\.mjs$/,
+  /^packages\/cli\/assets\/codemods\/__tests__\/registry\.test\.mjs$/,
+  /^packages\/cli\/assets\/codemods\/transforms\/(?:next|v\d+\.\d+\.\d+)\//,
+  /^pnpm-lock\.yaml$/,
+];
+
+function isReleaseOutputPath(file) {
+  return RELEASE_OUTPUT_PATTERNS.some(pattern => pattern.test(file));
+}
+
+function validateReleaseDiff(entries, {plan, baseChangesets} = {}) {
   const errors = [];
-  const allowed = [
-    /^\.changeset\/[A-Za-z0-9._-]+\.md$/,
-    /^packages\/(?:[^/]+|themes\/[^/]+)\/package\.json$/,
-    /^packages\/(?:[^/]+|themes\/[^/]+)\/CHANGELOG\.md$/,
-    /^packages\/cli\/assets\/codemods\/registry\.mjs$/,
-    /^packages\/cli\/assets\/codemods\/__tests__\/registry\.test\.mjs$/,
-    /^packages\/cli\/assets\/codemods\/transforms\/(?:next|v\d+\.\d+\.\d+)\//,
-    /^pnpm-lock\.yaml$/,
-  ];
+  const planned = plan
+    ? new Map(plan.changesets.map(entry => [entry.path, entry.sha256]))
+    : null;
+  const deletedChangesets = new Set();
   for (const entry of entries) {
     const [status, ...files] = entry.split('\t');
     const isMove = status?.startsWith('R') || status?.startsWith('C');
@@ -268,11 +362,85 @@ function validateReleaseDiff(entries) {
       continue;
     }
     for (const file of files) {
-      if (!allowed.some(pattern => pattern.test(file)))
+      if (!file.startsWith('.changeset/') && !isReleaseOutputPath(file))
         errors.push(`release bump contains a non-generated path: ${file}`);
-      if (file.startsWith('.changeset/') && status !== 'D')
-        errors.push(`release bump may only delete planned Changesets: ${file}`);
+      if (file.startsWith('.changeset/')) {
+        if (status !== 'D')
+          errors.push(
+            `release bump may only delete planned Changesets: ${file}`,
+          );
+        else {
+          deletedChangesets.add(file);
+          if (planned && !planned.has(file))
+            errors.push(`release bump deletes an unplanned Changeset: ${file}`);
+        }
+      }
     }
+  }
+  if (planned && baseChangesets) {
+    for (const [file, digest] of planned) {
+      if (baseChangesets.get(file) !== digest)
+        errors.push(
+          `frozen Changeset differs or is missing at branch base: ${file}`,
+        );
+      if (!deletedChangesets.has(file))
+        errors.push(`release bump did not delete frozen Changeset: ${file}`);
+    }
+    for (const file of baseChangesets.keys()) {
+      if (!planned.has(file))
+        errors.push(`release branch contains an unplanned Changeset: ${file}`);
+    }
+  }
+  return errors;
+}
+
+function validateReleaseSync({
+  entries,
+  plan,
+  baseChangesets,
+  headChangesets,
+  releaseOutputs,
+  headOutputs,
+}) {
+  const errors = [];
+  const planned = new Set(plan.changesets.map(entry => entry.path));
+  for (const entry of entries) {
+    const [status, ...files] = entry.split('\t');
+    if (!status || files.length !== 1 || !files[0]) {
+      errors.push(`invalid sync diff entry: ${entry}`);
+      continue;
+    }
+    const file = files[0];
+    if (file.startsWith('.changeset/')) {
+      if (status !== 'D' || !planned.has(file))
+        errors.push(`release sync may only delete frozen Changesets: ${file}`);
+    } else if (
+      !isReleaseOutputPath(file) &&
+      !/^\.github\/pages\/assets\/(?:manifest\.json|reset\.css|astryx\.css|theme\.css)$/.test(
+        file,
+      )
+    ) {
+      errors.push(`release sync contains a non-bookkeeping path: ${file}`);
+    }
+  }
+  for (const file of planned) {
+    if (baseChangesets.has(file) && headChangesets.has(file))
+      errors.push(`release sync did not delete frozen Changeset: ${file}`);
+  }
+  for (const [file, digest] of baseChangesets) {
+    if (planned.has(file)) continue;
+    if (headChangesets.get(file) !== digest)
+      errors.push(`release sync changed post-cut Changeset: ${file}`);
+  }
+  for (const file of headChangesets.keys()) {
+    if (!baseChangesets.has(file))
+      errors.push(
+        `release sync added a Changeset instead of preserving main: ${file}`,
+      );
+  }
+  for (const [file, digest] of releaseOutputs) {
+    if (headOutputs.get(file) !== digest)
+      errors.push(`release sync output differs from published branch: ${file}`);
   }
   return errors;
 }
@@ -297,6 +465,19 @@ function required(values, key) {
   return values[key];
 }
 
+function versionTagExists(root, version) {
+  try {
+    execFileSync(
+      'git',
+      ['rev-parse', '--verify', '--quiet', `refs/tags/v${version}`],
+      {cwd: root, stdio: 'ignore'},
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function writeAuthority(root, values, refresh) {
   const version = required(values, 'version');
   const branch = required(values, 'branch');
@@ -311,15 +492,40 @@ function writeAuthority(root, values, refresh) {
     );
   const dir = path.join(root, RELEASE_DIR);
   const markerPath = path.join(dir, MARKER_FILE);
-  if (!refresh && fs.existsSync(markerPath))
-    throw new Error('active release marker already exists');
+  const planPath = path.join(dir, PLAN_FILE);
+  const markerExists = fs.existsSync(markerPath);
+  const planExists = fs.existsSync(planPath);
+
+  if (refresh) {
+    if (!markerExists || !planExists)
+      throw new Error('release refresh requires an existing active marker and plan');
+    const existingMarker = readJson(markerPath);
+    const existingPlan = readJson(planPath);
+    const identityErrors = validateIdentity(existingMarker, existingPlan);
+    if (identityErrors.length) throw new Error(identityErrors.join('\n'));
+    for (const [key, value] of [
+      ['version', version],
+      ['branch', branch],
+      ['cutSha', cutSha],
+    ]) {
+      if (existingMarker[key] !== value)
+        throw new Error(`release refresh cannot change ${key}`);
+    }
+  } else {
+    if (markerExists || planExists)
+      throw new Error(
+        'release authority already exists; a release branch cannot be reused',
+      );
+    if (versionTagExists(root, version))
+      throw new Error(
+        `version v${version} already has an immutable tag; use a new release branch and version`,
+      );
+  }
+
   fs.mkdirSync(dir, {recursive: true});
   const plan = buildPlan({root, version, branch, cutSha});
   const marker = buildMarker(plan);
-  fs.writeFileSync(
-    path.join(dir, PLAN_FILE),
-    `${JSON.stringify(plan, null, 2)}\n`,
-  );
+  fs.writeFileSync(planPath, `${JSON.stringify(plan, null, 2)}\n`);
   fs.writeFileSync(markerPath, `${JSON.stringify(marker, null, 2)}\n`);
   console.log(
     JSON.stringify({branch, version, cutSha, planDigest: marker.planDigest}),
@@ -348,17 +554,85 @@ function main() {
   if (command === 'validate-diff') {
     const base = required(values, 'base');
     const head = required(values, 'head');
+    const marker = markerAtRef(root, base);
+    const plan = JSON.parse(
+      git(root, ['show', `${base}:${RELEASE_DIR}/${PLAN_FILE}`]),
+    );
     const raw = git(root, ['diff', '--name-status', `${base}...${head}`]);
-    const errors = validateReleaseDiff(raw ? raw.split('\n') : []);
+    const errors = [
+      ...validateIdentity(marker, plan),
+      ...validateReleaseDiff(raw ? raw.split('\n') : [], {
+        plan,
+        baseChangesets: changesetMapAtRef(root, base),
+      }),
+    ];
     if (errors.length) throw new Error(errors.join('\n'));
     console.log(
-      JSON.stringify({base, head, files: raw ? raw.split('\n').length : 0}),
+      JSON.stringify({
+        base,
+        head,
+        planDigest: marker.planDigest,
+        files: raw ? raw.split('\n').length : 0,
+      }),
+    );
+    return;
+  }
+  if (command === 'validate-sync') {
+    const base = required(values, 'base');
+    const releaseRef = required(values, 'release-ref');
+    const marker = markerAtRef(root, releaseRef);
+    const plan = JSON.parse(
+      git(root, ['show', `${releaseRef}:${RELEASE_DIR}/${PLAN_FILE}`]),
+    );
+    const errors = validateIdentity(marker, plan);
+    if (releaseRef !== `v${marker.version}`)
+      errors.push('release sync must use the immutable version tag');
+    const releaseHead = git(root, ['rev-parse', releaseRef]);
+    const branchHead = git(root, ['rev-parse', `origin/${marker.branch}`]);
+    if (releaseHead !== branchHead)
+      errors.push('version tag does not match the active release branch head');
+    const activeBranches = required(values, 'active-branches')
+      .split(',')
+      .filter(Boolean)
+      .sort();
+    if (activeBranches.length !== 1 || activeBranches[0] !== marker.branch)
+      errors.push('release sync requires exactly the marked active branch');
+    const raw = git(root, [
+      'diff',
+      '--name-status',
+      '--find-renames',
+      base,
+      'HEAD',
+    ]);
+    const releaseOutputs = releaseOutputMapAtRef(root, plan, releaseRef);
+    errors.push(
+      ...validateReleaseSync({
+        entries: raw ? raw.split('\n') : [],
+        plan,
+        baseChangesets: changesetMapAtRef(root, base),
+        headChangesets: new Map(
+          changesetEntries(root).map(entry => [entry.path, entry.sha256]),
+        ),
+        releaseOutputs,
+        headOutputs: currentOutputMap(root, releaseOutputs.keys()),
+      }),
+    );
+    if (errors.length) throw new Error(errors.join('\n'));
+    console.log(
+      JSON.stringify({
+        branch: marker.branch,
+        head: releaseHead,
+        version: marker.version,
+        planDigest: marker.planDigest,
+        base,
+        releaseRef,
+      }),
     );
     return;
   }
   if (command !== 'validate')
     throw new Error(
-      'command must be create, refresh, list-active, inspect-ref, validate-diff, or validate',
+      'command must be create, refresh, list-active, inspect-ref, validate-diff, validate-sync, or validate',
     );
 
   const marker = readJson(path.join(root, RELEASE_DIR, MARKER_FILE));
@@ -373,6 +647,9 @@ function main() {
     plan,
     mode: required(values, 'mode'),
     releaseBranch: required(values, 'release-branch'),
+    releaseVersion: values['release-version'],
+    releaseTag: values['release-tag'],
+    expectedPlanDigest: values['plan-digest'],
     refName: required(values, 'ref-name'),
     expectedHead: required(values, 'expected-head'),
     checkoutSha: required(values, 'checkout-sha'),
@@ -417,4 +694,7 @@ export {
   validateRefMarker,
   validateReleaseDiff,
   validateReleaseState,
+  validateReleaseSync,
+  versionTagExists,
+  writeAuthority,
 };

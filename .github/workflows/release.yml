@@ -54,8 +54,20 @@ on:
         description: 'Single marked release/vX.Y.Z branch'
         type: string
         required: true
+      release-version:
+        description: 'Exact X.Y.Z version recorded by the active marker'
+        type: string
+        required: true
+      release-tag:
+        description: 'Exact immutable vX.Y.Z tag checked out by this run'
+        type: string
+        required: true
       expected-head:
         description: 'Exact full release branch SHA carried by this tag'
+        type: string
+        required: true
+      plan-digest:
+        description: 'Exact SHA-256 digest recorded by the active marker'
         type: string
         required: true
   push:
@@ -85,7 +97,10 @@ jobs:
       - name: Validate marked release branch, tag commit, and plan
         env:
           RELEASE_BRANCH: ${{ inputs['release-branch'] }}
+          RELEASE_VERSION: ${{ inputs['release-version'] }}
+          RELEASE_TAG: ${{ inputs['release-tag'] }}
           EXPECTED_HEAD: ${{ inputs['expected-head'] }}
+          PLAN_DIGEST: ${{ inputs['plan-digest'] }}
         run: |
           set -eu
           git fetch origin '+refs/heads/release/v*:refs/remotes/origin/release/v*'
@@ -94,7 +109,10 @@ jobs:
           node scripts/release/active-release.mjs validate \
             --mode publish \
             --release-branch "$RELEASE_BRANCH" \
+            --release-version "$RELEASE_VERSION" \
+            --release-tag "$RELEASE_TAG" \
             --expected-head "$EXPECTED_HEAD" \
+            --plan-digest "$PLAN_DIGEST" \
             --checkout-sha "$GITHUB_SHA" \
             --remote-head "$REMOTE_HEAD" \
             --ref-name "$GITHUB_REF_NAME" \
@@ -115,8 +133,9 @@ jobs:
             echo '## Stable release authority'
             echo
             echo "- Branch: ${{ inputs['release-branch'] }}"
+            echo "- Version: ${{ inputs['release-version'] }}"
             echo "- Head: ${{ inputs['expected-head'] }}"
-            echo "- Tag: $GITHUB_REF_NAME"
+            echo "- Tag: ${{ inputs['release-tag'] }}"
             echo "- Plan digest: $PLAN_DIGEST"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -130,6 +149,9 @@ jobs:
 
       - name: Build all packages
         run: pnpm build
+
+      - name: Verify published package contents
+        run: pnpm check:public-package-identifiers
 
       - name: Publish changed packages
         env:
