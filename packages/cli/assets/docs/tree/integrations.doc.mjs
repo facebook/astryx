@@ -441,6 +441,25 @@ export const docs = {
       ],
     },
     {
+      title: 'Discover source',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: '`astryx discover` lists the integrations an app has and, through discover sources, the ones it could add, with every version and what each one adds. An integration can supply a source by exporting an async function named `discover` from its integration module. Like `debug`, it is a named export, not a manifest field, so a CLI that predates it simply does not read it.',
+        },
+        {
+          type: 'code',
+          lang: 'typescript',
+          code: "// astryx.integration.ts\nimport type {DiscoverSource} from '@astryxdesign/cli/authoring';\n\nexport const discover: DiscoverSource = async ({signal, package: name, version}) => {\n  // Every package you know about, each with every version and what the\n  // requested (else latest) version adds.\n  return readCatalog({signal, name, version});\n};\n\nexport default {\n  components: './components',\n};",
+        },
+        {
+          type: 'prose',
+          text: 'A project can set the same function as `discover` in `astryx.config`. Discover calls every source, the project one first and then each integration in load order, and one that throws, runs past 30 seconds, or returns an invalid catalog never hides the others. It keeps the last good answer from each source in the per-user cache and uses it, with its date, when the source cannot be reached. Discover only reads: it prints the command that adds a package and never runs it. `astryx docs authoring discover-source` has the catalog shape.',
+        },
+      ],
+    },
+    {
       title: 'How It Works',
       category: 'guide',
       content: [
@@ -450,7 +469,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Runtime integration features — `debug` and `gapReport` — use named exports from the integration module rather than fields in the default manifest. The CLI discovers them alongside the manifest but loads them through the composition rules in `spec:AST-031`: every configured handler runs additively, each in isolation with its own copy of the event.',
+          text: 'Runtime integration features — `debug`, `gapReport`, and `discover` — use named exports from the integration module rather than fields in the default manifest. The CLI discovers them alongside the manifest but loads them through the composition rules in `spec:AST-031`: every configured handler runs additively, each in isolation with its own copy of the event.',
         },
         {
           type: 'prose',

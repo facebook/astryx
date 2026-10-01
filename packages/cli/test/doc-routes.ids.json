@@ -1059,6 +1059,7 @@
     "component-doc",
     "config",
     "debug-event",
+    "discover-source",
     "enum-doc",
     "function-doc",
     "gap-report-handler",

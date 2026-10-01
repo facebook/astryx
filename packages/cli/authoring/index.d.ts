@@ -44,6 +44,15 @@ export type {
   GapReportTarget,
   GapReportHandlerReceipt,
 } from './gap-report/type.js'; // gap-report handler contract
+export type {
+  DiscoverSource,
+  DiscoverSourceContext,
+  DiscoverCatalog,
+  DiscoverPackage,
+  DiscoverVersion,
+  DiscoverContribution,
+  DiscoverKind,
+} from './discover/type.js'; // discover source contract
 export type {AstryxCodemod, AstryxConfigCodemod} from './codemod/type.js'; // codemods/*
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -67,6 +76,7 @@ export {
   parseGapReportHandler,
   parseGapReportReceipt,
 } from './gap-report/parse.mjs';
+export {parseDiscoverCatalog} from './discover/parse.mjs';
 export {parseCodemod} from './codemod/parse.mjs';
 export {parseDebugEvent} from './debug/parse.mjs';
 

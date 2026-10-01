@@ -104,21 +104,27 @@ export const doc = {
     {
       value: 'discover.list',
       description:
-        'The configured external packages (name, category, components, version, description); when empty it carries meta.configured to tell "nothing configured" from "nothing discovered".',
+        'The integrations the project loads (name, category, components, version, a list per other kind they add, and latest when a source knows it); with a discover source, meta.available lists what the project could add and meta.sources reports each source; when empty it carries meta.configured to tell "nothing configured" from "nothing discovered".',
     },
     {
       value: 'discover.detail',
-      description: 'A single external package entry, for an @scope/name query.',
+      description:
+        'One package, for an @scope/name or @scope/name@version query: what the shown version adds, whether the project has it, and, when a source knows the package, its versions, latest release, and the command that adds it.',
     },
     {
       value: 'discover.detail.doc',
       description:
-        'The validated ComponentDoc for one external component: an @scope/name/Component query, or a free-text term resolving to exactly one component.',
+        'The validated ComponentDoc for one installed component, for an @scope/name/Component query.',
+    },
+    {
+      value: 'discover.item',
+      description:
+        'One item that is not an installed component, for an @scope/name/<item> query: its kind, name, package, version, and whether the project has the package.',
     },
     {
       value: 'discover.search',
       description:
-        'The echoed query plus the matching {package, component} pairs, when a free-text term matches several components.',
+        'The echoed query plus every matching item and package across all packages, each with its kind and whether the project has it, even when only one matches; total is set when --limit cut the list.',
     },
 
     // search
