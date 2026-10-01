@@ -9,7 +9,7 @@ superseded_by: null
 approved_by: null
 approved_at: null
 owners: [cixzhang]
-review_triggers: [theming]
+review_triggers: [theming, public-api, behavior, accessibility]
 verified_by:
   [
     packages/core/src/DropdownMenu/DropdownMenu.test.tsx,
@@ -49,7 +49,7 @@ highlight follows the pointer — is contracted by
 
 - Released default preserved: `yes`
 - Compatibility class: additive documentation; the press-model behavior
-  delta is recorded in `module:DropdownMenu/useMenuPress` (DEC-3)
+  delta is recorded in `module:DropdownMenu/useMenuPress`
 - Controlled/uncontrolled behavior: unchanged
 - Migration decision: `module:DropdownMenu/useMenuPress/DEC-3`; proposed
   `module:DropdownMenu/useMenuPress/DEC-4`
@@ -82,20 +82,25 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-No new public concept is introduced. Consumer props, item shapes,
-subcomponents, and presentation policy remain documented in
-`DropdownMenu.doc.mjs` and the subcomponent docs.
+Consumer props, item shapes, subcomponents, and presentation policy remain
+documented in `DropdownMenu.doc.mjs` and the subcomponent docs. One
+component-local concept is added by DEC-2; it keeps its released default.
+
+| Concept        | Closed values or states                            | Meaning                                                                                                                                                               | Availability by variant/orientation/state | Default  | Owner                    | Stability | Invalid-value behavior                              |
+| -------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | -------- | ------------------------ | --------- | --------------------------------------------------- |
+| Trigger source | `button` (Button props) or `trigger` (render prop) | Which control the menu hangs off. `trigger` receives `DropdownMenuTriggerProps` — the press model, keyboard opens, toggle click and ARIA wiring — and names the menu. | Both presentations                        | `button` | `component:DropdownMenu` | stable    | Both given: `trigger` wins and a dev warning fires. |
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                                                                                                                                                                                                                                         | Basis                                                                                        | Draft review state                                 |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| FR1 | Every current render contains a Trigger button. Pointer presentation renders a Pointer menu surface with pointer-owned rows and optional pointer headings, dividers, indicators, and nested flyouts. Touch presentation renders a Touch sheet frame containing a Touch menu surface, Touch heading, Touch action list, and Touch action rows.                                               | Current source, docs, and tests                                                              | Verified current behavior; no new behavior decided |
-| FR2 | The six current local targets are `dropdown-menu`, `dropdown-menu-item`, `dropdown-menu-radio`, `dropdown-menu-section-heading`, `dropdown-menu-divider`, and `dropdown-menu-indicator-icon`; every target remains on its current painted element.                                                                                                                                          | Current source, docs, and tests                                                              | Verified current inventory; no target change       |
-| FR3 | Button owns the Trigger button, BottomSheet owns the Touch sheet frame, List owns the Touch action list and Touch action rows, Indicator owns checkbox chrome, and Icon owns ordinary rendered icons.                                                                                                                                                                                       | Current source and owner docs                                                                | Verified current delegation; no ownership change   |
-| FR4 | The same `dropdown-menu` target reaches the alternative Pointer menu surface and Touch menu surface. Pointer action rows retain `dropdown-menu-item`; touch action rows instead use List's `list-item` target.                                                                                                                                                                              | Current source and tests                                                                     | Verified modality split; no target change          |
-| FR5 | Both menu surfaces carry `data-astryx-menu-press` and follow `module:DropdownMenu/useMenuPress` FR1–FR7: the row under the release acts, the highlight follows a held pointer, a mouse released outside closes and a finger leaves the menu open, the browser's stray click never acts, and the Pointer menu surface declares `touch-action` by overflow. Keyboard navigation is unchanged. | `module:DropdownMenu/useMenuPress`; `DropdownMenu.test.tsx` press model suite                | Proposed; verified in jsdom and real Chromium      |
-| FR6 | The Trigger button opens the pointer menu on a mouse press-down and on a finger held for the long-press delay, with the module's settle rule on the opening release; pressing the trigger of an open menu closes it without reopening in the same gesture; a tap and the keyboard open as before (`module:DropdownMenu/useMenuPress` proposed FR8, FR9).                                    | Proposed `module:DropdownMenu/useMenuPress/DEC-4`; `DropdownMenu.test.tsx` press model suite | Proposed; verified in jsdom, pending owner review  |
+| ID  | Candidate invariant                                                                                                                                                                                                                                                                                                                                                                                                    | Basis                                                                                        | Draft review state                                  |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| FR1 | Every current render contains a Trigger button. Pointer presentation renders a Pointer menu surface with pointer-owned rows and optional pointer headings, dividers, indicators, and nested flyouts. Touch presentation renders a Touch sheet frame containing a Touch menu surface, Touch heading, Touch action list, and Touch action rows.                                                                          | Current source, docs, and tests                                                              | Verified current behavior; no new behavior decided  |
+| FR2 | The six current local targets are `dropdown-menu`, `dropdown-menu-item`, `dropdown-menu-radio`, `dropdown-menu-section-heading`, `dropdown-menu-divider`, and `dropdown-menu-indicator-icon`; every target remains on its current painted element.                                                                                                                                                                     | Current source, docs, and tests                                                              | Verified current inventory; no target change        |
+| FR3 | Button owns the Trigger button, BottomSheet owns the Touch sheet frame, List owns the Touch action list and Touch action rows, Indicator owns checkbox chrome, and Icon owns ordinary rendered icons.                                                                                                                                                                                                                  | Current source and owner docs                                                                | Verified current delegation; no ownership change    |
+| FR4 | The same `dropdown-menu` target reaches the alternative Pointer menu surface and Touch menu surface. Pointer action rows retain `dropdown-menu-item`; touch action rows instead use List's `list-item` target.                                                                                                                                                                                                         | Current source and tests                                                                     | Verified modality split; no target change           |
+| FR5 | Both menu surfaces carry `data-astryx-menu-press` and follow `module:DropdownMenu/useMenuPress` FR1–FR7: the row under the release acts, the highlight follows a held pointer, a mouse released outside closes and a finger leaves the menu open, the browser's stray click never acts, and the Pointer menu surface declares `touch-action` by overflow. Keyboard navigation is unchanged.                            | `module:DropdownMenu/useMenuPress`; `DropdownMenu.test.tsx` press model suite                | Proposed; verified in jsdom and real Chromium       |
+| FR6 | The Trigger button opens the pointer menu on a mouse press-down and on a finger held for the long-press delay, with the module's settle rule on the opening release; pressing the trigger of an open menu closes it without reopening in the same gesture; a tap and the keyboard open as before (`module:DropdownMenu/useMenuPress` proposed FR8, FR9).                                                               | Proposed `module:DropdownMenu/useMenuPress/DEC-4`; `DropdownMenu.test.tsx` press model suite | Proposed; verified in jsdom, pending owner review   |
+| FR9 | With `trigger`, the rendered control MUST carry `aria-haspopup`, `aria-expanded`, `aria-controls` and the `id` the menu's `aria-labelledby` points at, and MUST receive the same press-model, keyboard-open and toggle-click handlers as the Button path; the menu is named by that control. `button` and `trigger` are mutually exclusive: both given, `trigger` wins and a dev warning fires, in both presentations. | `component:DropdownMenu/DEC-2`                                                               | Proposed; verified in jsdom; owner to confirm DEC-2 |
 
 ### Allowed variation
 
@@ -110,13 +115,14 @@ subcomponents, and presentation policy remain documented in
 
 ### Representative states
 
-| State                       | Required invariant                                                                                 | Allowed variation                                              |
-| --------------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| Anchored root menu          | Trigger button and Pointer menu surface render with pointer-owned rows.                            | Width, placement, alignment, and optional item content vary.   |
-| Anchored nested flyout      | Pointer action row opens another Pointer menu surface and may show the submenu indicator icon.     | Loading may replace the indicator with the current Spinner.    |
-| Bottom-sheet root actions   | Trigger button opens Touch sheet frame, Touch menu surface, heading, action list, and action rows. | Icons, sections, dividers, and action descriptions may vary.   |
-| Bottom-sheet nested actions | The same frame and list owners remain while heading and rows change to the selected action level.  | Back control and drill-in indicator follow current navigation. |
-| Selectable pointer action   | Pointer action row may contain shared checkbox or radio chrome.                                    | Checked and disabled state follow the current item contracts.  |
+| State                       | Required invariant                                                                                       | Allowed variation                                              |
+| --------------------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Anchored root menu          | Trigger button and Pointer menu surface render with pointer-owned rows.                                  | Width, placement, alignment, and optional item content vary.   |
+| Anchored nested flyout      | Pointer action row opens another Pointer menu surface and may show the submenu indicator icon.           | Loading may replace the indicator with the current Spinner.    |
+| Bottom-sheet root actions   | Trigger button opens Touch sheet frame, Touch menu surface, heading, action list, and action rows.       | Icons, sections, dividers, and action descriptions may vary.   |
+| Bottom-sheet nested actions | The same frame and list owners remain while heading and rows change to the selected action level.        | Back control and drill-in indicator follow current navigation. |
+| Selectable pointer action   | Pointer action row may contain shared checkbox or radio chrome.                                          | Checked and disabled state follow the current item contracts.  |
+| Custom-trigger menu         | The caller's control carries the trigger ARIA and names the menu; the Pointer menu surface is unchanged. | Any focusable control: icon button, chip, avatar, list row.    |
 
 ### Transformation and precedence order
 
@@ -133,6 +139,11 @@ This draft does not change DropdownMenu's trigger naming, menu and dialog
 roles, keyboard navigation, item semantics, focus return, or dismissal
 ordering. While a pointer is held, the highlight is DOM focus per
 `module:DropdownMenu/useMenuPress` AR1.
+
+- **AR1 — A custom trigger still names the menu.** With `trigger`, the menu
+  carries `aria-labelledby` pointing at the control's `id` (the Button path
+  keeps `aria-label`), and the control carries `aria-haspopup="menu"`,
+  `aria-expanded` and `aria-controls`.
 
 ## Design relationships
 
@@ -240,12 +251,30 @@ than adding a DropdownMenu-owned heading target.
 | FR5                 | `DropdownMenu.test.tsx` press model suite; the module record's own map                                    | Finger slide across rows, outside release by mouse and finger, `touch-action`, root marker | A row acting on the press or the stray click, a lost `touch-action`, or a finger release that closes fails.                      | `audit:DropdownMenu/behavior` |
 | FR6                 | `DropdownMenu.test.tsx` press model suite (trigger cases)                                                 | Press-open + drag-release, unsettled opening release, trigger toggle, held touch, tap      | A menu that does not open on a mouse press, an unsettled release that acts, or a trigger that reopens in the same gesture fails. | `audit:DropdownMenu/behavior` |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                             | Canonical anatomy and current target inventory                                             | Missing, extra, prefixed, stale, or unclassified mappings fail repository validation.                                            | `audit:DropdownMenu/theming`  |
+| FR9, AR1            | `DropdownMenu.test.tsx` "DropdownMenu custom trigger" suite                                               | Open, toggle, keyboard open, mouse press-open, `button`+`trigger` in both presentations    | A missing ARIA attribute, an unnamed menu, or a silent `button` drop fails.                                                      | `audit:DropdownMenu/behavior` |
 
 ## Decision log
 
-None component-local. The press model decision lives in
-`module:DropdownMenu/useMenuPress` DEC-3 and proposed DEC-4; this record introduces no design,
-theming, or layer-system decision of its own.
+The press model decision lives in
+`module:DropdownMenu/useMenuPress` DEC-3 and proposed DEC-4.
+The decision below is component-local, taken by vjeux on 2026-09-27, and
+awaits the owner's confirmation (the record stays `draft` until then).
+
+### DEC-2 — Any control can open a menu
+
+**Reference:** `component:DropdownMenu/DEC-2`
+
+**Decider:** vjeux, 2026-09-27 (owner confirmation pending)
+
+`trigger` is a render prop handing the caller `DropdownMenuTriggerProps` to
+spread, so the press model, the keyboard opens and the ARIA wiring ride the
+same code path as the built-in Button, and the menu is named by the control
+through `aria-labelledby`. `button` and `trigger` are mutually exclusive (a dev
+warning); the Button path is unchanged.
+
+Rejected: an `as` prop on the Button — an icon button, a chip, an avatar and a
+list row are not Button variants; a slot component — hides which props must
+reach the control.
 
 ## Open questions
 

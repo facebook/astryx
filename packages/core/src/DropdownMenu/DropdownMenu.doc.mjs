@@ -180,9 +180,16 @@ export const docs = {
       name: 'button',
       type: 'DropdownMenuButtonProps',
       description:
-        'Props for the trigger button (Button props except onClick).',
+        'Props for the trigger button (Button props except onClick). Mutually exclusive with `trigger`.',
       default: "{ label: 'Menu' }",
     },
+    {
+      name: 'trigger',
+      type: '(props: DropdownMenuTriggerProps) => ReactNode',
+      description:
+        'Render the control the menu hangs off — an IconButton, a chip, an avatar, a list row — instead of the built-in Button. Spread the given props onto it: they carry the press model (a mouse opens on press-down, a held finger opens with the finger down), the keyboard opens, the toggle click, and `aria-haspopup`/`aria-expanded`/`aria-controls`/`id`; the menu is then named by that control through `aria-labelledby`. Mutually exclusive with `button`.',
+    },
+
     {
       name: 'items',
       type: 'DropdownMenuOption[]',
@@ -252,7 +259,7 @@ export const docs = {
   usage: {
     anatomy,
     description:
-      'A dropdown menu that displays a list of actionable items in a popup triggered by a button. Use to present action options as a next step in a process, or to offer contextual actions without cluttering the interface. Like the menus of macOS and iOS, the row under the pointer when it is released is the row that acts, the highlight follows a held mouse or finger, a mouse opens it on press and can drag straight into it, and a finger held on the trigger opens it with the finger down.',
+      'A dropdown menu that displays a list of actionable items in a popup triggered by a button. Use to present action options as a next step in a process, or to offer contextual actions without cluttering the interface. Like the menus of macOS and iOS, the row under the pointer when it is released is the row that acts, and the highlight follows a held mouse or finger.',
     bestPractices: [
       {
         guidance: true,

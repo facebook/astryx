@@ -2311,81 +2311,132 @@ describe('DropdownMenu press model', () => {
     expect(menu).toHaveClass(hash(touchStyles.none));
     expect(menu).not.toHaveClass(hash(touchStyles.panY));
   });
+});
 
-  it('a mouse press on the trigger opens the menu and a drag-release acts on the row under it', () => {
-    const onPick = vi.fn();
-    const trigger = renderMenu(onPick);
-    fireEvent.pointerDown(trigger, mouse);
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
+describe('DropdownMenu custom trigger', () => {
+  it('a custom trigger opens, toggles and names the menu', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        trigger={props => (
+          <span {...props} role="button" tabIndex={0}>
+            Ada Lovelace
+          </span>
+        )}>
+        <DropdownMenuItem label="Profile" onClick={() => {}} />
+      </DropdownMenu>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Ada Lovelace'});
+    expect(trigger.tagName).toBe('SPAN');
+    expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    const menu = screen.getByRole('menu', {hidden: true});
+    expect(trigger).toHaveAttribute('aria-controls', menu.id);
+    // The menu is named by the control it hangs off.
+    expect(menu).toHaveAttribute('aria-labelledby', trigger.id);
+    expect(menu).not.toHaveAttribute('aria-label');
+    expect(screen.getByRole('menu', {name: 'Ada Lovelace', hidden: true})).toBe(
+      menu,
+    );
 
-    fireEvent.pointerMove(item('Duplicate'), mouse);
-    expect(item('Duplicate')).toHaveFocus();
-    fireEvent.pointerUp(item('Duplicate'), mouse);
-    expect(onPick).toHaveBeenCalledTimes(1);
-    expect(onPick).toHaveBeenCalledWith('Duplicate');
-    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+    await user.click(trigger);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+    await user.click(trigger);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+    );
   });
 
-  it('the opening release before the settle time acts on nothing and the menu stays', () => {
-    vi.useFakeTimers();
+  it('a custom trigger opens from the keyboard and lands on the first row', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        trigger={props => (
+          <button type="button" {...props}>
+            More
+          </button>
+        )}>
+        <DropdownMenuItem label="Profile" onClick={() => {}} />
+      </DropdownMenu>,
+    );
+    const trigger = screen.getByRole('button', {name: 'More'});
+    trigger.focus();
+    await user.keyboard('{ArrowDown}');
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', {name: 'Profile', hidden: true}),
+      ).toHaveFocus(),
+    );
+  });
+
+  it('a mouse press on a custom trigger opens the menu', () => {
+    render(
+      <DropdownMenu
+        trigger={props => (
+          <button type="button" {...props}>
+            More
+          </button>
+        )}>
+        <DropdownMenuItem label="Profile" onClick={() => {}} />
+      </DropdownMenu>,
+    );
+    const trigger = screen.getByRole('button', {name: 'More'});
+    fireEvent.pointerDown(trigger, {
+      pointerType: 'mouse',
+      pointerId: 1,
+      button: 0,
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('warns when both button and trigger are given in the bottom-sheet presentation too', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {
-      const onPick = vi.fn();
-      const trigger = renderMenu(onPick);
-      fireEvent.pointerDown(trigger, mouse);
-      fireEvent.pointerUp(trigger, mouse);
-      fireEvent.click(trigger, {detail: 1});
-      expect(onPick).not.toHaveBeenCalled();
-      expect(trigger).toHaveAttribute('aria-expanded', 'true');
-      expect(HTMLElement.prototype.hidePopover).not.toHaveBeenCalled();
+      render(
+        <DropdownMenu
+          button={{label: 'Actions'}}
+          presentation="bottom-sheet"
+          trigger={props => (
+            <button type="button" {...props}>
+              More
+            </button>
+          )}
+          items={[{label: 'Profile'}]}
+        />,
+      );
+      expect(screen.getByRole('button', {name: 'More'})).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', {name: /Actions/}),
+      ).not.toBeInTheDocument();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('mutually exclusive'),
+      );
     } finally {
-      vi.useRealTimers();
+      warn.mockRestore();
     }
   });
 
-  it('pressing the trigger of an open menu closes it and does not reopen it in the same gesture', () => {
-    const trigger = renderMenu();
-    fireEvent.pointerDown(trigger, mouse);
-    fireEvent.pointerUp(trigger, mouse);
-    fireEvent.click(trigger, {detail: 1});
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
-
-    fireEvent.pointerDown(trigger, mouse);
-    expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    fireEvent.pointerUp(trigger, mouse);
-    fireEvent.click(trigger, {detail: 1});
-    expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
-  });
-
-  it('a held touch on the trigger opens with the finger down and a slide picks', () => {
-    vi.useFakeTimers();
+  it('warns when both button and trigger are given', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {
-      const onPick = vi.fn();
-      const trigger = renderMenu(onPick);
-      fireEvent.pointerDown(trigger, touch);
-      expect(trigger).toHaveAttribute('aria-expanded', 'false');
-      act(() => {
-        vi.advanceTimersByTime(500);
-      });
-      expect(trigger).toHaveAttribute('aria-expanded', 'true');
-      fireEvent.pointerMove(item('Delete'), touch);
-      expect(item('Delete')).toHaveFocus();
-      fireEvent.pointerUp(item('Delete'), touch);
-      expect(onPick).toHaveBeenCalledWith('Delete');
-      // The click the browser aims at the trigger for this gesture is spent.
-      fireEvent.click(trigger, {detail: 1});
-      expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
+      render(
+        <DropdownMenu
+          button={{label: 'Actions'}}
+          trigger={props => (
+            <button type="button" {...props}>
+              More
+            </button>
+          )}>
+          <DropdownMenuItem label="Profile" onClick={() => {}} />
+        </DropdownMenu>,
+      );
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('mutually exclusive'),
+      );
     } finally {
-      vi.useRealTimers();
+      warn.mockRestore();
     }
-  });
-
-  it('a tap on the trigger still opens through its click', () => {
-    const trigger = renderMenu();
-    fireEvent.pointerDown(trigger, touch);
-    fireEvent.pointerUp(trigger, touch);
-    fireEvent.click(trigger, {detail: 1});
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 });

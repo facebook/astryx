@@ -3,6 +3,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {Badge} from '@astryxdesign/core/Badge';
+import {IconButton} from '@astryxdesign/core/IconButton';
 import {useState} from 'react';
 import {
   DropdownMenu,
@@ -1268,5 +1269,41 @@ export const SubmenuViewportFit: Story = {
         }
       }
     }
+  },
+};
+
+export const CustomTrigger: Story = {
+  name: 'Custom trigger (any control)',
+  render: () => (
+    <DropdownMenu
+      trigger={props => (
+        <IconButton
+          icon={<EllipsisHorizontalIcon />}
+          label="More actions"
+          variant="ghost"
+          {...props}
+        />
+      )}>
+      <DropdownMenuItem icon={PencilIcon} label="Rename" onClick={() => {}} />
+      <DropdownMenuItem
+        icon={DocumentDuplicateIcon}
+        label="Duplicate"
+        onClick={() => {}}
+      />
+      <DropdownMenuItem
+        icon={TrashIcon}
+        label="Delete"
+        variant="destructive"
+        onClick={() => {}}
+      />
+    </DropdownMenu>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Any control can open a menu: `trigger` renders it and receives the props to spread — the press model (a mouse opens on press-down, a held finger opens with the finger down), the keyboard opens, the toggle click, and the ARIA wiring. The menu is named by that control through `aria-labelledby`.',
+      },
+    },
   },
 };
