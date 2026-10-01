@@ -34,7 +34,7 @@ describe('integration template replacement docs', () => {
       'wins over one that is only installed',
       'the one listed later wins',
       "listed later in the app's package.json dependencies",
-      'fails closed',
+      'is safe by default',
       'missing_template_replacement_target',
       'invalid_template_replacement',
       'ambiguous_template_replacement',
