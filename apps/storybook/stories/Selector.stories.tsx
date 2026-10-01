@@ -583,6 +583,20 @@ const compactSizingTheme = defineTheme({
   },
 });
 
+// A spacing scale larger than the label text, like the docsite Playground's
+// largest preset: `--spacing-5` (40px) is as tall as the small size token, so a
+// trigger that sized its text row from spacing would overshoot that token.
+const wideSpacingSizingTheme = defineTheme({
+  name: 'selector-wide-spacing-sizing',
+  typography: {scale: {base: 18, ratio: 1.414}},
+  tokens: {
+    '--spacing-5': '40px',
+    '--size-element-sm': '40px',
+    '--size-element-md': '48px',
+    '--size-element-lg': '56px',
+  },
+});
+
 export const SizeVariants: Story = {
   render: () => {
     const [value1, setValue1] = useState<string | undefined>();
@@ -678,6 +692,37 @@ export const SizeVariants: Story = {
             </div>
           ))}
         </Theme>
+        <Theme theme={wideSpacingSizingTheme}>
+          {(['sm', 'md', 'lg'] as const).map(size => (
+            <div key={size} style={{display: 'grid', gap: 8}}>
+              {(['plain', 'clear'] as const).map(state => (
+                <Selector
+                  key={state}
+                  label={`Wide spacing ${size} ${state}`}
+                  size={size}
+                  options={['Apple']}
+                  value="Apple"
+                  onChange={() => {}}
+                  hasClear={state === 'clear'}
+                />
+              ))}
+              <Selector
+                label={`Wide spacing ${size} multiline`}
+                data-testid="wide-multiline"
+                size={size}
+                options={['Apple']}
+                value="Apple"
+                onChange={() => {}}
+                renderValue={option => (
+                  <>
+                    <div>{option.label}</div>
+                    <div>Second line</div>
+                  </>
+                )}
+              />
+            </div>
+          ))}
+        </Theme>
       </div>
     );
   },
@@ -686,15 +731,17 @@ export const SizeVariants: Story = {
     await document.fonts.ready;
     const triggers =
       canvasElement.querySelectorAll<HTMLElement>('.astryx-selector');
-    expect(triggers).toHaveLength(33);
+    expect(triggers).toHaveLength(42);
     for (const trigger of triggers) {
       const styles = getComputedStyle(trigger);
       const size = Number.parseFloat(
         styles.getPropertyValue(`--size-element-${trigger.dataset.size}`),
       );
       const height = trigger.getBoundingClientRect().height;
-      if (trigger.dataset.testid === 'compact-multiline') {
-        expect(height).toBeGreaterThan(size);
+      if (trigger.dataset.testid?.endsWith('-multiline')) {
+        // A second line adds exactly one text row to the one-line height.
+        const row = Number.parseFloat(styles.lineHeight);
+        expect(height, trigger.textContent ?? '').toBeCloseTo(size + row, 1);
       } else {
         expect(height, trigger.textContent ?? '').toBeCloseTo(size, 1);
       }
