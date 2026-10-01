@@ -93,6 +93,14 @@ import {selectorPresentationStyles} from '../Selector/selectorPresentation.style
 // Sentinel value for the select-all item in keyboard navigation
 const SELECT_ALL_VALUE = '__xds_select_all__';
 
+// Value of the synthetic "Create <query>" row `hasCreate` offers. Never a real
+// option value: the row commits through `onCreate`, not `onChange`.
+const CREATE_VALUE_PREFIX = '__astryx_multi_selector_create__';
+
+function isCreateValue(value: string): boolean {
+  return value.startsWith(CREATE_VALUE_PREFIX);
+}
+
 const styles = stylex.create({
   // Trigger container — the enhanced click target wrapping the combobox button and clear button as siblings
   triggerContainer: {
@@ -650,6 +658,22 @@ export interface MultiSelectorProps<
   emptySearchText?: ReactNode;
 
   /**
+   * With `hasSearch` and `onCreate`, offer a `Create "<query>"` row first in
+   * the list when the typed text matches no option's label exactly. Picking it
+   * calls `onCreate` with the trimmed query instead of `onChange`, and clears
+   * the search so the option the caller adds is visible. Same rule as
+   * `Tokenizer.hasCreate`. Without `onCreate` no row is offered.
+   * @default false
+   */
+  hasCreate?: boolean;
+
+  /**
+   * Called with the trimmed query when the create row is picked. The caller
+   * mints the option and, usually, selects it through `onChange`.
+   */
+  onCreate?: (query: string) => void;
+
+  /**
    * How to display selected items in the trigger.
    * - 'count': "3 selected"
    * - 'labels': "Name, Email, +3"
@@ -783,6 +807,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   searchPlaceholder: searchPlaceholderFromProps,
   emptyText: emptyTextFromProps,
   emptySearchText: emptySearchTextFromProps,
+  hasCreate = false,
+  onCreate,
   triggerDisplay = 'count',
   formatValue,
   maxBadges = 3,
@@ -922,6 +948,34 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   // Selected-at-open items are placed first within each group/section, and the
   // same walk applies while searching so group structure survives filtering
   // (only matching items are kept; the query is empty in non-search mode).
+  // The query the create row would mint, or null when there is none to offer:
+  // no `hasCreate`, no search, no handler, nothing typed, or an option already
+  // carries that label (case-insensitive) — Tokenizer.hasCreate's rule. The
+  // row is offered only when something can act on it: `hasCreate` without
+  // `onCreate` offers nothing, so nothing is announced as created either.
+  const canCreate = hasCreate && hasSearch && onCreate != null;
+  const getCreateQuery = useCallback(
+    (query: string): string | null => {
+      if (!canCreate) {
+        return null;
+      }
+      const trimmed = query.trim();
+      if (trimmed === '') {
+        return null;
+      }
+      const lower = trimmed.toLowerCase();
+      const exists = selectableItems.some(
+        item => (item.label ?? item.value).toLowerCase() === lower,
+      );
+      return exists ? null : trimmed;
+    },
+    [canCreate, selectableItems],
+  );
+  const createQuery = useMemo(
+    () => getCreateQuery(searchQuery),
+    [getCreateQuery, searchQuery],
+  );
+
   const sortedItems = useMemo(() => {
     const selectedSet = selectedAtOpen ?? new Set<string>();
     const result: MultiSelectorOptionData[] = [];
@@ -960,10 +1014,25 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     flushFlat();
 
     if (hasSelectAll) {
-      return [{value: SELECT_ALL_VALUE, label: selectAllLabel}, ...result];
+      result.unshift({value: SELECT_ALL_VALUE, label: selectAllLabel});
+    }
+    if (createQuery != null) {
+      // First row, before select-all: the row the typed text asked for.
+      result.unshift({
+        value: `${CREATE_VALUE_PREFIX}${createQuery}`,
+        label: t('@astryx.multiSelector.createOption', {query: createQuery}),
+      });
     }
     return result;
-  }, [searchQuery, options, selectedAtOpen, hasSelectAll, selectAllLabel]);
+  }, [
+    searchQuery,
+    options,
+    selectedAtOpen,
+    hasSelectAll,
+    selectAllLabel,
+    createQuery,
+    t,
+  ]);
 
   // Layer for dropdown positioning
   const handleLayerHide = useCallback(() => {
@@ -1046,6 +1115,16 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       }
       const count = filterOptionsByQuery(selectableItems, nextQuery).length;
       if (count === 0) {
+        const nextCreateQuery = getCreateQuery(nextQuery);
+        if (nextCreateQuery != null) {
+          // The create row is the one result on screen, so the panel is not
+          // empty and the rendered-message route below stays silent; say the
+          // row.
+          announce(
+            t('@astryx.multiSelector.createOption', {query: nextCreateQuery}),
+          );
+          return;
+        }
         // The empty panel is announced from the rendered message below, not
         // from here. Two speakers for one transition would say it twice, and
         // this one cannot cover an empty result that arrives after the
@@ -1054,7 +1133,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       }
       announce(t('@astryx.multiSelector.resultCount', {count}));
     },
-    [announce, isLoading, selectableItems, t],
+    [announce, isLoading, selectableItems, getCreateQuery, t],
   );
 
   // The panel's empty message is role="presentation" — role="listbox" permits
@@ -1071,11 +1150,14 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   // region silent.
   //
   // `realItemCount` mirrors renderOptions exactly: the select-all sentinel
-  // rides in `sortedItems` but is not an option anybody can match.
-  const realItemCount = hasSelectAll
-    ? sortedItems.length - 1
-    : sortedItems.length;
-  const isPanelEmpty = surface.isOpen && !isLoading && realItemCount === 0;
+  // and the create row ride in `sortedItems`, in that order from the top,
+  // but neither is an option anybody can match. A create row is a result of
+  // its own, so a panel showing one is not empty.
+  const hasCreateRow = createQuery != null;
+  const leadingCount = (hasCreateRow ? 1 : 0) + (hasSelectAll ? 1 : 0);
+  const realItemCount = sortedItems.length - leadingCount;
+  const isPanelEmpty =
+    surface.isOpen && !isLoading && realItemCount === 0 && !hasCreateRow;
   useAnnounceRenderedText(emptyStateRef, isPanelEmpty, searchQuery);
 
   // Handle toggle
@@ -1194,16 +1276,29 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     announceSelection,
   ]);
 
-  // Route toggle: select-all sentinel → handleSelectAll, everything else → handleToggle
+  const commitCreate = useCallback(
+    (query: string) => {
+      onCreate?.(query);
+      // The caller adds the option; clear the filter so it is visible.
+      setSearchQuery('');
+      announce(t('@astryx.multiSelector.optionCreated', {label: query}));
+    },
+    [onCreate, announce, t],
+  );
+
+  // Route toggle: select-all sentinel → handleSelectAll, the create row →
+  // commitCreate, everything else → handleToggle
   const handleNavigableToggle = useCallback(
     (itemValue: string) => {
       if (itemValue === SELECT_ALL_VALUE) {
         handleSelectAll();
+      } else if (isCreateValue(itemValue)) {
+        commitCreate(itemValue.slice(CREATE_VALUE_PREFIX.length));
       } else {
         handleToggle(itemValue);
       }
     },
-    [handleSelectAll, handleToggle],
+    [handleSelectAll, handleToggle, commitCreate],
   );
 
   // Multi-select combobox behavior — index-based, matching useCombobox pattern.
@@ -1355,6 +1450,17 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           if (isImeKeyEvent(e.nativeEvent)) {
             return;
           }
+          if (
+            e.key === 'Enter' &&
+            highlightedIndex < 0 &&
+            createQuery != null
+          ) {
+            // Nothing highlighted and the typed text matches no option:
+            // Enter mints it, as it does in Tokenizer.
+            e.preventDefault();
+            commitCreate(createQuery);
+            return;
+          }
           // Arrow keys navigate options; Enter toggles; Escape closes.
           // Space and Home/End are left to the input (type a space / move
           // the caret) per the APG editable combobox; PageUp/PageDown are
@@ -1392,6 +1498,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     surface.isOpen,
     highlightedIndex,
     getItemId,
+    createQuery,
+    commitCreate,
     t,
   ]);
 
@@ -1400,9 +1508,12 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     (item: MultiSelectorOptionData, flatIndex: number) => {
       const isHighlighted = flatIndex === highlightedIndex;
       const isSelectAll = item.value === SELECT_ALL_VALUE;
+      // The create row is a plain labelled option: no checkbox, never
+      // selected, and the caller's `renderOption` does not see it.
+      const isCreate = isCreateValue(item.value);
       const isSelected = isSelectAll
         ? allEnabledSelected
-        : optimisticValue.includes(item.value);
+        : !isCreate && optimisticValue.includes(item.value);
       const checkboxValue = isSelectAll ? selectAllState : isSelected;
       // aria-selected="mixed" is invalid on role="option", and the tri-state
       // checkbox is inert/decorative, so the indeterminate state must be
@@ -1410,7 +1521,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       const isPartiallySelected =
         isSelectAll && selectAllState === 'indeterminate';
 
-      const checkbox = (
+      const checkbox = isCreate ? null : (
         <div
           inert
           {...stylex.props(
@@ -1468,7 +1579,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             ),
           )}>
           {indicatorPosition === 'start' && checkbox}
-          {renderOption && !isSelectAll ? (
+          {renderOption && !isSelectAll && !isCreate ? (
             renderOption(item)
           ) : (
             <span {...stylex.props(styles.itemLabel)}>
@@ -1502,15 +1613,21 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     const elements: ReactNode[] = [];
     let cursor = 0;
 
+    // The create row is the first row: the row the typed text asked for.
+    if (hasCreateRow) {
+      elements.push(renderItem(sortedItems[cursor], cursor));
+      cursor++;
+    }
+
     // Show select-all only when there are real items to select. It reads as
     // the first row of the list, not a section of its own — no divider under
     // it (the checkbox column already lines it up with the options below).
-    if (hasSelectAll && realItemCount > 0) {
-      elements.push(renderItem(sortedItems[0], 0));
-      cursor = 1;
-    } else if (hasSelectAll) {
+    if (hasSelectAll) {
+      if (realItemCount > 0) {
+        elements.push(renderItem(sortedItems[cursor], cursor));
+      }
       // Skip the select-all sentinel when there are no real items
-      cursor = 1;
+      cursor++;
     }
 
     // Empty state — no real items to show. role="presentation" keeps the
@@ -1520,7 +1637,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     // While isLoading the options have not arrived yet, so asserting either
     // message would be a claim the component cannot make; the trigger's
     // spinner covers it.
-    if (realItemCount === 0 && !isLoading) {
+    // A create row is a result of its own, so the empty state stays out.
+    if (realItemCount === 0 && !isLoading && !hasCreateRow) {
       elements.push(
         <div
           key="empty"
@@ -1630,6 +1748,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     isLoading,
     emptyText,
     emptySearchText,
+    hasCreateRow,
   ]);
 
   // The detached message box renders its own leading status icon, so the
