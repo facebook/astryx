@@ -156,7 +156,10 @@ describe('manifest: shape', () => {
 
   it('derives arguments from Commander metadata', () => {
     const component = allEntries.find((c) => c.name === 'component');
-    expect(component.arguments.map((a) => a.name)).toContain('name');
+    const names = component.arguments.find((a) => a.name === 'names');
+    expect(names.required).toBe(false);
+    expect(names.variadic).toBe(true);
+    expect(names.description).toContain('Two or more return one ordered batch');
     const themeBuild = allEntries.find((c) => c.name === 'theme build');
     expect(themeBuild.arguments.map((a) => a.name)).toContain('files');
     const files = themeBuild.arguments.find((a) => a.name === 'files');
@@ -193,7 +196,7 @@ describe('manifest: e2e', () => {
     // Enriched: the full structured manifest is embedded.
     expect(parsed.data.manifest).toBeDefined();
     expect(parsed.data.manifest.commands.find((c) => c.name === 'component').responseTypes)
-      .toContain('component.list');
+      .toEqual(expect.arrayContaining(['component.list', 'component.batch']));
   });
 });
 

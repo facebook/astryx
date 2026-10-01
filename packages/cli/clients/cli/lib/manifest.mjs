@@ -51,6 +51,7 @@ export const RESPONSE_TYPES = {
   init: ['init.run', 'init.remove'],
   component: [
     'component.list',
+    'component.batch',
     'component.detail',
     'component.detail.props',
     'component.detail.source',
@@ -112,6 +113,7 @@ const EXAMPLES = {
   component: [
     'astryx component',
     'astryx component XDSButton',
+    'astryx component Button Badge Text',
     'astryx component XDSButton --props --json',
   ],
   docs: [

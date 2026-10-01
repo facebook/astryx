@@ -396,6 +396,61 @@
     },
     {
       "kind": "topic",
+      "id": "cli/component-lookups",
+      "oldCliRoute": "astryx docs cli/component-lookups",
+      "oldDocsiteUrl": "/docs/cli-component-lookups",
+      "placement": "namespace:cli/component-lookups",
+      "aliasNeeded": false,
+      "evidence": "It places itself: placement {parent: 'namespace:cli', slot: 'guides'}. Its four sections document the component command's exact selectors, batch receipt, exit status and programmatic API.",
+      "rationale": "Caller guide for exact single and batch component lookup. This is a new route, so no previous CLI or docsite identity needs an alias.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "cli/component-lookups#several",
+      "oldCliRoute": "astryx docs cli/component-lookups several",
+      "oldDocsiteUrl": "/docs/cli-component-lookups#look-up-several-components",
+      "placement": "namespace:cli/component-lookups",
+      "aliasNeeded": false,
+      "evidence": "Moves with cli/component-lookups.",
+      "rationale": "Stays a section of cli/component-lookups under the stable key several.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "cli/component-lookups#selectors",
+      "oldCliRoute": "astryx docs cli/component-lookups selectors",
+      "oldDocsiteUrl": "/docs/cli-component-lookups#selector-forms",
+      "placement": "namespace:cli/component-lookups",
+      "aliasNeeded": false,
+      "evidence": "Moves with cli/component-lookups.",
+      "rationale": "Stays a section of cli/component-lookups under the stable key selectors.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "cli/component-lookups#output",
+      "oldCliRoute": "astryx docs cli/component-lookups output",
+      "oldDocsiteUrl": "/docs/cli-component-lookups#batch-output-and-exit-status",
+      "placement": "namespace:cli/component-lookups",
+      "aliasNeeded": false,
+      "evidence": "Moves with cli/component-lookups.",
+      "rationale": "Stays a section of cli/component-lookups under the stable key output.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "cli/component-lookups#api",
+      "oldCliRoute": "astryx docs cli/component-lookups api",
+      "oldDocsiteUrl": "/docs/cli-component-lookups#programmatic-api",
+      "placement": "namespace:cli/component-lookups",
+      "aliasNeeded": false,
+      "evidence": "Moves with cli/component-lookups.",
+      "rationale": "Stays a section of cli/component-lookups under the stable key api.",
+      "status": "proposed"
+    },
+    {
+      "kind": "topic",
       "id": "cli/integrations",
       "oldCliRoute": "astryx docs cli/integrations",
       "oldDocsiteUrl": "/docs/cli-integrations",
