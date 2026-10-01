@@ -497,7 +497,14 @@ describe("the CLI's own docs tree", () => {
       expect(
         tree.get('cli')?.slots.map(slot => [slot.name, slot.children]),
       ).toEqual([
-        ['guides', ['cli/integrations', 'cli/writing-docs']],
+        [
+          'guides',
+          [
+            'cli/component-lookups',
+            'cli/integrations',
+            'cli/writing-docs',
+          ],
+        ],
         ['reference', ['cli/commands', 'cli/api']],
       ]);
       expect(tree.get('cli/api')?.slots[0].children).toEqual([
@@ -566,6 +573,7 @@ describe("the CLI's own docs tree", () => {
         'commands',
       ]);
       expect(inputs.docs.map(d => [d.name, d.placement?.parent])).toEqual([
+        ['component-lookups', 'namespace:cli'],
         ['integrations', 'namespace:cli'],
         ['writing-docs', 'namespace:cli'],
       ]);

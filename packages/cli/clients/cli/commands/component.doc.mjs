@@ -16,11 +16,23 @@ export const doc = {
   namespace: 'cli/commands',
   summary: 'List components or print component docs',
   description:
-    'Resolves a component by name across core and integration packages and prints ' +
-    'its authored doc, or lists the catalog grouped by category. Boolean flags narrow ' +
-    'a single component to just its props, source, showcase, or example blocks.',
+    'Resolves one or several components by exact selector across core and integration ' +
+    'packages and prints each authored doc, or lists the catalog grouped by category. ' +
+    "Use 'Button', 'widgets/Button', '@acme/widgets/Button', or " +
+    "'@acme/widgets@1.2.3/Button'. A version applies to the package and must match the " +
+    'installed version. Boolean flags narrow every resolved component to just its props, ' +
+    'source, showcase, or example blocks.',
   fn: 'component',
-  args: [{name: 'name', param: 'name', required: false}],
+  args: [
+    {
+      name: 'names',
+      param: 'name',
+      description:
+        'One or more exact selectors. Use Name, package/Name, @scope/package/Name, or @scope/package@version/Name. Two or more return one ordered batch. At most 100 selectors are accepted.',
+      required: false,
+      variadic: true,
+    },
+  ],
   options: [
     {
       flag: '--list',
@@ -55,11 +67,16 @@ export const doc = {
     {
       flag: '--package <name>',
       param: 'options.package',
-      description: 'Scope lookup to an external package (e.g. @acme/xds-widgets)',
+      description:
+        'Scope lookup to an external package (e.g. @acme/xds-widgets)',
     },
   ],
   examples: [
     {label: 'Browse the catalog', cli: 'astryx component --list'},
+    {
+      label: 'Look up several components',
+      cli: 'astryx component Button Badge Text',
+    },
     {
       label: 'Props table as JSON',
       cli: 'astryx component XDSButton --props --json',
@@ -69,7 +86,7 @@ export const doc = {
     {code: 0, when: 'success'},
     {
       code: 1,
-      when: 'unknown component, category, or package, or @astryxdesign/core cannot be resolved',
+      when: 'unknown component, category, or package; more than 100 selectors; any batch row is unresolved; or @astryxdesign/core cannot be resolved',
     },
   ],
   related: ['search', 'hook', 'docs', 'template', 'swizzle'],

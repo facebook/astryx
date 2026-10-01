@@ -113,7 +113,9 @@ import {
 } from '@astryxdesign/cli/api';
 import type {
   ComponentOptions, SearchOptions, UpgradeOptions, GapReportOptions,
-  ComponentDetailResponse, SearchResponse, UpgradeRunResponse,
+  BatchResponse, BatchRow, ComponentBatchCandidate, ComponentBatchResponse,
+  ComponentBatchResult, ComponentSingleResponse, ComponentDetailResponse,
+  SearchResponse, UpgradeRunResponse,
   GapReportReceiptResponse, GapReportCategoriesResponse, Logger,
   IntegrationAddComponentOptions, IntegrationAddDocOptions,
   IntegrationAddTemplateOptions, IntegrationAddCodemodOptions,
@@ -125,6 +127,14 @@ import type {
 async function main() {
   const r = await component('Button');
   if (r.type === 'component.detail') { const n: string = r.data.name; void n; }
+  const batch = await component(['Button']) as ComponentBatchResponse;
+  const sharedBatch: BatchResponse<
+    'component.batch', ComponentSingleResponse, ComponentBatchCandidate
+  > = batch;
+  const sharedRow: BatchRow<ComponentSingleResponse, ComponentBatchCandidate> | undefined =
+    sharedBatch.data.results[0];
+  const componentRow: ComponentBatchResult | undefined = batch.data.results[0];
+  void [sharedBatch, sharedRow, componentRow];
   const s: SearchOptions = { limit: 5, type: 'component' };
   const l: Logger = logger; l.setSilent(false); l.log('x');
   void ({} as ComponentOptions); void ({} as UpgradeOptions); void ({} as GapReportOptions);

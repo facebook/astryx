@@ -128,6 +128,24 @@ describe('search leaf — docs at the grain a reader reads them', () => {
   );
 
   it(
+    'finds the component batch guide from task language',
+    async () => {
+      const result = await search('look up several components', {
+        cwd,
+        type: 'doc',
+      });
+      expect(result.data.results).toContainEqual(
+        expect.objectContaining({
+          name: 'cli/component-lookups',
+          section: 'several',
+          command: 'astryx docs cli/component-lookups several',
+        }),
+      );
+    },
+    SLOW,
+  );
+
+  it(
     'gives a top-level namespace hit the topic list as its parent',
     async () => {
       for (const [query, route] of [['unorganized', 'unorganized'], ['Astryx CLI', 'cli']]) {
