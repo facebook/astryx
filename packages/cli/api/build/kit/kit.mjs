@@ -25,11 +25,20 @@
  * a page entry carries when it is not a direct match, so a loose page reads
  * as a layout preview rather than the thing to build. Neither is prefixing —
  * the invocation stays the renderer's job.
+ *
+ * The start and each alternative also carry what scaffolding that template
+ * into this project would leave to install, read through the adapter:
+ * `missingPackages`, package names with nothing environment-specific in them,
+ * and `installCommand`, the same line `astryx template` prints when it
+ * scaffolds. That line is the one package-manager-specific string in the kit,
+ * because an install without its package manager is not a command; it installs
+ * packages rather than invoking the CLI, so there is no invocation to leave to
+ * the renderer.
  */
 
 import {search} from '../../search/search.mjs';
 import {getResultCoverage} from '../../search/coverage.mjs';
-import {loadPageTemplates} from '../_adapter.mjs';
+import {loadPageTemplates, pageTemplatePackageNeeds} from '../_adapter.mjs';
 import {pickAlternatives, pickStart, rankPages} from './rank.mjs';
 
 /** A page at/above this score is a confident direct match. */
@@ -116,6 +125,18 @@ const asTemplate = t => ({
 });
 
 /**
+ * A named template with what scaffolding it into the project in `cwd` would
+ * leave missing, so a reader installs those packages with the scaffold rather
+ * than finding out from a failed build.
+ * @param {PageTemplate} t
+ * @param {string} cwd
+ */
+const withPackageNeeds = (t, cwd) => ({
+  ...asTemplate(t),
+  ...pageTemplatePackageNeeds(t, cwd),
+});
+
+/**
  * The template to start from: the ready page the ranker puts first when it
  * has the evidence to lead, else the first fallback shell the project can
  * scaffold. Null only when the project has no page template to offer at all.
@@ -129,9 +150,10 @@ const asTemplate = t => ({
  * @param {SearchResultEntry[]} pages
  * @param {boolean} directMatch
  * @param {PageTemplate[]} catalog
+ * @param {string} cwd
  * @returns {Omit<BuildStart, 'alternatives'> | null}
  */
-function chooseStart(ranked, pages, directMatch, catalog) {
+function chooseStart(ranked, pages, directMatch, catalog, cwd) {
   const direct = directMatch ? pages[0].name : null;
   const unready =
     direct && !catalog.some(t => t.name === direct) ? direct : null;
@@ -144,7 +166,7 @@ function chooseStart(ranked, pages, directMatch, catalog) {
   if (closest) {
     const agrees = closest.name === direct;
     return {
-      ...asTemplate(closest),
+      ...withPackageNeeds(closest, cwd),
       basis: agrees ? 'direct' : 'closest',
       reason: agrees
         ? 'Matches the idea.'
@@ -162,7 +184,7 @@ function chooseStart(ranked, pages, directMatch, catalog) {
       // lead ("horizontal site navigation"); say so rather than "no match".
       const nearest = ranked[0]?.name === shell.name && ranked[0].hits > 0;
       return {
-        ...asTemplate(shell),
+        ...withPackageNeeds(shell, cwd),
         basis: 'fallback',
         reason: unready
           ? `\`${unready}\` matches but is not ready yet, so start from the app shell.`
@@ -263,7 +285,7 @@ export async function buildKit(query, options = {}) {
   const catalog = wantsPages ? await loadPageTemplates(cwd) : [];
   const ranked = wantsPages ? rankPages(query, catalog) : [];
   const chosen = wantsPages
-    ? chooseStart(ranked, matchedPages, directMatch, catalog)
+    ? chooseStart(ranked, matchedPages, directMatch, catalog, cwd)
     : null;
   // Name the ranker's next two templates beside the start: the reader judges
   // meaning better than keywords do, and an acceptable template is in these
@@ -273,7 +295,7 @@ export async function buildKit(query, options = {}) {
     ...chosen,
     alternatives: pickAlternatives(ranked, chosen.name).flatMap(r => {
       const t = catalog.find(c => c.name === r.name);
-      return t ? [asTemplate(t)] : [];
+      return t ? [withPackageNeeds(t, cwd)] : [];
     }),
   };
 

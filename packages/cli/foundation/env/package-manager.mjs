@@ -6,7 +6,8 @@
  * The order is: the `packageManager` field a project DECLARES, then the
  * lockfiles it happens to have, then a committed package-manager config, then
  * the runner that launched us. Returns the correct command prefix for running
- * package binaries (e.g. 'npx astryx', 'yarn astryx', 'pnpm exec astryx').
+ * package binaries (e.g. 'npx astryx', 'yarn astryx', 'pnpm exec astryx') and
+ * for adding packages (e.g. 'npm install', 'pnpm add').
  */
 
 import * as fs from 'node:fs';
@@ -282,6 +283,29 @@ export function getRunPrefix(targetDir) {
     case 'bun': return 'bunx';
     case 'npm':
     default: return 'npx';
+  }
+}
+
+/**
+ * Get the command that adds packages to a project with its package manager.
+ * Nothing detected, or several lockfiles tied, adds with npm: the same
+ * fallback {@link getRunPrefix} makes.
+ *
+ * @param {string} [targetDir]
+ * @returns {string} e.g. 'npm install', 'pnpm add', 'yarn add', 'bun add'
+ */
+export function getAddPrefix(targetDir) {
+  const pm = detectPackageManager(targetDir);
+  switch (pm) {
+    case 'yarn':
+      return 'yarn add';
+    case 'pnpm':
+      return 'pnpm add';
+    case 'bun':
+      return 'bun add';
+    case 'npm':
+    default:
+      return 'npm install';
   }
 }
 

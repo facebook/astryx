@@ -64,7 +64,9 @@ describe('build kit text fields mirror the JSON keys', () => {
     expect(first.length).toBeLessThan(start.description.length);
     const line = out => out.split('\n').find(l => l.startsWith('description:'));
     const brief = await runCli(['build', 'quarterly revenue dashboard'], REPO);
-    expect(line(brief.stdout)).toBe(`description: ${first}`);
+    // The value column is padded to the widest field the record prints, which
+    // grows when the start carries missingPackages.
+    expect(line(brief.stdout)?.replace(/^description:\s+/, '')).toBe(first);
     const whole = await runCli(['build', 'quarterly revenue dashboard', '--verbose'], REPO);
     expect(whole.stdout).toContain(start.description);
   }, SLOW);

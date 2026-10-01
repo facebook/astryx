@@ -254,7 +254,7 @@ describe('cliDocSection', () => {
           {flag: '--dry', description: 'Dry run.', default: false},
         ],
         examples: [
-          {label: 'Run it', cli: 'astryx grp sub x'},
+          {label: 'Run it', cli: 'astryx grp sub x', output: 'did x'},
           {cli: 'astryx grp sub y'},
         ],
         exitCodes: [{code: 1, when: 'it fails'}],
@@ -303,6 +303,8 @@ describe('cliDocSection', () => {
         lang: 'bash',
         code: '# Run it\nastryx grp sub x\nastryx grp sub y',
       },
+      {type: 'prose', text: 'Run it, sample output:'},
+      {type: 'code', lang: 'text', code: '$ astryx grp sub x\ndid x'},
       {
         type: 'table',
         headers: ['Exit code', 'When'],

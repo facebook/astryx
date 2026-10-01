@@ -179,6 +179,10 @@ export function registerBuild(program) {
         ],
         format: {command: formatCliCommand},
       };
+      // A template's scaffold command, then what scaffolding it would leave
+      // missing in this project; the record drops the two package fields when
+      // nothing is.
+      const SCAFFOLD = ['command', 'missingPackages', 'installCommand'];
       /** @param {string[]} fields */
       const brief = fields => ({
         fields,
@@ -220,10 +224,10 @@ export function registerBuild(program) {
             start,
             verbose
               ? {
-                  fields: ['name', 'displayName', 'description', 'command'],
+                  fields: ['name', 'displayName', 'description', ...SCAFFOLD],
                   format: {command: formatCliCommand},
                 }
-              : brief(['name', 'description', 'command']),
+              : brief(['name', 'description', ...SCAFFOLD]),
           ),
         );
         if (start.alternatives.length) {
@@ -234,7 +238,12 @@ export function registerBuild(program) {
             ),
             records(
               start.alternatives,
-              verbose ? full : brief(['name', 'description', 'command']),
+              verbose
+                ? {
+                    fields: ['name', 'displayName', 'description', ...SCAFFOLD],
+                    format: {command: formatCliCommand},
+                  }
+                : brief(['name', 'description', ...SCAFFOLD]),
             ),
           );
         }

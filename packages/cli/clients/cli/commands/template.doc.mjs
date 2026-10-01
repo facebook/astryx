@@ -18,7 +18,9 @@ export const doc = {
   description:
     'One entry point for the template family: with no name it lists the discovered ' +
     'templates; with a name it shows the source or a layout skeleton, or scaffolds it ' +
-    'into the project at a target path. A configured integration replacement is the ' +
+    'into the project at a target path. A scaffold also names the packages the written ' +
+    'file imports that the project does not list, with the command that installs them ' +
+    "in the project's package manager. A configured integration replacement is the " +
     'default for its Core id; use --package @astryxdesign/core for the original. ' +
     'Narrow other ambiguous names with --type and/or --package. --cdn writes the ' +
     'no-build-step CDN starter page, which ships as an asset rather than as a ' +
@@ -91,6 +93,23 @@ export const doc = {
     {
       label: 'Scaffold into the app',
       cli: 'astryx template dashboard ./src/app',
+    },
+    {
+      label:
+        'Scaffold a template that imports packages the project lacks, then run the installCommand it prints',
+      cli: 'astryx template dashboard ./src/pages/dashboard',
+      output: [
+        'Copied template to src/pages/dashboard/page.tsx',
+        '',
+        '[warn] The template imports packages this project does not list. It will not build until they are installed:',
+        '',
+        'missingPackages: @heroicons/react, recharts',
+        'installCommand:  npm install @heroicons/react@2 recharts@3',
+      ].join('\n'),
+    },
+    {
+      label: 'The same scaffold as data: missingPackages and installCommand',
+      cli: 'astryx --json template dashboard ./src/pages/dashboard',
     },
     {
       label: 'Select a replaced Core original',

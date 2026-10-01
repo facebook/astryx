@@ -7,8 +7,9 @@
  * @input Template discovery for `cwd` — the CLI's own templates plus any that
  *   the project's configured integrations contribute.
  * @output Ready page templates as `{name, displayName, description, category,
- *   command}`, where `command` is the `astryx template` command that selects
- *   exactly that template.
+ *   command, filePath}`, where `command` is the `astryx template` command that
+ *   selects exactly that template; and, for one of them, the packages it
+ *   imports that the project does not list.
  * @position Beside build.mjs (api/build/). The kit leaf reads templates only
  *   through here, because a subject's `_adapter.mjs` is its only environment
  *   access. Search keeps its own discovery; this adds none of its own, it
@@ -16,6 +17,7 @@
  */
 
 import {discoverTemplates} from '../template/template.mjs';
+import {templateFilePackageNeeds} from '../../foundation/discovery/template-packages.mjs';
 
 /**
  * A page template the kit can recommend starting from.
@@ -25,6 +27,7 @@ import {discoverTemplates} from '../template/template.mjs';
  * @property {string} displayName Human-facing name.
  * @property {string} description What the page is: its layout and the ideas it serves.
  * @property {string} category The template's own `Family - Variant` label; empty when it declares none.
+ * @property {string} filePath The template's source file.
  */
 
 /**
@@ -56,5 +59,19 @@ export async function loadPageTemplates(cwd) {
       // The id `template()` resolves back to this entry: an active replacement
       // owns the Core id it names, so that id selects it, not its own.
       command: `astryx template ${t.replaces ?? t.dirName} --type page`,
+      filePath: t.filePath,
     }));
+}
+
+/**
+ * The packages a page template imports that the project in `cwd` does not
+ * list, and the command that installs them — what scaffolding it into this
+ * project would report.
+ *
+ * @param {PageTemplate} template
+ * @param {string} cwd
+ * @returns {{missingPackages: string[], installCommand: string | null}}
+ */
+export function pageTemplatePackageNeeds(template, cwd) {
+  return templateFilePackageNeeds(template.filePath, {targetDir: cwd, cwd});
 }

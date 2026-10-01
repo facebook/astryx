@@ -137,7 +137,7 @@ export const doc = {
     {
       value: 'build.kit',
       description:
-        "The template to start from and its kit: query, hasResults, matchCount (never a cap), directMatch, start {name, command, basis, reason, alternatives, ...}, pages (search's closest templates), blocks and domain as SearchResultEntry[], frame, foundation, and hint {reason, commands} when thin.",
+        "The template to start from and its kit: query, hasResults, matchCount (never a cap), directMatch, start {name, command, missingPackages, installCommand, basis, reason, alternatives, ...}, pages (search's closest templates), blocks and domain as SearchResultEntry[], frame, foundation, and hint {reason, commands} when thin.",
     },
 
     // swizzle
@@ -182,7 +182,7 @@ export const doc = {
     {
       value: 'template.copy',
       description:
-        'A scaffold receipt: template id, output directory, written file name, and file count.',
+        'A scaffold receipt: template id, output directory, written file name, file count, missingPackages (imports the project does not list), and installCommand (null when nothing is missing).',
     },
 
     {

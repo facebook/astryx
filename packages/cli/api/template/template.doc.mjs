@@ -123,7 +123,7 @@ export const doc = {
     {
       type: 'template.copy',
       description:
-        'A receipt after scaffolding the template into the project: the template id, output directory, written file name, and file count.',
+        "A receipt after scaffolding the template into the project: the template id, output directory, written file name, and file count, plus `missingPackages` (the packages the written file imports that no package.json in the project declares) and `installCommand` (the command that installs them with the project's package manager, or null when nothing is missing).",
     },
     {
       type: 'template.cdn',
@@ -171,6 +171,17 @@ export const doc = {
     {
       label: 'Scaffold into the project',
       code: "await template('dashboard', {targetPath: './app/page.tsx'});",
+    },
+    {
+      label: 'Scaffold, then install what the page imports',
+      code: [
+        "const {data} = await template('dashboard', {targetPath: './src/pages/dashboard'});",
+        '// In a project that lists neither package, with a package-lock.json:',
+        "// data.missingPackages -> ['@heroicons/react', 'recharts']",
+        "// data.installCommand  -> 'npm install @heroicons/react@2 recharts@3'",
+        '// Both are empty ([] and null) when the project already lists every import.',
+        'if (data.installCommand) console.log(`Run: ${data.installCommand}`);',
+      ].join('\n'),
     },
     {
       label: 'CDN starter page',

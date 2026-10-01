@@ -44,6 +44,8 @@
  * @property {string} description What the page is: its layout and the ideas it serves.
  * @property {string} command The scaffold command that selects exactly this template, `astryx template <id> --type page <path>`: `<id>` is the Core id an integration replacement stands in for, else the template's own id, `<path>` is a placeholder for the file or folder to write the template to, and the `astryx` prefix is for the caller to replace with its own invocation.
  * @property {'direct' | 'closest' | 'fallback'} basis Why this template. The page ranker picks every start: it weighs each matched word by how rare it is among page templates, favors the family the idea's head names and the container it names ("in a modal"), and discounts words that only modify another. `direct` when its pick is also search's direct match (`directMatch`); `closest` when it is not; `fallback` when no template has the evidence to lead and the page starts from the app shell.
+ * @property {string[]} missingPackages Packages the template imports that the project where build ran does not list in any package.json, sorted. Empty when it lists them all. Scaffolding the template reports the same packages; the project does not build the page until they are installed.
+ * @property {string | null} installCommand The command that installs `missingPackages` with the project's package manager, as `astryx template` prints it when it scaffolds. Null when nothing is missing.
  * @property {string} reason One sentence saying the same as `basis`, for a reader.
  * @property {BuildAlternative[]} alternatives The ranker's next closest page templates (≤2), for when the start's layout is wrong.
  */
@@ -56,6 +58,8 @@
  * @property {string} displayName Human-facing template name.
  * @property {string} description What the page is: its layout and the ideas it serves.
  * @property {string} command The scaffold command, in the same form as the start's.
+ * @property {string[]} missingPackages Packages the template imports that the project does not list, as on the start.
+ * @property {string | null} installCommand The command that installs them, as on the start. Null when nothing is missing.
  */
 
 /**

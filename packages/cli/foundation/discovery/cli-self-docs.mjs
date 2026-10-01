@@ -243,6 +243,15 @@ function commandSection(cmd, index) {
   if (examples.length > 0) {
     content.push({type: 'code', lang: 'bash', code: examples.join('\n')});
   }
+  // An example's sample output follows the invocations, under its own label,
+  // so a reader sees what the command answers, not only how to call it.
+  for (const e of cmd.examples ?? []) {
+    if (!e.output) continue;
+    content.push(
+      {type: 'prose', text: `${e.label ?? `\`${e.cli}\``}, sample output:`},
+      {type: 'code', lang: 'text', code: `$ ${e.cli}\n${e.output}`},
+    );
+  }
   const exitCodes = cmd.exitCodes ?? [];
   if (exitCodes.length > 0) {
     content.push({

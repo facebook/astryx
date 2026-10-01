@@ -8,6 +8,7 @@ import {
   detectPackageManager,
   explainPackageManager,
   getDlxPrefix,
+  getAddPrefix,
   isCliOneOff,
   getCliInvocation,
   formatCliCommand,
@@ -394,5 +395,31 @@ describe('formatCliCommand', () => {
     const dir = makeTmpDir();
     fs.writeFileSync(path.join(dir, 'package-lock.json'), '{}');
     expect(formatCliCommand('astryx component Button', dir)).toBe('npx @astryxdesign/cli component Button');
+  });
+});
+
+describe('getAddPrefix', () => {
+  it('adds with the detected package manager', () => {
+    const cases = [
+      ['yarn.lock', 'yarn add'],
+      ['pnpm-lock.yaml', 'pnpm add'],
+      ['bun.lockb', 'bun add'],
+      ['package-lock.json', 'npm install'],
+    ];
+    for (const [lockfile, prefix] of cases) {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-pm-add-'));
+      try {
+        fs.writeFileSync(path.join(dir, lockfile), '');
+        expect(getAddPrefix(dir)).toBe(prefix);
+      } finally {
+        fs.rmSync(dir, {recursive: true, force: true});
+      }
+    }
+  });
+
+  it('falls back to npm when nothing is detected', () => {
+    const dir = makeTmpDir();
+    delete process.env.npm_config_user_agent;
+    expect(getAddPrefix(dir)).toBe('npm install');
   });
 });

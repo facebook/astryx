@@ -1258,6 +1258,41 @@ describe('integration template discovery', () => {
     );
   });
 
+  it("installs an integration template's imports on the lines its own package declares", async () => {
+    const pkgDir = installWidgets(tmpDir);
+    fs.writeFileSync(
+      path.join(pkgDir, 'package.json'),
+      JSON.stringify({
+        name: '@acme/widgets',
+        version: '2.0.0',
+        devDependencies: {'@acme/charts': '^4.1.0'},
+      }),
+    );
+    writeTemplate(pkgDir, 'revenue', {
+      kind: 'page',
+      source:
+        "import {AreaChart} from '@acme/charts/area';\nimport {Card} from '@acme/widgets/Card';\n" +
+        'export default function Revenue() { return <Card><AreaChart /></Card>; }\n',
+    });
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({
+        name: 'consumer',
+        dependencies: {'@acme/widgets': '2.0.0'},
+      }),
+    );
+    fs.writeFileSync(path.join(tmpDir, 'package-lock.json'), '{}');
+
+    const result = await template('revenue', {
+      targetPath: './dest',
+      cwd: tmpDir,
+    });
+    expect(result.data).toMatchObject({
+      missingPackages: ['@acme/charts'],
+      installCommand: 'npm install @acme/charts@4',
+    });
+  });
+
   it('copies a block template into a directory as <id-basename>.tsx', async () => {
     const pkgDir = installWidgets(tmpDir);
     writeTemplate(pkgDir, 'marketing/hero', {kind: 'block'});

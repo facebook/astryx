@@ -5,7 +5,7 @@
  */
 
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {emit, section, text, records, code} from '../formatters/index.mjs';
+import {emit, section, text, record, records, code} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {template as templateApi} from '../../../api/template/template.mjs';
 import {Project} from '../../../foundation/config/project.mjs';
@@ -162,10 +162,18 @@ export function registerTemplate(program) {
         }
 
         case 'template.copy': {
+          const {missingPackages, installCommand} = result.data;
           emit(
             text(
               `Copied template to ${result.data.outputDir}/${result.data.fileName}`,
             ),
+            // The same two fields the JSON carries, under the same names; the
+            // record renderer drops them when nothing is missing.
+            missingPackages.length > 0 &&
+              text(
+                '[warn] The template imports packages this project does not list. It will not build until they are installed:',
+              ),
+            record({missingPackages, installCommand}),
           );
           break;
         }

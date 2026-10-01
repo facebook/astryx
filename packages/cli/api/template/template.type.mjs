@@ -75,6 +75,8 @@
  * @property {string} data.outputDir
  * @property {string} data.fileName
  * @property {number} data.filesCopied
+ * @property {string[]} data.missingPackages Packages the written file imports that no package.json in the project (the target's directory or any above it) declares, sorted. Empty when the project lists everything the file imports. The project does not build the file until these are installed.
+ * @property {string | null} data.installCommand The command that installs `missingPackages` with the project's package manager (e.g. `npm install @heroicons/react@2 recharts@3`), each pinned to the major line the template was checked against where the template's package declares one, and prefixed with `cd <dir> &&` when the project's package.json is not in `cwd`. Null when nothing is missing.
  */
 
 /**

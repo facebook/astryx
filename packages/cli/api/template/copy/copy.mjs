@@ -6,7 +6,8 @@
  *
  * @position api/template/copy — the only side-effecting template leaf: resolves
  *   a path-safe destination, strips demo asset refs, writes the file, and
- *   returns the receipt. The template dispatcher routes the copy case here.
+ *   returns the receipt, which names any package the written file imports that
+ *   the project does not list. The template dispatcher routes the copy case here.
  */
 
 import * as fs from 'node:fs';
@@ -19,6 +20,7 @@ import {
 import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {stripTemplateAssetRefs} from '../../../foundation/discovery/template-adapter.mjs';
+import {templatePackageNeeds} from '../../../foundation/discovery/template-packages.mjs';
 
 /**
  * Scaffold an already-resolved template to `targetPath` (relative to `cwd`) and
@@ -88,6 +90,17 @@ export function templateCopy(match, {targetPath, cwd, overwrite = false}) {
   const outputSource = stripTemplateAssetRefs(source);
   fs.writeFileSync(outputFilePath, outputSource);
 
+  // The file is written either way: it is the starter the caller asked for.
+  // What the receipt adds is whether the project can build it — a template
+  // that imports a package the project does not list breaks the build the
+  // moment the page is wired in, so name those packages and the install line.
+  const {missingPackages, installCommand} = templatePackageNeeds({
+    source: outputSource,
+    templateFile: match.filePath,
+    targetDir: outputDir,
+    cwd,
+  });
+
   const relOutput = path.relative(cwd, outputDir) || '.';
   return {
     type: 'template.copy',
@@ -96,6 +109,8 @@ export function templateCopy(match, {targetPath, cwd, overwrite = false}) {
       outputDir: relOutput,
       fileName: outputFileName,
       filesCopied: 1,
+      missingPackages,
+      installCommand,
     },
   };
 }
