@@ -219,6 +219,7 @@
     "useMergedRefs",
     "useOverflow",
     "usePopover",
+    "usePressFeedback",
     "useResizable",
     "useScrollableArea",
     "useScrollLock",
