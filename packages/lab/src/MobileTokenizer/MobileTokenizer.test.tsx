@@ -2,7 +2,7 @@
 /**
  * @file MobileTokenizer.test.tsx
  * @input Uses vitest, @testing-library/react, MobileTokenizer
- * @output Lab tests for the single-sheet touch flow
+ * @output Lab tests for the transfer-list-inspired single-sheet touch flow
  * @position Lab tests; validates MobileTokenizer.tsx
  */
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
@@ -112,24 +112,15 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('MobileTokenizer (Lab, single-sheet flow)', () => {
-  it('keeps rows stable while open and applies selected-first order on reopen', async () => {
+  it('opens stacked Selected and Available sections and transfers items in place', async () => {
     const spy = vi.fn();
     render(<Harness spy={spy} />);
     const trigger = screen.getByRole('button', {name: /Tags/});
     fireEvent.click(trigger);
 
     const list = await screen.findByTestId('mobile-tokenizer-list');
-    await screen.findByRole('checkbox', {name: 'Energizer'});
-    const checkboxLabels = () =>
-      within(list)
-        .getAllByRole('checkbox')
-        .map(row => row.getAttribute('aria-label'));
-    expect(checkboxLabels()).toEqual([
-      'Design',
-      'Eng',
-      'Engineer',
-      'Energizer',
-    ]);
+    expect(list).toHaveTextContent('Design');
+    expect(list).toHaveTextContent('Engineer');
     const search = screen.getByLabelText('Search Tags');
     expect(
       search.closest('.astryx-text-input')?.querySelector('.astryx-icon'),
@@ -137,50 +128,36 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
     expect(
       screen.queryByRole('button', {name: 'Add item'}),
     ).not.toBeInTheDocument();
-    const design = screen.getByRole('checkbox', {name: 'Design'});
-    expect(design).toBeChecked();
-    expect(design.lastElementChild).toHaveAttribute('aria-hidden', 'true');
-    expect(design.lastElementChild).toHaveAttribute('data-size', 'md');
+    expect(
+      screen.getByTestId('mobile-tokenizer-selected-section'),
+    ).toHaveTextContent('Selected');
+    expect(
+      screen.getByTestId('mobile-tokenizer-available-section'),
+    ).toHaveTextContent('Available');
+    expect(screen.getByRole('button', {name: 'Remove Design'})).toHaveAttribute(
+      'data-size',
+      'lg',
+    );
 
-    fireEvent.click(screen.getByRole('checkbox', {name: 'Energizer'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Add Engineer'}));
     expect(spy).toHaveBeenCalledWith(
-      [ITEMS[0], ITEMS[1], ITEMS[3]],
+      [ITEMS[0], ITEMS[1], ITEMS[2]],
       expect.objectContaining({type: 'add'}),
     );
     await waitFor(() =>
-      expect(screen.getByRole('checkbox', {name: 'Energizer'})).toBeChecked(),
+      expect(
+        screen.getByRole('button', {name: 'Remove Engineer'}),
+      ).toBeInTheDocument(),
     );
-    expect(checkboxLabels()).toEqual([
-      'Design',
-      'Eng',
-      'Engineer',
-      'Energizer',
-    ]);
 
-    fireEvent.click(screen.getByRole('checkbox', {name: 'Eng'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Remove Eng'}));
     expect(spy).toHaveBeenLastCalledWith(
-      [ITEMS[0], ITEMS[3]],
+      [ITEMS[0], ITEMS[2]],
       expect.objectContaining({type: 'remove'}),
     );
-    expect(checkboxLabels()).toEqual([
-      'Design',
-      'Eng',
-      'Engineer',
-      'Energizer',
-    ]);
 
     fireEvent.click(screen.getByRole('button', {name: 'Done'}));
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
-
-    await act(async () => {
-      fireEvent.click(trigger);
-    });
-    expect(checkboxLabels()).toEqual([
-      'Design',
-      'Energizer',
-      'Eng',
-      'Engineer',
-    ]);
   });
 
   it('creates a custom entry with a trailing Add action', async () => {
@@ -192,7 +169,7 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
     fireEvent.change(search, {target: {value: 'Custom'}});
 
     expect(
-      screen.queryByRole('checkbox', {name: 'Create "Custom"'}),
+      screen.queryByRole('button', {name: 'Remove Custom'}),
     ).not.toBeInTheDocument();
     const create = await screen.findByRole('button', {name: 'Add Custom'});
     expect(
@@ -214,8 +191,8 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
     );
     await waitFor(() => expect(trigger).toHaveTextContent('Custom'));
     expect(search).toHaveValue('');
-    const custom = await screen.findByRole('checkbox', {name: 'Custom'});
-    expect(custom).toBeChecked();
+    const custom = await screen.findByRole('button', {name: 'Remove Custom'});
+    expect(custom).toHaveAttribute('data-size', 'lg');
   });
 
   it('renders long lists in 50-item batches and resets the window for search', async () => {
@@ -249,9 +226,9 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
       expect(list).toHaveAttribute('data-rendered-count', '50');
       expect(list).toHaveAttribute('data-total-count', '120');
     });
-    expect(screen.getAllByRole('checkbox')).toHaveLength(50);
+    expect(screen.getAllByRole('button', {name: /^Add Item/})).toHaveLength(50);
     expect(
-      screen.queryByRole('checkbox', {name: 'Item 051'}),
+      screen.queryByRole('button', {name: 'Add Item 051'}),
     ).not.toBeInTheDocument();
 
     Object.defineProperties(list, {
@@ -261,9 +238,11 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
     });
     fireEvent.scroll(list);
     expect(list).toHaveAttribute('data-rendered-count', '100');
-    expect(screen.getAllByRole('checkbox')).toHaveLength(100);
+    expect(screen.getAllByRole('button', {name: /^Add Item/})).toHaveLength(
+      100,
+    );
     expect(
-      screen.getByRole('checkbox', {name: 'Item 100'}),
+      screen.getByRole('button', {name: 'Add Item 100'}),
     ).toBeInTheDocument();
 
     Object.defineProperties(list, {
@@ -276,7 +255,9 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
     });
     fireEvent.scroll(list);
     expect(list).toHaveAttribute('data-rendered-count', '120');
-    expect(screen.getAllByRole('checkbox')).toHaveLength(120);
+    expect(screen.getAllByRole('button', {name: /^Add Item/})).toHaveLength(
+      120,
+    );
 
     fireEvent.change(screen.getByLabelText('Search Items'), {
       target: {value: 'Item'},
@@ -284,11 +265,13 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
     await waitFor(() =>
       expect(list).toHaveAttribute('data-rendered-count', '50'),
     );
-    expect(screen.getAllByRole('checkbox')).toHaveLength(50);
+    expect(screen.getAllByRole('button', {name: /^Add Item/})).toHaveLength(50);
 
     fireEvent.scroll(list);
     expect(list).toHaveAttribute('data-rendered-count', '100');
-    expect(screen.getAllByRole('checkbox')).toHaveLength(100);
+    expect(screen.getAllByRole('button', {name: /^Add Item/})).toHaveLength(
+      100,
+    );
   });
 
   it('searches within the same sheet and centers the no-results state', async () => {
