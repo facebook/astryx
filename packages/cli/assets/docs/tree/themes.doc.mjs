@@ -27,7 +27,7 @@ export const docs = {
     },
     {
       type: 'prose',
-      text: 'These guides cover authoring a theme inside an integration — scaffold it, generate its palette, define its tokens, and document it. Using a theme, applying and extending it, is the same for every theme; see {@link generic:theme}.',
+      text: 'These guides cover authoring a theme inside an integration — scaffold it, generate its palette, define its tokens, ship its fonts, and document it. Using a theme, applying and extending it, is the same for every theme; see {@link generic:theme}.',
     },
   ],
   slots: {

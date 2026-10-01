@@ -21,7 +21,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'An app installs the integration as a dependency and applies your theme like any Astryx theme: wrap the app in `<Theme>`. The theme and its fonts come from the installed package — there is no copy step.',
+          text: 'An app installs the integration as a dependency and applies your theme like any Astryx theme: wrap the app in `<Theme>`. The theme and its fonts come from the installed package ({@link generic:fonts-and-assets}) — there is no copy step.',
         },
         {
           type: 'code',
