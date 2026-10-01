@@ -33,7 +33,7 @@ import {
 } from './Breadcrumbs.a11y.states';
 
 const SUBJECT_SELECTOR = '[data-a11y-breadcrumb]';
-const SEPARATOR_SELECTOR = 'ol > li > span[aria-hidden]';
+const SEPARATOR_SELECTOR = 'li > span:first-child';
 let storybook: StaticServer;
 
 test.beforeAll(async () => {

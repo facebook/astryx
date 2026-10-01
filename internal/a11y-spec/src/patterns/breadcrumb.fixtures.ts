@@ -140,7 +140,7 @@ export const BREADCRUMB_MUTATIONS: Readonly<Record<string, readonly string[]>> =
       'violating-landmark-role',
       'violating-landmark-name',
     ],
-    'breadcrumb.trail.ordered': [
+    'breadcrumb.trail.list': [
       'violating-list-role',
       'violating-list-containment',
     ],

@@ -69,7 +69,7 @@ export const BREADCRUMB_PATTERN: PatternContract<BreadcrumbStateFacts> =
     pattern: 'breadcrumb',
     url: APG_URL,
     scope:
-      'One named navigation landmark containing an ordered breadcrumb trail, an optional current page, and decorative separators.',
+      'One named navigation landmark containing a breadcrumb list trail, an optional current page, and decorative separators.',
     expectations: [
       {
         id: 'breadcrumb.landmark.named',
@@ -95,9 +95,9 @@ export const BREADCRUMB_PATTERN: PatternContract<BreadcrumbStateFacts> =
         },
       },
       {
-        id: 'breadcrumb.trail.ordered',
+        id: 'breadcrumb.trail.list',
         outcome:
-          'The navigation landmark contains a list that exposes the ordered trail relationship.',
+          'The navigation landmark contains a list that exposes the breadcrumb trail relationship.',
         sources: [WCAG_1_3_1],
         covers: ['1.3.1-info-and-relationships'],
         appliesWhen: ALWAYS,

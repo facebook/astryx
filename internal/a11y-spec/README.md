@@ -51,7 +51,7 @@ src/
     ├── listbox.*            listbox, group, and option semantics
     ├── spinbutton.*         numeric role, value, bounds, state, and arrow stepping
     ├── disclosure.*         standalone disclosure state/content semantics
-    └── breadcrumb.*         landmark, ordered-trail, current-page, and separator semantics
+    └── breadcrumb.*         landmark, list-trail, current-page, and separator semantics
 ```
 
 ## The patterns
@@ -69,7 +69,7 @@ src/
 | `listbox`        | [WAI-ARIA 1.2 Listbox](https://www.w3.org/TR/wai-aria-1.2/#listbox) and WCAG 2.2 semantics            | Selector and MultiSelector popup listbox, group, and option parts                |
 | `spinbutton`     | WCAG 2.2 semantics and [APG Spinbutton](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/)         | NumberInput                                                                      |
 | `disclosure`     | [APG Disclosure](https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/)                                | Standalone Collapsible triggers and their controlled content                     |
-| `breadcrumb`     | WCAG 2.2 semantics; [APG Breadcrumb](https://www.w3.org/WAI/ARIA/apg/patterns/breadcrumb/) as context | Breadcrumbs landmarks, ordered trails, current-page state, and separators        |
+| `breadcrumb`     | WCAG 2.2 semantics; [APG Breadcrumb](https://www.w3.org/WAI/ARIA/apg/patterns/breadcrumb/) as context | Breadcrumbs landmarks, list trails, current-page state, and separators           |
 
 The `spinbutton` contract owns NumberInput's required role, persistent name,
 committed numeric value, optional bounds and formatted value text, disabled and
@@ -86,7 +86,7 @@ unavailable-button semantics remain in the existing `button` contract. This firs
 migration binds standalone Collapsible states only; CollapsibleGroup coordination
 and Accordion, Table, and SideNav adoption remain outside this contract.
 
-The breadcrumb contract owns the named navigation landmark, ordered trail,
+The breadcrumb contract owns the named navigation landmark, list trail,
 optional current-page state, and decorative separator exposure. Its first
 Breadcrumbs binding covers explicit and automatic current-page selection, a
 custom landmark label, RTL/supporting presentation, and an intentional
