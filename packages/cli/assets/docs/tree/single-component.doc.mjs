@@ -60,6 +60,11 @@ export default {
             'If the module later exposes several related public exports, adapt this doc with {@link generic:component-family}.',
           ],
         },
+        {
+          type: 'reference',
+          target: 'schema:component-doc',
+          presentation: 'summary',
+        },
       ],
     },
     {
@@ -81,12 +86,6 @@ export default {
     {guidance: false, description: 'Hide information that must remain visible for comparison.'},
   ],
 },`,
-        },
-        {
-          type: 'reference',
-          target: 'schema:component-doc',
-          projection: {fields: ['usage']},
-          presentation: 'full',
         },
       ],
     },
@@ -117,12 +116,6 @@ export default {
 ],`,
         },
         {
-          type: 'reference',
-          target: 'schema:component-doc',
-          projection: {fields: ['props']},
-          presentation: 'full',
-        },
-        {
           type: 'list',
           style: 'unordered',
           items: [
@@ -150,12 +143,6 @@ export default {
     code: '<AcmeCarousel slides={slides} interval={5000} />',
   },
 ],`,
-        },
-        {
-          type: 'reference',
-          target: 'schema:component-doc',
-          projection: {fields: ['examples']},
-          presentation: 'full',
         },
       ],
     },
