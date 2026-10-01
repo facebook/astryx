@@ -17,7 +17,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-item', visualProps: ['density', 'align']},
+      {className: 'astryx-item', visualProps: ['density', 'align'], states: ['unread']},
     ],
     vars: [
       {name: '--_item-label-color', description: 'Color of the label line. Unset by default (the label uses the primary text token); a parent sets it to recolor the label it renders, as the destructive dropdown/context menu item does.', default: 'var(--color-text-primary)', private: true},
@@ -52,6 +52,7 @@ export const docs = {
         {name: 'rel', type: 'string', description: 'Link relationship tokens. noopener noreferrer are merged automatically for target="_blank".'},
         {name: 'isHighlighted', type: 'boolean', description: 'Highlighted state (hover/keyboard focus appearance).', default: 'false'},
         {name: 'isSelected', type: 'boolean', description: 'Selected state.', default: 'false'},
+        {name: 'isUnread', type: 'boolean', description: 'Unread emphasis for a row standing for something not yet seen (an inbox row): the label takes the semibold weight and the description the primary text color. The row ground is the theme\'s, through the unread state of the item target, so an app paints its own unread tint without a call-site color.', default: 'false'},
         {name: 'isDisabled', type: 'boolean', description: 'Disabled state.', default: 'false'},
         {name: 'ref', type: 'React.Ref<HTMLDivElement>', description: 'Ref forwarded to the root element.'},
         {name: 'xstyle', type: 'StyleXStyles', description: 'StyleX styles for layout customization. Must be a stylex.create() value.'},
@@ -107,6 +108,8 @@ export const docsZh = {
         rel: '链接关系标记。target="_blank" 会自动合并 noopener noreferrer。',
         isHighlighted: '高亮状态（悬停/键盘焦点外观）。',
         isSelected: '选中状态。',
+        isUnread:
+          '未读强调，用于代表尚未查看内容的行（如收件箱行）：标签使用半粗字重，描述使用主文本颜色。行的底色由主题通过 item 目标的 unread 状态决定，无需在调用处指定颜色。',
         isDisabled: '禁用状态。',
         ref: '转发到根元素的引用。',
         xstyle: 'StyleX 样式，用于布局自定义。必须是 stylex.create() 的值。',
@@ -177,6 +180,8 @@ export const docsDense = {
         rel: 'Link relationship tokens. noopener noreferrer are merged for target="_blank".',
         isHighlighted: 'Highlighted state.',
         isSelected: 'Selected state.',
+        isUnread:
+          'Unread emphasis: semibold label, primary-colour description; the row ground is the theme\'s via the unread state of the item target.',
         isDisabled: 'Disabled state.',
         xstyle: 'StyleX layout styles; must be stylex.create() value.',
         'data-testid': 'Test selector.',

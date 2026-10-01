@@ -12,6 +12,7 @@
 import {use, useRef} from 'react';
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import {rulesDeclaredFor} from '../__tests__/pressState';
 import userEvent from '@testing-library/user-event';
 import {Item} from './Item';
 import {ItemDescriptionContext} from './ItemDescriptionContext';
@@ -602,5 +603,39 @@ describe('Item', () => {
   it('ignores inline layout when there is no description', () => {
     render(<Item label="Private" layout="inline" />);
     expect(screen.getByText('Private')).toBeInTheDocument();
+  });
+});
+
+describe('isUnread', () => {
+  it('emphasizes the label and description, and exposes the state to themes', () => {
+    render(
+      <Item
+        label="New message"
+        description="Just now"
+        isUnread
+        data-testid="row"
+      />,
+    );
+    const root = screen.getByTestId('row');
+    expect(root).toHaveAttribute('data-unread', 'unread');
+    const label = screen.getByText('New message');
+    const weights = rulesDeclaredFor(label).filter(rule =>
+      rule.includes('font-weight'),
+    );
+    expect(weights.join('\n')).toMatch(/var\(--font-weight-semibold\)/);
+    const description = screen.getByText('Just now');
+    const colours = rulesDeclaredFor(description).filter(rule =>
+      rule.includes('color:'),
+    );
+    expect(colours.join('\n')).toMatch(/var\(--color-text-primary\)/);
+  });
+
+  it('is a plain row without it', () => {
+    render(<Item label="Read" description="Yesterday" data-testid="row" />);
+    expect(screen.getByTestId('row')).not.toHaveAttribute('data-unread');
+    const weights = rulesDeclaredFor(screen.getByText('Read')).filter(rule =>
+      rule.includes('font-weight'),
+    );
+    expect(weights.join('\n')).not.toMatch(/var\(--font-weight-semibold\)/);
   });
 });

@@ -24,6 +24,7 @@ import {
   spacingVars,
   durationVars,
   easeVars,
+  fontWeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
@@ -171,6 +172,16 @@ export interface ItemProps extends BaseProps<HTMLElement> {
   isSelected?: boolean;
 
   /**
+   * Unread emphasis, for a row that stands for something the person has not
+   * seen yet (an inbox row). The label takes the semibold weight and the
+   * description the primary text colour; the row's ground is left to the
+   * theme through the `unread` state of the `item` target, so an app paints
+   * its own unread tint without a call-site colour.
+   * @default false
+   */
+  isUnread?: boolean;
+
+  /**
    * Disabled state.
    * @default false
    */
@@ -299,6 +310,14 @@ const styles = stylex.create({
     flexShrink: 1,
     minWidth: 0,
   },
+  // Unread: the weight says it; the ground is the theme's (`item` target,
+  // `unread` state), so no row colour is decided here.
+  unreadLabel: {
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+  },
+  unreadDescription: {
+    color: `var(--_item-description-color, ${colorVars['--color-text-primary']})`,
+  },
   label: {
     // Falls back to the primary text token; a parent (e.g. a destructive menu
     // item) can recolor the label by setting --_item-label-color.
@@ -401,6 +420,7 @@ export function Item({
   rel: relFromProps,
   isHighlighted = false,
   isSelected = false,
+  isUnread = false,
   isDisabled = false,
   xstyle,
   className,
@@ -483,6 +503,7 @@ export function Item({
       <span
         {...stylex.props(
           styles.label,
+          isUnread && styles.unreadLabel,
           isInline && styles.inlineLabel,
           labelTruncateStyle,
           labelLines != null &&
@@ -496,6 +517,7 @@ export function Item({
           id={hasRenderableDescription ? descriptionID : undefined}
           {...stylex.props(
             styles.description,
+            isUnread && styles.unreadDescription,
             isInline && styles.inlineDescription,
             descriptionTruncateStyle,
             descriptionLines != null &&
@@ -604,7 +626,11 @@ export function Item({
       }
       aria-disabled={isDisabled || undefined}
       {...mergeProps(
-        themeProps('item', {density, align}),
+        themeProps('item', {
+          density,
+          align,
+          unread: isUnread ? 'unread' : null,
+        }),
         focusOutlineProps.focusWithin(
           styles.root,
           densityStyles[density],
