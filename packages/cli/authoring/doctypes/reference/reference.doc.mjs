@@ -93,9 +93,9 @@ export const doc = {
         },
         {
           name: 'sections[].content',
-          type: 'ReferenceContentBlock[]',
+          type: '(ReferenceContentBlock | ReferenceDocBlock)[]',
           description:
-            'Ordered content blocks: prose, heading, code, table, list, and token-ref. workflow, collection, and reference are declared for the docs graph and parse, but a topic that uses one fails to load until the docs graph ships.',
+            "Ordered content blocks: prose, heading, code, table, list, token-ref, and reference. A `reference` block (`{type: 'reference', target, projection?, presentation?}`) includes another doc from its canonical source instead of a copy: a schema, command, function, or enum doc as `astryx docs` prints it, then the command that opens it. `projection.fields` keeps only those fields of a schema; `presentation` is `full` (the default), `compact` (no code blocks), or `summary` (only the doc's title, summary, and command). Any other doc shows as a summary. Graph-only workflow and collection blocks are available through GraphContentBlock on NamespaceDoc, without widening the stable ReferenceContentBlock union. Inside text, `{@link <target>}` links another doc by identity (`[<provider>:]<kind>:<name>`): the CLI prints the command that opens it, and `astryx doctor` warns on one that names no doc.",
           required: true,
         },
         {
@@ -144,7 +144,27 @@ export const docs = {
     },
     {
       type: 'prose',
-      text: 'Each `sections[].content` is an ordered array of ReferenceContentBlock, a discriminated union. workflow, collection, and reference are declared for the docs graph: they parse, but topic loading rejects them until the docs graph ships. choice, callout, and checklist remain invalid. The same union is reused by the `notes` field on SchemaDoc and CommandDoc.',
+      text: 'Each `sections[].content` is an ordered array of ReferenceContentBlock, the stable discriminated union of prose, heading, code, table, list, and token-ref, plus the reference block (ReferenceDocBlock). A read inlines a reference block the way it inlines a token-ref, so `astryx docs`, in text and in `--json`, returns only the stable block kinds. Docs-graph-only workflow and collection blocks are exported separately as GraphContentBlock and accepted by NamespaceDoc. choice, callout, and checklist remain invalid. ReferenceContentBlock is also reused by the `notes` field on SchemaDoc and CommandDoc. Inside text, `{@link <target>}` links another doc by identity (`[<provider>:]<kind>:<name>`): the CLI prints the command that opens it, and `astryx doctor` warns on one that names no doc.',
+    },
+    {
+      type: 'prose',
+      text: "A reference block includes content, where a link only points at it: `astryx doctor integration docs` fails when its target names no doc, when `projection.fields` names a field the schema does not have, or when the doc cannot take the projection or presentation it sets, and a read marks the missing content. A target without a provider names a doc of the package that wrote it, so an integration names the CLI's docs with the CLI's provider, as in `@astryxdesign/cli:schema:integration`.",
+    },
+    {
+      type: 'code',
+      lang: 'js',
+      label: 'A section that includes two fields of the integration manifest',
+      code: `{
+  title: 'Point the manifest at your folders',
+  content: [
+    {type: 'prose', text: 'Add these fields to astryx.integration.mjs.'},
+    {
+      type: 'reference',
+      target: '@astryxdesign/cli:schema:integration',
+      projection: {fields: ['components', 'docs']},
+    },
+  ],
+}`,
     },
     {
       type: 'code',
@@ -156,10 +176,19 @@ export const docs = {
   | { type: 'code'; lang: string; code: string; label?: string }
   | { type: 'table'; headers: string[]; rows: string[][] }
   | { type: 'list'; style: 'ordered' | 'unordered' | 'do' | 'dont'; items: string[] }
-  | { type: 'token-ref'; topic: string; section: string }
+  | { type: 'token-ref'; topic: string; section: string };
+
+type ReferenceDocBlock = {
+  type: 'reference';
+  target: string;
+  projection?: { fields?: string[]; sections?: string[] };
+  presentation?: 'summary' | 'compact' | 'full';
+};
+
+type GraphContentBlock =
   | { type: 'workflow'; title?: string; steps: WorkflowStep[] }
   | { type: 'collection'; source: {slot: string}; presentation?: 'list' | 'cards' | 'compact'; whenEmpty?: 'show' | 'omit' }
-  | { type: 'reference'; target: string; projection?: {fields?: string[]; sections?: string[]} };`,
+  | ReferenceDocBlock;`,
     },
     {
       type: 'prose',

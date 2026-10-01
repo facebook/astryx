@@ -272,6 +272,12 @@ const commands = [
 ];
 
 const SETUP_NUDGE_EXEMPT = new Set(['init', 'agent-docs']);
+/** An integration package's manifest: the package is not an app to set up. */
+const INTEGRATION_MANIFEST_FILES = [
+  'astryx.integration.ts',
+  'astryx.integration.mjs',
+  'astryx.integration.js',
+];
 
 /**
  * Build a fresh, fully-wired Astryx CLI program (root options, hooks, all
@@ -515,6 +521,8 @@ export async function createProgram() {
       if (SETUP_NUDGE_EXEMPT.has(actionCommand.name())) return;
       const cwd = process.cwd();
       if (!fs.existsSync(path.join(cwd, 'package.json'))) return; // not a project
+      // An integration package is not an app: `init` is not its next step.
+      if (INTEGRATION_MANIFEST_FILES.some(file => fs.existsSync(path.join(cwd, file)))) return;
       if (isAstryxInitialized(cwd)) return; // already set up — stay quiet
       // Same wording as the core/cli postinstall nudges. #4151's getCliInvocation()
       // renders the correct form for THIS project — scoped `npx @astryxdesign/cli`

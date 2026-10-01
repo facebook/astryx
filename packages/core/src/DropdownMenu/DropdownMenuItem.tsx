@@ -55,7 +55,8 @@ const menuItemStyles = stylex.create({
       ':active:where(:not(:disabled,[aria-disabled="true"]))':
         colorVars['--color-overlay-pressed'],
     },
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     cursor: {
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
@@ -118,6 +119,13 @@ export interface DropdownMenuItemProps extends Pick<
    * the error color for dangerous actions (e.g. Delete). @default 'default'
    */
   variant?: 'default' | 'destructive';
+  /**
+   * Ref forwarded to the row root — the element carrying `role="menuitem"`.
+   * Lets a caller register the row with an element-keyed observer (an
+   * IntersectionObserver for an impression, a measurement, a debug overlay)
+   * the way `Item` and `DropdownMenuDivider` already allow.
+   */
+  ref?: React.Ref<HTMLElement>;
 }
 
 /**
@@ -146,6 +154,7 @@ export function DropdownMenuItem({
   xstyle,
   className,
   style,
+  ref,
 }: DropdownMenuItemProps) {
   const ctx = useDropdownMenuContext();
   const menuSize = ctx?.menuSize ?? 'md';
@@ -169,6 +178,7 @@ export function DropdownMenuItem({
 
   return (
     <Item
+      ref={ref}
       role="menuitem"
       tabIndex={isDisabled ? undefined : -1}
       onPointerMove={handlePointerMove}

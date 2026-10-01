@@ -60,5 +60,5 @@ export const doc = {
     },
   ],
   command: 'doctor integration validate',
-  related: ['summarizeIssues', 'doctor integration templates', 'upgrade'],
+  related: ['summarizeIssues', 'integrationTemplateConflicts', 'upgrade'],
 };

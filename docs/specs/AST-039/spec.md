@@ -13,7 +13,7 @@ owners: [josephfarina]
 affects_architecture: [architecture:cli-surface]
 affects_families: []
 affects_contributing: [contributing:cli-conventions]
-affects_consumer_docs: [cli-integrations]
+affects_consumer_docs: [cli/integrations]
 ---
 
 # Integration contribution descriptor system spec

@@ -76,7 +76,7 @@ function App() {
             [
               'Neutral',
               "import {neutralTheme} from '@astryxdesign/theme-neutral'",
-              'Muted, minimal aesthetic with system fonts. A good starting point.',
+              'Muted, minimal aesthetic with Figtree typography. A good starting point.',
             ],
             [
               'Butter',
@@ -391,7 +391,7 @@ const brandTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: 'The `components` field in defineTheme uses semantic component keys and style keys, not raw CSS selectors. Use `base` for all instances, `variant:value` or `stateName` for specific props/states, and let the theme pipeline choose the underlying selector. For raw external CSS escape hatches, prefer the data-attribute selector surface documented in `astryx docs styling`.',
+          text: 'The `components` field in defineTheme uses semantic component keys and style keys, not raw CSS selectors. Use `base` for all instances, `variant:value` or `stateName` for specific props/states, and let the theme pipeline choose the underlying selector. For raw external CSS escape hatches, prefer the data-attribute selector surface documented in {@link generic:styling}.',
         },
         {
           type: 'code',
@@ -572,7 +572,7 @@ import './themes/ocean.css';
         },
         {
           type: 'prose',
-          text: "The build also warns when the theme names font families it does not load (webfonts like Fraunces) and prints the `<link>`/`@font-face` to add. The built CSS only sets font-family, so loading the font files stays the app's job. See `astryx docs typography` for the full recipe.",
+          text: "The build also warns when the theme names font families it does not load (webfonts like Fraunces) and prints the `<link>`/`@font-face` to add. The built CSS only sets font-family, so loading the font files stays the app's job. See {@link generic:typography} for the full recipe.",
         },
       ],
     },
@@ -811,7 +811,7 @@ function ChartConfig() {
         },
         {
           type: 'prose',
-          text: 'See `astryx docs styling-libraries` for styling-library interop and `astryx docs tokens` for the full token reference.',
+          text: 'See {@link generic:styling-libraries} for styling-library interop and {@link generic:tokens} for the full token reference.',
         },
       ],
     },

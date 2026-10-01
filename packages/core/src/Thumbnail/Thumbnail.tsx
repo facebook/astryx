@@ -192,7 +192,6 @@ const styles = stylex.create({
     },
   },
   interactiveButton: {
-    all: 'unset',
     cursor: {
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',

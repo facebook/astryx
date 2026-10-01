@@ -23,9 +23,11 @@ import {
   doctor,
   checkAuthoringDocs,
   checkCliDocs,
+  checkDocsTree,
   checkDocsProgressiveDisclosure,
   checkImplicitIntegrations,
   checkProviderIdentity,
+  checkIntegrationIssues,
   checkVersionAlignment,
   checkPackageManager,
 } from './doctor.mjs';
@@ -82,6 +84,27 @@ describe('doctor leaf', () => {
     expect(ids).toContain('node-version');
     expect(ids).toContain('core-installed');
   }, SLOW);
+});
+
+describe('integration issue check', () => {
+  it('surfaces cross-package replacement warnings', () => {
+    const check = checkIntegrationIssues({
+      integrationIssues: [
+        {
+          package: '@acme/later',
+          code: 'ambiguous_template_replacement',
+          severity: 'warning',
+          message: 'Later configured replacement wins.',
+        },
+      ],
+    });
+
+    expect(check).toMatchObject({
+      id: 'integration-issues',
+      status: 'warn',
+      message: expect.stringContaining('Later configured replacement wins.'),
+    });
+  });
 });
 
 describe('doctor leaf — degradation & error paths', () => {
@@ -391,7 +414,7 @@ describe('checkDocsProgressiveDisclosure', () => {
     expect(c.message).toMatch(/^\d+ topics: /);
   }, SLOW);
 
-  it('fails on an invalid doc an integration contributed', async () => {
+  it('warns on an invalid doc an integration contributed', async () => {
     const c = await checkDocsProgressiveDisclosure({
       docsCatalogIssues: [
         {
@@ -402,13 +425,13 @@ describe('checkDocsProgressiveDisclosure', () => {
         },
       ],
     });
-    expect(c.status).toBe('fail');
+    expect(c.status).toBe('warn');
     expect(c.message).toBe('@acme/widgets: bad.doc.mjs exports no doc');
   });
 
-  it('fails when the docs catalog cannot be built', async () => {
+  it('warns when the docs catalog cannot be built', async () => {
     const c = await checkDocsProgressiveDisclosure({docsCatalogError: 'boom'});
-    expect(c.status).toBe('fail');
+    expect(c.status).toBe('warn');
     expect(c.message).toContain('boom');
   });
 
@@ -436,7 +459,7 @@ describe('checkDocsProgressiveDisclosure', () => {
       }),
       docsCatalogIssues: [],
     });
-    expect(c.status).toBe('fail');
+    expect(c.status).toBe('warn');
     expect(c.message).toMatch(/^2 problems: /);
     expect(c.message).toContain('huge everything: 41 KB, over the 32 KB one read may return');
     expect(c.message).toContain('broken: ');
@@ -476,7 +499,7 @@ describe('checkCliDocs', () => {
         id: 'cli-docs',
         label: 'CLI docs',
         status: 'pass',
-        message: `All ${audit.docs} CLI docs are readable: ${audit.sections} in \`astryx docs cli\` and ${audit.authoring} in \`astryx docs authoring\`.`,
+        message: `All ${audit.docs} CLI docs are readable: ${audit.tree} in the \`astryx docs cli\` tree and ${audit.authoring} in \`astryx docs authoring\`.`,
       });
     },
     SLOW,
@@ -516,6 +539,71 @@ describe('checkCliDocs', () => {
     },
     SLOW,
   );
+});
+
+describe('checkDocsTree', () => {
+  it(
+    'passes on this repo: every CLI doc in a cli group has one route',
+    async () => {
+      const {loadDocsTree} = await import(
+        '../../foundation/doc-compiler/tree.mjs'
+      );
+      const tree = await loadDocsTree({fresh: true});
+      const nodes = [...tree.nodes.values()];
+      const namespaces = nodes.filter(node => node.kind === 'namespace').length;
+      expect(await checkDocsTree()).toEqual({
+        id: 'docs-tree',
+        label: 'Docs tree',
+        status: 'pass',
+        message: expect.stringMatching(
+          /^The docs tree has \d+ docs in \d+ sections \(\d+ at the top\), each at one route\.$/,
+        ),
+      });
+    },
+    SLOW,
+  );
+
+  it('fails on a tree with a broken placement, and names the fix', async () => {
+    const {buildDocsTree} = await import(
+      '../../foundation/doc-compiler/tree.mjs'
+    );
+    const tree = buildDocsTree({
+      namespaces: [
+        {
+          provider: '@acme/kit',
+          providerId: '@acme/kit',
+          source: '@acme/kit/tree/guides.doc.mjs',
+          doc: {
+            type: 'namespace',
+            name: 'guides',
+            title: 'Guides',
+            summary: 'Every guide.',
+            slots: {all: {title: 'All', accepts: {kinds: ['generic']}}},
+          },
+        },
+      ],
+      docs: [
+        {
+          provider: '@acme/kit',
+          providerId: '@acme/kit',
+          source: '@acme/kit/tree/setup.doc.mjs',
+          kind: 'generic',
+          name: 'setup',
+          title: 'Setup',
+          summary: 'Set it up.',
+          group: null,
+          placement: {parent: 'namespace:guidez'},
+        },
+      ],
+    });
+    const c = await checkDocsTree(undefined, {tree});
+    // New findings warn (0.6 compatibility): a broken tree is named, not fatal.
+    expect(c).toMatchObject({id: 'docs-tree', status: 'warn'});
+    expect(c.message).toContain(
+      '@acme/kit/tree/setup.doc.mjs: placement.parent "namespace:guidez" names no namespace; @acme/kit declares "guides".',
+    );
+    expect(c.fix).toMatch(/a placement names a namespace of its own package/);
+  });
 });
 
 describe('checkAuthoringDocs against the public authoring surface', () => {
@@ -812,7 +900,7 @@ describe('checkDocsProgressiveDisclosure languages', () => {
       docsCatalog: DocsCatalog.fromBuiltins({deploying: path.join(dir, 'deploying.doc.mjs')}),
       docsCatalogIssues: [],
     });
-    expect(c.status).toBe('fail');
+    expect(c.status).toBe('warn');
     expect(c.message).toContain('deploying [zh]: zh overlay broken');
     expect(c.message).toContain('deploying [dense] overview: 41 KB');
     expect(c.message).not.toMatch(/deploying overview:/);

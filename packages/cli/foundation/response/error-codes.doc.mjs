@@ -155,6 +155,16 @@ export const doc = {
       description: 'One or more codemods failed during an upgrade run.',
     },
     {
+      value: 'ERR_CODEMOD_PROTECTED',
+      description:
+        'A required codemod change remains blocked by a protected consumer file.',
+    },
+    {
+      value: 'ERR_CODEMOD_PROTECTION_SOURCE',
+      description:
+        'A working-tree protection declaration could not be read or parsed.',
+    },
+    {
       value: 'ERR_NOT_FOUND',
       description:
         'A generic discover/lookup query matched nothing in any package.',

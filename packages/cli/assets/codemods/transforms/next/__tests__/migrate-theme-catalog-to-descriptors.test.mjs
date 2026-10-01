@@ -81,6 +81,7 @@ describe('migrate-theme-catalog-to-descriptors', () => {
   it('is staged for the next release as a project codemod', () => {
     expect(manifest.map(t => [t.name, t.meta.codemodType])).toEqual([
       ['migrate-theme-catalog-to-descriptors', 'project'],
+      ['migrate-native-picker-to-presentation', undefined],
     ]);
   });
 
@@ -135,6 +136,9 @@ describe('migrate-theme-catalog-to-descriptors', () => {
 
   it('previews without writing, even with no source folder', async () => {
     writeKit([entry('ocean')]);
+    // A staged code codemod (migrate-native-picker-to-presentation) requires
+    // the source folder to exist; an empty one exercises the same preview.
+    fs.mkdirSync(path.join(root, 'src'), {recursive: true});
 
     const result = await run(false, path.join(root, 'src'));
 

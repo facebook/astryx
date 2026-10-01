@@ -25,7 +25,7 @@ import {
 } from './compile.mjs';
 import {diagnostic as rawDiagnostic, sortDiagnostics} from './diagnostics.mjs';
 import {collectDocInputs} from './inputs.mjs';
-import {compileDocFile, loadTopicInput} from './read.mjs';
+import {compileDocFile, loadTopicInput, readDocView} from './read.mjs';
 import {packageSource, scrubPaths} from './source.mjs';
 
 /**
@@ -127,6 +127,50 @@ export async function compileDocs(project, {lang = null} = {}) {
   /** @type {Array<CompiledDocNode | CompiledReferenceNode>} */
   const nodes = [];
   for (const input of inputs) {
+    // A guide the docs tree places is a reference topic, lowered and linked
+    // like one; a namespace doc lowers like any typed descriptor below.
+    if (
+      input.root === 'tree' &&
+      (await treeDocType(input.file)) === 'generic'
+    ) {
+      const entry = {
+        name: input.name,
+        package: input.owner,
+        path: input.file,
+        extensions: [],
+        tree: true,
+      };
+      const topic = await loadTopicInput(entry, lang);
+      if ('error' in topic.base || 'overlayError' in topic.base) {
+        const failure =
+          'error' in topic.base ? topic.base.error : topic.base.overlayError;
+        diagnostics.push(
+          diagnostic('error' in topic.base ? 'load_failed' : 'overlay_failed', {
+            provider: input.owner,
+            source: input.source,
+            message: `${topic.base.file}: ${messageOf(failure)}`,
+          }),
+        );
+        continue;
+      }
+      try {
+        const linked = await linkReferenceTopic(
+          lowerReferenceTopic(topic),
+          lowerTarget,
+        );
+        diagnostics.push(...unresolvedReferences(linked, input));
+        nodes.push(linked);
+      } catch (error) {
+        diagnostics.push(
+          diagnostic('invalid_topic', {
+            provider: input.owner,
+            source: input.source,
+            message: messageOf(error),
+          }),
+        );
+      }
+      continue;
+    }
     if (input.root === 'docs') {
       if (input.role !== 'base') continue;
       const lowered = topics.get(input.name.toLowerCase());
@@ -146,6 +190,7 @@ export async function compileDocs(project, {lang = null} = {}) {
           input.root === 'components' || input.root === 'hooks' ? lang : null,
         check: true,
         ...(input.root === 'templates' ? {loader: 'template'} : {}),
+        ...(input.root === 'tree' ? {loader: 'native'} : {}),
         ...(input.root === 'themes'
           ? {
               label: themeDescriptorLabel(input.file, input.owner),
@@ -172,6 +217,21 @@ export async function compileDocs(project, {lang = null} = {}) {
     nodes,
     diagnostics: sortDiagnostics(diagnostics),
   };
+}
+
+/**
+ * The stamped type of a docs-tree file, or null when it cannot be read; the
+ * compile that follows reports why.
+ * @param {string} file
+ * @returns {Promise<string | null>}
+ */
+async function treeDocType(file) {
+  try {
+    const doc = await readDocView(file, {root: 'tree', loader: 'native'});
+    return typeof doc?.type === 'string' ? doc.type : null;
+  } catch {
+    return null;
+  }
 }
 
 /**

@@ -121,7 +121,7 @@ export const doc = {
     {
       type: 'upgrade.run',
       description:
-        'The terminal run receipt: from/to versions, the codemod count, integrations processed, the agent-docs summary, an optional copied-composition registry summary, and (apply mode) filesChanged, transformsApplied, and any per-codemod errors.',
+        'The terminal run receipt: from/to versions, codemod count, integrations processed, agent-docs and registry summaries, modifiedFiles, protectedFiles, declinedCandidates, and completion state. A protected required change returns complete: false with ERR_CODEMOD_PROTECTED; the CLI exits nonzero while preserving the structured receipt.',
     },
   ],
   throws: [
@@ -146,6 +146,10 @@ export const doc = {
     {
       code: 'ERR_CODEMOD_FAILED',
       when: 'one or more codemods failed, or a post-codemod hook failed',
+    },
+    {
+      code: 'ERR_CODEMOD_PROTECTION_SOURCE',
+      when: 'a working-tree protection declaration cannot be read or parsed before writes begin',
     },
   ],
   examples: [

@@ -105,7 +105,7 @@ const scenario = `
 import {
   component, docs, blog, discover, template, hook, search, build, swizzle,
   gapReport, upgrade, init, doctor,
-  themeBuild, themeAdd, themeList, listThemes,
+  themeBuild, themeAdd, themeTemplate, themeList, listThemes,
   integrationAdd, integrationAddComponent, integrationAddDoc,
   integrationAddTemplate, integrationAddCodemod, integrationAddAgentDoc,
   integrationAddTheme, integrationPackCheck,
@@ -131,8 +131,8 @@ async function main() {
   void ({} as ComponentDetailResponse); void ({} as SearchResponse); void ({} as UpgradeRunResponse);
   void ({} as GapReportReceiptResponse); void ({} as GapReportCategoriesResponse);
   void [docs, blog, discover, template, hook, search, build, swizzle, gapReport, upgrade, init,
-    doctor, themeBuild, themeAdd, themeList,
-    listThemes, validateIntegration, summarizeIssues, AstryxError, s];
+    doctor, themeBuild, themeAdd, themeTemplate,
+    themeList, listThemes, validateIntegration, summarizeIssues, AstryxError, s];
 }
 void main;
 

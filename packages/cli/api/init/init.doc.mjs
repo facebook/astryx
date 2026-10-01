@@ -102,5 +102,5 @@ export const doc = {
     {label: 'Remove agent docs', code: 'await init({removeAgents: true});'},
   ],
   command: 'init',
-  related: ['doctor', 'upgrade', 'build', 'theme'],
+  related: ['doctor', 'upgrade', 'build', 'themeTemplate'],
 };

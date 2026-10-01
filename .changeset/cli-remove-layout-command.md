@@ -8,6 +8,6 @@ There is no replacement and no codemod: a layout expression has no equivalent co
 
 Two pieces of the surface deliberately stay. The `ERR_LAYOUT_PARSE` and `ERR_LAYOUT_INVALID` error codes remain registered, because a shipped code is never removed, and both still describe what the retained `@astryxdesign/cli/xle` engine reports.
 
-The `experimental.xle.components` config key is also still accepted, but **it now has no effect**: its only reader was the deleted layout command, so setting it does nothing. Whether the key is kept as explicitly inert or removed with its own migration is not settled here. Until it is, do not expect a value in that key to be read.
+The `experimental.xle.components` config key is still accepted, so existing configs keep loading, but **it has no effect**: its only reader was the deleted layout command. Delete it from `astryx.config.*`; the README and the config reference now say the same.
 
 @josephfarina

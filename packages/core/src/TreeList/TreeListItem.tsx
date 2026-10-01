@@ -113,7 +113,6 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-accent-muted'],
   },
   invisibleButton: {
-    all: 'unset',
     cursor: {
       default: 'inherit',
       ':is(:disabled,[aria-disabled="true"])': 'default',
@@ -129,7 +128,6 @@ const styles = stylex.create({
     outline: 'none',
   },
   invisibleAnchor: {
-    all: 'unset',
     cursor: {
       default: 'inherit',
       ':is(:disabled,[aria-disabled="true"])': 'default',
@@ -181,8 +179,9 @@ const styles = stylex.create({
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
-    border: 'none',
-    background: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
     padding: 0,
     color: colorVars['--color-icon-secondary'],
     borderRadius: radiusVars['--radius-inner'],
@@ -190,7 +189,6 @@ const styles = stylex.create({
     marginInlineEnd: `calc(${spacingVars['--spacing-1']} * -1)`,
   },
   chevronButton: {
-    all: 'unset',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

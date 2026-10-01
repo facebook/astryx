@@ -573,6 +573,16 @@ export const OptionDescriptions: Story = {
 };
 
 // Size variants
+const compactSizingTheme = defineTheme({
+  name: 'selector-compact-sizing',
+  tokens: {
+    '--spacing-5': '10px',
+    '--size-element-sm': '24px',
+    '--size-element-md': '28px',
+    '--size-element-lg': '32px',
+  },
+});
+
 export const SizeVariants: Story = {
   render: () => {
     const [value1, setValue1] = useState<string | undefined>();
@@ -605,10 +615,91 @@ export const SizeVariants: Story = {
           onChange={setValue3}
           placeholder="Large size (36px)"
         />
+        <Theme theme={compactSizingTheme}>
+          {(['sm', 'md', 'lg'] as const).map(size => (
+            <div key={size} style={{display: 'grid', gap: 8}}>
+              {(
+                [
+                  'plain',
+                  'start',
+                  'option',
+                  'status',
+                  'tooltip',
+                  'clear',
+                  'loading',
+                  'custom',
+                  'readonly',
+                ] as const
+              ).map(state => (
+                <Selector
+                  key={state}
+                  label={`Compact ${size} ${state}`}
+                  size={size}
+                  options={[
+                    {
+                      value: 'apple',
+                      label: 'Apple',
+                      icon: state === 'option' ? UserIcon : undefined,
+                    },
+                  ]}
+                  value="apple"
+                  onChange={() => {}}
+                  startIcon={state === 'start' ? UserIcon : undefined}
+                  status={
+                    state === 'status' || state === 'tooltip'
+                      ? {type: 'warning', message: 'Check selection'}
+                      : undefined
+                  }
+                  statusVariant={state === 'tooltip' ? 'tooltip' : 'attached'}
+                  hasClear={state === 'clear'}
+                  isLoading={state === 'loading'}
+                  isReadOnly={state === 'readonly'}
+                  renderValue={
+                    state === 'custom'
+                      ? option => <span>{option.label}</span>
+                      : undefined
+                  }
+                />
+              ))}
+              <Selector
+                label={`Compact ${size} multiline`}
+                data-testid="compact-multiline"
+                size={size}
+                options={['Apple']}
+                value="Apple"
+                onChange={() => {}}
+                renderValue={option => (
+                  <>
+                    <div>{option.label}</div>
+                    <div>Second line</div>
+                  </>
+                )}
+              />
+            </div>
+          ))}
+        </Theme>
       </div>
     );
   },
   decorators: [Story => <Story />],
+  play: async ({canvasElement}) => {
+    await document.fonts.ready;
+    const triggers =
+      canvasElement.querySelectorAll<HTMLElement>('.astryx-selector');
+    expect(triggers).toHaveLength(33);
+    for (const trigger of triggers) {
+      const styles = getComputedStyle(trigger);
+      const size = Number.parseFloat(
+        styles.getPropertyValue(`--size-element-${trigger.dataset.size}`),
+      );
+      const height = trigger.getBoundingClientRect().height;
+      if (trigger.dataset.testid === 'compact-multiline') {
+        expect(height).toBeGreaterThan(size);
+      } else {
+        expect(height, trigger.textContent ?? '').toBeCloseTo(size, 1);
+      }
+    }
+  },
 };
 
 // Ghost variant for toolbar composition

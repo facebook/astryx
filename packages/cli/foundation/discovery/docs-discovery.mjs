@@ -37,7 +37,7 @@ import {CLI_PROVIDER_ID} from '../identity/providers.mjs';
 import {parseReadableDoc} from '../doc-compiler/parse-readable.mjs';
 import {
   sectionKey,
-  sectionKeyProblems,
+  sectionKeyErrors,
   sourceTitle,
   withSourceTitle,
 } from './docs-section-key.mjs';
@@ -71,6 +71,8 @@ const TOPIC_NAME_RE = /^[\w-]+$/;
  * @typedef {object} DocsTopicRecord A doc file discovered under a docs root.
  * @property {string} name
  * @property {string} package owner package
+ * @property {string} [providerId] the owner's ProviderId, when it differs from
+ *   the package name
  * @property {string} path absolute path to the doc file
  * @property {string} [title]
  * @property {string} [description]
@@ -83,13 +85,21 @@ const TOPIC_NAME_RE = /^[\w-]+$/;
  * @typedef {object} DocsTopicEntry A resolved topic in the catalog.
  * @property {string} name
  * @property {string} package owner package
+ * @property {string} [providerId] the owner's ProviderId; the package name when
+ *   absent. Links in the topic resolve against it.
  * @property {string} path absolute path to the doc file
  * @property {string} [title]
  * @property {string} [description]
  * @property {string|null} [category]
  * @property {string} [replaces] the topic this one took the place of
- * @property {Array<{package: string, path: string}>} extensions overlays to
- *   merge onto the base doc, in the order their integrations were configured
+ * @property {Array<{package: string, path: string, providerId?: string}>} extensions
+ *   overlays to merge onto the base doc, in the order their integrations were
+ *   configured; each section an extension adds resolves its links against the
+ *   extension's provider id (its package name when absent)
+ * @property {string} [parent] the route of the namespace a tree guide sits in
+ * @property {string} [route] a tree guide's route
+ * @property {boolean} [tree] a guide that only the docs tree reads, by its
+ *   route; never a flat topic
  */
 
 /**
@@ -135,16 +145,20 @@ const BLOCK_FIELDS = {
   table: ['headers', 'rows'],
   list: ['style', 'items'],
   'token-ref': ['topic', 'section'],
+  // A read inlines it as the doc it names includes (spec:AST-047 FR9).
+  reference: ['target'],
 };
 
-/** Blocks that are valid authoring but require the compiled graph renderer. */
-export const GRAPH_BLOCK_TYPES = new Set([
-  'workflow',
-  'collection',
-  'reference',
-]);
+/**
+ * Blocks that are valid authoring but require the compiled graph renderer: a
+ * namespace doc's `blocks` hold them, a topic section does not.
+ */
+export const GRAPH_BLOCK_TYPES = new Set(['workflow', 'collection']);
 
-/** Doc fields only the docs graph reads; a topic that sets one fails to load. */
+/**
+ * Doc fields only the docs tree reads. A flat topic that sets one fails to
+ * load; a guide the tree places may set `placement` (spec:AST-046).
+ */
 export const GRAPH_ONLY_FIELDS = ['placement', 'aliases', 'audience'];
 
 /**
@@ -155,6 +169,7 @@ export const GRAPH_ONLY_FIELDS = ['placement', 'aliases', 'audience'];
 /** @type {Record<string, string[]>} */
 const OPTIONAL_BLOCK_FIELDS = {
   code: ['label'],
+  reference: ['projection', 'presentation'],
 };
 
 /**
@@ -166,7 +181,11 @@ const OPTIONAL_BLOCK_FIELDS = {
 const BLOCK_FIELD_VALUES = {
   heading: {level: [3, 4, 5, 6]},
   list: {style: ['ordered', 'unordered', 'do', 'dont']},
+  reference: {presentation: ['summary', 'compact', 'full']},
 };
+
+/** The parts of a doc a reference block's `projection` may select. */
+const PROJECTION_FIELDS = ['fields', 'sections'];
 
 /** Keys a section may carry. */
 const SECTION_FIELDS = ['id', 'title', 'category', 'content', 'previewType'];
@@ -180,14 +199,16 @@ const SECTION_FIELDS = ['id', 'title', 'category', 'content', 'previewType'];
  * where the file that needs fixing can be named.
  *
  * @param {any} doc a parsed doc
+ * @param {{placement?: boolean}} [options] `placement`: the doc is a guide the
+ *   docs tree places, so its `placement` field is read, not rejected
  * @returns {string[]} problems, each already pointed at a place in the doc
  */
-export function problemsInTopic(doc) {
-  // A namespace doc is valid authoring that only the docs graph reads. Said
+export function problemsInTopic(doc, {placement = false} = {}) {
+  // A namespace doc is valid authoring that only the docs tree reads. Said
   // plainly, instead of as the topic fields it does not have.
   if (doc?.type === 'namespace') {
     return [
-      `"${doc.name}" is a namespace doc. Only the docs graph reads namespace docs, and it is not built yet; remove this file from the docs directory.`,
+      `"${doc.name}" is a namespace doc, which the docs tree reads, not the topic list. The CLI keeps its own in assets/docs/tree; an integration ships its namespace docs in its docs directory.`,
     ];
   }
   /** @type {string[]} */
@@ -203,6 +224,8 @@ export function problemsInTopic(doc) {
     );
   }
   for (const field of GRAPH_ONLY_FIELDS) {
+    // A guide the docs tree places carries `placement`; the tree reads it.
+    if (field === 'placement' && placement) continue;
     if (doc?.[field] != null) {
       problems.push(
         `${field}: requires the compiled graph reader and is not supported by legacy topic readers`,
@@ -308,13 +331,71 @@ export function problemsInTopic(doc) {
               );
             }
           }
+          // A projection names the parts of the doc to include, so each part
+          // it names is a non-empty list of names.
+          if (block.type === 'reference' && block.projection != null) {
+            const projection = block.projection;
+            if (typeof projection !== 'object' || Array.isArray(projection)) {
+              problems.push(
+                `${blockAt}.projection: expected {fields?, sections?}, naming the parts of the doc to include`,
+              );
+            } else {
+              for (const [key, names] of Object.entries(projection)) {
+                if (!PROJECTION_FIELDS.includes(key)) {
+                  problems.push(
+                    `${blockAt}.projection.${key}: not a field of a projection`,
+                  );
+                } else if (
+                  !Array.isArray(names) ||
+                  names.length === 0 ||
+                  names.some(
+                    name => typeof name !== 'string' || name.trim() === '',
+                  )
+                ) {
+                  problems.push(
+                    `${blockAt}.projection.${key}: expected a non-empty array of names`,
+                  );
+                }
+              }
+            }
+          }
         },
       );
     },
   );
-  // Readers address a section by its key, so two sections sharing one would
-  // make one of them unreachable.
-  problems.push(...sectionKeyProblems(doc.sections));
+  // Explicit authored IDs are a new opt-in contract and remain strict. Topics
+  // that relied on 0.6.x title-only sections keep loading; the compiler assigns
+  // deterministic fallback/suffixed keys for the additive index API.
+  problems.push(...sectionKeyErrors(doc.sections));
+  return problems;
+}
+
+/**
+ * The fields the docs tree reads from a namespace doc an integration ships.
+ * @param {any} doc
+ * @returns {string[]}
+ */
+export function problemsInNamespace(doc) {
+  /** @type {string[]} */
+  const problems = [];
+  for (const field of ['name', 'title', 'summary']) {
+    if (typeof doc?.[field] !== 'string' || doc[field] === '') {
+      problems.push(`${field}: expected a non-empty string`);
+    }
+  }
+  const slots = doc?.slots;
+  if (slots == null || typeof slots !== 'object' || Object.keys(slots).length === 0) {
+    problems.push('slots: expected at least one slot');
+    return problems;
+  }
+  for (const [name, slot] of Object.entries(slots)) {
+    if (typeof slot?.title !== 'string' || slot.title === '') {
+      problems.push(`slots.${name}.title: expected a non-empty string`);
+    }
+    if (!Array.isArray(slot?.accepts?.kinds) || slot.accepts.kinds.length === 0) {
+      problems.push(`slots.${name}.accepts.kinds: expected at least one kind`);
+    }
+  }
   return problems;
 }
 
@@ -325,11 +406,15 @@ export function problemsInTopic(doc) {
  * discovery this loads each doc, because a topic's name and its relationship
  * to an existing topic are fields inside the file.
  *
+ * A namespace doc and a guide with `placement` go to the docs tree instead of
+ * the topic list (spec:AST-046): they come back in `namespaces` and `guides`,
+ * named by the integration's provider id.
+ *
  * Errors are returned, not thrown: one unusable doc is reported as an issue
  * against its package while the rest of the CLI keeps working.
  *
- * @param {{name: string, docs?: string}} integration a loaded integration
- * @returns {Promise<{records: DocsTopicRecord[], errors: Error[]}>}
+ * @param {{name: string, docs?: string, providerId?: string}} integration a loaded integration
+ * @returns {Promise<{records: DocsTopicRecord[], errors: Error[], namespaces: import('../doc-compiler/tree.mjs').TreeNamespaceInput[], guides: import('../doc-compiler/tree.mjs').TreeDocInput[]}>}
  */
 export async function discoverIntegrationDocs(integration) {
   const docsDir = integration?.docs;
@@ -337,7 +422,14 @@ export async function discoverIntegrationDocs(integration) {
   const records = [];
   /** @type {Error[]} */
   const errors = [];
-  if (!docsDir || !fs.existsSync(docsDir)) return {records, errors};
+  /** @type {import('../doc-compiler/tree.mjs').TreeNamespaceInput[]} */
+  const namespaces = [];
+  /** @type {import('../doc-compiler/tree.mjs').TreeDocInput[]} */
+  const guides = [];
+  if (!docsDir || !fs.existsSync(docsDir)) {
+    return {records, errors, namespaces, guides};
+  }
+  const providerId = integration.providerId ?? integration.name;
 
   /** @type {string[]} */
   const files = [];
@@ -372,11 +464,34 @@ export async function discoverIntegrationDocs(integration) {
       );
       continue;
     }
-    const problems = problemsInTopic(doc);
+    const relative = path.relative(docsDir, file);
+    const source = `${integration.name}/${relative.split(path.sep).join('/')}`;
+    if (/** @type {any} */ (doc)?.type === 'namespace') {
+      const problems = problemsInNamespace(doc);
+      if (problems.length > 0) {
+        errors.push(
+          new Error(
+            `${relative} is not a usable namespace doc:\n${problems
+              .map(problem => `  ${problem}`)
+              .join('\n')}`,
+          ),
+        );
+        continue;
+      }
+      namespaces.push({
+        provider: integration.name,
+        providerId,
+        source,
+        doc: /** @type {any} */ (doc),
+      });
+      continue;
+    }
+    const placed = /** @type {any} */ (doc)?.placement != null;
+    const problems = problemsInTopic(doc, {placement: placed});
     if (problems.length > 0) {
       errors.push(
         new Error(
-          `${path.relative(docsDir, file)} is not a usable topic:\n${problems
+          `${relative} is not a usable topic:\n${problems
             .map(problem => `  ${problem}`)
             .join('\n')}`,
         ),
@@ -397,6 +512,29 @@ export async function discoverIntegrationDocs(integration) {
       continue;
     }
     seen.set(topicKey, path.relative(docsDir, file));
+    if (placed) {
+      if (parsed.replaces != null || parsed.extends != null) {
+        errors.push(
+          new Error(
+            `${relative} is placed in the docs tree and also declares \`${parsed.replaces != null ? 'replaces' : 'extends'}\`. A placed guide has its own route; only a flat topic takes over or extends another.`,
+          ),
+        );
+        continue;
+      }
+      guides.push({
+        provider: integration.name,
+        providerId,
+        source,
+        kind: 'generic',
+        name: parsed.name,
+        title: parsed.title,
+        summary: parsed.description,
+        group: null,
+        placement: parsed.placement,
+        ref: {topicFile: file},
+      });
+      continue;
+    }
     if (parsed.replaces != null && parsed.extends != null) {
       errors.push(
         new Error(
@@ -414,10 +552,11 @@ export async function discoverIntegrationDocs(integration) {
       category: parsed.category ?? null,
       replaces: parsed.replaces,
       extendsTopic: parsed.extends,
+      ...(providerId === integration.name ? {} : {providerId}),
     });
   }
 
-  return {records, errors};
+  return {records, errors, namespaces, guides};
 }
 
 /**
@@ -487,7 +626,7 @@ function findMergeTarget(sections, section) {
   const sameTitle = sections.findIndex(
     candidate => sourceTitle(candidate) === title,
   );
-  return sameTitle === -1 ? byKey() : sameTitle;
+  return sameTitle;
 }
 
 /**
@@ -503,6 +642,46 @@ export class DocsCatalog {
   #topics = new Map();
   /** @type {Map<string, string>} old topic name → the name that replaced it */
   #aliases = new Map();
+  /** @type {Array<{namespaces: import('../doc-compiler/tree.mjs').TreeNamespaceInput[], guides: import('../doc-compiler/tree.mjs').TreeDocInput[]}>} */
+  #treeInputs = [];
+  /** @type {Array<{package: string, message: string}>} */
+  #issues = [];
+
+  /**
+   * Record a doc file a package ships that did not load. Its package's docs
+   * are withdrawn; readers name the package so an author knows where to look.
+   * @param {{package: string, message: string}} issue
+   */
+  addIssue(issue) {
+    this.#issues.push(issue);
+  }
+
+  /**
+   * The doc files that did not load, by package.
+   * @returns {ReadonlyArray<{package: string, message: string}>}
+   */
+  get issues() {
+    return this.#issues;
+  }
+
+  /**
+   * Add the namespace docs and placed guides one integration ships to the
+   * docs tree (spec:AST-046).
+   * @param {{namespaces: import('../doc-compiler/tree.mjs').TreeNamespaceInput[], guides: import('../doc-compiler/tree.mjs').TreeDocInput[]}} inputs
+   */
+  addTreeInputs(inputs) {
+    if (inputs.namespaces.length > 0 || inputs.guides.length > 0) {
+      this.#treeInputs.push(inputs);
+    }
+  }
+
+  /**
+   * What the integrations add to the docs tree, in configured order.
+   * @returns {ReadonlyArray<{namespaces: import('../doc-compiler/tree.mjs').TreeNamespaceInput[], guides: import('../doc-compiler/tree.mjs').TreeDocInput[]}>}
+   */
+  get treeInputs() {
+    return this.#treeInputs;
+  }
 
   /**
    * Seed a catalog with the CLI's own topics.
@@ -540,7 +719,11 @@ export class DocsCatalog {
           message: `"${record.name}" extends "${record.extendsTopic}", which is not a topic in this project.`,
         };
       }
-      target.extensions.push({package: record.package, path: record.path});
+      target.extensions.push({
+        package: record.package,
+        path: record.path,
+        ...(record.providerId ? {providerId: record.providerId} : {}),
+      });
       return null;
     }
 
@@ -578,6 +761,7 @@ export class DocsCatalog {
         description: record.description,
         category: record.category,
         replaces: replaced,
+        ...(record.providerId ? {providerId: record.providerId} : {}),
         // Extensions were authored against the content that just went away.
         extensions: [],
       });
@@ -607,9 +791,24 @@ export class DocsCatalog {
       title: record.title,
       description: record.description,
       category: record.category,
+      ...(record.providerId ? {providerId: record.providerId} : {}),
       extensions: [],
     });
     return null;
+  }
+
+  /**
+   * Every other name a topic answers to, lowercased: the names of the topics
+   * it replaced, directly or through a chain of replacements. `resolve` finds
+   * the topic by each of them.
+   * @param {DocsTopicEntry} entry
+   * @returns {string[]}
+   */
+  aliasesOf(entry) {
+    const key = entry.name.toLowerCase();
+    return [...this.#aliases]
+      .filter(([, to]) => to === key)
+      .map(([from]) => from);
   }
 
   /**

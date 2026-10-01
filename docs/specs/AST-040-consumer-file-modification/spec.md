@@ -13,7 +13,7 @@ owners: [josephfarina]
 affects_architecture: [architecture:cli-surface]
 affects_families: []
 affects_contributing: [contributing:cli-conventions]
-affects_consumer_docs: [cli-integrations]
+affects_consumer_docs: [cli/integrations]
 ---
 
 # Evidence-based consumer file modification system spec
@@ -36,7 +36,10 @@ project, including core, integration, and configuration codemods.
 - Creating new files, such as template copies or scaffolding. Their write
   confinement stays with `architecture:cli-surface`, and template copy behavior
   stays with `spec:AST-028`.
-- Defining individual migrations or their mappings.
+- Defining individual migrations or their mappings. The
+  [Release compatibility and versioning spec](../AST-017/spec.md) owns when a
+  deprecation, planned cleanup, or incompatible fix requires migration evidence;
+  this record owns how a consumer-file transform edits safely.
 - Choosing a command for inspecting effective settings; `spec:AST-017` FR20
   requires one.
 - Equivalent internal implementations remain valid when they satisfy this contract.
@@ -129,7 +132,7 @@ permission to edit matching literals anywhere in that file. Both behaviors are
 non-conforming with FR1–FR3; this record does not choose their implementation.
 
 Post-codemod hooks already exist and serve as the declared regeneration for FR5.
-The `cli-integrations` authoring topic and the codemod authoring guidance must
+The `cli/integrations` guide and the codemod authoring guidance must
 explain protection, how to mark generated files, and how transforms prove scope.
 
 This specification-only change alters no runtime behavior or published package

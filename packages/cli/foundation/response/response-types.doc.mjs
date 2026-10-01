@@ -4,7 +4,11 @@
  * @file EnumDoc for the `type` discriminant carried on every --json success
  * envelope. The vocabulary mirrors the RESPONSE_TYPES map (each command's
  * `jsonOut(...)` call sites) in `clients/cli/lib/manifest.mjs`; a consumer
- * switches on `type` to narrow the `data` payload.
+ * switches on `type` to narrow the `data` payload. Descriptions follow the
+ * currently published response projection, not a future package-version boundary.
+ *
+ * @input Public response discriminants and their currently released payloads.
+ * @output Generated consumer reference for every typed JSON success response.
  * @position packages/cli/foundation/response — enum documentation
  */
 
@@ -61,22 +65,27 @@ export const doc = {
     {
       value: 'docs.list',
       description:
-        'All reference-doc topics as DocsListEntry[] ({topic, description}), in discovery order.',
+        "All reference-doc topics as DocsListEntry[] ({topic, description, package, replaces?}), in read order; meta.namespaces lists the docs tree's top-level namespaces, and meta.notLoaded each package whose docs did not load.",
     },
     {
       value: 'docs.detail',
       description:
-        "One topic's full ReferenceDoc, with token-ref blocks inlined.",
+        "One topic's full ReferenceDoc (the JSON read of a topic, --full, --dense, or a topic with one section), with token-ref blocks inlined, plus links ({up, previous, next}: the commands that open the level it sits in and its neighbors there).",
     },
     {
       value: 'docs.index',
       description:
-        "One topic's section index (--index): the topic's name, title, and description, plus sections, each {id, title, summary} (pass the id as the section argument; summary is the section's one-line summary).",
+        "One topic's section index, the text read of a topic with more than one section (and --index): the topic's name, title, and description, plus sections, each {id, title, summary} (pass the id as the section argument; summary is the section's one-line summary), and links ({up, previous, next}: the commands that open the level it sits in and its neighbors there).",
     },
     {
       value: 'docs.detail.section',
       description:
-        'One ReferenceSection of a topic, found by key or title, with token-ref blocks inlined.',
+        'One ReferenceSection of a topic, found by key or title, with token-ref blocks inlined, plus links ({up, previous, next}: the commands that open its topic index and the sections before and after it).',
+    },
+    {
+      value: 'docs.node',
+      description:
+        "One node of the docs tree, read by its route: its id, kind, package, title, summary, and breadcrumb, plus a namespace's slots with their children (one level down) or a typed doc's content, and links ({up, previous, next, related}: the commands that open its parent, its neighbors, and the docs it names).",
     },
 
     // blog (read from the published RSS feed)
@@ -116,7 +125,7 @@ export const doc = {
     {
       value: 'search',
       description:
-        'The echoed query, `matchCount` (total matches, before `limit`), and results, a ranked SearchResultEntry[] bounded by `limit`: each {domain, name, score, reason, description, command}, plus import (components, hooks), title (docs), or displayName and kind (templates).',
+        'The echoed query, `matchCount` (total matches, before `limit`), and results, a ranked SearchResultEntry[] bounded by `limit`: each {domain, name, score, reason, description, command}, plus import (components, hooks), title, parent (the command that opens the level above), package (for a docs-tree hit), and, for a hit on one section, section (docs), or displayName and kind (templates).',
     },
 
     // build
@@ -128,7 +137,7 @@ export const doc = {
     {
       value: 'build.kit',
       description:
-        'The composition kit: echoed query, hasResults, matchCount (total matched, never a cap), directMatch, pages (closest templates), blocks (drop-in patterns) and domain (idea components/hooks) as SearchResultEntry[], frame and foundation name arrays, and hint {reason, commands} when thin.',
+        "The template to start from and its kit: query, hasResults, matchCount (never a cap), directMatch, start {name, command, basis, reason, alternatives, ...}, pages (search's closest templates), blocks and domain as SearchResultEntry[], frame, foundation, and hint {reason, commands} when thin.",
     },
 
     // swizzle
@@ -158,7 +167,7 @@ export const doc = {
     {
       value: 'template.list',
       description:
-        'Every discovered template (page + block); each entry carries id, name, description, kind, owning package, optional category and componentsUsed, and readiness flags.',
+        'The effective discovered TemplateListEntry[] for pages and blocks. A winning replacement entry includes optional `replaces`, naming the Core id omitted from the default list.',
     },
     {
       value: 'template.show',
@@ -286,7 +295,7 @@ export const doc = {
     {
       value: 'integration.template-conflicts',
       description:
-        'The integration identity, structural issues, and non-blocking conflicts where an integration template id is also owned by Core; each conflict includes the exact package-qualified command.',
+        'The integration identity, structural issues, and non-blocking Core template-id conflicts as {id, severity: warning, integrationPackage, integrationType, integrationName, coreMatches, message, command}.',
     },
     {
       value: 'integration.component-conflicts',
@@ -296,7 +305,7 @@ export const doc = {
     {
       value: 'integration.doc-conflicts',
       description:
-        'The integration identity, structural issues, and Core doc overlaps classified as intentional replacements, intentional extensions, or accidental same-name conflicts.',
+        'The integration identity, structural issues, and Core doc overlaps. Each finding includes `severity` (`info` | `error`) and `relationship` (`replaces` | `extends` | `accidental`).',
     },
   ],
 };

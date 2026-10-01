@@ -104,8 +104,8 @@ export interface AstryxConfig {
     /** Experimental XLE (layout expression) configuration. */
     xle?: {
       /**
-       * Register app-local components so XLE layout expressions can
-       * reference them by name via {hint}. Keyed by component name.
+       * No effect. Its only reader was the removed `layout` command. Still
+       * accepted so existing configs keep loading; delete it.
        */
       components?: Record<string, XleComponent>;
     };

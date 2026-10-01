@@ -3,7 +3,8 @@
 /**
  * @file Ensures `astryx theme build` preserves AST-012 adaptation semantics.
  * Runtime and static output share core's compiler; this suite guards the CLI
- * loading, diagnostics, serialization, and extension boundaries around it.
+ * loading, diagnostics, serialization, and extension boundaries around it,
+ * including root component overrides underneath adapted typography scales.
  */
 
 import {afterEach, beforeAll, beforeEach, describe, expect, it} from 'vitest';
@@ -93,6 +94,104 @@ describe('theme build adaptations', () => {
       css.indexOf('--spacing-4: 20px'),
     );
   });
+
+  it.each([
+    ['defined', writeTheme],
+    ['plain', writePlainTheme],
+  ])(
+    'preserves component pins in %s themes and built extensions',
+    async (_kind, write) => {
+      const {defineTheme, generateAdaptationCSS, generateThemeCSS} =
+        await import('@astryxdesign/core/theme');
+      const project = path.join(tmpDir, 'project');
+      const themesDir = path.join(project, 'themes');
+      const displayFamily =
+        'Sarina, "Brush Script MT", "Snell Roundhand", cursive';
+      const input = {
+        name: 'adaptive-display',
+        typography: {
+          scale: {base: 16, ratio: 1.25},
+          body: {family: 'Outfit', fallbacks: 'sans-serif'},
+        },
+        components: {
+          text: Object.fromEntries(
+            ['display-1', 'display-2', 'display-3'].map(type => [
+              `type:${type}`,
+              {fontFamily: displayFamily},
+            ]),
+          ),
+          button: {base: {borderRadius: '12px'}},
+        },
+        adaptations: {
+          rules: [
+            {
+              when: {width: {below: 'md'}, pointer: 'coarse'},
+              value: {typography: {scale: {base: 14, ratio: 1.2}}},
+            },
+            {
+              when: {contrast: 'more'},
+              value: {
+                typography: {scale: {base: 15}},
+                components: {
+                  text: {'type:display-1': {fontFamily: 'monospace'}},
+                },
+              },
+            },
+          ],
+        },
+      };
+      const themeFile = write(themesDir, input.name, JSON.stringify(input));
+      const result = await build(project, themeFile);
+      expect(result.code, result.stderr).toBe(0);
+      const css = fs.readFileSync(
+        path.join(themesDir, 'adaptive-display.css'),
+        'utf8',
+      );
+      const compact = value => value.replace(/\s+/g, ' ').trim();
+      const source = defineTheme(input);
+      const runtime = generateThemeCSS(source);
+      // The CLI wraps root, adaptation, and surface CSS in separate @layer
+      // blocks; their contents and order must still match runtime output.
+      const adaptationCSS = generateAdaptationCSS(source).component;
+      const [rootCSS, surfaceCSS] = runtime.component.split(adaptationCSS);
+      const blocks = [rootCSS, adaptationCSS, surfaceCSS].map(compact);
+      let previousIndex = -1;
+      for (const block of blocks) {
+        expect(compact(css)).toContain(block);
+        const index = compact(css).indexOf(block);
+        expect(index).toBeGreaterThan(previousIndex);
+        previousIndex = index;
+      }
+      expect(compact(css)).toContain(compact(runtime.prose));
+      const scaleBlock = css.slice(
+        css.indexOf('@media (width < 768px) and (pointer: coarse)'),
+        css.indexOf('@media (prefers-contrast: more)'),
+      );
+      expect(scaleBlock).toContain('--font-size-base: 0.875rem');
+      expect(scaleBlock).not.toContain('.astryx-text');
+      expect(scaleBlock).not.toContain('.astryx-heading');
+      expect(scaleBlock).not.toContain('.astryx-button');
+      expect(css).toContain(`font-family: ${displayFamily};`);
+      expect(css).toContain('font-family: monospace;');
+
+      const {adaptiveDisplayTheme: builtTheme} = await import(
+        pathToFileURL(path.join(themesDir, 'adaptive-display.js')).href
+      );
+      expect(builtTheme.__adaptationRules).toBeUndefined();
+      expect(generateThemeCSS(builtTheme)).toEqual(runtime);
+      const childInput = {
+        name: 'display-child',
+        components: {text: {'type:display-2': {fontFamily: 'serif'}}},
+      };
+      const fromSource = defineTheme({...childInput, extends: source});
+      const fromBuilt = defineTheme({...childInput, extends: builtTheme});
+      expect(generateThemeCSS(fromBuilt)).toEqual(generateThemeCSS(fromSource));
+      expect(fromBuilt.__adaptationRules[0].components).toBeUndefined();
+      expect(fromBuilt.components.text['type:display-2'].fontFamily).toBe(
+        'serif',
+      );
+    },
+  );
 
   it('resolves a plain object whose only input-only field is adaptations', async () => {
     const project = path.join(tmpDir, 'project');

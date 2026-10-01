@@ -28,6 +28,7 @@ export {template} from './template/template.mjs';
 export {
   themeBuild,
   themeAdd,
+  themeTemplate,
   themeList,
   themeListAvailable,
   themeTargets,

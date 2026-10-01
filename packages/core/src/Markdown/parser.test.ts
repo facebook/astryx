@@ -42,6 +42,11 @@ describe('parseInline', () => {
     expect(result).toEqual([{type: 'code', content: 'const x'}]);
   });
 
+  it('keeps backslash escapes literal inside standalone inline code', () => {
+    const result = parseInline('`T \\| null`');
+    expect(result).toEqual([{type: 'code', content: 'T \\| null'}]);
+  });
+
   it('leaves math delimiters as literal text by default', () => {
     expect(parseInline('Euler: $e^{i * pi} + 1 = 0$.')).toEqual([
       {type: 'text', content: 'Euler: $e^{i * pi} + 1 = 0$.'},
@@ -417,6 +422,177 @@ describe('parseMarkdown', () => {
     expect(result[0].type).toBe('blockquote');
   });
 
+  it('keeps lazy paragraph continuations inside blockquotes and list items', () => {
+    expect(parseMarkdown('> quoted\ncontinued lazily')).toEqual([
+      {
+        type: 'blockquote',
+        children: [
+          {
+            type: 'paragraph',
+            children: [{type: 'text', content: 'quoted\ncontinued lazily'}],
+          },
+        ],
+      },
+    ]);
+
+    for (const marker of ['-', '1.', '- [ ]']) {
+      const [list] = parseMarkdown(`${marker} listed\ncontinued lazily`);
+      expect(list).toMatchObject({
+        type: 'list',
+        items: [
+          {
+            children: [
+              {
+                type: 'paragraph',
+                children: [{type: 'text', content: 'listed\ncontinued lazily'}],
+              },
+            ],
+          },
+        ],
+      });
+    }
+    expect(parseMarkdown('> # Foo\n> bar\nbaz')).toMatchObject([
+      {
+        type: 'blockquote',
+        children: [
+          {type: 'heading', level: 1},
+          {
+            type: 'paragraph',
+            children: [{type: 'text', content: 'bar\nbaz'}],
+          },
+        ],
+      },
+    ]);
+    expect(parseMarkdown('> bar\nbaz\n> foo')).toMatchObject([
+      {
+        type: 'blockquote',
+        children: [
+          {
+            type: 'paragraph',
+            children: [{type: 'text', content: 'bar\nbaz\nfoo'}],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('keeps lazy continuations in the deepest open paragraph', () => {
+    expect(parseMarkdown('> 1. > Blockquote\ncontinued here.')).toMatchObject([
+      {
+        type: 'blockquote',
+        children: [
+          {
+            type: 'list',
+            items: [
+              {
+                children: [
+                  {
+                    type: 'blockquote',
+                    children: [
+                      {
+                        type: 'paragraph',
+                        children: [
+                          {
+                            type: 'text',
+                            content: 'Blockquote\ncontinued here.',
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    expect(
+      parseMarkdown('- Outer item\n  > Nested quote\ncontinued here.'),
+    ).toMatchObject([
+      {
+        type: 'list',
+        items: [
+          {
+            children: [
+              {type: 'paragraph'},
+              {
+                type: 'blockquote',
+                children: [
+                  {
+                    type: 'paragraph',
+                    children: [
+                      {
+                        type: 'text',
+                        content: 'Nested quote\ncontinued here.',
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('resumes lazy continuation for a later blockquote paragraph', () => {
+    expect(parseMarkdown('> para1\n>\n> para2\nlazy')).toMatchObject([
+      {
+        type: 'blockquote',
+        children: [
+          {
+            type: 'paragraph',
+            children: [{type: 'text', content: 'para1'}],
+          },
+          {
+            type: 'paragraph',
+            children: [{type: 'text', content: 'para2\nlazy'}],
+          },
+        ],
+      },
+    ]);
+
+    expect(parseMarkdown('> > para1\n> >\n> > para2\nlazy')).toMatchObject([
+      {
+        type: 'blockquote',
+        children: [
+          {
+            type: 'blockquote',
+            children: [
+              {
+                type: 'paragraph',
+                children: [{type: 'text', content: 'para1'}],
+              },
+              {
+                type: 'paragraph',
+                children: [{type: 'text', content: 'para2\nlazy'}],
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('does not continue a container paragraph across a blank or block start', () => {
+    expect(
+      parseMarkdown('> quoted\n\noutside').map(block => block.type),
+    ).toEqual(['blockquote', 'paragraph']);
+    expect(
+      parseMarkdown('- listed\n\noutside').map(block => block.type),
+    ).toEqual(['list', 'paragraph']);
+    expect(
+      parseMarkdown('> quoted\n# Outside').map(block => block.type),
+    ).toEqual(['blockquote', 'heading']);
+    expect(parseMarkdown('- listed\n```\noutside\n```')).toMatchObject([
+      {type: 'list'},
+      {type: 'codeblock', content: 'outside'},
+    ]);
+  });
+
   it('parses horizontal rules', () => {
     const result = parseMarkdown('---');
     expect(result[0].type).toBe('hr');
@@ -681,17 +857,24 @@ describe('parseMarkdown', () => {
 
   // --- Table with escaped pipes ---
 
-  it('handles escaped pipes in table cells', () => {
+  it('decodes escaped pipes in table code spans without changing prose nodes', () => {
     const input =
-      '| Concept | TypeScript |\n| --- | --- |\n| Null safety | `T \\| null` |\n| Union | `A \\| B \\| C` |';
+      '| Concept | TypeScript |\n| --- | --- |\n| Prose | A \\| B |\n| Null safety | `T \\| null` |\n| Union | `A \\| B \\| C` |';
     const result = parseMarkdown(input);
     expect(result[0].type).toBe('table');
     if (result[0].type === 'table') {
       expect(result[0].headers).toHaveLength(2);
-      expect(result[0].rows).toHaveLength(2);
-      // The cell should contain the escaped pipe as inline content
-      expect(result[0].rows[0]).toHaveLength(2);
-      expect(result[0].rows[1]).toHaveLength(2);
+      expect(result[0].rows).toHaveLength(3);
+      expect(result[0].rows[0][1].children).toEqual([
+        {type: 'text', content: 'A '},
+        {type: 'text', content: '| B'},
+      ]);
+      expect(result[0].rows[1][1].children).toEqual([
+        {type: 'code', content: 'T | null'},
+      ]);
+      expect(result[0].rows[2][1].children).toEqual([
+        {type: 'code', content: 'A | B | C'},
+      ]);
     }
   });
 

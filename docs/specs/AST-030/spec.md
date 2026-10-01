@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-09-07
+approved_at: 2026-09-29
 phase: accepted
 owners: [cixzhang]
 affects_architecture: []
@@ -54,6 +54,9 @@ they are separately named.
 - Add a test-specific or build-specific lane for work already owned by an
   existing surface.
 - Apply changed-surface routing to post-merge `main` CI.
+- Define compatibility semantics or release-pair delta classes. Those belong to
+  [`spec:AST-017`](../AST-017/spec.md); this record routes their checks and owns the
+  exact-main release-check execution boundary.
 - Remove required check names, branch protection, merge-queue coverage, or
   exact-head owner approval.
 - Infer safety from file extensions, directory names, or the absence of a known
@@ -157,8 +160,11 @@ they are separately named.
   including scheduled, post-CI, post-merge, or manual replacement owners.
   Publication of the canonical run's reports is not another test owner: it MUST
   consume that run's artifacts without recapturing or recomparing pixels.
-  Explicit full-plan baseline capture and reviewed baseline publication MUST
-  remain in `ci.yml`; they are maintenance operations, not release gates.
+  Explicit full-plan baseline capture MUST remain in `ci.yml`; it is a maintenance
+  operation, not a release gate. A reviewed baseline update MUST consume that
+  capture, update the versioned repository baseline through a normal pull request,
+  and remain separate from automatic merge or release work. GitHub Pages MUST NOT
+  be baseline or report storage.
   Release evidence MUST come from an explicit `operation=release-check`
   `workflow_dispatch` in this same workflow, dispatched from `main` and bound to
   its exact event SHA. It MUST run the canonical `pr-visual` (**Stable visual
@@ -296,7 +302,8 @@ Run release evidence against exact current `main`, not only constituent PR heads
 Use an explicit release-time dispatch in `ci.yml` so full visual, accessibility,
 and RTL checks do not run on every main push. Reuse existing test/build owners,
 keep their finding policies, and fail closed on incomplete scope, missing work,
-or main drift. Baseline capture and reviewed promotion remain separate operations.
+or main drift. Baseline capture and the reviewed pull request that versions an
+accepted candidate remain separate operations.
 
 PR accessibility remains a scoped, fast check: audit only explicitly resolved
 changed component owners and retain the fast modal-close, theme-var, and story-play

@@ -28,6 +28,14 @@ export interface BaseTemplateDoc extends AuthoredDocGraphFields {
 
   /** Optional stable slug override and prior aliases for registry output. */
   registry?: RegistryDocIdentity;
+
+  /** Integration templates only: the exact id of the Core template this one
+   *  replaces for unqualified lookup (find it with
+   *  `astryx --json template --list --package @astryxdesign/core`). The Core
+   *  original stays selectable with `--package @astryxdesign/core`. Needs
+   *  `@astryxdesign/cli` 0.7.0 or later: earlier CLIs reject the field and
+   *  withhold the package's templates and doc topics. */
+  replaces?: string;
   /** Whether this template is ready for use. Templates with
    *  isReady: false show as "(WIP)" in the gallery and CLI. */
   isReady?: boolean;

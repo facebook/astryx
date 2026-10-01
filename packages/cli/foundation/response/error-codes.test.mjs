@@ -86,6 +86,8 @@ describe('error codes: shipped set', () => {
     'ERR_AMBIGUOUS_TEMPLATE',
     'ERR_AMBIGUOUS_THEME',
     'ERR_CODEMOD_FAILED',
+    'ERR_CODEMOD_PROTECTED',
+    'ERR_CODEMOD_PROTECTION_SOURCE',
     'ERR_CORE_INCOMPATIBLE',
     'ERR_CORE_NOT_FOUND',
     'ERR_DEP_MISSING',
@@ -135,25 +137,67 @@ describe('error codes: shipped set', () => {
   ];
 
   it('still carries every shipped code, spelled the same', () => {
-    const missing = SHIPPED.filter(code => !isErrorCode(code) || ERROR_CODES[code] !== code);
+    const missing = SHIPPED.filter(
+      code => !isErrorCode(code) || ERROR_CODES[code] !== code,
+    );
     expect(missing, 'shipped codes removed or respelled').toEqual([]);
   });
 });
 
 describe('error codes: end-to-end JSON envelopes', () => {
   const cases = [
-    {name: 'unknown component', args: ['component', 'Bogus', '--json'], code: 'ERR_UNKNOWN_COMPONENT'},
-    {name: 'unknown hook', args: ['hook', 'bogusHook', '--json'], code: 'ERR_UNKNOWN_HOOK'},
-    {name: 'unknown topic', args: ['docs', 'bogusTopic', '--json'], code: 'ERR_UNKNOWN_TOPIC'},
-    {name: 'unknown template', args: ['template', 'bogusTemplate', '--json'], code: 'ERR_UNKNOWN_TEMPLATE'},
-    {name: 'unknown command', args: ['bogus-cmd', '--json'], code: 'ERR_UNKNOWN_COMMAND'},
-    {name: 'invalid --lang', args: ['docs', 'color', '--lang', 'fr', '--json'], code: 'ERR_INVALID_LANG'},
-    {name: 'invalid --detail', args: ['docs', 'color', '--detail', 'bogus', '--json'], code: 'ERR_INVALID_DETAIL'},
-    {name: 'unknown option', args: ['component', 'Button', '--bogus-flag', '--json'], code: 'ERR_INVALID_OPTION'},
-    {name: 'missing argument', args: ['theme', 'build', '--json'], code: 'ERR_MISSING_ARGUMENT'},
+    {
+      name: 'unknown component',
+      args: ['component', 'Bogus', '--json'],
+      code: 'ERR_UNKNOWN_COMPONENT',
+    },
+    {
+      name: 'unknown hook',
+      args: ['hook', 'bogusHook', '--json'],
+      code: 'ERR_UNKNOWN_HOOK',
+    },
+    {
+      name: 'unknown topic',
+      args: ['docs', 'bogusTopic', '--json'],
+      code: 'ERR_UNKNOWN_TOPIC',
+    },
+    {
+      name: 'unknown template',
+      args: ['template', 'bogusTemplate', '--json'],
+      code: 'ERR_UNKNOWN_TEMPLATE',
+    },
+    {
+      name: 'unknown command',
+      args: ['bogus-cmd', '--json'],
+      code: 'ERR_UNKNOWN_COMMAND',
+    },
+    {
+      name: 'invalid --lang',
+      args: ['docs', 'color', '--lang', 'fr', '--json'],
+      code: 'ERR_INVALID_LANG',
+    },
+    {
+      name: 'invalid --detail',
+      args: ['docs', 'color', '--detail', 'bogus', '--json'],
+      code: 'ERR_INVALID_DETAIL',
+    },
+    {
+      name: 'unknown option',
+      args: ['component', 'Button', '--bogus-flag', '--json'],
+      code: 'ERR_INVALID_OPTION',
+    },
+    {
+      name: 'missing argument',
+      args: ['theme', 'build', '--json'],
+      code: 'ERR_MISSING_ARGUMENT',
+    },
     // `theme` is not on the --json allowlist, so --json on any theme subcommand
     // is rejected at the preAction gate with a stable invalid-option code.
-    {name: 'json not supported', args: ['theme', 'bogus-sub', '--json'], code: 'ERR_INVALID_OPTION'},
+    {
+      name: 'json not supported',
+      args: ['theme', 'bogus-sub', '--json'],
+      code: 'ERR_INVALID_OPTION',
+    },
   ];
 
   for (const {name, args, code} of cases) {

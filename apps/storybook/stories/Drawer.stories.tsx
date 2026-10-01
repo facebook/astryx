@@ -51,12 +51,6 @@ const meta: Meta<typeof Drawer> = {
 export default meta;
 type Story = StoryObj<typeof Drawer>;
 
-const HOSTS = [
-  {id: 'web-01', region: 'us-east-1', status: 'Healthy', cpu: '32%'},
-  {id: 'web-02', region: 'us-east-1', status: 'Healthy', cpu: '41%'},
-  {id: 'worker-01', region: 'eu-west-1', status: 'Degraded', cpu: '87%'},
-];
-
 const REGIONS = ['us-east-1', 'eu-west-1', 'ap-south-1'];
 
 export const Showcase: Story = {
@@ -97,52 +91,91 @@ export const Showcase: Story = {
   },
 };
 
+/**
+ * Non-modal inspector: no scrim, no focus trap, and the page behind stays
+ * interactive. In a real master-detail flow, derive the open state from the
+ * selection (`isOpen={selected != null}`) and clear it in `onOpenChange`.
+ */
 export const RowInspector: Story = {
   render: () => {
-    const [selectedId, setSelectedId] = useState<string | null>(null);
-    const selected = HOSTS.find(host => host.id === selectedId);
+    const [isOpen, setIsOpen] = useState(false);
     return (
       <>
-        <VStack gap={1}>
-          {HOSTS.map(host => (
-            <Button
-              key={host.id}
-              variant="ghost"
-              label={`${host.id} / ${host.region}`}
-              onClick={() => setSelectedId(host.id)}
-            />
-          ))}
-        </VStack>
+        <Button label="Open drawer" onClick={() => setIsOpen(true)} />
         <Drawer
-          isOpen={selected != null}
-          onOpenChange={isOpen => !isOpen && setSelectedId(null)}
-          label={selected ? `Host details: ${selected.id}` : 'Host details'}
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          label="Details"
           hasScrim={false}
           width={360}>
-          {selected != null && (
-            <Section padding={4}>
-              <VStack gap={4}>
-                <VStack gap={1}>
-                  <Heading level={3}>{selected.id}</Heading>
-                  <Text type="supporting" color="secondary">
-                    {selected.region}
-                  </Text>
-                </VStack>
-                <Divider />
-                <VStack gap={2}>
-                  <Text type="label">Status</Text>
-                  <Text type="body">{selected.status}</Text>
-                  <Text type="label">CPU</Text>
-                  <Text type="body">{selected.cpu}</Text>
-                </VStack>
-                <Button
-                  label="Close inspector"
-                  variant="secondary"
-                  onClick={() => setSelectedId(null)}
-                />
+          <Section padding={4}>
+            <VStack gap={4}>
+              <VStack gap={1}>
+                <Heading level={3}>Details</Heading>
+                <Text type="supporting" color="secondary">
+                  The page behind stays interactive.
+                </Text>
               </VStack>
-            </Section>
-          )}
+              <Button
+                label="Close inspector"
+                variant="secondary"
+                onClick={() => setIsOpen(false)}
+              />
+            </VStack>
+          </Section>
+        </Drawer>
+      </>
+    );
+  },
+};
+
+/**
+ * Sibling drawers share one top-layer stack. A closing inner drawer continues
+ * to own Escape until its slide-out finishes, then the outer drawer becomes
+ * the topmost dismissible surface.
+ */
+export const StackedDrawers: Story = {
+  render: () => {
+    const [orderOpen, setOrderOpen] = useState(false);
+    const [lineItemOpen, setLineItemOpen] = useState(false);
+    return (
+      <>
+        <Button label="Open order" onClick={() => setOrderOpen(true)} />
+        <Drawer
+          isOpen={orderOpen}
+          onOpenChange={setOrderOpen}
+          label="Order details"
+          hasScrim={false}>
+          <Section padding={4}>
+            <VStack gap={4}>
+              <Heading level={3}>Order #4821</Heading>
+              <Text type="body">Three line items, ready to ship.</Text>
+              <Button
+                label="Open line item"
+                data-autofocus
+                onClick={() => setLineItemOpen(true)}
+              />
+            </VStack>
+          </Section>
+        </Drawer>
+        <Drawer
+          isOpen={lineItemOpen}
+          onOpenChange={setLineItemOpen}
+          label="Line item details"
+          hasScrim={false}
+          width={320}>
+          <Section padding={4}>
+            <VStack gap={4}>
+              <Heading level={3}>Compute instance</Heading>
+              <Text type="body">Quantity 6 · us-east-1</Text>
+              <Button
+                label="Close line item"
+                variant="secondary"
+                data-autofocus
+                onClick={() => setLineItemOpen(false)}
+              />
+            </VStack>
+          </Section>
         </Drawer>
       </>
     );
