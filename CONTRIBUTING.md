@@ -339,14 +339,19 @@ These are not free-form. `parseDoc` validates each at load, and a **drift harnes
 
 Most of the conventions above are mechanical, so they're checked rather than reviewed:
 
-| Rule                                                                                                                                              | Enforced by                      |
-| ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| the layer directions hold: `authoring/` imports no other layer, `foundation/` never imports `api/` or `clients/`, `api/` never imports `clients/` | ESLint (`no-restricted-imports`) |
-| zod stays sealed behind the `authoring/` parsers                                                                                                  | ESLint (`no-restricted-imports`) |
-| commands register via `defineCommand`, never straight onto Commander                                                                              | ESLint (`no-restricted-syntax`)  |
-| each doc-type ships `type.ts` + `parse.mjs` + `<kind>.doc.mjs`, re-exports its parser, and appears in `parseDoc`'s `@returns`                     | `pnpm check:cli-structure`       |
-| each `api/<name>/` ships its typedefs, a `FunctionDoc`, and a test                                                                                | `pnpm check:cli-structure`       |
-| every `CommandDoc`/`EnumDoc` matches the live CLI                                                                                                 | the drift harness                |
+| Rule                                                                                                                                              | Enforced by                                                  |
+| ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| the layer directions hold: `authoring/` imports no other layer, `foundation/` never imports `api/` or `clients/`, `api/` never imports `clients/` | ESLint (`no-restricted-imports`)                             |
+| zod stays sealed behind the `authoring/` parsers                                                                                                  | ESLint (`no-restricted-imports`)                             |
+| commands register via `defineCommand`, never straight onto Commander                                                                              | ESLint (`no-restricted-syntax`)                              |
+| a command handler must not access the environment: no filesystem, network, subprocess, Project, or discovery imports (INV22)                      | `pnpm check:cli-structure`                                   |
+| an API module (other than an adapter or helper imported only by adapters) must not access the environment (INV21)                                 | `pnpm check:cli-structure`                                   |
+| a command handler must not build text with `.padEnd()`, `.padStart()`, `.repeat()`, or `new Block()` (INV23, FR3)                                 | ESLint (`no-restricted-syntax`) + `pnpm check:cli-structure` |
+| every executable `CommandDoc` `fn` must name a function exported from `api/index.mjs` (FR1)                                                       | `pnpm check:cli-structure`                                   |
+| every function exported from `api/index.mjs` must have a `FunctionDoc` whose `name` matches (FR2)                                                 | `pnpm check:cli-structure`                                   |
+| each doc-type ships `type.ts` + `parse.mjs` + `<kind>.doc.mjs`, re-exports its parser, and appears in `parseDoc`'s `@returns`                     | `pnpm check:cli-structure`                                   |
+| each `api/<name>/` ships its typedefs, a `FunctionDoc`, and a test                                                                                | `pnpm check:cli-structure`                                   |
+| every `CommandDoc`/`EnumDoc` matches the live CLI                                                                                                 | the drift harness                                            |
 
 You never hand-write the `.d.mts` declarations. `packages/cli/scripts/sync-api-types.mjs` emits them for both `api/` and `authoring/` from the `.mjs` JSDoc — gitignored, regenerated at `prepack`, and stamped `@generated`. Edit the JSDoc and run `pnpm -F @astryxdesign/cli sync:api-types`.
 
@@ -357,7 +362,7 @@ That matters because a hand-written declaration _shadows_ the JSDoc in its `.mjs
 Author the docs _before_ the handler: `defineCommand` builds the Commander command from the `CommandDoc`, so the handler needs it to exist.
 
 1. Add the behavior under `api/<name>/`, with a colocated `<name>.type.mjs` (the `Options` + `{ type, data }` response typedefs — the shape source of truth) and a test.
-2. Author the docs — a `FunctionDoc` at `api/<name>/<fn>.doc.mjs` and a `CommandDoc` at `clients/cli/commands/<name>.doc.mjs`. Copy the `search` pair as a template.
+2. Author the docs — a `FunctionDoc` at `api/<name>/<fn>.doc.mjs` and a `CommandDoc` at `clients/cli/commands/<name>.doc.mjs`. Copy the `blog` pair as a template.
 3. Write the thin handler in `clients/cli/commands/<name>.mjs`, registering it with `defineCommand(program, <name>Command, {fn: <name>Fn, action})` so `--help` and the manifest come from the doc. Call its `register<Name>` from `clients/cli/index.mjs`.
 4. Run the checks below. The drift harness catches a doc that disagrees with the live command, and `check:cli-structure` catches a missing typedef, doc, or test.
 
@@ -527,6 +532,26 @@ enforces it at author time; `pnpm guard:disabled-cursor --storybook-dir
 apps/storybook/dist` hit-tests every disabled element in a built Storybook in
 Chromium and fails on any other cursor.
 
+### Playground preview isolation
+
+The docsite playground runs user-authored code in a sandboxed iframe with an
+opaque origin, tied to the page only by a nonce-attested MessagePort handshake
+(`apps/docsite/src/app/playground/previewChannel.ts`). The `docsite-browser`
+job feeds the existing required `docsite-test` check and proves that boundary
+in Chromium against a production build: a reloaded
+preview document recovers with the current code and theme, and a document that
+previewed code navigated the frame to receives nothing. The sandbox only exists
+in production builds (`next dev` cannot serve its assets to an opaque origin),
+so the specs need a build first:
+
+```bash
+pnpm build                                   # workspace packages the docsite imports
+pnpm -F @astryxdesign/docsite build
+npx playwright install chromium
+
+pnpm test:docsite-browser
+```
+
 ## Versioning & Releases
 
 We use [Changesets](https://github.com/changesets/changesets) for versioning, with a thin Astryx layer on top so changelogs stay categorized, contributor-attributed, and aligned with our pre-1.0 conventions.
@@ -542,9 +567,9 @@ pnpm changeset:new
 This wrapper:
 
 1. **Detects which packages you changed** from your git diff and pre-selects them — no hand-enumerating the frontmatter.
-2. **Asks for a category** (`breaking`, `component`, `feat`, `fix`, `perf`, `docs`, `chore`) — this drives changelog grouping, _not_ the semver bump.
+2. **Asks for a category** (`breaking`, `experimental`, `component`, `feat`, `fix`, `perf`, `docs`, `chore`) — this drives changelog grouping and the pre-1.0 semver bump.
 3. **Captures the contributor(s)** — defaults to your `gh`/git identity, so credit is recorded at authoring time (not reconstructed from the release bot's commit).
-4. **Derives the semver bump from the category** — a `[breaking]` change bumps the minor; everything else bumps the patch (see below).
+4. **Derives the semver bump from the category** — a `[breaking]` change bumps the minor; `[experimental]` and every other category bump the patch (see below).
 
 It writes a normal `.changeset/<id>.md` — commit it with your PR. The body looks like:
 
@@ -567,11 +592,12 @@ pnpm changeset:new --category fix --summary "…" --pr 2717 --contributor yourha
 > convention by hand (`[category]` first line + `@handle` line). CI
 > (`pnpm check:changesets`) rejects changesets missing a category or
 > contributor, or whose bump doesn't match the category (`[breaking]` must be
-> `minor`, everything else `patch`), or declaring a `major` bump while 0.x.
+> `minor`; `[experimental]` and every other category must be `patch`), or
+> declaring a `major` bump while 0.x.
 
 ### Version Bumps
 
-- **0.x (current): bump follows the category.** We track standard semver for the `0.x.y` range, where a minor bump is the breaking tier (under a caret range like `^0.1.8`, npm resolves `<0.2.0`, so `0.1.x → 0.2.0` is what signals "may break you"). A `[breaking]` change bumps the **minor** (`0.x.y → 0.(x+1).0`); every other category (`feat`, `fix`, `component`, `perf`, `docs`, `chore`) bumps the **patch**. `major` is never used while 0.x — it would jump to `1.0.0`. `pnpm changeset:new` writes the right bump from the category you pick; `pnpm check:changesets` is the CI backstop that enforces the coupling both ways.
+- **0.x (current): bump follows the category.** We track standard semver for the `0.x.y` range, where a minor bump is the stable breaking tier (under a caret range like `^0.1.8`, npm resolves `<0.2.0`). A `[breaking]` change bumps the **minor** (`0.x.y → 0.(x+1).0`). A change confined to a surface that was explicitly marked experimental before its first stable publication uses `[experimental]` and bumps the **patch**, even when that experimental API changes incompatibly. Every other category (`feat`, `fix`, `component`, `perf`, `docs`, `chore`) also bumps the patch. If stable defaults, behavior, props, imports, CLI commands, or machine schemas break, the change remains `[breaking]`. `major` is never used while 0.x — it would jump to `1.0.0`. `pnpm changeset:new` writes the right bump from the category you pick; `pnpm check:changesets` enforces the coupling both ways.
 - All publishable packages are a `fixed` group, so a single change co-bumps them to the same version. Only genuinely-affected packages get a changelog entry — the rest get a clean version-only bump.
 
 ### How a release is cut

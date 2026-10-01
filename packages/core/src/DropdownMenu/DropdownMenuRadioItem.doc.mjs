@@ -58,6 +58,12 @@ export const docs = {
       description:
         'Content to render after the label and description, such as a badge or metadata.',
     },
+    {
+      name: 'ref',
+      type: 'React.Ref<HTMLElement>',
+      description:
+        'Ref forwarded to the row root, the element carrying role="menuitemradio". Register the row with an element-keyed observer or overlay.',
+    },
   ],
 };
 
@@ -74,6 +80,7 @@ export const docsZh = {
     icon: '显示在标签前的图标。',
     isDisabled: '该单选项是否禁用。',
     endContent: '在标签和描述之后渲染的内容。',
+    ref: '转发到行根元素（带 role="menuitemradio" 的元素）的 ref。',
   },
 };
 
@@ -89,5 +96,6 @@ export const docsDense = {
     icon: 'icon before label',
     isDisabled: 'disabled; stays focusable via aria-disabled',
     endContent: 'content after label+description',
+    ref: 'forwarded to the row root (the role="menuitemradio" element)',
   },
 };

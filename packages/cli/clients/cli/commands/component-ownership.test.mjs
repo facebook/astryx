@@ -71,7 +71,7 @@ function createFixture({
   );
   fs.writeFileSync(
     path.join(compDir, 'MetaAppShell.doc.mjs'),
-    `export const docs = {\n  name: 'MetaAppShell',\n  usage: { description: 'Meta-flavored app shell.' },\n  props: [{ name: 'title', type: 'string', description: 'Header title' }],\n};\n`,
+    `export default {\n  type: 'component',\n  name: 'MetaAppShell',\n  usage: { description: 'Meta-flavored app shell.' },\n  props: [{ name: 'title', type: 'string', description: 'Header title' }],\n};\n`,
   );
   if (withSource) {
     fs.writeFileSync(
@@ -82,7 +82,7 @@ function createFixture({
   if (extraComponent) {
     fs.writeFileSync(
       path.join(compDir, `${extraComponent}.doc.mjs`),
-      `export const docs = {\n  name: '${extraComponent}',\n  usage: { description: '${extraComponent} from meta.' },\n};\n`,
+      `export default {\n  type: 'component',\n  name: '${extraComponent}',\n  usage: { description: '${extraComponent} from meta.' },\n  props: [],\n};\n`,
     );
     fs.writeFileSync(
       path.join(compDir, `${extraComponent}.tsx`),
@@ -100,7 +100,7 @@ function createFixture({
       : '';
     fs.writeFileSync(
       path.join(entryDir, `${entryPoint.component}.doc.mjs`),
-      `export const docs = {\n  name: '${entryPoint.component}',${ownSpecifier}\n  usage: { description: '${entryPoint.component} from an entry point.' },\n};\n`,
+      `export default {\n  type: 'component',\n  name: '${entryPoint.component}',${ownSpecifier}\n  usage: { description: '${entryPoint.component} from an entry point.' },\n  props: [],\n};\n`,
     );
   }
 

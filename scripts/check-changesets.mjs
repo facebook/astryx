@@ -7,7 +7,8 @@
  *   1. 0.x semver coupling: while every publishable package is < 1.0.0, the
  *      bump must match the category. A [breaking] changeset must be `minor`
  *      (0.x.y -> 0.(x+1).0, the breaking tier under caret ranges); every other
- *      category must be `patch`. `major` is rejected (it would jump to 1.0.0).
+ *      category, including [experimental], must be `patch`. `major` is rejected
+ *      (it would jump to 1.0.0).
  *   2. Every changeset body must carry a recognized [category] tag.
  *   3. Every changeset body must credit at least one @contributor.
  *   4. Frontmatter packages must be real, publishable, non-ignored packages.
@@ -163,7 +164,7 @@ function main() {
     process.exit(1);
   }
   console.log(
-    `✓ check:changesets — ${files.length} changeset(s) valid${ctx.pre1 ? ' (0.x: [breaking] -> minor, else patch)' : ''}`,
+    `✓ check:changesets — ${files.length} changeset(s) valid${ctx.pre1 ? ' (0.x: [breaking] -> minor, [experimental] and other categories -> patch)' : ''}`,
   );
 }
 

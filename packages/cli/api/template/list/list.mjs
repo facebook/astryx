@@ -32,6 +32,7 @@ export function templateList(templates, options = {}) {
       description: t.description,
       type: t.type,
       package: pkgOf(t),
+      replaces: t.replaces,
       category: t.category || undefined,
       componentsUsed: t.componentsUsed ?? undefined,
       aspectRatio: t.aspectRatio,

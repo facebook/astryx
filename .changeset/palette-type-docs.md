@@ -2,7 +2,7 @@
 '@astryxdesign/cli': patch
 ---
 
-[fix] Correct the palette authoring types. `TonalPaletteCandidate`'s description had landed on `TonalPaletteAnchor`, so the generated `.d.ts` documented the wrong type and left the candidate bare. `TonalPaletteFamilyInput` — the type an author writes by hand — had no property descriptions, and `neutralProfile` never said what its four values do.
+[fix] Correct the palette authoring types. `TonalPaletteCandidate`'s description had landed on `TonalPaletteAnchor`, so the generated `.d.ts` documented the wrong type and left the candidate bare. `TonalPaletteFamilyInput` — the type an author writes by hand — had no property descriptions, and `neutralProfile` never said what its four values do. (#6168)
 
 [fix] Give the generation receipt a real type. `generationReceipt` was `Record<string, unknown>`; it is now `TonalPaletteGenerationReceipt`, with `TonalPaletteRampDiagnostics`, `TonalPaletteCoordinationDiagnostics`, and `TonalPaletteNormalizedRequest` beside it. The generator's internal typedefs point at the same types, so the compiler holds the documentation true instead of letting it drift.
 

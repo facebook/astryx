@@ -12,7 +12,7 @@ export const doc = {
   type: 'command',
   name: 'manifest',
   displayName: 'astryx manifest',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Print the full CLI capability manifest (use with --json).',
   description:
     'Emits the complete CLI surface: every command with its arguments, options, ' +

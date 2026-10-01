@@ -11,6 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'search',
+  namespace: 'cli/api',
   displayName: 'search()',
   summary:
     'Unified ranked search across components, hooks, docs, and templates.',
@@ -46,20 +47,25 @@ export const doc = {
     {
       name: 'options.cwd',
       type: 'string',
-      description: 'Directory to resolve @astryxdesign/core from.',
+      description:
+        "Directory to resolve @astryxdesign/core from. A docs-only search (`type: 'doc'`) does not need it.",
     },
   ],
   returns: [
     {
       type: 'search',
       description:
-        'The query echoed back, `matchCount` (how many candidates matched in total, before `limit`), plus a ranked SearchResultEntry[] bounded by `limit` (domain, name, score, reason, description, follow-up command, and import path where relevant).',
+        'The query echoed back, `matchCount` (how many candidates matched in total, before `limit`), plus a ranked SearchResultEntry[] bounded by `limit`: each has domain, name, score, reason, description, and follow-up command, plus `import` for components and hooks, `title` for docs, and `displayName` and `kind` for templates. A doc result is the smallest part that answers: one section (with `section`, and a command that reads only it), one docs-tree route, or a topic, whose command lists its sections. `parent` is the command that opens the level above it: the section list of its topic, the namespace a tree node sits in, the Unorganized level for a flat topic, or the topic list for a top-level namespace. Every doc result also carries `package`, the npm package that authored it (for a section, the package its file came from).',
     },
   ],
   throws: [
     {
       code: 'ERR_INVALID_ARGUMENT',
       when: 'the query is empty, --type is unknown, or --limit is not a positive integer',
+    },
+    {
+      code: 'ERR_CORE_NOT_FOUND',
+      when: '@astryxdesign/core cannot be found from the cwd, and the search reads it: every `type` but `doc`',
     },
   ],
   examples: [

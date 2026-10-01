@@ -3,7 +3,12 @@
 /**
  * @file `astryx doctor` project health and integration-authoring diagnostics.
  * Human output uses plain stable tokens; every leaf also has a typed JSON
- * response. Exit 1 means a check found an error, while warnings remain exit 0.
+ * response. Template-conflict fields follow the package release boundary.
+ * Exit 1 means a check found an error, while warnings remain exit 0.
+ *
+ * @input Typed Doctor and integration-authoring API responses.
+ * @output Human-readable records or pass-through typed JSON.
+ * @position CLI presentation adapter for project and integration health.
  */
 
 import {runChecks} from '../../../api/doctor/doctor.mjs';
@@ -17,7 +22,7 @@ import {
   validateIntegration,
 } from '../../../api/integration/validate-integration.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {emit, section, records, text} from '../formatters/index.mjs';
+import {emit, section, record, records, text} from '../formatters/index.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {doc as doctorCommand} from './doctor.doc.mjs';
 import {doc as doctorIntegrationGroup} from './doctor-integration.doc.mjs';
@@ -55,7 +60,7 @@ function integrationLabel(data) {
  * @param {import('../../../api/doctor/doctor.mjs').DoctorReport} report
  */
 function printHuman(report) {
-  const {pass, warn, fail, info} = report.summary;
+  const {warn, fail} = report.summary;
   const closing =
     fail > 0
       ? 'Some checks failed. Address the items marked [fail] above.'
@@ -63,18 +68,15 @@ function printHuman(report) {
         ? 'No failures — but review the [warn] warnings above when you can.'
         : 'All checks passed. Your Astryx setup looks healthy.';
 
+  // Field names are the JSON keys, so text and --json map one to one.
   emit(
     section('astryx doctor — diagnosing your setup'),
     records(report.checks, {
-      fields: ['status', 'label', 'message', 'fix'],
-      labels: {label: 'check'},
+      fields: ['id', 'status', 'label', 'message', 'fix'],
       format: {status: statusToken},
     }),
-    text(
-      `Summary: ${pass} passed, ${warn} warning${warn === 1 ? '' : 's'}, ` +
-        `${fail} failure${fail === 1 ? '' : 's'}` +
-        (info ? `, ${info} info` : ''),
-    ),
+    section('summary'),
+    record(report.summary, {fields: ['pass', 'warn', 'fail', 'info']}),
     text(closing),
   );
 }
@@ -128,25 +130,41 @@ function printTemplateConflicts(data) {
     ),
     ...issueBlocks(data.issues),
   ];
-  if (data.conflicts.length === 0) {
+  if (data.conflicts.length === 0 && data.issues.length === 0) {
     output.push(text('[ok] No template ids conflict with Core.'));
-  } else {
+  } else if (data.conflicts.length > 0) {
+    const expanded = data.conflicts.some(
+      conflict => 'relationship' in conflict,
+    );
     output.push(
       records(data.conflicts, {
-        fields: [
-          'severity',
-          'id',
-          'integrationPackage',
-          'integrationType',
-          'integrationName',
-          'message',
-          'command',
-        ],
+        fields: expanded
+          ? [
+              'severity',
+              'relationship',
+              'id',
+              'replaces',
+              'integrationPackage',
+              'integrationType',
+              'integrationName',
+              'message',
+              'command',
+            ]
+          : [
+              'severity',
+              'id',
+              'integrationPackage',
+              'integrationType',
+              'integrationName',
+              'message',
+              'command',
+            ],
         format: {severity: statusToken},
       }),
       text(
-        `${data.conflicts.length} Core template conflict(s). ` +
-          'Renaming is recommended but optional; keep the package-qualified command if the overlap is intentional.',
+        expanded
+          ? `${data.conflicts.length} Core template relationship(s).`
+          : `${data.conflicts.length} Core template conflict(s). Renaming is recommended but optional; keep the package-qualified command if the overlap is intentional.`,
       ),
     );
   }
@@ -168,7 +186,13 @@ function printComponentConflicts(data) {
   } else {
     output.push(
       records(data.conflicts, {
-        fields: ['severity', 'name', 'integrationPackage', 'message', 'command'],
+        fields: [
+          'severity',
+          'name',
+          'integrationPackage',
+          'message',
+          'command',
+        ],
         format: {severity: statusToken},
       }),
       text(
@@ -190,6 +214,15 @@ function printDocConflicts(data) {
     ),
     ...issueBlocks(data.issues),
   ];
+  if (
+    !data.issues.some(
+      issue => issue.severity === 'error' || issue.code === 'invalid_doc_graph',
+    )
+  ) {
+    output.push(
+      text('[ok] The docs tree and every link in these docs check out.'),
+    );
+  }
   if (data.findings.length === 0) {
     output.push(text('[ok] No doc topics overlap with Core.'));
   } else {
@@ -275,7 +308,8 @@ async function runAuthoringCheck(program, pkg, kind) {
   const structuralErrors = summarizeIssues(result.data.issues).errors;
   const docErrors =
     result.type === 'integration.doc-conflicts'
-      ? result.data.findings.filter(finding => finding.severity === 'error').length
+      ? result.data.findings.filter(finding => finding.severity === 'error')
+          .length
       : 0;
   if (structuralErrors > 0 || docErrors > 0) process.exitCode = 1;
   return NO_RESULT_SET;
@@ -290,13 +324,6 @@ export function registerDoctor(program) {
     fn: doctorFn,
     action: async () => runProjectDoctor(program),
   });
-  doctorCmd.addHelpText(
-    'after',
-    '\nExit code:\n' +
-      '  0  no failures (warnings are allowed) — safe as a CI gate\n' +
-      '  1  one or more checks failed\n',
-  );
-
   /** @type {import('commander').Command} */
   let integrationCmd;
   integrationCmd = defineCommand(doctorCmd, doctorIntegrationGroup, {

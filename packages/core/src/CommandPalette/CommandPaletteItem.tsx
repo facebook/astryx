@@ -43,7 +43,8 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-label-size'],
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     cursor: {
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',

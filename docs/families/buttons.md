@@ -26,7 +26,11 @@ members:
     component:ToggleButtonGroup,
   ]
 architecture:
-  [architecture:component-theming-surface, architecture:public-component-api]
+  [
+    architecture:component-size-cascade,
+    architecture:component-theming-surface,
+    architecture:public-component-api,
+  ]
 contributing: []
 deciding_specs: [spec:AST-002/DEC-1]
 ---
@@ -134,8 +138,11 @@ Membership follows public responsibility, not an import of Button or a rendered
   derive from the effective in-flight value rather than a stale committed value.
 - **FR7 — Shared size preserves family geometry.** Members using the family size
   axis MUST map `sm`, `md`, and `lg` to the same control-height contract. An
-  icon-only member is square at the resolved size. Label weight, pressed state,
-  loading, or icon replacement MUST NOT change its outer dimensions.
+  icon-only member is square at the resolved size. Button and IconButton MUST
+  default an Astryx Icon in their owned icon slot to `sm` for `sm` and `md`
+  controls and to `md` for `lg` controls; an explicit Icon size MUST win. Label
+  weight, pressed state, loading, or icon replacement MUST NOT change the outer
+  control dimensions.
 - **FR8 — Elevation belongs to the painted surface.** A standalone member that
   paints its visible surface owns its resting elevation. A connected group that
   paints one continuous surface owns one shared elevation and its members paint

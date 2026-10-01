@@ -12,7 +12,7 @@ export const doc = {
   type: 'schema',
   name: 'codemod',
   displayName: 'Astryx Codemod',
-  namespace: 'cli',
+  namespace: 'authoring',
   description:
     'A codemod module the CLI runs during `astryx upgrade`. Default-export a ' +
     "plain object with a `type` discriminant: 'code' rewrites source files, " +

@@ -134,7 +134,8 @@ const styles = stylex.create({
     minWidth: 0,
     // Reset default <button> appearance for the collapsible title control.
     padding: 0,
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     backgroundColor: 'transparent',
     color: 'inherit',
     font: 'inherit',

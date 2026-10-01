@@ -25,6 +25,7 @@
  * @property {string} name
  * @property {string} title
  * @property {string} version
+ * @property {boolean} optional True when the codemod runs only if named with `--codemod`.
  */
 
 /**
@@ -95,6 +96,16 @@
  */
 
 /**
+ * A required codemod change blocked by effective working-tree protection.
+ * @typedef {object} ProtectedCodemodFile
+ * @property {string} file Project-relative path.
+ * @property {string[]} codemods Codemods that still require a change.
+ * @property {string[]} reasons Protection categories (generated, vendored, ignored, and hard boundaries).
+ * @property {string[]} declarations Effective declarations that protect the file.
+ * @property {string[]} commands Exact regeneration commands found in generated headers, when present.
+ */
+
+/**
  * astryx --json upgrade [--apply]
  * @typedef {object} UpgradeRunResponse
  * @property {'upgrade.run'} type
@@ -106,7 +117,12 @@
  * @property {boolean} data.agentDocsRefreshed
  * @property {AgentDocsSummary} data.agentDocs
  * @property {RegistryCompositionSummary} [data.registryCompositions]
+ * @property {boolean} [data.complete] False when protected required changes remain.
+ * @property {'ERR_CODEMOD_PROTECTED'} [data.errorCode] Stable incomplete-result code when complete is false.
  * @property {number} [data.filesChanged] Total files changed across core + integration codemods (apply mode).
+ * @property {string[]} [data.modifiedFiles] Project-relative files changed or previewed.
+ * @property {ProtectedCodemodFile[]} [data.protectedFiles] Protected files that still require a codemod change after regeneration.
+ * @property {Array<{file: string, location?: string, reason: string}>} [data.declinedCandidates] Candidates left unchanged because proof was insufficient.
  * @property {number} [data.transformsApplied] Total transforms that reported a change.
  * @property {Array<{file: string, codemod: string, error: string}>} [data.errors] Per-codemod errors, when any codemod failed.
  */

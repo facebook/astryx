@@ -20,6 +20,7 @@
  * @typedef {IntegrationAddBaseOptions & {
  *   replaces?: string,
  *   extends?: string,
+ *   parent?: string,
  * }} IntegrationAddDocOptions
  */
 
@@ -48,6 +49,7 @@
  * @property {'page'|'block'} [templateType]
  * @property {string} [replaces]
  * @property {string} [extends]
+ * @property {string} [parent]
  * @property {string} [to]
  */
 

@@ -3,7 +3,7 @@
 /**
  * @file Baseline maintenance workflow ownership contracts.
  * @input ci.yml and independent PR/dispatch states
- * @output Routing, trust-boundary, and publication ordering regression checks
+ * @output Routing, trust-boundary, and artifact retention regression checks
  * @position Node contracts for the shared visual owner, not another CI lane
  */
 
@@ -19,11 +19,8 @@ const workflow = yaml.parse(
   fs.readFileSync(path.join(root, '.github/workflows/ci.yml'), 'utf8'),
 );
 const visual = workflow.jobs['pr-visual'];
-const publication = workflow.jobs['baseline-publication'];
 const step = (job, name) =>
   job.steps.find(candidate => candidate.name === name);
-const index = (job, name) =>
-  job.steps.findIndex(candidate => candidate.name === name);
 
 // Only trusted workflow expressions are evaluated. The fixtures below provide
 // outcomes independently, including skipped dependencies on maintenance dispatch.
@@ -80,39 +77,31 @@ function dependencies(job, result = 'success') {
 }
 
 describe('CI baseline maintenance routing', () => {
-  it('has explicit capture/promote dispatch without a new workflow or test owner', () => {
+  it('has explicit capture/release dispatch without a new workflow or test owner', () => {
     expect(workflow.on.workflow_dispatch.inputs.operation.options).toEqual([
       'capture',
-      'promote',
+      'release-check',
     ]);
     expect(visual.name).toBe('Stable visual regression');
     expect(visual['runs-on']).toBe('2-core-ubuntu-arm');
-    expect(publication['runs-on']).toBe('ubuntu-slim');
+    expect(workflow.jobs).not.toHaveProperty('baseline-publication');
     expect(workflow.on).not.toHaveProperty('schedule');
   });
 
-  it.each(['capture', 'promote'])(
-    'does not run non-maintenance CI jobs for %s',
-    operation => {
-      for (const [name, job] of Object.entries(workflow.jobs)) {
-        if (
-          ['maintenance-request', 'pr-visual', 'baseline-publication'].includes(
-            name,
-          )
-        )
-          continue;
-        expect(runs(job, {operation, needs: dependencies(job)}), name).toBe(
-          false,
-        );
-      }
-    },
-  );
+  it('does not run non-maintenance CI jobs for capture', () => {
+    for (const [name, job] of Object.entries(workflow.jobs)) {
+      if (['maintenance-request', 'pr-visual'].includes(name)) continue;
+      expect(
+        runs(job, {operation: 'capture', needs: dependencies(job)}),
+        name,
+      ).toBe(false);
+    }
+  });
 
   it('runs capture despite skipped PR dependencies, only after the main guard succeeds', () => {
     const needs = dependencies(visual, 'skipped');
     needs['maintenance-request'].result = 'success';
     expect(runs(visual, {needs})).toBe(true);
-    expect(runs(visual, {needs, operation: 'promote'})).toBe(false);
     needs['maintenance-request'].result = 'failure';
     expect(runs(visual, {needs})).toBe(false);
   });
@@ -129,60 +118,19 @@ describe('CI baseline maintenance routing', () => {
     expect(runs(visual, {event: 'merge_group', needs})).toBe(false);
   });
 
-  it('publishes only an explicit promote dispatch after the main guard', () => {
-    expect(
-      runs(publication, {
-        operation: 'promote',
-        needs: dependencies(publication),
-      }),
-    ).toBe(true);
-    expect(
-      runs(publication, {
-        operation: 'capture',
-        needs: dependencies(publication),
-      }),
-    ).toBe(false);
-    expect(
-      runs(publication, {
-        operation: 'promote',
-        needs: dependencies(publication, 'failure'),
-      }),
-    ).toBe(false);
-    expect(
-      runs(publication, {
-        event: 'pull_request',
-        operation: 'promote',
-        needs: dependencies(publication),
-      }),
-    ).toBe(false);
-  });
-
   it.each([
-    ['refs/heads/main', 'capture', 0],
-    ['refs/heads/main', 'promote', 0],
-    ['refs/heads/feature', 'capture', 1],
-    ['refs/tags/main', 'promote', 1],
-    ['refs/heads/main', 'other', 1],
-  ])(
-    'guards maintenance ref %s and operation %s before checkout',
-    (ref, operation, expected) => {
-      const guard = workflow.jobs['maintenance-request'];
-      expect(guard.steps).toHaveLength(1);
-      const result = spawnSync('bash', ['-c', guard.steps[0].run], {
-        env: {
-          ...process.env,
-          GITHUB_REF: ref,
-          OPERATION: operation,
-          RUN_ID: '101',
-          RUN_ATTEMPT: '2',
-          KEYS: 'all',
-          REASON: 'Reviewed browser refresh',
-        },
-        encoding: 'utf8',
-      });
-      expect(result.status, result.stderr).toBe(expected);
-    },
-  );
+    ['refs/heads/main', 0],
+    ['refs/heads/feature', 1],
+    ['refs/tags/main', 1],
+  ])('guards maintenance ref %s before checkout', (ref, expected) => {
+    const guard = workflow.jobs['maintenance-request'];
+    expect(guard.steps).toHaveLength(1);
+    const result = spawnSync('bash', ['-c', guard.steps[0].run], {
+      env: {...process.env, GITHUB_REF: ref},
+      encoding: 'utf8',
+    });
+    expect(result.status, result.stderr).toBe(expected);
+  });
 
   it('isolates dispatch concurrency from PRs and does not cancel queued maintenance', () => {
     expect(workflow.concurrency.group).toContain('|| github.run_id');
@@ -192,15 +140,19 @@ describe('CI baseline maintenance routing', () => {
   });
 });
 
-describe('canonical capture and publication separation', () => {
+describe('canonical capture and checked-in baseline separation', () => {
   it('builds full maintenance Storybook only inside the existing visual owner', () => {
     const build = step(visual, 'Build canonical maintenance Storybook');
-    expect(build.if).toBe("github.event_name == 'workflow_dispatch'");
+    expect(build.if).toBe(
+      "github.event_name == 'workflow_dispatch' && inputs.operation == 'capture'",
+    );
     expect(build.run).toBe(
       'pnpm build && pnpm -F @astryxdesign/storybook build',
     );
     const capture = step(visual, 'Capture canonical visual baseline');
-    expect(capture.if).toBe("github.event_name == 'workflow_dispatch'");
+    expect(capture.if).toBe(
+      "github.event_name == 'workflow_dispatch' && inputs.operation == 'capture'",
+    );
     expect(capture.run).toContain('gate.mjs release');
     expect(capture.run).not.toMatch(
       /--(?:sample|only|components|themes|max-shots|tiers)\b/,
@@ -231,69 +183,11 @@ describe('canonical capture and publication separation', () => {
     expect(artifact.with.path).toContain('.visual-run/verdict.json');
   });
 
-  it('uses exact validated artifact identity before any downloaded bytes or publication', () => {
-    const resolve = step(publication, 'Resolve the reviewed canonical capture');
-    const download = step(publication, 'Download the reviewed capture');
-    expect(resolve.with.script).toContain('resolveVisualMaintenanceSource');
-    expect(download.with['artifact-ids']).toBe(
-      '${{ steps.source.outputs.artifact_id }}',
-    );
-    expect(download.with['run-id']).toBe('${{ steps.source.outputs.run_id }}');
-    expect(download.with['merge-multiple']).toBe(true);
-    const verify = step(publication, 'Verify downloaded capture identity');
-    expect(verify.run).toContain('validateVisualMaintenanceCapture');
-    expect(verify.env.CAPTURE_SHA).toBe('${{ steps.source.outputs.sha }}');
-    expect(index(publication, resolve.name)).toBeLessThan(
-      index(publication, download.name),
-    );
-    expect(index(publication, download.name)).toBeLessThan(
-      index(publication, verify.name),
-    );
-    expect(index(publication, verify.name)).toBeLessThan(
-      index(publication, 'Promote the explicitly reviewed baseline'),
-    );
-  });
-
-  it('retains ordered manual publication with explicit keys, reason, actor, and prune', () => {
-    const names = [
-      'Queue baseline publication',
-      'Wait for the baseline publication turn',
-      'Promote the explicitly reviewed baseline',
-      'Release the baseline publication turn',
-    ];
-    const positions = names.map(name => index(publication, name));
-    expect(positions.every(position => position >= 0)).toBe(true);
-    expect(positions).toEqual([...positions].sort((a, b) => a - b));
-    for (const [name, command] of [
-      [names[0], 'enqueue'],
-      [names[1], 'wait'],
-      [names[3], 'release'],
-    ]) {
-      expect(step(publication, name).run).toContain(
-        `gh-pages-publisher.mjs ${command} --scope visual-gate/baseline`,
-      );
-    }
-    expect(step(publication, names[3]).if).toBe(
-      "always() && steps.queue.outcome == 'success'",
-    );
-    const promote = step(publication, names[2]);
-    expect(promote.run).toContain(
-      'gh-pages-publisher.mjs visual-baseline-manual',
-    );
-    for (const [flag, variable] of [
-      ['keys', 'KEYS'],
-      ['reason', 'REASON'],
-      ['actor', 'PROMOTER'],
-      ['prune', 'PRUNE'],
-    ]) {
-      expect(promote.run).toContain(`--${flag} "$${variable}"`);
-    }
-    const commands = publication.steps
-      .map(item => item.run ?? item.with?.script ?? '')
-      .join('\n');
-    expect(commands).not.toMatch(
-      /playwright|gate\.mjs (?:release|capture|check)|createCommitStatus|createWorkflowDispatch/,
-    );
+  it('uses the checked-in baseline for every comparison', () => {
+    const commands = visual.steps.map(item => item.run ?? '').join('\n');
+    expect(commands).toContain('--baseline .github/visual-baseline');
+    expect(commands).not.toContain('gh-pages');
+    expect(workflow.jobs).not.toHaveProperty('baseline-publication');
   });
 
   it.each([

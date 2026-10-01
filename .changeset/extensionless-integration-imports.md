@@ -2,7 +2,7 @@
 '@astryxdesign/cli': patch
 ---
 
-[fix] Use extensionless subpath specifiers for generated integration imports
+[fix] Use extensionless subpath specifiers for generated integration imports (#6288)
 
 `integrationAddComponent` and `integrationAddTemplate` now emit extensionless
 public import specifiers (`@pkg/components/MyWidget` instead of

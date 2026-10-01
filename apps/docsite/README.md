@@ -181,8 +181,42 @@ apps/docsite/
 | `pnpm test`       | Run vitest                                      |
 | `pnpm test:watch` | Run vitest in watch mode                        |
 
+## Playground preview restrictions
+
+The playground is for trying Astryx code, not saving its runtime data.
+Production previews (including deployed PR previews) are **ephemeral** and run
+with `sandbox="allow-scripts"`: Docsite origin-bound storage and parent-page DOM
+access are unavailable. Local storage may throw; previewed code has no
+persistence guarantee. In-memory interaction still works; the AI Chat template's
+resizable panel already falls back when its storage is unavailable. Reloading or
+replacing the preview resets its runtime state, then restores the editor's current
+code, theme, and mode.
+
+Production Chromium tests also characterize these browser consequences of the
+opaque origin; they do not establish separate playground capability policy:
+
+- **Clipboard and microphone:** Chromium's permission policy denies clipboard
+  writes and microphone access in the preview. Copy did not report success;
+  readable text can still be selected for manual copying. Dictation remained idle
+  while typing worked.
+- **Native pickers:** cross-origin `showPicker()` is restricted for date/time
+  controls; typed entry and Astryx's `nativePicker="never"` surface remain usable.
+  File and color controls have browser-defined exceptions and can still respond
+  to a user gesture. The sandbox is not a blanket ban on every native picker.
+- **Navigation:** previewed Astryx links use native anchors instead of inheriting
+  the docsite's Next router. Fragment links stay in the current document. A
+  non-fragment navigation replaces the document and triggers preview recovery.
+
+`next dev` retains the original same-origin sandbox so development assets load.
+It is not evidence for the production security boundary. Do not add
+`allow-same-origin` to make a production demo work.
+
 ## Testing
 
 Tests live in `src/__tests__/data-extraction.test.ts` and validate the generated
 registries: package discovery, component extraction, theme wiring, etc. Run
 `pnpm generate` before running tests since they import from `src/generated/`.
+
+Browser contracts for the playground preview live in `e2e/` and run with
+`pnpm test:docsite-browser` from the repo root against a production build
+(`pnpm build` at the root, then `pnpm build` here); see `playwright.config.ts`.

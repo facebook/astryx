@@ -112,6 +112,17 @@ describe('json envelope shape', () => {
     });
   });
 
+  it('toErrorEnvelope never emits an unregistered code', () => {
+    // A Node system error carries `code: 'EACCES'`; that is not an Astryx code.
+    const sysErr = Object.assign(new Error('EACCES: permission denied'), {
+      code: 'EACCES',
+    });
+    expect(toErrorEnvelope(sysErr).code).toBe('ERR_UNKNOWN');
+    expect(toErrorEnvelope('boom', undefined, 'ENOENT').code).toBe('ERR_UNKNOWN');
+    const docErr = Object.assign(new Error('no doc'), {code: 'ERR_NO_DOC'});
+    expect(toErrorEnvelope(docErr, undefined, 'ENOENT').code).toBe('ERR_NO_DOC');
+  });
+
   it('toErrorEnvelope includes suggestions when present', () => {
     const env = toErrorEnvelope('x', [{name: 'Button', reason: 'close match'}]);
     expect(env.suggestions).toEqual([{name: 'Button', reason: 'close match'}]);

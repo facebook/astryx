@@ -2,6 +2,9 @@
 
 /**
  * @file FunctionDoc for integration template-conflict diagnostics.
+ * @input The stable 0.6.x `integrationTemplateConflicts` API contract.
+ * @output Generated CLI API reference metadata.
+ * @position Consumer-facing documentation for the public authoring API.
  */
 
 /** @type {import('@astryxdesign/cli/authoring').FunctionDoc} */
@@ -9,6 +12,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'integrationTemplateConflicts',
+  namespace: 'cli/api',
   displayName: 'integrationTemplateConflicts()',
   summary: 'Find integration template ids that also exist in Core.',
   description:

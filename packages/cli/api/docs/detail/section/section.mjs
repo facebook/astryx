@@ -4,9 +4,9 @@
  * @file docs.detail.section leaf — load a single section of a topic.
  *
  * @input A topic name, a section query, and optional {lang, zh, dense}. Resolves
- *   the topic via the shared adapter, finds the section in its lowered compiled
- *   node by its stable key, then by exact title, then by a title that contains
- *   the query, and links only that section.
+ *   the topic via the shared adapter, keeps the 0.6.x first title-substring
+ *   match, then falls back to a stable key or normalized title key, and links
+ *   only that section.
  * @output { type: 'docs.detail.section', data: ReferenceSection } with any
  *   token-ref blocks inlined — matching `astryx --json docs <topic> <section>`.
  *   Throws ERR_UNKNOWN_SECTION when nothing matches, or when the query matches
@@ -50,18 +50,15 @@ export async function section(topic, sectionName, options = {}) {
     );
   }
 
-  const {catalog, node, lang} = await resolveTopicDocs(topic, options);
+  const {catalog, node, lang, entry} = await resolveTopicDocs(topic, options);
   const sections = readerSections(node);
-  const {section: match, candidates} = findDocSection(sections, sectionName);
+  const {section: match} = findDocSection(sections, sectionName);
   if (!match) {
-    const ambiguous = candidates.length > 1;
     throw new AstryxError(
-      ambiguous
-        ? `Section "${sectionName}" matches ${candidates.length} sections in "${topic}". Read one by its key.`
-        : `Section "${sectionName}" not found in "${topic}"`,
-      (ambiguous ? candidates : sections).map(s => ({
-        name: sectionKey(s),
-        reason: s.title,
+      `Section "${sectionName}" not found in "${topic}"`,
+      sections.map(s => ({
+        name: s.title,
+        reason: 'available section',
       })),
       ERROR_CODES.ERR_UNKNOWN_SECTION,
     );
@@ -74,5 +71,19 @@ export async function section(topic, sectionName, options = {}) {
     match,
     referenceTargets(catalog, lang),
   );
-  return {type: 'docs.detail.section', data: sectionView(node, linked)};
+  // The moves from one section (spec:AST-047): up to its topic's index, and
+  // across to the sections before and after it.
+  const at = sections.indexOf(match);
+  /** @type {import('../../docs.type.mjs').DocsLinks} */
+  const links = {up: `astryx docs ${entry.name} --index`};
+  if (at > 0) {
+    links.previous = `astryx docs ${entry.name} ${sectionKey(sections[at - 1])}`;
+  }
+  if (at !== -1 && at < sections.length - 1) {
+    links.next = `astryx docs ${entry.name} ${sectionKey(sections[at + 1])}`;
+  }
+  return {
+    type: 'docs.detail.section',
+    data: {...sectionView(node, linked), links},
+  };
 }

@@ -33,7 +33,7 @@ import {fileURLToPath} from 'node:url';
 import {spawn} from 'node:child_process';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {emit, section, text, list, code} from '../formatters/index.mjs';
+import {emit, section, text, list, records, code} from '../formatters/index.mjs';
 import {logger} from '../../../api/logger.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
@@ -196,7 +196,7 @@ async function warnOnThemeIntegrationIssues(json) {
   try {
     const project = await Project.load(process.cwd());
     await project.themes();
-    await warnOnIntegrationIssues(project.loadedIntegrations, {json});
+    await warnOnIntegrationIssues(project, {json});
   } catch {
     // Never let the nudge break the command.
   }
@@ -227,47 +227,6 @@ function printThemeList(themes) {
       `Usage:\n  ${run} theme add <slug> [target-path]   Scaffold a theme file you own`,
     ),
   );
-}
-
-/**
- * Render the targets as one greppable line each, under an aligned header. A
- * `records()` block would be five lines per target — over a thousand for the
- * full surface, which is the view this command exists to make readable.
- * @param {import('../../../api/theme/theme.type.mjs').ThemeTargetEntry[]} targets
- * @returns {string}
- */
-function formatTargetsTable(targets) {
-  const rows = targets.map(t => ({
-    key: t.deprecatedFor
-      ? `${t.key} [deprecated; use ${t.deprecatedFor}]`
-      : t.key,
-    component: t.component,
-    props: t.props.join(', ') || '-',
-    states: t.states.join(', ') || '-',
-  }));
-  const head = {
-    key: 'key',
-    component: 'component',
-    props: 'props',
-    states: 'states',
-  };
-  const width = (/** @type {'key'|'component'|'props'} */ field) =>
-    [head, ...rows].reduce((max, r) => Math.max(max, r[field].length), 0);
-  const w = {
-    key: width('key'),
-    component: width('component'),
-    props: width('props'),
-  };
-  const line = (/** @type {typeof head} */ r) =>
-    [
-      r.key.padEnd(w.key),
-      r.component.padEnd(w.component),
-      r.props.padEnd(w.props),
-      r.states,
-    ]
-      .join('  ')
-      .trimEnd();
-  return [line(head), ...rows.map(line)].join('\n');
 }
 
 /**
@@ -369,7 +328,7 @@ export function registerTheme(program) {
         emit(
           section(
             'Palette candidate',
-            `${result.data.familyCount} families · ${result.data.stopCount} stops · ${result.data.modes.join(', ')}`,
+            `${result.data.familyCount} families, ${result.data.stopCount} stops, ${result.data.modes.join(', ')}`,
           ),
           code(serializePaletteCandidate(result.data.candidate).trimEnd()),
         );
@@ -426,7 +385,7 @@ export function registerTheme(program) {
                 {
                   name: `astryx theme build ${entry.file.replace(/['"]/g, '')}`,
                   reason:
-                    'globs are expanded by your shell — pass the pattern unquoted, or list the files',
+                    'globs are expanded by your shell; pass the pattern unquoted, or list the files',
                 },
               ]
             : undefined,
@@ -491,7 +450,7 @@ export function registerTheme(program) {
       // Non-watch: delegate to the API compiler, once per theme, in argument
       // order. Enable human output unless in --json mode (log → stdout via
       // humanLog, warn/error → stderr). The "Building theme from" line, the
-      // ✓/warning lines, and the install instructions are all emitted from
+      // [ok]/[warn] lines, and the install instructions are all emitted from
       // inside themeBuild via the shared logger.
       logger.setSilent(json);
 
@@ -574,8 +533,8 @@ export function registerTheme(program) {
         emit(
           text(
             options.check
-              ? `\n${stale ? '✗' : '✓'} Checked ${entries.length} themes.`
-              : `\n✓ Built ${entries.length} themes.`,
+              ? `\n${stale ? '[fail]' : '[ok]'} Checked ${entries.length} themes.`
+              : `\n[ok] Built ${entries.length} themes.`,
           ),
         );
       }
@@ -811,9 +770,16 @@ export function registerTheme(program) {
       emit(
         section(
           'Theming targets',
-          `${targets.length} across ${componentCount} component${componentCount === 1 ? '' : 's'}`,
+          `${targets.length} across ${componentCount} component${componentCount === 1 ? '' : 's'}\n(key - component - props - states - className - deprecatedFor)`,
         ),
-        text(formatTargetsTable(targets)),
+        records(targets, {
+          fields: ['key', 'component', 'props', 'states', 'className', 'deprecatedFor'],
+          layout: 'inline',
+          format: {
+            deprecatedFor: (/** @type {string|null} */ v) =>
+              v ? `deprecated; use ${v}` : '',
+          },
+        }),
         text(
           [
             `Each key goes under \`components\` in defineTheme; it paints \`.astryx-<key>\`.`,
