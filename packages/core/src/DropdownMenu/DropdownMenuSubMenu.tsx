@@ -355,6 +355,9 @@ export function DropdownMenuSubMenu(
       hide: hideLayer,
       isOpen,
       isEnabled: canOpen,
+      // The safe triangle toward the flyout's near edge is built from the
+      // flyout this component renders, not the hook's own list ref.
+      flyoutRef: menuRef,
     });
 
   const open = useCallback(
@@ -399,19 +402,19 @@ export function DropdownMenuSubMenu(
     if (isDisabled) {
       return;
     }
-    // Toggles, except for the click that follows a hover-open (#3121).
+    // A press or release on a sub-menu row OPENS it and never closes the
+    // menu, as macOS sub-menu rows do: an open flyout is confirmed and takes
+    // focus; a closed one opens. Closing is the keyboard's (ArrowLeft,
+    // Escape) and the pointer-leave delay's job.
     if (isOpen) {
-      if (confirmHoverOpen()) {
-        if (!focusFirst()) {
-          menuRef.current?.focus();
-        }
-        return;
+      confirmHoverOpen();
+      if (!focusFirst()) {
+        menuRef.current?.focus();
       }
-      close({focusTrigger: true});
-    } else {
-      open({focusFirst: true});
+      return;
     }
-  }, [isDisabled, isOpen, open, close, confirmHoverOpen, focusFirst, menuRef]);
+    open({focusFirst: true});
+  }, [isDisabled, isOpen, open, confirmHoverOpen, focusFirst, menuRef]);
 
   const handleTriggerKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
