@@ -69,6 +69,7 @@ export const RESPONSE_TYPES = {
     'discover.list',
     'discover.detail',
     'discover.detail.doc',
+    'discover.item',
     'discover.search',
   ],
   search: ['search'],

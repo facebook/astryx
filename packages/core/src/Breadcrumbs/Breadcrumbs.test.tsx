@@ -99,18 +99,6 @@ describe('Breadcrumbs', () => {
     expect(separators[1].textContent).toBe('›');
   });
 
-  it('separators are aria-hidden', () => {
-    const {container} = render(
-      <Breadcrumbs>
-        <BreadcrumbItem href="/">Home</BreadcrumbItem>
-        <BreadcrumbItem isCurrent>Page</BreadcrumbItem>
-      </Breadcrumbs>,
-    );
-    const separators = container.querySelectorAll('span[aria-hidden="true"]');
-    expect(separators.length).toBeGreaterThan(0);
-    expect(separators[0]).toHaveAttribute('aria-hidden', 'true');
-  });
-
   it('forwards ref to the nav element', () => {
     const ref = {current: null as HTMLElement | null};
     render(

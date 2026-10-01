@@ -99,6 +99,16 @@
     },
     {
       "kind": "section",
+      "id": "authoring#discover-source",
+      "oldCliRoute": "astryx docs authoring discover-source",
+      "oldDocsiteUrl": "/docs/authoring#discoversource",
+      "placement": "keep-flat",
+      "aliasNeeded": false,
+      "rationale": "Stays a section of authoring under the same key. Its content is the schema self-doc `discover-source` (schema row), which the topic renders as one section.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
       "id": "authoring#codemod",
       "oldCliRoute": "astryx docs authoring codemod",
       "oldDocsiteUrl": "/docs/authoring#astryx-codemod",
@@ -532,6 +542,17 @@
       "id": "cli/integrations#gap-report-handler",
       "oldCliRoute": "astryx docs cli/integrations gap-report-handler",
       "oldDocsiteUrl": "/docs/cli-integrations#gap-report-handler",
+      "placement": "namespace:cli/integrations",
+      "aliasNeeded": false,
+      "evidence": "Moves with cli/integrations.",
+      "rationale": "Stays a section of cli/integrations under the same key.",
+      "status": "proposed"
+    },
+    {
+      "kind": "section",
+      "id": "cli/integrations#discover-source",
+      "oldCliRoute": "astryx docs cli/integrations discover-source",
+      "oldDocsiteUrl": "/docs/cli-integrations#discover-source",
       "placement": "namespace:cli/integrations",
       "aliasNeeded": false,
       "evidence": "Moves with cli/integrations.",
@@ -2394,13 +2415,13 @@
       "kind": "schema",
       "id": "@astryxdesign/cli/schema",
       "provider": "@astryxdesign/cli",
-      "count": 18,
+      "count": 19,
       "oldCliRoute": null,
       "oldDocsiteUrl": null,
       "placement": "generated:@astryxdesign/cli/schema",
       "aliasNeeded": false,
-      "evidence": "No schema doc authors a placement; output declares cli/api and the other 17 declare authoring.",
-      "rationale": "17 declare namespace 'authoring' and are read as sections of `astryx docs authoring`; `output` declares cli/api and is read as the leaf cli/api/schemas/output. Their home in the tree for authoring is a later phase.",
+      "evidence": "No schema doc authors a placement; output declares cli/api and the other 18 declare authoring.",
+      "rationale": "18 declare namespace 'authoring' and are read as sections of `astryx docs authoring`; `output` declares cli/api and is read as the leaf cli/api/schemas/output. Their home in the tree for authoring is a later phase.",
       "status": "proposed"
     },
     {
