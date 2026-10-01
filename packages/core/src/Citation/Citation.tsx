@@ -5,7 +5,7 @@
 /**
  * @file Citation.tsx
  * @input Uses React, StyleX, theme tokens, and the shared navigation policy
- * @output Exports Citation component for inline citation references
+ * @output Exports Citation with safe navigation and named inert-reference states
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -205,10 +205,10 @@ export function Citation({
   const hasIcon = iconNode != null || imageSrc != null;
 
   const Tag = href ? 'a' : 'span';
-  // `doc-noteref` is a reference role — only appropriate on the interactive
-  // link form. On a plain (unlinked) span it is not a permitted role
-  // (axe: aria-allowed-role), so omit it there; the aria-label still names it.
-  const noteRole = href ? ('doc-noteref' as const) : undefined;
+  // `doc-noteref` is a link role and is not permitted on the inert span. Give
+  // that span a supported naming role so the component-authored aria-label
+  // still identifies number-only citations to assistive technology.
+  const noteRole = href ? ('doc-noteref' as const) : ('group' as const);
   const linkProps = href
     ? {
         href,

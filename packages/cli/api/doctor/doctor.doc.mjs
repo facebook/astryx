@@ -11,6 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'doctor',
+  namespace: 'cli/api',
   displayName: 'doctor()',
   summary: 'Read-only project + environment health check.',
   description:

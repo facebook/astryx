@@ -68,7 +68,8 @@ const styles = stylex.create({
   input: {
     flex: 1,
     minWidth: 0,
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     outline: 'none',
     backgroundColor: 'transparent',
     color: colorVars['--color-text-primary'],

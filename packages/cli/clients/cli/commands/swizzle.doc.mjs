@@ -12,7 +12,7 @@ export const doc = {
   type: 'command',
   name: 'swizzle',
   displayName: 'astryx swizzle',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary: 'Copy component source for customization',
   description:
     "Ejects a component's source from the resolved @astryxdesign/core (or its owning " +

@@ -58,6 +58,12 @@ export const docs = {
       description:
         'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
+    {
+      name: 'ref',
+      type: 'React.Ref<HTMLElement>',
+      description:
+        'Ref forwarded to the row root, the element carrying role="menuitem". Register the row with an element-keyed observer or overlay.',
+    },
   ],
 };
 
@@ -105,6 +111,11 @@ export const docsZh = {
       type: 'StyleXStyles',
       description: '根容器的 StyleX 样式。',
     },
+    {
+      name: 'ref',
+      type: 'React.Ref<HTMLElement>',
+      description: '转发到行根元素（带 role="menuitem" 的元素）的 ref。',
+    },
   ],
 };
 
@@ -123,5 +134,6 @@ export const docsDense = {
     variant:
       "'destructive' renders the item in the error color for dangerous actions",
     xstyle: 'StyleX styles for root container',
+    ref: 'forwarded to the row root (the role="menuitem" element)',
   },
 };

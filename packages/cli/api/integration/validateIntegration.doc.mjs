@@ -12,6 +12,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'validateIntegration',
+  namespace: 'cli/api',
   displayName: 'validateIntegration()',
   summary:
     'Validate a single Astryx integration package and report its issues.',
@@ -59,5 +60,5 @@ export const doc = {
     },
   ],
   command: 'doctor integration validate',
-  related: ['summarizeIssues', 'doctor integration templates', 'upgrade'],
+  related: ['summarizeIssues', 'integrationTemplateConflicts', 'upgrade'],
 };

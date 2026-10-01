@@ -321,7 +321,8 @@ const styles = stylex.create({
     },
     outline: 'none',
     backgroundColor: 'transparent',
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     textAlign: 'start',
   },
   itemHighlighted: {

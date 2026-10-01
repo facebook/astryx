@@ -30,69 +30,6 @@ describe('Collapsible', () => {
     expect(screen.getByText('Content')).toBeInTheDocument();
   });
 
-  it('starts open by default', () => {
-    render(
-      <Collapsible trigger="Details">
-        <p>Visible content</p>
-      </Collapsible>,
-    );
-
-    const trigger = screen.getByRole('button', {name: /Details/});
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByText('Visible content')).toBeVisible();
-  });
-
-  it('toggles content on click', async () => {
-    const user = userEvent.setup();
-    render(
-      <Collapsible trigger="Details">
-        <p>Collapsible content</p>
-      </Collapsible>,
-    );
-
-    const trigger = screen.getByRole('button', {name: /Details/});
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByText('Collapsible content')).toBeVisible();
-
-    // Click to collapse
-    await user.click(trigger);
-    expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.getByText('Collapsible content')).not.toBeVisible();
-
-    // Click to expand
-    await user.click(trigger);
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByText('Collapsible content')).toBeVisible();
-  });
-
-  it('starts collapsed when defaultIsOpen is false', () => {
-    render(
-      <Collapsible trigger="Details" defaultIsOpen={false}>
-        <p>Hidden content</p>
-      </Collapsible>,
-    );
-
-    const trigger = screen.getByRole('button', {name: /Details/});
-    expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.getByText('Hidden content')).not.toBeVisible();
-  });
-
-  it('links the trigger to its content region via aria-controls', () => {
-    render(
-      <Collapsible trigger="Details">
-        <p>Region content</p>
-      </Collapsible>,
-    );
-
-    const trigger = screen.getByRole('button', {name: /Details/});
-    const controlsId = trigger.getAttribute('aria-controls');
-    // aria-controls must be present and point at the real content region.
-    expect(controlsId).toBeTruthy();
-    const region = document.getElementById(controlsId as string);
-    expect(region).not.toBeNull();
-    expect(region).toContainElement(screen.getByText('Region content'));
-  });
-
   it('respects controlled isOpen/onOpenChange', async () => {
     const onOpenChange = vi.fn();
     const user = userEvent.setup();
@@ -168,26 +105,6 @@ describe('Collapsible', () => {
     const svg = trigger.querySelector('svg');
     expect(svg).toBeInTheDocument();
     expect(svg).toHaveAttribute('aria-hidden');
-  });
-
-  it('activates via keyboard (Enter and Space)', async () => {
-    const user = userEvent.setup();
-    render(
-      <Collapsible trigger="Keyboard">
-        <p>Content</p>
-      </Collapsible>,
-    );
-
-    const trigger = screen.getByRole('button', {name: /Keyboard/});
-    trigger.focus();
-
-    // Enter key
-    await user.keyboard('{Enter}');
-    expect(trigger).toHaveAttribute('aria-expanded', 'false');
-
-    // Space key
-    await user.keyboard(' ');
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 });
 

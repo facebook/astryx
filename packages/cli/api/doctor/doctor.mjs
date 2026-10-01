@@ -34,8 +34,17 @@ import {
   docsIndexBytes,
   oversizedDocSections,
 } from '../../foundation/discovery/docs-output-budget.mjs';
-import {compileTopic, overlayLanguages} from '../docs/_adapter.mjs';
-import {detailView} from '../../foundation/doc-compiler/lenses.mjs';
+import {
+  builtinCatalog,
+  compileTopic,
+  docsLinkProblems,
+  guideEntry,
+  lowerTopic,
+  overlayLanguages,
+  projectTree,
+} from '../docs/_adapter.mjs';
+import {typedEdges} from '../docs/node/node.mjs';
+import {detailView, indexView} from '../../foundation/doc-compiler/lenses.mjs';
 import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
 
 /**
@@ -66,6 +75,8 @@ import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env
  *   `invalid_doc` issues from the project's contributed docs.
  * @property {string|null} [docsCatalogError] - Why the project's docs catalog
  *   could not be built, when it could not.
+ * @property {Array<{package: string, code: string, severity: 'warning'|'error', message: string}>|null} [integrationIssues]
+ *   Combined project-level integration issues, including cross-package template replacement warnings.
  * @property {Error|null} [configError] - Error thrown while resolving the config
  *   path (e.g. multiple config files present), surfaced by checkConfig as a FAIL.
  */
@@ -585,7 +596,45 @@ export function checkPeerDeps(ctx) {
 }
 
 /**
- * Check 9 — report the detected package manager, and say so when the project's
+ * Summarize the combined integration graph, including cross-package warnings.
+ * @param {DoctorContext} ctx
+ * @returns {DoctorCheck}
+ */
+export function checkIntegrationIssues(ctx) {
+  const issues = ctx.integrationIssues;
+  if (issues == null) {
+    return {
+      id: 'integration-issues',
+      label: 'Integration contributions',
+      status: 'info',
+      message: 'Skipped — the project integration graph could not be loaded.',
+    };
+  }
+  if (issues.length === 0) {
+    return {
+      id: 'integration-issues',
+      label: 'Integration contributions',
+      status: 'pass',
+      message: 'Integration contributions and cross-package relationships are valid.',
+    };
+  }
+  const errors = issues.filter(issue => issue.severity === 'error').length;
+  const details = issues
+    .map(issue => `${issue.package}: ${issue.message}`)
+    .join(' | ');
+  // This check is new, so it warns: a project that passed before keeps
+  // passing (spec:AST-046 FR8). `astryx doctor integration` fails on errors.
+  return {
+    id: 'integration-issues',
+    label: 'Integration contributions',
+    status: 'warn',
+    message: `${issues.length} integration issue(s)${errors > 0 ? `, ${errors} of them errors` : ''}: ${details}`,
+    fix: 'Run `astryx doctor integration` for package-specific diagnostics and resolve cross-package precedence in astryx.config.',
+  };
+}
+
+/**
+ * Check 10 — report the detected package manager, and say so when the project's
  * own declaration disagrees with what is on disk.
  *
  * Two states are worth surfacing rather than guessing past, because in both the
@@ -721,38 +770,144 @@ function joinProblems(problems) {
     : `${problems.length} problems: ${problems.join('; ')}`;
 }
 
+/** How the self-doc audit's problems are fixed. */
+const AUTHORING_DOCS_FIX =
+  'List every authoring self-doc in AUTHORING_SELF_DOCS, fix the one that fails to load, and split a section that is too large.';
+
+/** How the public-surface audit's problems are fixed. */
+const AUTHORING_SURFACE_FIX =
+  'Put a self-doc beside each module whose types @astryxdesign/cli/authoring exports and list it in AUTHORING_SELF_DOCS; export what each listed self-doc documents, or remove that self-doc.';
+
+/** Types one problem names before it counts the rest. */
+const NAMED_TYPES = 40;
+
+/**
+ * @param {string[]} names
+ * @returns {string}
+ */
+function nameTypes(names) {
+  return names.length <= NAMED_TYPES
+    ? names.join(', ')
+    : `${names.slice(0, NAMED_TYPES).join(', ')} and ${names.length - NAMED_TYPES} more`;
+}
+
+/**
+ * The section keys `astryx docs authoring --index` lists, read the way that
+ * command reads them.
+ * @returns {Promise<{keys: Set<string>} | {keys: null, error: string}>}
+ */
+async function authoringTopicKeys() {
+  try {
+    const catalog = DocsCatalog.fromBuiltins();
+    const entry = catalog.resolve('authoring');
+    if (!entry) return {keys: null, error: 'it is not a built-in topic'};
+    const index = indexView(await lowerTopic(catalog, entry));
+    return {keys: new Set(index.sections.map(section => section.id))};
+  } catch (err) {
+    return {
+      keys: null,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
+/**
+ * @param {Awaited<ReturnType<typeof import('../../foundation/discovery/authoring-surface.mjs').auditAuthoringSurface>>} surface
+ * @returns {string[]}
+ */
+function surfaceProblems(surface) {
+  /** @type {string[]} */
+  const problems = [];
+  if (surface.types === 0 && surface.untraced.length === 0) {
+    problems.push(
+      '@astryxdesign/cli/authoring exports no types, so nothing was compared with `astryx docs authoring`',
+    );
+  }
+  for (const {module, names, reason, source, key} of surface.unreadable) {
+    const why =
+      reason === 'no-self-doc'
+        ? `no self-doc sits beside ${module}`
+        : reason === 'unregistered'
+          ? `${source} is not listed in AUTHORING_SELF_DOCS`
+          : reason === 'failed'
+            ? `${source} does not load`
+            : `${source} renders section "${key}", which the topic's index does not list`;
+    problems.push(
+      `${nameTypes(names)} from ${module} ${names.length === 1 ? 'has' : 'have'} no doc in \`astryx docs authoring\`: ${why}`,
+    );
+  }
+  for (const {name, reason} of surface.untraced) {
+    problems.push(
+      `${name} cannot be traced to the module that declares it: ${reason}`,
+    );
+  }
+  for (const {source, subject} of surface.unmatched) {
+    problems.push(
+      subject
+        ? `${source} documents ${subject}, which @astryxdesign/cli/authoring does not export`
+        : `${source} documents no type @astryxdesign/cli/authoring exports`,
+    );
+  }
+  return problems;
+}
+
 /**
  * Every authoring self-doc is reachable from `astryx docs authoring`, loads,
- * and fits in one read. The audit is imported here, inside the try, so a
- * malformed self-doc is reported rather than taking Doctor down.
+ * and fits in one read, and every type `@astryxdesign/cli/authoring` exports
+ * has its doc there: the self-doc beside the module that declares it. The
+ * audits are imported here, inside the try, so a malformed self-doc is
+ * reported rather than taking Doctor down.
  * @param {DoctorContext} [_ctx]
+ * @param {{root?: string, sources?: string[], topicKeys?: Set<string> | null}} [options]
+ *   Another authoring tree, list, or topic index to audit (for tests).
  * @returns {Promise<DoctorCheck>}
  */
-export async function checkAuthoringDocs(_ctx) {
+export async function checkAuthoringDocs(_ctx, options = {}) {
   const id = 'authoring-docs';
   const label = 'Authoring docs';
   try {
-    const {auditAuthoringSelfDocs} = await import(
-      '../../foundation/discovery/authoring-self-docs.mjs'
-    );
-    const audit = await auditAuthoringSelfDocs();
+    const {auditAuthoringSelfDocs} =
+      await import('../../foundation/discovery/authoring-self-docs.mjs');
+    const {auditAuthoringSurface} =
+      await import('../../foundation/discovery/authoring-surface.mjs');
+    const {root, sources} = options;
+    const audit = await auditAuthoringSelfDocs({root, sources});
     const problems = [
       ...audit.unreachable.map(
         source => `${source} is not in \`astryx docs authoring\``,
       ),
-      ...audit.failed.map(({source, error}) => `${source} failed to load: ${error}`),
+      ...audit.failed.map(
+        ({source, error}) => `${source} failed to load: ${error}`,
+      ),
       ...audit.oversized.map(
         ({key, bytes}) =>
           `authoring section "${key}" is ${kilobytes(bytes)}, over the ${kilobytes(DOC_OUTPUT_BUDGET_BYTES)} one read may return`,
       ),
     ];
-    if (problems.length > 0) {
+    const topic =
+      options.topicKeys === undefined
+        ? await authoringTopicKeys()
+        : {keys: options.topicKeys};
+    const surface = [
+      ...('error' in topic
+        ? [`\`astryx docs authoring\` could not be read: ${topic.error}`]
+        : []),
+      ...surfaceProblems(
+        await auditAuthoringSurface({root, sources, topicKeys: topic.keys}),
+      ),
+    ];
+    if (problems.length + surface.length > 0) {
       return {
         id,
         label,
         status: 'fail',
-        message: joinProblems(problems),
-        fix: 'List every authoring self-doc in AUTHORING_SELF_DOCS, fix the one that fails to load, and split a section that is too large.',
+        message: joinProblems([...problems, ...surface]),
+        fix: [
+          problems.length > 0 ? AUTHORING_DOCS_FIX : null,
+          surface.length > 0 ? AUTHORING_SURFACE_FIX : null,
+        ]
+          .filter(Boolean)
+          .join(' '),
       };
     }
     return {
@@ -767,6 +922,153 @@ export async function checkAuthoringDocs(_ctx) {
       label,
       status: 'fail',
       message: `The authoring docs could not be audited: ${err instanceof Error ? err.message : String(err)}`,
+      fix: 'Reinstall @astryxdesign/cli.',
+    };
+  }
+}
+
+/** How the CLI-docs audit's problems are fixed. */
+const CLI_DOCS_FIX =
+  "Set `namespace` on each CLI doc to the one that reads it: cli/commands for a command, cli/api for an API function or the output schema, error codes, and response types, and authoring for a file an author writes (and list it in AUTHORING_SELF_DOCS).";
+
+/** How the docs-tree check's problems are fixed. */
+const DOCS_TREE_FIX =
+  'Fix each placement, adoption rule, or link the message names: a placement names a namespace of its own package, one of its slots, and a slot that accepts its kind; exactly one namespace adopts each doc; every route belongs to one doc; every link names a doc that exists, as `[<provider>:]<kind>:<name>`.';
+
+/**
+ * Every command, API function, schema, and enum doc the CLI ships declares a
+ * namespace, and something reads it: the docs tree under `astryx docs cli`
+ * for `cli/commands` and `cli/api`, `astryx docs authoring` for `authoring`.
+ * @param {DoctorContext | Partial<DoctorContext>} _ctx
+ * @param {{root?: string, sources?: string[], authoringSources?: string[]}} [options]
+ *   test seams: the CLI root, the docs to audit, and the authoring topic's list
+ * @returns {Promise<DoctorCheck>}
+ */
+export async function checkCliDocs(_ctx, options = {}) {
+  const id = 'cli-docs';
+  const label = 'CLI docs';
+  try {
+    const {auditCliSelfDocs} =
+      await import('../../foundation/discovery/cli-self-docs.mjs');
+    const audit = await auditCliSelfDocs(options);
+    const problems = [
+      ...audit.missing.map(
+        source =>
+          `${source} has no namespace, so no \`astryx docs\` topic reads it`,
+      ),
+      ...audit.unknown.map(
+        ({source, namespace}) =>
+          `${source} has namespace "${namespace}", which no \`astryx docs\` topic reads`,
+      ),
+      ...audit.misfiled.map(({message}) => message),
+      ...audit.failed.map(
+        ({source, error}) => `${source} failed to load: ${error}`,
+      ),
+      ...audit.oversized.map(
+        ({key, bytes}) =>
+          `CLI doc "${key}" is ${kilobytes(bytes)}, over the ${kilobytes(DOC_OUTPUT_BUDGET_BYTES)} one read may return`,
+      ),
+    ];
+    if (problems.length > 0) {
+      return {
+        id,
+        label,
+        status: 'fail',
+        message: joinProblems(problems),
+        fix: CLI_DOCS_FIX,
+      };
+    }
+    return {
+      id,
+      label,
+      status: 'pass',
+      message: `All ${audit.docs} CLI docs are readable: ${audit.tree} in the \`astryx docs cli\` tree and ${audit.authoring} in \`astryx docs authoring\`.`,
+    };
+  } catch (err) {
+    return {
+      id,
+      label,
+      status: 'fail',
+      message: `The CLI docs could not be audited: ${err instanceof Error ? err.message : String(err)}`,
+      fix: 'Reinstall @astryxdesign/cli.',
+    };
+  }
+}
+
+/**
+ * The docs tree builds with no error, and every CLI typed doc in a `cli/...`
+ * group has a route in it (spec:AST-046): each placement names a namespace of
+ * its own package and a slot that accepts it, exactly one namespace adopts
+ * each doc, and each route belongs to one doc.
+ * @param {DoctorContext | Partial<DoctorContext>} _ctx
+ * @param {{tree?: import('../../foundation/doc-compiler/tree.mjs').DocsTree}} [options]
+ *   test seam: a tree to check instead of the CLI's own
+ * @returns {Promise<DoctorCheck>}
+ */
+export async function checkDocsTree(_ctx, options = {}) {
+  const id = 'docs-tree';
+  const label = 'Docs tree';
+  try {
+    const catalog =
+      /** @type {any} */ (_ctx)?.docsCatalog ?? builtinCatalog();
+    const tree = options.tree ?? (await projectTree(catalog, {fresh: true}));
+    const problems = tree.diagnostics
+      .filter(d => d.severity === 'error')
+      .map(d => `${d.source ?? d.provider ?? 'docs tree'}: ${d.message}`);
+    if (options.tree === undefined) {
+      const {loadCliSelfDocs, CLI_DOC_NAMESPACES} =
+        await import('../../foundation/discovery/cli-self-docs.mjs');
+      const placed = new Set(
+        [...tree.nodes.values()].map(
+          node => `${node.provider}\u0000${node.kind}\u0000${node.name}`,
+        ),
+      );
+      for (const {source, doc} of (await loadCliSelfDocs()).loaded) {
+        if (CLI_DOC_NAMESPACES[doc.namespace]?.reader !== 'tree') continue;
+        if (!placed.has(`@astryxdesign/cli\u0000${doc.type}\u0000${doc.name}`)) {
+          problems.push(
+            `${source} has namespace "${doc.namespace}", but no docs-tree namespace adopts it`,
+          );
+        }
+      }
+      // Every link between docs names a doc that exists (spec:AST-047 FR9):
+      // typed fields, reference and workflow blocks, and inline links. A
+      // reference block also includes all it names.
+      for (const node of tree.nodes.values()) {
+        for (const edge of typedEdges(tree, node).unresolved) {
+          problems.push(`${node.route}: ${edge}`);
+        }
+      }
+      problems.push(...(await docsLinkProblems(catalog, tree)));
+      problems.push(
+        ...(await docsLinkProblems(catalog, tree, {references: true})),
+      );
+    }
+    // New findings warn: a project that passed before keeps passing
+    // (0.6 compatibility), and the warning names what to fix.
+    if (problems.length > 0) {
+      return {
+        id,
+        label,
+        status: 'warn',
+        message: joinProblems(problems),
+        fix: DOCS_TREE_FIX,
+      };
+    }
+    const nodes = [...tree.nodes.values()];
+    const namespaces = nodes.filter(node => node.kind === 'namespace').length;
+    return {
+      id,
+      label,
+      status: 'pass',
+      message: `The docs tree has ${nodes.length - namespaces} docs in ${namespaces} sections (${tree.roots().length} at the top), each at one route.`,
+    };
+  } catch (err) {
+    return {
+      id,
+      label,
+      status: 'warn',
+      message: `The docs tree could not be built: ${err instanceof Error ? err.message : String(err)}`,
       fix: 'Reinstall @astryxdesign/cli.',
     };
   }
@@ -794,7 +1096,13 @@ export async function checkDocsProgressiveDisclosure(ctx) {
   let topics = 0;
   const catalog = ctx.docsCatalog;
   if (catalog) {
-    for (const entry of catalog.entries()) {
+    // A guide the docs tree places is a topic read by its route; it is held
+    // to the same budget as every flat topic.
+    const guides = [...(await projectTree(catalog)).nodes.values()]
+      // A flat topic in the Unorganized level is checked above, as a topic.
+      .filter(node => node.kind === 'generic' && !node.ref?.flatTopic)
+      .map(guideEntry);
+    for (const entry of [...catalog.entries(), ...guides]) {
       for (const lang of [null, ...overlayLanguages(entry)]) {
         const where = lang ? `${entry.name} [${lang}]` : entry.name;
         try {
@@ -823,7 +1131,7 @@ export async function checkDocsProgressiveDisclosure(ctx) {
     return {
       id,
       label,
-      status: 'fail',
+      status: 'warn',
       message: joinProblems(problems),
       fix: 'Fix the doc each problem names; split a section that is too large into smaller ones, each with its own key.',
     };
@@ -848,6 +1156,7 @@ export const SYNC_CHECKS = [
   checkThemes,
   checkImplicitIntegrations,
   checkProviderIdentity,
+  checkIntegrationIssues,
   checkAgentDocs,
   checkPeerDeps,
   checkPackageManager,
@@ -887,6 +1196,8 @@ export async function runChecks(options = {}) {
   let docsCatalogIssues = [];
   /** @type {string|null} */
   let docsCatalogError = null;
+  /** @type {Array<{package: string, code: string, severity: 'warning'|'error', message: string}>|null} */
+  let integrationIssues = null;
   try {
     const project = await Project.load(cwd);
     configTheme =
@@ -901,6 +1212,7 @@ export async function runChecks(options = {}) {
       docsCatalog = null;
       docsCatalogError = err instanceof Error ? err.message : String(err);
     }
+    integrationIssues = await project.issues();
   } catch {
     // Best-effort: a missing/invalid config leaves configTheme null.
   }
@@ -916,6 +1228,7 @@ export async function runChecks(options = {}) {
     docsCatalog,
     docsCatalogIssues,
     docsCatalogError,
+    integrationIssues,
     configError,
   };
 
@@ -929,6 +1242,8 @@ export async function runChecks(options = {}) {
     }
   }
   checks.push(await checkAuthoringDocs(ctx));
+  checks.push(await checkCliDocs(ctx));
+  checks.push(await checkDocsTree(ctx));
   checks.push(await checkDocsProgressiveDisclosure(ctx));
 
   const summary = {pass: 0, warn: 0, fail: 0, info: 0};

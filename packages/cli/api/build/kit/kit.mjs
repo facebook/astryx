@@ -1,44 +1,57 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file build.kit leaf — the grouped composition kit and raw match count.
+ * @file build.kit leaf — the page template to start from, and the kit around it.
  *
- * Runs the unified search for the query and groups the results into a
- * composition KIT: the closest page templates, the blocks that cover parts,
- * and the domain components to fill gaps, plus the always-on frame + foundation.
+ * Every kit names a page template to START from: the page the page ranker
+ * (rank.mjs) puts first when it has the evidence to lead, else the app shell.
+ * The ranker is the only thing that picks the start, so one noisy signal —
+ * search matching "site" to a gallery's "side" — cannot choose the page. A
+ * template carries the page frame, the spacing, and the section rhythm; a page
+ * composed from components carries none of that, so the kit never recommends
+ * composing from scratch while a template exists. Next to the start it names
+ * the ranker's next two templates, then groups the unified search into the
+ * blocks that cover parts and the domain components to fill gaps, plus the
+ * always-on frame + foundation names. `pages` and `directMatch` keep search's
+ * own view for callers that read them.
  *
  * The kit carries RAW `SearchResultEntry` objects and static name arrays only —
  * never pre-formatted command strings. All CLI prefixing (formatCliCommand /
  * getCliInvocation) and the section prose live in the command renderer, so the
  * JSON shape stays package-manager-agnostic and stable across environments.
  *
- * The one adjustment it makes is on a page's `command`: when the top page is
- * not a direct match the kit appends `--skeleton`, so the field agrees with
- * the recommendation the kit itself computed. That is still not prefixing —
+ * Two commands are the kit's own: `start.command`, the scaffold (`astryx
+ * template <id> --type page <path>`, with `<path>` a placeholder), and the `--skeleton`
+ * a page entry carries when it is not a direct match, so a loose page reads
+ * as a layout preview rather than the thing to build. Neither is prefixing —
  * the invocation stays the renderer's job.
  */
 
 import {search} from '../../search/search.mjs';
 import {getResultCoverage} from '../../search/coverage.mjs';
+import {loadPageTemplates} from '../_adapter.mjs';
+import {pickAlternatives, pickStart, rankPages} from './rank.mjs';
 
 /** A page at/above this score is a confident direct match. */
 const PAGE_DIRECT = 95;
-/** Below this a page is too weak to offer even as a layout reference. */
+/** Below this a page is too weak to offer at all. */
 const PAGE_FLOOR = 50;
-/** Below this a block/domain-component match is incidental noise. */
-const DOMAIN_FLOOR = 55;
 /**
- * How much of a multi-word query a result must cover to be offered as a PAGE.
+ * Below this a block/domain-component match is incidental noise. A single
+ * description word in a multi-word idea scores 50 plus at most 7.5 of coverage
+ * garnish, so it stays below; a name or keyword hit clears it. `build "weekly
+ * brief"` used to offer Toast, Popover and TextInput because their
+ * descriptions say "brief".
+ */
+const DOMAIN_FLOOR = 60;
+/**
+ * How much of a multi-word query a page must cover to be offered on breadth.
  *
- * Score alone cannot carry this. A page's keywords include every component its
- * source renders, so `build "actionable warning banner"` scored `login`,
- * `contact-form` and `documentation-design` at 95 apiece — an exact keyword hit
- * (90) on "banner" alone, plus the coverage garnish, lands exactly on
- * PAGE_DIRECT. Three pages that are not warnings, presented as a direct match,
- * because each happens to render a Banner somewhere.
- *
- * Coverage has to gate rather than garnish: matching one of three concepts is
- * not the same claim as matching three.
+ * Score alone cannot carry this. A page's derived keywords include every
+ * component its source renders, so `build "actionable warning banner"` once
+ * scored `login`, `contact-form` and `documentation-design` at 95 apiece — an
+ * exact hit on "banner" alone, plus the coverage garnish. Matching one of
+ * three concepts is not the same claim as matching three.
  */
 const PAGE_COVERAGE = 0.5;
 /**
@@ -50,12 +63,21 @@ const PAGE_COVERAGE = 0.5;
  * Astryx contains, which is exactly the failure `build` exists to prevent.
  */
 const THIN_KIT = 3;
+/**
+ * Where a page starts when no page template matched: the first of these the
+ * project can scaffold. A top nav over empty, full-width content is the least
+ * opinionated frame that still has navigation; `blank` is the floor, with no
+ * chrome at all. Either one still hands the reader a page frame and its
+ * padding, which composing from components does not.
+ */
+const FALLBACK_STARTS = ['shell-top-nav', 'blank'];
 
 /**
  * Always-surfaced primitives. Every page needs a shell + layout/typography/
  * action atoms, but these never keyword-match an idea ("dashboard" != "Stack"),
  * so search alone never returns them. Kept here (not the renderer) because they
  * are ALSO used to exclude these names from the idea-specific `domain` group.
+ * Every page template already uses them.
  */
 const FRAME = ['AppShell', 'TopNav', 'SideNav', 'Layout'];
 const FOUNDATION = [
@@ -75,7 +97,90 @@ const FOUNDATION = [
 const ALWAYS = new Set([...FRAME, ...FOUNDATION]);
 
 /**
- * The grouped composition kit for what you're building.
+ * @typedef {import('../../search/search.type.mjs').SearchResultEntry} SearchResultEntry
+ * @typedef {import('../build.type.mjs').BuildStart} BuildStart
+ * @typedef {import('../_adapter.mjs').PageTemplate} PageTemplate
+ */
+
+/**
+ * A page template as the kit names it: the command that selects exactly that
+ * template, scaffolding into `<path>`, a placeholder for the file or folder to
+ * write it to.
+ * @param {PageTemplate} t
+ */
+const asTemplate = t => ({
+  name: t.name,
+  displayName: t.displayName,
+  description: t.description,
+  command: `${t.command} <path>`,
+});
+
+/**
+ * The template to start from: the ready page the ranker puts first when it
+ * has the evidence to lead, else the first fallback shell the project can
+ * scaffold. Null only when the project has no page template to offer at all.
+ *
+ * `direct` means two independent signals agree: the ranker's pick is also
+ * search's direct match. The ranker sees only ready templates, so a template
+ * still marked not ready is never the start; when search matched one directly
+ * the reason names it, so the reader knows why the kit starts elsewhere.
+ *
+ * @param {import('./rank.mjs').RankedPage[]} ranked
+ * @param {SearchResultEntry[]} pages
+ * @param {boolean} directMatch
+ * @param {PageTemplate[]} catalog
+ * @returns {Omit<BuildStart, 'alternatives'> | null}
+ */
+function chooseStart(ranked, pages, directMatch, catalog) {
+  const direct = directMatch ? pages[0].name : null;
+  const unready =
+    direct && !catalog.some(t => t.name === direct) ? direct : null;
+  // The reason never denies a match the same response reports: a direct
+  // match the ranker outweighed is named, and so are the loose page matches
+  // search listed when the kit falls back to the shell.
+  const loose = pages.map(p => `\`${p.name}\``).join(', ');
+  const pick = pickStart(ranked);
+  const closest = pick && catalog.find(t => t.name === pick.name);
+  if (closest) {
+    const agrees = closest.name === direct;
+    return {
+      ...asTemplate(closest),
+      basis: agrees ? 'direct' : 'closest',
+      reason: agrees
+        ? 'Matches the idea.'
+        : unready
+          ? `\`${unready}\` matches but is not ready yet; this is the closest ready template.`
+          : direct
+            ? `Search matched \`${direct}\` by name, but this template fits more of the idea.`
+            : 'The closest template; none is exactly this page.',
+    };
+  }
+  for (const id of FALLBACK_STARTS) {
+    const shell = catalog.find(t => t.name === id);
+    if (shell) {
+      // The shell can also be the ranker's best guess without the evidence to
+      // lead ("horizontal site navigation"); say so rather than "no match".
+      const nearest = ranked[0]?.name === shell.name && ranked[0].hits > 0;
+      return {
+        ...asTemplate(shell),
+        basis: 'fallback',
+        reason: unready
+          ? `\`${unready}\` matches but is not ready yet, so start from the app shell.`
+          : direct
+            ? `Search matched \`${direct}\` by name, but too little of the idea fits it, so start from the app shell.`
+            : nearest
+              ? 'No template is a clear match; the app shell is the closest.'
+              : loose
+                ? `Search matched ${loose} only loosely, so start from the app shell.`
+                : 'No template matched, so start from the app shell.',
+      };
+    }
+  }
+  return null;
+}
+
+/**
+ * The page template to start from, and the kit around it.
  *
  * @param {string} query what you're building (e.g. "analytics dashboard")
  * @param {{cwd?: string, type?: import('../../search/search.type.mjs').SearchDomain, limit?: number}} [options]
@@ -98,7 +203,7 @@ export async function buildKit(query, options = {}) {
   const matchCount = result.data.matchCount;
 
   /**
-   * Did this result answer enough of the query to stand as a page?
+   * Did this result answer enough of the query to stand as a page on breadth?
    * Single-concept queries have nothing to cover, so they always pass. Coverage
    * stays in a module-private WeakMap and never enters public search/build JSON.
    * @param {object} r
@@ -110,7 +215,7 @@ export async function buildKit(query, options = {}) {
     return (coverage?.matched ?? 0) / total >= PAGE_COVERAGE;
   };
 
-  const pages = results
+  const matchedPages = results
     .filter(
       r =>
         r.domain === 'template' &&
@@ -135,32 +240,42 @@ export async function buildKit(query, options = {}) {
         !ALWAYS.has(r.name),
     )
     .slice(0, 6);
-  const directMatch = pages.length > 0 && pages[0].score >= PAGE_DIRECT;
+  const directMatch =
+    matchedPages.length > 0 && matchedPages[0].score >= PAGE_DIRECT;
 
   /**
-   * On a loose match, recommend reading the layout rather than scaffolding it.
-   *
-   * A page entry's `command` is what a caller runs next, and it was always the
-   * scaffold command — `template <name>` — even when the kit had just decided
-   * the top page was NOT a direct match. The renderer already says the right
-   * thing to a human in that case: RECOMMENDED START prints
-   * `template <name> --skeleton` and the PAGE TEMPLATES heading reads "use as
-   * a layout reference". But prose is not what a program reads. A JSON caller
-   * takes `command` and gets the scaffold, so the two audiences were given
-   * opposite advice from the same kit.
-   *
-   * That matters most for the caller least able to notice. `template <name>`
-   * emits the whole page, and an agent handed a full template it did not quite
-   * ask for tends to adapt it anyway — which is how a request for one thing
-   * comes back as a competent version of another. `--skeleton` gives the
-   * layout without the invitation.
-   *
-   * Copied rather than mutated: these entries come from `search()` and are not
-   * this function's to modify.
+   * On a loose match, a page entry's `command` previews the layout rather
+   * than printing the whole template: `--skeleton` gives the shape without
+   * presenting the page as the thing to build. The recommendation itself is
+   * `start`, which always scaffolds. Copied rather than mutated: these entries
+   * come from `search()` and are not this function's to modify.
    */
-  const recommendedPages = directMatch
-    ? pages
-    : pages.map(page => ({...page, command: `${page.command} --skeleton`}));
+  const pages = directMatch
+    ? matchedPages
+    : matchedPages.map(page => ({
+        ...page,
+        command: `${page.command} --skeleton`,
+      }));
+
+  // A kit narrowed to components or hooks has no page to start from; every
+  // other kit does, so the reader is never left to compose a page from scratch.
+  const wantsPages = !type || type === 'template';
+  const catalog = wantsPages ? await loadPageTemplates(cwd) : [];
+  const ranked = wantsPages ? rankPages(query, catalog) : [];
+  const chosen = wantsPages
+    ? chooseStart(ranked, matchedPages, directMatch, catalog)
+    : null;
+  // Name the ranker's next two templates beside the start: the reader judges
+  // meaning better than keywords do, and an acceptable template is in these
+  // three far more often than it is the start alone.
+  /** @type {BuildStart | null} */
+  const start = chosen && {
+    ...chosen,
+    alternatives: pickAlternatives(ranked, chosen.name).flatMap(r => {
+      const t = catalog.find(c => c.name === r.name);
+      return t ? [asTemplate(t)] : [];
+    }),
+  };
 
   // What to try when the kit comes back thin. Keyword search over a design
   // system misses in a predictable way — the reader's words and the package's
@@ -185,12 +300,13 @@ export async function buildKit(query, options = {}) {
     type: 'build.kit',
     data: {
       query: result.data.query,
-      // Distinguishes "search found nothing" (renderer shows "No matches")
-      // from a weak-but-non-empty result set (renderer still shows the kit).
+      // Distinguishes "search found nothing" from a weak-but-non-empty result
+      // set. Either way the kit still names a template to start from.
       hasResults: matchCount > 0,
       matchCount,
       directMatch,
-      pages: recommendedPages,
+      start,
+      pages,
       blocks,
       domain,
       frame: FRAME,

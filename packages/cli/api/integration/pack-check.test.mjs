@@ -53,25 +53,10 @@ function writePackage({
       "import {defineTheme} from '@astryxdesign/core/theme';\n\nexport const oceanTheme = defineTheme({name: 'ocean'});\n",
     );
     fs.writeFileSync(
-      path.join(root, 'manifest.json'),
-      JSON.stringify(
-        {
-          version: 1,
-          themes: [
-            {
-              slug: 'ocean',
-              displayName: 'Ocean',
-              description: 'Ocean theme.',
-              maintained: true,
-              entry: 'oceanTheme.ts',
-              exportName: 'oceanTheme',
-              files: ['oceanTheme.ts'],
-            },
-          ],
-        },
-        null,
-        2,
-      ) + '\n',
+      path.join(root, 'ocean', 'oceanTheme.doc.mjs'),
+      `/** @type {import('@astryxdesign/cli/authoring').ThemeDoc} */
+export default {type: 'theme', name: 'ocean', displayName: 'Ocean', description: 'Ocean theme.', maintained: true};
+`,
     );
   }
   if (components) {
@@ -109,7 +94,7 @@ describe('integrationPackCheck', () => {
     );
   });
 
-  it('fails when a theme entry omits its catalog export', async () => {
+  it('fails when a theme entry omits its inferred runtime export', async () => {
     writePackage({files: ['astryx.integration.mjs', 'themes']});
     fs.writeFileSync(
       path.join(tmpDir, 'themes', 'ocean', 'oceanTheme.ts'),
@@ -129,18 +114,11 @@ describe('integrationPackCheck', () => {
     );
   });
 
-  it('fails when a theme imports a file omitted from its catalog', async () => {
+  it('fails when a theme imports a missing local file', async () => {
     writePackage({files: ['astryx.integration.mjs', 'themes']});
-    fs.mkdirSync(path.join(tmpDir, 'themes', 'ocean', 'tokens'), {
-      recursive: true,
-    });
     fs.writeFileSync(
       path.join(tmpDir, 'themes', 'ocean', 'oceanTheme.ts'),
       "import {oceanPalette} from './tokens/ocean.palette';\nexport const oceanTheme = {oceanPalette};\n",
-    );
-    fs.writeFileSync(
-      path.join(tmpDir, 'themes', 'ocean', 'tokens', 'ocean.palette.ts'),
-      'export const oceanPalette = {};\n',
     );
 
     const result = await integrationPackCheck({cwd: tmpDir});
@@ -150,7 +128,7 @@ describe('integrationPackCheck', () => {
       expect.objectContaining({
         code: 'invalid_theme',
         message: expect.stringContaining(
-          'must resolve to a listed file inside the theme directory',
+          'must resolve to a file inside the theme directory',
         ),
       }),
     );
@@ -231,7 +209,7 @@ describe('integrationPackCheck', () => {
     );
     fs.mkdirSync(path.join(tmpDir, 'templates'));
     fs.writeFileSync(
-      path.join(tmpDir, 'templates', 'account-page.template.mjs'),
+      path.join(tmpDir, 'templates', 'account-page.doc.mjs'),
       "export default {type: 'page', name: 'Account page', description: 'Account page.'};\n",
     );
     fs.writeFileSync(
@@ -302,6 +280,93 @@ describe('integrationPackCheck', () => {
     expect(fileErrors.length).toBeGreaterThan(0);
   });
 
+  it('fails a package that ships a namespace doc on a CLI range that cannot read it', async () => {
+    writePackage({manifest: "export default {docs: './docs'};\n", themes: false});
+    fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'acme.doc.mjs'),
+      "export default {type: 'namespace', name: 'acme', title: 'Acme', summary: 'Acme guides.', slots: {guides: {title: 'Guides', accepts: {kinds: ['generic']}}}};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'deploying.doc.mjs'),
+      "export default {type: 'generic', name: 'deploying', title: 'Deploying', description: 'Ship it.', placement: {parent: 'namespace:acme', slot: 'guides'}, sections: [{title: 'Overview', content: [{type: 'prose', text: 'Ship it.'}]}]};\n",
+    );
+    const file = path.join(tmpDir, 'package.json');
+    const peer = (/** @type {string | undefined} */ range) => {
+      const pkg = JSON.parse(fs.readFileSync(file, 'utf-8'));
+      if (range == null) delete pkg.peerDependencies;
+      else pkg.peerDependencies = {'@astryxdesign/cli': range};
+      fs.writeFileSync(file, `${JSON.stringify(pkg, null, 2)}\n`);
+    };
+    const codes = async () =>
+      (await integrationPackCheck({cwd: tmpDir})).data.issues.map(
+        (/** @type {{code: string}} */ issue) => issue.code,
+      );
+
+    peer(undefined);
+    expect(await codes()).toContain('docs_tree_needs_cli');
+    peer('^0.6.0 || >=0.7.0');
+    expect(await codes()).toContain('docs_tree_needs_cli');
+    peer('>=0.7.0');
+    expect(await codes()).not.toContain('docs_tree_needs_cli');
+  }, 120_000);
+
+  it('fails a package with only a placed guide on a CLI range that cannot read the docs tree, and passes flat topics', async () => {
+    writePackage({manifest: "export default {docs: './docs'};\n", themes: false});
+    fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'notes.doc.mjs'),
+      "export default {type: 'generic', name: 'notes', title: 'Notes', description: 'Notes.', sections: [{title: 'Overview', content: [{type: 'prose', text: 'Notes.'}]}]};\n",
+    );
+    const codes = async () =>
+      (await integrationPackCheck({cwd: tmpDir})).data.issues.map(
+        (/** @type {{code: string}} */ issue) => issue.code,
+      );
+    // Flat topics alone need no CLI peer.
+    expect(await codes()).not.toContain('docs_tree_needs_cli');
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'setup.doc.mjs'),
+      "export default {type: 'generic', name: 'setup', title: 'Setup', description: 'Set up.', placement: {parent: 'namespace:acme', slot: 'guides'}, sections: [{title: 'Overview', content: [{type: 'prose', text: 'Set up.'}]}]};\n",
+    );
+    expect(await codes()).toContain('docs_tree_needs_cli');
+    const file = path.join(tmpDir, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(file, 'utf-8'));
+    pkg.peerDependencies = {'@astryxdesign/cli': '>=0.7.0'};
+    fs.writeFileSync(file, `${JSON.stringify(pkg, null, 2)}\n`);
+    expect(await codes()).not.toContain('docs_tree_needs_cli');
+  }, 120_000);
+
+  it('fails a package with a template that sets replaces on a CLI range that rejects the field', async () => {
+    writePackage({manifest: "export default {templates: './templates'};\n", themes: false});
+    fs.mkdirSync(path.join(tmpDir, 'templates'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, 'templates', 'acme-shell.doc.mjs'),
+      "export default {type: 'page', name: 'acme-shell', description: 'Acme shell.', replaces: 'shell-side-nav'};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'templates', 'acme-shell.tsx'),
+      'export default function AcmeShell() { return null; }\n',
+    );
+    const file = path.join(tmpDir, 'package.json');
+    const peer = (/** @type {string | undefined} */ range) => {
+      const pkg = JSON.parse(fs.readFileSync(file, 'utf-8'));
+      if (range == null) delete pkg.peerDependencies;
+      else pkg.peerDependencies = {'@astryxdesign/cli': range};
+      fs.writeFileSync(file, `${JSON.stringify(pkg, null, 2)}\n`);
+    };
+    const codes = async () =>
+      (await integrationPackCheck({cwd: tmpDir})).data.issues.map(
+        (/** @type {{code: string}} */ issue) => issue.code,
+      );
+
+    peer(undefined);
+    expect(await codes()).toContain('replaces_needs_cli');
+    peer('^0.6.0');
+    expect(await codes()).toContain('replaces_needs_cli');
+    peer('>=0.7.0');
+    expect(await codes()).not.toContain('replaces_needs_cli');
+  }, 120_000);
+
   it('passes when package.json has no files field', async () => {
     writePackage({files: undefined});
     const result = await integrationPackCheck({cwd: tmpDir});
@@ -310,14 +375,48 @@ describe('integrationPackCheck', () => {
     expect(result.data.packable).toBe(true);
   });
 
+  it('detects a lifecycle script that changes packed template replacements', async () => {
+    const script = [
+      "const fs=require('fs')",
+      "const p='templates/acme-shell.template.mjs'",
+      "const s=fs.readFileSync(p,'utf8')",
+      "fs.writeFileSync(p,s.replace('shell-side-nav','shell-top-nav'))",
+    ].join(';');
+    writePackage({
+      manifest: "export default {templates: './templates'};\n",
+      files: ['astryx.integration.mjs', 'templates'],
+      themes: false,
+      scripts: {prepack: `node -e "${script}"`},
+    });
+    fs.mkdirSync(path.join(tmpDir, 'templates'));
+    fs.writeFileSync(
+      path.join(tmpDir, 'templates', 'acme-shell.template.mjs'),
+      "export default {type: 'page', name: 'Acme shell', description: 'Fixture.', replaces: 'shell-side-nav'};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'templates', 'acme-shell.tsx'),
+      'export default function AcmeShell() { return null; }\n',
+    );
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    expect(result.data.packable).toBe(false);
+    expect(result.data.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'identity_mismatch',
+        message: expect.stringContaining('acme-shell'),
+      }),
+    );
+  });
+
   it('detects a lifecycle script that changes the packed identity', async () => {
     const script = [
       "const fs=require('fs')",
       "fs.renameSync('themes/ocean','themes/storm')",
-      "const p='themes/manifest.json'",
-      'const x=JSON.parse(fs.readFileSync(p))',
-      "x.themes[0].slug='storm'",
-      'fs.writeFileSync(p,JSON.stringify(x))',
+      "const p='themes/storm/oceanTheme.doc.mjs'",
+      "let x=fs.readFileSync(p,'utf8')",
+      "x=x.replace(/name: 'ocean'/, 'name: '+String.fromCharCode(39)+'storm'+String.fromCharCode(39))",
+      'fs.writeFileSync(p,x)',
     ].join(';');
     writePackage({
       files: ['astryx.integration.mjs', 'themes'],
@@ -513,23 +612,15 @@ describe('integrationPackCheck', () => {
 });
 
 describe('pack-check mutation tests', () => {
-  it('detects when a theme file is deleted after initial add', async () => {
+  it('detects when a theme source is deleted after initial authoring', async () => {
     writePackage({files: ['astryx.integration.mjs', 'themes']});
-
-    // Write a second theme file then delete it — catalog still references it
-    const catalog = JSON.parse(
-      fs.readFileSync(path.join(tmpDir, 'themes', 'manifest.json'), 'utf-8'),
-    );
-    catalog.themes[0].files.push('tokens.ts');
-    fs.writeFileSync(
-      path.join(tmpDir, 'themes', 'manifest.json'),
-      JSON.stringify(catalog, null, 2) + '\n',
-    );
-    // tokens.ts doesn't exist on disk → will be in inventory but not on disk
-    // (Phase 1 catches this; the file won't be in the pack list either)
+    fs.rmSync(path.join(tmpDir, 'themes', 'ocean', 'oceanTheme.ts'));
 
     const result = await integrationPackCheck({cwd: tmpDir});
     expect(result.data.packable).toBe(false);
+    expect(result.data.issues).toContainEqual(
+      expect.objectContaining({code: 'invalid_theme'}),
+    );
   });
 
   it('detects when files[] is narrowed after add removes themes', async () => {

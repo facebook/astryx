@@ -177,8 +177,9 @@ const itemStyles = stylex.create({
   // paddingBlock `link` sets above, which shrank the button crumbs to 20px
   // against their sibling links' 28px.
   buttonReset: {
-    background: 'none',
-    border: 'none',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderStyle: 'none',
     paddingInline: 0,
     margin: 0,
     font: 'inherit',

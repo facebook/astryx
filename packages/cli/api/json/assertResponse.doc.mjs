@@ -11,6 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'assertResponse',
+  namespace: 'cli/api',
   displayName: 'assertResponse()',
   summary:
     'Parse and assert one expected response type, throwing on an error or a mismatch.',

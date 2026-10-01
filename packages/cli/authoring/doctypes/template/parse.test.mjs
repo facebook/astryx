@@ -22,6 +22,24 @@ function reason(value, label = 'template') {
 }
 
 describe('parseTemplate (load boundary)', () => {
+  it('accepts replaces on page and block templates', () => {
+    for (const type of ['page', 'block']) {
+      const parsed = parseTemplate({
+        type,
+        name: 'Acme shell',
+        description: 'Replaces a Core template.',
+        replaces: 'shell-side-nav',
+      });
+      expect(parsed.replaces).toBe('shell-side-nav');
+    }
+  });
+
+  it('rejects an empty replaces', () => {
+    expect(reason({type: 'page', name: 'Acme shell', replaces: ''})).toMatch(
+      /replaces must name a Core template id/,
+    );
+  });
+
   it('accepts a stamped page template', () => {
     const parsed = parseTemplate({
       type: 'page',

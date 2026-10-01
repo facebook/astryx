@@ -1,5 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file Guard PR reporting, preview staging, and remaining Pages writers.
+ * @input Workflow definitions plus the docsite builder and PR reconciler.
+ * @output Node tests that keep exact-head Vercel links and visual evidence
+ *   separate from the remaining Pages publisher until its migration is proven.
+ * @position Repository workflow contract tests.
+ */
+
 import {execFileSync} from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -80,7 +88,7 @@ describe('PR report and deployment workflow contracts', () => {
       'reconcileEarlyPreviewComment',
     );
     expect(jobs.resolve.if).toContain("github.event_name == 'workflow_run'");
-    expect(jobs.comment.needs).toEqual(['resolve', 'deploy-preview']);
+    expect(jobs.comment.needs).toBe('resolve');
     expect(jobs.comment.permissions.deployments).toBe('read');
   });
 
@@ -147,7 +155,7 @@ describe('PR report and deployment workflow contracts', () => {
     );
   });
 
-  it('hosts only Storybook on Vercel and preserves Sandbox Pages publication', () => {
+  it('stages both static apps in Vercel preview and production', () => {
     const config = JSON.parse(
       fs.readFileSync(path.join(ROOT, 'apps/docsite/vercel.json'), 'utf8'),
     );
@@ -161,85 +169,82 @@ describe('PR report and deployment workflow contracts', () => {
       path.join(ROOT, 'apps/docsite/scripts/build-previews.mjs'),
       'utf8',
     );
-    expect(builder).toContain("deploymentEnv !== 'preview'");
-    expect(builder).toContain('buildStorybookPreview(deploymentEnv, root');
-    expect(builder).not.toContain("'@astryxdesign/sandbox'");
-    const comment = workflow('pr-comment.yml');
-    expect(comment).toContain('uses: ./.github/workflows/deploy-preview.yml');
-    expect(comment).toContain('preview-deployment-');
-    expect(comment).toContain('deployments: read');
-    expect(workflow('deploy-preview.yml')).not.toContain(
-      '--storybook storybook-dist',
-    );
-    expect(workflow('redeploy-preview.yml')).not.toContain(
-      '--storybook storybook-dist',
-    );
-    expect(workflow('deploy-preview.yml')).toContain('--sandbox sandbox-dist');
-    expect(workflow('redeploy-preview.yml')).toContain(
-      '--sandbox sandbox-dist',
-    );
-    const publisher = fs.readFileSync(
-      path.join(ROOT, '.github/scripts/lib/gh-pages-publisher.mjs'),
+    expect(builder).toContain("new Set(['preview', 'production'])");
+    expect(builder).toContain('export function buildPreviews(');
+    expect(builder).toContain('VERCEL_GIT_COMMIT_SHA');
+    expect(builder).toContain("'@astryxdesign/storybook'");
+    expect(builder).toContain("'@astryxdesign/sandbox'");
+    expect(builder).toContain("SANDBOX_BASE_PATH: '/sandbox'");
+    const routing = fs.readFileSync(
+      path.join(ROOT, 'apps/docsite/next.config.mjs'),
       'utf8',
     );
-    expect(publisher).toContain("command === 'pr-preview'");
-    expect(publisher).toContain('Storybook previews are hosted on Vercel');
+    expect(routing).toContain("source: '/sandbox/:path+'");
+    expect(routing).toContain("destination: '/sandbox/:path+/index.html'");
+    const comment = workflow('pr-comment.yml');
+    expect(comment).toContain('deployments: read');
+    expect(comment).not.toContain('deploy-preview.yml');
+    expect(comment).not.toContain('gh-pages-publisher.mjs');
     const reconciler = fs.readFileSync(
       path.join(ROOT, '.github/scripts/lib/pr-preview.mjs'),
       'utf8',
     );
     expect(reconciler).toContain('resolveVercelPreview');
     expect(reconciler).toContain('`${previewOrigin}/storybook/`');
-    expect(reconciler).toContain('pagesURL(identity, sandboxPath)');
+    expect(reconciler).toContain('`${previewOrigin}/sandbox/`');
   });
 
-  it('defers full-tree cleanup and retains required visual evidence and stable-site writers', () => {
-    const cleanup = yaml.parse(workflow('cleanup-previews.yml'));
-    expect(cleanup.on.schedule).toEqual([{cron: '0 6 * * *'}]);
-    expect(cleanup.on.workflow_dispatch).toBeDefined();
-    expect(cleanup.on.workflow_run).toBeUndefined();
-    const stable = workflow('deploy.yml');
-    const pages = workflow('pages-deploy.yml');
-    expect(stable).toContain(
-      'gh-pages-publisher.mjs stable-site --source staged',
+  it('publishes only the static compatibility landing to GitHub Pages', () => {
+    const pages = yaml.parse(workflow('pages-deploy.yml'));
+    expect(pages.on.workflow_run).toBeUndefined();
+    expect(pages.on.push.branches).toEqual(['main']);
+    expect(pages.concurrency).toEqual({
+      group: 'github-pages-landing',
+      'cancel-in-progress': true,
+    });
+    expect(Object.keys(pages.jobs)).toEqual(['deploy']);
+    expect(pages.jobs.deploy.permissions).toEqual({
+      contents: 'read',
+      pages: 'write',
+      'id-token': 'write',
+    });
+    const page = fs.readFileSync(
+      path.join(ROOT, '.github/pages/index.html'),
+      'utf8',
     );
-    expect(pages).toContain("- 'Deploy'");
-    expect(pages).toContain("- 'PR Comment'");
-    expect(pages).toContain("- 'Re-deploy Preview'");
-    expect(pages).toContain(
-      "github.event.workflow_run.event == 'workflow_dispatch'",
-    );
-    expect(pages).toContain('actions/deploy-pages@v5');
-    expect(workflow('pr-comment.yml')).toContain(
-      'gh-pages-publisher.mjs immutable-path',
-    );
-    expect(workflow('ci.yml')).toContain(
-      'gh-pages-publisher.mjs visual-baseline-manual',
-    );
+    expect(page).toContain('https://astryx.atmeta.com/');
+    expect(page).toContain('https://astryx.atmeta.com/storybook/');
+    expect(page).toContain('https://astryx.atmeta.com/sandbox/');
+    expect(page).toContain('aria-label="Astryx destinations"');
+    expect(page).toContain(':focus-visible');
   });
 
-  it('retains the remaining Pages publishers behind the shared publisher', () => {
-    const files = [
+  it('keeps CI evidence while removing every branch-backed Pages publisher', () => {
+    for (const file of [
       '.github/workflows/deploy-preview.yml',
       '.github/workflows/redeploy-preview.yml',
       '.github/workflows/cleanup-previews.yml',
       '.github/workflows/compact-gh-pages.yml',
-      '.github/workflows/vibe-screenshots.yml',
+      '.github/scripts/gh-pages-publisher.mjs',
+      '.github/scripts/lib/gh-pages-publisher.mjs',
+      '.github/scripts/lib/gh-pages-publisher.test.mjs',
       'internal/vibe-tests/src/deploy-report.ts',
-    ];
-    const combined = files
-      .map(file => fs.readFileSync(path.join(ROOT, file), 'utf8'))
-      .join('\n');
-    expect(combined).toContain('gh-pages-publisher.mjs');
-    expect(combined).not.toContain('git push origin gh-pages');
-    expect(combined).not.toContain('ref: gh-pages');
-    for (const [file, job] of [
-      ['cleanup-previews.yml', 'cleanup'],
-      ['compact-gh-pages.yml', 'compact'],
-      ['vibe-screenshots.yml', 'deploy-screenshots'],
     ]) {
-      const permissions = yaml.parse(workflow(file)).jobs[job].permissions;
-      expect(permissions).toMatchObject({actions: 'read', contents: 'write'});
+      expect(fs.existsSync(path.join(ROOT, file))).toBe(false);
     }
+    const ci = workflow('ci.yml');
+    expect(ci).toContain('--baseline .github/visual-baseline');
+    expect(ci).toContain('name: visual-pr-report');
+    expect(ci).toContain('retention-days: 30');
+    expect(ci).not.toContain('gh-pages');
+    expect(workflow('vibe-screenshots.yml')).toContain(
+      'name: vibe-test-screenshots',
+    );
+    expect(workflow('vibe-screenshots.yml')).not.toContain('gh-pages');
+    const main = workflow('deploy.yml');
+    expect(main).toContain('name: Main');
+    expect(main).toContain('pnpm vitest run --project ui');
+    expect(main).not.toContain('deploy-storybook');
+    expect(main).not.toContain('gh-pages');
   });
 });

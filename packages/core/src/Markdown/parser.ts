@@ -945,6 +945,7 @@ function matchReferenceLink(
   start: number,
   linkDefs: ReadonlyMap<string, string>,
   opts: ResolvedOptions,
+  context: 'default' | 'tableCell',
 ): {
   node: MarkdownAstPhrasingContent<RuntimeExtensionNode>;
   end: number;
@@ -969,7 +970,11 @@ function matchReferenceLink(
           node: {
             type: 'link',
             url: href,
-            children: parseInlineImpl(linkText, protectedInlineOptions(opts)),
+            children: parseInlineImpl(
+              linkText,
+              protectedInlineOptions(opts),
+              context,
+            ),
           },
           end: labelClose + 1,
         };
@@ -990,7 +995,11 @@ function matchReferenceLink(
     node: {
       type: 'link',
       url: href,
-      children: parseInlineImpl(linkText, protectedInlineOptions(opts)),
+      children: parseInlineImpl(
+        linkText,
+        protectedInlineOptions(opts),
+        context,
+      ),
     },
     end: textClose + 1,
   };
@@ -1425,14 +1434,16 @@ function parseInlineAstRuntime(
 function parseInlineEntry(
   text: string,
   opts: ResolvedOptions,
+  context: 'default' | 'tableCell' = 'default',
 ): MarkdownAstPhrasingContent<RuntimeExtensionNode>[] {
-  const nodes = parseInlineImpl(text, opts);
+  const nodes = parseInlineImpl(text, opts, context);
   return opts.autolink === 'gfm' ? transformAutolinks(nodes) : nodes;
 }
 
 function parseInlineImpl(
   text: string,
   opts: ResolvedOptions,
+  context: 'default' | 'tableCell' = 'default',
 ): MarkdownAstPhrasingContent<RuntimeExtensionNode>[] {
   const nodes: MarkdownAstPhrasingContent<RuntimeExtensionNode>[] = [];
   // Only a plugin that actually contributes INLINE syntax may cost anything
@@ -1461,7 +1472,10 @@ function parseInlineImpl(
       if (closeIndex !== -1) {
         nodes.push({
           type: 'inlineCode',
-          value: text.slice(openIndex, closeIndex),
+          value:
+            context === 'tableCell'
+              ? text.slice(openIndex, closeIndex).replace(/\\\|/g, '|')
+              : text.slice(openIndex, closeIndex),
         });
         i = closeIndex + tickCount;
         continue;
@@ -1551,6 +1565,7 @@ function parseInlineImpl(
               children: parseInlineImpl(
                 text.slice(i + 1, textClose),
                 protectedInlineOptions(opts),
+                context,
               ),
             });
           }
@@ -1562,7 +1577,7 @@ function parseInlineImpl(
 
     // --- Reference link [text][label] / [text][] / [text] ---
     if (opts.linkDefs != null && text[i] === '[') {
-      const ref = matchReferenceLink(text, i, opts.linkDefs, opts);
+      const ref = matchReferenceLink(text, i, opts.linkDefs, opts, context);
       if (ref) {
         nodes.push(ref.node);
         i = ref.end;
@@ -1590,7 +1605,11 @@ function parseInlineImpl(
             children: [
               {
                 type: 'emphasis',
-                children: parseInlineImpl(text.slice(i + 3, closeIndex), opts),
+                children: parseInlineImpl(
+                  text.slice(i + 3, closeIndex),
+                  opts,
+                  context,
+                ),
               },
             ],
           });
@@ -1617,7 +1636,11 @@ function parseInlineImpl(
         ) {
           nodes.push({
             type: 'strong',
-            children: parseInlineImpl(text.slice(i + 2, closeIndex), opts),
+            children: parseInlineImpl(
+              text.slice(i + 2, closeIndex),
+              opts,
+              context,
+            ),
           });
           i = closeIndex + 2;
           continue;
@@ -1631,7 +1654,11 @@ function parseInlineImpl(
       if (closeIndex !== -1) {
         nodes.push({
           type: 'delete',
-          children: parseInlineImpl(text.slice(i + 2, closeIndex), opts),
+          children: parseInlineImpl(
+            text.slice(i + 2, closeIndex),
+            opts,
+            context,
+          ),
         });
         i = closeIndex + 2;
         continue;
@@ -1652,7 +1679,11 @@ function parseInlineImpl(
         ) {
           nodes.push({
             type: 'emphasis',
-            children: parseInlineImpl(text.slice(i + 1, closeIndex), opts),
+            children: parseInlineImpl(
+              text.slice(i + 1, closeIndex),
+              opts,
+              context,
+            ),
           });
           i = closeIndex + 1;
           continue;
@@ -2136,6 +2167,62 @@ function isBlockStart(line: string): boolean {
   return false;
 }
 
+/**
+ * A lazy continuation may omit an owning quote marker or list indentation only
+ * while the deepest open leaf is a paragraph. A blank line or an interrupting
+ * block start closes that opportunity.
+ */
+function canContinueParagraphLazily(
+  lines: ReadonlyArray<string>,
+  lineIndex: number,
+  insideList = false,
+): boolean {
+  const line = lines[lineIndex];
+  if (line == null || line.trim() === '') {
+    return false;
+  }
+  if (
+    /^#{1,6} /.test(line) ||
+    /^(`{3,}|~{3,})/.test(line) ||
+    isHorizontalRule(line) ||
+    line.startsWith('> ') ||
+    line === '>' ||
+    /^ {0,9}[-*+] /.test(line) ||
+    (insideList ? /^ {0,9}\d+[.)] /.test(line) : /^ {0,9}0*1[.)] /.test(line))
+  ) {
+    return false;
+  }
+  return !(
+    line.includes('|') &&
+    lineIndex + 1 < lines.length &&
+    isTableSeparator(lines[lineIndex + 1])
+  );
+}
+
+function endsInParagraph(
+  blocks: ReadonlyArray<MarkdownAstBlockContent<RuntimeExtensionNode>>,
+): boolean {
+  const last = blocks[blocks.length - 1];
+  if (last == null) {
+    return false;
+  }
+  if (last.type === 'paragraph') {
+    return true;
+  }
+  if (last.type === 'blockquote') {
+    return endsInParagraph(last.children);
+  }
+  if (last.type === 'list') {
+    const item = last.children[last.children.length - 1];
+    return item != null && endsInParagraph(item.children);
+  }
+  return false;
+}
+
+function sourceEndsInParagraph(source: string, opts: ResolvedOptions): boolean {
+  return endsInParagraph(parseMarkdownImpl(source, nested(opts)));
+}
+
 function splitTableRow(line: string): string[] {
   let start = 0;
   let end = line.length;
@@ -2182,7 +2269,10 @@ function parseTable(
 ): {node: MarkdownAstBlockContent<RuntimeExtensionNode>; nextIndex: number} {
   const headers: MarkdownAstTableCell<RuntimeExtensionNode>[] = splitTableRow(
     lines[lineIndex],
-  ).map(cell => ({type: 'tableCell', children: parseInlineEntry(cell, opts)}));
+  ).map(cell => ({
+    type: 'tableCell',
+    children: parseInlineEntry(cell, opts, 'tableCell'),
+  }));
   const alignments: TableAlignment[] = splitTableRow(lines[lineIndex + 1]).map(
     cell => {
       const trimmed = cell.trim();
@@ -2208,7 +2298,7 @@ function parseTable(
       type: 'tableRow',
       children: splitTableRow(lines[rowIndex]).map(cell => ({
         type: 'tableCell',
-        children: parseInlineEntry(cell, opts),
+        children: parseInlineEntry(cell, opts, 'tableCell'),
       })),
     });
     rowIndex++;
@@ -2227,11 +2317,36 @@ function parseTable(
   };
 }
 
+function listItemSource(
+  itemText: string,
+  subLines: ReadonlyArray<string>,
+  lazyLineIndexes: ReadonlySet<number>,
+): string {
+  if (subLines.length === 0) {
+    return itemText;
+  }
+  const nonBlankIndents = subLines
+    .filter((line, index) => line.trim() !== '' && !lazyLineIndexes.has(index))
+    .map(getIndent);
+  const minSubIndent =
+    nonBlankIndents.length === 0 ? 0 : Math.min(...nonBlankIndents);
+  return `${itemText}\n${subLines
+    .map((line, index) =>
+      line.trim() === ''
+        ? ''
+        : line.slice(
+            lazyLineIndexes.has(index) ? getIndent(line) : minSubIndent,
+          ),
+    )
+    .join('\n')}`;
+}
+
 function parseList(
   lines: string[],
   startIndex: number,
   ordered: boolean,
   opts: ResolvedOptions,
+  interruptsLazyContinuation: (lineIndex: number) => boolean,
 ): {node: MarkdownAstBlockContent<RuntimeExtensionNode>; nextIndex: number} {
   const items: MarkdownAstListItem<RuntimeExtensionNode>[] = [];
   const baseIndent = getIndent(lines[startIndex]);
@@ -2268,29 +2383,58 @@ function parseList(
 
     index++;
 
-    // Collect sub-content (nested items or continuation lines)
+    // Collect sub-content. Lines indented past the marker remain ordinary
+    // nested content. A less-indented nonblank line can still belong to the
+    // item when the deepest open leaf is a paragraph: CommonMark's lazy
+    // continuation rule permits deleting some or all of that indentation.
     const subLines: string[] = [];
-    while (
-      index < lines.length &&
-      lines[index].trim() !== '' &&
-      getIndent(lines[index]) > baseIndent
-    ) {
+    const lazyLineIndexes = new Set<number>();
+    let lazyParagraphOpen: boolean | undefined = canContinueParagraphLazily(
+      [itemText],
+      0,
+      true,
+    )
+      ? true
+      : undefined;
+    while (index < lines.length && lines[index].trim() !== '') {
+      if (getIndent(lines[index]) > baseIndent) {
+        subLines.push(lines[index]);
+        if (
+          lazyParagraphOpen === true &&
+          !canContinueParagraphLazily([lines[index].trimStart()], 0)
+        ) {
+          lazyParagraphOpen = undefined;
+        }
+        index++;
+        continue;
+      }
+
+      if (
+        interruptsLazyContinuation(index) ||
+        !canContinueParagraphLazily(lines, index, true)
+      ) {
+        break;
+      }
+      if (lazyParagraphOpen === undefined) {
+        lazyParagraphOpen = sourceEndsInParagraph(
+          listItemSource(itemText, subLines, lazyLineIndexes),
+          opts,
+        );
+      }
+      if (!lazyParagraphOpen) {
+        break;
+      }
+      lazyLineIndexes.add(subLines.length);
       subLines.push(lines[index]);
       index++;
     }
 
-    if (subLines.length > 0) {
-      const minSubIndent = Math.min(
-        ...subLines.map(subLine => getIndent(subLine)),
-      );
-      const deindented = subLines.map(subLine => subLine.slice(minSubIndent));
-      itemText += '\n' + deindented.join('\n');
-    }
+    const source = listItemSource(itemText, subLines, lazyLineIndexes);
 
     items.push({
       type: 'listItem',
       checked,
-      children: parseMarkdownImpl(itemText, nested(opts)),
+      children: parseMarkdownImpl(source, nested(opts)),
     });
 
     // CommonMark loose list: blank line(s) between items of the same style
@@ -2447,6 +2591,27 @@ function parseMarkdownImpl(
     }
   }
   const blockExtensionMatches = new Map<number, ExtensionMatch>();
+  const interruptsWithBlockExtension = (lineIndex: number): boolean => {
+    if (!hasBlockExtensionSyntax) {
+      return false;
+    }
+    const extensionColumn = blockExtensionColumn(lines[lineIndex]);
+    if (extensionColumn == null) {
+      return false;
+    }
+    const extensionOffset = lineOffsets[lineIndex] + extensionColumn;
+    const extension = matchExtensionSyntax(
+      cleaned,
+      extensionOffset,
+      'block',
+      opts,
+    );
+    if (extension.status === 'none') {
+      return false;
+    }
+    blockExtensionMatches.set(extensionOffset, extension);
+    return true;
+  };
   const blocks: MarkdownAstBlockContent<RuntimeExtensionNode>[] = [];
   // The line each block started on, parallel to `blocks`. Only collected when
   // ranges were asked for; a block's end is resolved after the loop, since the
@@ -2573,11 +2738,41 @@ function parseMarkdownImpl(
     // --- Blockquote ---
     if (line.startsWith('> ') || line === '>') {
       const quoteLines: string[] = [];
-      while (
-        index < lines.length &&
-        (lines[index].startsWith('> ') || lines[index] === '>')
-      ) {
-        quoteLines.push(lines[index].replace(/^> ?/, ''));
+      let lazyParagraphOpen: boolean | undefined;
+      while (index < lines.length) {
+        const quoteLine = lines[index];
+        if (quoteLine.startsWith('> ') || quoteLine === '>') {
+          const content = quoteLine.replace(/^> ?/, '');
+          quoteLines.push(content);
+          if (content.trim() === '') {
+            lazyParagraphOpen = false;
+          } else if (
+            lazyParagraphOpen === false ||
+            (lazyParagraphOpen === true &&
+              !canContinueParagraphLazily([content], 0))
+          ) {
+            lazyParagraphOpen = undefined;
+          }
+          index++;
+          continue;
+        }
+        if (
+          quoteLines[quoteLines.length - 1]?.trim() === '' ||
+          interruptsWithBlockExtension(index) ||
+          !canContinueParagraphLazily(lines, index)
+        ) {
+          break;
+        }
+        if (lazyParagraphOpen === undefined) {
+          lazyParagraphOpen = sourceEndsInParagraph(
+            quoteLines.join('\n'),
+            opts,
+          );
+        }
+        if (!lazyParagraphOpen) {
+          break;
+        }
+        quoteLines.push(quoteLine);
         index++;
       }
       pushBlock({
@@ -2589,7 +2784,13 @@ function parseMarkdownImpl(
 
     // --- Unordered list ---
     if (/^ {0,9}[-*+] /.test(line)) {
-      const listResult = parseList(lines, index, false, opts);
+      const listResult = parseList(
+        lines,
+        index,
+        false,
+        opts,
+        interruptsWithBlockExtension,
+      );
       pushBlock(listResult.node);
       index = listResult.nextIndex;
       continue;
@@ -2597,7 +2798,13 @@ function parseMarkdownImpl(
 
     // --- Ordered list ---
     if (/^ {0,9}\d+[.)] /.test(line)) {
-      const listResult = parseList(lines, index, true, opts);
+      const listResult = parseList(
+        lines,
+        index,
+        true,
+        opts,
+        interruptsWithBlockExtension,
+      );
       pushBlock(listResult.node);
       index = listResult.nextIndex;
       continue;
@@ -2660,21 +2867,8 @@ function parseMarkdownImpl(
       ) {
         break;
       }
-      if (hasBlockExtensionSyntax) {
-        const extensionColumn = blockExtensionColumn(nextLine);
-        if (extensionColumn != null) {
-          const extensionOffset = lineOffsets[index] + extensionColumn;
-          const extension = matchExtensionSyntax(
-            cleaned,
-            extensionOffset,
-            'block',
-            opts,
-          );
-          if (extension.status !== 'none') {
-            blockExtensionMatches.set(extensionOffset, extension);
-            break;
-          }
-        }
+      if (interruptsWithBlockExtension(index)) {
+        break;
       }
       paraLines.push(nextLine);
       index++;

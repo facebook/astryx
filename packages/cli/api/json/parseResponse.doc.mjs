@@ -11,6 +11,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'parseResponse',
+  namespace: 'cli/api',
   displayName: 'parseResponse()',
   summary: 'Parse `astryx --json` stdout into the structural response envelope.',
   description:

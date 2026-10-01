@@ -30,6 +30,17 @@ describe('docs.detail.section leaf', () => {
     }
     expect(err).toBeInstanceOf(AstryxError);
     expect(err.code).toBe('ERR_UNKNOWN_SECTION');
+    expect(err.suggestions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: expect.any(String),
+          reason: 'available section',
+        }),
+      ]),
+    );
+    expect(err.suggestions.some(suggestion => /\s/u.test(suggestion.name))).toBe(
+      true,
+    );
   }, SLOW);
 
   it('does not return the first section for an empty section name', async () => {
@@ -50,12 +61,10 @@ describe('docs.detail.section leaf', () => {
     expect(res.data.id).toBe(target.id);
   }, SLOW);
 
-  it('refuses a query that matches more than one section', async () => {
-    const err = await section('theme', 'e').catch(e => e);
-    expect(err).toBeInstanceOf(AstryxError);
-    expect(err.code).toBe('ERR_UNKNOWN_SECTION');
-    expect(err.message).toMatch(/matches \d+ sections/);
-    expect(err.suggestions.length).toBeGreaterThan(1);
+  it('keeps a previously accepted ambiguous query on its first match', async () => {
+    const res = await section('theme', 'e');
+    expect(res.type).toBe('docs.detail.section');
+    expect(res.data).toBeDefined();
   }, SLOW);
 
   it.each([null, 'zh', 'dense'])(

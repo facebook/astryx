@@ -112,6 +112,25 @@ describe('CheckboxInput', () => {
     expect(handleChange).toHaveBeenCalledWith(false, expect.any(Object));
   });
 
+  it('keeps a changeAction-only checkbox editable', async () => {
+    const user = userEvent.setup();
+    const changeAction = vi.fn();
+    render(
+      <CheckboxInput
+        label="Accept terms"
+        value={false}
+        changeAction={changeAction}
+      />,
+    );
+
+    const checkbox = screen.getByRole('checkbox');
+    expect(checkbox).not.toHaveAttribute('aria-readonly');
+    await user.click(checkbox);
+    await waitFor(() =>
+      expect(changeAction).toHaveBeenCalledWith(true, expect.any(Object)),
+    );
+  });
+
   it('works when clicking on the label', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
@@ -341,6 +360,19 @@ describe('CheckboxInput', () => {
 
     expect(container.textContent).toBe('Accept terms');
     expect(container.querySelector('.astryx-icon')).toBeInTheDocument();
+  });
+
+  it('renders custom labelIcon content', () => {
+    render(
+      <CheckboxInput
+        label="Accept terms"
+        value={false}
+        onChange={() => {}}
+        labelIcon={<span data-testid="custom-label-icon">Custom</span>}
+      />,
+    );
+
+    expect(screen.getByTestId('custom-label-icon')).toHaveTextContent('Custom');
   });
 
   it('renders the status message for an error', () => {

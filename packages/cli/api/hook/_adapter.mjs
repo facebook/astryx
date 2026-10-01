@@ -15,7 +15,10 @@
  */
 
 import {findCoreDir} from '../../foundation/fs/paths.mjs';
-import {findHookDoc, getAllHookNames} from '../../foundation/discovery/hook-discovery.mjs';
+import {
+  findHookDoc,
+  getAllHookNames,
+} from '../../foundation/discovery/hook-discovery.mjs';
 import {loadDocs} from '../../foundation/discovery/component-loader.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {AstryxError} from '../error.mjs';
@@ -30,7 +33,11 @@ import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 export function resolveCoreDir(cwd) {
   const coreDir = findCoreDir(cwd);
   if (!coreDir) {
-    throw new AstryxError('Could not find @astryxdesign/core package', undefined, ERROR_CODES.ERR_CORE_NOT_FOUND);
+    throw new AstryxError(
+      'Could not find @astryxdesign/core package',
+      undefined,
+      ERROR_CODES.ERR_CORE_NOT_FOUND,
+    );
   }
   return coreDir;
 }
@@ -44,7 +51,11 @@ export function resolveCoreDir(cwd) {
  * @param {{zh?: boolean, lang?: string|null}} [opts]
  * @returns {Promise<import('./hook.type.mjs').HookDoc>}
  */
-export async function resolveHookDoc(coreDir, name, {zh = false, lang = null} = {}) {
+export async function resolveHookDoc(
+  coreDir,
+  name,
+  {zh = false, lang = null} = {},
+) {
   const docPath = findHookDoc(coreDir, name);
 
   if (!docPath) {
@@ -59,7 +70,10 @@ export async function resolveHookDoc(coreDir, name, {zh = false, lang = null} = 
       .filter(m => m.distance <= 5)
       .sort((a, b) => a.distance - b.distance)
       .slice(0, 5)
-      .map(m => ({name: m.name, reason: `similar name (distance ${m.distance})`}));
+      .map(m => ({
+        name: m.name,
+        reason: `similar name (distance ${m.distance})`,
+      }));
 
     throw new AstryxError(
       `No hook named "${name}"`,
@@ -68,5 +82,5 @@ export async function resolveHookDoc(coreDir, name, {zh = false, lang = null} = 
     );
   }
 
-  return loadDocs(docPath, /** @type {{zh?: boolean, dense?: boolean, lang?: string}} */ ({zh, lang}));
+  return loadDocs(docPath, {zh, lang, root: 'hooks'});
 }

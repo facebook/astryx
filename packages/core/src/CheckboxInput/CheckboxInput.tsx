@@ -342,7 +342,7 @@ export function CheckboxInput({
   });
 
   // The checkbox visual is an indicator: a theme can restyle it through the
-  // `checkbox` target or replace the component outright.
+  // canonical `checkbox-indicator` target or replace the component outright.
   const CheckboxControl = useIndicator('checkbox');
   // The ring is drawn on the indicator itself: the native input is
   // `opacity: 0`, and only the indicator's own element can shape the outline

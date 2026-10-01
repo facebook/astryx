@@ -106,7 +106,8 @@ const triggerStyles = stylex.create({
       default: 'transparent',
       ':focus': colorVars['--color-overlay-hover'],
     },
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     cursor: {
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',

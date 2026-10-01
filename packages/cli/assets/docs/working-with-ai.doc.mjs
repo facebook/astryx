@@ -66,14 +66,14 @@ npx @astryxdesign/cli init --features agents --agent muse      # AGENTS.md (Muse
           type: 'list',
           style: 'ordered',
           items: [
-            '`astryx template --list`: find a related page pattern to use as reference',
-            '`astryx template <name> --skeleton`: study the layout structure',
+            '`astryx build "<idea>"`: get the page template to start from (always one: the closest match, or the app shell), two other templates, and the blocks and components for the parts it lacks',
+            '`astryx template <name> <path>`: scaffold that template into the project, keep its frame and spacing, and replace its content',
             '`astryx component <Name>`: read props and examples for every component used',
           ],
         },
         {
           type: 'prose',
-          text: "It also includes rules that prevent common mistakes (no raw divs, no style={{}}, use tokens not magic values), a CLI quick reference, and package-labeled integration guidance when a configured manifest declares `agentDocs`. After setup, you shouldn't need to manually correct your AI on these conventions; the agent docs handle it at the system level.",
+          text: "It also includes rules that prevent common mistakes (start every page from a template, no raw divs, no style={{}}, use tokens not magic values), a CLI quick reference, and package-labeled integration guidance when a configured manifest declares `agentDocs`. After setup, you shouldn't need to manually correct your AI on these conventions; the agent docs handle it at the system level.",
         },
       ],
     },
