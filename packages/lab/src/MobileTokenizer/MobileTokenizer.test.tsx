@@ -183,6 +183,75 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
     expect(custom).toBeChecked();
   });
 
+  it('renders long lists in 50-item batches and resets the window for search', async () => {
+    const longItems: SearchableItem[] = Array.from(
+      {length: 120},
+      (_, index) => ({
+        id: `item-${index + 1}`,
+        label: `Item ${String(index + 1).padStart(3, '0')}`,
+      }),
+    );
+    const longSource: SearchSource<SearchableItem> = {
+      bootstrap: () => longItems,
+      search: query =>
+        longItems.filter(item =>
+          item.label.toLowerCase().includes(query.toLowerCase()),
+        ),
+    };
+    render(
+      <MobileTokenizer
+        label="Items"
+        searchSource={longSource}
+        value={[]}
+        onChange={() => {}}
+        maxMenuItems={120}
+        debounceMs={0}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', {name: 'Items'}));
+    const list = await screen.findByTestId('mobile-tokenizer-list');
+    await waitFor(() => {
+      expect(list).toHaveAttribute('data-rendered-count', '50');
+      expect(list).toHaveAttribute('data-total-count', '120');
+    });
+    expect(screen.getAllByRole('checkbox')).toHaveLength(50);
+    expect(
+      screen.queryByRole('checkbox', {name: 'Item 051'}),
+    ).not.toBeInTheDocument();
+
+    Object.defineProperties(list, {
+      clientHeight: {configurable: true, value: 600},
+      scrollHeight: {configurable: true, value: 2400},
+      scrollTop: {configurable: true, value: 1700, writable: true},
+    });
+    fireEvent.scroll(list);
+    expect(list).toHaveAttribute('data-rendered-count', '100');
+    expect(screen.getAllByRole('checkbox')).toHaveLength(100);
+    expect(
+      screen.getByRole('checkbox', {name: 'Item 100'}),
+    ).toBeInTheDocument();
+
+    Object.defineProperties(list, {
+      scrollHeight: {configurable: true, value: 4400},
+      scrollTop: {
+        configurable: true,
+        value: 3600,
+        writable: true,
+      },
+    });
+    fireEvent.scroll(list);
+    expect(list).toHaveAttribute('data-rendered-count', '120');
+    expect(screen.getAllByRole('checkbox')).toHaveLength(120);
+
+    fireEvent.change(screen.getByLabelText('Search Items'), {
+      target: {value: 'Item'},
+    });
+    await waitFor(() =>
+      expect(list).toHaveAttribute('data-rendered-count', '50'),
+    );
+    expect(screen.getAllByRole('checkbox')).toHaveLength(50);
+  });
+
   it('searches within the same sheet and centers the no-results state', async () => {
     render(<Harness />);
     fireEvent.click(screen.getByRole('button', {name: /Tags/}));

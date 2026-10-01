@@ -8,7 +8,7 @@
  *   BottomSheet, BottomSheetSwitcher, Button, CheckboxInput, EmptyState, Field,
  *   Icon, Text, TextInput, Token)
  * @output Exports MobileTokenizer — Lab prototype of the touch Tokenizer
- *   flow (single searchable management sheet)
+ *   flow with a single searchable sheet and progressive long-list rendering
  * @position Lab (canary) stack layer 1: validates the design before the
  *   Core promotion (Tokenizer presentation="bottom-sheet").
  *
@@ -77,6 +77,8 @@ export interface MobileTokenizerProps<T extends SearchableItem> extends Omit<
 
 type SheetId = 'manage';
 const CREATABLE_ID_PREFIX = '__xds_create__';
+const LIST_RENDER_BATCH_SIZE = 50;
+const LIST_LOAD_MORE_THRESHOLD_PX = 200;
 
 function ListBulletIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -245,7 +247,11 @@ export function MobileTokenizer<T extends SearchableItem>({
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<T[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [renderedItemCount, setRenderedItemCount] = useState(
+    LIST_RENDER_BATCH_SIZE,
+  );
   const seqRef = useRef(0);
+  const lastLoadScrollHeightRef = useRef<number | null>(null);
   const isSheetOpen = activeSheet === 'manage';
   useEffect(() => {
     if (!isSheetOpen) {
@@ -305,6 +311,8 @@ export function MobileTokenizer<T extends SearchableItem>({
     ];
   }, [query, results, value]);
 
+  const renderedItems = visibleItems.slice(0, renderedItemCount);
+
   const createItem = useMemo<T | null>(() => {
     const trimmed = query.trim();
     if (!hasCreate || trimmed === '' || isAtMax) {
@@ -338,7 +346,11 @@ export function MobileTokenizer<T extends SearchableItem>({
         aria-expanded={activeSheet != null}
         aria-label={label}
         disabled={isDisabled}
-        onClick={() => setActiveSheet('manage')}
+        onClick={() => {
+          lastLoadScrollHeightRef.current = null;
+          setRenderedItemCount(LIST_RENDER_BATCH_SIZE);
+          setActiveSheet('manage');
+        }}
         {...stylex.props(styles.trigger)}>
         {value.length > 0 ? (
           value.map(item => (
@@ -368,6 +380,7 @@ export function MobileTokenizer<T extends SearchableItem>({
                   width="100%"
                   hasClear
                   onChange={next => {
+                    setRenderedItemCount(LIST_RENDER_BATCH_SIZE);
                     setQuery(next);
                     onChangeQuery?.(next);
                   }}
@@ -378,7 +391,26 @@ export function MobileTokenizer<T extends SearchableItem>({
                 {...stylex.props(styles.list)}
                 role="group"
                 aria-label={label}
-                data-testid="mobile-tokenizer-list">
+                data-testid="mobile-tokenizer-list"
+                data-rendered-count={renderedItems.length}
+                data-total-count={visibleItems.length}
+                onScroll={event => {
+                  const list = event.currentTarget;
+                  const distanceFromBottom =
+                    list.scrollHeight - list.scrollTop - list.clientHeight;
+                  if (
+                    distanceFromBottom <= LIST_LOAD_MORE_THRESHOLD_PX &&
+                    lastLoadScrollHeightRef.current !== list.scrollHeight
+                  ) {
+                    lastLoadScrollHeightRef.current = list.scrollHeight;
+                    setRenderedItemCount(current =>
+                      Math.min(
+                        current + LIST_RENDER_BATCH_SIZE,
+                        visibleItems.length,
+                      ),
+                    );
+                  }
+                }}>
                 {createItem != null && (
                   <div
                     data-testid="mobile-tokenizer-create-row"
@@ -393,6 +425,7 @@ export function MobileTokenizer<T extends SearchableItem>({
                       size="lg"
                       onClick={() => {
                         handleAdd(createItem);
+                        setRenderedItemCount(LIST_RENDER_BATCH_SIZE);
                         setQuery('');
                       }}
                     />
@@ -423,7 +456,7 @@ export function MobileTokenizer<T extends SearchableItem>({
                     xstyle={styles.empty}
                   />
                 ) : (
-                  visibleItems.map(item => {
+                  renderedItems.map(item => {
                     const isSelected = selectedIds.has(item.id);
                     const rowDisabled = !isSelected && isAtMax;
                     return (
