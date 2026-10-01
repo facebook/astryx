@@ -2311,4 +2311,81 @@ describe('DropdownMenu press model', () => {
     expect(menu).toHaveClass(hash(touchStyles.none));
     expect(menu).not.toHaveClass(hash(touchStyles.panY));
   });
+
+  it('a mouse press on the trigger opens the menu and a drag-release acts on the row under it', () => {
+    const onPick = vi.fn();
+    const trigger = renderMenu(onPick);
+    fireEvent.pointerDown(trigger, mouse);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
+
+    fireEvent.pointerMove(item('Duplicate'), mouse);
+    expect(item('Duplicate')).toHaveFocus();
+    fireEvent.pointerUp(item('Duplicate'), mouse);
+    expect(onPick).toHaveBeenCalledTimes(1);
+    expect(onPick).toHaveBeenCalledWith('Duplicate');
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+  });
+
+  it('the opening release before the settle time acts on nothing and the menu stays', () => {
+    vi.useFakeTimers();
+    try {
+      const onPick = vi.fn();
+      const trigger = renderMenu(onPick);
+      fireEvent.pointerDown(trigger, mouse);
+      fireEvent.pointerUp(trigger, mouse);
+      fireEvent.click(trigger, {detail: 1});
+      expect(onPick).not.toHaveBeenCalled();
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      expect(HTMLElement.prototype.hidePopover).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('pressing the trigger of an open menu closes it and does not reopen it in the same gesture', () => {
+    const trigger = renderMenu();
+    fireEvent.pointerDown(trigger, mouse);
+    fireEvent.pointerUp(trigger, mouse);
+    fireEvent.click(trigger, {detail: 1});
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.pointerDown(trigger, mouse);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.pointerUp(trigger, mouse);
+    fireEvent.click(trigger, {detail: 1});
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
+  });
+
+  it('a held touch on the trigger opens with the finger down and a slide picks', () => {
+    vi.useFakeTimers();
+    try {
+      const onPick = vi.fn();
+      const trigger = renderMenu(onPick);
+      fireEvent.pointerDown(trigger, touch);
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      fireEvent.pointerMove(item('Delete'), touch);
+      expect(item('Delete')).toHaveFocus();
+      fireEvent.pointerUp(item('Delete'), touch);
+      expect(onPick).toHaveBeenCalledWith('Delete');
+      // The click the browser aims at the trigger for this gesture is spent.
+      fireEvent.click(trigger, {detail: 1});
+      expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a tap on the trigger still opens through its click', () => {
+    const trigger = renderMenu();
+    fireEvent.pointerDown(trigger, touch);
+    fireEvent.pointerUp(trigger, touch);
+    fireEvent.click(trigger, {detail: 1});
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
 });

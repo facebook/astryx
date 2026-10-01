@@ -3,14 +3,14 @@
 /**
  * @file menuPressGesture.test.ts
  * @input vitest, the pure menuPressStep machine
- * @output One test per transition of the press-model state diagram (a press
- *   inside the menu; the trigger states have their own suite)
+ * @output One test per transition of the press-model state diagram
  * @position Testing; validates menuPressGesture.ts without a browser
  */
 
 import {describe, it, expect} from 'vitest';
 import {
   IDLE_MENU_PRESS,
+  MENU_PRESS_SETTLE_MS,
   menuPressStep,
   type MenuPressEvent,
   type MenuPressGesture,
@@ -32,7 +32,9 @@ function run(events: MenuPressEvent<Row>[]) {
 const downInMenu = (
   row: Row | null,
   pointerType: 'mouse' | 'touch' = 'touch',
-) => ({type: 'down', pointerType, row, time: 0}) as const;
+) => ({type: 'down', target: 'menu', pointerType, row, time: 0}) as const;
+const downOnTrigger = (pointerType: 'mouse' | 'touch', time = 0) =>
+  ({type: 'down', target: 'trigger', pointerType, row: null, time}) as const;
 const move = (row: Row | null, isInMenu = true, time = 10) =>
   ({type: 'move', row, isInMenu, time}) as const;
 const up = (
@@ -123,5 +125,123 @@ describe('menuPressStep — inside the menu', () => {
     expect(menuPressStep(IDLE_MENU_PRESS, up('A')).effect).toEqual({
       type: 'none',
     });
+  });
+});
+
+describe('menuPressStep — the trigger', () => {
+  it('Idle → Open: a mouse press on the trigger opens the menu at once', () => {
+    const {gesture, last} = run([downOnTrigger('mouse')]);
+    expect(gesture.phase).toBe('open');
+    expect(last).toEqual({type: 'open'});
+  });
+
+  it('Idle → TriggerPress: a finger on the trigger opens nothing yet', () => {
+    const {gesture, last} = run([downOnTrigger('touch')]);
+    expect(gesture.phase).toBe('triggerPress');
+    expect(last).toEqual({type: 'none'});
+  });
+
+  it('TriggerPress → Idle: a finger that lifts before the delay is a tap; the browser click opens the menu', () => {
+    const {gesture, last} = run([
+      downOnTrigger('touch'),
+      up(null, {isInMenu: false, isOnTrigger: true}),
+    ]);
+    expect(gesture.phase).toBe('idle');
+    expect(last).toEqual({type: 'settle', stray: false, dismiss: false});
+  });
+
+  it('TriggerPress → Open: the menu opens under a finger held for the delay', () => {
+    const {gesture, last} = run([
+      downOnTrigger('touch'),
+      {type: 'opened', time: 500},
+    ]);
+    expect(gesture.phase).toBe('open');
+    expect(last).toEqual({type: 'none'});
+  });
+
+  it('TriggerPress → Idle: a cancel before the delay ends the gesture quietly', () => {
+    const {gesture, last} = run([downOnTrigger('touch'), {type: 'cancel'}]);
+    expect(gesture.phase).toBe('idle');
+    expect(last).toEqual({type: 'none'});
+  });
+
+  it('Open → Tracking: the pointer moving onto the menu starts tracking from the trigger', () => {
+    const {gesture, last} = run([downOnTrigger('mouse'), move('A', true)]);
+    expect(gesture).toMatchObject({
+      phase: 'tracking',
+      origin: 'trigger',
+      row: 'A',
+    });
+    expect(last).toEqual({type: 'highlight', row: 'A'});
+  });
+
+  it('Open → Open: a move that stays outside the menu changes nothing', () => {
+    const {gesture, last} = run([downOnTrigger('mouse'), move(null, false)]);
+    expect(gesture.phase).toBe('open');
+    expect(last).toEqual({type: 'none'});
+  });
+
+  it('Open → Idle: the opening release before the settle time, without entering, acts on nothing and the menu stays', () => {
+    const {gesture, last} = run([
+      downOnTrigger('mouse', 0),
+      up(null, {
+        isInMenu: false,
+        isOnTrigger: true,
+        time: MENU_PRESS_SETTLE_MS - 1,
+      }),
+    ]);
+    expect(gesture.phase).toBe('idle');
+    expect(last).toEqual({type: 'settle', stray: true, dismiss: false});
+  });
+
+  it('Open → Acted: a drag from the trigger into the menu that releases over a row acts on it', () => {
+    const {last} = run([
+      downOnTrigger('mouse', 0),
+      move('B', true, 50),
+      up('B', {time: 60}),
+    ]);
+    expect(last).toEqual({type: 'act', row: 'B'});
+  });
+
+  it('Open → Acted: after the settle time the opening release acts on the row under it', () => {
+    const {last} = run([
+      downOnTrigger('mouse', 0),
+      up('A', {time: MENU_PRESS_SETTLE_MS}),
+    ]);
+    expect(last).toEqual({type: 'act', row: 'A'});
+  });
+
+  it('Open → Idle: releasing on the trigger after the settle time leaves the menu open', () => {
+    const {last} = run([
+      downOnTrigger('mouse', 0),
+      up(null, {
+        isInMenu: false,
+        isOnTrigger: true,
+        time: MENU_PRESS_SETTLE_MS,
+      }),
+    ]);
+    expect(last).toEqual({type: 'settle', stray: true, dismiss: false});
+  });
+
+  it('Open → Released → Idle: a settled mouse release outside dismisses; a finger leaves the menu open', () => {
+    expect(
+      run([
+        downOnTrigger('mouse', 0),
+        up(null, {isInMenu: false, time: MENU_PRESS_SETTLE_MS}),
+      ]).last,
+    ).toEqual({type: 'settle', stray: true, dismiss: true});
+    expect(
+      run([
+        downOnTrigger('touch', 0),
+        {type: 'opened', time: 500},
+        up(null, {isInMenu: false, time: 500 + MENU_PRESS_SETTLE_MS}),
+      ]).last,
+    ).toEqual({type: 'settle', stray: true, dismiss: false});
+  });
+
+  it('Open → Idle: a cancel while open ends the gesture and keeps the menu', () => {
+    const {gesture, last} = run([downOnTrigger('mouse'), {type: 'cancel'}]);
+    expect(gesture.phase).toBe('idle');
+    expect(last).toEqual({type: 'none'});
   });
 });

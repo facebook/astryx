@@ -4,8 +4,8 @@
  * @file useMenuPress.test.tsx
  * @input vitest, @testing-library/react, useMenuPress
  * @output Unit tests for the DOM half of the menu press model: tracking,
- *   highlight, activation, the stray-click swallower, dismissal and edge
- *   autoscroll
+ *   highlight, activation, the stray-click swallower, dismissal, the trigger
+ *   press and edge autoscroll
  * @position Testing; validates useMenuPress.ts. The transition table itself
  *   is covered by menuPressGesture.test.ts.
  */
@@ -15,10 +15,12 @@ import {act, fireEvent, render, screen} from '@testing-library/react';
 import {useRef, useState} from 'react';
 import {
   MENU_PRESS_AUTOSCROLL_ZONE_PX,
+  MENU_PRESS_LONG_PRESS_MS,
   MENU_PRESS_STRAY_CLICK_MS,
   __resetMenuPressForTest,
   useMenuPress,
 } from './useMenuPress';
+import {MENU_PRESS_SETTLE_MS} from './menuPressGesture';
 
 const ITEM_SELECTOR = '[role="menuitem"]:not([aria-disabled="true"])';
 
@@ -50,6 +52,14 @@ function Harness({
     menuRef,
     triggerRef,
     itemSelector: ITEM_SELECTOR,
+    onTriggerPress: () => {
+      if (isOpen) {
+        open(false);
+        return false;
+      }
+      open(true);
+      return true;
+    },
     onDismiss,
     hitTest,
     getScroller,
@@ -60,8 +70,14 @@ function Harness({
       <button
         type="button"
         ref={triggerRef}
+        {...press.triggerProps}
         aria-expanded={isOpen}
-        onClick={() => open(!isOpen)}>
+        onClick={() => {
+          if (press.isTriggerClickFromPress()) {
+            return;
+          }
+          open(!isOpen);
+        }}>
         Open
       </button>
       <div ref={menuRef} role="menu" tabIndex={-1} {...press.menuProps}>
@@ -313,7 +329,7 @@ describe('useMenuPress — release outside and cancellation', () => {
   });
 });
 
-describe('useMenuPress — the trigger and the marker', () => {
+describe('useMenuPress — the trigger', () => {
   it('a mouse released back on the trigger acts on nothing and leaves the menu open', () => {
     const onSelect = vi.fn();
     const onDismiss = vi.fn();
@@ -324,6 +340,119 @@ describe('useMenuPress — the trigger and the marker', () => {
     fireEvent.pointerUp(trigger, mouse());
     expect(onSelect).not.toHaveBeenCalled();
     expect(onDismiss).not.toHaveBeenCalled();
+  });
+
+  it('a mouse press on the trigger opens the menu, and that gesture’s click does not toggle it', () => {
+    const onOpenChange = vi.fn();
+    render(<Harness onOpenChange={onOpenChange} />);
+    const trigger = screen.getByRole('button', {name: 'Open'});
+    fireEvent.pointerDown(trigger, mouse());
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    fireEvent.pointerUp(trigger, mouse());
+    fireEvent.click(trigger, {detail: 1});
+    expect(onOpenChange).toHaveBeenCalledTimes(1);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('a mouse press on the trigger of an open menu closes it and does not reopen it in the same gesture', () => {
+    const onOpenChange = vi.fn();
+    render(<Harness onOpenChange={onOpenChange} />);
+    const trigger = screen.getByRole('button', {name: 'Open'});
+    fireEvent.pointerDown(trigger, mouse());
+    fireEvent.pointerUp(trigger, mouse());
+    fireEvent.click(trigger, {detail: 1});
+    fireEvent.pointerDown(trigger, mouse());
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+    fireEvent.pointerUp(trigger, mouse());
+    fireEvent.click(trigger, {detail: 1});
+    expect(onOpenChange).toHaveBeenCalledTimes(2);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('a drag from the trigger into the menu that releases over a row acts on it', () => {
+    const onSelect = vi.fn();
+    render(<Harness onSelect={onSelect} />);
+    const trigger = screen.getByRole('button', {name: 'Open'});
+    fireEvent.pointerDown(trigger, mouse());
+    fireEvent.pointerMove(row('B'), mouse());
+    expect(row('B')).toHaveFocus();
+    fireEvent.pointerUp(row('B'), mouse());
+    expect(onSelect).toHaveBeenCalledWith('B');
+  });
+
+  it('the opening release before the settle time acts on nothing; after it, it acts', () => {
+    vi.useFakeTimers();
+    const onSelect = vi.fn();
+    render(<Harness onSelect={onSelect} />);
+    const trigger = screen.getByRole('button', {name: 'Open'});
+    fireEvent.pointerDown(trigger, mouse());
+    act(() => {
+      vi.advanceTimersByTime(MENU_PRESS_SETTLE_MS - 1);
+    });
+    fireEvent.pointerUp(row('B'), mouse());
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.pointerDown(trigger, mouse());
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.pointerUp(trigger, mouse());
+    fireEvent.pointerDown(trigger, mouse());
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    act(() => {
+      vi.advanceTimersByTime(MENU_PRESS_SETTLE_MS);
+    });
+    fireEvent.pointerUp(row('B'), mouse());
+    expect(onSelect).toHaveBeenCalledWith('B');
+  });
+
+  it('a finger held on the trigger opens after the long-press delay and then tracks', () => {
+    vi.useFakeTimers();
+    const onSelect = vi.fn();
+    const onOpenChange = vi.fn();
+    render(<Harness onSelect={onSelect} onOpenChange={onOpenChange} />);
+    const trigger = screen.getByRole('button', {name: 'Open'});
+    fireEvent.pointerDown(trigger, touch());
+    act(() => {
+      vi.advanceTimersByTime(MENU_PRESS_LONG_PRESS_MS - 1);
+    });
+    expect(onOpenChange).not.toHaveBeenCalled();
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    fireEvent.pointerMove(row('C'), touch());
+    expect(row('C')).toHaveFocus();
+    fireEvent.pointerUp(row('C'), touch());
+    expect(onSelect).toHaveBeenCalledWith('C');
+  });
+
+  it('a finger that lifts before the delay is a tap: the browser click opens the menu', () => {
+    vi.useFakeTimers();
+    const onOpenChange = vi.fn();
+    render(<Harness onOpenChange={onOpenChange} />);
+    const trigger = screen.getByRole('button', {name: 'Open'});
+    fireEvent.pointerDown(trigger, touch());
+    fireEvent.pointerUp(trigger, touch());
+    fireEvent.click(trigger, {detail: 1});
+    expect(onOpenChange).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    act(() => {
+      vi.advanceTimersByTime(MENU_PRESS_LONG_PRESS_MS);
+    });
+    expect(onOpenChange).toHaveBeenCalledTimes(1);
+  });
+
+  it('a finger that travels on the trigger is a scroll, not a held press', () => {
+    vi.useFakeTimers();
+    const onOpenChange = vi.fn();
+    render(<Harness onOpenChange={onOpenChange} />);
+    const trigger = screen.getByRole('button', {name: 'Open'});
+    fireEvent.pointerDown(trigger, {...touch(), clientX: 0, clientY: 0});
+    fireEvent.pointerMove(trigger, {...touch(), clientX: 0, clientY: 40});
+    act(() => {
+      vi.advanceTimersByTime(MENU_PRESS_LONG_PRESS_MS);
+    });
+    expect(onOpenChange).not.toHaveBeenCalled();
   });
 
   it('marks the menu root as carrying the press model', () => {
