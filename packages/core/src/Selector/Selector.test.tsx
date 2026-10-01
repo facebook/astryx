@@ -4396,3 +4396,63 @@ describe('Selector option descriptions and trigger value', () => {
     expect(trigger).not.toHaveTextContent('Anyone at the company can join.');
   });
 });
+
+describe('Selector press model', () => {
+  const touch = {pointerType: 'touch', pointerId: 1};
+  const h = {hidden: true};
+
+  it('a finger release over an option selects it, not the option the press began on', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(<Selector label="Fruit" options={OPTIONS} onChange={onChange} />);
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+
+    const apple = screen.getByRole('option', {name: /Apple/, ...h});
+    const cherry = screen.getByRole('option', {name: /Cherry/, ...h});
+    fireEvent.pointerDown(apple, touch);
+    fireEvent.pointerMove(cherry, touch);
+    // The highlight moves through aria-activedescendant; focus stays put.
+    expect(trigger).toHaveAttribute('aria-activedescendant', cherry.id);
+    expect(cherry).not.toHaveFocus();
+    fireEvent.pointerUp(cherry, touch);
+    // The WebKit tail: a click aimed at the option the touch began on.
+    fireEvent.click(apple, {detail: 1});
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith('Cherry');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('a finger released outside acts on nothing and leaves the list open; a mouse closes it', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(<Selector label="Fruit" options={OPTIONS} onChange={onChange} />);
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+    const apple = screen.getByRole('option', {name: /Apple/, ...h});
+
+    fireEvent.pointerDown(apple, touch);
+    fireEvent.pointerUp(document.body, touch);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.pointerDown(apple, {
+      pointerType: 'mouse',
+      pointerId: 2,
+      button: 0,
+    });
+    fireEvent.pointerUp(document.body, {pointerType: 'mouse', pointerId: 2});
+    expect(onChange).not.toHaveBeenCalled();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('marks the listbox as carrying the press model', async () => {
+    const user = userEvent.setup();
+    render(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
+    await user.click(screen.getByRole('combobox'));
+    expect(screen.getByRole('listbox', h)).toHaveAttribute(
+      'data-astryx-menu-press',
+    );
+  });
+});

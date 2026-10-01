@@ -71,6 +71,7 @@ import {
   getSelectableOptions,
 } from './utils';
 import {useCombobox, useSelectedItemOffset} from './hooks';
+import {useMenuPress} from '../hooks/useMenuPress';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {SelectorOption} from './SelectorOption';
@@ -1238,6 +1239,30 @@ export function Selector<T extends SelectorOptionType>(
   });
   resetTypeaheadRef.current = typeahead.reset;
 
+  // The press model for the listbox: the option under a finger's or
+  // a mouse's RELEASE is the one picked, and the highlight follows a held
+  // pointer through `highlightedIndex` — DOM focus stays on the trigger, as a
+  // combobox's must. A mouse released outside dismisses the list; a finger
+  // leaves it open.
+  const optionIndexFromRow = useCallback((row: HTMLElement): number => {
+    const match = /-item-(\d+)$/.exec(row.id);
+    return match == null ? -1 : Number(match[1]);
+  }, []);
+  const listboxPress = useMenuPress({
+    menuRef: listboxRef,
+    itemSelector: '[role="option"]:not([aria-disabled="true"])',
+    onHighlight: row => {
+      setHighlightedIndex(row == null ? -1 : optionIndexFromRow(row));
+    },
+    onActivate: row => {
+      const item = filteredItems[optionIndexFromRow(row)];
+      if (item != null) {
+        onItemSelect(item);
+      }
+    },
+    onDismiss: surface.hide,
+  });
+
   const handleTriggerKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (isDisabled || isEffectivelyReadOnly) {
@@ -1624,6 +1649,7 @@ export function Selector<T extends SelectorOptionType>(
         id={listboxId}
         role="listbox"
         aria-labelledby={triggerId}
+        {...listboxPress.menuProps}
         {...stylex.props(
           styles.dropdown,
           surface.activePresentation === 'popover' &&
@@ -1638,6 +1664,7 @@ export function Selector<T extends SelectorOptionType>(
       ref={listboxRef}
       id={listboxId}
       role="listbox"
+      {...listboxPress.menuProps}
       // The bottom sheet is a modal layer, so Chromium drops the trigger
       // outside it from the accessibility tree and a reference to it yields
       // no name. Name only this no-search sheet directly from the component's
