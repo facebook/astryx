@@ -46,6 +46,30 @@ export const oceanTheme = defineTheme({
       ],
     },
     {
+      id: 'build-on-another-theme',
+      title: 'Build on another theme',
+      content: [
+        {
+          type: 'prose',
+          text: 'To base a theme on an existing one, `extends` it: import the base theme and override only the tokens you change. The derived theme keeps a live link to the base and inherits its later changes — unlike `--from`, which forks a copy ({@link generic:add-a-theme}).',
+        },
+        {
+          type: 'code',
+          lang: 'ts',
+          code: `import {defineTheme} from '@astryxdesign/core/theme';
+import {oceanTheme} from './oceanTheme';
+
+export const oceanContrastTheme = defineTheme({
+  name: 'ocean-contrast',
+  extends: oceanTheme,
+  tokens: {
+    '--color-accent': ['#0051a3', '#4aa3ff'],
+  },
+});`,
+        },
+      ],
+    },
+    {
       id: 'keep-light-dark-to-colors',
       title: 'Keep light-dark() to colors',
       content: [

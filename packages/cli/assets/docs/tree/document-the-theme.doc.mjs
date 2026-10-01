@@ -9,7 +9,7 @@
 export const docs = {
   type: 'generic',
   name: 'document-the-theme',
-  placement: {parent: 'namespace:themes', slot: 'guides', order: 60},
+  placement: {parent: 'namespace:themes', slot: 'guides', order: 50},
   title: 'Document the theme',
   category: 'guide',
   description:
@@ -41,7 +41,7 @@ export default {
       content: [
         {
           type: 'prose',
-          text: "Add \`@acme/astryx-widgets\` to the app's dependencies, copy the theme with \`astryx theme add ocean\`, and import its fonts once with \`import '@acme/astryx-widgets/fonts.css'\`.",
+          text: "Add \`@acme/astryx-widgets\` to the app's dependencies and apply the Ocean theme with \`<Theme theme={oceanTheme}>\`.",
         },
       ],
     },
@@ -50,7 +50,7 @@ export default {
         },
         {
           type: 'prose',
-          text: 'Keep the section short: how to add the package, how to apply the theme, and the one `fonts.css` import a copied theme needs ({@link generic:ship-fonts-and-assets}). Extend `theme` rather than a topic another package replaces, or an app that lists that package first drops your section.',
+          text: 'Keep the section short: how to add the package and apply the theme ({@link generic:use-a-theme-in-an-app}). Extend `theme` rather than a topic another package replaces, or an app that lists that package first drops your section.',
         },
       ],
     },

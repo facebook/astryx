@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/themes`: ship a source
- * theme an app discovers, copies into its code, and builds.
+ * @file `astryx docs cli/integrations/building-blocks/themes`: author a theme
+ * in an integration; apps install, apply, and extend it like any theme.
  */
 
 /** @type {import('@astryxdesign/cli/authoring').NamespaceDoc} */
@@ -12,22 +12,22 @@ export const docs = {
   placement: {parent: 'namespace:building-blocks', slot: 'guides', order: 30},
   title: 'Themes',
   summary:
-    'Ship an editable source theme that apps discover, copy into their code, and build.',
+    'Author a theme in your integration; apps install, apply, and extend it like any theme.',
   keywords: [
     'integration theme',
     'ship a theme',
     'define theme',
     'theme palette',
-    'theme fonts',
+    'extend a theme',
   ],
   blocks: [
     {
       type: 'prose',
-      text: 'A theme is an editable `defineTheme` source with a generated color palette. An app finds it with `theme list`, copies it with `theme add`, and compiles it with `theme build`; the copied theme becomes app code the app owns.',
+      text: 'A theme is an editable `defineTheme` source with a generated color palette. An integration ships a theme the same way a standalone theme package does: an app installs the package, applies the theme with `<Theme>`, and customizes it with `extends`. An integration theme and a standalone theme package are the same shape.',
     },
     {
       type: 'prose',
-      text: 'The whole `themes/<slug>/` folder is the unit that ships and that an app copies, so a theme needs no `exports` entry of its own. Anything a copied theme reaches outside that folder — a font, a keyframes stylesheet — must be exported and imported on purpose, or the copy leaves it behind.',
+      text: 'These guides cover authoring a theme inside an integration — scaffold it, generate its palette, define its tokens, and document it. Using a theme, applying and extending it, is the same for every theme; see {@link generic:theme}.',
     },
   ],
   slots: {

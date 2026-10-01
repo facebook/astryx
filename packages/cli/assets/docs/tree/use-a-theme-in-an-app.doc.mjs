@@ -2,52 +2,48 @@
 
 /**
  * @file `astryx docs cli/integrations/building-blocks/themes/use-a-theme-in-an-app`:
- * list, copy, and build a theme in an app.
+ * an app installs the integration and applies or extends the theme, like any theme.
  */
 
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
 export const docs = {
   type: 'generic',
   name: 'use-a-theme-in-an-app',
-  placement: {parent: 'namespace:themes', slot: 'guides', order: 50},
-  title: 'Use the theme in an app',
+  placement: {parent: 'namespace:themes', slot: 'guides', order: 40},
+  title: 'Use and extend the theme',
   category: 'guide',
   description:
-    'List a theme, copy its folder into an app, and build it; the copy belongs to the app.',
+    'An app installs the integration and applies or extends your theme, the same as any theme.',
   sections: [
     {
-      id: 'use-a-theme-in-an-app',
-      title: 'Use the theme in an app',
+      id: 'apply-the-theme',
+      title: 'Apply the theme',
       content: [
         {
           type: 'prose',
-          text: 'An app lists your theme, copies its folder into its own source, and builds it. The copy belongs to the app, which can edit it.',
+          text: 'An app installs the integration as a dependency and applies your theme like any Astryx theme: wrap the app in `<Theme>`. The theme and its fonts come from the installed package — there is no copy step.',
         },
         {
           type: 'code',
-          lang: 'bash',
-          code: `npx astryx theme list
-npx astryx theme add ocean --package @acme/astryx-widgets
-npx astryx theme build src/themes/ocean/oceanTheme.ts`,
-        },
-        {
-          type: 'code',
-          lang: 'text',
-          code: `[ok] Added Ocean theme from @acme/astryx-widgets to src/themes/ocean/
+          lang: 'tsx',
+          code: `import {Theme} from '@astryxdesign/core/theme';
+import {oceanTheme} from '@acme/astryx-widgets/themes/ocean';
 
-- src/themes/ocean/oceanTheme.ts
-- src/themes/ocean/oceanTheme.doc.mjs
-- src/themes/ocean/palette.config.json
-- src/themes/ocean/tokens/ocean.palette.receipt.json
-- src/themes/ocean/tokens/ocean.palette.ts`,
+<Theme theme={oceanTheme}>{/* app */}</Theme>`,
         },
         {
           type: 'prose',
-          text: '`theme list` shows `ocean (maintained, @acme/astryx-widgets)`. When two packages ship the slug `ocean`, `theme add ocean` fails until the app passes `--package`. `theme build` writes `ocean.css`, `ocean.js`, and `ocean.d.ts` beside the source.',
+          text: 'The import specifier is whatever your integration exports for the theme. Applying a theme — `mode`, SSR, and the production build — works the same for every theme; see {@link generic:theme}.',
         },
+      ],
+    },
+    {
+      id: 'extend-the-theme',
+      title: 'Extend to customize',
+      content: [
         {
           type: 'prose',
-          text: 'A copied theme that uses a package-owned font or keyframes stylesheet also needs that one import; see {@link generic:ship-fonts-and-assets}.',
+          text: 'To change a theme, an app does not copy it — it derives a new one with `extends`: import your theme and override only the tokens it changes. See {@link generic:define-the-theme}.',
         },
       ],
     },

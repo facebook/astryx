@@ -9,7 +9,7 @@
 export const docs = {
   type: 'generic',
   name: 'themes-on-older-clis',
-  placement: {parent: 'namespace:themes', slot: 'guides', order: 70},
+  placement: {parent: 'namespace:themes', slot: 'guides', order: 60},
   title: 'Fix missing themes on older CLIs',
   category: 'guide',
   description:

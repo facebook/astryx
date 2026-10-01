@@ -2,7 +2,7 @@
 
 /**
  * @file `astryx docs cli/integrations/building-blocks/themes/add-a-theme`:
- * create a theme source and its descriptor in a package.
+ * scaffold a theme in a package — blank, or forked from an existing theme.
  */
 
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
@@ -13,7 +13,7 @@ export const docs = {
   title: 'Add a theme',
   category: 'guide',
   description:
-    'Create an editable theme source and its descriptor in your package.',
+    'Scaffold a theme in your package — blank, or forked from an existing theme.',
   sections: [
     {
       id: 'add-a-theme',
@@ -21,7 +21,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Run `integration add theme` with a lowercase kebab-case slug. It writes the theme source and its descriptor into a folder named after the slug.',
+          text: 'Run `integration add theme` with a lowercase kebab-case slug. It writes a blank theme — a `defineTheme` skeleton and its descriptor — into a folder named after the slug.',
         },
         {
           type: 'code',
@@ -48,7 +48,26 @@ Declare theme root ./themes in astryx.integration.mjs.
         },
         {
           type: 'prose',
-          text: 'The whole `themes/ocean/` folder is what ships and what an app copies, so a theme needs no `exports` entry of its own. When package.json has a `files` list, add puts `themes` and `astryx.integration.mjs` in it. It also declares the optional `@astryxdesign/cli` peer that reads themes; see {@link generic:versioning}.',
+          text: 'The source ships in your package. An app installs the package and applies the theme — it is not copied; see {@link generic:use-a-theme-in-an-app}.',
+        },
+      ],
+    },
+    {
+      id: 'start-from-an-existing-theme',
+      title: 'Start from an existing theme',
+      content: [
+        {
+          type: 'prose',
+          text: 'To begin from an existing theme instead of a blank one, pass `--from`. It copies that theme as your starting point to diverge from — a fork, with no link back.',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          code: 'npx astryx integration add theme ocean --from neutral',
+        },
+        {
+          type: 'prose',
+          text: 'Use `--from` when you want to change a lot. For a small change that should stay linked to a base theme, use `extends` instead ({@link generic:define-the-theme}).',
         },
       ],
     },
@@ -58,7 +77,7 @@ Declare theme root ./themes in astryx.integration.mjs.
       content: [
         {
           type: 'prose',
-          text: 'A package can ship more than one theme. Run `integration add theme` once per slug; each theme gets its own `themes/<slug>/` folder and descriptor, and `theme list` shows them all. An app copies only the ones it adds.',
+          text: 'A package can ship more than one theme. Run `integration add theme` once per slug; each theme gets its own folder and descriptor, and `theme list` shows them all.',
         },
       ],
     },
