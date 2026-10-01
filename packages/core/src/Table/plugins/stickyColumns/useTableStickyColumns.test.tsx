@@ -89,6 +89,32 @@ describe('useTableStickyColumns', () => {
     expect(getHeader('Email').style.insetInlineStart).toBe('180px');
   });
 
+  it('uses the width-less floor for cumulative pinned offsets', () => {
+    const widthLessColumns: TableColumn<Row>[] = [
+      {key: 'name', header: 'Name'},
+      {key: 'email', header: 'Email'},
+      {key: 'team', header: 'Team'},
+    ];
+
+    function Harness() {
+      const sticky = useTableStickyColumns<Row>({
+        startKeys: ['name', 'email'],
+      });
+      return (
+        <Table
+          data={data}
+          columns={widthLessColumns}
+          idKey="id"
+          plugins={{stickyColumns: sticky}}
+        />
+      );
+    }
+
+    render(<Harness />);
+    expect(getHeader('Name').style.insetInlineStart).toBe('0px');
+    expect(getHeader('Email').style.insetInlineStart).toBe('60px');
+  });
+
   it('pins an end column at inset-inline-end: 0', () => {
     function Harness() {
       const sticky = useTableStickyColumns<Row>({endKeys: ['status']});
