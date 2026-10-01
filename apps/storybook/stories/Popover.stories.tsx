@@ -102,9 +102,9 @@ const readinessStyles = stylex.create({
     display: 'flex',
     justifyContent: 'flex-end',
   },
-  // kt-0mno geometry: a 320px panel at the viewport's inline-start edge with
-  // a 40px trigger whose far edge sits 45px from the panel's far edge, so the
-  // span of viewport on the trigger's end side is 320 - 45 = 275px.
+  // Width-overhang geometry: a 320px panel at the viewport's inline-start edge
+  // with a 40px trigger whose far edge sits 45px from the panel's far edge, so
+  // the span of viewport on the trigger's end side is 320 - 45 = 275px.
   overhangCanvas: {
     boxSizing: 'border-box',
     inlineSize: '100%',
@@ -771,7 +771,7 @@ export const WidthOverhang: Story = {
         <Popover
           placement="below"
           alignment="end"
-          label="Only me"
+          label="Scope"
           width={352}
           data-testid="overhang-popover"
           content={
@@ -784,7 +784,7 @@ export const WidthOverhang: Story = {
           }>
           <button
             type="button"
-            aria-label="Only me"
+            aria-label="Scope"
             {...stylex.props(readinessStyles.overhangTrigger)}>
             ◐
           </button>

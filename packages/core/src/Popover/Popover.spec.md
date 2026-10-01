@@ -348,7 +348,7 @@ removal.
 | Public boundary, FR1         | `Popover.test.tsx` compile-time public-surface assertions plus package/barrel inspection                                              | Unchanged public signatures and same-gesture rejection across Popover-family openings                              | A public type changes or a same-gesture request reaches visibility state.                                                                                               | `audit:Popover/api`           |
 | FR2, AR2–AR4                 | `Popover.test.tsx` focus/role suites and `useFocusTrap.test.tsx` container-entry suites                                               | Pointer, keyboard/AT-style, read-only, neutral role, no autofocus, controlled, Tab/Shift+Tab, Escape, focus return | Changing semantic destination by modality, selecting fallback close initially, losing shared indication, or allowing focus escape fails assertions.                     | `audit:Popover/accessibility` |
 | FR3, FR4                     | `Popover.test.tsx` sizing/overflow suites; `Popover.stories.tsx` real-viewport scenarios for manual/browser evidence                  | Explicit width, trigger matching, all alignments, fitting and overflowing content                                  | Removing a cap, reversing width precedence, or always enabling scroll fails emitted-style or overflow assertions.                                                       | `audit:Popover/layout`        |
-| FR8                          | `Popover.test.tsx` explicit-width suite and `useLayer.test.tsx` fallback-list suite                                                   | End- and start-aligned explicit widths, a side placement with a width, no width, a centered width                  | A percentage cap returning to an explicit width, span-all appearing without a width or on a side placement, or a no-width popover losing its span cap fails the suites. | `audit:Popover/layout`        |
+| FR8                          | `Popover.test.tsx` explicit-width suite and the Width Overhang story play guard                                                       | End- and start-aligned explicit widths, a side placement with a width, no width, a centered width                  | A percentage cap returning to an explicit width, span-all appearing without a width or on a side placement, or a no-width popover losing its span cap fails the suites. | `audit:Popover/layout`        |
 | FR5                          | `Popover.test.tsx` scheduling and observer-lifecycle suites                                                                           | Closed, opened, repeated signals, cleanup                                                                          | Constructing observers while closed or measuring more than once per pending frame fails lifecycle assertions.                                                           | `audit:Popover/resources`     |
 | FR6, FR7 and theming anatomy | `Popover.test.tsx`, `Popover.doc.mjs`, `usePopover.doc.mjs`, `astryx theme targets Popover --json`, and `scripts/check-knowledge.mjs` | One real surface with canonical `popover`; deprecated alias on that element; composed-component refinements        | A fake anatomy part, loss of compatibility output, missing deprecation metadata, or an active target without a real owner fails review or validation.                   | `audit:Popover/theming`       |
 | AR5                          | `Popover.stories.tsx` manual-AT fixture and PR #5373 test record                                                                      | Read-only dialog manual-AT fixture; no recorded NVDA/VoiceOver announcement result                                 | A fixture without recorded AT/browser observations cannot be cited as announcement proof.                                                                               | `audit:Popover/at-evidence`   |
@@ -442,8 +442,7 @@ and invariants.
 
 **Reference:** `component:Popover/DEC-4`
 
-**Decider:** pending owner review (proposed in PR #6688 for agentcloud Client
-spec 365 Phase 4, gap kt-0mno)
+**Decider:** pending owner review (proposed in PR #6688)
 
 Under CSS anchor positioning an aligned surface's percentage `max-inline-size`
 resolves against the anchor's inset-modified containing block — the span of
@@ -454,16 +453,19 @@ that literal: with a width the cap is the viewport minus both inline gutters,
 and the surface may overhang past the trigger's other side. Without a width the
 content-sized surface keeps the released span cap, so nothing else moves.
 
-Where the width fits on neither side of a block-placed trigger, the runtime's
-`hasSlideFallback` render option appends `span-all` fallbacks after the flips,
-so the surface centers on the trigger and is shifted into view instead of being
-clipped at the viewport edge (the released percentage cap hid that case by
-shrinking the surface). Side placements do not take the option: their alignment
-axis is the block axis, where a span cannot rescue an inline width, so they stop
-at `flip-inline`.
+Where the width fits on neither side of a block-placed trigger, Popover appends
+`span-all` fallbacks after the runtime's flips (through the render props'
+`style`, which the runtime merges after its placement styles), so the surface
+centers on the trigger and is shifted into view instead of being clipped at the
+viewport edge (the released percentage cap hid that case by shrinking the
+surface). The runtime's own fallback list and public API are unchanged. Side
+placements do not take the span: their alignment axis is the block axis, where a
+span cannot rescue an inline width, so they stop at `flip-inline`.
 
 Rejected: choosing `span-all` first whenever a width is requested. That would
 move every wide surface off its requested alignment even when it fits, and the
-alignment a caller asked for is the design intent. Also rejected: keeping the
-span cap and asking callers to measure — the measurement is the browser's, and
-Radix-style measurement is what the migration is leaving.
+alignment a caller asked for is the design intent. Also rejected: a runtime
+render option for the span — the case is Popover's (its explicit width), and a
+public `useLayer` option is a second API for one component's need. Also
+rejected: keeping the span cap and asking callers to measure — the measurement
+is the browser's.

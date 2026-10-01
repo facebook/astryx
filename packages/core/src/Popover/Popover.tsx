@@ -29,7 +29,11 @@ import * as stylex from '@stylexjs/stylex';
 import {devWarn} from '../utils/devWarning';
 import type {BaseProps} from '../BaseProps';
 import {usePopover} from './usePopover';
-import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
+import {
+  getPositionTryFallbacks,
+  type LayerAlignment,
+  type LayerPlacement,
+} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {InteractiveRoleContext} from '../InteractiveRoleContext/InteractiveRoleContext';
@@ -287,7 +291,7 @@ const styles = stylex.create({
   // the span beside the trigger (an end-aligned 352px menu under a button
   // 45px from a panel edge rendered 259px); a requested width may instead
   // overhang past the trigger's other side, which the layer's flip and
-  // span-all fallbacks arrange (see `hasSlideFallback`).
+  // span-all fallbacks arrange (see `overflowStyle` below).
   viewportWidthClamp: {
     maxInlineSize: stylex.firstThatWorks(
       POPOVER_MAX_INLINE_SIZE,
@@ -701,13 +705,22 @@ export function Popover({
   const hasExplicitWidth = Boolean(width) && width !== 'auto';
   // An explicit width on an aligned layer may exceed the span beside the
   // trigger; the flips move it to the other side and, when neither side
-  // fits, the span-all fallback centers it on the trigger and slides it into
-  // view instead of clipping it at the viewport edge. Only a block placement
-  // aligns along the inline axis; for a side placement the alignment axis is
-  // the block axis, where a span cannot rescue a width, so the inline overflow
-  // there is left to `flip-inline` alone.
-  const hasSlideFallback =
-    hasExplicitWidth && alignment !== 'center' && !isSidePlacement;
+  // fits, a `span-all` last resort centers it on the trigger and the browser
+  // slides it into view instead of clipping it at the viewport edge — the
+  // released percentage cap hid that case by shrinking the layer. Only a block
+  // placement aligns along the inline axis; for a side placement the
+  // alignment axis is the block axis, where a span cannot rescue a width, so
+  // the inline overflow there is left to `flip-inline` alone. Authored here
+  // through the render props' `style`, which the runtime merges after its own
+  // placement styles; the runtime's fallback list is unchanged.
+  const overflowStyle: React.CSSProperties | undefined =
+    hasExplicitWidth && alignment !== 'center' && !isSidePlacement
+      ? {
+          positionTryFallbacks: `${getPositionTryFallbacks(placement, alignment)}, ${
+            placement === 'above' ? 'top' : 'bottom'
+          } span-all, ${placement === 'above' ? 'bottom' : 'top'} span-all`,
+        }
+      : undefined;
   const popoverViewportXstyle =
     alignment === 'center'
       ? isSidePlacement
@@ -731,7 +744,7 @@ export function Popover({
         {popover.render(<div data-testid={testId}>{content}</div>, {
           placement,
           alignment,
-          hasSlideFallback,
+          style: overflowStyle,
           offset: spacingVars['--spacing-1'],
           xstyle: [
             styles.viewportFit,
@@ -762,7 +775,7 @@ export function Popover({
         {popover.render(<div data-testid={testId}>{content}</div>, {
           placement,
           alignment,
-          hasSlideFallback,
+          style: overflowStyle,
           offset: spacingVars['--spacing-1'],
           xstyle: [
             styles.viewportFit,
@@ -786,7 +799,7 @@ export function Popover({
       {popover.render(<div data-testid={testId}>{content}</div>, {
         placement,
         alignment,
-        hasSlideFallback,
+        style: overflowStyle,
         offset: spacingVars['--spacing-1'],
         xstyle: [
           styles.viewportFit,

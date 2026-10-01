@@ -192,37 +192,6 @@ describe('useLayer identity', () => {
 describe('getPositionTryFallbacks (issue #3671)', () => {
   const FLIPS = 'flip-block, flip-inline, flip-block flip-inline';
 
-  describe('hasSlideFallback (an aligned layer wider than either side of its anchor)', () => {
-    it('appends span-all fallbacks, same side first, for aligned block placements', () => {
-      expect(getPositionTryFallbacks('below', 'end', true)).toBe(
-        `${FLIPS}, bottom span-all, top span-all`,
-      );
-      expect(getPositionTryFallbacks('above', 'start', true)).toBe(
-        `${FLIPS}, top span-all, bottom span-all`,
-      );
-    });
-
-    it('spans the block axis for aligned side placements', () => {
-      expect(getPositionTryFallbacks('end', 'start', true)).toBe(
-        `${FLIPS}, right span-all, left span-all`,
-      );
-      expect(getPositionTryFallbacks('start', 'end', true)).toBe(
-        `${FLIPS}, left span-all, right span-all`,
-      );
-    });
-
-    it('changes nothing for centered alignments, which already slide', () => {
-      expect(getPositionTryFallbacks('below', 'center', true)).toBe(
-        getPositionTryFallbacks('below', 'center'),
-      );
-    });
-
-    it('is off by default: aligned layers keep flip-only fallbacks', () => {
-      expect(getPositionTryFallbacks('below', 'end')).toBe(FLIPS);
-      expect(getPositionTryFallbacks('below', 'end', false)).toBe(FLIPS);
-    });
-  });
-
   it('appends inline span fallbacks for centered above/below layers so inline overflow can resolve (flip-inline is a no-op on center)', () => {
     expect(getPositionTryFallbacks('above', 'center')).toBe(
       `${FLIPS}, top span-left, top span-right, bottom span-left, bottom span-right`,

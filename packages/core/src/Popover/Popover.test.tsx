@@ -515,7 +515,7 @@ describe('Popover', () => {
       render(
         <Popover
           content={<span>Content</span>}
-          label="Only me"
+          label="Scope"
           alignment="end"
           width={352}>
           <button type="button">Open</button>

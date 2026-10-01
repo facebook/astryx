@@ -62,7 +62,7 @@ const TARGETS = [
     guards:
       'an explicit 352px width on an end-aligned trigger 45px from a panel ' +
       'edge renders 352px and stays on-screen instead of shrinking to the ' +
-      '275px span beside the trigger (kt-0mno)',
+      '275px span beside the trigger',
   },
   {
     component: 'TabList',
