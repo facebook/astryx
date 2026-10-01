@@ -24,8 +24,8 @@ export const docs = {
       {guidance: false, description: 'Do not ship stable product on this Lab API; it has no theming, i18n, or spec contract yet.'},
     ],
     anatomy: [
-      {name: 'Trigger field', required: true, description: 'Button showing tokens as a summary, with chevron.'},
-      {name: 'Manage sheet', required: true, description: 'Selected rows with remove, Clear all footer, Add item.'},
+      {name: 'Trigger field', required: true, description: 'Button showing tokens as a summary.'},
+      {name: 'Manage sheet', required: true, description: 'Selected rows with remove controls, guided empty states, and equal-width footer actions.'},
       {name: 'Add sheet', required: true, description: 'Stacked sheet: result rows with +/check toggles, bottom filter + Done row.'},
     ],
   },

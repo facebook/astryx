@@ -344,15 +344,19 @@ describe('ci.yml RTL package sharding', () => {
 describe('deploy.yml push gating', () => {
   const workflow = load('deploy.yml');
 
-  it('still blocks the publish on the join and the build', () => {
-    // Splitting the gate must not let a deploy through on a red suite.
-    expect(workflow.jobs.deploy.needs).toEqual(
-      expect.arrayContaining(['test', 'build']),
-    );
-    expect(workflow.jobs.deploy.if).toContain("needs.test.result == 'success'");
-    expect(workflow.jobs.deploy.if).toContain(
-      "needs.build.result == 'success'",
-    );
+  it('ends at the stable validation join without a publisher', () => {
+    expect(workflow.jobs.deploy).toBeUndefined();
+    expect(workflow.jobs.test.needs).toEqual([
+      'test-ui',
+      'test-node',
+      'typecheck',
+    ]);
+    const join = workflow.jobs.test.steps.find(
+      step => step.name === 'Assert every push gate succeeded',
+    ).run;
+    for (const owner of ['test-ui', 'test-node', 'typecheck']) {
+      expect(join).toContain(`needs.${owner}.result`);
+    }
   });
 
   it('keeps the typecheck gates behind the build they need', () => {

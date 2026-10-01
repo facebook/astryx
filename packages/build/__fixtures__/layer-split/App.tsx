@@ -20,10 +20,23 @@ import {Button} from '@astryxdesign/core/Button';
 import {Theme} from '@astryxdesign/core/theme';
 import {nestedTheme, nestedDarkTheme} from './theme';
 
+const integrityPulse = stylex.keyframes({
+  from: {opacity: 0.271},
+  to: {opacity: 0.913},
+});
+
 const styles = stylex.create({
   productBox: {
     backgroundColor: 'rgb(238, 238, 238)',
     padding: '11px',
+    animationName: integrityPulse,
+    animationDuration: '717ms',
+    '::after': {
+      content: '""',
+      borderTopColor: 'rgb(1, 2, 3)',
+      borderTopStyle: 'solid',
+      borderTopWidth: '7px',
+    },
   },
   themedButton: {
     backgroundColor: 'rgb(255, 140, 0)',

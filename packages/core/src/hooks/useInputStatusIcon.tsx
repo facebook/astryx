@@ -78,8 +78,9 @@ const styles = stylex.create({
     justifyContent: 'center',
     padding: 0,
     margin: 0,
-    border: 'none',
-    background: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
     color: 'inherit',
     cursor: {
       default: 'pointer',

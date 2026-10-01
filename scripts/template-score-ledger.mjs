@@ -29,7 +29,7 @@ export const TEMPLATE_LEDGER_URL =
 export const WIKI_REMOTE = 'https://github.com/facebook/astryx.wiki.git';
 export const WIKI_BRANCH = 'master';
 export const TEMPLATE_AUDITS_PAGE_URL =
-  'https://facebook.github.io/astryx/sandbox/templates/';
+  'https://astryx.atmeta.com/sandbox/templates/';
 export const LEDGER_FETCH_TIMEOUT_MS = 10_000;
 export const WIKI_CACHE_DIR = path.join(
   os.tmpdir(),

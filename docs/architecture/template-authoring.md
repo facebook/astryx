@@ -98,7 +98,7 @@ entry and pass one validation boundary. That boundary uses these requirements:
 
 | Scope                | Required                                                                                                                 | Optional or conditional                                                               |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
-| Every entry          | `id`, `package`, `type`, `name`, `displayName`, non-empty `description`, explicit `isReady`, and an existing source file | Source-specific provenance and diagnostics                                            |
+| Every entry          | `id`, `package`, `type`, `name`, `displayName`, non-empty `description`, explicit `isReady`, and an existing source file | `keywords`; source-specific provenance and diagnostics                                |
 | Page                 | Everything above; `category` when eligible for the overview                                                              | `scaffold`, `isHiddenFromOverview`; a hidden special-purpose page may omit `category` |
 | Block                | Everything above plus `exampleFor`, positive `aspectRatio`, and complete `componentsUsed`                                | `scale`, `isShowcase`, `alsoExampleFor`, `alsoShowcaseFor`                            |
 | Primary showcase     | Block requirements plus `isShowcase: true`; at most one resolved primary showcase per `(package, target)`                | The same block may serve additional targets through `alsoShowcaseFor`                 |

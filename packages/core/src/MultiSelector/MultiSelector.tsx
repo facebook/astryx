@@ -318,7 +318,8 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     outline: 'none',
   },
   itemHighlighted: {

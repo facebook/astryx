@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {expect} from 'storybook/test';
 import {useState} from 'react';
 import {Button} from '@astryxdesign/core/Button';
 import {MultiSelector} from '@astryxdesign/core/MultiSelector';
@@ -433,6 +434,16 @@ export const Status: Story = {
 };
 
 // Size variants
+const compactSizingTheme = defineTheme({
+  name: 'multi-selector-compact-sizing',
+  tokens: {
+    '--spacing-5': '10px',
+    '--size-element-sm': '24px',
+    '--size-element-md': '28px',
+    '--size-element-lg': '32px',
+  },
+});
+
 export const Sizes: Story = {
   render: () => {
     const [value1, setValue1] = useState<string[]>([]);
@@ -465,10 +476,71 @@ export const Sizes: Story = {
           onChange={setValue3}
           placeholder="Large (36px)"
         />
+        <Theme theme={compactSizingTheme}>
+          {(['sm', 'md', 'lg'] as const).map(size => (
+            <div key={size} style={{display: 'grid', gap: 8}}>
+              {(
+                [
+                  'plain',
+                  'start',
+                  'option',
+                  'status',
+                  'tooltip',
+                  'clear',
+                  'loading',
+                  'readonly',
+                ] as const
+              ).map(state => (
+                <MultiSelector
+                  key={state}
+                  label={`Compact ${size} ${state}`}
+                  size={size}
+                  options={[
+                    {
+                      value: 'name',
+                      label: 'Name',
+                      icon: state === 'option' ? 'search' : undefined,
+                    },
+                  ]}
+                  value={['name']}
+                  onChange={() => {}}
+                  startIcon={state === 'start' ? 'search' : undefined}
+                  status={
+                    state === 'status' || state === 'tooltip'
+                      ? {type: 'warning', message: 'Check selection'}
+                      : undefined
+                  }
+                  statusVariant={state === 'tooltip' ? 'tooltip' : 'attached'}
+                  hasClear={state === 'clear'}
+                  isLoading={state === 'loading'}
+                  isReadOnly={state === 'readonly'}
+                />
+              ))}
+            </div>
+          ))}
+        </Theme>
       </div>
     );
   },
   decorators: [Story => <Story />],
+  play: async ({canvasElement}) => {
+    await document.fonts.ready;
+    const triggers = canvasElement.querySelectorAll<HTMLElement>(
+      '.astryx-multi-selector',
+    );
+    expect(triggers).toHaveLength(27);
+    for (const trigger of triggers) {
+      const size = Number.parseFloat(
+        getComputedStyle(trigger).getPropertyValue(
+          `--size-element-${trigger.dataset.size}`,
+        ),
+      );
+      expect(
+        trigger.getBoundingClientRect().height,
+        trigger.textContent ?? '',
+      ).toBeCloseTo(size, 1);
+    }
+  },
 };
 
 // Form composition

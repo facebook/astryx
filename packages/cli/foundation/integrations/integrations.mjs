@@ -29,6 +29,7 @@ import {
 } from '../../authoring/integration/schema.mjs';
 import {importUserModule, findPresentFiles} from '../fs/module-loader.mjs';
 import {parseGapReportHandler} from '../../authoring/gap-report/parse.mjs';
+import {parseDiscoverSource} from '../../authoring/discover/parse.mjs';
 import {resolveProviders} from './provider-resolution.mjs';
 
 /**
@@ -80,6 +81,9 @@ import {resolveProviders} from './provider-resolution.mjs';
  *   validated package-owned handler from the `gapReport` NAMED export.
  * @property {string} [__gapReportError] isolated named-handler validation error.
  *   Named exports are not manifest keys — see {@link loadManifest}.
+ * @property {import('../../authoring/discover/type').DiscoverSource} [__discover]
+ *   validated catalog source from the `discover` NAMED export.
+ * @property {string} [__discoverError] isolated discover-source validation error.
  */
 
 /** Conventional manifest basenames, in load-precedence order. */
@@ -168,6 +172,23 @@ function parseGapReportHandlerExport(value, label) {
 }
 
 /**
+ * Parse the optional named discover source the same way: a malformed one is
+ * isolated from every other contribution and reported by `astryx discover`.
+ *
+ * @param {unknown} value
+ * @param {string} label
+ * @returns {{source?: import('../../authoring/discover/type').DiscoverSource, error?: string}}
+ */
+function parseDiscoverSourceExport(value, label) {
+  if (value === undefined) return {};
+  try {
+    return {source: parseDiscoverSource(value, `${label} named export "discover"`)};
+  } catch (error) {
+    return {error: error instanceof Error ? error.message : String(error)};
+  }
+}
+
+/**
  * Load and validate a manifest module's default export, while isolating the
  * optional `agentDocs` contribution from the manifest's other fields.
  *
@@ -183,7 +204,7 @@ function parseGapReportHandlerExport(value, label) {
  * @param {string} file absolute manifest path
  * @param {string} [label] used in error messages
  * @param {{fresh?: boolean}} [options]
- * @returns {Promise<{manifest: import('../../authoring/integration/type').AstryxIntegration, unknownKeys: string[], debug?: import('../../authoring/debug/type').DebugEventHandler, gapReport?: import('../../authoring/gap-report/type').GapReportHandler, gapReportError?: string, agentDocsError?: string}>}
+ * @returns {Promise<{manifest: import('../../authoring/integration/type').AstryxIntegration, unknownKeys: string[], debug?: import('../../authoring/debug/type').DebugEventHandler, gapReport?: import('../../authoring/gap-report/type').GapReportHandler, gapReportError?: string, discover?: import('../../authoring/discover/type').DiscoverSource, discoverError?: string, agentDocsError?: string}>}
  */
 export async function loadManifest(
   file,
@@ -194,6 +215,7 @@ export async function loadManifest(
   const raw = mod?.default;
   const baseManifest = parseIntegrationBase(raw, label);
   const gapReport = parseGapReportHandlerExport(mod?.gapReport, label);
+  const discover = parseDiscoverSourceExport(mod?.discover, label);
   const hasAgentDocs =
     raw != null &&
     typeof raw === 'object' &&
@@ -228,6 +250,8 @@ export async function loadManifest(
         : undefined,
     gapReport: gapReport.handler,
     gapReportError: gapReport.error,
+    discover: discover.source,
+    discoverError: discover.error,
     agentDocsError,
   };
 }
@@ -345,6 +369,10 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
   let gapReportHandler;
   /** @type {string | undefined} */
   let gapReportError;
+  /** @type {import('../../authoring/discover/type').DiscoverSource | undefined} */
+  let discoverSource;
+  /** @type {string | undefined} */
+  let discoverError;
   /** @type {string | undefined} */
   let agentDocsError;
   try {
@@ -354,6 +382,8 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
       debug: debugHandler,
       gapReport: gapReportHandler,
       gapReportError,
+      discover: discoverSource,
+      discoverError,
       agentDocsError,
     } = await loadManifest(manifestFile, `Integration ${spec}`, {fresh}));
   } catch (err) {
@@ -397,6 +427,8 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
     __debug: debugHandler,
     __gapReport: gapReportHandler,
     __gapReportError: gapReportError,
+    __discover: discoverSource,
+    __discoverError: discoverError,
     __spec: spec,
     __packageDir: packageDir,
     __packageExports: pkg.exports ?? null,
@@ -448,6 +480,10 @@ export async function loadIntegrations(
     let gapReportHandler;
     /** @type {string | undefined} */
     let gapReportError;
+    /** @type {import('../../authoring/discover/type').DiscoverSource | undefined} */
+    let discoverSource;
+    /** @type {string | undefined} */
+    let discoverError;
     /** @type {string | undefined} */
     let agentDocsError;
     try {
@@ -457,6 +493,8 @@ export async function loadIntegrations(
         debug: debugHandler,
         gapReport: gapReportHandler,
         gapReportError,
+        discover: discoverSource,
+        discoverError,
         agentDocsError,
       } = await loadManifest(manifestFile, `Integration ${spec}`, {fresh}));
     } catch (err) {
@@ -507,6 +545,8 @@ export async function loadIntegrations(
       __debug: debugHandler,
       __gapReport: gapReportHandler,
       __gapReportError: gapReportError,
+      __discover: discoverSource,
+      __discoverError: discoverError,
       __spec: spec,
       __packageDir: packageDir,
       __packageExports: pkg.exports ?? null,

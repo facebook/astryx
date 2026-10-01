@@ -77,7 +77,7 @@ function App() {
             [
               'Neutral',
               "import {neutralTheme} from '@astryxdesign/theme-neutral'",
-              'Restrained warm grays with Figtree type. A good starting point.',
+              'Muted, minimal aesthetic with Figtree typography. A good starting point.',
             ],
             [
               'Butter',

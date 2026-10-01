@@ -14,12 +14,13 @@ export const doc = {
   name: 'discover',
   displayName: 'astryx discover',
   namespace: 'cli/commands',
-  summary: 'Discover external packages and components',
+  summary:
+    'Browse and search integrations: the ones you have and the ones you could add',
   description:
-    'Explores components contributed by configured external packages and integrations. ' +
-    'With no query it lists those packages; an @scope/name query browses one package; ' +
-    'an @scope/name/Component path or a free-text term resolves to a component doc. ' +
-    'When no configured integration contributes components, it says so and exits 0 for any query.',
+    'Lists the integrations this project loads and, when it has a discover source, the ones it could add, with what each one adds. ' +
+    'A package query shows one package: what it adds, every version a source knows, and the command that adds it. ' +
+    "An @scope/name/Component path prints an installed component's doc; any other item path shows that item. " +
+    'Anything else, even an exact component name, searches every item and package and lists the matches. Discover only reads: your package manager installs, updates, and removes packages.',
   fn: 'discover',
   args: [{name: 'query', param: 'query', required: false}],
   options: [
@@ -27,19 +28,61 @@ export const doc = {
       flag: '--components',
       param: 'options.components',
       description:
-        'In the package list, print every component of each package instead of the first 10 and a "+N more" count. No effect on --json output or on a package, component, or search query.',
+        'In the package list, print every component, and every other item, of each package instead of the first 10 and a "+N more" count. No effect on --json output or on a package, component, or search query.',
+    },
+    {
+      flag: '--type <kind>',
+      param: 'options.type',
+      description:
+        'Only one kind: component, template, doc, theme, codemod, or agent-doc. In the list, only packages that add it; in a search, only items of that kind.',
+    },
+    {
+      flag: '--installed',
+      param: 'options.installed',
+      description:
+        'Only what this project has. Cannot be set with --available.',
+    },
+    {
+      flag: '--available',
+      param: 'options.available',
+      description:
+        'Only what this project could add. Cannot be set with --installed.',
+    },
+    {
+      flag: '--limit <n>',
+      param: 'options.limit',
+      description:
+        'Max number of search results, a positive integer (default 20).',
     },
   ],
   examples: [
-    {label: 'List packages', cli: 'astryx discover --json'},
-    {label: 'List every component of each package', cli: 'astryx discover --components'},
-    {label: 'Browse a package', cli: 'astryx discover @acme/ui'},
+    {
+      label: 'List what you have and what you could add',
+      cli: 'astryx discover',
+    },
+    {
+      label: 'List every component of each package',
+      cli: 'astryx discover --components',
+    },
+    {
+      label: 'Only packages that add themes',
+      cli: 'astryx discover --type theme',
+    },
+    {
+      label: 'Browse a package and its versions',
+      cli: 'astryx discover @acme/ui',
+    },
+    {label: 'See one version', cli: 'astryx discover @acme/ui@2.1.0'},
+    {
+      label: 'Search templates you could add',
+      cli: 'astryx discover dashboard --type template --available',
+    },
   ],
   exitCodes: [
-    {code: 0, when: 'success, including any query when no integration contributes components'},
+    {code: 0, when: 'success'},
     {
       code: 1,
-      when: 'an unknown package or component, a malformed doc, or a blank query when packages are discovered',
+      when: 'unknown package, version, component, or item; a malformed doc; an invalid --type or --limit; --installed with --available; or a blank query when packages are discovered',
     },
   ],
   related: ['component', 'search', 'template'],

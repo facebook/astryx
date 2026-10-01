@@ -162,8 +162,9 @@ const styles = stylex.create({
     flexShrink: '0',
     padding: 0,
     margin: 0,
-    background: 'transparent',
-    border: 'none',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderStyle: 'none',
     cursor: {
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',

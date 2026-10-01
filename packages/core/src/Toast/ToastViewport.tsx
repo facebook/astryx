@@ -76,8 +76,8 @@ const styles = stylex.create({
     // at x=19.
     width: 'auto',
     margin: 0,
-    border: 'none',
-    background: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     backgroundColor: 'transparent',
     overflow: 'visible',
   },

@@ -11,6 +11,7 @@
 
 import type {DebugEventHandler} from '../debug/type.js';
 import type {GapReportHandler} from '../gap-report/type.js';
+import type {DiscoverSource} from '../discover/type.js';
 
 /**
  * A command to run as part of a post-codemod hook. Returned by a hook's
@@ -96,6 +97,16 @@ export interface AstryxConfig {
   debug?: DebugConfig;
   /** Route gap reports through a project-owned handler. See {@link GapReportHandler}. */
   gapReport?: GapReportHandler;
+  /**
+   * Tell `astryx discover` about integrations this project could add. See
+   * {@link DiscoverSource}.
+   *
+   * An integration can provide a source too, as a `discover` named export from
+   * its `astryx.integration.*` module. Discover calls every source: this one
+   * first, then each integration's in load order, and one that fails never
+   * hides the others.
+   */
+  discover?: DiscoverSource;
   /**
    * EXPERIMENTAL — shape may change and is not part of the stable config
    * contract. Provisional home for features still being proven out.

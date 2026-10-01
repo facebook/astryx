@@ -150,7 +150,7 @@ const styles = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'The Tailwind v4 bridge at `@astryxdesign/core/tailwind-theme.css` maps Tailwind theme variables to system CSS variables with `@theme inline`, so utility classes like `text-primary`, `bg-surface`, `border-border`, `rounded-lg`, and `shadow-md` stay in sync with the active theme.',
+          text: 'The Tailwind v4 bridge at `@astryxdesign/core/tailwind-theme.css` maps Tailwind theme variables to system CSS variables with `@theme reference inline`, so utility classes like `text-primary`, `bg-surface`, `border-border`, `rounded-lg`, and `shadow-md` stay in sync with the active theme without emitting competing runtime declarations.',
         },
         {
           type: 'code',
