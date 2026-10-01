@@ -9,7 +9,7 @@
 export const docs = {
   type: 'generic',
   name: 'replace-a-core-component',
-  placement: {parent: 'namespace:components', slot: 'advanced', order: 10},
+  placement: {parent: 'namespace:components', slot: 'guides', order: 50},
   title: 'Replace a Core component',
   category: 'guide',
   description:

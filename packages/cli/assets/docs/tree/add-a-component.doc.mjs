@@ -9,7 +9,7 @@
 export const docs = {
   type: 'generic',
   name: 'add-a-component',
-  placement: {parent: 'namespace:components', slot: 'build', order: 10},
+  placement: {parent: 'namespace:components', slot: 'guides', order: 10},
   title: 'Add a component',
   category: 'guide',
   description:

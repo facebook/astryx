@@ -15,13 +15,9 @@ export const docs = {
     'Add components to an integration, document their public contract, and make them work in every app that installs the package.',
   keywords: ['integration component', 'ship a component', 'component docs'],
   slots: {
-    build: {
-      title: 'Build',
+    guides: {
+      title: 'Components',
       accepts: {kinds: ['generic', 'namespace']},
-    },
-    advanced: {
-      title: 'Advanced',
-      accepts: {kinds: ['generic']},
     },
   },
 };

@@ -9,7 +9,7 @@
 export const docs = {
   type: 'generic',
   name: 'see-it-in-an-app',
-  placement: {parent: 'namespace:components', slot: 'build', order: 40},
+  placement: {parent: 'namespace:components', slot: 'guides', order: 40},
   title: 'See it in an app',
   category: 'guide',
   description:

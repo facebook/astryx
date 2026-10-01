@@ -9,7 +9,7 @@
 export const docs = {
   type: 'generic',
   name: 'component-imports',
-  placement: {parent: 'namespace:components', slot: 'build', order: 30},
+  placement: {parent: 'namespace:components', slot: 'guides', order: 30},
   title: 'Resolve the import',
   category: 'guide',
   description:
