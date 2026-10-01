@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: josephfarina
-approved_at: 2026-09-29
+approved_at: 2026-10-01
 phase: accepted
 owners: [josephfarina]
 affects_architecture: [architecture:cli-surface]
@@ -60,7 +60,9 @@ and template owners own what each template is.
   control, a state, a widget, a section) MUST start from the page template the
   request places that part in, when the request gives that page, and from the
   app shell (FR2) when it gives no page. The blocks and components in the kit
-  carry the part itself.
+  carry the part itself. A request that changes a page the builder already has
+  starts from the app shell (FR2): the page is the builder's to keep (FR9), and
+  no template scaffolds it.
 - **FR4 — Never an unready start.** A template marked not ready MUST NOT be the
   start or an alternative. When search matches one directly, the start's
   reason MUST name it and say the start is the closest ready template or the
@@ -132,7 +134,7 @@ When this ships:
 | Contract   | Verification                  | Representative states                                                                  | Mutation or failure expectation                                                   |
 | ---------- | ----------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | FR1, FR2   | Build kit tests               | a request that names a template; a loose request; a request no template fits           | A page build with no start, or a start that is not a page template                |
-| FR3        | Build kit tests               | a part placed in a page; a part with no page                                           | A part with no page starting from a page template                                 |
+| FR3        | Build kit tests               | a part placed in a page; a part with no page; a change to an existing page             | A part with no page starting from a page template                                 |
 | FR4        | Build kit tests               | search's direct match is not ready                                                     | An unready template as the start or an alternative, or a reason that hides it     |
 | FR5        | Template integration tests    | an integration template that replaces a Core one; a block sharing a page template's id | A start or alternative command that selects another template, or none             |
 | FR6, FR7   | Build kit tests               | direct, closest, and fallback starts                                                   | A start without a basis or reason, or without its alternatives                    |
@@ -179,11 +181,12 @@ Rejected: a single pick with no alternatives.
 ### DEC-4 — A part starts where it lives
 
 **Reference:** `spec:AST-048/DEC-4`
-**Decider:** `josephfarina`, `2026-09-29`
+**Decider:** `josephfarina`, `2026-10-01`
 
 A part is built inside a page. When the request gives that page, its template
 is where the part goes; when it gives none, the app shell is the frame, and the
-blocks and components carry the part.
+blocks and components carry the part. A change to an existing page is the same
+case: the page is the builder's own, so no template is its start.
 
 Rejected: starting a part from whichever page template shares a word with it,
 which scaffolds an unrelated page for a single control; and giving a part no
