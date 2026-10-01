@@ -33,10 +33,12 @@
  *      shows help because the invocation failed (`help <unknown>`, or a
  *      command group with no subcommand), which exits 1.
  *
- * Non-JSON behavior is preserved exactly: every code path that printed
- * to stderr before still prints to stderr. Commander writes its
- * "error: ..." line via configureOutput.writeErr, which we pass
- * through verbatim outside of --json mode.
+ * Commander writes its own "error: ..." line via configureOutput.writeErr.
+ * The shim drops that line in both modes. Under --json the error envelope
+ * replaces it; in text mode `handleCommanderError` writes the Astryx line
+ * instead (`Error: <message>`, the same message the envelope carries), so
+ * a parse failure reads like every other CLI error. Other stderr output,
+ * such as help printed as the failure report, still passes through.
  */
 
 import {API_VERSION, isJsonMode, toErrorEnvelope} from '../../../foundation/response/json.mjs';
