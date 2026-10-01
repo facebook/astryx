@@ -366,7 +366,7 @@ const styles = stylex.create({
         },
         {
           type: 'prose',
-          text: 'The working path on Next.js is an SWC-based StyleX transform (e.g. the community `@stylexswc/nextjs-plugin`) wired into `next.config`, which keeps SWC and `next/font` intact. See the example app `apps/example-nextjs-stylex` in the repo for a complete, working Next.js + StyleX + SWC configuration.',
+          text: 'The working path on Next.js is an SWC-based StyleX transform (e.g. the community `@stylexswc/nextjs-plugin`) wired into `next.config`, which keeps SWC and `next/font` intact. The snippet below is the whole wiring. The repo ships no SWC example app: `apps/example-nextjs-stylex` compiles StyleX with the Babel plugin and PostCSS, so read it for the PostCSS layer setup, not for the transform.',
         },
         {
           type: 'code',
