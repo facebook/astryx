@@ -41,7 +41,7 @@ const TARGETS = [
   {
     component: 'Selector',
     story: 'core-selector--size-variants',
-    guards: 'compact and wide-spacing trigger variants match their size tokens and multiline values grow by one text row',
+    guards: 'compact and wide-spacing triggers match their size tokens, large label text stays unclipped, and multiline values grow by one text row',
   },
   {
     component: 'MultiSelector',

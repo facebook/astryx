@@ -597,6 +597,13 @@ const wideSpacingSizingTheme = defineTheme({
   },
 });
 
+// Label text too large for the small token: the trigger must keep it visible
+// rather than cap its row to the token.
+const largeTextSizingTheme = defineTheme({
+  name: 'selector-large-text-sizing',
+  tokens: {'--spacing-5': '40px', '--text-label-size': '32px'},
+});
+
 export const SizeVariants: Story = {
   render: () => {
     const [value1, setValue1] = useState<string | undefined>();
@@ -723,6 +730,16 @@ export const SizeVariants: Story = {
             </div>
           ))}
         </Theme>
+        <Theme theme={largeTextSizingTheme}>
+          <Selector
+            label="Large text small"
+            data-testid="large-text"
+            size="sm"
+            options={['Ågypj']}
+            value="Ågypj"
+            onChange={() => {}}
+          />
+        </Theme>
       </div>
     );
   },
@@ -731,14 +748,33 @@ export const SizeVariants: Story = {
     await document.fonts.ready;
     const triggers =
       canvasElement.querySelectorAll<HTMLElement>('.astryx-selector');
-    expect(triggers).toHaveLength(42);
+    expect(triggers).toHaveLength(43);
     for (const trigger of triggers) {
       const styles = getComputedStyle(trigger);
       const size = Number.parseFloat(
         styles.getPropertyValue(`--size-element-${trigger.dataset.size}`),
       );
       const height = trigger.getBoundingClientRect().height;
-      if (trigger.dataset.testid?.endsWith('-multiline')) {
+      if (trigger.dataset.testid === 'large-text') {
+        // The text's box must stay inside the label's clipping box.
+        const walker = document.createTreeWalker(trigger, NodeFilter.SHOW_TEXT);
+        let text: Node | null = walker.nextNode();
+        while (text && !text.textContent?.includes('Ågypj')) {
+          text = walker.nextNode();
+        }
+        const clipElement = text?.parentElement;
+        expect(clipElement).toBeTruthy();
+        if (!text || !clipElement) {
+          continue;
+        }
+        const range = document.createRange();
+        range.selectNodeContents(text);
+        const textBox = range.getBoundingClientRect();
+        const clip = clipElement.getBoundingClientRect();
+        expect(textBox.top).toBeGreaterThanOrEqual(clip.top - 0.5);
+        expect(textBox.bottom).toBeLessThanOrEqual(clip.bottom + 0.5);
+        expect(height).toBeGreaterThan(size);
+      } else if (trigger.dataset.testid?.endsWith('-multiline')) {
         // A second line adds exactly one text row to the one-line height.
         const row = Number.parseFloat(styles.lineHeight);
         expect(height, trigger.textContent ?? '').toBeCloseTo(size + row, 1);

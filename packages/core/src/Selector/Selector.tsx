@@ -222,9 +222,12 @@ const styles = stylex.create({
   triggerIconOpen: {
     transform: 'rotate(180deg)',
   },
+  // Ghost has no borders, so its spacing row never overshoots the token; it
+  // keeps the uncapped line box from before the sizeStyles cap.
   triggerGhost: {
     width: 'auto',
     borderWidth: 0,
+    lineHeight: `max(${spacingVars['--spacing-5']}, 20px, 1rem)`,
     backgroundColor: 'transparent',
     boxShadow: {
       default: 'none',
@@ -403,17 +406,18 @@ const styles = stylex.create({
 
 // The trigger is sized by PADDING, not by a fixed height, so it is the size
 // token plus one text line for each extra line the value uses: 28/32/36 for
-// one line, 48/52/56 for two. The token and a text line are both multiples of
-// 4, so every trigger lands on the 4px rhythm and lines up with the Buttons
-// and inputs beside it. No prop picks the height — the content does, and it
-// can only land on the grid.
+// one line, 48/52/56 for two with the default tokens, where the token and a
+// text line are both multiples of 4 and the trigger lines up with the Buttons
+// and inputs beside it. No prop picks the height — the content does.
 //
-// The line box is `--spacing-5`, capped at what the size token can hold inside
-// the trigger's borders, then floored at the 20px clear control and 1rem
-// icons. The cap keeps a spacing scale taller than the token from pushing a
-// one-line trigger past it; the floors still win, so content is never clipped
-// to reach a token. Line box and padding read the same value, and a fixed
-// length keeps the iOS font floor from changing trigger height.
+// The line box is `--spacing-5`, floored at the 20px clear control and 1rem
+// icons. When that row would not fit inside the size token's borders, it is
+// capped at what the token holds, so a spacing scale taller than the token
+// cannot push a one-line trigger past it. The cap never goes below 1.5em of
+// the trigger's own font — the type scale's loosest target leading, above any
+// label's glyph extent — so label text too large for the token keeps the
+// uncapped row instead of being clipped. Line box and padding read the same
+// value; nothing changes wherever the row already fit.
 // Keep these calculations inline: a consumer's Babel preset can lower a
 // module-scope helper to a function expression before StyleX evaluates this
 // object, and StyleX cannot constant-evaluate that transformed helper.
@@ -421,18 +425,18 @@ const styles = stylex.create({
 const sizeStyles = stylex.create({
   sm: {
     minHeight: sizeVars['--size-element-sm'],
-    lineHeight: `max(min(${spacingVars['--spacing-5']}, ${sizeVars['--size-element-sm']} - 2 * ${borderVars['--border-width']}), 20px, 1rem)`,
-    paddingBlock: `calc((${sizeVars['--size-element-sm']} - max(min(${spacingVars['--spacing-5']}, ${sizeVars['--size-element-sm']} - 2 * ${borderVars['--border-width']}), 20px, 1rem) - 2 * ${borderVars['--border-width']}) / 2)`,
+    lineHeight: `max(min(${spacingVars['--spacing-5']}, max(${sizeVars['--size-element-sm']} - 2 * ${borderVars['--border-width']}, 1.5em)), 20px, 1rem)`,
+    paddingBlock: `calc((${sizeVars['--size-element-sm']} - max(min(${spacingVars['--spacing-5']}, max(${sizeVars['--size-element-sm']} - 2 * ${borderVars['--border-width']}, 1.5em)), 20px, 1rem) - 2 * ${borderVars['--border-width']}) / 2)`,
   },
   md: {
     minHeight: sizeVars['--size-element-md'],
-    lineHeight: `max(min(${spacingVars['--spacing-5']}, ${sizeVars['--size-element-md']} - 2 * ${borderVars['--border-width']}), 20px, 1rem)`,
-    paddingBlock: `calc((${sizeVars['--size-element-md']} - max(min(${spacingVars['--spacing-5']}, ${sizeVars['--size-element-md']} - 2 * ${borderVars['--border-width']}), 20px, 1rem) - 2 * ${borderVars['--border-width']}) / 2)`,
+    lineHeight: `max(min(${spacingVars['--spacing-5']}, max(${sizeVars['--size-element-md']} - 2 * ${borderVars['--border-width']}, 1.5em)), 20px, 1rem)`,
+    paddingBlock: `calc((${sizeVars['--size-element-md']} - max(min(${spacingVars['--spacing-5']}, max(${sizeVars['--size-element-md']} - 2 * ${borderVars['--border-width']}, 1.5em)), 20px, 1rem) - 2 * ${borderVars['--border-width']}) / 2)`,
   },
   lg: {
     minHeight: sizeVars['--size-element-lg'],
-    lineHeight: `max(min(${spacingVars['--spacing-5']}, ${sizeVars['--size-element-lg']} - 2 * ${borderVars['--border-width']}), 20px, 1rem)`,
-    paddingBlock: `calc((${sizeVars['--size-element-lg']} - max(min(${spacingVars['--spacing-5']}, ${sizeVars['--size-element-lg']} - 2 * ${borderVars['--border-width']}), 20px, 1rem) - 2 * ${borderVars['--border-width']}) / 2)`,
+    lineHeight: `max(min(${spacingVars['--spacing-5']}, max(${sizeVars['--size-element-lg']} - 2 * ${borderVars['--border-width']}, 1.5em)), 20px, 1rem)`,
+    paddingBlock: `calc((${sizeVars['--size-element-lg']} - max(min(${spacingVars['--spacing-5']}, max(${sizeVars['--size-element-lg']} - 2 * ${borderVars['--border-width']}, 1.5em)), 20px, 1rem) - 2 * ${borderVars['--border-width']}) / 2)`,
   },
 });
 
