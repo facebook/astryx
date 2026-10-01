@@ -20,6 +20,7 @@ import React, {
   useCallback,
   useEffect,
   useId,
+  useImperativeHandle,
   useMemo,
   useOptimistic,
   useRef,
@@ -437,6 +438,43 @@ export type MultiSelectorStatusType = 'warning' | 'error' | 'success';
 
 export type {MultiSelectorStatus};
 
+/**
+ * Props the `trigger` render prop hands to the control the caller renders.
+ * Spread them onto that control: it becomes the panel's anchor, the element
+ * focus returns to, and the control that announces the panel's state.
+ */
+export interface MultiSelectorTriggerProps {
+  /** Attaches the control as the panel's anchor and focus-return target. */
+  ref: (element: HTMLElement | null) => void;
+  /** The id the field would have given its own button. */
+  id: string;
+  onClick: (event: React.MouseEvent<HTMLElement>) => void;
+  onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void;
+  onFocus: (event: React.FocusEvent<HTMLElement>) => void;
+  'aria-haspopup': 'listbox' | 'dialog';
+  'aria-expanded': boolean;
+  'aria-controls': string;
+  'aria-busy': boolean | undefined;
+}
+
+/**
+ * Imperative control surface for MultiSelector, accessed via the `handleRef`
+ * prop. Methods drive the same popover machinery as the built-in trigger, so
+ * they respect focus restoration, light dismiss, and Escape. Pair with
+ * `onOpenChange` to observe every open and close, including the ones the
+ * selector performs itself. Same shape as `ComplexSelectorHandle`.
+ */
+export interface MultiSelectorHandle {
+  /** Open the panel. No-op when disabled, read-only, or already open. */
+  open(): void;
+  /** Close the panel. Restores focus to the trigger. */
+  close(): void;
+  /** Toggle the panel open or closed. */
+  toggle(): void;
+  /** Whether the panel is currently open. Reads live state. */
+  isOpen(): boolean;
+}
+
 export interface MultiSelectorSelectedItem {
   value: string;
   label: string;
@@ -704,6 +742,40 @@ export interface MultiSelectorProps<
   isDefaultOpen?: boolean;
 
   /**
+   * Render the control the panel hangs off — a glyph in a list row, a chip,
+   * an icon button — instead of the selector's own field and button. Spread
+   * the given props onto it; the listbox is then anchored to and labelled by
+   * that control, and `label` names the listbox for assistive technology.
+   * The field chrome (`Field`, status, clear button, spinner) is not
+   * rendered; the caller owns the opener. Pair with `handleRef` to open the
+   * panel from a keystroke elsewhere.
+   *
+   * @example
+   * ```
+   * <MultiSelector
+   *   label="Labels"
+   *   trigger={props => <IconButton icon="tag" label="Labels" {...props} />}
+   *   …
+   * />
+   * ```
+   */
+  trigger?: (props: MultiSelectorTriggerProps) => ReactNode;
+
+  /**
+   * Imperative handle for opening and closing the panel. Prefer `handleRef`
+   * over mirroring open state in the parent — the selector owns its
+   * visibility, and imperative calls avoid the focus-management pitfalls of
+   * syncing an external `isOpen` prop.
+   */
+  handleRef?: React.Ref<MultiSelectorHandle>;
+
+  /**
+   * Called whenever the panel opens or closes, however it happened — the
+   * trigger, the keyboard, a light dismiss, Escape, or the imperative handle.
+   */
+  onOpenChange?: (isOpen: boolean) => void;
+
+  /**
    * Test ID for testing frameworks.
    */
   'data-testid'?: string;
@@ -788,6 +860,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   indicatorPosition = 'start',
   presentation = 'popover',
   isDefaultOpen = false,
+  trigger,
+  handleRef,
+  onOpenChange,
   'data-testid': testId,
   htmlName,
   width,
@@ -974,13 +1049,16 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   }, [searchQuery, options, selectedAtOpen, hasSelectAll, selectAllLabel]);
 
   // Layer for dropdown positioning
+  const hasExternalTrigger = trigger != null;
+
   const handleLayerHide = useCallback(() => {
     setSearchQuery('');
     setSelectedAtOpen(null);
     // Clear any lingering result count when the popover closes so stale status
     // text does not linger in the a11y tree.
     announce('');
-  }, [announce]);
+    onOpenChange?.(false);
+  }, [announce, onOpenChange]);
 
   const handleLayerShow = useCallback(() => {
     // Snapshot selection only after the surface actually opens; a same-gesture
@@ -990,8 +1068,15 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       requestAnimationFrame(() => {
         searchRef.current?.focus();
       });
+    } else if (hasExternalTrigger) {
+      // The caller's anchor may not take focus (a glyph in a link row), so
+      // the listbox owns the keyboard while the panel is open.
+      requestAnimationFrame(() => {
+        listboxRef.current?.focus();
+      });
     }
-  }, [hasSearch, optimisticValue]);
+    onOpenChange?.(true);
+  }, [hasSearch, hasExternalTrigger, optimisticValue, onOpenChange]);
 
   const surface = useSelectorPresentation({
     presentation,
@@ -1031,6 +1116,28 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       hideSurface();
     }
   }, [isEffectivelyReadOnly, isSurfaceOpen, hideSurface]);
+
+  const canOpen = !isDisabled && !isEffectivelyReadOnly;
+  useImperativeHandle(
+    handleRef,
+    () => ({
+      open: () => {
+        if (canOpen && !surface.isOpen) {
+          surface.show();
+        }
+      },
+      close: () => surface.hide(),
+      toggle: () => {
+        if (surface.isOpen) {
+          surface.hide();
+        } else if (canOpen) {
+          surface.show();
+        }
+      },
+      isOpen: () => surface.isOpen,
+    }),
+    [canOpen, surface],
+  );
 
   // Announce the filtered result count from the query-change handler (matching
   // BaseTypeahead) rather than a reactive effect: computing the count for the
@@ -1657,6 +1764,16 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const showStatusTooltip =
     status != null && effectiveStatusVariant === 'tooltip' && !!status.message;
 
+  // With the caller's own trigger, `label` names the listbox directly: the
+  // anchor may carry no text of its own (a glyph in a link row).
+  const listboxLabelProps = hasExternalTrigger
+    ? {'aria-label': label}
+    : {'aria-labelledby': triggerId};
+  // In a bottom sheet, or hung off a caller's anchor that may not take focus,
+  // the listbox itself owns the keyboard.
+  const listboxOwnsKeyboard =
+    surface.activePresentation === 'bottom-sheet' || hasExternalTrigger;
+
   const panelContent = hasSearch ? (
     <div>
       {renderSearch()}
@@ -1667,7 +1784,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           id={listboxId}
           role="listbox"
           aria-multiselectable="true"
-          aria-labelledby={triggerId}
+          {...listboxLabelProps}
           {...stylex.props(styles.listbox)}>
           {renderOptions()}
         </div>
@@ -1680,16 +1797,14 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         id={listboxId}
         role="listbox"
         aria-multiselectable="true"
-        aria-labelledby={triggerId}
+        {...listboxLabelProps}
         aria-activedescendant={
           surface.isOpen && highlightedIndex >= 0
             ? getItemId(highlightedIndex)
             : undefined
         }
-        tabIndex={surface.activePresentation === 'bottom-sheet' ? 0 : undefined}
-        onKeyDown={
-          surface.activePresentation === 'bottom-sheet' ? onKeyDown : undefined
-        }
+        tabIndex={listboxOwnsKeyboard ? 0 : undefined}
+        onKeyDown={listboxOwnsKeyboard ? onKeyDown : undefined}
         {...stylex.props(styles.listbox)}>
         {renderOptions()}
       </div>
@@ -1737,6 +1852,46 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       isEffectivelyReadOnly && styles.triggerReadOnly,
     ),
   };
+
+  if (trigger != null) {
+    // Anchor-only mode: the caller renders the opener and spreads these props
+    // on it. No Field, no status, no clear button — the caller owns the
+    // control; the selector owns the panel, its anchor, and focus return.
+    const triggerProps: MultiSelectorTriggerProps = {
+      ref: el => {
+        popover.triggerRef(el);
+        triggerRef.current = el;
+      },
+      id: triggerId,
+      onClick: onTriggerClick,
+      onKeyDown,
+      onFocus: event => {
+        onFocus?.(event);
+        surface.onTriggerFocus(event);
+      },
+      'aria-haspopup':
+        surface.activePresentation === 'bottom-sheet' ? 'dialog' : 'listbox',
+      'aria-expanded': surface.isOpen,
+      'aria-controls': listboxId,
+      'aria-busy': isBusy || undefined,
+    };
+    return (
+      <>
+        {trigger(triggerProps)}
+        {htmlName != null &&
+          value.map(v => (
+            <input
+              key={v}
+              type="hidden"
+              name={htmlName}
+              value={v}
+              disabled={isDisabled}
+            />
+          ))}
+        {selectionSurface}
+      </>
+    );
+  }
 
   const multiSelectorContent = (
     <>

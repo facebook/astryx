@@ -384,6 +384,24 @@ export const docs = {
           default: 'false',
         },
         {
+          name: 'trigger',
+          type: '(props: MultiSelectorTriggerProps) => ReactNode',
+          description:
+            "Render the control the panel hangs off — a glyph in a list row, a chip, an icon button — instead of the selector's own field and button. Spread the given props ({ref, id, onClick, onKeyDown, onFocus, aria-haspopup, aria-expanded, aria-controls, aria-busy}) onto it; the listbox is anchored to that control and named by `label`. The field chrome (Field, status, clear, spinner) is not rendered. Pair with handleRef to open from a keystroke elsewhere.",
+        },
+        {
+          name: 'handleRef',
+          type: 'React.Ref<MultiSelectorHandle>',
+          description:
+            'Imperative handle with open(), close(), toggle() and isOpen(). Prefer it over mirroring open state in the parent; the selector owns its visibility.',
+        },
+        {
+          name: 'onOpenChange',
+          type: '(isOpen: boolean) => void',
+          description:
+            'Called whenever the panel opens or closes, however it happened: the trigger, the keyboard, a light dismiss, Escape, or the handle.',
+        },
+        {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
@@ -493,6 +511,10 @@ export const docsZh = {
           '状态消息的放置方式：attached 直接叠加在输入框下方；detached 作为独立元素浮于下方并留有间距。',
         renderOption:
           '每个可选选项的自定义渲染函数。不会用于分隔线、分组或全选行。',
+        trigger:
+          '由调用方渲染面板的触发控件（替代选择器自带的字段和按钮）；将传入的属性展开到该控件上，列表框将锚定于它并由 label 命名。',
+        handleRef: '命令式句柄：open()、close()、toggle()、isOpen()。',
+        onOpenChange: '面板每次打开或关闭时触发，无论由何种方式引起。',
         presentation:
           '选项列表的呈现方式：锚定弹出框、底部抽屉，或根据紧凑触控屏自适应。',
         xstyle: '布局自定义的 StyleX 样式，必须是 stylex.create() 值。',
@@ -635,6 +657,10 @@ export const docsDense = {
           'status message placement; ghost detaches attached by default; use tooltip for compact toolbars.',
         renderOption:
           'custom render fn per selectable option; not dividers/sections/select-all',
+        trigger:
+          'caller-rendered opener replacing the field+button; spread the given props; listbox anchored to it, named by label',
+        handleRef: 'imperative open()/close()/toggle()/isOpen()',
+        onOpenChange: 'fires on every open/close, whatever caused it',
         presentation:
           'popover, bottom-sheet, or compact-touch adaptive presentation',
         xstyle: 'StyleX layout styles; stylex.create() only',

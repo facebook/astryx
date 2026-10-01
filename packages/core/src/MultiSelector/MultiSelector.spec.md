@@ -53,7 +53,13 @@ behavior.
   affordances. `isDisabled` takes precedence when both are set.
 - Existing DOM, styling, targets, and public API remain unchanged when the prop is
   omitted.
-- Controlled/uncontrolled behavior: unchanged
+- `trigger`, `handleRef`, and `onOpenChange` are additive and absent by
+  default. When omitted, DOM, styling, targets, keyboard behavior, and public
+  API remain unchanged. With `trigger`, the caller-rendered control replaces
+  the Field shell and Trigger by the caller's choice, not as a change to the
+  released default.
+- Controlled/uncontrolled behavior: unchanged. Open state stays owned by the
+  component; `handleRef` drives it and `onOpenChange` reports it.
 - Migration decision: none
 
 Consumer migration instructions belong in consumer docs and release notes.
@@ -92,21 +98,23 @@ Consumer migration instructions belong in consumer docs and release notes.
 This table names the additive concept introduced by `spec:AST-011`. Complete prop
 syntax and examples remain in `MultiSelector.doc.mjs`.
 
-| Concept         | Closed values or states | Meaning                                                   | Availability   | Default | Owner  | Stability | Invalid-value behavior |
-| --------------- | ----------------------- | --------------------------------------------------------- | -------------- | ------- | ------ | --------- | ---------------------- |
-| read-only state | `false`, `true`         | Preserves and submits values without selection affordance | Closed trigger | `false` | Caller | additive  | Boolean normalization  |
+| Concept         | Closed values or states   | Meaning                                                                                             | Availability                  | Default | Owner  | Stability | Invalid-value behavior                                       |
+| --------------- | ------------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------- | ------- | ------ | --------- | ------------------------------------------------------------ |
+| read-only state | `false`, `true`           | Preserves and submits values without selection affordance                                           | Closed trigger                | `false` | Caller | additive  | Boolean normalization                                        |
+| anchored mode   | `trigger` absent, present | Caller-rendered control replaces Field shell and Trigger; panel anchored to it and named by `label` | Pointer popup and Touch sheet | absent  | Caller | additive  | Render prop must return the control carrying the given props |
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                                                                                                                           | Basis                           | Draft review state                                 |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | -------------------------------------------------- |
-| FR1 | The current standalone presentation contains a Field and painted Trigger; the supported InputGroup path renders the same Trigger without a Field. Optional start content, clear action, status icon, or Indicator icon follows supplied props and state.                      | Current source, docs, and tests | Verified current behavior; no new behavior decided |
-| FR2 | The shared panel content contains the optional Search row, zero or more Option rows, optional public Option dividers and Section headings, and an Empty state when the applicable result set is empty and the value is not loading.                                           | Current source, docs, and tests | Verified current behavior; no new behavior decided |
-| FR3 | Trigger, Indicator icon, Search row, Option row, Section heading, Empty state, and Pointer popup carry the seven current non-deprecated MultiSelector targets documented in `MultiSelector.doc.mjs`.                                                                          | Current source, docs, and tests | Verified current behavior; no target change        |
-| FR4 | When present, Field, shared clear actions, option checkbox indicators, public Option dividers, general icons, Touch sheet heading, and Touch sheet retain their Field, CheckboxInput, Divider, Icon, Text, and BottomSheet theming owners.                                    | Current composition and owners  | Verified current behavior; no target change        |
-| FR5 | Pointer popup and Touch sheet are separate surface anatomy rows, but both host the same `panelContent` tree; the Touch sheet additionally renders its Heading. Changing presentation does not create a second search, option, divider, section, or empty-state content model. | Current source and tests        | Verified current behavior; no normalization        |
-| FR6 | `multi-selector-clear-icon` remains a deprecated compatibility alias for `input-clear-icon`; it is not a current target and does not claim a separate anatomy part.                                                                                                           | Current public target metadata  | Verified current compatibility state               |
-| FR7 | While `isReadOnly` is true, selected values remain focusable and form-submittable, while the selection surface, clear action, disclosure indicator, and every value-change path are unavailable.                                                                              | `spec:AST-011`, docs, and tests | Accepted read-only behavior                        |
+| ID  | Candidate invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Basis                           | Draft review state                                 |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | -------------------------------------------------- |
+| FR1 | The current standalone presentation contains a Field and painted Trigger; the supported InputGroup path renders the same Trigger without a Field. Optional start content, clear action, status icon, or Indicator icon follows supplied props and state.                                                                                                                                                                                                                                              | Current source, docs, and tests | Verified current behavior; no new behavior decided |
+| FR2 | The shared panel content contains the optional Search row, zero or more Option rows, optional public Option dividers and Section headings, and an Empty state when the applicable result set is empty and the value is not loading.                                                                                                                                                                                                                                                                   | Current source, docs, and tests | Verified current behavior; no new behavior decided |
+| FR3 | Trigger, Indicator icon, Search row, Option row, Section heading, Empty state, and Pointer popup carry the seven current non-deprecated MultiSelector targets documented in `MultiSelector.doc.mjs`.                                                                                                                                                                                                                                                                                                  | Current source, docs, and tests | Verified current behavior; no target change        |
+| FR4 | When present, Field, shared clear actions, option checkbox indicators, public Option dividers, general icons, Touch sheet heading, and Touch sheet retain their Field, CheckboxInput, Divider, Icon, Text, and BottomSheet theming owners.                                                                                                                                                                                                                                                            | Current composition and owners  | Verified current behavior; no target change        |
+| FR5 | Pointer popup and Touch sheet are separate surface anatomy rows, but both host the same `panelContent` tree; the Touch sheet additionally renders its Heading. Changing presentation does not create a second search, option, divider, section, or empty-state content model.                                                                                                                                                                                                                         | Current source and tests        | Verified current behavior; no normalization        |
+| FR6 | `multi-selector-clear-icon` remains a deprecated compatibility alias for `input-clear-icon`; it is not a current target and does not claim a separate anatomy part.                                                                                                                                                                                                                                                                                                                                   | Current public target metadata  | Verified current compatibility state               |
+| FR7 | While `isReadOnly` is true, selected values remain focusable and form-submittable, while the selection surface, clear action, disclosure indicator, and every value-change path are unavailable.                                                                                                                                                                                                                                                                                                      | `spec:AST-011`, docs, and tests | Accepted read-only behavior                        |
+| FR8 | With `trigger`, the caller-rendered control receives `ref`, `id`, `onClick`, `onKeyDown`, `onFocus`, `aria-haspopup`, `aria-expanded`, `aria-controls`, and `aria-busy`; the panel is anchored to it, focus returns to it on close, the listbox is named by `label`, and the listbox takes focus and owns the keyboard on open. No Field, status, clear action, spinner, or indicator renders. `handleRef` exposes `open`, `close`, `toggle`, `isOpen`; `onOpenChange` fires on every open and close. | DEC-1, docs, and tests          | Proposed; awaiting owner approval                  |
 
 ### Allowed variation
 
@@ -154,6 +162,12 @@ button-hosted combobox mapping omits the ARIA read-only property, so a localized
 accessible description also announces that state. Search and non-search modes use
 the same read-only combobox semantics because neither exposes a search control in
 this state.
+
+With `trigger`, the caller's control carries `aria-haspopup`, `aria-expanded`,
+and `aria-controls` for the listbox, the listbox carries `aria-label` from
+`label` instead of `aria-labelledby` the trigger, and the listbox is the
+focused element that owns arrow, Enter, Escape, and typeahead keys while open,
+so an anchor that cannot take focus still leaves a keyboard path.
 
 ## Design relationships
 
@@ -261,14 +275,15 @@ empty-state content remains one shared tree.
 
 ## Verification map
 
-| Contract            | Verification                                                                                                                             | Representative states                                                            | Mutation or failure expectation                                                                                             | Audit section                       |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| FR1, FR2            | `MultiSelector.test.tsx` render, search, divider, grouping, status, select-all, and empty-state suites plus InputGroup source inspection | Standalone/InputGroup, search, divided, selected, empty, status                  | Removing a documented part or misreporting Field presence conflicts with existing structure, content assertions, or source. | `audit:MultiSelector/anatomy`       |
-| FR3, FR6            | Component target suites, source inspection, and public target inventory                                                                  | All seven current targets and deprecated alias                                   | A current target is missed, invented, moved, or confused with the deprecated clear-icon alias.                              | `audit:MultiSelector/theming`       |
-| FR4                 | Composed owner source/tests for Field, CheckboxInput, Divider, Icon, Text, and BottomSheet                                               | Field omission/presence, clear actions, checkbox, divider, icons, heading, sheet | A shared part gains the wrong local owner or its documented owner no longer renders it.                                     | `audit:MultiSelector/theming`       |
-| FR5                 | `MultiSelector.test.tsx` presentation suites and `panelContent` source inspection                                                        | Explicit popover, explicit sheet, adaptive touch                                 | A presentation stops using its owner or receives a divergent panel-content implementation.                                  | `audit:MultiSelector/overlay`       |
-| FR7                 | read-only interaction, form, ARIA, and theme-state tests                                                                                 | search/non-search, clearable, open→read-only, disabled precedence                | A value changes, popup or edit affordance remains, form value disappears, or read-only semantics are absent.                | `audit:MultiSelector/accessibility` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                                            | Canonical anatomy and current local targets                                      | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.                                  | `audit:MultiSelector/theming`       |
+| Contract            | Verification                                                                                                                             | Representative states                                                            | Mutation or failure expectation                                                                                                           | Audit section                       |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| FR1, FR2            | `MultiSelector.test.tsx` render, search, divider, grouping, status, select-all, and empty-state suites plus InputGroup source inspection | Standalone/InputGroup, search, divided, selected, empty, status                  | Removing a documented part or misreporting Field presence conflicts with existing structure, content assertions, or source.               | `audit:MultiSelector/anatomy`       |
+| FR3, FR6            | Component target suites, source inspection, and public target inventory                                                                  | All seven current targets and deprecated alias                                   | A current target is missed, invented, moved, or confused with the deprecated clear-icon alias.                                            | `audit:MultiSelector/theming`       |
+| FR4                 | Composed owner source/tests for Field, CheckboxInput, Divider, Icon, Text, and BottomSheet                                               | Field omission/presence, clear actions, checkbox, divider, icons, heading, sheet | A shared part gains the wrong local owner or its documented owner no longer renders it.                                                   | `audit:MultiSelector/theming`       |
+| FR5                 | `MultiSelector.test.tsx` presentation suites and `panelContent` source inspection                                                        | Explicit popover, explicit sheet, adaptive touch                                 | A presentation stops using its owner or receives a divergent panel-content implementation.                                                | `audit:MultiSelector/overlay`       |
+| FR7                 | read-only interaction, form, ARIA, and theme-state tests                                                                                 | search/non-search, clearable, open→read-only, disabled precedence                | A value changes, popup or edit affordance remains, form value disappears, or read-only semantics are absent.                              | `audit:MultiSelector/accessibility` |
+| FR8                 | `MultiSelector.test.tsx` "trigger render prop" suite                                                                                     | External trigger closed/open; handle open/close; disabled; listbox focus         | Field chrome renders with a trigger, the control lacks disclosure state, the listbox is unnamed, or the handle opens a disabled selector. | `audit:MultiSelector/accessibility` |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                                            | Canonical anatomy and current local targets                                      | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.                                                | `audit:MultiSelector/theming`       |
 
 Existing component tests directly assert the Trigger, Indicator icon, Search row,
 Option row, Section heading, Empty state, and Pointer popup targets. Presentation
@@ -279,8 +294,16 @@ owner evidence rather than new MultiSelector targets.
 
 ## Decision log
 
-None. This draft records current facts and introduces no component-local design,
-API, theming, or layer-system decision.
+- **DEC-1 — Anchored mode through `trigger` + `handleRef`, not a controlled
+  `isOpen`.** A picker anchored in a row the caller owns (a link row whose
+  opener is a presentational glyph) cannot host the Field shell or a nested
+  button. The caller renders the control and spreads the given props; the
+  component keeps owning open state, and `handleRef`/`onOpenChange` open it
+  from a keystroke elsewhere and report every change — the rule already written
+  on `ComplexSelectorHandle`. Rejected: an `anchorRef` plus controlled
+  `isOpen`, which mirrors open state in the parent and reintroduces the focus
+  pitfalls that rule names. Proposed in `github:facebook/astryx#6689`; FR8
+  becomes policy only when an owner approves this record.
 
 ## Open questions
 

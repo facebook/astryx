@@ -20,7 +20,8 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import * as stylex from '@stylexjs/stylex';
-import {MultiSelector} from './MultiSelector';
+import {MultiSelector, type MultiSelectorHandle} from './MultiSelector';
+import {useRef} from 'react';
 import {Icon} from '../Icon';
 import {InternationalizationProvider} from '../i18n';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -3141,6 +3142,165 @@ describe('MultiSelector popup theme target', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
     expect(trigger.parentElement).toHaveClass(
       stylex.props(selectorPresentationStyles.pointerRestoredFocus).className!,
+    );
+  });
+});
+
+describe('MultiSelector trigger render prop', () => {
+  const OPTIONS = [
+    {value: 'bug', label: 'Bug'},
+    {value: 'feature', label: 'Feature'},
+    {value: 'docs', label: 'Docs'},
+  ];
+
+  it('renders the caller control instead of the field and button', () => {
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        trigger={props => (
+          <button type="button" {...props}>
+            Pick labels
+          </button>
+        )}
+      />,
+    );
+    const opener = screen.getByRole('button', {name: 'Pick labels'});
+    expect(opener).toHaveAttribute('aria-haspopup', 'listbox');
+    expect(opener).toHaveAttribute('aria-expanded', 'false');
+    expect(opener).toHaveAttribute('aria-controls');
+    // No field chrome: exactly one button, and no Field label element.
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+    expect(screen.queryByText('Labels')).toBeNull();
+  });
+
+  it('opens against the caller control and names the listbox by label', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={['bug']}
+        onChange={() => {}}
+        trigger={props => (
+          <button type="button" {...props}>
+            Pick labels
+          </button>
+        )}
+      />,
+    );
+    const opener = screen.getByRole('button', {name: 'Pick labels'});
+    await user.click(opener);
+
+    expect(opener).toHaveAttribute('aria-expanded', 'true');
+    const listbox = screen.getByRole('listbox', {name: 'Labels', ...h});
+    expect(opener.getAttribute('aria-controls')).toBe(listbox.id);
+    expect(screen.getAllByRole('option', h)).toHaveLength(3);
+    expect(screen.getByRole('option', {name: 'Bug', ...h})).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+  });
+
+  it('the listbox owns the keyboard once open and toggles on Enter', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={onChange}
+        trigger={props => (
+          <button type="button" {...props}>
+            Pick labels
+          </button>
+        )}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Pick labels'}));
+    const listbox = screen.getByRole('listbox', h);
+    expect(listbox).toHaveAttribute('tabindex', '0');
+    await waitFor(() => expect(listbox).toHaveFocus());
+
+    // Opening by click highlights the first option; Enter toggles it.
+    fireEvent.keyDown(listbox, {key: 'ArrowDown'});
+    fireEvent.keyDown(listbox, {key: 'Enter'});
+    expect(onChange).toHaveBeenCalledWith(['feature']);
+  });
+
+  it('handleRef opens and closes the panel and onOpenChange reports it', async () => {
+    const onOpenChange = vi.fn();
+    function Harness() {
+      const handleRef = useRef<MultiSelectorHandle>(null);
+      return (
+        <>
+          <button type="button" onClick={() => handleRef.current?.open()}>
+            open from outside
+          </button>
+          <button type="button" onClick={() => handleRef.current?.close()}>
+            close from outside
+          </button>
+          <MultiSelector
+            label="Labels"
+            options={OPTIONS}
+            value={[]}
+            onChange={() => {}}
+            handleRef={handleRef}
+            onOpenChange={onOpenChange}
+            trigger={props => (
+              <button type="button" {...props}>
+                anchor
+              </button>
+            )}
+          />
+        </>
+      );
+    }
+    const user = userEvent.setup();
+    render(<Harness />);
+    const anchor = screen.getByRole('button', {name: 'anchor'});
+    expect(anchor).toHaveAttribute('aria-expanded', 'false');
+    expect(onOpenChange).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', {name: 'open from outside'}));
+    expect(anchor).toHaveAttribute('aria-expanded', 'true');
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+
+    await user.click(screen.getByRole('button', {name: 'close from outside'}));
+    await waitFor(() => {
+      expect(anchor).toHaveAttribute('aria-expanded', 'false');
+    });
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+    expect(onOpenChange).toHaveBeenCalledTimes(2);
+  });
+
+  it('the handle does not open a disabled selector', () => {
+    const handleRef = {current: null as MultiSelectorHandle | null};
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        isDisabled
+        handleRef={handleRef}
+        trigger={props => (
+          <button type="button" {...props}>
+            anchor
+          </button>
+        )}
+      />,
+    );
+    act(() => {
+      handleRef.current?.open();
+    });
+    expect(handleRef.current?.isOpen()).toBe(false);
+    expect(screen.getByRole('button', {name: 'anchor'})).toHaveAttribute(
+      'aria-expanded',
+      'false',
     );
   });
 });
