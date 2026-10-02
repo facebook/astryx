@@ -23,7 +23,15 @@ import {logger} from '../../logger.mjs';
  * @returns {Promise<import('../init.type.mjs').InitRemoveResponse>}
  */
 export async function remove({cwd = process.cwd()} = {}) {
-  removeAgentDocs(cwd);
-  logger.log('[ok] AI agent docs removed.');
-  return {type: 'init.remove', data: {removed: true}};
+  // A clean project has no managed block, and removing from it is a no-op. The
+  // receipt used to be the literal {removed: true} either way, so a caller
+  // could not tell "removed it" from "there was nothing there".
+  const removedFrom = removeAgentDocs(cwd);
+  const removed = removedFrom.length > 0;
+  logger.log(
+    removed
+      ? '[ok] AI agent docs removed.'
+      : '[ok] Nothing to remove: no Astryx agent-docs block was found.',
+  );
+  return {type: 'init.remove', data: {removed}};
 }
