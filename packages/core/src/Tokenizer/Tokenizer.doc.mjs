@@ -175,7 +175,8 @@ export const docs = {
     {
       name: 'size',
       type: "'sm' | 'md' | 'lg'",
-      description: 'Input and token size.',
+      description:
+        "Input and token size. Inside an InputGroup the group's size applies instead.",
       default: "'md'",
     },
     {
@@ -262,6 +263,7 @@ export const docs = {
       {guidance: true, description: 'Set maxEntries when the number of selections should be bounded, like limiting a review to 5 approvers.'},
       {guidance: true, description: 'Use hasCreate for free-form tagging where users need to enter values that do not exist in the search source.'},
       {guidance: true, description: 'Show validation status with the status prop so users know immediately when a selection is missing or invalid.'},
+      {guidance: true, description: 'Use inside InputGroup only when the tokenizer needs a short prefix or suffix addon as part of one decorated input surface; the grouped row stays single-line, so keep selections few (maxEntries) or use tokenOverflowBehavior to summarize them.'},
       {guidance: false, description: 'Don\'t use Tokenizer for single-item selection; use Typeahead instead. Tokenizer is for building sets of two or more items.'},
       {guidance: false, description: 'Avoid applying custom colors to individual tokens inside a Tokenizer; use the default token style for visual consistency across the set.'},
       {guidance: false, description: 'Don\'t hide the label; every Tokenizer needs a visible label so users understand what they are selecting. Use isLabelHidden only when surrounding context makes the purpose obvious.'},
@@ -436,7 +438,7 @@ export const docsZh = {
     {
       name: 'size',
       type: "'sm' | 'md' | 'lg'",
-      description: '\u8f93\u5165\u6846\u548c\u6807\u8bb0\u7684\u5c3a\u5bf8\u3002',
+      description: '\u8f93\u5165\u6846\u548c\u6807\u8bb0\u7684\u5c3a\u5bf8\u3002\u5728 InputGroup \u5185\u5219\u4f7f\u7528\u8be5\u7ec4\u7684\u5c3a\u5bf8\u3002',
       default: "'md'",
     },
     {
@@ -488,6 +490,7 @@ export const docsZh = {
       {guidance: true, description: 'Set maxEntries when the number of selections should be bounded, like limiting a review to 5 approvers.'},
       {guidance: true, description: 'Use hasCreate for free-form tagging where users need to enter values that do not exist in the search source.'},
       {guidance: true, description: 'Show validation status with the status prop so users know immediately when a selection is missing or invalid.'},
+      {guidance: true, description: 'Use inside InputGroup only when the tokenizer needs a short prefix or suffix addon as part of one decorated input surface; the grouped row stays single-line, so keep selections few (maxEntries) or use tokenOverflowBehavior to summarize them.'},
       {guidance: false, description: 'Don\'t use Tokenizer for single-item selection; use Typeahead instead. Tokenizer is for building sets of two or more items.'},
       {guidance: false, description: 'Avoid applying custom colors to individual tokens inside a Tokenizer; use the default token style for visual consistency across the set.'},
       {guidance: false, description: 'Don\'t hide the label; every Tokenizer needs a visible label so users understand what they are selecting. Use isLabelHidden only when surrounding context makes the purpose obvious.'},
@@ -516,6 +519,7 @@ export const docsDense = {
       {guidance: true, description: 'maxEntries when selections are bounded (e.g. 5 approvers max).'},
       {guidance: true, description: 'hasCreate for free-form tagging with values not in the source.'},
       {guidance: true, description: 'status prop for immediate validation feedback.'},
+      {guidance: true, description: 'Use inside InputGroup only for a short prefix or suffix addon; the grouped row stays single-line, so keep selections few (maxEntries) or use tokenOverflowBehavior.'},
       {guidance: false, description: 'Don\'t use for single-item selection; use Typeahead instead.'},
       {guidance: false, description: 'Avoid custom token colors; default style for consistency.'},
       {guidance: false, description: 'Don\'t hide the label unless context makes purpose obvious.'},
@@ -548,7 +552,7 @@ export const docsDense = {
     minQueryLength: 'Min query length before searching. Menu stays closed below it, except the hasCreate entry.',
     emptySearchResultsText: 'Text when search returns no results.',
     hasAutoFocus: 'Auto-focus input on mount.',
-    size: 'Input+token size.',
+    size: 'Input+token size; the group size applies inside InputGroup.',
     debounceMs: 'Search debounce delay ms. 0 for sync sources.',
     onChangeQuery: 'Fired on search query text change.',
     startIcon: 'Icon at input start, before tokens. Icon name, SVG component, or ReactNode.',
