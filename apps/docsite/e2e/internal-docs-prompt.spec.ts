@@ -73,7 +73,7 @@ async function serveReachability(page: Page, origin: string) {
 
 for (const {name, origin} of deployments) {
   for (const width of [1440, 390]) {
-    test(`${name}: fixed pill at ${width}px never shifts content and dismissal persists`, async ({
+    test(`${name}: fixed pill at ${width}px never shifts content and dismissal stays view-local`, async ({
       page,
       baseURL,
     }, testInfo) => {
@@ -141,19 +141,41 @@ for (const {name, origin} of deployments) {
       const close = prompt.getByRole('button', {
         name: 'Dismiss internal docs prompt',
       });
+      const storageBefore = await page.evaluate(() => ({
+        session: {...sessionStorage},
+        local: {...localStorage},
+        cookie: document.cookie,
+      }));
       await close.focus();
       await expect(close).toBeFocused();
       await page.keyboard.press('Enter');
       await expect(prompt).toHaveCount(0);
+      expect(
+        await page.evaluate(() => ({
+          session: {...sessionStorage},
+          local: {...localStorage},
+          cookie: document.cookie,
+        })),
+      ).toEqual(storageBefore);
+
+      // Next.js' native history integration updates the client URL view without
+      // reloading the document or repeating the successful reachability probe.
+      await page.evaluate(() =>
+        window.history.pushState(null, '', '?source=after-dismiss'),
+      );
+      await expect(prompt).toBeVisible();
+      await expect(link).toHaveAttribute(
+        'href',
+        `${internalOrigin}/docs/getting-started?source=after-dismiss`,
+      );
+      expect(probe.requests()).toBe(1);
+      await close.click();
+      await expect(prompt).toHaveCount(0);
+
       await page.reload();
       await expect(heading).toBeVisible();
-      await expect(prompt).toHaveCount(0);
-      expect(probe.requests()).toBe(1);
-      expect(
-        await page.evaluate(() =>
-          sessionStorage.getItem('astryx:internal-prompt:dismissed'),
-        ),
-      ).toBe('true');
+      await expect(prompt).toBeVisible();
+      expect(probe.requests()).toBe(2);
     });
   }
 }

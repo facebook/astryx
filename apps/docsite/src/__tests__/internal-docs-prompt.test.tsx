@@ -37,7 +37,6 @@ let Prompt: typeof InternalDocsPrompt;
 let href: typeof internalDocsHref;
 const internalOrigin = 'https://astryx.internalmeta.com';
 const message = {type: 'astryx:access-check:v1', reachable: true};
-const dismissalKey = 'astryx:internal-prompt:dismissed';
 
 beforeEach(async () => {
   vi.resetModules();
@@ -45,7 +44,6 @@ beforeEach(async () => {
   jsdom.reconfigure({
     url: 'https://astryx.atmeta.com/components/Button?tab=props',
   });
-  window.sessionStorage.clear();
   route.pathname = '/components/Button';
   route.search = 'tab=props';
   const module = await import('../components/InternalDocsPrompt');
@@ -262,41 +260,83 @@ describe('InternalDocsPrompt', () => {
     expect(prompt()).toBeNull();
   });
 
-  it('dismisses and remembers the dismissal across remounts and page loads', async () => {
+  it('dismisses only the mounted view without writing storage or cookies', async () => {
+    for (const path of [
+      'components/InternalDocsPrompt.tsx',
+      'lib/useInternalDocsPrompt.ts',
+    ]) {
+      const source = readFileSync(join(__dirname, '..', path), 'utf8');
+      expect(source).not.toMatch(
+        /sessionStorage|localStorage|document\.cookie/,
+      );
+    }
     const view = await mount();
     showPrompt();
+    const before = {
+      session: {...window.sessionStorage},
+      local: {...window.localStorage},
+      cookie: document.cookie,
+    };
     const close = screen.getByRole('button', {
       name: 'Dismiss internal docs prompt',
     });
     expect(close.getAttribute('tabindex')).not.toBe('-1');
     fireEvent.click(close);
     expect(prompt()).toBeNull();
-    expect(window.sessionStorage.getItem(dismissalKey)).toBe('true');
-    view.unmount();
-    vi.resetModules();
-    Prompt = (await import('../components/InternalDocsPrompt'))
-      .InternalDocsPrompt;
-    await mount();
+    view.rerender(
+      <StrictMode>
+        <Prompt />
+      </StrictMode>,
+    );
     expect(prompt()).toBeNull();
+    expect({
+      session: {...window.sessionStorage},
+      local: {...window.localStorage},
+      cookie: document.cookie,
+    }).toEqual(before);
+    view.unmount();
+    await mount();
+    expect(prompt()).not.toBeNull();
     expect(document.querySelector('iframe')).toBeNull();
   });
 
-  it('still dismisses when sessionStorage is unavailable', async () => {
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
-      throw new DOMException('Storage unavailable', 'SecurityError');
-    });
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-      throw new DOMException('Storage unavailable', 'SecurityError');
-    });
+  it('resets dismissal on pathname and query navigation, including returning to a dismissed URL', async () => {
     const view = await mount();
     showPrompt();
-    fireEvent.click(
-      screen.getByRole('button', {name: 'Dismiss internal docs prompt'}),
+    for (const [pathname, search] of [
+      ['/docs/tokens', ''],
+      ['/docs/tokens', 'mode=dark'],
+      ['/components/Button', 'tab=props'],
+    ]) {
+      fireEvent.click(
+        screen.getByRole('button', {name: 'Dismiss internal docs prompt'}),
+      );
+      expect(prompt()).toBeNull();
+      route.pathname = pathname;
+      route.search = search;
+      view.rerender(
+        <StrictMode>
+          <Prompt />
+        </StrictMode>,
+      );
+      expect(prompt()).not.toBeNull();
+      expect(document.querySelector('iframe')).toBeNull();
+    }
+  });
+
+  it('keeps an in-flight probe alive across client navigation', async () => {
+    const view = await mount();
+    const target = frame();
+    route.pathname = '/docs/tokens';
+    view.rerender(
+      <StrictMode>
+        <Prompt />
+      </StrictMode>,
     );
-    expect(prompt()).toBeNull();
-    view.unmount();
-    await mount();
-    expect(prompt()).toBeNull();
+    expect(frame()).toBe(target);
+    fireEvent.load(target);
+    send(target);
+    expect(prompt()).not.toBeNull();
   });
 
   it('updates the link on client navigation without probing again', async () => {
@@ -304,7 +344,11 @@ describe('InternalDocsPrompt', () => {
     showPrompt();
     route.pathname = '/docs/tokens';
     route.search = 'mode=dark&query=a%26b';
-    view.rerender(<Prompt />);
+    view.rerender(
+      <StrictMode>
+        <Prompt />
+      </StrictMode>,
+    );
     expect(
       screen
         .getByRole('link', {name: /Internal docs — open Astryx documentation/})

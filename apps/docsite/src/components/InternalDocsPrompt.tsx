@@ -3,11 +3,12 @@
 'use client';
 
 /**
- * @input Positive reachability, session dismissal, and the current docs route
+ * @input Positive reachability, mounted-view dismissal, and the current docs route
  * @output A compact, non-modal pill floating above the page at every width
  * @position Client leaf mounted once inside the docsite's server root layout
  */
 
+import {useState} from 'react';
 import {usePathname, useSearchParams} from 'next/navigation';
 import {BookOpen} from 'lucide-react';
 import * as stylex from '@stylexjs/stylex';
@@ -50,11 +51,23 @@ export function internalDocsHref(pathname: string, search: string): string {
 }
 
 export function InternalDocsPrompt() {
-  const {isVisible, dismiss} = useInternalDocsPrompt();
+  const isReachable = useInternalDocsPrompt();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const search = useSearchParams().toString();
 
-  if (!isVisible) {
+  // Keep detection mounted across navigation, but reset only the pill's local
+  // dismissal state when the current path/query changes.
+  return isReachable ? (
+    <InternalDocsPill
+      key={`${pathname}?${search}`}
+      href={internalDocsHref(pathname, search)}
+    />
+  ) : null;
+}
+
+function InternalDocsPill({href}: {href: string}) {
+  const [isDismissed, setIsDismissed] = useState(false);
+  if (isDismissed) {
     return null;
   }
 
@@ -68,7 +81,7 @@ export function InternalDocsPrompt() {
       <HStack gap={2} vAlign="center">
         <Icon icon={BookOpen} size="sm" color="accent" />
         <Link
-          href={internalDocsHref(pathname, searchParams.toString())}
+          href={href}
           label="Internal docs — open Astryx documentation (Meta network detected, opens in a new tab)"
           isStandalone
           target="_blank"
@@ -80,7 +93,7 @@ export function InternalDocsPrompt() {
           tooltip="Dismiss internal docs prompt"
           icon={<Icon icon="close" />}
           variant="ghost"
-          onClick={dismiss}
+          onClick={() => setIsDismissed(true)}
         />
       </HStack>
     </Card>

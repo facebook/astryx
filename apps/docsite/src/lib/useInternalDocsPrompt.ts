@@ -4,7 +4,7 @@
 
 /**
  * @input An anonymous iframe's load and exact-origin reachability message
- * @output A fail-closed, once-per-page-load prompt state and session dismissal
+ * @output A fail-closed, once-per-page-load reachability result
  * @position Client-only detection shared across root-layout remounts
  */
 
@@ -17,15 +17,14 @@ export const ALLOWED_PARENT_ORIGINS: readonly string[] = [
 ];
 export const INTERNAL_DOCS_ORIGIN = 'https://astryx.internalmeta.com';
 export const ACCESS_CHECK_MESSAGE_TYPE = 'astryx:access-check:v1';
-export const DISMISSAL_KEY = 'astryx:internal-prompt:dismissed';
 
 const listeners = new Set<() => void>();
 let attempted = false;
-let visible = false;
+let reachable = false;
 let cancelCheck: (() => void) | undefined;
 
-function publishVisibility(next: boolean) {
-  visible = next;
+function publishReachability(next: boolean) {
+  reachable = next;
   for (const listener of listeners) {
     listener();
   }
@@ -33,13 +32,6 @@ function publishVisibility(next: boolean) {
 
 function startCheck() {
   attempted = true;
-  try {
-    if (window.sessionStorage.getItem(DISMISSAL_KEY) === 'true') {
-      return;
-    }
-  } catch {
-    // Storage may be disabled. In-memory dismissal still works for this load.
-  }
 
   // Mirror the companion endpoint's exact deployment allowlist. Never probe
   // arbitrary preview/hash domains or send a different origin on their behalf.
@@ -64,7 +56,7 @@ function startCheck() {
     frame.removeEventListener('load', onLoad);
     frame.remove();
     cancelCheck = undefined;
-    publishVisibility(reachable);
+    publishReachability(reachable);
   };
   const onLoad = () => {
     loaded = true;
@@ -110,23 +102,9 @@ function subscribe(listener: () => void) {
   };
 }
 
-function dismiss() {
-  try {
-    window.sessionStorage.setItem(DISMISSAL_KEY, 'true');
-  } catch {
-    // Do not prevent dismissal when the browser refuses persistence.
-  }
-  publishVisibility(false);
-}
-
-const getSnapshot = () => visible;
+const getSnapshot = () => reachable;
 const getServerSnapshot = () => false;
 
 export function useInternalDocsPrompt() {
-  const isVisible = useSyncExternalStore(
-    subscribe,
-    getSnapshot,
-    getServerSnapshot,
-  );
-  return {isVisible, dismiss};
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
