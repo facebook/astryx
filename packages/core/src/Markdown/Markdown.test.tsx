@@ -11,11 +11,20 @@ import {
 } from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import type {ComponentProps, ReactNode} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {Markdown} from './Markdown';
 import type {MarkdownComponents, MarkdownInlinePlugin} from './Markdown';
 import type {ParseOptions} from './index';
 import {stubMatchMedia} from '../__tests__/stubMatchMedia';
 import {parseOutlineFromMarkdown} from '../Outline/parseOutlineFromMarkdown';
+import {spacingVars} from '../theme/tokens.stylex';
+
+const tableCellSpacingProbe = stylex.create({
+  cell: {
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-2'],
+  },
+});
 
 describe('Markdown', () => {
   it('renders with role="document"', () => {
@@ -376,6 +385,21 @@ describe('Markdown', () => {
     expect(bq).toBeInTheDocument();
   });
 
+  it('renders lazy continuations in the owning nested containers', () => {
+    const {container} = render(
+      <Markdown>{'> 1. > Quoted **text**\ncontinued lazily'}</Markdown>,
+    );
+    const root = container.querySelector('.astryx-markdown');
+    const outerQuote = root?.querySelector('blockquote');
+    const nestedQuote = outerQuote?.querySelector('ol blockquote');
+
+    expect(root?.children).toHaveLength(1);
+    expect(root?.querySelectorAll('blockquote')).toHaveLength(2);
+    expect(root?.querySelectorAll('ol')).toHaveLength(1);
+    expect(nestedQuote).toHaveTextContent('Quoted text');
+    expect(nestedQuote).toHaveTextContent('continued lazily');
+  });
+
   it('renders unordered lists', () => {
     render(<Markdown>{'- A\n- B\n- C'}</Markdown>);
     const ul = document.querySelector('ul');
@@ -461,15 +485,132 @@ describe('Markdown', () => {
     expect(cells[1].querySelector('code')).toHaveTextContent('T | null');
   });
 
-  it('makes the table scroll wrapper keyboard-focusable', () => {
-    render(<Markdown>{'| A | B |\n| --- | --- |\n| 1 | 2 |'}</Markdown>);
-    const table = document.querySelector('table');
+  it('delegates table scrolling and focus to the Table-owned viewport', () => {
+    const {container} = render(
+      <Markdown>{'| A | B |\n| --- | --- |\n| 1 | 2 |'}</Markdown>,
+    );
+    const table = container.querySelector('table');
+    const markdownBlock = container.querySelector('.astryx-markdown-table');
+    const groups = container.querySelectorAll('[role="group"]');
+
     expect(table).toBeInTheDocument();
-    // The GFM table's outer overflow wrapper is keyboard-focusable so keyboard
-    // users can horizontally scroll a wide table.
-    const wrapper = table!.closest('[role="group"][tabindex="0"]');
-    expect(wrapper).toBeTruthy();
-    expect(wrapper).toHaveAttribute('aria-label', 'Table');
+    // Exactly one scroll region: Table's own, which also owns the name and
+    // (when it actually overflows) the tab stop. Markdown's block carries
+    // spacing and sizing only.
+    expect(groups).toHaveLength(1);
+    expect(groups[0]).toContainElement(table);
+    expect(groups[0]).toHaveAttribute('aria-label', 'Table');
+    expect(markdownBlock).not.toHaveAttribute('role');
+    expect(markdownBlock).not.toHaveAttribute('tabindex');
+  });
+
+  it('uses spacing-2 on every Markdown table cell edge', () => {
+    const {container} = render(
+      <Markdown>{'| A | B |\n| --- | --- |\n| 1 | 2 |'}</Markdown>,
+    );
+    const spacingClasses = (
+      stylex.props(tableCellSpacingProbe.cell).className ?? ''
+    )
+      .split(' ')
+      .filter(className => className !== '' && !className.includes('__'));
+    const cells = container.querySelectorAll('th, td');
+
+    expect(spacingClasses.length).toBeGreaterThan(0);
+    expect(cells).toHaveLength(4);
+    for (const cell of cells) {
+      for (const className of spacingClasses) {
+        expect(cell).toHaveClass(className);
+      }
+    }
+  });
+
+  it('floors each table column from its own content, in ch', () => {
+    // The floor algorithm: max(4, ceil(longest cell / 2), min(header, 20)),
+    // capped at 24, expressed in `ch` so it follows the reader's font size.
+    // That the floor then survives cell padding and actually widens the
+    // column is geometry, and is proved in MarkdownTable.a11y.chromium.spec.ts.
+    const long = 'x'.repeat(120);
+    render(
+      <Markdown>
+        {`| Key | Meaning | Note |\n| --- | --- | --- |\n| id | Stable identifier never reused | ${long} |`}
+      </Markdown>,
+    );
+    const floors = Array.from(document.querySelectorAll('th')).map(th =>
+      th.getAttribute('style'),
+    );
+    expect(floors[0]).toMatch(/\b4ch\b/); // "Key" / "id" — short, min floor
+    expect(floors[1]).toMatch(/\b15ch\b/); // 30 chars → ceil(30 / 2)
+    expect(floors[2]).toMatch(/\b24ch\b/); // 120 chars → capped
+    // No fixed pixel bucket survives anywhere in the column floors.
+    expect(floors.join(' ')).not.toMatch(/\d+px/);
+  });
+
+  it('floors a short-bodied column from its header label, up to the cap', () => {
+    render(
+      <Markdown>
+        {
+          '| Component name | Accessibility status and remediation owner | X |\n| --- | --- | --- |\n| Button | Pass | 1 |'
+        }
+      </Markdown>,
+    );
+    const ths = Array.from(document.querySelectorAll('th'));
+    // 14-char label: the header floor (14ch) beats the body floor (3ch).
+    expect(ths[0].getAttribute('style')).toMatch(/\b14ch\b/);
+    // 42-char label: the header floor caps at 20ch, so the body floor
+    // (ceil(42 / 2) = 21ch) is what the column keeps.
+    expect(ths[1].getAttribute('style')).toMatch(/\b21ch\b/);
+  });
+
+  it('floors a header-only table from its labels alone', () => {
+    // No body rows: the body floor is computed over nothing, so the header
+    // label has to carry the column by itself rather than collapsing to the
+    // minimum (or throwing on an absent row).
+    render(<Markdown>{'| Status | Owner |\n| --- | --- |'}</Markdown>);
+    const ths = Array.from(document.querySelectorAll('th'));
+    expect(ths.map(th => th.textContent)).toEqual(['Status', 'Owner']);
+    expect(document.querySelectorAll('tbody tr')).toHaveLength(0);
+    expect(ths[0].getAttribute('style')).toMatch(/\b6ch\b/);
+    expect(ths[1].getAttribute('style')).toMatch(/\b5ch\b/);
+  });
+
+  it('floors a column of empty cells at the minimum', () => {
+    render(
+      <Markdown>
+        {'| A | B | C |\n| --- | --- | --- |\n|  | middle only |  |'}
+      </Markdown>,
+    );
+    const ths = Array.from(document.querySelectorAll('th'));
+    // Empty body cells contribute nothing; a one-character header still
+    // leaves the column at the 4ch minimum rather than at zero.
+    expect(ths[0].getAttribute('style')).toMatch(/\b4ch\b/);
+    expect(ths[2].getAttribute('style')).toMatch(/\b4ch\b/);
+    // 11 chars in the middle column → ceil(11 / 2) = 6ch.
+    expect(ths[1].getAttribute('style')).toMatch(/\b6ch\b/);
+  });
+
+  it('keeps inline code inside a table cell on the default Code part', () => {
+    render(
+      <Markdown>
+        {'| Status |\n| --- |\n| `needs_revision_before_landing_v2` |'}
+      </Markdown>,
+    );
+    const code = document.querySelector('tbody td code');
+    expect(code).toHaveTextContent('needs_revision_before_landing_v2');
+  });
+
+  it('lets a supplied inlineCode renderer own code inside table cells', () => {
+    const components: Partial<MarkdownComponents> = {
+      inlineCode: ({children}) => <kbd data-custom>{children}</kbd>,
+    };
+    render(
+      <Markdown components={components}>
+        {'| Status |\n| --- |\n| `x` |'}
+      </Markdown>,
+    );
+    expect(
+      document.querySelector('tbody td kbd[data-custom]'),
+    ).toHaveTextContent('x');
+    expect(document.querySelector('tbody td code')).toBeNull();
   });
 
   it('renders horizontal rules', () => {

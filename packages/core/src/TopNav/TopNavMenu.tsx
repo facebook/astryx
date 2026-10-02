@@ -81,7 +81,8 @@ const styles = stylex.create({
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     fontFamily: 'inherit',
   },
   triggerOpen: {
@@ -134,7 +135,8 @@ const styles = stylex.create({
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
   },
   menuItemIcon: {
     display: 'flex',
@@ -173,8 +175,9 @@ const drawerStyles = stylex.create({
   },
   header: {
     justifyContent: 'space-between',
-    border: 'none',
-    background: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
   },
   chevron: {
     display: 'inline-flex',

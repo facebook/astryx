@@ -216,6 +216,34 @@ describe('the docs tree, one level at a time', () => {
     expect(JSON.parse(both.stdout).code).toBe('ERR_INVALID_ARGUMENT');
   }, SLOW);
 
+  it('reads the component lookup guide and its output/API examples', async () => {
+    const index = await runCli([
+      'docs',
+      'cli/component-lookups',
+      '--index',
+    ]);
+    expect(index.status).toBe(0);
+    expect(index.stdout).toContain('several');
+    expect(index.stdout).toContain('selectors');
+    expect(index.stdout).toContain('output');
+    expect(index.stdout).toContain('api');
+
+    const output = await runCli([
+      'docs',
+      'cli/component-lookups',
+      'output',
+    ]);
+    expect(output.status).toBe(0);
+    expect(output.stdout).toContain('component.batch');
+    expect(output.stdout).toContain('ERR_UNKNOWN_COMPONENT');
+    expect(output.stdout).toContain('exits 1');
+
+    const api = await runCli(['docs', 'cli/component-lookups', 'api']);
+    expect(api.status).toBe(0);
+    expect(api.stdout).toContain('component([])');
+    expect(api.stdout).toContain("component(['Button'])");
+  }, SLOW);
+
   it('reads the integration guide by its route, and not by its old name', async () => {
     const guide = await runCli(['docs', 'cli/integrations', '--index']);
     expect(guide.status).toBe(0);
@@ -252,6 +280,7 @@ describe('the docs tree, one level at a time', () => {
     const error = JSON.parse(section.stdout);
     expect(error).toMatchObject({code: 'ERR_UNKNOWN_SECTION'});
     expect(error.suggestions.map(s => s.name)).toEqual([
+      'cli/component-lookups',
       'cli/integrations',
       'cli/writing-docs',
       'cli/commands',

@@ -33,6 +33,7 @@ export const AUTHORING_SELF_DOCS = [
   'config/config.doc.mjs',
   'debug/debug.doc.mjs',
   'gap-report/gap-report.doc.mjs',
+  'discover/discover.doc.mjs',
   'codemod/codemod.doc.mjs',
   'identity/identity.doc.mjs',
   'doctypes/base/graph-fields.doc.mjs',
@@ -134,6 +135,24 @@ function fieldRows(fields) {
 }
 
 /**
+ * A schema's fields as the table its section prints, each nested field on the
+ * row after its parent; null when there are none. A reference block that
+ * names some of a schema's fields includes this table of just those.
+ * @param {any[]} fields
+ * @returns {{type: 'table', headers: string[], rows: string[][]} | null}
+ */
+export function schemaFieldTable(fields) {
+  const rows = fieldRows(fields);
+  return rows.length > 0
+    ? {
+        type: 'table',
+        headers: ['Field', 'Type', 'Required', 'Description'],
+        rows,
+      }
+    : null;
+}
+
+/**
  * One self-doc as a topic section, keyed by the doc's own name.
  * @param {any} doc
  * @returns {import('../../authoring/doctypes/reference/type').ReferenceSection}
@@ -144,14 +163,8 @@ export function selfDocSection(doc) {
   if (doc.appliesTo) {
     content.push({type: 'prose', text: `Applies to: ${doc.appliesTo}`});
   }
-  const rows = fieldRows(doc.fields ?? []);
-  if (rows.length > 0) {
-    content.push({
-      type: 'table',
-      headers: ['Field', 'Type', 'Required', 'Description'],
-      rows,
-    });
-  }
+  const table = schemaFieldTable(doc.fields ?? []);
+  if (table) content.push(table);
   for (const example of doc.examples ?? []) {
     if (typeof example?.code !== 'string' || example.code.trim() === '')
       continue;

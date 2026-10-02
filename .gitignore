@@ -83,8 +83,9 @@ mise.toml
 # Generated shadcn Registry output (rebuilt by the docsite generate step)
 apps/docsite/public/shadcn/
 
-# Generated i18n artifacts (rebuilt from en.json)
+# Generated i18n artifacts (rebuilt from en.json and translated catalogs)
 packages/core/locales/pseudo.json
+packages/core/src/i18n/generated-locales/
 
 # Generated lab readiness report (rebuild with `pnpm lab:readiness`).
 # Deliberately not committed: a checked-in snapshot goes stale the moment the

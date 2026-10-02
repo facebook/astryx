@@ -78,7 +78,8 @@ const styles = stylex.create({
     position: 'fixed',
     margin: 0,
     padding: 0,
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     maxWidth: 'none',
     maxHeight: 'none',
     // Full viewport overlay — the dialog itself is the full-screen container

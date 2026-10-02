@@ -55,6 +55,15 @@ describe('generateCompressedIndex', () => {
     expect(frameRule).not.toMatch(/https?:/);
   });
 
+  it('starts every page from a template before any component', () => {
+    const lines = generateCompressedIndex('1.0.0').split('\n');
+    const workflow = lines.findIndex(l => l.startsWith('WORKFLOW'));
+    expect(lines[workflow]).toMatch(/start every page from a template/);
+    expect(lines[workflow + 1]).toMatch(/^1\. `astryx build /);
+    expect(lines[workflow + 2]).toMatch(/^2\. `astryx template <name> <path>`/);
+    expect(lines.join('\n')).not.toMatch(/reference code/);
+  });
+
   it('includes the post-generation self-check rule', () => {
     const result = generateCompressedIndex('1.0.0');
     expect(result).toContain('SELF-CHECK before you finish');

@@ -112,8 +112,9 @@ export const docs = {
     },
     {
       name: 'labelIcon',
-      type: 'IconType',
-      description: 'Icon to display before the label text. See `astryx docs icons` for valid semantic names.',
+      type: 'ReactNode | IconType',
+      description:
+        'Semantic icon name or custom content displayed before the label text. See `astryx docs icons` for valid semantic names.',
     },
     {
       name: 'status',
@@ -204,7 +205,7 @@ export const docsZh = {
     {name: 'size', type: "'sm' | 'md'", description: '复选框尺寸。sm 用于紧凑布局，md 为默认。', default: "'md'"},
     {name: 'onFocus', type: '(e: FocusEvent<HTMLInputElement>) => void', description: '复选框获得焦点时触发的回调。'},
     {name: 'onBlur', type: '(e: FocusEvent<HTMLInputElement>) => void', description: '复选框失去焦点时触发的回调。'},
-    {name: 'labelIcon', type: 'IconType', description: '标签文本前显示的图标。'},
+    {name: 'labelIcon', type: 'ReactNode | IconType', description: '标签文本前显示的语义图标名称或自定义内容。'},
     {
       name: 'status',
       type: "{ type: 'error' | 'warning' | 'success', message: string }",
@@ -256,7 +257,7 @@ export const docsDense = {
     size: 'sm (compact) or md (default)',
     onFocus: 'callback on focus',
     onBlur: 'callback on blur',
-    labelIcon: 'icon before label text',
+    labelIcon: 'semantic icon name or custom content before label text',
     status: 'error/warning/success with message; sets aria-invalid on error',
   },
 };

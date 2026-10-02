@@ -145,14 +145,15 @@ const BLOCK_FIELDS = {
   table: ['headers', 'rows'],
   list: ['style', 'items'],
   'token-ref': ['topic', 'section'],
+  // A read inlines it as the doc it names includes (spec:AST-047 FR9).
+  reference: ['target'],
 };
 
-/** Blocks that are valid authoring but require the compiled graph renderer. */
-export const GRAPH_BLOCK_TYPES = new Set([
-  'workflow',
-  'collection',
-  'reference',
-]);
+/**
+ * Blocks that are valid authoring but require the compiled graph renderer: a
+ * namespace doc's `blocks` hold them, a topic section does not.
+ */
+export const GRAPH_BLOCK_TYPES = new Set(['workflow', 'collection']);
 
 /**
  * Doc fields only the docs tree reads. A flat topic that sets one fails to
@@ -168,6 +169,7 @@ export const GRAPH_ONLY_FIELDS = ['placement', 'aliases', 'audience'];
 /** @type {Record<string, string[]>} */
 const OPTIONAL_BLOCK_FIELDS = {
   code: ['label'],
+  reference: ['projection', 'presentation'],
 };
 
 /**
@@ -179,7 +181,11 @@ const OPTIONAL_BLOCK_FIELDS = {
 const BLOCK_FIELD_VALUES = {
   heading: {level: [3, 4, 5, 6]},
   list: {style: ['ordered', 'unordered', 'do', 'dont']},
+  reference: {presentation: ['summary', 'compact', 'full']},
 };
+
+/** The parts of a doc a reference block's `projection` may select. */
+const PROJECTION_FIELDS = ['fields', 'sections'];
 
 /** Keys a section may carry. */
 const SECTION_FIELDS = ['id', 'title', 'category', 'content', 'previewType'];
@@ -323,6 +329,34 @@ export function problemsInTopic(doc, {placement = false} = {}) {
               problems.push(
                 `${blockAt}.${key}: not a field of a ${block.type} block`,
               );
+            }
+          }
+          // A projection names the parts of the doc to include, so each part
+          // it names is a non-empty list of names.
+          if (block.type === 'reference' && block.projection != null) {
+            const projection = block.projection;
+            if (typeof projection !== 'object' || Array.isArray(projection)) {
+              problems.push(
+                `${blockAt}.projection: expected {fields?, sections?}, naming the parts of the doc to include`,
+              );
+            } else {
+              for (const [key, names] of Object.entries(projection)) {
+                if (!PROJECTION_FIELDS.includes(key)) {
+                  problems.push(
+                    `${blockAt}.projection.${key}: not a field of a projection`,
+                  );
+                } else if (
+                  !Array.isArray(names) ||
+                  names.length === 0 ||
+                  names.some(
+                    name => typeof name !== 'string' || name.trim() === '',
+                  )
+                ) {
+                  problems.push(
+                    `${blockAt}.projection.${key}: expected a non-empty array of names`,
+                  );
+                }
+              }
             }
           }
         },

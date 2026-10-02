@@ -2,9 +2,16 @@
 
 /**
  * @file Command-level coverage for `astryx doctor integration` authoring checks.
+ * @input Integration fixtures and the post-0.7 conflict projection.
+ * @output Assertions for human and typed command responses.
+ * @position CLI adapter coverage; 0.6.x API shape is verified separately.
  */
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+
+vi.mock('../../../foundation/discovery/template-conflict-release.mjs', () => ({
+  expandedTemplateConflictSchemaActive: () => true,
+}));
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {Command} from 'commander';

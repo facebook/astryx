@@ -10,13 +10,17 @@
 import {readdirSync} from 'node:fs';
 import {resolve} from 'node:path';
 
+const stagesStaticApps =
+  process.env.VERCEL_ENV === 'preview' ||
+  process.env.VERCEL_ENV === 'production';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   cacheComponents: true,
   // Sandbox exports trailing-slash directories; Next's automatic slash
-  // redirect runs before rewrites. Only preview/canary needs to preserve
-  // those URLs. Production docs keep their existing canonical redirects.
-  skipTrailingSlashRedirect: process.env.VERCEL_ENV === 'preview',
+  // redirect runs before rewrites. Vercel deployments preserve those URLs;
+  // local builds keep the docsite's existing canonical redirects.
+  skipTrailingSlashRedirect: stagesStaticApps,
   // A dynamic route segment can't carry a static extension, so the public
   // plaintext URL /blog/<slug>.txt is served by the /blog/txt/[slug] handler.
   // Static files (including Storybook's iframe and Sandbox's JS/CSS, embeds
@@ -27,7 +31,7 @@ const nextConfig = {
       afterFiles: [
         {source: '/blog/:slug.txt', destination: '/blog/txt/:slug'},
         {source: '/storybook', destination: '/storybook/index.html'},
-        ...(process.env.VERCEL_ENV === 'preview'
+        ...(stagesStaticApps
           ? [
               {source: '/sandbox', destination: '/sandbox/index.html'},
               {

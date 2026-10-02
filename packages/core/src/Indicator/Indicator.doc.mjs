@@ -52,7 +52,7 @@ export const docs = {
           name: 'children',
           type: 'ReactNode',
           description:
-            'Rendered inside the chrome INSTEAD of the state mark. CheckboxInput passes its loading Spinner through this while a change action is pending, so a replacement indicator must render children when they will actually draw something: use `isRenderable(children)`, never `children ?? mark`, because a host writes `children={isBusy && <Spinner/>}` and `false` slips straight past a nullish check and deletes the mark.',
+            'Rendered inside the chrome INSTEAD of the state mark when the shallow `isRenderable(children)` check accepts the value. The helper excludes `null`, `undefined`, booleans, and the empty string; React elements and containers take the replacement path even when their descendants render nothing. CheckboxInput passes its loading Spinner through as `children={isBusy && <Spinner/>}`, so replacements should use the same helper rather than a nullish check.',
         },
       ],
     },
@@ -241,12 +241,12 @@ defineTheme({name: 'brand', indicators: {check: RadioIndicator}});`,
       {
         guidance: true,
         description:
-          'Reach for component overrides first (components: {checkbox}). Replacing the component is the heavier path, for when the shape itself is wrong.',
+          "Reach for the canonical `components['checkbox-indicator']` override first. Replacing the component is the heavier path, for when the shape itself is wrong.",
       },
       {
         guidance: true,
         description:
-          'A replacement must render `children` when they will actually draw something: use `isRenderable(children)`, not `children != null` or `children ?? mark`. The owning control passes its loading Spinner through as `children={isBusy && <Spinner/>}`, so the value is `false` whenever it is not busy: a nullish check takes the children branch, renders nothing, and deletes your state mark on every chosen row (#4893).',
+          'Match the shipped replacement-content branch with `isRenderable(children)`, not `children != null` or `children ?? mark`. The helper is deliberately shallow: it excludes nullish values, booleans, and the empty string, while React elements and containers take the replacement path even when their descendants render nothing. The owning control passes `children={isBusy && <Spinner/>}`, so a nullish check deletes the state mark whenever that value is `false` (#4893).',
       },
       {
         guidance: true,
@@ -276,10 +276,10 @@ defineTheme({name: 'brand', indicators: {check: RadioIndicator}});`,
     ],
     anatomy: [
       {
-        name: 'Chrome',
+        name: 'Chrome (checkbox, radio)',
         required: true,
         description:
-          'The persistent box or circle, present in every state. Carries the astryx-checkbox-indicator / astryx-radio-indicator theme target (the pre-indicator astryx-checkbox / astryx-radio names are still emitted on the same element).',
+          'The persistent box or circle rendered by CheckboxIndicator and RadioIndicator in every state. CheckIndicator is the state mark itself and intentionally owns no chrome.',
       },
       {
         name: 'State mark',
@@ -299,8 +299,8 @@ export const docsDense = {
     description:
       'Componentized selection visuals shared by CheckboxInput, RadioList, and menu rows. Decorative: the owner keeps input/role/name/focus/keyboard; the indicator turns state into a picture. That split makes them themeable: restyle via class targets or replace the component.',
     bestPractices: [
-      { guidance: true, description: 'Prefer component overrides first (components: {checkbox}). Replacing the component is the heavier path, for when the shape itself is wrong.' },
-      { guidance: true, description: 'A replacement must render `children` when they will draw something: use `isRenderable(children)`, not `children != null` or `children ?? mark`. The owner passes a loading Spinner as `children={isBusy && <Spinner/>}`, so it is `false` when idle; a nullish check then renders nothing and deletes the mark on every chosen row (#4893).' },
+      { guidance: true, description: "Prefer the canonical `components['checkbox-indicator']` override first. Replacing the component is the heavier path, for when the shape itself is wrong." },
+      { guidance: true, description: 'Match the shipped replacement-content branch with `isRenderable(children)`, not `children != null` or `children ?? mark`. The helper is shallow: it excludes nullish values, booleans, and the empty string, while React elements and containers take the replacement path even when their descendants render nothing. The owner passes `children={isBusy && <Spinner/>}`, so a nullish check deletes the state mark whenever the value is `false` (#4893).' },
       { guidance: true, description: 'A replacement must set aria-hidden. The owner supplies role and accessible name; a visible indicator would be announced twice.' },
       { guidance: true, description: 'Use theme tokens for every color, radius, and border width in a replacement. Run `npx astryx docs tokens` for the set.' },
       { guidance: true, description: 'Render a single root ELEMENT with the border-radius the focus ring should follow. The owner paints the standard ring onto the indicator at focus time (useIndicatorFocusRing) and outline picks up its radius; the ring is never missing (WCAG 2.4.7), only mis-shaped if the root lacks a radius. Do not draw a focus ring yourself.' },

@@ -2,7 +2,8 @@
 /**
  * @file MobileTokenizer.stories.tsx
  * @input Uses MobileTokenizer (Lab) with the sketch's Design/Eng data
- * @output Storybook try-it story at 390px: field -> manage -> add sheets
+ * @output Storybook try-it story at 390px: field -> manage -> add sheets,
+ *   including custom item creation
  * @position Lab story; stack layer 1 try-it surface
  */
 import {useState} from 'react';
@@ -40,6 +41,7 @@ export const TouchFlow: Story = {
           value={value}
           onChange={items => setValue(items)}
           placeholder="Add tags"
+          hasCreate
           debounceMs={0}
         />
       </div>

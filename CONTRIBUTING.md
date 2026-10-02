@@ -115,8 +115,10 @@ Storybook will open at http://localhost:6006 with:
 - **Mode switcher** - Toggle between Light and Dark modes
 - **Component stories** - Interactive component examples
 
-**If you make changes to `@astryxdesign/core`:** nothing extra. The dev server
-serves the edited source, so the story updates on save — no rebuild, no restart.
+**If you make changes to `@astryxdesign/core`:** source changes update without a
+rebuild or restart. Storybook and the docsite also watch
+`packages/core/locales/*.json`, regenerate the compact runtime catalogs, and
+reload imported messages after a locale edit.
 
 ### Running the Doc Site
 

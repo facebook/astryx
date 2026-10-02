@@ -20,7 +20,8 @@ export const doc = {
     'ReferenceDoc, and `index: true` returns its section index (each ' +
     'section\'s key, title, and summary); a topic plus a section returns ' +
     'that one section. Token-ref blocks are ' +
-    'inlined in every read. The topic set is the CLI\'s own docs plus the ' +
+    'inlined in every read, and so is a section\'s reference block: the doc it ' +
+    'includes, then the command that opens that doc. The topic set is the CLI\'s own docs plus the ' +
     'ones the project\'s configured integrations contribute, including any ' +
     'topic an integration replaces or extends, so it depends on the cwd. ' +
     'A route opens a node of the docs tree instead: a namespace such as ' +
@@ -97,7 +98,7 @@ export const doc = {
     {
       type: 'docs.detail',
       description:
-        "One topic's full ReferenceDoc, with token-ref blocks inlined, plus links.",
+        "One topic's full ReferenceDoc, with token-ref and reference blocks inlined, plus links.",
     },
     {
       type: 'docs.index',
@@ -107,7 +108,7 @@ export const doc = {
     {
       type: 'docs.detail.section',
       description:
-        'One ReferenceSection of the topic, found by key or title, with token-ref blocks inlined.',
+        'One ReferenceSection of the topic, found by key or title, with token-ref and reference blocks inlined.',
     },
     {
       type: 'docs.node',

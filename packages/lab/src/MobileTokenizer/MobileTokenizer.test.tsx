@@ -35,6 +35,7 @@ function Harness({
       label="Tags"
       searchSource={source}
       value={value}
+      hasCreate
       debounceMs={0}
       placeholder="Add tags"
       onChange={(items, change) => {
@@ -63,18 +64,16 @@ beforeEach(() => {
   }
   vi.stubGlobal(
     'matchMedia',
-    vi
-      .fn()
-      .mockReturnValue({
-        matches: false,
-        media: '',
-        onchange: null,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      }),
+    vi.fn().mockReturnValue({
+      matches: false,
+      media: '',
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }),
   );
   vi.stubGlobal(
     'requestAnimationFrame',
@@ -99,7 +98,8 @@ describe('MobileTokenizer (Lab, sketch flow)', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Add item'}));
     const search = await screen.findByLabelText('Search Tags');
     fireEvent.change(search, {target: {value: 'E'}});
-    const engineer = await screen.findByRole('option', {name: /Engineer/});
+    const engineer = await screen.findByRole('button', {name: 'Add Engineer'});
+    expect(engineer).toHaveAttribute('data-variant', 'secondary');
     fireEvent.click(engineer);
     expect(spy).toHaveBeenCalledWith(
       [ITEMS[0], ITEMS[1], ITEMS[2]],
@@ -107,15 +107,80 @@ describe('MobileTokenizer (Lab, sketch flow)', () => {
     );
     await waitFor(() =>
       expect(
-        screen
-          .getByRole('option', {name: /Engineer/})
-          .getAttribute('aria-selected'),
-      ).toBe('true'),
+        screen.getByRole('button', {name: 'Remove Engineer'}),
+      ).toBeInTheDocument(),
     );
     fireEvent.click(screen.getByRole('button', {name: 'Done'}));
     expect(
       (await screen.findByTestId('mobile-tokenizer-manage-list')).textContent,
     ).toContain('Engineer');
+  });
+  it('creates custom items and shows them in the field and manage sheet', async () => {
+    const spy = vi.fn();
+    render(<Harness spy={spy} />);
+    const trigger = screen.getByRole('button', {name: /Tags/});
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole('button', {name: 'Add item'}));
+    const search = await screen.findByLabelText('Search Tags');
+    fireEvent.change(search, {target: {value: 'Custom'}});
+
+    const create = await screen.findByRole('button', {
+      name: 'Create "Custom"',
+    });
+    fireEvent.click(create);
+    expect(spy).toHaveBeenCalledWith(
+      [ITEMS[0], ITEMS[1], {id: 'Custom', label: 'Custom'}],
+      expect.objectContaining({type: 'create'}),
+    );
+    await waitFor(() => expect(trigger).toHaveTextContent('Custom'));
+
+    fireEvent.click(screen.getByRole('button', {name: 'Done'}));
+    expect(
+      await screen.findByTestId('mobile-tokenizer-manage-list'),
+    ).toHaveTextContent('Custom');
+  });
+
+  it('uses guided empty states and large actions', async () => {
+    render(
+      <MobileTokenizer
+        label="Tags"
+        searchSource={source}
+        value={[]}
+        debounceMs={0}
+        onChange={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', {name: /Tags/}));
+    const manageTitle = await screen.findByRole('heading', {
+      name: 'No items yet',
+    });
+    expect(
+      manageTitle.closest('[role="status"]')?.querySelector('.astryx-icon'),
+    ).toHaveAttribute('data-size', 'lg');
+    expect(screen.getByRole('button', {name: 'Clear all'})).toHaveAttribute(
+      'data-size',
+      'lg',
+    );
+    expect(
+      screen.queryByRole('button', {name: 'Close'}),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: 'Add item'}));
+    const search = await screen.findByLabelText('Search Tags');
+    expect(search.closest('.astryx-text-input')).toHaveAttribute(
+      'data-size',
+      'lg',
+    );
+    expect(screen.getByRole('button', {name: 'Done'})).toHaveAttribute(
+      'data-size',
+      'lg',
+    );
+    fireEvent.change(search, {target: {value: 'zzz'}});
+    const searchTitle = await screen.findByRole('heading', {
+      name: 'No results found',
+    });
+    expect(searchTitle.closest('[role="status"]')).toHaveTextContent(
+      'Try a different search.',
+    );
   });
   it('manage sheet removes and clears', async () => {
     const spy = vi.fn();

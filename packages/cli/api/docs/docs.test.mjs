@@ -146,6 +146,7 @@ describe('docs() dispatcher routing', () => {
     // A guide moves across its namespace's slot, as any tree node does.
     expect(index.data.links).toEqual({
       up: 'astryx docs cli',
+      previous: 'astryx docs cli/component-lookups',
       next: 'astryx docs cli/writing-docs',
     });
     const first = (await docs('cli/integrations', index.data.sections[0].id)).data;
@@ -209,6 +210,7 @@ describe('docs() dispatcher routing', () => {
     expect(err).toBeInstanceOf(AstryxError);
     expect(err.code).toBe('ERR_UNKNOWN_SECTION');
     expect(err.suggestions.map(s => s.name)).toEqual([
+      'cli/component-lookups',
       'cli/integrations',
       'cli/writing-docs',
       'cli/commands',

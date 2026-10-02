@@ -89,12 +89,15 @@ const STATIC_EXPORTS = {
   },
   './docs.mjs': './docs.mjs',
   './groups.doc.mjs': './groups.doc.mjs',
-  // i18n message catalogs. Consumers pass these to
-  // <InternationalizationProvider messages={{fr, ...}}> or use them for
-  // custom overrides / pseudoloc smoke-tests. Wildcard export exposes every
-  // JSON file under packages/core/locales/, which ships thanks to the
-  // `locales` entry in the `files` array.
+  // Rich authoring catalogs keep their existing JSON paths. Generated string
+  // maps are additive runtime imports for applications that want no translator
+  // metadata in their bundles.
   './locales/*.json': './locales/*.json',
+  './locales/*.generated.js': {
+    source: './src/i18n/generated-locales/*.generated.ts',
+    types: './dist/i18n/generated-locales/*.generated.d.ts',
+    default: './dist/i18n/generated-locales/*.generated.js',
+  },
 };
 
 /** Nested modules backed by an index.ts entry point. */

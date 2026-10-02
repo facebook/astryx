@@ -121,8 +121,9 @@ guidance owns the process used to propose and test APIs.
 - **INV8 — Refs follow React 19.** A public DOM component accepts `ref` as a prop
   and connects it to the element promised by its contract.
 - **INV9 — Released APIs change deliberately.** A released prop, type, export,
-  default, or observable behavior is not removed, renamed, or retyped without an
-  explicit compatibility decision and migration.
+  default, or observable behavior is not removed, renamed, retyped, deprecated, or
+  corrected incompatibly without the lifecycle, evidence, and migration required by
+  [`spec:AST-017`](../specs/AST-017/spec.md).
 - **INV10 — Shared subcontracts are linked, not copied.** Input Actions, layer
   behavior, theming, and family-specific rules stay with their owning records.
 - **INV11 — Public theme seams pass API admission.** A public semantic CSS custom

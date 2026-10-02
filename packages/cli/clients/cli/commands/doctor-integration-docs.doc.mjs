@@ -32,7 +32,7 @@ export const doc = {
   ],
   exitCodes: [
     {code: 0, when: 'all Core overlaps are explicitly declared or no overlap exists'},
-    {code: 1, when: 'an overlap is accidental, a doc is invalid, or a namespace or placement fails. A link that names no doc is a warning, and does not change the exit code'},
+    {code: 1, when: 'an overlap is accidental, a doc is invalid, a namespace or placement fails, or a reference block cannot include what it names. A link that names no doc is a warning, and does not change the exit code'},
   ],
   related: ['doctor integration validate', 'docs'],
 };
