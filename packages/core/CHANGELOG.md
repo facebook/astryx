@@ -1,5 +1,33 @@
 # @xds/core
 
+# 0.6.5
+
+#### New Features
+
+- Stop bundling translator-only descriptions with the built-in English
+  fallback and add compact generated string-map modules for every shipped locale. Existing rich JSON catalog exports remain unchanged.
+
+#### Fixes
+
+- Button no longer overflows narrow rows: a labelled button can shrink below its label width and truncates the label with an ellipsis, while icon-only buttons stay square
+- Replace an environment-specific example token in published Markdown audit source with a neutral fixed-width token.
+- Prevent an empty Tokenizer input from creating a blank trailing row.
+- SegmentedControl's default `hug` layout is now capped at its container width, and its segments shrink and truncate their labels instead of overflowing narrow cards and phone rows
+- SelectableCard: keep disabled cards in sequential focus navigation with aria-disabled and gated interaction handlers.
+- Switch: announce busy/loading states through the persistent `useAnnounce` live region and localize the announcement via `@astryx.switch.loading`.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+- @Geervan
+- @imdreamrunner
+- @nynexman4464
+- @thedjpetersen
+
+---
+
 # 0.6.4
 
 #### New Features
