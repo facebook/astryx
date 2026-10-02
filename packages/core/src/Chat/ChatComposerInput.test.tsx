@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect, vi, afterEach} from 'vitest';
+import {describe, it, expect, expectTypeOf, vi, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ChatComposer} from './ChatComposer';
@@ -364,6 +364,280 @@ describe('ChatComposerInput', () => {
       // The effect must apply this — the stale marker is gone.
       rerender(<ChatComposerInput value="hello" onChange={onChange} />);
       expect(textbox.textContent).toBe('hello');
+    });
+
+    it('keeps newer internal state when the parent commits a late echo of an earlier emission', () => {
+      // Two rapid inputs emit 'ab' then 'abc' before the parent's
+      // state commit for 'ab' lands. That late value='ab' re-render
+      // is a stale echo of our own emission — not an external
+      // override — and must not wipe the trailing 'c' the user
+      // typed in the meantime.
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <ChatComposerInput value="" onChange={onChange} />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+      textbox.textContent = 'ab';
+      fireEvent.input(textbox);
+      textbox.textContent = 'abc';
+      fireEvent.input(textbox);
+      expect(onChange).toHaveBeenNthCalledWith(1, 'ab');
+      expect(onChange).toHaveBeenNthCalledWith(2, 'abc');
+      // The parent's LATE commit of the first emission arrives after
+      // the second emission. Internal state ('abc') is newer and
+      // stays authoritative.
+      rerender(<ChatComposerInput value="ab" onChange={onChange} />);
+      expect(textbox.textContent).toBe('abc');
+    });
+
+    it('applies a genuine override equal to a non-oldest pending emission', () => {
+      // A parent that doesn't commit every onChange: the user edits a
+      // restored draft, empties it, and starts typing again, then the
+      // parent switches threads to an empty draft. That value='' matches
+      // an emission still in the ledger, but not the oldest one, so it
+      // can't be an in-order echo and must clear the box.
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <ChatComposerInput value="draft A" onChange={onChange} />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+      textbox.textContent = 'draft Ax';
+      fireEvent.input(textbox);
+      textbox.textContent = '';
+      fireEvent.input(textbox);
+      textbox.textContent = 'half';
+      fireEvent.input(textbox);
+      rerender(<ChatComposerInput value="" onChange={onChange} />);
+      expect(textbox.textContent).toBe('');
+    });
+
+    it('a coalesced commit does not leave a stale ledger head that swallows a later override', () => {
+      // The parent coalesces commits: only the latest emission ('ab')
+      // lands. It already matches the DOM, so the older 'a' entry is
+      // obsolete; a later genuine override back to 'a' must apply.
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <ChatComposerInput value="" onChange={onChange} />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+      textbox.textContent = 'a';
+      fireEvent.input(textbox);
+      textbox.textContent = 'ab';
+      fireEvent.input(textbox);
+      rerender(<ChatComposerInput value="ab" onChange={onChange} />);
+      expect(textbox.textContent).toBe('ab');
+      rerender(<ChatComposerInput value="a" onChange={onChange} />);
+      expect(textbox.textContent).toBe('a');
+    });
+
+    it('applies a coalesced commit that differs from the editor content as an override', () => {
+      // Only in-order echoes are skipped. The parent coalesces commits
+      // and lands 'ab' while the oldest pending emission is 'a' and the
+      // DOM is already at 'abc': not an in-order echo, so it applies.
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <ChatComposerInput value="" onChange={onChange} />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+      textbox.textContent = 'a';
+      fireEvent.input(textbox);
+      textbox.textContent = 'ab';
+      fireEvent.input(textbox);
+      textbox.textContent = 'abc';
+      fireEvent.input(textbox);
+      rerender(<ChatComposerInput value="ab" onChange={onChange} />);
+      expect(textbox.textContent).toBe('ab');
+    });
+
+    it('lets setValue force an override equal to the oldest uncommitted emission', () => {
+      // Known residual documented on `value`: a parent that doesn't
+      // commit onChange restores 'draft A', the user's first edit
+      // empties it, and a later value='' matches that oldest pending
+      // emission, so it reads as its late echo and is skipped.
+      // handleRef.setValue is the documented way to force it.
+      let handle: ChatComposerInputHandle | null = null;
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <ChatComposerInput
+          value="draft A"
+          onChange={onChange}
+          handleRef={h => {
+            handle = h;
+          }}
+        />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+      textbox.textContent = '';
+      fireEvent.input(textbox);
+      textbox.textContent = 'half';
+      fireEvent.input(textbox);
+      rerender(
+        <ChatComposerInput
+          value=""
+          onChange={onChange}
+          handleRef={h => {
+            handle = h;
+          }}
+        />,
+      );
+      expect(textbox.textContent).toBe('half');
+
+      act(() => {
+        handle!.setValue!('');
+      });
+      expect(textbox.textContent).toBe('');
+      expect(onChange).toHaveBeenLastCalledWith('');
+    });
+
+    it('setValue writes synchronously, places the caret at the end, and emits one echo-free onChange', () => {
+      let handle: ChatComposerInputHandle | null = null;
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <ChatComposerInput
+          value=""
+          onChange={onChange}
+          handleRef={h => {
+            handle = h;
+          }}
+        />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+
+      handle!.setValue!('/feedback ');
+
+      // Synchronous DOM write + exactly one informational onChange.
+      expect(textbox.textContent).toBe('/feedback ');
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenCalledWith('/feedback ');
+
+      // Caret is collapsed at the end of the new content — the next
+      // keystroke appends, not prepends.
+      const selection = window.getSelection()!;
+      expect(selection.rangeCount).toBe(1);
+      const range = selection.getRangeAt(0);
+      expect(range.collapsed).toBe(true);
+      expect(
+        range.endContainer === textbox ||
+          range.endContainer.parentNode === textbox,
+      ).toBe(true);
+      expect(range.endOffset).toBe(
+        range.endContainer.nodeType === Node.TEXT_NODE
+          ? (range.endContainer.textContent?.length ?? 0)
+          : textbox.childNodes.length,
+      );
+
+      // A subsequent parent echo of that value must cause ZERO DOM
+      // writes — observed via MutationObserver + node identity.
+      const textNodeBefore = textbox.firstChild;
+      const observer = new MutationObserver(() => {});
+      observer.observe(textbox, {
+        childList: true,
+        characterData: true,
+        subtree: true,
+      });
+      rerender(
+        <ChatComposerInput
+          value="/feedback "
+          onChange={onChange}
+          handleRef={h => {
+            handle = h;
+          }}
+        />,
+      );
+      expect(observer.takeRecords()).toEqual([]);
+      observer.disconnect();
+      expect(textbox.firstChild).toBe(textNodeBefore);
+      expect(textbox.textContent).toBe('/feedback ');
+      // No re-emission on the echo — still exactly one onChange.
+      expect(onChange).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps keystrokes typed after setValue when the parent echoes it late', () => {
+      let handle: ChatComposerInputHandle | null = null;
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <ChatComposerInput
+          value=""
+          onChange={onChange}
+          handleRef={h => {
+            handle = h;
+          }}
+        />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+
+      handle!.setValue!('/feedback ');
+      // The user keeps typing before the parent's state commit for the
+      // setValue emission lands.
+      textbox.textContent = '/feedback great';
+      fireEvent.input(textbox);
+
+      // The parent's LATE echo of the setValue emission is a stale echo
+      // — not an external override — and must not wipe the keystrokes
+      // typed after it. This only holds if setValue records its
+      // emission in the same pending-emissions ledger as typing.
+      rerender(
+        <ChatComposerInput
+          value="/feedback "
+          onChange={onChange}
+          handleRef={h => {
+            handle = h;
+          }}
+        />,
+      );
+      expect(textbox.textContent).toBe('/feedback great');
+    });
+
+    it('setValue leaves the document selection alone when the input is not focused', () => {
+      let handle: ChatComposerInputHandle | null = null;
+      const onChange = vi.fn();
+      render(
+        <ChatComposerInput
+          value=""
+          onChange={onChange}
+          handleRef={h => {
+            handle = h;
+          }}
+        />,
+      );
+      const textbox = screen.getByRole('textbox');
+
+      // The user is working in a different editable surface — focus
+      // and the document selection both live there.
+      const other = document.createElement('div');
+      other.setAttribute('contenteditable', 'true');
+      other.tabIndex = -1;
+      other.textContent = 'elsewhere';
+      document.body.appendChild(other);
+      other.focus();
+      const selection = window.getSelection()!;
+      const range = document.createRange();
+      range.setStart(other.firstChild!, 4);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+
+      act(() => {
+        handle!.setValue!('restored draft');
+      });
+
+      // The replacement and emission happen, but the other surface
+      // keeps its caret — a background setValue must not yank the
+      // document selection (and with it, in some browsers, focus)
+      // away from where the user is typing.
+      expect(textbox.textContent).toBe('restored draft');
+      expect(onChange).toHaveBeenCalledWith('restored draft');
+      expect(selection.rangeCount).toBe(1);
+      expect(selection.getRangeAt(0).startContainer).toBe(other.firstChild);
+      expect(selection.getRangeAt(0).startOffset).toBe(4);
+      other.remove();
     });
   });
 
@@ -1200,10 +1474,26 @@ describe('ChatComposerInput', () => {
         expect.objectContaining({
           insertToken: expect.any(Function),
           insertText: expect.any(Function),
+          setValue: expect.any(Function),
           focus: expect.any(Function),
           getValue: expect.any(Function),
         }),
       );
+    });
+
+    it('accepts handle objects built without setValue', () => {
+      // Consumers build ChatComposerInputHandle objects too (mocks,
+      // custom inputs passed to useChatPasteAsToken/useChatDictation).
+      // setValue was added after release, so it stays optional and a
+      // handle with only the original members still type-checks.
+      const handle: ChatComposerInputHandle = {
+        insertToken: () => undefined,
+        expandToken: () => {},
+        insertText: () => {},
+        focus: () => {},
+        getValue: () => '',
+      };
+      expectTypeOf(handle).toEqualTypeOf<ChatComposerInputHandle>();
     });
 
     it('getValue returns empty string for empty input', () => {
@@ -1425,6 +1715,33 @@ describe('ChatComposerInput', () => {
 
       expect(textbox.getAttribute('aria-expanded')).toBe('false');
       expect(document.querySelector(BODY_ANCHOR_SELECTOR)).toBeNull();
+    });
+
+    it('setValue closes a stale trigger menu left open over replaced content', () => {
+      let handle: ChatComposerInputHandle | null = null;
+      render(
+        <ChatComposerInput
+          triggers={[createMentionTrigger()]}
+          onChange={vi.fn()}
+          handleRef={h => {
+            handle = h;
+          }}
+        />,
+      );
+      const textbox = screen.getByRole('combobox');
+      textbox.focus();
+      setCursorAfterText(textbox, '@');
+      fireEvent.input(textbox);
+      expect(textbox.getAttribute('aria-expanded')).toBe('true');
+
+      // Replacing the content invalidates the menu's stored trigger
+      // position — an item pick on the stale menu would splice the
+      // wrong range of the new text. setValue re-evaluates the menu
+      // the same way typing does, so the stale menu closes.
+      act(() => {
+        handle!.setValue!('/done ');
+      });
+      expect(textbox.getAttribute('aria-expanded')).toBe('false');
     });
 
     it('serialized output is clean — no anchor artifacts', () => {
