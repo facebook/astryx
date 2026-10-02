@@ -138,6 +138,18 @@ export const docs = {
           description: 'Shows loading state on the trigger.',
         },
         {
+          name: 'hasClear',
+          type: 'boolean',
+          default: 'false',
+          description:
+            'Shows a clear button between the loading spinner and the chevron while `triggerLabel` is set. Activating it calls `onClear`, or `onChange(undefined)` when `onClear` is not given.',
+        },
+        {
+          name: 'onClear',
+          type: '() => void',
+          description: 'Called when the clear button is activated.',
+        },
+        {
           name: 'status',
           type: "{type: 'warning' | 'error' | 'success', message?: string}",
           description: 'Validation status.',
