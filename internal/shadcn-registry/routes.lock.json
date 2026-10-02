@@ -2011,6 +2011,11 @@
       "aliases": []
     },
     {
+      "name": "example-dropdown-menu-group-selectable-rows",
+      "path": "examples/dropdown-menu-group/selectable-rows",
+      "aliases": []
+    },
+    {
       "name": "example-dropdown-menu-item-basic",
       "path": "examples/dropdown-menu-item/basic",
       "aliases": []
@@ -4233,6 +4238,11 @@
     {
       "name": "showcase-drawer-basic",
       "path": "showcases/drawer/basic",
+      "aliases": []
+    },
+    {
+      "name": "showcase-dropdown-menu-group-default",
+      "path": "showcases/dropdown-menu-group/default",
       "aliases": []
     },
     {

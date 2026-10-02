@@ -540,6 +540,8 @@
     "DividerVertical",
     "DropdownMenuActions",
     "DropdownMenuBottomSheet",
+    "DropdownMenuGroupShowcase",
+    "DropdownMenuGroupWithSelectable",
     "DropdownMenuItemBasic",
     "DropdownMenuItemShowcase",
     "DropdownMenuNoChevron",

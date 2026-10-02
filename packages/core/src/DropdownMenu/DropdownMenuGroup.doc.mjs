@@ -7,6 +7,11 @@ export const docs = {
   subComponentOf: 'DropdownMenu',
   displayName: 'Dropdown Menu Group',
   isHiddenFromOverview: true,
+  playground: {
+    // A standalone group has no required props, so the properties-tab preview
+    // would render an empty box. Seed a title so the heading shows.
+    defaults: {title: 'Version history'},
+  },
   description:
     'A titled group of rows in a compound menu. Renders role="group" named by its heading; the heading is plain text, not a menuitem, so arrow keys and typeahead skip it. The data-driven equivalent is the `{type: "section", title, items}` entry in `items`; the heading shares its typography and theme target.',
   props: [
