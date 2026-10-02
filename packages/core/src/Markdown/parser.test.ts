@@ -123,6 +123,48 @@ describe('parseInline', () => {
     }
   });
 
+  it('parses links with escaped brackets in the label', () => {
+    const result = parseInline('[\\[DISCUSS\\] Clarify](https://example.com)');
+    expect(result).toEqual([
+      {
+        type: 'link',
+        href: 'https://example.com',
+        children: [
+          {type: 'text', content: '[DISCUSS'},
+          {type: 'text', content: '] Clarify'},
+        ],
+      },
+    ]);
+  });
+
+  it('parses links with an escaped closing bracket in the label', () => {
+    const result = parseInline('[a\\]b](https://example.com)');
+    expect(result).toEqual([
+      {
+        type: 'link',
+        href: 'https://example.com',
+        children: [
+          {type: 'text', content: 'a'},
+          {type: 'text', content: ']b'},
+        ],
+      },
+    ]);
+  });
+
+  it('treats a bracket after an escaped backslash as the label end', () => {
+    const result = parseInline('[a\\\\](https://example.com)');
+    expect(result).toEqual([
+      {
+        type: 'link',
+        href: 'https://example.com',
+        children: [
+          {type: 'text', content: 'a'},
+          {type: 'text', content: '\\'},
+        ],
+      },
+    ]);
+  });
+
   it('parses images', () => {
     const result = parseInline('![alt](img.png)');
     expect(result).toEqual([{type: 'image', src: 'img.png', alt: 'alt'}]);
