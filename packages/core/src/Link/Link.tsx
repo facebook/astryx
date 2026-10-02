@@ -53,9 +53,12 @@ import {useTranslator} from '../i18n';
  */
 const styles = stylex.create({
   base: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-0-5'],
+    // `inline` (not `inline-flex`) so the anchor participates in the
+    // surrounding line boxes and an ancestor clamp (e.g. <Text maxLines>)
+    // can truncate it. An inline-flex box establishes its own formatting
+    // context, which an ancestor -webkit-line-clamp cannot reach —
+    // <Text maxLines={2}><Link>…</Link></Text> silently did nothing.
+    display: 'inline',
     fontFamily: 'inherit',
     fontSize: 'inherit',
     lineHeight: 'inherit',
@@ -84,6 +87,17 @@ const styles = stylex.create({
     padding: 0,
     pointerEvents: 'auto',
     position: 'relative',
+  },
+  /**
+   * Flex layout for the cases that need it: external links append an icon
+   * after the text (icon centering + gap), and the button-rendered form
+   * keeps its previous inline-flex layout. On plain anchors this is
+   * deliberately NOT applied — see the `base` display note.
+   */
+  flexLayout: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-0-5'],
   },
   hasUnderline: {
     textDecoration: 'underline',
@@ -273,6 +287,22 @@ function preventDefaultClick(event: React.MouseEvent<HTMLAnchorElement>): void {
 }
 
 /**
+ * Determines whether children consist solely of text nodes (strings or numbers,
+ * or arrays of them). When composed with elements (such as HStack, Icon, or
+ * block containers), the anchor must keep an inline-flex root box so Chromium
+ * computes and paints a visible keyboard focus outline.
+ */
+function isTextOnly(content: ReactNode): boolean {
+  if (typeof content === 'string' || typeof content === 'number') {
+    return true;
+  }
+  if (Array.isArray(content)) {
+    return content.every(isTextOnly);
+  }
+  return false;
+}
+
+/**
  * A styled anchor link component.
  *
  * Uses Text internally for typography styling.
@@ -330,6 +360,19 @@ export function Link({
   // render as a <button> with link styling for semantic correctness.
   const renderAsButton =
     role === 'button' || (role === 'inert' && href == null);
+  const isExternalWithIcon = isExternalLink && !renderAsButton;
+  // The plain anchor stays `inline` so an ancestor clamp (<Text maxLines>)
+  // can truncate it — that is the composition this PR fixes. But a Link that
+  // establishes its own box (`display="block"`, or clamping itself via
+  // `maxLines`, or carrying the external-link icon, or composed with block-level
+  // children like HStack) must keep the inline-flex root: an inline anchor
+  // around a block-level child computes a focus outline that paints nothing in
+  // Chromium, losing keyboard focus visibility on those forms.
+  const needsRootBox =
+    isExternalWithIcon ||
+    display !== 'inline' ||
+    maxLines > 0 ||
+    !isTextOnly(children);
 
   const sharedContent = (
     <>
@@ -342,7 +385,7 @@ export function Link({
         maxLines={maxLines}>
         {children}
       </Text>
-      {isExternalLink && !renderAsButton && (
+      {isExternalWithIcon && (
         <>
           <Icon icon="externalLink" size="xsm" color="inherit" />
           <VisuallyHidden>{newTabLabel}</VisuallyHidden>
@@ -367,6 +410,7 @@ export function Link({
           themeProps('link', {color}),
           focusOutlineProps.focusVisible(
             styles.base,
+            styles.flexLayout,
             styles.buttonReset,
             linkColorStyles[color],
             // The system's pressed overlay behind the text; the hover stays the
@@ -402,10 +446,11 @@ export function Link({
           themeProps('link', {color}),
           focusOutlineProps.focusVisible(
             styles.base,
+            needsRootBox && styles.flexLayout,
             linkColorStyles[color],
             hasUnderline && styles.hasUnderline,
             isStandalone && styles.standalone,
-            styles.disabled,
+            isDisabled && styles.disabled,
             xstyle,
           ),
           className,
@@ -430,6 +475,7 @@ export function Link({
           themeProps('link', {color}),
           focusOutlineProps.focusVisible(
             styles.base,
+            needsRootBox && styles.flexLayout,
             linkColorStyles[color],
             !isDisabled && interactionOverlayStyles.pressedBackgroundColor,
             hasUnderline && styles.hasUnderline,
