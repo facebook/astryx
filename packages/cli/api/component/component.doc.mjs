@@ -15,16 +15,17 @@ export const doc = {
   namespace: 'cli/api',
   displayName: 'component()',
   summary:
-    'Resolve one or several components by name, or list the catalog, with optional focused slices (props, source, showcase, blocks).',
+    'Resolve one or several components by name, list the catalog, or read vanilla HTML markup, with optional focused slices (props, source, showcase, blocks).',
   description:
     'Routes on its arguments: one string resolves that component across core and ' +
     'integration packages; an array returns one ordered result row per selector at ' +
     'every array length; and no name returns the catalog grouped by category. ' +
     'Boolean flags narrow each resolved component to just its props, source, ' +
-    'showcase, or example blocks.',
+    'showcase, or example blocks. The html option instead reads the vanilla ' +
+    'markup catalog under packages/vanilla.',
   importPath: '@astryxdesign/cli/api',
   signature:
-    'component(name?: string | string[], options?: ComponentOptions): Promise<ComponentListResponse | ComponentBatchResponse | ComponentDetailResponse | ComponentDetailPropsResponse | ComponentDetailSourceResponse | ComponentDetailShowcaseResponse | ComponentDetailBlocksResponse>',
+    'component(name?: string | string[], options?: ComponentOptions): Promise<ComponentListResponse | ComponentBatchResponse | ComponentDetailResponse | ComponentDetailPropsResponse | ComponentDetailSourceResponse | ComponentDetailShowcaseResponse | ComponentDetailBlocksResponse | ComponentHtmlListResponse | ComponentHtmlResponse>',
   keywords: [
     'component',
     'components',
@@ -86,6 +87,12 @@ export const doc = {
         "Return the component's example blocks (showcase, examples, related).",
     },
     {
+      name: 'options.html',
+      type: 'boolean',
+      description:
+        'Read one packages/vanilla/markup file verbatim, or list the available files when options.list is also set.',
+    },
+    {
       name: 'options.detail',
       type: "'full' | 'compact' | 'brief'",
       description: 'Detail level for list views.',
@@ -143,11 +150,20 @@ export const doc = {
       description:
         "The component's example blocks, as {component, showcase, examples, related} of BlockEntry.",
     },
+    {
+      type: 'component.html.list',
+      description: 'The sorted vanilla component markup files as {name, file}.',
+    },
+    {
+      type: 'component.html',
+      description:
+        'One vanilla markup file as {component, file, source}; source includes its docs and variant comments verbatim.',
+    },
   ],
   throws: [
     {
       code: 'ERR_INVALID_ARGUMENT',
-      when: 'a selector array has more than 100 entries, a package-shaped selector has no component item, or its package conflicts with options.package',
+      when: 'a selector array has more than 100 entries, a package-shaped selector has no component item, its package conflicts with options.package, or options.html is missing its required name/list shape or is combined with another component projection',
     },
     {
       code: 'ERR_INVALID_DETAIL',
@@ -200,6 +216,7 @@ export const doc = {
       code: "await component(['Button', 'Badge']);",
     },
     {label: 'Props only', code: "await component('Button', {props: true});"},
+    {label: 'Vanilla HTML', code: "await component('Button', {html: true});"},
     {
       label: 'Browse one group',
       code: "await component(undefined, {category: 'Layout', detail: 'compact'});",

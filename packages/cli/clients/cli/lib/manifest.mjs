@@ -58,6 +58,8 @@ export const RESPONSE_TYPES = {
     'component.detail.source',
     'component.detail.showcase',
     'component.detail.blocks',
+    'component.html.list',
+    'component.html',
   ],
   docs: [
     'docs.list',
@@ -84,6 +86,8 @@ export const RESPONSE_TYPES = {
     'template.skeleton',
     'template.copy',
     'template.cdn',
+    'template.html.list',
+    'template.html',
   ],
   hook: ['hook.list', 'hook.detail', 'hook.detail.params'],
   'theme build': ['theme.build', 'theme.build.check', 'theme.build.batch'],

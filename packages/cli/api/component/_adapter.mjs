@@ -121,6 +121,85 @@ export function requireCoreDir(cwd) {
 }
 
 /**
+ * Find the vanilla package owned by the current repository, walking upward from
+ * cwd so the API works from the repository root or a nested directory.
+ * @param {string} cwd
+ * @returns {string}
+ */
+function requireVanillaDir(cwd) {
+  let cursor = path.resolve(cwd);
+  while (true) {
+    const direct =
+      path.basename(cursor) === 'vanilla' &&
+      path.basename(path.dirname(cursor)) === 'packages'
+        ? cursor
+        : path.join(cursor, 'packages', 'vanilla');
+    if (fs.existsSync(direct) && fs.statSync(direct).isDirectory())
+      return direct;
+    const parent = path.dirname(cursor);
+    if (parent === cursor) break;
+    cursor = parent;
+  }
+  throw new AstryxError(
+    `Could not find packages/vanilla from "${cwd}"`,
+    undefined,
+    ERROR_CODES.ERR_FILE_NOT_FOUND,
+  );
+}
+
+/**
+ * List the HTML component markup files shipped by packages/vanilla.
+ * @param {string} cwd
+ * @returns {{name: string, file: string}[]}
+ */
+export function listVanillaComponentHtml(cwd) {
+  const markupDir = path.join(requireVanillaDir(cwd), 'markup');
+  if (!fs.existsSync(markupDir)) return [];
+  return fs
+    .readdirSync(markupDir, {withFileTypes: true})
+    .filter(entry => entry.isFile() && entry.name.endsWith('.html'))
+    .map(entry => ({
+      name: entry.name.slice(0, -'.html'.length),
+      file: entry.name,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * Read one exact component markup file without permitting path traversal.
+ * @param {string} name
+ * @param {string} cwd
+ * @returns {{component: string, file: string, source: string}}
+ */
+export function readVanillaComponentHtml(name, cwd) {
+  const entries = listVanillaComponentHtml(cwd);
+  if (!/^[A-Za-z][A-Za-z0-9]*$/.test(name)) {
+    throw new AstryxError(
+      `Invalid vanilla component name "${name}"`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
+  const match = entries.find(entry => entry.name === name);
+  if (!match) {
+    throw new AstryxError(
+      `No vanilla HTML markup found for component "${name}"`,
+      entries.map(entry => ({
+        name: entry.name,
+        reason: 'vanilla HTML component',
+      })),
+      ERROR_CODES.ERR_UNKNOWN_COMPONENT,
+    );
+  }
+  const filePath = path.join(requireVanillaDir(cwd), 'markup', match.file);
+  return {
+    component: name,
+    file: match.file,
+    source: fs.readFileSync(filePath, 'utf8'),
+  };
+}
+
+/**
  * Load the configured integrations for `cwd`, swallowing any config errors so
  * component discovery never hard-fails on a malformed/absent integration. An
  * empty list means "core only".

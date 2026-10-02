@@ -14,7 +14,7 @@ export const doc = {
   name: 'template',
   displayName: 'astryx template',
   namespace: 'cli/commands',
-  summary: 'List, show, or scaffold page and block templates',
+  summary: 'List, show, scaffold, or render page and block templates',
   description:
     'One entry point for the template family: with no name it lists the discovered ' +
     'templates; with a name it shows the source or a layout skeleton, or scaffolds it ' +
@@ -22,7 +22,8 @@ export const doc = {
     'default for its Core id; use --package @astryxdesign/core for the original. ' +
     'Narrow other ambiguous names with --type and/or --package. --cdn writes the ' +
     'no-build-step CDN starter page, which ships as an asset rather than as a ' +
-    'discovered template.',
+    'discovered template. --html reads standalone pages from packages/vanilla/templates ' +
+    'and substitutes a commit-pinned jsDelivr base URL.',
   fn: 'template',
   args: [
     {
@@ -76,6 +77,18 @@ export const doc = {
         'A value right after --cdn (anything not starting with -) is taken as that path',
     },
     {
+      flag: '--html',
+      param: 'options.html',
+      description:
+        'Print one standalone packages/vanilla/templates page, or list those files with --list. Refuses --cdn, --skeleton, <path>, --overwrite, --type and --package.',
+    },
+    {
+      flag: '--cdn-ref <ref>',
+      param: 'options.cdnRef',
+      description:
+        'Override the Git ref in vanilla jsDelivr URLs. Requires a named --html template and cannot be used with --list.',
+    },
+    {
       flag: '-f, --overwrite',
       param: 'options.overwrite',
       description:
@@ -97,6 +110,7 @@ export const doc = {
       cli: 'astryx template shell-side-nav ./src/app --package @astryxdesign/core',
     },
     {label: 'CDN starter page', cli: 'astryx template --cdn'},
+    {label: 'Vanilla standalone HTML', cli: 'astryx template dashboard --html'},
     {
       label: 'CDN starter page, elsewhere',
       cli: 'astryx template --cdn public/demo.html',
@@ -109,7 +123,7 @@ export const doc = {
     },
     {
       code: 1,
-      when: 'unknown or ambiguous template, no source, a path escape, or an existing target without --overwrite',
+      when: 'unknown or ambiguous template, invalid --html/--cdn-ref combinations, no source, a path escape, or an existing target without --overwrite',
     },
   ],
   related: ['component', 'search', 'discover', 'init'],

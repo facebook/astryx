@@ -28,7 +28,9 @@ export {discoverTemplates, listTemplates} from '../../../api/template/template.m
  *   import('../../../api/template/template.type.mjs').TemplateShowResponse |
  *   import('../../../api/template/template.type.mjs').TemplateSkeletonResponse |
  *   import('../../../api/template/template.type.mjs').TemplateCopyResponse |
- *   import('../../../api/template/template.type.mjs').TemplateCdnResponse
+ *   import('../../../api/template/template.type.mjs').TemplateCdnResponse |
+ *   import('../../../api/template/html/html.type.mjs').TemplateHtmlListResponse |
+ *   import('../../../api/template/html/html.type.mjs').TemplateHtmlResponse
  * )} TemplateResponse
  */
 
@@ -46,7 +48,10 @@ function summarize(result) {
       return resultSet({count: result.data.length, resultKind: 'template'});
     case 'template.show':
     case 'template.skeleton':
+    case 'template.html':
       return resultSet({count: 1, resultKind: 'template', directMatch: true});
+    case 'template.html.list':
+      return resultSet({count: result.data.length, resultKind: 'template'});
     case 'template.copy':
     case 'template.cdn':
       return NO_RESULT_SET;
@@ -63,7 +68,7 @@ export function registerTemplate(program) {
       /**
        * @param {string | undefined} name
        * @param {string | undefined} targetPath
-       * @param {{list?: boolean, type?: string, package?: string, skeleton?: boolean, cdn?: boolean | string, overwrite?: boolean}} options
+       * @param {{list?: boolean, type?: string, package?: string, skeleton?: boolean, cdn?: boolean | string, html?: boolean, cdnRef?: string, overwrite?: boolean}} options
        */
       async (name, targetPath, options) => {
       const json = program.opts().json || false;
@@ -87,6 +92,8 @@ export function registerTemplate(program) {
             list: options.list,
             skeleton: options.skeleton,
             cdn: options.cdn,
+            html: options.html,
+            cdnRef: options.cdnRef,
             type: /** @type {'page' | 'block' | undefined} */ (options.type),
             package: options.package,
             targetPath,
@@ -140,6 +147,21 @@ export function registerTemplate(program) {
               ].join('\n'),
             ),
           );
+          break;
+        }
+
+        case 'template.html.list': {
+          emit(
+            section('Vanilla HTML templates'),
+            result.data.length > 0
+              ? records(result.data, {fields: ['id', 'file']})
+              : text('No vanilla HTML templates found in packages/vanilla/templates.'),
+          );
+          break;
+        }
+
+        case 'template.html': {
+          emit(code(result.data.source));
           break;
         }
 

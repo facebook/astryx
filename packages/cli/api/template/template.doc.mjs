@@ -13,7 +13,7 @@ export const doc = {
   name: 'template',
   namespace: 'cli/api',
   displayName: 'template()',
-  summary: 'List, inspect, or scaffold page and block templates.',
+  summary: 'List, inspect, scaffold, or render page and block templates.',
   description:
     'One entry point for the template family: with no name it lists the discovered ' +
     "templates; with a name it returns that template's source, a layout skeleton, or " +
@@ -22,10 +22,11 @@ export const doc = {
     'addresses the Core original. Other duplicate ids remain ambiguous and can be ' +
     'narrowed by type and/or package. The cdn option writes the annotated ' +
     'no-build-step CDN starter page, which ships as an asset rather than as ' +
-    'a discovered template.',
+    'a discovered template. The html option instead reads standalone pages from ' +
+    'packages/vanilla/templates and substitutes a commit-pinned jsDelivr base URL.',
   importPath: '@astryxdesign/cli/api',
   signature:
-    'template(name?: string, options?: TemplateOptions): Promise<TemplateListResponse | TemplateShowResponse | TemplateSkeletonResponse | TemplateCopyResponse | TemplateCdnResponse>',
+    'template(name?: string, options?: TemplateOptions): Promise<TemplateListResponse | TemplateShowResponse | TemplateSkeletonResponse | TemplateCopyResponse | TemplateCdnResponse | TemplateHtmlListResponse | TemplateHtmlResponse>',
   keywords: [
     'template',
     'scaffold',
@@ -66,6 +67,20 @@ export const doc = {
       default: 'false',
     },
     {
+      name: 'options.html',
+      type: 'boolean',
+      description:
+        'Read a standalone page from packages/vanilla/templates, or list those files with options.list.',
+      default: 'false',
+    },
+    {
+      name: 'options.cdnRef',
+      type: 'string',
+      description:
+        'Override the Git ref inserted into the vanilla jsDelivr base URL. Requires options.html and a named template.',
+      default: 'ASTRYX_VANILLA_CDN_REF',
+    },
+    {
       name: 'options.show',
       type: 'boolean',
       description:
@@ -89,7 +104,7 @@ export const doc = {
       type: 'string',
       description:
         'Destination (relative to cwd) to scaffold the template into. Its presence switches a named lookup into a copy. ' +
-        'A path that ends in .tsx, .ts, .jsx, .js, .mjs, .cjs, .css, .scss, .json, .md or .html is the file to write; any other path is a directory, which receives page.tsx for a page template or the block\'s own file name for a block.',
+        "A path that ends in .tsx, .ts, .jsx, .js, .mjs, .cjs, .css, .scss, .json, .md or .html is the file to write; any other path is a directory, which receives page.tsx for a page template or the block's own file name for a block.",
     },
     {
       name: 'options.overwrite',
@@ -131,8 +146,21 @@ export const doc = {
       description:
         'A write receipt for the CDN starter page: the path (relative to cwd), the Astryx version every CDN URL was pinned to, whether it was written, and the reason it was not. `exists` when a file was already there, which is a success.',
     },
+    {
+      type: 'template.html.list',
+      description: 'The sorted vanilla standalone page files as {id, file}.',
+    },
+    {
+      type: 'template.html',
+      description:
+        'One vanilla standalone page as {template, file, cdnRef, cdnBase, source}, with every CDN placeholder substituted.',
+    },
   ],
   throws: [
+    {
+      code: 'ERR_INVALID_ARGUMENT',
+      when: 'options.cdnRef is used without html, or html is missing its required name/list shape or is combined with cdn, skeleton, targetPath, overwrite, type, or package',
+    },
     {
       code: 'ERR_UNKNOWN_TEMPLATE',
       when: 'the named template does not exist, or options.skeleton is set without a name',
@@ -176,6 +204,10 @@ export const doc = {
     {
       label: 'CDN starter page',
       code: 'await template(undefined, {cdn: true});',
+    },
+    {
+      label: 'Vanilla standalone HTML',
+      code: "await template('dashboard', {html: true});",
     },
   ],
   command: 'template',

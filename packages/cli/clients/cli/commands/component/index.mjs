@@ -44,6 +44,8 @@ import {doc as componentFn} from '../../../../api/component/component.doc.mjs';
  *   | import('../../../../api/component/component.type.mjs').ComponentDetailSourceResponse
  *   | import('../../../../api/component/component.type.mjs').ComponentDetailShowcaseResponse
  *   | import('../../../../api/component/component.type.mjs').ComponentDetailBlocksResponse
+ *   | import('../../../../api/component/html/html.type.mjs').ComponentHtmlListResponse
+ *   | import('../../../../api/component/html/html.type.mjs').ComponentHtmlResponse
  * )} ComponentResult
  */
 
@@ -78,6 +80,10 @@ function summarize(result) {
     case 'component.detail.source':
     case 'component.detail.showcase':
       return resultSet({count: 1, resultKind: 'component', directMatch: true});
+    case 'component.html':
+      return resultSet({count: 1, resultKind: 'component', directMatch: true});
+    case 'component.html.list':
+      return resultSet({count: result.data.length, resultKind: 'component'});
     case 'component.detail.blocks': {
       const {showcase, examples, related} = result.data;
       return resultSet({
@@ -175,7 +181,7 @@ export function registerComponent(program) {
     fn: componentFn,
     action: async (
       /** @type {string[] | undefined} */ names,
-      /** @type {{list?: boolean, category?: string, props?: boolean, source?: boolean, showcase?: boolean, blocks?: boolean, package?: string}} */ options,
+      /** @type {{list?: boolean, category?: string, props?: boolean, source?: boolean, showcase?: boolean, blocks?: boolean, package?: string, html?: boolean}} */ options,
     ) => {
       const run = getCliInvocation();
       const name = names?.length === 1 ? names[0] : undefined;
@@ -218,6 +224,7 @@ export function registerComponent(program) {
           source: options.source,
           showcase: options.showcase,
           blocks: options.blocks,
+          html: options.html,
           detail,
           lang, zh, dense,
         }));
@@ -235,6 +242,18 @@ export function registerComponent(program) {
       }
       if (json) {
         jsonOut(result);
+        return answered;
+      }
+
+      if (result.type === 'component.html.list') {
+        emit(
+          section('Vanilla HTML components'),
+          records(result.data, {fields: ['name', 'file']}),
+        );
+        return answered;
+      }
+      if (result.type === 'component.html') {
+        emit(code(result.data.source));
         return answered;
       }
 

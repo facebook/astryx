@@ -26,6 +26,8 @@
  * astryx --json component Button --source         -> component.detail.source
  * astryx --json component Button --showcase       -> component.detail.showcase
  * astryx --json component Button --blocks         -> component.detail.blocks
+ * astryx --json component --list --html           -> component.html.list
+ * astryx --json component Button --html           -> component.html
  * (not found)                                     -> CLIError
  */
 
@@ -186,6 +188,7 @@
  * @property {boolean} [source]
  * @property {boolean} [showcase]
  * @property {boolean} [blocks] List example blocks for the component: showcase, examples, and related.
+ * @property {boolean} [html] Read vanilla HTML markup, or list vanilla markup files with list.
  * @property {'full' | 'compact' | 'brief'} [detail]
  * @property {string} [lang]
  * @property {boolean} [zh]

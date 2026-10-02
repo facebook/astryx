@@ -17,7 +17,8 @@ export const doc = {
   summary: 'List components or print component docs',
   description:
     'Resolves one or several components by exact selector across core and integration ' +
-    'packages and prints each authored doc, or lists the catalog grouped by category. ' +
+    'packages and prints each authored doc, lists the catalog grouped by category, or ' +
+    'reads vanilla HTML markup from packages/vanilla/markup. ' +
     "Use 'Button', 'widgets/Button', '@acme/widgets/Button', or " +
     "'@acme/widgets@1.2.3/Button'. A version applies to the package and must match the " +
     'installed version. Boolean flags narrow every resolved component to just its props, ' +
@@ -71,6 +72,12 @@ export const doc = {
       description:
         'Scope lookup to an external package (e.g. @acme/xds-widgets)',
     },
+    {
+      flag: '--html',
+      param: 'options.html',
+      description:
+        'Print vanilla HTML markup for exactly one <name>, or list packages/vanilla/markup files with --list. Refuses --category, --package, --props, --source, --showcase and --blocks.',
+    },
   ],
   examples: [
     {label: 'Browse the catalog', cli: 'astryx component --list'},
@@ -82,12 +89,16 @@ export const doc = {
       label: 'Props table as JSON',
       cli: 'astryx component Button --props --json',
     },
+    {
+      label: 'Vanilla HTML markup',
+      cli: 'astryx component Button --html',
+    },
   ],
   exitCodes: [
     {code: 0, when: 'success'},
     {
       code: 1,
-      when: 'unknown component, category, or package; more than 100 selectors; any batch row is unresolved; or @astryxdesign/core cannot be resolved',
+      when: 'unknown component, category, or package; an invalid --html combination; more than 100 selectors; any batch row is unresolved; or @astryxdesign/core cannot be resolved',
     },
   ],
   related: ['search', 'hook', 'docs', 'template', 'swizzle'],

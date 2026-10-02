@@ -66,6 +66,15 @@ export const doc = {
       description:
         "One component's example blocks, as {component, showcase, examples, related} of BlockEntry.",
     },
+    {
+      value: 'component.html.list',
+      description: 'The sorted packages/vanilla/markup files as {name, file}.',
+    },
+    {
+      value: 'component.html',
+      description:
+        'One vanilla component markup file as {component, file, source}, preserving docs and variant comments verbatim.',
+    },
 
     // docs
     {
@@ -201,6 +210,15 @@ export const doc = {
       value: 'template.cdn',
       description:
         'A write receipt for the no-build-step CDN starter page: the path (relative to cwd), the Astryx version every CDN URL was pinned to, whether it was written, and the reason it was not. `exists` when a file was already there, which is a success.',
+    },
+    {
+      value: 'template.html.list',
+      description: 'The sorted packages/vanilla/templates files as {id, file}.',
+    },
+    {
+      value: 'template.html',
+      description:
+        'One vanilla standalone page as {template, file, cdnRef, cdnBase, source}, with every CDN placeholder substituted.',
     },
 
     // hook

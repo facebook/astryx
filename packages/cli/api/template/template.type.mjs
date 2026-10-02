@@ -13,6 +13,8 @@
  * astryx --json template <name> --skeleton -> template.skeleton
  * astryx --json template <name> [path]     -> template.copy
  * astryx --json template --cdn [path]      -> template.cdn
+ * astryx --json template --list --html     -> template.html.list
+ * astryx --json template <name> --html     -> template.html
  * (unknown template)                       -> CLIError
  */
 
@@ -94,6 +96,8 @@
  * @property {boolean} [skeleton]
  * @property {boolean} [show]
  * @property {boolean | string} [cdn] Write the no-build-step CDN starter page instead of resolving a template. A string is used as the destination path.
+ * @property {boolean} [html] Read vanilla standalone HTML, or list vanilla HTML files with list.
+ * @property {string} [cdnRef] Git ref inserted into vanilla jsDelivr URLs; requires html.
  * @property {'page' | 'block'} [type] Filter templates by kind: 'page' or 'block'. Narrows both list and direct lookup.
  * @property {string} [package] Narrow to templates from a specific package. Without it, a valid integration replacement is selected for the Core id; @astryxdesign/core explicitly selects the original.
  * @property {string} [targetPath]
