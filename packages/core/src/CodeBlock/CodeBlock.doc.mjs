@@ -172,7 +172,7 @@ export const docs = {
       {guidance: false, description: 'Nest a code block inside a scrollable container. Use the maxHeight prop instead, which handles overflow natively.'},
     ],
     anatomy: [
-      {name: 'Header Bar', required: false, description: 'Shows the title, language label, and copy button. Appears when any of these props are set.'},
+      {name: 'Header Bar', required: false, description: 'Shows the title, visible language label, and copy button when a header is present. A title or visible language label creates the header; the copy button alone floats at the top-end of a headerless block.'},
       {name: 'Line Numbers', required: false, description: 'Numbered gutter along the left edge. Enable with hasLineNumbers.'},
       {name: 'Code Body', required: true, description: 'The syntax-highlighted code content.'},
       {name: 'Highlighted Lines', required: false, description: 'Background accent on specific lines to draw attention.'},
