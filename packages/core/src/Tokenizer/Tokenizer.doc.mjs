@@ -6,7 +6,17 @@ export const docs = {
   name: 'Tokenizer',
   displayName: 'Tokenizer',
   category: 'Form Controls',
-  keywords: ["tokenizer","multiselect","multi-select","chips","tags","combobox","autocomplete","taginput","chipinput"],
+  keywords: [
+    'tokenizer',
+    'multiselect',
+    'multi-select',
+    'chips',
+    'tags',
+    'combobox',
+    'autocomplete',
+    'taginput',
+    'chipinput',
+  ],
   playground: {
     // `value` is a required array of custom items the preview cannot
     // auto-generate; without a default the properties tab shows the
@@ -104,9 +114,9 @@ export const docs = {
     },
     {
       name: 'statusVariant',
-      type: "'attached' | 'detached'",
+      type: "'attached' | 'detached' | 'tooltip'",
       description:
-        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing.',
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing; tooltip reveals the message in an info-tip button.',
       default: "'attached'",
     },
     {
@@ -146,18 +156,21 @@ export const docs = {
     {
       name: 'maxMenuItems',
       type: 'number',
-      description: 'Maximum number of search results to display. The hasCreate entry is offered on top of them, so a menu can show one more than this.',
+      description:
+        'Maximum number of search results to display. The hasCreate entry is offered on top of them, so a menu can show one more than this.',
       default: '10',
     },
     {
       name: 'menuWidth',
       type: 'number',
-      description: 'Fixed dropdown width in pixels. The menu never shrinks below its anchor width.',
+      description:
+        'Fixed dropdown width in pixels. The menu never shrinks below its anchor width.',
     },
     {
       name: 'minQueryLength',
       type: 'number',
-      description: 'Minimum query length before the search source is queried. Below it no search runs, and the menu stays closed — unless hasCreate is set, in which case the "Create ..." entry is still offered, being derived from the typed text rather than fetched for it.',
+      description:
+        'Minimum query length before the search source is queried. Below it no search runs, and the menu stays closed — unless hasCreate is set, in which case the "Create ..." entry is still offered, being derived from the typed text rather than fetched for it.',
       default: '1',
     },
     {
@@ -229,7 +242,8 @@ export const docs = {
     {
       name: 'tokenOverflowBehavior',
       type: "'none' | 'unfocusedInline' | 'unfocusedLayer'",
-      description: 'Controls how tokens overflow when the container is too narrow.',
+      description:
+        'Controls how tokens overflow when the container is too narrow.',
       default: "'none'",
     },
     {
@@ -251,30 +265,101 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-tokenizer', visualProps: ['size', 'status'], states: ['disabled']},
+      {
+        className: 'astryx-tokenizer',
+        visualProps: ['size', 'status'],
+        states: ['disabled'],
+      },
     ],
   },
   usage: {
     description:
       'Tokenizer is a multi-select input that lets users search, select, and manage multiple items displayed as removable chips. Use it when users need to build a set of selections from a searchable data source, like adding team members, applying tags, or choosing filters.',
     bestPractices: [
-      {guidance: true, description: 'Write a placeholder that tells users what they can search for, such as "Search people..." or "Add tags...", so the input is not a blank mystery.'},
-      {guidance: true, description: 'Set maxEntries when the number of selections should be bounded, like limiting a review to 5 approvers.'},
-      {guidance: true, description: 'Use hasCreate for free-form tagging where users need to enter values that do not exist in the search source.'},
-      {guidance: true, description: 'Show validation status with the status prop so users know immediately when a selection is missing or invalid.'},
-      {guidance: false, description: 'Don\'t use Tokenizer for single-item selection; use Typeahead instead. Tokenizer is for building sets of two or more items.'},
-      {guidance: false, description: 'Avoid applying custom colors to individual tokens inside a Tokenizer; use the default token style for visual consistency across the set.'},
-      {guidance: false, description: 'Don\'t hide the label; every Tokenizer needs a visible label so users understand what they are selecting. Use isLabelHidden only when surrounding context makes the purpose obvious.'},
-      {guidance: false, description: 'Wrap a disabled Tokenizer in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.'},
+      {
+        guidance: true,
+        description:
+          'Write a placeholder that tells users what they can search for, such as "Search people..." or "Add tags...", so the input is not a blank mystery.',
+      },
+      {
+        guidance: true,
+        description:
+          'Set maxEntries when the number of selections should be bounded, like limiting a review to 5 approvers.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use hasCreate for free-form tagging where users need to enter values that do not exist in the search source.',
+      },
+      {
+        guidance: true,
+        description:
+          'Show validation status with the status prop so users know immediately when a selection is missing or invalid.',
+      },
+      {
+        guidance: false,
+        description:
+          "Don't use Tokenizer for single-item selection; use Typeahead instead. Tokenizer is for building sets of two or more items.",
+      },
+      {
+        guidance: false,
+        description:
+          'Avoid applying custom colors to individual tokens inside a Tokenizer; use the default token style for visual consistency across the set.',
+      },
+      {
+        guidance: false,
+        description:
+          "Don't hide the label; every Tokenizer needs a visible label so users understand what they are selecting. Use isLabelHidden only when surrounding context makes the purpose obvious.",
+      },
+      {
+        guidance: false,
+        description:
+          'Wrap a disabled Tokenizer in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+      },
     ],
     anatomy: [
-      {name: 'Label', required: true, description: 'The visible text above the input describing what the user is selecting. Also used as the accessible name.'},
-      {name: 'Token chips', required: false, description: 'Removable chips representing each selected item. Each chip shows a label and a remove button.'},
-      {name: 'Search input', required: true, description: 'The text input where users type to search the data source. Hides when maxEntries is reached.'},
-      {name: 'Dropdown menu', required: false, description: 'The search results list that appears below the input as the user types.'},
-      {name: 'Spinner', required: false, description: 'Loading indicator shown at the end of the field while a search is in flight.'},
-      {name: 'End content', required: false, description: 'A trailing slot after the input for action buttons, counts, or other controls.'},
-      {name: 'Clear button', required: false, description: 'A button that removes all selected tokens at once. Shown when hasClear is true and tokens are present.'},
+      {
+        name: 'Label',
+        required: true,
+        description:
+          'The visible text above the input describing what the user is selecting. Also used as the accessible name.',
+      },
+      {
+        name: 'Token chips',
+        required: false,
+        description:
+          'Removable chips representing each selected item. Each chip shows a label and a remove button.',
+      },
+      {
+        name: 'Search input',
+        required: true,
+        description:
+          'The text input where users type to search the data source. Hides when maxEntries is reached.',
+      },
+      {
+        name: 'Dropdown menu',
+        required: false,
+        description:
+          'The search results list that appears below the input as the user types.',
+      },
+      {
+        name: 'Spinner',
+        required: false,
+        description:
+          'Loading indicator shown at the end of the field while a search is in flight.',
+      },
+      {
+        name: 'End content',
+        required: false,
+        description:
+          'A trailing slot after the input for action buttons, counts, or other controls.',
+      },
+      {
+        name: 'Clear button',
+        required: false,
+        description:
+          'A button that removes all selected tokens at once. Shown when hasClear is true and tokens are present.',
+      },
     ],
   },
 };
@@ -287,7 +372,8 @@ export const docsZh = {
     {
       name: 'label',
       type: 'string',
-      description: '\u8f93\u5165\u6846\u7684\u65e0\u969c\u788d\u6807\u7b7e\u3002',
+      description:
+        '\u8f93\u5165\u6846\u7684\u65e0\u969c\u788d\u6807\u7b7e\u3002',
       required: true,
     },
     {
@@ -300,7 +386,8 @@ export const docsZh = {
     {
       name: 'value',
       type: 'T[]',
-      description: '\u5f53\u524d\u5df2\u9009\u9879\u76ee\u7684\u6570\u7ec4\u3002',
+      description:
+        '\u5f53\u524d\u5df2\u9009\u9879\u76ee\u7684\u6570\u7ec4\u3002',
       required: true,
     },
     {
@@ -325,7 +412,8 @@ export const docsZh = {
     {
       name: 'hasClear',
       type: 'boolean',
-      description: '\u663e\u793a\u5168\u90e8\u6e05\u9664\u6309\u94ae\uff0c\u7528\u4e8e\u6279\u91cf\u79fb\u9664\u6240\u6709\u6807\u8bb0\u3002',
+      description:
+        '\u663e\u793a\u5168\u90e8\u6e05\u9664\u6309\u94ae\uff0c\u7528\u4e8e\u6279\u91cf\u79fb\u9664\u6240\u6709\u6807\u8bb0\u3002',
       default: 'false',
     },
     {
@@ -343,13 +431,15 @@ export const docsZh = {
     {
       name: 'isDisabled',
       type: 'boolean',
-      description: '\u7981\u7528\u8f93\u5165\u6846\u548c\u6240\u6709\u6807\u8bb0\u4ea4\u4e92\u3002',
+      description:
+        '\u7981\u7528\u8f93\u5165\u6846\u548c\u6240\u6709\u6807\u8bb0\u4ea4\u4e92\u3002',
       default: 'false',
     },
     {
       name: 'htmlName',
       type: 'string',
-      description: '用于表单提交的 HTML name 属性。为每个已选项目的 id 渲染一个隐藏输入。',
+      description:
+        '用于表单提交的 HTML name 属性。为每个已选项目的 id 渲染一个隐藏输入。',
     },
     {
       name: 'disabledMessage',
@@ -365,21 +455,23 @@ export const docsZh = {
     },
     {
       name: 'statusVariant',
-      type: "'attached' | 'detached'",
+      type: "'attached' | 'detached' | 'tooltip'",
       description:
-        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距。',
+        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距；tooltip 在状态图标的提示气泡中显示消息。',
       default: "'attached'",
     },
     {
       name: 'isLabelHidden',
       type: 'boolean',
-      description: '\u89c6\u89c9\u9690\u85cf\u6807\u7b7e\uff0c\u540c\u65f6\u4fdd\u6301\u5176\u53ef\u8bbf\u95ee\u6027\u3002',
+      description:
+        '\u89c6\u89c9\u9690\u85cf\u6807\u7b7e\uff0c\u540c\u65f6\u4fdd\u6301\u5176\u53ef\u8bbf\u95ee\u6027\u3002',
       default: 'false',
     },
     {
       name: 'description',
       type: 'string',
-      description: '\u663e\u793a\u5728\u6807\u7b7e\u4e0b\u65b9\u7684\u8f85\u52a9\u6587\u672c\u3002',
+      description:
+        '\u663e\u793a\u5728\u6807\u7b7e\u4e0b\u65b9\u7684\u8f85\u52a9\u6587\u672c\u3002',
     },
     {
       name: 'isRequired',
@@ -390,24 +482,28 @@ export const docsZh = {
     {
       name: 'isOptional',
       type: 'boolean',
-      description: '\u5728\u6807\u7b7e\u4e0a\u663e\u793a\u53ef\u9009\u6307\u793a\u5668\u3002',
+      description:
+        '\u5728\u6807\u7b7e\u4e0a\u663e\u793a\u53ef\u9009\u6307\u793a\u5668\u3002',
       default: 'false',
     },
     {
       name: 'labelTooltip',
       type: 'string',
-      description: '\u6807\u7b7e\u4e0a\u663e\u793a\u7684\u5de5\u5177\u63d0\u793a\u6587\u672c\u3002',
+      description:
+        '\u6807\u7b7e\u4e0a\u663e\u793a\u7684\u5de5\u5177\u63d0\u793a\u6587\u672c\u3002',
     },
     {
       name: 'hasEntriesOnFocus',
       type: 'boolean',
-      description: '\u805a\u7126\u65f6\u5728\u8f93\u5165\u524d\u663e\u793a\u5f15\u5bfc\u7ed3\u679c\u3002',
+      description:
+        '\u805a\u7126\u65f6\u5728\u8f93\u5165\u524d\u663e\u793a\u5f15\u5bfc\u7ed3\u679c\u3002',
       default: 'false',
     },
     {
       name: 'maxMenuItems',
       type: 'number',
-      description: '下拉列表显示的最大搜索结果数。“创建 ...”条目会在此之外额外提供，因此菜单可能比该数量多显示一项。',
+      description:
+        '下拉列表显示的最大搜索结果数。“创建 ...”条目会在此之外额外提供，因此菜单可能比该数量多显示一项。',
       default: '10',
     },
     {
@@ -418,25 +514,29 @@ export const docsZh = {
     {
       name: 'minQueryLength',
       type: 'number',
-      description: '查询搜索源前的最小查询长度。低于该长度不会发起搜索，菜单保持关闭；但设置 hasCreate 时仍会提供“创建 ...”条目——该条目由输入的文本推导而来，并非通过搜索获取。',
+      description:
+        '查询搜索源前的最小查询长度。低于该长度不会发起搜索，菜单保持关闭；但设置 hasCreate 时仍会提供“创建 ...”条目——该条目由输入的文本推导而来，并非通过搜索获取。',
       default: '1',
     },
     {
       name: 'emptySearchResultsText',
       type: 'string',
-      description: '\u641c\u7d22\u65e0\u7ed3\u679c\u65f6\u663e\u793a\u7684\u6587\u672c\u3002',
+      description:
+        '\u641c\u7d22\u65e0\u7ed3\u679c\u65f6\u663e\u793a\u7684\u6587\u672c\u3002',
       default: "'No results found'",
     },
     {
       name: 'hasAutoFocus',
       type: 'boolean',
-      description: '\u6302\u8f7d\u65f6\u81ea\u52a8\u805a\u7126\u8f93\u5165\u6846\u3002',
+      description:
+        '\u6302\u8f7d\u65f6\u81ea\u52a8\u805a\u7126\u8f93\u5165\u6846\u3002',
       default: 'false',
     },
     {
       name: 'size',
       type: "'sm' | 'md' | 'lg'",
-      description: '\u8f93\u5165\u6846\u548c\u6807\u8bb0\u7684\u5c3a\u5bf8\u3002',
+      description:
+        '\u8f93\u5165\u6846\u548c\u6807\u8bb0\u7684\u5c3a\u5bf8\u3002',
       default: "'md'",
     },
     {
@@ -449,7 +549,8 @@ export const docsZh = {
     {
       name: 'onChangeQuery',
       type: '(query: string) => void',
-      description: '\u641c\u7d22\u67e5\u8be2\u6587\u672c\u53d8\u66f4\u65f6\u89e6\u53d1\u7684\u56de\u8c03\u3002',
+      description:
+        '\u641c\u7d22\u67e5\u8be2\u6587\u672c\u53d8\u66f4\u65f6\u89e6\u53d1\u7684\u56de\u8c03\u3002',
     },
     {
       name: 'startIcon',
@@ -477,83 +578,195 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-tokenizer', visualProps: ['size', 'status'], states: ['disabled']},
+      {
+        className: 'astryx-tokenizer',
+        visualProps: ['size', 'status'],
+        states: ['disabled'],
+      },
     ],
   },
   usage: {
     description:
       'Tokenizer is a multi-select input that lets users search, select, and manage multiple items displayed as removable chips. Use it when users need to build a set of selections from a searchable data source, like adding team members, applying tags, or choosing filters.',
     bestPractices: [
-      {guidance: true, description: 'Write a placeholder that tells users what they can search for, such as "Search people..." or "Add tags...", so the input is not a blank mystery.'},
-      {guidance: true, description: 'Set maxEntries when the number of selections should be bounded, like limiting a review to 5 approvers.'},
-      {guidance: true, description: 'Use hasCreate for free-form tagging where users need to enter values that do not exist in the search source.'},
-      {guidance: true, description: 'Show validation status with the status prop so users know immediately when a selection is missing or invalid.'},
-      {guidance: false, description: 'Don\'t use Tokenizer for single-item selection; use Typeahead instead. Tokenizer is for building sets of two or more items.'},
-      {guidance: false, description: 'Avoid applying custom colors to individual tokens inside a Tokenizer; use the default token style for visual consistency across the set.'},
-      {guidance: false, description: 'Don\'t hide the label; every Tokenizer needs a visible label so users understand what they are selecting. Use isLabelHidden only when surrounding context makes the purpose obvious.'},
-      {guidance: false, description: 'Wrap a disabled Tokenizer in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.'},
+      {
+        guidance: true,
+        description:
+          'Write a placeholder that tells users what they can search for, such as "Search people..." or "Add tags...", so the input is not a blank mystery.',
+      },
+      {
+        guidance: true,
+        description:
+          'Set maxEntries when the number of selections should be bounded, like limiting a review to 5 approvers.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use hasCreate for free-form tagging where users need to enter values that do not exist in the search source.',
+      },
+      {
+        guidance: true,
+        description:
+          'Show validation status with the status prop so users know immediately when a selection is missing or invalid.',
+      },
+      {
+        guidance: false,
+        description:
+          "Don't use Tokenizer for single-item selection; use Typeahead instead. Tokenizer is for building sets of two or more items.",
+      },
+      {
+        guidance: false,
+        description:
+          'Avoid applying custom colors to individual tokens inside a Tokenizer; use the default token style for visual consistency across the set.',
+      },
+      {
+        guidance: false,
+        description:
+          "Don't hide the label; every Tokenizer needs a visible label so users understand what they are selecting. Use isLabelHidden only when surrounding context makes the purpose obvious.",
+      },
+      {
+        guidance: false,
+        description:
+          'Wrap a disabled Tokenizer in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+      },
     ],
     anatomy: [
-      {name: 'Label', required: true, description: 'The visible text above the input describing what the user is selecting. Also used as the accessible name.'},
-      {name: 'Token chips', required: false, description: 'Removable chips representing each selected item. Each chip shows a label and a remove button.'},
-      {name: 'Search input', required: true, description: 'The text input where users type to search the data source. Hides when maxEntries is reached.'},
-      {name: 'Dropdown menu', required: false, description: 'The search results list that appears below the input as the user types.'},
-      {name: 'Spinner', required: false, description: 'Loading indicator shown at the end of the field while a search is in flight.'},
-      {name: 'End content', required: false, description: 'A trailing slot after the input for action buttons, counts, or other controls.'},
-      {name: 'Clear button', required: false, description: 'A button that removes all selected tokens at once. Shown when hasClear is true and tokens are present.'},
+      {
+        name: 'Label',
+        required: true,
+        description:
+          'The visible text above the input describing what the user is selecting. Also used as the accessible name.',
+      },
+      {
+        name: 'Token chips',
+        required: false,
+        description:
+          'Removable chips representing each selected item. Each chip shows a label and a remove button.',
+      },
+      {
+        name: 'Search input',
+        required: true,
+        description:
+          'The text input where users type to search the data source. Hides when maxEntries is reached.',
+      },
+      {
+        name: 'Dropdown menu',
+        required: false,
+        description:
+          'The search results list that appears below the input as the user types.',
+      },
+      {
+        name: 'Spinner',
+        required: false,
+        description:
+          'Loading indicator shown at the end of the field while a search is in flight.',
+      },
+      {
+        name: 'End content',
+        required: false,
+        description:
+          'A trailing slot after the input for action buttons, counts, or other controls.',
+      },
+      {
+        name: 'Clear button',
+        required: false,
+        description:
+          'A button that removes all selected tokens at once. Shown when hasClear is true and tokens are present.',
+      },
     ],
   },
 };
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
-  description: 'Multi-select typeahead w/ token chips for selected items. Composes BaseTypeahead for search+Token for chips.',
+  description:
+    'Multi-select typeahead w/ token chips for selected items. Composes BaseTypeahead for search+Token for chips.',
   usage: {
     description:
       'Multi-select input for searching and selecting multiple items as removable chips. Use for team members, tags, filters, or any set built from a searchable source.',
     bestPractices: [
-      {guidance: true, description: 'Placeholder that communicates what to search, such as "Search people..." rather than blank.'},
-      {guidance: true, description: 'maxEntries when selections are bounded (e.g. 5 approvers max).'},
-      {guidance: true, description: 'hasCreate for free-form tagging with values not in the source.'},
-      {guidance: true, description: 'status prop for immediate validation feedback.'},
-      {guidance: false, description: 'Don\'t use for single-item selection; use Typeahead instead.'},
-      {guidance: false, description: 'Avoid custom token colors; default style for consistency.'},
-      {guidance: false, description: 'Don\'t hide the label unless context makes purpose obvious.'},
-      {guidance: false, description: 'Wrap a disabled Tokenizer in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.'},
+      {
+        guidance: true,
+        description:
+          'Placeholder that communicates what to search, such as "Search people..." rather than blank.',
+      },
+      {
+        guidance: true,
+        description:
+          'maxEntries when selections are bounded (e.g. 5 approvers max).',
+      },
+      {
+        guidance: true,
+        description:
+          'hasCreate for free-form tagging with values not in the source.',
+      },
+      {
+        guidance: true,
+        description: 'status prop for immediate validation feedback.',
+      },
+      {
+        guidance: false,
+        description:
+          "Don't use for single-item selection; use Typeahead instead.",
+      },
+      {
+        guidance: false,
+        description:
+          'Avoid custom token colors; default style for consistency.',
+      },
+      {
+        guidance: false,
+        description:
+          "Don't hide the label unless context makes purpose obvious.",
+      },
+      {
+        guidance: false,
+        description:
+          'Wrap a disabled Tokenizer in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+      },
     ],
   },
   propDescriptions: {
     label: 'Accessible label for input.',
-    searchSource: 'Data source w/ search+bootstrap methods for populating dropdown.',
+    searchSource:
+      'Data source w/ search+bootstrap methods for populating dropdown.',
     value: 'Array of currently selected items.',
-    onChange: "Fired on selection change. Change arg includes affected item+type ('add'|'create'|'remove'|'reorder').",
-    hasCreate: 'Enable free-text token creation. Shows "Create" dropdown option for unmatched typed text.',
+    onChange:
+      "Fired on selection change. Change arg includes affected item+type ('add'|'create'|'remove'|'reorder').",
+    hasCreate:
+      'Enable free-text token creation. Shows "Create" dropdown option for unmatched typed text.',
     placeholder: 'Input placeholder. Only shown when no tokens selected.',
     maxEntries: 'Max selections allowed. Input hidden at limit.',
     hasClear: 'Clear-all button for bulk removal.',
-    renderToken: 'Custom token render. Default renders Token w/ label+onRemove.',
+    renderToken:
+      'Custom token render. Default renders Token w/ label+onRemove.',
     renderItem: 'Custom dropdown item render. Default renders TypeaheadItem.',
     isDisabled: 'Disables input+all token interactions.',
     htmlName: 'HTML name attr; one hidden input per selected item id.',
     status: 'Validation status w/ type+message for error/warning/success.',
-    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing.',
+    statusVariant:
+      'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip shows on status icon.',
     isLabelHidden: 'Visually hides label; keeps a11y.',
     description: 'Helper text below label.',
     isRequired: 'Marks field required.',
     isOptional: 'Shows optional indicator on label.',
     labelTooltip: 'Tooltip on label.',
     hasEntriesOnFocus: 'Show bootstrap results on focus before typing.',
-    maxMenuItems: 'Max search results shown; the hasCreate entry sits on top of them.',
+    maxMenuItems:
+      'Max search results shown; the hasCreate entry sits on top of them.',
     menuWidth: 'Fixed dropdown width in pixels.',
-    minQueryLength: 'Min query length before searching. Menu stays closed below it, except the hasCreate entry.',
+    minQueryLength:
+      'Min query length before searching. Menu stays closed below it, except the hasCreate entry.',
     emptySearchResultsText: 'Text when search returns no results.',
     hasAutoFocus: 'Auto-focus input on mount.',
     size: 'Input+token size.',
     debounceMs: 'Search debounce delay ms. 0 for sync sources.',
     onChangeQuery: 'Fired on search query text change.',
-    startIcon: 'Icon at input start, before tokens. Icon name, SVG component, or ReactNode.',
+    startIcon:
+      'Icon at input start, before tokens. Icon name, SVG component, or ReactNode.',
     endContent: 'Content at input row end. For buttons, counts, controls.',
     handleRef: 'Imperative handle for focus() and blur() control.',
-    xstyle: 'StyleX layout styles (margins, positioning). Must be stylex.create() value.',
+    xstyle:
+      'StyleX layout styles (margins, positioning). Must be stylex.create() value.',
   },
 };
