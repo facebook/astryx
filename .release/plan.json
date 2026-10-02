@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "version": "0.6.5",
+  "branch": "release/v0.6.5",
+  "cutSha": "9711e3d4483c7374e42318e03448aa14e31aeaed",
+  "changesets": [
+    {
+      "path": ".changeset/button-shrinks-in-narrow-rows.md",
+      "sha256": "648a0545da7a735e758fcf46d4e614306a1c0f33e1ca904dc593a8036a008834"
+    },
+    {
+      "path": ".changeset/cli-component-batch-lookups.md",
+      "sha256": "e50a03ef29b75919a73adeda019b0fd029fc26a124d4c6767fb33aeb7accb817"
+    },
+    {
+      "path": ".changeset/cli-spec-pack-check-lifecycle-output.md",
+      "sha256": "5a71ab41ef7e1a874d47219edc75a21e1e340c90ddbe735d784ade8e7046224f"
+    },
+    {
+      "path": ".changeset/discover-integration-manager.md",
+      "sha256": "7a5dcb31e11097727a5ecd179b72453a94fb4ecccc2c07ef851a9b83ebdc16d8"
+    },
+    {
+      "path": ".changeset/lean-runtime-i18n.md",
+      "sha256": "4b36e6c44511580b410651169b5e6500cc04ac947d50b441db3847730c9e7ea3"
+    },
+    {
+      "path": ".changeset/public-package-identifiers.md",
+      "sha256": "23e897fb31f6eb864123ca4de113baf01fd66940915ffe580146ab248ee0e4df"
+    },
+    {
+      "path": ".changeset/quiet-tokens-share.md",
+      "sha256": "d6edeb2c6617a8a4cf7ebd32330d4182fac7991fcc0a8aeaa468dee9efb8a52e"
+    },
+    {
+      "path": ".changeset/segmented-control-hug-caps.md",
+      "sha256": "28db4f7d5a105aaa8a3916a76630104fec6e3d67503737c52c24404a383c926a"
+    },
+    {
+      "path": ".changeset/selectable-card-focusable-disabled.md",
+      "sha256": "3e8a74403a670eea5f65d5f72eb6e195767bd3ec489a5b75ea00ba69916ffe24"
+    },
+    {
+      "path": ".changeset/switch-busy-announcement.md",
+      "sha256": "d97ea19d1365f779aec7d4952564a80b8bd6fe44938460c0b4eed9b3a67d0dee"
+    },
+    {
+      "path": ".changeset/theme-writes-roll-back.md",
+      "sha256": "6b0f17888baf7a867f37c547c6581b9a752f94b3bca9d22f034189be0bd8d384"
+    }
+  ]
+}
