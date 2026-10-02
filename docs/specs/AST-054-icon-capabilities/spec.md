@@ -48,13 +48,25 @@ A component maintainer does not repeat the theme vocabularies for each icon role
 For example, when Button owns an icon role:
 
 1. Button declares the role and its fallback semantic icon name.
-2. Button's existing context supplies the icon size.
-3. The active theme may map that role to another shared icon name.
-4. The selected theme icon entry supplies its default appearance and weight.
+2. Button declares only the default requests its visual contract owns, such as its
+   contextual icon size and, when required, an appearance or weight.
+3. The active theme may map the role to another shared icon name and supplies the
+   admitted values and matching icon versions.
 
-Button can then render `<Icon icon={resolvedButtonIcon} />`. It supplies an explicit
-size, appearance, or weight only when Button's own documented behavior requires that
-override.
+Button then passes its resolved name and owned defaults to `Icon`:
+
+```tsx
+<Icon
+  icon={resolvedButtonIcon}
+  size={buttonIconSize}
+  appearance={buttonIconAppearance}
+  weight={buttonIconWeight}
+/>
+```
+
+Any request Button does not own remains omitted and uses the selected icon
+configuration's default. Button defines its defaults once; it does not enumerate every
+possible value or repeat them for every icon.
 
 ## Non-goals
 
