@@ -107,7 +107,10 @@ describe('reference doc overlays (#2182)', () => {
       const overlay = overlayMod.docsDense || overlayMod.docsZh;
       const anchors = (overlay.sections || []).map(s => s.section);
       const dupes = anchors.filter((a, i) => anchors.indexOf(a) !== i);
-      expect(dupes, `${topic}.doc.${variant}.mjs overrides the same base section twice`).toEqual([]);
+      expect(
+        dupes,
+        `${topic}.doc.${variant}.mjs overrides the same base section twice`,
+      ).toEqual([]);
     });
   }
 });
@@ -155,5 +158,14 @@ describe('the reported defect: docs tokens --dense (#2182)', () => {
     // Every section the overlay translates must appear once, in Chinese only.
     expect(titles).not.toContain('Dark mode');
     expect(titles).toContain('亮/暗模式');
+  });
+
+  it('directs new palette authoring to the supported generator in every variant', async () => {
+    for (const options of [{}, {dense: true}, {zh: true}]) {
+      const result = await docs('theme', null, options);
+      expect(JSON.stringify(result.data.sections)).toContain(
+        'astryx theme palette generate palette.config.json',
+      );
+    }
   });
 });

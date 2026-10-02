@@ -99,15 +99,23 @@ export const myTheme = defineTheme({
   // extends: neutralTheme,
 
   // ───────────────────────────────────────────────────────────────────────
-  // Scale configs — a few parameters generate a whole family of tokens.
-  // Reach for these first. They keep a theme internally consistent and cover
-  // far more ground than you would hand-write.
+  // Scale configs — concise inputs for typography, radius, and motion.
+  // The color scale remains supported for existing themes, but it is not the
+  // recommended starting point for a new palette; see its note below.
   // ───────────────────────────────────────────────────────────────────────
 
   /**
-   * Generates the neutral ramp and the accent tokens from a seed colour
-   * using the HCT perceptual model: surfaces, text, icons, borders, muted
-   * fills, hover and pressed overlays — light and dark both.
+   * Supported compatibility path for existing themes. This expands one accent
+   * seed into the neutral ramp, surfaces, text, icons, borders, muted fills,
+   * hover and pressed overlays — light and dark both. It is not an accent-only
+   * edit.
+   *
+   * For a new complete palette, run:
+   *
+   *   astryx theme palette generate palette.config.json
+   *
+   * Review the generated candidate, then map accepted values explicitly in
+   * `tokens` below. Palette generation does not rewrite a theme automatically.
    *
    *   accent        seed hex, or a [light, dark] pair to seed each scheme's
    *                 palette from its own colour; omit to keep the default
@@ -133,7 +141,7 @@ export const myTheme = defineTheme({
    * Reference: `astryx docs color` for what each semantic role means,
    * `astryx docs tokens` for every colour token and its light/dark default.
    */
-  color: {accent: '#0064E0', neutralStyle: 'cool', contrast: 'standard'},
+  // color: {accent: '#0064E0', neutralStyle: 'cool', contrast: 'standard'},
 
   /**
    * Type scale and the three font roles.

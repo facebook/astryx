@@ -53,6 +53,10 @@ export const docsDense = {
         null,
         {
           type: 'prose',
+          text: 'new complete palette: `astryx theme palette generate palette.config.json` → review candidate → assign accepted colors explicitly to semantic tokens. generation does not change the theme.',
+        },
+        {
+          type: 'prose',
           text: '`astryx theme template` writes theme.template.ts: every defineTheme field + token families + override syntax, annotated, with the CLI command that prints each reference.',
         },
       ],
@@ -63,7 +67,7 @@ export const docsDense = {
       content: [
         {
           type: 'prose',
-          text: 'scale configs (color, typography, radius, motion) + explicit token overrides + component overrides. color derives full palette from accent via HCT; accent = hex or [light, dark] tuple (per-scheme palettes). tokens overrides win token-by-token; --color-on-accent stays baked from color.accent, so prefer a tuple accent over overriding --color-accent. localTokens accepts any valid CSS custom-property name; prefixes do not establish ownership.',
+          text: 'defineTheme = explicit token overrides + optional typography/radius/motion scale configs + component overrides. existing themes may use the supported color config, which derives accent, neutral, surface, text and border values together via HCT; it is not an accent-only edit. new complete palettes: `astryx theme palette generate palette.config.json` → review → map accepted values explicitly. token overrides win token-by-token. with an existing color config, overriding --color-accent re-points --color-accent-muted/--color-text-accent/--color-icon-accent, but --color-on-accent stays baked from color.accent; prefer a [light, dark] color.accent tuple over overriding --color-accent alone. localTokens accepts any valid CSS custom-property name; prefixes do not establish ownership.',
         },
         null,
         null,

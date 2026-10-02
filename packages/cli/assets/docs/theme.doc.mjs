@@ -165,6 +165,10 @@ function App() {
         },
         {
           type: 'prose',
+          text: 'For a new coordinated color system, run `astryx theme palette generate palette.config.json`. It produces a complete candidate for review without changing the theme. After review, assign the accepted colors explicitly to semantic tokens.',
+        },
+        {
+          type: 'prose',
           text: 'For an annotated map of the whole surface (every defineTheme field, the token families, and the component override syntax, each with the CLI command that prints its reference), run `astryx theme template`. It writes `theme.template.ts` into your project to read and copy from (`astryx init --features theme` writes it as part of project setup).',
         },
       ],
@@ -175,18 +179,16 @@ function App() {
       content: [
         {
           type: 'prose',
-          text: 'defineTheme creates a theme from token overrides and optional scale configs. Scale configs generate tokens from parameters. Explicit token overrides always take precedence over scale-generated values, token by token. localTokens accepts any valid CSS custom-property name; prefixes do not establish ownership. One caveat for the accent: overriding --color-accent in tokens re-points the reference tokens (--color-accent-muted, --color-text-accent, --color-icon-accent) but NOT --color-on-accent, which stays baked from the color.accent seed. To give each scheme its own accent with a consistent derived palette, pass a [light, dark] tuple to color.accent instead of overriding the token.',
+          text: 'defineTheme creates a theme from explicit token overrides and optional scale configs. Existing themes may use `color` to expand an accent seed into neutral, surface, text, border, and related values; it is not an accent-only edit. Keep that configuration when preserving existing output. For new complete palettes, use `astryx theme palette generate palette.config.json`, review the candidate, and assign accepted values explicitly to semantic tokens. Other scale configs generate typography, radius, and motion values from parameters. Explicit token overrides always take precedence over scale-generated values, token by token. When an existing `color` config is in use, overriding `--color-accent` in `tokens` re-points `--color-accent-muted`, `--color-text-accent`, and `--color-icon-accent`, but `--color-on-accent` stays baked from the `color.accent` seed. Prefer a `[light, dark]` tuple for `color.accent` over overriding `--color-accent` alone. localTokens accepts any valid CSS custom-property name; prefixes do not establish ownership.',
         },
         {
           type: 'code',
           lang: 'tsx',
-          label: 'defineTheme with scale configs',
+          label: 'defineTheme with explicit colors and non-color scale configs',
           code: `import {defineTheme} from '@astryxdesign/core/theme';
 
 const myTheme = defineTheme({
   name: 'my-theme',
-  // accent: single hex, or [light, dark] tuple to seed each scheme separately
-  color: { accent: ['#7B61FF', '#9B85FF'], neutralStyle: 'cool' },
   typography: {
     scale: { base: 14, ratio: 1.2 },
     body: { family: 'Inter', fallbacks: '-apple-system, sans-serif' },
@@ -194,7 +196,8 @@ const myTheme = defineTheme({
   radius: { base: 4, multiplier: 1 },
   motion: { fast: 175, medium: 410, ratio: 0.75 },
   tokens: {
-    // Explicit overrides take precedence over scale-generated values
+    '--color-accent': ['#7B61FF', '#9B85FF'],
+    '--color-on-accent': ['#FFFFFF', '#FFFFFF'],
     '--color-background-body': ['#FFFFFF', '#0A0A0A'],
   },
 });`,
@@ -204,9 +207,9 @@ const myTheme = defineTheme({
           headers: ['Config', 'Generates', 'Parameters'],
           rows: [
             [
-              'color',
+              'color (existing themes)',
               '--color-accent, --color-background-*, --color-text-*, --color-border, etc.',
-              'accent? (hex or [light, dark] tuple; omit for neutral-only), neutralStyle? (warm|cool|neutral), contrast? (standard|high)',
+              'Supported broad scale: accent? (hex or [light, dark] tuple), neutralStyle? (warm|cool|neutral), contrast? (standard|high). Use theme palette generate for new complete palettes.',
             ],
             [
               'typography.scale',
