@@ -18,7 +18,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'Lab prototype for trying the touch Tokenizer flow: tap the field to open one searchable sheet where selected and available items share a full-row checkbox list, selected custom values stay in that list, and long result sets render progressively in 50-item batches. Custom text uses a trailing Add action, and guarded Clear all plus Done actions finish the unfiltered flow. The footer is hidden while searching.',
+      'Lab prototype for trying the touch Tokenizer flow: tap the field to open one searchable sheet where selected and available items share a full-row checkbox list. Selected items are grouped first when the sheet opens, while checkbox changes keep every existing row in place until the sheet closes; the latest selection is regrouped the next time it opens. Selected custom values stay in the list, and long result sets render progressively in 50-item batches. Custom text uses a trailing Add action, and guarded Clear all plus Done actions finish the unfiltered flow. The footer is hidden while searching.',
     bestPractices: [
       {guidance: true, description: 'Try this in Lab/canary to validate the flow; graduate via Core Tokenizer presentation="adaptive" when it ships.'},
       {guidance: false, description: 'Do not ship stable product on this Lab API; it has no theming, i18n, or spec contract yet.'},

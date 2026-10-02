@@ -3,7 +3,8 @@
  * @file MobileTokenizer.stories.tsx
  * @input Uses MobileTokenizer (Lab) with a 1,000-entry searchable dataset
  * @output Storybook try-it story at 390px: one searchable management sheet
- *   with enough rows to evaluate progressive list rendering
+ *   with stable checkbox rows and enough entries to evaluate progressive
+ *   list rendering
  * @position Lab story; single-sheet touch-flow prototype
  */
 import {useState} from 'react';

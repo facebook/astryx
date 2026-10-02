@@ -8,7 +8,8 @@
  *   BottomSheet, BottomSheetSwitcher, Button, CheckboxIndicator, EmptyState,
  *   Field, Icon, Text, TextInput, Token)
  * @output Exports MobileTokenizer — Lab prototype of the touch Tokenizer
- *   flow with a single searchable sheet and progressive long-list rendering
+ *   flow with a single searchable sheet, stable in-session checkbox ordering,
+ *   and progressive long-list rendering
  * @position Lab (canary) stack layer 1: validates the design before the
  *   Core promotion (Tokenizer presentation="bottom-sheet").
  *
@@ -269,6 +270,7 @@ export function MobileTokenizer<T extends SearchableItem>({
   );
   const seqRef = useRef(0);
   const lastLoadScrollHeightRef = useRef<number | null>(null);
+  const [selectedItemsAtOpen, setSelectedItemsAtOpen] = useState<T[]>(value);
   const isSheetOpen = activeSheet === 'manage';
   useEffect(() => {
     if (!isSheetOpen) {
@@ -316,17 +318,29 @@ export function MobileTokenizer<T extends SearchableItem>({
 
   const visibleItems = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    const selectedMatches = value.filter(
-      item =>
-        normalizedQuery === '' ||
-        item.label.toLowerCase().includes(normalizedQuery),
+    const matchesQuery = (item: T) =>
+      normalizedQuery === '' ||
+      item.label.toLowerCase().includes(normalizedQuery);
+    const selectedAtOpenMatches = selectedItemsAtOpen.filter(matchesQuery);
+    const selectedAtOpenIds = new Set(
+      selectedAtOpenMatches.map(item => item.id),
     );
-    const selectedMatchIds = new Set(selectedMatches.map(item => item.id));
+    const resultIds = new Set(results.map(item => item.id));
+    const selectedItemsMissingFromResults = value.filter(
+      item =>
+        !selectedAtOpenIds.has(item.id) &&
+        !resultIds.has(item.id) &&
+        matchesQuery(item),
+    );
+
+    // Selection changes update checkbox state without moving an existing row.
+    // The next open snapshots the latest value and applies selected-first order.
     return [
-      ...selectedMatches,
-      ...results.filter(item => !selectedMatchIds.has(item.id)),
+      ...selectedAtOpenMatches,
+      ...selectedItemsMissingFromResults,
+      ...results.filter(item => !selectedAtOpenIds.has(item.id)),
     ];
-  }, [query, results, value]);
+  }, [query, results, selectedItemsAtOpen, value]);
 
   const renderedItems = visibleItems.slice(0, renderedItemCount);
 
@@ -364,6 +378,7 @@ export function MobileTokenizer<T extends SearchableItem>({
         aria-label={label}
         disabled={isDisabled}
         onClick={() => {
+          setSelectedItemsAtOpen(value);
           lastLoadScrollHeightRef.current = null;
           setRenderedItemCount(LIST_RENDER_BATCH_SIZE);
           setActiveSheet('manage');

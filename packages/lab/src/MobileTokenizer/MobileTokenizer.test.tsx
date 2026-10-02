@@ -100,6 +100,7 @@ beforeEach(() => {
       dispatchEvent: vi.fn(),
     }),
   );
+  window.scrollTo = vi.fn();
   vi.stubGlobal(
     'requestAnimationFrame',
     vi.fn((cb: FrameRequestCallback) => {
@@ -111,15 +112,24 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('MobileTokenizer (Lab, single-sheet flow)', () => {
-  it('opens one searchable list and toggles items in place', async () => {
+  it('keeps rows stable while open and applies selected-first order on reopen', async () => {
     const spy = vi.fn();
     render(<Harness spy={spy} />);
     const trigger = screen.getByRole('button', {name: /Tags/});
     fireEvent.click(trigger);
 
     const list = await screen.findByTestId('mobile-tokenizer-list');
-    expect(list).toHaveTextContent('Design');
-    expect(list).toHaveTextContent('Engineer');
+    await screen.findByRole('checkbox', {name: 'Energizer'});
+    const checkboxLabels = () =>
+      within(list)
+        .getAllByRole('checkbox')
+        .map(row => row.getAttribute('aria-label'));
+    expect(checkboxLabels()).toEqual([
+      'Design',
+      'Eng',
+      'Engineer',
+      'Energizer',
+    ]);
     const search = screen.getByLabelText('Search Tags');
     expect(
       search.closest('.astryx-text-input')?.querySelector('.astryx-icon'),
@@ -132,23 +142,45 @@ describe('MobileTokenizer (Lab, single-sheet flow)', () => {
     expect(design.lastElementChild).toHaveAttribute('aria-hidden', 'true');
     expect(design.lastElementChild).toHaveAttribute('data-size', 'md');
 
-    fireEvent.click(screen.getByText('Engineer'));
+    fireEvent.click(screen.getByRole('checkbox', {name: 'Energizer'}));
     expect(spy).toHaveBeenCalledWith(
-      [ITEMS[0], ITEMS[1], ITEMS[2]],
+      [ITEMS[0], ITEMS[1], ITEMS[3]],
       expect.objectContaining({type: 'add'}),
     );
     await waitFor(() =>
-      expect(screen.getByRole('checkbox', {name: 'Engineer'})).toBeChecked(),
+      expect(screen.getByRole('checkbox', {name: 'Energizer'})).toBeChecked(),
     );
+    expect(checkboxLabels()).toEqual([
+      'Design',
+      'Eng',
+      'Engineer',
+      'Energizer',
+    ]);
 
     fireEvent.click(screen.getByRole('checkbox', {name: 'Eng'}));
     expect(spy).toHaveBeenLastCalledWith(
-      [ITEMS[0], ITEMS[2]],
+      [ITEMS[0], ITEMS[3]],
       expect.objectContaining({type: 'remove'}),
     );
+    expect(checkboxLabels()).toEqual([
+      'Design',
+      'Eng',
+      'Engineer',
+      'Energizer',
+    ]);
 
     fireEvent.click(screen.getByRole('button', {name: 'Done'}));
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    await act(async () => {
+      fireEvent.click(trigger);
+    });
+    expect(checkboxLabels()).toEqual([
+      'Design',
+      'Energizer',
+      'Eng',
+      'Engineer',
+    ]);
   });
 
   it('creates a custom entry with a trailing Add action', async () => {
