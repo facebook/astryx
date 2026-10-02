@@ -44,29 +44,18 @@ the existing contextual-size cascade, while appearance and weight use the select
 icon configuration's supplied defaults. The required `icon` source keeps its
 existing meaning.
 
-A component maintainer does not repeat the theme vocabularies for each icon role.
-For example, when Button owns an icon role:
+A component maintainer does not repeat the theme capability defaults for each icon
+role. For example, when Button owns an icon role:
 
 1. Button declares the role and its fallback semantic icon name.
-2. Button declares only the default requests its visual contract owns, such as its
-   contextual icon size and, when required, an appearance or weight.
-3. The active theme may map the role to another shared icon name and supplies the
-   admitted values and matching icon versions.
+2. Button's existing family-level size mapping supplies the contextual icon size.
+3. The active theme may map the role to another shared icon name.
+4. The selected theme icon configuration supplies its default appearance and weight.
 
-Button then passes its resolved name and owned defaults to `Icon`:
-
-```tsx
-<Icon
-  icon={resolvedButtonIcon}
-  size={buttonIconSize}
-  appearance={buttonIconAppearance}
-  weight={buttonIconWeight}
-/>
-```
-
-Any request Button does not own remains omitted and uses the selected icon
-configuration's default. Button defines its defaults once; it does not enumerate every
-possible value or repeat them for every icon.
+Button can then render `<Icon icon={resolvedButtonIcon} />`. Adding another Button
+icon role reuses the same size mapping and theme defaults. Button supplies an explicit
+appearance or weight only when its own documented behavior requires an exceptional
+override.
 
 ## Non-goals
 
@@ -89,9 +78,10 @@ possible value or repeat them for every icon.
   and `weight` MUST remain separate caller requests. Size resolution remains the
   explicit prop when supplied, then the nearest component-owned default, then
   standalone `md`. Omitting appearance or weight uses the selected icon
-  configuration's declared default. A component owner SHOULD omit capability
-  requests the component does not own and MUST NOT hardcode an appearance or weight
-  value absent from any supported theme contract.
+  configuration's declared default. Adding an icon role to a component MUST NOT
+  require redeclaring the theme's appearance or weight defaults. A component owner
+  SHOULD omit capability requests the component does not own and MUST NOT hardcode an
+  appearance or weight value absent from any supported theme contract.
 - **FR2 — The base size scale remains compatible.** `xsm` (12px), `sm` (16px),
   `md` (20px), and `lg` (24px) at the default 16px root MUST remain valid with
   their existing dimensions. A theme MAY define a preferred typed size scale and
