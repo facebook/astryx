@@ -27,220 +27,257 @@ affects_consumer_docs: [theme, Icon]
 
 ## Intent
 
-Icon libraries expose different size, appearance, and weight systems. One library
-may use `outline` and `filled`, another may add `solid`, `duotone`, or `color`, and
-another may expose no appearance choice. Weight may be numeric, named, adjustable
-through a supported stroke control, or unavailable.
+Icon libraries do not all work the same way. One may provide outline and filled
+versions. Another may use solid, duotone, or color. Weight may be a number, a name,
+an adjustable stroke width, or unavailable.
 
-`Icon` should let a caller request those three concepts independently while the
-active theme defines their typed vocabulary:
+`Icon` should support those differences without forcing every library into one model:
 
 ```tsx
 <Icon icon="search" size="medium" appearance="duotone" weight={600} />
 ```
 
-`size`, `appearance`, and `weight` are optional. Omitting them is valid: size uses
-the existing contextual-size cascade, while appearance and weight use the selected
-icon configuration's supplied defaults. The required `icon` source keeps its
-existing meaning.
+The three optional props have separate jobs:
 
-A component maintainer does not repeat the theme capability defaults for each icon
-role. For example, when Button owns an icon role:
+- `size` controls the icon box;
+- `appearance` chooses a theme-supplied version, such as outline or duotone; and
+- `weight` chooses a theme-supplied thickness or weight.
 
-1. Button declares the role and its fallback semantic icon name.
-2. Button's existing family-level size mapping supplies the contextual icon size.
-3. The active theme may map the role to another shared icon name.
-4. The selected theme icon configuration supplies its default appearance and weight.
+The active theme decides which values exist and which icon versions are available.
+Callers may omit any optional prop without causing an error.
 
-Button can then render `<Icon icon={resolvedButtonIcon} />`. Adding another Button
-icon role reuses the same size mapping and theme defaults. Button supplies an explicit
-appearance or weight only when its own documented behavior requires an exceptional
-override.
+## What theme authors define
+
+### Size
+
+Astryx keeps its existing sizes so old code does not break:
+
+- `xsm` = 12px
+- `sm` = 16px
+- `md` = 20px
+- `lg` = 24px
+
+A theme may add and prefer its own typed names, such as `small`, `medium`, and
+`large`. Adding those names does not remove or change the four existing values.
+Every active theme must provide dimensions for every added size name it supports;
+Astryx does not guess a substitute size.
+
+### Appearance
+
+Astryx does not define one appearance list for every icon library. A theme may use
+names such as `outline`, `filled`, `solid`, `duotone`, `color`, or another
+type-checked list of names.
+
+If the requested appearance exists for an icon, Astryx uses it. If it does not exist,
+Astryx uses that icon's theme-supplied default version.
+
+### Weight
+
+Astryx does not define one weight scale for every icon library. A theme may use
+numbers, names, or another type-checked list of values that matches the library.
+
+If the requested weight exists for the selected icon version, Astryx uses it. If it
+does not exist, Astryx uses that icon configuration's theme-supplied default. Astryx
+does not reinterpret the value as CSS `font-weight` or guess a `stroke-width`.
+
+### Icon entries
+
+An **icon configuration** is one group of available icon versions with one supplied
+default. It may be fixed or adaptive.
+
+An existing plain React node remains a valid fixed configuration. It ignores appearance
+and weight because it has only one version.
+
+A theme may instead provide an adaptive configuration with versions by size,
+appearance, weight, or any combination. Every adaptive configuration must include one
+real default version, so omitted or unsupported requests always have a supplied result.
+When `defaultAppearance` or `defaultWeight` labels that version, the same key must not
+also appear in its map because that duplicate could never be selected.
+
+## What component maintainers do
+
+Adding an icon role to a component does not require repeating the theme's size,
+appearance, or weight lists.
+
+A component maintainer chooses the semantic icon role and fallback icon name. The
+component or family may provide one shared icon-default profile when all of its icons
+need the same treatment. Every owned icon role inherits that profile; individual icons
+override it only when the component's documented behavior requires an exception.
+
+For example, the Button family already defines its icon-size relationship once for
+all Button icons. Adding another Button icon role reuses that relationship rather than
+repeating a size for every icon.
+
+## Defaults and fallback
+
+Astryx determines the effective value for each optional prop in this order:
+
+1. an explicit `Icon` prop;
+2. the nearest component- or family-owned default; then
+3. the final default:
+   - standalone `md` for size; or
+   - the selected icon configuration's supplied default for appearance and weight.
+
+A component/family appearance or weight default becomes the requested value for the
+next lookup. If that version is unavailable for the selected icon, Astryx uses the
+configuration's supplied default.
+
+An unknown callsite value is a type error. A malformed theme value is a theme-authoring
+error. Omitting a prop is valid and never causes a runtime error.
+
+Astryx chooses one icon entry from the active theme, then process-wide registration,
+then the built-in default. After one of those sources supplies the entry, Astryx never
+fills missing versions from another source. This prevents one rendered icon from
+mixing different icon families.
+
+## Resolution order
+
+For a semantic icon name, Astryx resolves:
+
+1. the icon entry: active theme, process-wide fixed registration, then built-in fixed
+   default;
+2. the effective box size from the explicit prop, component/family default, or
+   standalone `md`;
+3. an exact size-specific icon configuration when one exists;
+4. the effective appearance from the explicit prop or component/family default, then
+   an exact version when one exists, otherwise the current configuration's default;
+   and
+5. the effective weight from the explicit prop or component/family default, then an
+   exact version when one exists, otherwise the current configuration's default.
+
+An exact fixed size or appearance version is final. After an exact adaptive size or
+appearance match, later fallback stays inside that match; it does not jump back to the
+top-level icon versions.
+
+## What Astryx never generates
+
+Every rendered result must be a version supplied by the selected theme entry. Astryx
+never edits SVG fill, stroke, color, paths, transforms, filters, or geometry to imitate
+a missing appearance or weight.
 
 ## Non-goals
 
-- Define universal appearance or weight names for every icon library.
-- Require every icon in a set to support every declared appearance or weight.
-- Generate a missing icon version by editing SVG fill, stroke, color, paths,
-  transforms, filters, or geometry.
+- Define universal appearance or weight names.
+- Require every icon to support every value declared by its theme.
+- Remove or change the existing size values.
 - Change semantic icon names, component-owned icon slots, color, direction,
   accessibility, state, interaction, or registry-source precedence.
-- Remove the existing `xsm`, `sm`, `md`, or `lg` size values.
-- Implement the runtime, theme compiler, generated declarations, or consumer docs
-  in this specification pull request.
+- Implement the runtime, theme compiler, declarations, or consumer docs in this
+  specification pull request.
 - Equivalent internal implementations remain valid when they satisfy this contract.
 
 ## Requirements
 
-### Public requests and theme vocabularies
-
-- **FR1 — The three requests are independent and optional.** `size`, `appearance`,
-  and `weight` MUST remain separate caller requests. Size resolution remains the
-  explicit prop when supplied, then the nearest component-owned default, then
-  standalone `md`. Omitting appearance or weight uses the selected icon
-  configuration's declared default. Adding an icon role to a component MUST NOT
-  require redeclaring the theme's appearance or weight defaults. A component owner
-  SHOULD omit capability requests the component does not own and MUST NOT hardcode an
-  appearance or weight value absent from any supported theme contract.
-- **FR2 — Existing sizes do not break.** Existing calls using `xsm` (12px),
-  `sm` (16px), `md` (20px), or `lg` (24px) at the default 16px root MUST
-  keep the same meaning and dimensions. A theme MAY add and prefer its own typed
-  size names, but those additions MUST NOT remove or change the four existing
-  values.
-- **FR3 — Theme-owned size values are complete.** A theme-owned size name MUST map
-  to dimensions in every theme that can become active where that name is valid,
-  whether by direct declaration or theme inheritance. Missing or invalid dimensions
-  MUST fail theme validation before rendering; the resolver MUST NOT guess another
-  size. The requested size name remains the key for size-specific icon versions.
-- **FR4 — Appearance vocabulary is theme-owned.** Core MUST define no universal
-  appearance values. An integration contributes a finite typed string vocabulary
-  that may include names such as `outline`, `filled`, `solid`, `duotone`, `color`,
-  or library-specific terms. A requested appearance uses an exact supplied match;
-  an unsupported or omitted appearance uses the selected icon configuration's
-  default version without warning.
-- **FR5 — Weight vocabulary is theme-owned.** Core MUST define no universal weight
-  names or numbers. An integration contributes a finite typed string or numeric
-  vocabulary. A requested weight uses an exact supplied match; an unsupported or
-  omitted weight uses the selected icon configuration's default version without
-  warning. Core MUST NOT interpret the value as CSS `font-weight` or infer a
-  `stroke-width`.
-- **FR6 — Types remain finite.** Theme-generated or augmentable declarations MUST
-  expose only admitted size, appearance, and weight values. The props MUST NOT widen
-  to arbitrary strings, numbers, CSS lengths, or pixel values. Invalid callsite
-  values fail type checking, and invalid theme keys fail authoring validation.
-
-### Theme entries and resolution
-
-- **FR7 — Existing fixed entries remain valid.** A plain React node in `icons[name]`
-  remains a fixed icon version. Size still controls its box; appearance and weight
-  do not alter it. Existing themes, process-wide registrations, built-in defaults,
-  direct SVG component sources, and programmatic node-returning lookups remain
-  compatible.
-- **FR8 — Adaptive entries always have a real default.** A theme MAY supply an
-  adaptive entry with size-, appearance-, and weight-specific versions. Every
-  adaptive root and nested configuration MUST provide one real default icon version.
-  `defaultAppearance` and `defaultWeight`, when present, label that version; the
-  matching keys MUST NOT be duplicated in their maps because those entries would be
-  unreachable.
-- **FR9 — Resolution order is stable.** Resolution MUST occur in this order:
-  1. active theme, process-wide fixed registration, then built-in fixed default;
-  2. explicit, contextual, then standalone size;
-  3. an exact size-specific icon configuration when present;
-  4. an exact appearance version when present, otherwise that configuration's default;
-  5. an exact weight version when present, otherwise that configuration's default.
-- **FR10 — A selected source is atomic.** Once one registry source supplies an icon
-  entry, missing size, appearance, or weight versions MUST NOT come from a lower
-  source. A child theme replaces an inherited icon entry as one unit; nested icon
-  configurations do not merge across child, parent, global, or built-in sources.
-- **FR11 — A size-specific configuration is authoritative.** An exact fixed size
-  version is final. An exact adaptive size configuration owns all later appearance
-  and weight resolution. The resolver MUST NOT return to root versions after an
-  exact size match.
-- **FR12 — Appearance resolves before weight.** An exact appearance configuration
-  owns weight lookup and its default. A fixed appearance version is final and
-  ignores weight. Weight lookup MUST NOT cross size or appearance configurations.
-- **FR13 — Missing versions are never synthesized.** Every rendered result MUST be
-  a version explicitly supplied by the selected theme entry. The core resolver MUST
-  NOT inspect or mutate SVG internals to imitate an unsupported request.
-
-### Compatibility and parity
-
-- **FR14 — Presentation behavior stays component-owned.** Selected icon versions
-  MUST NOT change the resolved box, color, alignment, accessible name, decorative
-  default, focusability, interaction, component-owned state, or direction handling.
-  Existing `xstyle`, `className`, inline `style`, and pass-through precedence remain
-  unchanged.
-- **FR15 — Every public path resolves consistently.** Component rendering, hooks,
-  component-owned slots, programmatic lookups, server rendering, client rendering,
-  runtime themes, and compiled themes MUST produce the same observable result for
-  the same source and requests. Resolution is synchronous and requires no DOM
-  measurement, computed style, browser global, network request, or mutable render
-  callback.
-- **FR16 — Inspection separates request from support.** Public tooling and docs MUST
-  distinguish requested size, appearance, and weight from the capabilities supplied
-  by the selected icon entry. An ignored request MUST NOT be reported as supported.
+- **FR1 — Requests remain independent.** Size, appearance, and weight must not rewrite
+  one another.
+- **FR2 — Existing sizes do not break.** Existing calls using `xsm`, `sm`, `md`, or
+  `lg` keep their current meaning and dimensions.
+- **FR3 — Theme values stay specific and type-safe.** Size and appearance accept only
+  names declared by the theme; weight accepts only declared names or numbers. The
+  props do not widen to arbitrary values or CSS lengths.
+- **FR4 — Theme-owned sizes are complete.** Every added size name has dimensions in
+  every theme where it is valid, either directly or through theme inheritance.
+  Incomplete themes fail validation before rendering.
+- **FR5 — Components do not repeat shared defaults.** A component or family may define
+  one shared size, appearance, and weight profile inherited by all owned icon roles.
+  Adding another role does not require redeclaring those values; only an explicit
+  exception overrides them.
+- **FR6 — Fixed and adaptive entries coexist.** Existing fixed React nodes keep their
+  behavior. Every adaptive configuration supplies one real default icon version. A
+  default appearance or weight key must not also appear in its map because that
+  duplicate could never be selected.
+- **FR7 — Resolution order is stable.** Source, size, appearance, and weight resolve in
+  that order using the defaults described above.
+- **FR8 — Later fallback stays inside the current match.** After an exact size or
+  appearance match, unsupported later requests use that match's supplied default.
+  They do not jump back to top-level versions or another icon source.
+- **FR9 — Missing versions are never synthesized.** Every result is explicitly supplied
+  by the selected theme entry.
+- **FR10 — Existing presentation behavior stays unchanged.** Version selection does
+  not change box geometry, color, alignment, accessibility, focus, interaction,
+  direction, selected/pressed/loading behavior, or style-prop precedence.
+- **FR11 — Public resolution stays consistent and synchronous.** Components, hooks,
+  component slots, programmatic lookups, server/client rendering, runtime themes, and
+  compiled themes produce the same result for the same inputs. Resolution does not
+  depend on DOM measurement, computed styles, browser globals, network requests, or
+  mutable render callbacks.
+- **FR12 — Public surfaces stay synchronized.** Generated types and docs describe the
+  same admitted values and defaults as the runtime theme contract. Inspection reports
+  what was requested separately from what the selected icon entry supports.
 
 ### Platform support
 
-- Supported feature/engine floor: every platform that currently supports `Icon` and
-  normalized themes.
-- Unsupported behavior: fixed icon sources keep their existing behavior and ignore
-  appearance and weight requests.
-- Browser evidence: representative real-browser checks prove stable box geometry,
-  styling, accessibility, hydration, and selection of the supplied icon version.
+- Supported floor: every platform that currently supports `Icon` and normalized
+  themes.
+- Fixed icon sources keep their existing behavior and ignore appearance and weight.
+- Representative browser checks prove stable geometry, styling, accessibility,
+  hydration, and selection of supplied icon versions.
 
 ## Current-state impact
 
-Current `Icon` exposes only the closed `xsm | sm | md | lg` size axis. It has no
+Today `Icon` supports only the closed `xsm | sm | md | lg` size values. It has no
 appearance or weight prop, and theme icon entries are fixed React nodes.
 
 **Current conflict:** `architecture:component-theming-surface` INV14 keeps
-`Icon.size` closed because an unavailable custom value has no safe
-theme-independent fallback. This proposal does not invent such a fallback: it
-requires every possible active theme to define every admitted theme-owned size
-value and rejects incomplete theme contracts before rendering. Acceptance MUST
-amend INV14; while this record remains draft, INV14 continues to govern.
+`Icon.size` closed because a missing custom size has no safe fallback. This proposal
+does not invent a fallback. Instead, every active theme must define every added size
+name it supports, and incomplete theme contracts fail before rendering. Accepting this
+spec requires amending INV14; while this spec remains draft, INV14 still governs.
 
-Acceptance also requires coordinated amendments to the current owners of Icon's
-public API, theme authoring and compilation, and shared icon resolution.
-
-The implementation must update the Icon component contract and consumer docs, theme
-normalization and inheritance, runtime/build parity, generated declarations, and all
-component-slot and programmatic resolver paths. This specification changes no runtime
-or package by itself and adds no Changeset.
+Implementation must update the Icon component contract and docs, theme authoring and
+compilation, generated types, runtime/build parity, and component-slot and
+programmatic resolver paths. This spec changes no runtime or package by itself and
+adds no Changeset.
 
 ## Verification
 
-| Contract | Required evidence                      | Representative states                                                                               | Failure signal                                                                  |
-| -------- | -------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| FR1–FR6  | public type and theme-authoring tests  | omitted props; base and theme-owned sizes; named appearances; named/numeric weights; invalid values | omission throws, a domain widens, or an admitted size lacks dimensions          |
-| FR7–FR8  | fixed/adaptive registry tests          | fixed root; one or many appearances; sparse weights; required defaults                              | an existing node entry changes or an adaptive configuration has no real default |
-| FR9–FR13 | resolver matrix                        | source × size × appearance × weight; fixed nested versions; unsupported requests                    | resolution crosses a source/configuration boundary or synthesizes a version     |
-| FR14     | styling and accessibility regressions  | decorative and labelled icons; direction/state; style escape hatches                                | selection changes box, color, name, focus, interaction, or style precedence     |
-| FR15     | runtime/build and server/client parity | component, hook, programmatic lookup, component slot, SSR and hydration                             | equivalent inputs select different versions across public paths                 |
-| FR16     | generated docs and inspection tests    | requested value supported, unsupported, and omitted                                                 | tooling describes an ignored request as a fulfilled capability                  |
+| Contract | Required evidence                                                | Failure signal                                                                                                          |
+| -------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR5  | type, theme-authoring, and component-family default tests        | omission fails, a type widens, a size lacks dimensions, or a component repeats family defaults                          |
+| FR6–FR9  | fixed/adaptive registry and resolver matrix tests                | an old fixed entry changes, a configuration lacks a default, resolution crosses a boundary, or a version is synthesized |
+| FR10     | styling and accessibility regressions                            | version selection changes geometry, color, naming, focus, interaction, direction, or style precedence                   |
+| FR11     | runtime/build, server/client, and environment-independence tests | equivalent inputs select different versions or resolution depends on DOM, network, or mutable render state              |
+| FR12     | generated type, docs, and inspection tests                       | types/docs disagree with runtime values or tooling reports an ignored request as supported                              |
 
 ## Decision log
 
-### DEC-1 — Themes own the capability vocabularies
+### DEC-1 — Themes decide which values are available
 
 **Reference:** `spec:AST-054/DEC-1`
 **Decider:** `rubyycheung`, `2026-10-02`
 
-Different icon libraries use incompatible appearance and weight models. Themes
-therefore define finite typed appearance and weight vocabularies, and may define a
-preferred size vocabulary while the base size values remain compatible.
+Themes define type-checked appearance and weight values that match their icon
+libraries. They may also add preferred size names while Astryx keeps its four existing
+size values compatible.
 
-Rejected: one universal numeric weight scale or one closed appearance list, because
-either would misrepresent supported icon libraries.
+Rejected: one universal weight scale or one closed appearance list.
 
-### DEC-2 — Optional requests use supplied defaults
+### DEC-2 — Optional requests use shared defaults
 
 **Reference:** `spec:AST-054/DEC-2`
 **Decider:** `rubyycheung`, `2026-10-02`
 
-Callers may omit size, appearance, or weight. Size keeps its existing cascade;
-appearance and weight use the selected icon configuration's real default version.
-Unsupported appearance and weight requests degrade the same way without warning.
+Optional requests resolve from an explicit prop, then one shared component- or
+family-owned default, then the standalone size or selected icon configuration default.
+One family profile applies to every owned icon role, so adding an icon does not repeat
+defaults.
 
-Rejected: runtime errors for omitted optional props, synthetic icon versions, and
-cross-source fallback that mixes icon families.
+Rejected: runtime errors for omitted props, per-role duplication, synthetic icon
+versions, and cross-source fallback.
 
-### DEC-3 — Resolution narrows from source to size to appearance to weight
+### DEC-3 — Resolution narrows in one direction
 
 **Reference:** `spec:AST-054/DEC-3`
 **Decider:** `rubyycheung`, `2026-10-02`
 
-Each exact selection owns the remaining choices and its default. This keeps
-size-specific design, appearance-specific weight coverage, and one icon family's
-visual language intact.
+Resolution moves from source to size to appearance to weight. Each exact match owns the
+choices and default that follow.
 
-Rejected: root fallback after an exact size or appearance match, because it can mix
-versions designed for different boxes or styles.
+Rejected: returning to root versions after an exact size or appearance match.
 
 ## Open questions
 
-- **OQ1 — How should themes declare the three vocabularies?** (`human-api`) The
-  observable contract above is independent of whether the public authoring shape
-  uses dedicated fields or one grouped icon configuration. API review must settle
-  that shape before this record can become current.
+- **OQ1 — What is the public theme authoring shape?** (`human-api`) API review must
+  choose dedicated fields or one grouped icon configuration for theme-owned values,
+  adaptive entries, and shared component/family defaults before this spec can become
+  current.
