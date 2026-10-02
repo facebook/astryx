@@ -12,6 +12,9 @@
  *   astryx --json docs <topic> <section> -> docs.detail.section
  *   astryx --json docs <route>           -> docs.node (a namespace or a
  *                                           typed doc in the docs tree)
+ *   astryx --json docs <namespace>
+ *     --full --flatten                   -> docs.tree (the namespace and every
+ *                                           descendant's full body)
  *   (unknown topic/section)              -> CLIError
  */
 
@@ -139,6 +142,14 @@
  */
 
 /**
+ * astryx --json docs <namespace> --full --flatten
+ * @typedef {object} DocsTreeResponse
+ * @property {'docs.tree'} type
+ * @property {DocsTreeNode} data the namespace and every descendant, in slot and
+ *   child order, with full guide sections and typed-doc content
+ */
+
+/**
  * One node of the docs tree.
  * @typedef {object} DocsNode
  * @property {string | null} id the doc's DocId, built from its provider's
@@ -162,6 +173,14 @@
  */
 
 /**
+ * One fully read node inside a DocsTreeResponse. A flattened guide or flat
+ * topic uses `kind: 'generic'`, carries its compiled sections, and has empty
+ * content. Namespace slots recursively contain full nodes; namespace and typed
+ * docs have empty sections.
+ * @typedef {Omit<DocsNode, 'slots'> & {slots: DocsTreeSlot[], sections: DocsReadSection[]}} DocsTreeNode
+ */
+
+/**
  * @typedef {object} DocsNodeLink
  * @property {string} route
  * @property {string} title
@@ -172,6 +191,14 @@
  * @property {string} name the slot's key in its namespace
  * @property {string} title
  * @property {DocsNodeChild[]} children in reading order
+ */
+
+/**
+ * One slot in a full subtree read.
+ * @typedef {object} DocsTreeSlot
+ * @property {string} name
+ * @property {string} title
+ * @property {DocsTreeNode[]} children full descendants in reading order
  */
 
 /**
@@ -191,6 +218,9 @@
  * @property {boolean} [dense]
  * @property {boolean} [index] return a topic's section index instead of its
  *   whole doc
+ * @property {boolean} [flatten] return a namespace and every descendant with
+ *   each guide or typed doc's full body; invalid for topics, typed docs,
+ *   sections, and index reads
  * @property {string} [cwd] project directory whose configured integrations
  *   contribute topics; defaults to process.cwd()
  */

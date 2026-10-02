@@ -92,6 +92,11 @@ export const doc = {
       description:
         "One node of the docs tree, read by its route: its id, kind, package, title, summary, and breadcrumb, plus a namespace's slots with their children (one level down) or a typed doc's content, and links ({up, previous, next, related}: the commands that open its parent, its neighbors, and the docs it names).",
     },
+    {
+      value: 'docs.tree',
+      description:
+        "A full namespace subtree requested with --full --flatten: each node's id, route, kind, package, title, summary, breadcrumb, content, sections, and links, with namespace slots recursively holding their full child nodes in reading order.",
+    },
 
     // blog (read from the published RSS feed)
     {

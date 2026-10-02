@@ -64,6 +64,7 @@ export const RESPONSE_TYPES = {
     'docs.detail',
     'docs.detail.section',
     'docs.node',
+    'docs.tree',
   ],
   blog: ['blog.list', 'blog.detail'],
   discover: [

@@ -4,9 +4,10 @@
  * @file docs command — Print Astryx reference docs
  *
  * In text, every read is one level: a topic lists its sections, so a reader can
- * open one section by its key, and `--full` prints the whole topic. `--json`
- * keeps the docs() contract: a topic returns its whole doc, and `--index` its
- * sections.
+ * open one section by its key, and `--full` prints the whole topic. An explicit
+ * `--full --flatten` compiles a namespace and every descendant under nested
+ * headings. `--json` keeps the docs() contract: a topic returns its whole doc,
+ * `--index` its sections, and a flattened namespace returns `docs.tree`.
  * Supports --detail (full|compact|brief) and --lang (en|zh|dense).
  *
  * Usage:
@@ -15,6 +16,8 @@
  *                                        with one section prints whole)
  *   astryx docs <topic> <section>        Print one section
  *   astryx docs <topic> --full           Print the whole topic
+ *   astryx docs <namespace> --full
+ *     --flatten                          Compile the full namespace subtree
  *   astryx docs <route>                  Open a node of the docs tree, such as
  *                                        cli, cli/api, or cli/api/functions/search
  */
@@ -156,6 +159,93 @@ function formatReferenceFull(docs, detail) {
 }
 
 /**
+ * @param {string} title
+ * @param {number} level
+ * @returns {string}
+ */
+function treeHeading(title, level) {
+  return `${'#'.repeat(Math.max(1, Math.min(6, level)))} ${title}`;
+}
+
+/**
+ * @param {import('@astryxdesign/cli/authoring').ReferenceContentBlock} block
+ * @param {'full' | 'compact' | 'brief'} detail
+ * @param {number} headingOffset
+ * @returns {string | null}
+ */
+function formatTreeBlock(block, detail, headingOffset) {
+  if (block.type === 'heading') {
+    return treeHeading(block.text, (block.level || 3) + headingOffset);
+  }
+  return formatBlock(block, detail);
+}
+
+/**
+ * @param {import('@astryxdesign/cli/authoring').ReferenceContentBlock[]} blocks
+ * @param {'full' | 'compact' | 'brief'} detail
+ * @param {number} headingOffset
+ * @returns {string[]}
+ */
+function formatTreeBlocks(blocks, detail, headingOffset) {
+  const formatted = [];
+  for (const block of blocks) {
+    const value = formatTreeBlock(block, detail, headingOffset);
+    if (value) formatted.push(value);
+  }
+  return formatted;
+}
+
+/**
+ * @param {import('../../../api/docs/docs.type.mjs').DocsReadSection} docSection
+ * @param {'full' | 'compact' | 'brief'} detail
+ * @param {number} headingLevel
+ * @returns {string}
+ */
+function formatTreeSection(docSection, detail, headingLevel) {
+  const heading = treeHeading(docSection.title, headingLevel);
+  const blocks = formatTreeBlocks(
+    docSection.content,
+    detail,
+    headingLevel - 2,
+  );
+  if (detail === 'brief') {
+    const first = blocks[0]?.split('\n')[0];
+    return first ? `${heading}\n\n${first}` : heading;
+  }
+  return blocks.length > 0 ? `${heading}\n\n${blocks.join('\n\n')}` : heading;
+}
+
+/**
+ * One fully expanded docs-tree node. Slot headings are not tree levels, so
+ * children stay one heading deeper than their namespace while slot and child
+ * order still decide the reading order.
+ * @param {import('../../../api/docs/docs.type.mjs').DocsTreeNode} node
+ * @param {'full' | 'compact' | 'brief'} detail
+ * @param {number} [level]
+ * @returns {string}
+ */
+function formatTree(node, detail, level = 1) {
+  const parts = [treeHeading(node.title, level)];
+  if (
+    node.summary &&
+    (node.kind === 'namespace' || node.kind === 'generic')
+  ) {
+    parts.push(node.summary);
+  }
+  const content = formatTreeBlocks(node.content, detail, level - 2);
+  if (content.length > 0) parts.push(content.join('\n\n'));
+  parts.push(
+    ...node.sections.map(docSection =>
+      formatTreeSection(docSection, detail, level + 1),
+    ),
+  );
+  for (const slot of node.slots) {
+    parts.push(...slot.children.map(child => formatTree(child, detail, level + 1)));
+  }
+  return parts.join('\n\n');
+}
+
+/**
  * The moves a read offers (spec:AST-047), one runnable command per line: up to
  * the level it sits in, the item before and after it, and the docs it names.
  * @param {import('../../../api/docs/docs.type.mjs').DocsLinks | undefined} links
@@ -268,7 +358,8 @@ function emitNode(node, detail, run) {
  *   | import('../../../api/docs/docs.type.mjs').DocsIndexResponse
  *   | import('../../../api/docs/docs.type.mjs').DocsDetailResponse
  *   | import('../../../api/docs/docs.type.mjs').DocsDetailSectionResponse
- *   | import('../../../api/docs/docs.type.mjs').DocsNodeResponse} result
+ *   | import('../../../api/docs/docs.type.mjs').DocsNodeResponse
+ *   | import('../../../api/docs/docs.type.mjs').DocsTreeResponse} result
  * @returns {import('../../../foundation/debug/command-result.mjs').CommandResult}
  */
 function summarize(result) {
@@ -288,7 +379,7 @@ export function registerDocs(program) {
     action: async (
       /** @type {string | undefined} */ topic,
       /** @type {string | undefined} */ sectionName,
-      /** @type {{index?: boolean, full?: boolean}} */ options = {},
+      /** @type {{index?: boolean, full?: boolean, flatten?: boolean}} */ options = {},
     ) => {
       const run = getCliInvocation();
       const lang = program.opts().lang || null;
@@ -303,9 +394,16 @@ export function registerDocs(program) {
           {code: ERROR_CODES.ERR_INVALID_ARGUMENT},
         );
       }
+      if (options.flatten && !options.full) {
+        return cliError(
+          'Compile a namespace subtree with both --full and --flatten.',
+          {code: ERROR_CODES.ERR_INVALID_ARGUMENT},
+        );
+      }
       // Text reads one level: a topic lists its sections (one with a single
       // section prints whole). JSON keeps docs(): the whole topic unless
-      // --index. The dense variant is written to be read whole.
+      // --index. The dense variant is written to be read whole. An explicit
+      // full + flatten read instead asks docs() for the whole namespace tree.
       const listSections =
         Boolean(options.index) ||
         (!json &&
@@ -320,6 +418,7 @@ export function registerDocs(program) {
           zh,
           dense,
           index: listSections,
+          flatten: Boolean(options.flatten),
         });
         if (
           !options.index &&
@@ -373,6 +472,7 @@ export function registerDocs(program) {
                 `Usage: ${run} docs <topic>                  list a topic's sections`,
                 `       ${run} docs <topic> <section>        read one section`,
                 `       ${run} docs <topic> --full           read the whole topic`,
+                `       ${run} docs <namespace> --full --flatten  compile a namespace subtree`,
                 `       ${run} docs cli/api                  go down the docs tree one level at a time`,
                 `With --json, a topic returns its whole doc; add --index for its section list.`,
               ].join('\n'),
@@ -415,6 +515,11 @@ export function registerDocs(program) {
             code(formatSection(result.data, detail)),
             text(linkLines(result.data.links).join('\n')),
           );
+          break;
+        }
+
+        case 'docs.tree': {
+          emit(code(formatTree(result.data, detail)));
           break;
         }
 

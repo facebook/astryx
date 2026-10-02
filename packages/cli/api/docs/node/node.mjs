@@ -5,16 +5,19 @@
  *
  * @input A route the docs tree resolves: a namespace such as `cli/api`, or a
  *   typed doc such as `cli/api/functions/search`, plus {cwd}.
- * @output { type: 'docs.node', data: DocsNode } — the node's identity, title
- *   and summary, the namespaces above it, and either its slots with their
- *   children (a namespace) or its content (a typed doc). A namespace never
- *   lists its grandchildren, so a reader goes down one level at a time.
- *   Matches `astryx --json docs <route>`.
+ * @output A one-level `{ type: 'docs.node', data: DocsNode }` view, or the
+ *   recursive DocsTreeNode used by `docs.tree`: the node's identity, title and
+ *   summary, the namespaces above it, and either slots in tree order, full
+ *   guide sections, or typed-doc content. The default node view remains one
+ *   level, matching `astryx --json docs <route>`.
  * @position Leaf under api/docs, beside the topic leaves. A guide the tree
  *   places is a topic: the detail leaf reads it by its route.
  */
 
+import {detailView} from '../../../foundation/doc-compiler/lenses.mjs';
 import {
+  compileTopic,
+  guideEntry,
   nodeContent,
   placeLinks,
   resolveDocsArgument,
@@ -63,6 +66,59 @@ export async function nodeView(catalog, tree, node) {
       })),
     content,
     links: nodeLinks(tree, node),
+  };
+}
+
+/**
+ * A namespace and every descendant as one nested read. Slots and children keep
+ * the tree's order. A namespace keeps recursing; a typed doc carries its full
+ * content; a guide or flat topic carries every compiled section.
+ *
+ * @param {import('../../../foundation/discovery/docs-discovery.mjs').DocsCatalog} catalog
+ * @param {DocsTree} tree
+ * @param {TreeNode} node
+ * @param {{lang?: string, zh?: boolean, dense?: boolean}} [options]
+ * @returns {Promise<import('../docs.type.mjs').DocsTreeNode>}
+ */
+export async function treeView(catalog, tree, node, options = {}) {
+  const view = await nodeView(catalog, tree, node);
+  const lang =
+    options.lang || (options.dense ? 'dense' : options.zh ? 'zh' : null);
+  const entry =
+    node.kind !== 'generic'
+      ? null
+      : node.ref?.topicFile
+        ? guideEntry(node)
+        : node.ref?.flatTopic
+          ? catalog.resolve(node.ref.flatTopic)
+          : null;
+  let topic = null;
+  if (entry) {
+    topic = detailView(await compileTopic(catalog, entry, lang));
+  }
+  const slots = await Promise.all(
+    node.slots
+      .filter(slot => slot.children.length > 0)
+      .map(async slot => ({
+        name: slot.name,
+        title: slot.title,
+        children: await Promise.all(
+          slot.children.map(route =>
+            treeView(
+              catalog,
+              tree,
+              /** @type {TreeNode} */ (tree.get(route)),
+              options,
+            ),
+          ),
+        ),
+      })),
+  );
+  return {
+    ...view,
+    ...(topic ? {title: topic.title, summary: topic.description} : {}),
+    slots,
+    sections: topic?.sections ?? [],
   };
 }
 

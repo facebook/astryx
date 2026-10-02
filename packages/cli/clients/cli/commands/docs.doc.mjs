@@ -18,8 +18,9 @@ export const doc = {
     'Reads the reference docs one level at a time: with no topic it lists every topic; a ' +
     'topic lists its sections, each with the key to read it by (a topic with one section ' +
     'prints whole); a topic plus a section prints that section; `--full` prints the whole ' +
-    'topic, as does `--dense`. With `--json`, a topic returns its whole doc, as docs() ' +
-    'does, and `--index` its section index. A route ' +
+    'topic, as does `--dense`. `--full --flatten` compiles a namespace and every descendant ' +
+    'guide or typed doc into one read. With `--json`, a topic returns its whole doc, as docs() ' +
+    'does, `--index` its section index, and a flattened namespace returns `docs.tree`. A route ' +
     'opens a node of the docs tree: `cli` lists its guides and reference, ' +
     '`cli/api/functions` lists every API function, and `cli/api/functions/search` prints ' +
     'one.',
@@ -39,6 +40,12 @@ export const doc = {
       description:
         'Print the whole topic instead of its sections (text; `--json` returns the whole topic unless --index). Cannot be set with --index',
     },
+    {
+      flag: '--flatten',
+      param: 'options.flatten',
+      description:
+        'With --full, recursively compile a namespace and every descendant guide or typed doc. Text nests headings by tree level; --json returns docs.tree. Only valid for a namespace route',
+    },
   ],
   examples: [
     {label: 'List topics', cli: 'astryx docs'},
@@ -46,6 +53,10 @@ export const doc = {
     {label: 'A whole topic as JSON', cli: 'astryx docs spacing --json'},
     {label: 'One section', cli: 'astryx docs theme quick-start'},
     {label: 'The CLI docs tree', cli: 'astryx docs cli'},
+    {
+      label: 'The full API subtree',
+      cli: 'astryx docs cli/api --full --flatten',
+    },
     {label: 'One API function', cli: 'astryx docs cli/api/functions/search'},
     {label: 'A whole guide', cli: 'astryx docs cli/integrations --full'},
   ],
@@ -53,7 +64,8 @@ export const doc = {
     {code: 0, when: 'success'},
     {
       code: 1,
-      when: 'unknown topic or route, or a section that matches no section or more than one',
+      when:
+        'unknown topic or route, a section that matches no section or more than one, or an invalid --index/--full/--flatten combination',
     },
   ],
   related: ['search', 'component', 'hook', 'template'],

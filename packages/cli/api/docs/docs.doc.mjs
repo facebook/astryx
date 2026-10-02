@@ -14,7 +14,7 @@ export const doc = {
   namespace: 'cli/api',
   displayName: 'docs()',
   summary:
-    'Read the reference docs: list every topic, one topic\'s sections, one section, or a whole topic.',
+    'Read the reference docs: list topics, one section or topic, one tree node, or a full namespace subtree.',
   description:
     'No topic lists every reference-doc topic; a topic returns its whole ' +
     'ReferenceDoc, and `index: true` returns its section index (each ' +
@@ -27,7 +27,9 @@ export const doc = {
     'A route opens a node of the docs tree instead: a namespace such as ' +
     "`cli/api` returns its children one level down, a typed doc such as " +
     "`cli/api/functions/search` returns its content, and a guide the tree " +
-    'places (`cli/integrations`) reads like any topic. ' +
+    'places (`cli/integrations`) reads like any topic. `flatten: true` on a ' +
+    'namespace returns `docs.tree`: that namespace and every descendant in tree ' +
+    'order, with each guide\'s compiled sections and each typed doc\'s content. ' +
     'Every read but the list carries `links`, the commands that move from it: ' +
     '`up` to the level it sits in, `previous` and `next` to its neighbors, and, ' +
     'for a typed doc, `related` to the docs it names (its command or function, ' +
@@ -36,7 +38,7 @@ export const doc = {
     'Overlay options select localized or dense variants.',
   importPath: '@astryxdesign/cli/api',
   signature:
-    'docs(topic?: string, section?: string, options?: DocsOptions): Promise<DocsListResponse | DocsIndexResponse | DocsDetailResponse | DocsDetailSectionResponse | DocsNodeResponse>',
+    'docs(topic?: string, section?: string, options?: DocsOptions): Promise<DocsListResponse | DocsIndexResponse | DocsDetailResponse | DocsDetailSectionResponse | DocsNodeResponse | DocsTreeResponse>',
   keywords: [
     'docs',
     'documentation',
@@ -83,6 +85,12 @@ export const doc = {
         "Return the topic's section index (each section's key, title, and summary), even for a topic with one section.",
     },
     {
+      name: 'options.flatten',
+      type: 'boolean',
+      description:
+        'Return a namespace and every descendant in tree order, with full compiled sections for guides and full content for typed docs. Invalid without a namespace route, or with a section or index read.',
+    },
+    {
       name: 'options.cwd',
       type: 'string',
       description:
@@ -115,8 +123,18 @@ export const doc = {
       description:
         "A namespace or typed doc in the docs tree, read by its route: {id, route, kind, package, title, summary, breadcrumb, slots, content}. A namespace lists each slot's children one level down; a typed doc carries its content.",
     },
+    {
+      type: 'docs.tree',
+      description:
+        'A namespace subtree requested with flatten: true. Every node carries its normal identity, route, metadata, content, and links; namespace slots recursively contain full child nodes, and a guide or flat topic carries all compiled sections.',
+    },
   ],
   throws: [
+    {
+      code: 'ERR_INVALID_ARGUMENT',
+      when:
+        'flatten is requested without a namespace route, or with a topic, typed doc, section, or index read',
+    },
     {
       code: 'ERR_UNKNOWN_TOPIC',
       when: 'the topic is not a string, or matches no topic and no docs-tree route',
@@ -134,6 +152,10 @@ export const doc = {
       code: "await docs('principles', undefined, {index: true});",
     },
     {label: 'A docs-tree namespace', code: "await docs('cli/api');"},
+    {
+      label: 'A full namespace subtree',
+      code: "await docs('cli/api', undefined, {flatten: true});",
+    },
     {label: 'One API function', code: "await docs('cli/api/functions/search');"},
     {
       label: 'A whole guide from the docs tree',
