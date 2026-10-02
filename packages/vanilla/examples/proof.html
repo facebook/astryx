@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en" data-astryx-theme="neutral" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Astryx Vanilla proof</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@astryxdesign/core@0.6.5/src/reset.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/facebook/astryx@__CDN_REF__/packages/vanilla/dist/astryx-vanilla.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-neutral@0.6.5/dist/theme.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-butter@0.6.5/dist/theme.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-y2k@0.6.5/dist/theme.css" />
+    <script defer src="https://cdn.jsdelivr.net/gh/facebook/astryx@__CDN_REF__/packages/vanilla/dist/astryx-vanilla.js"></script>
+  </head>
+  <body>
+    <main class="ax-layout">
+      <header class="ax-stack ax-stack--gap-2">
+        <h1 class="ax-heading ax-heading--1">Astryx without a build step</h1>
+        <p class="ax-text ax-text--large ax-text--secondary">Readable classes, generated tokens, and shipped themes.</p>
+      </header>
+
+      <section class="ax-card ax-card--elevation-low">
+        <div class="ax-stack ax-stack--horizontal ax-stack--gap-3 ax-stack--wrap">
+          <label class="ax-stack ax-stack--gap-1">
+            <span class="ax-text ax-text--label">Theme</span>
+            <select class="ax-text-input" data-ax-theme-switch>
+              <option value="neutral">Neutral · Figtree</option>
+              <option value="butter">Butter · Outfit</option>
+              <option value="y2k">Y2K · Poppins</option>
+            </select>
+          </label>
+          <label class="ax-stack ax-stack--gap-1">
+            <span class="ax-text ax-text--label">Mode</span>
+            <select class="ax-text-input" data-ax-mode-switch>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="ax-stack ax-stack--horizontal ax-stack--gap-4 ax-stack--wrap">
+        <article class="ax-card ax-card--elevation-low">
+          <div class="ax-stack ax-stack--gap-3">
+            <span class="ax-badge ax-badge--info">CDN proof</span>
+            <h2 class="ax-heading ax-heading--2">Base components</h2>
+            <p class="ax-text ax-text--secondary">The same semantic tokens now drive authored vanilla markup.</p>
+            <div class="ax-stack ax-stack--horizontal ax-stack--gap-2 ax-stack--wrap">
+              <button class="ax-button ax-button--primary">Primary</button>
+              <button class="ax-button ax-button--secondary">Secondary</button>
+              <button class="ax-button ax-button--ghost">Ghost</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="ax-card ax-card--elevation-low">
+          <div class="ax-stack ax-stack--gap-2">
+            <h2 class="ax-heading ax-heading--2">Text input</h2>
+            <label class="ax-stack ax-stack--gap-1">
+              <span class="ax-text ax-text--label">Project name</span>
+              <span class="ax-text-input">
+                <input value="Vanilla Astryx" aria-label="Project name" />
+              </span>
+            </label>
+            <hr class="ax-divider" />
+            <a class="ax-link" href="https://github.com/facebook/astryx">View Astryx on GitHub</a>
+          </div>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

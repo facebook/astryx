@@ -1,0 +1,37 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+:where(.ax-badge) {
+  display: inline-flex;
+  max-width: 100%;
+  min-width: 0;
+  height: var(--spacing-5);
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-1);
+  padding: 0 var(--spacing-2);
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--color-neutral);
+  color: var(--color-text-primary);
+  font-size: var(--text-supporting-size);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--text-supporting-leading);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:where(.ax-badge--info) {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+:where(.ax-badge--success) {
+  background: var(--color-success);
+  color: var(--color-on-success);
+}
+:where(.ax-badge--warning) {
+  background: var(--color-warning);
+  color: var(--color-on-warning);
+}
+:where(.ax-badge--error) {
+  background: var(--color-error);
+  color: var(--color-on-error);
+}

@@ -1,0 +1,93 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+:where(.ax-button) {
+  --_ax-button-focus-offset: var(--focus-outline-offset);
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  height: var(--size-element-md);
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 0;
+  border-radius: var(--_ax-button-radius, var(--radius-element));
+  background: var(--color-neutral);
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: var(--text-label-size);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--text-label-leading);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+:where(.ax-button--sm) {
+  height: var(--size-element-sm);
+}
+:where(.ax-button--lg) {
+  height: var(--size-element-lg);
+}
+:where(.ax-button--primary) {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+:where(.ax-button--secondary) {
+  background: var(--color-neutral);
+  color: var(--color-text-primary);
+}
+:where(.ax-button--ghost) {
+  background: transparent;
+  color: var(--color-text-primary);
+}
+:where(.ax-button--destructive) {
+  background: var(--color-error);
+  color: var(--color-on-error);
+}
+:where(.ax-button:active:not(:disabled, [aria-disabled='true'])) {
+  transform: scale(0.98);
+}
+:where(.ax-button:focus-visible) {
+  outline: var(--focus-outline-width) var(--focus-outline-style)
+    var(--focus-outline-color);
+  outline-offset: var(--_ax-button-focus-offset);
+}
+:where(.ax-button:disabled, .ax-button[aria-disabled='true']) {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@scope ([data-astryx-theme="butter"]) to ([data-astryx-theme]) {
+  :scope .ax-button {
+    padding-block: var(--spacing-3);
+    padding-inline: var(--spacing-4);
+  }
+  :scope .ax-button--secondary {
+    border: 1.5px solid light-dark(#225bff, #fdee8c);
+    background: transparent;
+    color: light-dark(#225bff, #fdee8c);
+  }
+  :scope .ax-button--ghost {
+    color: light-dark(#225bff, #fdee8c);
+  }
+}
+@scope ([data-astryx-theme="y2k"]) to ([data-astryx-theme]) {
+  :scope .ax-button {
+    border: 1px solid var(--color-border);
+    border-radius: 0;
+  }
+  :scope .ax-button--primary {
+    border-color: transparent;
+    background: var(--color-text-primary);
+    color: var(--color-background-body);
+  }
+  :scope .ax-button--secondary {
+    border-color: var(--color-text-green);
+    background: var(--color-background-green);
+    color: var(--color-text-green);
+  }
+}

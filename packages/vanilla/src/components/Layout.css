@@ -1,0 +1,17 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+:where(.ax-layout) {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  gap: var(--spacing-6);
+  padding: var(--spacing-6);
+}
+:where(.ax-layout__header, .ax-layout__main, .ax-layout__footer) {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+}
+:where(.ax-layout__main) {
+  flex: 1;
+}

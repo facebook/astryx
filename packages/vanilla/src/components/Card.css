@@ -1,0 +1,53 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+:where(.ax-card) {
+  --_ax-card-radius: var(--radius-container);
+  --_ax-card-ring: 0 0 transparent;
+  --_ax-card-elevation: 0 0 transparent;
+  overflow: clip;
+  padding: calc(var(--spacing-4) - var(--border-width));
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--_ax-card-radius);
+  background: var(--color-background-card);
+  box-shadow: var(--_ax-card-ring), var(--_ax-card-elevation);
+}
+:where(.ax-card--transparent) {
+  border-color: transparent;
+  background: transparent;
+}
+:where(.ax-card--muted) {
+  border-color: transparent;
+  background: var(--color-background-muted);
+}
+:where(.ax-card--elevation-low) {
+  --_ax-card-elevation: var(--shadow-low);
+}
+:where(.ax-card--elevation-med) {
+  --_ax-card-elevation: var(--shadow-med);
+}
+:where(.ax-card--elevation-high) {
+  --_ax-card-elevation: var(--shadow-high);
+}
+:where(.ax-card__header, .ax-card__body, .ax-card__footer) {
+  min-width: 0;
+}
+:where(.ax-card__header + .ax-card__body, .ax-card__body + .ax-card__footer) {
+  margin-block-start: var(--spacing-3);
+}
+
+@scope ([data-astryx-theme="neutral"]) to ([data-astryx-theme]) {
+  :scope .ax-card {
+    padding: calc(var(--spacing-3) - var(--border-width));
+  }
+}
+@scope ([data-astryx-theme="butter"]) to ([data-astryx-theme]) {
+  :scope .ax-card {
+    padding: calc(var(--spacing-4) - var(--border-width));
+  }
+}
+@scope ([data-astryx-theme="y2k"]) to ([data-astryx-theme]) {
+  :scope .ax-card {
+    padding: calc(var(--spacing-3) - var(--border-width));
+    border-radius: 0;
+  }
+}

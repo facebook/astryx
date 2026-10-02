@@ -1,0 +1,13 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+:where(html) {
+  background: var(--color-background-body);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-body);
+}
+
+:where(body) {
+  min-height: 100vh;
+  background: var(--color-background-body);
+  color: var(--color-text-primary);
+}

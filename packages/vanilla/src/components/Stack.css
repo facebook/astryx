@@ -1,0 +1,52 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+:where(.ax-stack) {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+:where(.ax-stack--horizontal) {
+  flex-direction: row;
+}
+:where(.ax-stack--vertical) {
+  flex-direction: column;
+}
+:where(.ax-stack--wrap) {
+  flex-wrap: wrap;
+}
+:where(.ax-stack--wrap-reverse) {
+  flex-wrap: wrap-reverse;
+}
+:where(.ax-stack--gap-0) {
+  gap: var(--spacing-0);
+}
+:where(.ax-stack--gap-0-5) {
+  gap: var(--spacing-0-5);
+}
+:where(.ax-stack--gap-1) {
+  gap: var(--spacing-1);
+}
+:where(.ax-stack--gap-1-5) {
+  gap: var(--spacing-1-5);
+}
+:where(.ax-stack--gap-2) {
+  gap: var(--spacing-2);
+}
+:where(.ax-stack--gap-3) {
+  gap: var(--spacing-3);
+}
+:where(.ax-stack--gap-4) {
+  gap: var(--spacing-4);
+}
+:where(.ax-stack--gap-5) {
+  gap: var(--spacing-5);
+}
+:where(.ax-stack--gap-6) {
+  gap: var(--spacing-6);
+}
+:where(.ax-stack--gap-8) {
+  gap: var(--spacing-8);
+}
+:where(.ax-stack--gap-10) {
+  gap: var(--spacing-10);
+}

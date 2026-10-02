@@ -1,0 +1,48 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+:where(.ax-text) {
+  color: var(--color-text-primary);
+  font-family: var(--font-family-body);
+  font-size: var(--text-body-size);
+  font-weight: var(--text-body-weight);
+  line-height: var(--text-body-leading);
+}
+:where(.ax-text--large) {
+  font-size: var(--text-large-size);
+  font-weight: var(--text-large-weight);
+  line-height: var(--text-large-leading);
+}
+:where(.ax-text--label) {
+  font-size: var(--text-label-size);
+  font-weight: var(--text-label-weight);
+  line-height: var(--text-label-leading);
+}
+:where(.ax-text--supporting) {
+  font-size: var(--text-supporting-size);
+  font-weight: var(--text-supporting-weight);
+  line-height: var(--text-supporting-leading);
+}
+:where(.ax-text--code) {
+  font-family: var(--font-family-code);
+  font-size: var(--text-code-size);
+  font-weight: var(--text-code-weight);
+  line-height: var(--text-code-leading);
+}
+:where(.ax-text--secondary) {
+  color: var(--color-text-secondary);
+}
+:where(.ax-text--disabled) {
+  color: var(--color-text-disabled);
+}
+:where(.ax-text--accent) {
+  color: var(--color-text-accent);
+}
+:where(.ax-text--medium) {
+  font-weight: var(--font-weight-medium);
+}
+:where(.ax-text--semibold) {
+  font-weight: var(--font-weight-semibold);
+}
+:where(.ax-text--bold) {
+  font-weight: var(--font-weight-bold);
+}

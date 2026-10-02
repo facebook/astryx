@@ -1142,6 +1142,8 @@ importers:
         specifier: 0.6.4
         version: link:../../cli
 
+  packages/vanilla: {}
+
   packages/vega:
     dependencies:
       react:
