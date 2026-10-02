@@ -730,8 +730,8 @@ export function PowerSearch({
       } else if (change.type === 'remove' && change.item) {
         const auxData = change.item.auxiliaryData as PowerSearchAuxData;
         if (auxData?.filterIndex != null) {
-          const newFilters = filters.filter(
-            (_, i) => i !== auxData.filterIndex,
+          const newFilters = filters.filter((_, i) =>
+            _items.some(item => item.auxiliaryData?.filterIndex === i),
           );
           onChange(newFilters, 'remove', auxData.filterIndex);
         }
