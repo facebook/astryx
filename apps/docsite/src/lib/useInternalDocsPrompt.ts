@@ -10,7 +10,11 @@
 
 import {useSyncExternalStore} from 'react';
 
-export const PUBLIC_DOCS_ORIGIN = 'https://astryx.atmeta.com';
+export const ALLOWED_PARENT_ORIGINS: readonly string[] = [
+  'https://astryx.atmeta.com',
+  'https://astryx-git-feat-docs-internal-network-prompt-fbopensource.vercel.app',
+  'https://astryx-canary.vercel.app',
+];
 export const INTERNAL_DOCS_ORIGIN = 'https://astryx.internalmeta.com';
 export const ACCESS_CHECK_MESSAGE_TYPE = 'astryx:access-check:v1';
 export const DISMISSAL_KEY = 'astryx:internal-prompt:dismissed';
@@ -37,8 +41,10 @@ function startCheck() {
     // Storage may be disabled. In-memory dismissal still works for this load.
   }
 
-  // Only the canonical deployment is allowlisted by the companion endpoint.
-  if (window.location.origin !== PUBLIC_DOCS_ORIGIN) {
+  // Mirror the companion endpoint's exact deployment allowlist. Never probe
+  // arbitrary preview/hash domains or send a different origin on their behalf.
+  const parentOrigin = window.location.origin;
+  if (!ALLOWED_PARENT_ORIGINS.includes(parentOrigin)) {
     return;
   }
 
@@ -48,7 +54,7 @@ function startCheck() {
   frame.setAttribute('aria-hidden', 'true');
   frame.title = 'Astryx documentation reachability check';
   frame.referrerPolicy = 'no-referrer';
-  frame.src = `${INTERNAL_DOCS_ORIGIN}/embed/access-check?parent_origin=${encodeURIComponent(PUBLIC_DOCS_ORIGIN)}`;
+  frame.src = `${INTERNAL_DOCS_ORIGIN}/embed/access-check?parent_origin=${encodeURIComponent(parentOrigin)}`;
 
   let loaded = false;
   let received = false;

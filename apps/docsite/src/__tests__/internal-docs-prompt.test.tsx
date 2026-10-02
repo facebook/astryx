@@ -26,6 +26,13 @@ vi.mock('@stylexjs/stylex', () => ({
   props: () => ({}),
 }));
 
+const allowedOrigins = [
+  'https://astryx.atmeta.com',
+  'https://astryx-git-feat-docs-internal-network-prompt-fbopensource.vercel.app',
+  'https://astryx-canary.vercel.app',
+];
+declare const jsdom: {reconfigure(options: {url: string}): void};
+
 let Prompt: typeof InternalDocsPrompt;
 let href: typeof internalDocsHref;
 const internalOrigin = 'https://astryx.internalmeta.com';
@@ -35,6 +42,9 @@ const dismissalKey = 'astryx:internal-prompt:dismissed';
 beforeEach(async () => {
   vi.resetModules();
   vi.useFakeTimers();
+  jsdom.reconfigure({
+    url: 'https://astryx.atmeta.com/components/Button?tab=props',
+  });
   window.sessionStorage.clear();
   route.pathname = '/components/Button';
   route.search = 'tab=props';
@@ -113,7 +123,15 @@ describe('InternalDocsPrompt', () => {
     expect(prompt()).toBeNull();
     send(target);
     expect(prompt()).not.toBeNull();
-    const link = screen.getByRole('link', {name: /Open internal docs/});
+    const link = screen.getByRole('link', {
+      name: /Internal docs — open Astryx documentation/,
+    });
+    expect(link.textContent).toBe('Internal docs');
+    expect(prompt()?.textContent).not.toContain("On Meta's network?");
+    expect(prompt()?.textContent).not.toContain('Meta-specific components');
+    expect(prompt()?.querySelectorAll('a')).toHaveLength(1);
+    expect(prompt()?.querySelectorAll('button')).toHaveLength(1);
+    expect(link.getAttribute('aria-label')).toContain('Meta network detected');
     expect(link.getAttribute('href')).toBe(
       `${internalOrigin}/components/Button?tab=props`,
     );
@@ -121,6 +139,39 @@ describe('InternalDocsPrompt', () => {
     expect(link.getAttribute('rel')).toContain('noopener');
     expect(link.getAttribute('rel')).toContain('noreferrer');
     expect(document.querySelector('iframe')).toBeNull();
+  });
+
+  it.each(allowedOrigins)(
+    'sends the actual allowlisted parent origin: %s',
+    async origin => {
+      const {ALLOWED_PARENT_ORIGINS} =
+        await import('../lib/useInternalDocsPrompt');
+      expect(ALLOWED_PARENT_ORIGINS).toEqual(allowedOrigins);
+      jsdom.reconfigure({url: `${origin}/docs/tokens?mode=dark`});
+      await mount();
+      const target = frame();
+      expect(new URL(target.src).searchParams.get('parent_origin')).toBe(
+        origin,
+      );
+      fireEvent.load(target);
+      send(target);
+      expect(prompt()).not.toBeNull();
+    },
+  );
+
+  it.each([
+    'https://astryx-canary.vercel.app.evil.example',
+    'https://astryx-git-feat-docs-internal-network-prompt-fbopensource.vercel.app.evil.example',
+    'http://astryx-canary.vercel.app',
+    'https://astryx-f3fuc1mqg-fbopensource.vercel.app',
+    'https://astryx-git-unapproved-fbopensource.vercel.app',
+    'https://astryx-canary-otherteam.vercel.app',
+    'http://localhost:3233',
+  ])('does not probe on an unallowlisted parent: %s', async origin => {
+    jsdom.reconfigure({url: `${origin}/docs/tokens`});
+    await mount();
+    expect(document.querySelector('iframe')).toBeNull();
+    expect(prompt()).toBeNull();
   });
 
   it('also accepts the message before the iframe load event', async () => {
@@ -256,7 +307,7 @@ describe('InternalDocsPrompt', () => {
     view.rerender(<Prompt />);
     expect(
       screen
-        .getByRole('link', {name: /Open internal docs/})
+        .getByRole('link', {name: /Internal docs — open Astryx documentation/})
         .getAttribute('href'),
     ).toBe(`${internalOrigin}/docs/tokens?mode=dark&query=a%26b`);
     expect(document.querySelector('iframe')).toBeNull();
