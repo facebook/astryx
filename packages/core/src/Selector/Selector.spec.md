@@ -50,6 +50,9 @@ connection between the closed trigger and its selection surface.
   space at that logical edge, while an empty resolved indicator occupies none.
 - `presentation` defaults to `popover`. `bottom-sheet` is an explicit modal
   presentation, and `adaptive` selects it on compact coarse-pointer screens.
+- `placement` defaults to `overlay`, the selected-item alignment that omitting
+  it has always meant. `overlay` and `offset` are additive names; `offset`
+  currently resolves to the `below` position.
 - `hasClear` changes the value contract to include `null`; that distinction is
   already part of the public type.
 - `isReadOnly` is additive and defaults to `false`. It preserves the selected
@@ -88,6 +91,7 @@ and examples remain in `Selector.doc.mjs`.
 | size                   | `sm`, `md`, `lg`                       | Trigger and option-row density                           | All presentations                         | `md`      | Selector | released  | TypeScript rejects other values |
 | selected-mark position | `start`, `end`                         | Logical edge containing a rendered selection mark        | Every option row                          | `end`     | Selector | released  | TypeScript rejects other values |
 | presentation           | `popover`, `bottom-sheet`, `adaptive`  | Anchored pointer surface or modal compact-touch surface  | All trigger variants                      | `popover` | Selector | released  | TypeScript rejects other values |
+| menu placement         | `overlay`, `offset`, Layer directions  | Selected row over the trigger, or the menu clear of it   | Popover; search falls back to `offset`    | `overlay` | Selector | additive  | TypeScript rejects other values |
 | popup semantics        | `listbox`; modal dialog containing one | Semantics follow the active presentation                 | Popover; bottom sheet                     | `listbox` | Selector | released  | No separate role prop is public |
 | option-row state       | `selected`, `disabled`                 | Stable theming state on each option row                  | Every rendered option                     | neither   | Selector | released  | Unknown states are not emitted  |
 | read-only state        | `false`, `true`                        | Preserves and submits value without selection affordance | Closed trigger                            | `false`   | Caller   | additive  | Boolean normalization           |
@@ -99,7 +103,7 @@ These requirements describe shipped behavior on current `main`.
 | ID  | Shipped invariant                                                                                                                                                                                                                                                                                                             | Evidence                                                                 |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | FR1 | Selecting an enabled option updates the one selected value, closes the active presentation, and returns the trigger to its stable closed state.                                                                                                                                                                               | Consumer docs and selection interaction tests                            |
-| FR2 | Without explicit placement, a non-search popover aligns the selected row over the trigger and clamps it to the viewport. Search popovers and explicit placement use normal Layer positioning.                                                                                                                                 | Consumer docs, implementation, and geometry tests                        |
+| FR2 | `overlay` placement, the default when `placement` is omitted, aligns a non-search popover's selected row over the trigger and clamps it to the viewport; search popovers fall back to `offset`. `offset` and the four directions use normal Layer positioning and menu clearance; `offset` currently matches `below`.         | Consumer docs, implementation, and geometry tests                        |
 | FR3 | An option whose resolved selection indicator draws no content reserves no mark-column space. Visible selected or themed replacement indicators remain in layout at `indicatorPosition`; the resulting state-dependent label position or available width is intentional, and row content keeps its existing overflow behavior. | `itemMarkColumn`, focused indicator tests, and Chromium evidence stories |
 | FR4 | `popover` uses an anchored Popover. `bottom-sheet` uses a modal BottomSheet. `adaptive` resolves to the modal bottom sheet on compact coarse-pointer screens and Popover otherwise.                                                                                                                                           | Presentation controller and adaptive-presentation tests                  |
 | FR5 | While `isLoading` is true, the trigger exposes busy state and the listbox suppresses empty and no-results output.                                                                                                                                                                                                             | Loading, empty-state, and announcement tests                             |
@@ -136,8 +140,8 @@ These requirements describe shipped behavior on current `main`.
   option objects become one option shape before search, keyboard matching,
   rendering, and value comparison.
 - **ORD2 — Caller-selected content wins deliberately.** `startIcon` takes
-  precedence over a selected option's icon; explicit placement takes precedence
-  over selected-item overlay alignment.
+  precedence over a selected option's icon; a directional or `offset` placement
+  takes precedence over selected-item overlay alignment.
 
 ### Performance and resources
 

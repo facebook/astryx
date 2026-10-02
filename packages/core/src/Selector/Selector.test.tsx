@@ -536,12 +536,17 @@ describe('Selector', () => {
       await user.click(screen.getByRole('combobox'));
       const popover = screen
         .getByRole('listbox', {hidden: true})
-        .closest('[popover]');
+        .closest('[popover]') as HTMLElement;
       await waitFor(() => {
         expect(popover?.getAttribute('style')).toContain(
           'margin-block-start: -110px',
         );
       });
+      // Overlay mode owns its geometry through the measured margin; the
+      // standard layer clearance must stay off or it would offset the
+      // opposite block edge asymmetrically.
+      expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe('');
+      expect(popover.style.getPropertyValue('--x-marginBlockEnd')).toBe('');
     } finally {
       restoreRects();
     }
@@ -642,12 +647,165 @@ describe('Selector', () => {
         .closest('[popover]');
       await waitFor(() => {
         expect(popover?.getAttribute('style')).not.toContain(
-          'margin-block-start',
+          'margin-block-start: -',
         );
       });
     } finally {
       restoreRects();
     }
+  });
+
+  describe('placement values (#4227)', () => {
+    it('placement="offset" clears the trigger from the standard below position', async () => {
+      const restoreRects = mockSelectorRects();
+      const user = userEvent.setup();
+      try {
+        render(
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value="Banana"
+            onChange={() => {}}
+            placement="offset"
+          />,
+        );
+
+        await user.click(screen.getByRole('combobox'));
+        const popover = screen
+          .getByRole('listbox', {hidden: true})
+          .closest('[popover]') as HTMLElement;
+        // The standard clearance on both block edges, so the gap survives a
+        // position-try-fallbacks flip to the opposite side (#4803).
+        await waitFor(() => {
+          expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe(
+            spacingVars['--spacing-1'],
+          );
+        });
+        expect(popover.style.getPropertyValue('--x-marginBlockEnd')).toBe(
+          spacingVars['--spacing-1'],
+        );
+        // The standard menu position (below), with the layer's usual flips.
+        expect(popover.getAttribute('style')).toContain(
+          'position-area: self-block-end span-self-inline-end',
+        );
+        // Never the selected-item overlay, even with a value selected.
+        expect(popover.getAttribute('style')).not.toContain(
+          'margin-block-start: -',
+        );
+      } finally {
+        restoreRects();
+      }
+    });
+
+    it('placement="offset" positions the menu exactly like placement="below"', async () => {
+      const user = userEvent.setup();
+      const openPosition = async (placement: 'offset' | 'below') => {
+        const {unmount} = render(
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value="Banana"
+            onChange={() => {}}
+            placement={placement}
+          />,
+        );
+        await user.click(screen.getByRole('combobox'));
+        const popover = screen
+          .getByRole('listbox', {hidden: true})
+          .closest('[popover]') as HTMLElement;
+        await waitFor(() => {
+          expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe(
+            spacingVars['--spacing-1'],
+          );
+        });
+        const position = {
+          className: popover.className,
+          positionArea: popover.style.getPropertyValue('position-area'),
+          positionTryFallbacks: popover.style.getPropertyValue(
+            'position-try-fallbacks',
+          ),
+          marginBlockStart: popover.style.getPropertyValue(
+            '--x-marginBlockStart',
+          ),
+          marginBlockEnd: popover.style.getPropertyValue('--x-marginBlockEnd'),
+        };
+        unmount();
+        return position;
+      };
+
+      // 'offset' names "clear of the trigger" rather than a distinct geometry:
+      // today it is the below position with the layer's usual edge flips, so
+      // the docs must not promise more than 'below' does.
+      const offset = await openPosition('offset');
+      expect(offset.positionArea).toBe('self-block-end span-self-inline-end');
+      expect(offset.positionTryFallbacks).toBe(
+        'flip-block, flip-inline, flip-block flip-inline',
+      );
+      expect(offset).toEqual(await openPosition('below'));
+    });
+
+    it('placement="overlay" names the default selected-item overlay', async () => {
+      const restoreRects = mockSelectorRects();
+      const user = userEvent.setup();
+      try {
+        render(
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value="Banana"
+            onChange={() => {}}
+            placement="overlay"
+          />,
+        );
+
+        await user.click(screen.getByRole('combobox'));
+        const popover = screen
+          .getByRole('listbox', {hidden: true})
+          .closest('[popover]') as HTMLElement;
+        // Identical to omitting the prop: the measured pull-up engages and
+        // the standard clearance stays off.
+        await waitFor(() => {
+          expect(popover.getAttribute('style')).toContain(
+            'margin-block-start: -110px',
+          );
+        });
+        expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe('');
+        expect(popover.style.getPropertyValue('--x-marginBlockEnd')).toBe('');
+      } finally {
+        restoreRects();
+      }
+    });
+
+    it('placement="overlay" with hasSearch falls back to offset', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+          hasSearch
+          placement="overlay"
+        />,
+      );
+
+      // In hasSearch mode the trigger is a plain button, not a combobox.
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      const popover = screen
+        .getByRole('listbox', {hidden: true})
+        .closest('[popover]') as HTMLElement;
+      await waitFor(() => {
+        expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe(
+          spacingVars['--spacing-1'],
+        );
+      });
+      expect(popover.getAttribute('style')).toContain(
+        'position-area: self-block-end span-self-inline-end',
+      );
+      expect(popover.getAttribute('style')).not.toContain(
+        'margin-block-start: -',
+      );
+    });
   });
 
   describe('menu clearance', () => {
