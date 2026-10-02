@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en" data-astryx-theme="neutral" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Astryx contact form</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/core@0.6.5/src/reset.css" />
+    <link rel="stylesheet" href="__ASTRYX_VANILLA_CDN__/astryx-vanilla.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-neutral@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-butter@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-y2k@0.6.5/dist/theme.css" />
+    <style>
+      @layer astryx-base {
+        .contact-shell {
+          min-height: 100vh;
+          background: var(--color-background-body);
+        }
+        .contact-main {
+          width: min(100% - 2 * var(--spacing-4), 72rem);
+          margin-inline: auto;
+          padding-block: var(--spacing-6) var(--spacing-10);
+        }
+        .contact-toolbar {
+          display: flex;
+          align-items: end;
+          justify-content: space-between;
+          gap: var(--spacing-4);
+          flex-wrap: wrap;
+        }
+        .contact-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 0.9fr) minmax(24rem, 1.1fr);
+          gap: var(--spacing-8);
+          align-items: start;
+        }
+        .contact-art {
+          display: grid;
+          min-height: 18rem;
+          place-items: center;
+          overflow: hidden;
+          border: var(--border-width) solid var(--color-border);
+          border-radius: var(--radius-container);
+          background:
+            radial-gradient(
+              circle at 25% 30%,
+              var(--color-accent-muted) 0 18%,
+              transparent 19%
+            ),
+            radial-gradient(
+              circle at 72% 62%,
+              var(--color-background-muted) 0 28%,
+              transparent 29%
+            ),
+            var(--color-background-surface);
+        }
+        .contact-art__mark {
+          display: grid;
+          width: 8rem;
+          aspect-ratio: 1;
+          place-items: center;
+          border-radius: 50%;
+          background: var(--color-accent);
+          color: var(--color-foreground-on-accent);
+          font-size: var(--text-display-size);
+          font-weight: var(--font-weight-bold);
+        }
+        .contact-fields {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: var(--spacing-3);
+        }
+        .contact-fields__wide {
+          grid-column: 1 / -1;
+        }
+        .contact-textarea {
+          box-sizing: border-box;
+          width: 100%;
+          min-height: 7rem;
+          resize: vertical;
+          padding: var(--spacing-3);
+          border: var(--border-width) solid var(--color-border-emphasized);
+          border-radius: var(--radius-element);
+          background: var(--color-background-surface);
+          color: var(--color-text-primary);
+          font: inherit;
+        }
+        .contact-textarea:focus-visible {
+          border-color: var(--color-accent);
+          outline: 2px solid var(--color-accent-muted);
+          outline-offset: 0;
+        }
+        .contact-details {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: var(--spacing-4);
+          text-align: center;
+        }
+        @media (max-width: 48rem) {
+          .contact-grid {
+            grid-template-columns: 1fr;
+          }
+          .contact-fields {
+            grid-template-columns: 1fr;
+          }
+          .contact-fields__wide {
+            grid-column: auto;
+          }
+          .contact-details {
+            grid-template-columns: 1fr;
+            text-align: start;
+          }
+          .contact-main {
+            width: min(100% - 2 * var(--spacing-3), 72rem);
+          }
+        }
+      }
+    </style>
+    <script>
+      const params = new URLSearchParams(location.search);
+      const theme = params.get('theme');
+      const mode = params.get('mode');
+      if (['neutral', 'butter', 'y2k'].includes(theme))
+        document.documentElement.dataset.astryxTheme = theme;
+      if (['light', 'dark'].includes(mode))
+        document.documentElement.dataset.theme = mode;
+    </script>
+    <script defer src="__ASTRYX_VANILLA_CDN__/astryx-vanilla.js"></script>
+  </head>
+  <body class="contact-shell">
+    <main class="contact-main ax-stack ax-stack--gap-8">
+      <header class="contact-toolbar">
+        <a class="ax-top-nav__brand" href="#">
+          <span class="ax-top-nav__brand-mark" aria-hidden="true">A</span>
+          <span>Astryx Studio</span>
+        </a>
+        <div
+          class="ax-stack ax-stack--horizontal ax-stack--gap-2 ax-stack--wrap">
+          <label class="ax-selector ax-selector--sm">
+            <span class="ax-selector__label">Theme</span>
+            <span class="ax-selector__control">
+              <select class="ax-selector__select" data-ax-theme-switch>
+                <option value="neutral">Neutral</option>
+                <option value="butter">Butter</option>
+                <option value="y2k">Y2K</option>
+              </select>
+              <span class="ax-selector__indicator" aria-hidden="true"></span>
+            </span>
+          </label>
+          <label class="ax-selector ax-selector--sm">
+            <span class="ax-selector__label">Mode</span>
+            <span class="ax-selector__control">
+              <select class="ax-selector__select" data-ax-mode-switch>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+              <span class="ax-selector__indicator" aria-hidden="true"></span>
+            </span>
+          </label>
+        </div>
+      </header>
+
+      <section class="contact-grid" aria-labelledby="contact-title">
+        <div class="ax-stack ax-stack--gap-6">
+          <div class="ax-stack ax-stack--gap-3">
+            <span class="ax-badge ax-badge--info">New project</span>
+            <h1 class="ax-heading ax-heading--1" id="contact-title">
+              Let’s build something useful
+            </h1>
+            <p class="ax-text ax-text--large ax-text--secondary">
+              Tell us what you are working on. We will pair you with the right
+              team and respond within two business days.
+            </p>
+          </div>
+          <div class="contact-art" aria-hidden="true">
+            <span class="contact-art__mark">A</span>
+          </div>
+          <div class="ax-card ax-card--muted ax-stack ax-stack--gap-2">
+            <p class="ax-text ax-text--semibold">What happens next</p>
+            <p class="ax-text ax-text--secondary">
+              A short discovery call, a clear proposal, and no pressure to
+              proceed.
+            </p>
+          </div>
+        </div>
+
+        <form
+          id="contact-form"
+          class="ax-card ax-card--elevation-med ax-stack ax-stack--gap-5">
+          <div class="ax-card__header ax-stack ax-stack--gap-1">
+            <h2 class="ax-heading ax-heading--3">Your details</h2>
+            <p class="ax-text ax-text--supporting ax-text--secondary">
+              Fields marked with * are required.
+            </p>
+          </div>
+          <div class="ax-card__body contact-fields">
+            <label class="ax-stack ax-stack--gap-1">
+              <span class="ax-text ax-text--label">Full name *</span>
+              <span class="ax-text-input"
+                ><input
+                  name="name"
+                  type="text"
+                  autocomplete="name"
+                  required
+                  placeholder="Alex Rivera"
+              /></span>
+            </label>
+            <label class="ax-stack ax-stack--gap-1">
+              <span class="ax-text ax-text--label">Work email *</span>
+              <span class="ax-text-input"
+                ><input
+                  name="email"
+                  type="email"
+                  autocomplete="email"
+                  required
+                  placeholder="alex@example.com"
+              /></span>
+            </label>
+            <label class="ax-stack ax-stack--gap-1">
+              <span class="ax-text ax-text--label">Company</span>
+              <span class="ax-text-input"
+                ><input
+                  name="company"
+                  type="text"
+                  autocomplete="organization"
+                  placeholder="Northstar Labs"
+              /></span>
+            </label>
+            <label class="ax-stack ax-stack--gap-1">
+              <span class="ax-text ax-text--label">Role</span>
+              <span class="ax-text-input"
+                ><input
+                  name="role"
+                  type="text"
+                  autocomplete="organization-title"
+                  placeholder="Product lead"
+              /></span>
+            </label>
+            <label class="ax-selector contact-fields__wide">
+              <span class="ax-selector__label">What can we help with? *</span>
+              <span class="ax-selector__control">
+                <select class="ax-selector__select" name="inquiry" required>
+                  <option value="">Choose a project type</option>
+                  <option>Design system</option>
+                  <option>Product experience</option>
+                  <option>Developer tooling</option>
+                  <option>Research partnership</option>
+                </select>
+                <span class="ax-selector__indicator" aria-hidden="true"></span>
+              </span>
+            </label>
+            <label class="ax-selector contact-fields__wide">
+              <span class="ax-selector__label">Budget range</span>
+              <span class="ax-selector__control">
+                <select class="ax-selector__select" name="budget">
+                  <option>Not sure yet</option>
+                  <option>Under $25k</option>
+                  <option>$25k–$75k</option>
+                  <option>$75k–$150k</option>
+                  <option>$150k+</option>
+                </select>
+                <span class="ax-selector__indicator" aria-hidden="true"></span>
+              </span>
+            </label>
+            <label class="ax-stack ax-stack--gap-1 contact-fields__wide">
+              <span class="ax-text ax-text--label">Project details *</span>
+              <textarea
+                class="contact-textarea"
+                name="details"
+                required
+                placeholder="Goals, audience, timeline, and anything else we should know"></textarea>
+            </label>
+          </div>
+          <div class="ax-card__footer ax-stack ax-stack--gap-4">
+            <label class="ax-checkbox-input">
+              <input
+                class="ax-checkbox-input__control"
+                type="checkbox"
+                name="updates" />
+              <span class="ax-checkbox-input__box" aria-hidden="true"></span>
+              <span class="ax-checkbox-input__content"
+                ><span class="ax-checkbox-input__label"
+                  >Send me occasional product updates</span
+                ></span
+              >
+            </label>
+            <label class="ax-switch ax-switch--label-start ax-switch--spread">
+              <input
+                class="ax-switch__control"
+                type="checkbox"
+                role="switch"
+                name="copy"
+                checked />
+              <span class="ax-switch__track" aria-hidden="true"
+                ><span class="ax-switch__thumb"></span
+              ></span>
+              <span class="ax-switch__content"
+                ><span class="ax-switch__label">Email me a copy</span></span
+              >
+            </label>
+            <button class="ax-button ax-button--primary" type="submit">
+              Send inquiry
+            </button>
+            <p class="ax-text ax-text--supporting ax-text--secondary">
+              By submitting, you agree to our
+              <button
+                class="ax-link"
+                type="button"
+                data-ax-dialog-open="privacy-dialog">
+                privacy notice</button
+              >.
+            </p>
+          </div>
+        </form>
+      </section>
+
+      <hr class="ax-divider" />
+      <section class="contact-details" aria-label="Contact options">
+        <div class="ax-stack ax-stack--gap-1">
+          <span class="ax-text ax-text--supporting ax-text--secondary"
+            >General inquiries</span
+          ><a class="ax-link" href="mailto:hello@example.com"
+            >hello@example.com</a
+          >
+        </div>
+        <div class="ax-stack ax-stack--gap-1">
+          <span class="ax-text ax-text--supporting ax-text--secondary"
+            >New business</span
+          ><a class="ax-link" href="mailto:projects@example.com"
+            >projects@example.com</a
+          >
+        </div>
+        <div class="ax-stack ax-stack--gap-1">
+          <span class="ax-text ax-text--supporting ax-text--secondary"
+            >Partnerships</span
+          ><a class="ax-link" href="mailto:partners@example.com"
+            >partners@example.com</a
+          >
+        </div>
+      </section>
+    </main>
+
+    <dialog
+      class="ax-dialog"
+      id="privacy-dialog"
+      data-ax-dialog
+      aria-labelledby="privacy-title">
+      <div class="ax-dialog__surface">
+        <header class="ax-dialog__header">
+          <h2 class="ax-dialog__title" id="privacy-title">Your information</h2>
+          <button
+            class="ax-button ax-button--ghost"
+            type="button"
+            data-ax-dialog-close
+            aria-label="Close dialog">
+            ×
+          </button>
+        </header>
+        <div class="ax-dialog__body">
+          <p class="ax-text">
+            We use these details only to respond to your inquiry and plan the
+            requested work.
+          </p>
+        </div>
+        <footer class="ax-dialog__footer">
+          <button
+            class="ax-button ax-button--primary"
+            type="button"
+            data-ax-dialog-close>
+            Got it
+          </button>
+        </footer>
+      </div>
+    </dialog>
+
+    <script>
+      document
+        .querySelector('#contact-form')
+        .addEventListener('submit', event => {
+          event.preventDefault();
+          if (!event.currentTarget.reportValidity()) return;
+          window.astryx.toast('Thanks — your inquiry is on its way.');
+          event.currentTarget.reset();
+        });
+    </script>
+  </body>
+</html>

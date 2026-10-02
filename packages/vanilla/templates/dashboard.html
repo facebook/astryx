@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en" data-astryx-theme="neutral" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Astryx analytics dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/core@0.6.5/src/reset.css" />
+    <link rel="stylesheet" href="__ASTRYX_VANILLA_CDN__/astryx-vanilla.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-neutral@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-butter@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-y2k@0.6.5/dist/theme.css" />
+    <style>
+      @layer astryx-base {
+        .dashboard-shell {
+          min-height: 100vh;
+          background: var(--color-background-body);
+        }
+        .dashboard-main {
+          width: min(100% - 2 * var(--spacing-4), 90rem);
+          margin-inline: auto;
+          padding-block: var(--spacing-6);
+        }
+        .dashboard-header,
+        .dashboard-toolbar,
+        .dashboard-card-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: var(--spacing-3);
+          flex-wrap: wrap;
+        }
+        .dashboard-toolbar {
+          padding: var(--spacing-3);
+          border: var(--border-width) solid var(--color-border);
+          border-radius: var(--radius-container);
+          background: var(--color-background-surface);
+        }
+        .dashboard-metrics {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: var(--spacing-4);
+        }
+        .dashboard-metric-value {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          gap: var(--spacing-2);
+        }
+        .dashboard-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1.7fr) minmax(18rem, 1fr);
+          gap: var(--spacing-4);
+        }
+        .dashboard-chart {
+          display: flex;
+          height: 16rem;
+          align-items: end;
+          gap: var(--spacing-2);
+          padding: var(--spacing-4) var(--spacing-2) var(--spacing-2);
+          border-block-end: var(--border-width) solid var(--color-border);
+          background: repeating-linear-gradient(
+            to bottom,
+            transparent 0,
+            transparent calc(25% - var(--border-width)),
+            var(--color-border) 25%
+          );
+        }
+        .dashboard-chart__bar {
+          width: 100%;
+          height: var(--value);
+          min-height: var(--spacing-2);
+          border-radius: var(--radius-element) var(--radius-element) 0 0;
+          background: var(--color-accent);
+          opacity: calc(0.5 + var(--emphasis));
+        }
+        .dashboard-list {
+          display: grid;
+          gap: var(--spacing-3);
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+        .dashboard-list__item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: var(--spacing-3);
+          padding-block-end: var(--spacing-3);
+          border-block-end: var(--border-width) solid var(--color-border);
+        }
+        @media (max-width: 64rem) {
+          .dashboard-metrics {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+          .dashboard-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+        @media (max-width: 40rem) {
+          .dashboard-main {
+            width: min(100% - 2 * var(--spacing-3), 90rem);
+          }
+          .dashboard-metrics {
+            grid-template-columns: 1fr;
+          }
+          .dashboard-chart {
+            height: 12rem;
+          }
+          .ax-top-nav__items {
+            display: none;
+          }
+        }
+      }
+    </style>
+    <script>
+      const params = new URLSearchParams(location.search);
+      const theme = params.get('theme');
+      const mode = params.get('mode');
+      if (['neutral', 'butter', 'y2k'].includes(theme))
+        document.documentElement.dataset.astryxTheme = theme;
+      if (['light', 'dark'].includes(mode))
+        document.documentElement.dataset.theme = mode;
+    </script>
+    <script defer src="__ASTRYX_VANILLA_CDN__/astryx-vanilla.js"></script>
+  </head>
+  <body class="dashboard-shell">
+    <nav class="ax-top-nav" aria-label="Primary navigation">
+      <div class="ax-top-nav__start">
+        <a class="ax-top-nav__brand" href="#">
+          <span class="ax-top-nav__brand-mark" aria-hidden="true">A</span>
+          <span>Astryx Analytics</span>
+        </a>
+        <div class="ax-top-nav__items">
+          <a class="ax-top-nav__item" href="#" aria-current="page">Overview</a>
+          <a class="ax-top-nav__item" href="#engagement">Engagement</a>
+          <a class="ax-top-nav__item" href="#audience">Audience</a>
+        </div>
+      </div>
+      <div class="ax-top-nav__end">
+        <div class="ax-dropdown-menu">
+          <button
+            class="ax-button ax-button--secondary ax-button--sm"
+            type="button"
+            data-ax-dropdown-trigger="dashboard-export-menu">
+            Export
+          </button>
+          <div
+            class="ax-dropdown-menu__popover"
+            id="dashboard-export-menu"
+            role="menu"
+            popover="auto"
+            data-ax-dropdown-menu>
+            <button
+              class="ax-dropdown-menu__item"
+              type="button"
+              role="menuitem">
+              Download CSV
+            </button>
+            <button
+              class="ax-dropdown-menu__item"
+              type="button"
+              role="menuitem">
+              Download PDF
+            </button>
+          </div>
+        </div>
+        <button
+          class="ax-button ax-button--primary ax-button--sm"
+          type="button"
+          data-ax-toast="Dashboard refreshed">
+          Refresh
+        </button>
+      </div>
+    </nav>
+
+    <main class="dashboard-main ax-stack ax-stack--gap-6">
+      <header class="dashboard-header">
+        <div class="ax-stack ax-stack--gap-1">
+          <span class="ax-badge ax-badge--success">Live</span>
+          <h1 class="ax-heading ax-heading--1">Product overview</h1>
+          <p class="ax-text ax-text--secondary">
+            Signals from the last 30 days, refreshed a few seconds ago.
+          </p>
+        </div>
+        <div
+          class="ax-stack ax-stack--horizontal ax-stack--gap-2 ax-stack--wrap">
+          <label class="ax-selector ax-selector--sm">
+            <span class="ax-selector__label">Theme</span>
+            <span class="ax-selector__control">
+              <select class="ax-selector__select" data-ax-theme-switch>
+                <option value="neutral">Neutral</option>
+                <option value="butter">Butter</option>
+                <option value="y2k">Y2K</option>
+              </select>
+              <span class="ax-selector__indicator" aria-hidden="true"></span>
+            </span>
+          </label>
+          <label class="ax-selector ax-selector--sm">
+            <span class="ax-selector__label">Mode</span>
+            <span class="ax-selector__control">
+              <select class="ax-selector__select" data-ax-mode-switch>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+              <span class="ax-selector__indicator" aria-hidden="true"></span>
+            </span>
+          </label>
+        </div>
+      </header>
+
+      <section class="dashboard-metrics" aria-label="Key metrics">
+        <article
+          class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-2">
+          <p class="ax-text ax-text--label ax-text--secondary">
+            Monthly visitors
+          </p>
+          <div class="dashboard-metric-value">
+            <h2 class="ax-heading ax-heading--2">27.3k</h2>
+            <span class="ax-badge ax-badge--success">+18.2%</span>
+          </div>
+          <p class="ax-text ax-text--supporting ax-text--secondary">
+            vs. previous period
+          </p>
+        </article>
+        <article
+          class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-2">
+          <p class="ax-text ax-text--label ax-text--secondary">Page views</p>
+          <div class="dashboard-metric-value">
+            <h2 class="ax-heading ax-heading--2">48.2k</h2>
+            <span class="ax-badge ax-badge--success">+12.5%</span>
+          </div>
+          <p class="ax-text ax-text--supporting ax-text--secondary">
+            1.8 views per visitor
+          </p>
+        </article>
+        <article
+          class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-2">
+          <p class="ax-text ax-text--label ax-text--secondary">Avg. session</p>
+          <div class="dashboard-metric-value">
+            <h2 class="ax-heading ax-heading--2">4m 32s</h2>
+            <span class="ax-badge ax-badge--warning">-2.1%</span>
+          </div>
+          <p class="ax-text ax-text--supporting ax-text--secondary">
+            across all devices
+          </p>
+        </article>
+        <article
+          class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-2">
+          <p class="ax-text ax-text--label ax-text--secondary">Conversion</p>
+          <div class="dashboard-metric-value">
+            <h2 class="ax-heading ax-heading--2">8.7%</h2>
+            <span class="ax-badge ax-badge--info">+0.6 pts</span>
+          </div>
+          <p class="ax-text ax-text--supporting ax-text--secondary">
+            2,376 completed goals
+          </p>
+        </article>
+      </section>
+
+      <section class="dashboard-grid" aria-label="Traffic and goals">
+        <article
+          class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4">
+          <div class="dashboard-card-header">
+            <div>
+              <h2 class="ax-heading ax-heading--3">Active users</h2>
+              <p class="ax-text ax-text--supporting ax-text--secondary">
+                Hourly activity today
+              </p>
+            </div>
+            <span class="ax-badge ax-badge--info">120 online</span>
+          </div>
+          <div
+            class="dashboard-chart"
+            aria-label="Bar chart of hourly active users">
+            <span
+              class="dashboard-chart__bar"
+              style="--value: 42%; --emphasis: 0.05"></span>
+            <span
+              class="dashboard-chart__bar"
+              style="--value: 51%; --emphasis: 0.08"></span>
+            <span
+              class="dashboard-chart__bar"
+              style="--value: 46%; --emphasis: 0.12"></span>
+            <span
+              class="dashboard-chart__bar"
+              style="--value: 59%; --emphasis: 0.16"></span>
+            <span
+              class="dashboard-chart__bar"
+              style="--value: 67%; --emphasis: 0.2"></span>
+            <span
+              class="dashboard-chart__bar"
+              style="--value: 61%; --emphasis: 0.24"></span>
+            <span
+              class="dashboard-chart__bar"
+              style="--value: 72%; --emphasis: 0.28"></span>
+            <span
+              class="dashboard-chart__bar"
+              style="--value: 83%; --emphasis: 0.32"></span>
+            <span
+              class="dashboard-chart__bar"
+              style="--value: 77%; --emphasis: 0.36"></span>
+            <span
+              class="dashboard-chart__bar"
+              style="--value: 92%; --emphasis: 0.4"></span>
+            <span
+              class="dashboard-chart__bar"
+              style="--value: 86%; --emphasis: 0.44"></span>
+            <span
+              class="dashboard-chart__bar"
+              style="--value: 100%; --emphasis: 0.48"></span>
+          </div>
+          <div
+            class="dashboard-card-header ax-text ax-text--supporting ax-text--secondary">
+            <span>12 AM</span><span>6 AM</span><span>12 PM</span
+            ><span>Now</span>
+          </div>
+        </article>
+
+        <article
+          class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4">
+          <div class="dashboard-card-header">
+            <h2 class="ax-heading ax-heading--3">Top goals</h2>
+            <a class="ax-link" href="#engagement">View all</a>
+          </div>
+          <ol class="dashboard-list">
+            <li class="dashboard-list__item">
+              <span class="ax-text">Create workspace</span>
+              <strong class="ax-text">1,204</strong>
+            </li>
+            <li class="dashboard-list__item">
+              <span class="ax-text">Invite teammate</span>
+              <strong class="ax-text">847</strong>
+            </li>
+            <li class="dashboard-list__item">
+              <span class="ax-text">Publish project</span>
+              <strong class="ax-text">624</strong>
+            </li>
+            <li class="dashboard-list__item">
+              <span class="ax-text">Export report</span>
+              <strong class="ax-text">391</strong>
+            </li>
+          </ol>
+        </article>
+      </section>
+
+      <section
+        id="engagement"
+        class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4">
+        <div class="dashboard-card-header">
+          <div>
+            <h2 class="ax-heading ax-heading--3">Top pages</h2>
+            <p class="ax-text ax-text--supporting ax-text--secondary">
+              Sorted by total views
+            </p>
+          </div>
+          <button
+            class="ax-button ax-button--secondary ax-button--sm"
+            type="button"
+            data-ax-toast="Report copied">
+            Copy report
+          </button>
+        </div>
+        <div
+          class="ax-table__scroll"
+          tabindex="0"
+          role="group"
+          aria-label="Top pages table">
+          <table class="ax-table ax-table--hover ax-table--striped">
+            <caption>
+              Page engagement for the last 30 days
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Page</th>
+                <th scope="col">Views</th>
+                <th scope="col">Avg. time</th>
+                <th scope="col">Trend</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>/home</td>
+                <td>8,420</td>
+                <td>3m 42s</td>
+                <td><span class="ax-badge ax-badge--success">+16%</span></td>
+              </tr>
+              <tr>
+                <td>/products</td>
+                <td>6,150</td>
+                <td>4m 15s</td>
+                <td><span class="ax-badge ax-badge--success">+9%</span></td>
+              </tr>
+              <tr>
+                <td>/pricing</td>
+                <td>4,830</td>
+                <td>2m 58s</td>
+                <td><span class="ax-badge ax-badge--warning">-3%</span></td>
+              </tr>
+              <tr>
+                <td>/docs</td>
+                <td>3,410</td>
+                <td>6m 12s</td>
+                <td><span class="ax-badge ax-badge--info">+2%</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

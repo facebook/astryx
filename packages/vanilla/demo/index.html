@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en" data-astryx-theme="neutral" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vanilla Astryx demos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/core@0.6.5/src/reset.css" />
+    <link rel="stylesheet" href="__ASTRYX_VANILLA_CDN__/astryx-vanilla.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-neutral@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-butter@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-y2k@0.6.5/dist/theme.css" />
+    <style>
+      @layer astryx-base {
+        .demo-shell {
+          min-height: 100vh;
+          background: var(--color-background-body);
+        }
+        .demo-main {
+          width: min(100% - 2 * var(--spacing-4), 78rem);
+          margin-inline: auto;
+          padding-block: var(--spacing-8) var(--spacing-10);
+        }
+        .demo-hero {
+          display: grid;
+          grid-template-columns: minmax(0, 1.4fr) minmax(18rem, 0.8fr);
+          gap: var(--spacing-6);
+          align-items: end;
+        }
+        .demo-controls {
+          display: flex;
+          align-items: end;
+          justify-content: end;
+          gap: var(--spacing-3);
+          flex-wrap: wrap;
+        }
+        .demo-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: var(--spacing-4);
+        }
+        .demo-card {
+          display: flex;
+          min-height: 19rem;
+          flex-direction: column;
+        }
+        .demo-card__preview {
+          position: relative;
+          display: grid;
+          min-height: 10rem;
+          place-items: center;
+          overflow: hidden;
+          border: var(--border-width) solid var(--color-border);
+          border-radius: var(--radius-element);
+          background: var(--color-background-muted);
+        }
+        .demo-card__preview::before,
+        .demo-card__preview::after {
+          content: '';
+          position: absolute;
+          border-radius: var(--radius-container);
+          background: var(--color-background-surface);
+          box-shadow: var(--shadow-low);
+        }
+        .demo-card__preview::before {
+          width: 64%;
+          height: 60%;
+          inset: 20% auto auto 10%;
+        }
+        .demo-card__preview::after {
+          width: 30%;
+          height: 42%;
+          inset: 34% 8% auto auto;
+          background: var(--color-accent-muted);
+        }
+        .demo-card__mark {
+          position: relative;
+          z-index: 1;
+          display: grid;
+          width: 3rem;
+          aspect-ratio: 1;
+          place-items: center;
+          border-radius: 50%;
+          background: var(--color-accent);
+          color: var(--color-foreground-on-accent);
+          font-weight: var(--font-weight-bold);
+        }
+        .demo-card__footer {
+          display: flex;
+          margin-block-start: auto;
+          align-items: center;
+          justify-content: space-between;
+          gap: var(--spacing-3);
+        }
+        .demo-code {
+          overflow-x: auto;
+          padding: var(--spacing-3);
+          border-radius: var(--radius-element);
+          background: var(--color-background-muted);
+          color: var(--color-text-primary);
+          font-family: var(--font-family-mono);
+          font-size: var(--text-supporting-size);
+        }
+        @media (max-width: 48rem) {
+          .demo-hero,
+          .demo-grid {
+            grid-template-columns: 1fr;
+          }
+          .demo-controls {
+            justify-content: start;
+          }
+          .demo-main {
+            width: min(100% - 2 * var(--spacing-3), 78rem);
+            padding-block-start: var(--spacing-5);
+          }
+        }
+      }
+    </style>
+    <script defer src="__ASTRYX_VANILLA_CDN__/astryx-vanilla.js"></script>
+  </head>
+  <body class="demo-shell">
+    <main class="demo-main ax-stack ax-stack--gap-8">
+      <header class="demo-hero">
+        <div class="ax-stack ax-stack--gap-3">
+          <span class="ax-badge ax-badge--info">No build step</span>
+          <h1 class="ax-heading ax-heading--1">Vanilla Astryx</h1>
+          <p class="ax-text ax-text--large ax-text--secondary">
+            Token-based components, accessible browser behaviors, and complete
+            page templates in plain HTML, CSS, and JavaScript.
+          </p>
+          <div
+            class="ax-stack ax-stack--horizontal ax-stack--gap-2 ax-stack--wrap">
+            <a class="ax-button ax-button--primary" href="#templates"
+              >Explore templates</a
+            >
+            <button
+              class="ax-button ax-button--secondary"
+              type="button"
+              data-ax-toast="Vanilla Astryx is ready">
+              Test a toast
+            </button>
+          </div>
+        </div>
+        <section
+          class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-3"
+          aria-label="Appearance controls">
+          <h2 class="ax-heading ax-heading--4">Preview appearance</h2>
+          <div class="demo-controls">
+            <label class="ax-selector">
+              <span class="ax-selector__label">Theme</span>
+              <span class="ax-selector__control"
+                ><select
+                  class="ax-selector__select"
+                  data-ax-theme-switch
+                  data-demo-theme>
+                  <option value="neutral">Neutral · Figtree</option>
+                  <option value="butter">Butter · Outfit</option>
+                  <option value="y2k">Y2K · Poppins</option></select
+                ><span class="ax-selector__indicator" aria-hidden="true"></span
+              ></span>
+            </label>
+            <label class="ax-selector">
+              <span class="ax-selector__label">Mode</span>
+              <span class="ax-selector__control"
+                ><select
+                  class="ax-selector__select"
+                  data-ax-mode-switch
+                  data-demo-mode>
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option></select
+                ><span class="ax-selector__indicator" aria-hidden="true"></span
+              ></span>
+            </label>
+          </div>
+          <p class="ax-text ax-text--supporting ax-text--secondary">
+            Selections also follow you into each template.
+          </p>
+        </section>
+      </header>
+
+      <hr class="ax-divider" />
+
+      <section
+        id="templates"
+        class="ax-stack ax-stack--gap-4"
+        aria-labelledby="templates-title">
+        <div class="ax-stack ax-stack--gap-1">
+          <h2 class="ax-heading ax-heading--2" id="templates-title">
+            Page templates
+          </h2>
+          <p class="ax-text ax-text--secondary">
+            Open any page as a local file or serve the directory from a static
+            host.
+          </p>
+        </div>
+        <div class="demo-grid">
+          <article
+            class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4 demo-card">
+            <div class="demo-card__preview">
+              <span class="demo-card__mark" aria-hidden="true">D</span>
+            </div>
+            <div class="ax-stack ax-stack--gap-2">
+              <span class="ax-badge ax-badge--success">Analytics</span>
+              <h3 class="ax-heading ax-heading--3">Dashboard</h3>
+              <p class="ax-text ax-text--secondary">
+                Metrics, a token-driven chart, goals, and an engagement table.
+              </p>
+            </div>
+            <div class="demo-card__footer">
+              <code class="ax-text ax-text--code">dashboard</code
+              ><a
+                class="ax-button ax-button--secondary"
+                data-template-link
+                href="../templates/dashboard.html"
+                >Open template</a
+              >
+            </div>
+          </article>
+          <article
+            class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4 demo-card">
+            <div class="demo-card__preview">
+              <span class="demo-card__mark" aria-hidden="true">T</span>
+            </div>
+            <div class="ax-stack ax-stack--gap-2">
+              <span class="ax-badge ax-badge--info">Operations</span>
+              <h3 class="ax-heading ax-heading--3">Table + filters</h3>
+              <p class="ax-text ax-text--secondary">
+                Searchable service work with status, priority, and view
+                controls.
+              </p>
+            </div>
+            <div class="demo-card__footer">
+              <code class="ax-text ax-text--code">table-filter</code
+              ><a
+                class="ax-button ax-button--secondary"
+                data-template-link
+                href="../templates/table-filter.html"
+                >Open template</a
+              >
+            </div>
+          </article>
+          <article
+            class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4 demo-card">
+            <div class="demo-card__preview">
+              <span class="demo-card__mark" aria-hidden="true">F</span>
+            </div>
+            <div class="ax-stack ax-stack--gap-2">
+              <span class="ax-badge ax-badge--warning">Lead capture</span>
+              <h3 class="ax-heading ax-heading--3">Two-column form</h3>
+              <p class="ax-text ax-text--secondary">
+                A responsive contact experience with native validation and
+                feedback.
+              </p>
+            </div>
+            <div class="demo-card__footer">
+              <code class="ax-text ax-text--code">form-two-column</code
+              ><a
+                class="ax-button ax-button--secondary"
+                data-template-link
+                href="../templates/form-two-column.html"
+                >Open template</a
+              >
+            </div>
+          </article>
+          <article
+            class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4 demo-card">
+            <div class="demo-card__preview">
+              <span class="demo-card__mark" aria-hidden="true">O</span>
+            </div>
+            <div class="ax-stack ax-stack--gap-2">
+              <span class="ax-badge ax-badge--error">Commerce</span>
+              <h3 class="ax-heading ax-heading--3">Detail page</h3>
+              <p class="ax-text ax-text--secondary">
+                Order items, invoice data, tabs, disclosures, and contextual
+                actions.
+              </p>
+            </div>
+            <div class="demo-card__footer">
+              <code class="ax-text ax-text--code">detail-page</code
+              ><a
+                class="ax-button ax-button--secondary"
+                data-template-link
+                href="../templates/detail-page.html"
+                >Open template</a
+              >
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section
+        class="ax-card ax-card--muted ax-stack ax-stack--gap-3"
+        aria-labelledby="cli-title">
+        <h2 class="ax-heading ax-heading--3" id="cli-title">
+          From the Astryx CLI
+        </h2>
+        <p class="ax-text ax-text--secondary">
+          Run the branch checkout directly; no package publish is required.
+        </p>
+        <pre
+          class="demo-code"><code>node packages/cli/clients/cli/bin/astryx.mjs template dashboard --html</code></pre>
+      </section>
+    </main>
+
+    <script>
+      const theme = document.querySelector('[data-demo-theme]');
+      const mode = document.querySelector('[data-demo-mode]');
+      const links = [...document.querySelectorAll('[data-template-link]')];
+      function syncLinks() {
+        for (const link of links) {
+          const url = new URL(link.getAttribute('href'), location.href);
+          url.searchParams.set('theme', theme.value);
+          url.searchParams.set('mode', mode.value);
+          link.href = url.href;
+        }
+      }
+      theme.addEventListener('change', syncLinks);
+      mode.addEventListener('change', syncLinks);
+      syncLinks();
+    </script>
+  </body>
+</html>
