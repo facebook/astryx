@@ -574,12 +574,12 @@ There is no factory: write a plain object. For editor autocomplete and
 type-checking, annotate it with the `AstryxConfig` type exported from
 `@astryxdesign/cli/authoring`.
 
-| Field                         | Type                           | Purpose                                                                                         |
-| ----------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------- |
-| `integrations`                | `string[]`                     | Integration package names to load (see [Integrations](#integrations)).                          |
-| `issuesUrl`                   | `string`                       | Where "report an issue" links point for your project. Defaults to the core issue tracker.       |
-| `hooks.postCodemod`           | `PostCodemodHook[]`            | Commands to run after `astryx upgrade` applies codemods (e.g. reinstall, rebuild, reformat).    |
-| `experimental.xle.components` | `Record<string, XleComponent>` | Register app-local components so layout (XLE) expressions can reference them by name. Unstable. |
+| Field                         | Type                           | Purpose                                                                                                                  |
+| ----------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `integrations`                | `string[]`                     | Integration package names to load (see [Integrations](#integrations)).                                                   |
+| `issuesUrl`                   | `string`                       | Where "report an issue" links point for your project. Defaults to the core issue tracker.                                |
+| `hooks.postCodemod`           | `PostCodemodHook[]`            | Commands to run after `astryx upgrade` applies codemods (e.g. reinstall, rebuild, reformat).                             |
+| `experimental.xle.components` | `Record<string, XleComponent>` | No effect. Its only reader was the removed `layout` command. Still accepted so existing configs keep loading; delete it. |
 
 The config is validated against a strict schema when the CLI loads it, so an
 unknown field is a hard error rather than a silent no-op. `astryx doctor`
