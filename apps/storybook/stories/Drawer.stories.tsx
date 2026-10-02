@@ -5,7 +5,6 @@ import {useState} from 'react';
 import {Drawer, DrawerHeader} from '@astryxdesign/lab';
 import {Button} from '@astryxdesign/core/Button';
 import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
-import {Divider} from '@astryxdesign/core/Divider';
 import {Heading} from '@astryxdesign/core/Heading';
 import {Section} from '@astryxdesign/core/Section';
 import {VStack, HStack} from '@astryxdesign/core/Stack';
@@ -64,15 +63,14 @@ export const Showcase: Story = {
           onOpenChange={setIsOpen}
           label="Deployment details"
           width={400}>
+          <DrawerHeader
+            title="web-prod-04"
+            subtitle="us-east-1, deployed 12 min ago"
+            onOpenChange={setIsOpen}
+            hasDivider
+          />
           <Section padding={4}>
             <VStack gap={4}>
-              <VStack gap={1}>
-                <Heading level={3}>web-prod-04</Heading>
-                <Text type="supporting" color="secondary">
-                  us-east-1, deployed 12 min ago
-                </Text>
-              </VStack>
-              <Divider />
               <VStack gap={2}>
                 <Text type="label">Status</Text>
                 <Text type="body">
