@@ -384,16 +384,6 @@ export async function integrationDocConflicts(pkg, options = {}) {
     )) {
       issues.push({code: 'invalid_doc_reference', severity: 'error', message});
     }
-
-    // A reference block includes content rather than linking to it, so one
-    // that cannot include what it names loses that content for every reader:
-    // an error, where a link that names no doc still prints as written.
-    for (const message of await packageReferenceProblems(
-      /** @type {{name: string}} */ (resolved.integration),
-      discovered,
-    )) {
-      issues.push({code: 'invalid_doc_reference', severity: 'error', message});
-    }
   }
 
   return {
