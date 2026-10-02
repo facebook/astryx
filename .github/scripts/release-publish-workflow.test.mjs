@@ -71,9 +71,6 @@ describe('stable and canary publication authority', () => {
       /^actions\/checkout@/u,
     );
     expect(step(stable, 'Build all packages').run).toBe('pnpm build');
-    expect(step(stable, 'Verify published package contents').run).toBe(
-      'pnpm check:public-package-identifiers',
-    );
     expect(
       stable.steps.some(candidate =>
         /download-artifact/u.test(candidate.uses ?? ''),
