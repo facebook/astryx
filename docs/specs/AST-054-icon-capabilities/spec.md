@@ -44,6 +44,13 @@ the existing contextual-size cascade, while appearance and weight use the select
 icon configuration's supplied defaults. The required `icon` source keeps its
 existing meaning.
 
+A component that owns an icon slot does not repeat the theme vocabularies or specify
+all three requests. For example, a Button may resolve its semantic icon name and
+render `<Icon icon={resolvedButtonIcon} />`; Button's contextual size and the selected
+icon configuration's defaults complete the result. A component supplies an explicit
+size, appearance, or weight only when its own documented behavior requires that
+override.
+
 ## Non-goals
 
 - Define universal appearance or weight names for every icon library.
