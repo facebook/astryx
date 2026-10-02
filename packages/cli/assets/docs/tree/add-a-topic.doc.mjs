@@ -111,7 +111,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Only guides, topics, and your docs section go in the `docs` root. The others have their own guides: {@link namespace:components}, {@link namespace:templates}, and {@link generic:themes}.',
+          text: 'Only guides, topics, and your docs section go in the `docs` root. The others have their own guides: {@link namespace:components}, {@link namespace:templates}, and {@link namespace:themes}.',
         },
       ],
     },
