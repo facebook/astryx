@@ -285,7 +285,9 @@ const styles = stylex.create({
   },
   tokenSpan: {
     display: 'inline-flex',
-    verticalAlign: 'middle',
+    alignItems: 'center',
+    height: '1lh',
+    verticalAlign: 'top',
   },
 });
 
