@@ -13,7 +13,7 @@ import {
 } from '../_adapter.mjs';
 
 export const ASTRYX_VANILLA_CDN_REF =
-  'bdac12d4da1b37a9a7cba44cfdc9c0c8775e24c3';
+  '30b945f673a88e00a7420f3567e246aaf875cff7';
 export const ASTRYX_VANILLA_CDN_PLACEHOLDER = '__ASTRYX_VANILLA_CDN__';
 
 /** @param {string} ref @returns {string} */
