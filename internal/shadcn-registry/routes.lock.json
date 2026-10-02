@@ -557,6 +557,11 @@
       "aliases": []
     },
     {
+      "name": "component-lab-drawer-header",
+      "path": "components/lab/drawer-header",
+      "aliases": []
+    },
+    {
       "name": "component-lab-info-tip",
       "path": "components/lab/info-tip",
       "aliases": []

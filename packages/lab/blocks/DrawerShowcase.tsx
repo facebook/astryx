@@ -9,11 +9,10 @@
  */
 
 import {useState} from 'react';
-import {Drawer} from '@astryxdesign/lab';
+import {Drawer, DrawerHeader} from '@astryxdesign/lab';
 import {Button} from '@astryxdesign/core/Button';
 import {Section} from '@astryxdesign/core/Section';
-import {VStack} from '@astryxdesign/core/Stack';
-import {Heading, Text} from '@astryxdesign/core/Text';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function DrawerShowcase() {
   const [isOpen, setIsOpen] = useState(false);
@@ -26,13 +25,11 @@ export default function DrawerShowcase() {
         onOpenChange={setIsOpen}
         label="Details"
         width={360}>
+        <DrawerHeader title="Details" onOpenChange={setIsOpen} />
         <Section padding={4}>
-          <VStack gap={2}>
-            <Heading level={3}>Details</Heading>
-            <Text type="body">
-              Close with Escape, the scrim, or the close button.
-            </Text>
-          </VStack>
+          <Text type="body">
+            Close with Escape, the scrim, or the close button.
+          </Text>
         </Section>
       </Drawer>
     </>

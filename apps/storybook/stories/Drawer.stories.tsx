@@ -2,7 +2,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {Drawer} from '@astryxdesign/lab';
+import {Drawer, DrawerHeader} from '@astryxdesign/lab';
 import {Button} from '@astryxdesign/core/Button';
 import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
 import {Divider} from '@astryxdesign/core/Divider';
@@ -413,17 +413,74 @@ export const Scrim: Story = {
           isOpen={openWithout}
           onOpenChange={setOpenWithout}
           label="Non-modal details"
-          hasScrim={false}
-          hasCloseButton>
+          hasScrim={false}>
+          {/* No scrim to click, so the header's close button is the visible exit. */}
+          <DrawerHeader title="Non-modal" onOpenChange={setOpenWithout} />
           <Section padding={4}>
-            <VStack gap={4}>
-              <Heading level={3}>Non-modal</Heading>
-              <Text type="body">
-                No scrim, no focus trap. The page behind keeps working while
-                this stays open.
-              </Text>
-            </VStack>
+            <Text type="body">
+              No scrim, no focus trap. The page behind keeps working while this
+              stays open.
+            </Text>
           </Section>
+        </Drawer>
+      </>
+    );
+  },
+};
+
+/**
+ * `purpose` matches Dialog. `info` (default) closes on Escape and a scrim
+ * click; `form` ignores the scrim click so a stray click cannot discard input;
+ * `required` ignores both and is exposed as an `alertdialog`, so its content
+ * owns the way out. Drawer has no close button of its own: `DrawerHeader`
+ * renders one when given `onOpenChange`.
+ */
+export const Purpose: Story = {
+  render: () => {
+    const [purpose, setPurpose] = useState<'info' | 'form' | 'required' | null>(
+      null,
+    );
+    const close = () => setPurpose(null);
+    return (
+      <>
+        <HStack gap={2}>
+          <Button label="info" onClick={() => setPurpose('info')} />
+          <Button label="form" onClick={() => setPurpose('form')} />
+          <Button label="required" onClick={() => setPurpose('required')} />
+        </HStack>
+        <Drawer
+          isOpen={purpose != null}
+          onOpenChange={isOpen => !isOpen && close()}
+          label={`Purpose: ${purpose ?? 'info'}`}
+          purpose={purpose ?? 'info'}>
+          {purpose === 'required' ? (
+            <>
+              <DrawerHeader title="Accept the terms" />
+              <Section padding={4}>
+                <VStack gap={4}>
+                  <Text type="body">
+                    Escape and the scrim do nothing. Only this button closes the
+                    drawer.
+                  </Text>
+                  <Button label="Accept" data-autofocus onClick={close} />
+                </VStack>
+              </Section>
+            </>
+          ) : (
+            <>
+              <DrawerHeader
+                title={purpose === 'form' ? 'Edit details' : 'Details'}
+                onOpenChange={isOpen => !isOpen && close()}
+              />
+              <Section padding={4}>
+                <Text type="body">
+                  {purpose === 'form'
+                    ? 'Escape or the close button closes; a scrim click does not.'
+                    : 'Escape, a scrim click, or the close button closes.'}
+                </Text>
+              </Section>
+            </>
+          )}
         </Drawer>
       </>
     );

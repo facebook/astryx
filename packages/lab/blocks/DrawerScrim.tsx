@@ -9,11 +9,11 @@
  */
 
 import {useState} from 'react';
-import {Drawer} from '@astryxdesign/lab';
+import {Drawer, DrawerHeader} from '@astryxdesign/lab';
 import {Button} from '@astryxdesign/core/Button';
 import {Section} from '@astryxdesign/core/Section';
-import {HStack, VStack} from '@astryxdesign/core/Stack';
-import {Heading, Text} from '@astryxdesign/core/Text';
+import {HStack} from '@astryxdesign/core/Stack';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function DrawerScrim() {
   const [openModal, setOpenModal] = useState(false);
@@ -32,13 +32,11 @@ export default function DrawerScrim() {
         isOpen={openModal}
         onOpenChange={setOpenModal}
         label="Edit details">
+        <DrawerHeader title="Edit details" onOpenChange={setOpenModal} />
         <Section padding={4}>
-          <VStack gap={2}>
-            <Heading level={3}>Edit details</Heading>
-            <Text type="body">
-              The scrim blocks the page behind this modal drawer.
-            </Text>
-          </VStack>
+          <Text type="body">
+            The scrim blocks the page behind this modal drawer.
+          </Text>
         </Section>
       </Drawer>
       <Drawer
@@ -46,13 +44,11 @@ export default function DrawerScrim() {
         onOpenChange={setOpenPanel}
         label="Inspector"
         hasScrim={false}>
+        <DrawerHeader title="Inspector" onOpenChange={setOpenPanel} />
         <Section padding={4}>
-          <VStack gap={2}>
-            <Heading level={3}>Inspector</Heading>
-            <Text type="body">
-              The page behind this non-modal drawer stays interactive.
-            </Text>
-          </VStack>
+          <Text type="body">
+            The page behind this non-modal drawer stays interactive.
+          </Text>
         </Section>
       </Drawer>
     </>

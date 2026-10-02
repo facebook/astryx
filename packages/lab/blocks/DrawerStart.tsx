@@ -9,11 +9,10 @@
  */
 
 import {useState} from 'react';
-import {Drawer} from '@astryxdesign/lab';
+import {Drawer, DrawerHeader} from '@astryxdesign/lab';
 import {Button} from '@astryxdesign/core/Button';
 import {Section} from '@astryxdesign/core/Section';
-import {VStack} from '@astryxdesign/core/Stack';
-import {Heading, Text} from '@astryxdesign/core/Text';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function DrawerStart() {
   const [isOpen, setIsOpen] = useState(false);
@@ -26,13 +25,11 @@ export default function DrawerStart() {
         onOpenChange={setIsOpen}
         label="Navigation"
         side="start">
+        <DrawerHeader title="Navigation" onOpenChange={setIsOpen} />
         <Section padding={4}>
-          <VStack gap={2}>
-            <Heading level={3}>Navigation</Heading>
-            <Text type="body">
-              The start edge follows the page's writing direction.
-            </Text>
-          </VStack>
+          <Text type="body">
+            The start edge follows the page's writing direction.
+          </Text>
         </Section>
       </Drawer>
     </>
