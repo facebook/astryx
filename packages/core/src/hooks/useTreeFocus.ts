@@ -6,7 +6,8 @@
  * @file useTreeFocus.ts
  * @input Uses React useCallback, useRef, useIsomorphicLayoutEffect, isRtlElement
  * @output Exports useTreeFocus hook for WAI-ARIA tree keyboard navigation
- * @position Core hook; used by TreeList for roving tabindex + APG tree keyboard model
+ * @position Core hook; used by TreeList for roving tabindex + APG tree keyboard
+ *   model, and by the Table tree plugin (treegrid rows, via `itemSelector`)
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts
@@ -49,6 +50,11 @@ export interface UseTreeFocusOptions {
    * DOM order (collapsed subtrees are not rendered, so they are naturally
    * excluded). Disabled treeitems are still matched and then skipped via
    * {@link UseTreeFocusOptions.isItemDisabled}.
+   *
+   * The same selector resolves which item owns focus on a key press (the
+   * nearest matching ancestor of the active element), so a host whose items
+   * are not treeitems — a treegrid's rows — passes its own selector and
+   * composes the whole keyboard model.
    * @default '[role="treeitem"]'
    */
   itemSelector?: string;
@@ -163,9 +169,10 @@ export interface UseTreeFocusReturn<T extends HTMLElement = HTMLElement> {
   handleKeyDown: (e: React.KeyboardEvent) => void;
 
   /**
-   * Focus handler to attach to the container's `onFocus`. Keeps the roving tab
-   * stop in sync when `hasRovingTabIndex` is enabled; a no-op otherwise, so it
-   * is always safe to attach.
+   * Focus handler to attach to the container's `onFocus`. When
+   * `hasRovingTabIndex` is enabled it moves the roving tab stop to the item
+   * that owns the focus target (a click or programmatic focus included); a
+   * no-op otherwise, so it is always safe to attach.
    */
   handleFocus: (e: React.FocusEvent) => void;
 
@@ -417,10 +424,12 @@ export function useTreeFocus<T extends HTMLElement = HTMLElement>(
       }
 
       const active = document.activeElement;
-      // Resolve the treeitem that owns focus: the nearest treeitem ancestor of
-      // the active element (never an outer treeitem that merely contains it).
+      // Resolve the item that owns focus: the nearest `itemSelector` ancestor
+      // of the active element (never an outer item that merely contains it).
+      // Matched through the same selector as the item list, so a host whose
+      // items are not treeitems (a treegrid's rows) resolves correctly.
       const activeItem =
-        active instanceof Element ? active.closest('[role="treeitem"]') : null;
+        active instanceof Element ? active.closest(itemSelector) : null;
       const currentIndex = items.findIndex(item => item === activeItem);
       const current = currentIndex >= 0 ? items[currentIndex] : undefined;
 
@@ -546,6 +555,7 @@ export function useTreeFocus<T extends HTMLElement = HTMLElement>(
     },
     [
       getItems,
+      itemSelector,
       typeahead,
       runTypeahead,
       focusEnabledFrom,
@@ -562,14 +572,38 @@ export function useTreeFocus<T extends HTMLElement = HTMLElement>(
 
   /**
    * Keep the roving stop pointing at whatever ended up focused (e.g. a click
-   * or programmatic focus) so the next Tab behaves correctly. No-op unless
-   * roving tabindex is enabled.
+   * or programmatic focus) so the next Tab behaves correctly: the enabled item
+   * that owns the focus target (the nearest `itemSelector` ancestor, as for a
+   * key press) becomes the stop. Focus that lands outside every item only
+   * repairs the stop. No-op unless roving tabindex is enabled.
    */
-  const handleFocus = useCallback(() => {
-    if (hasRovingTabIndex) {
-      syncTabStops();
-    }
-  }, [hasRovingTabIndex, syncTabStops]);
+  const handleFocus = useCallback(
+    (e: React.FocusEvent) => {
+      if (!hasRovingTabIndex) {
+        return;
+      }
+      const owner =
+        e.target instanceof Element ? e.target.closest(itemSelector) : null;
+      const items = getItems();
+      if (
+        owner instanceof HTMLElement &&
+        items.includes(owner) &&
+        !itemDisabled(owner)
+      ) {
+        moveTabStop(items, owner);
+      } else {
+        syncTabStops();
+      }
+    },
+    [
+      hasRovingTabIndex,
+      itemSelector,
+      getItems,
+      itemDisabled,
+      moveTabStop,
+      syncTabStops,
+    ],
+  );
 
   return {
     treeRef,

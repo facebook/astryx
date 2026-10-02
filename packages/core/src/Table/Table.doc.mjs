@@ -192,7 +192,7 @@ export const docs = {
     {
       name: 'plugins',
       type: 'Record<string, TablePlugin<T>>',
-      description: 'Named plugins that extend table behavior via the transform pipeline. Converted to an ordered array internally.',
+      description: 'Named plugins that extend table behavior via the transform pipeline. Converted to an ordered array internally. A handler you pass to Table for an event a plugin also handles on the <table> (the tree plugin\'s onKeyDown, say) runs first and composes with it; event.preventDefault() skips the plugin\'s. A plugin\'s role on the <table> wins over one you pass.',
     },
     {
       name: 'rowIndexStart',
