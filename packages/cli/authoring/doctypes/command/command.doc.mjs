@@ -151,7 +151,7 @@ export const doc = {
       name: 'subcommands',
       type: 'string[]',
       description:
-        'Subcommand names (for command groups like `theme` / `layout`).',
+        'Subcommand names (for command groups like `theme`).',
     },
     {
       name: 'examples',

@@ -4,7 +4,7 @@
  * @file Shared template discovery + IO.
  *
  * Owns everything the template leaves (list/show/skeleton/copy) AND other
- * commands (component, layout, search, init, discover, Doctor integration)
+ * commands (component, search, init, discover, Doctor integration)
  * share: template discovery across core/external/integration sources, the
  * template-spec loaders, and the cross-command helpers (stripTemplateAssetRefs,
  * findShowcase, findRelatedBlocks, extractComponents, listTemplates). The

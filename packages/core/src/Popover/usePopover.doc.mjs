@@ -94,6 +94,12 @@ export const docs = {
       default: 'true',
     },
     {
+      name: 'padding',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description:
+        'Inner padding of the painted surface on the spacing scale (0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10). Omit it and the hook paints no padding of its own; Popover passes 3 by default and 0 for a flush surface.',
+    },
+    {
       name: 'surfaceTarget',
       type: 'string',
       description:
@@ -213,6 +219,7 @@ export const docsDense = {
     role: 'content wrapper ARIA role; "none" for listbox/menu popups.',
     isModal: 'whether a dialog-role popover is modal (aria-modal).',
     hasSurface: 'apply default surface background/radius/shadow.',
+    padding: 'spacing-scale padding on the painted surface; omit for none.',
     surfaceTarget:
       'optional owned refinement target; document it and do not use deprecated popover-surface.',
   },
