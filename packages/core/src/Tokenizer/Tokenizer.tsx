@@ -719,11 +719,11 @@ export function Tokenizer<T extends SearchableItem>({
       if (!hasCreate || trimmed === '') {
         return [];
       }
+      const queryLower = trimmed.toLowerCase();
       const alreadyExists =
         selectedIds.has(trimmed) ||
-        results.some(
-          item => item.label.toLowerCase() === trimmed.toLowerCase(),
-        );
+        value.some(item => item.label.toLowerCase() === queryLower) ||
+        results.some(item => item.label.toLowerCase() === queryLower);
       if (alreadyExists) {
         return [];
       }
@@ -735,7 +735,7 @@ export function Tokenizer<T extends SearchableItem>({
         } as unknown as T,
       ];
     },
-    [hasCreate, selectedIds],
+    [hasCreate, selectedIds, value],
   );
 
   const emptySource: SearchSource<T> = useMemo(
@@ -769,7 +769,11 @@ export function Tokenizer<T extends SearchableItem>({
         item.id.startsWith(CREATABLE_ID_PREFIX)
       ) {
         const createdValue = item.id.slice(CREATABLE_ID_PREFIX.length);
-        if (selectedIds.has(createdValue)) {
+        const createdValueLower = createdValue.toLowerCase();
+        if (
+          selectedIds.has(createdValue) ||
+          value.some(v => v.label.toLowerCase() === createdValueLower)
+        ) {
           return;
         }
         const base = {id: createdValue, label: createdValue};
