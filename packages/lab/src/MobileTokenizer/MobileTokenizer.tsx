@@ -342,7 +342,7 @@ export function MobileTokenizer<T extends SearchableItem>({
         <BottomSheetSwitcher
           activeSheet={activeSheet}
           onActiveSheetChange={id => setActiveSheet(id as SheetId | null)}>
-          <BottomSheet sheetId="manage" label={label} height="hug">
+          <BottomSheet sheetId="manage" label={label} height="hug" padding={0}>
             <div {...stylex.props(styles.sheetBody)}>
               <div
                 {...stylex.props(styles.list)}
@@ -397,7 +397,7 @@ export function MobileTokenizer<T extends SearchableItem>({
             </div>
           </BottomSheet>
 
-          <BottomSheet sheetId="add" label="Add item" height="tall">
+          <BottomSheet sheetId="add" label="Add item" height="tall" padding={0}>
             <div {...stylex.props(styles.sheetBody)}>
               <div
                 {...stylex.props(styles.list, styles.addList)}

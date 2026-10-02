@@ -81,6 +81,7 @@ export const TextOnly: Story = {
     const [isOpen, setIsOpen] = useState(true);
     return (
       <BottomSheet
+        padding={0}
         {...standaloneArgs}
         isOpen={isOpen}
         onOpenChange={setIsOpen}

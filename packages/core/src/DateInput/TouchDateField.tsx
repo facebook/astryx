@@ -1269,7 +1269,9 @@ export function TouchDateField({
         label={t('@astryx.dateInput.dialogLabel')}
         // The picker is a fixed height by construction, so the sheet should be
         // exactly as tall as it is rather than claiming a viewport budget.
-        height="hug">
+        height="hug"
+        // sheetBody owns the inset, including the band under the grab handle.
+        padding={0}>
         <div {...stylex.props(styles.sheetBody)}>{surface}</div>
       </BottomSheet>
       {showsDisabledMessage &&
