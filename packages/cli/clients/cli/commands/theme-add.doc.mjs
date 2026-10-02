@@ -1,12 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/**
- * @file CommandDoc for `astryx theme add`. The terminal binding of the
- * `themeAdd()` function (referenced via `fn`); its args/flags map to that
- * function's params so a converter can build Commander config + --help from one
- * source of truth.
- * @position packages/cli/clients/cli/commands — command documentation
- */
+/** @file CommandDoc for `astryx theme add`. */
 
 /** @type {import('@astryxdesign/cli/authoring').CommandDoc} */
 export const doc = {
@@ -14,24 +8,12 @@ export const doc = {
   name: 'theme add',
   displayName: 'astryx theme add',
   namespace: 'cli/commands',
-  summary: 'Scaffold a theme into your project as editable source',
+  summary: 'Add an installed or built local theme to the app',
   description:
-    "Copies a bundled or installed integration theme's source into your project so you own it. " +
-    'Writes are staged then renamed, rolling back on failure. Running it with no slug, or with ' +
-    '--list, lists available themes; use --package when more than one owner provides the slug.',
+    "Records the theme in the app's generated theme module and imports its built module and stylesheets. The first added theme becomes the default. A same-slug local theme wins unless --package selects the package. It never copies source or edits app code.",
   fn: 'themeAdd',
-  args: [
-    {name: 'slug', param: 'slug', required: false},
-    {name: 'path', param: 'options.targetPath', required: false},
-  ],
+  args: [{name: 'slug', param: 'slug', required: true}],
   options: [
-    {
-      flag: '-f, --overwrite',
-      param: 'options.overwrite',
-      description:
-        'Replace existing files. Without it, existing files fail the command with ERR_FILE_EXISTS and nothing is written',
-    },
-    {flag: '--list', description: 'List available themes'},
     {
       flag: '--package <package>',
       param: 'options.package',
@@ -39,18 +21,18 @@ export const doc = {
     },
   ],
   examples: [
-    {label: 'Scaffold a theme', cli: 'astryx theme add matcha'},
+    {label: 'Add a theme', cli: 'astryx theme add ocean'},
     {
-      label: 'Pick the owner when two packages ship the same slug',
+      label: 'Select a package theme over a local theme',
       cli: 'astryx theme add ocean --package @acme/themes',
     },
   ],
   exitCodes: [
-    {code: 0, when: 'success'},
+    {code: 0, when: 'the module is regenerated'},
     {
       code: 1,
-      when: 'unknown or ambiguous theme, a path escape, a missing descriptor or source, or an existing file without --overwrite',
+      when: 'the theme, its built imports, its record, or the fixed module home is invalid',
     },
   ],
-  related: ['theme list', 'theme build'],
+  related: ['theme list', 'theme remove', 'theme use', 'theme eject'],
 };

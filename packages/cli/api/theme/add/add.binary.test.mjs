@@ -4,7 +4,7 @@ import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import {themeAdd} from './add.mjs';
+import {themeEject} from '../eject/eject.mjs';
 
 const HEADER = '// Copyright (c) Meta Platforms, Inc. and affiliates.\n\n';
 
@@ -53,17 +53,17 @@ afterEach(() => {
   fs.rmSync(tmpDir, {recursive: true, force: true});
 });
 
-describe('themeAdd copies every file of the theme', () => {
+describe('themeEject copies every file of the theme', () => {
   it('copies a binary file byte for byte', async () => {
-    const result = await themeAdd('ocean', {
+    const result = await themeEject('ocean', {
       cwd: tmpDir,
       package: '@acme/themes',
     });
 
     expect(result.data.files).toEqual([
       'oceanTheme.ts',
-      'fonts/ocean.woff2',
       'oceanTheme.doc.mjs',
+      'fonts/ocean.woff2',
     ]);
     const copied = fs.readFileSync(
       path.join(tmpDir, 'src', 'themes', 'ocean', 'fonts', 'ocean.woff2'),
@@ -72,7 +72,7 @@ describe('themeAdd copies every file of the theme', () => {
   });
 
   it('still strips the repo header from a text source', async () => {
-    await themeAdd('ocean', {cwd: tmpDir, package: '@acme/themes'});
+    await themeEject('ocean', {cwd: tmpDir, package: '@acme/themes'});
 
     expect(
       fs.readFileSync(

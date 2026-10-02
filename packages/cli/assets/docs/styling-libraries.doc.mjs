@@ -377,7 +377,7 @@ tokens: {
           lang: 'ts',
           label: 'Resolve tokens without React context',
           code: `import {resolveThemeTokens} from '@astryxdesign/core/theme/tokens';
-import {neutralTheme} from '@astryxdesign/theme-neutral';
+import {neutralTheme} from '@astryxdesign/theme-neutral/built';
 
 const tokens = resolveThemeTokens(neutralTheme, {mode: 'light'});
 

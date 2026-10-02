@@ -1,47 +1,160 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/**
- * @file Tests for resolveTheme's handling of a malformed `astryx.theme`.
- * The field is user/third-party-controlled config, so a non-string value must
- * degrade to null (like an unknown slug) rather than crash `astryx component`
- * with a raw TypeError from specifier.startsWith(...).
- */
+/** @file Tests for generated-record and legacy default-theme resolution. */
 
-import {describe, it, expect, afterEach} from 'vitest';
+import {afterEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {resolveTheme} from './resolve-theme.mjs';
+import {renderThemeModule} from '../../../foundation/config/theme-state.mjs';
 
+/** @type {string[]} */
 const dirs = [];
-function fixture(pkg) {
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'resolve-theme-'));
-  dirs.push(d);
-  fs.writeFileSync(path.join(d, 'package.json'), JSON.stringify(pkg));
-  return d;
+
+function fixture(pkg = {name: 'app'}) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'resolve-theme-'));
+  dirs.push(dir);
+  fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify(pkg));
+  return dir;
 }
+
+function installPackage(dir, owner = '@acme/themes', slug = 'ocean') {
+  const packageDir = path.join(dir, 'node_modules', ...owner.split('/'));
+  fs.mkdirSync(packageDir, {recursive: true});
+  fs.writeFileSync(
+    path.join(packageDir, 'package.json'),
+    JSON.stringify({
+      name: owner,
+      exports: {[`./themes/${slug}`]: `./${slug}.cjs`},
+    }),
+  );
+  const moduleFile = path.join(packageDir, `${slug}.cjs`);
+  fs.writeFileSync(
+    moduleFile,
+    `exports.${slug}Theme = {name: '${slug}', variants: {Button: ['primary']}, fonts: {body: 'Figtree'}};\n`,
+  );
+  return moduleFile;
+}
+
+function writePackageRecord(dir, owner = '@acme/themes', slug = 'ocean') {
+  const moduleFile = installPackage(dir, owner, slug);
+  fs.writeFileSync(
+    path.join(dir, 'astryx-themes.js'),
+    renderThemeModule(
+      [
+        {
+          slug,
+          owner,
+          exportName: `${slug}Theme`,
+          module: `${owner}/themes/${slug}`,
+          stylesheet: `${owner}/themes/${slug}.css`,
+          moduleFile,
+          stylesheetFile: path.join(path.dirname(moduleFile), `${slug}.css`),
+          source: 'package',
+        },
+      ],
+      slug,
+      false,
+    ),
+  );
+}
+
 afterEach(() => {
   delete process.env.ASTRYX_THEME;
-  while (dirs.length) fs.rmSync(dirs.pop(), {recursive: true, force: true});
+  while (dirs.length > 0) {
+    fs.rmSync(dirs.pop(), {recursive: true, force: true});
+  }
 });
 
-describe('resolveTheme — malformed astryx.theme degrades to null', () => {
-  it('numeric theme → null', () => {
-    expect(resolveTheme(fixture({astryx: {theme: 123}}))).toBeNull();
+describe('resolveTheme generated module record', () => {
+  it('loads the default built package theme without executing the app module', () => {
+    const dir = fixture();
+    writePackageRecord(dir);
+
+    expect(resolveTheme(dir)).toEqual({
+      name: 'ocean',
+      variants: {Button: ['primary']},
+      fonts: {body: 'Figtree'},
+    });
   });
-  it('array theme → null', () => {
-    expect(resolveTheme(fixture({astryx: {theme: ['a']}}))).toBeNull();
+
+  it('loads a built local default', () => {
+    const dir = fixture();
+    const sourceDir = path.join(dir, 'src', 'themes', 'ocean');
+    fs.mkdirSync(sourceDir, {recursive: true});
+    const moduleFile = path.join(sourceDir, 'ocean.js');
+    fs.writeFileSync(
+      moduleFile,
+      "exports.oceanTheme = {name: 'ocean', variants: {Card: ['quiet']}};\n",
+    );
+    fs.writeFileSync(
+      path.join(dir, 'src', 'astryx-themes.js'),
+      renderThemeModule(
+        [
+          {
+            slug: 'ocean',
+            owner: './src/themes',
+            exportName: 'oceanTheme',
+            module: '',
+            stylesheet: '',
+            moduleFile,
+            stylesheetFile: path.join(sourceDir, 'ocean.css'),
+            source: 'local',
+          },
+        ],
+        'ocean',
+        false,
+      ),
+    );
+
+    expect(resolveTheme(dir)).toMatchObject({
+      name: 'ocean',
+      variants: {Card: ['quiet']},
+    });
   });
-  it('object theme → null', () => {
-    expect(resolveTheme(fixture({astryx: {theme: {x: 1}}}))).toBeNull();
+
+  it('ignores both the environment and legacy field when a module exists', () => {
+    const dir = fixture({name: 'app', astryx: {theme: './legacy.cjs'}});
+    fs.writeFileSync(
+      path.join(dir, 'legacy.cjs'),
+      "module.exports = {name: 'legacy', variants: {}};\n",
+    );
+    process.env.ASTRYX_THEME = './legacy.cjs';
+    writePackageRecord(dir);
+
+    expect(resolveTheme(dir)?.name).toBe('ocean');
   });
-  it('boolean theme → null', () => {
-    expect(resolveTheme(fixture({astryx: {theme: true}}))).toBeNull();
+
+  it('does not read ASTRYX_THEME', () => {
+    const dir = fixture();
+    fs.writeFileSync(
+      path.join(dir, 'legacy.cjs'),
+      "module.exports = {name: 'legacy', variants: {}};\n",
+    );
+    process.env.ASTRYX_THEME = './legacy.cjs';
+    expect(resolveTheme(dir)).toBeNull();
   });
-  it('empty-string theme → null', () => {
-    expect(resolveTheme(fixture({astryx: {theme: ''}}))).toBeNull();
+});
+
+describe('resolveTheme legacy package field', () => {
+  it('keeps package.json astryx.theme behavior when no module exists', () => {
+    const dir = fixture({name: 'app', astryx: {theme: './legacy.cjs'}});
+    fs.writeFileSync(
+      path.join(dir, 'legacy.cjs'),
+      "module.exports = {name: 'legacy', variants: {Button: ['old']}};\n",
+    );
+    expect(resolveTheme(dir)).toMatchObject({
+      name: 'legacy',
+      variants: {Button: ['old']},
+    });
   });
-  it('no theme field → null', () => {
-    expect(resolveTheme(fixture({name: 'p'}))).toBeNull();
+
+  it.each([123, ['a'], {x: 1}, true, ''])('treats malformed value %j as absent', value => {
+    expect(resolveTheme(fixture({astryx: {theme: value}}))).toBeNull();
+  });
+
+  it('returns null with no theme field', () => {
+    expect(resolveTheme(fixture({name: 'app'}))).toBeNull();
   });
 });

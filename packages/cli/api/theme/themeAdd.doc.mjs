@@ -1,8 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/**
- * @file FunctionDoc for `themeAdd()` / `astryx theme add`.
- */
+/** @file FunctionDoc for `themeAdd()` / `astryx theme add`. */
 
 /** @type {import('@astryxdesign/cli/authoring').FunctionDoc} */
 export const doc = {
@@ -11,52 +9,38 @@ export const doc = {
   name: 'themeAdd',
   namespace: 'cli/api',
   displayName: 'themeAdd()',
-  summary: 'Copy an available theme into a project as editable source.',
+  summary: "Add a built theme to an app's generated theme module.",
   description:
-    "Resolves a theme from the CLI bundle or an installed integration and copies it into the consumer project: a bundled theme's source files, or an integration theme's complete directory with its descriptor. Writes are staged and existing files require explicit overwrite. Duplicate slugs fail closed until the caller selects an owner package.",
+    "Resolves an installed package theme or a built local theme, records its slug and owner, and regenerates the app's theme module with the built module and stylesheet imports. The first added theme becomes the default. A local theme wins when it shares a slug with a package theme unless options.package selects the package. This never copies source or edits app code.",
   importPath: '@astryxdesign/cli/api',
   signature:
-    'themeAdd(slug: string, options?: {targetPath?: string, overwrite?: boolean, cwd?: string, package?: string}): Promise<ThemeAddResponse>',
-  keywords: ['theme', 'add', 'integration', 'scaffold', 'copy', 'eject'],
+    'themeAdd(slug: string, options?: {cwd?: string, package?: string}): Promise<ThemeAppResponse>',
+  keywords: ['theme', 'add', 'app', 'import', 'default', 'local'],
   params: [
     {
       name: 'slug',
       type: 'string',
-      description:
-        'Slug of the available theme to copy (matched case-insensitively).',
+      description: 'Slug of the available theme to add.',
       required: true,
-    },
-    {
-      name: 'options.targetPath',
-      type: 'string',
-      description:
-        'Destination directory for copied files. Must resolve within cwd.',
-      default: "'src/themes/<slug>'",
-    },
-    {
-      name: 'options.overwrite',
-      type: 'boolean',
-      description: 'Replace existing files instead of refusing.',
-      default: 'false',
     },
     {
       name: 'options.cwd',
       type: 'string',
-      description:
-        'Project directory used for integration discovery and target paths.',
+      description: 'Project directory used for theme discovery and app state.',
       default: 'process.cwd()',
     },
     {
       name: 'options.package',
       type: 'string',
-      description: 'Exact owner package used to disambiguate a shared slug.',
+      description:
+        'Exact source-selector package to select instead of a same-slug local theme. Bundled themes retain @astryxdesign/cli while the app record names their import package.',
     },
   ],
   returns: [
     {
-      type: 'theme.add',
+      type: 'theme.app',
       description:
-        'Copy receipt with slug, displayName, maintained flag, owner package, outputDir, entry, exportName, and files.',
+        'Every added theme and its imports, the default slug, the generated module path, and the add change.',
     },
   ],
   throws: [
@@ -67,26 +51,21 @@ export const doc = {
     {code: 'ERR_AMBIGUOUS_THEME', when: 'more than one package owns the slug'},
     {
       code: 'ERR_THEME_INVALID',
-      when: 'the selected installed package has a blocking integration or theme-descriptor error',
-    },
-    {code: 'ERR_PATH_TRAVERSAL', when: 'the target path escapes cwd'},
-    {
-      code: 'ERR_NO_SOURCE',
-      when: 'the bundled theme descriptors cannot be read, or a theme file to copy is missing',
+      when: 'built imports, generated state, or a theme descriptor is invalid',
     },
     {
       code: 'ERR_FILE_EXISTS',
-      when: 'a destination exists and overwrite is not set',
+      when: 'the fixed module home contains a file the CLI did not generate',
     },
-    {code: 'ERR_WRITE_FAILED', when: 'writing files fails'},
+    {code: 'ERR_WRITE_FAILED', when: 'the generated module cannot be written'},
   ],
   examples: [
-    {label: 'Copy a bundled theme', code: "await themeAdd('butter');"},
+    {label: 'Add a theme', code: "await themeAdd('butter');"},
     {
-      label: 'Name the owner package and the destination',
-      code: "await themeAdd('butter', {package: '@astryxdesign/cli', targetPath: 'src/brand-theme'});",
+      label: 'Select a package theme over a local theme',
+      code: "await themeAdd('ocean', {package: '@acme/themes'});",
     },
   ],
   command: 'theme add',
-  related: ['themeListAvailable', 'themeTemplate', 'listThemes'],
+  related: ['themeRemove', 'themeUse', 'themeEject', 'themeListAvailable'],
 };

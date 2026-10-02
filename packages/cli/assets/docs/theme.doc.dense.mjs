@@ -16,7 +16,26 @@ export const docsDense = {
         null,
         {
           type: 'prose',
-          text: 'default import = runtime injection. /built import = pre-compiled CSS (pair with theme.css).',
+          text: '`theme add` generates the app module with built theme + CSS + optional font CSS. import themes/defaultThemeSlug once. use/remove regenerate it. extend built themes to customize; eject only to fork source.',
+        },
+      ],
+    },
+    {
+      section: 'Migrating Earlier Theme Copies',
+      title: 'Migrate Earlier Copies',
+      content: [
+        {
+          type: 'prose',
+          text: 'earlier `theme add` copies stay app source. upgrade writes only their missing unmaintained descriptor.',
+        },
+        null,
+        {
+          type: 'prose',
+          text: 'before upgrade, theme commands skip them; list and doctor name them. old copy scripts move to `theme eject`; app-use scripts keep `theme add`.',
+        },
+        {
+          type: 'prose',
+          text: '`ASTRYX_THEME` is ignored. use `theme use <slug>` with a generated module; without one, released package.json#astryx.theme still works.',
         },
       ],
     },
@@ -28,7 +47,7 @@ export const docsDense = {
         null,
         {
           type: 'prose',
-          text: 'published: neutral (start here), butter, chocolate, gothic (dark-only), matcha, stone, y2k. @astryxdesign/theme-{name} = source (runtime). @astryxdesign/theme-{name}/built = optimized (+ theme.css).',
+          text: 'published: neutral (start here), butter, chocolate, gothic (dark-only), matcha, stone, y2k. install @astryxdesign/theme-{name}, then `theme add <name>`. package exports: /built + theme.css + fonts.css.',
         },
       ],
     },
@@ -48,7 +67,7 @@ export const docsDense = {
       content: [
         {
           type: 'prose',
-          text: '`theme list` + `theme add <slug>` to start from a bundled or installed integration theme; use `--package` for a shared slug. Or defineTheme from scratch. only override tokens that differ.',
+          text: 'extend an imported built theme for ordinary customization. build + add local results. `theme eject` is only for an independent source fork. only override values that differ.',
         },
         null,
         {
@@ -182,7 +201,7 @@ export const docsDense = {
       content: [
         {
           type: 'prose',
-          text: 'runtime: useInsertionEffect injects styles client-side. built: static CSS on first paint. USE /built + theme.css FOR SSR.',
+          text: 'apps use built themes. generated module pairs each built object with production CSS and optional font CSS. package themes keep owner updates; local themes are app-owned. never hand-edit the module.',
         },
         null,
         null,

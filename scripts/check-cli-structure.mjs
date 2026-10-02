@@ -239,7 +239,9 @@ function importSources(filePath) {
     out.push(m[1]);
   }
   // Runtime dynamic imports — but not JSDoc type-only `{import('…')}`
-  for (const m of src.matchAll(/(?<!\{)\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g)) {
+  for (const m of src.matchAll(
+    /(?<!\{)\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+  )) {
     out.push(m[1]);
   }
   return out;
@@ -253,7 +255,8 @@ function importSources(filePath) {
 function banCategory(spec) {
   if (spec === 'node:fs' || spec === 'node:fs/promises') return 'fs';
   if (spec === 'node:child_process') return 'child_process';
-  if (spec === 'node:net' || spec === 'node:http' || spec === 'node:https') return 'net';
+  if (spec === 'node:net' || spec === 'node:http' || spec === 'node:https')
+    return 'net';
   if (spec.includes('foundation/config/project')) return 'project';
   if (spec.includes('foundation/discovery/')) return 'discovery';
   return null;
@@ -325,7 +328,10 @@ const INV22_KNOWN_GAPS = new Map([
 ]);
 const handlerFiles = walkScopedMjs(HANDLER_DIR);
 const inv22Count = checkEnvironmentImports(
-  'INV22', handlerFiles, HANDLER_DIR, INV22_KNOWN_GAPS,
+  'INV22',
+  handlerFiles,
+  HANDLER_DIR,
+  INV22_KNOWN_GAPS,
 );
 
 // --- INV21: API non-adapter modules ---
@@ -346,7 +352,11 @@ function allMjsFiles(dir) {
   for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) out.push(...allMjsFiles(full));
-    else if (entry.name.endsWith('.mjs') && !entry.name.endsWith('.test.mjs') && !entry.name.endsWith('.doc.mjs')) {
+    else if (
+      entry.name.endsWith('.mjs') &&
+      !entry.name.endsWith('.test.mjs') &&
+      !entry.name.endsWith('.doc.mjs')
+    ) {
       out.push(full);
     }
   }
@@ -407,7 +417,10 @@ function computeAdapterExemptions() {
       if (!importers || importers.size === 0) continue;
       let allExempt = true;
       for (const imp of importers) {
-        if (!exempt.has(imp)) { allExempt = false; break; }
+        if (!exempt.has(imp)) {
+          allExempt = false;
+          break;
+        }
       }
       if (allExempt) {
         exempt.add(uf);
@@ -440,7 +453,10 @@ const INV21_KNOWN_GAPS = new Map([
   ['component/list/list.mjs', new Set(['discovery'])],
   ['docs/detail/section/section.mjs', new Set(['discovery'])],
   ['doctor/doctor.mjs', new Set(['fs', 'project', 'discovery'])],
-  ['gap-report/gap-report.mjs', new Set(['child_process', 'discovery', 'project'])],
+  [
+    'gap-report/gap-report.mjs',
+    new Set(['child_process', 'discovery', 'project']),
+  ],
   ['hook/list/list.mjs', new Set(['discovery'])],
   ['init/run/run.mjs', new Set(['fs'])],
   ['integration/add-contribution.mjs', new Set(['discovery', 'fs'])],
@@ -461,7 +477,6 @@ const INV21_KNOWN_GAPS = new Map([
   ['template/show/show.mjs', new Set(['fs', 'discovery'])],
   ['template/skeleton/skeleton.mjs', new Set(['fs', 'discovery'])],
   ['template/template.mjs', new Set(['discovery'])],
-  ['theme/add/add.mjs', new Set(['fs'])],
   ['theme/build/build.mjs', new Set(['fs', 'discovery'])],
   ['theme/palette/generate/generate.mjs', new Set(['fs'])],
   ['theme/targets/targets.mjs', new Set(['discovery'])],
@@ -470,7 +485,10 @@ const INV21_KNOWN_GAPS = new Map([
   ['upgrade/run/run.mjs', new Set(['fs'])],
 ]);
 const inv21Count = checkEnvironmentImports(
-  'INV21', apiScopedFiles, API, INV21_KNOWN_GAPS,
+  'INV21',
+  apiScopedFiles,
+  API,
+  INV21_KNOWN_GAPS,
 );
 
 // ── 3b. INV23: text-layout patterns ─────────────────────────────────
@@ -489,9 +507,7 @@ const TEXT_LAYOUT_PATTERNS = [
 
 /** @type {Map<string, Set<string>>} known gaps recorded in AST-042;
  *  remove an entry when the file is fixed; do not add entries */
-const INV23_KNOWN_GAPS = new Map([
-  ['docs.mjs', new Set(['padEnd', 'repeat'])],
-]);
+const INV23_KNOWN_GAPS = new Map([['docs.mjs', new Set(['padEnd', 'repeat'])]]);
 
 let inv23Count = 0;
 for (const filePath of handlerFiles) {
@@ -538,7 +554,9 @@ const apiIndexSrc = fs.readFileSync(path.join(API, 'index.mjs'), 'utf8');
 
 /** Extract named function exports from api/index.mjs (skip type re-exports). */
 const apiExports = new Set();
-for (const m of apiIndexSrc.matchAll(/export\s*\{([^}]+)\}\s*from\s*['"]([^'"]+)['"]/g)) {
+for (const m of apiIndexSrc.matchAll(
+  /export\s*\{([^}]+)\}\s*from\s*['"]([^'"]+)['"]/g,
+)) {
   if (m[2].endsWith('.type.mjs')) continue;
   for (const part of m[1].split(',')) {
     const trimmed = part.trim();

@@ -21,19 +21,24 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'An app installs the integration as a dependency and applies your theme like any Astryx theme: wrap the app in `<Theme>`. The theme comes from the installed package — there is no copy step. Your theme only names its fonts; the app loads them ({@link generic:fonts-and-assets}).',
+          text: 'Install the integration, then run `theme add` with its slug and package. The command records the package owner and regenerates one app theme module that imports the built theme, production CSS, and optional font CSS. It never copies the package source.',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          code: 'npm install @acme/astryx-widgets\nnpx astryx theme add ocean --package @acme/astryx-widgets',
         },
         {
           type: 'code',
           lang: 'tsx',
           code: `import {Theme} from '@astryxdesign/core/theme';
-import {oceanTheme} from '@acme/astryx-widgets/themes/ocean';
+import {themes, defaultThemeSlug} from './astryx-themes';
 
-<Theme theme={oceanTheme}>{/* app */}</Theme>`,
+<Theme theme={themes[defaultThemeSlug]}>{/* app */}</Theme>`,
         },
         {
           type: 'prose',
-          text: 'The import specifier is whatever your integration exports for the theme. Applying a theme — `mode`, SSR, and the production build — works the same for every theme; see {@link generic:theme}.',
+          text: '`theme list` shows the available, added, and default themes. Use `theme use <slug>` to change the default, `theme remove <slug>` to stop importing one, and `theme eject <slug>` only when the app needs an independent source fork. Applying a theme — `mode`, SSR, and the production build — works the same for every theme; see {@link generic:theme}.',
         },
       ],
     },
@@ -43,7 +48,19 @@ import {oceanTheme} from '@acme/astryx-widgets/themes/ocean';
       content: [
         {
           type: 'prose',
-          text: 'To change a theme, an app does not copy it — it derives a new one with `extends`: import your theme and override only the tokens it changes. See {@link generic:define-the-theme}.',
+          text: 'For ordinary customization, do not copy the package source. Import the built theme and derive a new one with `defineTheme({extends: importedTheme, ...})`, overriding only the tokens the app changes. Use `theme eject` only when the app must own an independent source fork. See {@link generic:define-the-theme}.',
+        },
+        {
+          type: 'code',
+          lang: 'ts',
+          code: `import {defineTheme} from '@astryxdesign/core/theme';
+import {oceanTheme} from '@acme/astryx-widgets/themes/ocean';
+
+export const productTheme = defineTheme({
+  name: 'product',
+  extends: oceanTheme,
+  tokens: {'--color-accent': ['#0051a3', '#4aa3ff']},
+});`,
         },
       ],
     },

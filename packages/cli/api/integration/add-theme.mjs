@@ -2,8 +2,8 @@
 
 /**
  * @file `astryx integration add theme` — scaffold one strongly typed,
- * same-stem source/descriptor pair into an integration package and declare the
- * themes root on first use.
+ * same-stem source/descriptor pair into an integration package, declare the
+ * themes root on first use, and add the built module and stylesheet exports.
  */
 
 import * as fs from 'node:fs';
@@ -237,10 +237,24 @@ export async function integrationAddTheme(name, options = {}) {
       createOnly: true,
     },
   ];
+  const outputBase = projectPath(
+    path.relative(packageDir, path.join(themeDir, identity.slug)),
+  );
   let packageUpdate = packageJsonUpdate(
     packageFile,
     rootPath,
     path.basename(manifestFile),
+    [
+      {
+        subpath: `themes/${identity.slug}`,
+        target: `${outputBase}.js`,
+      },
+      {
+        subpath: `themes/${identity.slug}.css`,
+        target: `${outputBase}.css`,
+      },
+    ],
+    {createExports: true, sideEffects: ['**/*.css']},
   );
   // A CLI older than the one that reads typed theme descriptors rejects the
   // themes root and withholds the package's themes and docs. Declare the CLI

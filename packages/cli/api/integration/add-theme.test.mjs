@@ -70,10 +70,14 @@ describe('integrationAddTheme', () => {
     expect(
       fs.readFileSync(path.join(tmpDir, 'astryx.integration.mjs'), 'utf-8'),
     ).toContain("themes: './themes'");
-    expect(
-      JSON.parse(fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'))
-        .files,
-    ).toEqual(['dist', 'themes', 'astryx.integration.mjs']);
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'),
+    );
+    expect(pkg.files).toEqual(['dist', 'themes', 'astryx.integration.mjs']);
+    expect(pkg.exports).toMatchObject({
+      './themes/ocean': './themes/ocean/ocean.js',
+      './themes/ocean.css': './themes/ocean/ocean.css',
+    });
     expect((await validateLocalIntegration(tmpDir)).issues).toEqual([]);
   });
 
@@ -105,10 +109,16 @@ describe('integrationAddTheme', () => {
       'export default {};\n',
     );
     const result = await integrationAddTheme('ocean', {cwd: tmpDir});
-    expect(result.data.files).not.toContain('package.json');
+    expect(result.data.files).toContain('package.json');
     expect(
       JSON.parse(fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8')),
-    ).toEqual(pkg);
+    ).toMatchObject({
+      ...pkg,
+      exports: {
+        './themes/ocean': './themes/ocean/ocean.js',
+        './themes/ocean.css': './themes/ocean/ocean.css',
+      },
+    });
   });
 
   it('dry-runs the identical receipt without writing anything', async () => {
@@ -133,14 +143,17 @@ describe('integrationAddTheme', () => {
     ).toBe(beforeManifest);
   });
 
-  it('does not create package.json files when the package had no allowlist', async () => {
+  it('creates theme exports even when the package has no files allowlist', async () => {
     setup({includeFiles: false});
     await integrationAddTheme('ocean', {cwd: tmpDir});
     const pkg = JSON.parse(
       fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'),
     );
     expect(pkg).not.toHaveProperty('files');
-    expect(pkg).not.toHaveProperty('exports');
+    expect(pkg.exports).toEqual({
+      './themes/ocean': './themes/ocean/ocean.js',
+      './themes/ocean.css': './themes/ocean/ocean.css',
+    });
   });
 
   it('uses an author-declared custom root without rewriting it', async () => {
@@ -159,13 +172,35 @@ describe('integrationAddTheme', () => {
     expect(
       fs.existsSync(path.join(tmpDir, 'src/themes/ocean/oceanTheme.doc.mjs')),
     ).toBe(true);
+    expect(
+      JSON.parse(fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'))
+        .exports,
+    ).toEqual({
+      './themes/ocean': './src/themes/ocean/ocean.js',
+      './themes/ocean.css': './src/themes/ocean/ocean.css',
+    });
   });
 
-  it('keeps each theme to its own folder: a second theme touches no shared file', async () => {
+  it('keeps generated theme CSS side-effectful', async () => {
+    setup();
+    const packageFile = path.join(tmpDir, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(packageFile, 'utf-8'));
+    pkg.sideEffects = false;
+    fs.writeFileSync(packageFile, `${JSON.stringify(pkg, null, 2)}\n`);
+
+    await integrationAddTheme('ocean', {cwd: tmpDir});
+
+    expect(
+      JSON.parse(fs.readFileSync(packageFile, 'utf-8')).sideEffects,
+    ).toEqual(['**/*.css']);
+  });
+
+  it('adds one export pair per theme without touching the manifest again', async () => {
     setup({manifest: "export default {themes: './themes'};\n"});
     await integrationAddTheme('ocean', {cwd: tmpDir});
-    const shared = ['package.json', 'astryx.integration.mjs'].map(file =>
-      fs.readFileSync(path.join(tmpDir, file), 'utf-8'),
+    const manifestBefore = fs.readFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      'utf-8',
     );
 
     const result = await integrationAddTheme('reef', {cwd: tmpDir});
@@ -173,16 +208,24 @@ describe('integrationAddTheme', () => {
     expect(result.data.files).toEqual([
       'themes/reef/reefTheme.ts',
       'themes/reef/reefTheme.doc.mjs',
+      'package.json',
     ]);
     expect(fs.readdirSync(path.join(tmpDir, 'themes')).sort()).toEqual([
       'ocean',
       'reef',
     ]);
     expect(
-      ['package.json', 'astryx.integration.mjs'].map(file =>
-        fs.readFileSync(path.join(tmpDir, file), 'utf-8'),
-      ),
-    ).toEqual(shared);
+      fs.readFileSync(path.join(tmpDir, 'astryx.integration.mjs'), 'utf-8'),
+    ).toBe(manifestBefore);
+    expect(
+      JSON.parse(fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'))
+        .exports,
+    ).toEqual({
+      './themes/ocean': './themes/ocean/ocean.js',
+      './themes/ocean.css': './themes/ocean/ocean.css',
+      './themes/reef': './themes/reef/reef.js',
+      './themes/reef.css': './themes/reef/reef.css',
+    });
   });
 
   it('refuses an obsolete central catalog without changing its bytes', async () => {

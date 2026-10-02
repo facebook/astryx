@@ -33,13 +33,16 @@ import {fileURLToPath} from 'node:url';
 import {spawn} from 'node:child_process';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {emit, section, text, list, records, code} from '../formatters/index.mjs';
+import {emit, section, text, records, code} from '../formatters/index.mjs';
 import {logger} from '../../../api/logger.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {Project} from '../../../foundation/config/project.mjs';
 import {warnOnIntegrationIssues} from '../../../foundation/integrations/integration-warnings.mjs';
 import {themeAdd} from '../../../api/theme/add/add.mjs';
+import {themeRemove} from '../../../api/theme/remove/remove.mjs';
+import {themeUse} from '../../../api/theme/use/use.mjs';
+import {themeEject} from '../../../api/theme/eject/eject.mjs';
 import {themeTemplate} from '../../../api/theme/template/template.mjs';
 import {themeListAvailable} from '../../../api/theme/list/list.mjs';
 import {themeTargets} from '../../../api/theme/targets/targets.mjs';
@@ -47,17 +50,16 @@ import {
   serializePaletteCandidate,
   themePaletteGenerate,
 } from '../../../api/theme/palette/generate/generate.mjs';
-import {
-  themeBuild,
-  themeBuildFamily,
-  importSpecifier,
-} from '../../../api/theme/build/build.mjs';
+import {themeBuild, themeBuildFamily} from '../../../api/theme/build/build.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {NO_RESULT_SET, resultSet} from '../../../foundation/debug/index.mjs';
 import {doc as themeGroup} from './theme.doc.mjs';
 import {doc as themeBuildCommand} from './theme-build.doc.mjs';
 import {doc as themeListCommand} from './theme-list.doc.mjs';
 import {doc as themeAddCommand} from './theme-add.doc.mjs';
+import {doc as themeRemoveCommand} from './theme-remove.doc.mjs';
+import {doc as themeUseCommand} from './theme-use.doc.mjs';
+import {doc as themeEjectCommand} from './theme-eject.doc.mjs';
 import {doc as themeTemplateCommand} from './theme-template.doc.mjs';
 import {doc as themeTargetsCommand} from './theme-targets.doc.mjs';
 import {doc as themePaletteGroup} from './theme-palette.doc.mjs';
@@ -65,6 +67,9 @@ import {doc as themePaletteGenerateCommand} from './theme-palette-generate.doc.m
 import {doc as themeBuildFn} from '../../../api/theme/themeBuild.doc.mjs';
 import {doc as themeListFn} from '../../../api/theme/themeListAvailable.doc.mjs';
 import {doc as themeAddFn} from '../../../api/theme/themeAdd.doc.mjs';
+import {doc as themeRemoveFn} from '../../../api/theme/themeRemove.doc.mjs';
+import {doc as themeUseFn} from '../../../api/theme/themeUse.doc.mjs';
+import {doc as themeEjectFn} from '../../../api/theme/themeEject.doc.mjs';
 import {doc as themeTemplateFn} from '../../../api/theme/themeTemplate.doc.mjs';
 import {doc as themeTargetsFn} from '../../../api/theme/themeTargets.doc.mjs';
 import {doc as themePaletteGenerateFn} from '../../../api/theme/themePaletteGenerate.doc.mjs';
@@ -203,28 +208,133 @@ async function warnOnThemeIntegrationIssues(json) {
 }
 
 /**
- * Emit available themes as a bulleted list plus the `theme add` usage hint —
- * the human projection of a `theme.list` envelope. Each row names its owner so
- * duplicate slugs are distinguishable.
+ * Print every field in the `theme.list` entries. Duplicate slugs stay separate
+ * because each record names its owner.
  * @param {import('../../../api/theme/theme.type.mjs').ThemeListEntry[]} themes
+ * @param {import('../../../api/theme/theme.type.mjs').ThemeUnmigratedCopy[]} [unmigratedCopies]
  */
-function printThemeList(themes) {
+function printThemeList(themes, unmigratedCopies = []) {
+  const run = getCliInvocation();
   if (themes.length === 0) {
     emit(text('No themes are available in this project.'));
-    return;
-  }
-  const run = getCliInvocation();
-  emit(
-    section('Themes'),
-    list(
-      themes.map(t => {
-        const status = t.maintained ? 'maintained' : 'example';
-        const head = `${t.slug} (${status}, ${t.package})`;
-        return t.description ? [head, t.description] : head;
+  } else {
+    emit(
+      section('Themes', `${themes.length} available`),
+      records(themes, {
+        fields: [
+          'slug',
+          'displayName',
+          'description',
+          'maintained',
+          'package',
+          'source',
+          'added',
+          'default',
+        ],
+        layout: 'stacked',
+        format: {
+          maintained: (/** @type {boolean} */ value) =>
+            value ? 'yes' : 'no',
+          added: (/** @type {boolean} */ value) => (value ? 'yes' : 'no'),
+          default: (/** @type {boolean} */ value) => (value ? 'yes' : 'no'),
+        },
       }),
+      text(`Add one: ${run} theme add <slug> [--package <package>]`),
+    );
+  }
+  if (unmigratedCopies.length > 0) {
+    emit(
+      section(
+        'Unmigrated theme copies',
+        `${unmigratedCopies.length} not listed as themes`,
+      ),
+      records(unmigratedCopies, {
+        fields: ['slug', 'path', 'source', 'descriptor'],
+        layout: 'stacked',
+      }),
+      text(`Migrate them: ${unmigratedCopies[0].upgradeCommand}`),
+    );
+  }
+}
+
+/**
+ * Print every `theme.app` receipt field and the one-time app wiring on the first
+ * add.
+ * @param {import('../../../api/theme/theme.type.mjs').ThemeAppResponse} result
+ */
+function printThemeApp(result) {
+  const {themes, default: defaultSlug, modulePath, change} = result.data;
+  emit(
+    section('App themes', `${themes.length} added`),
+    records(themes, {
+      fields: [
+        'slug',
+        'owner',
+        'module',
+        'stylesheet',
+        'fontStylesheet',
+        'source',
+      ],
+      layout: 'stacked',
+    }),
+    records(
+      [
+        {
+          default: defaultSlug,
+          modulePath,
+          action: change.action,
+          slug: change.slug,
+          changed: change.changed,
+          firstAdd: change.firstAdd,
+        },
+      ],
+      {
+        fields: [
+          'default',
+          'modulePath',
+          'action',
+          'slug',
+          'changed',
+          'firstAdd',
+        ],
+        layout: 'stacked',
+      },
     ),
+  );
+  if (!change.firstAdd) return;
+  const stem = path.basename(modulePath, path.extname(modulePath));
+  emit(
+    text('Wire the generated module once in the app root:'),
+    code(
+      `import {themes, defaultThemeSlug} from './${stem}';\n\n` +
+        '<Theme theme={themes[defaultThemeSlug]}>\n  <App />\n</Theme>',
+    ),
+  );
+}
+
+/**
+ * Print every field in a source-fork receipt.
+ * @param {import('../../../api/theme/theme.type.mjs').ThemeEjectResponse} result
+ */
+function printThemeEject(result) {
+  const {data} = result;
+  emit(
+    section('Ejected theme'),
+    records([data], {
+      fields: [
+        'slug',
+        'displayName',
+        'maintained',
+        'package',
+        'outputDir',
+        'entry',
+        'exportName',
+        'files',
+      ],
+      layout: 'stacked',
+    }),
     text(
-      `Usage:\n  ${run} theme add <slug> [target-path]   Scaffold a theme file you own`,
+      `This is a local fork. Build it with ${getCliInvocation()} theme build ${path.join(data.outputDir, data.entry)}.`,
     ),
   );
 }
@@ -582,7 +692,7 @@ export function registerTheme(program) {
         return answered;
       }
 
-      printThemeList(result.data);
+      printThemeList(result.data, result.meta?.unmigratedCopies);
       return answered;
     },
   });
@@ -590,31 +700,17 @@ export function registerTheme(program) {
   defineCommand(theme, themeAddCommand, {
     fn: themeAddFn,
     action: async (
-      /** @type {string | undefined} */ slug,
-      /** @type {string | undefined} */ targetPath,
-      /** @type {{list?: boolean, overwrite?: boolean, package?: string}} */ options,
+      /** @type {string} */ slug,
+      /** @type {{package?: string}} */ options,
     ) => {
       const json = program.opts().json || false;
-
-      // The CLI is non-interactive: never prompt to confirm an overwrite.
-      // Existing files require an explicit --overwrite; otherwise themeAdd's
-      // ERR_FILE_EXISTS guard rejects the write. `--list` (or a bare `theme add`
-      // with no slug) is the list affordance — route it to the list leaf.
-      /** @type {import('../../../api/theme/theme.type.mjs').ThemeListResponse | import('../../../api/theme/theme.type.mjs').ThemeAddResponse} */
+      /** @type {import('../../../api/theme/theme.type.mjs').ThemeAppResponse} */
       let result;
       try {
-        result =
-          options.list || !slug
-            ? await themeListAvailable({
-                cwd: process.cwd(),
-                package: options.package,
-              })
-            : await themeAdd(slug, {
-                targetPath,
-                overwrite: options.overwrite,
-                cwd: process.cwd(),
-                package: options.package,
-              });
+        result = await themeAdd(slug, {
+          cwd: process.cwd(),
+          package: options.package,
+        });
       } catch (e) {
         const err =
           /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
@@ -623,53 +719,88 @@ export function registerTheme(program) {
           code: err.code,
         });
       }
-
       await warnOnThemeIntegrationIssues(json);
-      // `--list` (or no slug) browses all available themes; naming one copies it
-      // into the project, which is an effect with nothing to count.
-      const answered =
-        result.type === 'theme.list'
-          ? resultSet({count: result.data.length, resultKind: 'theme'})
-          : NO_RESULT_SET;
+      if (json) jsonOut(result);
+      else printThemeApp(result);
+      return NO_RESULT_SET;
+    },
+  });
 
-      if (json) {
-        jsonOut(result);
-        return answered;
+  defineCommand(theme, themeRemoveCommand, {
+    fn: themeRemoveFn,
+    action: async (/** @type {string} */ slug) => {
+      const json = program.opts().json || false;
+      /** @type {import('../../../api/theme/theme.type.mjs').ThemeAppResponse} */
+      let result;
+      try {
+        result = await themeRemove(slug, {cwd: process.cwd()});
+      } catch (e) {
+        const err =
+          /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
+        return cliError(err.message, {
+          suggestions: err.suggestions || [],
+          code: err.code,
+        });
       }
+      await warnOnThemeIntegrationIssues(json);
+      if (json) jsonOut(result);
+      else printThemeApp(result);
+      return NO_RESULT_SET;
+    },
+  });
 
-      if (result.type === 'theme.list') {
-        printThemeList(result.data);
-        return answered;
+  defineCommand(theme, themeUseCommand, {
+    fn: themeUseFn,
+    action: async (/** @type {string} */ slug) => {
+      const json = program.opts().json || false;
+      /** @type {import('../../../api/theme/theme.type.mjs').ThemeAppResponse} */
+      let result;
+      try {
+        result = await themeUse(slug, {cwd: process.cwd()});
+      } catch (e) {
+        const err =
+          /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
+        return cliError(err.message, {
+          suggestions: err.suggestions || [],
+          code: err.code,
+        });
       }
+      await warnOnThemeIntegrationIssues(json);
+      if (json) jsonOut(result);
+      else printThemeApp(result);
+      return NO_RESULT_SET;
+    },
+  });
 
-      // theme.add — print where files landed + how to use the theme.
-      const {
-        displayName,
-        outputDir,
-        entry,
-        exportName,
-        files,
-        package: owner,
-      } = result.data;
-      const entryModule = importSpecifier(
-        outputDir,
-        entry.replace(/\.tsx?$/, ''),
-      );
-      emit(
-        text(`[ok] Added ${displayName} theme from ${owner} to ${outputDir}/`),
-        list(files.map(f => `${outputDir}/${f}`)),
-        text(
-          'Use it in your app (import path is relative to a file in src/ — adjust if yours lives elsewhere):',
-        ),
-        code(
-          `import { ${exportName} } from '${entryModule}';\n\n` +
-            `<Theme theme={${exportName}}>\n  <App />\n</Theme>`,
-        ),
-        text(
-          `This is your copy of the ${displayName} theme — edit ${entry} to make it your own.`,
-        ),
-      );
-      return answered;
+  defineCommand(theme, themeEjectCommand, {
+    fn: themeEjectFn,
+    action: async (
+      /** @type {string} */ slug,
+      /** @type {string | undefined} */ targetPath,
+      /** @type {{overwrite?: boolean, package?: string}} */ options,
+    ) => {
+      const json = program.opts().json || false;
+      /** @type {import('../../../api/theme/theme.type.mjs').ThemeEjectResponse} */
+      let result;
+      try {
+        result = await themeEject(slug, {
+          targetPath,
+          overwrite: options.overwrite,
+          cwd: process.cwd(),
+          package: options.package,
+        });
+      } catch (e) {
+        const err =
+          /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
+        return cliError(err.message, {
+          suggestions: err.suggestions || [],
+          code: err.code,
+        });
+      }
+      await warnOnThemeIntegrationIssues(json);
+      if (json) jsonOut(result);
+      else printThemeEject(result);
+      return NO_RESULT_SET;
     },
   });
 

@@ -1,153 +1,170 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Theme resolution — resolve a theme from config or environment
+ * @file Resolve the app's default theme for component metadata.
  *
- * Resolution sources (in priority order):
- * 1. ASTRYX_THEME environment variable
- * 2. xds.theme field in package.json
- *
- * Resolution strategy for the value:
- * - Starts with `.` or `/` → file path relative to cwd
- * - Starts with `@` → npm package (require/import)
- * - Otherwise → try `@astryxdesign/theme-{name}`, then try as bare package name
- *
- * Returns the theme object's `variants` and `fonts` if available,
- * or null if no theme is configured or found.
+ * A generated theme module is the primary record. Its default slug and owner
+ * choose a built package or local module without executing the generated module
+ * itself. Only a project with no generated module falls back to the released
+ * `package.json#astryx.theme` behavior. Environment variables never select a
+ * theme.
  */
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {createRequire} from 'node:module';
-
-const _require = createRequire(import.meta.url);
+import {
+  isLocalThemeOwner,
+  readThemeState,
+} from '../../../foundation/config/theme-state.mjs';
+import {inspectPackageExport} from '../../../foundation/discovery/package-exports.mjs';
+import {findInstalledPackage} from '../../../foundation/fs/paths.mjs';
 
 /**
- * Try to load a module, returning the default export or the module itself.
- * Returns null if the module cannot be found.
+ * Try to load a module from the app's resolution context.
  * @param {string} specifier
  * @param {string} cwd
  * @returns {unknown}
  */
 function tryLoadModule(specifier, cwd) {
-  // For relative/absolute paths, resolve against cwd
-  if (specifier.startsWith('.') || specifier.startsWith('/')) {
-    const resolved = path.resolve(cwd, specifier);
-    try {
-      return _require(resolved);
-    } catch {
-      return null;
-    }
-  }
-
-  // For package specifiers, try require
+  const appRequire = createRequire(path.join(cwd, 'package.json'));
   try {
-    return _require(specifier);
+    const resolved =
+      specifier.startsWith('.') || specifier.startsWith('/')
+        ? path.resolve(cwd, specifier)
+        : specifier;
+    return appRequire(resolved);
   } catch {
     return null;
   }
 }
 
 /**
- * Extract theme data from a loaded module.
- * Handles both `module.default` and direct `module` patterns,
- * as well as named exports like `module.theme` or `module.{name}Theme`.
+ * Extract a theme object from a loaded module.
  * @param {any} mod
  * @returns {any}
  */
 function extractTheme(mod) {
   if (!mod || typeof mod !== 'object') return null;
-
-  // Check default export
   const obj = mod.default || mod;
-
-  // If it looks like a theme (has name + tokens or variants), use it directly
-  if (obj.name && (obj.tokens || obj.variants)) {
-    return obj;
-  }
-
-  // Check for a `theme` named export
+  if (obj.name && (obj.tokens || obj.variants)) return obj;
   if (mod.theme && typeof mod.theme === 'object' && mod.theme.name) {
     return mod.theme;
   }
-
-  // Check for any export ending in 'Theme'
   for (const key of Object.keys(mod)) {
     if (key.endsWith('Theme') && typeof mod[key] === 'object' && mod[key]?.name) {
       return mod[key];
     }
   }
-
   return null;
 }
 
 /**
- * Resolve the active Astryx theme from config and environment.
- *
- * @param {string} [cwd] - Working directory (defaults to process.cwd())
- * @returns {{ variants?: Record<string, string[]>, fonts?: Record<string, string>, name?: string } | null}
+ * Resolve a generated record's default slug to its built module file.
+ * @param {ReturnType<typeof readThemeState>} state
+ * @returns {string|null}
  */
-export function resolveTheme(cwd = process.cwd()) {
-  // 1. Determine theme specifier
-  let specifier = process.env.ASTRYX_THEME || null;
-
-  if (!specifier) {
-    // Read from package.json
-    const pkgPath = path.join(cwd, 'package.json');
-    if (fs.existsSync(pkgPath)) {
-      try {
-        const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-        specifier = pkg.astryx?.theme || null;
-      } catch {
-        // Ignore parse errors
-      }
-    }
+function defaultBuiltModule(state) {
+  const slug = state.defaultSlug;
+  if (slug == null || !Object.hasOwn(state.themes, slug)) return null;
+  const owner = state.themes[slug];
+  if (isLocalThemeOwner(owner)) {
+    return path.resolve(state.projectDir, owner, slug, `${slug}.js`);
   }
-
-  // `astryx.theme` (package.json) and ASTRYX_THEME are user/third-party
-  // controlled and may be any value. Anything that isn't a usable non-empty
-  // string means "no theme" — degrade to null rather than crashing on
-  // specifier.startsWith(...) below. (Subsumes the empty-string case.)
-  if (typeof specifier !== 'string' || specifier.length === 0) {
+  const packageDir = findInstalledPackage(state.projectDir, owner);
+  if (!packageDir) return null;
+  let pkg;
+  try {
+    pkg = JSON.parse(
+      fs.readFileSync(path.join(packageDir, 'package.json'), 'utf-8'),
+    );
+  } catch {
     return null;
   }
+  const perTheme = inspectPackageExport(
+    pkg,
+    packageDir,
+    `./themes/${slug}`,
+  );
+  if (perTheme.target != null) return perTheme.target;
+  const ownerCount = Object.values(state.themes).filter(
+    value => value === owner,
+  ).length;
+  if (ownerCount !== 1) return null;
+  return inspectPackageExport(pkg, packageDir, './built').target;
+}
 
-  // 2. Resolve the specifier to a module
-  let mod;
-
+/**
+ * Resolve the legacy `astryx.theme` value to a module.
+ * @param {string} specifier
+ * @param {string} cwd
+ */
+function loadLegacyTheme(specifier, cwd) {
   if (specifier.startsWith('.') || specifier.startsWith('/')) {
-    // File path
-    mod = tryLoadModule(specifier, cwd);
+    const mod = tryLoadModule(specifier, cwd);
     if (!mod) {
       console.warn(`⚠ theme: could not resolve file "${specifier}" from ${cwd}`);
-      return null;
     }
-  } else if (specifier.startsWith('@')) {
-    // Scoped package
-    mod = tryLoadModule(specifier, cwd);
-    if (!mod) {
-      console.warn(`⚠ theme: could not resolve package "${specifier}"`);
-      return null;
-    }
-  } else {
-    // Convention: try @astryxdesign/theme-{name} first, then bare package
-    mod = tryLoadModule(`@astryxdesign/theme-${specifier}`, cwd);
-    if (!mod) {
-      mod = tryLoadModule(specifier, cwd);
-    }
-    if (!mod) {
-      console.warn(`⚠ theme: could not resolve "${specifier}" (tried @astryxdesign/theme-${specifier} and ${specifier})`);
-      return null;
-    }
+    return mod;
   }
+  if (specifier.startsWith('@')) {
+    const mod = tryLoadModule(specifier, cwd);
+    if (!mod) console.warn(`⚠ theme: could not resolve package "${specifier}"`);
+    return mod;
+  }
+  const conventional = `@astryxdesign/theme-${specifier}`;
+  const mod =
+    tryLoadModule(conventional, cwd) ?? tryLoadModule(specifier, cwd);
+  if (!mod) {
+    console.warn(
+      `⚠ theme: could not resolve "${specifier}" (tried ${conventional} and ${specifier})`,
+    );
+  }
+  return mod;
+}
 
-  // 3. Extract theme data
-  const theme = extractTheme(mod);
-  if (!theme) {
-    console.warn(`⚠ theme: loaded "${specifier}" but could not find a theme object`);
+/**
+ * Resolve the active Astryx theme from the generated record or legacy package
+ * field.
+ * @param {string} [cwd]
+ * @returns {{variants?: Record<string, string[]>|null, fonts?: Record<string, string>|null, name?: string|null}|null}
+ */
+export function resolveTheme(cwd = process.cwd()) {
+  let state;
+  try {
+    state = readThemeState(cwd);
+  } catch (error) {
+    console.warn(
+      `⚠ theme: could not read the generated theme record: ${error instanceof Error ? error.message : String(error)}`,
+    );
     return null;
   }
 
+  let label;
+  let mod;
+  if (state.configured) {
+    label = state.defaultSlug;
+    const built = defaultBuiltModule(state);
+    if (!built) {
+      console.warn(
+        `⚠ theme: default theme "${state.defaultSlug ?? ''}" has no resolvable built module`,
+      );
+      return null;
+    }
+    mod = tryLoadModule(built, state.projectDir);
+  } else {
+    const specifier = state.legacyTheme;
+    if (typeof specifier !== 'string' || specifier.length === 0) return null;
+    label = specifier;
+    mod = loadLegacyTheme(specifier, state.projectDir);
+  }
+
+  if (!mod) return null;
+  const theme = extractTheme(mod);
+  if (!theme) {
+    console.warn(`⚠ theme: loaded "${label}" but could not find a theme object`);
+    return null;
+  }
   return {
     name: theme.name || null,
     variants: theme.variants || null,

@@ -88,7 +88,10 @@ export const RESPONSE_TYPES = {
   hook: ['hook.list', 'hook.detail', 'hook.detail.params'],
   'theme build': ['theme.build', 'theme.build.check', 'theme.build.batch'],
   'theme list': ['theme.list'],
-  'theme add': ['theme.list', 'theme.add'],
+  'theme add': ['theme.app'],
+  'theme remove': ['theme.app'],
+  'theme use': ['theme.app'],
+  'theme eject': ['theme.eject'],
   'theme template': ['theme.template'],
   'theme targets': ['theme.targets'],
   'theme palette generate': ['theme.palette.generate'],
@@ -152,9 +155,12 @@ const EXAMPLES = {
     'astryx theme build ./src/themes/ocean.ts --check',
   ],
   'theme list': ['astryx theme list --json'],
-  'theme add': [
-    'astryx theme add matcha',
-    'astryx theme add matcha ./src/themes/matcha',
+  'theme add': ['astryx theme add matcha'],
+  'theme remove': ['astryx theme remove matcha'],
+  'theme use': ['astryx theme use matcha'],
+  'theme eject': [
+    'astryx theme eject matcha',
+    'astryx theme eject matcha ./src/themes/my-matcha',
   ],
   'theme template': ['astryx theme template', 'astryx theme template --json'],
   'theme targets': [

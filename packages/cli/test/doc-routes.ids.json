@@ -964,15 +964,13 @@
     "VStackBasic",
     "VStackShowcase"
   ],
-  "@astryxdesign/cli/theme": [
-    "butter",
-    "chocolate",
-    "gothic",
-    "matcha",
-    "neutral",
-    "stone",
-    "y2k"
-  ],
+  "@astryxdesign/theme-butter/theme": ["butter"],
+  "@astryxdesign/theme-chocolate/theme": ["chocolate"],
+  "@astryxdesign/theme-gothic/theme": ["gothic"],
+  "@astryxdesign/theme-matcha/theme": ["matcha"],
+  "@astryxdesign/theme-neutral/theme": ["neutral"],
+  "@astryxdesign/theme-stone/theme": ["stone"],
+  "@astryxdesign/theme-y2k/theme": ["y2k"],
   "@astryxdesign/cli/command": [
     "blog",
     "build",
@@ -1003,11 +1001,14 @@
     "theme",
     "theme add",
     "theme build",
+    "theme eject",
     "theme list",
     "theme palette",
     "theme palette generate",
+    "theme remove",
     "theme targets",
     "theme template",
+    "theme use",
     "upgrade"
   ],
   "@astryxdesign/cli/function": [
@@ -1045,11 +1046,14 @@
     "template",
     "themeAdd",
     "themeBuild",
+    "themeEject",
     "themeList",
     "themeListAvailable",
     "themePaletteGenerate",
+    "themeRemove",
     "themeTargets",
     "themeTemplate",
+    "themeUse",
     "upgrade",
     "validateIntegration"
   ],

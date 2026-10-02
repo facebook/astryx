@@ -23,7 +23,7 @@ export const doc = {
     'integration provider identity and contribution issues, agent docs, the ' +
     'detected package manager, and the health of the docs the CLI reads (authoring ' +
     'and CLI docs, the docs tree, doc size), and returns a structured ' +
-    'report. It only reads (never installs, writes, or mutates), apart from ' +
+    'report. Theme checks run when the generated app module exists; without one, doctor reports that the CLI manages no themes and names theme add. Earlier descriptor-less copies are a non-failing upgrade warning. It only reads (never installs, writes, or mutates), apart from ' +
     "importing astryx.config, which runs that file's top-level code, so it is safe " +
     'as a CI gate and for agents to invoke.',
   importPath: '@astryxdesign/cli/api',

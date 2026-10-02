@@ -417,8 +417,26 @@ const CASES = [
   },
   {
     name: 'theme add',
-    args: ['theme', 'add', '--list'],
-    // Themes are rendered as list items, not records.
+    args: ['theme', 'add', 'does-not-exist'],
+    errorExpected: true,
+    skipFieldChecks: true,
+  },
+  {
+    name: 'theme remove',
+    args: ['theme', 'remove', 'does-not-exist'],
+    errorExpected: true,
+    skipFieldChecks: true,
+  },
+  {
+    name: 'theme use',
+    args: ['theme', 'use', 'does-not-exist'],
+    errorExpected: true,
+    skipFieldChecks: true,
+  },
+  {
+    name: 'theme eject',
+    args: ['theme', 'eject', 'does-not-exist'],
+    errorExpected: true,
     skipFieldChecks: true,
   },
   {

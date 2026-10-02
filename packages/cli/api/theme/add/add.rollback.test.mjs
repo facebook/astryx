@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * `theme add` writes a theme as one transaction: when a later file fails to
+ * `theme eject` writes a theme as one transaction: when a later file fails to
  * publish, every file it already replaced gets its previous bytes back and
  * every file it created is removed. Publishing is forced to fail by wrapping
  * the two calls that publish a staged file: `linkSync` for a new file and
@@ -61,13 +61,13 @@ vi.mock('node:fs', async importOriginal => {
 });
 
 const fs = await import('node:fs');
-const {themeAdd} = await import('./add.mjs');
+const {themeEject} = await import('../eject/eject.mjs');
 const {listThemes} = await import('../_adapter.mjs');
 
 let tmpDir;
 
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-themeadd-rollback-'));
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-themeeject-rollback-'));
   failures.publish = 0;
   failures.restore = false;
   failures.count = 0;
@@ -98,12 +98,12 @@ function strays() {
     .filter(name => name.includes('.tmp') || name.includes('.restore-'));
 }
 
-describe('themeAdd rolls back a partial write', () => {
+describe('themeEject rolls back a partial write', () => {
   it('removes every created file when the second publish fails', async () => {
     const files = stoneFiles();
     failures.publish = 2;
 
-    await expect(themeAdd('stone', {cwd: tmpDir})).rejects.toMatchObject({
+    await expect(themeEject('stone', {cwd: tmpDir})).rejects.toMatchObject({
       code: 'ERR_WRITE_FAILED',
     });
 
@@ -119,7 +119,7 @@ describe('themeAdd rolls back a partial write', () => {
     failures.publish = 2;
 
     await expect(
-      themeAdd('stone', {cwd: tmpDir, overwrite: true}),
+      themeEject('stone', {cwd: tmpDir, overwrite: true}),
     ).rejects.toMatchObject({code: 'ERR_WRITE_FAILED'});
 
     expect(fs.readFileSync(files[0]).equals(before)).toBe(true);
@@ -136,7 +136,7 @@ describe('themeAdd rolls back a partial write', () => {
 
     let error;
     try {
-      await themeAdd('stone', {cwd: tmpDir, overwrite: true});
+      await themeEject('stone', {cwd: tmpDir, overwrite: true});
     } catch (caught) {
       error = caught;
     }
@@ -149,9 +149,9 @@ describe('themeAdd rolls back a partial write', () => {
   it('writes every file when nothing fails', async () => {
     const files = stoneFiles();
 
-    const result = await themeAdd('stone', {cwd: tmpDir});
+    const result = await themeEject('stone', {cwd: tmpDir});
 
-    expect(result.type).toBe('theme.add');
+    expect(result.type).toBe('theme.eject');
     for (const file of files) expect(fs.existsSync(file)).toBe(true);
     expect(strays()).toEqual([]);
   });

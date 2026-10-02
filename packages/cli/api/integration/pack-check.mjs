@@ -37,6 +37,15 @@ import {
   discoverIntegrationDocs,
   loadTopicModule,
 } from '../../foundation/discovery/docs-discovery.mjs';
+import {discoverIntegrationThemes} from '../../foundation/discovery/theme-discovery.mjs';
+import {
+  ThemeImportError,
+  resolveThemeImports,
+} from '../../foundation/discovery/theme-imports.mjs';
+import {
+  normalizeThemeBuildForCompare,
+  themeBuild,
+} from '../theme/build/build.mjs';
 import {
   discoverIntegrationComponents,
   resolveIntegrationImportPath,
@@ -478,6 +487,184 @@ async function validatePackedComponentExports(integration, scratchBase) {
 }
 
 /**
+ * Prove local theme exports are fresh, prove the same exports resolve from the
+ * tarball, and reject lifecycle changes to source or built output bytes.
+ *
+ * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration} localIntegration
+ * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration} packedIntegration
+ * @param {string} scratchBase
+ * @returns {Promise<Issue[]>}
+ */
+async function validatePackedThemeExports(
+  localIntegration,
+  packedIntegration,
+  scratchBase,
+) {
+  /** @type {Issue[]} */
+  const issues = [];
+  let localThemes;
+  let packedThemes;
+  try {
+    localThemes = await discoverIntegrationThemes(localIntegration);
+  } catch (err) {
+    issues.push(
+      error(
+        'theme_discovery_failed',
+        `Local themes could not be validated: ${err instanceof Error ? err.message : String(err)}`,
+      ),
+    );
+    return issues;
+  }
+  try {
+    packedThemes = await discoverIntegrationThemes(packedIntegration);
+  } catch (err) {
+    issues.push(
+      error(
+        'packed_theme_discovery_failed',
+        `Packed themes could not be validated: ${err instanceof Error ? err.message : String(err)}`,
+      ),
+    );
+    return issues;
+  }
+  const packedBySlug = new Map(packedThemes.map(theme => [theme.slug, theme]));
+  for (const localTheme of localThemes) {
+    const packedTheme = packedBySlug.get(localTheme.slug);
+    if (!packedTheme) continue;
+    const source = path.join(localTheme.sourceDir, localTheme.entry);
+    const packedSource = path.join(packedTheme.sourceDir, packedTheme.entry);
+    const sourceRelative = path.relative(localIntegration.__packageDir, source);
+    let localImports;
+    let packedImports;
+    try {
+      localImports = resolveThemeImports(localTheme, {
+        cwd: localIntegration.__packageDir,
+        ownerThemeCount: localThemes.length,
+      });
+      packedImports = resolveThemeImports(packedTheme, {
+        cwd: scratchBase,
+        ownerThemeCount: packedThemes.length,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      issues.push(
+        error(
+          err instanceof ThemeImportError
+            ? 'theme_import_unresolvable'
+            : 'theme_import_invalid',
+          `${message} Run \`astryx theme build ${sourceRelative}\` before packing.`,
+        ),
+      );
+      continue;
+    }
+
+    if (!fs.readFileSync(source).equals(fs.readFileSync(packedSource))) {
+      issues.push(
+        error(
+          'packed_theme_source_changed',
+          `Theme "${localTheme.slug}" source changed during packing. Keep ${sourceRelative} unchanged in the tarball.`,
+        ),
+      );
+    }
+
+    const expectedDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), `astryx-theme-${localTheme.slug}-`),
+    );
+    const expectedCss = path.join(expectedDir, `${localTheme.slug}.css`);
+    try {
+      const receipt = await themeBuild(
+        source,
+        {out: expectedCss},
+        {cwd: localIntegration.__packageDir},
+      );
+      if (receipt == null || receipt.type !== 'theme.build') {
+        issues.push(
+          error(
+            'theme_build_failed',
+            `Theme "${localTheme.slug}" did not produce a complete build. Run \`astryx theme build ${sourceRelative}\` before packing.`,
+          ),
+        );
+        continue;
+      }
+      const expectedModule = path.join(
+        expectedDir,
+        `${localTheme.slug}.js`,
+      );
+      /** @type {Array<{kind: string, expected: string, local: string, packed: string, staleCode: string, packedCode: string}>} */
+      const buildOutputs = [
+        {
+          kind: 'module',
+          expected: expectedModule,
+          local: localImports.moduleFile,
+          packed: packedImports.moduleFile,
+          staleCode: 'theme_module_stale',
+          packedCode: 'packed_theme_module_changed',
+        },
+        {
+          kind: 'stylesheet',
+          expected: expectedCss,
+          local: localImports.stylesheetFile,
+          packed: packedImports.stylesheetFile,
+          staleCode: 'theme_stylesheet_stale',
+          packedCode: 'packed_theme_stylesheet_changed',
+        },
+      ];
+      for (const output of buildOutputs) {
+        const expected = normalizeThemeBuildForCompare(
+          fs.readFileSync(output.expected, 'utf-8'),
+        );
+        const local = normalizeThemeBuildForCompare(
+          fs.readFileSync(output.local, 'utf-8'),
+        );
+        const packed = normalizeThemeBuildForCompare(
+          fs.readFileSync(output.packed, 'utf-8'),
+        );
+        if (expected !== local) {
+          issues.push(
+            error(
+              output.staleCode,
+              `Theme "${localTheme.slug}" ${output.kind} does not match ${sourceRelative}. Run \`astryx theme build ${sourceRelative}\` before packing.`,
+            ),
+          );
+        }
+        if (local !== packed) {
+          issues.push(
+            error(
+              output.packedCode,
+              `Theme "${localTheme.slug}" ${output.kind} changed during packing. Keep the built output unchanged in the tarball.`,
+            ),
+          );
+        }
+      }
+      if (
+        localImports.fontStylesheet !== packedImports.fontStylesheet ||
+        (localImports.fontStylesheetFile &&
+          packedImports.fontStylesheetFile &&
+          !fs
+            .readFileSync(localImports.fontStylesheetFile)
+            .equals(fs.readFileSync(packedImports.fontStylesheetFile)))
+      ) {
+        issues.push(
+          error(
+            'packed_theme_font_stylesheet_changed',
+            `Theme "${localTheme.slug}" font stylesheet changed during packing. Keep its export and bytes unchanged in the tarball.`,
+          ),
+        );
+      }
+    } catch (err) {
+      issues.push(
+        error(
+          'theme_build_failed',
+          `Theme "${localTheme.slug}" could not be rebuilt from ${sourceRelative}: ${err instanceof Error ? err.message : String(err)} Run \`astryx theme build ${sourceRelative}\` before packing.`,
+        ),
+      );
+    } finally {
+      fs.rmSync(expectedDir, {recursive: true, force: true});
+    }
+  }
+  return issues;
+}
+
+/**
  * Verify that every packed template source can be imported through its exact
  * package subpath and still has a default export.
  *
@@ -861,6 +1048,11 @@ export async function integrationPackCheck(options = {}) {
 
     issues.push(...compareIdentities(localIdentities, packedIdentities));
     issues.push(
+      ...(await validatePackedThemeExports(
+        loaded,
+        packedResult.integration,
+        scratchBase,
+      )),
       ...(await validatePackedComponentExports(
         packedResult.integration,
         scratchBase,

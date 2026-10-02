@@ -40,6 +40,12 @@ function writePackage({
   if (themes) pkg.peerDependencies = {'@astryxdesign/cli': '>=0.7.0'};
   if (files !== undefined) pkg.files = files;
   if (scripts !== undefined) pkg.scripts = scripts;
+  if (themes) {
+    pkg.exports = {
+      './themes/ocean': './themes/ocean/ocean.js',
+      './themes/ocean.css': './themes/ocean/ocean.css',
+    };
+  }
   fs.writeFileSync(
     path.join(tmpDir, 'package.json'),
     JSON.stringify(pkg, null, 2) + '\n',
@@ -60,6 +66,21 @@ function writePackage({
 export default {type: 'theme', name: 'ocean', displayName: 'Ocean', description: 'Ocean theme.', maintained: true};
 `,
     );
+    const built = spawnSync(
+      process.execPath,
+      [
+        path.join(process.cwd(), 'packages/cli/clients/cli/bin/astryx.mjs'),
+        'theme',
+        'build',
+        'themes/ocean/oceanTheme.ts',
+      ],
+      {cwd: tmpDir, encoding: 'utf-8', timeout: 30_000},
+    );
+    if (built.status !== 0) {
+      throw new Error(
+        `Could not build the theme fixture: ${built.stderr || built.stdout}`,
+      );
+    }
   }
   if (components) {
     const root = path.join(tmpDir, 'components');
@@ -81,7 +102,10 @@ describe('integrationPackCheck', () => {
     const result = await integrationPackCheck({cwd: tmpDir});
 
     expect(result.type).toBe('integration.pack-check');
-    expect(result.data.packable).toBe(true);
+    expect(
+      result.data.packable,
+      JSON.stringify(result.data.issues, null, 2),
+    ).toBe(true);
     expect(result.data.name).toBe('@acme/widgets');
     expect(result.data.tarball).not.toBeNull();
     expect(result.data.inventory.manifest).toBe('astryx.integration.mjs');
@@ -117,6 +141,89 @@ describe('integrationPackCheck', () => {
     const old = await integrationPackCheck({cwd: tmpDir});
     expect(old.data.issues).toContainEqual(
       expect.objectContaining({code: 'themes_need_cli'}),
+    );
+  });
+
+  it('fails when a theme export is missing', async () => {
+    writePackage({files: ['astryx.integration.mjs', 'themes']});
+    const packageFile = path.join(tmpDir, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(packageFile, 'utf-8'));
+    delete pkg.exports['./themes/ocean.css'];
+    fs.writeFileSync(packageFile, `${JSON.stringify(pkg, null, 2)}\n`);
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    expect(result.data.packable).toBe(false);
+    expect(result.data.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'theme_import_unresolvable',
+        message: expect.stringContaining('stylesheet export'),
+      }),
+    );
+  });
+
+  it('fails when built theme module and stylesheet drift from source', async () => {
+    writePackage({files: ['astryx.integration.mjs', 'themes']});
+    fs.appendFileSync(
+      path.join(tmpDir, 'themes', 'ocean', 'ocean.js'),
+      '// stale module\n',
+    );
+    fs.appendFileSync(
+      path.join(tmpDir, 'themes', 'ocean', 'ocean.css'),
+      '/* stale stylesheet */\n',
+    );
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    expect(result.data.packable).toBe(false);
+    expect(result.data.issues).toContainEqual(
+      expect.objectContaining({code: 'theme_module_stale'}),
+    );
+    expect(result.data.issues).toContainEqual(
+      expect.objectContaining({code: 'theme_stylesheet_stale'}),
+    );
+  });
+
+  it('fails when a built module omits the descriptor export', async () => {
+    writePackage({files: ['astryx.integration.mjs', 'themes']});
+    const built = path.join(tmpDir, 'themes', 'ocean', 'ocean.js');
+    fs.writeFileSync(
+      built,
+      fs
+        .readFileSync(built, 'utf-8')
+        .replace('export const oceanTheme', 'export const otherTheme'),
+    );
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    expect(result.data.packable).toBe(false);
+    expect(result.data.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'theme_import_unresolvable',
+        message: expect.stringContaining('does not export "oceanTheme"'),
+      }),
+    );
+  });
+
+  it('fails when an exported font stylesheet is absent from the tarball', async () => {
+    writePackage({npmignore: '**/*.fonts.css\n'});
+    const packageFile = path.join(tmpDir, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(packageFile, 'utf-8'));
+    pkg.exports['./themes/ocean.fonts.css'] = './themes/ocean/ocean.fonts.css';
+    fs.writeFileSync(packageFile, `${JSON.stringify(pkg, null, 2)}\n`);
+    fs.writeFileSync(
+      path.join(tmpDir, 'themes', 'ocean', 'ocean.fonts.css'),
+      '@import url("https://example.com/fonts.css");\n',
+    );
+
+    const result = await integrationPackCheck({cwd: tmpDir});
+
+    expect(result.data.packable).toBe(false);
+    expect(result.data.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'theme_import_unresolvable',
+        message: expect.stringContaining('font stylesheet does not resolve'),
+      }),
     );
   });
 
@@ -340,7 +447,10 @@ describe('integrationPackCheck', () => {
   });
 
   it('fails a package that ships a namespace doc on a CLI range that cannot read it', async () => {
-    writePackage({manifest: "export default {docs: './docs'};\n", themes: false});
+    writePackage({
+      manifest: "export default {docs: './docs'};\n",
+      themes: false,
+    });
     fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
     fs.writeFileSync(
       path.join(tmpDir, 'docs', 'acme.doc.mjs'),
@@ -371,7 +481,10 @@ describe('integrationPackCheck', () => {
   }, 120_000);
 
   it('fails a package with only a placed guide on a CLI range that cannot read the docs tree, and passes flat topics', async () => {
-    writePackage({manifest: "export default {docs: './docs'};\n", themes: false});
+    writePackage({
+      manifest: "export default {docs: './docs'};\n",
+      themes: false,
+    });
     fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
     fs.writeFileSync(
       path.join(tmpDir, 'docs', 'notes.doc.mjs'),
@@ -396,7 +509,10 @@ describe('integrationPackCheck', () => {
   }, 120_000);
 
   it('fails a package whose doc section sets id on a CLI range that rejects the field', async () => {
-    writePackage({manifest: "export default {docs: './docs'};\n", themes: false});
+    writePackage({
+      manifest: "export default {docs: './docs'};\n",
+      themes: false,
+    });
     fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
     const topic = (/** @type {string} */ section) =>
       `export default {type: 'generic', name: 'notes', title: 'Notes', description: 'Notes.', sections: [${section}]};\n`;
@@ -407,7 +523,9 @@ describe('integrationPackCheck', () => {
       );
     fs.writeFileSync(
       file,
-      topic("{title: 'Take notes', content: [{type: 'prose', text: 'Notes.'}]}"),
+      topic(
+        "{title: 'Take notes', content: [{type: 'prose', text: 'Notes.'}]}",
+      ),
     );
     expect(await codes()).not.toContain('section_ids_need_cli');
     // A fresh file name: the module loader caches a path once it is imported.
@@ -427,7 +545,10 @@ describe('integrationPackCheck', () => {
   }, 120_000);
 
   it('fails a package with a template that sets replaces on a CLI range that rejects the field', async () => {
-    writePackage({manifest: "export default {templates: './templates'};\n", themes: false});
+    writePackage({
+      manifest: "export default {templates: './templates'};\n",
+      themes: false,
+    });
     fs.mkdirSync(path.join(tmpDir, 'templates'), {recursive: true});
     fs.writeFileSync(
       path.join(tmpDir, 'templates', 'acme-shell.doc.mjs'),

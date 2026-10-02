@@ -18,19 +18,19 @@ export const docs = {
         {
           type: 'code',
           lang: 'bash',
-          label: 'Install a theme package',
-          code: 'npm install @astryxdesign/theme-neutral',
+          label: 'Install and add a theme',
+          code: 'npm install @astryxdesign/theme-neutral\nastryx theme add neutral',
         },
         {
           type: 'code',
           lang: 'tsx',
-          label: 'Basic theme setup (runtime injection)',
+          label: 'Wire the generated module once',
           code: `import {Theme} from '@astryxdesign/core';
-import {neutralTheme} from '@astryxdesign/theme-neutral';
+import {themes, defaultThemeSlug} from './astryx-themes';
 
 function App() {
   return (
-    <Theme theme={neutralTheme}>
+    <Theme theme={themes[defaultThemeSlug]}>
       <YourApp />
     </Theme>
   );
@@ -39,26 +39,44 @@ function App() {
         {
           type: 'code',
           lang: 'tsx',
-          label: 'Optimized setup (pre-built CSS)',
-          code: `import {Theme} from '@astryxdesign/core';
-import {neutralTheme} from '@astryxdesign/theme-neutral/built';
-import '@astryxdesign/theme-neutral/theme.css';
+          label: 'Switch among added themes',
+          code: `import {useState} from 'react';
+import {themes, type ThemeSlug} from './astryx-themes';
 
-function App() {
-  return (
-    <Theme theme={neutralTheme}>
-      <YourApp />
-    </Theme>
-  );
-}`,
+const [slug, setSlug] = useState<ThemeSlug>('neutral');
+const app = <Theme theme={themes[slug]}><YourApp /></Theme>;`,
         },
         {
           type: 'prose',
-          text: 'Each theme ships as its own npm package. Install the one you want, then wrap your app in `<Theme>`. The same pattern works for every theme; just swap the package and import name.',
+          text: '`theme add` records an installed package theme and regenerates `src/astryx-themes.ts` or `.js` with its built module, production CSS, and optional font CSS. In a project without `src`, the module is at the project root. The first added theme becomes the default. `theme use <slug>` changes that default, and `theme remove <slug>` removes a non-default theme.',
         },
         {
           type: 'prose',
-          text: 'The default import uses runtime style injection, which works everywhere with no build step. The `/built` import skips injection and relies on the pre-compiled CSS file for better performance and SSR support.',
+          text: 'Customize a package theme with `defineTheme({extends: importedTheme, ...})`, then build and add that local theme. Use `theme eject` only when you want an independent source fork that no longer receives the package owner’s updates.',
+        },
+      ],
+    },
+    {
+      title: 'Migrating Earlier Theme Copies',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'A theme copied by the released `theme add` stays app source. The upgrade does not move, delete, or rewrite it. It only writes the missing same-stem descriptor with `maintained: false`, so the copy becomes a local theme.',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'Add descriptors to earlier copies',
+          code: 'astryx upgrade --from 0.6.4 --path . --apply',
+        },
+        {
+          type: 'prose',
+          text: 'Before the upgrade runs, theme commands skip a descriptor-less copy in `src/themes`. `theme list` and doctor name it as unmigrated and show the upgrade command. A script that meant to copy source now runs `theme eject` with the same arguments. A script that meant to make the app use a theme keeps `theme add`.',
+        },
+        {
+          type: 'prose',
+          text: '`ASTRYX_THEME` is no longer read. In a project with a generated theme module, add the theme and run `theme use <slug>` to choose the default. In a project with no generated module, the released `package.json#astryx.theme` field keeps its existing meaning.',
         },
       ],
     },
@@ -68,52 +86,52 @@ function App() {
       content: [
         {
           type: 'prose',
-          text: 'Install the theme package you want with `npm install @astryxdesign/theme-{name}`, then import its theme object as shown below.',
+          text: 'Install the theme package you want with `npm install @astryxdesign/theme-{name}`, then add its slug. The CLI imports the package’s built outputs for you.',
         },
         {
           type: 'table',
-          headers: ['Theme', 'Import', 'Description'],
+          headers: ['Theme', 'Add command', 'Description'],
           rows: [
             [
               'Neutral',
-              "import {neutralTheme} from '@astryxdesign/theme-neutral'",
+              'astryx theme add neutral',
               'Muted, minimal aesthetic with Figtree typography. A good starting point.',
             ],
             [
               'Butter',
-              "import {butterTheme} from '@astryxdesign/theme-butter'",
+              'astryx theme add butter',
               'Golden, buttery surfaces with blue accents; Sarina + Outfit type.',
             ],
             [
               'Chocolate',
-              "import {chocolateTheme} from '@astryxdesign/theme-chocolate'",
+              'astryx theme add chocolate',
               'Warm brown tones and cozy beige; Fraunces + Albert Sans type.',
             ],
             [
               'Gothic',
-              "import {gothicTheme} from '@astryxdesign/theme-gothic'",
+              'astryx theme add gothic',
               'Dark-only atmospheric theme; deep blue-gray surfaces, distressed display type.',
             ],
             [
               'Matcha',
-              "import {matchaTheme} from '@astryxdesign/theme-matcha'",
+              'astryx theme add matcha',
               'Earthy greens; DM Sans + Playwrite US Trad type.',
             ],
             [
               'Stone',
-              "import {stoneTheme} from '@astryxdesign/theme-stone'",
+              'astryx theme add stone',
               'Warm stone and slate tones; Montserrat + Figtree type.',
             ],
             [
               'Y2K',
-              "import {y2kTheme} from '@astryxdesign/theme-y2k'",
+              'astryx theme add y2k',
               'Playful Y2K pop; periwinkle body, holographic accents, Poppins + `Crimson Text`.',
             ],
           ],
         },
         {
           type: 'prose',
-          text: 'All theme packages export from two subpaths:\n- `@astryxdesign/theme-{name}`: source theme (runtime injection)\n- `@astryxdesign/theme-{name}/built`: pre-built theme (pair with `theme.css`)',
+          text: 'Every first-party package exports its built theme at `@astryxdesign/theme-{name}/built`, production CSS at `/theme.css`, and font loading CSS at `/fonts.css`. `theme add` writes those imports into the generated app module.',
         },
       ],
     },
@@ -134,17 +152,17 @@ function App() {
       content: [
         {
           type: 'prose',
-          text: 'Install the integration as a direct dependency and Astryx discovers its source themes and guide topics without an `astryx.config` file. Install Core too because the copied source imports `defineTheme` from `@astryxdesign/core/theme`.',
+          text: 'Install the integration as a direct dependency. Astryx discovers its themes and guides without an `astryx.config` entry. A theme can be added only when the installed package exports its built module and production stylesheet.',
         },
         {
           type: 'code',
           lang: 'bash',
-          label: 'Install, inspect, copy, and build',
-          code: 'npm install @astryxdesign/core @acme/brand-integration\nastryx theme list --package @acme/brand-integration\nastryx docs brand-theme\nastryx theme add ocean --package @acme/brand-integration\nastryx theme build src/themes/ocean/oceanTheme.ts',
+          label: 'Install, inspect, and add',
+          code: 'npm install @astryxdesign/core @acme/brand-integration\nastryx theme list --package @acme/brand-integration\nastryx docs brand-theme\nastryx theme add ocean --package @acme/brand-integration',
         },
         {
           type: 'prose',
-          text: 'The copy is editable project source, not a reference back into node_modules. The complete theme directory comes with it, including its typed `.doc.mjs`, nested token and palette modules, and receipts. A second add refuses to overwrite those files unless you pass `--overwrite`.',
+          text: '`theme add` keeps the owner package in the app record and imports its built module, stylesheet, and optional font stylesheet. Package updates continue to reach the app. Run `theme eject ocean --package @acme/brand-integration` only to copy the source and descriptor into `src/themes/ocean` as an independent local fork.',
         },
       ],
     },
@@ -155,13 +173,13 @@ function App() {
       content: [
         {
           type: 'prose',
-          text: 'Start from a bundled theme or one contributed by an installed integration, or write one from scratch with defineTheme. `theme list` names each owner; when packages share a slug, pass `--package`. Only override tokens that differ from defaults; omitted tokens use the design system defaults.',
+          text: 'Use an installed built theme as the base for ordinary customization. Import it into your source and pass it as `extends` to `defineTheme({extends: importedTheme, ...})`. Build the result, then add the local slug. Only eject when you need to own and maintain a full source fork.',
         },
         {
           type: 'code',
           lang: 'bash',
-          label: 'Browse, then copy a theme in as editable source',
-          code: 'astryx theme list\nastryx theme add stone\nastryx theme add ocean --package @acme/themes',
+          label: 'Add to use, eject to fork',
+          code: 'astryx theme list\nastryx theme add stone\nastryx theme eject stone\nastryx theme build src/themes/stone/stoneTheme.ts\nastryx theme add stone',
         },
         {
           type: 'prose',
@@ -245,7 +263,7 @@ const myTheme = defineTheme({
           lang: 'tsx',
           label: 'Extending the neutral theme',
           code: `import {defineTheme} from '@astryxdesign/core/theme';
-import {neutralTheme} from '@astryxdesign/theme-neutral';
+import {neutralTheme} from '@astryxdesign/theme-neutral/built';
 import {myIcons} from './icons';
 
 const brandTheme = defineTheme({
@@ -627,41 +645,31 @@ esbuild src/themes/icons.tsx --bundle --format=esm --outfile=dist/icons.mjs \\
       content: [
         {
           type: 'prose',
-          text: 'Themes work in two modes:',
+          text: 'Apps use built themes. The generated app module imports each theme object with its production CSS and optional font CSS, so every added theme is ready on first paint. Source-theme imports remain an authoring input for `theme build`, not the app wiring model.',
         },
         {
           type: 'table',
-          headers: ['', 'Runtime (source)', 'Built'],
+          headers: ['App concern', 'Package theme', 'Local theme'],
           rows: [
             [
-              'Import (published theme)',
-              '@astryxdesign/theme-{name}',
-              '@astryxdesign/theme-{name}/built + theme.css',
+              'Add',
+              '`astryx theme add <slug> [--package <package>]`',
+              '`astryx theme build <source>` then `astryx theme add <slug>`',
             ],
             [
-              'Import (custom theme)',
-              'defineTheme() directly',
-              'Built .js + .css from `astryx theme build`',
+              'Module import',
+              'Package `./built` or `./themes/<slug>` export',
+              'Built `<slug>.js` beside the source',
             ],
             [
-              'How it works',
-              'useInsertionEffect injects <style> at hydration',
-              'Pre-compiled .css file loaded with the page',
+              'Styles',
+              '`./theme.css` or `./themes/<slug>.css`, plus optional font CSS',
+              'Built `<slug>.css`, plus optional `<slug>.fonts.css`',
             ],
             [
-              'Component overrides',
-              'Injected client-only',
-              'In static CSS: present during SSR',
-            ],
-            [
-              'SSR safe',
-              'Tokens yes, component overrides flash on hydration',
-              'Fully SSR safe: no flash',
-            ],
-            [
-              'Best for',
-              'Dev, prototyping, client-only SPAs',
-              'Production, SSR apps (Next.js, Remix)',
+              'Updates',
+              'Stay owned by the installed package',
+              'Stay owned and rebuilt by the app',
             ],
           ],
         },
@@ -669,17 +677,18 @@ esbuild src/themes/icons.tsx --bundle --format=esm --outfile=dist/icons.mjs \\
           type: 'list',
           style: 'do',
           items: [
-            'Use the /built subpath + theme.css for production SSR apps.',
-            'Use runtime themes during development for fast iteration.',
-            'Run `astryx theme build` for custom themes to get the built artifacts.',
+            'Import `themes` and `defaultThemeSlug` from the generated module once.',
+            'Extend an imported built theme for ordinary customization.',
+            'Use `theme eject` only when you want an independent source fork.',
           ],
         },
         {
           type: 'list',
           style: 'dont',
           items: [
-            'Use runtime themes in production SSR apps; component overrides will flash on hydration.',
-            "Import /built without the CSS file; component overrides won't apply.",
+            'Import package theme source into app runtime code.',
+            "Import a built theme without its stylesheet; component overrides won't apply.",
+            'Hand-edit the generated theme module; add, remove, and use regenerate it.',
           ],
         },
       ],
@@ -770,7 +779,7 @@ const pandaOrEmotionTheme = {
           lang: 'ts',
           label: 'Resolve token values without a hook',
           code: `import {resolveThemeTokens} from '@astryxdesign/core/theme/tokens';
-import {neutralTheme} from '@astryxdesign/theme-neutral';
+import {neutralTheme} from '@astryxdesign/theme-neutral/built';
 
 const lightTokens = resolveThemeTokens(neutralTheme, {mode: 'light'});
 const chartTheme = {

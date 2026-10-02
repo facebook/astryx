@@ -73,11 +73,13 @@ describe('themeBuild() — receipt', () => {
 
     // Output paths are cwd-relative and derive from the theme name…
     expect(result?.data.outputs.css).toBe('apitheme.css');
+    expect(result?.data.outputs.cssDts).toBe('apitheme.css.d.ts');
     expect(result?.data.outputs.js).toBe('apitheme.js');
     expect(result?.data.outputs.dts).toBe('apitheme.d.ts');
     // …and every declared output actually exists on disk.
     for (const rel of [
       result?.data.outputs.css,
+      result?.data.outputs.cssDts,
       result?.data.outputs.js,
       result?.data.outputs.dts,
     ]) {
@@ -85,6 +87,9 @@ describe('themeBuild() — receipt', () => {
         fs.existsSync(path.join(tmpDir, /** @type {string} */ (rel))),
       ).toBe(true);
     }
+    expect(
+      fs.readFileSync(path.join(tmpDir, 'apitheme.css.d.ts'), 'utf8'),
+    ).toContain('export {};');
   });
 
   it('emits local tokens and preserves enrollment metadata in the built module', async () => {

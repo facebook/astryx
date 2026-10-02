@@ -2,7 +2,7 @@
 
 /**
  * @file Colocated types for the `theme` command — the source of truth for its
- * build/list/add JSON response shapes. The leaves' `@returns` reference these
+ * app-management JSON response shapes. The leaves' `@returns` reference these
  * directly (functions own their types); the public `@astryxdesign/cli/api`
  * surface re-exports them via types/theme.d.ts, so consumers see the same names.
  *
@@ -12,13 +12,14 @@
  * astryx --json theme build <file> --check    -> theme.build.check
  * astryx --json theme build <a> <b> …         -> theme.build.batch
  * astryx --json theme list                    -> theme.list
- * astryx --json theme add <slug>              -> theme.add
+ * astryx --json theme add/remove/use <slug>   -> theme.app
+ * astryx --json theme eject <slug>            -> theme.eject
  * astryx --json theme template                -> theme.template
  * astryx --json theme targets [filter]        -> theme.targets
  * astryx --json theme palette generate <file> -> theme.palette.generate
  * (file not found / parse error)              -> CLIError
  *
- * @position api — colocated typedefs for api/theme/{theme,build,add,list,template,targets,_adapter}
+ * @position api — colocated typedefs for api/theme/{theme,build,add,remove,use,eject,list,template,targets,_adapter}
  */
 
 /**
@@ -28,7 +29,7 @@
  * `warnings` are defects the theme author should fix. `notices` are advisories
  * about a correct theme — most of them cannot be fixed in a theme file at all,
  * so folding them into `warnings` makes a clean build look dirty.
- * @property {{name: string, tokenCount: number, componentCount: number, sizeKB: number, outputs: {css: string, js: string, dts: string, variantsDts?: string}, warnings: string[], notices: string[]}} data
+ * @property {{name: string, tokenCount: number, componentCount: number, sizeKB: number, outputs: {css: string, cssDts: string, js: string, dts: string, variantsDts?: string}, warnings: string[], notices: string[]}} data
  */
 
 /**
@@ -55,7 +56,20 @@
  * @property {string} displayName
  * @property {string} description
  * @property {boolean} maintained
- * @property {string} [package] owner package for project-aware listings
+ * @property {string} [package] source-selector package or local theme root; bundled themes retain @astryxdesign/cli
+ * @property {boolean} [added] whether the app module records this theme
+ * @property {boolean} [default] whether this is the app's default theme
+ * @property {'bundled'|'package'|'local'} [source] where the theme source comes from
+ */
+
+/**
+ * A source copy made by the released `theme add` before local descriptors.
+ * @typedef {object} ThemeUnmigratedCopy
+ * @property {string} slug
+ * @property {string} path project-relative source directory
+ * @property {string} source project-relative theme source
+ * @property {string} descriptor project-relative descriptor the upgrade writes
+ * @property {string} upgradeCommand command that migrates the copy
  */
 
 /**
@@ -63,12 +77,34 @@
  * @typedef {object} ThemeListResponse
  * @property {'theme.list'} type
  * @property {ThemeListEntry[]} data
+ * @property {{unmigratedCopies: ThemeUnmigratedCopy[]}} [meta] descriptor-less released copies that are not listed as themes
  */
 
 /**
- * astryx --json theme add <slug>
- * @typedef {object} ThemeAddResponse
- * @property {'theme.add'} type
+ * One built theme imported by the generated app module.
+ * @typedef {object} ThemeAppEntry
+ * @property {string} slug
+ * @property {string} owner package name or local themes root
+ * @property {string} module built theme module import
+ * @property {string} stylesheet production stylesheet import
+ * @property {string} [fontStylesheet] package-owned font stylesheet import
+ * @property {'bundled'|'package'|'local'} source
+ */
+
+/**
+ * astryx --json theme add/remove/use <slug>
+ * @typedef {object} ThemeAppResponse
+ * @property {'theme.app'} type
+ * @property {{themes: ThemeAppEntry[], default: string, modulePath: string, change: {action: 'add'|'remove'|'use', slug: string, changed: boolean, firstAdd: boolean}}} data
+ */
+
+/**
+ * astryx --json theme eject <slug> [path]
+ * @typedef {object} ThemeEjectResponse
+ * @property {'theme.eject'} type
+ * `maintained` describes the selected source theme. The ejected descriptor is
+ * always written with `maintained: false` because the app owns the fork.
+ * `package` is the source selector; bundled themes retain `@astryxdesign/cli`.
  * @property {{slug: string, displayName: string, maintained: boolean, package: string, outputDir: string, entry: string, exportName: string, files: string[]}} data
  */
 

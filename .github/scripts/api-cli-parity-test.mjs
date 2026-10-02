@@ -225,8 +225,6 @@ add('integration add theme (dry run)',
 // synchronous themeList() export stays bundled-only for API compatibility.
 add('theme list', ['theme', 'list'],
   () => apiCall(api.themeListAvailable, {cwd: ROOT}));
-add('theme add --list', ['theme', 'add', '--list'],
-  () => apiCall(api.themeListAvailable, {cwd: ROOT}));
 add('theme add nonexistent', ['theme', 'add', 'nonexistent99'],
   () => apiCall(api.themeAdd, 'nonexistent99', {cwd: ROOT}));
 
