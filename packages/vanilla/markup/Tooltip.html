@@ -1,0 +1,18 @@
+<!-- docs: Explain a control with short text that appears on hover or focus. -->
+<!-- variant: icon button -->
+<span class="ax-tooltip" data-ax-tooltip data-ax-tooltip-delay="200">
+  <button
+    class="ax-button ax-button--secondary"
+    type="button"
+    data-ax-tooltip-trigger
+    aria-label="Project information">
+    ?
+  </button>
+  <span
+    class="ax-tooltip__surface"
+    role="tooltip"
+    data-ax-tooltip-content
+    data-ax-placement="above"
+    >More information about this project</span
+  >
+</span>

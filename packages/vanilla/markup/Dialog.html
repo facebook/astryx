@@ -1,0 +1,45 @@
+<!-- docs: Present a focused task in a native modal dialog with managed focus return. -->
+<!-- variant: confirmation -->
+<button
+  class="ax-button ax-button--primary"
+  type="button"
+  data-ax-dialog-open="confirm-dialog">
+  Open dialog
+</button>
+<dialog
+  class="ax-dialog"
+  id="confirm-dialog"
+  data-ax-dialog
+  aria-labelledby="confirm-dialog-title">
+  <div class="ax-dialog__surface">
+    <header class="ax-dialog__header">
+      <h2 class="ax-dialog__title" id="confirm-dialog-title">
+        Archive project?
+      </h2>
+      <button
+        class="ax-button ax-button--ghost"
+        type="button"
+        data-ax-dialog-close
+        aria-label="Close dialog">
+        ×
+      </button>
+    </header>
+    <div class="ax-dialog__body">
+      <p class="ax-text">You can restore this project later.</p>
+    </div>
+    <footer class="ax-dialog__footer">
+      <button
+        class="ax-button ax-button--ghost"
+        type="button"
+        data-ax-dialog-close>
+        Cancel
+      </button>
+      <button
+        class="ax-button ax-button--primary"
+        type="button"
+        data-ax-dialog-close>
+        Archive
+      </button>
+    </footer>
+  </div>
+</dialog>

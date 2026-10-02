@@ -1,0 +1,54 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+:where(.ax-tab-list) {
+  display: flex;
+  gap: var(--spacing-1);
+  overflow-x: auto;
+  border-bottom: var(--border-width) solid var(--color-border);
+  scrollbar-width: thin;
+}
+:where(.ax-tab-list--fill > .ax-tab) {
+  flex: 1;
+}
+:where(.ax-tab) {
+  position: relative;
+  display: inline-flex;
+  min-height: var(--size-element-lg);
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  outline: 0;
+}
+:where(.ax-tab:hover) {
+  color: var(--color-text-primary);
+}
+:where(.ax-tab:focus-visible) {
+  border-radius: var(--radius-inner);
+  outline: var(--focus-outline-width) var(--focus-outline-style)
+    var(--focus-outline-color);
+  outline-offset: calc(-1 * var(--focus-outline-offset));
+}
+:where(.ax-tab[aria-selected='true'], .ax-tab[data-ax-selected]) {
+  color: var(--color-text-primary);
+}
+:where(.ax-tab[aria-selected='true']::after, .ax-tab[data-ax-selected]::after) {
+  position: absolute;
+  right: var(--spacing-2);
+  bottom: -1px;
+  left: var(--spacing-2);
+  height: 2px;
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+  content: '';
+}
+:where(.ax-tab-panel) {
+  padding-block: var(--spacing-4);
+  outline: 0;
+}

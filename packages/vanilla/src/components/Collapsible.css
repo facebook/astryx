@@ -1,0 +1,38 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+:where(.ax-collapsible) {
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+:where(.ax-collapsible__trigger) {
+  display: flex;
+  min-height: var(--size-element-lg);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) 0;
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  list-style: none;
+}
+:where(.ax-collapsible__trigger::-webkit-details-marker) {
+  display: none;
+}
+:where(.ax-collapsible__trigger::after) {
+  color: var(--color-text-secondary);
+  content: '⌄';
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+:where(.ax-collapsible[open] > .ax-collapsible__trigger::after) {
+  transform: rotate(180deg);
+}
+:where(.ax-collapsible__trigger:focus-visible) {
+  border-radius: var(--radius-inner);
+  outline: var(--focus-outline-width) var(--focus-outline-style)
+    var(--focus-outline-color);
+  outline-offset: var(--focus-outline-offset);
+}
+:where(.ax-collapsible__content) {
+  padding: 0 0 var(--spacing-4);
+  color: var(--color-text-secondary);
+}

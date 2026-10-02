@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en" data-astryx-theme="neutral" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Interactive Vanilla Astryx</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/core@0.6.5/src/reset.css" />
+    <link rel="stylesheet" href="../dist/astryx-vanilla.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-neutral@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-butter@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-y2k@0.6.5/dist/theme.css" />
+    <script defer src="../dist/astryx-vanilla.js"></script>
+  </head>
+  <body>
+    <main class="ax-layout ax-stack ax-stack--gap-6">
+      <header class="ax-stack ax-stack--gap-2">
+        <span class="ax-badge ax-badge--info">Vanilla POC</span>
+        <h1 class="ax-heading ax-heading--1">
+          Interactive Astryx without a build step
+        </h1>
+        <p class="ax-text ax-text--large ax-text--secondary">
+          Native browser primitives, accessible keyboard behavior, and
+          progressive enhancement.
+        </p>
+      </header>
+
+      <section
+        class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-3"
+        aria-label="Appearance controls">
+        <div
+          class="ax-stack ax-stack--horizontal ax-stack--gap-3 ax-stack--wrap">
+          <label class="ax-stack ax-stack--gap-1">
+            <span class="ax-text ax-text--label">Theme</span>
+            <select class="ax-text-input" data-ax-theme-switch>
+              <option value="neutral">Neutral</option>
+              <option value="butter">Butter</option>
+              <option value="y2k">Y2K</option>
+            </select>
+          </label>
+          <label class="ax-stack ax-stack--gap-1">
+            <span class="ax-text ax-text--label">Mode</span>
+            <select class="ax-text-input" data-ax-mode-switch>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </label>
+          <button
+            class="ax-button ax-button--secondary"
+            type="button"
+            data-ax-theme-toggle>
+            Cycle theme
+          </button>
+          <button
+            class="ax-button ax-button--secondary"
+            type="button"
+            data-ax-mode-toggle>
+            Toggle mode
+          </button>
+        </div>
+      </section>
+
+      <section class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4">
+        <h2 class="ax-heading ax-heading--2">Dialog and dropdown</h2>
+        <div
+          class="ax-stack ax-stack--horizontal ax-stack--gap-3 ax-stack--wrap">
+          <button
+            class="ax-button ax-button--primary"
+            id="dialog-trigger"
+            type="button"
+            data-ax-dialog-open="gallery-dialog">
+            Open dialog
+          </button>
+          <div class="ax-dropdown-menu">
+            <button
+              class="ax-button ax-button--secondary"
+              id="menu-trigger"
+              type="button"
+              data-ax-dropdown-trigger="gallery-menu">
+              Actions
+            </button>
+            <div
+              class="ax-dropdown-menu__popover"
+              id="gallery-menu"
+              role="menu"
+              popover="auto"
+              data-ax-dropdown-menu>
+              <button
+                class="ax-dropdown-menu__item"
+                type="button"
+                role="menuitem">
+                Edit project
+              </button>
+              <button
+                class="ax-dropdown-menu__item"
+                type="button"
+                role="menuitem">
+                Duplicate project
+              </button>
+              <hr class="ax-dropdown-menu__divider" />
+              <button
+                class="ax-dropdown-menu__item ax-dropdown-menu__item--destructive"
+                type="button"
+                role="menuitem">
+                Archive project
+              </button>
+            </div>
+          </div>
+        </div>
+        <dialog
+          class="ax-dialog"
+          id="gallery-dialog"
+          data-ax-dialog
+          aria-labelledby="gallery-dialog-title">
+          <div class="ax-dialog__surface">
+            <header class="ax-dialog__header">
+              <h2 class="ax-dialog__title" id="gallery-dialog-title">
+                Publish changes?
+              </h2>
+              <button
+                class="ax-button ax-button--ghost"
+                type="button"
+                data-ax-dialog-close
+                aria-label="Close dialog">
+                ×
+              </button>
+            </header>
+            <div class="ax-dialog__body">
+              <p class="ax-text">
+                Your changes will be visible to everyone with access.
+              </p>
+            </div>
+            <footer class="ax-dialog__footer">
+              <button
+                class="ax-button ax-button--ghost"
+                type="button"
+                data-ax-dialog-close>
+                Cancel
+              </button>
+              <button
+                class="ax-button ax-button--primary"
+                type="button"
+                data-ax-dialog-close>
+                Publish
+              </button>
+            </footer>
+          </div>
+        </dialog>
+      </section>
+
+      <section class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4">
+        <h2 class="ax-heading ax-heading--2">Tabs and disclosure</h2>
+        <div
+          class="ax-tab-list"
+          role="tablist"
+          aria-label="Project information"
+          data-ax-tab-list>
+          <button
+            class="ax-tab"
+            id="gallery-tab-overview"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            aria-controls="gallery-panel-overview">
+            Overview
+          </button>
+          <button
+            class="ax-tab"
+            id="gallery-tab-activity"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="gallery-panel-activity">
+            Activity
+          </button>
+          <button
+            class="ax-tab"
+            id="gallery-tab-settings"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="gallery-panel-settings">
+            Settings
+          </button>
+        </div>
+        <div
+          class="ax-tab-panel"
+          id="gallery-panel-overview"
+          role="tabpanel"
+          aria-labelledby="gallery-tab-overview">
+          Overview content
+        </div>
+        <div
+          class="ax-tab-panel"
+          id="gallery-panel-activity"
+          role="tabpanel"
+          aria-labelledby="gallery-tab-activity">
+          Activity content
+        </div>
+        <div
+          class="ax-tab-panel"
+          id="gallery-panel-settings"
+          role="tabpanel"
+          aria-labelledby="gallery-tab-settings">
+          Settings content
+        </div>
+        <details
+          class="ax-collapsible"
+          id="gallery-collapsible"
+          data-ax-collapsible>
+          <summary class="ax-collapsible__trigger">
+            How does progressive enhancement work?
+          </summary>
+          <div class="ax-collapsible__content">
+            The native details element works before JavaScript loads, then
+            Astryx synchronizes state hooks for richer integrations.
+          </div>
+        </details>
+      </section>
+
+      <section class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4">
+        <h2 class="ax-heading ax-heading--2">Tooltip, toast, and SideNav</h2>
+        <div
+          class="ax-stack ax-stack--horizontal ax-stack--gap-3 ax-stack--wrap">
+          <span class="ax-tooltip" data-ax-tooltip data-ax-tooltip-delay="0">
+            <button
+              class="ax-button ax-button--secondary"
+              id="tooltip-trigger"
+              type="button"
+              data-ax-tooltip-trigger>
+              Focus or hover
+            </button>
+            <span
+              class="ax-tooltip__surface"
+              role="tooltip"
+              data-ax-tooltip-content
+              >Helpful context appears here</span
+            >
+          </span>
+          <button
+            class="ax-button ax-button--primary"
+            id="toast-trigger"
+            type="button"
+            data-ax-toast="Changes saved"
+            data-ax-toast-duration="10000">
+            Show toast
+          </button>
+          <button
+            class="ax-button ax-button--secondary"
+            id="side-nav-trigger"
+            type="button"
+            data-ax-side-nav-toggle="gallery-side-nav">
+            Toggle SideNav
+          </button>
+        </div>
+        <nav
+          class="ax-card"
+          id="gallery-side-nav"
+          data-ax-side-nav
+          aria-label="Project navigation">
+          <div class="ax-stack ax-stack--gap-2">
+            <a class="ax-link" href="#overview">Overview</a>
+            <a class="ax-link" href="#activity">Activity</a>
+          </div>
+        </nav>
+      </section>
+
+      <section class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-3">
+        <h2 class="ax-heading ax-heading--2">MutationObserver demo</h2>
+        <p class="ax-text ax-text--secondary">
+          Insert fresh behavior markup after load; it is enhanced automatically.
+        </p>
+        <button
+          class="ax-button ax-button--secondary"
+          id="insert-dynamic"
+          type="button">
+          Insert menu
+        </button>
+        <div id="dynamic-region"></div>
+      </section>
+    </main>
+    <script>
+      document
+        .querySelector('#insert-dynamic')
+        .addEventListener('click', () => {
+          document.querySelector('#dynamic-region').innerHTML = `
+          <div class="ax-dropdown-menu">
+            <button class="ax-button ax-button--secondary" id="dynamic-menu-trigger" type="button" data-ax-dropdown-trigger="dynamic-menu">Dynamic actions</button>
+            <div class="ax-dropdown-menu__popover" id="dynamic-menu" role="menu" popover="auto" data-ax-dropdown-menu>
+              <button class="ax-dropdown-menu__item" type="button" role="menuitem">Fresh action</button>
+            </div>
+          </div>`;
+        });
+    </script>
+  </body>
+</html>

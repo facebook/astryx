@@ -1,0 +1,56 @@
+<!-- docs: Switch between related in-page views with arrow-key navigation. -->
+<!-- variant: panels -->
+<div
+  class="ax-tab-list"
+  role="tablist"
+  aria-label="Project views"
+  data-ax-tab-list>
+  <button
+    class="ax-tab"
+    id="tab-overview"
+    type="button"
+    role="tab"
+    aria-selected="true"
+    aria-controls="panel-overview">
+    Overview
+  </button>
+  <button
+    class="ax-tab"
+    id="tab-activity"
+    type="button"
+    role="tab"
+    aria-selected="false"
+    aria-controls="panel-activity">
+    Activity
+  </button>
+  <button
+    class="ax-tab"
+    id="tab-settings"
+    type="button"
+    role="tab"
+    aria-selected="false"
+    aria-controls="panel-settings">
+    Settings
+  </button>
+</div>
+<div
+  class="ax-tab-panel"
+  id="panel-overview"
+  role="tabpanel"
+  aria-labelledby="tab-overview">
+  Overview content
+</div>
+<div
+  class="ax-tab-panel"
+  id="panel-activity"
+  role="tabpanel"
+  aria-labelledby="tab-activity">
+  Activity content
+</div>
+<div
+  class="ax-tab-panel"
+  id="panel-settings"
+  role="tabpanel"
+  aria-labelledby="tab-settings">
+  Settings content
+</div>

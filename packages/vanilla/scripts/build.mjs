@@ -83,9 +83,24 @@ ${componentCSS}
 }
 
 export function renderClassicJS(source) {
+  const exportMatches = [...source.matchAll(/^export \{([\s\S]*?)\};$/gm)];
+  if (exportMatches.length === 0) {
+    throw new Error('Bundled ESM must contain a named export list');
+  }
+  const exportNames = [
+    ...new Set(
+      exportMatches.flatMap(match =>
+        match[1]
+          .split(',')
+          .map(name => name.trim())
+          .filter(Boolean),
+      ),
+    ),
+  ];
   const body = source
     .replace(/^\/\/ Copyright[^\n]*\n+/, '')
-    .replace(/\nexport \{[^}]+\};\s*$/, '');
+    .replace(/^export \{[\s\S]*?\};\n?/gm, '');
+  const globalExports = exportNames.map(name => `    ${name},`).join('\n');
 
   return `/* Copyright (c) Meta Platforms, Inc. and affiliates. */
 
@@ -95,12 +110,52 @@ export function renderClassicJS(source) {
 ${indent(body, 2)}
 
   globalThis.AstryxVanilla = Object.freeze({
-    initThemeModeSwitchers,
-    setMode,
-    setTheme,
+${globalExports}
   });
 })();
 `;
+}
+
+async function readBundledJS() {
+  const sourceRoot = path.dirname(sourceJSPath);
+  const visited = new Set();
+  const bundledModules = [];
+
+  async function visit(modulePath, isEntry = false) {
+    const absolutePath = path.resolve(modulePath);
+    if (
+      absolutePath !== sourceJSPath &&
+      !absolutePath.startsWith(`${sourceRoot}${path.sep}`)
+    ) {
+      throw new Error(
+        `JavaScript import escapes ${sourceRoot}: ${absolutePath}`,
+      );
+    }
+    if (visited.has(absolutePath)) return;
+    visited.add(absolutePath);
+
+    const source = await readFile(absolutePath, 'utf8');
+    const dependencies = [];
+    const body = source.replace(
+      /^import\s+\{[\s\S]*?\}\s+from\s+'(\.\/[^']+)';\n?/gm,
+      (_statement, dependencyPath) => {
+        dependencies.push(
+          path.resolve(path.dirname(absolutePath), dependencyPath),
+        );
+        return '';
+      },
+    );
+    for (const dependency of dependencies) await visit(dependency);
+    bundledModules.push(
+      (isEntry ? body : body.replace(/^export /gm, '')).trim(),
+    );
+  }
+
+  await visit(sourceJSPath, true);
+  if (bundledModules.length < 2) {
+    throw new Error(`No JavaScript modules imported by ${sourceJSPath}`);
+  }
+  return `${bundledModules.join('\n\n')}\n`;
 }
 
 async function readComponentCSS() {
@@ -127,7 +182,7 @@ async function build() {
     readFile(tokenSourcePath, 'utf8'),
     readFile(baseCSSPath, 'utf8'),
     readComponentCSS(),
-    readFile(sourceJSPath, 'utf8'),
+    readBundledJS(),
   ]);
   const tokens = extractTokenDefaults(tokenSource);
   const generatedCSS = renderCSS(baseCSS, components, tokens);

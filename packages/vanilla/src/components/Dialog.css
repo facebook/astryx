@@ -1,0 +1,64 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+:where(.ax-dialog) {
+  max-width: min(42rem, calc(100vw - var(--spacing-8)));
+  max-height: min(75dvh, calc(100vh - var(--spacing-8)));
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  overflow: visible;
+}
+:where(.ax-dialog::backdrop) {
+  background: rgb(10 19 23 / 55%);
+  backdrop-filter: blur(2px);
+}
+:where(.ax-dialog__surface) {
+  display: flex;
+  min-width: min(24rem, calc(100vw - var(--spacing-8)));
+  max-height: inherit;
+  flex-direction: column;
+  overflow: hidden;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-container);
+  background: var(--color-background-popover);
+  box-shadow: var(--shadow-high);
+}
+:where(.ax-dialog__header, .ax-dialog__body, .ax-dialog__footer) {
+  padding: var(--spacing-4);
+}
+:where(.ax-dialog__header) {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+:where(.ax-dialog__title) {
+  margin: 0;
+  font-size: var(--text-heading-3-size);
+  font-weight: var(--text-heading-3-weight);
+  line-height: var(--text-heading-3-leading);
+  outline: 0;
+}
+:where(.ax-dialog__body) {
+  overflow: auto;
+}
+:where(.ax-dialog__footer) {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-2);
+  border-top: var(--border-width) solid var(--color-border);
+}
+:where(.ax-dialog--fullscreen) {
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+}
+:where(.ax-dialog--fullscreen .ax-dialog__surface) {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+}

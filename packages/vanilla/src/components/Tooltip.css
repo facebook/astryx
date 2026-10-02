@@ -1,0 +1,27 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+:where(.ax-tooltip) {
+  display: inline-flex;
+}
+:where(.ax-tooltip__surface) {
+  position: fixed;
+  z-index: 1100;
+  max-width: min(18rem, calc(100vw - var(--spacing-4)));
+  padding: var(--spacing-1-5) var(--spacing-2);
+  border-radius: var(--radius-inner);
+  background: var(--color-background-inverted);
+  color: var(--color-background-surface);
+  box-shadow: var(--shadow-low);
+  font-size: var(--text-supporting-size);
+  line-height: var(--text-supporting-leading);
+  pointer-events: none;
+}
+:where(.ax-tooltip__surface[data-ax-open='true']) {
+  animation: ax-tooltip-enter var(--duration-fast-min) var(--ease-standard);
+}
+@keyframes ax-tooltip-enter {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+}
