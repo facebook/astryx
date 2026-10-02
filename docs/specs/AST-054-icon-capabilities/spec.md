@@ -1,6 +1,6 @@
 ---
 schema_version: 4
-template_version: 1
+template_version: 2
 kind: system-spec
 id: spec:AST-054
 authority: draft
@@ -14,570 +14,317 @@ affects_architecture:
   [
     architecture:component-theming-surface,
     architecture:icon-resolution-and-component-slots,
-    architecture:public-component-api,
     architecture:theme-application,
     architecture:theme-authoring-contract,
     architecture:theme-compilation,
   ]
-affects_families: [family:buttons]
+affects_families: []
 affects_contributing: [contributing:api-conventions]
 affects_consumer_docs: [theme, Icon]
 ---
 
-# Theme-defined Icon capabilities system spec
+# Registry-backed Icon variant and component-slot resolver system spec
 
 ## Intent
 
-Icon libraries do not all work the same way. One may provide outline and filled
-versions. Another may use solid, duotone, or color. Weight may be a name, one of
-several numbers, a continuous numeric range, or unavailable.
-
-`Icon` should support those differences without forcing every library into one
-model:
-
-```tsx
-<Icon icon="search" size="compact" appearance="duotone" weight={600} />
-```
-
-The three optional props have separate jobs:
-
-- `size` controls the icon box;
-- `appearance` selects a supplied visual version, such as outline or duotone; and
-- `weight` selects a supplied thickness or weight.
-
-The installed icon capability contracts determine which values type-check. The
-active theme and selected icon determine which supplied version renders. Omitting
-any prop is valid.
-
-## Compatibility examples
-
-This contract is library-neutral, but it must cover materially different public
-icon models:
-
-- Material Symbols uses a continuous numeric weight axis and a separate fill axis.
-- Phosphor uses named weights that include thin, regular, bold, fill, and duotone.
-- Lucide exposes numeric stroke width through its library API.
-- Heroicons has a sparse matrix: 24px outline assets and 16px, 20px, and 24px
-  solid assets.
-- Fluent UI System Icons supplies regular and filled versions broadly and lighter
-  versions for a subset.
-
-These examples explain why Astryx supports exact values, parameterized numeric
-ranges, sparse size-specific versions, and theme-defined appearance names. A
-parameterized integration owns how a validated number reaches its library; Astryx
-does not reinterpret it as stroke width or another library-specific setting.
-
-## Public model
-
-### Capability contracts
-
-Theme integrations declare their supported icon values once in one reusable,
-grouped capability contract. Conceptually:
-
-```tsx
-const capabilities = defineIconCapabilities({
-  sizes: {
-    compact: {default: '14px'},
-    display: {default: '32px'},
-  },
-  appearances: ['outline', 'filled'],
-  weights: {values: [400, 500, 600]},
-});
-```
-
-A continuous library may declare a numeric range instead:
-
-```tsx
-const capabilities = defineIconCapabilities({
-  weights: {range: {min: 100, max: 700}},
-});
-```
-
-The final exported names require normal API review, but the public structure is
-one grouped contract rather than unrelated declarations. Generated types, docs,
-inspection, runtime themes, and built themes all derive from that same contract.
-
-All installed contracts compose into one application capability set. A custom size
-name has one canonical default dimension in that set. Repeating the same name with
-the same default is valid; repeating it with a different default is a capability or
-build error. That canonical default remains available even when the active theme
-uses another contract. Appearance and weight declarations form admitted unions;
-an active theme or icon may support only a subset because their supplied defaults
-make that mismatch safe.
-
-A theme uses a contract, may override size dimensions, and supplies its icon
-entries. The nearest active theme override for a size name wins. Without one,
-Astryx uses the application capability set's canonical default. Existing fixed
-`icons` entries remain valid:
-
-```tsx
-defineTheme({
-  iconCapabilities: {
-    contract: capabilities,
-    sizeOverrides: {compact: '16px'},
-  },
-  icons: {
-    search: <SearchIcon />,
-  },
-});
-```
-
-### Three terms used in this spec
-
-- An **icon version** is either a fixed React node or a pure parameterized icon
-  component supplied by an integration.
-- A **parameterized version** receives a validated numeric weight and maps it to
-  its own library API, such as a variable-font axis or `strokeWidth`. Astryx passes
-  the admitted value but does not interpret or mutate it.
-- An **icon entry** is either one fixed version or an adaptive tree of supplied
-  branches. Every branch has a default that is always present. A default may be
-  another adaptive branch for later axes, and every path ends at an icon version.
-
-Adaptive entries may supply branches by size, appearance, weight, or a
-combination. They are not required to support every value admitted by the
-capability contract. Conceptually:
-
-```tsx
-const outline = {
-  default: <SearchOutline400 />,
-  byWeight: {600: <SearchOutline600 />},
-};
-
-const search = {
-  default: outline,
-  byAppearance: {
-    outline,
-    filled: {default: <SearchFilled400 />},
-  },
-  bySize: {
-    compact: {default: <SearchCompact />},
-  },
-};
-```
-
-A continuous library instead supplies a pure parameterized component for its
-admitted range. The component—not Astryx—maps the validated number to that
-library's rendering API.
-
-## Size
-
-Astryx continues to provide these names and default dimensions:
-
-- `xsm` = 12px
-- `sm` = 16px
-- `md` = 20px
-- `lg` = 24px
-
-Themes may intentionally override those dimensions, but they cannot remove the
-names. An application that does not opt into an override renders exactly as it
-does today.
-
-A capability contract may add names such as `compact` or `display`. Every added
-name declares one theme-independent default dimension. A theme may override that
-dimension; when it does not, Astryx uses the declared default. This keeps the
-value safe when the active theme changes without falling back to an unrelated
-name such as `md`.
-
-An icon entry may provide artwork for an exact size name. Matching uses the name,
-not the resolved dimension, so an override of `compact` still selects the
-`compact` branch. Astryx uses that branch when it exists. When it does not, Astryx
-renders the entry's normal branch in the resolved box size. That is normal behavior
-and does not produce a warning.
-
-## Appearance
-
-Appearance selects a visual version supplied by the icon entry. Each capability
-contract chooses its own names, such as `outline`, `filled`, `solid`, `duotone`,
-`color`, or `regular`.
-
-`appearance` is intentionally separate from component `variant` and React
-`style`. Astryx consumes the prop and does not forward it to the DOM or treat it
-as CSS `appearance`.
-
-If an explicit appearance is unavailable in the current branch, Astryx enters that
-branch's supplied default and continues resolving later axes. A requested weight
-may therefore still select a version inside the default appearance branch. The
-fallback and diagnostic behavior follows the normative matrix below.
-
-## Weight
-
-A capability contract may declare either:
-
-- exact numeric or named values, such as `400 | 500 | 600` or
-  `"regular" | "bold"`; or
-- a continuous numeric range with a minimum and maximum.
-
-Exact values provide literal types and autocomplete. A range accepts numbers and
-validates its bounds at runtime. An in-range value is passed unchanged to the
-integration's supplied parameterized version. Different installed themes may
-declare different sets; public callsite types describe their combined admitted
-values because the active theme can change at runtime.
-
-If the current branch does not provide an exact weight or parameterized range, or
-a number is outside its declared range, Astryx uses that branch's supplied default
-as defined by the normative matrix below. Astryx never clamps, converts, or decides
-that weight means CSS `font-weight`, `stroke-width`, or any other library-specific
-setting.
-
-## Fixed icon sources
-
-A fixed React node, a directly supplied icon component, a fixed process-wide
-registration, or a fixed namespaced extension icon continues to render normally.
-`size` still controls its box. Because the source has only one supplied version,
-`appearance` and `weight` do not change it.
-
-An explicit unsupported request uses the normative fallback and diagnostic matrix
-below. Astryx never edits the SVG to imitate the request.
-
-## Component and family defaults
-
-Adding an icon role to a component does not require repeating theme values or
-per-icon defaults.
-
-A component family may own one shared icon-default policy. The policy may provide
-fixed defaults or derive them from documented component inputs. For example, the
-Button family defines its control-size-to-icon-size relationship once, and every
-Button icon role reuses it. Fixed appearance or weight defaults can live in the
-same policy. Only a documented exception overrides the shared policy.
-
-Each optional request resolves in this order:
-
-1. an explicit `Icon` request;
-2. the nearest component- or family-owned default policy; then
-3. the final default:
-   - `md` for an Icon outside an Astryx component-owned icon slot; or
-   - the current adaptive branch's supplied default for appearance or weight.
-
-A component-owned default is evaluated like an explicit request during icon
-selection. If the current branch cannot satisfy it, resolution enters that branch's
-supplied default and continues to any later axis. Inspection records the requested
-and selected values, but runtime warnings are reserved for explicit caller requests
-so existing fixed themes do not warn on every component-owned icon.
-
-Components do not automatically gain public icon appearance or weight props.
-Each component or family must deliberately expose caller control when that choice
-is caller-owned and cannot be derived from component behavior.
-
-## Resolution order
-
-For a semantic icon name, Astryx resolves:
-
-1. one icon entry from the active theme, then a process-wide fixed registration,
-   then the built-in fixed default;
-2. the box size from an explicit request, component/family policy, or standalone
-   `md`, using the nearest active theme override when present and otherwise the
-   application's canonical default dimension for that size name;
-3. an exact size-specific branch when one exists, otherwise the root branch;
-4. an exact appearance branch when one exists, otherwise the current branch's
-   supplied default branch; and
-5. an exact weight version or supplied parameterized range when one exists,
-   otherwise the current branch's supplied default version.
-
-Each axis is evaluated once. For example, if `duotone` is unavailable but the
-default appearance branch supplies weight `600`, a request for
-`appearance="duotone" weight={600}` reports only the appearance mismatch and still
-selects weight `600` inside the default appearance branch. If an exact size or
-appearance branch ends in one fixed version, a later unsupported request keeps
-that version and reports the later mismatch; resolution does not return to a
-broader branch.
-
-After an exact adaptive size or appearance match, later fallback stays inside
-that match. It does not return to root branches or another registry source.
-
-After one registry source supplies an entry, Astryx does not fill missing versions
-from another source. A child theme that replaces an icon entry replaces it as a
-unit; nested version maps do not merge implicitly across theme or registry
-boundaries. This prevents one rendered icon from mixing icon families.
-
-## Component slots and programmatic lookups
-
-Component-owned icon slots use the same resolver. A semantic slot receives the
-component/family policy before version selection. A slot containing a fixed React
-node follows the fixed-source behavior. Existing behavior for a missing or
-unresolved namespaced icon key does not change.
-
-Existing one-argument programmatic calls remain valid and return the same React
-nodes as today. Request-aware forms accept optional size, appearance, and weight
-and use the shared resolver. Their exact function signatures require normal API
-review, but the compatibility rule does not: existing calls require no migration.
-
-## Failure and diagnostics
-
-Capability mismatch alone never throws during rendering. This matrix is the
-normative fallback and diagnostic behavior:
-
-| Situation                                                                               | Rendered result                                                       | Development reporting                                     |
-| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------- |
-| Request omitted                                                                         | documented default                                                    | none                                                      |
-| Explicit appearance or weight is admitted but unsupported by the current branch         | that branch's supplied default, followed by any later resolvable axis | one deduplicated console warning plus inspection metadata |
-| Component/family policy value is unsupported                                            | that branch's supplied default                                        | inspection metadata only                                  |
-| Explicit appearance or weight targets a fixed source                                    | the fixed version                                                     | one deduplicated console warning plus inspection metadata |
-| Exact size-specific artwork is absent                                                   | root branch in the resolved box                                       | none                                                      |
-| Untyped runtime request is outside the application capability contract or numeric range | the same fallback as an unsupported request                           | one deduplicated console warning plus inspection metadata |
-| Runtime data bypasses authoring validation and contains a malformed icon entry          | skip that registry source and continue normal source precedence       | one deduplicated console warning plus inspection metadata |
-
-Production emits no capability-mismatch console warning. Inspection still reports
-requested, admitted, supported, and selected values when inspection is enabled.
-
-A statically known exact value outside the application contract is a TypeScript
-error. Untyped callers use the runtime behavior above. Malformed capability
-contracts, conflicting custom-size defaults, missing branch defaults, invalid
-ranges, and malformed theme overrides fail capability, theme-authoring, or
-static-build validation before the theme is used. Runtime and built themes apply
-the same validation contract and preserve the same resolved capability metadata.
-
-## What Astryx never generates
-
-Every rendered result comes from a supplied fixed or parameterized icon version.
-Passing a validated number to an integration's supplied parameterized component is
-selection, not synthesis. Astryx never edits SVG fill, stroke, color, paths,
-transforms, filters, or geometry to imitate a missing appearance or weight.
+A theme may supply more than one authored representation for one semantic icon.
+`Icon` accepts one optional registry-backed `variant` request, so a semantic name
+selects the active theme's representation. A component-owned slot in
+`componentIcons` may choose its semantic icon request from the component's state.
 
 ## Non-goals
 
-- Define universal appearance or weight names.
-- Require every icon to support every value admitted by its capability contract.
-- Clamp, interpolate, synthesize, or mutate icon versions.
-- Add icon appearance or weight props to every Astryx component automatically.
-- Change semantic icon names, color, direction, accessibility, interaction,
-  registry-source precedence, or existing missing-key behavior.
-- Equivalent internal implementations remain valid when they satisfy this
-  contract.
+- Add appearance or weight axes, universal variant names, or per-library capability
+  contracts.
+- Add Icon size names beyond `xsm | sm | md | lg` or let a theme redefine their
+  physical dimensions.
+- Add nested size, variant, weight, or component-state maps.
+- Generate compound component slot keys for state combinations.
+- Build a union of variant values across themes or change public types when the
+  active theme changes.
+- Route direct component-mode Icons through registry selection.
+- Synthesize, inspect, measure, mutate, or normalize SVG artwork.
+- Change semantic icon names, registry-source precedence, component instance
+  precedence, `null` suppression, color, accessibility, interaction, or control
+  geometry.
+- Equivalent internal implementations remain valid when they satisfy this contract.
 
 ## Requirements
 
-- **FR1 — Requests remain optional and independently evaluated.** Size,
-  appearance, and weight do not rewrite one another. A missing appearance may enter
-  its default branch and still honor a later weight request. Omitting any request is
-  valid.
-- **FR2 — One grouped application capability set owns admitted values.** Types,
-  docs, inspection, runtime themes, and built themes derive from the same reusable
-  contracts. Duplicate custom-size names must have identical defaults; conflicting
-  defaults fail validation.
-- **FR3 — Every size has a safe canonical dimension.** Astryx's four existing names
-  keep their current defaults. Every added name declares one application-wide
-  default that remains available under any active theme. The nearest theme may
-  override dimensions but may not remove admitted names.
-- **FR4 — Weight supports discrete and continuous libraries.** A contract declares
-  exact numeric or named values, or one numeric range. An in-range number is passed
-  unchanged to an integration-supplied pure parameterized component. Astryx defines
-  no universal weight scale or library-specific mapping.
-- **FR5 — Every adaptive branch has a supplied default.** Fixed entries remain
-  valid. An adaptive default may itself contain later-axis branches, and every path
-  ends at a supplied fixed or parameterized icon version.
-- **FR6 — Capability mismatch does not throw during rendering.** Fallback and
-  reporting follow the normative matrix above. Development console warnings are
-  limited to explicit caller or untyped runtime requests; policy fallback remains
-  available through inspection without warning on every fixed icon.
-- **FR7 — Families do not repeat shared defaults.** One component/family policy may
-  provide fixed defaults or derive them from component inputs for every owned icon
-  role. Explicit caller intent wins; documented exceptions may override the policy.
-- **FR8 — Size artwork degrades to the root branch.** An exact branch keyed by the
-  requested size name is used when present. Its absence renders the root branch in
-  the resolved box without a warning.
-- **FR9 — Resolution narrows in one direction.** Source, size, appearance, and
-  weight resolve in that order. After an exact adaptive match, later fallback stays
-  inside that match.
-- **FR10 — Sources and theme entries stay isolated.** Resolution does not combine
-  versions from multiple registry sources or implicitly merge replacement entries
-  across theme inheritance.
-- **FR11 — Fixed sources remain compatible.** Direct icon components, fixed React
-  nodes, fixed registrations, and fixed namespaced extensions keep rendering and
-  ignore appearance and weight without SVG mutation. Only explicit unsupported
-  requests produce the development warning.
-- **FR12 — Slots and programmatic APIs share resolution.** A component slot selects
-  `IconName | null` before entry resolution. Existing one-argument lookups keep
-  their behavior; request-aware forms use the same result as `Icon` for the same
-  request and active theme.
-- **FR13 — Validation happens before theme use.** Capability authoring,
-  `defineTheme`, runtime compilation, and static theme builds reject malformed
-  branches, ranges, overrides, and conflicting size defaults consistently and
-  preserve equivalent capability metadata.
-- **FR14 — Existing presentation behavior stays unchanged.** Version selection does
-  not change resolved box geometry, color, alignment, accessibility, focus,
-  interaction, direction, component state, or style-prop precedence beyond an
-  intentional theme size override.
-- **FR15 — Resolution stays synchronous and environment-independent.** Equivalent
-  server/client and runtime/built inputs select the same supplied fixed or pure
-  parameterized version without DOM measurement, computed styles, browser globals,
-  network requests, or mutable render callbacks.
+- **FR1 — Authoring entries are fixed nodes or pure request resolvers.**
+  `DefineThemeInput.icons` and process-wide registration, for semantic and
+  namespaced keys, accept a fixed React node or one resolver receiving
+  `{size, variant}`. A fixed node is the same node for every request. Built-in
+  default icons are fixed nodes. Conceptually:
+
+  ```ts
+  type IconRegistryRequest = Readonly<{
+    size: 'xsm' | 'sm' | 'md' | 'lg';
+    variant?: string;
+  }>;
+
+  type IconRegistryEntry =
+    React.ReactNode | ((request: IconRegistryRequest) => React.ReactNode);
+  ```
+
+- **FR2 — One optional variant is registry-backed.** Registry mode may request an
+  opaque `variant?: string`. The selected entry owns its meanings and the normal
+  representation used for an omitted or unsupported variant. Variant is not a
+  `themeProps` axis, public `*Map` vocabulary, appearance/weight model, or
+  cross-theme union.
+- **FR3 — Registry size stays closed and semantic.** Every registry request uses
+  only `xsm | sm | md | lg`. `Icon` resolves its effective size, passes it to the
+  registry, and applies the fixed box CSS for that size. A registry resolver
+  selects artwork and cannot alter the effective size.
+- **FR4 — Direct component mode stays fixed.** A supplied icon component renders
+  directly and never invokes a registry resolver. `IconProps` is an extendable
+  interface, and runtime destructuring removes `variant` before remaining props
+  are forwarded. Size, styling, ref, and accessibility precedence are unchanged.
+- **FR5 — Source precedence resolves before requests.** A non-nullish active-theme
+  entry wins over a non-nullish process-wide registration, which wins over the
+  built-in default; static nullish entries fall through in that order. A selected
+  resolver is invoked once. Its nullish result renders no glyph and never retries
+  without `variant` or falls through to another source (DEC-5).
+- **FR6 — Component slots use one typed state resolver.** `ComponentIconSlotMap`
+  is the one slot owner: a `true` value denotes a stateless slot whose resolver
+  receives `{}`, and an object-type value declares the slot's exact readonly state
+  fields. `componentIcons` accepts a static `IconName | null` or one pure resolver
+  of that state. Conceptually:
+
+  ```ts
+  type ComponentIconRequest = Readonly<{
+    icon?: IconName | null;
+    variant?: string;
+    size?: 'xsm' | 'sm' | 'md' | 'lg';
+  }>;
+
+  type ComponentIconValue<State> =
+    | IconName
+    | null
+    | ((state: Readonly<State>) => ComponentIconRequest | null | undefined);
+  ```
+
+  The component supplies only deterministic state, and a theme handles state
+  combinations in resolver code.
+
+- **FR7 — Partial slot results preserve precise fallbacks.** Consumer instance
+  content wins; the theme slot entry is not consulted and none of its fields
+  apply. Otherwise, a resolver `icon` wins over the component's declared fallback,
+  and a missing `icon` or an `undefined` result uses that fallback. Resolver
+  `variant` and `size` apply to whichever of those semantic names wins. A missing
+  `variant` sends no variant request. A missing `size` keeps the component's
+  Icon-size choice. Static `null`, a `null` result, and `icon: null` suppress the
+  slot after consumer-instance precedence; a `null` component fallback renders
+  nothing.
+- **FR8 — A slot size changes only that Icon box.** A resolver-provided `size`
+  replaces the component's Icon-size choice for that slot, and `Icon` applies the
+  CSS for that named size. The containing control, touch target, placement, state,
+  color, transforms, interaction, and accessibility stay component-owned and never
+  derive from the selected Icon size.
+- **FR9 — Released reads and calls stay source-compatible.** One-argument
+  registry, extension, snapshot, and hook calls return React nodes; an omitted
+  request outside Astryx-maintained code uses `md`. `IconRegistry`,
+  `DefinedTheme['icons']`, registry snapshots, and built-theme public icon exports
+  are node-valued, materialized at `{size: 'md'}` (DEC-6). A nullish materialized
+  resolver result stays nullish and never falls through to a lower source. Every
+  Astryx-maintained callsite in Core or a first-party package passes its effective
+  size or renders through `Icon`.
+- **FR10 — Resolution is synchronous and environment-independent.** Registry and
+  slot resolvers are pure synchronous functions of their input. They use no hooks,
+  DOM or SVG measurement, computed style, browser globals, network access, mutable
+  module state, or render-phase side effects.
+- **FR11 — Runtime, build, and server boundaries agree.** Runtime themes,
+  `extends`, built output, server rendering, and hydration produce equivalent
+  resolver inputs, source precedence, and selected nodes. A child theme's icon and
+  slot entries replace inherited entries for the same key whole. Server code may
+  resolve icons with a resolver-bearing theme; only client code passes that theme
+  to `<Theme>`, and passing it as a prop across a Server-to-Client Component
+  boundary is unsupported (DEC-7).
+- **FR12 — Validation is split between types, theme shape, and resolver output.**
+  Types reject a `ComponentIconSlotMap` value that is neither `true` nor an object
+  type of state fields, a resolver result field outside `icon`, `variant`, and
+  `size`, and a size outside the four names. Theme validation accepts only a valid
+  semantic name, `null`, or a function as a slot value. At render, an unknown
+  returned `icon`, a non-string `variant`, or an unsupported `size` is treated as
+  a missing field and warns once in development only (DEC-8). A valid but unknown
+  variant string uses the resolver's own fallback and does not warn.
+- **FR13 — Slot state is public theme metadata.** A stateful slot's exact state
+  fields join the slot metadata that component docs and CLI/docsite discovery
+  expose under `architecture:icon-resolution-and-component-slots`. Adding,
+  renaming, removing, or reinterpreting a shipped state field is a compatibility
+  change.
 
 ### Platform support
 
-- Supported floor: every platform that currently supports `Icon` and normalized
-  themes.
-- Unsupported capability requests use the supplied fallback instead of throwing.
-- Representative browser evidence covers theme switching, nested themes,
-  hydration, fixed and adaptive entries, diagnostics, stable geometry, styling,
-  and accessibility.
+- Supported floor: every React, server-rendering, and browser target supported by
+  Astryx Core.
+- Unsupported behavior: asynchronous resolvers, resolvers that depend on ambient
+  mutable state, DOM or SVG measurement, computed-style selection, arbitrary Icon
+  size strings, and passing a resolver-bearing theme object as a prop across a
+  Server-to-Client Component boundary.
+- Browser evidence: representative theme switching, nested themes, component states,
+  and all four Icon sizes preserve wrapper geometry and hydration while selecting
+  the expected supplied node.
 
 ## Current-state impact
 
-Today `Icon` supports only `xsm | sm | md | lg`, uses static default dimensions,
-has no appearance or weight prop, and accepts fixed theme icon entries.
+Fixed registry entries, direct icon components, semantic names, namespaced keys,
+component instance props, node-valued read projections, and one-argument lookups
+are compatible. Applications that author no resolver entry and request no variant
+render the same nodes and box geometry. Every static `componentIcons` value keeps
+its meaning; state resolution is additive.
 
-This proposal is additive. Existing fixed entries, omitted optional props,
-one-argument programmatic lookups, and applications without size overrides keep
-their current behavior. Theme authors deliberately choosing a different dimension
-for an existing size also deliberately choose the resulting layout change.
+When this ships, these owners change:
 
-### Relationship to prior Astryx work
-
-- [Issue #44](https://github.com/facebook/astryx/issues/44) established the need
-  for themeable icons across font and SVG libraries, including filled, outline,
-  and variable-axis models.
-- The draft in
-  [PR #6244](https://github.com/facebook/astryx/pull/6244) proposes size-aware
-  registry entries with a required default and closed `bySize` map. AST-054 covers
-  that use case and adds custom size contracts, appearance, weight, parameterized
-  integrations, family policies, and their combined resolver.
-- [PR #6025](https://github.com/facebook/astryx/pull/6025) and
-  [PR #6028](https://github.com/facebook/astryx/pull/6028) were earlier closed
-  attempts to specify and implement theme-owned Icon sizes.
-- [Issue #1267](https://github.com/facebook/astryx/issues/1267) explored CSS-driven
-  SVG mutation. AST-054 instead requires supplied fixed or parameterized versions.
-- [Issue #5058](https://github.com/facebook/astryx/issues/5058) records a current
-  theme-build registry bug that any implementation carrying richer entries must not
-  preserve.
-
-Before AST-054 or the size-aware registry draft becomes current, their owners must
-choose one canonical owner for size-specific entry resolution. AST-054 may absorb
-that behavior or depend on an accepted narrower record; the two drafts must not
-become competing authority.
-
-`architecture:component-theming-surface` INV14 currently keeps `Icon.size`
-closed because an added name has no theme-independent baseline. Acceptance of
-this spec amends that rule for `Icon.size`: an extension is admitted only through
-a public icon capability contract that supplies a default dimension. The active
-theme may override that dimension; without an override, the contract default is
-the no-match baseline. While this spec remains draft, INV14 still governs.
-
-Implementation also requires coordinated amendments to the affected current
-records:
-
-- theme authoring and compilation carry grouped capability contracts, size
-  overrides, adaptive entries, validation, and equivalent runtime/build metadata;
-- theme application makes the nearest active theme's dimension override available
-  while preserving the contract baseline;
-- icon resolution covers direct components, fixed and adaptive registry entries,
-  namespaced extensions, component slots, and request-aware programmatic lookups;
-- the public API record admits the optional caller-owned `appearance` and `weight`
-  requests and reviews exported names and widened public types;
-- the API-conventions record replaces its closed `Icon.size` example with the
-  capability-contract rule: an added name is admissible only when it carries the
-  safe theme-independent default required here;
-- the current `component:Icon` contract changes its closed size concept, size
-  resolution, and caller-owned public requests;
-- the Button-family contract preserves explicit intent and one family-owned policy
-  rather than per-role duplication; and
-- Icon and theme consumer documentation explain admitted values, defaults,
-  diagnostics, and sparse library support.
-
-The owners of each affected current record must review its amendment. This
-specification pull request changes no runtime or package and adds no Changeset.
+- `component:Icon` — the glyph-source concept gains the optional registry-mode
+  `variant` request (FR2, FR4), and registry artwork selection uses the size
+  resolved by ORD1 (FR3).
+- `architecture:icon-resolution-and-component-slots` — `ComponentIconSlotMap`
+  values are `true` or a state shape, and INV3 and `ComponentIconMap` admit the
+  typed state resolver beside static `IconName | null` (FR6). INV8 lets a slot
+  resolver replace the slot's Icon size while control geometry stays
+  component-owned (FR8). Shared resolution treats a selected resolver's result as
+  final (FR5), and the component-local documentation section lists state fields
+  (FR13).
+- `architecture:component-theming-surface` — INV14 gains one explicit exception:
+  the registry `variant` request is an open string whose fallback belongs to the
+  selected resolver rather than being theme-independent. It is not a component
+  prop axis, `themeProps` does not reflect it, and no `*Map` enumerates it. No
+  other axis gains this exception.
+- `architecture:theme-authoring-contract` — `DefineThemeInput.icons` and
+  `componentIcons` accept resolver entries. Normalization and `extends` preserve
+  request-aware behavior for shared resolution, replace same-key entries whole,
+  and keep `DefinedTheme['icons']` node-valued (FR9, FR11).
+- `architecture:theme-compilation` — built output reproduces runtime
+  request-aware `icons` and `componentIcons` behavior while public icon exports
+  stay node-valued (FR11).
+- `architecture:theme-application` — `Theme` receives a resolver-bearing theme
+  only from client code (FR11).
+- `contributing:api-conventions` — the open-vocabulary section states that the
+  registry `variant` request is the INV14 exception and not a `*Map` axis, so its
+  `*Map` rule is not applied to it.
+- Consumer `theme` and `Icon` docs describe resolver entries, `variant`, slot
+  resolvers, and the server boundary.
 
 ## Verification
 
-| Contract   | Verification                                         | Representative states                                                                                                                | Mutation or failure expectation                                                                      |
-| ---------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
-| FR1–FR4    | Public type and capability-contract tests            | omitted props; duplicate/conflicting size defaults; active theme using another contract; exact weights; supplied numeric adapter     | arbitrary values type-check, axes stop early, a range lacks a renderer, or size is undefined         |
-| FR5–FR10   | Resolver and theme-inheritance matrix tests          | sparse axes; missing appearance then supported weight; fixed exact match then later request; missing size branch; source replacement | a default is absent, a later axis is skipped, fallback crosses a selected boundary, or entries merge |
-| FR6, FR11  | Development/production diagnostic tests              | explicit versus policy mismatch; direct component; fixed registration; out-of-range weight; malformed runtime entry                  | rendering throws, policy use spams warnings, production warns, or malformed data reaches React       |
-| FR7, FR12  | Family, slot, hook, and programmatic tests           | slot-to-name ordering; explicit request; derived Button mapping; shared default; old and request-aware lookup                        | roles repeat policy, slot meaning changes, explicit intent loses, or public paths disagree           |
-| FR13, FR15 | Theme authoring/build and server/client parity tests | conflicting contract; malformed branch; runtime theme; built theme; nested theme; hydration; pure parameterized component            | invalid input reaches rendering or equivalent inputs select different versions                       |
-| FR14       | Browser presentation and accessibility evidence      | theme size override; fallback version; selected/pressed/loading component states; direction and focus                                | unintended geometry, naming, color, interaction, or style precedence changes                         |
+| Contract  | Verification                                                       | Representative states                                                                                                                    | Mutation or failure expectation                                                                                     |
+| --------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR5   | Registry input/read types, resolver, and Icon render tests         | fixed node; resolver; static null; resolver null; omitted/known/unknown variant; four sizes; theme/global/default; direct component mode | source mixing, prop leakage, changed node reads, or changed fixed-node identity fails fixtures                      |
+| FR6–FR8   | Component-slot type, state, precedence, and geometry tests         | stateless `true`; state object; empty/icon/variant/size/full result; undefined; null; instance; component default Icon size              | fallback order changes, null loses suppression, or Icon size changes the control/touch target                       |
+| FR9       | Public read, API, hook, and maintained-callsite tests              | released calls; request-aware calls; Core and first-party direct lookups; namespaced key; theme and registry snapshots                   | a released read widens to a function, a call returns a descriptor, or a maintained callsite passes the wrong size   |
+| FR10–FR11 | SSR, server-boundary, hydration, runtime/build/import tests        | nested themes; child replacement; built resolver behavior; public node exports; resolver-bearing client theme; theme switching           | public exports contain functions, resolvers merge, built and runtime results differ, or server/client nodes diverge |
+| FR3, FR8  | Browser geometry and accessibility evidence                        | each Icon size; slot override; containing control states; touch targets; labelled and decorative icons                                   | selection changes control/touch geometry, focus, naming, color, interaction, or accessibility                       |
+| FR12      | Type, theme-shape, and returned-field negative tests               | invalid state; invalid slot value; unknown icon; non-string variant; invalid size; unknown valid variant                                 | malformed fields change fallback, production warns, or valid variant fallback warns                                 |
+| FR13      | Component metadata, CLI/docsite fixtures, and compatibility review | stateless/stateful slots; fallback; null behavior; state field addition, rename, removal, and meaning change                             | a resolver state is undiscoverable or changes without compatibility classification                                  |
 
 ## Decision log
 
-### DEC-1 — Themes use one grouped capability contract
+### DEC-1 — Registry entries use one pure request resolver
 
 **Reference:** `spec:AST-054/DEC-1`
-**Decider:** `rubyycheung`, `2026-10-02`
+**Decider:** `<pending>` — proposed, not yet decided
 
-Reusable contracts compose into one application capability set containing added
-size names and canonical defaults, appearance names, and either exact weight values
-or numeric ranges backed by integration-supplied parameterized components. Public
-types, docs, runtime, build, and inspection derive from it. Conflicting defaults
-for one custom size name fail validation.
+A registry entry is a fixed React node or one pure synchronous function receiving
+the effective semantic size and optional variant. The function returns supplied
+artwork; Astryx does not model the icon library behind it.
 
-Rejected: unrelated declarations that can disagree, ambiguous custom-size defaults,
-one universal appearance list, and one universal weight scale.
+Rejected: per-icon capability trees and separate appearance or weight resolvers.
 
-### DEC-2 — Size names are overridable tokens with safe defaults
+### DEC-2 — Variant is opaque and registry-only
 
 **Reference:** `spec:AST-054/DEC-2`
-**Decider:** `rubyycheung`, `2026-10-02`
+**Decider:** `<pending>` — proposed, not yet decided
 
-Astryx's existing names keep their current default dimensions and may be
-deliberately overridden by a theme. Every added size has one canonical application
-default that remains available under any active theme. The nearest active theme
-override wins; otherwise the canonical default applies.
+One optional string request lets a selected registry entry expose theme-specific
+representations without changing direct component-mode Icon or constructing a
+cross-theme type union. It is an explicit registry-only exception to open
+component-axis vocabulary: `themeProps` does not reflect it and no public `*Map`
+enumerates values. Omission and unsupported values use resolver-owned normal
+artwork.
 
-Rejected: permanently locking all dimensions, removing existing names, an
-undefined result after theme switching, and fallback to an unrelated size name.
+Rejected: universal appearance/weight vocabularies and application-wide capability
+composition.
 
-### DEC-3 — Capability mismatch falls back without throwing
+### DEC-3 — Component state extends the existing slot map
 
 **Reference:** `spec:AST-054/DEC-3`
-**Decider:** `rubyycheung`, `2026-10-02`
+**Decider:** `<pending>` — proposed, not yet decided
 
-An unsupported appearance enters the current branch's supplied default and later
-axes continue resolving there. Unsupported weight uses that branch's supplied
-default version. Explicit mismatches produce a deduplicated development warning
-and inspection metadata; production silently renders the fallback. Policy defaults
-use inspection without per-render warnings. A missing size-specific branch uses
-the root branch in the resolved box.
+A component slot may use one typed state resolver returning a partial semantic icon
+request. Consumer instance content takes none of its fields; otherwise variant and
+size apply to the resolver icon or component fallback. Missing fields preserve
+precise defaults, and `null` suppresses the slot. Slot names, state meaning, and
+rendering behavior are component-owned.
 
-Rejected: render-time exceptions, clamping, inferred weights, SVG mutation, and
-warnings for normal size-artwork fallback.
+Rejected: a second component-icon registry or definer, nested state maps, and
+compound keys for state combinations.
 
-### DEC-4 — Component families own shared default policies
+### DEC-4 — Semantic selection stays outside geometry
 
 **Reference:** `spec:AST-054/DEC-4`
-**Decider:** `rubyycheung`, `2026-10-02`
+**Decider:** `<pending>` — proposed, not yet decided
 
-A family policy may provide fixed icon defaults or derive them from component
-inputs, such as Button size. Every owned role reuses it; explicit caller intent
-wins and only documented exceptions override it.
+A registry resolver selects supplied artwork from the already-effective semantic
+size and cannot alter it. A component-slot resolver may replace the Icon size for
+that slot; `Icon` then applies the box CSS for that size while the containing
+component's control geometry and touch target are unchanged. Selected artwork never
+feeds measured geometry back into either layer.
 
-Rejected: repeating defaults for every component or icon role and treating the
-existing Button size mapping as one fixed value.
+Rejected: theme-defined Icon dimensions, SVG measurement, and generated geometry
+corrections.
 
-### DEC-5 — Resolution narrows in one direction
+### DEC-5 — A selected resolver's result is final
 
 **Reference:** `spec:AST-054/DEC-5`
-**Decider:** `rubyycheung`, `2026-10-02`
+**Decider:** `<pending>` — proposed, not yet decided
 
-Resolution moves from one selected source to size, appearance, and weight. Each
-axis is evaluated once. Exact adaptive matches own the choices and default that
-follow, while a missing appearance may enter a default branch that still resolves
-the requested weight. Existing programmatic calls remain compatible while
-request-aware paths share this resolver.
+Static nullish entries fall through to the next source. Once a resolver entry is
+selected, its single result is the answer for that source chain: a nullish result
+renders no glyph, so the selected theme can deliberately draw nothing for a
+request.
 
-Rejected: mixing icon families, returning to root after an exact adaptive match,
-and changing existing one-argument lookups.
+Rejected: retrying without `variant` or falling through to a lower source, because
+the result would mix artwork from two sources.
 
-### DEC-6 — `appearance` selects a supplied visual version
+### DEC-6 — Node-valued public reads materialize `md`
 
 **Reference:** `spec:AST-054/DEC-6`
-**Decider:** `rubyycheung`, `2026-10-02`
+**Decider:** `<pending>` — proposed, not yet decided
 
-The optional `appearance` prop expresses caller-owned standalone Icon intent that
-cannot always be derived from the semantic name. The name avoids collision with
-component `variant` and React `style`; Astryx consumes it rather than forwarding
-it as CSS.
+Public read projections and one-argument calls keep their React-node types by
+materializing each resolver entry at `{size: 'md'}`, the standalone Icon default.
 
-Rejected: `variant`, `style`, `iconStyle`, and `fill`, which are ambiguous or too
-narrow for the supported library models.
+Rejected: widening released read types to include functions.
+
+### DEC-7 — Resolver-bearing themes stay on the client side of `Theme`
+
+**Reference:** `spec:AST-054/DEC-7`
+**Decider:** `<pending>` — proposed, not yet decided
+
+A theme carrying resolver functions can resolve icons in server code, and client
+code passes it to `<Theme>`. Passing it as a prop from a Server Component to a
+Client Component is unsupported because functions are not serializable props.
+
+### DEC-8 — Malformed resolver output degrades to missing fields
+
+**Reference:** `spec:AST-054/DEC-8`
+**Decider:** `<pending>` — proposed, not yet decided
+
+An unknown returned `icon`, a non-string `variant`, or an unsupported `size` is
+treated as missing, so the precise fallback still renders, and warns once in
+development only.
+
+Rejected: throwing during render for malformed theme output.
 
 ## Open questions
 
-- **OQ1 — What are the final exported helper, theme-field, and request-aware
-  lookup names?** (`human-api`) The public `size`, `appearance`, and `weight` prop
-  names and their behavior are settled. API review may adjust only the helper,
-  grouped theme-field, and programmatic lookup spellings without changing the
-  contract decided here.
-- **OQ2 — Which draft becomes the canonical owner of size-specific entry
-  resolution?** (`human-api`) AST-054 and the size-aware registry draft in
-  [PR #6244](https://github.com/facebook/astryx/pull/6244) must be reconciled before
-  either becomes current.
+- **OQ1 — What are the final request-aware overload and exported type names?**
+  (`human-api`) Existing calls, the `variant` prop name, the resolver inputs, and
+  component-slot semantics are fixed by DEC-1 through DEC-4. API review may adjust only type and overload
+  spelling without adding another public definer or capability layer.
+- **OQ2 — What does public theme data expose for a resolver-valued component slot?**
+  (`human-api`) The state resolver must remain available to runtime and built-theme
+  resolution, but it cannot be materialized without component state. Undecided:
+  whether the public `DefinedTheme.componentIcons` map admits resolver functions directly or whether request-aware slot entries live on a
+  separate non-public projection while the public map remains static.
