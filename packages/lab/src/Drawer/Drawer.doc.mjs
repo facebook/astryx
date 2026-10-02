@@ -82,7 +82,14 @@ export const docs = {
     },
   },
   theming: {
-    targets: [{className: 'astryx-drawer', visualProps: ['side']}],
+    targets: [
+      {className: 'astryx-drawer', visualProps: ['side']},
+      {className: 'astryx-drawer-header'},
+      {className: 'astryx-drawer-header-start-content'},
+      {className: 'astryx-drawer-header-title-block'},
+      {className: 'astryx-drawer-header-end-content'},
+      {className: 'astryx-drawer-header-close-icon'},
+    ],
   },
   description:
     'Side panel that floats above page content, using the native <dialog> element. Slides in from the inline start or end edge; full height, never reflows the layout underneath.',
