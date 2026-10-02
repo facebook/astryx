@@ -2883,6 +2883,138 @@ describe('Selector caller-supplied id', () => {
   });
 });
 
+describe('Selector hidden label', () => {
+  // The trigger is a <button>, an HTML labelable element, so the sr-only
+  // <label htmlFor={triggerId}> that FieldLabel keeps in the DOM names it
+  // natively. Nothing here asserts the absence of aria-label/aria-labelledby:
+  // the pin is the behaviour (name from `label`) and the association, not a
+  // ban on future belt-and-braces wiring (#6318).
+  const PROJECT_OPTIONS = [
+    {value: 'unset', label: 'No project'},
+    {value: 'p1', label: 'Alpha'},
+  ];
+
+  it('names the trigger from the hidden label, not the selected value', () => {
+    render(
+      <Selector
+        label="Project"
+        isLabelHidden
+        value="unset"
+        options={PROJECT_OPTIONS}
+      />,
+    );
+
+    const trigger = screen.getByRole('combobox', {name: 'Project'});
+    expect(trigger.tagName).toBe('BUTTON');
+    expect(trigger).toHaveAccessibleName('Project');
+    expect(trigger).toHaveTextContent('No project');
+    expect(screen.getByLabelText('Project')).toBe(trigger);
+    expect(screen.queryByRole('combobox', {name: 'No project'})).toBeNull();
+  });
+
+  it('keeps the native label association when hidden', () => {
+    render(
+      <Selector
+        label="Project"
+        isLabelHidden
+        value="unset"
+        options={PROJECT_OPTIONS}
+      />,
+    );
+
+    const trigger = screen.getByRole<HTMLButtonElement>('combobox');
+    const labels = Array.from(trigger.labels ?? []);
+    expect(labels).toHaveLength(1);
+    expect(labels[0].htmlFor).toBe(trigger.id);
+    expect(labels[0]).toHaveTextContent('Project');
+    expect(labels[0]).not.toHaveAttribute('hidden');
+    expect(labels[0]).not.toHaveAttribute('aria-hidden');
+  });
+
+  it('hides the label visually without removing it from rendering', () => {
+    render(
+      <Selector
+        label="Project"
+        isLabelHidden
+        value="unset"
+        options={PROJECT_OPTIONS}
+      />,
+    );
+
+    const label = screen.getByText('Project', {selector: 'label'});
+    const style = getComputedStyle(label);
+    // display:none or visibility:hidden would drop the label from the
+    // accessibility tree and take the trigger name with it.
+    expect(style.display).not.toBe('none');
+    expect(style.visibility).not.toBe('hidden');
+    expect(style.position).toBe('absolute');
+    expect(style.clip).toBe('rect(0px, 0px, 0px, 0px)');
+  });
+
+  it('keeps same-value triggers distinguishable by their hidden labels', () => {
+    render(
+      <>
+        <Selector
+          label="Project for Buy milk"
+          isLabelHidden
+          value="unset"
+          options={PROJECT_OPTIONS}
+        />
+        <Selector
+          label="Project for Walk dog"
+          isLabelHidden
+          value="unset"
+          options={PROJECT_OPTIONS}
+        />
+      </>,
+    );
+
+    expect(
+      screen.getByRole('combobox', {name: 'Project for Buy milk'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('combobox', {name: 'Project for Walk dog'}),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', {name: 'No project'})).toBeNull();
+  });
+
+  it('names the search-variant trigger button from the hidden label', () => {
+    render(
+      <Selector
+        label="Project"
+        isLabelHidden
+        hasSearch
+        value="unset"
+        options={PROJECT_OPTIONS}
+      />,
+    );
+
+    // With hasSearch the combobox role lives on the popup search input, so the
+    // closed trigger is a plain button and only the label can name it.
+    expect(screen.queryByRole('combobox')).toBeNull();
+    const trigger = screen.getByLabelText('Project');
+    expect(trigger.tagName).toBe('BUTTON');
+    expect(trigger).not.toHaveAttribute('role');
+    expect(trigger).toHaveAccessibleName('Project');
+  });
+
+  it('points the hidden label at a caller-supplied id', () => {
+    render(
+      <Selector
+        label="Project"
+        isLabelHidden
+        id="project-picker"
+        value="unset"
+        options={PROJECT_OPTIONS}
+      />,
+    );
+
+    const trigger = screen.getByLabelText('Project');
+    expect(trigger).toHaveAttribute('id', 'project-picker');
+    expect(trigger).toHaveAccessibleName('Project');
+  });
+});
+
 describe('Selector statusVariant forwarding', () => {
   it('defaults to attached (status renders with data-variant="attached")', () => {
     const {container} = render(
