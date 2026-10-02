@@ -114,7 +114,7 @@ another implementation helper.
 | Concept           | Values or states                                               | Default semantics                                                                                                    | Stability                                            |
 | ----------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | field shell       | standalone Field or supported InputGroup path                  | One label/status owner surrounds the control                                                                         | shipped pattern                                      |
-| field size        | `sm`, `md`, `lg` where supported                               | Same-size single-line controls align without one state changing the row                                              | approved family rule                                 |
+| field size        | `sm`, `md`, `lg` where supported                               | Same-size single-line controls align without one state changing the row                                              | approved rule; Selector exception in AV3             |
 | inline size       | intrinsic, explicit `Field.width`, or containing layout        | A member keeps its available inline size across value and busy-state changes                                         | approved rule; Selector exception below              |
 | end controls      | absent, clear, busy, status, disclosure, or component content  | Every rendered control has non-overlapping space; absent controls leave no unexplained reserve                       | approved family rule                                 |
 | grouped row       | standalone or admitted InputGroup child                        | InputGroup owns fixed height, connected edges, and group focus; the child owns its grouped adaptation                | approved capability contract; shipped adoption below |
@@ -194,6 +194,9 @@ another implementation helper.
   not weaken FR1 or FR2.
 - **AV3 — Block-axis growth and grouped adaptation.** TextArea and Tokenizer may
   grow in the block axis for multiline or multi-token content while ungrouped.
+  Standalone Selector may likewise grow for multi-line rendered values, and may
+  exceed its size token when necessary to keep its single-line content unclipped
+  under `component:Selector/DEC-1`; it otherwise aligns with same-size controls.
   InputGroup admission does not change those standalone defaults. In grouped mode,
   an admitted component owns a presentation that satisfies FR3. Tokenizer is
   admitted on that basis and, when the caller does not choose another supported
@@ -245,7 +248,7 @@ another implementation helper.
 | DateTimeInput   | Field, FormLayout, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                            | not InputGroup-compatible                                                                                                                       |
 | TimeInput       | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | none                                                                                                                                            |
 | FileInput       | Field, FormLayout, width, `isLoading`, `changeAction`, clear, status, and disabled reason                                  | no public `size`; compact and dropzone modes are component-owned                                                                                |
-| Selector        | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | DEC-1 permits standalone content-sized width                                                                                                    |
+| Selector        | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | DEC-1 permits standalone content-sized width; AV3 permits standalone content-sized block size under `component:Selector/DEC-1`                  |
 | MultiSelector   | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | trigger-display modes remain component-owned                                                                                                    |
 | ComplexSelector | Field, FormLayout, size, width, `isLoading`, `changeAction`, and status                                                    | no InputGroup or disabled-reason API                                                                                                            |
 | Typeahead       | Field, FormLayout, InputGroup, size, width, clear, status, disabled reason, and BaseTypeahead source loading               | no family `isLoading` or `changeAction`; search lifecycle is component-owned                                                                    |
