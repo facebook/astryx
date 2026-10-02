@@ -1,0 +1,3 @@
+# Keep CDN-ready build artifacts in version control.
+!dist/
+!dist/**

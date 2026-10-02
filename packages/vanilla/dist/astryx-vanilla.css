@@ -1,0 +1,6 @@
+/* Astryx Vanilla CDN proof. Full generated styles follow in the next commit. */
+@layer astryx-base {
+  :root {
+    --astryx-vanilla-cdn-proof: 1;
+  }
+}
