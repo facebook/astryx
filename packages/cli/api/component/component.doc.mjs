@@ -15,16 +15,16 @@ export const doc = {
   namespace: 'cli/api',
   displayName: 'component()',
   summary:
-    'Resolve a component by name, or list the catalog, with optional focused slices (props, source, showcase, blocks).',
+    'Resolve one or several components by name, or list the catalog, with optional focused slices (props, source, showcase, blocks).',
   description:
-    'Routes on its arguments: a name resolves that component across core and ' +
-    'integration packages and returns its authored ComponentDoc plus ownership ' +
-    'metadata; no name (or `list`/`category`) returns the catalog grouped by ' +
-    'component group. Boolean flags narrow a single component to just its props, ' +
-    'source, showcase, or example blocks.',
+    'Routes on its arguments: one string resolves that component across core and ' +
+    'integration packages; an array returns one ordered result row per selector at ' +
+    'every array length; and no name returns the catalog grouped by category. ' +
+    'Boolean flags narrow each resolved component to just its props, source, ' +
+    'showcase, or example blocks.',
   importPath: '@astryxdesign/cli/api',
   signature:
-    'component(name?: string, options?: ComponentOptions): Promise<ComponentListResponse | ComponentDetailResponse | ComponentDetailPropsResponse | ComponentDetailSourceResponse | ComponentDetailShowcaseResponse | ComponentDetailBlocksResponse>',
+    'component(name?: string | string[], options?: ComponentOptions): Promise<ComponentListResponse | ComponentBatchResponse | ComponentDetailResponse | ComponentDetailPropsResponse | ComponentDetailSourceResponse | ComponentDetailShowcaseResponse | ComponentDetailBlocksResponse>',
   keywords: [
     'component',
     'components',
@@ -37,9 +37,9 @@ export const doc = {
   params: [
     {
       name: 'name',
-      type: 'string',
+      type: 'string | string[]',
       description:
-        "Component name to resolve (e.g. 'Button'). Omit to list the catalog.",
+        "Pass one selector string for the existing single-result response, or an array of at most 100 selectors for an ordered component.batch response. The limit counts duplicates in every projection mode. An array always requests a batch, including [] and ['Button']. Use 'Button', 'widgets/Button', '@acme/widgets/Button', or '@acme/widgets@1.2.3/Button'. A version applies to the package and must match the installed version. Omit the argument to list the catalog.",
     },
     {
       name: 'options.cwd',
@@ -116,6 +116,11 @@ export const doc = {
         "The catalog grouped by component group. data.detail is the level ('names' | 'compact' | 'full') and data.components is the grouped map: names entries with name, package, and an optional canonical import for integration and legacy package components; brief entries; or full ComponentDoc entries.",
     },
     {
+      type: 'component.batch',
+      description:
+        'An explicit selector array returns one ordered receipt at every array length: count and one results row per selector, including duplicates. ComponentBatchResponse specializes the shared BatchResponse and BatchRow types. Each row carries selector and status (found, not_found, ambiguous, or error); found rows carry the single-selector result, ambiguous rows carry installed candidates ({package, component, kind, installed}), and failed rows carry code, error, and optional suggestions.',
+    },
+    {
       type: 'component.detail',
       description:
         "One component's authored ComponentDoc plus ownership metadata (owner package, import specifier, whether source is available). When the name is a sub-component documented in a parent's doc, the payload is scoped to it and parentDoc names that parent.",
@@ -141,6 +146,10 @@ export const doc = {
   ],
   throws: [
     {
+      code: 'ERR_INVALID_ARGUMENT',
+      when: 'a selector array has more than 100 entries, a package-shaped selector has no component item, or its package conflicts with options.package',
+    },
+    {
       code: 'ERR_INVALID_DETAIL',
       when: "options.detail is not 'full', 'compact', or 'brief'",
     },
@@ -162,7 +171,7 @@ export const doc = {
     },
     {
       code: 'ERR_UNKNOWN_PACKAGE',
-      when: 'a name is given and options.package matches no loaded integration and no installed external package',
+      when: 'options.package names a legacy external package that cannot be found, or a package-qualified selector requests a version that is not installed',
     },
     {
       code: 'ERR_NO_DOC',
@@ -185,6 +194,10 @@ export const doc = {
     {
       label: 'Look up a component',
       code: "const r = await component('Button');",
+    },
+    {
+      label: 'Look up several components',
+      code: "await component(['Button', 'Badge']);",
     },
     {label: 'Props only', code: "await component('Button', {props: true});"},
     {

@@ -703,7 +703,7 @@ test('a column floor survives the cell padding it sits behind', async ({
   const longLabel = wide.headers.find(header =>
     header.text.startsWith('Accessibility status'),
   );
-  // `D116586407` is ten characters and cannot break: the column carries it.
+  // `REFERENCE1` is ten characters and cannot break: the column carries it.
   expect(identifier?.contentWidth).toBeGreaterThanOrEqual(10 * wide.chPx - 1);
   // A 42-character label floors the column at 21ch (its body floor) and wraps.
   expect(longLabel?.contentWidth).toBeGreaterThanOrEqual(20 * wide.chPx - 1);

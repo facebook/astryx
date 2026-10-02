@@ -52,6 +52,7 @@ export const RESPONSE_TYPES = {
   init: ['init.run', 'init.remove'],
   component: [
     'component.list',
+    'component.batch',
     'component.detail',
     'component.detail.props',
     'component.detail.source',
@@ -121,8 +122,9 @@ export const ROOT_RESPONSE_TYPES = Object.freeze(['help', 'version']);
 const EXAMPLES = {
   component: [
     'astryx component',
-    'astryx component Button',
-    'astryx component Button --props --json',
+    'astryx component XDSButton',
+    'astryx component Button Badge Text',
+    'astryx component XDSButton --props --json',
   ],
   docs: [
     'astryx docs',
