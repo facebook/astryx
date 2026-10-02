@@ -17,6 +17,7 @@ import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {Table} from '../../Table';
 import {useTableStickyColumns} from './useTableStickyColumns';
+import {useTableColumnResize} from '../columnResize/useTableColumnResize';
 import {pixel} from '../../columnUtils';
 import type {TableColumn} from '../../types';
 
@@ -159,5 +160,71 @@ describe('useTableStickyColumns', () => {
     expect(getHeader('Name').style.insetInlineStart).toBe('0px');
     expect(getHeader('Team').style.insetInlineStart).toBe('');
     expect(getHeader('Team').style.insetInlineEnd).toBe('');
+  });
+
+  /**
+   * Composition with the resize plugin. Both plugins contribute `position` to
+   * the same header cell — resize appends `relative` for its handle's
+   * containing block — so the pin has to survive either insertion order. The
+   * plugin writes `position` inline for exactly that reason, which also makes
+   * it the jsdom-visible signal.
+   */
+  describe('composition with the column-resize plugin', () => {
+    /**
+     * With the resize plugin mounted, each header cell also contains the
+     * handle's own labelled element, so the cell's accessible name is no
+     * longer just its header text. Address the cell by its column key.
+     */
+    function getHeaderCell(key: string): HTMLElement {
+      const cell = document.querySelector<HTMLElement>(
+        `th[data-column-key="${key}"]`,
+      );
+      if (!cell) {
+        throw new Error(`header cell not found: ${key}`);
+      }
+      return cell;
+    }
+
+    function StickyResizeHarness({
+      resizeFirst,
+    }: {
+      resizeFirst: boolean;
+    }): React.ReactElement {
+      const sticky = useTableStickyColumns<Row>({startKeys: ['name']});
+      const resize = useTableColumnResize<Row>({
+        columns: columns as TableColumn<Record<string, unknown>>[],
+      });
+      return (
+        <Table
+          data={data}
+          columns={columns}
+          idKey="id"
+          plugins={
+            resizeFirst
+              ? {resize, stickyColumns: sticky}
+              : {stickyColumns: sticky, resize}
+          }
+        />
+      );
+    }
+
+    it('keeps a pinned column sticky with resize declared first', () => {
+      render(<StickyResizeHarness resizeFirst={true} />);
+      expect(getHeaderCell('name').style.position).toBe('sticky');
+      expect(getHeaderCell('name').style.insetInlineStart).toBe('0px');
+    });
+
+    it('keeps a pinned column sticky with sticky declared first', () => {
+      render(<StickyResizeHarness resizeFirst={false} />);
+      expect(getHeaderCell('name').style.position).toBe('sticky');
+      expect(getHeaderCell('name').style.insetInlineStart).toBe('0px');
+    });
+
+    it('leaves unpinned columns to the resize plugin', () => {
+      render(<StickyResizeHarness resizeFirst={true} />);
+      // Only pinned cells get an inline position; the rest keep whatever the
+      // resize plugin's own styles give them.
+      expect(getHeaderCell('team').style.position).toBe('');
+    });
   });
 });

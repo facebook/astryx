@@ -355,10 +355,19 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
         // position/inline-offset are runtime values → set via inline style so
         // they are authoritative regardless of plugin composition order (the
         // resize plugin also writes inline style on header cells).
+        //
+        // `position` belongs inline for the same reason, and used not to be:
+        // it was left to `stickyStyles.cell`, which put it in the same xstyle
+        // array the resize plugin appends `position: relative` to for its
+        // handle's containing block. Whichever plugin was appended later won,
+        // so a pinned column silently stopped pinning depending on the order
+        // the caller happened to write `plugins={{ ... }}`. Inline wins over
+        // both, which makes the composition order-independent instead of
+        // buying a lucky order from the plugin sequence.
         const offsetStyle: CSSProperties =
           side.edge === 'start'
-            ? {insetInlineStart: `${side.offset}px`}
-            : {insetInlineEnd: `${side.offset}px`};
+            ? {position: 'sticky', insetInlineStart: `${side.offset}px`}
+            : {position: 'sticky', insetInlineEnd: `${side.offset}px`};
         return {
           ...props,
           htmlProps: {

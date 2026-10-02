@@ -79,6 +79,7 @@ const STRUCTURAL_VARS = new Set([
   '--indicator-color',
   '--indicator-width',
   '--table-resize-height',
+  '--table-resize-offset',
   // sticky-columns plugin: opaque backdrop (overridable) + the row overlay it
   // replays on pinned cells. Structural/runtime, not themeable design tokens.
   '--table-sticky-background',
