@@ -1,0 +1,644 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+import {describe, it, expect, afterAll} from 'vitest';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as os from 'node:os';
+import {
+  evaluate,
+  loadAxeResults,
+  getA11yBasisNote,
+  getA11yCoverage,
+  getA11yDimensionLabel,
+  type AxeResultForPrompt,
+} from './universal-eval.js';
+import type {UniversalAggregate} from './types.js';
+import {hashContent} from './utils.js';
+
+const dirs: string[] = [];
+function tmpDir(): string {
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'vibe-eval-'));
+  dirs.push(d);
+  return d;
+}
+afterAll(() => dirs.forEach(d => fs.rmSync(d, {recursive: true})));
+
+// Component-composed output — no raw HTML, so no static a11y rule can fire.
+// This is the #4145 blind spot: the score is 100 by construction.
+const COMPOSED_CODE = `
+import {XDSButton, XDSTextInput, XDSHeading} from '@astryxdesign/core';
+export default function App() {
+  return (
+    <>
+      <XDSHeading level={1}>Dashboard</XDSHeading>
+      <XDSTextInput label="Name" />
+      <XDSButton onClick={() => {}}>Save</XDSButton>
+    </>
+  );
+}
+`;
+
+const AXE_FIXTURE: AxeResultForPrompt = {
+  target: 'astryx',
+  themesScanned: ['light', 'dark'],
+  passes: 24,
+  incomplete: 1,
+  violations: [
+    {
+      id: 'color-contrast',
+      impact: 'serious',
+      help: 'Elements must have sufficient color contrast',
+      nodes: 3,
+      themes: ['dark'],
+    },
+    {
+      id: 'button-name',
+      impact: 'critical',
+      help: 'Buttons must have discernible text',
+      nodes: 1,
+      themes: ['light', 'dark'],
+    },
+  ],
+};
+
+// ============================================================
+// Pinning tests — existing static-rule behavior (guards refactor)
+// ============================================================
+
+describe('accessibility static rules (pinned behavior)', () => {
+  it('penalizes onClick on a non-interactive element without role or tabIndex', () => {
+    const code = `export default () => <div onClick={() => {}}>hi</div>;`;
+    const {accessibility} = evaluate(code, 'html');
+    expect(accessibility.score).toBe(85);
+    expect(accessibility.findings?.map(f => f.rule)).toContain(
+      'click-non-interactive',
+    );
+  });
+
+  it('penalizes an icon-only button without aria-label', () => {
+    const code = `export default () => <button><svg viewBox="0 0 1 1" /></button>;`;
+    const {accessibility} = evaluate(code, 'html');
+    expect(accessibility.findings?.map(f => f.rule)).toContain(
+      'icon-button-no-label',
+    );
+  });
+
+  it('penalizes a form input without a label', () => {
+    const code = `export default () => <input type="text" />;`;
+    const {accessibility} = evaluate(code, 'html');
+    expect(accessibility.findings?.map(f => f.rule)).toContain(
+      'input-no-label',
+    );
+  });
+
+  it('penalizes an image without alt text', () => {
+    const code = `export default () => <img src="/a.png" />;`;
+    const {accessibility} = evaluate(code, 'html');
+    expect(accessibility.findings?.map(f => f.rule)).toContain('img-no-alt');
+  });
+
+  it('penalizes a skipped heading level', () => {
+    const code = [
+      `export default () => (`,
+      `  <div>`,
+      `    <h1>Title</h1>`,
+      `    <h3>Sub</h3>`,
+      `  </div>`,
+      `);`,
+    ].join('\n');
+    const {accessibility} = evaluate(code, 'html');
+    expect(accessibility.findings?.map(f => f.rule)).toContain('heading-skip');
+  });
+
+  it('scores 100 for component-composed code (the #4145 blind spot)', () => {
+    const {accessibility} = evaluate(COMPOSED_CODE, 'astryx');
+    expect(accessibility.score).toBe(100);
+  });
+});
+
+// ============================================================
+// New: eligibility metrics (issue #4145 proposal 4)
+// ============================================================
+
+describe('accessibility eligibility metrics', () => {
+  it('reports zero eligible sites for component-composed code, exposing the score ceiling', () => {
+    const {accessibility} = evaluate(COMPOSED_CODE, 'astryx');
+    expect(accessibility.metrics).toBeDefined();
+    expect(accessibility.metrics?.eligibleSites).toBe(0);
+    expect(accessibility.metrics?.rulesFired).toBe(0);
+    expect(accessibility.metrics?.runtime).toBe(false);
+  });
+
+  it('counts eligible sites per rule for raw-HTML code', () => {
+    const code = [
+      `export default function App() {`,
+      `  return (`,
+      `    <div>`,
+      `      <img src="/a.png" alt="A" />`,
+      `      <img src="/b.png" />`,
+      `      <input type="text" aria-label="q" />`,
+      `      <h1>Title</h1>`,
+      `      <h3>Sub</h3>`,
+      `    </div>`,
+      `  );`,
+      `}`,
+    ].join('\n');
+    const {accessibility} = evaluate(code, 'html');
+    const m = accessibility.metrics;
+    expect(m?.eligibleByRule['img-no-alt']).toBe(2);
+    expect(m?.eligibleByRule['input-no-label']).toBe(1);
+    expect(m?.eligibleByRule['heading-skip']).toBe(1);
+    expect(m?.eligibleByRule['click-non-interactive']).toBe(0);
+    expect(m?.eligibleSites).toBe(4);
+    expect(m?.rulesFired).toBe(2); // img-no-alt + heading-skip
+  });
+});
+
+// ============================================================
+// New: loadAxeResults sidecar loader (mirrors loadBuildErrors)
+// ============================================================
+
+describe('loadAxeResults', () => {
+  it('parses an axe-results.json sidecar keyed by promptId', () => {
+    const dir = tmpDir();
+    fs.writeFileSync(
+      path.join(dir, 'axe-results.json'),
+      JSON.stringify({'cwm-1': AXE_FIXTURE}),
+    );
+    const results = loadAxeResults(dir);
+    expect(results?.['cwm-1'].violations).toHaveLength(2);
+    expect(results?.['cwm-1'].themesScanned).toEqual(['light', 'dark']);
+  });
+
+  it('returns null when the sidecar is absent (older iterations)', () => {
+    expect(loadAxeResults(tmpDir())).toBeNull();
+  });
+
+  it('returns null for a malformed sidecar', () => {
+    const dir = tmpDir();
+    fs.writeFileSync(path.join(dir, 'axe-results.json'), '{not json');
+    expect(loadAxeResults(dir)).toBeNull();
+  });
+});
+
+// ============================================================
+// New: runtime axe fold-in (issue #4145 proposal 1)
+// ============================================================
+
+describe('accessibility runtime fold-in', () => {
+  it('penalizes axe violations by impact when runtime results are present', () => {
+    // serious −10, critical −15 → 100 − 25 = 75
+    const {accessibility} = evaluate(COMPOSED_CODE, 'astryx', {
+      axeResult: AXE_FIXTURE,
+    });
+    expect(accessibility.score).toBe(75);
+    expect(accessibility.findings?.map(f => f.rule)).toEqual(
+      expect.arrayContaining(['axe:color-contrast', 'axe:button-name']),
+    );
+  });
+
+  it('records runtime metrics when axe results are present', () => {
+    const {accessibility} = evaluate(COMPOSED_CODE, 'astryx', {
+      axeResult: AXE_FIXTURE,
+    });
+    const m = accessibility.metrics;
+    expect(m?.runtime).toBe(true);
+    expect(m?.axeViolationCount).toBe(2);
+    expect(m?.axeImpacts).toEqual({serious: 1, critical: 1});
+    expect(m?.axePasses).toBe(24);
+    expect(m?.axeIncomplete).toBe(1);
+    expect(m?.themesScanned).toEqual(['light', 'dark']);
+  });
+
+  it('does not double-penalize static rules that axe verifies at runtime', () => {
+    // Static img-no-alt overlaps axe image-alt: with runtime data present the
+    // static finding is reported but only the axe violation is penalized.
+    const code = `export default () => <img src="/a.png" />;`;
+    const axe: AxeResultForPrompt = {
+      target: 'html',
+      themesScanned: ['light'],
+      passes: 10,
+      incomplete: 0,
+      violations: [
+        {
+          id: 'image-alt',
+          impact: 'critical',
+          help: 'Images must have alternative text',
+          nodes: 1,
+          themes: ['light'],
+        },
+      ],
+    };
+    const {accessibility} = evaluate(code, 'html', {axeResult: axe});
+    expect(accessibility.score).toBe(85); // one −15, not −23
+    expect(accessibility.findings?.map(f => f.rule)).toContain('img-no-alt');
+  });
+
+  it('suppresses each axe-covered static rule once axe evaluated its matching rule', () => {
+    const fixtures: Array<{rule: string; axeRule: string; code: string}> = [
+      {
+        rule: 'icon-button-no-label',
+        axeRule: 'button-name',
+        code: `export default () => <button><svg viewBox="0 0 1 1" /></button>;`,
+      },
+      {
+        rule: 'input-no-label',
+        axeRule: 'label',
+        code: `export default () => <input type="text" />;`,
+      },
+      {
+        rule: 'img-no-alt',
+        axeRule: 'image-alt',
+        code: `export default () => <img src="/a.png" />;`,
+      },
+      {
+        rule: 'heading-skip',
+        axeRule: 'heading-order',
+        code: [
+          `export default () => (`,
+          `  <div>`,
+          `    <h1>T</h1>`,
+          `    <h3>S</h3>`,
+          `  </div>`,
+          `);`,
+        ].join('\n'),
+      },
+    ];
+    for (const {rule, axeRule, code} of fixtures) {
+      const cleanAxe: AxeResultForPrompt = {
+        target: 'html',
+        themesScanned: ['light'],
+        passes: 10,
+        incomplete: 0,
+        passedRules: [axeRule],
+        violations: [],
+      };
+      const {accessibility} = evaluate(code, 'html', {axeResult: cleanAxe});
+      expect(
+        accessibility.findings?.map(f => f.rule),
+        rule,
+      ).toContain(rule);
+      expect(accessibility.score, rule).toBe(100);
+
+      // Evidence for the other covered rules says nothing about this one
+      const otherRulesAxe: AxeResultForPrompt = {
+        ...cleanAxe,
+        passedRules: fixtures.map(f => f.axeRule).filter(id => id !== axeRule),
+      };
+      expect(
+        evaluate(code, 'html', {axeResult: otherRulesAxe}).accessibility.score,
+        rule,
+      ).toBeLessThan(100);
+    }
+  });
+
+  // An <img> that only renders inside a closed dialog never reaches the DOM
+  // axe scans, so axe has no evidence about it (cixzhang's review, #4229)
+  const CLOSED_DIALOG_IMG = [
+    `export default function Gallery() {`,
+    `  const [open, setOpen] = useState(false);`,
+    `  return (`,
+    `    <main>`,
+    `      <button onClick={() => setOpen(true)}>Open gallery</button>`,
+    `      {open && (`,
+    `        <dialog open>`,
+    `          <img src="/photo.png" />`,
+    `        </dialog>`,
+    `      )}`,
+    `    </main>`,
+    `  );`,
+    `}`,
+  ].join('\n');
+
+  it('keeps the static penalty when axe never evaluated the matching rule', () => {
+    const axe: AxeResultForPrompt = {
+      target: 'html',
+      themesScanned: ['light', 'dark'],
+      passes: 12,
+      incomplete: 0,
+      passedRules: ['document-title', 'html-has-lang', 'landmark-one-main'],
+      violations: [],
+    };
+    const {accessibility} = evaluate(CLOSED_DIALOG_IMG, 'html', {
+      axeResult: axe,
+    });
+    expect(accessibility.findings?.map(f => f.rule)).toContain('img-no-alt');
+    expect(accessibility.score).toBe(92);
+    expect(accessibility.metrics?.runtime).toBe(true);
+  });
+
+  it('keeps the static penalty when axe evaluated only other covered rules', () => {
+    const axe: AxeResultForPrompt = {
+      target: 'html',
+      themesScanned: ['light', 'dark'],
+      passes: 12,
+      incomplete: 0,
+      passedRules: ['label', 'button-name', 'heading-order'],
+      violations: [],
+    };
+    const {accessibility} = evaluate(CLOSED_DIALOG_IMG, 'html', {
+      axeResult: axe,
+    });
+    expect(accessibility.score).toBe(92);
+  });
+
+  it('waives the static penalty when axe passed the matching rule', () => {
+    const axe: AxeResultForPrompt = {
+      target: 'html',
+      themesScanned: ['light', 'dark'],
+      passes: 13,
+      incomplete: 0,
+      passedRules: ['document-title', 'html-has-lang', 'image-alt'],
+      violations: [],
+    };
+    const {accessibility} = evaluate(CLOSED_DIALOG_IMG, 'html', {
+      axeResult: axe,
+    });
+    expect(accessibility.score).toBe(100);
+  });
+
+  it('does not treat an incomplete axe rule as evidence', () => {
+    const axe: AxeResultForPrompt = {
+      target: 'html',
+      themesScanned: ['light'],
+      passes: 12,
+      incomplete: 1,
+      passedRules: ['html-has-lang'],
+      incompleteRules: ['image-alt'],
+      violations: [],
+    };
+    const {accessibility} = evaluate(CLOSED_DIALOG_IMG, 'html', {
+      axeResult: axe,
+    });
+    expect(accessibility.score).toBe(92);
+  });
+
+  it('keeps the static penalty for a legacy sidecar that stored only a pass count', () => {
+    const legacy: AxeResultForPrompt = {
+      target: 'html',
+      themesScanned: ['light', 'dark'],
+      passes: 12,
+      incomplete: 0,
+      violations: [],
+    };
+    const {accessibility} = evaluate(CLOSED_DIALOG_IMG, 'html', {
+      axeResult: legacy,
+    });
+    expect(accessibility.score).toBe(92);
+  });
+
+  it('penalizes an unrecognized axe impact at the moderate rate', () => {
+    const axe = {
+      target: 'astryx',
+      themesScanned: ['light'],
+      passes: 10,
+      incomplete: 0,
+      violations: [
+        {
+          id: 'future-rule',
+          impact: 'widget',
+          help: 'future',
+          nodes: 1,
+          themes: ['light'],
+        },
+      ],
+    } as unknown as AxeResultForPrompt;
+    const {accessibility} = evaluate(COMPOSED_CODE, 'astryx', {axeResult: axe});
+    expect(accessibility.score).toBe(92);
+  });
+
+  it('floors the score at 0 when axe penalties exceed 100', () => {
+    const axe: AxeResultForPrompt = {
+      target: 'astryx',
+      themesScanned: ['light'],
+      passes: 0,
+      incomplete: 0,
+      violations: Array.from({length: 8}, (_, i) => ({
+        id: `rule-${i}`,
+        impact: 'critical' as const,
+        help: 'broken',
+        nodes: 1,
+        themes: ['light'],
+      })),
+    };
+    const {accessibility} = evaluate(COMPOSED_CODE, 'astryx', {axeResult: axe});
+    expect(accessibility.score).toBe(0);
+  });
+
+  it('still penalizes click-on-non-interactive statically since axe cannot see React handlers', () => {
+    const code = `export default () => <div onClick={() => {}}>hi</div>;`;
+    const axe: AxeResultForPrompt = {
+      target: 'html',
+      themesScanned: ['light'],
+      passes: 10,
+      incomplete: 0,
+      violations: [],
+    };
+    const {accessibility} = evaluate(code, 'html', {axeResult: axe});
+    expect(accessibility.score).toBe(85);
+  });
+
+  it('resolves the axe sidecar from iterDir and promptId like build-errors.json', () => {
+    const dir = tmpDir();
+    fs.writeFileSync(
+      path.join(dir, 'axe-results.json'),
+      JSON.stringify({'cwm-1': AXE_FIXTURE}),
+    );
+    const {accessibility} = evaluate(COMPOSED_CODE, 'astryx', {
+      iterDir: dir,
+      promptId: 'cwm-1',
+    });
+    expect(accessibility.metrics?.runtime).toBe(true);
+    expect(accessibility.score).toBe(75);
+  });
+
+  it("ignores an axe entry scanned from another target's preview", () => {
+    // Multi-iteration runs keep every target's previews in one directory; an
+    // entry for a different target is not a render of this code
+    const {accessibility} = evaluate(COMPOSED_CODE, 'astryx', {
+      axeResult: {...AXE_FIXTURE, target: 'html'},
+    });
+    expect(accessibility.metrics?.runtime).toBe(false);
+    expect(accessibility.score).toBe(100);
+  });
+
+  it('ignores a stale axe entry scanned from code that has since changed', () => {
+    const {accessibility} = evaluate(COMPOSED_CODE, 'astryx', {
+      axeResult: {...AXE_FIXTURE, sourceHash: hashContent('// old code')},
+    });
+    expect(accessibility.metrics?.runtime).toBe(false);
+    expect(accessibility.score).toBe(100);
+  });
+
+  it('uses an axe entry stamped with the hash of the scored code', () => {
+    const {accessibility} = evaluate(COMPOSED_CODE, 'astryx', {
+      axeResult: {...AXE_FIXTURE, sourceHash: hashContent(COMPOSED_CODE)},
+    });
+    expect(accessibility.metrics?.runtime).toBe(true);
+    expect(accessibility.score).toBe(75);
+  });
+
+  it('falls back to static-only scoring when no sidecar exists for the prompt', () => {
+    const dir = tmpDir();
+    const {accessibility} = evaluate(COMPOSED_CODE, 'astryx', {
+      iterDir: dir,
+      promptId: 'cwm-1',
+    });
+    expect(accessibility.metrics?.runtime).toBe(false);
+    expect(accessibility.score).toBe(100);
+  });
+});
+
+// ============================================================
+// Edge cases: malformed sidecars and basis semantics
+// ============================================================
+
+describe('accessibility fold-in edge cases', () => {
+  it('survives a sidecar entry with no violations array instead of crashing the run', () => {
+    // A truncated or hand-edited axe-results.json entry: promptId present,
+    // violations missing. Must score as a clean runtime scan, not throw.
+    const malformed = {target: 'astryx'} as unknown as AxeResultForPrompt;
+    const {accessibility} = evaluate(COMPOSED_CODE, 'astryx', {
+      axeResult: malformed,
+    });
+    expect(accessibility.score).toBe(100);
+    expect(accessibility.metrics?.runtime).toBe(true);
+    expect(accessibility.metrics?.axeViolationCount).toBe(0);
+  });
+
+  it('keeps runtime metrics on a clean scan with zero violations', () => {
+    const clean: AxeResultForPrompt = {
+      target: 'astryx',
+      themesScanned: ['light', 'dark'],
+      passes: 30,
+      incomplete: 0,
+      violations: [],
+    };
+    const {accessibility} = evaluate(COMPOSED_CODE, 'astryx', {
+      axeResult: clean,
+    });
+    expect(accessibility.score).toBe(100);
+    expect(accessibility.metrics?.runtime).toBe(true);
+    expect(accessibility.metrics?.axeViolationCount).toBe(0);
+    expect(accessibility.metrics?.axePasses).toBe(30);
+  });
+
+  it('treats an explicitly null axe result as static-basis scoring', () => {
+    const {accessibility} = evaluate(COMPOSED_CODE, 'astryx', {
+      axeResult: null,
+    });
+    expect(accessibility.metrics?.runtime).toBe(false);
+  });
+
+  it('counts a rule-eligible site that does not fire', () => {
+    const code = `export default () => <div role="button" tabIndex={0} onClick={() => {}}>go</div>;`;
+    const {accessibility} = evaluate(code, 'html');
+    expect(accessibility.metrics?.eligibleByRule['click-non-interactive']).toBe(
+      1,
+    );
+    expect(accessibility.metrics?.rulesFired).toBe(0);
+    expect(accessibility.score).toBe(100);
+  });
+
+  it('tolerates a violation record with no themes list', () => {
+    const axe = {
+      target: 'astryx',
+      themesScanned: ['light'],
+      passes: 1,
+      incomplete: 0,
+      violations: [{id: 'label', impact: 'critical', help: 'labels', nodes: 1}],
+    } as unknown as AxeResultForPrompt;
+    const {accessibility} = evaluate(COMPOSED_CODE, 'astryx', {
+      axeResult: axe,
+    });
+    expect(accessibility.score).toBe(85);
+    expect(
+      accessibility.findings?.find(f => f.rule === 'axe:label'),
+    ).toBeDefined();
+  });
+});
+
+// ============================================================
+// New: honest dimension label (issue #4145 proposal 3)
+// ============================================================
+
+describe('getA11yCoverage', () => {
+  const staticScore = evaluate(COMPOSED_CODE, 'astryx');
+  const runtimeScore = evaluate(COMPOSED_CODE, 'astryx', {
+    axeResult: AXE_FIXTURE,
+  });
+
+  it('reads a score set without runtime data as static', () => {
+    expect(getA11yCoverage([staticScore, staticScore])).toEqual({
+      basis: 'static',
+      runtime: 0,
+      total: 2,
+    });
+  });
+
+  it('reads partial runtime coverage as mixed, not runtime-backed', () => {
+    expect(getA11yCoverage([staticScore, runtimeScore])).toEqual({
+      basis: 'mixed',
+      runtime: 1,
+      total: 2,
+    });
+  });
+
+  it('reads full runtime coverage as runtime', () => {
+    expect(getA11yCoverage([runtimeScore, runtimeScore]).basis).toBe('runtime');
+  });
+});
+
+describe('getA11yDimensionLabel', () => {
+  it('labels the static-only score as composition hygiene', () => {
+    expect(getA11yDimensionLabel({basis: 'static', runtime: 0, total: 8})).toBe(
+      'A11y Hygiene (composition)',
+    );
+  });
+
+  it('labels a partially runtime-backed score as mixed with its coverage', () => {
+    expect(getA11yDimensionLabel({basis: 'mixed', runtime: 6, total: 8})).toBe(
+      'Accessibility (mixed: 6/8 runtime)',
+    );
+  });
+
+  it('labels the runtime-backed score as accessibility', () => {
+    expect(
+      getA11yDimensionLabel({basis: 'runtime', runtime: 8, total: 8}),
+    ).toBe('Accessibility (runtime + hygiene)');
+  });
+});
+
+describe('getA11yBasisNote', () => {
+  const aggregate = (runtimeFlags: boolean[]) =>
+    ({
+      byPrompt: Object.fromEntries(
+        runtimeFlags.map((runtime, i) => [
+          `tc-${i}`,
+          evaluate(
+            COMPOSED_CODE,
+            'astryx',
+            runtime ? {axeResult: AXE_FIXTURE} : {},
+          ),
+        ]),
+      ),
+    }) as UniversalAggregate;
+
+  it('names static-only and mixed targets with their coverage', () => {
+    expect(
+      getA11yBasisNote([
+        {label: 'Astryx', data: aggregate([true, true])},
+        {label: 'Baseline', data: aggregate([true, false])},
+        {label: 'HTML', data: aggregate([false, false])},
+      ]),
+    ).toBe(
+      'A11y basis: HTML scored by static composition hygiene only (no runtime axe data — run axe-previews); Baseline runtime-backed on 1/2 prompts, the rest hygiene-only',
+    );
+  });
+
+  it('is null when every target is fully runtime-backed', () => {
+    expect(
+      getA11yBasisNote([{label: 'Astryx', data: aggregate([true, true])}]),
+    ).toBeNull();
+  });
+});

@@ -22,7 +22,11 @@ import type {
   TargetName,
 } from './types.js';
 import {writeJson, getResultsDir} from './utils.js';
-import {getDimensionNames, getAverageScore} from './universal-eval.js';
+import {
+  getA11yBasisNote,
+  getDimensionNames,
+  getAverageScore,
+} from './universal-eval.js';
 
 const DIMENSION_LABELS: Partial<Record<UniversalDimension, string>> = {
   correctness: 'Correctness',
@@ -202,6 +206,18 @@ function toMarkdown(opts: {
   }
 
   lines.push('');
+
+  const mdTargets: Array<{label: string; data: UniversalAggregate}> = [
+    {label: 'Astryx', data: astryx},
+    {label: 'Baseline', data: baseline},
+    ...(htmlData ? [{label: 'HTML', data: htmlData}] : []),
+    ...(twData ? [{label: 'Astryx+TW', data: twData}] : []),
+  ];
+  const basisNote = getA11yBasisNote(mdTargets);
+  if (basisNote) {
+    lines.push(`_${basisNote}._`);
+    lines.push('');
+  }
 
   // Per-prompt winners
   const promptEntries = Object.entries(byPrompt);
@@ -450,6 +466,11 @@ async function main() {
   // Dark mode
   const dmParts = targets.map(t => `${t.label} ${t.data.darkModeRate}%`);
   console.log(`\n🌙 Dark Mode: ${dmParts.join(' | ')}`);
+
+  const cliBasisNote = getA11yBasisNote(targets);
+  if (cliBasisNote) {
+    console.log(`\n♿ ${cliBasisNote}`);
+  }
 
   // Efficiency metrics comparison
   const targetEffMetrics = targets.map(t => ({
