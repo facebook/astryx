@@ -38,6 +38,7 @@ const meta: Meta<typeof Item> = {
   argTypes: {
     align: {control: 'select', options: ['center', 'start']},
     density: {control: 'select', options: ['compact', 'balanced', 'spacious']},
+    variant: {control: 'select', options: ['transparent', 'outline', 'muted']},
   },
 };
 
@@ -257,6 +258,61 @@ export const Disabled: Story = {
         description="This item cannot be interacted with"
         onClick={() => {}}
         isDisabled
+      />
+    </Stack>
+  ),
+};
+
+/**
+ * Surface variants. `transparent` is the default — an Item without the prop
+ * paints no surface, which is what lists and menus want. The surfaced variants
+ * share Card's tokens but keep Item's element-scale radius.
+ */
+export const Variants: Story = {
+  render: () => (
+    <Stack gap={2}>
+      <Item
+        label="transparent"
+        description="No surface — the default, shown here without the prop"
+      />
+      <Item
+        variant="outline"
+        label="outline"
+        description="Border only, no fill"
+      />
+      <Item
+        variant="muted"
+        label="muted"
+        description="Muted background, no border"
+      />
+    </Stack>
+  ),
+};
+
+/**
+ * Hover and selection composite *over* the variant surface rather than
+ * replacing it, so a bordered or filled Item still gives interaction feedback.
+ */
+export const VariantsInteractive: Story = {
+  render: () => (
+    <Stack gap={2}>
+      <Item
+        label="Clickable transparent"
+        description="Hover me"
+        onClick={() => {}}
+      />
+      <Item
+        variant="outline"
+        label="Selected outline"
+        description="Selection tint over the border"
+        isSelected
+        onClick={() => {}}
+      />
+      <Item
+        variant="muted"
+        label="Clickable muted"
+        description="Hover still reads, even though muted and the hover overlay share a token value in light mode"
+        onClick={() => {}}
       />
     </Stack>
   ),

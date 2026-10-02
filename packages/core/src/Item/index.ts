@@ -10,4 +10,4 @@
  */
 
 export {Item} from './Item';
-export type {ItemProps, ItemAlign, ItemDensity} from './Item';
+export type {ItemProps, ItemAlign, ItemDensity, ItemVariant} from './Item';
