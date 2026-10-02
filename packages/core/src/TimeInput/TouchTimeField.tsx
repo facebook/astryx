@@ -475,7 +475,9 @@ export function TouchTimeField({
         isOpen={isSheetOpen}
         onOpenChange={setIsSheetOpen}
         label={label}
-        height="hug">
+        height="hug"
+        // sheetBody owns the inset, including the band under the grab handle.
+        padding={0}>
         <div {...stylex.props(styles.sheetBody)}>
           <div {...stylex.props(styles.wheels)}>
             <Wheel
