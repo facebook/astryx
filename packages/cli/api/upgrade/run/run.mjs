@@ -114,7 +114,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
   // Resolve the source dir against the API's cwd (not process.cwd()) so a
   // programmatic caller in another directory scans the right tree. Confine it to
   // cwd: --apply rewrites files in place, so a `..`-escaping or out-of-tree
-  // absolute --path must be rejected (parity with template/theme/swizzle,
+  // absolute --path must be rejected (parity with template/theme/swizzle/layout,
   // and this is the most destructive command). allowAbsolute permits an absolute
   // path that still resolves inside cwd.
   let path_;

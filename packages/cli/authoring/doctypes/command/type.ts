@@ -75,7 +75,7 @@ export interface CommandDoc extends AuthoredDocGraphFields {
   args?: CommandArgDoc[];
   /** Flags/options. */
   options?: CommandOptionDoc[];
-  /** Subcommand names (for command groups like `theme`). */
+  /** Subcommand names (for command groups like `theme` / `layout`). */
   subcommands?: string[];
   /** Terminal examples. */
   examples?: CommandExampleDoc[];
