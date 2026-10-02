@@ -50,7 +50,7 @@ export default {
         },
         {
           type: 'prose',
-          text: 'Keep the section short: how to add the package and apply the theme ({@link generic:use-a-theme-in-an-app}). Extend `theme` rather than a topic another package replaces, or an app that lists that package first drops your section.',
+          text: 'Keep the section short: how to add the package, apply the theme ({@link generic:use-a-theme-in-an-app}), and — if the theme uses a custom font — which fonts the app must load ({@link generic:fonts-and-assets}). Extend `theme` rather than a topic another package replaces, or an app that lists that package first drops your section.',
         },
       ],
     },
