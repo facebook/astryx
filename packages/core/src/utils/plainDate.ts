@@ -242,11 +242,20 @@ export function plainDateSetEndOfWeekExclusive(
 }
 
 export function plainDateGetWeekNumber(pd: PlainDate): number {
-  const d = plainDateToDate(pd);
-  const dayNum = d.getDay() || 7;
-  d.setDate(d.getDate() + 4 - dayNum);
-  const yearStart = new Date(d.getFullYear(), 0, 1);
-  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  // ISO week number: ceil(day-of-year of the week's Thursday / 7). Computed
+  // entirely on UTC anchors — the same DST immunity plainDateDiffDays relies
+  // on — because mixing local-time instants leaks the host zone's DST offset
+  // into the day count. When Jan 1 is a Friday (so every Thursday's day-of-year
+  // is an exact multiple of 7), a one-hour offset from a zone whose DST ends
+  // after New Year rounds a whole week up: Sydney, Auckland and Santiago users
+  // saw week 15 for the week that is ISO week 14.
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const utcMidnight = Date.UTC(pd.year, pd.month - 1, pd.day);
+  const dayNum = new Date(utcMidnight).getUTCDay() || 7;
+  const thursday = utcMidnight + (4 - dayNum) * msPerDay;
+  const yearStart = Date.UTC(new Date(thursday).getUTCFullYear(), 0, 1);
+  const dayOfYear = (thursday - yearStart) / msPerDay + 1;
+  return Math.ceil(dayOfYear / 7);
 }
 
 // e.g. "Wednesday, May 21, 2026" (locale-dependent)
