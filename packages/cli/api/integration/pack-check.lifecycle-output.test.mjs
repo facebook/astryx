@@ -24,6 +24,8 @@ function writeThemePackage(scripts) {
         name: '@acme/widgets',
         version: '1.0.0',
         files: ['astryx.integration.mjs', 'themes'],
+        peerDependencies: {'@astryxdesign/cli': '>=0.7.0'},
+        peerDependenciesMeta: {'@astryxdesign/cli': {optional: true}},
         scripts,
       },
       null,

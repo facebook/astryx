@@ -15,7 +15,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import {describe, expect, it} from 'vitest';
-import {TEMPLATE_RUBRIC} from '../packages/cli/assets/docs/tree/template-quality.doc.mjs';
+import {TEMPLATE_RUBRIC} from '../packages/cli/assets/docs/tree/template-grading-rubric.doc.mjs';
 
 import {
   TEMPLATE_CATEGORIES,
