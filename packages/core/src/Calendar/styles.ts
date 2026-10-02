@@ -49,6 +49,39 @@ export const calendarStyles = stylex.create({
     fontSize: typeScaleVars['--text-label-size'],
     color: colorVars['--color-text-primary'],
   },
+  /**
+   * Replaces monthYearLabel when `hasMonthYearPickers` is set: keeps the
+   * caption slot centered between the nav buttons while holding the two
+   * picker triggers side by side.
+   */
+  pickerGroup: {
+    display: 'flex',
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacingVars['--spacing-1'],
+    minWidth: 0,
+  },
+  /**
+   * Theme-target wrapper for one picker trigger (see Calendar.tsx for why
+   * the target cannot live on Selector itself). It owns the caption text
+   * color and weight (the ghost Selector's defaults) so a theme's color or
+   * fontWeight on the target reaches the label through pickerTrigger.
+   */
+  pickerItem: {
+    display: 'inline-flex',
+    minWidth: 0,
+    color: colorVars['--color-text-primary'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+  },
+  /**
+   * Applied to each picker's Selector: the trigger inherits its text color
+   * and weight from pickerItem instead of setting its own.
+   */
+  pickerTrigger: {
+    color: 'inherit',
+    fontWeight: 'inherit',
+  },
   monthsContainer: {
     display: 'flex',
     // Wraps rather than overflowing: two months side by side need ~488px, so
