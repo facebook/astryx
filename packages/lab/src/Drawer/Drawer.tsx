@@ -4,7 +4,7 @@
 
 /**
  * @file Drawer.tsx
- * @input Uses React, StyleX, theme tokens and text defaults, Icon/IconButton, shared focus/dismissal/depth primitives, i18n, scroll locking/dialog presence, BaseProps, merged refs/props, themeProps
+ * @input Uses React, StyleX, theme tokens and text defaults, the Dialog purpose type, shared focus/dismissal/depth primitives, scroll locking/dialog presence, BaseProps, merged refs/props, themeProps
  * @output Exports Drawer component and DrawerProps
  * @position Lab implementation; consumed by index.ts, tested by Drawer.test.tsx, demonstrated in Storybook
  *
@@ -35,9 +35,15 @@
  * Sibling drawers use the shared layer dismissal stack for topmost-only Escape
  * handling and the browser top layer's chronological paint order.
  *
+ * Dismissal follows Dialog: `purpose` decides whether Escape and a scrim click
+ * request close, and Drawer renders no close button of its own. Compose
+ * `DrawerHeader` with `onOpenChange` for a visible close action, as with
+ * `DialogHeader`.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/lab/src/Drawer/Drawer.doc.mjs (props table, features, usage)
  * - /packages/lab/src/Drawer/Drawer.test.tsx (tests for new/changed behavior)
+ * - /packages/lab/src/Drawer/Drawer.spec.md (component contract)
  * - /packages/lab/src/Drawer/index.ts (exports if types change)
  * - /apps/storybook/stories/Drawer.stories.tsx (examples and visual coverage)
  */
@@ -51,19 +57,16 @@ import {
   durationVars,
   easeVars,
   shadowVars,
-  spacingVars,
   typeScaleVars,
   typographyVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
-import {Icon} from '@astryxdesign/core/Icon';
-import {IconButton} from '@astryxdesign/core/IconButton';
+import type {DialogPurpose} from '@astryxdesign/core/Dialog';
 import {
   useFocusTrap,
   useMergedRefs,
   useScrollLock,
 } from '@astryxdesign/core/hooks';
 import {LayerDepthProvider, useLayerDismissal} from '@astryxdesign/core/Layer';
-import {useTranslator} from '@astryxdesign/core/i18n';
 import {
   composeEventHandlers,
   mergeProps,
@@ -235,16 +238,6 @@ const styles = stylex.create({
     paddingBlockEnd: 'env(safe-area-inset-bottom, 0px)',
     outline: 'none',
   },
-  // Close affordance floats in the top-trailing corner, above the
-  // scrollable content.
-  controls: {
-    position: 'absolute',
-    insetBlockStart: spacingVars['--spacing-2'],
-    insetInlineEnd: spacingVars['--spacing-2'],
-    display: 'flex',
-    gap: spacingVars['--spacing-1'],
-    zIndex: 1,
-  },
 });
 
 const dynamicStyles = stylex.create({
@@ -274,10 +267,11 @@ export interface DrawerProps extends BaseProps<HTMLDialogElement> {
   isOpen: boolean;
 
   /**
-   * Called when the drawer requests an open-state change. Escape, scrim
-   * click, and the built-in close button call it with `false`. The caller owns
-   * the open state. When sibling drawers are open, Escape only closes the top
-   * (last-opened) drawer.
+   * Called when the drawer requests an open-state change. Escape and a scrim
+   * click call it with `false` as `purpose` allows; a `DrawerHeader` close
+   * button calls it when you pass the same callback to the header. The caller
+   * owns the open state. When sibling drawers are open, Escape only closes the
+   * top (last-opened) drawer.
    */
   onOpenChange: (isOpen: boolean) => void;
 
@@ -324,12 +318,16 @@ export interface DrawerProps extends BaseProps<HTMLDialogElement> {
   hasScrim?: boolean;
 
   /**
-   * Whether to render the built-in close button in the top-trailing
-   * corner. Enabled by default for both modal and non-modal drawers so every
-   * overlay has an obvious dismissal affordance.
-   * @default true
+   * Configures how the drawer enables dismissals, matching Dialog.
+   * - required: Disables Escape and scrim click (for mandatory flows); a
+   *   modal required drawer is exposed as an `alertdialog`
+   * - form: Prevents scrim click, allows the Escape key
+   * - info: Allows Escape and scrim click
+   *
+   * A non-modal drawer has no scrim, so `form` and `info` behave the same.
+   * @default 'info'
    */
-  hasCloseButton?: boolean;
+  purpose?: DialogPurpose;
 
   /**
    * Drawer content. Rendered inside a full-height scrollable area.
@@ -359,13 +357,19 @@ export interface DrawerProps extends BaseProps<HTMLDialogElement> {
  * closes the top-most open drawer; focus returns to the element that
  * opened it.
  *
+ * Dismissal matches Dialog: `purpose` decides whether Escape and a scrim click
+ * close the drawer, and `DrawerHeader` renders a close button when given
+ * `onOpenChange`.
+ *
  * @example
  * ```
  * const [selected, setSelected] = useState(null);
+ * const handleOpenChange = isOpen => !isOpen && setSelected(null);
  * <Drawer
  *   isOpen={selected != null}
- *   onOpenChange={isOpen => !isOpen && setSelected(null)}
+ *   onOpenChange={handleOpenChange}
  *   label={`Details: ${selected?.name}`}>
+ *   <DrawerHeader title={selected?.name} onOpenChange={handleOpenChange} />
  *   <HostDetails host={selected} />
  * </Drawer>
  * ```
@@ -378,7 +382,7 @@ export function Drawer({
   isFullWidthOnMobile = false,
   label,
   hasScrim = true,
-  hasCloseButton = true,
+  purpose = 'info',
   children,
   xstyle,
   className,
@@ -393,7 +397,9 @@ export function Drawer({
     isActive: isOpen && hasScrim,
   });
   const mergedDialogRef = useMergedRefs(ref, dialogRef, focusTrapRef);
-  const t = useTranslator();
+  // Derive dismissal behavior from purpose, as Dialog does.
+  const allowEscape = purpose !== 'required';
+  const allowScrimClick = purpose === 'info';
   // Whether the panel paints: true while open and for the whole slide-out.
   const [isRendered, setIsRendered] = useState(isOpen);
 
@@ -423,6 +429,9 @@ export function Drawer({
     // the stack until the same commit that hides the host, so a second Escape
     // cannot fall through to a lower layer during the exit animation.
     isActive: isRendered,
+    // A `required` drawer consumes Escape without closing, so the press cannot
+    // fall through and dismiss a layer behind it either.
+    escapeBehavior: allowEscape ? 'close' : 'block',
     onDismiss: handleDismiss,
     getContainer: () => dialogRef.current,
   });
@@ -436,22 +445,22 @@ export function Drawer({
   const handleCancel = useCallback(
     (event: React.SyntheticEvent<HTMLDialogElement>) => {
       event.preventDefault();
-      if (shouldDismissOnCloseRequest()) {
+      if (shouldDismissOnCloseRequest() && allowEscape) {
         handleDismiss();
       }
     },
-    [handleDismiss, shouldDismissOnCloseRequest],
+    [allowEscape, handleDismiss, shouldDismissOnCloseRequest],
   );
 
   // Clicks on the ::backdrop target the <dialog> element itself; clicks on
   // drawer content always target a child (the content area fills the panel).
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLDialogElement>) => {
-      if (event.target === event.currentTarget && hasScrim) {
+      if (event.target === event.currentTarget && hasScrim && allowScrimClick) {
         onOpenChange(false);
       }
     },
-    [hasScrim, onOpenChange],
+    [allowScrimClick, hasScrim, onOpenChange],
   );
 
   const widthValue = typeof width === 'number' ? `${width}px` : width;
@@ -501,6 +510,9 @@ export function Drawer({
       popover={hasScrim ? undefined : 'manual'}
       aria-label={label}
       aria-modal={hasScrim ? 'true' : undefined}
+      {...(purpose === 'required' && hasScrim
+        ? {role: 'alertdialog'}
+        : undefined)}
       onClick={composeEventHandlers(onClickProp, handleClick)}
       onKeyDown={onKeyDownProp}
       onCancel={handleCancel}>
@@ -510,16 +522,6 @@ export function Drawer({
         <div tabIndex={-1} {...stylex.props(styles.content)}>
           {children}
         </div>
-        {hasCloseButton && (
-          <div {...stylex.props(styles.controls)}>
-            <IconButton
-              icon={<Icon icon="close" size="sm" color="inherit" />}
-              label={t('@astryx.dialog.close')}
-              variant="ghost"
-              onClick={handleDismiss}
-            />
-          </div>
-        )}
       </LayerDepthProvider>
     </dialog>
   );

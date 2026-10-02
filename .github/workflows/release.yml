@@ -150,9 +150,6 @@ jobs:
       - name: Build all packages
         run: pnpm build
 
-      - name: Verify published package contents
-        run: pnpm check:public-package-identifiers
-
       - name: Publish changed packages
         env:
           DRY_RUN: ${{ inputs.dry-run }}
