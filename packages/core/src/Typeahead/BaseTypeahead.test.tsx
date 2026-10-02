@@ -68,6 +68,7 @@ const testStyles = stylex.create({
 describe('BaseTypeahead', () => {
   it('forwards supported DOM, styling, and event props to the combobox input', () => {
     const onBlur = vi.fn();
+    const onCompositionEnd = vi.fn();
     const onFocus = vi.fn();
     const onPointerDown = vi.fn();
 
@@ -81,6 +82,7 @@ describe('BaseTypeahead', () => {
         className="consumer-input"
         data-audit-state="forwarded"
         onBlur={onBlur}
+        onCompositionEnd={onCompositionEnd}
         onFocus={onFocus}
         onPointerDown={onPointerDown}
         style={{letterSpacing: '0.08em'}}
@@ -98,9 +100,11 @@ describe('BaseTypeahead', () => {
     fireEvent.pointerDown(input);
     fireEvent.focus(input);
     fireEvent.blur(input);
+    fireEvent.compositionEnd(input);
     expect(onPointerDown).toHaveBeenCalledOnce();
     expect(onFocus).toHaveBeenCalledOnce();
     expect(onBlur).toHaveBeenCalledOnce();
+    expect(onCompositionEnd).toHaveBeenCalledOnce();
   });
 
   it('preserves native input attributes when legacy aliases are undefined', () => {

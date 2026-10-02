@@ -43,7 +43,7 @@ export default function TokenizerCreatable() {
           value={tags}
           onChange={items => setTags(items)}
           hasCreate
-          placeholder="Type a tag and press Enter..."
+          placeholder="Type or paste a list of tags..."
           style={{width: 400}}
         />
       </Stack>

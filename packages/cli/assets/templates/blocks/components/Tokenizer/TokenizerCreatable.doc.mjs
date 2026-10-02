@@ -6,7 +6,7 @@ export const doc = {
   exampleFor: 'Tokenizer',
   name: 'Tokenizer \u2014 Creatable',
   displayName: 'Tokenizer \u2014 Creatable',
-  description: 'Free-text tokenizer for creating custom tags and a combined create-or-search pattern. Use when users need to enter values that may not exist in a predefined list.',
+  description: 'Free-text tokenizer for creating custom tags and a combined create-or-search pattern. Use when users need to enter values that may not exist in a predefined list. With hasCreate, typing a comma or pasting a comma/newline-separated list adds several tokens at once (see the delimiters prop).',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: ['Tokenizer', 'Layout', 'Text'],
