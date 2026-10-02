@@ -72,7 +72,9 @@ override.
   and `weight` MUST remain separate caller requests. Size resolution remains the
   explicit prop when supplied, then the nearest component-owned default, then
   standalone `md`. Omitting appearance or weight uses the selected icon
-  configuration's declared default.
+  configuration's declared default. A component owner SHOULD omit capability
+  requests the component does not own and MUST NOT hardcode an appearance or weight
+  value absent from any supported theme contract.
 - **FR2 — The base size scale remains compatible.** `xsm` (12px), `sm` (16px),
   `md` (20px), and `lg` (24px) at the default 16px root MUST remain valid with
   their existing dimensions. A theme MAY define a preferred typed size scale and
