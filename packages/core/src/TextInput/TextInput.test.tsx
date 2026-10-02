@@ -11,7 +11,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TestIcon} from '../__tests__/TestIcon';
 import {declaredValue} from '../__tests__/stylexDeclarations';
@@ -712,6 +712,54 @@ describe('TextInput', () => {
       await user.click(screen.getByRole('button', {name: 'Clear Name'}));
       expect(onChange).toHaveBeenCalledWith('', null);
     });
+
+    it('calls onChange and changeAction with empty string when clear is clicked', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      const changeAction = vi.fn();
+      render(
+        <TextInput
+          label="Name"
+          value="hello"
+          onChange={onChange}
+          changeAction={changeAction}
+          hasClear
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Clear Name'}));
+      expect(onChange).toHaveBeenCalledWith('', null);
+      expect(changeAction).toHaveBeenCalledWith('', null);
+    });
+
+    it('presents optimistic empty value and busy state while clear changeAction is pending', async () => {
+      const user = userEvent.setup();
+      let resolveAction: () => void = () => {};
+      const changeAction = vi.fn(
+        async () =>
+          new Promise<void>(resolve => {
+            resolveAction = resolve;
+          }),
+      );
+      render(
+        <TextInput
+          label="Name"
+          value="hello"
+          onChange={() => {}}
+          changeAction={changeAction}
+          hasClear
+        />,
+      );
+      const input = screen.getByRole('textbox');
+      expect(input).toHaveValue('hello');
+
+      await user.click(screen.getByRole('button', {name: 'Clear Name'}));
+      expect(input).toHaveValue('');
+      expect(input).toHaveAttribute('aria-busy', 'true');
+
+      await act(async () => {
+        resolveAction();
+      });
+    });
   });
 
   describe('click-to-focus', () => {
@@ -1131,4 +1179,3 @@ describe('TextInput text size', () => {
     );
   });
 });
-
