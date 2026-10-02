@@ -437,9 +437,11 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
 
   const registryResult = await reconcileCompositions();
 
-  const mergedFilesChanged =
-    (coreResult?.totalFilesChanged ?? 0) +
-    (integrationResult?.totalFilesChanged ?? 0);
+  // A file a core codemod AND an integration codemod both changed is one file.
+  const mergedFilesChanged = new Set([
+    ...(coreResult?.changedFiles ?? []),
+    ...(integrationResult?.changedFiles ?? []),
+  ]).size;
   const mergedTransformsApplied =
     (coreResult?.totalTransformsApplied ?? 0) +
     (integrationResult?.totalTransformsApplied ?? 0);
