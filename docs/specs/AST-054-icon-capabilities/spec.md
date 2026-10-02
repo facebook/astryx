@@ -218,6 +218,12 @@ a missing appearance or weight.
 Today `Icon` supports only the closed `xsm | sm | md | lg` size values. It has no
 appearance or weight prop, and theme icon entries are fixed React nodes.
 
+**Compatibility:** this proposal is additive and is not intended to require a caller
+or theme migration. Existing sizes, fixed icon entries, omitted optional props,
+defaults, and node-returning programmatic lookups stay unchanged. An implementation
+that removes or reinterprets those behaviors is a separate breaking change and is not
+authorized by this spec.
+
 **Current conflict:** `architecture:component-theming-surface` INV14 keeps
 `Icon.size` closed because a missing custom size has no safe fallback. This proposal
 does not invent a fallback. Instead, every active theme must define every added size
