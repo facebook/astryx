@@ -72,6 +72,7 @@ import {
 } from './utils';
 import {useCombobox, useSelectedItemOffset} from './hooks';
 import {useMenuPress} from '../hooks/useMenuPress';
+import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {SelectorOption} from './SelectorOption';
@@ -293,6 +294,17 @@ const styles = stylex.create({
     // The input trigger's text inset includes its border. Mirror that extra
     // pixel in the menu; the borderless ghost variant needs no correction.
     paddingInline: `calc(${spacingVars['--spacing-1']} + ${borderVars['--border-width']})`,
+  },
+  // Scroll ownership by the browser's own signal, as the menus declare it: a
+  // list whose options fit keeps every finger, so a slide over the options
+  // stays a slide; one that scrolls lets the browser pan it vertically and
+  // cancel the press when it does.
+  touchNone: {
+    touchAction: 'none',
+  },
+  touchPanY: {
+    touchAction: 'pan-y',
+    overscrollBehavior: 'contain',
   },
   // Same correction for the search row's gutter, so the search field and the
   // option rows share one left edge.
@@ -1248,11 +1260,29 @@ export function Selector<T extends SelectorOptionType>(
     const match = /-item-(\d+)$/.exec(row.id);
     return match == null ? -1 : Number(match[1]);
   }, []);
+  // Re-measured when the option set changes; the count is the dependency.
+  const listboxHasOverflow = useMenuOverflow(
+    listboxRef,
+    filteredItems.length,
+    surface.isOpen,
+  );
   const listboxPress = useMenuPress({
     menuRef: listboxRef,
     itemSelector: '[role="option"]:not([aria-disabled="true"])',
     onHighlight: row => {
-      setHighlightedIndex(row == null ? -1 : optionIndexFromRow(row));
+      if (row == null) {
+        setHighlightedIndex(-1);
+        return;
+      }
+      // The hover path, not the raw setter: a pointer-driven highlight must
+      // never scroll the option into view, or the rows move under the
+      // stationary finger and the highlight runs away (the same rule hover
+      // follows).
+      const index = optionIndexFromRow(row);
+      const item = filteredItems[index];
+      if (item != null) {
+        onItemMouseEnter(item, index);
+      }
     },
     onActivate: row => {
       const item = filteredItems[optionIndexFromRow(row)];
@@ -1652,6 +1682,7 @@ export function Selector<T extends SelectorOptionType>(
         {...listboxPress.menuProps}
         {...stylex.props(
           styles.dropdown,
+          listboxHasOverflow ? styles.touchPanY : styles.touchNone,
           surface.activePresentation === 'popover' &&
             variant !== 'ghost' &&
             styles.dropdownInput,
@@ -1689,6 +1720,7 @@ export function Selector<T extends SelectorOptionType>(
       }
       {...stylex.props(
         styles.dropdown,
+        listboxHasOverflow ? styles.touchPanY : styles.touchNone,
         surface.activePresentation === 'popover' &&
           variant !== 'ghost' &&
           styles.dropdownInput,

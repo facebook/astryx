@@ -4447,6 +4447,47 @@ describe('Selector press model', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
+  it('a pointer-driven highlight never scrolls the option into view (the rows would move under the finger)', async () => {
+    const scrollIntoView = vi.fn();
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scrollIntoView;
+    try {
+      const user = userEvent.setup();
+      render(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
+      await user.click(screen.getByRole('combobox'));
+      scrollIntoView.mockClear();
+      const apple = screen.getByRole('option', {name: /Apple/, ...h});
+      const cherry = screen.getByRole('option', {name: /Cherry/, ...h});
+      fireEvent.pointerDown(apple, touch);
+      fireEvent.pointerMove(cherry, touch);
+      expect(screen.getByRole('combobox')).toHaveAttribute(
+        'aria-activedescendant',
+        cherry.id,
+      );
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
+  });
+
+  it('the listbox owns touch scrolling: touch-action none while the options fit', async () => {
+    const user = userEvent.setup();
+    render(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
+    await user.click(screen.getByRole('combobox'));
+    const listbox = screen.getByRole('listbox', h);
+    // jsdom does not compute `touch-action`; StyleX class names hash the
+    // declaration, so the same declaration yields the same class (the dev
+    // build prefixes a debug name; the hash is the last token).
+    const touchStyles = stylex.create({
+      none: {touchAction: 'none'},
+      panY: {touchAction: 'pan-y'},
+    });
+    const hash = (style: stylex.StyleXStyles) =>
+      stylex.props(style).className!.split(' ').pop()!;
+    expect(listbox).toHaveClass(hash(touchStyles.none));
+    expect(listbox).not.toHaveClass(hash(touchStyles.panY));
+  });
+
   it('marks the listbox as carrying the press model', async () => {
     const user = userEvent.setup();
     render(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
