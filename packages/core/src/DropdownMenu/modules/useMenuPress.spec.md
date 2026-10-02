@@ -18,6 +18,7 @@ verified_by:
     packages/core/src/DropdownMenu/DropdownMenuSubMenu.test.tsx,
     packages/core/src/ContextMenu/ContextMenu.test.tsx,
     packages/core/src/Selector/Selector.test.tsx,
+    packages/core/src/DropdownMenu/__tests__/MenuPress.a11y.chromium.spec.ts,
   ]
 parent_component: component:DropdownMenu
 references:
@@ -33,15 +34,15 @@ references:
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | New public hook `useMenuPress` and the pure `menuPressStep` machine it drives, exported from `@astryxdesign/core/hooks`; the marker `data-astryx-menu-press` on every menu or listbox root that mounts it. No consumer prop of DropdownMenu, ContextMenu, DropdownMenuSubMenu or Selector changes.                                                                                                                               |
-| Behavior                | The row under the pointer when it is RELEASED is the row that acts; the highlight follows a held mouse, finger or pen; a mouse released outside closes the menu and a finger leaves it open; the browser's stray click for a tracked gesture never acts; the menu root declares `touch-action` by overflow so the browser decides when a finger is scrolling.                                                                    |
-| End-user impact         | A finger that lands on one menu row and lifts on another acts on the second, once, instead of on the first; a drag inside an open menu picks where it lets go; a mouse that lets go outside dismisses, a finger does not. Keyboard behavior, trigger opening and sub-menu hover are unchanged.                                                                                                                                   |
-| Builder impact          | None for consumers of the five surfaces: they mount the model themselves. A component CAN adopt this model only when it meets the eligibility criteria below, and its component contract MUST explicitly name this module and the governed surfaces before mounting `useMenuPress`. The builder supplies an enabled-row selector and a `touch-action` declaration.                                                               |
-| Compatibility/readiness | Additive public hook; existing consumer props unchanged; shipped keyboard and trigger behavior unchanged. One deliberate shipped-behavior change (DEC-3): a mouse released outside a menu now dismisses it. jsdom evidence is complete; iOS WebKit behavior and Chromium touch scrolling remain browser-only evidence (OQ1). Authority: current; `cixzhang` approved the model for explicitly adopting components on 2026-10-02. |
-| Review checks           | Reject a row that acts on `pointerdown` or from the browser's click after a tracked release; a second activation reaching a row for one gesture; a highlight that lights two rows; a finger release outside that closes the menu, or a mouse release outside that leaves it open; a menu root without a `touch-action` declaration; a picker whose listbox takes DOM focus for the highlight.                                    |
-| Governing rules         | `architecture:interaction-modality` INV2–INV4 (one operable path per modality, hover as enhancement, menus may move focus with the pointer); `architecture:public-component-api` for the new public hook; `architecture:layer-runtime` for the native light dismiss the model leaves in place; `family:overlay-dismissal` for Escape ordering, which this module does not change.                                                |
+| Area                    | Contract                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | New public hook `useMenuPress` and the pure `menuPressStep` machine it drives, exported from `@astryxdesign/core/hooks`; the marker `data-astryx-menu-press` on every menu or listbox root that mounts it. No consumer prop of DropdownMenu, ContextMenu, DropdownMenuSubMenu or Selector changes.                                                                                                                                                                                      |
+| Behavior                | The row under the pointer when it is RELEASED is the row that acts; the highlight follows a held mouse, finger or pen; a mouse released outside closes the menu and a finger leaves it open; the browser's stray click for a tracked gesture never acts; the menu root declares `touch-action` by overflow so the browser decides when a finger is scrolling.                                                                                                                           |
+| End-user impact         | A finger that lands on one menu row and lifts on another acts on the second, once, instead of on the first; a drag inside an open menu picks where it lets go; a mouse that lets go outside dismisses, a finger does not. Keyboard behavior, trigger opening and sub-menu hover are unchanged.                                                                                                                                                                                          |
+| Builder impact          | None for consumers of the five surfaces: they mount the model themselves. A component CAN adopt this model only when it meets the eligibility criteria below, and its component contract MUST explicitly name this module and the governed surfaces before mounting `useMenuPress`. The builder supplies an enabled-row selector and a `touch-action` declaration.                                                                                                                      |
+| Compatibility/readiness | Additive public hook; existing consumer props unchanged; shipped keyboard and trigger behavior unchanged. One deliberate shipped-behavior change (DEC-3): a mouse released outside a menu now dismisses it. jsdom evidence is complete, and real-Chromium evidence covers the touch pan, the finger slide and its stray click; iOS WebKit evidence is not required for this module. Authority: current; `cixzhang` approved the model for explicitly adopting components on 2026-10-02. |
+| Review checks           | Reject a row that acts on `pointerdown` or from the browser's click after a tracked release; a second activation reaching a row for one gesture; a highlight that lights two rows; a finger release outside that closes the menu, or a mouse release outside that leaves it open; a menu root without a `touch-action` declaration; a picker whose listbox takes DOM focus for the highlight.                                                                                           |
+| Governing rules         | `architecture:interaction-modality` INV2–INV4 (one operable path per modality, hover as enhancement, menus may move focus with the pointer); `architecture:public-component-api` for the new public hook; `architecture:layer-runtime` for the native light dismiss the model leaves in place; `family:overlay-dismissal` for Escape ordering, which this module does not change.                                                                                                       |
 
 This table is a review projection; the body below is authoritative.
 
@@ -217,7 +218,7 @@ owned by the item components.
 | FR1–FR5, FR7, AR1, AR3 | `useMenuPress.test.tsx` with an injected hit test                                            | release over another row, tap, stray click, `detail: 0`, mouse/finger outside, pointercancel, second pointer, autoscroll | A second activation, a swallowed assistive click, a wrong dismissal, or a dead autoscroll fails   |
 | FR1, FR3–FR5           | `DropdownMenu.test.tsx`, `DropdownMenuSubMenu.test.tsx`, `ContextMenu.test.tsx` press suites | finger slide across rows, outside release by mouse and finger, `touch-action`, flyout release, root marker               | Each removed behavior fails its named case                                                        |
 | FR1, FR3, AR2          | `Selector.test.tsx` press model suite                                                        | finger release over another option, finger/mouse release outside, listbox marker                                         | A listbox that takes focus, acts on the press option, or closes under a finger fails              |
-| FR4 (scroll), OQ1      | Browser evidence only                                                                        | Chromium touch pan in an overflowing menu; iOS WebKit finger slide and stray click                                       | Not provable in jsdom                                                                             |
+| FR4 (scroll)           | `MenuPress.a11y.chromium.spec.ts` (real Chromium)                                            | Chromium touch pan in an overflowing menu; touch-action by overflow; finger slide and its stray click                    | Not provable in jsdom; a pan that acts on a row, or a slide that acts on the press row, fails     |
 
 ## Decision log
 
@@ -259,10 +260,12 @@ availability alone does not make a component an adopter.
 
 ## Open questions
 
-- **OQ1 — Browser-only evidence.** (`checkable`) The browser's touch pan in
-  an overflowing menu and the finger slide with its stray click on iOS
-  WebKit cannot be exercised in jsdom. Chromium and iOS evidence remain
-  required before this implementation is accepted for release.
+None. OQ1 (browser-only evidence) is resolved: the touch pan, the finger
+slide and its stray click cannot be exercised in jsdom, and real-Chromium
+evidence for them now exists in
+`packages/core/src/DropdownMenu/__tests__/MenuPress.a11y.chromium.spec.ts`.
+`cixzhang` ruled on 2026-10-02 that iOS WebKit evidence is not required for
+this module, now or later; real Chromium is the evidence bar.
 
 ## Content boundary
 
