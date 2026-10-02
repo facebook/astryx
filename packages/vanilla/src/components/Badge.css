@@ -2,8 +2,10 @@
 
 :where(.ax-badge) {
   display: inline-flex;
+  width: fit-content;
   max-width: 100%;
   min-width: 0;
+  align-self: flex-start;
   height: var(--spacing-5);
   align-items: center;
   justify-content: center;

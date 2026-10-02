@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="en" data-astryx-theme="neutral" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Astryx Vanilla static components</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/core@0.6.5/src/reset.css" />
+    <link
+      id="astryx-vanilla-css"
+      rel="stylesheet"
+      href="../dist/astryx-vanilla.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-neutral@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-butter@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-y2k@0.6.5/dist/theme.css" />
+    <style>
+      @layer astryx-base {
+        .ax-gallery {
+          min-height: 100vh;
+          background: var(--color-background-body);
+        }
+        .ax-gallery__toolbar {
+          position: sticky;
+          z-index: 10;
+          top: 0;
+          display: flex;
+          align-items: end;
+          gap: var(--spacing-3);
+          padding: var(--spacing-3) var(--spacing-4);
+          border-block-end: var(--border-width) solid var(--color-border);
+          background: color-mix(
+            in srgb,
+            var(--color-background-surface),
+            transparent 8%
+          );
+          backdrop-filter: blur(12px);
+        }
+        .ax-gallery__source {
+          margin-inline-start: auto;
+          color: var(--color-text-secondary);
+          font-size: var(--text-supporting-size);
+        }
+        .ax-gallery__page {
+          display: grid;
+          max-width: 90rem;
+          margin-inline: auto;
+          gap: var(--spacing-6);
+          padding: var(--spacing-6);
+        }
+        .ax-gallery__grid {
+          display: grid;
+          grid-template-columns: repeat(
+            auto-fit,
+            minmax(min(100%, 22rem), 1fr)
+          );
+          gap: var(--spacing-4);
+        }
+        .ax-gallery__demo {
+          min-width: 0;
+          padding: var(--spacing-4);
+          border: var(--border-width) solid var(--color-border);
+          border-radius: var(--radius-container);
+          background: var(--color-background-surface);
+        }
+        .ax-gallery__demo--wide {
+          grid-column: 1 / -1;
+        }
+        .ax-gallery__controls {
+          display: grid;
+          gap: var(--spacing-3);
+        }
+        .ax-gallery__nav-layout {
+          display: grid;
+          min-height: 28rem;
+          grid-template-columns: auto minmax(0, 1fr);
+          overflow: hidden;
+          border: var(--border-width) solid var(--color-border);
+          border-radius: var(--radius-container);
+          background: var(--color-background-surface);
+        }
+        .ax-gallery__nav-content {
+          padding: var(--spacing-5);
+        }
+        @media (max-width: 48rem) {
+          .ax-gallery__toolbar {
+            align-items: stretch;
+            flex-direction: column;
+          }
+          .ax-gallery__source {
+            margin-inline-start: 0;
+          }
+          .ax-gallery__page {
+            padding: var(--spacing-3);
+          }
+          .ax-gallery__nav-layout {
+            grid-template-columns: var(--spacing-12) minmax(0, 1fr);
+          }
+          .ax-gallery__nav-layout .ax-side-nav {
+            width: var(--spacing-12);
+          }
+          .ax-gallery__nav-layout .ax-side-nav__brand-copy,
+          .ax-gallery__nav-layout .ax-side-nav__section-title,
+          .ax-gallery__nav-layout .ax-side-nav__item-label {
+            display: none;
+          }
+          .ax-gallery__nav-layout .ax-side-nav__item {
+            width: var(--size-element-md);
+            justify-content: center;
+            padding-inline: 0;
+          }
+        }
+      }
+    </style>
+    <script>
+      const params = new URLSearchParams(location.search);
+      const ref = params.get('ref');
+      const initialTheme = params.get('theme') || 'neutral';
+      const initialMode = params.get('mode') || 'light';
+      if (ref && /^[0-9a-f]{7,40}$/i.test(ref)) {
+        document.getElementById('astryx-vanilla-css').href =
+          `https://cdn.jsdelivr.net/gh/facebook/astryx@${ref}/packages/vanilla/dist/astryx-vanilla.css`;
+      }
+      document.documentElement.dataset.astryxTheme = initialTheme;
+      document.documentElement.dataset.theme = initialMode;
+      addEventListener('DOMContentLoaded', () => {
+        const theme = document.querySelector('[data-gallery-theme]');
+        const mode = document.querySelector('[data-gallery-mode]');
+        theme.value = initialTheme;
+        mode.value = initialMode;
+        theme.addEventListener('change', () => {
+          document.documentElement.dataset.astryxTheme = theme.value;
+        });
+        mode.addEventListener('change', () => {
+          document.documentElement.dataset.theme = mode.value;
+        });
+        document.querySelector('[data-gallery-source]').textContent = ref
+          ? `CSS: jsDelivr @ ${ref.slice(0, 12)}`
+          : 'CSS: local dist';
+      });
+    </script>
+  </head>
+  <body class="ax-gallery">
+    <header class="ax-gallery__toolbar">
+      <label class="ax-selector ax-selector--sm">
+        <span class="ax-selector__label">Theme</span>
+        <span class="ax-selector__control">
+          <select class="ax-selector__select" data-gallery-theme>
+            <option value="neutral">Neutral · Figtree</option>
+            <option value="butter">Butter · Outfit</option>
+            <option value="y2k">Y2K · Poppins</option>
+          </select>
+          <span class="ax-selector__indicator" aria-hidden="true"></span>
+        </span>
+      </label>
+      <label class="ax-selector ax-selector--sm">
+        <span class="ax-selector__label">Mode</span>
+        <span class="ax-selector__control">
+          <select class="ax-selector__select" data-gallery-mode>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+          <span class="ax-selector__indicator" aria-hidden="true"></span>
+        </span>
+      </label>
+      <span class="ax-gallery__source" data-gallery-source></span>
+    </header>
+
+    <main class="ax-gallery__page">
+      <div class="ax-stack ax-stack--gap-2">
+        <span class="ax-badge ax-badge--info">Static components</span>
+        <h1 class="ax-heading ax-heading--1">Vanilla Astryx gallery</h1>
+        <p class="ax-text ax-text--large ax-text--secondary">
+          Native controls and semantic markup styled with readable ax- classes.
+        </p>
+      </div>
+
+      <section class="ax-gallery__grid" aria-label="Form controls">
+        <article class="ax-gallery__demo ax-stack ax-stack--gap-3">
+          <h2 class="ax-heading ax-heading--3">CheckboxInput</h2>
+          <div class="ax-gallery__controls">
+            <label class="ax-checkbox-input">
+              <input class="ax-checkbox-input__control" type="checkbox" />
+              <span class="ax-checkbox-input__box" aria-hidden="true"></span>
+              <span class="ax-checkbox-input__content">
+                <span class="ax-checkbox-input__label">Product updates</span>
+                <span class="ax-checkbox-input__description"
+                  >Receive a monthly product digest.</span
+                >
+              </span>
+            </label>
+            <label class="ax-checkbox-input">
+              <input
+                class="ax-checkbox-input__control"
+                type="checkbox"
+                checked />
+              <span class="ax-checkbox-input__box" aria-hidden="true"></span>
+              <span class="ax-checkbox-input__content">
+                <span class="ax-checkbox-input__label">Share usage data</span>
+              </span>
+            </label>
+            <label class="ax-checkbox-input ax-checkbox-input--sm">
+              <input
+                class="ax-checkbox-input__control"
+                type="checkbox"
+                checked
+                disabled />
+              <span class="ax-checkbox-input__box" aria-hidden="true"></span>
+              <span class="ax-checkbox-input__content">
+                <span class="ax-checkbox-input__label"
+                  >Managed by your organization</span
+                >
+              </span>
+            </label>
+          </div>
+        </article>
+
+        <article class="ax-gallery__demo ax-stack ax-stack--gap-3">
+          <h2 class="ax-heading ax-heading--3">Switch</h2>
+          <div class="ax-gallery__controls">
+            <label class="ax-switch">
+              <input class="ax-switch__control" type="checkbox" role="switch" />
+              <span class="ax-switch__track" aria-hidden="true"
+                ><span class="ax-switch__thumb"></span
+              ></span>
+              <span class="ax-switch__content">
+                <span class="ax-switch__label">Enable notifications</span>
+                <span class="ax-switch__description"
+                  >Receive alerts for important changes.</span
+                >
+              </span>
+            </label>
+            <label class="ax-switch">
+              <input
+                class="ax-switch__control"
+                type="checkbox"
+                role="switch"
+                checked />
+              <span class="ax-switch__track" aria-hidden="true"
+                ><span class="ax-switch__thumb"></span
+              ></span>
+              <span class="ax-switch__content"
+                ><span class="ax-switch__label">Dark mode</span></span
+              >
+            </label>
+            <label class="ax-switch ax-switch--sm">
+              <input
+                class="ax-switch__control"
+                type="checkbox"
+                role="switch"
+                checked />
+              <span class="ax-switch__track" aria-hidden="true"
+                ><span class="ax-switch__thumb"></span
+              ></span>
+              <span class="ax-switch__content"
+                ><span class="ax-switch__label">Compact navigation</span></span
+              >
+            </label>
+          </div>
+        </article>
+
+        <article class="ax-gallery__demo ax-stack ax-stack--gap-3">
+          <h2 class="ax-heading ax-heading--3">Selector</h2>
+          <label class="ax-selector">
+            <span class="ax-selector__label">Workspace</span>
+            <span class="ax-selector__control">
+              <select class="ax-selector__select">
+                <option>Design systems</option>
+                <option>Developer tools</option>
+                <option>Business platform</option>
+              </select>
+              <span class="ax-selector__indicator" aria-hidden="true"></span>
+            </span>
+            <span class="ax-selector__description"
+              >Choose where this project belongs.</span
+            >
+          </label>
+          <label class="ax-selector ax-selector--error">
+            <span class="ax-selector__label">Owner</span>
+            <span class="ax-selector__control">
+              <select class="ax-selector__select" aria-invalid="true">
+                <option>Choose an owner</option>
+                <option>Alex Morgan</option>
+              </select>
+              <span class="ax-selector__indicator" aria-hidden="true"></span>
+            </span>
+          </label>
+        </article>
+
+        <article class="ax-gallery__demo ax-stack ax-stack--gap-3">
+          <h2 class="ax-heading ax-heading--3">Badge sizing</h2>
+          <div class="ax-stack ax-stack--gap-2">
+            <span class="ax-badge ax-badge--info">Information</span>
+            <span class="ax-badge ax-badge--success">On track</span>
+            <span class="ax-badge ax-badge--warning">At risk</span>
+            <span class="ax-badge ax-badge--error">Blocked</span>
+          </div>
+        </article>
+      </section>
+
+      <section
+        class="ax-gallery__demo ax-gallery__demo--wide ax-stack ax-stack--gap-3"
+        aria-labelledby="top-nav-title">
+        <h2 class="ax-heading ax-heading--3" id="top-nav-title">TopNav</h2>
+        <nav class="ax-top-nav" aria-label="Primary navigation">
+          <div class="ax-top-nav__start">
+            <a class="ax-top-nav__brand" href="#">
+              <span class="ax-top-nav__brand-mark" aria-hidden="true">A</span>
+              <span>Astryx</span>
+            </a>
+            <div class="ax-top-nav__items">
+              <a class="ax-top-nav__item" href="#" aria-current="page"
+                >Overview</a
+              >
+              <a class="ax-top-nav__item" href="#">Projects</a>
+              <a class="ax-top-nav__item" href="#">Reports</a>
+            </div>
+          </div>
+          <div class="ax-top-nav__end">
+            <button class="ax-button ax-button--ghost ax-button--sm">
+              Help
+            </button>
+            <button class="ax-button ax-button--primary ax-button--sm">
+              Create
+            </button>
+          </div>
+        </nav>
+      </section>
+
+      <section
+        class="ax-gallery__nav-layout"
+        aria-label="SideNav layout example">
+        <nav class="ax-side-nav" aria-label="Application navigation">
+          <div class="ax-side-nav__header">
+            <a class="ax-side-nav__brand" href="#">
+              <span class="ax-side-nav__brand-mark" aria-hidden="true">A</span>
+              <span class="ax-side-nav__brand-copy">
+                <span class="ax-side-nav__brand-name">Astryx Studio</span>
+                <span class="ax-side-nav__brand-context">Design systems</span>
+              </span>
+            </a>
+          </div>
+          <div class="ax-side-nav__content">
+            <div
+              class="ax-side-nav__section"
+              role="group"
+              aria-labelledby="gallery-main-nav">
+              <div class="ax-side-nav__section-title" id="gallery-main-nav">
+                Main
+              </div>
+              <a class="ax-side-nav__item" href="#" aria-current="page">
+                <span class="ax-side-nav__item-icon" aria-hidden="true">●</span>
+                <span class="ax-side-nav__item-label">Overview</span>
+              </a>
+              <a class="ax-side-nav__item" href="#">
+                <span class="ax-side-nav__item-icon" aria-hidden="true">◆</span>
+                <span class="ax-side-nav__item-label">Projects</span>
+              </a>
+              <a class="ax-side-nav__item" href="#">
+                <span class="ax-side-nav__item-icon" aria-hidden="true">▦</span>
+                <span class="ax-side-nav__item-label">Reports</span>
+              </a>
+            </div>
+          </div>
+          <div class="ax-side-nav__footer">
+            <button class="ax-button ax-button--ghost ax-button--sm">
+              Settings
+            </button>
+          </div>
+        </nav>
+        <div class="ax-gallery__nav-content ax-stack ax-stack--gap-3">
+          <span class="ax-badge ax-badge--success">Healthy</span>
+          <h2 class="ax-heading ax-heading--2">Workspace overview</h2>
+          <p class="ax-text ax-text--secondary">
+            SideNav provides the application shell while content keeps its own
+            flow.
+          </p>
+        </div>
+      </section>
+
+      <section
+        class="ax-gallery__demo ax-gallery__demo--wide ax-stack ax-stack--gap-3"
+        aria-labelledby="table-title">
+        <h2 class="ax-heading ax-heading--3" id="table-title">Table</h2>
+        <div
+          class="ax-table__scroll"
+          tabindex="0"
+          role="group"
+          aria-label="Project table">
+          <table class="ax-table ax-table--hover ax-table--striped">
+            <caption>
+              Project delivery status
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Project</th>
+                <th scope="col">Owner</th>
+                <th scope="col">Status</th>
+                <th scope="col" class="ax-table__numeric">Tasks</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Vanilla Astryx</td>
+                <td>Design Systems</td>
+                <td>
+                  <span class="ax-badge ax-badge--success">On track</span>
+                </td>
+                <td class="ax-table__numeric">24</td>
+              </tr>
+              <tr>
+                <td>Theme migration</td>
+                <td>Foundations</td>
+                <td><span class="ax-badge ax-badge--warning">At risk</span></td>
+                <td class="ax-table__numeric">11</td>
+              </tr>
+              <tr>
+                <td>CLI templates</td>
+                <td>Developer Experience</td>
+                <td><span class="ax-badge ax-badge--info">Planning</span></td>
+                <td class="ax-table__numeric">8</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

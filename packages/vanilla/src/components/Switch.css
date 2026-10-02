@@ -1,0 +1,160 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+:where(.ax-switch) {
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--spacing-2);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-body);
+  cursor: pointer;
+}
+:where(.ax-switch--label-start) {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+:where(.ax-switch--label-start .ax-switch__control) {
+  order: 2;
+}
+:where(.ax-switch--label-start .ax-switch__track) {
+  order: 2;
+}
+:where(.ax-switch--spread) {
+  width: 100%;
+  justify-content: space-between;
+}
+:where(.ax-switch__control) {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+:where(.ax-switch__track) {
+  box-sizing: border-box;
+  position: relative;
+  display: inline-flex;
+  width: 40px;
+  height: 24px;
+  flex: none;
+  align-items: center;
+  padding: 4px;
+  border-radius: var(--radius-full);
+  background: var(--color-background-gray);
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+:where(.ax-switch__thumb) {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  background: var(--color-background-surface);
+  box-shadow: 0 1px 2px
+    color-mix(in srgb, var(--color-text-primary), transparent 75%);
+  transition:
+    width var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+:where(.ax-switch:hover .ax-switch__track) {
+  background-image: linear-gradient(
+    var(--color-overlay-hover),
+    var(--color-overlay-hover)
+  );
+}
+:where(.ax-switch__control:checked + .ax-switch__track) {
+  background-color: var(--color-accent);
+}
+:where(.ax-switch__control:checked + .ax-switch__track .ax-switch__thumb) {
+  width: 20px;
+  height: 20px;
+  transform: translateX(14px);
+}
+:where(
+  [dir='rtl'] .ax-switch__control:checked + .ax-switch__track .ax-switch__thumb
+) {
+  transform: translateX(-14px);
+}
+:where(.ax-switch__control:focus-visible + .ax-switch__track) {
+  outline: var(--focus-outline-width) var(--focus-outline-style)
+    var(--focus-outline-color);
+  outline-offset: var(--focus-outline-offset);
+}
+:where(.ax-switch__content) {
+  display: flex;
+  min-height: 24px;
+  flex-direction: column;
+  justify-content: center;
+}
+:where(.ax-switch__label) {
+  font-size: var(--text-label-size);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--text-label-leading);
+}
+:where(.ax-switch__description) {
+  color: var(--color-text-secondary);
+  font-size: var(--text-supporting-size);
+  line-height: var(--text-supporting-leading);
+}
+:where(.ax-switch--sm .ax-switch__track) {
+  width: 32px;
+  height: 20px;
+  padding: 2px;
+}
+:where(.ax-switch--sm .ax-switch__thumb) {
+  width: 14px;
+  height: 14px;
+}
+:where(
+  .ax-switch--sm
+    .ax-switch__control:checked
+    + .ax-switch__track
+    .ax-switch__thumb
+) {
+  width: 16px;
+  transform: translateX(12px);
+}
+:where(
+  [dir='rtl']
+    .ax-switch--sm
+    .ax-switch__control:checked
+    + .ax-switch__track
+    .ax-switch__thumb
+) {
+  transform: translateX(-12px);
+}
+:where(.ax-switch--sm .ax-switch__content) {
+  min-height: 20px;
+}
+:where(.ax-switch:has(.ax-switch__control:disabled)) {
+  opacity: 0.5;
+  cursor: default;
+}
+:where(.ax-switch:has(.ax-switch__control:disabled) .ax-switch__track) {
+  background-image: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.ax-switch__track, .ax-switch__thumb) {
+    transition-duration: 0s;
+  }
+}
+
+@media (forced-colors: active) {
+  :where(.ax-switch__track) {
+    border: 1px solid CanvasText;
+    background: Canvas;
+  }
+  :where(.ax-switch__control:checked + .ax-switch__track) {
+    background: Highlight;
+  }
+  :where(.ax-switch__thumb) {
+    background: CanvasText;
+    box-shadow: none;
+  }
+  :where(.ax-switch__control:checked + .ax-switch__track .ax-switch__thumb) {
+    background: HighlightText;
+  }
+}

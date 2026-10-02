@@ -12,18 +12,20 @@ const packageRoot = path.resolve(
   '..',
 );
 const cssPath = path.join(packageRoot, 'dist/astryx-vanilla.css');
-const componentNames = [
-  'Badge',
-  'Button',
-  'Card',
-  'Divider',
-  'Heading',
-  'Layout',
-  'Link',
-  'Stack',
-  'Text',
-  'TextInput',
-];
+const componentsDir = path.join(packageRoot, 'src/components');
+const markupDir = path.join(packageRoot, 'markup');
+
+async function listStems(directory, extension) {
+  const entries = await readdir(directory, {withFileTypes: true});
+  return entries
+    .filter(entry => entry.isFile() && entry.name.endsWith(extension))
+    .map(entry => path.basename(entry.name, extension))
+    .sort((a, b) => a.localeCompare(b));
+}
+
+function toKebabCase(name) {
+  return name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+}
 
 test('committed dist is generated from core token defaults and source files', async () => {
   execFileSync(process.execPath, ['scripts/build.mjs', '--check'], {
@@ -38,37 +40,42 @@ test('committed dist is generated from core token defaults and source files', as
   assert.ok(css.indexOf('--color-accent') < css.indexOf('/* Badge */'));
 });
 
-test('component CSS is discovered and concatenated in stable order', async () => {
-  const files = await readdir(path.join(packageRoot, 'src/components'));
+test('component CSS and markup inventories match and build in stable order', async () => {
+  const [componentNames, markupNames, css] = await Promise.all([
+    listStems(componentsDir, '.css'),
+    listStems(markupDir, '.html'),
+    readFile(cssPath, 'utf8'),
+  ]);
+
   assert.deepEqual(
-    files.toSorted(),
-    componentNames.map(name => `${name}.css`),
+    componentNames,
+    markupNames,
+    'every component stylesheet must have same-named markup and vice versa',
   );
 
-  const css = await readFile(cssPath, 'utf8');
   let previousIndex = -1;
   for (const name of componentNames) {
     const index = css.indexOf(`/* ${name} */`);
     assert.ok(index > previousIndex, `${name}.css is missing or out of order`);
     previousIndex = index;
+
+    const blockClass = `.ax-${toKebabCase(name)}`;
+    assert.ok(
+      css.includes(blockClass),
+      `${name}.css must emit its ${blockClass} block class`,
+    );
   }
+
   assert.ok(css.includes('.ax-button--primary'));
   assert.ok(css.includes('.ax-stack--gap-2'));
   assert.ok(!css.includes('.astryx-button'));
 });
 
 test('markup follows the shared docs and variant contract', async () => {
-  const files = await readdir(path.join(packageRoot, 'markup'));
-  assert.deepEqual(
-    files.toSorted(),
-    componentNames.map(name => `${name}.html`),
-  );
+  const componentNames = await listStems(markupDir, '.html');
 
-  for (const file of files) {
-    const markup = await readFile(
-      path.join(packageRoot, 'markup', file),
-      'utf8',
-    );
+  for (const name of componentNames) {
+    const markup = await readFile(path.join(markupDir, `${name}.html`), 'utf8');
     assert.match(markup, /^<!-- docs: [^\n]+ -->/);
     assert.match(markup, /\n<!-- variant: [^\n]+ -->\n/);
   }
