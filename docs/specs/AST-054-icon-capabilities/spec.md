@@ -82,11 +82,11 @@ override.
   require redeclaring the theme's appearance or weight defaults. A component owner
   SHOULD omit capability requests the component does not own and MUST NOT hardcode an
   appearance or weight value absent from any supported theme contract.
-- **FR2 — The base size scale remains compatible.** `xsm` (12px), `sm` (16px),
-  `md` (20px), and `lg` (24px) at the default 16px root MUST remain valid with
-  their existing dimensions. A theme MAY define a preferred typed size scale and
-  use only that scale in theme-owned components, but it MUST NOT make the base
-  values invalid for existing callers.
+- **FR2 — Existing sizes do not break.** Existing calls using `xsm` (12px),
+  `sm` (16px), `md` (20px), or `lg` (24px) at the default 16px root MUST
+  keep the same meaning and dimensions. A theme MAY add and prefer its own typed
+  size names, but those additions MUST NOT remove or change the four existing
+  values.
 - **FR3 — Theme-owned size values are complete.** A theme-owned size name MUST map
   to dimensions in every theme that can become active where that name is valid,
   whether by direct declaration or theme inheritance. Missing or invalid dimensions
