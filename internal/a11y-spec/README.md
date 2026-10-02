@@ -51,7 +51,8 @@ src/
     ├── listbox.*            listbox, group, and option semantics
     ├── spinbutton.*         numeric role, value, bounds, state, and arrow stepping
     ├── disclosure.*         standalone disclosure state/content semantics
-    └── breadcrumb.*         landmark, list-trail, current-page, and separator semantics
+    ├── breadcrumb.*         landmark, list-trail, current-page, and separator semantics
+    └── combobox.*           control identity, state, popup, and active-descendant semantics
 ```
 
 ## The patterns
@@ -70,6 +71,7 @@ src/
 | `spinbutton`     | WCAG 2.2 semantics and [APG Spinbutton](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/)         | NumberInput                                                                      |
 | `disclosure`     | [APG Disclosure](https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/)                                | Standalone Collapsible triggers and their controlled content                     |
 | `breadcrumb`     | WCAG 2.2 semantics; [APG Breadcrumb](https://www.w3.org/WAI/ARIA/apg/patterns/breadcrumb/) as context | Breadcrumbs landmarks, list trails, current-page state, and separators           |
+| `combobox`       | WCAG 2.2 + [WAI-ARIA 1.2 Combobox](https://www.w3.org/TR/wai-aria-1.2/#combobox); APG as context      | Selector trigger identity, state, popup, and active-descendant relationships     |
 
 The `spinbutton` contract owns NumberInput's required role, persistent name,
 committed numeric value, optional bounds and formatted value text, disabled and
@@ -93,6 +95,13 @@ custom landmark label, RTL/supporting presentation, and an intentional
 no-current-page opt-out. Link, action-button, and sibling-menu semantics stay
 with their own patterns; the APG Breadcrumb page remains context because no
 current Astryx record adopts it as an additional required gate.
+
+The combobox contract owns the named control, expanded/busy/read-only state,
+its relationship to a rendered popup, and a declared active descendant. Its
+first Selector binding covers closed, open, read-only, and busy trigger states.
+Popup contents keep the existing listbox contract; keyboard and selection policy
+stay with each current component owner because Astryx has not adopted one APG
+Combobox interaction model across every button-, input-, and modal-hosted adopter.
 
 The `listbox` contract is a bounded semantic migration, not blanket APG
 interaction adoption. Its first bindings cover 21 existing scenarios across

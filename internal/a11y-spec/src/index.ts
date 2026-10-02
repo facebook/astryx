@@ -127,3 +127,9 @@ export {
   BREADCRUMB_PATTERN,
   type BreadcrumbStateFacts,
 } from './patterns/breadcrumb';
+
+export {
+  COMBOBOX_PATTERN,
+  type ComboboxPopupRole,
+  type ComboboxStateFacts,
+} from './patterns/combobox';
