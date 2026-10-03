@@ -6,7 +6,7 @@
  * @file Timestamp.tsx
  * @input Uses React, Text, lazy TimestampHoverCard, locale, and formatters
  * @output Exports Timestamp component and related types
- * @position Core implementation; the semantic time element anchors its details card
+ * @position Core implementation; a stable time node anchors lazily attached details
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Timestamp/formatRelativeTime.ts
@@ -27,6 +27,7 @@ import {useTranslator} from '../i18n';
 import {useLocale} from '../i18n/useLocale';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {formatInstant} from './formatInstant';
 import {formatRelativeTime} from './formatRelativeTime';
 import {formatTooltipLines} from './tooltipEntries';
@@ -90,7 +91,7 @@ export interface TimestampProps extends BaseProps<HTMLTimeElement> {
    */
   autoThreshold?: number;
   /**
-   * Whether to show a hover card with the full date/time on hover. The card
+   * Whether to show a card with the full date/time on hover or keyboard focus. The card
    * is copyable — its default single row carries the full absolute time — and
    * `tooltipEntries` customizes its rows.
    * @default true
@@ -168,6 +169,12 @@ export interface TimestampProps extends BaseProps<HTMLTimeElement> {
 // =============================================================================
 
 const styles = stylex.create({
+  hoverIndication: {
+    textDecorationLine: 'underline',
+    textDecorationStyle: 'dashed',
+    textDecorationColor: colorVars['--color-border-emphasized'],
+    textUnderlineOffset: spacingVars['--spacing-0-5'],
+  },
   time: {
     display: 'inline',
     fontFamily: 'inherit',
@@ -379,7 +386,7 @@ export function Timestamp({
       ref={mergedTimeRef}
       dateTime={isoString}
       data-testid={testId}
-      {...stylex.props(styles.time)}
+      {...stylex.props(styles.time, showTooltip && styles.hoverIndication)}
       {...rest}
       // `ariaLabelText` is '' only for an invalid date, which bails out
       // before rendering — but keep the guard local: an empty aria-label
@@ -401,30 +408,29 @@ export function Timestamp({
     </time>
   );
 
-  // Keep Text outside the lazy card so HoverCard's first element child is
-  // the focusable <time>. Its popup attributes, anchor, and focus return must
-  // all use that same element. Text continues to own typography and theming.
-  // While the overlay chunk loads, the same styled timestamp stays visible.
+  // Keep the focusable node outside Suspense. Attaching the lazy overlay must
+  // not replace a timestamp the reader focused while its chunk was loading.
   return (
-    <Text
-      type={type}
-      size={size}
-      color={color}
-      weight={weight}
-      xstyle={xstyle}
-      {...timestampProps}>
-      {showTooltip ? (
-        <Suspense fallback={timeElement}>
+    <>
+      <Text
+        type={type}
+        size={size}
+        color={color}
+        weight={weight}
+        xstyle={xstyle}
+        {...timestampProps}>
+        {timeElement}
+      </Text>
+      {showTooltip && (
+        <Suspense fallback={null}>
           <LazyTimestampHoverCard
             lines={lines}
-            label={t('@astryx.timestamp.detailsLabel')}>
-            {timeElement}
-          </LazyTimestampHoverCard>
+            label={t('@astryx.timestamp.detailsLabel')}
+            triggerRef={timeRef}
+          />
         </Suspense>
-      ) : (
-        timeElement
       )}
-    </Text>
+    </>
   );
 }
 

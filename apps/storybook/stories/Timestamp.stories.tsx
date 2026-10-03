@@ -3,7 +3,7 @@
 /**
  * @file Timestamp.stories.tsx
  * @input Uses Timestamp, Text, and the Storybook theme decorator
- * @output Stories for timestamp formats and keyboard-accessible details
+ * @output Stories for timestamp formats, sequential keyboard access and lazy details
  * @position Storybook examples for Timestamp
  */
 
@@ -88,7 +88,7 @@ const meta: Meta<typeof Timestamp> = {
     },
     hasTooltip: {
       control: 'boolean',
-      description: 'Show copyable hover card on hover',
+      description: 'Show copyable details on hover or keyboard focus',
     },
     isTimezoneShown: {
       control: 'boolean',
