@@ -3,7 +3,7 @@
 /**
  * @file BottomSheetSwitcher.test.tsx
  * @input Uses vitest, Testing Library, BottomSheet, BottomSheetSwitcher
- * @output Tests mutually exclusive sheet selection, dismissal, and focus handoff
+ * @output Tests ordered-path selection, stacked presentation, dismissal, and focus handoff
  * @position Core tests for BottomSheetSwitcher
  *
  * SYNC: When BottomSheetSwitcher.tsx or its BottomSheet integration changes,
@@ -13,6 +13,7 @@
 import {fireEvent, render, screen} from '@testing-library/react';
 import {
   createRef,
+  useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
@@ -978,5 +979,364 @@ describe('BottomSheetSwitcher', () => {
     finishSheetTransition(confirmSheet, 'transform');
 
     expect(backButton).toHaveFocus();
+  });
+});
+
+const NO_SHEETS: ReadonlyArray<string> = [];
+
+function StackFlow({
+  initialSheets = NO_SHEETS,
+  withFinalFocus = false,
+}: {
+  initialSheets?: ReadonlyArray<string>;
+  withFinalFocus?: boolean;
+}) {
+  const [activeSheets, setActiveSheets] =
+    useState<ReadonlyArray<string>>(initialSheets);
+  const finalFocusRef = useRef<HTMLButtonElement | null>(null);
+  return (
+    <>
+      <button type="button" onClick={() => setActiveSheets(['issues'])}>
+        Open issues
+      </button>
+      <button type="button" onClick={() => setActiveSheets([])}>
+        Close all
+      </button>
+      <button type="button" ref={finalFocusRef}>
+        Final focus target
+      </button>
+      <BottomSheetSwitcher
+        activeSheets={activeSheets}
+        onActiveSheetsChange={setActiveSheets}
+        finalFocusRef={withFinalFocus ? finalFocusRef : undefined}>
+        <BottomSheet sheetId="issues" label="Issues" data-testid="issues-sheet">
+          <button
+            type="button"
+            onClick={() => setActiveSheets(['issues', 'issue-details'])}>
+            Open issue
+          </button>
+        </BottomSheet>
+        <BottomSheet
+          sheetId="issue-details"
+          label="Issue details"
+          data-testid="issue-details-sheet">
+          <button
+            type="button"
+            onClick={() => setActiveSheets(current => current.slice(0, -1))}>
+            Back
+          </button>
+        </BottomSheet>
+      </BottomSheetSwitcher>
+    </>
+  );
+}
+
+describe('BottomSheetSwitcher ordered path', () => {
+  it('opens, pushes, and keeps only the top sheet interactive', () => {
+    render(<StackFlow />);
+    fireEvent.click(screen.getByRole('button', {name: 'Open issues'}));
+    const issuesLayer = getSheetLayer('issues-sheet');
+    const detailsLayer = getSheetLayer('issue-details-sheet');
+
+    expect(issuesLayer).not.toHaveAttribute('hidden');
+    expect(issuesLayer).not.toHaveAttribute('inert');
+    expect(detailsLayer).toHaveAttribute('hidden');
+    expect(getSharedDialog()).toHaveAccessibleName('Issues');
+    expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole('button', {name: 'Open issue'}));
+
+    // Only the top sheet is interactive; the covered level stays mounted,
+    // inert, accessibility-hidden, and receded by the stack transform.
+    expect(getSharedDialog()).toHaveAccessibleName('Issue details');
+    expect(issuesLayer).not.toHaveAttribute('hidden');
+    expect(issuesLayer).toHaveAttribute('inert');
+    expect(issuesLayer).toHaveAttribute('aria-hidden', 'true');
+    expect(issuesLayer.getAttribute('style')).toContain('scale(0.96)');
+    expect(issuesLayer.getAttribute('style')).toContain(
+      'blur(1px) brightness(0.96)',
+    );
+    expect(detailsLayer).not.toHaveAttribute('hidden');
+    expect(detailsLayer).not.toHaveAttribute('inert');
+    expect(detailsLayer.getAttribute('style') ?? '').not.toContain('scale(0.9');
+
+    // A push swaps panels inside the one already-open shared dialog.
+    expect(document.querySelectorAll('dialog[open]')).toHaveLength(1);
+    expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledTimes(1);
+  });
+
+  it('pops one level, restores covered focus, and exits only the former top', () => {
+    render(<StackFlow />);
+    fireEvent.click(screen.getByRole('button', {name: 'Open issues'}));
+    const openIssueButton = screen.getByRole('button', {name: 'Open issue'});
+    openIssueButton.focus();
+    fireEvent.click(openIssueButton);
+
+    const issuesLayer = getSheetLayer('issues-sheet');
+    const detailsLayer = getSheetLayer('issue-details-sheet');
+    expect(getSheetPanel(detailsLayer)).toHaveFocus();
+
+    fireEvent.click(screen.getByRole('button', {name: 'Back'}));
+
+    // The revealed sheet is active again and regains its recorded focus; the
+    // former top stays visible but inert through its exit.
+    expect(issuesLayer).not.toHaveAttribute('inert');
+    expect(detailsLayer).not.toHaveAttribute('hidden');
+    expect(detailsLayer).toHaveAttribute('inert');
+    expect(openIssueButton).toHaveFocus();
+
+    finishSheetTransition(detailsLayer, 'transform');
+    expect(detailsLayer).toHaveAttribute('hidden');
+    expect(getSharedDialog()).toHaveAttribute('open');
+    expect(document.querySelectorAll('dialog[open]')).toHaveLength(1);
+  });
+
+  it('requests one-level dismissal with details from Escape and scrim', () => {
+    const onActiveSheetsChange = vi.fn();
+    render(
+      <BottomSheetSwitcher
+        activeSheets={['issues', 'issue-details']}
+        onActiveSheetsChange={onActiveSheetsChange}>
+        <BottomSheet sheetId="issues" label="Issues">
+          Content
+        </BottomSheet>
+        <BottomSheet sheetId="issue-details" label="Issue details">
+          Content
+        </BottomSheet>
+      </BottomSheetSwitcher>,
+    );
+    const dialog = getSharedDialog();
+
+    fireEvent.keyDown(dialog, {key: 'Escape'});
+    expect(onActiveSheetsChange).toHaveBeenNthCalledWith(1, ['issues'], {
+      reason: 'escape',
+      dismissedSheetId: 'issue-details',
+    });
+
+    fireEvent.click(dialog);
+    expect(onActiveSheetsChange).toHaveBeenNthCalledWith(2, ['issues'], {
+      reason: 'scrim',
+      dismissedSheetId: 'issue-details',
+    });
+
+    // The caller kept the prior value both times: the same top stays
+    // presented and each gesture was reported exactly once.
+    expect(onActiveSheetsChange).toHaveBeenCalledTimes(2);
+    expect(dialog).toHaveAttribute('open');
+    expect(dialog).toHaveAccessibleName('Issue details');
+  });
+
+  it('reports a completed top-sheet swipe with swipe details', () => {
+    const onActiveSheetsChange = vi.fn();
+    render(
+      <BottomSheetSwitcher
+        activeSheets={['issues', 'issue-details']}
+        onActiveSheetsChange={onActiveSheetsChange}>
+        <BottomSheet sheetId="issues" label="Issues">
+          Content
+        </BottomSheet>
+        <BottomSheet
+          sheetId="issue-details"
+          label="Issue details"
+          data-testid="issue-details-sheet">
+          Content
+        </BottomSheet>
+      </BottomSheetSwitcher>,
+    );
+    const detailsPanel = getSheetPanel(getSheetLayer('issue-details-sheet'));
+    const handle = detailsPanel.firstElementChild;
+    if (!(handle instanceof HTMLElement)) {
+      throw new Error('sheet handle not found');
+    }
+
+    fireEvent.pointerDown(handle, {
+      pointerId: 1,
+      clientY: 0,
+      button: 0,
+      isPrimary: true,
+    });
+    fireEvent.pointerMove(handle, {pointerId: 1, clientY: 40});
+    fireEvent.pointerMove(handle, {pointerId: 1, clientY: 120});
+    fireEvent.pointerUp(handle, {pointerId: 1, clientY: 120});
+
+    expect(onActiveSheetsChange).toHaveBeenCalledWith(['issues'], {
+      reason: 'swipe',
+      dismissedSheetId: 'issue-details',
+    });
+  });
+
+  it('keeps the released singular form as a projection of the list', () => {
+    const onActiveSheetChange = vi.fn();
+    render(
+      <BottomSheetSwitcher
+        activeSheet="issues"
+        onActiveSheetChange={onActiveSheetChange}>
+        <BottomSheet sheetId="issues" label="Issues" data-testid="issues-sheet">
+          Content
+        </BottomSheet>
+      </BottomSheetSwitcher>,
+    );
+
+    // The singular projection presents one sheet with no stack treatment.
+    const issuesLayer = getSheetLayer('issues-sheet');
+    expect(issuesLayer.getAttribute('style') ?? '').not.toContain('scale(');
+    expect(getSharedDialog()).toHaveAccessibleName('Issues');
+
+    // Dismissal reaches the singular callback as `next.at(-1) ?? null`.
+    fireEvent.keyDown(getSharedDialog(), {key: 'Escape'});
+    expect(onActiveSheetChange).toHaveBeenCalledTimes(1);
+    expect(onActiveSheetChange).toHaveBeenCalledWith(null);
+  });
+
+  it('warns when both forms are supplied and lets the list form win', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      render(
+        <BottomSheetSwitcher
+          activeSheets={['issue-details']}
+          onActiveSheetsChange={() => {}}
+          activeSheet="issues"
+          onActiveSheetChange={() => {}}>
+          <BottomSheet sheetId="issues" label="Issues">
+            Content
+          </BottomSheet>
+          <BottomSheet sheetId="issue-details" label="Issue details">
+            Content
+          </BottomSheet>
+        </BottomSheetSwitcher>,
+      );
+
+      expect(getSharedDialog()).toHaveAccessibleName('Issue details');
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('the list form wins'),
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('presents the longest valid prefix and warns for an unknown id', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      render(
+        <BottomSheetSwitcher
+          activeSheets={['issues', 'missing', 'issue-details']}
+          onActiveSheetsChange={() => {}}>
+          <BottomSheet
+            sheetId="issues"
+            label="Issues"
+            data-testid="issues-sheet">
+            Content
+          </BottomSheet>
+          <BottomSheet
+            sheetId="issue-details"
+            label="Issue details"
+            data-testid="issue-details-sheet">
+            Content
+          </BottomSheet>
+        </BottomSheetSwitcher>,
+      );
+
+      // Presentation stops before the first invalid id: the valid ancestor
+      // stays interactive and the disconnected suffix never presents.
+      expect(getSharedDialog()).toHaveAccessibleName('Issues');
+      expect(getSheetLayer('issues-sheet')).not.toHaveAttribute('hidden');
+      expect(getSheetLayer('issues-sheet')).not.toHaveAttribute('inert');
+      expect(getSheetLayer('issue-details-sheet')).toHaveAttribute('hidden');
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('activeSheets[1]'),
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('keeps an ambiguously registered id unavailable', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      render(
+        <BottomSheetSwitcher
+          activeSheets={['issues', 'dup']}
+          onActiveSheetsChange={() => {}}>
+          <BottomSheet
+            sheetId="issues"
+            label="Issues"
+            data-testid="issues-sheet">
+            Content
+          </BottomSheet>
+          <BottomSheet
+            sheetId="dup"
+            label="First duplicate"
+            data-testid="dup-a-sheet">
+            Content
+          </BottomSheet>
+          <BottomSheet
+            sheetId="dup"
+            label="Second duplicate"
+            data-testid="dup-b-sheet">
+            Content
+          </BottomSheet>
+        </BottomSheetSwitcher>,
+      );
+
+      // Neither duplicate wins by source or mount order.
+      expect(getSharedDialog()).toHaveAccessibleName('Issues');
+      expect(getSheetLayer('dup-a-sheet')).toHaveAttribute('hidden');
+      expect(getSheetLayer('dup-b-sheet')).toHaveAttribute('hidden');
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('more than one'),
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('presents a deep initial path with focus only in the top sheet', () => {
+    render(<StackFlow initialSheets={['issues', 'issue-details']} />);
+    const issuesLayer = getSheetLayer('issues-sheet');
+    const detailsLayer = getSheetLayer('issue-details-sheet');
+
+    expect(issuesLayer).not.toHaveAttribute('hidden');
+    expect(issuesLayer).toHaveAttribute('inert');
+    expect(issuesLayer).toHaveAttribute('aria-hidden', 'true');
+    expect(detailsLayer).not.toHaveAttribute('inert');
+    expect(getSheetPanel(detailsLayer)).toHaveFocus();
+    expect(getSharedDialog()).toHaveAccessibleName('Issue details');
+    expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes the whole path with one exit while covered levels hide', () => {
+    render(<StackFlow initialSheets={['issues', 'issue-details']} />);
+    const issuesLayer = getSheetLayer('issues-sheet');
+    const detailsLayer = getSheetLayer('issue-details-sheet');
+
+    fireEvent.click(screen.getByRole('button', {name: 'Close all'}));
+
+    // Close-all converges: the last visible panel exits coherently and the
+    // covered level hides without its own choreography.
+    const dialog = getSharedDialog();
+    expect(issuesLayer).toHaveAttribute('hidden');
+    expect(detailsLayer).not.toHaveAttribute('hidden');
+    expect(detailsLayer).toHaveAttribute('inert');
+    expect(dialog).toHaveAttribute('open');
+
+    finishSheetTransition(detailsLayer, 'transform');
+    expect(dialog).not.toHaveAttribute('open');
+  });
+
+  it('returns focus to finalFocusRef after the path closes', () => {
+    render(<StackFlow withFinalFocus />);
+    const opener = screen.getByRole('button', {name: 'Open issues'});
+    opener.focus();
+    fireEvent.click(opener);
+
+    fireEvent.click(screen.getByRole('button', {name: 'Close all'}));
+    finishSheetTransition(getSheetLayer('issues-sheet'), 'transform');
+
+    // An eligible finalFocusRef target wins over the captured opener.
+    expect(
+      screen.getByRole('button', {name: 'Final focus target'}),
+    ).toHaveFocus();
+    expect(opener).not.toHaveFocus();
   });
 });

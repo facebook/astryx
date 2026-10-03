@@ -7,7 +7,7 @@ export const doc = {
   name: 'Bottom Sheet Switcher',
   displayName: 'Bottom Sheet Switcher',
   description:
-    'A three-step flow that transitions between content-hugging sheets of different heights inside one shared dialog.',
+    'A three-step setup flow on the ordered activeSheets path: steps replace each other like the singular flow, and the first step pushes a stacked help sheet above itself — the covered step recedes, Back pops one level, and [] closes.',
   isReady: true,
   isShowcase: true,
   aspectRatio: 3 / 4,

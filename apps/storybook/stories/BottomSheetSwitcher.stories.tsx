@@ -43,12 +43,15 @@ interface NotificationOverviewSheetProps {
   height: NotificationSheetHeight;
   onCancel: () => void;
   onContinue: () => void;
+  /** Pushes a stacked help sheet above this step (activeSheets flows). */
+  onHelp?: () => void;
 }
 
 function NotificationOverviewSheet({
   height,
   onCancel,
   onContinue,
+  onHelp,
 }: NotificationOverviewSheetProps) {
   return (
     <BottomSheet
@@ -88,6 +91,13 @@ function NotificationOverviewSheet({
               </Text>
             </VStack>
           </VStack>
+          {onHelp != null && (
+            <Button
+              label="How do notifications work?"
+              variant="secondary"
+              onClick={onHelp}
+            />
+          )}
           <HStack gap={2} hAlign="end">
             <Button label="Cancel" variant="secondary" onClick={onCancel} />
             <Button label="Continue" onClick={onContinue} />
@@ -248,25 +258,118 @@ const openFlow: NonNullable<Story['play']> = async ({canvasElement}) => {
   }
 };
 
+/**
+ * The unified flow on the ordered `activeSheets` path: the same three setup
+ * steps as the singular flow (each step replaces the last), plus a stacked
+ * help sheet pushed above step 1 — the covered step stays mounted and recedes
+ * behind it, and Back pops one level.
+ */
+function MultiStepPathExample({
+  initialSheets,
+}: {
+  initialSheets: ReadonlyArray<string>;
+}) {
+  const [activeSheets, setActiveSheets] =
+    useState<ReadonlyArray<string>>(initialSheets);
+
+  return (
+    <>
+      <Button
+        label="Set up notifications"
+        onClick={() => setActiveSheets(['overview'])}
+      />
+      <BottomSheetSwitcher
+        activeSheets={activeSheets}
+        onActiveSheetsChange={setActiveSheets}>
+        {/* Hug-height help content sized to closely match the first step's
+            natural height, so the covered step's recede reads clearly behind
+            it (prototype parity pending spec:AST-044 OQ5). */}
+        <NotificationOverviewSheet
+          height="hug"
+          onCancel={() => setActiveSheets([])}
+          onContinue={() => setActiveSheets(['frequency'])}
+          onHelp={() => setActiveSheets(['overview', 'help'])}
+        />
+        <BottomSheet sheetId="help" label="How notifications work" height="hug">
+          <Section padding={4}>
+            <VStack gap={4}>
+              <VStack gap={1}>
+                <Heading level={3}>How notifications work</Heading>
+                <Text type="supporting" color="secondary">
+                  Stacked above step 1
+                </Text>
+              </VStack>
+              <Divider />
+              <Text type="supporting" color="secondary">
+                This sheet is stacked on the ordered path: the first step stays
+                mounted and recedes behind it, keeping your place.
+              </Text>
+              <VStack gap={3}>
+                <VStack gap={1}>
+                  <Text type="label">Back returns one level</Text>
+                  <Text type="supporting" color="secondary">
+                    Popping the path reveals the step below with its state and
+                    focus intact.
+                  </Text>
+                </VStack>
+                <VStack gap={1}>
+                  <Text type="label">Private by default</Text>
+                  <Text type="supporting" color="secondary">
+                    Notifications never share your activity with other people.
+                  </Text>
+                </VStack>
+              </VStack>
+              <HStack gap={2} hAlign="end">
+                <Button
+                  label="Back"
+                  onClick={() =>
+                    setActiveSheets(current => current.slice(0, -1))
+                  }
+                />
+              </HStack>
+            </VStack>
+          </Section>
+        </BottomSheet>
+        <NotificationFrequencySheet
+          height="hug"
+          onBack={() => setActiveSheets(['overview'])}
+          onContinue={() => setActiveSheets(['channels'])}
+        />
+        <NotificationChannelsSheet
+          height="hug"
+          onBack={() => setActiveSheets(['frequency'])}
+          onFinish={() => setActiveSheets([])}
+        />
+      </BottomSheetSwitcher>
+    </>
+  );
+}
+
+export const MultiStepStackedHelp: Story = {
+  name: 'Multi-step + Stacked Help (activeSheets)',
+  render: () => <MultiStepPathExample initialSheets={['overview', 'help']} />,
+};
+
 export const HugContent: Story = {
-  name: 'Hug content',
+  name: 'Legacy Singular (activeSheet) — Hug content',
   render: () => <MultiStepSwitcherExample height="hug" />,
   play: openFlow,
 };
 
 export const Capped: Story = {
+  name: 'Legacy Singular (activeSheet) — Capped',
   render: () => <MultiStepSwitcherExample height="capped" />,
   play: openFlow,
 };
 
 export const NoScrim: Story = {
-  name: 'No scrim',
+  name: 'Legacy Singular (activeSheet) — No scrim',
   render: () => <MultiStepSwitcherExample height="hug" hasScrim={false} />,
   play: openFlow,
 };
 
 export const NarrowViewport: Story = {
-  name: 'Narrow viewport',
+  name: 'Legacy Singular (activeSheet) — Narrow viewport',
   parameters: {viewport: {defaultViewport: 'mobile1'}},
   render: () => <MultiStepSwitcherExample height="hug" />,
   play: openFlow,
