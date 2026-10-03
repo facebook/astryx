@@ -268,8 +268,9 @@ function TableInner<T extends Record<string, unknown>>({
  * Combine with Badge (status labels), StatusDot (colored indicators),
  * Text (formatted values), Avatar (user cells), and HStack/VStack
  * (multi-element cell layouts). Without renderCell, cells render as plain text.
- * Always set explicit width on columns using proportional() or pixel() — omitting
- * width skips the minimum width floor, which can cause columns to collapse on mobile.
+ * Columns without width remain equally flexible with a compact 60px readability
+ * floor. Use proportional() for weighted or larger flexible columns and pixel()
+ * for fixed widths.
  *
  * @example
  * ```

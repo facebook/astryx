@@ -25,6 +25,7 @@ import {
   generateColumns,
   resolveColumnWidths,
   capitalize,
+  DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH,
   DEFAULT_MIN_COLUMN_WIDTH,
 } from './columnUtils';
 import type {TablePlugin, TableColumn, ProportionalWidth} from './types';
@@ -452,9 +453,16 @@ describe('BaseTable', () => {
       );
     });
 
-    it('lets a consumer style.minWidth survive when columns compute none', () => {
-      const plain: TableColumn<User>[] = [{key: 'name'}, {key: 'age'}];
-      render(<Table data={users} columns={plain} style={{minWidth: '10px'}} />);
+    it('lets a consumer style.minWidth survive when no columns are resolved', () => {
+      render(
+        <Table style={{minWidth: '10px'}}>
+          <tbody>
+            <TableRow>
+              <TableCell>Cell</TableCell>
+            </TableRow>
+          </tbody>
+        </Table>,
+      );
       expect(screen.getByRole('table').style.minWidth).toBe('10px');
     });
 
@@ -745,18 +753,50 @@ describe('BaseTable', () => {
       }
     });
 
-    it('does not apply minWidth on columns with no explicit width', () => {
+    it('keeps width-less columns flexible with a compact readability floor', () => {
       const cols: TableColumn<User>[] = [
         {key: 'name', header: 'Name'},
         {key: 'age', header: 'Age'},
       ];
       render(<BaseTable data={users} columns={cols} />);
       const headers = screen.getAllByRole('columnheader');
-      expect(headers[0]).not.toHaveStyle({
-        minWidth: `${DEFAULT_MIN_COLUMN_WIDTH}px`,
+      expect(headers[0]).toHaveStyle({
+        width: '50%',
+        minWidth: `${DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH}px`,
       });
-      expect(headers[1]).not.toHaveStyle({
-        minWidth: `${DEFAULT_MIN_COLUMN_WIDTH}px`,
+      expect(headers[1]).toHaveStyle({
+        width: '50%',
+        minWidth: `${DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH}px`,
+      });
+      expect(screen.getByRole('table')).toHaveStyle({
+        minWidth: `${DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH * 2}px`,
+      });
+    });
+
+    it('keeps the width-less floor stable when row content changes', () => {
+      const cols: TableColumn<User>[] = [
+        {key: 'name', header: 'Name'},
+        {key: 'age', header: 'Age'},
+      ];
+      const {rerender} = render(<BaseTable data={[]} columns={cols} />);
+      const table = screen.getByRole('table');
+      expect(table).toHaveStyle({
+        minWidth: `${DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH * 2}px`,
+      });
+
+      rerender(
+        <BaseTable
+          data={[
+            {
+              ...users[0],
+              name: 'one-unbreakable-token-that-must-not-change-column-sizing',
+            },
+          ]}
+          columns={cols}
+        />,
+      );
+      expect(table).toHaveStyle({
+        minWidth: `${DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH * 2}px`,
       });
     });
 

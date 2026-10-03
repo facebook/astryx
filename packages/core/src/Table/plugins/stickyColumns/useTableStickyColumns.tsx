@@ -23,7 +23,10 @@ import type {
   BodyCellRenderProps,
   ScrollWrapperRenderProps,
 } from '../../types';
-import {DEFAULT_MIN_COLUMN_WIDTH} from '../../columnUtils';
+import {
+  DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH,
+  DEFAULT_MIN_COLUMN_WIDTH,
+} from '../../columnUtils';
 
 // =============================================================================
 // Config
@@ -60,12 +63,13 @@ export interface UseTableStickyColumnsConfig {
  * Resolve a column's pixel width for cumulative offset math. Mirrors the
  * resize plugin's fallback so offsets line up with rendered widths:
  * pixel columns use their value; proportional columns use their declared
- * minWidth (or the default); unknown widths use the default.
+ * minWidth (or the explicit proportional default); width-less columns use the
+ * same compact floor as Table layout and resizing.
  */
 function getColumnWidth(col: TableColumn<Record<string, unknown>>): number {
   const w = col.width;
   if (!w) {
-    return DEFAULT_MIN_COLUMN_WIDTH;
+    return DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH;
   }
   if (w.type === 'pixel') {
     return w.value;

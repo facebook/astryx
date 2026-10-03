@@ -15,8 +15,27 @@ import type {CSSProperties, ReactNode} from 'react';
 import type {TableColumn, ProportionalWidth, PixelWidth} from './types';
 import {firstCharacter} from '../utils/characters';
 
-/** Default minimum width (in px) for proportional columns. */
+/** Default minimum width (in px) for explicit proportional columns. */
 export const DEFAULT_MIN_COLUMN_WIDTH = 120;
+
+/**
+ * Compact readability floor (in px) for flexible columns with no width.
+ *
+ * This is intentionally smaller than the explicit proportional() default:
+ * width-less columns remain compact and equal while avoiding near-zero collapse.
+ */
+export const DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH = 60;
+
+function resolveFlexibleColumnMinWidth(
+  width: ProportionalWidth | undefined,
+): number {
+  return (
+    width?.minWidth ??
+    (width == null
+      ? DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH
+      : DEFAULT_MIN_COLUMN_WIDTH)
+  );
+}
 
 // =============================================================================
 // Resolved Column Widths
@@ -74,10 +93,7 @@ export function resolveColumnWidths<T extends Record<string, unknown>>(
       pixelTotal += w.value;
     } else {
       const proportion = w?.value ?? 1;
-      // Only count minWidth for columns that explicitly used proportional().
-      // Columns with no width set (w === undefined) have no minimum —
-      // they flex freely and the scroll wrapper handles overflow.
-      const minW = w != null ? (w.minWidth ?? DEFAULT_MIN_COLUMN_WIDTH) : 0;
+      const minW = resolveFlexibleColumnMinWidth(w);
       totalProportion += proportion;
       proportionalCols.push({key: col.key, proportion, minWidth: minW});
     }
@@ -112,13 +128,8 @@ export function resolveColumnWidths<T extends Record<string, unknown>>(
       if (totalProportion > 0) {
         style.width = `${(proportion / totalProportion) * 100}%`;
       }
-      // Only apply minWidth if the column explicitly used proportional().
-      // Columns with no width set (w === undefined) have no minimum —
-      // they flex freely and the scroll wrapper handles overflow.
-      if (w != null) {
-        const minW = w.minWidth ?? DEFAULT_MIN_COLUMN_WIDTH;
-        style.minWidth = `${minW}px`;
-      }
+      // Width-less columns stay flexible, but keep a compact readability floor.
+      style.minWidth = `${resolveFlexibleColumnMinWidth(w)}px`;
     }
 
     result.set(col.key, {style});
@@ -253,9 +264,6 @@ function longestWord(value: unknown): number {
   return max;
 }
 
-/** Minimum floor for any column (px). Prevents collapse on narrow viewports. */
-const MIN_COLUMN_FLOOR = 60;
-
 /** Scale factor: approximate px per character for min-width calculation. */
 const PX_PER_CHAR = 8;
 
@@ -309,7 +317,7 @@ export function generateColumns<T extends Record<string, unknown>>(
     // Min-width: enough to fit header or longest word without wrapping
     const minWidth = Math.max(
       Math.max(m.headerLen, m.maxWordLen) * PX_PER_CHAR,
-      MIN_COLUMN_FLOOR,
+      DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH,
     );
 
     return {
