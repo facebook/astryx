@@ -11,7 +11,7 @@
  *   (richtext), exported from @astryxdesign/richtext
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/richtext/src/RichTextView.test.tsx
+ * - /packages/richtext/src/RichTextEditor.test.tsx
  * - /packages/richtext/src/index.ts
  * - /apps/storybook/stories/RichTextEditor.stories.tsx
  */
@@ -20,6 +20,7 @@ import {useEffect, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {sharedEditorTheme} from './editorTheme';
 import type {BaseProps} from '@astryxdesign/core';
+import {mergeProps} from '@astryxdesign/core/utils';
 
 import {LexicalExtensionComposer} from '@lexical/react/LexicalExtensionComposer';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
@@ -54,6 +55,34 @@ const DEFAULT_NODES: ReadonlyArray<Klass<LexicalNode>> = [
   CodeNode,
   CodeHighlightNode,
 ];
+
+/**
+ * Lexical's `ContentEditable` renders `role="textbox"` with widget-only ARIA
+ * (`aria-autocomplete`, `aria-readonly`) even when the editor is not editable.
+ * A view renders published content, not a form field, so all three are cleared:
+ *
+ * - `textbox` is a widget role, so an unnamed one is an axe
+ *   `aria-input-field-name` violation — and a view has no name to give, because
+ *   it is content rather than a labelled input.
+ * - The role also flattens the content to the field's *value* for assistive
+ *   technology, suppressing exactly the heading/list/link structure this
+ *   component exists to render.
+ * - Widget-only ARIA is invalid without a widget role, so removing the role
+ *   alone would trade one axe violation (`aria-input-field-name`) for another
+ *   (`aria-allowed-attr`).
+ *
+ * `role` must be `null` rather than `undefined`: Lexical applies its `textbox`
+ * default to `undefined`. Upstream fix: facebook/lexical#9270, after which
+ * these overrides become no-ops rather than wrong.
+ *
+ * A consumer who wants the read-only *form field* semantics instead wants
+ * `<RichTextEditor isDisabled />`, which is a labelled field by construction.
+ */
+const VIEW_CONTENT_EDITABLE_PROPS = {
+  'aria-autocomplete': undefined,
+  'aria-readonly': undefined,
+  role: null as unknown as undefined,
+} as const;
 
 export interface RichTextViewProps extends BaseProps {
   /**
@@ -173,10 +202,26 @@ export function RichTextView({
     lastValueRef.current = value;
   }
 
+  // The error is recorded during render (below, and from Lexical's `onError`
+  // while the composer builds) but reported to the consumer from an effect.
+  // Adjusting a component's own state during render is legal; calling a
+  // consumer's callback is not — under StrictMode, or in a concurrent render
+  // that is discarded, it would fire twice or for a render that never commits.
+  const pendingErrorRef = useRef<Error | null>(null);
+  const reportedErrorRef = useRef<Error | null>(null);
+
   const handleError = (error: Error) => {
-    onParseError?.(error);
+    pendingErrorRef.current = error;
     setHasError(true);
   };
+
+  useEffect(() => {
+    const error = pendingErrorRef.current;
+    if (error !== null && reportedErrorRef.current !== error) {
+      reportedErrorRef.current = error;
+      onParseError?.(error);
+    }
+  });
 
   // Validate `value` parses as JSON before handing it to Lexical. Malformed
   // JSON would otherwise throw synchronously while the composer builds the
@@ -196,11 +241,7 @@ export function RichTextView({
     // with the corrected `value`.
     extensionRef.current = null;
     return (
-      <div
-        {...stylex.props(styles.root, xstyle)}
-        className={className}
-        style={style}
-        {...rest}>
+      <div {...mergeProps(stylex.props(styles.root, xstyle), {className, style})} {...rest}>
         {errorFallback}
       </div>
     );
@@ -221,17 +262,13 @@ export function RichTextView({
   }
 
   return (
-    <div
-      {...stylex.props(styles.root, xstyle)}
-      className={className}
-      style={style}
-      {...rest}>
+    <div {...mergeProps(stylex.props(styles.root, xstyle), {className, style})} {...rest}>
       <LexicalExtensionComposer
         extension={extensionRef.current}
         contentEditable={null}>
         <SyncValuePlugin value={value} />
         <RichTextPlugin
-          contentEditable={<ContentEditable />}
+          contentEditable={<ContentEditable {...VIEW_CONTENT_EDITABLE_PROPS} />}
           placeholder={null}
           ErrorBoundary={LexicalErrorBoundary}
         />

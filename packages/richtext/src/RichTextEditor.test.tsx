@@ -15,7 +15,8 @@
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen, waitFor, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {createRef, useEffect} from 'react';
+import {createRef, StrictMode, useEffect} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 import type {EditorState, LexicalEditor} from 'lexical';
 import {
@@ -910,14 +911,108 @@ describe('RichTextEditor Tab keyboard trap escape (WCAG 2.1.2)', () => {
 
 describe('RichTextView', () => {
   it('renders serialized content read-only', async () => {
-    render(<RichTextView value={HELLO_STATE} />);
+    const {container} = render(<RichTextView value={HELLO_STATE} />);
     await waitFor(() =>
       expect(screen.getByText('Hello world')).toBeInTheDocument(),
     );
-    expect(screen.getByRole('textbox')).toHaveAttribute(
+    expect(container.querySelector('[data-lexical-editor]')).toHaveAttribute(
       'contenteditable',
       'false',
     );
+  });
+
+  it('renders content rather than a form field', async () => {
+    const {container} = render(<RichTextView value={HELLO_STATE} />);
+    await waitFor(() =>
+      expect(screen.getByText('Hello world')).toBeInTheDocument(),
+    );
+
+    // A view renders published content: `role="textbox"` would make it an
+    // unnamed widget (axe aria-input-field-name) and would flatten the
+    // heading/list/link structure to a single field value for assistive
+    // technology. Lexical's ContentEditable applies that role, and the
+    // widget-only ARIA that depends on it, even when not editable.
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+
+    const content = container.querySelector('[data-lexical-editor]')!;
+    expect(content.getAttribute('role')).toBeNull();
+    expect(content.getAttribute('aria-autocomplete')).toBeNull();
+    expect(content.getAttribute('aria-readonly')).toBeNull();
+  });
+
+  it('exposes heading and list structure to assistive technology', async () => {
+    render(<RichTextView value={makeListState('bullet')} />);
+    // The structural roles the textbox role would have suppressed.
+    await waitFor(() => expect(screen.getByRole('list')).toBeInTheDocument());
+    expect(screen.getAllByRole('listitem').length).toBeGreaterThan(0);
+  });
+
+  it('applies its own StyleX styles alongside a consumer className', async () => {
+    // A JSX attribute after an object spread wins even when undefined, so
+    // `className={className}` after `{...stylex.props(...)}` silently dropped
+    // every generated class — including styles.root's width: 100%.
+    const {container} = render(
+      <RichTextView value={HELLO_STATE} className="consumer-class" />,
+    );
+    const root = container.firstElementChild!;
+    expect(root).toHaveClass('consumer-class');
+    // …and the component's own StyleX class survives alongside it.
+    expect(root.classList.length).toBeGreaterThan(1);
+  });
+
+  it('applies a consumer xstyle', async () => {
+    const xstyles = stylex.create({custom: {opacity: 0.5}});
+    const {container} = render(
+      <RichTextView value={HELLO_STATE} xstyle={xstyles.custom} />,
+    );
+    const root = container.firstElementChild!;
+    const withXstyle = root.className;
+
+    const {container: plain} = render(<RichTextView value={HELLO_STATE} />);
+    expect(withXstyle).not.toBe(plain.firstElementChild!.className);
+  });
+
+  it('merges className and xstyle on the error fallback too', () => {
+    const {container} = render(
+      <RichTextView
+        value={'{ not valid json'}
+        className="consumer-class"
+        errorFallback={<div>Unavailable</div>}
+      />,
+    );
+    const root = container.firstElementChild!;
+    expect(root).toHaveClass('consumer-class');
+    expect(root.classList.length).toBeGreaterThan(1);
+  });
+
+  it('reports a parse error once, with the error', () => {
+    // Locks the observable contract around the render-phase fix below. Note
+    // this does NOT by itself prove the callback left the render body: the
+    // `hasError` guard means a StrictMode double-render skips the second parse
+    // either way, so the old code passes this too. The render-phase move is a
+    // correctness fix against concurrent rendering (a discarded render must not
+    // call a consumer), which jsdom cannot stage; these tests keep the
+    // behaviour from regressing in the other direction.
+    const onParseError = vi.fn();
+    render(
+      <StrictMode>
+        <RichTextView value={'{ not valid json'} onParseError={onParseError} />
+      </StrictMode>,
+    );
+    expect(onParseError).toHaveBeenCalledTimes(1);
+    expect(onParseError.mock.calls[0][0]).toBeInstanceOf(Error);
+  });
+
+  it('reports each distinct parse error once, across re-renders', () => {
+    const onParseError = vi.fn();
+    const {rerender} = render(
+      <RichTextView value={'{ bad'} onParseError={onParseError} />,
+    );
+    expect(onParseError).toHaveBeenCalledTimes(1);
+
+    // A re-render with the same bad value must not re-report it.
+    rerender(<RichTextView value={'{ bad'} onParseError={onParseError} />);
+    expect(onParseError).toHaveBeenCalledTimes(1);
   });
 
   it('renders custom read-only plugins passed via the plugins prop', () => {
