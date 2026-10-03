@@ -16,12 +16,16 @@ import {
   selectPrompts,
   stableId,
 } from './constants.mjs';
-import {evaluateRun} from './evaluator.mjs';
+import {captureAuthoredSources, evaluateRun} from './evaluator.mjs';
 import {
+  SANDBOX_PROJECT,
+  auditAgentContext,
   countCliLookups,
   countToolCalls,
+  createPrivateRunRoot,
   parseUsage,
   runCommand,
+  runIsolatedCommand,
 } from './process.mjs';
 import {prepareProject} from './projects.mjs';
 import {buildReports} from './report.mjs';
@@ -29,6 +33,7 @@ import {buildReports} from './report.mjs';
 const fsp = fs.promises;
 const here = path.dirname(fileURLToPath(import.meta.url));
 const vibeTestsRoot = path.resolve(here, '..');
+const MUSE_MAX_MODEL_STEPS = 80;
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
@@ -50,59 +55,47 @@ async function main() {
     return;
   }
 
+  await assertIsolationAvailable();
   const iterationId =
     options.iteration ??
     new Date().toISOString().replaceAll(/[:.]/g, '-').replace('Z', '');
   const outputDir = path.resolve(
     options.outputDir ?? path.join('/tmp/astryx-delivery-modes', iterationId),
   );
-  await fsp.mkdir(outputDir, {recursive: true});
   await fsp.mkdir(path.join(outputDir, 'screenshots'), {recursive: true});
-  await fsp.mkdir(path.join(outputDir, 'judge'), {recursive: true});
+  const manifest = {
+    iterationId,
+    createdAt: new Date().toISOString(),
+    configs: options.configs,
+    agents: options.agents,
+    prompts: prompts.map(prompt => prompt.id),
+    reactVersion: options.reactVersion,
+    vanillaCdnRef: options.vanillaCdnRef,
+    vanillaTarballUrl: options.vanillaTarballUrl,
+    concurrency: options.concurrency,
+    agentTimeoutMinutes: options.timeoutMinutes,
+    runnerLimits: {
+      claude: 'no model-step cap; wall-clock timeout only',
+      muse: `${MUSE_MAX_MODEL_STEPS} model steps plus the same wall-clock timeout`,
+    },
+    isolation: {
+      privateRootMode: '0700',
+      mountNamespace: true,
+      freshHomeTmpAndProject: true,
+      sharedResultsAfterCompletionOnly: true,
+      path: '/mnt/run/bin:/usr/bin:/bin (no meta CLI)',
+      startupProbe: await probeIsolation(),
+    },
+    runnerVersions: await runnerVersions(),
+  };
   await fsp.writeFile(
     path.join(outputDir, 'manifest.json'),
-    `${JSON.stringify(
-      {
-        iterationId,
-        createdAt: new Date().toISOString(),
-        configs: options.configs,
-        agents: options.agents,
-        prompts: prompts.map(prompt => prompt.id),
-        reactVersion: options.reactVersion,
-        vanillaCdnRef: options.vanillaCdnRef,
-        vanillaTarballUrl: options.vanillaTarballUrl,
-      },
-      null,
-      2,
-    )}\n`,
+    `${JSON.stringify(manifest, null, 2)}\n`,
   );
 
   if (options.configs.includes('react-nobuild')) {
-    console.log('Verifying the React no-build 0.6.5 starter…');
-    const starterDir = path.join(outputDir, 'starter-verification');
-    await prepareProject(specs['react-nobuild'], starterDir);
-    const starterScreenshot = path.join(
-      outputDir,
-      'screenshots',
-      'react-nobuild-starter-0.6.5.png',
-    );
-    const verification = await evaluateRun({
-      config: 'react-nobuild',
-      projectDir: starterDir,
-      prompt: {prompt: 'Render the supplied starter.'},
-      screenshotPath: starterScreenshot,
-      judgeRoot: path.join(outputDir, 'judge'),
-      skipJudge: true,
-    });
-    await fsp.writeFile(
-      path.join(outputDir, 'starter-verification.json'),
-      `${JSON.stringify(verification, null, 2)}\n`,
-    );
-    if (!verification.render.passed) {
-      throw new Error(
-        `React no-build starter failed verification: ${JSON.stringify(verification.render)}`,
-      );
-    }
+    console.log('Verifying the React no-build starter with hooks and icons…');
+    await verifyStarter(specs['react-nobuild'], outputDir);
   }
 
   const jobs = [];
@@ -132,6 +125,18 @@ async function main() {
     );
   });
   results.sort((a, b) => a.id.localeCompare(b.id));
+  manifest.completedAt = new Date().toISOString();
+  manifest.runnerVersions.claude =
+    results.find(result => result.runner?.contextAudit?.runnerVersion)?.runner
+      .contextAudit.runnerVersion ??
+    results.find(
+      result => result.evaluation?.judge?.contextAudit?.runnerVersion,
+    )?.evaluation.judge.contextAudit.runnerVersion ??
+    null;
+  await fsp.writeFile(
+    path.join(outputDir, 'manifest.json'),
+    `${JSON.stringify(manifest, null, 2)}\n`,
+  );
 
   const report = await buildReports({outputDir, iterationId, results});
   console.log(`\nReport: ${report.htmlPath}`);
@@ -144,12 +149,45 @@ async function main() {
   }
 }
 
+async function verifyStarter(spec, outputDir) {
+  const privateRun = await createPrivateRunRoot('starter-');
+  const privateScreenshot = path.join(privateRun.root, 'starter.png');
+  try {
+    await prepareProject(spec, privateRun.projectDir);
+    const baselineSources = await captureAuthoredSources(privateRun.projectDir);
+    const verification = await evaluateRun({
+      config: 'react-nobuild',
+      projectDir: privateRun.projectDir,
+      prompt: {prompt: 'Render the supplied starter.'},
+      screenshotPath: privateScreenshot,
+      baselineSources,
+      skipJudge: true,
+    });
+    if (!verification.render.passed) {
+      throw new Error(
+        `React no-build starter failed verification: ${JSON.stringify(verification.render)}`,
+      );
+    }
+    await fsp.copyFile(
+      privateScreenshot,
+      path.join(outputDir, 'screenshots', 'react-nobuild-starter-0.6.5.png'),
+    );
+    await fsp.writeFile(
+      path.join(outputDir, 'starter-verification.json'),
+      `${JSON.stringify(verification, null, 2)}\n`,
+    );
+  } finally {
+    await fsp.rm(privateRun.root, {recursive: true, force: true});
+  }
+}
+
 async function runOne({prompt, config, agent, spec, outputDir, options}) {
   const id = `${prompt.id}-${config}-${agent}`;
-  const runDir = path.join(outputDir, 'runs', id);
-  const projectDir = path.join(runDir, 'project');
-  const screenshotPath = path.join(outputDir, 'screenshots', `${id}.png`);
-  const taskPrompt = buildTaskPrompt(prompt, spec, projectDir);
+  const sharedRunDir = path.join(outputDir, 'runs', id);
+  const sharedScreenshot = path.join(outputDir, 'screenshots', `${id}.png`);
+  const privateRun = await createPrivateRunRoot(`${id}-`);
+  const privateScreenshot = path.join(privateRun.root, 'screenshot.png');
+  const taskPrompt = buildTaskPrompt(prompt, spec, SANDBOX_PROJECT);
   const result = {
     id,
     promptId: prompt.id,
@@ -157,72 +195,92 @@ async function runOne({prompt, config, agent, spec, outputDir, options}) {
     config,
     agent,
     outputDir,
-    projectDir,
-    screenshotPath,
-    taskPromptHash: stableId(
-      taskPrompt.replaceAll(projectDir, '<project-dir>'),
-    ),
+    projectDir: SANDBOX_PROJECT,
+    screenshotPath: sharedScreenshot,
+    taskPromptHash: stableId(taskPrompt),
     startedAt: new Date().toISOString(),
   };
 
   try {
-    await fsp.mkdir(runDir, {recursive: true});
-    await prepareProject(spec, projectDir);
-    const promptFile = path.join(projectDir, 'TASK.md');
-    await fsp.writeFile(promptFile, `${taskPrompt}\n`);
+    await prepareProject(spec, privateRun.projectDir);
+    const baselineSources = await captureAuthoredSources(privateRun.projectDir);
+    await fsp.writeFile(
+      path.join(privateRun.projectDir, 'TASK.md'),
+      `${taskPrompt}\n`,
+    );
     result.runner = await runAgent({
       agent,
-      projectDir,
-      promptFile,
+      privateRun,
       taskPrompt,
       timeoutMs: options.timeoutMinutes * 60 * 1000,
-      transcriptPath: path.join(runDir, `${agent}.transcript.jsonl`),
     });
     result.evaluation = await evaluateRun({
       config,
-      projectDir,
+      projectDir: privateRun.projectDir,
       prompt,
-      screenshotPath,
-      judgeRoot: path.join(outputDir, 'judge'),
+      screenshotPath: privateScreenshot,
+      baselineSources,
       skipJudge: options.skipJudge,
     });
+    if (!result.runner.success) {
+      forceFailedScores(
+        result.evaluation,
+        result.runner.contextAudit?.passed === false
+          ? `Forbidden runner context: ${result.runner.contextAudit.violations.join('; ')}`
+          : 'Agent runner failed or timed out',
+      );
+    }
   } catch (error) {
     result.error =
       error instanceof Error ? (error.stack ?? error.message) : String(error);
-    result.evaluation ??= {
-      render: {passed: false, nonBlank: false, error: result.error},
-    };
+    result.evaluation = failedRunEvaluation(result.error);
   }
   result.finishedAt = new Date().toISOString();
-  await fsp.mkdir(runDir, {recursive: true});
+
+  // Nothing under outputDir is created for this run until the agent and
+  // evaluator have both completed. The private mount root is never shared.
+  await fsp.mkdir(sharedRunDir, {recursive: true});
+  if (fs.existsSync(privateScreenshot)) {
+    await fsp.copyFile(privateScreenshot, sharedScreenshot);
+  } else {
+    result.screenshotPath = null;
+  }
+  await copyProjectEvidence(
+    privateRun.projectDir,
+    path.join(sharedRunDir, 'project'),
+  );
+  for (const file of ['transcript.jsonl', 'transcript.jsonl.stderr.log']) {
+    const source = path.join(privateRun.root, file);
+    if (fs.existsSync(source)) {
+      await fsp.copyFile(source, path.join(sharedRunDir, `${agent}.${file}`));
+    }
+  }
   await fsp.writeFile(
-    path.join(runDir, 'run.json'),
+    path.join(sharedRunDir, 'run.json'),
     `${JSON.stringify(result, null, 2)}\n`,
   );
+  await fsp.rm(privateRun.root, {recursive: true, force: true});
   return result;
 }
 
-async function runAgent({
-  agent,
-  projectDir,
-  promptFile,
-  taskPrompt,
-  timeoutMs,
-  transcriptPath,
-}) {
+async function runAgent({agent, privateRun, taskPrompt, timeoutMs}) {
   let command;
   let args;
   let input;
   if (agent === 'claude') {
-    command = 'claude';
+    command = '/usr/local/bin/claude';
     args = [
+      '--safe-mode',
+      '--strict-mcp-config',
+      '--mcp-config',
+      '/mnt/run/empty-mcp.json',
       '--no-session-persistence',
       '--permission-mode',
       'bypassPermissions',
       '--dangerously-skip-permissions',
       '--disable-slash-commands',
-      '--setting-sources',
-      'project',
+      '--tools',
+      'Bash,Read,Write,Edit',
       '-p',
       '--output-format',
       'stream-json',
@@ -230,39 +288,50 @@ async function runAgent({
     ];
     input = taskPrompt;
   } else if (agent === 'muse') {
-    command = 'muse';
+    command = '/usr/local/bin/muse';
     args = [
       'exec',
       '--json',
       '--workspace',
-      projectDir,
+      SANDBOX_PROJECT,
       '--prompt-file',
-      promptFile,
+      `${SANDBOX_PROJECT}/TASK.md`,
+      '--provider',
+      'meta',
+      '--preset',
+      'native-basic',
       '--trust-workspace',
-      '--yolo',
       '--parallel-tool-calls',
       '--no-foreign-personal-context',
       '--no-session-log',
       '--max-model-steps',
-      '80',
+      String(MUSE_MAX_MODEL_STEPS),
+      '--disable-web-tools',
+      '--approval-mode',
+      'never',
+      '--disable-muse-llm-rules',
     ];
   } else {
     throw new Error(`Unsupported agent: ${agent}`);
   }
 
-  const execution = await runCommand(command, args, {
-    cwd: projectDir,
+  const execution = await runIsolatedCommand(privateRun.root, command, args, {
     input,
     timeoutMs,
-    transcriptPath,
+    transcriptPath: privateRun.transcriptPath,
   });
   const usage = parseUsage(execution.stdout);
   const combined = `${execution.stdout}\n${execution.stderr}`;
+  const contextAudit = auditAgentContext(
+    agent,
+    execution.stdout,
+    execution.stderr,
+  );
   return {
     command: agent,
     code: execution.code,
     signal: execution.signal,
-    success: execution.code === 0 && !execution.timedOut,
+    success: execution.code === 0 && !execution.timedOut && contextAudit.passed,
     durationMs: execution.durationMs,
     timedOut: execution.timedOut,
     stalled: execution.timedOut,
@@ -273,9 +342,150 @@ async function runAgent({
       ),
     usage,
     toolCalls: countToolCalls(execution.stdout),
-    cliLookups: countCliLookups(combined),
+    cliLookups: countCliLookups(execution.stdout),
+    contextAudit,
+    limits:
+      agent === 'muse'
+        ? {maxModelSteps: MUSE_MAX_MODEL_STEPS}
+        : {maxModelSteps: null},
     stderr: execution.stderr,
   };
+}
+
+function forceFailedScores(evaluation, reason) {
+  evaluation.render.passed = false;
+  evaluation.render.adoptedElementCount = 0;
+  evaluation.render.adoptionShare = 0;
+  evaluation.render.error ??= reason;
+  evaluation.judge = {
+    configBlind: true,
+    promptFulfillment: 0,
+    visualQuality: 0,
+    success: false,
+    notes: reason,
+    failureReasons: [reason],
+    automaticFailure: true,
+  };
+}
+
+function failedRunEvaluation(reason) {
+  return {
+    build: {passed: false, code: null, timedOut: false, durationMs: 0},
+    typecheck: null,
+    render: {
+      passed: false,
+      nonBlank: false,
+      adoptionShare: 0,
+      adoptedElementCount: 0,
+      eligibleElementCount: 0,
+      visibleElementCount: 0,
+      textLength: 0,
+      error: reason,
+    },
+    source: {
+      authoredFileCount: 0,
+      inlineStyleAttributes: 0,
+      customPropertyOnlyStyles: 0,
+      rawHexValues: 0,
+      rawPixelValues: 0,
+      hardCodedStyleCount: 0,
+    },
+    accessibility: {violationCount: null, violations: []},
+    judge: {
+      configBlind: true,
+      promptFulfillment: 0,
+      visualQuality: 0,
+      success: false,
+      notes: reason,
+      failureReasons: [reason],
+      automaticFailure: true,
+    },
+  };
+}
+
+async function assertIsolationAvailable() {
+  const check = await runCommand('/usr/bin/sudo', ['-n', 'true'], {
+    cwd: vibeTestsRoot,
+    timeoutMs: 10_000,
+  });
+  if (check.code !== 0) {
+    throw new Error(
+      'This harness requires passwordless sudo for private mount namespaces.',
+    );
+  }
+}
+
+async function probeIsolation() {
+  const left = await createPrivateRunRoot('probe-left-');
+  const right = await createPrivateRunRoot('probe-right-');
+  try {
+    await fsp.writeFile(path.join(left.projectDir, 'allowed.txt'), 'allowed\n');
+    const siblingSecret = path.join(right.projectDir, 'secret.txt');
+    await fsp.writeFile(siblingSecret, 'sibling secret\n');
+    const execution = await runIsolatedCommand(
+      left.root,
+      '/bin/sh',
+      [
+        '-c',
+        'set -eu; test "$(cat /mnt/run/project/allowed.txt)" = allowed; printf written > /mnt/run/project/written.txt; test ! -e "$1"; ! command -v meta >/dev/null 2>&1; printf "own-root=read-write\\nsibling=hidden\\nmeta=absent\\n"',
+        'probe',
+        siblingSecret,
+      ],
+      {timeoutMs: 30_000},
+    );
+    const ownWrite = await fsp.readFile(
+      path.join(left.projectDir, 'written.txt'),
+      'utf8',
+    );
+    if (execution.code !== 0 || ownWrite !== 'written') {
+      throw new Error(
+        `Mount-namespace isolation probe failed: ${execution.stderr || execution.stdout}`,
+      );
+    }
+    return {
+      passed: true,
+      ownRootReadWrite: true,
+      exactSiblingPathHidden: true,
+      metaAbsentFromPath: true,
+      output: execution.stdout.trim().split('\n'),
+    };
+  } finally {
+    await Promise.all(
+      [left.root, right.root].map(root =>
+        fsp.rm(root, {recursive: true, force: true}),
+      ),
+    );
+  }
+}
+
+async function runnerVersions() {
+  const commands = {
+    node: [process.execPath, ['--version']],
+    npm: ['/usr/bin/npm', ['--version']],
+    muse: ['/usr/local/bin/muse', ['--version']],
+  };
+  const entries = await Promise.all(
+    Object.entries(commands).map(async ([name, [command, args]]) => {
+      const result = await runCommand(command, args, {
+        cwd: vibeTestsRoot,
+        timeoutMs: 30_000,
+      });
+      return [name, (result.stdout || result.stderr).trim()];
+    }),
+  );
+  return Object.fromEntries(entries);
+}
+
+async function copyProjectEvidence(source, destination) {
+  await fsp.cp(source, destination, {
+    recursive: true,
+    filter: entry => {
+      const relative = path.relative(source, entry);
+      return !relative
+        .split(path.sep)
+        .some(part => ['node_modules', 'dist', '.cache'].includes(part));
+    },
+  });
 }
 
 async function runWithConcurrency(items, concurrency, worker) {

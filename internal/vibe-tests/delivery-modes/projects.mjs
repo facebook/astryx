@@ -30,7 +30,8 @@ async function prepareReactBuild(spec, projectDir) {
     type: 'module',
     scripts: {
       dev: 'vite',
-      build: 'tsc --noEmit && vite build',
+      build: 'vite build',
+      typecheck: 'tsc --noEmit',
       preview: 'vite preview',
     },
     dependencies: {
@@ -128,7 +129,8 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({plugins: [react()]});
 `,
   );
-  await installAndInitialize(projectDir);
+  await installDependencies(projectDir);
+  await initializeAgentDocs(projectDir);
 }
 
 async function prepareReactNoBuild(spec, projectDir) {
@@ -143,7 +145,8 @@ async function prepareReactNoBuild(spec, projectDir) {
     path.join(projectDir, 'index.html'),
     reactNoBuildStarter(spec.reactVersion),
   );
-  await installAndInitialize(projectDir);
+  await installDependencies(projectDir);
+  await initializeAgentDocs(projectDir);
 }
 
 async function prepareVanilla(spec, projectDir) {
@@ -154,7 +157,11 @@ async function prepareVanilla(spec, projectDir) {
     type: 'module',
     devDependencies: {'@astryxdesign/cli': spec.vanillaTarballUrl},
   });
-  await installAndInitialize(projectDir);
+  await fsp.writeFile(
+    path.join(projectDir, 'index.html'),
+    vanillaStarter(spec),
+  );
+  await installDependencies(projectDir);
 
   const tarballRef = spec.vanillaTarballUrl.match(
     /facebook\/astryx@([^/]+)\/packages\/vanilla/,
@@ -167,17 +174,7 @@ async function prepareVanilla(spec, projectDir) {
       `Could not load pinned Vanilla Astryx onboarding (${docsResponse.status}): ${docsUrl}`,
     );
   }
-  const publicDocs = await docsResponse.text();
-  const pinnedDocs = publicDocs
-    .replaceAll(
-      /https:\/\/cdn\.jsdelivr\.net\/gh\/facebook\/astryx@[0-9a-f]{40}\/packages\/vanilla\/dist/g,
-      `https://cdn.jsdelivr.net/gh/facebook/astryx@${spec.vanillaCdnRef}/packages/vanilla/dist`,
-    )
-    .replaceAll(
-      /https:\/\/cdn\.jsdelivr\.net\/gh\/facebook\/astryx@[0-9a-f]{40}\/packages\/vanilla\/dist\/cli\/astryx-cli-vanilla\.tgz/g,
-      spec.vanillaTarballUrl,
-    );
-  const agentDocs = `# AGENTS\n\n${pinnedDocs}`;
+  const agentDocs = buildVanillaAgentDocs(await docsResponse.text(), spec);
   await fsp.writeFile(path.join(projectDir, 'AGENTS.md'), agentDocs);
   await fsp.mkdir(path.join(projectDir, '.claude'), {recursive: true});
   await fsp.writeFile(
@@ -186,7 +183,52 @@ async function prepareVanilla(spec, projectDir) {
   );
 }
 
-async function installAndInitialize(projectDir) {
+export function buildVanillaAgentDocs(publicDocs, spec) {
+  const start = publicDocs.indexOf('## Path A — Build-less HTML');
+  const end = publicDocs.indexOf('## Path B — React with a dev server');
+  if (start < 0 || end <= start) {
+    throw new Error(
+      'Pinned llms.txt does not contain the expected HTML section',
+    );
+  }
+  let htmlDocs = publicDocs.slice(start, end).trim();
+  htmlDocs = htmlDocs
+    .replace('## Path A — Build-less HTML', '## Build-less HTML')
+    .replace('### A4. Rules for Path A', '### A4. Rules')
+    .replace(
+      /\n\*\*Fallback — clone the pinned source commit:\*\*[\s\S]*?(?=\n\*\*Option 2)/,
+      '',
+    )
+    .replace(
+      '**Option 1 — install the preview CLI (Node 22.13+):**',
+      '**Option 1 — use the installed preview CLI (Node 22.13+):**',
+    )
+    .replace(
+      /npm install -g https:\/\/cdn\.jsdelivr\.net\/gh\/facebook\/astryx@[0-9a-f]{40}\/packages\/vanilla\/dist\/cli\/astryx-cli-vanilla\.tgz\n\n/,
+      '# The preview CLI is installed locally in this project. Run it with `npx astryx`.\n\n',
+    )
+    .replaceAll(/^astryx /gm, 'npx astryx ')
+    .replaceAll(
+      /https:\/\/cdn\.jsdelivr\.net\/gh\/facebook\/astryx@[0-9a-f]{40}\/packages\/vanilla\/dist/g,
+      `https://cdn.jsdelivr.net/gh/facebook/astryx@${spec.vanillaCdnRef}/packages/vanilla/dist`,
+    );
+
+  return `# AGENTS
+
+# Vanilla Astryx
+
+This project uses the build-less HTML delivery. The local preview CLI and the pinned public assets below are the complete consumer surface; do not clone the Astryx source repository.
+
+${htmlDocs}
+
+## More
+
+- Component docs and CLI reference: https://github.com/facebook/astryx
+- Use the installed CLI for authoritative, version-matched answers.
+`;
+}
+
+async function installDependencies(projectDir) {
   const install = await runCommand(
     'npm',
     ['install', '--no-audit', '--no-fund', '--prefer-offline'],
@@ -195,6 +237,9 @@ async function installAndInitialize(projectDir) {
   if (install.code !== 0) {
     throw new Error(`npm install failed:\n${install.stderr}`);
   }
+}
+
+async function initializeAgentDocs(projectDir) {
   const init = await runCommand(
     'npx',
     ['astryx', 'init', '--features', 'agents', '--agent', 'all'],
@@ -205,7 +250,7 @@ async function installAndInitialize(projectDir) {
   }
 }
 
-function reactNoBuildStarter(version) {
+export function reactNoBuildStarter(version) {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -235,21 +280,62 @@ function reactNoBuildStarter(version) {
     const htm = (await import('htm')).default;
     const h = htm.bind(React.createElement);
     const A = await import('https://esm.sh/@astryxdesign/core@${version}?external=react,react-dom');
-    const {neutralTheme} = await import('https://esm.sh/@astryxdesign/theme-neutral@${version}/built');
+    const {neutralTheme} = await import('https://esm.sh/@astryxdesign/theme-neutral@${version}/built?external=react,react-dom');
 
     function App() {
+      const [value, setValue] = React.useState('');
       return h\`<\${A.Theme} theme=\${neutralTheme}>
-        <\${A.VStack} gap=\${4} padding=\${6}>
-          <\${A.Card} padding=\${5}>
-            <\${A.Heading} level=\${1}>Astryx CDN starter<//>
-            <\${A.Text} type="supporting">React 19, htm, and Astryx ${version} loaded without a build step.<//>
+        <main>
+          <\${A.VStack} gap=\${4} padding=\${6}>
+            <\${A.Banner}
+              status="info"
+              title="Single React runtime verified"
+              description="This icon-bearing starter exercises the theme and component hooks."
+            />
+            <\${A.Card} padding=\${5}>
+              <\${A.Heading} level=\${1}>Astryx CDN starter<//>
+              <\${A.Text} type="supporting">React 19, htm, and Astryx ${version} loaded without a build step.<//>
+              <\${A.TextInput}
+                label="Starter field"
+                value=\${value}
+                onChange=\${event => setValue(event.target.value)}
+              />
+            <//>
           <//>
-        <//>
+        </main>
       <//>\`;
     }
 
     createRoot(document.getElementById('root')).render(h\`<\${App} />\`);
   </script>
+</body>
+</html>
+`;
+}
+
+export function vanillaStarter(spec) {
+  return `<!doctype html>
+<html lang="en" data-astryx-theme="neutral" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vanilla Astryx starter</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@astryxdesign/core@0.6.5/src/reset.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/facebook/astryx@${spec.vanillaCdnRef}/packages/vanilla/dist/astryx-vanilla.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-neutral@0.6.5/dist/theme.css" />
+  <script src="https://cdn.jsdelivr.net/gh/facebook/astryx@${spec.vanillaCdnRef}/packages/vanilla/dist/astryx-vanilla.js" defer></script>
+</head>
+<body>
+  <main class="ax-stack ax-stack--gap-4">
+    <article class="ax-card">
+      <header class="ax-card__header">
+        <h1 class="ax-heading ax-heading--1">Vanilla Astryx starter</h1>
+      </header>
+      <div class="ax-card__body">
+        <p class="ax-text ax-text--supporting ax-text--secondary">Replace this starter with the requested UI.</p>
+      </div>
+    </article>
+  </main>
 </body>
 </html>
 `;

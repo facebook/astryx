@@ -35,7 +35,7 @@ export function getDeliverySpecs(options = {}) {
       name: 'vanilla',
       outputFile: 'index.html',
       description:
-        'a build-less static HTML project with the Vanilla Astryx preview CLI and its Path A agent documentation installed from a pinned public tarball',
+        'a build-less static HTML project with the Vanilla Astryx preview CLI and its agent documentation installed from a pinned public tarball',
       vanillaCdnRef,
       vanillaTarballUrl,
     },

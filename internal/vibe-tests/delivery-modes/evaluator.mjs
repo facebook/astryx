@@ -2,13 +2,17 @@
 /* global URL, document, fetch, process, setTimeout, window */
 
 import {spawn} from 'node:child_process';
-import {randomUUID} from 'node:crypto';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as path from 'node:path';
 import {AxeBuilder} from '@axe-core/playwright';
 import {chromium} from 'playwright';
-import {runCommand} from './process.mjs';
+import {
+  auditAgentContext,
+  createPrivateRunRoot,
+  runCommand,
+  runIsolatedCommand,
+} from './process.mjs';
 
 const fsp = fs.promises;
 
@@ -17,9 +21,16 @@ export async function evaluateRun({
   projectDir,
   prompt,
   screenshotPath,
-  judgeRoot,
+  baselineSources,
   skipJudge = false,
 }) {
+  const typecheck =
+    config === 'react-build'
+      ? await runCommand('npm', ['run', 'typecheck'], {
+          cwd: projectDir,
+          timeoutMs: 5 * 60 * 1000,
+        })
+      : null;
   const build =
     config === 'react-build'
       ? await runCommand('npm', ['run', 'build'], {
@@ -27,21 +38,15 @@ export async function evaluateRun({
           timeoutMs: 5 * 60 * 1000,
         })
       : {code: 0, stdout: '', stderr: '', durationMs: 0, timedOut: false};
+  const source = await scanAuthoredSource(projectDir, baselineSources);
 
   if (build.code !== 0) {
-    return {
-      build: commandReceipt(build),
-      render: {
-        passed: false,
-        nonBlank: false,
-        consoleErrors: [],
-        pageErrors: [],
-        error: build.stderr || build.stdout || 'Build failed',
-      },
-      source: await scanAuthoredSource(projectDir),
-      accessibility: {violations: [], violationCount: null},
-      judge: {skipped: true, error: 'Build failed'},
-    };
+    return failedEvaluation({
+      build,
+      typecheck,
+      source,
+      reason: build.stderr || build.stdout || 'Build failed',
+    });
   }
 
   await fsp.mkdir(path.dirname(screenshotPath), {recursive: true});
@@ -69,46 +74,10 @@ export async function evaluateRun({
     await page.goto(server.url, {waitUntil: 'networkidle', timeout: 90_000});
     await page.waitForTimeout(1500);
 
-    const renderMetrics = await page.evaluate(() => {
-      const body = document.body;
-      const textLength = (body?.innerText ?? '').trim().length;
-      const visibleElements = [...document.querySelectorAll('body *')].filter(
-        element => {
-          const rect = element.getBoundingClientRect();
-          const style = window.getComputedStyle(element);
-          return (
-            rect.width > 1 &&
-            rect.height > 1 &&
-            style.display !== 'none' &&
-            style.visibility !== 'hidden'
-          );
-        },
-      );
-      const eligible = [
-        ...document.querySelectorAll(
-          'button,input,select,textarea,h1,h2,h3,h4,h5,h6,main,section,article,nav,header,footer,form,table,[role="dialog"]',
-        ),
-      ];
-      const adopted = eligible.filter(element => {
-        const classes = element.getAttribute('class') ?? '';
-        return classes
-          .split(/\s+/)
-          .some(name => name.startsWith('astryx-') || name.startsWith('ax-'));
-      });
-      return {
-        textLength,
-        visibleElementCount: visibleElements.length,
-        eligibleElementCount: eligible.length,
-        adoptedElementCount: adopted.length,
-        adoptionShare:
-          eligible.length === 0 ? 0 : adopted.length / eligible.length,
-      };
-    });
-
+    const renderMetrics = await page.evaluate(measureAdoptionInDocument);
     const axe = await new AxeBuilder({page}).analyze();
     await page.screenshot({path: screenshotPath, fullPage: true});
 
-    const source = await scanAuthoredSource(projectDir);
     const nonBlank =
       renderMetrics.textLength >= 20 && renderMetrics.visibleElementCount >= 3;
     const render = {
@@ -119,12 +88,19 @@ export async function evaluateRun({
       passed: nonBlank && consoleErrors.length === 0 && pageErrors.length === 0,
       url: server.url,
     };
-    const judge = skipJudge
-      ? {skipped: true}
-      : await runBlindJudge({prompt, screenshotPath, judgeRoot});
+    if (!render.passed) {
+      render.adoptionShare = 0;
+      render.adoptedElementCount = 0;
+    }
+    const judge = !render.passed
+      ? zeroJudgment('Render failed, was blank, or emitted runtime errors')
+      : skipJudge
+        ? {skipped: true}
+        : await runBlindJudge({prompt, screenshotPath});
 
     return {
       build: commandReceipt(build),
+      typecheck: typecheckReceipt(typecheck),
       render,
       source,
       accessibility: {
@@ -139,52 +115,248 @@ export async function evaluateRun({
       judge,
     };
   } catch (error) {
-    return {
-      build: commandReceipt(build),
-      render: {
-        passed: false,
-        nonBlank: false,
-        consoleErrors: [],
-        pageErrors: [],
-        error:
-          error instanceof Error
-            ? (error.stack ?? error.message)
-            : String(error),
-      },
-      source: await scanAuthoredSource(projectDir),
-      accessibility: {violations: [], violationCount: null},
-      judge: {skipped: true, error: 'Render failed'},
-    };
+    return failedEvaluation({
+      build,
+      typecheck,
+      source,
+      reason:
+        error instanceof Error ? (error.stack ?? error.message) : String(error),
+    });
   } finally {
     await browser?.close();
     await server.stop();
   }
 }
 
-export async function scanAuthoredSource(projectDir) {
+function failedEvaluation({build, typecheck, source, reason}) {
+  return {
+    build: commandReceipt(build),
+    typecheck: typecheckReceipt(typecheck),
+    render: {
+      passed: false,
+      nonBlank: false,
+      textLength: 0,
+      visibleElementCount: 0,
+      eligibleElementCount: 0,
+      adoptedElementCount: 0,
+      adoptionShare: 0,
+      consoleErrors: [],
+      pageErrors: [],
+      error: reason,
+    },
+    source,
+    accessibility: {violations: [], violationCount: null},
+    judge: zeroJudgment(reason),
+  };
+}
+
+function zeroJudgment(reason) {
+  return {
+    configBlind: true,
+    promptFulfillment: 0,
+    visualQuality: 0,
+    success: false,
+    notes: reason,
+    failureReasons: [reason],
+    automaticFailure: true,
+  };
+}
+
+export function measureAdoptionInDocument(assumeVisible = false) {
+  const doc = document;
+  const view = doc.defaultView ?? window;
+  const semanticSelector = [
+    'button',
+    'a[href]',
+    'input',
+    'select',
+    'textarea',
+    'h1',
+    'h2',
+    'h3',
+    'h4',
+    'h5',
+    'h6',
+    'table',
+    'dialog',
+    'nav',
+    '[role="button"]',
+    '[role="link"]',
+    '[role="textbox"]',
+    '[role="combobox"]',
+    '[role="checkbox"]',
+    '[role="radio"]',
+    '[role="switch"]',
+    '[role="table"]',
+    '[role="dialog"]',
+    '[role="navigation"]',
+  ].join(',');
+  const containerSelector = [
+    '.astryx-card',
+    '.ax-card',
+    '.astryx-dialog',
+    '.ax-dialog',
+    '.astryx-table',
+    '.ax-table',
+    '.astryx-top-nav',
+    '.ax-top-nav',
+    '.astryx-side-nav',
+    '.ax-side-nav',
+  ].join(',');
+  const targets = new Set([
+    ...doc.querySelectorAll(semanticSelector),
+    ...doc.querySelectorAll(containerSelector),
+  ]);
+
+  const hasDesignSystemClass = element =>
+    (element.getAttribute('class') ?? '')
+      .split(/\s+/)
+      .some(name => name.startsWith('astryx-') || name.startsWith('ax-'));
+  const hasOnlyContainerClass = element => {
+    const classes = (element.getAttribute('class') ?? '').split(/\s+/);
+    return classes.some(name =>
+      /^(?:astryx|ax)-(?:stack|vstack|hstack|grid|layout|center|section|card|dialog|banner|app-shell|top-nav|side-nav|toolbar|form-layout)(?:--|__|$)/.test(
+        name,
+      ),
+    );
+  };
+  const isVisible = element => {
+    if (assumeVisible) {
+      return !element.hasAttribute('hidden');
+    }
+    const tabPanel = element.closest('[role="tabpanel"]');
+    const controllingTabId = tabPanel?.getAttribute('aria-labelledby');
+    const controllingTab = controllingTabId
+      ? doc.getElementById(controllingTabId)
+      : null;
+    const inactiveTabPanel =
+      tabPanel &&
+      (tabPanel.getAttribute('data-state') === 'inactive' ||
+        tabPanel.getAttribute('data-state') === 'closed' ||
+        tabPanel.getAttribute('data-active') === 'false' ||
+        controllingTab?.getAttribute('aria-selected') === 'false');
+    if (
+      element.hasAttribute('hidden') ||
+      element.closest('[aria-hidden="true"]') ||
+      element.closest('dialog:not([open])') ||
+      (element.closest('details:not([open])') && !element.closest('summary')) ||
+      element.closest('[popover]:not(:popover-open)') ||
+      inactiveTabPanel
+    ) {
+      return false;
+    }
+    const style = view.getComputedStyle(element);
+    if (style.display === 'none' || style.visibility === 'hidden') {
+      return false;
+    }
+    const rect = element.getBoundingClientRect();
+    return rect.width > 1 && rect.height > 1;
+  };
+  const isAdopted = element => {
+    if (hasDesignSystemClass(element)) {
+      return (
+        element.matches(containerSelector) || !hasOnlyContainerClass(element)
+      );
+    }
+    let ancestor = element.parentElement;
+    while (ancestor && ancestor !== doc.body) {
+      if (hasDesignSystemClass(ancestor)) {
+        return !hasOnlyContainerClass(ancestor);
+      }
+      ancestor = ancestor.parentElement;
+    }
+    return false;
+  };
+
+  const visibleElements = [...doc.querySelectorAll('body *')].filter(isVisible);
+  const eligible = [...targets].filter(isVisible);
+  const adopted = eligible.filter(isAdopted);
+  return {
+    textLength: (doc.body?.innerText ?? doc.body?.textContent ?? '').trim()
+      .length,
+    visibleElementCount: visibleElements.length,
+    eligibleElementCount: eligible.length,
+    adoptedElementCount: adopted.length,
+    adoptionShare: eligible.length === 0 ? 0 : adopted.length / eligible.length,
+  };
+}
+
+export async function captureAuthoredSources(projectDir) {
   const files = [];
   await walk(projectDir, files);
-  const authored = files.filter(file =>
-    /\.(?:html|css|js|jsx|mjs|ts|tsx)$/.test(file),
+  const entries = await Promise.all(
+    files
+      .filter(file => /\.(?:html|css|js|jsx|mjs|ts|tsx)$/.test(file))
+      .map(async file => [
+        path.relative(projectDir, file),
+        await fsp.readFile(file, 'utf8'),
+      ]),
+  );
+  return Object.fromEntries(entries);
+}
+
+export async function scanAuthoredSource(projectDir, baselineSources = {}) {
+  const current = await captureAuthoredSources(projectDir);
+  const authored = Object.entries(current).filter(
+    ([relativePath, source]) => baselineSources[relativePath] !== source,
   );
   let inlineStyleAttributes = 0;
+  let customPropertyOnlyStyles = 0;
   let rawHexValues = 0;
   let rawPixelValues = 0;
-  for (const file of authored) {
-    const source = await fsp.readFile(file, 'utf8');
-    inlineStyleAttributes += (
-      source.match(/\bstyle\s*=\s*(?:["'{]|\{\{)/g) ?? []
-    ).length;
-    rawHexValues += (source.match(/#[0-9a-f]{3,8}\b/gi) ?? []).length;
-    rawPixelValues += (source.match(/\b\d+(?:\.\d+)?px\b/gi) ?? []).length;
+  for (const [, source] of authored) {
+    const styleCounts = countInlineStyles(source);
+    const scannableSource = stripCustomPropertyOnlyInlineStyles(source);
+    inlineStyleAttributes += styleCounts.hardCoded;
+    customPropertyOnlyStyles += styleCounts.customPropertyOnly;
+    rawHexValues += (scannableSource.match(/#[0-9a-f]{3,8}\b/gi) ?? []).length;
+    rawPixelValues += (scannableSource.match(/\b\d+(?:\.\d+)?px\b/gi) ?? [])
+      .length;
   }
   return {
     authoredFileCount: authored.length,
     inlineStyleAttributes,
+    customPropertyOnlyStyles,
     rawHexValues,
     rawPixelValues,
     hardCodedStyleCount: inlineStyleAttributes + rawHexValues + rawPixelValues,
   };
+}
+
+export function countInlineStyles(source) {
+  let hardCoded = 0;
+  let customPropertyOnly = 0;
+  const pattern = /\bstyle\s*=\s*(?:"([^"]*)"|'([^']*)'|\{\{([\s\S]*?)\}\})/g;
+  for (const match of source.matchAll(pattern)) {
+    const body = match[1] ?? match[2] ?? match[3] ?? '';
+    if (isCustomPropertyOnlyStyle(body)) {
+      customPropertyOnly += 1;
+    } else {
+      hardCoded += 1;
+    }
+  }
+  return {hardCoded, customPropertyOnly};
+}
+
+function stripCustomPropertyOnlyInlineStyles(source) {
+  const pattern = /\bstyle\s*=\s*(?:"([^"]*)"|'([^']*)'|\{\{([\s\S]*?)\}\})/g;
+  return source.replace(pattern, (match, double, single, object) => {
+    const body = double ?? single ?? object ?? '';
+    return isCustomPropertyOnlyStyle(body) ? '' : match;
+  });
+}
+
+function isCustomPropertyOnlyStyle(body) {
+  const properties = [];
+  for (const declaration of body.split(/[;,]\s*/)) {
+    const property = declaration.match(/^\s*['"]?([^:'"]+)['"]?\s*:/)?.[1];
+    if (property) {
+      properties.push(property.trim());
+    }
+  }
+  return (
+    properties.length > 0 && properties.every(name => name.startsWith('--'))
+  );
 }
 
 async function walk(directory, files) {
@@ -309,10 +481,13 @@ async function waitForUrl(url, child, logPath) {
   throw new Error(`Timed out waiting for ${url}`);
 }
 
-async function runBlindJudge({prompt, screenshotPath, judgeRoot}) {
-  const anonymousDir = path.join(judgeRoot, randomUUID());
-  await fsp.mkdir(anonymousDir, {recursive: true});
-  await fsp.copyFile(screenshotPath, path.join(anonymousDir, 'screenshot.png'));
+async function runBlindJudge({prompt, screenshotPath}) {
+  const privateRun = await createPrivateRunRoot('judge-');
+  const anonymousScreenshot = path.join(
+    privateRun.projectDir,
+    'screenshot.png',
+  );
+  await fsp.copyFile(screenshotPath, anonymousScreenshot);
   const schema = {
     type: 'object',
     properties: {
@@ -344,22 +519,33 @@ Score only visible evidence:
 Do not infer implementation details, identify the system, inspect other files, or reward a particular visual style. Return the requested JSON only.`;
 
   try {
-    const result = await runCommand(
-      'claude',
+    const result = await runIsolatedCommand(
+      privateRun.root,
+      '/usr/local/bin/claude',
       [
         '--safe-mode',
+        '--strict-mcp-config',
+        '--mcp-config',
+        `${privateRun.sandboxProjectDir}/../empty-mcp.json`,
         '--no-session-persistence',
         '--permission-mode',
-        'dontAsk',
+        'bypassPermissions',
+        '--dangerously-skip-permissions',
+        '--disable-slash-commands',
         '--tools',
         'Read',
         '-p',
         '--output-format',
-        'json',
+        'stream-json',
+        '--verbose',
         '--json-schema',
         JSON.stringify(schema),
       ],
-      {cwd: anonymousDir, input: judgePrompt, timeoutMs: 5 * 60 * 1000},
+      {
+        input: judgePrompt,
+        timeoutMs: 5 * 60 * 1000,
+        transcriptPath: privateRun.transcriptPath,
+      },
     );
     if (result.code !== 0) {
       return {
@@ -368,8 +554,15 @@ Do not infer implementation details, identify the system, inspect other files, o
       };
     }
     const parsed = parseClaudeStructuredOutput(result.stdout);
+    const contextAudit = auditAgentContext(
+      'claude',
+      result.stdout,
+      result.stderr,
+    );
     return {
       configBlind: true,
+      fileAccessRoot: '/mnt/run/project',
+      contextAudit,
       ...parsed,
       durationMs: result.durationMs,
     };
@@ -379,14 +572,31 @@ Do not infer implementation details, identify the system, inspect other files, o
       error: error instanceof Error ? error.message : String(error),
     };
   } finally {
-    await fsp.rm(anonymousDir, {recursive: true, force: true});
+    await fsp.rm(privateRun.root, {recursive: true, force: true});
   }
 }
 
 function parseClaudeStructuredOutput(text) {
-  const outer = JSON.parse(text);
-  const candidate = outer.structured_output ?? outer.result ?? outer;
-  if (typeof candidate === 'object') {
+  let outer;
+  try {
+    outer = JSON.parse(text);
+  } catch {
+    const records = text
+      .split('\n')
+      .filter(Boolean)
+      .map(line => {
+        try {
+          return JSON.parse(line);
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
+    outer =
+      records.findLast(record => record.type === 'result') ?? records.at(-1);
+  }
+  const candidate = outer?.structured_output ?? outer?.result ?? outer;
+  if (candidate && typeof candidate === 'object') {
     return candidate;
   }
   const match = String(candidate).match(/\{[\s\S]*\}/);
@@ -403,6 +613,17 @@ function commandReceipt(command) {
     timedOut: command.timedOut,
     durationMs: command.durationMs,
     stderr: command.stderr,
+  };
+}
+
+function typecheckReceipt(command) {
+  if (!command) {
+    return null;
+  }
+  const output = `${command.stdout}\n${command.stderr}`;
+  return {
+    ...commandReceipt(command),
+    errorCount: (output.match(/\berror TS\d+:/g) ?? []).length,
   };
 }
 

@@ -39,38 +39,68 @@ export function summarize(results) {
     .map(([key, runs]) => {
       const [config, agent] = key.split('::');
       const passed = runs.filter(run => run.evaluation?.render?.passed).length;
+      const wall = metric(runs.map(run => run.runner?.durationMs));
+      const tokens = metric(
+        runs.map(run => {
+          const input = run.runner?.usage?.inputTokens;
+          const output = run.runner?.usage?.outputTokens;
+          return input == null && output == null
+            ? null
+            : (input ?? 0) + (output ?? 0);
+        }),
+      );
+      const cli = metric(runs.map(run => run.runner?.cliLookups));
+      const adoption = metric(
+        runs.map(run => run.evaluation?.render?.adoptionShare),
+      );
+      const hardCoded = metric(
+        runs.map(run => run.evaluation?.source?.hardCodedStyleCount),
+      );
+      const axe = metric(
+        runs.map(run => run.evaluation?.accessibility?.violationCount),
+      );
+      const prompt = metric(
+        runs.map(run => run.evaluation?.judge?.promptFulfillment),
+      );
+      const visual = metric(
+        runs.map(run => run.evaluation?.judge?.visualQuality),
+      );
+      const typeErrors = metric(
+        runs.map(run => run.evaluation?.typecheck?.errorCount),
+      );
       return {
         config,
         agent,
         runs: runs.length,
         passed,
         passRate: runs.length === 0 ? 0 : passed / runs.length,
-        medianWallTimeMs: median(runs.map(run => run.runner?.durationMs)),
-        medianTokens: median(
-          runs.map(run => {
-            const input = run.runner?.usage?.inputTokens;
-            const output = run.runner?.usage?.outputTokens;
-            return input == null && output == null
-              ? null
-              : (input ?? 0) + (output ?? 0);
-          }),
-        ),
-        medianCliLookups: median(runs.map(run => run.runner?.cliLookups)),
-        medianAdoptionShare: median(
-          runs.map(run => run.evaluation?.render?.adoptionShare),
-        ),
-        medianHardCodedStyles: median(
-          runs.map(run => run.evaluation?.source?.hardCodedStyleCount),
-        ),
-        medianAxeViolations: median(
-          runs.map(run => run.evaluation?.accessibility?.violationCount),
-        ),
-        medianPromptFulfillment: median(
-          runs.map(run => run.evaluation?.judge?.promptFulfillment),
-        ),
-        medianVisualQuality: median(
-          runs.map(run => run.evaluation?.judge?.visualQuality),
-        ),
+        timeouts: runs.filter(run => run.runner?.timedOut).length,
+        contextFailures: runs.filter(
+          run => run.runner?.contextAudit?.passed === false,
+        ).length,
+        buildFailures: runs.filter(
+          run => run.evaluation?.build?.passed === false,
+        ).length,
+        medianWallTimeMs: wall.value,
+        medianTokens: tokens.value,
+        medianCliLookups: cli.value,
+        medianAdoptionShare: adoption.value,
+        medianHardCodedStyles: hardCoded.value,
+        medianAxeViolations: axe.value,
+        medianPromptFulfillment: prompt.value,
+        medianVisualQuality: visual.value,
+        medianTypeErrors: typeErrors.value,
+        samples: {
+          wall: wall.count,
+          tokens: tokens.count,
+          cli: cli.count,
+          adoption: adoption.count,
+          hardCoded: hardCoded.count,
+          axe: axe.count,
+          prompt: prompt.count,
+          visual: visual.count,
+          typeErrors: typeErrors.count,
+        },
       };
     })
     .sort((a, b) =>
@@ -82,14 +112,18 @@ function markdownReport(iterationId, summary, results) {
   const lines = [
     `# Delivery-mode vibe test — ${iterationId}`,
     '',
-    'The same prompt battery and evaluator were used for every configuration. The visual judge received only an anonymized screenshot and task prompt.',
+    'The same prompt battery and evaluator were used for every configuration. A build failure, runtime page error, or blank render contributes adoption, prompt-fulfillment, and visual-quality scores of 0 and remains in every median and pass-rate denominator.',
     '',
-    '| Config | Agent | Runs | Pass rate | Wall time | Tokens | CLI lookups | DS adoption | Hard-coded styles | axe | Prompt | Visual |',
-    '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
+    'TypeScript errors are reported for `react-build` as a non-gating quality metric; only `vite build` gates its render. The visual judge receives one anonymized default-state screenshot and the task prompt in its own filesystem namespace, so multi-step flows are judged from their default state equally across configs.',
+    '',
+    'Known delivery asymmetry: `react-nobuild` receives the published React CLI guide, which has no CDN-specific workflow. Known runner asymmetry: Muse emits built-in skill and final-verification reminder lifecycle records even with external plugins, foreign context, MCP, external skill content, and llm-rules disabled; the same minimal preset is used for every config.',
+    '',
+    '| Config | Agent | Runs | Pass | Timeouts | Context failures | Wall | Tokens | CLI | Adoption | Hard-coded | axe | Type errors | Prompt | Visual |',
+    '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
   ];
   for (const row of summary) {
     lines.push(
-      `| ${row.config} | ${row.agent} | ${row.runs} | ${percent(row.passRate)} | ${seconds(row.medianWallTimeMs)} | ${formatNumber(row.medianTokens)} | ${formatNumber(row.medianCliLookups)} | ${percent(row.medianAdoptionShare)} | ${formatNumber(row.medianHardCodedStyles)} | ${formatNumber(row.medianAxeViolations)} | ${formatNumber(row.medianPromptFulfillment)} | ${formatNumber(row.medianVisualQuality)} |`,
+      `| ${row.config} | ${row.agent} | ${row.runs} | ${percent(row.passRate)} | ${row.timeouts} | ${row.contextFailures} | ${metricText(seconds(row.medianWallTimeMs), row.samples.wall)} | ${metricText(formatNumber(row.medianTokens), row.samples.tokens)} | ${metricText(formatNumber(row.medianCliLookups), row.samples.cli)} | ${metricText(percent(row.medianAdoptionShare), row.samples.adoption)} | ${metricText(formatNumber(row.medianHardCodedStyles), row.samples.hardCoded)} | ${metricText(formatNumber(row.medianAxeViolations), row.samples.axe)} | ${metricText(formatNumber(row.medianTypeErrors), row.samples.typeErrors)} | ${metricText(formatNumber(row.medianPromptFulfillment), row.samples.prompt)} | ${metricText(formatNumber(row.medianVisualQuality), row.samples.visual)} |`,
     );
   }
   lines.push('', '## Screenshots', '');
@@ -114,10 +148,12 @@ async function htmlReport(iterationId, summary, results) {
   const rows = summary
     .map(
       row => `<tr>
-<td>${escapeHtml(row.config)}</td><td>${escapeHtml(row.agent)}</td><td>${row.runs}</td>
-<td>${percent(row.passRate)}</td><td>${seconds(row.medianWallTimeMs)}</td><td>${formatNumber(row.medianTokens)}</td>
-<td>${formatNumber(row.medianCliLookups)}</td><td>${percent(row.medianAdoptionShare)}</td><td>${formatNumber(row.medianHardCodedStyles)}</td>
-<td>${formatNumber(row.medianAxeViolations)}</td><td>${formatNumber(row.medianPromptFulfillment)}</td><td>${formatNumber(row.medianVisualQuality)}</td>
+<td>${escapeHtml(row.config)}</td><td>${escapeHtml(row.agent)}</td><td>${row.runs}</td><td>${percent(row.passRate)}</td>
+<td>${row.timeouts}</td><td>${row.contextFailures}</td><td>${metricText(seconds(row.medianWallTimeMs), row.samples.wall)}</td>
+<td>${metricText(formatNumber(row.medianTokens), row.samples.tokens)}</td><td>${metricText(formatNumber(row.medianCliLookups), row.samples.cli)}</td>
+<td>${metricText(percent(row.medianAdoptionShare), row.samples.adoption)}</td><td>${metricText(formatNumber(row.medianHardCodedStyles), row.samples.hardCoded)}</td>
+<td>${metricText(formatNumber(row.medianAxeViolations), row.samples.axe)}</td><td>${metricText(formatNumber(row.medianTypeErrors), row.samples.typeErrors)}</td>
+<td>${metricText(formatNumber(row.medianPromptFulfillment), row.samples.prompt)}</td><td>${metricText(formatNumber(row.medianVisualQuality), row.samples.visual)}</td>
 </tr>`,
     )
     .join('\n');
@@ -134,6 +170,7 @@ async function htmlReport(iterationId, summary, results) {
 <dt>Render</dt><dd>${result.evaluation?.render?.passed ? 'pass' : 'fail'}</dd>
 <dt>Adoption</dt><dd>${percent(result.evaluation?.render?.adoptionShare)}</dd>
 <dt>axe</dt><dd>${formatNumber(result.evaluation?.accessibility?.violationCount)}</dd>
+<dt>Type errors</dt><dd>${formatNumber(result.evaluation?.typecheck?.errorCount)}</dd>
 <dt>Prompt / visual</dt><dd>${formatNumber(result.evaluation?.judge?.promptFulfillment)} / ${formatNumber(result.evaluation?.judge?.visualQuality)}</dd>
 </dl></article>`);
     }
@@ -146,27 +183,36 @@ async function htmlReport(iterationId, summary, results) {
 <html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Delivery-mode vibe test — ${escapeHtml(iterationId)}</title>
 <style>
-:root{color-scheme:light dark;font-family:Inter,system-ui,sans-serif}body{max-width:1600px;margin:auto;padding:24px;background:#f4f6f8;color:#18202a}h1,h2{letter-spacing:-.02em}p{max-width:80ch}table{border-collapse:collapse;width:100%;background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px #0002}th,td{padding:10px;border-bottom:1px solid #d9dee5;text-align:right;font-variant-numeric:tabular-nums}th:first-child,th:nth-child(2),td:first-child,td:nth-child(2){text-align:left}.table-wrap{overflow:auto}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}article{background:white;border:1px solid #d9dee5;border-radius:12px;padding:12px;box-shadow:0 1px 4px #0001}article h3{margin:0 0 10px}img{width:100%;max-height:420px;object-fit:contain;object-position:top;background:#eef1f4;border-radius:8px}.missing{height:180px;display:grid;place-items:center;background:#eef1f4;border-radius:8px}dl{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:0}dt{font-weight:600}dd{margin:0;text-align:right}@media(prefers-color-scheme:dark){body{background:#111820;color:#e8edf2}table,article{background:#1b2530;border-color:#34404d}th,td{border-color:#34404d}.missing,img{background:#10161d}}
+:root{color-scheme:light dark;font-family:Inter,system-ui,sans-serif}body{max-width:1800px;margin:auto;padding:24px;background:#f4f6f8;color:#18202a}h1,h2{letter-spacing:-.02em}p{max-width:90ch}table{border-collapse:collapse;width:100%;background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px #0002}th,td{padding:10px;border-bottom:1px solid #d9dee5;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}th:first-child,th:nth-child(2),td:first-child,td:nth-child(2){text-align:left}.table-wrap{overflow:auto}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}article{background:white;border:1px solid #d9dee5;border-radius:12px;padding:12px;box-shadow:0 1px 4px #0001}article h3{margin:0 0 10px}img{width:100%;max-height:420px;object-fit:contain;object-position:top;background:#eef1f4;border-radius:8px}.missing{height:180px;display:grid;place-items:center;background:#eef1f4;border-radius:8px}dl{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:0}dt{font-weight:600}dd{margin:0;text-align:right}@media(prefers-color-scheme:dark){body{background:#111820;color:#e8edf2}table,article{background:#1b2530;border-color:#34404d}th,td{border-color:#34404d}.missing,img{background:#10161d}}
 </style></head><body>
-<h1>Delivery-mode vibe test</h1><p>Iteration <code>${escapeHtml(iterationId)}</code>. Every configuration used the same prompt battery and evaluator. The visual judge received only an anonymized screenshot and the original task.</p>
-<div class="table-wrap"><table><thead><tr><th>Config</th><th>Agent</th><th>Runs</th><th>Pass</th><th>Wall</th><th>Tokens</th><th>CLI</th><th>Adoption</th><th>Hard-coded</th><th>axe</th><th>Prompt</th><th>Visual</th></tr></thead><tbody>${rows}</tbody></table></div>
+<h1>Delivery-mode vibe test</h1>
+<p>Iteration <code>${escapeHtml(iterationId)}</code>. Every config uses the same evaluator. Failed builds, runtime errors, and blank renders contribute 0 to adoption, prompt, and visual metrics and stay in every denominator. Parenthetical <code>n</code> is the sample count for each median.</p>
+<p>TypeScript diagnostics are non-gating. The blind judge sees only an anonymized default-state screenshot and prompt in a private filesystem namespace. Muse uses one minimal preset across configs; its built-in skill and final-verification reminder lifecycle remains a documented runner asymmetry.</p>
+<div class="table-wrap"><table><thead><tr><th>Config</th><th>Agent</th><th>Runs</th><th>Pass</th><th>Timeouts</th><th>Context</th><th>Wall</th><th>Tokens</th><th>CLI</th><th>Adoption</th><th>Hard-coded</th><th>axe</th><th>Type errors</th><th>Prompt</th><th>Visual</th></tr></thead><tbody>${rows}</tbody></table></div>
 ${grids.join('\n')}
 </body></html>\n`;
 }
 
-function median(values) {
+function metric(values) {
   const numbers = values
     .filter(value => Number.isFinite(value))
     .sort((a, b) => a - b);
   if (numbers.length === 0) {
-    return null;
+    return {value: null, count: 0};
   }
   const middle = Math.floor(numbers.length / 2);
-  return numbers.length % 2 === 0
-    ? (numbers[middle - 1] + numbers[middle]) / 2
-    : numbers[middle];
+  return {
+    value:
+      numbers.length % 2 === 0
+        ? (numbers[middle - 1] + numbers[middle]) / 2
+        : numbers[middle],
+    count: numbers.length,
+  };
 }
 
+function metricText(value, count) {
+  return `${value} (n=${count})`;
+}
 function percent(value) {
   return Number.isFinite(value) ? `${Math.round(value * 100)}%` : '—';
 }
