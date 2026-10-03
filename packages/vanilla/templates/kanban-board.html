@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en" data-astryx-theme="neutral" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Astryx kanban board</title>
+    <script>
+      (() => {
+        const root = document.documentElement;
+        const params = new URLSearchParams(location.search);
+        const themeKey = 'astryx-vanilla-theme';
+        const modeKey = 'astryx-vanilla-mode';
+        const read = key => {
+          try {
+            return localStorage.getItem(key);
+          } catch {
+            return null;
+          }
+        };
+        const remember = (key, value) => {
+          try {
+            localStorage.setItem(key, value);
+          } catch {}
+        };
+        const theme = params.get('theme') || read(themeKey);
+        const mode = params.get('mode') || read(modeKey);
+        if (/^[a-z][a-z0-9-]*$/.test(theme || '')) {
+          root.dataset.astryxTheme = theme;
+          if (params.has('theme')) remember(themeKey, theme);
+        }
+        if (['light', 'dark'].includes(mode)) {
+          root.dataset.theme = mode;
+          if (params.has('mode')) remember(modeKey, mode);
+        }
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700&amp;family=Crimson+Text:wght@400;600;700&amp;family=DM+Sans:wght@400;500;600;700&amp;family=Figtree:wght@400;500;600;700&amp;family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&amp;family=Fustat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;family=Manufacturing+Consent&amp;family=Montserrat:wght@400;500;600;700&amp;family=Outfit:wght@400;500;600;700&amp;family=Playwrite+US+Trad:wght@100..400&amp;family=Poppins:wght@400;500;600;700&amp;family=Sarina&amp;display=swap"
+      rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/core@0.6.5/src/reset.css" />
+    <link rel="stylesheet" href="__ASTRYX_VANILLA_CDN__/astryx-vanilla.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-neutral@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-butter@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-y2k@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-stone@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-matcha@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-chocolate@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-gothic@0.6.5/dist/theme.css" />
+    <style>
+      @layer astryx-theme {
+        :root[data-astryx-theme='brand'] {
+          --color-accent: light-dark(#6d28d9, #a78bfa);
+          --color-accent-muted: light-dark(#ede9fe, #2e1a47);
+          --color-on-accent: light-dark(#ffffff, #1f1235);
+          --color-text-accent: light-dark(#5b21b6, #c4b5fd);
+          --color-icon-accent: light-dark(#5b21b6, #c4b5fd);
+          --color-background-body: light-dark(#f5f3ff, #171126);
+          --focus-outline-color: var(--color-accent);
+        }
+      }
+      @layer astryx-base {
+        .kanban-shell {
+          min-height: 100vh;
+          background: var(--color-background-body);
+        }
+        .kanban-main {
+          width: min(100% - 2 * var(--spacing-4), 96rem);
+          margin-inline: auto;
+          padding-block: var(--spacing-5) var(--spacing-8);
+        }
+        .kanban-header,
+        .kanban-toolbar,
+        .kanban-column-header,
+        .kanban-card-meta {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: var(--spacing-3);
+          flex-wrap: wrap;
+        }
+        .kanban-board {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(16rem, 1fr));
+          gap: var(--spacing-4);
+          align-items: start;
+          overflow-x: auto;
+          padding-block-end: var(--spacing-3);
+        }
+        .kanban-column {
+          min-height: 34rem;
+          padding: var(--spacing-3);
+          border: var(--border-width) solid var(--color-border);
+          border-radius: var(--radius-container);
+          background: var(--color-background-muted);
+        }
+        .kanban-cards {
+          display: grid;
+          gap: var(--spacing-3);
+        }
+        .kanban-card {
+          cursor: grab;
+        }
+        .kanban-card:active {
+          cursor: grabbing;
+        }
+        .kanban-tags {
+          display: flex;
+          gap: var(--spacing-1);
+          flex-wrap: wrap;
+        }
+        .kanban-assignees {
+          display: flex;
+          align-items: center;
+        }
+        .kanban-assignees > * + * {
+          margin-inline-start: calc(var(--spacing-2) * -1);
+        }
+        @media (max-width: 48rem) {
+          .kanban-main {
+            width: min(100% - 2 * var(--spacing-3), 96rem);
+          }
+          .kanban-board {
+            grid-template-columns: repeat(4, 18rem);
+          }
+        }
+      }
+    </style>
+    <script defer src="__ASTRYX_VANILLA_CDN__/astryx-vanilla.js"></script>
+  </head>
+  <body class="kanban-shell">
+    <nav class="ax-top-nav" aria-label="Primary navigation">
+      <div class="ax-top-nav__start">
+        <a class="ax-top-nav__brand" href="#"
+          ><span class="ax-top-nav__brand-mark" aria-hidden="true">O</span
+          ><span>Orbit Projects</span></a
+        >
+        <div class="ax-top-nav__items">
+          <a class="ax-top-nav__item" href="#">Home</a
+          ><a class="ax-top-nav__item" href="#" aria-current="page">Projects</a
+          ><a class="ax-top-nav__item" href="#">Reports</a>
+        </div>
+      </div>
+      <div class="ax-top-nav__end">
+        <span
+          class="ax-avatar ax-avatar--md ax-avatar--circle"
+          role="img"
+          aria-label="Riley Kim, Online"
+          ><span class="ax-avatar__content" aria-hidden="true">RK</span
+          ><span class="ax-avatar__status" aria-hidden="true"
+            ><span class="ax-status-dot ax-status-dot--success"></span></span
+        ></span>
+      </div>
+    </nav>
+    <main class="kanban-main ax-stack ax-stack--gap-5">
+      <header class="kanban-header">
+        <div class="ax-stack ax-stack--gap-1">
+          <nav
+            class="ax-breadcrumbs ax-breadcrumbs--supporting"
+            aria-label="Breadcrumb">
+            <ol class="ax-breadcrumbs__list">
+              <li class="ax-breadcrumbs__item">
+                <span class="ax-breadcrumbs__separator" aria-hidden="true"
+                  >/</span
+                ><a class="ax-breadcrumbs__link" href="#">Projects</a>
+              </li>
+              <li class="ax-breadcrumbs__item">
+                <span class="ax-breadcrumbs__separator" aria-hidden="true"
+                  >/</span
+                ><span class="ax-breadcrumbs__current" aria-current="page"
+                  >Mobile launch</span
+                >
+              </li>
+            </ol>
+          </nav>
+          <h1 class="ax-heading ax-heading--1">Mobile launch</h1>
+          <p class="ax-text ax-text--secondary">
+            Plan and ship the next Orbit mobile experience.
+          </p>
+        </div>
+        <div class="kanban-toolbar">
+          <button class="ax-button ax-button--secondary" type="button">
+            Filter</button
+          ><button class="ax-button ax-button--secondary" type="button">
+            Share</button
+          ><button
+            class="ax-button ax-button--primary"
+            type="button"
+            data-ax-toast="New task created">
+            New task
+          </button>
+        </div>
+      </header>
+      <div class="ax-banner ax-banner--info">
+        <div class="ax-banner__content">
+          <strong class="ax-banner__title">Sprint 18 ends Friday</strong>
+          <p class="ax-banner__description">
+            14 of 20 tasks are complete. Review blocked work before the launch
+            check-in.
+          </p>
+        </div>
+      </div>
+      <section class="kanban-board" aria-label="Mobile launch task board">
+        <section
+          class="kanban-column ax-stack ax-stack--gap-3"
+          aria-labelledby="backlog-title">
+          <header class="kanban-column-header">
+            <h2 class="ax-heading ax-heading--4" id="backlog-title">Backlog</h2>
+            <span class="ax-badge ax-badge--neutral">3</span>
+          </header>
+          <div class="kanban-cards">
+            <article
+              class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-3 kanban-card"
+              draggable="true">
+              <div class="kanban-tags">
+                <span class="ax-badge ax-badge--purple">Research</span>
+              </div>
+              <h3 class="ax-heading ax-heading--4">Interview beta customers</h3>
+              <p class="ax-text ax-text--supporting ax-text--secondary">
+                Confirm the top onboarding blockers before final copy.
+              </p>
+              <div class="kanban-card-meta">
+                <span class="ax-text ax-text--supporting">OR-142</span
+                ><span
+                  class="ax-avatar ax-avatar--sm ax-avatar--circle"
+                  role="img"
+                  aria-label="Noah Diaz"
+                  ><span class="ax-avatar__content" aria-hidden="true"
+                    >ND</span
+                  ></span
+                >
+              </div>
+            </article>
+            <article
+              class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-3 kanban-card"
+              draggable="true">
+              <div class="kanban-tags">
+                <span class="ax-badge ax-badge--blue">Design</span>
+              </div>
+              <h3 class="ax-heading ax-heading--4">Define empty states</h3>
+              <p class="ax-text ax-text--supporting ax-text--secondary">
+                Cover inbox, search, and first-run project surfaces.
+              </p>
+              <div class="kanban-card-meta">
+                <span class="ax-text ax-text--supporting">OR-149</span
+                ><span
+                  class="ax-avatar ax-avatar--sm ax-avatar--circle"
+                  role="img"
+                  aria-label="Mina Park"
+                  ><span class="ax-avatar__content" aria-hidden="true"
+                    >MP</span
+                  ></span
+                >
+              </div>
+            </article>
+          </div>
+        </section>
+        <section
+          class="kanban-column ax-stack ax-stack--gap-3"
+          aria-labelledby="progress-title">
+          <header class="kanban-column-header">
+            <h2 class="ax-heading ax-heading--4" id="progress-title">
+              In progress
+            </h2>
+            <span class="ax-badge ax-badge--info">3</span>
+          </header>
+          <div class="kanban-cards">
+            <article
+              class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-3 kanban-card"
+              draggable="true">
+              <div class="kanban-tags">
+                <span class="ax-badge ax-badge--orange">Engineering</span
+                ><span class="ax-badge ax-badge--error">High</span>
+              </div>
+              <h3 class="ax-heading ax-heading--4">Offline sync conflicts</h3>
+              <p class="ax-text ax-text--supporting ax-text--secondary">
+                Keep local edits safe when a project changes remotely.
+              </p>
+              <div class="ax-progress-bar" style="--ax-progress-value: 60%">
+                <div
+                  class="ax-progress-bar__track"
+                  role="progressbar"
+                  aria-label="Offline sync task progress"
+                  aria-valuenow="60"
+                  aria-valuemin="0"
+                  aria-valuemax="100">
+                  <div class="ax-progress-bar__fill"></div>
+                </div>
+              </div>
+              <div class="kanban-card-meta">
+                <span class="ax-text ax-text--supporting">OR-131</span>
+                <div class="kanban-assignees">
+                  <span
+                    class="ax-avatar ax-avatar--sm ax-avatar--circle"
+                    role="img"
+                    aria-label="Ari Bell"
+                    ><span class="ax-avatar__content" aria-hidden="true"
+                      >AB</span
+                    ></span
+                  ><span
+                    class="ax-avatar ax-avatar--sm ax-avatar--circle"
+                    role="img"
+                    aria-label="Riley Kim"
+                    ><span class="ax-avatar__content" aria-hidden="true"
+                      >RK</span
+                    ></span
+                  >
+                </div>
+              </div>
+            </article>
+            <article
+              class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-3 kanban-card"
+              draggable="true">
+              <div class="kanban-tags">
+                <span class="ax-badge ax-badge--blue">Design</span>
+              </div>
+              <h3 class="ax-heading ax-heading--4">Polish launch motion</h3>
+              <p class="ax-text ax-text--supporting ax-text--secondary">
+                Reduce motion and tune page transitions.
+              </p>
+              <div class="kanban-card-meta">
+                <span class="ax-text ax-text--supporting">OR-138</span
+                ><span
+                  class="ax-avatar ax-avatar--sm ax-avatar--circle"
+                  role="img"
+                  aria-label="Mina Park"
+                  ><span class="ax-avatar__content" aria-hidden="true"
+                    >MP</span
+                  ></span
+                >
+              </div>
+            </article>
+          </div>
+        </section>
+        <section
+          class="kanban-column ax-stack ax-stack--gap-3"
+          aria-labelledby="review-title">
+          <header class="kanban-column-header">
+            <h2 class="ax-heading ax-heading--4" id="review-title">Review</h2>
+            <span class="ax-badge ax-badge--warning">2</span>
+          </header>
+          <div class="kanban-cards">
+            <article
+              class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-3 kanban-card"
+              draggable="true">
+              <div class="kanban-tags">
+                <span class="ax-badge ax-badge--green">Content</span>
+              </div>
+              <h3 class="ax-heading ax-heading--4">Approve store listing</h3>
+              <p class="ax-text ax-text--supporting ax-text--secondary">
+                Final screenshots and localization copy are ready.
+              </p>
+              <div class="kanban-card-meta">
+                <span class="ax-text ax-text--supporting">OR-127</span
+                ><span
+                  class="ax-avatar ax-avatar--sm ax-avatar--circle"
+                  role="img"
+                  aria-label="Lena Ortiz"
+                  ><span class="ax-avatar__content" aria-hidden="true"
+                    >LO</span
+                  ></span
+                >
+              </div>
+            </article>
+            <article
+              class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-3 kanban-card"
+              draggable="true">
+              <div class="kanban-tags">
+                <span class="ax-badge ax-badge--orange">Engineering</span>
+              </div>
+              <h3 class="ax-heading ax-heading--4">Accessibility sweep</h3>
+              <p class="ax-text ax-text--supporting ax-text--secondary">
+                Verify focus order, labels, and reduced motion.
+              </p>
+              <div class="kanban-card-meta">
+                <span class="ax-text ax-text--supporting">OR-140</span
+                ><span
+                  class="ax-avatar ax-avatar--sm ax-avatar--circle"
+                  role="img"
+                  aria-label="Ari Bell"
+                  ><span class="ax-avatar__content" aria-hidden="true"
+                    >AB</span
+                  ></span
+                >
+              </div>
+            </article>
+          </div>
+        </section>
+        <section
+          class="kanban-column ax-stack ax-stack--gap-3"
+          aria-labelledby="done-title">
+          <header class="kanban-column-header">
+            <h2 class="ax-heading ax-heading--4" id="done-title">Done</h2>
+            <span class="ax-badge ax-badge--success">14</span>
+          </header>
+          <div class="kanban-cards">
+            <article
+              class="ax-card ax-card--muted ax-stack ax-stack--gap-3 kanban-card"
+              draggable="true">
+              <div class="kanban-tags">
+                <span class="ax-badge ax-badge--green">Content</span>
+              </div>
+              <h3 class="ax-heading ax-heading--4">Finalize release notes</h3>
+              <p class="ax-text ax-text--supporting ax-text--secondary">
+                Highlights, migration notes, and known limitations.
+              </p>
+              <div class="kanban-card-meta">
+                <span class="ax-text ax-text--supporting">OR-118</span
+                ><span class="ax-badge ax-badge--success">Complete</span>
+              </div>
+            </article>
+            <section
+              class="ax-empty-state ax-empty-state--compact"
+              role="status"
+              aria-labelledby="done-more-title">
+              <div class="ax-empty-state__text">
+                <h3 class="ax-empty-state__title" id="done-more-title">
+                  Everything else is archived
+                </h3>
+                <p class="ax-empty-state__description">
+                  Show completed tasks from earlier sprints.
+                </p>
+              </div>
+              <div class="ax-empty-state__actions">
+                <button
+                  class="ax-button ax-button--secondary ax-button--sm"
+                  type="button">
+                  View archive
+                </button>
+              </div>
+            </section>
+          </div>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>

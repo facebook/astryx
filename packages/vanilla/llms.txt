@@ -100,13 +100,18 @@ Templates (complete, standalone, already wired to the CDN links above):
 | `table-filter`    | search + filters + results table             |
 | `form-two-column` | data entry / settings-style forms            |
 | `detail-page`     | a single record with tabs, metadata, actions |
+| `settings`        | account and workspace preferences            |
+| `shell-side-nav`  | administration with collapsible navigation   |
+| `product-detail`  | storefront media, variants, and purchase     |
+| `login`           | focused credential sign-in                   |
+| `kanban-board`    | task lanes, owners, and progress             |
 
 **Option 1 — install the preview CLI (Node 22.13+):**
 
 ```sh
 npm install -g https://cdn.jsdelivr.net/gh/facebook/astryx@4855ea30514a6033a9abbe88069589b6ff15d64a/packages/vanilla/dist/cli/astryx-cli-vanilla.tgz
 
-astryx template --list --html                  # the 4 template ids
+astryx template --list --html                  # the 9 template ids
 astryx template dashboard --html > page.html   # full standalone page
 astryx component --list --html                 # all HTML components
 astryx component Dialog --html                 # docs + copyable markup variants

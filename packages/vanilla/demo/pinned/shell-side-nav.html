@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en" data-astryx-theme="neutral" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Astryx admin shell</title>
+    <script>
+      (() => {
+        const root = document.documentElement;
+        const params = new URLSearchParams(location.search);
+        const themeKey = 'astryx-vanilla-theme';
+        const modeKey = 'astryx-vanilla-mode';
+        const read = key => {
+          try {
+            return localStorage.getItem(key);
+          } catch {
+            return null;
+          }
+        };
+        const remember = (key, value) => {
+          try {
+            localStorage.setItem(key, value);
+          } catch {}
+        };
+        const theme = params.get('theme') || read(themeKey);
+        const mode = params.get('mode') || read(modeKey);
+        if (/^[a-z][a-z0-9-]*$/.test(theme || '')) {
+          root.dataset.astryxTheme = theme;
+          if (params.has('theme')) remember(themeKey, theme);
+        }
+        if (['light', 'dark'].includes(mode)) {
+          root.dataset.theme = mode;
+          if (params.has('mode')) remember(modeKey, mode);
+        }
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700&amp;family=Crimson+Text:wght@400;600;700&amp;family=DM+Sans:wght@400;500;600;700&amp;family=Figtree:wght@400;500;600;700&amp;family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&amp;family=Fustat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;family=Manufacturing+Consent&amp;family=Montserrat:wght@400;500;600;700&amp;family=Outfit:wght@400;500;600;700&amp;family=Playwrite+US+Trad:wght@100..400&amp;family=Poppins:wght@400;500;600;700&amp;family=Sarina&amp;display=swap"
+      rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/core@0.6.5/src/reset.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/facebook/astryx@3906c4ccda61f94bc6dd9777ec38131ac58e8a70/packages/vanilla/dist/astryx-vanilla.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-neutral@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-butter@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-y2k@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-stone@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-matcha@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-chocolate@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-gothic@0.6.5/dist/theme.css" />
+    <style>
+      @layer astryx-theme {
+        :root[data-astryx-theme='brand'] {
+          --color-accent: light-dark(#6d28d9, #a78bfa);
+          --color-accent-muted: light-dark(#ede9fe, #2e1a47);
+          --color-on-accent: light-dark(#ffffff, #1f1235);
+          --color-text-accent: light-dark(#5b21b6, #c4b5fd);
+          --color-icon-accent: light-dark(#5b21b6, #c4b5fd);
+          --color-background-body: light-dark(#f5f3ff, #171126);
+          --focus-outline-color: var(--color-accent);
+        }
+      }
+      @layer astryx-base {
+        .shell-page {
+          min-height: 100vh;
+          background: var(--color-background-body);
+        }
+        .shell-frame {
+          display: grid;
+          min-height: 100vh;
+          grid-template-columns: auto minmax(0, 1fr);
+        }
+        .shell-frame > .ax-side-nav {
+          position: sticky;
+          inset-block-start: 0;
+          height: 100vh;
+        }
+        .shell-content {
+          min-width: 0;
+          padding: var(--spacing-5);
+        }
+        .shell-header,
+        .shell-toolbar,
+        .shell-metric {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: var(--spacing-3);
+          flex-wrap: wrap;
+        }
+        .shell-metrics {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: var(--spacing-4);
+        }
+        .shell-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1.4fr) minmax(16rem, 0.6fr);
+          gap: var(--spacing-4);
+          align-items: start;
+        }
+        .shell-activity {
+          display: grid;
+          gap: var(--spacing-3);
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+        .shell-activity li {
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr) auto;
+          gap: var(--spacing-3);
+          align-items: center;
+          padding-block-end: var(--spacing-3);
+          border-block-end: var(--border-width) solid var(--color-border);
+        }
+        @media (max-width: 58rem) {
+          .shell-metrics,
+          .shell-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+        @media (max-width: 42rem) {
+          .shell-frame {
+            display: block;
+          }
+          .shell-frame > .ax-side-nav {
+            position: static;
+            width: 100%;
+            height: auto;
+          }
+          .shell-content {
+            padding: var(--spacing-3);
+          }
+        }
+      }
+    </style>
+    <script defer src="https://cdn.jsdelivr.net/gh/facebook/astryx@3906c4ccda61f94bc6dd9777ec38131ac58e8a70/packages/vanilla/dist/astryx-vanilla.js"></script>
+  </head>
+  <body class="shell-page">
+    <div class="shell-frame">
+      <nav
+        class="ax-side-nav"
+        id="admin-navigation"
+        aria-label="Admin navigation">
+        <div class="ax-side-nav__header">
+          <a class="ax-side-nav__brand" href="#"
+            ><span class="ax-side-nav__brand-mark" aria-hidden="true">A</span
+            ><span class="ax-side-nav__brand-copy"
+              ><span class="ax-side-nav__brand-name">Astryx Admin</span
+              ><span class="ax-side-nav__brand-context"
+                >Northstar workspace</span
+              ></span
+            ></a
+          >
+        </div>
+        <div class="ax-side-nav__content">
+          <div
+            class="ax-side-nav__section"
+            role="group"
+            aria-labelledby="manage-heading">
+            <div class="ax-side-nav__section-title" id="manage-heading">
+              Manage
+            </div>
+            <a class="ax-side-nav__item" href="#" aria-current="page"
+              ><span class="ax-side-nav__item-icon" aria-hidden="true">●</span
+              ><span class="ax-side-nav__item-label">Overview</span></a
+            ><a class="ax-side-nav__item" href="#"
+              ><span class="ax-side-nav__item-icon" aria-hidden="true">◆</span
+              ><span class="ax-side-nav__item-label">People</span
+              ><span class="ax-badge ax-badge--neutral">248</span></a
+            ><a class="ax-side-nav__item" href="#"
+              ><span class="ax-side-nav__item-icon" aria-hidden="true">▦</span
+              ><span class="ax-side-nav__item-label">Projects</span></a
+            >
+          </div>
+          <div
+            class="ax-side-nav__section"
+            role="group"
+            aria-labelledby="system-heading">
+            <div class="ax-side-nav__section-title" id="system-heading">
+              System
+            </div>
+            <a class="ax-side-nav__item" href="#"
+              ><span class="ax-side-nav__item-icon" aria-hidden="true">◈</span
+              ><span class="ax-side-nav__item-label">Integrations</span></a
+            ><a class="ax-side-nav__item" href="#"
+              ><span class="ax-side-nav__item-icon" aria-hidden="true">⚙</span
+              ><span class="ax-side-nav__item-label">Settings</span></a
+            >
+          </div>
+        </div>
+        <div class="ax-side-nav__footer">
+          <button
+            class="ax-button ax-button--ghost ax-button--sm"
+            type="button"
+            data-ax-side-nav-toggle="admin-navigation">
+            Collapse navigation
+          </button>
+        </div>
+      </nav>
+      <main class="shell-content ax-stack ax-stack--gap-5" id="main-content">
+        <header class="shell-header">
+          <div class="ax-stack ax-stack--gap-1">
+            <span class="ax-badge ax-badge--success">All systems healthy</span>
+            <h1 class="ax-heading ax-heading--1">Workspace overview</h1>
+            <p class="ax-text ax-text--secondary">
+              Administration, activity, and access in one place.
+            </p>
+          </div>
+          <div class="shell-toolbar">
+            <button
+              class="ax-button ax-button--secondary"
+              type="button"
+              data-ax-side-nav-toggle="admin-navigation">
+              Toggle navigation</button
+            ><button
+              class="ax-button ax-button--primary"
+              type="button"
+              data-ax-dialog-open="invite-dialog">
+              Invite member</button
+            ><span
+              class="ax-avatar ax-avatar--md ax-avatar--circle"
+              role="img"
+              aria-label="Jordan Lee, Online"
+              ><span class="ax-avatar__content" aria-hidden="true">JL</span
+              ><span class="ax-avatar__status" aria-hidden="true"
+                ><span
+                  class="ax-status-dot ax-status-dot--success"></span></span
+            ></span>
+          </div>
+        </header>
+        <div class="ax-banner ax-banner--warning">
+          <div class="ax-banner__content">
+            <strong class="ax-banner__title"
+              >Three access reviews are due this week</strong
+            >
+            <p class="ax-banner__description">
+              Confirm owners before Friday to keep external projects active.
+            </p>
+          </div>
+          <button
+            class="ax-button ax-button--secondary ax-button--sm"
+            type="button">
+            Review access
+          </button>
+        </div>
+        <section class="shell-metrics" aria-label="Workspace metrics">
+          <article
+            class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-2">
+            <p class="ax-text ax-text--label ax-text--secondary">
+              Active members
+            </p>
+            <div class="shell-metric">
+              <h2 class="ax-heading ax-heading--2">248</h2>
+              <span class="ax-badge ax-badge--success">+12</span>
+            </div>
+            <p class="ax-text ax-text--supporting ax-text--secondary">
+              in the last 30 days
+            </p>
+          </article>
+          <article
+            class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-2">
+            <p class="ax-text ax-text--label ax-text--secondary">
+              Open projects
+            </p>
+            <div class="shell-metric">
+              <h2 class="ax-heading ax-heading--2">37</h2>
+              <span class="ax-badge ax-badge--info">8 shared</span>
+            </div>
+            <p class="ax-text ax-text--supporting ax-text--secondary">
+              across six teams
+            </p>
+          </article>
+          <article
+            class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-2">
+            <p class="ax-text ax-text--label ax-text--secondary">Storage</p>
+            <div class="shell-metric">
+              <h2 class="ax-heading ax-heading--2">72%</h2>
+              <span class="ax-text ax-text--supporting">1.4 TB</span>
+            </div>
+            <div
+              class="ax-progress-bar ax-progress-bar--success"
+              style="--ax-progress-value: 72%">
+              <div
+                class="ax-progress-bar__track"
+                role="progressbar"
+                aria-label="Storage used"
+                aria-valuenow="72"
+                aria-valuemin="0"
+                aria-valuemax="100">
+                <div class="ax-progress-bar__fill"></div>
+              </div>
+            </div>
+          </article>
+        </section>
+        <div class="shell-grid">
+          <section
+            class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4">
+            <div class="shell-header">
+              <div>
+                <h2 class="ax-heading ax-heading--3">Recent activity</h2>
+                <p class="ax-text ax-text--supporting ax-text--secondary">
+                  Changes across your workspace.
+                </p>
+              </div>
+              <button
+                class="ax-button ax-button--ghost ax-button--sm"
+                type="button">
+                View audit log
+              </button>
+            </div>
+            <ul class="shell-activity">
+              <li>
+                <span
+                  class="ax-avatar ax-avatar--md ax-avatar--circle"
+                  role="img"
+                  aria-label="Maya Chen"
+                  ><span class="ax-avatar__content" aria-hidden="true"
+                    >MC</span
+                  ></span
+                ><span
+                  ><strong class="ax-text">Maya Chen</strong><br /><span
+                    class="ax-text ax-text--supporting ax-text--secondary"
+                    >Published the Research library</span
+                  ></span
+                ><span class="ax-text ax-text--supporting ax-text--secondary"
+                  >8m</span
+                >
+              </li>
+              <li>
+                <span
+                  class="ax-avatar ax-avatar--md ax-avatar--circle"
+                  role="img"
+                  aria-label="Theo Singh"
+                  ><span class="ax-avatar__content" aria-hidden="true"
+                    >TS</span
+                  ></span
+                ><span
+                  ><strong class="ax-text">Theo Singh</strong><br /><span
+                    class="ax-text ax-text--supporting ax-text--secondary"
+                    >Invited four collaborators</span
+                  ></span
+                ><span class="ax-text ax-text--supporting ax-text--secondary"
+                  >42m</span
+                >
+              </li>
+              <li>
+                <span
+                  class="ax-avatar ax-avatar--md ax-avatar--circle"
+                  role="img"
+                  aria-label="Design Ops"
+                  ><span class="ax-avatar__content" aria-hidden="true"
+                    >DO</span
+                  ></span
+                ><span
+                  ><strong class="ax-text">Design Ops</strong><br /><span
+                    class="ax-text ax-text--supporting ax-text--secondary"
+                    >Updated project permissions</span
+                  ></span
+                ><span class="ax-text ax-text--supporting ax-text--secondary"
+                  >2h</span
+                >
+              </li>
+            </ul>
+          </section>
+          <aside class="ax-card ax-card--muted ax-stack ax-stack--gap-4">
+            <h2 class="ax-heading ax-heading--3">Workspace setup</h2>
+            <div class="ax-progress-bar" style="--ax-progress-value: 80%">
+              <div class="ax-progress-bar__header">
+                <span class="ax-progress-bar__label" id="setup-label"
+                  >4 of 5 steps</span
+                ><span class="ax-progress-bar__value">80%</span>
+              </div>
+              <div
+                class="ax-progress-bar__track"
+                role="progressbar"
+                aria-labelledby="setup-label"
+                aria-valuenow="80"
+                aria-valuemin="0"
+                aria-valuemax="100">
+                <div class="ax-progress-bar__fill"></div>
+              </div>
+            </div>
+            <p class="ax-text ax-text--secondary">
+              Connect a source control provider to complete setup.
+            </p>
+            <button class="ax-button ax-button--primary" type="button">
+              Connect provider
+            </button>
+          </aside>
+        </div>
+      </main>
+    </div>
+    <dialog
+      class="ax-dialog"
+      id="invite-dialog"
+      data-ax-dialog
+      aria-labelledby="invite-title">
+      <div class="ax-dialog__surface">
+        <header class="ax-dialog__header">
+          <h2 class="ax-dialog__title" id="invite-title">Invite a member</h2>
+          <button
+            class="ax-button ax-button--ghost"
+            type="button"
+            data-ax-dialog-close
+            aria-label="Close">
+            ×
+          </button>
+        </header>
+        <div class="ax-dialog__body">
+          <label class="ax-stack ax-stack--gap-1"
+            ><span class="ax-text ax-text--label">Email</span
+            ><span class="ax-text-input"
+              ><input type="email" placeholder="teammate@example.com" /></span
+          ></label>
+        </div>
+        <footer class="ax-dialog__footer">
+          <button
+            class="ax-button ax-button--ghost"
+            type="button"
+            data-ax-dialog-close>
+            Cancel</button
+          ><button
+            class="ax-button ax-button--primary"
+            type="button"
+            data-ax-dialog-close
+            data-ax-toast="Invitation sent">
+            Send invite
+          </button>
+        </footer>
+      </div>
+    </dialog>
+  </body>
+</html>

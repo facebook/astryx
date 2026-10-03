@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en" data-astryx-theme="neutral" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Astryx account settings</title>
+    <script>
+      (() => {
+        const root = document.documentElement;
+        const params = new URLSearchParams(location.search);
+        const themeKey = 'astryx-vanilla-theme';
+        const modeKey = 'astryx-vanilla-mode';
+        const read = key => {
+          try {
+            return localStorage.getItem(key);
+          } catch {
+            return null;
+          }
+        };
+        const remember = (key, value) => {
+          try {
+            localStorage.setItem(key, value);
+          } catch {}
+        };
+        const theme = params.get('theme') || read(themeKey);
+        const mode = params.get('mode') || read(modeKey);
+        if (/^[a-z][a-z0-9-]*$/.test(theme || '')) {
+          root.dataset.astryxTheme = theme;
+          if (params.has('theme')) remember(themeKey, theme);
+        }
+        if (['light', 'dark'].includes(mode)) {
+          root.dataset.theme = mode;
+          if (params.has('mode')) remember(modeKey, mode);
+        }
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700&amp;family=Crimson+Text:wght@400;600;700&amp;family=DM+Sans:wght@400;500;600;700&amp;family=Figtree:wght@400;500;600;700&amp;family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&amp;family=Fustat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;family=Manufacturing+Consent&amp;family=Montserrat:wght@400;500;600;700&amp;family=Outfit:wght@400;500;600;700&amp;family=Playwrite+US+Trad:wght@100..400&amp;family=Poppins:wght@400;500;600;700&amp;family=Sarina&amp;display=swap"
+      rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/core@0.6.5/src/reset.css" />
+    <link rel="stylesheet" href="__ASTRYX_VANILLA_CDN__/astryx-vanilla.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-neutral@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-butter@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-y2k@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-stone@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-matcha@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-chocolate@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-gothic@0.6.5/dist/theme.css" />
+    <style>
+      @layer astryx-theme {
+        :root[data-astryx-theme='brand'] {
+          --color-accent: light-dark(#6d28d9, #a78bfa);
+          --color-accent-muted: light-dark(#ede9fe, #2e1a47);
+          --color-on-accent: light-dark(#ffffff, #1f1235);
+          --color-text-accent: light-dark(#5b21b6, #c4b5fd);
+          --color-icon-accent: light-dark(#5b21b6, #c4b5fd);
+          --color-background-body: light-dark(#f5f3ff, #171126);
+          --focus-outline-color: var(--color-accent);
+        }
+      }
+      @layer astryx-base {
+        .settings-shell {
+          min-height: 100vh;
+          background: var(--color-background-body);
+        }
+        .settings-main {
+          width: min(100% - 2 * var(--spacing-4), 72rem);
+          margin-inline: auto;
+          padding-block: var(--spacing-6) var(--spacing-10);
+        }
+        .settings-heading,
+        .settings-actions,
+        .settings-profile {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: var(--spacing-3);
+          flex-wrap: wrap;
+        }
+        .settings-grid {
+          display: grid;
+          grid-template-columns: minmax(12rem, 0.45fr) minmax(0, 1.55fr);
+          gap: var(--spacing-6);
+          align-items: start;
+        }
+        .settings-nav {
+          position: sticky;
+          inset-block-start: var(--spacing-4);
+        }
+        .settings-nav a {
+          display: block;
+          padding: var(--spacing-2) var(--spacing-3);
+          border-radius: var(--radius-element);
+          color: var(--color-text-secondary);
+          text-decoration: none;
+        }
+        .settings-nav a[aria-current='page'] {
+          background: var(--color-accent-muted);
+          color: var(--color-text-accent);
+          font-weight: var(--font-weight-semibold);
+        }
+        .settings-section {
+          padding-block: var(--spacing-5);
+          border-block-end: var(--border-width) solid var(--color-border);
+        }
+        .settings-field-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: var(--spacing-4);
+        }
+        @media (max-width: 48rem) {
+          .settings-grid,
+          .settings-field-grid {
+            grid-template-columns: 1fr;
+          }
+          .settings-nav {
+            position: static;
+          }
+          .settings-main {
+            width: min(100% - 2 * var(--spacing-3), 72rem);
+          }
+        }
+      }
+    </style>
+    <script defer src="__ASTRYX_VANILLA_CDN__/astryx-vanilla.js"></script>
+  </head>
+  <body class="settings-shell">
+    <nav class="ax-top-nav" aria-label="Primary navigation">
+      <div class="ax-top-nav__start">
+        <a class="ax-top-nav__brand" href="#"
+          ><span class="ax-top-nav__brand-mark" aria-hidden="true">A</span
+          ><span>Astryx Cloud</span></a
+        >
+      </div>
+      <div class="ax-top-nav__end">
+        <span
+          class="ax-avatar ax-avatar--md ax-avatar--circle"
+          role="img"
+          aria-label="Avery Morgan, Online"
+          ><span class="ax-avatar__content" aria-hidden="true">AM</span
+          ><span class="ax-avatar__status" aria-hidden="true"
+            ><span class="ax-status-dot ax-status-dot--success"></span></span
+        ></span>
+      </div>
+    </nav>
+    <main class="settings-main ax-stack ax-stack--gap-5">
+      <header class="settings-heading">
+        <div class="ax-stack ax-stack--gap-1">
+          <nav
+            class="ax-breadcrumbs ax-breadcrumbs--supporting"
+            aria-label="Breadcrumb">
+            <ol class="ax-breadcrumbs__list">
+              <li class="ax-breadcrumbs__item">
+                <span class="ax-breadcrumbs__separator" aria-hidden="true"
+                  >/</span
+                ><a class="ax-breadcrumbs__link" href="#">Workspace</a>
+              </li>
+              <li class="ax-breadcrumbs__item">
+                <span class="ax-breadcrumbs__separator" aria-hidden="true"
+                  >/</span
+                ><span class="ax-breadcrumbs__current" aria-current="page"
+                  >Settings</span
+                >
+              </li>
+            </ol>
+          </nav>
+          <h1 class="ax-heading ax-heading--1">Account settings</h1>
+          <p class="ax-text ax-text--secondary">
+            Manage your profile, notifications, and workspace defaults.
+          </p>
+        </div>
+        <div class="settings-actions">
+          <button
+            class="ax-button ax-button--secondary"
+            type="reset"
+            form="settings-form">
+            Reset</button
+          ><button
+            class="ax-button ax-button--primary"
+            type="submit"
+            form="settings-form"
+            data-ax-toast="Settings saved">
+            Save changes
+          </button>
+        </div>
+      </header>
+      <div class="settings-grid">
+        <nav
+          class="settings-nav ax-stack ax-stack--gap-1"
+          aria-label="Settings sections">
+          <a href="#profile" aria-current="page">Profile</a
+          ><a href="#notifications">Notifications</a
+          ><a href="#workspace">Workspace</a><a href="#security">Security</a>
+        </nav>
+        <form
+          id="settings-form"
+          class="ax-card ax-card--elevation-low"
+          action="#">
+          <section
+            id="profile"
+            class="settings-section ax-stack ax-stack--gap-4">
+            <div>
+              <h2 class="ax-heading ax-heading--3">Profile</h2>
+              <p class="ax-text ax-text--supporting ax-text--secondary">
+                Shown to teammates across shared projects.
+              </p>
+            </div>
+            <div class="settings-profile">
+              <span
+                class="ax-avatar ax-avatar--lg ax-avatar--rounded"
+                role="img"
+                aria-label="Avery Morgan"
+                ><span class="ax-avatar__content" aria-hidden="true"
+                  >AM</span
+                ></span
+              >
+              <div class="settings-actions">
+                <button
+                  class="ax-button ax-button--secondary ax-button--sm"
+                  type="button">
+                  Upload photo</button
+                ><button
+                  class="ax-button ax-button--ghost ax-button--sm"
+                  type="button">
+                  Remove
+                </button>
+              </div>
+            </div>
+            <div class="settings-field-grid">
+              <label class="ax-stack ax-stack--gap-1"
+                ><span class="ax-text ax-text--label">Display name</span
+                ><span class="ax-text-input"
+                  ><input
+                    name="display-name"
+                    value="Avery Morgan" /></span></label
+              ><label class="ax-stack ax-stack--gap-1"
+                ><span class="ax-text ax-text--label">Email</span
+                ><span class="ax-text-input"
+                  ><input
+                    name="email"
+                    type="email"
+                    value="avery@example.com" /></span
+              ></label>
+            </div>
+            <label class="ax-text-area" for="bio"
+              ><span class="ax-text-area__label">Bio</span
+              ><span class="ax-text-area__control">
+                <textarea class="ax-text-area__input" id="bio" rows="4">
+Product designer focused on thoughtful collaboration.</textarea></span
+              ><span class="ax-text-area__description"
+                >Keep it concise—this appears on your profile.</span
+              ></label
+            >
+          </section>
+          <section
+            id="notifications"
+            class="settings-section ax-stack ax-stack--gap-4">
+            <div>
+              <h2 class="ax-heading ax-heading--3">Notifications</h2>
+              <p class="ax-text ax-text--supporting ax-text--secondary">
+                Choose the updates that should interrupt you.
+              </p>
+            </div>
+            <label class="ax-switch ax-switch--label-start ax-switch--spread"
+              ><input
+                class="ax-switch__control"
+                type="checkbox"
+                role="switch"
+                checked /><span class="ax-switch__track" aria-hidden="true"
+                ><span class="ax-switch__thumb"></span></span
+              ><span class="ax-switch__content"
+                ><span class="ax-switch__label">Project mentions</span
+                ><span class="ax-switch__description"
+                  >Notify me when someone mentions my name.</span
+                ></span
+              ></label
+            ><label class="ax-switch ax-switch--label-start ax-switch--spread"
+              ><input
+                class="ax-switch__control"
+                type="checkbox"
+                role="switch" /><span
+                class="ax-switch__track"
+                aria-hidden="true"
+                ><span class="ax-switch__thumb"></span></span
+              ><span class="ax-switch__content"
+                ><span class="ax-switch__label">Weekly digest</span
+                ><span class="ax-switch__description"
+                  >A Monday summary of workspace activity.</span
+                ></span
+              ></label
+            >
+          </section>
+          <section
+            id="workspace"
+            class="settings-section ax-stack ax-stack--gap-4">
+            <div>
+              <h2 class="ax-heading ax-heading--3">Workspace defaults</h2>
+              <p class="ax-text ax-text--supporting ax-text--secondary">
+                Applied to new projects you create.
+              </p>
+            </div>
+            <fieldset class="ax-radio-list" aria-describedby="visibility-help">
+              <legend class="ax-radio-list__legend">Default visibility</legend>
+              <span class="ax-radio-list__description" id="visibility-help"
+                >You can override this per project.</span
+              ><span class="ax-radio-list__items"
+                ><label class="ax-radio-list__item"
+                  ><input
+                    class="ax-radio-list__input"
+                    type="radio"
+                    name="visibility"
+                    checked /><span
+                    class="ax-radio-list__indicator"
+                    aria-hidden="true"></span
+                  ><span class="ax-radio-list__content"
+                    ><span class="ax-radio-list__label">Team</span
+                    ><span class="ax-radio-list__item-description"
+                      >Everyone in this workspace can view it.</span
+                    ></span
+                  ></label
+                ><label class="ax-radio-list__item"
+                  ><input
+                    class="ax-radio-list__input"
+                    type="radio"
+                    name="visibility" /><span
+                    class="ax-radio-list__indicator"
+                    aria-hidden="true"></span
+                  ><span class="ax-radio-list__content"
+                    ><span class="ax-radio-list__label">Private</span
+                    ><span class="ax-radio-list__item-description"
+                      >Only invited collaborators can view it.</span
+                    ></span
+                  ></label
+                ></span
+              >
+            </fieldset>
+          </section>
+          <section
+            id="security"
+            class="settings-section ax-stack ax-stack--gap-3">
+            <div>
+              <h2 class="ax-heading ax-heading--3">Security</h2>
+              <p class="ax-text ax-text--supporting ax-text--secondary">
+                Your last password update was 42 days ago.
+              </p>
+            </div>
+            <div class="ax-banner ax-banner--info">
+              <div class="ax-banner__content">
+                <strong class="ax-banner__title"
+                  >Two-factor authentication is active</strong
+                >
+                <p class="ax-banner__description">
+                  Recovery codes were generated on September 12.
+                </p>
+              </div>
+              <button
+                class="ax-button ax-button--secondary ax-button--sm"
+                type="button">
+                Review
+              </button>
+            </div>
+          </section>
+        </form>
+      </div>
+    </main>
+  </body>
+</html>

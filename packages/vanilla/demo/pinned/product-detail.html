@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en" data-astryx-theme="neutral" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Astryx product detail</title>
+    <script>
+      (() => {
+        const root = document.documentElement;
+        const params = new URLSearchParams(location.search);
+        const themeKey = 'astryx-vanilla-theme';
+        const modeKey = 'astryx-vanilla-mode';
+        const read = key => {
+          try {
+            return localStorage.getItem(key);
+          } catch {
+            return null;
+          }
+        };
+        const remember = (key, value) => {
+          try {
+            localStorage.setItem(key, value);
+          } catch {}
+        };
+        const theme = params.get('theme') || read(themeKey);
+        const mode = params.get('mode') || read(modeKey);
+        if (/^[a-z][a-z0-9-]*$/.test(theme || '')) {
+          root.dataset.astryxTheme = theme;
+          if (params.has('theme')) remember(themeKey, theme);
+        }
+        if (['light', 'dark'].includes(mode)) {
+          root.dataset.theme = mode;
+          if (params.has('mode')) remember(modeKey, mode);
+        }
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700&amp;family=Crimson+Text:wght@400;600;700&amp;family=DM+Sans:wght@400;500;600;700&amp;family=Figtree:wght@400;500;600;700&amp;family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&amp;family=Fustat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;family=Manufacturing+Consent&amp;family=Montserrat:wght@400;500;600;700&amp;family=Outfit:wght@400;500;600;700&amp;family=Playwrite+US+Trad:wght@100..400&amp;family=Poppins:wght@400;500;600;700&amp;family=Sarina&amp;display=swap"
+      rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/core@0.6.5/src/reset.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/facebook/astryx@3906c4ccda61f94bc6dd9777ec38131ac58e8a70/packages/vanilla/dist/astryx-vanilla.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-neutral@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-butter@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-y2k@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-stone@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-matcha@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-chocolate@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-gothic@0.6.5/dist/theme.css" />
+    <style>
+      @layer astryx-theme {
+        :root[data-astryx-theme='brand'] {
+          --color-accent: light-dark(#6d28d9, #a78bfa);
+          --color-accent-muted: light-dark(#ede9fe, #2e1a47);
+          --color-on-accent: light-dark(#ffffff, #1f1235);
+          --color-text-accent: light-dark(#5b21b6, #c4b5fd);
+          --color-icon-accent: light-dark(#5b21b6, #c4b5fd);
+          --color-background-body: light-dark(#f5f3ff, #171126);
+          --focus-outline-color: var(--color-accent);
+        }
+      }
+      @layer astryx-base {
+        .product-shell {
+          min-height: 100vh;
+          background: var(--color-background-body);
+        }
+        .product-main {
+          width: min(100% - 2 * var(--spacing-4), 76rem);
+          margin-inline: auto;
+          padding-block: var(--spacing-5) var(--spacing-10);
+        }
+        .product-toolbar,
+        .product-actions,
+        .product-meta {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: var(--spacing-3);
+          flex-wrap: wrap;
+        }
+        .product-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1.15fr) minmax(20rem, 0.85fr);
+          gap: var(--spacing-6);
+          align-items: start;
+        }
+        .product-gallery {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: var(--spacing-3);
+        }
+        .product-media {
+          display: grid;
+          min-height: 14rem;
+          place-items: center;
+          border-radius: var(--radius-container);
+          background: linear-gradient(
+            145deg,
+            var(--color-accent-muted),
+            var(--color-background-surface)
+          );
+          color: var(--color-text-accent);
+          font-weight: var(--font-weight-bold);
+        }
+        .product-media:first-child {
+          grid-column: 1 / -1;
+          min-height: 25rem;
+        }
+        .product-price {
+          display: flex;
+          align-items: baseline;
+          gap: var(--spacing-2);
+        }
+        .product-swatches {
+          display: flex;
+          gap: var(--spacing-2);
+          flex-wrap: wrap;
+        }
+        .product-swatch {
+          min-width: 7rem;
+        }
+        .product-specs {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: var(--spacing-3);
+        }
+        @media (max-width: 52rem) {
+          .product-grid,
+          .product-specs {
+            grid-template-columns: 1fr;
+          }
+          .product-main {
+            width: min(100% - 2 * var(--spacing-3), 76rem);
+          }
+        }
+      }
+    </style>
+    <script defer src="https://cdn.jsdelivr.net/gh/facebook/astryx@3906c4ccda61f94bc6dd9777ec38131ac58e8a70/packages/vanilla/dist/astryx-vanilla.js"></script>
+  </head>
+  <body class="product-shell">
+    <nav class="ax-top-nav" aria-label="Store navigation">
+      <div class="ax-top-nav__start">
+        <a class="ax-top-nav__brand" href="#"
+          ><span class="ax-top-nav__brand-mark" aria-hidden="true">N</span
+          ><span>Northstar Goods</span></a
+        >
+        <div class="ax-top-nav__items">
+          <a class="ax-top-nav__item" href="#">New</a
+          ><a class="ax-top-nav__item" href="#" aria-current="page">Home</a
+          ><a class="ax-top-nav__item" href="#">Studio</a>
+        </div>
+      </div>
+      <div class="ax-top-nav__end">
+        <button class="ax-button ax-button--ghost ax-button--sm" type="button">
+          Search</button
+        ><button
+          class="ax-button ax-button--secondary ax-button--sm"
+          type="button">
+          Bag · 2
+        </button>
+      </div>
+    </nav>
+    <main class="product-main ax-stack ax-stack--gap-5">
+      <nav class="ax-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="ax-breadcrumbs__list">
+          <li class="ax-breadcrumbs__item">
+            <span class="ax-breadcrumbs__separator" aria-hidden="true">/</span
+            ><a class="ax-breadcrumbs__link" href="#">Home</a>
+          </li>
+          <li class="ax-breadcrumbs__item">
+            <span class="ax-breadcrumbs__separator" aria-hidden="true">/</span
+            ><a class="ax-breadcrumbs__link" href="#">Lighting</a>
+          </li>
+          <li class="ax-breadcrumbs__item">
+            <span class="ax-breadcrumbs__separator" aria-hidden="true">/</span
+            ><span class="ax-breadcrumbs__current" aria-current="page"
+              >Halo table lamp</span
+            >
+          </li>
+        </ol>
+      </nav>
+      <div class="product-grid">
+        <section class="product-gallery" aria-label="Product images">
+          <div
+            class="product-media"
+            role="img"
+            aria-label="Halo table lamp in warm sand">
+            HALO<br />TABLE LAMP
+          </div>
+          <div
+            class="product-media"
+            role="img"
+            aria-label="Close-up of the lamp shade">
+            SHADE
+          </div>
+          <div
+            class="product-media"
+            role="img"
+            aria-label="Lamp on a bedside table">
+            IN ROOM
+          </div>
+        </section>
+        <section class="ax-stack ax-stack--gap-5">
+          <div class="ax-stack ax-stack--gap-2">
+            <div class="product-meta">
+              <span class="ax-badge ax-badge--success">In stock</span
+              ><span class="ax-text ax-text--supporting ax-text--secondary"
+                >4.8 · 126 reviews</span
+              >
+            </div>
+            <h1 class="ax-heading ax-heading--1">Halo table lamp</h1>
+            <p class="ax-text ax-text--large ax-text--secondary">
+              A softly diffused light with a hand-finished ceramic base and
+              linen shade.
+            </p>
+            <div class="product-price">
+              <span class="ax-heading ax-heading--2">$189</span
+              ><span class="ax-text ax-text--secondary">Free shipping</span>
+            </div>
+          </div>
+          <hr class="ax-divider" />
+          <fieldset class="ax-stack ax-stack--gap-2">
+            <legend class="ax-text ax-text--label">Finish · Warm sand</legend>
+            <div class="product-swatches">
+              <label class="ax-button ax-button--secondary product-swatch"
+                ><input type="radio" name="finish" checked /> Warm sand</label
+              ><label class="ax-button ax-button--ghost product-swatch"
+                ><input type="radio" name="finish" /> Moss</label
+              ><label class="ax-button ax-button--ghost product-swatch"
+                ><input type="radio" name="finish" /> Charcoal</label
+              >
+            </div>
+          </fieldset>
+          <label class="ax-number-input" for="quantity"
+            ><span class="ax-number-input__label">Quantity</span
+            ><span class="ax-number-input__control"
+              ><input
+                class="ax-number-input__input"
+                id="quantity"
+                type="number"
+                min="1"
+                max="8"
+                value="1" /><span
+                class="ax-number-input__unit"
+                aria-hidden="true"
+                >items</span
+              ></span
+            ></label
+          >
+          <div class="product-actions">
+            <button
+              class="ax-button ax-button--primary"
+              type="button"
+              data-ax-toast="Halo table lamp added to bag">
+              Add to bag</button
+            ><button
+              class="ax-button ax-button--secondary"
+              type="button"
+              data-ax-toast="Saved to favorites">
+              Save
+            </button>
+          </div>
+          <div class="ax-banner ax-banner--info">
+            <div class="ax-banner__content">
+              <strong class="ax-banner__title">Delivery by Wednesday</strong>
+              <p class="ax-banner__description">
+                Order within 4 hours for complimentary standard shipping.
+              </p>
+            </div>
+          </div>
+          <div class="ax-stack ax-stack--gap-2">
+            <details class="ax-collapsible" data-ax-collapsible open>
+              <summary class="ax-collapsible__trigger">Details</summary>
+              <div class="ax-collapsible__content">
+                <p class="ax-text">
+                  Dimmable LED, woven cord, and felted base. Bulb included.
+                </p>
+              </div>
+            </details>
+            <details class="ax-collapsible" data-ax-collapsible>
+              <summary class="ax-collapsible__trigger">Dimensions</summary>
+              <div class="ax-collapsible__content">
+                <p class="ax-text">18 in high × 11 in wide · 6.2 lb.</p>
+              </div>
+            </details>
+            <details class="ax-collapsible" data-ax-collapsible>
+              <summary class="ax-collapsible__trigger">Care</summary>
+              <div class="ax-collapsible__content">
+                <p class="ax-text">
+                  Dust with a soft, dry cloth. Do not use abrasive cleaners.
+                </p>
+              </div>
+            </details>
+          </div>
+        </section>
+      </div>
+      <section
+        class="ax-stack ax-stack--gap-4"
+        aria-labelledby="product-highlights">
+        <h2 class="ax-heading ax-heading--2" id="product-highlights">
+          Thoughtful by design
+        </h2>
+        <div class="product-specs">
+          <article class="ax-card ax-card--muted ax-stack ax-stack--gap-2">
+            <span class="ax-badge ax-badge--info">Materials</span>
+            <h3 class="ax-heading ax-heading--4">Natural texture</h3>
+            <p class="ax-text ax-text--secondary">
+              Glazed stoneware and linen soften the light.
+            </p>
+          </article>
+          <article class="ax-card ax-card--muted ax-stack ax-stack--gap-2">
+            <span class="ax-badge ax-badge--success">Efficient</span>
+            <h3 class="ax-heading ax-heading--4">Low energy</h3>
+            <p class="ax-text ax-text--secondary">
+              The included LED uses 80% less energy.
+            </p>
+          </article>
+          <article class="ax-card ax-card--muted ax-stack ax-stack--gap-2">
+            <span class="ax-badge ax-badge--neutral">Repairable</span>
+            <h3 class="ax-heading ax-heading--4">Made to last</h3>
+            <p class="ax-text ax-text--secondary">
+              Replaceable shade, socket, and cord.
+            </p>
+          </article>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

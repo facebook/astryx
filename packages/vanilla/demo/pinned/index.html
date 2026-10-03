@@ -101,7 +101,7 @@
         }
         .demo-grid {
           display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+          grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: var(--spacing-4);
         }
         .demo-card {
@@ -112,43 +112,73 @@
         .demo-card__preview {
           position: relative;
           display: grid;
-          min-height: 10rem;
-          place-items: center;
+          min-height: 12rem;
           overflow: hidden;
+          padding: var(--spacing-3);
           border: var(--border-width) solid var(--color-border);
           border-radius: var(--radius-element);
           background: var(--color-background-muted);
         }
-        .demo-card__preview::before,
-        .demo-card__preview::after {
-          content: '';
-          position: absolute;
-          border-radius: var(--radius-container);
-          background: var(--color-background-surface);
+        .demo-mini {
+          display: grid;
+          min-height: 100%;
+          gap: var(--spacing-2);
+          padding: var(--spacing-2);
+          border-radius: var(--radius-element);
+          background: var(--color-background-body);
           box-shadow: var(--shadow-low);
         }
-        .demo-card__preview::before {
-          width: 64%;
-          height: 60%;
-          inset: 20% auto auto 10%;
+        .demo-mini__nav,
+        .demo-mini__row {
+          display: flex;
+          align-items: center;
+          gap: var(--spacing-1);
         }
-        .demo-card__preview::after {
-          width: 30%;
-          height: 42%;
-          inset: 34% 8% auto auto;
-          background: var(--color-accent-muted);
+        .demo-mini__nav {
+          min-height: var(--spacing-4);
+          padding-inline: var(--spacing-2);
+          border-radius: var(--radius-inner);
+          background: var(--color-background-surface);
         }
-        .demo-card__mark {
-          position: relative;
-          z-index: 1;
+        .demo-mini__columns {
           display: grid;
-          width: 3rem;
-          aspect-ratio: 1;
-          place-items: center;
-          border-radius: 50%;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: var(--spacing-2);
+        }
+        .demo-mini__columns--split {
+          grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+        }
+        .demo-mini__surface {
+          display: grid;
+          min-height: var(--spacing-10);
+          gap: var(--spacing-1);
+          padding: var(--spacing-2);
+          border: var(--border-width) solid var(--color-border);
+          border-radius: var(--radius-inner);
+          background: var(--color-background-surface);
+        }
+        .demo-mini__line,
+        .demo-mini__accent {
+          display: block;
+          height: var(--spacing-2);
+          border-radius: var(--radius-full);
+          background: var(--color-border-emphasized);
+        }
+        .demo-mini__line--short {
+          width: 58%;
+        }
+        .demo-mini__accent {
+          width: 36%;
           background: var(--color-accent);
-          color: var(--color-foreground-on-accent);
-          font-weight: var(--font-weight-bold);
+        }
+        .demo-mini__media {
+          min-height: 6rem;
+          border-radius: var(--radius-inner);
+          background: linear-gradient(
+            145deg,
+            var(--color-accent-muted),
+            var(--color-background-surface)
+          );
         }
         .demo-card__footer {
           display: flex;
@@ -165,6 +195,11 @@
           color: var(--color-text-primary);
           font-family: var(--font-family-mono);
           font-size: var(--text-supporting-size);
+        }
+        @media (max-width: 72rem) {
+          .demo-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
         }
         @media (max-width: 48rem) {
           .demo-hero,
@@ -269,7 +304,32 @@
           <article
             class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4 demo-card">
             <div class="demo-card__preview">
-              <span class="demo-card__mark" aria-hidden="true">D</span>
+              <div
+                class="demo-mini"
+                role="img"
+                aria-label="Miniature analytics dashboard">
+                <div class="demo-mini__nav">
+                  <span class="demo-mini__accent"></span
+                  ><span class="demo-mini__line demo-mini__line--short"></span>
+                </div>
+                <div class="demo-mini__columns">
+                  <span class="demo-mini__surface"
+                    ><span class="demo-mini__line"></span
+                    ><span class="demo-mini__accent"></span></span
+                  ><span class="demo-mini__surface"
+                    ><span class="demo-mini__line"></span
+                    ><span class="demo-mini__accent"></span></span
+                  ><span class="demo-mini__surface"
+                    ><span class="demo-mini__line"></span
+                    ><span class="demo-mini__accent"></span
+                  ></span>
+                </div>
+                <div class="demo-mini__surface">
+                  <span class="demo-mini__line demo-mini__line--short"></span
+                  ><span class="demo-mini__line"></span
+                  ><span class="demo-mini__line"></span>
+                </div>
+              </div>
             </div>
             <div class="ax-stack ax-stack--gap-2">
               <span class="ax-badge ax-badge--success">Analytics</span>
@@ -291,7 +351,31 @@
           <article
             class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4 demo-card">
             <div class="demo-card__preview">
-              <span class="demo-card__mark" aria-hidden="true">T</span>
+              <div
+                class="demo-mini"
+                role="img"
+                aria-label="Miniature filtered table">
+                <div class="demo-mini__nav">
+                  <span class="demo-mini__line"></span
+                  ><span class="demo-mini__accent"></span>
+                </div>
+                <div class="demo-mini__surface">
+                  <span class="demo-mini__row"
+                    ><span class="demo-mini__line"></span
+                    ><span class="demo-mini__line"></span
+                    ><span
+                      class="demo-mini__line demo-mini__line--short"></span></span
+                  ><span class="demo-mini__row"
+                    ><span class="demo-mini__accent"></span
+                    ><span class="demo-mini__line"></span
+                    ><span class="demo-mini__line"></span></span
+                  ><span class="demo-mini__row"
+                    ><span class="demo-mini__line"></span
+                    ><span class="demo-mini__line demo-mini__line--short"></span
+                    ><span class="demo-mini__accent"></span
+                  ></span>
+                </div>
+              </div>
             </div>
             <div class="ax-stack ax-stack--gap-2">
               <span class="ax-badge ax-badge--info">Operations</span>
@@ -314,7 +398,24 @@
           <article
             class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4 demo-card">
             <div class="demo-card__preview">
-              <span class="demo-card__mark" aria-hidden="true">F</span>
+              <div
+                class="demo-mini"
+                role="img"
+                aria-label="Miniature two-column form">
+                <div class="demo-mini__nav">
+                  <span class="demo-mini__accent"></span
+                  ><span class="demo-mini__line demo-mini__line--short"></span>
+                </div>
+                <div class="demo-mini__columns demo-mini__columns--split">
+                  <div class="demo-mini__surface">
+                    <span class="demo-mini__line demo-mini__line--short"></span
+                    ><span class="demo-mini__line"></span
+                    ><span class="demo-mini__line"></span
+                    ><span class="demo-mini__accent"></span>
+                  </div>
+                  <div class="demo-mini__media"></div>
+                </div>
+              </div>
             </div>
             <div class="ax-stack ax-stack--gap-2">
               <span class="ax-badge ax-badge--warning">Lead capture</span>
@@ -337,7 +438,27 @@
           <article
             class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4 demo-card">
             <div class="demo-card__preview">
-              <span class="demo-card__mark" aria-hidden="true">O</span>
+              <div
+                class="demo-mini"
+                role="img"
+                aria-label="Miniature order detail">
+                <div class="demo-mini__nav">
+                  <span class="demo-mini__line demo-mini__line--short"></span
+                  ><span class="demo-mini__accent"></span>
+                </div>
+                <div class="demo-mini__columns demo-mini__columns--split">
+                  <div class="demo-mini__surface">
+                    <span class="demo-mini__line"></span
+                    ><span class="demo-mini__line"></span
+                    ><span
+                      class="demo-mini__line demo-mini__line--short"></span>
+                  </div>
+                  <div class="demo-mini__surface">
+                    <span class="demo-mini__accent"></span
+                    ><span class="demo-mini__line"></span>
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="ax-stack ax-stack--gap-2">
               <span class="ax-badge ax-badge--error">Commerce</span>
@@ -353,6 +474,219 @@
                 class="ax-button ax-button--secondary"
                 data-template-link
                 href="./detail-page.html"
+                >Open template</a
+              >
+            </div>
+          </article>
+          <article
+            class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4 demo-card">
+            <div class="demo-card__preview">
+              <div
+                class="demo-mini"
+                role="img"
+                aria-label="Miniature account settings">
+                <div class="demo-mini__nav">
+                  <span class="demo-mini__accent"></span
+                  ><span class="demo-mini__line demo-mini__line--short"></span>
+                </div>
+                <div class="demo-mini__columns demo-mini__columns--split">
+                  <div class="demo-mini__surface">
+                    <span class="demo-mini__line"></span
+                    ><span class="demo-mini__line demo-mini__line--short"></span
+                    ><span
+                      class="demo-mini__line demo-mini__line--short"></span>
+                  </div>
+                  <div class="demo-mini__surface">
+                    <span class="demo-mini__line"></span
+                    ><span class="demo-mini__line"></span
+                    ><span class="demo-mini__accent"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="ax-stack ax-stack--gap-2">
+              <span class="ax-badge ax-badge--info">Configuration</span>
+              <h3 class="ax-heading ax-heading--3">Settings</h3>
+              <p class="ax-text ax-text--secondary">
+                Profile, notification, workspace, and security preferences.
+              </p>
+            </div>
+            <div class="demo-card__footer">
+              <code class="ax-text ax-text--code">settings</code
+              ><a
+                class="ax-button ax-button--secondary"
+                data-template-link
+                href="./settings.html"
+                >Open template</a
+              >
+            </div>
+          </article>
+          <article
+            class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4 demo-card">
+            <div class="demo-card__preview">
+              <div
+                class="demo-mini"
+                role="img"
+                aria-label="Miniature side navigation shell">
+                <div class="demo-mini__columns demo-mini__columns--split">
+                  <div class="demo-mini__surface">
+                    <span class="demo-mini__accent"></span
+                    ><span class="demo-mini__line"></span
+                    ><span class="demo-mini__line"></span
+                    ><span
+                      class="demo-mini__line demo-mini__line--short"></span>
+                  </div>
+                  <div class="demo-mini">
+                    <div class="demo-mini__nav">
+                      <span class="demo-mini__line"></span
+                      ><span class="demo-mini__accent"></span>
+                    </div>
+                    <div class="demo-mini__columns">
+                      <span class="demo-mini__surface"></span
+                      ><span class="demo-mini__surface"></span
+                      ><span class="demo-mini__surface"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="ax-stack ax-stack--gap-2">
+              <span class="ax-badge ax-badge--warning">Administration</span>
+              <h3 class="ax-heading ax-heading--3">Side navigation shell</h3>
+              <p class="ax-text ax-text--secondary">
+                A collapsible admin frame with metrics, activity, and setup.
+              </p>
+            </div>
+            <div class="demo-card__footer">
+              <code class="ax-text ax-text--code">shell-side-nav</code
+              ><a
+                class="ax-button ax-button--secondary"
+                data-template-link
+                href="./shell-side-nav.html"
+                >Open template</a
+              >
+            </div>
+          </article>
+          <article
+            class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4 demo-card">
+            <div class="demo-card__preview">
+              <div
+                class="demo-mini"
+                role="img"
+                aria-label="Miniature product detail">
+                <div class="demo-mini__nav">
+                  <span class="demo-mini__line demo-mini__line--short"></span
+                  ><span class="demo-mini__accent"></span>
+                </div>
+                <div class="demo-mini__columns demo-mini__columns--split">
+                  <div class="demo-mini__media"></div>
+                  <div class="demo-mini__surface">
+                    <span class="demo-mini__line"></span
+                    ><span class="demo-mini__accent"></span
+                    ><span class="demo-mini__line"></span
+                    ><span
+                      class="demo-mini__line demo-mini__line--short"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="ax-stack ax-stack--gap-2">
+              <span class="ax-badge ax-badge--success">Storefront</span>
+              <h3 class="ax-heading ax-heading--3">Product detail</h3>
+              <p class="ax-text ax-text--secondary">
+                Product media, variants, quantity, delivery, and specifications.
+              </p>
+            </div>
+            <div class="demo-card__footer">
+              <code class="ax-text ax-text--code">product-detail</code
+              ><a
+                class="ax-button ax-button--secondary"
+                data-template-link
+                href="./product-detail.html"
+                >Open template</a
+              >
+            </div>
+          </article>
+          <article
+            class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4 demo-card">
+            <div class="demo-card__preview">
+              <div
+                class="demo-mini"
+                role="img"
+                aria-label="Miniature login form">
+                <div
+                  class="demo-mini__surface"
+                  style="margin-inline: auto; width: 70%; align-self: center">
+                  <span
+                    class="demo-mini__accent"
+                    style="margin-inline: auto"></span
+                  ><span class="demo-mini__line"></span
+                  ><span class="demo-mini__line"></span
+                  ><span class="demo-mini__accent" style="width: 100%"></span
+                  ><span
+                    class="demo-mini__line demo-mini__line--short"
+                    style="margin-inline: auto"></span>
+                </div>
+              </div>
+            </div>
+            <div class="ax-stack ax-stack--gap-2">
+              <span class="ax-badge ax-badge--neutral">Authentication</span>
+              <h3 class="ax-heading ax-heading--3">Login</h3>
+              <p class="ax-text ax-text--secondary">
+                A focused sign-in card with provider and password paths.
+              </p>
+            </div>
+            <div class="demo-card__footer">
+              <code class="ax-text ax-text--code">login</code
+              ><a
+                class="ax-button ax-button--secondary"
+                data-template-link
+                href="./login.html"
+                >Open template</a
+              >
+            </div>
+          </article>
+          <article
+            class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4 demo-card">
+            <div class="demo-card__preview">
+              <div
+                class="demo-mini"
+                role="img"
+                aria-label="Miniature kanban board">
+                <div class="demo-mini__nav">
+                  <span class="demo-mini__line"></span
+                  ><span class="demo-mini__accent"></span>
+                </div>
+                <div class="demo-mini__columns">
+                  <div class="demo-mini__surface">
+                    <span class="demo-mini__line"></span
+                    ><span
+                      class="demo-mini__line demo-mini__line--short"></span>
+                  </div>
+                  <div class="demo-mini__surface">
+                    <span class="demo-mini__accent"></span
+                    ><span class="demo-mini__line"></span>
+                  </div>
+                  <div class="demo-mini__surface">
+                    <span class="demo-mini__line demo-mini__line--short"></span
+                    ><span class="demo-mini__line"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="ax-stack ax-stack--gap-2">
+              <span class="ax-badge ax-badge--error">Planning</span>
+              <h3 class="ax-heading ax-heading--3">Kanban board</h3>
+              <p class="ax-text ax-text--secondary">
+                Horizontal task lanes with progress, owners, and an empty state.
+              </p>
+            </div>
+            <div class="demo-card__footer">
+              <code class="ax-text ax-text--code">kanban-board</code
+              ><a
+                class="ax-button ax-button--secondary"
+                data-template-link
+                href="./kanban-board.html"
                 >Open template</a
               >
             </div>

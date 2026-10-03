@@ -7,13 +7,18 @@ Experimental no-build Astryx assets for plain HTML pages. Vanilla Astryx combine
 - Component CSS in `dist/astryx-vanilla.css`.
 - Classic and ESM behavior bundles in `dist/astryx-vanilla.js` and `dist/astryx-vanilla.mjs`.
 - Copyable component markup in `markup/`.
-- Four standalone page templates in `templates/`:
+- Nine standalone page templates in `templates/`:
   - [`dashboard.html`](templates/dashboard.html)
   - [`table-filter.html`](templates/table-filter.html)
   - [`form-two-column.html`](templates/form-two-column.html)
   - [`detail-page.html`](templates/detail-page.html)
+  - [`settings.html`](templates/settings.html)
+  - [`shell-side-nav.html`](templates/shell-side-nav.html)
+  - [`product-detail.html`](templates/product-detail.html)
+  - [`login.html`](templates/login.html)
+  - [`kanban-board.html`](templates/kanban-board.html)
 - A browsable [`demo/index.html`](demo/index.html) with all seven shipped themes, a custom brand example, and light and dark modes.
-- A committed, ready-to-open [`demo/pinned/index.html`](demo/pinned/index.html) and four pinned templates.
+- A committed, ready-to-open [`demo/pinned/index.html`](demo/pinned/index.html) and nine pinned templates.
 
 The canonical templates use `__ASTRYX_VANILLA_CDN__` as the base for their CSS and JavaScript URLs. The Astryx CLI and the demo renderer replace that placeholder with the same commit-pinned jsDelivr URL.
 
@@ -27,7 +32,7 @@ pnpm -F @astryxdesign/vanilla build
 pnpm -F @astryxdesign/vanilla test
 ```
 
-A fresh clone already contains the rendered demo. Open `packages/vanilla/demo/pinned/index.html` directly in a browser; its links open the four templates in the same directory. To regenerate the pinned copies from the canonical demo, templates, and CDN pin, run:
+A fresh clone already contains the rendered demo. Open `packages/vanilla/demo/pinned/index.html` directly in a browser; its links open the nine templates in the same directory. To regenerate the pinned copies from the canonical demo, templates, and CDN pin, run:
 
 ```sh
 pnpm -F @astryxdesign/vanilla demo

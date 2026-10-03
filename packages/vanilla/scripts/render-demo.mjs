@@ -23,6 +23,11 @@ const templateNames = [
   'dashboard',
   'detail-page',
   'form-two-column',
+  'kanban-board',
+  'login',
+  'product-detail',
+  'settings',
+  'shell-side-nav',
   'table-filter',
 ];
 

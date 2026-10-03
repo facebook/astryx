@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en" data-astryx-theme="neutral" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sign in to Astryx</title>
+    <script>
+      (() => {
+        const root = document.documentElement;
+        const params = new URLSearchParams(location.search);
+        const themeKey = 'astryx-vanilla-theme';
+        const modeKey = 'astryx-vanilla-mode';
+        const read = key => {
+          try {
+            return localStorage.getItem(key);
+          } catch {
+            return null;
+          }
+        };
+        const remember = (key, value) => {
+          try {
+            localStorage.setItem(key, value);
+          } catch {}
+        };
+        const theme = params.get('theme') || read(themeKey);
+        const mode = params.get('mode') || read(modeKey);
+        if (/^[a-z][a-z0-9-]*$/.test(theme || '')) {
+          root.dataset.astryxTheme = theme;
+          if (params.has('theme')) remember(themeKey, theme);
+        }
+        if (['light', 'dark'].includes(mode)) {
+          root.dataset.theme = mode;
+          if (params.has('mode')) remember(modeKey, mode);
+        }
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700&amp;family=Crimson+Text:wght@400;600;700&amp;family=DM+Sans:wght@400;500;600;700&amp;family=Figtree:wght@400;500;600;700&amp;family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&amp;family=Fustat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;family=Manufacturing+Consent&amp;family=Montserrat:wght@400;500;600;700&amp;family=Outfit:wght@400;500;600;700&amp;family=Playwrite+US+Trad:wght@100..400&amp;family=Poppins:wght@400;500;600;700&amp;family=Sarina&amp;display=swap"
+      rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/core@0.6.5/src/reset.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/facebook/astryx@3906c4ccda61f94bc6dd9777ec38131ac58e8a70/packages/vanilla/dist/astryx-vanilla.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-neutral@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-butter@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-y2k@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-stone@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-matcha@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-chocolate@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-gothic@0.6.5/dist/theme.css" />
+    <style>
+      @layer astryx-theme {
+        :root[data-astryx-theme='brand'] {
+          --color-accent: light-dark(#6d28d9, #a78bfa);
+          --color-accent-muted: light-dark(#ede9fe, #2e1a47);
+          --color-on-accent: light-dark(#ffffff, #1f1235);
+          --color-text-accent: light-dark(#5b21b6, #c4b5fd);
+          --color-icon-accent: light-dark(#5b21b6, #c4b5fd);
+          --color-background-body: light-dark(#f5f3ff, #171126);
+          --focus-outline-color: var(--color-accent);
+        }
+      }
+      @layer astryx-base {
+        .login-shell {
+          min-height: 100vh;
+          display: grid;
+          place-items: center;
+          padding: var(--spacing-5);
+          background: radial-gradient(
+            circle at top,
+            var(--color-accent-muted),
+            var(--color-background-body) 55%
+          );
+        }
+        .login-wrap {
+          width: min(100%, 28rem);
+        }
+        .login-brand {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: var(--spacing-2);
+        }
+        .login-mark {
+          display: grid;
+          width: var(--spacing-9);
+          aspect-ratio: 1;
+          place-items: center;
+          border-radius: var(--radius-element);
+          background: var(--color-accent);
+          color: var(--color-on-accent);
+          font-weight: var(--font-weight-bold);
+        }
+        .login-divider {
+          display: grid;
+          grid-template-columns: 1fr auto 1fr;
+          align-items: center;
+          gap: var(--spacing-3);
+          color: var(--color-text-secondary);
+        }
+        .login-divider::before,
+        .login-divider::after {
+          content: '';
+          border-block-start: var(--border-width) solid var(--color-border);
+        }
+        .login-footer {
+          text-align: center;
+        }
+      }
+    </style>
+    <script defer src="https://cdn.jsdelivr.net/gh/facebook/astryx@3906c4ccda61f94bc6dd9777ec38131ac58e8a70/packages/vanilla/dist/astryx-vanilla.js"></script>
+  </head>
+  <body class="login-shell">
+    <main class="login-wrap ax-stack ax-stack--gap-5">
+      <header class="ax-stack ax-stack--gap-2">
+        <a class="login-brand ax-link" href="#" aria-label="Astryx home"
+          ><span class="login-mark" aria-hidden="true">A</span
+          ><span class="ax-heading ax-heading--3">Astryx</span></a
+        >
+        <div class="ax-stack ax-stack--gap-1" style="text-align: center">
+          <h1 class="ax-heading ax-heading--1">Welcome back</h1>
+          <p class="ax-text ax-text--secondary">
+            Sign in to continue to your workspace.
+          </p>
+        </div>
+      </header>
+      <section class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4">
+        <button class="ax-button ax-button--secondary" type="button">
+          Continue with Google
+        </button>
+        <div class="login-divider">
+          <span class="ax-text ax-text--supporting">or use email</span>
+        </div>
+        <form class="ax-stack ax-stack--gap-4" action="#">
+          <label class="ax-stack ax-stack--gap-1"
+            ><span class="ax-text ax-text--label">Email</span
+            ><span class="ax-text-input"
+              ><input
+                type="email"
+                name="email"
+                autocomplete="email"
+                placeholder="you@example.com"
+                required /></span></label
+          ><label class="ax-stack ax-stack--gap-1"
+            ><span class="login-brand" style="justify-content: space-between"
+              ><span class="ax-text ax-text--label">Password</span
+              ><a class="ax-link ax-text ax-text--supporting" href="#"
+                >Forgot password?</a
+              ></span
+            ><span class="ax-text-input"
+              ><input
+                type="password"
+                name="password"
+                autocomplete="current-password"
+                placeholder="Enter your password"
+                required /></span></label
+          ><label class="ax-checkbox-input"
+            ><input
+              class="ax-checkbox-input__control"
+              type="checkbox"
+              checked /><span
+              class="ax-checkbox-input__indicator"
+              aria-hidden="true"></span
+            ><span class="ax-checkbox-input__content"
+              ><span class="ax-checkbox-input__label"
+                >Keep me signed in</span
+              ></span
+            ></label
+          ><button
+            class="ax-button ax-button--primary"
+            type="submit"
+            data-ax-toast="Signed in">
+            Sign in
+          </button>
+        </form>
+        <p class="ax-text ax-text--supporting ax-text--secondary login-footer">
+          New to Astryx? <a class="ax-link" href="#">Create an account</a>
+        </p>
+      </section>
+      <footer class="login-footer ax-stack ax-stack--gap-2">
+        <p class="ax-text ax-text--supporting ax-text--secondary">
+          Protected by enterprise single sign-on and two-factor authentication.
+        </p>
+        <div>
+          <a class="ax-link ax-text ax-text--supporting" href="#">Privacy</a
+          ><span aria-hidden="true"> · </span
+          ><a class="ax-link ax-text ax-text--supporting" href="#">Terms</a
+          ><span aria-hidden="true"> · </span
+          ><a class="ax-link ax-text ax-text--supporting" href="#">Help</a>
+        </div>
+      </footer>
+    </main>
+  </body>
+</html>
