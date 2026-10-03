@@ -734,7 +734,7 @@ describe('DropdownMenu', () => {
     }
   });
 
-  it('does not leave focus on the trigger after pointer dismissal', async () => {
+  it('returns focus to the trigger after pointer dismissal without a focus ring', async () => {
     const raf = vi
       .spyOn(window, 'requestAnimationFrame')
       .mockImplementation(callback => {
@@ -759,14 +759,56 @@ describe('DropdownMenu', () => {
         .getByRole('menu', {hidden: true})
         .closest('[popover]');
       expect(popoverEl).not.toBeNull();
-      // Simulate native popover focus restoration occurring before React's
-      // toggle handler; pointer dismissal should remove that focus again.
-      trigger.focus();
+      // A press on nothing focusable dismissed the menu: focus goes back to
+      // the trigger, and the pointer modality suppresses the ring Safari
+      // would otherwise paint after a touch pick.
+      trigger.blur();
       const toggleEvent = new Event('toggle');
       Object.defineProperty(toggleEvent, 'newState', {value: 'closed'});
       fireEvent(popoverEl as HTMLElement, toggleEvent);
 
-      expect(trigger).not.toHaveFocus();
+      expect(trigger).toHaveFocus();
+      await waitFor(() =>
+        expect(trigger).toHaveClass(
+          stylex.props(focusOutlineStyles.suppressed).className!,
+        ),
+      );
+    } finally {
+      raf.mockRestore();
+    }
+  });
+
+  it('leaves focus on the control a press outside landed on', () => {
+    const raf = vi
+      .spyOn(window, 'requestAnimationFrame')
+      .mockImplementation(callback => {
+        callback(0);
+        return 0;
+      });
+
+    try {
+      render(
+        <>
+          <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Edit'}]} />
+          <button type="button">Elsewhere</button>
+        </>,
+      );
+
+      const trigger = screen.getByRole('button', {name: /Actions/});
+      fireEvent.pointerDown(trigger, {pointerType: 'touch'});
+      fireEvent.click(trigger, {detail: 1});
+      const popoverEl = screen
+        .getByRole('menu', {hidden: true})
+        .closest('[popover]');
+
+      const elsewhere = screen.getByRole('button', {name: 'Elsewhere'});
+      fireEvent.pointerDown(elsewhere, {pointerType: 'mouse', button: 0});
+      elsewhere.focus();
+      const toggleEvent = new Event('toggle');
+      Object.defineProperty(toggleEvent, 'newState', {value: 'closed'});
+      fireEvent(popoverEl as HTMLElement, toggleEvent);
+
+      expect(elsewhere).toHaveFocus();
     } finally {
       raf.mockRestore();
     }
@@ -2265,6 +2307,7 @@ describe('DropdownMenu press model', () => {
 
   const item = (name: string) =>
     screen.getByRole('menuitem', {name, hidden: true});
+
   it('a finger that lands on one row and lifts on another acts on the second, once', async () => {
     const onPick = vi.fn();
     const user = userEvent.setup();
@@ -2310,5 +2353,59 @@ describe('DropdownMenu press model', () => {
       stylex.props(style).className!.split(' ').pop()!;
     expect(menu).toHaveClass(hash(touchStyles.none));
     expect(menu).not.toHaveClass(hash(touchStyles.panY));
+  });
+});
+
+describe('DropdownMenu focus return after a pointer pick', () => {
+  function renderMenu(onPick: (label: string) => void = () => {}) {
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" onClick={() => onPick('Edit')} />
+        <DropdownMenuItem label="Delete" onClick={() => onPick('Delete')} />
+      </DropdownMenu>,
+    );
+    return screen.getByRole('button', {name: /Actions/});
+  }
+
+  const item = (name: string) =>
+    screen.getByRole('menuitem', {name, hidden: true});
+
+  it('returns focus to the trigger after a pointer pick without a ring', async () => {
+    const user = userEvent.setup();
+    const trigger = renderMenu();
+    await user.click(trigger);
+    await user.click(item('Edit'));
+    expect(trigger).toHaveFocus();
+    await waitFor(() =>
+      expect(trigger).toHaveClass(
+        stylex.props(focusOutlineStyles.suppressed).className!,
+      ),
+    );
+  });
+
+  it('gives the ring back when the keyboard returns to the trigger', async () => {
+    const user = userEvent.setup();
+    const trigger = renderMenu();
+    await user.click(trigger);
+    await user.click(item('Edit'));
+    await waitFor(() =>
+      expect(trigger).toHaveClass(
+        stylex.props(focusOutlineStyles.suppressed).className!,
+      ),
+    );
+
+    // The suppression belongs to the pointer that dismissed the menu, not to
+    // the trigger. A keyboard user who tabs away and back is asking to see
+    // where they are, so the ring must come back: the trigger's own `onFocus`
+    // clears the suppression once the modality is keyboard again.
+    trigger.blur();
+    await user.keyboard('{Shift>}{Tab}{/Shift}');
+    trigger.focus();
+
+    await waitFor(() =>
+      expect(trigger).not.toHaveClass(
+        stylex.props(focusOutlineStyles.suppressed).className!,
+      ),
+    );
   });
 });

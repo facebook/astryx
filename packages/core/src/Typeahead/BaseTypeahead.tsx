@@ -31,6 +31,8 @@ import {useBusyIndicatorLane} from './busyIndicatorLane';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
+import {useRenamedProp} from '../hooks/useRenamedProp';
 import {useHighlightedOptionScroll} from '../hooks/useHighlightedOptionScroll';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {isImeKeyEvent} from '../utils/ime';
@@ -122,8 +124,30 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
   minQueryLength?: number;
 
   /**
+   * Content shown when the query matched nothing (`spec:AST-056` FR1).
+   * Takes a `ReactNode`, so a dead end can carry a link or a create row.
+   *
+   * The message is announced in a polite live region as the text it renders,
+   * read from the DOM, so an element is announced as written and anything
+   * marked `aria-hidden` is left out of both. Content that renders no text
+   * announces nothing, matching the screen.
+   *
+   * `null` means "not given", exactly as `undefined` does, so it falls
+   * through to the default. Pass an empty string to render nothing.
+   *
+   * @default 'No results found'
+   */
+  emptySearchText?: ReactNode;
+
+  /**
    * Text shown when no results found.
    * @default 'No results found'
+   * @deprecated `DEP-0003`. Renamed to `emptySearchText`, which takes a
+   * `ReactNode` rather than a `string` — every existing value stays valid
+   * (`spec:AST-056` FR1, FR7). Still works exactly as released;
+   * `emptySearchText` wins when both are set. Removal is `CLN-0003`, in a
+   * later minor whose frozen manifest carries both ids (`spec:AST-017`
+   * FR31).
    */
   emptySearchResultsText?: string;
 
@@ -438,7 +462,8 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   maxMenuItems = 10,
   menuWidth,
   minQueryLength = 1,
-  emptySearchResultsText: emptySearchResultsTextFromProps,
+  emptySearchResultsText: deprecatedEmptySearchResultsText,
+  emptySearchText: emptySearchTextFromProps,
   isDisabled = false,
   isFocusableDisabled = false,
   hasAutoFocus = false,
@@ -470,9 +495,21 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   const t = useTranslator();
   const placeholder =
     placeholderFromProps ?? t('@astryx.typeahead.searchPlaceholder');
-  const emptySearchResultsText =
-    emptySearchResultsTextFromProps ??
-    t('@astryx.typeahead.emptySearchResults');
+  const emptySearchText =
+    useRenamedProp<ReactNode>({
+      component: 'BaseTypeahead',
+      deprecated: 'emptySearchResultsText',
+      deprecatedValue: deprecatedEmptySearchResultsText,
+      replacement: 'emptySearchText',
+      value: emptySearchTextFromProps,
+    }) ?? t('@astryx.typeahead.emptySearchResults');
+  // The empty-state row carries the message visually, and the live region has
+  // to speak the same words. `emptySearchText` takes a ReactNode, so they are
+  // read off the rendered row after it renders rather than guessed from the
+  // prop — announcing a default over a caller's element tells the
+  // screen-reader user something the sighted user is not reading
+  // (`spec:AST-056` AR1).
+  const emptyStateRef = useRef<HTMLDivElement>(null);
   const generatedId = useId();
   // Keep the released input-specific aliases authoritative when a caller uses
   // them, but do not let an omitted alias erase the equivalent native BaseProp.
@@ -495,6 +532,16 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+
+  // Only the WORDS move here, not the timing. An empty query still reports
+  // nothing — a focus-opened menu that bootstrapped to nothing is not a
+  // search that failed — and a search still in flight reports nothing, which
+  // matters because the row is in the DOM before the spinner clears.
+  useAnnounceRenderedText(
+    emptyStateRef,
+    results.length === 0 && hasSearched && query.length > 0 && !isLoading,
+    query,
+  );
 
   // Report the busy state to a wrapper that has taken the indicator over.
   //
@@ -634,13 +681,11 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         }
         // Announce the outcome only for an active query (not the initial
         // focus-open), so screen-reader users hear result counts / no-results.
-        if (searchQuery.length > 0) {
-          announce(
-            shown.length === 0
-              ? emptySearchResultsText
-              : t('@astryx.typeahead.resultCount', {count: shown.length}),
-          );
+        if (searchQuery.length > 0 && shown.length > 0) {
+          announce(t('@astryx.typeahead.resultCount', {count: shown.length}));
         }
+        // An empty result is announced from the rendered row instead, so the
+        // region speaks whatever the caller put there.
       } catch {
         if (searchGenRef.current !== gen) {
           return;
@@ -658,7 +703,6 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       maxMenuItems,
       showLayer,
       announce,
-      emptySearchResultsText,
       __queryEntries,
       setLoading,
       t,
@@ -1087,13 +1131,14 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           )}>
           {results.length === 0 && hasSearched ? (
             <div
+              ref={emptyStateRef}
               role="option"
               aria-disabled="true"
               {...mergeProps(
                 themeProps('typeahead-empty-state'),
                 stylex.props(styles.emptyState),
               )}>
-              {emptySearchResultsText}
+              {emptySearchText}
             </div>
           ) : (
             (() => {

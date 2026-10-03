@@ -290,6 +290,16 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
     return () => clearTimeouts();
   }, [clearTimeouts]);
 
+  // A trigger disabled while a hover is in flight must stay closed. Returning
+  // inert handlers below is not enough on its own: the open this hover already
+  // scheduled would still fire, and it would open a surface whose handlers can
+  // no longer close it.
+  useEffect(() => {
+    if (!isEnabled) {
+      clearTimeouts();
+    }
+  }, [isEnabled, clearTimeouts]);
+
   const focusMenu = useCallback(() => {
     // An empty or still-loading menu has no focusable item; focus the container
     // so keyboard ownership still transfers off the trigger's list.

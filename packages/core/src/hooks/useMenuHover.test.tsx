@@ -13,7 +13,7 @@ import {describe, it, expect, vi, afterEach} from 'vitest';
 import {render, screen, act, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TopNavMenu} from '../TopNav/TopNavMenu';
-import {isPointInSafeTriangle} from './useMenuHover';
+import {isPointInSafeTriangle, useMenuHover} from './useMenuHover';
 
 const items = [
   {title: 'Analytics', description: 'Track user behavior', href: '/analytics'},
@@ -467,5 +467,70 @@ describe('useMenuHover — the click guard and its consumers', () => {
     );
     expect(detached.length).toBeGreaterThanOrEqual(attached.length);
     vi.useRealTimers();
+  });
+});
+
+// =============================================================================
+// Disabling a trigger with a hover already in flight
+// =============================================================================
+
+describe('useMenuHover — disabled during the hover delay', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  /**
+   * The hook directly: a consumer that can flip `isEnabled` without also
+   * changing what it renders. Through a real consumer the two move together —
+   * `SideNavItem` only enables the flyout while the rail is collapsed — so
+   * the disable cannot be observed apart from the re-render it causes.
+   */
+  function Harness({isEnabled, show}: {isEnabled: boolean; show: () => void}) {
+    const {triggerProps} = useMenuHover<HTMLDivElement>({
+      show,
+      hide: () => {},
+      isOpen: false,
+      isEnabled,
+    });
+    return (
+      <button type="button" {...triggerProps}>
+        Products
+      </button>
+    );
+  }
+
+  it('does not open a surface the hover scheduled before it was disabled', () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+      (query: string) =>
+        ({
+          matches: query.includes('hover: hover'),
+          media: query,
+          onchange: null,
+          addListener: () => {},
+          removeListener: () => {},
+          addEventListener: () => {},
+          removeEventListener: () => {},
+          dispatchEvent: () => false,
+        }) as MediaQueryList,
+    );
+    vi.useFakeTimers();
+    const show = vi.fn();
+    const {rerender} = render(<Harness isEnabled show={show} />);
+
+    fireEvent.mouseEnter(screen.getByRole('button', {name: 'Products'}));
+    act(() => {
+      vi.advanceTimersByTime(100);
+    });
+    expect(show).not.toHaveBeenCalled();
+
+    // Disabled with the open still pending. Inert handlers alone do not
+    // settle it: the scheduled open would land on a surface whose handlers
+    // can no longer dismiss it.
+    rerender(<Harness isEnabled={false} show={show} />);
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(show).not.toHaveBeenCalled();
   });
 });
