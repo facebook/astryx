@@ -2484,6 +2484,41 @@ describe('DropdownMenu custom trigger', () => {
   });
 });
 
+describe('DropdownMenu menuMaxHeight', () => {
+  it('a menu taller than the cap keeps the height it is given', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        menuMaxHeight={528}
+        items={Array.from({length: 12}, (_, i) => ({label: `Row ${i + 1}`}))}
+      />,
+    );
+    const menu = screen.getByRole('menu', {hidden: true});
+    // The cap is lifted to the given height, still bounded by the viewport.
+    expect(menu).toHaveStyle({maxHeight: 'var(--x-maxHeight)'});
+    expect(menu.getAttribute('style')).toContain('min(528px, calc(100dvb');
+    expect(menu.getAttribute('style')).not.toContain('min(300px');
+    // The popover viewport that holds the menu lifts its cap with it.
+    const popover = menu.closest('[popover]');
+    expect(popover?.getAttribute('style')).toContain('min(528px, calc(100dvb');
+  });
+
+  it('keeps the viewport bound below the raised cap', () => {
+    // The cap is the smaller of the two terms, so a tall menu on a short
+    // screen is still bounded by the viewport rather than by the number the
+    // caller asked for.
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        menuMaxHeight={720}
+        items={[{label: 'Row'}]}
+      />,
+    );
+    const menu = screen.getByRole('menu', {hidden: true});
+    expect(menu.getAttribute('style')).toContain('min(720px, calc(100dvb');
+  });
+});
+
 describe('DropdownMenu focus return after a pointer pick', () => {
   function renderMenu(onPick: (label: string) => void = () => {}) {
     render(

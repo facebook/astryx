@@ -90,7 +90,6 @@ describe('collectDocInputs over what this repo ships', () => {
     ).toEqual([
       'Chat',
       'ChatComposerTokenElement',
-      'Code',
       'ContextMenuItem',
       'Heading',
       'Indicator',
