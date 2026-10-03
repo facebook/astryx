@@ -51,17 +51,38 @@
 # Uses pull_request_target so it can label / request reviewers / disable
 # auto-merge on fork PRs. It reads the PR file list, diff text, and changed Core
 # base/head source bytes as inert API data. The approval helper comes from the
-# trusted workflow SHA; the visual classifier comes from the PR base ref. It reads
+# trusted workflow SHA; the visual classifier comes from the PR base commit when
+# the PR targets the default branch, and from the workflow SHA otherwise. It reads
 # eng/design owner lists from repository VARIABLES (vars.ENGOWNERS /
 # vars.DESIGNOWNERS) — no checkout and no execution of PR-controlled code.
 # Do not add checkout or build steps here.
+#
+# Stacked PRs (based on another PR's branch) are flagged too, against their own
+# base. GitHub always runs pull_request_target from the default branch, with
+# GITHUB_SHA at its tip, so a non-default base cannot choose the workflow or
+# helper code; manual dispatch is honored only from the default branch. A base
+# change re-flags the PR; title/body edits do not. Commit statuses are shared by
+# every PR with the same head, so the required "review-required" context is
+# published only for a PR the default branch's protection governs (it targets
+# the default branch, or is a rung of a native stack on it). Any other PR gets a
+# non-required "review-required/stacked-pr-<number>" context instead.
 
 name: Review signal
 
 on:
+  # No base-branch filter: a PR stacked on another PR's branch needs the gate as
+  # much as a main-based one. `edited` is admitted only for base changes (see
+  # the flag job's condition).
   pull_request_target:
-    branches: ['main']
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    types:
+      [
+        opened,
+        synchronize,
+        reopened,
+        ready_for_review,
+        converted_to_draft,
+        edited,
+      ]
   pull_request_review:
     types: [submitted, dismissed]
   # Manual re-trigger. The App only auto-runs on the PR events above, so if it
@@ -79,9 +100,12 @@ on:
 permissions: {}
 
 concurrency:
-  # One group per PR for the event/single-dispatch paths; a run-scoped group for
-  # the backfill-all dispatch so it is never cancelled by an unrelated re-run.
-  group: review-signal-${{ github.event.pull_request.number || github.event.inputs.pr || github.run_id }}
+  # Only runs that classify a PR share its group, so every run that cancels
+  # another reclassifies the live PR itself. Everything else is run-scoped and
+  # never cancels a classification: review events (their anchor must complete
+  # for review-clear), title/body edits, the backfill-all dispatch, and a
+  # dispatch from a ref other than the default branch.
+  group: review-signal-${{ ((github.event_name == 'pull_request_target' && (github.event.action != 'edited' || github.event.changes.base)) || (github.event_name == 'workflow_dispatch' && github.event.inputs.pr && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))) && format('pr-{0}', github.event.pull_request.number || github.event.inputs.pr) || format('run-{0}', github.run_id) }}
   cancel-in-progress: true
 
 env:
@@ -94,9 +118,13 @@ jobs:
   # Detect signals from changed paths + author; label, request reviewers, gate.
   # ---------------------------------------------------------------------------
   flag:
+    # A dispatch runs the workflow file from the selected ref; only the default
+    # branch's copy may publish the gate.
     if: >-
-      github.event_name == 'pull_request_target'
-      || github.event_name == 'workflow_dispatch'
+      (github.event_name == 'pull_request_target' &&
+       (github.event.action != 'edited' || github.event.changes.base != null))
+      || (github.event_name == 'workflow_dispatch' &&
+          github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
     name: Flag review signals
     runs-on: ubuntu-slim
     permissions:
@@ -121,40 +149,182 @@ jobs:
             const DESIGN = process.env.DESIGN_LABEL;
             const COMMUNITY = process.env.COMMUNITY_LABEL;
 
-            // Resolve which PR(s) to flag. On a PR event we get the payload PR.
-            // On manual dispatch we take the `pr` input (one PR), or re-flag
-            // every open PR when it's blank (backfill / mass recovery).
-            let prs;
+            // A pull request that moves, or whose file list and diff disagree,
+            // while it is classified is read and classified again, at most this
+            // many times, before the run fails without publishing a decision.
+            const MAX_ATTEMPTS = 3;
+            class Retry extends Error {}
+
+            // Resolve which PR(s) to flag: the payload PR on a PR event, the
+            // `pr` input on manual dispatch, or every open PR when it's blank
+            // (backfill / mass recovery). Only numbers are taken here. Every
+            // attempt below classifies the live PR: an event payload is a
+            // snapshot from when GitHub queued the event, and the list endpoint
+            // omits changed_files and stack.
+            let numbers;
             if (context.eventName === 'workflow_dispatch') {
               const num = (context.payload.inputs.pr || '').trim();
               if (num) {
-                const { data } = await github.rest.pulls.get({
-                  owner, repo, pull_number: Number(num),
-                });
-                prs = [data];
+                numbers = [Number(num)];
               } else {
-                prs = await github.paginate(github.rest.pulls.list, {
+                const open = await github.paginate(github.rest.pulls.list, {
                   owner, repo, state: 'open', per_page: 100,
                 });
-                core.info(`Backfill: re-flagging ${prs.length} open PR(s).`);
+                numbers = open.map((pr) => pr.number);
+                core.info(`Backfill: re-flagging ${numbers.length} open PR(s).`);
               }
             } else {
-              prs = [context.payload.pull_request];
+              numbers = [context.payload.pull_request.number];
+            }
+
+            // Match the trusted workflow version: an older PR base can predate
+            // this helper even though the running workflow requires it.
+            let reviewDecisionLoad = null;
+            function loadReviewDecision() {
+              reviewDecisionLoad ??= (async () => {
+                const { data: reviewDecisionFile } = await github.rest.repos.getContent({
+                  owner, repo, ref: context.sha,
+                  path: '.github/scripts/review-signal-decision.cjs',
+                });
+                const reviewDecisionSource = Buffer.from(
+                  reviewDecisionFile.content,
+                  'base64',
+                ).toString('utf8');
+                const reviewDecisionModule = { exports: {} };
+                new Function('module', 'exports', 'require', reviewDecisionSource)(
+                  reviewDecisionModule,
+                  reviewDecisionModule.exports,
+                  () => { throw new Error('review-signal-decision.cjs must stay dependency-free'); },
+                );
+                return reviewDecisionModule.exports;
+              })();
+              return reviewDecisionLoad;
             }
 
             let hadError = false;
-            for (const pr of prs) {
+            for (const number of numbers) {
               try {
-                await flagOne(pr);
+                await flagOne(number);
               } catch (e) {
                 hadError = true;
-                core.warning(`Failed to flag PR #${pr.number}: ${e.message}`);
+                core.warning(`Failed to flag PR #${number}: ${e.message}`);
               }
             }
             if (hadError) core.setFailed('One or more PRs failed to flag; see warnings.');
 
+            async function flagOne(number) {
+              let reason = '';
+              for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+                const { data: pr } = await github.rest.pulls.get({
+                  owner, repo, pull_number: number,
+                });
+                if (pr.state !== 'open') {
+                  core.info(`PR #${number} is ${pr.state}; nothing to flag.`);
+                  return;
+                }
+                try {
+                  await flagSnapshot(pr);
+                  return;
+                } catch (e) {
+                  if (!(e instanceof Retry)) throw e;
+                  reason = e.message;
+                  core.info(`PR #${number} ${reason} (attempt ${attempt} of ${MAX_ATTEMPTS}); reading it again.`);
+                }
+              }
+              throw new Error(`PR #${number} ${reason} on every attempt; refusing to publish a decision.`);
+            }
+
             // ================= per-PR detection + routing =================
-            async function flagOne(pr) {
+            // Classify one snapshot of a live PR. Throws Retry, with nothing
+            // further published, when the PR's head, base, or stack changed
+            // after the snapshot was read, or its file list and diff disagree.
+            // Every label, reviewer, auto-merge, and status change re-reads
+            // the PR first.
+            async function flagSnapshot(pr) {
+            const reviewDecision = await loadReviewDecision();
+            // Commit statuses are shared by every PR with this head. Only a PR
+            // the default branch's protection governs publishes the required
+            // context; any other PR publishes one scoped to its own number.
+            const scope = reviewDecision.gateScope(pr);
+            const GATE = reviewDecision.gateContext('review-required', pr);
+            async function moved() {
+              const { data: live } = await github.rest.pulls.get({
+                owner, repo, pull_number: pr.number,
+              });
+              return !reviewDecision.samePullIdentity(pr, live);
+            }
+            // Called immediately before every mutation.
+            async function ensureUnmoved() {
+              if (await moved()) throw new Retry('moved while it was classified');
+            }
+            // The effective exact-head ENGOWNER approval, read live.
+            async function readCodeApproval(engOwners) {
+              const reviews = await github.paginate(github.rest.pulls.listReviews, {
+                owner, repo, pull_number: pr.number, per_page: 100,
+              });
+              return reviewDecision.resolveReviewApprovals({
+                reviews,
+                headSha: pr.head.sha,
+                engOwners,
+                designOwners: [],
+              }).codeApproved;
+            }
+            // The one path that writes the gate status. A required context is
+            // shared by every PR with this head, so when another open PR that
+            // also reads it shares the head, no single decision can be right
+            // for both: publish pending until the heads differ. When the
+            // decision rests on the approval state, that state is re-read
+            // before the write and verified after it, because review-clear
+            // can act on a review that lands in between; a change starts the
+            // classification over.
+            async function publishGate(state, description, approval = null) {
+              let finalState = state;
+              let finalDescription = description;
+              if (scope.governed) {
+                // Commit association omits fork PRs, so also scan the open
+                // PRs for this exact head.
+                const sameHead = new Set();
+                const associated = await github.paginate(
+                  github.rest.repos.listPullRequestsAssociatedWithCommit,
+                  { owner, repo, commit_sha: pr.head.sha, per_page: 100 },
+                );
+                const open = await github.paginate(github.rest.pulls.list, {
+                  owner, repo, state: 'open', per_page: 100,
+                });
+                for (const other of [...associated, ...open]) {
+                  if (other.state === 'open' && other.head?.sha === pr.head.sha) sameHead.add(other.number);
+                }
+                sameHead.delete(pr.number);
+                const others = [];
+                for (const number of sameHead) {
+                  const { data } = await github.rest.pulls.get({
+                    owner, repo, pull_number: number,
+                  });
+                  others.push(data);
+                }
+                const siblings = reviewDecision.governedSiblings(pr, others);
+                if (siblings.length) {
+                  finalState = 'pending';
+                  finalDescription = `Head is shared with open PR ${siblings.map((n) => `#${n}`).join(', ')}; each needs its own head.`.slice(0, 140);
+                }
+              }
+              async function ensureApprovalUnchanged() {
+                if (
+                  approval &&
+                  (await readCodeApproval(approval.engOwners)) !== approval.codeApproved
+                ) {
+                  throw new Retry('changed its review state while it was classified');
+                }
+              }
+              await ensureApprovalUnchanged();
+              await ensureUnmoved();
+              await github.rest.repos.createCommitStatus({
+                owner, repo, sha: pr.head.sha,
+                context: GATE, state: finalState, description: finalDescription,
+              });
+              core.info(`${GATE} status: ${finalState}`);
+              await ensureApprovalUnchanged();
+            }
             const author = pr.user.login.toLowerCase();
             // Bots (Dependabot, github-actions, etc.) are our own automation,
             // not community contributors, and their PRs (dep bumps, chores) are
@@ -198,6 +368,7 @@ jobs:
               const current = pr.labels.map((l) => l.name);
               for (const name of [CODE, DESIGN, COMMUNITY]) {
                 if (current.includes(name)) {
+                  await ensureUnmoved();
                   try {
                     await github.rest.issues.removeLabel({
                       owner, repo, issue_number: pr.number, name,
@@ -207,40 +378,57 @@ jobs:
                   }
                 }
               }
-              await github.rest.repos.createCommitStatus({
-                owner, repo, sha: pr.head.sha,
-                context: 'review-required', state: 'success',
-                description: 'Automated (bot) PR — exempt from review gates.',
-              });
+              await publishGate(
+                'success',
+                'Automated (bot) PR — exempt from review gates.',
+              );
               return;
             }
-
-            // Match the trusted workflow version: an older PR base can predate
-            // this helper even though the running workflow requires it.
-            const { data: reviewDecisionFile } = await github.rest.repos.getContent({
-              owner, repo, ref: context.sha,
-              path: '.github/scripts/review-signal-decision.cjs',
-            });
-            const reviewDecisionSource = Buffer.from(
-              reviewDecisionFile.content,
-              'base64',
-            ).toString('utf8');
-            const reviewDecisionModule = { exports: {} };
-            new Function('module', 'exports', 'require', reviewDecisionSource)(
-              reviewDecisionModule,
-              reviewDecisionModule.exports,
-              () => { throw new Error('review-signal-decision.cjs must stay dependency-free'); },
-            );
-            const reviewDecision = reviewDecisionModule.exports;
 
             // --- Changed files. ---
             const allFiles = await github.paginate(github.rest.pulls.listFiles, {
               owner, repo, pull_number: pr.number, per_page: 100,
             });
             if (allFiles.length !== pr.changed_files) {
+              // A push or retarget between the two reads changes the count;
+              // otherwise the listing is incomplete and the gate fails closed.
+              await ensureUnmoved();
               throw new Error(
                 `GitHub returned ${allFiles.length} of ${pr.changed_files} changed files; refusing to classify an incomplete PR.`,
               );
+            }
+            // The file list decides the gate and the diff feeds the visual
+            // classifier; they are separate reads, so they must describe the
+            // same change before anything is decided. A disagreement is
+            // retried (the PR moved, or GitHub served inconsistent data) and
+            // never falls through to a decision. GitHub refuses a diff for a
+            // very large PR; then the list is read twice and must match, and
+            // the visual classifier is skipped (it fails closed).
+            let diff = null;
+            try {
+              ({ data: diff } = await github.request(
+                'GET /repos/{owner}/{repo}/pulls/{pull_number}',
+                { owner, repo, pull_number: pr.number,
+                  headers: { accept: 'application/vnd.github.diff' } },
+              ));
+              diff = String(diff);
+            } catch (e) {
+              if (e.status !== 406 && e.status !== 422) throw e;
+              core.info(`GitHub did not serve a diff for PR #${pr.number} (${e.status}); checking the file list against a second read.`);
+            }
+            if (diff !== null) {
+              if (!reviewDecision.diffMatchesFiles(diff, allFiles)) {
+                await ensureUnmoved();
+                throw new Retry('served a diff that does not describe its changed-file list');
+              }
+            } else {
+              const again = await github.paginate(github.rest.pulls.listFiles, {
+                owner, repo, pull_number: pr.number, per_page: 100,
+              });
+              if (!reviewDecision.sameFileList(allFiles, again)) {
+                await ensureUnmoved();
+                throw new Retry('served two different changed-file lists');
+              }
             }
             // A change is excluded as a safe-space change only when both its
             // current and previous path are safe. This keeps unsafe→safe and
@@ -334,14 +522,18 @@ jobs:
 
             // Content-based visual signal (#3667). The classifier also proves
             // the narrower appearance-only exception for DESIGNOWNER authors.
-            // It and the diff both come from the API: trusted BASE-ref source,
-            // inert PR diff text. Any fetch or parse failure keeps the exception
-            // false, so Core runtime changes continue to require engineering.
+            // It and the diff both come from the API: trusted source, inert PR
+            // diff text. A default-branch base commit is reviewed code; a
+            // stacked PR's base is another PR's unmerged head, so its classifier
+            // comes from the trusted workflow SHA instead. Any fetch or parse
+            // failure keeps the exception false, so Core runtime changes
+            // continue to require engineering.
             let visualClassification = null;
             if (coreChange || designReasons.length === 0) {
               try {
+                const classifierRef = scope.targetsDefaultBranch ? pr.base.sha : context.sha;
                 const { data: libFile } = await github.rest.repos.getContent({
-                  owner, repo, ref: pr.base.sha,
+                  owner, repo, ref: classifierRef,
                   path: '.github/scripts/lib/classify-visual.js',
                 });
                 const libSrc = Buffer.from(libFile.content, 'base64').toString('utf8');
@@ -350,11 +542,9 @@ jobs:
                   mod, mod.exports,
                   () => { throw new Error('classify-visual.js must stay dependency-free'); },
                 );
-                const { data: diff } = await github.request(
-                  'GET /repos/{owner}/{repo}/pulls/{pull_number}',
-                  { owner, repo, pull_number: pr.number,
-                    headers: { accept: 'application/vnd.github.diff' } },
-                );
+                if (diff === null) {
+                  throw new Error('no diff is available for this PR');
+                }
                 const sources = {};
                 const coreRuntimeFiles = files.filter((file) =>
                   isCoreRuntime(file.filename) ||
@@ -392,7 +582,7 @@ jobs:
                   ]);
                   sources[file.filename] = {base: baseSource, head: headSource};
                 }
-                visualClassification = mod.exports.classifyVisualDiff(String(diff), {
+                visualClassification = mod.exports.classifyVisualDiff(diff, {
                   ignorePath: isSafeSpace,
                   sources,
                 });
@@ -487,6 +677,7 @@ jobs:
             // (authorIsOwner is defined above.)
             if (!authorIsOwner && !current.includes(COMMUNITY)) toAdd.push(COMMUNITY);
             if (toAdd.length) {
+              await ensureUnmoved();
               await github.rest.issues.addLabels({
                 owner, repo, issue_number: pr.number, labels: toAdd,
               });
@@ -494,6 +685,7 @@ jobs:
             // Keep it accurate: if an owner's PR somehow carries it (e.g. author
             // was added to an owners file after opening), drop it.
             if (authorIsOwner && current.includes(COMMUNITY)) {
+              await ensureUnmoved();
               try {
                 await github.rest.issues.removeLabel({
                   owner, repo, issue_number: pr.number, name: COMMUNITY,
@@ -506,6 +698,7 @@ jobs:
             // (fork-safe clearing — the pull_request_review clear job doesn't
             // fire for forks, so we reconcile here from the reviews we read).
             async function dropLabel(name) {
+              await ensureUnmoved();
               try {
                 await github.rest.issues.removeLabel({
                   owner, repo, issue_number: pr.number, name,
@@ -526,6 +719,7 @@ jobs:
             async function requestReviewers(handles) {
               const reviewers = [...new Set(handles)].filter((h) => h !== author);
               if (!reviewers.length) return;
+              await ensureUnmoved();
               try {
                 await github.rest.pulls.requestReviewers({
                   owner, repo, pull_number: pr.number, reviewers,
@@ -540,6 +734,7 @@ jobs:
             //     it labels + requests design owners (above) but does NOT
             //     disable auto-merge or block the merge. ---
             if (codeGated && pr.auto_merge) {
+              await ensureUnmoved();
               try {
                 await github.graphql(
                   `mutation ($id: ID!) {
@@ -581,37 +776,68 @@ jobs:
               : codeHighRisk && codeApproved
                 ? 'Cleared by code-owner approval.'
                 : 'No code review required.';
-            await github.rest.repos.createCommitStatus({
-              owner,
-              repo,
-              sha: pr.head.sha,
-              context: 'review-required',
-              state: codeGated ? 'pending' : 'success',
-              description: gateDescription,
-            });
-            core.info(`review-required status: ${codeGated ? 'pending' : 'success'}`);
+            // Only a code-gated decision rests on the approval state.
+            await publishGate(
+              codeGated ? 'pending' : 'success',
+              gateDescription,
+              codeHighRisk ? { codeApproved, engOwners } : null,
+            );
             // Neutralize any stale "review-required" CHECK RUN left over from the
             // pre-status gate. Such a leftover (conclusion action_required) drags
             // the status rollup to FAILURE even though we now gate via a commit
             // status — so once the status is set, clear the old check-run.
+            let staleRuns = [];
             try {
               const { data } = await github.rest.checks.listForRef({
                 owner, repo, ref: pr.head.sha, check_name: 'review-required', per_page: 100,
               });
-              for (const cr of data.check_runs) {
-                if (cr.conclusion && cr.conclusion !== 'success' && cr.conclusion !== 'neutral') {
-                  await github.rest.checks.update({
-                    owner, repo, check_run_id: cr.id,
-                    conclusion: 'neutral',
-                    output: { title: 'Superseded by review-required status', summary: 'The gate is now a review-required commit status; see that context.' },
+              staleRuns = data.check_runs.filter((cr) =>
+                cr.conclusion && cr.conclusion !== 'success' && cr.conclusion !== 'neutral');
+            } catch (e) {
+              core.warning(`Could not list stale check-runs: ${e.message}`);
+            }
+            for (const cr of staleRuns) {
+              await ensureUnmoved();
+              try {
+                await github.rest.checks.update({
+                  owner, repo, check_run_id: cr.id,
+                  conclusion: 'neutral',
+                  output: { title: 'Superseded by review-required status', summary: 'The gate is now a review-required commit status; see that context.' },
+                });
+                core.info(`Neutralized stale review-required check-run ${cr.id}.`);
+              } catch (e) {
+                core.warning(`Could not neutralize stale check-run: ${e.message}`);
+              }
+            }
+            // A PR retargeted onto the default branch (or into a native stack
+            // on it) keeps the scoped status its stacked runs published for
+            // this head. Retire it so a stale pending dot does not linger.
+            if (scope.governed) {
+              const stackedContext = `review-required/stacked-pr-${pr.number}`;
+              let stale = null;
+              try {
+                const statuses = await github.paginate(
+                  github.rest.repos.listCommitStatusesForRef,
+                  { owner, repo, ref: pr.head.sha, per_page: 100 },
+                );
+                stale = statuses.find((status) => status.context === stackedContext);
+              } catch (e) {
+                core.warning(`Could not read ${stackedContext}: ${e.message}`);
+              }
+              if (stale?.state === 'pending') {
+                await ensureUnmoved();
+                try {
+                  await github.rest.repos.createCommitStatus({
+                    owner, repo, sha: pr.head.sha, context: stackedContext,
+                    state: 'success',
+                    description: 'Superseded: this PR is now gated by review-required.',
                   });
-                  core.info(`Neutralized stale review-required check-run ${cr.id}.`);
+                } catch (e) {
+                  core.warning(`Could not retire ${stackedContext}: ${e.message}`);
                 }
               }
-            } catch (e) {
-              core.warning(`Could not neutralize stale check-run: ${e.message}`);
             }
-            } // end flagOne
+            } // end flagSnapshot
 
   # Anchor the clear/restore chain for every review state that can change the
   # effective exact-head engineering approval.

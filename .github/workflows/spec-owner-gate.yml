@@ -9,12 +9,18 @@
 # requirement. Pure spec-record PRs
 # skip heavy CI only when every changed path is recognized; draft-only records
 # can auto-merge after validation, while current records also need approval on
-# the exact current head.
+# the exact current head. Stacked PRs (based on another PR's branch) are gated
+# against their current base too; pull_request_target always runs this file and
+# the checkout from the default branch, and a base change reconciles again.
+# Commit statuses are shared by every PR with the same head, so the required
+# "spec-owner-approval" context is published only for a PR the default branch's
+# protection governs; any other PR gets "spec-owner-approval/stacked-pr-<n>".
 name: Spec owner gate
 
 on:
+  # No base-branch filter; `edited` is admitted only for base changes (see the
+  # reconcile job's condition).
   pull_request_target:
-    branches: [main]
     types:
       [
         opened,
@@ -23,6 +29,7 @@ on:
         ready_for_review,
         converted_to_draft,
         auto_merge_enabled,
+        edited,
       ]
   pull_request_review:
     types: [submitted, dismissed]
@@ -54,14 +61,21 @@ jobs:
     # Fork review events have read-only tokens. Same-repo reviews reconcile
     # automatically; fork approvals use the trusted issue_comment command path.
     # The comment filter admits any owner-command shape, including one missing
-    # the head SHA, so the reconciler answers it instead of ignoring it.
+    # the head SHA, so the reconciler answers it instead of ignoring it. A
+    # title/body edit changes nothing the gate reads; a base change does. A
+    # dispatch runs the workflow file from the selected ref, so only the default
+    # branch's copy may publish the gate.
     if: >-
       (github.event_name != 'pull_request_review' ||
        github.event.pull_request.head.repo.full_name == github.repository) &&
       (github.event_name != 'issue_comment' ||
        (github.event.issue.pull_request != null &&
         (startsWith(github.event.comment.body, '/approve-spec') ||
-         startsWith(github.event.comment.body, '/revoke-spec'))))
+         startsWith(github.event.comment.body, '/revoke-spec')))) &&
+      (github.event.action != 'edited' ||
+       github.event.changes.base != null) &&
+      (github.event_name != 'workflow_dispatch' ||
+       github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
     runs-on: ubuntu-slim
     permissions:
       contents: read

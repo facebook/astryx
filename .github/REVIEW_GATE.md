@@ -145,7 +145,8 @@ internal contributors' PRs. Owners still self-serve their own domain.
    ┌─────────────────────────────────────────────┐
    │ review-clear.yml  (workflow_run, base token) │  ← works for fork PRs
    └─────────────────────────────────────────────┘
-     resolve the PR by the run's head_branch (head_sha points at main here)
+     resolve the PR by the run's head commit and branch (not head_repository,
+     which names this repo for forks); several matches: restore only
      entitled CODEOWNER approved?
        → drop needs:code-review · status → success 🟢 · neutralize stale check
 
@@ -154,6 +155,84 @@ internal contributors' PRs. Owners still self-serve their own domain.
      + 1 required approving review (native)
      ⇒ blocks non-admin merges even for write-access internal contributors
 ```
+
+## Stacked pull requests
+
+Both gates also run for a pull request whose base is another pull request's
+branch, and each decides the diff against the pull request's current base.
+Changing the base re-runs both gates; title and body edits do not. Approval
+still counts only for the exact current head.
+
+Commit statuses are keyed by commit, not by pull request, so every pull request
+with the same head shares them. The required contexts (`review-required`,
+`spec-owner-approval`) are therefore published only for a pull request the
+default branch's protection governs: one that targets the default branch, or a
+rung of a native stack whose trunk is the default branch (GitHub applies the
+trunk's required checks to every rung). Any other stacked pull request gets
+non-required `review-required/stacked-pr-<number>` and
+`spec-owner-approval/stacked-pr-<number>` contexts, and its ready attestation is
+scoped the same way. When a pull request moves under the default branch's
+protection, its gates publish the required contexts and retire its pending
+scoped ones. If two open pull requests that both read the required contexts
+share a head, neither gate can decide for both: the context stays `pending`
+("shared with open PR #…") until the heads differ.
+
+Each run classifies the live pull request and re-reads it immediately before
+every status, label, comment, reviewer request, check-run, and auto-merge
+change. The two exceptions are the spec gate's initial "Reconciling" marker,
+written right after the read it follows, and withdrawing an auto-merge enable
+that the run itself just made because the pull request moved. A moved head,
+base, base commit, or stack starts the classification over (at most three
+attempts, then the run fails without a decision). The changed-file list decides
+the gate and the diff feeds the visual classifier, so review-signal requires
+them to describe the same files (renames and deletions included) before
+deciding anything; a disagreement is retried the same way and never produces a
+decision. GitHub refuses a diff for a very large pull request; then the file
+list is read twice and must match, and the visual classifier is skipped.
+
+`pull_request_target` and `workflow_run` always run the default branch's
+workflow file, and a manual dispatch publishes only from the default branch's
+copy. The workflows never execute helpers from a stacked base: review-signal
+and review-clear load their decision helper from the workflow commit, and the
+visual classifier loads from the base commit only when the base is the default
+branch. Only runs that reclassify a pull request share its cancellation group,
+so review events, title/body edits, and non-review `workflow_run` completions
+cannot cancel a classification in progress.
+
+Review-clear identifies the reviewed pull request by the head commit and branch
+the review run recorded. The run's `head_repository` is not evidence: for a fork
+pull request it names this repository, and the run lists no pull requests.
+Candidates come from the run's own list, GitHub's commit association, and every
+open pull request whose head is that exact commit (the only source that finds a
+fork pull request); each is re-read and must match the commit and branch. When
+more than one open pull request matches, review-clear restores withdrawn gates
+but never clears one. Same-head checks in all three workflows scan the open
+pull requests for the same reason.
+
+Review-clear runs never cancel one another: each run is its own concurrency
+group, because GitHub compares group names case-insensitively while branch
+names are case-sensitive, so no branch-derived key is exact. Runs can therefore
+overlap or finish out of order. Before every mutation, and again after its
+status write, a run re-reads the pull request and recomputes its decision from
+the live exact-head reviews, gate status, and labels; if the decision changed,
+it reconciles again. It writes the status before changing the label in both
+directions, so a gate stays owned while it is cleared or restored. Every review
+change starts its own run after the change, so the last run to write also
+verifies last. Review-signal likewise re-reads the exact-head approval before
+and after a status write that depends on it, and starts over if it changed.
+
+The spec gate enables auto-merge only for a pull request that targets the
+default branch directly and is not part of a stack. It withdraws auto-merge it
+enabled from any other pull request before publishing, and re-reads the pull
+request after enabling: `expectedHeadOid` pins the head but not the base, so a
+retarget can still land between the last read and the enable, and the re-read
+(plus the retarget's own run) withdraws it.
+
+After linking existing pull requests into a native stack without changing their
+bases, re-run both gates for each rung, because GitHub sends no pull request
+event for that:
+`gh workflow run review-signal.yml -f pr=<n>` and
+`gh workflow run spec-owner-gate.yml -f pr=<n> -f backfill=true`.
 
 ## Enforcement
 

@@ -8,7 +8,13 @@ import {describe, expect, it} from 'vitest';
 const require = createRequire(import.meta.url);
 const {
   classifyReviewSignalPaths,
+  diffMatchesFiles,
+  gateContext,
+  gateScope,
+  governedSiblings,
   resolveReviewApprovals,
+  sameFileList,
+  samePullIdentity,
 } = require('./review-signal-decision.cjs');
 
 const head1 = '1111111111111111111111111111111111111111';
@@ -166,5 +172,148 @@ describe('review-signal exact-head approvals', () => {
       },
     );
     expect(typeof mod.exports.resolveReviewApprovals).toBe('function');
+    expect(typeof mod.exports.gateScope).toBe('function');
+  });
+});
+
+describe('gate scope for shared commit statuses', () => {
+  const pr = ({
+    number = 7,
+    baseRef = 'main',
+    stack = null,
+    headSha = head1,
+  } = {}) => ({
+    number,
+    state: 'open',
+    merged_at: null,
+    head: {sha: headSha, repo: {full_name: 'facebook/astryx'}},
+    base: {ref: baseRef, sha: head2, repo: {default_branch: 'main'}},
+    stack,
+  });
+  const onMain = {base: {ref: 'main', sha: head2}};
+
+  it.each([
+    ['targets the default branch', pr(), true, true],
+    ['is the bottom rung of a stack', pr({stack: onMain}), true, false],
+    [
+      'is an upper rung of a stack on main',
+      pr({baseRef: 'lower', stack: onMain}),
+      true,
+      false,
+    ],
+    [
+      'targets another branch without a stack',
+      pr({baseRef: 'lower'}),
+      false,
+      false,
+    ],
+    [
+      'is a rung of a stack on another trunk',
+      pr({baseRef: 'lower', stack: {base: {ref: 'release'}}}),
+      false,
+      false,
+    ],
+  ])('when the pull request %s', (_name, pull, governed, autoMergeEligible) => {
+    expect(gateScope(pull)).toMatchObject({governed, autoMergeEligible});
+    expect(gateContext('review-required', pull)).toBe(
+      governed ? 'review-required' : 'review-required/stacked-pr-7',
+    );
+  });
+
+  it('refuses to guess a scope without the default branch', () => {
+    expect(() => gateScope({number: 7, base: {ref: 'main', repo: {}}})).toThrow(
+      'Could not read the default branch for pull request #7.',
+    );
+  });
+
+  it('treats any head, base, stack, or state change as a new identity', () => {
+    const base = pr();
+    expect(samePullIdentity(base, structuredClone(base))).toBe(true);
+    for (const change of [
+      pull => (pull.head.sha = head2),
+      pull => (pull.base.ref = 'lower'),
+      pull => (pull.base.sha = head1),
+      pull => (pull.stack = onMain),
+      pull => (pull.state = 'closed'),
+      pull => (pull.head.repo.full_name = 'someone/astryx'),
+      pull => (pull.base.repo.default_branch = 'trunk'),
+    ]) {
+      const moved = structuredClone(base);
+      change(moved);
+      expect(samePullIdentity(base, moved)).toBe(false);
+    }
+  });
+
+  it('counts only open governed pull requests on the same head as siblings', () => {
+    expect(
+      governedSiblings(pr(), [
+        pr(),
+        pr({number: 8, baseRef: 'lower'}),
+        pr({number: 9, baseRef: 'lower', stack: onMain}),
+        pr({number: 10, headSha: head2}),
+        {...pr({number: 11}), state: 'closed'},
+        pr({number: 12}),
+      ]),
+    ).toEqual([9, 12]);
+  });
+
+  it('matches a diff to the listed files by header, renames and deletions included', () => {
+    const files = [
+      {filename: 'a.md'},
+      {filename: 'b/new.ts', previous_filename: 'b/old.ts'},
+      {filename: 'with space.md'},
+    ];
+    const diff = [
+      'diff --git a/a.md b/a.md',
+      '+x',
+      'diff --git a/b/old.ts b/b/new.ts',
+      'diff --git a/with space.md b/with space.md',
+      'deleted file mode 100644',
+      '',
+    ].join('\n');
+    expect(diffMatchesFiles(diff, files)).toBe(true);
+    // Too few headers, or an equal count naming another file.
+    expect(diffMatchesFiles('diff --git a/a.md b/a.md\n', files)).toBe(false);
+    expect(
+      diffMatchesFiles('diff --git a/README.md b/README.md\n', [
+        {filename: 'packages/core/src/Button/Button.tsx'},
+      ]),
+    ).toBe(false);
+    // A rename header with another previous path.
+    expect(
+      diffMatchesFiles('diff --git a/x.ts b/b/new.ts\n', [
+        {filename: 'b/new.ts', previous_filename: 'b/old.ts'},
+      ]),
+    ).toBe(false);
+    // A duplicated header cannot stand in for a missing file.
+    expect(
+      diffMatchesFiles('diff --git a/a.md b/a.md\ndiff --git a/a.md b/a.md\n', [
+        {filename: 'a.md'},
+        {filename: 'c.md'},
+      ]),
+    ).toBe(false);
+  });
+
+  it('matches quoted paths by count, only against quoted headers', () => {
+    const quoted = 'diff --git "a/\\303\\251" "b/\\303\\251"\n';
+    expect(diffMatchesFiles(quoted, [{filename: '\u00e9'}])).toBe(true);
+    // An unquoted header for another file cannot absorb a quoted one.
+    expect(
+      diffMatchesFiles('diff --git a/x.ts b/x.ts\n', [{filename: '\u00e9'}]),
+    ).toBe(false);
+  });
+
+  it('compares two file listings as the same change', () => {
+    const file = {filename: 'a.md', status: 'modified', sha: '1'};
+    expect(sameFileList([file], [{...file}])).toBe(true);
+    expect(sameFileList([file], [{...file, sha: '2'}])).toBe(false);
+    expect(sameFileList([file], [{...file, status: 'removed'}])).toBe(false);
+    expect(sameFileList([file], [file, file])).toBe(false);
+    expect(
+      sameFileList(
+        [file, {filename: 'b.md', status: 'added', sha: '3'}],
+        [{filename: 'b.md', status: 'added', sha: '3'}, file],
+      ),
+    ).toBe(true);
   });
 });
