@@ -1,0 +1,43 @@
+<!-- docs: Collect a time with the browser's native time picker and optional range constraints. -->
+<!-- variant: default -->
+<label class="ax-time-input" for="start-time">
+  <span class="ax-time-input__label">Start time</span>
+  <span class="ax-time-input__description" id="start-time-help"
+    >Use your local time zone.</span
+  >
+  <input
+    class="ax-time-input__control"
+    id="start-time"
+    name="start-time"
+    type="time"
+    value="09:30"
+    aria-describedby="start-time-help" />
+</label>
+
+<!-- variant: error -->
+<label class="ax-time-input ax-time-input--error" for="support-time">
+  <span class="ax-time-input__label">Support window</span>
+  <input
+    class="ax-time-input__control"
+    id="support-time"
+    type="time"
+    min="09:00"
+    max="17:00"
+    value="20:00"
+    aria-invalid="true"
+    aria-describedby="support-time-error" />
+  <span class="ax-time-input__message" id="support-time-error" role="alert"
+    >Choose a time from 9:00 AM to 5:00 PM.</span
+  >
+</label>
+
+<!-- variant: large-disabled -->
+<label class="ax-time-input ax-time-input--lg" for="locked-time">
+  <span class="ax-time-input__label">Scheduled time</span>
+  <input
+    class="ax-time-input__control"
+    id="locked-time"
+    type="time"
+    value="14:00"
+    disabled />
+</label>

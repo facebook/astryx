@@ -1,0 +1,60 @@
+<!-- docs: Select one value from a searchable native datalist when a full custom combobox is unnecessary. -->
+<!-- variant: default -->
+<label class="ax-typeahead" for="assignee">
+  <span class="ax-typeahead__label">Assignee</span>
+  <span class="ax-typeahead__description" id="assignee-help"
+    >Start typing a team member's name.</span
+  >
+  <span class="ax-typeahead__control">
+    <span class="ax-typeahead__icon" aria-hidden="true">⌕</span>
+    <input
+      class="ax-typeahead__input"
+      id="assignee"
+      name="assignee"
+      type="text"
+      list="assignee-options"
+      autocomplete="off"
+      placeholder="Search people"
+      aria-describedby="assignee-help" />
+  </span>
+  <datalist id="assignee-options">
+    <option value="Alex Morgan"></option>
+    <option value="Sam Rivera"></option>
+    <option value="Taylor Chen"></option>
+  </datalist>
+</label>
+
+<!-- variant: error -->
+<label class="ax-typeahead ax-typeahead--error" for="workspace-owner">
+  <span class="ax-typeahead__label">Workspace owner</span>
+  <span class="ax-typeahead__control">
+    <span class="ax-typeahead__icon" aria-hidden="true">⌕</span>
+    <input
+      class="ax-typeahead__input"
+      id="workspace-owner"
+      type="text"
+      list="workspace-owner-options"
+      aria-invalid="true"
+      aria-describedby="workspace-owner-error" />
+  </span>
+  <datalist id="workspace-owner-options">
+    <option value="Design systems"></option>
+    <option value="Developer tools"></option>
+  </datalist>
+  <span class="ax-typeahead__message" id="workspace-owner-error" role="alert"
+    >Choose an owner from the suggestions.</span
+  >
+</label>
+
+<!-- variant: compact-disabled -->
+<label class="ax-typeahead ax-typeahead--sm" for="locked-assignee">
+  <span class="ax-typeahead__label">Assigned reviewer</span>
+  <span class="ax-typeahead__control">
+    <input
+      class="ax-typeahead__input"
+      id="locked-assignee"
+      type="text"
+      value="Taylor Chen"
+      disabled />
+  </span>
+</label>

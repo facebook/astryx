@@ -1,0 +1,37 @@
+<!-- docs: Collect multi-line text with a visible label, helper text, and validation feedback. -->
+<!-- variant: default -->
+<label class="ax-text-area" for="summary">
+  <span class="ax-text-area__label">Summary</span>
+  <span class="ax-text-area__description" id="summary-help"
+    >Describe the change and its expected outcome.</span
+  >
+  <textarea
+    class="ax-text-area__control"
+    id="summary"
+    name="summary"
+    rows="4"
+    aria-describedby="summary-help"
+    placeholder="Add a concise summary"></textarea>
+</label>
+
+<!-- variant: error -->
+<label class="ax-text-area ax-text-area--error" for="incident-notes">
+  <span class="ax-text-area__label">Incident notes</span>
+  <textarea
+    class="ax-text-area__control"
+    id="incident-notes"
+    name="incident-notes"
+    rows="3"
+    aria-invalid="true"
+    aria-describedby="incident-notes-error"></textarea>
+  <span class="ax-text-area__message" id="incident-notes-error" role="alert"
+    >Add at least one troubleshooting step.</span
+  >
+</label>
+
+<!-- variant: compact-disabled -->
+<label class="ax-text-area ax-text-area--sm" for="archived-notes">
+  <span class="ax-text-area__label">Archived notes</span>
+  <textarea class="ax-text-area__control" id="archived-notes" rows="2" disabled>
+Editing is unavailable after archival.</textarea>
+</label>

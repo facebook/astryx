@@ -1,0 +1,91 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+:where(.ax-typeahead) {
+  display: grid;
+  width: min(100%, 24rem);
+  gap: var(--spacing-1);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-body);
+}
+:where(.ax-typeahead__label) {
+  font-size: var(--text-label-size);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--text-label-leading);
+}
+:where(.ax-typeahead__description, .ax-typeahead__message) {
+  color: var(--color-text-secondary);
+  font-size: var(--text-supporting-size);
+  line-height: var(--text-supporting-leading);
+}
+:where(.ax-typeahead__control) {
+  box-sizing: border-box;
+  display: flex;
+  width: 100%;
+  height: var(--size-element-md);
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1) var(--spacing-2);
+  border: var(--border-width) solid var(--color-border-emphasized);
+  border-radius: var(--_ax-field-radius, var(--radius-element));
+  background: var(--color-background-surface);
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+:where(.ax-typeahead__control:hover:not(:has(input:disabled))) {
+  box-shadow: inset 0 0 0 999px var(--color-overlay-hover);
+}
+:where(.ax-typeahead__control:focus-within) {
+  border-color: var(--color-accent);
+  outline: var(--focus-outline-width) var(--focus-outline-style)
+    var(--focus-outline-color);
+  outline-offset: var(--focus-outline-offset);
+}
+:where(.ax-typeahead__icon) {
+  flex: none;
+  color: var(--color-icon-secondary);
+  font-size: var(--text-label-size);
+  line-height: 1;
+}
+:where(.ax-typeahead__input) {
+  display: block;
+  min-width: 0;
+  flex: 1;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-leading);
+  outline: 0;
+}
+:where(.ax-typeahead__input)::placeholder {
+  color: var(--color-text-secondary);
+}
+:where(.ax-typeahead--sm .ax-typeahead__control) {
+  height: var(--size-element-sm);
+}
+:where(.ax-typeahead--lg .ax-typeahead__control) {
+  height: var(--size-element-lg);
+  padding-inline: var(--spacing-3);
+}
+:where(.ax-typeahead--error .ax-typeahead__control) {
+  border-color: var(--color-error);
+}
+:where(.ax-typeahead--error .ax-typeahead__message) {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-inner);
+  background: var(--color-error);
+  color: var(--color-on-error);
+}
+:where(.ax-typeahead__control:has(input:disabled)) {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (forced-colors: active) {
+  :where(.ax-typeahead__control) {
+    border-color: CanvasText;
+  }
+}

@@ -1,0 +1,83 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+:where(.ax-text-area) {
+  display: grid;
+  width: min(100%, 32rem);
+  gap: var(--spacing-1);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-body);
+}
+:where(.ax-text-area__label) {
+  font-size: var(--text-label-size);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--text-label-leading);
+}
+:where(.ax-text-area__description, .ax-text-area__message) {
+  color: var(--color-text-secondary);
+  font-size: var(--text-supporting-size);
+  line-height: var(--text-supporting-leading);
+}
+:where(.ax-text-area__control) {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-height: calc(var(--size-element-md) * 2.5);
+  resize: vertical;
+  padding: var(--spacing-2);
+  border: var(--border-width) solid var(--color-border-emphasized);
+  border-radius: var(--_ax-field-radius, var(--radius-element));
+  background: var(--color-background-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-leading);
+  outline: 0;
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+:where(.ax-text-area__control)::placeholder {
+  color: var(--color-text-secondary);
+}
+:where(.ax-text-area__control:hover:not(:disabled, [readonly])) {
+  box-shadow: inset 0 0 0 999px var(--color-overlay-hover);
+}
+:where(.ax-text-area__control:focus-visible) {
+  border-color: var(--color-accent);
+  outline: var(--focus-outline-width) var(--focus-outline-style)
+    var(--focus-outline-color);
+  outline-offset: var(--focus-outline-offset);
+}
+:where(.ax-text-area--sm .ax-text-area__control) {
+  min-height: calc(var(--size-element-sm) * 2.5);
+  padding: var(--spacing-1) var(--spacing-2);
+}
+:where(.ax-text-area--lg .ax-text-area__control) {
+  min-height: calc(var(--size-element-lg) * 2.5);
+  padding: var(--spacing-3);
+}
+:where(.ax-text-area--error .ax-text-area__control) {
+  border-color: var(--color-error);
+}
+:where(.ax-text-area--error .ax-text-area__message) {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-inner);
+  background: var(--color-error);
+  color: var(--color-on-error);
+}
+:where(.ax-text-area__control:disabled) {
+  opacity: 0.5;
+  cursor: default;
+}
+:where(.ax-text-area__control[readonly]) {
+  background: var(--color-background-muted);
+}
+
+@media (forced-colors: active) {
+  :where(.ax-text-area__control) {
+    border-color: CanvasText;
+  }
+  :where(.ax-text-area--error .ax-text-area__control) {
+    border-color: Mark;
+  }
+}

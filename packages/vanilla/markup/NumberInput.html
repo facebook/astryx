@@ -1,0 +1,55 @@
+<!-- docs: Collect a numeric value with native min, max, step, and form semantics. -->
+<!-- variant: default -->
+<label class="ax-number-input" for="seat-count">
+  <span class="ax-number-input__label">Seats</span>
+  <span class="ax-number-input__description" id="seat-count-help"
+    >Choose between 1 and 100 seats.</span
+  >
+  <span class="ax-number-input__control">
+    <input
+      class="ax-number-input__input"
+      id="seat-count"
+      name="seat-count"
+      type="number"
+      min="1"
+      max="100"
+      step="1"
+      value="12"
+      aria-describedby="seat-count-help" />
+    <span class="ax-number-input__unit" aria-hidden="true">seats</span>
+  </span>
+</label>
+
+<!-- variant: error -->
+<label class="ax-number-input ax-number-input--error" for="retention-days">
+  <span class="ax-number-input__label">Retention</span>
+  <span class="ax-number-input__control">
+    <input
+      class="ax-number-input__input"
+      id="retention-days"
+      type="number"
+      min="1"
+      max="365"
+      value="500"
+      aria-invalid="true"
+      aria-describedby="retention-days-error" />
+    <span class="ax-number-input__unit" aria-hidden="true">days</span>
+  </span>
+  <span class="ax-number-input__message" id="retention-days-error" role="alert"
+    >Enter a value from 1 to 365.</span
+  >
+</label>
+
+<!-- variant: large-readonly -->
+<label class="ax-number-input ax-number-input--lg" for="invoice-total">
+  <span class="ax-number-input__label">Invoice total</span>
+  <span class="ax-number-input__control">
+    <input
+      class="ax-number-input__input"
+      id="invoice-total"
+      type="number"
+      value="2400"
+      readonly />
+    <span class="ax-number-input__unit" aria-hidden="true">USD</span>
+  </span>
+</label>

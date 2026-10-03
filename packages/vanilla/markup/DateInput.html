@@ -1,0 +1,42 @@
+<!-- docs: Collect a calendar date with the browser's native date picker; this covers simple Calendar selection without a separate Calendar component. -->
+<!-- variant: default -->
+<label class="ax-date-input" for="launch-date">
+  <span class="ax-date-input__label">Launch date</span>
+  <span class="ax-date-input__description" id="launch-date-help"
+    >Choose the planned public launch date.</span
+  >
+  <input
+    class="ax-date-input__control"
+    id="launch-date"
+    name="launch-date"
+    type="date"
+    value="2026-10-15"
+    aria-describedby="launch-date-help" />
+</label>
+
+<!-- variant: error -->
+<label class="ax-date-input ax-date-input--error" for="renewal-date">
+  <span class="ax-date-input__label">Renewal date</span>
+  <input
+    class="ax-date-input__control"
+    id="renewal-date"
+    type="date"
+    min="2026-10-03"
+    value="2026-09-01"
+    aria-invalid="true"
+    aria-describedby="renewal-date-error" />
+  <span class="ax-date-input__message" id="renewal-date-error" role="alert"
+    >Choose today or a future date.</span
+  >
+</label>
+
+<!-- variant: compact-disabled -->
+<label class="ax-date-input ax-date-input--sm" for="closed-date">
+  <span class="ax-date-input__label">Closed date</span>
+  <input
+    class="ax-date-input__control"
+    id="closed-date"
+    type="date"
+    value="2026-09-28"
+    disabled />
+</label>

@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en" data-astryx-theme="neutral" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Astryx Vanilla form components</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/core@0.6.5/src/reset.css" />
+    <link rel="stylesheet" href="../dist/astryx-vanilla.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-neutral@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-butter@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-y2k@0.6.5/dist/theme.css" />
+    <style>
+      @layer astryx-base {
+        .ax-forms-gallery {
+          min-height: 100vh;
+          margin: 0;
+          background: var(--color-background-body);
+          color: var(--color-text-primary);
+          font-family: var(--font-family-body);
+        }
+        .ax-forms-gallery__toolbar {
+          position: sticky;
+          z-index: 10;
+          top: 0;
+          display: flex;
+          align-items: end;
+          gap: var(--spacing-3);
+          padding: var(--spacing-3) var(--spacing-4);
+          border-block-end: var(--border-width) solid var(--color-border);
+          background: color-mix(
+            in srgb,
+            var(--color-background-surface),
+            transparent 8%
+          );
+          backdrop-filter: blur(12px);
+        }
+        .ax-forms-gallery__source {
+          margin-inline-start: auto;
+          color: var(--color-text-secondary);
+          font-size: var(--text-supporting-size);
+        }
+        .ax-forms-gallery__page {
+          display: grid;
+          max-width: 78rem;
+          margin-inline: auto;
+          gap: var(--spacing-6);
+          padding: var(--spacing-6);
+        }
+        .ax-forms-gallery__intro {
+          display: grid;
+          gap: var(--spacing-2);
+        }
+        .ax-forms-gallery__intro > * {
+          margin: 0;
+        }
+        .ax-forms-gallery__intro p {
+          color: var(--color-text-primary);
+        }
+        .ax-forms-gallery__grid {
+          display: grid;
+          grid-template-columns: repeat(
+            auto-fit,
+            minmax(min(100%, 34rem), 1fr)
+          );
+          gap: var(--spacing-4);
+        }
+        .ax-forms-gallery__demo {
+          display: grid;
+          align-content: start;
+          gap: var(--spacing-4);
+          min-width: 0;
+          padding: var(--spacing-4);
+          border: var(--border-width) solid var(--color-border);
+          border-radius: var(--radius-container);
+          background: var(--color-background-surface);
+        }
+        .ax-forms-gallery__demo h2 {
+          margin: 0;
+          font-size: var(--text-heading-3-size);
+          line-height: var(--text-heading-3-leading);
+        }
+        @media (max-width: 42rem) {
+          .ax-forms-gallery__toolbar {
+            align-items: stretch;
+            flex-direction: column;
+          }
+          .ax-forms-gallery__source {
+            margin-inline-start: 0;
+          }
+          .ax-forms-gallery__page {
+            padding: var(--spacing-3);
+          }
+        }
+      }
+    </style>
+  </head>
+  <body class="ax-forms-gallery">
+    <header class="ax-forms-gallery__toolbar">
+      <label class="ax-selector ax-selector--sm">
+        <span class="ax-selector__label">Theme</span>
+        <span class="ax-selector__control">
+          <select class="ax-selector__select" data-gallery-theme>
+            <option value="neutral">Neutral · Figtree</option>
+            <option value="butter">Butter · Outfit</option>
+            <option value="y2k">Y2K · Poppins</option>
+          </select>
+          <span class="ax-selector__indicator" aria-hidden="true"></span>
+        </span>
+      </label>
+      <label class="ax-selector ax-selector--sm">
+        <span class="ax-selector__label">Mode</span>
+        <span class="ax-selector__control">
+          <select class="ax-selector__select" data-gallery-mode>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+          <span class="ax-selector__indicator" aria-hidden="true"></span>
+        </span>
+      </label>
+      <span class="ax-forms-gallery__source">Local Vanilla dist</span>
+    </header>
+
+    <main class="ax-forms-gallery__page">
+      <div class="ax-forms-gallery__intro">
+        <span class="ax-badge ax-badge--info">Native-first form controls</span>
+        <h1 class="ax-heading ax-heading--1">Vanilla Astryx forms</h1>
+        <p class="ax-text ax-text--large">
+          Seven lightweight controls using native browser semantics, Astryx
+          tokens, and readable ax- classes.
+        </p>
+      </div>
+
+      <section class="ax-forms-gallery__grid" aria-label="Form components">
+        <article class="ax-forms-gallery__demo">
+          <h2>TextArea</h2>
+          <label class="ax-text-area" for="gallery-summary">
+            <span class="ax-text-area__label">Summary</span>
+            <span class="ax-text-area__description" id="gallery-summary-help"
+              >Describe the change and expected outcome.</span
+            >
+            <textarea
+              class="ax-text-area__control"
+              id="gallery-summary"
+              rows="4"
+              aria-describedby="gallery-summary-help"
+              placeholder="Add a concise summary"></textarea>
+          </label>
+          <label
+            class="ax-text-area ax-text-area--error ax-text-area--sm"
+            for="gallery-notes">
+            <span class="ax-text-area__label">Incident notes</span>
+            <textarea
+              class="ax-text-area__control"
+              id="gallery-notes"
+              rows="2"
+              aria-invalid="true"
+              aria-describedby="gallery-notes-error"></textarea>
+            <span
+              class="ax-text-area__message"
+              id="gallery-notes-error"
+              role="alert"
+              >Add at least one troubleshooting step.</span
+            >
+          </label>
+        </article>
+
+        <article class="ax-forms-gallery__demo">
+          <h2>RadioList</h2>
+          <fieldset
+            class="ax-radio-list"
+            aria-describedby="gallery-channel-help">
+            <legend class="ax-radio-list__legend">Notification channel</legend>
+            <span class="ax-radio-list__description" id="gallery-channel-help"
+              >Choose where delivery updates should be sent.</span
+            >
+            <span class="ax-radio-list__items">
+              <label class="ax-radio-list__item">
+                <input
+                  class="ax-radio-list__input"
+                  type="radio"
+                  name="gallery-channel"
+                  value="email"
+                  checked />
+                <span
+                  class="ax-radio-list__indicator"
+                  aria-hidden="true"></span>
+                <span class="ax-radio-list__content">
+                  <span class="ax-radio-list__label">Email</span>
+                  <span class="ax-radio-list__item-description"
+                    >Best for detailed updates.</span
+                  >
+                </span>
+              </label>
+              <label class="ax-radio-list__item">
+                <input
+                  class="ax-radio-list__input"
+                  type="radio"
+                  name="gallery-channel"
+                  value="chat" />
+                <span
+                  class="ax-radio-list__indicator"
+                  aria-hidden="true"></span>
+                <span class="ax-radio-list__content">
+                  <span class="ax-radio-list__label">Chat</span>
+                </span>
+              </label>
+            </span>
+          </fieldset>
+          <fieldset
+            class="ax-radio-list ax-radio-list--horizontal ax-radio-list--error"
+            aria-invalid="true"
+            aria-describedby="gallery-plan-error">
+            <legend class="ax-radio-list__legend">Plan</legend>
+            <span class="ax-radio-list__items">
+              <label class="ax-radio-list__item">
+                <input
+                  class="ax-radio-list__input"
+                  type="radio"
+                  name="gallery-plan"
+                  value="starter" />
+                <span
+                  class="ax-radio-list__indicator"
+                  aria-hidden="true"></span>
+                <span class="ax-radio-list__content">
+                  <span class="ax-radio-list__label">Starter</span>
+                </span>
+              </label>
+              <label class="ax-radio-list__item">
+                <input
+                  class="ax-radio-list__input"
+                  type="radio"
+                  name="gallery-plan"
+                  value="pro" />
+                <span
+                  class="ax-radio-list__indicator"
+                  aria-hidden="true"></span>
+                <span class="ax-radio-list__content">
+                  <span class="ax-radio-list__label">Pro</span>
+                </span>
+              </label>
+            </span>
+            <span
+              class="ax-radio-list__message"
+              id="gallery-plan-error"
+              role="alert"
+              >Select a plan to continue.</span
+            >
+          </fieldset>
+        </article>
+
+        <article class="ax-forms-gallery__demo">
+          <h2>NumberInput</h2>
+          <label class="ax-number-input" for="gallery-seats">
+            <span class="ax-number-input__label">Seats</span>
+            <span class="ax-number-input__description" id="gallery-seats-help"
+              >Choose between 1 and 100 seats.</span
+            >
+            <span class="ax-number-input__control">
+              <input
+                class="ax-number-input__input"
+                id="gallery-seats"
+                type="number"
+                min="1"
+                max="100"
+                value="12"
+                aria-describedby="gallery-seats-help" />
+              <span class="ax-number-input__unit" aria-hidden="true"
+                >seats</span
+              >
+            </span>
+          </label>
+          <label
+            class="ax-number-input ax-number-input--error"
+            for="gallery-retention">
+            <span class="ax-number-input__label">Retention</span>
+            <span class="ax-number-input__control">
+              <input
+                class="ax-number-input__input"
+                id="gallery-retention"
+                type="number"
+                value="500"
+                aria-invalid="true"
+                aria-describedby="gallery-retention-error" />
+              <span class="ax-number-input__unit" aria-hidden="true">days</span>
+            </span>
+            <span
+              class="ax-number-input__message"
+              id="gallery-retention-error"
+              role="alert"
+              >Enter a value from 1 to 365.</span
+            >
+          </label>
+        </article>
+
+        <article class="ax-forms-gallery__demo">
+          <h2>DateInput</h2>
+          <label class="ax-date-input" for="gallery-launch-date">
+            <span class="ax-date-input__label">Launch date</span>
+            <span
+              class="ax-date-input__description"
+              id="gallery-launch-date-help"
+              >The native picker covers simple Calendar selection.</span
+            >
+            <input
+              class="ax-date-input__control"
+              id="gallery-launch-date"
+              type="date"
+              value="2026-10-15"
+              aria-describedby="gallery-launch-date-help" />
+          </label>
+          <label
+            class="ax-date-input ax-date-input--error"
+            for="gallery-renewal-date">
+            <span class="ax-date-input__label">Renewal date</span>
+            <input
+              class="ax-date-input__control"
+              id="gallery-renewal-date"
+              type="date"
+              value="2026-09-01"
+              aria-invalid="true"
+              aria-describedby="gallery-renewal-date-error" />
+            <span
+              class="ax-date-input__message"
+              id="gallery-renewal-date-error"
+              role="alert"
+              >Choose today or a future date.</span
+            >
+          </label>
+        </article>
+
+        <article class="ax-forms-gallery__demo">
+          <h2>TimeInput</h2>
+          <label class="ax-time-input" for="gallery-start-time">
+            <span class="ax-time-input__label">Start time</span>
+            <span
+              class="ax-time-input__description"
+              id="gallery-start-time-help"
+              >Use your local time zone.</span
+            >
+            <input
+              class="ax-time-input__control"
+              id="gallery-start-time"
+              type="time"
+              value="09:30"
+              aria-describedby="gallery-start-time-help" />
+          </label>
+          <label
+            class="ax-time-input ax-time-input--error"
+            for="gallery-support-time">
+            <span class="ax-time-input__label">Support window</span>
+            <input
+              class="ax-time-input__control"
+              id="gallery-support-time"
+              type="time"
+              value="20:00"
+              aria-invalid="true"
+              aria-describedby="gallery-support-time-error" />
+            <span
+              class="ax-time-input__message"
+              id="gallery-support-time-error"
+              role="alert"
+              >Choose a time from 9:00 AM to 5:00 PM.</span
+            >
+          </label>
+        </article>
+
+        <article class="ax-forms-gallery__demo">
+          <h2>Slider</h2>
+          <label class="ax-slider" for="gallery-volume">
+            <span class="ax-slider__label-row">
+              <span class="ax-slider__label">Volume</span>
+              <output
+                class="ax-slider__value"
+                for="gallery-volume"
+                data-slider-value
+                >65%</output
+              >
+            </span>
+            <span class="ax-slider__description" id="gallery-volume-help"
+              >Adjust playback volume.</span
+            >
+            <input
+              class="ax-slider__control"
+              id="gallery-volume"
+              type="range"
+              min="0"
+              max="100"
+              value="65"
+              aria-describedby="gallery-volume-help" />
+          </label>
+          <label class="ax-slider ax-slider--error" for="gallery-confidence">
+            <span class="ax-slider__label-row">
+              <span class="ax-slider__label">Confidence threshold</span>
+              <output
+                class="ax-slider__value"
+                for="gallery-confidence"
+                data-slider-value
+                >20%</output
+              >
+            </span>
+            <input
+              class="ax-slider__control"
+              id="gallery-confidence"
+              type="range"
+              min="0"
+              max="100"
+              value="20"
+              aria-invalid="true"
+              aria-describedby="gallery-confidence-error" />
+            <span
+              class="ax-slider__message"
+              id="gallery-confidence-error"
+              role="alert"
+              >Set the threshold to at least 40%.</span
+            >
+          </label>
+        </article>
+
+        <article class="ax-forms-gallery__demo">
+          <h2>Typeahead</h2>
+          <label class="ax-typeahead" for="gallery-assignee">
+            <span class="ax-typeahead__label">Assignee</span>
+            <span class="ax-typeahead__description" id="gallery-assignee-help"
+              >Start typing a team member's name.</span
+            >
+            <span class="ax-typeahead__control">
+              <span class="ax-typeahead__icon" aria-hidden="true">⌕</span>
+              <input
+                class="ax-typeahead__input"
+                id="gallery-assignee"
+                type="text"
+                list="gallery-assignee-options"
+                autocomplete="off"
+                placeholder="Search people"
+                aria-describedby="gallery-assignee-help" />
+            </span>
+            <datalist id="gallery-assignee-options">
+              <option value="Alex Morgan"></option>
+              <option value="Sam Rivera"></option>
+              <option value="Taylor Chen"></option>
+            </datalist>
+          </label>
+          <label class="ax-typeahead ax-typeahead--error" for="gallery-owner">
+            <span class="ax-typeahead__label">Workspace owner</span>
+            <span class="ax-typeahead__control">
+              <span class="ax-typeahead__icon" aria-hidden="true">⌕</span>
+              <input
+                class="ax-typeahead__input"
+                id="gallery-owner"
+                type="text"
+                list="gallery-owner-options"
+                aria-invalid="true"
+                aria-describedby="gallery-owner-error" />
+            </span>
+            <datalist id="gallery-owner-options">
+              <option value="Design systems"></option>
+              <option value="Developer tools"></option>
+            </datalist>
+            <span
+              class="ax-typeahead__message"
+              id="gallery-owner-error"
+              role="alert"
+              >Choose an owner from the suggestions.</span
+            >
+          </label>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      const theme = document.querySelector('[data-gallery-theme]');
+      const mode = document.querySelector('[data-gallery-mode]');
+      theme.addEventListener('change', () => {
+        document.documentElement.dataset.astryxTheme = theme.value;
+      });
+      mode.addEventListener('change', () => {
+        document.documentElement.dataset.theme = mode.value;
+      });
+      for (const slider of document.querySelectorAll('.ax-slider__control')) {
+        const output = slider
+          .closest('.ax-slider')
+          .querySelector('[data-slider-value]');
+        slider.addEventListener('input', () => {
+          output.value = `${slider.value}%`;
+        });
+      }
+    </script>
+  </body>
+</html>

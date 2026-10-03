@@ -1,0 +1,65 @@
+<!-- docs: Select an approximate numeric value with a native range control and visible value output. -->
+<!-- variant: default -->
+<label class="ax-slider" for="volume">
+  <span class="ax-slider__label-row">
+    <span class="ax-slider__label">Volume</span>
+    <output class="ax-slider__value" for="volume">65%</output>
+  </span>
+  <span class="ax-slider__description" id="volume-help"
+    >Adjust playback volume.</span
+  >
+  <input
+    class="ax-slider__control"
+    id="volume"
+    name="volume"
+    type="range"
+    min="0"
+    max="100"
+    value="65"
+    aria-describedby="volume-help"
+    oninput="
+      this.previousElementSibling.previousElementSibling.querySelector(
+        'output',
+      ).value = this.value + '%'
+    " />
+</label>
+
+<!-- variant: error -->
+<label class="ax-slider ax-slider--error" for="confidence">
+  <span class="ax-slider__label-row">
+    <span class="ax-slider__label">Confidence threshold</span>
+    <output class="ax-slider__value" for="confidence">20%</output>
+  </span>
+  <input
+    class="ax-slider__control"
+    id="confidence"
+    type="range"
+    min="0"
+    max="100"
+    value="20"
+    aria-invalid="true"
+    aria-describedby="confidence-error"
+    oninput="
+      this.previousElementSibling.querySelector('output').value =
+        this.value + '%'
+    " />
+  <span class="ax-slider__message" id="confidence-error" role="alert"
+    >Set the threshold to at least 40%.</span
+  >
+</label>
+
+<!-- variant: disabled -->
+<label class="ax-slider" for="managed-volume">
+  <span class="ax-slider__label-row">
+    <span class="ax-slider__label">Managed volume</span>
+    <output class="ax-slider__value" for="managed-volume">80%</output>
+  </span>
+  <input
+    class="ax-slider__control"
+    id="managed-volume"
+    type="range"
+    min="0"
+    max="100"
+    value="80"
+    disabled />
+</label>

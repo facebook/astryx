@@ -1,0 +1,95 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+:where(.ax-number-input) {
+  display: grid;
+  width: min(100%, 22rem);
+  gap: var(--spacing-1);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-body);
+}
+:where(.ax-number-input__label) {
+  font-size: var(--text-label-size);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--text-label-leading);
+}
+:where(.ax-number-input__description, .ax-number-input__message) {
+  color: var(--color-text-secondary);
+  font-size: var(--text-supporting-size);
+  line-height: var(--text-supporting-leading);
+}
+:where(.ax-number-input__control) {
+  box-sizing: border-box;
+  display: flex;
+  width: 100%;
+  height: var(--size-element-md);
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1) var(--spacing-2);
+  border: var(--border-width) solid var(--color-border-emphasized);
+  border-radius: var(--_ax-field-radius, var(--radius-element));
+  background: var(--color-background-surface);
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+:where(
+  .ax-number-input__control:hover:not(:has(input:disabled, input[readonly]))
+) {
+  box-shadow: inset 0 0 0 999px var(--color-overlay-hover);
+}
+:where(.ax-number-input__control:focus-within) {
+  border-color: var(--color-accent);
+  outline: var(--focus-outline-width) var(--focus-outline-style)
+    var(--focus-outline-color);
+  outline-offset: var(--focus-outline-offset);
+}
+:where(.ax-number-input__input) {
+  display: block;
+  min-width: 0;
+  flex: 1;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-leading);
+  outline: 0;
+}
+:where(.ax-number-input__input)::placeholder {
+  color: var(--color-text-secondary);
+}
+:where(.ax-number-input__unit) {
+  flex: none;
+  color: var(--color-text-secondary);
+  font-size: var(--text-body-size);
+}
+:where(.ax-number-input--sm .ax-number-input__control) {
+  height: var(--size-element-sm);
+}
+:where(.ax-number-input--lg .ax-number-input__control) {
+  height: var(--size-element-lg);
+  padding-inline: var(--spacing-3);
+}
+:where(.ax-number-input--error .ax-number-input__control) {
+  border-color: var(--color-error);
+}
+:where(.ax-number-input--error .ax-number-input__message) {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-inner);
+  background: var(--color-error);
+  color: var(--color-on-error);
+}
+:where(.ax-number-input__control:has(input:disabled)) {
+  opacity: 0.5;
+  cursor: default;
+}
+:where(.ax-number-input__control:has(input[readonly])) {
+  background: var(--color-background-muted);
+}
+
+@media (forced-colors: active) {
+  :where(.ax-number-input__control) {
+    border-color: CanvasText;
+  }
+}

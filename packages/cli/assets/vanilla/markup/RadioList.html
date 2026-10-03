@@ -1,0 +1,90 @@
+<!-- docs: Choose one value from a small visible set with native radio-group semantics. -->
+<!-- variant: default -->
+<fieldset class="ax-radio-list" aria-describedby="notification-channel-help">
+  <legend class="ax-radio-list__legend">Notification channel</legend>
+  <span class="ax-radio-list__description" id="notification-channel-help"
+    >Choose where delivery updates should be sent.</span
+  >
+  <span class="ax-radio-list__items">
+    <label class="ax-radio-list__item">
+      <input
+        class="ax-radio-list__input"
+        type="radio"
+        name="notification-channel"
+        value="email"
+        checked />
+      <span class="ax-radio-list__indicator" aria-hidden="true"></span>
+      <span class="ax-radio-list__content">
+        <span class="ax-radio-list__label">Email</span>
+        <span class="ax-radio-list__item-description"
+          >Best for detailed updates.</span
+        >
+      </span>
+    </label>
+    <label class="ax-radio-list__item">
+      <input
+        class="ax-radio-list__input"
+        type="radio"
+        name="notification-channel"
+        value="chat" />
+      <span class="ax-radio-list__indicator" aria-hidden="true"></span>
+      <span class="ax-radio-list__content">
+        <span class="ax-radio-list__label">Chat</span>
+      </span>
+    </label>
+  </span>
+</fieldset>
+
+<!-- variant: horizontal-error -->
+<fieldset
+  class="ax-radio-list ax-radio-list--horizontal ax-radio-list--error"
+  aria-invalid="true"
+  aria-describedby="plan-error">
+  <legend class="ax-radio-list__legend">Plan</legend>
+  <span class="ax-radio-list__items">
+    <label class="ax-radio-list__item">
+      <input
+        class="ax-radio-list__input"
+        type="radio"
+        name="plan"
+        value="starter" />
+      <span class="ax-radio-list__indicator" aria-hidden="true"></span>
+      <span class="ax-radio-list__content">
+        <span class="ax-radio-list__label">Starter</span>
+      </span>
+    </label>
+    <label class="ax-radio-list__item">
+      <input
+        class="ax-radio-list__input"
+        type="radio"
+        name="plan"
+        value="pro" />
+      <span class="ax-radio-list__indicator" aria-hidden="true"></span>
+      <span class="ax-radio-list__content">
+        <span class="ax-radio-list__label">Pro</span>
+      </span>
+    </label>
+  </span>
+  <span class="ax-radio-list__message" id="plan-error" role="alert"
+    >Select a plan to continue.</span
+  >
+</fieldset>
+
+<!-- variant: compact-disabled -->
+<fieldset class="ax-radio-list ax-radio-list--sm" disabled>
+  <legend class="ax-radio-list__legend">Billing cadence</legend>
+  <span class="ax-radio-list__items">
+    <label class="ax-radio-list__item">
+      <input
+        class="ax-radio-list__input"
+        type="radio"
+        name="billing-cadence"
+        value="annual"
+        checked />
+      <span class="ax-radio-list__indicator" aria-hidden="true"></span>
+      <span class="ax-radio-list__content">
+        <span class="ax-radio-list__label">Annual</span>
+      </span>
+    </label>
+  </span>
+</fieldset>
