@@ -497,7 +497,6 @@ function ViewportLayer({
   children,
   caption,
   canvasXstyle,
-  canvasStyle,
   extra,
 }: {
   at: Pos;
@@ -508,14 +507,12 @@ function ViewportLayer({
   children: React.ReactNode;
   caption: string;
   canvasXstyle?: stylex.StyleXStyles;
-  canvasStyle?: React.CSSProperties;
   extra?: React.ReactNode;
 }) {
   const layer = useLayer({mode: 'context', lightDismiss: true});
   return (
     <div
       {...stylex.props(viewportStyles.canvas, canvasXstyle)}
-      style={canvasStyle}
       data-testid="canvas">
       <p {...stylex.props(viewportStyles.caption)}>{caption}</p>
       <div style={{position: 'absolute', ...at}}>
@@ -541,11 +538,6 @@ function ViewportLayer({
     </div>
   );
 }
-
-// The app's one declaration (FR6); usually on :root.
-const appBottomBarInset: React.CSSProperties = {
-  ['--astryx-layer-inset-block-end' as string]: '80px',
-};
 
 const nextFrame = () => new Promise(r => requestAnimationFrame(() => r(null)));
 const settle = async () => {
@@ -788,17 +780,20 @@ export const AppDeclaredInset: Story = {
   name: 'Viewport inset: app-declared inset (floating bar)',
   parameters: viewportParameters,
   render: () => (
-    <ViewportLayer
-      at={{bottom: 140, left: 200}}
-      canvasStyle={appBottomBarInset}
-      caption="FR6 — The app floats an 80px bar over the bottom edge and declares it once: --astryx-layer-inset-block-end: 80px. The layer's bottom gutter becomes 96px, so a layer that would have ended under the bar flips above its trigger instead. Remove the declaration and it opens below, under the bar."
-      extra={
-        <div {...stylex.props(viewportStyles.bottomBar)}>
-          persistent bar — 80px, outside layout flow
-        </div>
-      }>
-      <div style={{blockSize: 200}}>200px of rows</div>
-    </ViewportLayer>
+    // The app's one declaration (FR6): inset on the LayerProvider it already
+    // mounts. Anchored layers and toasts both clear the bar.
+    <LayerProvider inset={{blockEnd: 80}}>
+      <ViewportLayer
+        at={{bottom: 140, left: 200}}
+        caption="FR6 — The app floats an 80px bar over the bottom edge and declares it once: <LayerProvider inset={{blockEnd: 80}}>. The layer's bottom gutter becomes 96px, so a layer that would have ended under the bar flips above its trigger instead; a toast under the same provider rises by the same 80px. Remove the declaration and the layer opens below, under the bar."
+        extra={
+          <div {...stylex.props(viewportStyles.bottomBar)}>
+            persistent bar — 80px, outside layout flow
+          </div>
+        }>
+        <div style={{blockSize: 200}}>200px of rows</div>
+      </ViewportLayer>
+    </LayerProvider>
   ),
   play: async ({canvasElement}) => {
     const r = await open(canvasElement);
