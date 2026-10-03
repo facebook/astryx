@@ -1231,32 +1231,32 @@ describe('Selector', () => {
       // keystroke-time announcement cannot know the outcome. When the load
       // lands with nothing that matches, the message appears on screen and
       // the region has to say so too.
-      function Deferred() {
-        const [loaded, setLoaded] = useState(false);
+      //
+      // The load lands through a rerender rather than a click on something
+      // outside the panel: a real browser light-dismisses the panel on any
+      // outside click, and a closed panel is a different scenario. jsdom
+      // implements no light dismiss, so a button would pass here while
+      // modelling something that cannot happen.
+      function Deferred({loaded}: {loaded: boolean}) {
         return (
-          <>
-            <button type="button" onClick={() => setLoaded(true)}>
-              land
-            </button>
-            <Selector
-              label="Fruit"
-              options={loaded ? OPTIONS : []}
-              onChange={() => {}}
-              hasSearch
-              isLoading={!loaded}
-              isDefaultOpen
-              emptySearchText="Nothing like that here"
-            />
-          </>
+          <Selector
+            label="Fruit"
+            options={loaded ? OPTIONS : []}
+            onChange={() => {}}
+            hasSearch
+            isLoading={!loaded}
+            isDefaultOpen
+            emptySearchText="Nothing like that here"
+          />
         );
       }
-      render(<Deferred />);
+      const {rerender} = render(<Deferred loaded={false} />);
 
       await user.type(screen.getByRole('combobox', h), 'xyz');
       // Loading: the panel shows nothing, so the region claims nothing.
       expect(politeRegion()?.textContent ?? '').toBe('');
 
-      await user.click(screen.getByRole('button', {name: 'land'}));
+      rerender(<Deferred loaded />);
 
       await waitFor(() =>
         expect(politeRegion()?.textContent).toBe('Nothing like that here'),

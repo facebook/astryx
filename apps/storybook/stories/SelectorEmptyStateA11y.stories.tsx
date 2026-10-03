@@ -15,7 +15,7 @@
  */
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {Selector} from '../../../packages/core/src/Selector/Selector';
 
 const OPTIONS = [
@@ -56,11 +56,21 @@ export const DeferredEmptyResult: StoryObj = {
   name: 'deferred empty result',
   render: function DeferredEmptyResult() {
     const [loaded, setLoaded] = useState(false);
+    // The test lands the results through this hook rather than by clicking a
+    // button. A real browser light-dismisses the open panel on any outside
+    // click, and a dismissed panel is a different scenario — the one being
+    // modelled here is a fetch landing while the panel is still open. jsdom
+    // implements no light dismiss, so a button looks fine there and silently
+    // tests the wrong thing.
+    useEffect(() => {
+      const w = window as unknown as {__landResults?: () => void};
+      w.__landResults = () => setLoaded(true);
+      return () => {
+        delete w.__landResults;
+      };
+    }, []);
     return (
       <div data-empty-scenario="deferred">
-        <button type="button" onClick={() => setLoaded(true)}>
-          land
-        </button>
         <Selector
           label="Fruit"
           options={loaded ? OPTIONS : []}

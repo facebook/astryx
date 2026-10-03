@@ -102,8 +102,12 @@ test('stays silent while loading, then announces when the load lands empty', asy
     ),
   ).toBe('');
 
-  await page.getByRole('button', {name: 'land'}).click();
-
+  // Land the results without touching anything outside the panel: an
+  // outside click would light-dismiss it, and a closed panel announces
+  // nothing because there is nothing on screen to announce.
+  await page.evaluate(() =>
+    (window as unknown as {__landResults?: () => void}).__landResults?.(),
+  );
   // The outcome arrives after the keystroke, so only something watching the
   // rendered state can report it.
   await expect(page.locator(politeRegion)).toHaveText('Nothing like that here');
