@@ -50,7 +50,6 @@ import {
   MENU_ITEM_ROLES,
   MENU_ITEM_SELECTOR,
   MENU_BOUNDARY_SELECTOR,
-  getMenuItemLabel,
 } from './menuItemRoles';
 import {
   DropdownMenuContext,
@@ -721,7 +720,7 @@ function DropdownMenuPopover({
   // badge. Reuses the hook's scoped item collection so an inline submenu
   // flyout's items aren't swept in.
   const typeahead = useTypeahead({
-    getItemLabels: () => getMenuItems().map(getMenuItemLabel),
+    getItemLabels: () => getMenuItems().map(el => el.textContent),
     onMatch: focusItem,
     getCurrentIndex: () =>
       getMenuItems().findIndex(

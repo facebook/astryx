@@ -77,7 +77,6 @@ import {
   MENU_ITEM_ROLES,
   MENU_ITEM_SELECTOR,
   MENU_BOUNDARY_SELECTOR,
-  getMenuItemLabel,
 } from './menuItemRoles';
 import {
   DropdownMenuContext,
@@ -351,7 +350,7 @@ export function DropdownMenuSubMenu(
   const hasOverflow = useMenuOverflow(menuRef, children, isOpen);
 
   const typeahead = useTypeahead({
-    getItemLabels: () => getItems().map(getMenuItemLabel),
+    getItemLabels: () => getItems().map(el => el.textContent),
     onMatch: focusItem,
     getCurrentIndex: () =>
       getItems().findIndex(

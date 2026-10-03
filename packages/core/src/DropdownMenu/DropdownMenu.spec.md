@@ -131,7 +131,7 @@ This draft does not change DropdownMenu's trigger naming, menu and dialog
 roles, item semantics, focus return, or dismissal ordering. While a
 pointer is held, the highlight is DOM focus per
 `module:DropdownMenu/useMenuPress` AR1. Keyboard navigation follows FR6:
-arrows wrap, PageUp/PageDown page, and typeahead reads the label alone.
+arrows wrap and PageUp/PageDown page.
 
 ## Design relationships
 

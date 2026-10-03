@@ -57,7 +57,6 @@ import {
   MENU_ITEM_ROLES,
   MENU_ITEM_SELECTOR,
   MENU_BOUNDARY_SELECTOR,
-  getMenuItemLabel,
 } from '../DropdownMenu/menuItemRoles';
 import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
 import {useListFocus} from '../hooks/useListFocus';
@@ -411,7 +410,7 @@ export function ContextMenu({
   // Reuses the hook's scoped item collection so an inline submenu flyout's
   // items aren't swept in.
   const typeahead = useTypeahead({
-    getItemLabels: () => getMenuItems().map(getMenuItemLabel),
+    getItemLabels: () => getMenuItems().map(el => el.textContent),
     onMatch: focusItem,
     getCurrentIndex: () =>
       getMenuItems().findIndex(

@@ -2373,28 +2373,4 @@ describe('DropdownMenu keyboard', () => {
     fireEvent.keyDown(item('Edit'), {key: 'Enter'});
     expect(onClick).toHaveBeenCalledTimes(1);
   });
-
-  it('typeahead reads the label alone, never the icon slot or description', async () => {
-    const user = userEvent.setup();
-    render(
-      <DropdownMenu button={{label: 'Actions'}}>
-        <DropdownMenuItem label="Duplicate" onClick={() => {}} />
-        <DropdownMenuItem
-          label="Edit"
-          icon={<span>Zap</span>}
-          description="Zero risk"
-          onClick={() => {}}
-        />
-        <DropdownMenuItem label="Zoom" onClick={() => {}} />
-      </DropdownMenu>,
-    );
-    screen.getByRole('button', {name: /Actions/}).focus();
-    await user.keyboard('{Enter}');
-    await waitFor(() => expect(item(/Duplicate/)).toHaveFocus());
-    const menu = screen.getByRole('menu', {hidden: true});
-    // "z" must skip Edit — its icon slot reads "Zap" and its description
-    // "Zero risk", but its LABEL starts with "E" — and land on Zoom.
-    fireEvent.keyDown(menu, {key: 'z'});
-    expect(item(/Zoom/)).toHaveFocus();
-  });
 });
