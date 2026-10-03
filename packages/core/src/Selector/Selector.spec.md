@@ -45,11 +45,14 @@ connection between the closed trigger and its selection surface.
 
 ## Compatibility and migration
 
-- Released defaults and behavior remain unchanged by this record.
+- Released defaults and behavior remain unchanged by this record, except the
+  `presentation` default that DEC-1 changes.
 - `indicatorPosition` defaults to `end`; a rendered selection mark occupies
   space at that logical edge, while an empty resolved indicator occupies none.
-- `presentation` defaults to `popover`. `bottom-sheet` is an explicit modal
-  presentation, and `adaptive` selects it on compact coarse-pointer screens.
+- `presentation` defaults to `adaptive` (DEC-1): the modal bottom sheet on
+  compact coarse-pointer screens and the anchored popover otherwise. `popover`
+  and `bottom-sheet` pin one surface on every device; pass `popover` to keep the
+  pre-DEC-1 default.
 - `hasClear` changes the value contract to include `null`; that distinction is
   already part of the public type.
 - `isReadOnly` is additive and defaults to `false`. It preserves the selected
@@ -82,15 +85,15 @@ connection between the closed trigger and its selection surface.
 This table names semantic concepts reviewers need. Prop syntax, complete defaults,
 and examples remain in `Selector.doc.mjs`.
 
-| Concept                | Closed values or states                | Meaning                                                  | Availability by variant/orientation/state | Default   | Owner    | Stability | Invalid-value behavior          |
-| ---------------------- | -------------------------------------- | -------------------------------------------------------- | ----------------------------------------- | --------- | -------- | --------- | ------------------------------- |
-| trigger variant        | `input`, `ghost`                       | Form-field or toolbar presentation                       | All trigger states                        | `input`   | Selector | released  | TypeScript rejects other values |
-| size                   | `sm`, `md`, `lg`                       | Trigger and option-row density                           | All presentations                         | `md`      | Selector | released  | TypeScript rejects other values |
-| selected-mark position | `start`, `end`                         | Logical edge containing a rendered selection mark        | Every option row                          | `end`     | Selector | released  | TypeScript rejects other values |
-| presentation           | `popover`, `bottom-sheet`, `adaptive`  | Anchored pointer surface or modal compact-touch surface  | All trigger variants                      | `popover` | Selector | released  | TypeScript rejects other values |
-| popup semantics        | `listbox`; modal dialog containing one | Semantics follow the active presentation                 | Popover; bottom sheet                     | `listbox` | Selector | released  | No separate role prop is public |
-| option-row state       | `selected`, `disabled`                 | Stable theming state on each option row                  | Every rendered option                     | neither   | Selector | released  | Unknown states are not emitted  |
-| read-only state        | `false`, `true`                        | Preserves and submits value without selection affordance | Closed trigger                            | `false`   | Caller   | additive  | Boolean normalization           |
+| Concept                | Closed values or states                | Meaning                                                  | Availability by variant/orientation/state | Default    | Owner    | Stability | Invalid-value behavior          |
+| ---------------------- | -------------------------------------- | -------------------------------------------------------- | ----------------------------------------- | ---------- | -------- | --------- | ------------------------------- |
+| trigger variant        | `input`, `ghost`                       | Form-field or toolbar presentation                       | All trigger states                        | `input`    | Selector | released  | TypeScript rejects other values |
+| size                   | `sm`, `md`, `lg`                       | Trigger and option-row density                           | All presentations                         | `md`       | Selector | released  | TypeScript rejects other values |
+| selected-mark position | `start`, `end`                         | Logical edge containing a rendered selection mark        | Every option row                          | `end`      | Selector | released  | TypeScript rejects other values |
+| presentation           | `popover`, `bottom-sheet`, `adaptive`  | Anchored pointer surface or modal compact-touch surface  | All trigger variants                      | `adaptive` | Selector | released  | TypeScript rejects other values |
+| popup semantics        | `listbox`; modal dialog containing one | Semantics follow the active presentation                 | Popover; bottom sheet                     | `listbox`  | Selector | released  | No separate role prop is public |
+| option-row state       | `selected`, `disabled`                 | Stable theming state on each option row                  | Every rendered option                     | neither    | Selector | released  | Unknown states are not emitted  |
+| read-only state        | `false`, `true`                        | Preserves and submits value without selection affordance | Closed trigger                            | `false`    | Caller   | additive  | Boolean normalization           |
 
 ## Behavioral and layout contract
 
@@ -124,7 +127,7 @@ These requirements describe shipped behavior on current `main`.
 | closed with no value     | Label and placeholder identify the field                                                  | Consumer placeholder text                                  |
 | closed with a value      | Selected option is represented in the trigger                                             | Custom `renderValue` content                               |
 | pointer / popover        | Anchored surface exposes the listbox without modal-dialog semantics                       | Default or explicit placement                              |
-| compact coarse pointer   | BottomSheet exposes a modal dialog containing the listbox                                 | Explicit `bottom-sheet` or resolved `adaptive`             |
+| compact coarse pointer   | BottomSheet exposes a modal dialog containing the listbox                                 | Default or explicit `adaptive`, or explicit `bottom-sheet` |
 | searching                | Visible options, keyboard navigation, and announced result count use one filter           | Consumer search and empty text                             |
 | loading                  | Trigger is busy; empty and no-results output is suppressed                                | Consumer loading duration                                  |
 | disabled with reason     | Trigger remains focusable enough to expose the reason while activation stays blocked      | Consumer reason text                                       |
@@ -294,8 +297,23 @@ new theming target.
 
 ## Decision log
 
-No component-local future decision is recorded here. FR3 implements the
-system decision owned by `spec:AST-004/DEC-1`.
+FR3 implements the system decision owned by `spec:AST-004/DEC-1`.
+
+### DEC-1 — Default presentation is `adaptive`
+
+**Reference:** `component:Selector/DEC-1`
+**Decider:** <owner>, <date>
+
+An omitted `presentation` resolves `adaptive` (FR4), so a Selector that does
+not name a surface gets the modal bottom sheet on compact coarse-pointer
+screens and the anchored popover elsewhere. Fine-pointer and large-screen
+output is unchanged. Rejected: keeping `popover` as the default (a phone gets
+a mouse-sized anchored list unless the caller knows to opt in); switching
+`adaptive` to the date inputs' pointer-only test (that changes what
+`adaptive` means for tablets and belongs to `spec:AST-043` OQ1); and shipping
+a codemod that pins `popover` (it would undo the default for every project
+that runs `astryx upgrade`). The default switch follows `spec:AST-017` as a
+stable-default change.
 
 ## Open questions
 
