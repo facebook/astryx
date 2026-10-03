@@ -1736,3 +1736,187 @@ describe('Tokenizer end-lane reserve', () => {
     });
   });
 });
+
+// `emptySearchResultsText` was renamed to `emptySearchText` and widened from
+// `string` to `ReactNode` (`spec:AST-056` FR1). It is a released prop with a
+// victim, so the replacement ships first and the old name keeps working
+// through the overlap (`spec:AST-017` FR28, FR29).
+describe('Tokenizer emptySearchText', () => {
+  async function searchForNothing() {
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: 'zzzzz'}});
+  }
+
+  it('renders an element, which the old string type could not express', async () => {
+    render(
+      <Tokenizer
+        label="People"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        debounceMs={0}
+        emptySearchText={
+          <span>
+            Nobody by that name. <a href="/invite">Invite them</a>
+          </span>
+        }
+      />,
+    );
+    await searchForNothing();
+
+    await waitFor(() => {
+      expect(screen.getByText('Invite them')).toBeInTheDocument();
+    });
+  });
+
+  it('announces what it rendered, not the catalog default', async () => {
+    render(
+      <Tokenizer
+        label="People"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        debounceMs={0}
+        emptySearchText={
+          <span>
+            Nobody by that name. <a href="/invite">Invite them</a>
+          </span>
+        }
+      />,
+    );
+    await searchForNothing();
+
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-astryx-live-region="polite"]'),
+      ).toHaveTextContent('Nobody by that name. Invite them');
+    });
+  });
+
+  it('leaves an aria-hidden decoration out of the announcement', async () => {
+    render(
+      <Tokenizer
+        label="People"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        debounceMs={0}
+        emptySearchText={
+          <span>
+            Nobody by that name<span aria-hidden="true"> →</span>
+          </span>
+        }
+      />,
+    );
+    await searchForNothing();
+
+    // The arrow is hidden from the accessibility tree on screen, so reading
+    // it into the live region would announce something the sighted user is
+    // not being shown either.
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-astryx-live-region="polite"]'),
+      ).toHaveTextContent('Nobody by that name');
+    });
+    expect(
+      document.querySelector('[data-astryx-live-region="polite"]')?.textContent,
+    ).not.toContain('→');
+  });
+
+  it('treats an explicit null as not given, falling through to the old name', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <Tokenizer
+        label="People"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        debounceMs={0}
+        emptySearchResultsText="Nobody found"
+        emptySearchText={null}
+      />,
+    );
+    await searchForNothing();
+
+    // `null` is what this prop's own `??` default already treats as absent,
+    // so the released name still supplies the message and the warning says
+    // only that it is deprecated.
+    await waitFor(() => {
+      expect(screen.getByText('Nobody found')).toBeInTheDocument();
+    });
+    expect(warn).not.toHaveBeenCalledWith(
+      expect.stringContaining('are both set'),
+    );
+    warn.mockRestore();
+  });
+
+  it('falls through to the default when null is the only value given', async () => {
+    render(
+      <Tokenizer
+        label="People"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        debounceMs={0}
+        emptySearchText={null}
+      />,
+    );
+    await searchForNothing();
+
+    await waitFor(() => {
+      expect(screen.getByText('No results found')).toBeInTheDocument();
+    });
+  });
+
+  it('keeps the deprecated name working, and says it is deprecated', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <Tokenizer
+        label="People"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        debounceMs={0}
+        emptySearchResultsText="Nobody found"
+      />,
+    );
+    await searchForNothing();
+
+    await waitFor(() => {
+      expect(screen.getByText('Nobody found')).toBeInTheDocument();
+    });
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Tokenizer: `emptySearchResultsText` is deprecated; use `emptySearchText`',
+      ),
+    );
+    warn.mockRestore();
+  });
+
+  it('lets the new name win when both are set, and warns', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <Tokenizer
+        label="People"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        debounceMs={0}
+        emptySearchResultsText="Old copy"
+        emptySearchText="New copy"
+      />,
+    );
+    await searchForNothing();
+
+    await waitFor(() => {
+      expect(screen.getByText('New copy')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Old copy')).not.toBeInTheDocument();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Tokenizer: `emptySearchResultsText` and `emptySearchText` are both set',
+      ),
+    );
+    warn.mockRestore();
+  });
+});

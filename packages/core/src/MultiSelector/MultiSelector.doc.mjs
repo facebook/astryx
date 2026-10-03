@@ -268,14 +268,14 @@ export const docs = {
           name: 'emptyText',
           type: 'ReactNode',
           description:
-            'Content shown in the dropdown panel when there are no options to show, and announced in a polite live region when the panel opens (a string override is announced verbatim; a richer node falls back to the default text). Not shown while isLoading.',
+            'Content shown in the dropdown panel when there are no options to show, and announced in a polite live region when the panel opens. The announcement is the text this content renders, read from the DOM, so an element is announced as written and aria-hidden parts are left out of both. Not shown while isLoading.',
           default: "'No options'",
         },
         {
           name: 'emptySearchText',
           type: 'ReactNode',
           description:
-            'Content shown in the dropdown panel when a search query matches no options, and announced in a polite live region at the same time (a string override is announced verbatim; a richer node falls back to the default text).',
+            'Content shown in the dropdown panel when a search query matches no options, and announced in a polite live region at the same time. The announcement is the text this content renders, read from the DOM, so an element is announced as written and aria-hidden parts are left out of both.',
           default: "'No results found'",
         },
         {
