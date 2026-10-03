@@ -415,11 +415,26 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
         return;
       }
       clearTimeouts();
+      // Where the pointer was last seen, so the delay can ask whether it is
+      // still heading for the flyout rather than only reacting to movement.
+      let lastPoint: Point | null = null;
+      let isTracking = false;
+      let isInside: (point: Point) => boolean = () => false;
       const scheduleHide = () => {
         if (hideTimerRef.current) {
           clearTimeout(hideTimerRef.current);
         }
         hideTimerRef.current = setTimeout(() => {
+          // A pointer that stopped mid-diagonal, aiming at a row, is still
+          // heading for the flyout: pausing is not leaving, and that pause
+          // is the exact moment the triangle exists to protect. Re-arm
+          // instead of closing underneath it. A pointer parked here holds
+          // the flyout open the same way a pointer parked on the row does;
+          // the first move outside the triangle ends it.
+          if (isTracking && lastPoint != null && isInside(lastPoint)) {
+            scheduleHide();
+            return;
+          }
           hide();
         }, hideDelay);
       };
@@ -440,13 +455,17 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
         return;
       }
       const doc = menu.ownerDocument;
+      isInside = point => isPointInSafeTriangle(point, apex, rect);
+      isTracking = true;
+      lastPoint = apex;
       const onPointerMove = (move: PointerEvent) => {
-        if (
-          isPointInSafeTriangle({x: move.clientX, y: move.clientY}, apex, rect)
-        ) {
+        const point = {x: move.clientX, y: move.clientY};
+        lastPoint = point;
+        if (isInside(point)) {
           scheduleHide();
           return;
         }
+        isTracking = false;
         safeTriangleCleanupRef.current?.();
         safeTriangleCleanupRef.current = null;
       };

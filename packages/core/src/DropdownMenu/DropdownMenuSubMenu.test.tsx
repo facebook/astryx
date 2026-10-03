@@ -863,7 +863,7 @@ describe('DropdownMenuSubMenu hover/click guard', () => {
     vi.useRealTimers();
   });
 
-  it('keeps the flyout open on a click that lands well after the hover-open', async () => {
+  it('closes on a click that lands well after the hover-open', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
     const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
     render(<MoveMenu />);
@@ -883,10 +883,7 @@ describe('DropdownMenuSubMenu hover/click guard', () => {
     });
 
     await user.click(trigger);
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    expect(
-      screen.getByRole('menuitem', {name: 'Folder A', hidden: true}),
-    ).toHaveFocus();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
 
     vi.useRealTimers();
   });
@@ -1016,6 +1013,42 @@ describe('DropdownMenuSubMenu safe triangle', () => {
     const {trigger} = await openByHover();
     fireEvent.mouseLeave(trigger, {clientX: 250, clientY: 100});
     // Straight down, away from the flyout: outside the triangle.
+    fireEvent.pointerMove(document.body, {clientX: 250, clientY: 400});
+    act(() => {
+      vi.advanceTimersByTime(250);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    vi.useRealTimers();
+  });
+
+  it('a pointer that pauses inside the triangle keeps the flyout open', async () => {
+    const {trigger} = await openByHover();
+    // The pointer leaves the row mid-diagonal and then STOPS, aiming at a
+    // row: no further pointermove fires. Pausing is not leaving, and this is
+    // the exact moment the triangle exists to protect — the close delay used
+    // to run out underneath it.
+    fireEvent.mouseLeave(trigger, {clientX: 250, clientY: 100});
+    fireEvent.pointerMove(document.body, {clientX: 275, clientY: 95});
+
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    vi.useRealTimers();
+  });
+
+  it('a pause inside the triangle still closes once the pointer leaves it', async () => {
+    const {trigger} = await openByHover();
+    fireEvent.mouseLeave(trigger, {clientX: 250, clientY: 100});
+    fireEvent.pointerMove(document.body, {clientX: 275, clientY: 95});
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // Re-arming is not the same as never closing: the first move out of the
+    // triangle lets the delay run.
     fireEvent.pointerMove(document.body, {clientX: 250, clientY: 400});
     act(() => {
       vi.advanceTimersByTime(250);

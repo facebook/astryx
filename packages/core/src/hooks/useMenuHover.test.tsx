@@ -10,7 +10,7 @@
  * SYNC: When useMenuHover changes, update tests to match new behavior
  */
 import {describe, it, expect, vi, afterEach} from 'vitest';
-import {render, screen, act} from '@testing-library/react';
+import {render, screen, act, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TopNavMenu} from '../TopNav/TopNavMenu';
 import {isPointInSafeTriangle} from './useMenuHover';
@@ -400,5 +400,72 @@ describe('isPointInSafeTriangle', () => {
     expect(
       isPointInSafeTriangle({x: 400, y: 100}, {x: 400, y: 100}, flyout),
     ).toBe(false);
+  });
+});
+
+describe('useMenuHover — the click guard and its consumers', () => {
+  it('closes immediately on a second click when the menu was opened BY click', async () => {
+    // The guard window keys off the hover-open timestamp, so a menu that was
+    // never hover-opened has no window at all: the next click is a second,
+    // deliberate press on something visibly open, and closes it.
+    const user = userEvent.setup();
+    const trigger = renderMenu();
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('confirms a hover-open on the click inside the guard window, and closes after it', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    const trigger = renderMenu();
+
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // Inside the window the click confirms: you were reaching for the row
+    // you already meant to open, so it must not slam shut under you.
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // Past the window it is a deliberate press on something visibly open.
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    vi.useRealTimers();
+  });
+
+  it('leaves no document pointermove listener behind after a close', async () => {
+    // Every consumer of this hook now gets triangle tracking, which attaches
+    // a document-level listener on leave. One surviving a close would run
+    // for the life of the page.
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    const add = vi.spyOn(document, 'addEventListener');
+    const remove = vi.spyOn(document, 'removeEventListener');
+    const trigger = renderMenu();
+
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    fireEvent.mouseLeave(trigger, {clientX: 10, clientY: 10});
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+
+    const attached = add.mock.calls.filter(([type]) => type === 'pointermove');
+    const detached = remove.mock.calls.filter(
+      ([type]) => type === 'pointermove',
+    );
+    expect(detached.length).toBeGreaterThanOrEqual(attached.length);
+    vi.useRealTimers();
   });
 });

@@ -415,19 +415,19 @@ export function DropdownMenuSubMenu(
     if (isDisabled) {
       return;
     }
-    // A press or release on a sub-menu row OPENS it and never closes the
-    // menu, as macOS sub-menu rows do: an open flyout is confirmed and takes
-    // focus; a closed one opens. Closing is the keyboard's (ArrowLeft,
-    // Escape) and the pointer-leave delay's job.
+    // Toggles, except for the click that follows a hover-open (#3121).
     if (isOpen) {
-      confirmHoverOpen();
-      if (!focusFirst()) {
-        menuRef.current?.focus();
+      if (confirmHoverOpen()) {
+        if (!focusFirst()) {
+          menuRef.current?.focus();
+        }
+        return;
       }
-      return;
+      close({focusTrigger: true});
+    } else {
+      open({focusFirst: true});
     }
-    open({focusFirst: true});
-  }, [isDisabled, isOpen, open, confirmHoverOpen, focusFirst, menuRef]);
+  }, [isDisabled, isOpen, open, close, confirmHoverOpen, focusFirst, menuRef]);
 
   const handleTriggerKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
