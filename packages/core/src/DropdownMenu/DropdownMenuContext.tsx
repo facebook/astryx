@@ -25,13 +25,22 @@ export type DropdownMenuSize = 'sm' | 'md' | 'lg';
  * On a phone a sub-menu row pushes its view and the root shows that view in
  * place of its own rows; Back, Escape and ArrowLeft pop it. Sibling rows and
  * dividers need no knowledge of it: they are simply hidden while a view shows.
+ *
+ * Internal. The public surface for this behavior is `presentation` alone;
+ * this is a view-stack controller, and exporting it would make internal
+ * machinery permanent API that nothing requires a caller to touch. A product
+ * that later needs to drive the stack earns a deliberate component or hook
+ * then, with its own contract.
+ * @internal
  */
 export interface DropdownMenuDrillIn {
   /**
-   * Whether a coarse pointer (a finger) drove the menu open — decided once,
-   * when the menu opened. An `adaptive` sub-menu drills in exactly then.
+   * Whether the menu opened on a compact touch display — decided once, when
+   * the menu opened, on the same query the root presentation uses for its
+   * bottom sheet. An `adaptive` sub-menu drills in exactly then, so one
+   * component carries one meaning of "adaptive".
    */
-  isCoarsePointer: boolean;
+  isCompactTouch: boolean;
   /** The pushed view ids, outermost first; the last one is the view shown. */
   viewStack: ReadonlyArray<string>;
   /** The element a shown view renders its rows into (a portal target). */

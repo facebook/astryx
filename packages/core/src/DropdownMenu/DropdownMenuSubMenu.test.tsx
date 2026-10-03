@@ -14,6 +14,7 @@ import * as stylex from '@stylexjs/stylex';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuItem} from './DropdownMenuItem';
 import {DropdownMenuSubMenu} from './DropdownMenuSubMenu';
+import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
 import {rtlStyles} from '../utils';
 
 beforeEach(() => {
@@ -957,11 +958,13 @@ describe('DropdownMenuSubMenu press model', () => {
 describe('DropdownMenuSubMenu drill-in on a phone', () => {
   const originalMatchMedia = window.matchMedia;
 
-  function stubCoarsePointer(matches: boolean) {
+  // The drill-in resolves on the same query the root presentation uses for
+  // its bottom sheet, so one component carries one meaning of "adaptive".
+  function stubCompactTouch(matches: boolean) {
     vi.stubGlobal(
       'matchMedia',
       vi.fn().mockImplementation((query: string) => ({
-        matches: matches && query === '(pointer: coarse)',
+        matches: matches && query === COMPACT_TOUCH_PRESENTATION_QUERY,
         media: query,
         onchange: null,
         addEventListener: vi.fn(),
@@ -1008,7 +1011,7 @@ describe('DropdownMenuSubMenu drill-in on a phone', () => {
     screen.getAllByRole('menu', {name, ...h}).find(isShown)!;
 
   it('on a phone a sub-menu drills in, is named by its row, and Back returns', async () => {
-    stubCoarsePointer(true);
+    stubCompactTouch(true);
     const user = userEvent.setup();
     const onMove = vi.fn();
     render(<PhoneMenu onMove={onMove} />);
@@ -1083,7 +1086,7 @@ describe('DropdownMenuSubMenu drill-in on a phone', () => {
   });
 
   it('typeahead and arrows scope to the drilled rows', async () => {
-    stubCoarsePointer(true);
+    stubCompactTouch(true);
     const user = userEvent.setup();
     render(<PhoneMenu />);
     await user.click(screen.getByRole('button', {name: /Actions/}));
@@ -1108,7 +1111,7 @@ describe('DropdownMenuSubMenu drill-in on a phone', () => {
   });
 
   it('presentation="flyout" keeps the flyout on a phone and "drill-in" drills on a laptop', async () => {
-    stubCoarsePointer(true);
+    stubCompactTouch(true);
     const user = userEvent.setup();
     const {unmount} = render(
       <DropdownMenu button={{label: 'Actions'}}>
@@ -1129,7 +1132,7 @@ describe('DropdownMenuSubMenu drill-in on a phone', () => {
     expect(screen.queryByRole('menuitem', {name: /^Back to/, ...h})).toBeNull();
     unmount();
 
-    stubCoarsePointer(false);
+    stubCompactTouch(false);
     render(
       <DropdownMenu button={{label: 'Actions'}}>
         <DropdownMenuSubMenu label="Move to" presentation="drill-in">
@@ -1145,7 +1148,7 @@ describe('DropdownMenuSubMenu drill-in on a phone', () => {
   });
 
   it('closing the menu resets the drilled view', async () => {
-    stubCoarsePointer(true);
+    stubCompactTouch(true);
     const user = userEvent.setup();
     render(<PhoneMenu />);
     const trigger = screen.getByRole('button', {name: /Actions/});

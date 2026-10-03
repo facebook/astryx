@@ -23,20 +23,20 @@
 import {useCallback, useMemo, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {DropdownMenuDrillIn} from './DropdownMenuContext';
+import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
 
 /**
- * A finger is the pointer. Width plays no part: the drill-in is about a
- * flyout having no room beside a menu a finger drives, so a large touch
- * display drills in too. Sits beside `useAdaptivePresentation`'s compact-touch
- * query, which decides the bottom sheet.
+ * The same query the root presentation uses to decide the bottom sheet, so
+ * one component carries one meaning of "adaptive". A bare `(pointer: coarse)`
+ * would disagree with it on a large touch tablet: the menu would stay an
+ * anchored popover while its sub-menus replaced rows in place, a combination
+ * nobody designed.
  */
-export const COARSE_POINTER_QUERY = '(pointer: coarse)';
-
-function matchesCoarsePointer(): boolean {
+function matchesCompactTouch(): boolean {
   return (
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
-    window.matchMedia(COARSE_POINTER_QUERY).matches
+    window.matchMedia(COMPACT_TOUCH_PRESENTATION_QUERY).matches
   );
 }
 
@@ -70,7 +70,7 @@ export interface UseMenuDrillInReturn {
  *   opens and the stack empties when it closes.
  */
 export function useMenuDrillIn(isOpen: boolean): UseMenuDrillInReturn {
-  const [isCoarsePointer, setIsCoarsePointer] = useState(false);
+  const [isCompactTouch, setIsCompactTouch] = useState(false);
   const [viewStack, setViewStack] = useState<ReadonlyArray<string>>([]);
   const [host, setHost] = useState<HTMLElement | null>(null);
   // Derived from the open transition during render (the documented pattern
@@ -81,7 +81,7 @@ export function useMenuDrillIn(isOpen: boolean): UseMenuDrillInReturn {
   if (wasOpen !== isOpen) {
     setWasOpen(isOpen);
     if (isOpen) {
-      setIsCoarsePointer(matchesCoarsePointer());
+      setIsCompactTouch(matchesCompactTouch());
     } else if (viewStack.length > 0) {
       setViewStack([]);
     }
@@ -97,8 +97,8 @@ export function useMenuDrillIn(isOpen: boolean): UseMenuDrillInReturn {
   }, []);
 
   const drillIn = useMemo<DropdownMenuDrillIn>(
-    () => ({isCoarsePointer, viewStack, host, push, pop}),
-    [isCoarsePointer, viewStack, host, push, pop],
+    () => ({isCompactTouch, viewStack, host, push, pop}),
+    [isCompactTouch, viewStack, host, push, pop],
   );
 
   const isDrilled = viewStack.length > 0;

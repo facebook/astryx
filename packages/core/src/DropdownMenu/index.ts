@@ -67,6 +67,5 @@ export {
   DropdownMenuContext,
   useDropdownMenuContext,
   type DropdownMenuContextValue,
-  type DropdownMenuDrillIn,
   type DropdownMenuSize,
 } from './DropdownMenuContext';

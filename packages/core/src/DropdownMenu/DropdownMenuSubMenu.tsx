@@ -354,7 +354,7 @@ export function DropdownMenuSubMenu(
   const activeDrillIn =
     drillIn != null &&
     (presentation === 'drill-in' ||
-      (presentation === 'adaptive' && drillIn.isCoarsePointer))
+      (presentation === 'adaptive' && drillIn.isCompactTouch))
       ? drillIn
       : null;
   const isDrillIn = activeDrillIn != null;
