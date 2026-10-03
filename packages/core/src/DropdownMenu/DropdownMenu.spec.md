@@ -308,8 +308,6 @@ viewport term cannot reason about.
 
 ### DEC-3 — Any control can open a menu
 
-### DEC-4 — Sub-menus drill in on a phone
-
 **Reference:** `component:DropdownMenu/DEC-3`
 
 **Decider:** `cixzhang`, 2026-10-02
@@ -339,9 +337,52 @@ Rejected: an `as` prop on the Button — an icon button, a chip, an avatar and a
 list row are not Button variants; a slot component — hides which props must
 reach the control.
 
-### DEC-4 — A row that goes somewhere is a link
+### DEC-4 — Sub-menus drill in on a phone
 
 **Reference:** `component:DropdownMenu/DEC-4`
+
+**Decider:** `cixzhang`, 2026-10-02
+
+A flyout beside a phone-width menu has no room. When a compact touch display
+opened the menu — sampled once, as it opens, so the menu never changes shape
+under a pointer — a sub-menu row pushes its view onto a stack the root keeps
+(`useMenuDrillIn`, internal) and the root shows that view in place of its rows:
+a "Back to <parent>" row, then the sub-menu's rows, inside the same menu box.
+The sub-menu portals its list into the root's host so the row stays mounted,
+its rows stay live, and Back has something to return focus to; sibling rows
+and dividers need no knowledge of it. Works in compound and data mode and in
+`ContextMenu`; `presentation` overrides the policy.
+
+The query is `COMPACT_TOUCH_PRESENTATION_QUERY`, the one the root
+presentation already uses to decide its bottom sheet, so one component
+carries one meaning of "adaptive". A bare `(pointer: coarse)` disagreed with
+it on a large touch tablet: the menu stayed an anchored popover while its
+sub-menus replaced rows in place, a combination nobody designed.
+
+The public surface is `presentation` alone. `useMenuDrillIn` and its
+`DropdownMenuDrillIn` view-stack controller stay internal: exporting them
+would make internal machinery permanent API that nothing here requires a
+caller to touch. A product that later needs to drive the stack earns a
+deliberate component or hook then, with its own contract.
+
+Rejected: a flipped flyout — lands over the parent rows and reads as a second
+menu; drill-in in data mode only — every menu in the app is compound; a
+`{label, children}` snapshot pushed onto the stack — unmounts the row and
+breaks focus return.
+
+## Open questions
+
+None.
+
+## Content boundary
+
+This file does not duplicate consumer prop tables, item examples, focus and
+positioning algorithms, implementation steps, or shared modality, layer,
+dismissal, and theming rules. It links to their owners.
+
+### DEC-5 — A row that goes somewhere is a link
+
+**Reference:** `component:DropdownMenu/DEC-5`
 
 **Decider:** vjeux, 2026-09-27 (owner confirmation pending)
 
