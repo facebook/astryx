@@ -13,8 +13,9 @@ Experimental no-build Astryx assets for plain HTML pages. Vanilla Astryx combine
   - [`form-two-column.html`](templates/form-two-column.html)
   - [`detail-page.html`](templates/detail-page.html)
 - A browsable [`demo/index.html`](demo/index.html) with neutral, butter, and Y2K theme controls plus light and dark modes.
+- A committed, ready-to-open [`demo/pinned/index.html`](demo/pinned/index.html) and four pinned templates.
 
-The templates use `__ASTRYX_VANILLA_CDN__` as the base for their CSS and JavaScript URLs. The Astryx CLI replaces that placeholder with a commit-pinned jsDelivr URL when it emits HTML.
+The canonical templates use `__ASTRYX_VANILLA_CDN__` as the base for their CSS and JavaScript URLs. The Astryx CLI and the demo renderer replace that placeholder with the same commit-pinned jsDelivr URL.
 
 ## Try it
 
@@ -26,6 +27,14 @@ pnpm -F @astryxdesign/vanilla build
 pnpm -F @astryxdesign/vanilla test
 ```
 
+A fresh clone already contains the rendered demo. Open `packages/vanilla/demo/pinned/index.html` directly in a browser; its links open the four templates in the same directory. To regenerate the pinned copies from the canonical demo, templates, and CDN pin, run:
+
+```sh
+pnpm -F @astryxdesign/vanilla demo
+```
+
+The command prints the ready-to-open `file://` URL. The committed copies intentionally load CSS and JavaScript from the single `ASTRYX_VANILLA_CDN_REF` constant in the CLI.
+
 Run the CLI directly from a checkout:
 
 ```sh
@@ -33,13 +42,13 @@ node packages/cli/clients/cli/bin/astryx.mjs template --list --html
 node packages/cli/clients/cli/bin/astryx.mjs template dashboard --html > dashboard.html
 ```
 
-For local development, replace `__ASTRYX_VANILLA_CDN__` in a template or the demo index with either:
+For local development, replace `__ASTRYX_VANILLA_CDN__` in a canonical template or the source demo index with either:
 
-- `../dist` for the committed demo index;
+- `../dist` for the source demo index;
 - an absolute URL for a local static server; or
 - a commit-pinned public URL such as `https://cdn.jsdelivr.net/gh/facebook/astryx@<commit>/packages/vanilla/dist`.
 
-Then serve the repository root with any static file server. The HTML documents themselves are intended for a local file or static host because jsDelivr serves HTML as plain text.
+Then serve the repository root with any static file server. The canonical HTML documents preserve the placeholder for CLI rendering, while `demo/pinned/` is the zero-setup copy for local files or an HTML-capable static host.
 
 ## Markup contract
 

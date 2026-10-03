@@ -6,6 +6,11 @@ import {readdir, readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import test from 'node:test';
+import {
+  ASTRYX_VANILLA_CDN_PLACEHOLDER,
+  ASTRYX_VANILLA_CDN_REF,
+  astryxVanillaCdnBase,
+} from '../../cli/api/template/html/html.mjs';
 
 const packageRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -14,6 +19,7 @@ const packageRoot = path.resolve(
 const cssPath = path.join(packageRoot, 'dist/astryx-vanilla.css');
 const componentsDir = path.join(packageRoot, 'src/components');
 const markupDir = path.join(packageRoot, 'markup');
+const pinnedDemoDir = path.join(packageRoot, 'demo/pinned');
 
 async function listStems(directory, extension) {
   const entries = await readdir(directory, {withFileTypes: true});
@@ -92,5 +98,43 @@ test('the build emits classic and ESM theme helpers', async () => {
   for (const source of [classic, esm]) {
     assert.match(source, /data-ax-theme-switch/);
     assert.match(source, /data-ax-mode-switch/);
+  }
+});
+
+test('pseudo-elements stay outside :where() and :is() in source and dist', async () => {
+  const componentFiles = (await readdir(componentsDir))
+    .filter(file => file.endsWith('.css'))
+    .map(file => path.join(componentsDir, file));
+
+  for (const file of [...componentFiles, cssPath]) {
+    const css = await readFile(file, 'utf8');
+    assert.doesNotMatch(
+      css,
+      /:(?:where|is)\([^)]*::/,
+      `${path.relative(packageRoot, file)} contains a pseudo-element inside :where() or :is()`,
+    );
+  }
+});
+
+test('the committed pinned demo matches the canonical sources and CDN ref', async () => {
+  execFileSync(process.execPath, ['scripts/render-demo.mjs', '--check'], {
+    cwd: packageRoot,
+    stdio: 'pipe',
+  });
+
+  const cdnBase = astryxVanillaCdnBase(ASTRYX_VANILLA_CDN_REF);
+  const names = ['dashboard', 'detail-page', 'form-two-column', 'table-filter'];
+  const index = await readFile(path.join(pinnedDemoDir, 'index.html'), 'utf8');
+  assert.doesNotMatch(index, new RegExp(ASTRYX_VANILLA_CDN_PLACEHOLDER));
+  assert.match(index, new RegExp(cdnBase, 'g'));
+
+  for (const name of names) {
+    assert.match(index, new RegExp(`href="\\./${name}\\.html"`));
+    const template = await readFile(
+      path.join(pinnedDemoDir, `${name}.html`),
+      'utf8',
+    );
+    assert.doesNotMatch(template, new RegExp(ASTRYX_VANILLA_CDN_PLACEHOLDER));
+    assert.match(template, new RegExp(cdnBase, 'g'));
   }
 });

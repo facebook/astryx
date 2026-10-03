@@ -241,8 +241,8 @@
     color: var(--color-on-success);
   }
   :where(.ax-badge--warning) {
-    background: var(--color-warning);
-    color: var(--color-on-warning);
+    background: light-dark(var(--color-warning-muted), var(--color-warning));
+    color: light-dark(var(--color-text-primary), var(--color-background-body));
   }
   :where(.ax-badge--error) {
     background: var(--color-error);
@@ -540,15 +540,15 @@
     cursor: pointer;
     list-style: none;
   }
-  :where(.ax-collapsible__trigger::-webkit-details-marker) {
+  :where(.ax-collapsible__trigger)::-webkit-details-marker {
     display: none;
   }
-  :where(.ax-collapsible__trigger::after) {
+  :where(.ax-collapsible__trigger)::after {
     color: var(--color-text-secondary);
     content: '⌄';
     transition: transform var(--duration-fast) var(--ease-standard);
   }
-  :where(.ax-collapsible[open] > .ax-collapsible__trigger::after) {
+  :where(.ax-collapsible[open] > .ax-collapsible__trigger)::after {
     transform: rotate(180deg);
   }
   :where(.ax-collapsible__trigger:focus-visible) {
@@ -574,7 +574,7 @@
     color: var(--color-text-primary);
     overflow: visible;
   }
-  :where(.ax-dialog::backdrop) {
+  :where(.ax-dialog)::backdrop {
     background: rgb(10 19 23 / 55%);
     backdrop-filter: blur(2px);
   }
@@ -1420,7 +1420,7 @@
   :where(.ax-tab[aria-selected='true'], .ax-tab[data-ax-selected]) {
     color: var(--color-text-primary);
   }
-  :where(.ax-tab[aria-selected='true']::after, .ax-tab[data-ax-selected]::after) {
+  :where(.ax-tab[aria-selected='true'], .ax-tab[data-ax-selected])::after {
     position: absolute;
     right: var(--spacing-2);
     bottom: -1px;
@@ -1539,7 +1539,7 @@
     font: inherit;
     outline: 0;
   }
-  :where(.ax-text-input > input::placeholder) {
+  :where(.ax-text-input > input)::placeholder {
     color: var(--color-text-secondary);
   }
 
@@ -1686,7 +1686,7 @@
     overflow-x: auto;
     scrollbar-width: none;
   }
-  :where(.ax-top-nav__items::-webkit-scrollbar) {
+  :where(.ax-top-nav__items)::-webkit-scrollbar {
     display: none;
   }
   :where(.ax-top-nav__brand) {

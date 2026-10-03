@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en" data-astryx-theme="neutral" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Astryx order detail</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/core@0.6.5/src/reset.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/facebook/astryx@30b945f673a88e00a7420f3567e246aaf875cff7/packages/vanilla/dist/astryx-vanilla.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-neutral@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-butter@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-y2k@0.6.5/dist/theme.css" />
+    <style>
+      @layer astryx-base {
+        .detail-shell {
+          min-height: 100vh;
+          background: var(--color-background-body);
+        }
+        .detail-main {
+          width: min(100% - 2 * var(--spacing-4), 76rem);
+          margin-inline: auto;
+          padding-block: var(--spacing-5) var(--spacing-10);
+        }
+        .detail-toolbar,
+        .detail-heading-row,
+        .detail-section-heading,
+        .detail-line {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: var(--spacing-3);
+          flex-wrap: wrap;
+        }
+        .detail-meta {
+          display: flex;
+          align-items: center;
+          gap: var(--spacing-2);
+          flex-wrap: wrap;
+        }
+        .detail-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1.55fr) minmax(18rem, 0.8fr);
+          gap: var(--spacing-4);
+          align-items: start;
+        }
+        .detail-items {
+          display: grid;
+          gap: var(--spacing-3);
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+        .detail-item {
+          display: grid;
+          grid-template-columns: 3rem minmax(0, 1fr) auto;
+          align-items: center;
+          gap: var(--spacing-3);
+          padding-block-end: var(--spacing-3);
+          border-block-end: var(--border-width) solid var(--color-border);
+        }
+        .detail-item__thumb {
+          display: grid;
+          width: 3rem;
+          aspect-ratio: 1;
+          place-items: center;
+          border-radius: var(--radius-element);
+          background: var(--color-background-muted);
+          color: var(--color-accent);
+          font-weight: var(--font-weight-bold);
+        }
+        .detail-summary {
+          display: grid;
+          gap: var(--spacing-2);
+          margin: 0;
+        }
+        .detail-summary > div {
+          display: grid;
+          grid-template-columns: 1fr auto;
+          gap: var(--spacing-3);
+        }
+        .detail-summary dt {
+          color: var(--color-text-secondary);
+        }
+        .detail-summary dd {
+          margin: 0;
+          text-align: end;
+        }
+        .detail-timeline {
+          display: grid;
+          gap: var(--spacing-4);
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+        .detail-timeline__event {
+          display: grid;
+          grid-template-columns: auto 1fr;
+          gap: var(--spacing-3);
+        }
+        .detail-timeline__dot {
+          width: var(--spacing-3);
+          height: var(--spacing-3);
+          margin-block-start: var(--spacing-1);
+          border-radius: 50%;
+          background: var(--color-accent);
+        }
+        @media (max-width: 52rem) {
+          .detail-grid {
+            grid-template-columns: 1fr;
+          }
+          .detail-main {
+            width: min(100% - 2 * var(--spacing-3), 76rem);
+          }
+          .detail-item {
+            grid-template-columns: 2.5rem minmax(0, 1fr);
+          }
+          .detail-item > :last-child {
+            grid-column: 2;
+          }
+        }
+      }
+    </style>
+    <script>
+      const params = new URLSearchParams(location.search);
+      const theme = params.get('theme');
+      const mode = params.get('mode');
+      if (['neutral', 'butter', 'y2k'].includes(theme))
+        document.documentElement.dataset.astryxTheme = theme;
+      if (['light', 'dark'].includes(mode))
+        document.documentElement.dataset.theme = mode;
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/gh/facebook/astryx@30b945f673a88e00a7420f3567e246aaf875cff7/packages/vanilla/dist/astryx-vanilla.js"></script>
+  </head>
+  <body class="detail-shell">
+    <main class="detail-main ax-stack ax-stack--gap-5">
+      <div class="detail-toolbar">
+        <a class="ax-link" href="#">← All orders</a>
+        <div
+          class="ax-stack ax-stack--horizontal ax-stack--gap-2 ax-stack--wrap">
+          <label class="ax-selector ax-selector--sm"
+            ><span class="ax-selector__label">Theme</span
+            ><span class="ax-selector__control"
+              ><select class="ax-selector__select" data-ax-theme-switch>
+                <option value="neutral">Neutral</option>
+                <option value="butter">Butter</option>
+                <option value="y2k">Y2K</option></select
+              ><span
+                class="ax-selector__indicator"
+                aria-hidden="true"></span></span
+          ></label>
+          <label class="ax-selector ax-selector--sm"
+            ><span class="ax-selector__label">Mode</span
+            ><span class="ax-selector__control"
+              ><select class="ax-selector__select" data-ax-mode-switch>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option></select
+              ><span
+                class="ax-selector__indicator"
+                aria-hidden="true"></span></span
+          ></label>
+        </div>
+      </div>
+
+      <header class="ax-stack ax-stack--gap-3">
+        <div class="detail-heading-row">
+          <div class="ax-stack ax-stack--gap-1">
+            <h1 class="ax-heading ax-heading--1">Order #1001</h1>
+            <div class="detail-meta">
+              <span class="ax-text ax-text--secondary">5 items</span>
+              <span aria-hidden="true">·</span>
+              <span class="ax-text">Jane Doe</span>
+              <span class="ax-badge ax-badge--warning">Unfulfilled</span>
+              <span class="ax-text ax-text--secondary">Feb 23, 2026</span>
+            </div>
+          </div>
+          <div
+            class="ax-stack ax-stack--horizontal ax-stack--gap-2 ax-stack--wrap">
+            <button
+              class="ax-button ax-button--secondary"
+              type="button"
+              data-ax-toast="Restock request created">
+              Restock
+            </button>
+            <div class="ax-dropdown-menu">
+              <button
+                class="ax-button ax-button--primary"
+                type="button"
+                data-ax-dropdown-trigger="order-actions">
+                Actions
+              </button>
+              <div
+                class="ax-dropdown-menu__popover"
+                id="order-actions"
+                role="menu"
+                popover="auto"
+                data-ax-dropdown-menu>
+                <button
+                  class="ax-dropdown-menu__item"
+                  type="button"
+                  role="menuitem"
+                  data-ax-dialog-open="fulfill-dialog">
+                  Mark fulfilled
+                </button>
+                <button
+                  class="ax-dropdown-menu__item"
+                  type="button"
+                  role="menuitem"
+                  data-ax-toast="Invoice sent">
+                  Send invoice
+                </button>
+                <hr class="ax-dropdown-menu__divider" />
+                <button
+                  class="ax-dropdown-menu__item ax-dropdown-menu__item--destructive"
+                  type="button"
+                  role="menuitem">
+                  Cancel order
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="ax-tab-list"
+          role="tablist"
+          aria-label="Order views"
+          data-ax-tab-list>
+          <button
+            class="ax-tab"
+            id="detail-tab-overview"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            aria-controls="detail-panel-overview">
+            Overview
+          </button>
+          <button
+            class="ax-tab"
+            id="detail-tab-timeline"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="detail-panel-timeline">
+            Timeline
+          </button>
+          <button
+            class="ax-tab"
+            id="detail-tab-customer"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="detail-panel-customer">
+            Customer
+          </button>
+        </div>
+      </header>
+
+      <section
+        class="ax-tab-panel"
+        id="detail-panel-overview"
+        role="tabpanel"
+        aria-labelledby="detail-tab-overview">
+        <div class="detail-grid">
+          <div class="ax-stack ax-stack--gap-4">
+            <article
+              class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4">
+              <div class="detail-section-heading">
+                <h2 class="ax-heading ax-heading--3">Items</h2>
+                <span class="ax-badge ax-badge--warning">Unfulfilled</span>
+              </div>
+              <ul class="detail-items">
+                <li class="detail-item">
+                  <span class="detail-item__thumb" aria-hidden="true">SM</span
+                  ><span
+                    ><strong class="ax-text">Solstice Mug</strong><br /><span
+                      class="ax-text ax-text--supporting ax-text--secondary"
+                      >Glaze: Snow · Matte</span
+                    ></span
+                  ><span class="ax-text ax-text--semibold">$89.00</span>
+                </li>
+                <li class="detail-item">
+                  <span class="detail-item__thumb" aria-hidden="true">EB</span
+                  ><span
+                    ><strong class="ax-text">Ember Bowl</strong><br /><span
+                      class="ax-text ax-text--supporting ax-text--secondary"
+                      >Glaze: Sage · Qty 2</span
+                    ></span
+                  ><span class="ax-text ax-text--semibold">$84.00</span>
+                </li>
+                <li class="detail-item">
+                  <span class="detail-item__thumb" aria-hidden="true">TC</span
+                  ><span
+                    ><strong class="ax-text">Terra Cup</strong><br /><span
+                      class="ax-text ax-text--supporting ax-text--secondary"
+                      >Glaze: Oat · 14 oz</span
+                    ></span
+                  ><span class="ax-text ax-text--semibold">$65.00</span>
+                </li>
+                <li class="detail-item">
+                  <span class="detail-item__thumb" aria-hidden="true">DP</span
+                  ><span
+                    ><strong class="ax-text">Dawn Plate Set</strong><br /><span
+                      class="ax-text ax-text--supporting ax-text--secondary"
+                      >Glaze: Charcoal · Qty 3</span
+                    ></span
+                  ><span class="ax-text ax-text--semibold">$102.00</span>
+                </li>
+              </ul>
+            </article>
+
+            <article
+              class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4">
+              <div class="detail-section-heading">
+                <h2 class="ax-heading ax-heading--3">Invoice</h2>
+                <span class="ax-badge ax-badge--success">Paid</span>
+              </div>
+              <dl class="detail-summary">
+                <div>
+                  <dt>Subtotal</dt>
+                  <dd>$340.00</dd>
+                </div>
+                <div>
+                  <dt>Discount · NEW15</dt>
+                  <dd>−$15.00</dd>
+                </div>
+                <div>
+                  <dt>Shipping</dt>
+                  <dd>Free</dd>
+                </div>
+                <div>
+                  <dt>Tax</dt>
+                  <dd>$26.81</dd>
+                </div>
+                <div>
+                  <dt><strong>Total</strong></dt>
+                  <dd><strong>$351.81</strong></dd>
+                </div>
+              </dl>
+            </article>
+          </div>
+
+          <aside class="ax-stack ax-stack--gap-3" aria-label="Order notes">
+            <article
+              class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-3">
+              <h2 class="ax-heading ax-heading--4">Order details</h2>
+              <details class="ax-collapsible" data-ax-collapsible open>
+                <summary class="ax-collapsible__trigger">Shipping</summary>
+                <div class="ax-collapsible__content">
+                  <p class="ax-text">
+                    Jane Doe<br />321 Smith Road<br />Oakland, CA 94607
+                  </p>
+                </div>
+              </details>
+              <details class="ax-collapsible" data-ax-collapsible>
+                <summary class="ax-collapsible__trigger">Customer note</summary>
+                <div class="ax-collapsible__content">
+                  Please wrap the mug and plate set in recycled kraft paper.
+                </div>
+              </details>
+              <details class="ax-collapsible" data-ax-collapsible>
+                <summary class="ax-collapsible__trigger">
+                  Fraud analysis
+                </summary>
+                <div class="ax-collapsible__content">
+                  <span class="ax-badge ax-badge--success">Low risk</span>
+                  <p class="ax-text ax-text--supporting">
+                    Payment and delivery signals look consistent.
+                  </p>
+                </div>
+              </details>
+            </article>
+            <article class="ax-card ax-card--muted ax-stack ax-stack--gap-2">
+              <h2 class="ax-heading ax-heading--4">Need help?</h2>
+              <p class="ax-text ax-text--secondary">
+                Review fulfillment guidance before changing this order.
+              </p>
+              <a class="ax-link" href="#">Open guide</a>
+            </article>
+          </aside>
+        </div>
+      </section>
+
+      <section
+        class="ax-tab-panel"
+        id="detail-panel-timeline"
+        role="tabpanel"
+        aria-labelledby="detail-tab-timeline">
+        <article
+          class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4">
+          <h2 class="ax-heading ax-heading--3">Timeline</h2>
+          <ol class="detail-timeline">
+            <li class="detail-timeline__event">
+              <span class="detail-timeline__dot" aria-hidden="true"></span
+              ><span
+                ><strong class="ax-text">Order placed</strong><br /><span
+                  class="ax-text ax-text--supporting ax-text--secondary"
+                  >Jane Doe · Feb 23 at 9:12 AM</span
+                ></span
+              >
+            </li>
+            <li class="detail-timeline__event">
+              <span class="detail-timeline__dot" aria-hidden="true"></span
+              ><span
+                ><strong class="ax-text">Payment verified</strong><br /><span
+                  class="ax-text ax-text--supporting ax-text--secondary"
+                  >Visa ending in 7482 · Feb 23 at 9:13 AM</span
+                ></span
+              >
+            </li>
+            <li class="detail-timeline__event">
+              <span class="detail-timeline__dot" aria-hidden="true"></span
+              ><span
+                ><strong class="ax-text">Ready for fulfillment</strong
+                ><br /><span
+                  class="ax-text ax-text--supporting ax-text--secondary"
+                  >Alex Rivera · Feb 23 at 2:15 PM</span
+                ></span
+              >
+            </li>
+          </ol>
+        </article>
+      </section>
+
+      <section
+        class="ax-tab-panel"
+        id="detail-panel-customer"
+        role="tabpanel"
+        aria-labelledby="detail-tab-customer">
+        <article
+          class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-3">
+          <h2 class="ax-heading ax-heading--3">Jane Doe</h2>
+          <p class="ax-text">Repeat customer · 3 orders this quarter</p>
+          <p class="ax-text ax-text--secondary">
+            janedoe@example.com · (510) 555-0128
+          </p>
+          <button
+            class="ax-button ax-button--secondary"
+            type="button"
+            data-ax-toast="Customer details copied">
+            Copy details
+          </button>
+        </article>
+      </section>
+    </main>
+
+    <dialog
+      class="ax-dialog"
+      id="fulfill-dialog"
+      data-ax-dialog
+      aria-labelledby="fulfill-title">
+      <div class="ax-dialog__surface">
+        <header class="ax-dialog__header">
+          <h2 class="ax-dialog__title" id="fulfill-title">
+            Mark order fulfilled?
+          </h2>
+          <button
+            class="ax-button ax-button--ghost"
+            type="button"
+            data-ax-dialog-close
+            aria-label="Close dialog">
+            ×
+          </button>
+        </header>
+        <div class="ax-dialog__body">
+          <p class="ax-text">
+            This records all items as packed and ready to ship.
+          </p>
+        </div>
+        <footer class="ax-dialog__footer">
+          <button
+            class="ax-button ax-button--ghost"
+            type="button"
+            data-ax-dialog-close>
+            Cancel</button
+          ><button
+            class="ax-button ax-button--primary"
+            type="button"
+            data-ax-dialog-close
+            data-ax-toast="Order marked fulfilled">
+            Confirm
+          </button>
+        </footer>
+      </div>
+    </dialog>
+  </body>
+</html>

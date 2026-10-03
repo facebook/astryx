@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en" data-astryx-theme="neutral" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Astryx service jobs</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/core@0.6.5/src/reset.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/facebook/astryx@30b945f673a88e00a7420f3567e246aaf875cff7/packages/vanilla/dist/astryx-vanilla.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-neutral@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-butter@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-y2k@0.6.5/dist/theme.css" />
+    <style>
+      @layer astryx-base {
+        .jobs-shell {
+          min-height: 100vh;
+          background: var(--color-background-body);
+        }
+        .jobs-main {
+          width: min(100% - 2 * var(--spacing-4), 90rem);
+          margin-inline: auto;
+          padding-block: var(--spacing-6);
+        }
+        .jobs-header,
+        .jobs-filters,
+        .jobs-summary {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: var(--spacing-3);
+          flex-wrap: wrap;
+        }
+        .jobs-filter-row {
+          display: grid;
+          grid-template-columns: minmax(16rem, 2fr) repeat(
+              2,
+              minmax(10rem, 1fr)
+            );
+          gap: var(--spacing-3);
+          align-items: end;
+        }
+        .jobs-actions {
+          display: flex;
+          align-items: center;
+          gap: var(--spacing-2);
+          flex-wrap: wrap;
+        }
+        .jobs-table-card {
+          padding: 0;
+        }
+        .jobs-table-card .jobs-summary {
+          padding: var(--spacing-4);
+        }
+        .jobs-table-card .ax-table__scroll {
+          border-block-start: var(--border-width) solid var(--color-border);
+        }
+        .jobs-row[hidden] {
+          display: none;
+        }
+        .jobs-id {
+          color: var(--color-text-secondary);
+          font-size: var(--text-supporting-size);
+        }
+        @media (max-width: 52rem) {
+          .jobs-filter-row {
+            grid-template-columns: 1fr;
+          }
+          .jobs-main {
+            width: min(100% - 2 * var(--spacing-3), 90rem);
+          }
+          .ax-top-nav__items {
+            display: none;
+          }
+        }
+      }
+    </style>
+    <script>
+      const params = new URLSearchParams(location.search);
+      const theme = params.get('theme');
+      const mode = params.get('mode');
+      if (['neutral', 'butter', 'y2k'].includes(theme))
+        document.documentElement.dataset.astryxTheme = theme;
+      if (['light', 'dark'].includes(mode))
+        document.documentElement.dataset.theme = mode;
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/gh/facebook/astryx@30b945f673a88e00a7420f3567e246aaf875cff7/packages/vanilla/dist/astryx-vanilla.js"></script>
+  </head>
+  <body class="jobs-shell">
+    <nav class="ax-top-nav" aria-label="Primary navigation">
+      <div class="ax-top-nav__start">
+        <a class="ax-top-nav__brand" href="#">
+          <span class="ax-top-nav__brand-mark" aria-hidden="true">F</span>
+          <span>Fieldwork</span>
+        </a>
+        <div class="ax-top-nav__items">
+          <a class="ax-top-nav__item" href="#">Schedule</a>
+          <a class="ax-top-nav__item" href="#" aria-current="page">Jobs</a>
+          <a class="ax-top-nav__item" href="#">Customers</a>
+        </div>
+      </div>
+      <div class="ax-top-nav__end">
+        <button
+          class="ax-button ax-button--primary ax-button--sm"
+          type="button"
+          data-ax-dialog-open="new-job-dialog">
+          New job
+        </button>
+      </div>
+    </nav>
+
+    <main class="jobs-main ax-stack ax-stack--gap-5">
+      <header class="jobs-header">
+        <div class="ax-stack ax-stack--gap-1">
+          <h1 class="ax-heading ax-heading--1">Service jobs</h1>
+          <p class="ax-text ax-text--secondary">
+            Dispatch, track, and close field work from one queue.
+          </p>
+        </div>
+        <div class="jobs-actions">
+          <label class="ax-selector ax-selector--sm">
+            <span class="ax-selector__label">Theme</span>
+            <span class="ax-selector__control">
+              <select class="ax-selector__select" data-ax-theme-switch>
+                <option value="neutral">Neutral</option>
+                <option value="butter">Butter</option>
+                <option value="y2k">Y2K</option>
+              </select>
+              <span class="ax-selector__indicator" aria-hidden="true"></span>
+            </span>
+          </label>
+          <label class="ax-selector ax-selector--sm">
+            <span class="ax-selector__label">Mode</span>
+            <span class="ax-selector__control">
+              <select class="ax-selector__select" data-ax-mode-switch>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+              <span class="ax-selector__indicator" aria-hidden="true"></span>
+            </span>
+          </label>
+        </div>
+      </header>
+
+      <section
+        class="ax-card ax-card--elevation-low ax-stack ax-stack--gap-4"
+        aria-labelledby="filters-title">
+        <div class="jobs-filters">
+          <h2 class="ax-heading ax-heading--3" id="filters-title">
+            Filter work
+          </h2>
+          <button
+            class="ax-button ax-button--ghost ax-button--sm"
+            id="clear-filters"
+            type="button">
+            Clear all
+          </button>
+        </div>
+        <div class="jobs-filter-row">
+          <label class="ax-stack ax-stack--gap-1">
+            <span class="ax-text ax-text--label">Search</span>
+            <span class="ax-text-input"
+              ><input
+                id="job-search"
+                type="search"
+                placeholder="Job, customer, or technician"
+            /></span>
+          </label>
+          <label class="ax-selector">
+            <span class="ax-selector__label">Status</span>
+            <span class="ax-selector__control">
+              <select class="ax-selector__select" id="job-status">
+                <option value="">All statuses</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="in progress">In progress</option>
+                <option value="on hold">On hold</option>
+                <option value="overdue">Overdue</option>
+              </select>
+              <span class="ax-selector__indicator" aria-hidden="true"></span>
+            </span>
+          </label>
+          <label class="ax-selector">
+            <span class="ax-selector__label">Priority</span>
+            <span class="ax-selector__control">
+              <select class="ax-selector__select" id="job-priority">
+                <option value="">All priorities</option>
+                <option value="urgent">Urgent</option>
+                <option value="high">High</option>
+                <option value="normal">Normal</option>
+              </select>
+              <span class="ax-selector__indicator" aria-hidden="true"></span>
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <section
+        class="ax-card ax-card--elevation-low jobs-table-card"
+        aria-labelledby="jobs-table-title">
+        <div class="jobs-summary">
+          <div>
+            <h2 class="ax-heading ax-heading--3" id="jobs-table-title">
+              Open work
+            </h2>
+            <p class="ax-text ax-text--supporting ax-text--secondary">
+              <span id="job-count">8</span> jobs match this view
+            </p>
+          </div>
+          <div class="jobs-actions">
+            <span class="ax-badge ax-badge--error">2 overdue</span>
+            <div class="ax-dropdown-menu">
+              <button
+                class="ax-button ax-button--secondary ax-button--sm"
+                type="button"
+                data-ax-dropdown-trigger="jobs-view-menu">
+                View options
+              </button>
+              <div
+                class="ax-dropdown-menu__popover"
+                id="jobs-view-menu"
+                role="menu"
+                popover="auto"
+                data-ax-dropdown-menu>
+                <button
+                  class="ax-dropdown-menu__item"
+                  type="button"
+                  role="menuitem">
+                  Compact rows
+                </button>
+                <button
+                  class="ax-dropdown-menu__item"
+                  type="button"
+                  role="menuitem">
+                  Group by customer
+                </button>
+                <button
+                  class="ax-dropdown-menu__item"
+                  type="button"
+                  role="menuitem">
+                  Save this view
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="ax-table__scroll"
+          tabindex="0"
+          role="group"
+          aria-label="Service jobs table">
+          <table class="ax-table ax-table--hover ax-table--striped">
+            <caption>
+              Open field-service jobs
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Job</th>
+                <th scope="col">Customer</th>
+                <th scope="col">Technician</th>
+                <th scope="col">Status</th>
+                <th scope="col">Priority</th>
+                <th scope="col">Scheduled</th>
+              </tr>
+            </thead>
+            <tbody id="jobs-body">
+              <tr
+                class="jobs-row"
+                data-status="in progress"
+                data-priority="urgent">
+                <td>
+                  <strong>No cooling — rooftop unit 3</strong><br /><span
+                    class="jobs-id"
+                    >SJ-2148</span
+                  >
+                </td>
+                <td>Harborview Grand Hotel</td>
+                <td>Luis Camarena</td>
+                <td>
+                  <span class="ax-badge ax-badge--info">In progress</span>
+                </td>
+                <td>Urgent</td>
+                <td>Today, 8:00 AM</td>
+              </tr>
+              <tr
+                class="jobs-row"
+                data-status="scheduled"
+                data-priority="normal">
+                <td>
+                  <strong>Quarterly preventive maintenance</strong><br /><span
+                    class="jobs-id"
+                    >SJ-2147</span
+                  >
+                </td>
+                <td>Northgate Dental Group</td>
+                <td>Dana Whitfield</td>
+                <td><span class="ax-badge ax-badge--info">Scheduled</span></td>
+                <td>Normal</td>
+                <td>Today, 10:30 AM</td>
+              </tr>
+              <tr class="jobs-row" data-status="on hold" data-priority="high">
+                <td>
+                  <strong>Walk-in freezer overshooting setpoint</strong
+                  ><br /><span class="jobs-id">SJ-2146</span>
+                </td>
+                <td>Beacon Street Bistro</td>
+                <td>Marcus Osei</td>
+                <td><span class="ax-badge ax-badge--warning">On hold</span></td>
+                <td>High</td>
+                <td>Yesterday, 1:00 PM</td>
+              </tr>
+              <tr
+                class="jobs-row"
+                data-status="scheduled"
+                data-priority="normal">
+                <td>
+                  <strong>Thermostat replacement, suite 400</strong><br /><span
+                    class="jobs-id"
+                    >SJ-2145</span
+                  >
+                </td>
+                <td>Pinnacle Property Mgmt</td>
+                <td>Dana Whitfield</td>
+                <td><span class="ax-badge ax-badge--info">Scheduled</span></td>
+                <td>Normal</td>
+                <td>Today, 2:00 PM</td>
+              </tr>
+              <tr class="jobs-row" data-status="overdue" data-priority="high">
+                <td>
+                  <strong>Boiler pilot fails to stay lit</strong><br /><span
+                    class="jobs-id"
+                    >SJ-2144</span
+                  >
+                </td>
+                <td>Elm &amp; 5th Lofts</td>
+                <td>Luis Camarena</td>
+                <td><span class="ax-badge ax-badge--error">Overdue</span></td>
+                <td>High</td>
+                <td>Yesterday, 9:00 AM</td>
+              </tr>
+              <tr
+                class="jobs-row"
+                data-status="scheduled"
+                data-priority="normal">
+                <td>
+                  <strong>Condenser coil cleaning</strong><br /><span
+                    class="jobs-id"
+                    >SJ-2143</span
+                  >
+                </td>
+                <td>Riverside Athletic Club</td>
+                <td>Priya Raman</td>
+                <td><span class="ax-badge ax-badge--info">Scheduled</span></td>
+                <td>Normal</td>
+                <td>Tomorrow, 7:30 AM</td>
+              </tr>
+              <tr class="jobs-row" data-status="on hold" data-priority="high">
+                <td>
+                  <strong>Intermittent short cycling</strong><br /><span
+                    class="jobs-id"
+                    >SJ-2142</span
+                  >
+                </td>
+                <td>Harborview Grand Hotel</td>
+                <td>Marcus Osei</td>
+                <td><span class="ax-badge ax-badge--warning">On hold</span></td>
+                <td>High</td>
+                <td>Yesterday, 3:30 PM</td>
+              </tr>
+              <tr class="jobs-row" data-status="overdue" data-priority="urgent">
+                <td>
+                  <strong>Emergency steam leak, basement</strong><br /><span
+                    class="jobs-id"
+                    >SJ-2141</span
+                  >
+                </td>
+                <td>Elm &amp; 5th Lofts</td>
+                <td>Priya Raman</td>
+                <td><span class="ax-badge ax-badge--error">Overdue</span></td>
+                <td>Urgent</td>
+                <td>Yesterday, 6:00 AM</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <dialog
+      class="ax-dialog"
+      id="new-job-dialog"
+      data-ax-dialog
+      aria-labelledby="new-job-title">
+      <div class="ax-dialog__surface">
+        <header class="ax-dialog__header">
+          <h2 class="ax-dialog__title" id="new-job-title">
+            Create service job
+          </h2>
+          <button
+            class="ax-button ax-button--ghost"
+            type="button"
+            data-ax-dialog-close
+            aria-label="Close dialog">
+            ×
+          </button>
+        </header>
+        <div class="ax-dialog__body ax-stack ax-stack--gap-3">
+          <label class="ax-stack ax-stack--gap-1"
+            ><span class="ax-text ax-text--label">Summary</span
+            ><span class="ax-text-input"
+              ><input type="text" placeholder="Describe the work" /></span
+          ></label>
+          <label class="ax-stack ax-stack--gap-1"
+            ><span class="ax-text ax-text--label">Customer</span
+            ><span class="ax-text-input"
+              ><input type="text" placeholder="Customer name" /></span
+          ></label>
+        </div>
+        <footer class="ax-dialog__footer">
+          <button
+            class="ax-button ax-button--ghost"
+            type="button"
+            data-ax-dialog-close>
+            Cancel</button
+          ><button
+            class="ax-button ax-button--primary"
+            type="button"
+            data-ax-dialog-close
+            data-ax-toast="Service job created">
+            Create job
+          </button>
+        </footer>
+      </div>
+    </dialog>
+
+    <script>
+      const search = document.querySelector('#job-search');
+      const status = document.querySelector('#job-status');
+      const priority = document.querySelector('#job-priority');
+      const rows = [...document.querySelectorAll('.jobs-row')];
+      const count = document.querySelector('#job-count');
+      function applyFilters() {
+        const query = search.value.trim().toLowerCase();
+        let visible = 0;
+        for (const row of rows) {
+          const matches =
+            (!query || row.textContent.toLowerCase().includes(query)) &&
+            (!status.value || row.dataset.status === status.value) &&
+            (!priority.value || row.dataset.priority === priority.value);
+          row.hidden = !matches;
+          if (matches) visible += 1;
+        }
+        count.textContent = visible;
+      }
+      search.addEventListener('input', applyFilters);
+      status.addEventListener('change', applyFilters);
+      priority.addEventListener('change', applyFilters);
+      document.querySelector('#clear-filters').addEventListener('click', () => {
+        search.value = '';
+        status.value = '';
+        priority.value = '';
+        applyFilters();
+      });
+    </script>
+  </body>
+</html>

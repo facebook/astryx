@@ -51,7 +51,7 @@
   font: inherit;
   outline: 0;
 }
-:where(.ax-text-input > input::placeholder) {
+:where(.ax-text-input > input)::placeholder {
   color: var(--color-text-secondary);
 }
 

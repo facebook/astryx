@@ -9,7 +9,7 @@
   color: var(--color-text-primary);
   overflow: visible;
 }
-:where(.ax-dialog::backdrop) {
+:where(.ax-dialog)::backdrop {
   background: rgb(10 19 23 / 55%);
   backdrop-filter: blur(2px);
 }

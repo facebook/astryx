@@ -34,7 +34,7 @@
   overflow-x: auto;
   scrollbar-width: none;
 }
-:where(.ax-top-nav__items::-webkit-scrollbar) {
+:where(.ax-top-nav__items)::-webkit-scrollbar {
   display: none;
 }
 :where(.ax-top-nav__brand) {

@@ -1,4 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
+/**
+ * @input Native dialog triggers, including triggers inside enhanced dropdown menus.
+ * @output Modal lifecycle, initial focus, and stable focus restoration.
+ * @position Progressive enhancement for Vanilla Astryx dialogs.
+ */
 /* global Element, HTMLDialogElement, HTMLElement, queueMicrotask */
 
 import {dispatchAstryx, elementsMatching, ensureID} from './utils.js';
@@ -26,9 +31,29 @@ function focusDialog(dialog) {
   target.focus({preventScroll: true});
 }
 
+function dialogReturnTarget(trigger) {
+  const menu = trigger.closest('[data-ax-dropdown-menu]');
+  if (!(menu instanceof HTMLElement) || !menu.id) return trigger;
+
+  for (const candidate of trigger.ownerDocument.querySelectorAll(
+    '[aria-controls]',
+  )) {
+    if (
+      candidate instanceof HTMLElement &&
+      candidate.getAttribute('aria-controls') === menu.id
+    ) {
+      return candidate;
+    }
+  }
+  return trigger;
+}
+
 export function openDialog(dialog, trigger = null) {
   if (trigger instanceof HTMLElement) {
-    dialogOpeners.set(dialog, trigger);
+    dialogOpeners.set(dialog, {
+      returnTarget: dialogReturnTarget(trigger),
+      trigger,
+    });
     trigger.setAttribute('aria-expanded', 'true');
   }
   if (!dialog.open) dialog.showModal();
@@ -37,11 +62,12 @@ export function openDialog(dialog, trigger = null) {
 }
 
 export function closeDialog(dialog, returnFocus = true) {
-  const trigger = dialogOpeners.get(dialog);
+  const opener = dialogOpeners.get(dialog);
   if (dialog.open) dialog.close();
-  if (trigger instanceof HTMLElement)
-    trigger.setAttribute('aria-expanded', 'false');
-  if (returnFocus && trigger?.isConnected) trigger.focus({preventScroll: true});
+  if (opener?.trigger instanceof HTMLElement)
+    opener.trigger.setAttribute('aria-expanded', 'false');
+  if (returnFocus && opener?.returnTarget?.isConnected)
+    opener.returnTarget.focus({preventScroll: true});
   dialogOpeners.delete(dialog);
   dispatchAstryx(dialog, 'dialog-close');
 }

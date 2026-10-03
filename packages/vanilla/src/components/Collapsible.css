@@ -15,15 +15,15 @@
   cursor: pointer;
   list-style: none;
 }
-:where(.ax-collapsible__trigger::-webkit-details-marker) {
+:where(.ax-collapsible__trigger)::-webkit-details-marker {
   display: none;
 }
-:where(.ax-collapsible__trigger::after) {
+:where(.ax-collapsible__trigger)::after {
   color: var(--color-text-secondary);
   content: '⌄';
   transition: transform var(--duration-fast) var(--ease-standard);
 }
-:where(.ax-collapsible[open] > .ax-collapsible__trigger::after) {
+:where(.ax-collapsible[open] > .ax-collapsible__trigger)::after {
   transform: rotate(180deg);
 }
 :where(.ax-collapsible__trigger:focus-visible) {

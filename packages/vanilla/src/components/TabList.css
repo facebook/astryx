@@ -38,7 +38,7 @@
 :where(.ax-tab[aria-selected='true'], .ax-tab[data-ax-selected]) {
   color: var(--color-text-primary);
 }
-:where(.ax-tab[aria-selected='true']::after, .ax-tab[data-ax-selected]::after) {
+:where(.ax-tab[aria-selected='true'], .ax-tab[data-ax-selected])::after {
   position: absolute;
   right: var(--spacing-2);
   bottom: -1px;

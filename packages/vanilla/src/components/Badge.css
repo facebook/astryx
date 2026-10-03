@@ -30,8 +30,8 @@
   color: var(--color-on-success);
 }
 :where(.ax-badge--warning) {
-  background: var(--color-warning);
-  color: var(--color-on-warning);
+  background: light-dark(var(--color-warning-muted), var(--color-warning));
+  color: light-dark(var(--color-text-primary), var(--color-background-body));
 }
 :where(.ax-badge--error) {
   background: var(--color-error);

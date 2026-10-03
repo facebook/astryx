@@ -12,6 +12,8 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "check": "node scripts/build.mjs --check",
-    "test": "node --test"
+    "demo": "node scripts/render-demo.mjs",
+    "test": "node --test",
+    "test:browser": "node src/js/browser-test.mjs"
   }
 }
