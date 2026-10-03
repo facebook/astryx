@@ -28,6 +28,7 @@ import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 import {selectorPresentationStyles} from '../Selector/selectorPresentation.stylex';
+import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -156,6 +157,79 @@ describe('MultiSelector', () => {
       await screen.findByRole('dialog', {name: 'Fruit'}),
     ).toBeInTheDocument();
     expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+  });
+
+  describe('default presentation', () => {
+    // Answer only the shared adaptive query, so the test follows the policy
+    // the component actually reads.
+    function stubCompactTouch() {
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn().mockImplementation((query: string) => ({
+          matches: query === COMPACT_TOUCH_PRESENTATION_QUERY,
+          media: query,
+          onchange: null,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        })),
+      );
+    }
+
+    function renderFruit(props: {presentation?: 'popover'} = {}) {
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={[]}
+          onChange={() => {}}
+          {...props}
+        />,
+      );
+    }
+
+    it('opens a bottom sheet on compact touch screens', async () => {
+      stubCompactTouch();
+      const user = userEvent.setup();
+      renderFruit();
+
+      await user.click(screen.getByRole('combobox'));
+      expect(
+        await screen.findByRole('dialog', {name: 'Fruit'}),
+      ).toBeInTheDocument();
+      expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+    });
+
+    it('moves keyboard focus into the sheet', async () => {
+      stubCompactTouch();
+      const user = userEvent.setup();
+      renderFruit();
+
+      screen.getByRole('combobox').focus();
+      await user.keyboard('{Enter}');
+      await waitFor(() => expect(screen.getByRole('listbox')).toHaveFocus());
+    });
+
+    it('keeps the anchored popover without compact touch', async () => {
+      const user = userEvent.setup();
+      renderFruit();
+
+      await user.click(screen.getByRole('combobox'));
+      expect(HTMLElement.prototype.showPopover).toHaveBeenCalledOnce();
+      expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
+    });
+
+    it('keeps an explicit popover anchored on compact touch screens', async () => {
+      stubCompactTouch();
+      const user = userEvent.setup();
+      renderFruit({presentation: 'popover'});
+
+      await user.click(screen.getByRole('combobox'));
+      expect(HTMLElement.prototype.showPopover).toHaveBeenCalledOnce();
+      expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
+    });
   });
 
   it('moves keyboard focus into a bottom-sheet listbox', async () => {

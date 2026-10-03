@@ -740,7 +740,10 @@ interface SelectorPropsBase<
    * - 'popover': anchored to the trigger
    * - 'bottom-sheet': modal sheet suited to compact touch screens
    * - 'adaptive': bottom sheet on compact coarse-pointer screens, otherwise popover
-   * @default 'popover'
+   * The default, 'adaptive', gives phones a touch-sized sheet and keeps the
+   * anchored popover for mouse, trackpad, and large touch screens. Pass
+   * 'popover' to stay anchored everywhere.
+   * @default 'adaptive'
    */
   presentation?: SelectorPresentation;
 
@@ -884,7 +887,7 @@ export function Selector<T extends SelectorOptionType>(
     emptyText: emptyTextFromProps,
     emptySearchText: emptySearchTextFromProps,
     placement,
-    presentation = 'popover',
+    presentation = 'adaptive',
     isDefaultOpen = false,
     'data-testid': testId,
     width,

@@ -1385,7 +1385,7 @@ describe('DropdownMenu adaptive-presentation example', () => {
     );
 
     expect(presentation?.type).toBe("'popover' | 'bottom-sheet' | 'adaptive'");
-    expect(presentation?.default).toBe("'popover'");
+    expect(presentation?.default).toBe("'adaptive'");
 
     const defaults = dropdownMenu?.playground?.defaults as
       Record<string, unknown> | undefined;
@@ -1395,30 +1395,31 @@ describe('DropdownMenu adaptive-presentation example', () => {
     expect(items?.every(item => typeof item.icon === 'string')).toBe(true);
   });
 
-  it('registers the responsive presentation example on the related component pages', () => {
+  it('registers the adaptive-by-default example on the related component pages', () => {
     const dropdownExamples = exampleRegistry['DropdownMenu'] ?? [];
-    const bottomSheetExample = dropdownExamples.find(example =>
+    const adaptiveExample = dropdownExamples.find(example =>
       /Adaptive presentation/i.test(example.name),
     );
 
-    expect(bottomSheetExample).toBeDefined();
-    expect(bottomSheetExample!.source).toContain('useMediaQuery');
-    expect(bottomSheetExample!.source).toContain("'bottom-sheet' : 'popover'");
-    expect(bottomSheetExample!.source).toContain('<DropdownMenu');
+    expect(adaptiveExample).toBeDefined();
+    expect(adaptiveExample!.source).toContain('<DropdownMenu');
+    // Adaptive is the default, so the call site wires no media query.
+    expect(adaptiveExample!.source).not.toContain('useMediaQuery');
+    expect(adaptiveExample!.source).not.toContain("'bottom-sheet' : 'popover'");
 
     const bottomSheetExamples = exampleRegistry['BottomSheet'] ?? [];
     expect(
       bottomSheetExamples.some(
-        example => example.source === bottomSheetExample!.source,
+        example => example.source === adaptiveExample!.source,
       ),
     ).toBe(true);
 
     const mediaQueryExamples = exampleRegistry['useMediaQuery'] ?? [];
     expect(
       mediaQueryExamples.some(
-        example => example.source === bottomSheetExample!.source,
+        example => example.source === adaptiveExample!.source,
       ),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it('registers the ContextMenu BottomSheet example', () => {
@@ -1473,7 +1474,7 @@ describe('Selector bottom-sheet examples', () => {
       expect(presentation?.type).toBe(
         "'popover' | 'bottom-sheet' | 'adaptive'",
       );
-      expect(presentation?.default).toBe("'popover'");
+      expect(presentation?.default).toBe("'adaptive'");
     },
   );
 

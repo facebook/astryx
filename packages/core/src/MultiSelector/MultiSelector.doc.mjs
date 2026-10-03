@@ -357,8 +357,8 @@ export const docs = {
           name: 'presentation',
           type: "'popover' | 'bottom-sheet' | 'adaptive'",
           description:
-            'How the option list is presented. adaptive uses a bottom sheet on compact touch screens and an anchored popover otherwise.',
-          default: "'popover'",
+            'How the option list is presented. The default, adaptive, uses a bottom sheet on compact touch screens and an anchored popover otherwise; set popover to stay anchored on phones.',
+          default: "'adaptive'",
         },
         {
           name: 'width',
@@ -430,7 +430,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use presentation="adaptive" when the multi-selector should become a bottom sheet on compact touch screens.',
+          'Keep the default presentation ("adaptive") so the multi-selector becomes a bottom sheet on compact touch screens; set presentation="popover" only when the list must stay anchored on phones.',
       },
       {
         guidance: false,

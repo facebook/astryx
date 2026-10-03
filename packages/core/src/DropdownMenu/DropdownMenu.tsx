@@ -6,8 +6,8 @@
  * @file DropdownMenu.tsx
  * @input Uses React, StyleX, usePopover, MenuBottomSheet, Button, List,
  *   useListFocus, and the shared viewport-safe menu-width resolver
- * @output Exports DropdownMenu with caller-selected popover or bottom-sheet
- *   presentation
+ * @output Exports DropdownMenu with adaptive (default), popover, or
+ *   bottom-sheet presentation for data-driven items
  * @position Core implementation; consumed by index.ts
  *
  * Supports two modes with a single keyboard/focus path:
@@ -327,10 +327,12 @@ interface DropdownMenuBaseProps extends BaseProps {
 
 interface DropdownMenuDataProps extends DropdownMenuBaseProps {
   /**
-   * Surface used to present the actions. Pass a value selected by product
-   * policy (for example, a compact-touch media query) when the presentation
-   * should adapt. Bottom-sheet presentation is intended for short action sets.
-   * @default 'popover'
+   * Surface used to present the actions. The default, 'adaptive', renders a
+   * BottomSheet on compact coarse-pointer screens and stays anchored
+   * elsewhere, so phones get touch-sized actions with no media query. Pass
+   * 'popover' to stay anchored everywhere or 'bottom-sheet' to always use the
+   * sheet. Bottom-sheet presentation is intended for short action sets.
+   * @default 'adaptive'
    */
   presentation?: DropdownMenuPresentation;
   items: DropdownMenuOption[];
@@ -354,8 +356,9 @@ export type DropdownMenuProps =
  * A dropdown menu component that displays a list of actionable items.
  *
  * Supports two modes:
- * - **Data-driven**: pass `items` and choose either the default anchored
- *   popover or the modal bottom-sheet presentation.
+ * - **Data-driven**: pass `items`. The default adaptive presentation opens a
+ *   modal bottom sheet on compact touch screens and an anchored popover
+ *   elsewhere; `presentation` can pin either one.
  * - **Compound-component**: pass JSX children for dynamic, stateful, or
  *   lazy-loaded anchored popover menus.
  *
@@ -363,7 +366,6 @@ export type DropdownMenuProps =
  * ```
  * <DropdownMenu
  *   button={{ label: 'Actions' }}
- *   presentation={useBottomSheet ? 'bottom-sheet' : 'popover'}
  *   items={[
  *     { label: 'Edit', onClick: () => handleEdit() },
  *     { label: 'Delete', onClick: () => handleDelete() },
@@ -1055,7 +1057,7 @@ function DropdownMenuPopover({
 export function DropdownMenu(props: DropdownMenuProps) {
   const {onOpenChange} = props;
   const requestedPresentation =
-    'items' in props ? (props.presentation ?? 'popover') : 'popover';
+    'items' in props ? (props.presentation ?? 'adaptive') : 'popover';
   const resolvedPresentation = useAdaptivePresentation(requestedPresentation);
   const isControlled = props.isMenuOpen !== undefined;
   const [internalIsOpen, setInternalIsOpen] = useState(false);

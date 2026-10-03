@@ -126,7 +126,7 @@ export const docs = {
     // is meaningful.
     defaults: {
       button: {label: 'Actions'},
-      presentation: 'popover',
+      presentation: 'adaptive',
       items: [
         {label: 'Edit project', icon: 'wrench'},
         {label: 'Duplicate project', icon: 'copy'},
@@ -194,8 +194,8 @@ export const docs = {
       name: 'presentation',
       type: "'popover' | 'bottom-sheet' | 'adaptive'",
       description:
-        "Presentation surface for data-driven items. 'popover' stays anchored, 'bottom-sheet' always renders the actions in a modal BottomSheet, and 'adaptive' uses a BottomSheet on compact coarse-pointer layouts while remaining anchored elsewhere. Compound children currently support popover only.",
-      default: "'popover'",
+        "Presentation surface for data-driven items. 'adaptive' (the default) uses a BottomSheet on compact coarse-pointer layouts while remaining anchored elsewhere, 'popover' stays anchored everywhere, and 'bottom-sheet' always renders the actions in a modal BottomSheet. Compound children currently support popover only.",
+      default: "'adaptive'",
     },
     {
       name: 'isMenuOpen',
@@ -272,7 +272,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use presentation="adaptive" when the same short action set should remain anchored on pointer layouts and become a BottomSheet on compact coarse-pointer layouts.',
+          'Keep the default presentation ("adaptive") for a short action set: it stays anchored on pointer layouts and becomes a BottomSheet on compact coarse-pointer layouts.',
       },
       {
         guidance: true,
@@ -282,7 +282,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Choose presentation explicitly in product code. A compact, coarse-pointer, hover-free media query is one useful policy, but DropdownMenu does not impose a universal device breakpoint.',
+          'Set presentation="popover" or "bottom-sheet" only when product policy needs a fixed surface; the default adaptive policy switches on a compact coarse-pointer query (768px or narrower).',
       },
       {
         guidance: true,
@@ -301,6 +301,37 @@ export const docs = {
       },
     ],
   },
+  examples: [
+    {
+      label: 'Page actions that fit a phone',
+      code: `// No presentation prop: on a phone the actions open in a bottom sheet with
+// full-width rows; with a mouse or on a large touch screen they open in the
+// anchored popover.
+<HStack justify="between" align="center" gap={2}>
+  <Heading level={1}>Order #1042</Heading>
+  <DropdownMenu
+    button={{label: 'Actions'}}
+    items={[
+      {label: 'Edit order', icon: 'wrench', onClick: editOrder},
+      {label: 'Duplicate', icon: 'copy', onClick: duplicateOrder},
+      {label: 'Open receipt', icon: 'externalLink', onClick: openReceipt},
+      {type: 'divider'},
+      {label: 'Cancel order', icon: 'stop', variant: 'destructive', onClick: cancelOrder},
+    ]}
+  />
+</HStack>`,
+    },
+    {
+      label: 'Keep the anchored popover on phones',
+      code: `// Pin the surface only when product policy needs it. Compound (children)
+// menus are always anchored.
+<DropdownMenu
+  button={{label: 'View'}}
+  presentation="popover"
+  items={[{label: 'Compact rows'}, {label: 'Comfortable rows'}]}
+/>`,
+    },
+  ],
 };
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
@@ -327,7 +358,7 @@ export const docsZh = {
       {
         guidance: true,
         description:
-          'Use presentation="adaptive" when the same short action set should remain anchored on pointer layouts and become a BottomSheet on compact coarse-pointer layouts.',
+          'Keep the default presentation ("adaptive") for a short action set: it stays anchored on pointer layouts and becomes a BottomSheet on compact coarse-pointer layouts.',
       },
       {
         guidance: true,
@@ -337,7 +368,7 @@ export const docsZh = {
       {
         guidance: true,
         description:
-          'Choose presentation explicitly in product code. A compact, coarse-pointer, hover-free media query is one useful policy, but DropdownMenu does not impose a universal device breakpoint.',
+          'Set presentation="popover" or "bottom-sheet" only when product policy needs a fixed surface; the default adaptive policy switches on a compact coarse-pointer query (768px or narrower).',
       },
       {
         guidance: true,
@@ -384,7 +415,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Use presentation="adaptive" when the same short action set should remain anchored on pointer layouts and become a BottomSheet on compact coarse-pointer layouts.',
+          'Keep the default presentation ("adaptive") for a short action set: it stays anchored on pointer layouts and becomes a BottomSheet on compact coarse-pointer layouts.',
       },
       {
         guidance: true,
@@ -394,7 +425,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Choose presentation explicitly in product code. A compact, coarse-pointer, hover-free media query is one useful policy, but DropdownMenu does not impose a universal device breakpoint.',
+          'Set presentation="popover" or "bottom-sheet" only when product policy needs a fixed surface; the default adaptive policy switches on a compact coarse-pointer query (768px or narrower).',
       },
       {
         guidance: true,
