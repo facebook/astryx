@@ -542,6 +542,11 @@
       "aliases": []
     },
     {
+      "name": "component-lab-chat-virtualizer",
+      "path": "components/lab/chat-virtualizer",
+      "aliases": []
+    },
+    {
       "name": "component-lab-circular-progress",
       "path": "components/lab/circular-progress",
       "aliases": []
