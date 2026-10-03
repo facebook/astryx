@@ -3,6 +3,7 @@
 /* global console, process */
 
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {
@@ -83,7 +84,9 @@ async function main() {
       mountNamespace: true,
       freshHomeTmpAndProject: true,
       sharedResultsAfterCompletionOnly: true,
-      path: '/mnt/run/bin:/usr/bin:/bin (no meta CLI)',
+      path: '/mnt/run/bin:/usr/bin:/bin (sandbox blocks sudo and meta)',
+      hiddenHostPaths: ['/home', '/tmp', '/data', '/var/tmp', '/dev/shm'],
+      browserTool: 'screenshot <file-or-url> [output.png]',
       startupProbe: await probeIsolation(),
     },
     runnerVersions: await runnerVersions(),
@@ -162,6 +165,7 @@ async function verifyStarter(spec, outputDir) {
       screenshotPath: privateScreenshot,
       baselineSources,
       skipJudge: true,
+      verifyStarterTyping: true,
     });
     if (!verification.render.passed) {
       throw new Error(
@@ -187,7 +191,9 @@ async function runOne({prompt, config, agent, spec, outputDir, options}) {
   const sharedScreenshot = path.join(outputDir, 'screenshots', `${id}.png`);
   const privateRun = await createPrivateRunRoot(`${id}-`);
   const privateScreenshot = path.join(privateRun.root, 'screenshot.png');
-  const taskPrompt = buildTaskPrompt(prompt, spec, SANDBOX_PROJECT);
+  const taskPrompt = buildTaskPrompt(prompt, spec, SANDBOX_PROJECT, {
+    timeoutMinutes: options.timeoutMinutes,
+  });
   const result = {
     id,
     promptId: prompt.id,
@@ -222,6 +228,15 @@ async function runOne({prompt, config, agent, spec, outputDir, options}) {
       baselineSources,
       skipJudge: options.skipJudge,
     });
+    if (result.runner.timedOut) {
+      result.evaluation.bestBeforeTimeout = {
+        renderPassed: result.evaluation.render?.passed ?? false,
+        adoptionShare: result.evaluation.render?.adoptionShare ?? 0,
+        promptFulfillment: result.evaluation.judge?.promptFulfillment ?? null,
+        visualQuality: result.evaluation.judge?.visualQuality ?? null,
+        screenshotCaptured: fs.existsSync(privateScreenshot),
+      };
+    }
     if (!result.runner.success) {
       forceFailedScores(
         result.evaluation,
@@ -386,6 +401,7 @@ function failedRunEvaluation(reason) {
       authoredFileCount: 0,
       inlineStyleAttributes: 0,
       customPropertyOnlyStyles: 0,
+      themeDefinitionCount: 0,
       rawHexValues: 0,
       rawPixelValues: 0,
       hardCodedStyleCount: 0,
@@ -418,20 +434,32 @@ async function assertIsolationAvailable() {
 async function probeIsolation() {
   const left = await createPrivateRunRoot('probe-left-');
   const right = await createPrivateRunRoot('probe-right-');
+  const nonce = `${process.pid}-${Date.now()}`;
+  const varTmpSecret = `/var/tmp/astryx-vibe-${nonce}`;
+  const sharedMemorySecret = `/dev/shm/astryx-vibe-${nonce}`;
   try {
-    await fsp.writeFile(path.join(left.projectDir, 'allowed.txt'), 'allowed\n');
+    await fsp.writeFile(
+      path.join(left.projectDir, 'allowed.html'),
+      '<!doctype html><title>allowed</title><p>allowed</p>\n',
+    );
     const siblingSecret = path.join(right.projectDir, 'secret.txt');
     await fsp.writeFile(siblingSecret, 'sibling secret\n');
+    await fsp.writeFile(varTmpSecret, 'var tmp secret\n');
+    await fsp.writeFile(sharedMemorySecret, 'shared memory secret\n');
+    const dataUserPath = path.join('/data/users', os.userInfo().username);
     const execution = await runIsolatedCommand(
       left.root,
       '/bin/sh',
       [
         '-c',
-        'set -eu; test "$(cat /mnt/run/project/allowed.txt)" = allowed; printf written > /mnt/run/project/written.txt; test ! -e "$1"; ! command -v meta >/dev/null 2>&1; printf "own-root=read-write\\nsibling=hidden\\nmeta=absent\\n"',
+        'set -eu; test "$(cat /mnt/run/project/allowed.html | grep -c allowed)" -ge 1; printf written > /mnt/run/project/written.txt; test ! -e "$1"; test ! -e "$2"; test ! -e "$3"; test ! -e "$4"; ! /usr/bin/sudo -n true >/dev/null 2>&1; ! /usr/bin/nsenter -t 1 -m true >/dev/null 2>&1; ! /usr/local/bin/meta --help >/dev/null 2>&1; ! command -v meta >/dev/null 2>&1; screenshot /mnt/run/project/allowed.html /mnt/run/project/browser-probe.png >/dev/null; test -s /mnt/run/project/browser-probe.png; printf "own-root=read-write\\nsibling=hidden\\nvar-tmp=private\\ndev-shm=private\\ndata=hidden\\nsudo=blocked\\nnsenter=blocked\\nmeta-absolute=blocked\\nbrowser=available\\n"',
         'probe',
         siblingSecret,
+        varTmpSecret,
+        sharedMemorySecret,
+        dataUserPath,
       ],
-      {timeoutMs: 30_000},
+      {timeoutMs: 60_000},
     );
     const ownWrite = await fsp.readFile(
       path.join(left.projectDir, 'written.txt'),
@@ -446,13 +474,25 @@ async function probeIsolation() {
       passed: true,
       ownRootReadWrite: true,
       exactSiblingPathHidden: true,
+      varTmpPrivate: true,
+      devShmPrivate: true,
+      dataHidden: true,
+      sudoBlocked: true,
+      nsenterBlocked: true,
+      metaAbsolutePathBlocked: true,
       metaAbsentFromPath: true,
+      identicalBrowserHelperAvailable: true,
       output: execution.stdout.trim().split('\n'),
     };
   } finally {
     await Promise.all(
       [left.root, right.root].map(root =>
         fsp.rm(root, {recursive: true, force: true}),
+      ),
+    );
+    await Promise.all(
+      [varTmpSecret, sharedMemorySecret].map(file =>
+        fsp.rm(file, {force: true}),
       ),
     );
   }
@@ -511,7 +551,11 @@ function printDryRun(options, prompts, specs) {
     console.log(`## ${prompt.id}`);
     for (const config of options.configs) {
       console.log(`\n### ${config}\n`);
-      console.log(buildTaskPrompt(prompt, specs[config], '<project-dir>'));
+      console.log(
+        buildTaskPrompt(prompt, specs[config], '<project-dir>', {
+          timeoutMinutes: options.timeoutMinutes,
+        }),
+      );
     }
     console.log('');
   }

@@ -56,6 +56,9 @@ export function summarize(results) {
       const hardCoded = metric(
         runs.map(run => run.evaluation?.source?.hardCodedStyleCount),
       );
+      const themeDefinitions = metric(
+        runs.map(run => run.evaluation?.source?.themeDefinitionCount),
+      );
       const axe = metric(
         runs.map(run => run.evaluation?.accessibility?.violationCount),
       );
@@ -67,6 +70,12 @@ export function summarize(results) {
       );
       const typeErrors = metric(
         runs.map(run => run.evaluation?.typecheck?.errorCount),
+      );
+      const bestBeforeTimeoutPrompt = metric(
+        runs.map(run => run.evaluation?.bestBeforeTimeout?.promptFulfillment),
+      );
+      const bestBeforeTimeoutVisual = metric(
+        runs.map(run => run.evaluation?.bestBeforeTimeout?.visualQuality),
       );
       return {
         config,
@@ -86,20 +95,26 @@ export function summarize(results) {
         medianCliLookups: cli.value,
         medianAdoptionShare: adoption.value,
         medianHardCodedStyles: hardCoded.value,
+        medianThemeDefinitions: themeDefinitions.value,
         medianAxeViolations: axe.value,
         medianPromptFulfillment: prompt.value,
         medianVisualQuality: visual.value,
         medianTypeErrors: typeErrors.value,
+        medianBestBeforeTimeoutPrompt: bestBeforeTimeoutPrompt.value,
+        medianBestBeforeTimeoutVisual: bestBeforeTimeoutVisual.value,
         samples: {
           wall: wall.count,
           tokens: tokens.count,
           cli: cli.count,
           adoption: adoption.count,
           hardCoded: hardCoded.count,
+          themeDefinitions: themeDefinitions.count,
           axe: axe.count,
           prompt: prompt.count,
           visual: visual.count,
           typeErrors: typeErrors.count,
+          bestBeforeTimeoutPrompt: bestBeforeTimeoutPrompt.count,
+          bestBeforeTimeoutVisual: bestBeforeTimeoutVisual.count,
         },
       };
     })
@@ -114,16 +129,16 @@ function markdownReport(iterationId, summary, results) {
     '',
     'The same prompt battery and evaluator were used for every configuration. A build failure, runtime page error, or blank render contributes adoption, prompt-fulfillment, and visual-quality scores of 0 and remains in every median and pass-rate denominator.',
     '',
-    'TypeScript errors are reported for `react-build` as a non-gating quality metric; only `vite build` gates its render. The visual judge receives one anonymized default-state screenshot and the task prompt in its own filesystem namespace, so multi-step flows are judged from their default state equally across configs.',
+    'TypeScript errors are reported for `react-build` as a non-gating quality metric; only `vite build` gates its render. Hard-coded values exclude comments and token/theme definitions, which have their own column. A timed-out run keeps primary scores at 0 and separately reports the last complete on-disk state as best-before-timeout. The visual judge receives one anonymized default-state screenshot and the task prompt in its own filesystem namespace, so multi-step flows are judged from their default state equally across configs.',
     '',
-    'Known delivery asymmetry: `react-nobuild` receives the published React CLI guide, which has no CDN-specific workflow. Known runner asymmetry: Muse emits built-in skill and final-verification reminder lifecycle records even with external plugins, foreign context, MCP, external skill content, and llm-rules disabled; the same minimal preset is used for every config.',
+    'Known delivery asymmetry: `react-nobuild` receives the published React CLI guide, which has no CDN-specific workflow, and its CLI cannot show component docs because `@astryxdesign/core` is loaded only from the CDN rather than installed locally. Known runner asymmetry: Muse emits built-in skill and final-verification reminder lifecycle records even with external plugins, foreign context, MCP, external skill content, and llm-rules disabled; the same minimal preset is used for every config.',
     '',
-    '| Config | Agent | Runs | Pass | Timeouts | Context failures | Wall | Tokens | CLI | Adoption | Hard-coded | axe | Type errors | Prompt | Visual |',
-    '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
+    '| Config | Agent | Runs | Pass | Timeouts | Context failures | Wall | Tokens | CLI | Adoption | Hard-coded | Theme defs | axe | Type errors | Prompt | Visual | Best-before timeout P/V |',
+    '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
   ];
   for (const row of summary) {
     lines.push(
-      `| ${row.config} | ${row.agent} | ${row.runs} | ${percent(row.passRate)} | ${row.timeouts} | ${row.contextFailures} | ${metricText(seconds(row.medianWallTimeMs), row.samples.wall)} | ${metricText(formatNumber(row.medianTokens), row.samples.tokens)} | ${metricText(formatNumber(row.medianCliLookups), row.samples.cli)} | ${metricText(percent(row.medianAdoptionShare), row.samples.adoption)} | ${metricText(formatNumber(row.medianHardCodedStyles), row.samples.hardCoded)} | ${metricText(formatNumber(row.medianAxeViolations), row.samples.axe)} | ${metricText(formatNumber(row.medianTypeErrors), row.samples.typeErrors)} | ${metricText(formatNumber(row.medianPromptFulfillment), row.samples.prompt)} | ${metricText(formatNumber(row.medianVisualQuality), row.samples.visual)} |`,
+      `| ${row.config} | ${row.agent} | ${row.runs} | ${percent(row.passRate)} | ${row.timeouts} | ${row.contextFailures} | ${metricText(seconds(row.medianWallTimeMs), row.samples.wall)} | ${metricText(formatNumber(row.medianTokens), row.samples.tokens)} | ${metricText(formatNumber(row.medianCliLookups), row.samples.cli)} | ${metricText(percent(row.medianAdoptionShare), row.samples.adoption)} | ${metricText(formatNumber(row.medianHardCodedStyles), row.samples.hardCoded)} | ${metricText(formatNumber(row.medianThemeDefinitions), row.samples.themeDefinitions)} | ${metricText(formatNumber(row.medianAxeViolations), row.samples.axe)} | ${metricText(formatNumber(row.medianTypeErrors), row.samples.typeErrors)} | ${metricText(formatNumber(row.medianPromptFulfillment), row.samples.prompt)} | ${metricText(formatNumber(row.medianVisualQuality), row.samples.visual)} | ${formatBestBefore(row)} |`,
     );
   }
   lines.push('', '## Screenshots', '');
@@ -152,8 +167,8 @@ async function htmlReport(iterationId, summary, results) {
 <td>${row.timeouts}</td><td>${row.contextFailures}</td><td>${metricText(seconds(row.medianWallTimeMs), row.samples.wall)}</td>
 <td>${metricText(formatNumber(row.medianTokens), row.samples.tokens)}</td><td>${metricText(formatNumber(row.medianCliLookups), row.samples.cli)}</td>
 <td>${metricText(percent(row.medianAdoptionShare), row.samples.adoption)}</td><td>${metricText(formatNumber(row.medianHardCodedStyles), row.samples.hardCoded)}</td>
-<td>${metricText(formatNumber(row.medianAxeViolations), row.samples.axe)}</td><td>${metricText(formatNumber(row.medianTypeErrors), row.samples.typeErrors)}</td>
-<td>${metricText(formatNumber(row.medianPromptFulfillment), row.samples.prompt)}</td><td>${metricText(formatNumber(row.medianVisualQuality), row.samples.visual)}</td>
+<td>${metricText(formatNumber(row.medianThemeDefinitions), row.samples.themeDefinitions)}</td><td>${metricText(formatNumber(row.medianAxeViolations), row.samples.axe)}</td><td>${metricText(formatNumber(row.medianTypeErrors), row.samples.typeErrors)}</td>
+<td>${metricText(formatNumber(row.medianPromptFulfillment), row.samples.prompt)}</td><td>${metricText(formatNumber(row.medianVisualQuality), row.samples.visual)}</td><td>${formatBestBefore(row)}</td>
 </tr>`,
     )
     .join('\n');
@@ -171,7 +186,9 @@ async function htmlReport(iterationId, summary, results) {
 <dt>Adoption</dt><dd>${percent(result.evaluation?.render?.adoptionShare)}</dd>
 <dt>axe</dt><dd>${formatNumber(result.evaluation?.accessibility?.violationCount)}</dd>
 <dt>Type errors</dt><dd>${formatNumber(result.evaluation?.typecheck?.errorCount)}</dd>
+<dt>Hard-coded / theme defs</dt><dd>${formatNumber(result.evaluation?.source?.hardCodedStyleCount)} / ${formatNumber(result.evaluation?.source?.themeDefinitionCount)}</dd>
 <dt>Prompt / visual</dt><dd>${formatNumber(result.evaluation?.judge?.promptFulfillment)} / ${formatNumber(result.evaluation?.judge?.visualQuality)}</dd>
+<dt>Best before timeout</dt><dd>${formatNumber(result.evaluation?.bestBeforeTimeout?.promptFulfillment)} / ${formatNumber(result.evaluation?.bestBeforeTimeout?.visualQuality)}</dd>
 </dl></article>`);
     }
     grids.push(
@@ -187,8 +204,8 @@ async function htmlReport(iterationId, summary, results) {
 </style></head><body>
 <h1>Delivery-mode vibe test</h1>
 <p>Iteration <code>${escapeHtml(iterationId)}</code>. Every config uses the same evaluator. Failed builds, runtime errors, and blank renders contribute 0 to adoption, prompt, and visual metrics and stay in every denominator. Parenthetical <code>n</code> is the sample count for each median.</p>
-<p>TypeScript diagnostics are non-gating. The blind judge sees only an anonymized default-state screenshot and prompt in a private filesystem namespace. Muse uses one minimal preset across configs; its built-in skill and final-verification reminder lifecycle remains a documented runner asymmetry.</p>
-<div class="table-wrap"><table><thead><tr><th>Config</th><th>Agent</th><th>Runs</th><th>Pass</th><th>Timeouts</th><th>Context</th><th>Wall</th><th>Tokens</th><th>CLI</th><th>Adoption</th><th>Hard-coded</th><th>axe</th><th>Type errors</th><th>Prompt</th><th>Visual</th></tr></thead><tbody>${rows}</tbody></table></div>
+<p>TypeScript diagnostics are non-gating. Comments are excluded from hard-coded scanning, and token/theme definitions are reported separately. Timed-out runs keep zero primary scores and expose their last complete screenshot under best-before-timeout. The blind judge sees only an anonymized default-state screenshot and prompt in a private filesystem namespace. Muse uses one minimal preset across configs; its built-in skill and final-verification reminder lifecycle remains a documented runner asymmetry.</p>
+<div class="table-wrap"><table><thead><tr><th>Config</th><th>Agent</th><th>Runs</th><th>Pass</th><th>Timeouts</th><th>Context</th><th>Wall</th><th>Tokens</th><th>CLI</th><th>Adoption</th><th>Hard-coded</th><th>Theme defs</th><th>axe</th><th>Type errors</th><th>Prompt</th><th>Visual</th><th>Best-before P/V</th></tr></thead><tbody>${rows}</tbody></table></div>
 ${grids.join('\n')}
 </body></html>\n`;
 }
@@ -208,6 +225,17 @@ function metric(values) {
         : numbers[middle],
     count: numbers.length,
   };
+}
+
+function formatBestBefore(row) {
+  const count = Math.max(
+    row.samples.bestBeforeTimeoutPrompt,
+    row.samples.bestBeforeTimeoutVisual,
+  );
+  if (count === 0) {
+    return '—';
+  }
+  return `${formatNumber(row.medianBestBeforeTimeoutPrompt)} / ${formatNumber(row.medianBestBeforeTimeoutVisual)} (n=${count})`;
 }
 
 function metricText(value, count) {

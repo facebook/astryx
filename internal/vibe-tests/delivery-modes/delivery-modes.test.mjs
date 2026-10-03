@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {afterEach, test} from 'node:test';
 import {chromium} from 'playwright';
 import {
@@ -13,6 +14,7 @@ import {
 } from './constants.mjs';
 import {
   captureAuthoredSources,
+  evaluateRun,
   measureAdoptionInDocument,
   scanAuthoredSource,
 } from './evaluator.mjs';
@@ -24,6 +26,7 @@ import {
 } from './process.mjs';
 import {
   buildVanillaAgentDocs,
+  prepareProject,
   reactNoBuildStarter,
   vanillaStarter,
 } from './projects.mjs';
@@ -48,13 +51,24 @@ test('generated prompts never leak expected components or Path A coaching', () =
     expectedComponents: ['Card', 'Switch'],
   };
   const generated = Object.values(specs).map(spec =>
-    buildTaskPrompt(prompt, spec, '<project-dir>'),
+    buildTaskPrompt(prompt, spec, '<project-dir>', {timeoutMinutes: 15}),
   );
   for (const task of generated) {
     assert.doesNotMatch(task, /expectedComponents|Switch|Path A/);
     assert.match(task, /Build a settings card\./);
     assert.match(task, /use only the documentation and tools installed there/);
+    assert.match(task, /You have up to 15 minutes/);
+    assert.match(task, /screenshot <file-or-url> \[output\.png\]/);
   }
+  assert.equal(
+    new Set(
+      generated.map(
+        task =>
+          task.match(/Time and browser:\n([\s\S]*?)\n\nFirst inspect/)?.[1],
+      ),
+    ).size,
+    1,
+  );
 });
 
 test('stratified sampling chooses distinct categories first', () => {
@@ -85,6 +99,8 @@ test('React no-build starter externalizes React for core and theme and exercises
   assert.match(starter, /React\.useState/);
   assert.match(starter, /A\.Banner/);
   assert.match(starter, /A\.TextInput/);
+  assert.match(starter, /onChange=\$\{setValue\}/);
+  assert.doesNotMatch(starter, /event\.target\.value/);
 });
 
 test('vanilla has a working starter and HTML-only agent documentation', () => {
@@ -159,7 +175,109 @@ test('adoption metric gives equivalent React and vanilla fixtures and raw HTML n
   }
 });
 
-test('source scanner scans only authored changes and ignores custom-property-only inline styles', async () => {
+test('real React-build and Vanilla markup fixtures score within five points', async () => {
+  const root = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), 'delivery-real-fixtures-'),
+  );
+  temporaryDirectories.push(root);
+  const reactDir = path.join(root, 'react');
+  const vanillaDir = path.join(root, 'vanilla');
+  const screenshotDir = path.join(root, 'screenshots');
+  const specs = getDeliverySpecs();
+
+  await prepareProject(specs['react-build'], reactDir);
+  await fs.promises.writeFile(
+    path.join(reactDir, 'src', 'App.tsx'),
+    `import {useState} from 'react';
+import {Banner} from '@astryxdesign/core/Banner';
+import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
+import {Heading} from '@astryxdesign/core/Heading';
+import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {TopNav, TopNavItem} from '@astryxdesign/core/TopNav';
+
+export function App() {
+  const [value, setValue] = useState('');
+  return <>
+    <TopNav heading="Astryx" startContent={<><TopNavItem label="Overview" href="#overview" isSelected /><TopNavItem label="Projects" href="#projects" /></>} />
+    <Banner status="warning" title="Trial ending" description="Choose a plan." endContent={<Button label="Upgrade" />} />
+    <Layout content={<LayoutContent>
+      <Card><Heading level={2}>Workspace</Heading><TextInput label="Name" value={value} onChange={setValue} /></Card>
+      <button>Raw layout action</button>
+    </LayoutContent>} />
+  </>;
+}
+`,
+  );
+
+  await fs.promises.mkdir(vanillaDir, {recursive: true});
+  const markupRoot = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    '../../../packages/vanilla/markup',
+  );
+  const fragments = await Promise.all([
+    readMarkupVariant(markupRoot, 'TopNav.html', 'default'),
+    readMarkupVariant(markupRoot, 'Banner.html', 'informational-card'),
+    readMarkupVariant(markupRoot, 'Card.html', 'default'),
+    readMarkupVariant(markupRoot, 'TextInput.html', 'default'),
+    readMarkupVariant(markupRoot, 'Layout.html', 'page-shell'),
+  ]);
+  fragments[4] = fragments[4].replace(
+    '</main>',
+    '<button>Raw layout action</button></main>',
+  );
+  const vanillaHtml = vanillaStarter(specs.vanilla).replace(
+    /<body>[\s\S]*<\/body>/,
+    `<body>${fragments.join('\n')}</body>`,
+  );
+  await fs.promises.writeFile(path.join(vanillaDir, 'index.html'), vanillaHtml);
+
+  const [react, vanilla] = await Promise.all([
+    evaluateRun({
+      config: 'react-build',
+      projectDir: reactDir,
+      prompt: {prompt: 'Render equivalent fixture.'},
+      screenshotPath: path.join(screenshotDir, 'react.png'),
+      baselineSources: {},
+      skipJudge: true,
+    }),
+    evaluateRun({
+      config: 'vanilla',
+      projectDir: vanillaDir,
+      prompt: {prompt: 'Render equivalent fixture.'},
+      screenshotPath: path.join(screenshotDir, 'vanilla.png'),
+      baselineSources: {},
+      skipJudge: true,
+    }),
+  ]);
+
+  assert.equal(react.render.passed, true, JSON.stringify(react.render));
+  assert.equal(vanilla.render.passed, true, JSON.stringify(vanilla.render));
+  assert.ok(
+    Math.abs(react.render.adoptionShare - vanilla.render.adoptionShare) <= 0.05,
+    `react=${react.render.adoptionShare}, vanilla=${vanilla.render.adoptionShare}`,
+  );
+  for (const evaluation of [react, vanilla]) {
+    const raw = evaluation.render.adoptionTargets.find(
+      target => target.text === 'Raw layout action',
+    );
+    assert.equal(raw?.adopted, false, JSON.stringify(raw));
+  }
+  assert.equal(react.typecheck.errorCount, 0, react.typecheck.stderr);
+});
+
+async function readMarkupVariant(root, file, variant) {
+  const source = await fs.promises.readFile(path.join(root, file), 'utf8');
+  const startMarker = `<!-- variant: ${variant} -->`;
+  const start = source.indexOf(startMarker);
+  assert.notEqual(start, -1, `${file} has ${variant}`);
+  const bodyStart = start + startMarker.length;
+  const next = source.indexOf('<!-- variant:', bodyStart);
+  return source.slice(bodyStart, next < 0 ? source.length : next).trim();
+}
+
+test('source scanner separates comments and theme definitions from hard-coded values', async () => {
   const directory = await fs.promises.mkdtemp(
     path.join(os.tmpdir(), 'delivery-source-'),
   );
@@ -171,17 +289,26 @@ test('source scanner scans only authored changes and ignores custom-property-onl
   const baseline = await captureAuthoredSources(directory);
   await fs.promises.writeFile(
     path.join(directory, 'index.html'),
-    '<div style="--brand: #fff; --gap: 12px"></div>',
+    `<!-- ignored #abc 999px -->
+<div style="--brand: #fff; --gap: 12px"></div>
+<style>:root[data-astryx-theme="brand"] { --color-accent: #123456; --space: 8px; }</style>`,
   );
   await fs.promises.writeFile(
     path.join(directory, 'new.html'),
-    '<div style="color:#fff;margin:12px"></div>',
+    '<div style="color:#fff;margin:12px"></div><!-- #000 400px -->',
+  );
+  await fs.promises.writeFile(
+    path.join(directory, 'new.ts'),
+    `// ignored #abc 900px
+/* ignored #fff 600px */
+const theme = createTheme({accent: '#ff0000'});`,
   );
   const metrics = await scanAuthoredSource(directory, baseline);
   assert.deepEqual(metrics, {
-    authoredFileCount: 2,
+    authoredFileCount: 3,
     inlineStyleAttributes: 1,
     customPropertyOnlyStyles: 1,
+    themeDefinitionCount: 5,
     rawHexValues: 1,
     rawPixelValues: 1,
     hardCodedStyleCount: 3,
@@ -197,6 +324,10 @@ test('all supported Astryx CLI invocation forms are counted', () => {
     '/tmp/project/node_modules/.bin/astryx component Card',
     'node packages/cli/clients/cli/bin/astryx.mjs docs',
     'astryx help',
+    'for x in Button; do npx astryx component "$x"; done',
+    'value=$(npx astryx docs tokens)',
+    '(npx astryx template dashboard)',
+    'timeout 10 npx astryx search form',
   ];
   assert.equal(
     commands.reduce((sum, command) => sum + countAstryxInvocations(command), 0),
@@ -256,6 +387,11 @@ test('private run roots use mode 0700', async () => {
     (await fs.promises.stat(privateRun.projectDir)).mode & 0o777,
     0o700,
   );
+  assert.equal(
+    (await fs.promises.stat(path.join(privateRun.root, 'bin', 'screenshot')))
+      .mode & 0o777,
+    0o700,
+  );
 });
 
 test('summary includes failure zeros in medians and reports sample counts', () => {
@@ -272,6 +408,10 @@ test('summary includes failure zeros in medians and reports sample counts', () =
   assert.equal(row.samples.adoption, 2);
   assert.equal(row.samples.prompt, 2);
   assert.equal(row.samples.axe, 1);
+  assert.equal(row.medianThemeDefinitions, 20);
+  assert.equal(row.medianBestBeforeTimeoutPrompt, 70);
+  assert.equal(row.medianBestBeforeTimeoutVisual, 75);
+  assert.equal(row.samples.bestBeforeTimeoutPrompt, 1);
 });
 
 function makeResult({passed, value, timedOut = false}) {
@@ -288,9 +428,15 @@ function makeResult({passed, value, timedOut = false}) {
     evaluation: {
       build: {passed},
       render: {passed, adoptionShare: value / 100},
-      source: {hardCodedStyleCount: value},
+      source: {
+        hardCodedStyleCount: value,
+        themeDefinitionCount: value / 2,
+      },
       accessibility: {violationCount: passed ? 0 : null},
       judge: {promptFulfillment: value, visualQuality: value},
+      bestBeforeTimeout: timedOut
+        ? {promptFulfillment: 70, visualQuality: 75}
+        : undefined,
       typecheck: null,
     },
   };

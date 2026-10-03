@@ -76,6 +76,10 @@ createRoot(document.getElementById('root')!).render(
 `,
   );
   await fsp.writeFile(
+    path.join(projectDir, 'src', 'vite-env.d.ts'),
+    '/// <reference types="vite/client" />\n',
+  );
+  await fsp.writeFile(
     path.join(projectDir, 'src', 'App.tsx'),
     `import {Card} from '@astryxdesign/core/Card';
 import {Heading} from '@astryxdesign/core/Heading';
@@ -298,7 +302,7 @@ export function reactNoBuildStarter(version) {
               <\${A.TextInput}
                 label="Starter field"
                 value=\${value}
-                onChange=\${event => setValue(event.target.value)}
+                onChange=\${setValue}
               />
             <//>
           <//>

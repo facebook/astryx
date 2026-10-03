@@ -23,6 +23,7 @@ export async function evaluateRun({
   screenshotPath,
   baselineSources,
   skipJudge = false,
+  verifyStarterTyping = false,
 }) {
   const typecheck =
     config === 'react-build'
@@ -74,6 +75,17 @@ export async function evaluateRun({
     await page.goto(server.url, {waitUntil: 'networkidle', timeout: 90_000});
     await page.waitForTimeout(1500);
 
+    let starterTyping = null;
+    if (verifyStarterTyping) {
+      const input = page.getByLabel('Starter field');
+      await input.fill('typing works');
+      starterTyping = {
+        expected: 'typing works',
+        actual: await input.inputValue(),
+      };
+      starterTyping.passed = starterTyping.actual === starterTyping.expected;
+    }
+
     const renderMetrics = await page.evaluate(measureAdoptionInDocument);
     const axe = await new AxeBuilder({page}).analyze();
     await page.screenshot({path: screenshotPath, fullPage: true});
@@ -85,7 +97,12 @@ export async function evaluateRun({
       nonBlank,
       consoleErrors,
       pageErrors,
-      passed: nonBlank && consoleErrors.length === 0 && pageErrors.length === 0,
+      starterTyping,
+      passed:
+        nonBlank &&
+        consoleErrors.length === 0 &&
+        pageErrors.length === 0 &&
+        (starterTyping?.passed ?? true),
       url: server.url,
     };
     if (!render.passed) {
@@ -165,6 +182,32 @@ function zeroJudgment(reason) {
 export function measureAdoptionInDocument(assumeVisible = false) {
   const doc = document;
   const view = doc.defaultView ?? window;
+  // These layout-only families come from the stable classes emitted by the
+  // React Layout/Stack/etc. sources and Vanilla Layout.css/Stack.css. All
+  // other Astryx classes, including BEM or hyphenated component parts, are
+  // component classes that may confer adoption.
+  const reactLayoutRoots = [
+    'astryx-stack',
+    'astryx-layout',
+    'astryx-grid',
+    'astryx-center',
+    'astryx-section',
+    'astryx-app-shell',
+    'astryx-form-layout',
+    'astryx-stepper-frame',
+    'astryx-collapsible-content',
+  ];
+  const vanillaLayoutRoots = [
+    'ax-stack',
+    'ax-layout',
+    'ax-grid',
+    'ax-center',
+    'ax-section',
+    'ax-app-shell',
+    'ax-form-layout',
+    'ax-stepper-frame',
+    'ax-collapsible__content',
+  ];
   const semanticSelector = [
     'button',
     'a[href]',
@@ -194,6 +237,8 @@ export function measureAdoptionInDocument(assumeVisible = false) {
   const containerSelector = [
     '.astryx-card',
     '.ax-card',
+    '.astryx-banner-frame',
+    '.ax-banner',
     '.astryx-dialog',
     '.ax-dialog',
     '.astryx-table',
@@ -208,18 +253,25 @@ export function measureAdoptionInDocument(assumeVisible = false) {
     ...doc.querySelectorAll(containerSelector),
   ]);
 
-  const hasDesignSystemClass = element =>
-    (element.getAttribute('class') ?? '')
-      .split(/\s+/)
-      .some(name => name.startsWith('astryx-') || name.startsWith('ax-'));
-  const hasOnlyContainerClass = element => {
-    const classes = (element.getAttribute('class') ?? '').split(/\s+/);
-    return classes.some(name =>
-      /^(?:astryx|ax)-(?:stack|vstack|hstack|grid|layout|center|section|card|dialog|banner|app-shell|top-nav|side-nav|toolbar|form-layout)(?:--|__|$)/.test(
-        name,
-      ),
-    );
+  const classNames = element =>
+    (element.getAttribute('class') ?? '').split(/\s+/).filter(Boolean);
+  const isDesignSystemClass = name =>
+    name.startsWith('astryx-') || name.startsWith('ax-');
+  const belongsToFamily = (name, root) =>
+    name === root ||
+    name.startsWith(`${root}-`) ||
+    name.startsWith(`${root}--`) ||
+    name.startsWith(`${root}__`);
+  const isLayoutClass = name => {
+    const roots = name.startsWith('astryx-')
+      ? reactLayoutRoots
+      : name.startsWith('ax-')
+        ? vanillaLayoutRoots
+        : [];
+    return roots.some(root => belongsToFamily(name, root));
   };
+  const designSystemClasses = element =>
+    classNames(element).filter(isDesignSystemClass);
   const isVisible = element => {
     if (assumeVisible) {
       return !element.hasAttribute('hidden');
@@ -253,31 +305,37 @@ export function measureAdoptionInDocument(assumeVisible = false) {
     return rect.width > 1 && rect.height > 1;
   };
   const isAdopted = element => {
-    if (hasDesignSystemClass(element)) {
-      return (
-        element.matches(containerSelector) || !hasOnlyContainerClass(element)
-      );
-    }
-    let ancestor = element.parentElement;
-    while (ancestor && ancestor !== doc.body) {
-      if (hasDesignSystemClass(ancestor)) {
-        return !hasOnlyContainerClass(ancestor);
+    let candidate = element;
+    while (candidate && candidate !== doc.body) {
+      const classes = designSystemClasses(candidate);
+      if (classes.length > 0) {
+        return classes.some(name => !isLayoutClass(name));
       }
-      ancestor = ancestor.parentElement;
+      candidate = candidate.parentElement;
     }
     return false;
   };
 
   const visibleElements = [...doc.querySelectorAll('body *')].filter(isVisible);
   const eligible = [...targets].filter(isVisible);
-  const adopted = eligible.filter(isAdopted);
+  const adoptionTargets = eligible.map(element => ({
+    tag: element.tagName.toLowerCase(),
+    classes: classNames(element),
+    text: (element.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 80),
+    adopted: isAdopted(element),
+  }));
+  const adoptedElementCount = adoptionTargets.filter(
+    target => target.adopted,
+  ).length;
   return {
     textLength: (doc.body?.innerText ?? doc.body?.textContent ?? '').trim()
       .length,
     visibleElementCount: visibleElements.length,
     eligibleElementCount: eligible.length,
-    adoptedElementCount: adopted.length,
-    adoptionShare: eligible.length === 0 ? 0 : adopted.length / eligible.length,
+    adoptedElementCount,
+    adoptionShare:
+      eligible.length === 0 ? 0 : adoptedElementCount / eligible.length,
+    adoptionTargets,
   };
 }
 
@@ -302,13 +360,17 @@ export async function scanAuthoredSource(projectDir, baselineSources = {}) {
   );
   let inlineStyleAttributes = 0;
   let customPropertyOnlyStyles = 0;
+  let themeDefinitionCount = 0;
   let rawHexValues = 0;
   let rawPixelValues = 0;
-  for (const [, source] of authored) {
-    const styleCounts = countInlineStyles(source);
-    const scannableSource = stripCustomPropertyOnlyInlineStyles(source);
+  for (const [relativePath, source] of authored) {
+    const uncommented = stripSourceComments(source, path.extname(relativePath));
+    const styleCounts = countInlineStyles(uncommented);
+    const themeAnalysis = separateThemeDefinitions(uncommented);
+    const scannableSource = themeAnalysis.scannableSource;
     inlineStyleAttributes += styleCounts.hardCoded;
     customPropertyOnlyStyles += styleCounts.customPropertyOnly;
+    themeDefinitionCount += themeAnalysis.count;
     rawHexValues += (scannableSource.match(/#[0-9a-f]{3,8}\b/gi) ?? []).length;
     rawPixelValues += (scannableSource.match(/\b\d+(?:\.\d+)?px\b/gi) ?? [])
       .length;
@@ -317,6 +379,7 @@ export async function scanAuthoredSource(projectDir, baselineSources = {}) {
     authoredFileCount: authored.length,
     inlineStyleAttributes,
     customPropertyOnlyStyles,
+    themeDefinitionCount,
     rawHexValues,
     rawPixelValues,
     hardCodedStyleCount: inlineStyleAttributes + rawHexValues + rawPixelValues,
@@ -338,12 +401,119 @@ export function countInlineStyles(source) {
   return {hardCoded, customPropertyOnly};
 }
 
-function stripCustomPropertyOnlyInlineStyles(source) {
-  const pattern = /\bstyle\s*=\s*(?:"([^"]*)"|'([^']*)'|\{\{([\s\S]*?)\}\})/g;
-  return source.replace(pattern, (match, double, single, object) => {
-    const body = double ?? single ?? object ?? '';
-    return isCustomPropertyOnlyStyle(body) ? '' : match;
+export function stripSourceComments(source, extension = '') {
+  if (extension === '.html') {
+    source = source.replace(
+      /(<script\b[^>]*>)([\s\S]*?)(<\/script>)/gi,
+      (_match, open, body, close) =>
+        `${open}${stripSourceComments(body, '.js')}${close}`,
+    );
+  }
+  const removeLineComments = /\.(?:js|jsx|mjs|ts|tsx)$/.test(extension);
+  let output = '';
+  let index = 0;
+  let quote = null;
+  while (index < source.length) {
+    if (quote) {
+      const character = source[index];
+      output += character;
+      if (character === '\\') {
+        output += source[index + 1] ?? '';
+        index += 2;
+        continue;
+      }
+      if (character === quote) {
+        quote = null;
+      }
+      index += 1;
+      continue;
+    }
+    if (source.startsWith('<!--', index)) {
+      const end = source.indexOf('-->', index + 4);
+      output += ' ';
+      index = end < 0 ? source.length : end + 3;
+      continue;
+    }
+    if (source.startsWith('/*', index)) {
+      const end = source.indexOf('*/', index + 2);
+      output += ' ';
+      index = end < 0 ? source.length : end + 2;
+      continue;
+    }
+    if (removeLineComments && source.startsWith('//', index)) {
+      const end = source.indexOf('\n', index + 2);
+      output += end < 0 ? '' : '\n';
+      index = end < 0 ? source.length : end + 1;
+      continue;
+    }
+    const character = source[index];
+    if (character === "'" || character === '"' || character === '`') {
+      quote = character;
+    }
+    output += character;
+    index += 1;
+  }
+  return output;
+}
+
+function separateThemeDefinitions(source) {
+  let count = 0;
+  let scannableSource = source;
+  const customPropertyPattern = /--[a-z0-9_-]+\s*:\s*[^;}{]+;?/gi;
+  scannableSource = scannableSource.replace(customPropertyPattern, match => {
+    count += 1;
+    return ' '.repeat(match.length);
   });
+  const strippedCalls = stripBalancedCalls(scannableSource, [
+    'defineTheme',
+    'createTheme',
+  ]);
+  count += strippedCalls.count;
+  return {count, scannableSource: strippedCalls.source};
+}
+
+function stripBalancedCalls(source, names) {
+  const pattern = new RegExp(`\\b(?:${names.join('|')})\\s*\\(`, 'g');
+  let count = 0;
+  let output = '';
+  let cursor = 0;
+  for (const match of source.matchAll(pattern)) {
+    if (match.index < cursor) {
+      continue;
+    }
+    const open = source.indexOf('(', match.index);
+    let depth = 0;
+    let quote = null;
+    let end = open;
+    for (; end < source.length; end += 1) {
+      const character = source[end];
+      if (quote) {
+        if (character === '\\') {
+          end += 1;
+        } else if (character === quote) {
+          quote = null;
+        }
+        continue;
+      }
+      if (character === "'" || character === '"' || character === '`') {
+        quote = character;
+      } else if (character === '(') {
+        depth += 1;
+      } else if (character === ')') {
+        depth -= 1;
+        if (depth === 0) {
+          end += 1;
+          break;
+        }
+      }
+    }
+    output += source.slice(cursor, match.index);
+    output += ' '.repeat(Math.max(0, end - match.index));
+    cursor = end;
+    count += 1;
+  }
+  output += source.slice(cursor);
+  return {source: output, count};
 }
 
 function isCustomPropertyOnlyStyle(body) {
@@ -612,6 +782,7 @@ function commandReceipt(command) {
     code: command.code,
     timedOut: command.timedOut,
     durationMs: command.durationMs,
+    stdout: command.stdout,
     stderr: command.stderr,
   };
 }

@@ -5,9 +5,9 @@ import {createHash} from 'node:crypto';
 export const DEFAULT_REACT_VERSION = '0.6.5';
 export const DEFAULT_REACT_RUNTIME_VERSION = '19.2.7';
 export const DEFAULT_VANILLA_CDN_REF =
-  'c11b28d74ce387f44ab224e516058cd31231285d';
+  '3a3219da36ad6662fc59fda159f9fe2aa422db0e';
 export const DEFAULT_VANILLA_TARBALL_URL =
-  'https://cdn.jsdelivr.net/gh/facebook/astryx@894a494af1323add3d837c7a7c9e308943231d5a/packages/vanilla/dist/cli/astryx-cli-vanilla.tgz';
+  'https://cdn.jsdelivr.net/gh/facebook/astryx@58d9d777b33e79bcc3d0fff12be18f0718bc4e4f/packages/vanilla/dist/cli/astryx-cli-vanilla.tgz';
 
 export const CONFIG_NAMES = ['react-build', 'react-nobuild', 'vanilla'];
 export const AGENT_NAMES = ['claude', 'muse'];
@@ -42,7 +42,12 @@ export function getDeliverySpecs(options = {}) {
   };
 }
 
-export function buildTaskPrompt(prompt, spec, projectDir = '<project-dir>') {
+export function buildTaskPrompt(
+  prompt,
+  spec,
+  projectDir = '<project-dir>',
+  {timeoutMinutes = 15} = {},
+) {
   return `You are implementing a UI in an isolated consumer project.
 
 Delivery environment:
@@ -50,6 +55,9 @@ ${spec.description}
 
 Project directory:
 ${projectDir}
+
+Time and browser:
+You have up to ${timeoutMinutes} minutes. A headless Chromium helper is available as \`screenshot <file-or-url> [output.png]\`.
 
 First inspect the project and use only the documentation and tools installed there. Do not read files outside this project.
 

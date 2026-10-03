@@ -14,13 +14,23 @@ const MOUNT_NAMESPACE_SCRIPT = `set -eu
 uid="$1"
 gid="$2"
 private_root="$3"
-shift 3
+browser_cache="$4"
+shift 4
 mount --make-rprivate /
 mount -t tmpfs tmpfs /mnt
-mkdir -p ${SANDBOX_ROOT}
+mkdir -p ${SANDBOX_ROOT} ${SANDBOX_ROOT}/browser-cache
 mount --bind "$private_root" ${SANDBOX_ROOT}
+mount --bind "$browser_cache" ${SANDBOX_ROOT}/browser-cache
+mount -o remount,bind,ro ${SANDBOX_ROOT}/browser-cache
 mount -t tmpfs tmpfs /tmp
 mount -t tmpfs tmpfs /home
+mount -t tmpfs tmpfs /data
+mount -t tmpfs tmpfs /var/tmp
+mount -t tmpfs tmpfs /dev/shm
+mount --bind /bin/false /usr/bin/sudo
+if [ -e /usr/local/bin/meta ]; then
+  mount --bind /bin/false /usr/local/bin/meta
+fi
 cd ${SANDBOX_PROJECT}
 exec setpriv --reuid="$uid" --regid="$gid" --clear-groups -- env \
   HOME=${SANDBOX_ROOT}/home \
@@ -30,9 +40,32 @@ exec setpriv --reuid="$uid" --regid="$gid" --clear-groups -- env \
   DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$uid/bus \
   TMPDIR=${SANDBOX_ROOT}/tmp \
   PATH=${SANDBOX_ROOT}/bin:/usr/bin:/bin \
+  PLAYWRIGHT_BROWSERS_PATH=${SANDBOX_ROOT}/browser-cache \
   MUSE_EXPERIMENTAL_PLUGINS=0 \
   LANG=C.UTF-8 \
   "$@"`;
+
+const SCREENSHOT_HELPER = `#!/bin/sh
+set -eu
+if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+  echo "usage: screenshot <file-or-url> [output.png]" >&2
+  exit 2
+fi
+target="$1"
+output="\${2:-screenshot.png}"
+case "$target" in
+  http://*|https://*|file://*) ;;
+  *) target="file://$(realpath "$target")" ;;
+esac
+chrome="$(find /mnt/run/browser-cache -type f -path '*/chrome-linux*/chrome' | sort | tail -n 1)"
+if [ -z "$chrome" ]; then
+  echo "screenshot: no Chromium executable found" >&2
+  exit 1
+fi
+"$chrome" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage \
+  --window-size=1440,900 --screenshot="$output" "$target" >/dev/null 2>&1
+printf '%s\n' "$output"
+`;
 
 export async function runCommand(command, args, options = {}) {
   const {
@@ -117,6 +150,7 @@ export async function createPrivateRunRoot(prefix = 'run-') {
     'home/.config',
     'tmp',
     'bin',
+    'browser-cache',
   ]) {
     await fs.promises.mkdir(path.join(root, directory), {
       recursive: true,
@@ -128,6 +162,9 @@ export async function createPrivateRunRoot(prefix = 'run-') {
     ? '/usr/bin/git'
     : '/usr/local/bin/git';
   await symlinkExecutable(gitPath, path.join(root, 'bin', 'git'));
+  const screenshotPath = path.join(root, 'bin', 'screenshot');
+  await fs.promises.writeFile(screenshotPath, SCREENSHOT_HELPER, {mode: 0o700});
+  await fs.promises.chmod(screenshotPath, 0o700);
   await fs.promises.writeFile(
     path.join(root, 'empty-mcp.json'),
     '{"mcpServers":{}}\n',
@@ -154,6 +191,10 @@ export async function runIsolatedCommand(
   if (!Number.isInteger(uid) || !Number.isInteger(gid)) {
     throw new Error('Could not determine the current uid/gid');
   }
+  const browserCache = path.join(os.homedir(), '.cache', 'ms-playwright');
+  if (!fs.existsSync(browserCache)) {
+    throw new Error(`Playwright browser cache is missing: ${browserCache}`);
+  }
   return await runCommand(
     '/usr/bin/sudo',
     [
@@ -167,6 +208,7 @@ export async function runIsolatedCommand(
       String(uid),
       String(gid),
       privateRoot,
+      browserCache,
       command,
       ...args,
     ],
@@ -289,17 +331,9 @@ export function countCliLookups(text) {
 }
 
 export function countAstryxInvocations(command) {
-  const patterns = [
-    /(?:^|[;&|]\s*)npx\s+(?:--yes\s+)?(?:astryx|@astryxdesign\/cli(?:@[^\s;&|]+)?)(?=\s|$)/gi,
-    /(?:^|[;&|]\s*)(?:npm|pnpm)\s+exec\s+(?:--\s+)?astryx(?=\s|$)/gi,
-    /(?:^|[;&|]\s*)(?:[^\s;&|]*\/)?node_modules\/\.bin\/astryx(?=\s|$)/gi,
-    /(?:^|[;&|]\s*)node\s+[^\s;&|]*astryx\.mjs(?=\s|$)/gi,
-    /(?:^|[;&|]\s*)astryx(?=\s|$)/gi,
-  ];
-  return patterns.reduce(
-    (total, pattern) => total + (command.match(pattern) ?? []).length,
-    0,
-  );
+  const pattern =
+    /(?:\bnpx\s+(?:--yes\s+)?(?:astryx|@astryxdesign\/cli(?:@[^\s;&|()]+)?)(?=\s|$)|\b(?:npm|pnpm)\s+exec\s+(?:--\s+)?astryx(?=\s|$)|(?:^|[\s(;$])(?:[^\s;&|()]*\/)?node_modules\/\.bin\/astryx(?=\s|$)|\bnode\s+[^\s;&|()]*astryx\.mjs(?=\s|$)|(?:^|[\s(;$])astryx(?=\s|$))/gi;
+  return (command.match(pattern) ?? []).length;
 }
 
 export function auditAgentContext(agent, stdout, stderr) {
@@ -349,7 +383,8 @@ export function auditAgentContext(agent, stdout, stderr) {
       launcherPluginInstallBlocked:
         (stderr.match(/^Installing /gm) ?? []).length > 0 &&
         externalPlugins.length === 0,
-      pathPolicy: 'private bin + /usr/bin + /bin; meta is absent',
+      pathPolicy:
+        'private bin + /usr/bin + /bin; sudo and absolute meta are sandbox-blocked',
     };
   }
 
@@ -388,7 +423,8 @@ export function auditAgentContext(agent, stdout, stderr) {
     externalSkillContentLoaded: false,
     knownAsymmetry:
       'Muse emits built-in skill and final-verification reminder lifecycle events; external rules, foreign context, plugins, MCP, and external skill content are disabled identically for every config.',
-    pathPolicy: 'private bin + /usr/bin + /bin; meta is absent',
+    pathPolicy:
+      'private bin + /usr/bin + /bin; sudo and absolute meta are sandbox-blocked',
   };
 }
 
