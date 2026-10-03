@@ -3334,6 +3334,10 @@ describe('MultiSelector renderTrigger — read-only', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
     expect(trigger).not.toHaveAttribute('aria-haspopup');
     expect(trigger).not.toHaveAttribute('aria-controls');
+    // Withholding the disclosure attributes stops the control lying about a
+    // panel; this says why it does not open, which the field path conveys
+    // through chrome the caller's control does not have.
+    expect(trigger).toHaveAttribute('aria-readonly', 'true');
   });
 
   it('still advertises the panel when the selector is not read-only', () => {
@@ -3355,5 +3359,59 @@ describe('MultiSelector renderTrigger — read-only', () => {
     expect(trigger).toHaveAttribute('aria-haspopup', 'listbox');
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
     expect(trigger).toHaveAttribute('aria-controls');
+  });
+});
+
+describe('MultiSelector renderTrigger — focus return', () => {
+  it('returns focus to a control that takes no focus of its own', async () => {
+    // A glyph is not keyboard-openable, but when it IS opened by pointer the
+    // panel still has to give focus back somewhere the person recognises.
+    // Without the fallback focus lands on the body and they lose their place.
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        value={[]}
+        onChange={() => {}}
+        options={[
+          {value: 'a', label: 'Alpha'},
+          {value: 'b', label: 'Beta'},
+        ]}
+        renderTrigger={props => (
+          <span {...props} data-testid="glyph">
+            #
+          </span>
+        )}
+      />,
+    );
+
+    const glyph = screen.getByTestId('glyph');
+    expect(glyph).toHaveAttribute('tabindex', '-1');
+
+    await user.click(glyph);
+    await waitFor(() => expect(glyph).toHaveAttribute('aria-expanded', 'true'));
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(glyph).toHaveFocus());
+    expect(document.body).not.toHaveFocus();
+  });
+
+  it('leaves a real control\u2019s own focusability alone', () => {
+    render(
+      <MultiSelector
+        label="Labels"
+        value={[]}
+        onChange={() => {}}
+        options={[{value: 'a', label: 'Alpha'}]}
+        renderTrigger={props => (
+          <button type="button" {...props}>
+            Labels
+          </button>
+        )}
+      />,
+    );
+
+    expect(screen.getByRole('button', {name: 'Labels'})).not.toHaveAttribute(
+      'tabindex',
+    );
   });
 });

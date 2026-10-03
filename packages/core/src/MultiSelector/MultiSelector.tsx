@@ -73,6 +73,7 @@ import {
 import {useMultiCombobox} from './hooks';
 import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {FOCUSABLE_SELECTOR} from '../hooks/focusableSelector';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
@@ -439,7 +440,8 @@ export type MultiSelectorStatusType = 'warning' | 'error' | 'success';
 export type {MultiSelectorStatus};
 
 /**
- * Props the `trigger` render prop hands to the control the caller renders.
+ * Props the `renderTrigger` render prop hands to the control the caller
+ * renders.
  * Spread them onto that control: it becomes the panel's anchor, the element
  * focus returns to, and the control that announces the panel's state.
  */
@@ -448,13 +450,28 @@ export interface MultiSelectorRenderTriggerProps {
   ref: (element: HTMLElement | null) => void;
   /** The id the field would have given its own button. */
   id: string;
-  onClick: (event: React.MouseEvent<HTMLElement>) => void;
-  onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void;
+  /**
+   * Opening handlers, present only when there is a panel to open. A
+   * read-only selector withholds them, so spreading these props onto a
+   * control gives it no opener rather than a dead one.
+   */
+  onClick?: (event: React.MouseEvent<HTMLElement>) => void;
+  onKeyDown?: (event: React.KeyboardEvent<HTMLElement>) => void;
   onFocus: (event: React.FocusEvent<HTMLElement>) => void;
-  'aria-haspopup': 'listbox' | 'dialog';
+  /**
+   * Disclosure state. A read-only selector has no surface to disclose, so
+   * `aria-haspopup` and `aria-controls` are absent and `aria-expanded` is
+   * `false` (`spec:AST-011` FR4).
+   */
+  'aria-haspopup'?: 'listbox' | 'dialog';
   'aria-expanded': boolean;
-  'aria-controls': string;
+  'aria-controls'?: string;
   'aria-busy': boolean | undefined;
+  /**
+   * `true` when the selector is read-only, so the caller's control can show
+   * that state the way its own design calls for.
+   */
+  'aria-readonly'?: boolean;
 }
 
 /**
@@ -1067,27 +1084,42 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   // Layer for dropdown positioning
   const hasExternalTrigger = renderTrigger != null;
 
+  // The open handlers defer their focus move by a frame, so a panel closed
+  // inside that frame would otherwise be focused after it has gone — the
+  // person loses focus to a surface that is no longer there. The pending
+  // frame is cancelled on hide.
+  const openFocusFrameRef = useRef<number | null>(null);
+  const cancelOpenFocus = useCallback(() => {
+    if (openFocusFrameRef.current != null) {
+      cancelAnimationFrame(openFocusFrameRef.current);
+      openFocusFrameRef.current = null;
+    }
+  }, []);
+
   const handleLayerHide = useCallback(() => {
+    cancelOpenFocus();
     setSearchQuery('');
     setSelectedAtOpen(null);
     // Clear any lingering result count when the popover closes so stale status
     // text does not linger in the a11y tree.
     announce('');
     onOpenChange?.(false);
-  }, [announce, onOpenChange]);
+  }, [announce, onOpenChange, cancelOpenFocus]);
 
   const handleLayerShow = useCallback(() => {
     // Snapshot selection only after the surface actually opens; a same-gesture
     // rejection must not prepare state for an opening that never happened.
     setSelectedAtOpen(new Set(optimisticValue));
     if (hasSearch) {
-      requestAnimationFrame(() => {
+      openFocusFrameRef.current = requestAnimationFrame(() => {
+        openFocusFrameRef.current = null;
         searchRef.current?.focus();
       });
     } else if (hasExternalTrigger) {
       // The caller's anchor may not take focus (a glyph in a link row), so
       // the listbox owns the keyboard while the panel is open.
-      requestAnimationFrame(() => {
+      openFocusFrameRef.current = requestAnimationFrame(() => {
+        openFocusFrameRef.current = null;
         listboxRef.current?.focus();
       });
     }
@@ -1877,6 +1909,16 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       ref: el => {
         popover.triggerRef(el);
         triggerRef.current = el;
+        // A control that takes no focus has nowhere for focus to return to
+        // when the panel closes, and focus would land on the body — the
+        // person loses their place in the page. Making it programmatically
+        // focusable repairs the return without putting it in the tab order,
+        // which is the caller's decision to make. It does not make the
+        // control openable from the keyboard: only a real control does
+        // that, which is what the warning below is for.
+        if (el != null && !el.matches(FOCUSABLE_SELECTOR)) {
+          el.tabIndex = -1;
+        }
       },
       id: triggerId,
       onClick: isEffectivelyReadOnly ? undefined : onTriggerClick,
@@ -1899,6 +1941,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       'aria-expanded': isEffectivelyReadOnly ? false : surface.isOpen,
       'aria-controls': isEffectivelyReadOnly ? undefined : listboxId,
       'aria-busy': isBusy || undefined,
+      // Withholding the disclosure attributes stops the control lying about
+      // a panel, but leaves it silent about WHY it does not open. The field
+      // path says so through its own chrome; the caller's control has none,
+      // so the state is handed over for it to present.
+      'aria-readonly': isEffectivelyReadOnly || undefined,
     };
     return (
       <>

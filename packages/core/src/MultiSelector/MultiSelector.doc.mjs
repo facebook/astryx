@@ -511,7 +511,7 @@ export const docsZh = {
           '状态消息的放置方式：attached 直接叠加在输入框下方；detached 作为独立元素浮于下方并留有间距。',
         renderOption:
           '每个可选选项的自定义渲染函数。不会用于分隔线、分组或全选行。',
-        trigger:
+        renderTrigger:
           '由调用方渲染面板的触发控件（替代选择器自带的字段和按钮）；将传入的属性展开到该控件上，列表框将锚定于它并由 label 命名。',
         handleRef: '命令式句柄：open()、close()、toggle()、isOpen()。',
         onOpenChange: '面板每次打开或关闭时触发，无论由何种方式引起。',
@@ -657,7 +657,7 @@ export const docsDense = {
           'status message placement; ghost detaches attached by default; use tooltip for compact toolbars.',
         renderOption:
           'custom render fn per selectable option; not dividers/sections/select-all',
-        trigger:
+        renderTrigger:
           'caller-rendered opener replacing the field+button; spread the given props; listbox anchored to it, named by label',
         handleRef: 'imperative open()/close()/toggle()/isOpen()',
         onOpenChange: 'fires on every open/close, whatever caused it',
