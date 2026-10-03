@@ -17,7 +17,7 @@ Experimental no-build Astryx assets for plain HTML pages. Vanilla Astryx combine
   - [`product-detail.html`](templates/product-detail.html)
   - [`login.html`](templates/login.html)
   - [`kanban-board.html`](templates/kanban-board.html)
-- A browsable [`demo/index.html`](demo/index.html) with all seven shipped themes, a custom brand example, and light and dark modes.
+- A browsable [`demo/index.html`](demo/index.html) with all seven shipped themes and light and dark modes.
 - A committed, ready-to-open [`demo/pinned/index.html`](demo/pinned/index.html) and nine pinned templates.
 
 The canonical templates use `__ASTRYX_VANILLA_CDN__` as the base for their CSS and JavaScript URLs. The Astryx CLI and the demo renderer replace that placeholder with the same commit-pinned jsDelivr URL.
@@ -70,9 +70,9 @@ Vanilla Astryx supports Neutral, Butter, Y2K, Stone, Matcha, Chocolate, and Goth
 
 The JavaScript bundle persists controls marked with `data-ax-theme-switch`, `data-ax-mode-switch`, `data-ax-theme-toggle`, or `data-ax-mode-toggle`. The demo and templates restore the saved choice before styles load, and template query parameters named `theme` and `mode` take precedence.
 
-Custom themes override semantic CSS variables in the `astryx-theme` layer. The included purple brand example changes the accent used by Button, Badge, and Link plus the page wash without restyling component classes.
+Custom themes override semantic CSS variables in the `astryx-theme` layer. Keep literal brand values in the dedicated theme definition; templates and component styles should only consume semantic tokens.
 
-See [`docs/theming.md`](docs/theming.md) for the complete stylesheet, font, switcher, persistence, and custom-theme examples. Copy the switcher and brand variants from the CLI with:
+See [`docs/theming.md`](docs/theming.md) for the complete stylesheet, font, switcher, persistence, and custom-theme examples. Copy the theme and mode controls from the CLI with:
 
 ```sh
 node packages/cli/clients/cli/bin/astryx.mjs component Selector --html

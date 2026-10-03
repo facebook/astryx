@@ -19,6 +19,7 @@ const packageRoot = path.resolve(
 const cssPath = path.join(packageRoot, 'dist/astryx-vanilla.css');
 const componentsDir = path.join(packageRoot, 'src/components');
 const markupDir = path.join(packageRoot, 'markup');
+const templatesDir = path.join(packageRoot, 'templates');
 const pinnedDemoDir = path.join(packageRoot, 'demo/pinned');
 
 async function listStems(directory, extension) {
@@ -32,6 +33,46 @@ async function listStems(directory, extension) {
 function toKebabCase(name) {
   return name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 }
+
+function authoredStyleSources(html) {
+  const uncommented = html.replace(/<!--[\s\S]*?-->/g, '');
+  return [
+    ...[...uncommented.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)].map(
+      match => match[1],
+    ),
+    ...[...uncommented.matchAll(/\bstyle\s*=\s*(?:"([^"]*)"|'([^']*)')/gi)].map(
+      match => match[1] ?? match[2],
+    ),
+  ].map(style => style.replace(/\/\*[\s\S]*?\*\//g, ''));
+}
+
+const forbiddenTemplateLiterals = [
+  [
+    'raw hex color',
+    /#(?:[0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{4}|[0-9a-f]{3})(?![0-9a-f])/gi,
+  ],
+  ['raw rgb color', /\brgba?\s*\(/gi],
+  ['raw pixel length', /[+-]?(?:\d*\.)?\d+px\b/gi],
+];
+
+test('template CSS and inline styles use tokens instead of raw literals', async () => {
+  const templateNames = (await readdir(templatesDir))
+    .filter(name => name.endsWith('.html'))
+    .sort((a, b) => a.localeCompare(b));
+  const violations = [];
+
+  for (const name of templateNames) {
+    const html = await readFile(path.join(templatesDir, name), 'utf8');
+    const styles = authoredStyleSources(html).join('\n');
+    for (const [kind, pattern] of forbiddenTemplateLiterals) {
+      for (const match of styles.matchAll(pattern)) {
+        violations.push(`${name}: ${kind} ${JSON.stringify(match[0])}`);
+      }
+    }
+  }
+
+  assert.deepEqual(violations, []);
+});
 
 test('committed dist is generated from core token defaults and source files', async () => {
   execFileSync(process.execPath, ['scripts/build.mjs', '--check'], {

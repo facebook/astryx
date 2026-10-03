@@ -84,8 +84,8 @@ If unsure and there is no package.json, choose **Path A**.
 - Custom theme: add a named `[data-astryx-theme="brand"]` rule after the shipped
   styles in `@layer astryx-theme` and override semantic custom properties such
   as `--color-accent`, `--color-on-accent`, `--color-text-accent`, and
-  `--color-background-body`. Run `astryx component Selector --html` for a
-  complete purple brand example plus theme and dark-mode controls.
+  `--color-background-body`. Keep literal brand values in that dedicated theme
+  definition; templates and component styles should only consume tokens.
 - ES-module alternative to the classic script:
   `https://cdn.jsdelivr.net/gh/facebook/astryx@c11b28d74ce387f44ab224e516058cd31231285d/packages/vanilla/dist/astryx-vanilla.mjs`
   (exports `setTheme`, `setMode`, `initThemeModeSwitchers`).
@@ -115,7 +115,7 @@ astryx template --list --html                  # the 9 template ids
 astryx template dashboard --html > page.html   # full standalone page
 astryx component --list --html                 # all HTML components
 astryx component Dialog --html                 # docs + copyable markup variants
-astryx component Selector --html               # theme switcher, dark mode, custom brand theme
+astryx component Selector --html               # theme switcher and dark mode controls
 ```
 
 **Fallback — clone the pinned source commit:**

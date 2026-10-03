@@ -91,7 +91,7 @@ node packages/cli/clients/cli/bin/astryx.mjs component Selector --html
 
 ## Custom brand theme
 
-A custom theme is a named `data-astryx-theme` scope with token overrides. Keep the override in the `astryx-theme` layer and place it after shipped theme stylesheets. Components continue to use semantic tokens; do not restyle their classes individually.
+A custom theme is a named `data-astryx-theme` scope with token overrides. Keep the override in the `astryx-theme` layer and place it after shipped theme stylesheets. Components continue to use semantic tokens; do not restyle their classes individually. The literal colors below are documented token-definition values; templates and component styles should only consume the semantic tokens.
 
 ```html
 <style>
