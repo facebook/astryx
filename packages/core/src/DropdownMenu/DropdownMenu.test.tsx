@@ -520,11 +520,10 @@ describe('DropdownMenu', () => {
     const popover = screen
       .getByRole('menu', {hidden: true})
       .closest('[popover]');
-    expect(popover?.className).toContain(
-      'DropdownMenu__styles.popoverViewportBlockStart',
-    );
+    // The gutter is the layer runtime's (spec:AST-059 FR1, FR7).
+    expect(popover?.className).toContain('useLayer__styles.gutterBlockEnd');
     expect(popover?.className).not.toContain(
-      'DropdownMenu__styles.popoverViewportStart',
+      'useLayer__styles.gutterInlineEnd',
     );
   });
 
@@ -557,9 +556,13 @@ describe('DropdownMenu', () => {
     expect(popover?.className).toContain(
       'DropdownMenu__styles.popoverViewport',
     );
-    expect(popover?.className).toContain('DropdownMenu__styles.popoverAligned');
+    expect(popover?.className).toContain(
+      'DropdownMenu__styles.popoverMatchTrigger',
+    );
+    // The cap is the viewport, never the span beside the trigger
+    // (spec:AST-059 FR2, FR7).
     expect(popover).toHaveStyle(
-      'min-width: min(anchor-size(width),calc(100% - max(var(--spacing-4),env(safe-area-inset-left,0px),env(safe-area-inset-right,0px))))',
+      'min-width: min(anchor-size(width),calc(100vi - calc(max(var(--spacing-4), env(safe-area-inset-left, 0px)) + var(--astryx-layer-inset-inline-start, 0px)) - calc(max(var(--spacing-4), env(safe-area-inset-right, 0px)) + var(--astryx-layer-inset-inline-end, 0px))))',
     );
 
     unmount();
@@ -576,7 +579,8 @@ describe('DropdownMenu', () => {
       'DropdownMenu__styles.popoverViewport',
     );
     expect(popover).toHaveStyle({minWidth: 'var(--x-minWidth)'});
-    expect(popover?.getAttribute('style')).toContain('min(640px, calc(100%');
+    expect(popover?.getAttribute('style')).toContain('min(640px, calc(100vw');
+    expect(popover?.getAttribute('style')).not.toContain('100%');
   });
 
   it.each(['max-content', 'fit-content', 'auto'])(
@@ -597,9 +601,7 @@ describe('DropdownMenu', () => {
         'DropdownMenu__styles.popoverCustomIntrinsicWidth',
       );
       expect(popover?.getAttribute('style')).toContain(menuWidth);
-      expect(popover?.className).toContain(
-        'DropdownMenu__styles.popoverViewportAligned',
-      );
+      expect(popover?.className).toContain('useLayer__styles.gutterInlineEnd');
       expect(popover?.getAttribute('style')).not.toContain(`min(${menuWidth},`);
     },
   );
@@ -628,7 +630,7 @@ describe('DropdownMenu', () => {
         );
       });
       expect(menu).toHaveStyle(
-        'max-height: min(300px,calc(100dvb - max(var(--spacing-4),env(safe-area-inset-top,0px)) - max(var(--spacing-4),env(safe-area-inset-bottom,0px))))',
+        'max-height: min(300px,calc(100dvb - calc(max(var(--spacing-4), env(safe-area-inset-top, 0px)) + var(--astryx-layer-inset-block-start, 0px)) - calc(max(var(--spacing-4), env(safe-area-inset-bottom, 0px)) + var(--astryx-layer-inset-block-end, 0px))))',
       );
       expect(menu).not.toHaveStyle({overflowY: 'auto'});
       expect(menu).toHaveAttribute('tabindex', '-1');
