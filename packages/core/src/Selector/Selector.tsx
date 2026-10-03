@@ -50,6 +50,7 @@ import {InternalInputClearButton} from '../Field/InputClearButton';
 import {Spinner} from '../Spinner';
 import {PanelSearchInput} from '../Field/PanelSearchInput';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
 import {
   colorVars,
   sizeVars,
@@ -716,9 +717,10 @@ interface SelectorPropsBase<
    * Content shown in the panel when a search query matches no options, and
    * announced in a polite live region at the same time.
    *
-   * The panel message is `role="presentation"`, so the live region is the only
-   * route to assistive tech: a string is announced verbatim, a richer node
-   * falls back to the default text since it cannot be spoken.
+   * The panel message is `role="presentation"`, so the live region is the
+   * only route to assistive tech. It announces the text this content renders,
+   * read from the DOM, so an element is announced as written and anything
+   * marked `aria-hidden` is left out of both.
    * @default 'No results found'
    */
   emptySearchText?: ReactNode;
@@ -916,6 +918,8 @@ export function Selector<T extends SelectorOptionType>(
   // has to be that same value or the label and listbox point at nothing.
   const triggerId = id ?? generatedTriggerId;
   const listboxId = useId();
+  // Read by the live region above so it speaks what this element renders.
+  const emptyStateRef = useRef<HTMLDivElement>(null);
   const descriptionId = useId();
   const statusMessageId = useId();
   const inputLabelId = useId();
@@ -940,17 +944,6 @@ export function Selector<T extends SelectorOptionType>(
   const [optimisticValue, setOptimisticValue] = useOptimistic(normalizedValue);
   const isBusy = isLoading || optimisticValue !== normalizedValue;
   const announce = useAnnounce();
-
-  // The panel's empty message is role="presentation" and reaches assistive tech
-  // only through this live region, so the region has to speak whatever the
-  // panel shows. A ReactNode override cannot be spoken; fall back to the
-  // catalog copy for that case rather than announcing nothing.
-  const emptyAnnouncement =
-    typeof emptyText === 'string' ? emptyText : t('@astryx.selector.empty');
-  const emptySearchAnnouncement =
-    typeof emptySearchText === 'string'
-      ? emptySearchText
-      : t('@astryx.selector.emptySearchResults');
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the trigger container (which already exists)
@@ -1101,13 +1094,16 @@ export function Selector<T extends SelectorOptionType>(
         return;
       }
       const count = filterOptionsByQuery(selectableItems, nextQuery).length;
-      announce(
-        count === 0
-          ? emptySearchAnnouncement
-          : t('@astryx.selector.resultCount', {count}),
-      );
+      if (count === 0) {
+        // The empty panel is announced from the rendered message below, not
+        // from here. Two speakers for one transition would say it twice, and
+        // this one cannot cover an empty result that arrives after the
+        // keystroke — an async load landing with nothing that matches.
+        return;
+      }
+      announce(t('@astryx.selector.resultCount', {count}));
     },
-    [announce, isLoading, selectableItems, emptySearchAnnouncement, t],
+    [announce, isLoading, selectableItems, t],
   );
 
   const handleSearchChange = useCallback(
@@ -1119,36 +1115,21 @@ export function Selector<T extends SelectorOptionType>(
     [announceSearchResults],
   );
 
-  // The panel's empty message is role="presentation", so this region is the
-  // only route to assistive tech. It has to watch the STATE rather than the
-  // open event: the panel can become empty either on open or when a fetch
-  // lands with nothing in it, and an open-only announcement leaves the second
-  // case silent while the message sits on screen. The ref makes it fire once
-  // per arrival at that state rather than on every re-render.
-  const announcedEmptyRef = useRef<string | null>(null);
-  useEffect(() => {
-    const isPanelEmpty =
-      surface.isOpen &&
-      !isLoading &&
-      searchQuery === '' &&
-      selectableItems.length === 0;
-    if (!isPanelEmpty) {
-      announcedEmptyRef.current = null;
-      return;
-    }
-    if (announcedEmptyRef.current === emptyAnnouncement) {
-      return;
-    }
-    announcedEmptyRef.current = emptyAnnouncement;
-    announce(emptyAnnouncement);
-  }, [
-    surface.isOpen,
-    isLoading,
-    searchQuery,
-    selectableItems.length,
-    emptyAnnouncement,
-    announce,
-  ]);
+  // The panel's empty message is role="presentation" — role="listbox" permits
+  // only option and group children — so this region is its only route to
+  // assistive tech, and the region has to say what the panel says. Both
+  // `emptyText` and `emptySearchText` take a ReactNode, so the words are read
+  // off the rendered element rather than guessed from the prop: a caller who
+  // puts a link in the dead end is announced their link, not a default
+  // (`spec:AST-056` AR1).
+  //
+  // Watching the rendered STATE rather than the keystroke also covers the
+  // case the old keystroke-time announcement could not: a fetch that lands
+  // with nothing matching an active query left the message on screen and the
+  // region silent.
+  const isPanelEmpty =
+    surface.isOpen && !isLoading && filteredItems.length === 0;
+  useAnnounceRenderedText(emptyStateRef, isPanelEmpty, searchQuery);
 
   // Calculate offset to position selected item over trigger. Explicit
   // placement opts out of the selector-specific overlay behavior and uses the
@@ -1554,6 +1535,7 @@ export function Selector<T extends SelectorOptionType>(
       return [
         <div
           key="empty"
+          ref={emptyStateRef}
           role="presentation"
           {...mergeProps(
             themeProps('selector-empty-state'),
