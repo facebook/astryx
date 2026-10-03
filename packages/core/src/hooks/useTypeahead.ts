@@ -74,9 +74,20 @@ function isPrintableCharacter(e: React.KeyboardEvent | KeyboardEvent): boolean {
     // which sets ctrlKey on Windows and Linux.
     !e.ctrlKey &&
     !e.metaKey &&
+    // A key that is part of an input method's composition is the IME's, not
+    // a jump. React's synthetic event surfaces `isComposing` too.
+    !isComposingKey(e) &&
     // A lone space is used for activation in menus, not typeahead-from-empty.
     e.key !== ' '
   );
+}
+
+function isComposingKey(e: React.KeyboardEvent | KeyboardEvent): boolean {
+  if ((e as {isComposing?: boolean}).isComposing === true) {
+    return true;
+  }
+  const native = (e as {nativeEvent?: {isComposing?: boolean}}).nativeEvent;
+  return native?.isComposing === true;
 }
 
 /**
@@ -144,6 +155,7 @@ export function useTypeahead(options: UseTypeaheadOptions): UseTypeaheadReturn {
         e.key === ' ' &&
         !e.ctrlKey &&
         !e.metaKey &&
+        !isComposingKey(e) &&
         bufferRef.current.length > 0;
       if (!isPrintableCharacter(e) && !isSpaceMidType) {
         return false;
