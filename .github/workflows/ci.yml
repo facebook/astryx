@@ -1157,6 +1157,27 @@ jobs:
             --project chromium \
             --output empty-state-announcement-output
 
+      # Outline owns real DOM focus through roving tabindex. Computed paint,
+      # pointer modality, clipping, forced colors, and exact pixels require the
+      # same real Chromium artifact this blocking accessibility lane already owns.
+      - name: Run Outline focus indicator contract
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Outline/OutlineFocus.a11y.chromium.spec.ts \
+            --project chromium \
+            --output outline-focus-output
+
+      - name: Upload Outline focus evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: outline-focus-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: test-results/outline-focus-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # ChatMessageBubble is nested under the shared Chat source directory, so
       # the generic stable-visual owner cannot select its dedicated fixture.
       # Run the component's bounded evidence matrix only when the PR scope names
