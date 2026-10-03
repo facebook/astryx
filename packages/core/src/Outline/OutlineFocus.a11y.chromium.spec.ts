@@ -541,15 +541,7 @@ test('keeps the actual focused Outline link visibly outlined in every supported 
 }) => {
   test.setTimeout(4 * 60 * 1000);
   const failures: string[] = [];
-  const targets = [
-    {name: 'current-head', origin: storybook.origin},
-    // Exact comparison target for the investigation run. Removed after its
-    // evidence artifact is banked so the permanent guard owns current head only.
-    {
-      name: 'preview-pr6915-fc188d8',
-      origin: 'https://astryx-l03yrtc96-fbopensource.vercel.app/storybook',
-    },
-  ] as const;
+  const targets = [{name: 'current-head', origin: storybook.origin}] as const;
   for (const target of targets) {
     for (const scenario of SCENARIOS) {
       failures.push(...(await runScenario(browser, target, scenario)));
