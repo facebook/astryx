@@ -630,6 +630,14 @@ function useLayerImplementation(
   // fallback is withdrawn while it is not, so an aligned layer holds its
   // position and size instead of chasing an anchor nobody can see.
   const [isAnchorInView, setIsAnchorInView] = useState(true);
+  // Mirror so the pre-paint read commits nothing when the answer is unchanged.
+  const isAnchorInViewRef = useRef(true);
+  const updateAnchorInView = useCallback((inView: boolean) => {
+    if (isAnchorInViewRef.current !== inView) {
+      isAnchorInViewRef.current = inView;
+      setIsAnchorInView(inView);
+    }
+  }, []);
   // The inset the app declared on LayerProvider (FR6). Read through context
   // and written inline on the layer, so a corrective portal cannot escape it
   // and no measurement is needed to apply it.
@@ -988,8 +996,7 @@ function useLayerImplementation(
         rect.right >= 0 &&
         rect.top <= view.innerHeight &&
         rect.left <= view.innerWidth;
-      // eslint-disable-next-line @eslint-react/set-state-in-effect -- read before paint so the first frame holds or slides correctly
-      setIsAnchorInView(inView);
+      updateAnchorInView(inView);
     }
     if (typeof IntersectionObserver === 'undefined') {
       return;
@@ -997,12 +1004,12 @@ function useLayerImplementation(
     const observer = new IntersectionObserver(entries => {
       const latest = entries[entries.length - 1];
       if (latest) {
-        setIsAnchorInView(latest.isIntersecting);
+        updateAnchorInView(latest.isIntersecting);
       }
     });
     observer.observe(anchor);
     return () => observer.disconnect();
-  }, [isOpen, mode]);
+  }, [isOpen, mode, updateAnchorInView]);
 
   // Render function for context mode
   const renderContext = useCallback(

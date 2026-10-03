@@ -1248,6 +1248,7 @@ function PlaygroundDemo() {
   }, [layer]);
 
   // Read after each commit; the readout is display, never an input to layout.
+  // Set only when the text changes, or the readout would re-render itself.
   useLayoutEffect(() => {
     const trigger = triggerRef.current;
     const el =
@@ -1255,7 +1256,15 @@ function PlaygroundDemo() {
       document.querySelector<HTMLElement>('[popover]:popover-open[id]');
     if (trigger && el) {
       layerElRef.current = el;
-      setReadout(readGeometry(trigger, el));
+      const next = readGeometry(trigger, el);
+      setReadout(current =>
+        current &&
+        current.box === next.box &&
+        current.within === next.within &&
+        current.resolved === next.resolved
+          ? current
+          : next,
+      );
     }
   });
 
