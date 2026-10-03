@@ -327,10 +327,41 @@ describe('Popover', () => {
     const frameCallbacks: FrameRequestCallback[] = [];
 
     class ResizeObserverMock {
+      #callback: ResizeObserverCallback;
       constructor(callback: ResizeObserverCallback) {
         resizeCallback = callback;
+        this.#callback = callback;
       }
-      observe = vi.fn();
+      // Fires once synchronously on observe(), same as the real thing does
+      // for an already-visible element and as the jsdom-wide polyfill in
+      // internal/test-utils/src/setup.ts models it — useLayer's own show()
+      // now relies on that first firing to know the anchor already has a box
+      // (#5398), so a no-op observe() here would leave the popover
+      // permanently waiting to open.
+      observe = vi.fn((target: Element) => {
+        this.#callback(
+          [
+            {
+              target,
+              contentRect: {
+                width: 1,
+                height: 1,
+                top: 0,
+                left: 0,
+                right: 1,
+                bottom: 1,
+                x: 0,
+                y: 0,
+                toJSON: () => ({}),
+              },
+              borderBoxSize: [],
+              contentBoxSize: [],
+              devicePixelContentBoxSize: [],
+            },
+          ],
+          this,
+        );
+      });
       unobserve = vi.fn();
       disconnect = vi.fn();
     }
@@ -383,18 +414,56 @@ describe('Popover', () => {
   });
 
   it('observes overflow only while the popover is open', () => {
-    const resizeConstructed = vi.fn();
-    const resizeDisconnected = vi.fn();
+    // useLayer's own anchor-readiness check (#5398) also constructs a
+    // ResizeObserver on open, observing the trigger's CSS anchor element
+    // (Popover's wrapper div in children mode, not necessarily the <button>
+    // itself). It fires once synchronously — matching the jsdom-wide
+    // polyfill in internal/test-utils/src/setup.ts, which every other
+    // consumer here relies on — and disconnects itself in that same
+    // synchronous callback, before this mock's own observe() call even
+    // returns. Popover's own overflow-watching ResizeObserver, by contrast,
+    // stays attached for as long as the popover is open. Tracking "currently
+    // still observing" rather than "ever constructed" isolates the one this
+    // test actually cares about without needing to know which element
+    // useLayer's own check happens to target.
+    const activeResizeObservers = new Set<object>();
     const mutationConstructed = vi.fn();
     const mutationDisconnected = vi.fn();
 
     class ResizeObserverMock {
-      constructor() {
-        resizeConstructed();
+      #callback: ResizeObserverCallback;
+      constructor(callback: ResizeObserverCallback) {
+        this.#callback = callback;
       }
-      observe = vi.fn();
+      observe = vi.fn((target: Element) => {
+        activeResizeObservers.add(this);
+        this.#callback(
+          [
+            {
+              target,
+              contentRect: {
+                width: 1,
+                height: 1,
+                top: 0,
+                left: 0,
+                right: 1,
+                bottom: 1,
+                x: 0,
+                y: 0,
+                toJSON: () => ({}),
+              },
+              borderBoxSize: [],
+              contentBoxSize: [],
+              devicePixelContentBoxSize: [],
+            },
+          ],
+          this,
+        );
+      });
       unobserve = vi.fn();
-      disconnect = resizeDisconnected;
+      disconnect = vi.fn(() => {
+        activeResizeObservers.delete(this);
+      });
     }
 
     class MutationObserverMock {
@@ -417,17 +486,16 @@ describe('Popover', () => {
 
     try {
       const trigger = screen.getByRole('button', {name: 'Open'});
-      expect(resizeConstructed).not.toHaveBeenCalled();
+      expect(activeResizeObservers.size).toBe(0);
       expect(mutationConstructed).not.toHaveBeenCalled();
 
       fireEvent.click(trigger);
-      expect(resizeConstructed).toHaveBeenCalledTimes(1);
+      expect(activeResizeObservers.size).toBe(1);
       expect(mutationConstructed).toHaveBeenCalledTimes(1);
 
       fireEvent.click(trigger);
-      expect(resizeDisconnected).toHaveBeenCalledTimes(1);
+      expect(activeResizeObservers.size).toBe(0);
       expect(mutationDisconnected).toHaveBeenCalledTimes(1);
-      expect(resizeConstructed).toHaveBeenCalledTimes(1);
       expect(mutationConstructed).toHaveBeenCalledTimes(1);
     } finally {
       unmount();
