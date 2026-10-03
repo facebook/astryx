@@ -73,6 +73,7 @@ export const Colors: Story = {
     const primaryColor = getComputedStyle(primary).color;
     const secondaryColor = getComputedStyle(secondary).color;
     const inheritedColor = getComputedStyle(inherited).color;
+    expect(secondaryColor).not.toBe(primaryColor);
     expect(inheritedColor).toBe(getComputedStyle(inheritedParent).color);
     expect(inheritedColor).not.toBe(primaryColor);
     expect(inheritedColor).not.toBe(secondaryColor);
