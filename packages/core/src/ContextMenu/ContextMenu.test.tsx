@@ -13,6 +13,7 @@ import {render, screen, fireEvent, act, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {readFileSync} from 'node:fs';
 import {ContextMenu} from './ContextMenu';
+import {ContextMenuGroup} from './index';
 import {
   ContextMenuItem,
   ContextMenuDivider,
@@ -1061,5 +1062,42 @@ describe('ContextMenu press model', () => {
     fireEvent.click(item('Cut'), {detail: 1});
     expect(onPaste).toHaveBeenCalledTimes(1);
     expect(onCut).not.toHaveBeenCalled();
+  });
+});
+
+describe('ContextMenuGroup', () => {
+  it('carries the group semantics through the alias, not just the component', async () => {
+    // Three public surfaces alias this component at once. An alias that
+    // re-exports without the semantics would pass a render test and fail a
+    // screen reader.
+    const user = userEvent.setup();
+    render(
+      <ContextMenu
+        menuContent={
+          <ContextMenuGroup title="Version history">
+            <DropdownMenuItem label="Restore" onClick={() => {}} />
+            <DropdownMenuItem label="Compare" onClick={() => {}} />
+          </ContextMenuGroup>
+        }>
+        <div data-testid="target">Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByTestId('target'));
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', {name: 'Restore', hidden: true}),
+      ).toBeInTheDocument(),
+    );
+
+    const group = screen.getByRole('group', {
+      name: 'Version history',
+      hidden: true,
+    });
+    const heading = screen.getByText('Version history');
+    expect(group).toHaveAttribute('aria-labelledby', heading.id);
+    expect(group).toContainElement(
+      screen.getByRole('menuitem', {name: 'Restore', hidden: true}),
+    );
   });
 });

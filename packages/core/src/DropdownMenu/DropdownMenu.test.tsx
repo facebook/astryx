@@ -1414,6 +1414,75 @@ describe('DropdownMenuItem ref', () => {
 });
 
 describe('DropdownMenuGroup (compound mode)', () => {
+  it('a focusable node in the heading is not reachable by the arrow keys', async () => {
+    // A heading is not a menu row, so a control inside one lands in the
+    // group but outside the roving focus order. The type does not prevent
+    // this — a rich heading is a legitimate need — so the behavior is
+    // pinned rather than discovered.
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuGroup
+          title={
+            <>
+              Version history <button type="button">Info</button>
+            </>
+          }>
+          <DropdownMenuItem label="Restore" onClick={() => {}} />
+          <DropdownMenuItem label="Compare" onClick={() => {}} />
+        </DropdownMenuGroup>
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+
+    const menu = screen.getByRole('menu', {hidden: true});
+    const info = screen.getByRole('button', {name: 'Info', hidden: true});
+    const restore = screen.getByRole('menuitem', {
+      name: 'Restore',
+      hidden: true,
+    });
+    const compare = screen.getByRole('menuitem', {
+      name: 'Compare',
+      hidden: true,
+    });
+
+    restore.focus();
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(compare).toHaveFocus();
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(info).not.toHaveFocus();
+  });
+
+  it('arrow navigation steps across a group boundary as if the rows were flat', async () => {
+    // The group renders a wrapper between the menu and its rows, which is
+    // where flat navigation usually breaks.
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Open" onClick={() => {}} />
+        <DropdownMenuGroup title="Version history">
+          <DropdownMenuItem label="Restore" onClick={() => {}} />
+        </DropdownMenuGroup>
+        <DropdownMenuGroup title="Danger zone">
+          <DropdownMenuItem label="Delete" onClick={() => {}} />
+        </DropdownMenuGroup>
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+
+    const menu = screen.getByRole('menu', {hidden: true});
+    const row = (name: string) =>
+      screen.getByRole('menuitem', {name, hidden: true});
+
+    row('Open').focus();
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(row('Restore')).toHaveFocus();
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(row('Delete')).toHaveFocus();
+    fireEvent.keyDown(menu, {key: 'ArrowUp'});
+    expect(row('Restore')).toHaveFocus();
+  });
+
   it('renders a role="group" named by its heading', () => {
     render(
       <DropdownMenu button={{label: 'Actions'}}>
