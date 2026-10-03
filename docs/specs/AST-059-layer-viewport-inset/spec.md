@@ -39,10 +39,10 @@ review_triggers: [layering, layout, behavior, public-api]
 | Area                    | Contract                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Public contract         | The layer runtime owns the viewport inset: one gutter definition (FR1), one size cap — the viewport, never the span beside the trigger (FR2, FR3) — one fallback order (FR4, FR5), and one place an app declares a persistent bar floating over a viewport edge (FR6). Popover is an application of the layer that adds styling on top (DEC-1).                                                                                                                                                 |
-| Behavior                | A layer renders at its own size — the caller's explicit size, or its content's — up to the viewport minus its gutters. When that size does not fit beside the trigger, the layer flips; when it fits on neither side, it keeps its size and slides along the alignment axis into view while the anchor is in view (FR4, DEC-2). A layer whose anchor has left the viewport holds its position and its size (FR5, DEC-3).                                                                        |
+| Behavior                | A layer renders at its own size — the caller's explicit size, or its content's — up to the viewport minus its gutters. Content that can wrap fits beside the trigger by wrapping; a size that cannot shrink flips to the other side, and when it fits on neither side it keeps its size and slides along the alignment axis into view while the anchor is in view (FR4, DEC-2). A layer whose anchor has left the viewport holds its position and its size (FR5, DEC-3).                        |
 | End-user impact         | A person who opens a 352px menu from a control near the edge of a panel gets a 352px menu, not a 274px one. A long menu on a phone keeps its labels readable instead of squeezing beside its trigger. A layer never ends under a phone navigation bar the app has declared (FR6). Nothing moves for an app that declares no bar.                                                                                                                                                                |
 | Builder impact          | `Popover.width` and `DropdownMenu.menuWidth` become ordinary sizes. Nothing new to pass. An app with a floating bar declares it once, on `:root`. Components that compose `useLayer` or `usePopover` inherit the gutter, the caps, and the fallbacks without a record change (FR7).                                                                                                                                                                                                             |
-| Compatibility/readiness | Behavior change, no API change. Content-sized aligned layers that used to shrink to the span beside the trigger now flip or slide at their natural size (DEC-2). Authority: `draft`, `approved_by` `null`. One owner decision is proposed here rather than already taken: DEC-2.                                                                                                                                                                                                                |
+| Compatibility/readiness | Behavior change, no API change. An explicit size near an edge renders at its size instead of shrinking; unwrappable content near an edge flips or slides instead of overflowing its box; prose still wraps beside its trigger (DEC-2). Every anchor-mode layer gains the gutter and caps (FR7). Authority: `draft`, `approved_by` `null`. Two decisions are proposed here rather than already taken: DEC-2 and DEC-4.                                                                           |
 | Review checks           | Reject a second definition of the viewport gutter outside the layer runtime; a `max-inline-size` resolved against the anchor's span; a fallback list authored by a component for an anchor-mode layer; a branch on whether a size was explicit; a slide that continues once the anchor has left the viewport; a `layer` theme target or a theme value standing in for an app's bar; a consumer minimum size that is not clamped by the runtime's cap.                                           |
 | Governing rules         | [`architecture:layer-runtime`](../../architecture/layer-runtime.md) INV3, INV5 for anchor-mode placement, fallbacks, and direction; [`spec:AST-003`](../AST-003/spec.md) FR21–FR23 for the reduced behavior where CSS Anchor Positioning is absent; `component:Popover` FR4, ORD4 for Popover's conditional scrolling, which this record leaves in place; [`architecture:container-padding`](../../architecture/container-padding.md) for the `--astryx-*` custom-property grammar FR6 follows. |
 
@@ -52,28 +52,19 @@ This table is a review projection; the body below is authoritative.
 
 An anchored layer must stay on screen with a breathing gap from the viewport
 edge and from the device's own insets, must choose a position that fits, and
-must know where the viewport really ends when an app floats a bar over it.
-Today each of those is a component's problem: the gutter expression
-`max(--spacing-4, env(safe-area-inset-*))` is copied into Popover,
-DropdownMenu, DropdownMenuSubMenu, and BaseTypeahead with four sets of
-constants, and the layer runtime itself fits nothing to the viewport. The
-copies have already drifted, and one of them hides a defect: an aligned layer
-caps its inline size to `calc(100% - gutter)`, which under anchor positioning
-is the span of viewport beside the trigger, so an explicit width shrinks when
-the trigger sits near an edge.
+must know where the viewport really ends when an app floats a bar over it. A
+person who opens a menu from a control near the edge of a panel needs the menu
+at the size it was given; a person on a phone needs a long menu's labels
+readable rather than squeezed beside the trigger; a person using an app with a
+floating navigation bar needs no layer to end underneath it.
 
 This record owns one answer: **the layer runtime owns the viewport inset —
 the gutter, the size cap, the fallback order, the app-declared inset, and the
 stories that show them. Popover is an application of the layer that adds
-styling on top.**
-
-The triggers are [#6688](https://github.com/facebook/astryx/pull/6688), which
-fixes the explicit-width defect inside Popover and extends the layer's
-fallback list from Popover, and
-[#6686](https://github.com/facebook/astryx/pull/6686), which proposes
-per-edge inset custom properties read by three components. Both reach for the
-layer's behavior through a component; this record puts the behavior where
-they were reaching.
+styling on top.** A gutter defined in one place cannot drift between
+components; a size capped by the viewport rather than by the span beside the
+trigger cannot shrink an explicit width near an edge; an inset declared once by
+the app reaches every layer instead of the components that happen to read it.
 
 ## Ownership boundary
 
@@ -96,7 +87,7 @@ they were reaching.
 - Its props and their meaning, including that an explicit `width` wins over
   trigger matching and that, without one, the surface prefers the trigger's
   minimum width — the one fact the layer cannot know is whether this instance
-  was given a size, and the layer no longer needs to know it (DEC-2).
+  was given a size, and the layer does not need to know it (DEC-2).
 - Its visual treatment, the painted surface and its `popover` theme target,
   its surface padding, and conditional internal scrolling once the layer has
   capped the surface (`component:Popover` FR4, ORD4).
@@ -104,19 +95,15 @@ they were reaching.
 **Why no existing record can hold it**
 
 - [`architecture:layer-runtime`](../../architecture/layer-runtime.md) is
-  `current`, and by its own first paragraph "describes the layer runtime
-  shipped on current `main`"; its Positioning section records that Popover,
-  not the layer, owns viewport sizing, which is true of the shipped code. A
-  `current` record carries one `authority` value, so writing unshipped
-  behavior into it would present that behavior as both approved and shipped
-  (`architecture:knowledge-contracts` INV1, INV14). The record already names
-  the path for an accepted layer change: `spec:AST-003` is incorporated "only
-  as that work ships". This record follows the same path; the exact
-  architecture-record deltas are listed under Current-state impact so the
-  consolidation can apply them.
+  `current` and describes the layer runtime as shipped; it incorporates an
+  accepted layer change only as that change ships (`spec:AST-003` is its
+  precedent). A `current` record carries one `authority` value, so an
+  unshipped behavior written into it would read as both approved and shipped
+  (`architecture:knowledge-contracts` INV1, INV14). The architecture-record
+  deltas this record requires are listed under Current-state impact.
 - `component:Popover` is `current` and records Popover's shipped behavior,
-  including the viewport fitting this record moves out of it (FR3, ORD2,
-  ORD3). The same authority rule applies; its deltas are listed below.
+  including viewport fitting (its FR3, ORD2, ORD3). The same authority rule
+  applies; its deltas are listed below.
 - `component:DropdownMenu`, `component:BaseTypeahead`, and the other
   composing components are consumers of the behavior, not owners of it. One
   rule binding five-plus components through one hook is a system fact.
@@ -125,8 +112,8 @@ they were reaching.
 
 - **Sizing a layer to the room on one side of its trigger on the placement
   axis.** A layer taller than the room both above and below its trigger is
-  capped to the viewport and flipped, as today. Preferring the roomier side is
-  not settled here.
+  capped to the viewport and flipped. Preferring the roomier side is not
+  settled here.
 - **Toast and fullscreen Dialog.** Both keep the same gutter value by
   convention but are not anchor-mode layers; whether the app-declared inset
   (FR6) reaches them is a later decision.
@@ -151,10 +138,12 @@ they were reaching.
 - **FR2 — The cap is the viewport, never the span.** On the alignment axis, a
   layer's size is capped to the viewport minus both gutters. The span of
   viewport beside the trigger never caps a layer. An explicit size the caller
-  gives renders at that size up to the cap; a content-sized layer renders at
-  its content's size up to the cap. The layer does not know, and does not
-  need to know, which of the two it is rendering. A composing component may
-  cap lower (Tooltip's 300px); it may not cap higher.
+  gives renders at that size up to the cap. A content-sized layer wraps its
+  content to the room beside its trigger when the content can wrap, and keeps
+  its content's size when it cannot (FR4 then moves it). The layer does not
+  know, and does not need to know, whether a size was given; no component
+  branches on it. A composing component may cap lower (Tooltip's 300px); it
+  may not cap higher.
 - **FR3 — Placement-axis cap.** On the placement axis, a layer's size is
   capped to the viewport minus both gutters. A composing component may cap
   lower (DropdownMenu's 300px) and may become a scroll container when its
@@ -163,13 +152,12 @@ they were reaching.
   preferred position; the flip across the placement axis; the flip across the
   alignment axis; both flips; then, while its anchor is in view, a slide
   along the alignment axis that keeps the layer's size and moves it the least
-  distance that brings it inside the gutters, on the preferred side of the
-  trigger first and the opposite side second. Side placements slide along the
-  block axis. The runtime authors this list; a component passes no fallbacks
+  distance that brings it inside the gutters. Side placements slide along the
+  block axis. The runtime authors this order; a component passes no fallbacks
   of its own to an anchor-mode layer.
 - **FR5 — An off-screen anchor holds.** A layer whose anchor has left the
   viewport does not slide. It keeps the position the flips give it and its
-  size until the anchor returns. Ruled by Cindy Zhang, 2026-10-03.
+  size until the anchor returns (DEC-3).
 - **FR6 — The app declares a floating bar once.** An app that keeps a
   persistent bar floating over a viewport edge declares its extent per
   logical edge through the inherited custom properties
@@ -205,7 +193,7 @@ they were reaching.
 
 ### `architecture:layer-runtime` (`current`)
 
-Applied when the consolidation ships, not before:
+When this ships:
 
 - Positioning: replace "Popover adds component-specific viewport sizing and
   overflow behavior above this geometry. Those constraints are not universal
@@ -229,7 +217,7 @@ Applied when the consolidation ships, not before:
 
 ### `component:Popover` (`current`)
 
-Applied when the consolidation ships, not before:
+When this ships:
 
 - Ownership boundary, Owns: remove "viewport fitting, safe-area gutters" from
   the third bullet; it keeps focus destination, match-trigger sizing,
@@ -246,74 +234,50 @@ Applied when the consolidation ships, not before:
   layer's cap (`spec:AST-059` FR7)." The sentence about viewport and
   safe-area capping is removed.
 - ORD3 is retired; the viewport fit is the layer's. ORD4's overflow
-  evaluation now follows the layer's cap rather than Popover's.
+  evaluation follows the layer's cap.
 - AV4 drops "available viewport size" from what Popover varies.
 - Design relationships: the Popover surface "carries scroll, focus, and
   dialog behavior"; fit is removed.
 - Verification map: the FR3/FR4 row becomes FR4 only; its Storybook
   reference points at the Layer stories for geometry and keeps Popover's
   overflow story for scrolling.
-- `Popover.tsx` loses its `viewportAligned` span cap and its
-  alignment-specific viewport styles; `width` becomes an ordinary CSS width
-  with the layer's cap above it. The `hasExplicitWidth` branch
-  [#6688](https://github.com/facebook/astryx/pull/6688) adds is not adopted.
-  The one branch that stays is Popover's own: explicit width, else
-  trigger-matching minimum.
+- `width` is an ordinary CSS width clamped by the layer's cap. Popover's one
+  sizing branch is its own — explicit width, else trigger-matching minimum —
+  and nothing in it depends on whether that width fits beside the trigger.
 
 ### What the other consumers inherit without a record change
 
-- `DropdownMenu` and `DropdownMenuSubMenu` drop their `MENU_*` gutter
-  constants and read the runtime's. `menuWidth` has the same defect as
-  `Popover.width`: `resolveMenuWidth` wraps a length as
-  `min(<length>, calc(100% - gutter))`, so an explicit `menuWidth` on an
-  aligned menu near an edge renders narrower than asked. Under FR7 the clamp
-  becomes the viewport cap. The 300px block cap stays as the component's
-  lower cap (FR3).
-- `BaseTypeahead` drops its `TYPEAHEAD_*` constants. It has the defect twice:
-  `menuWidth` sets a `width` under the span cap, and its match-trigger
-  `min-width: anchor-size(width)` is unclamped, so an input wider than the
-  span overflows. Both resolve under FR2 and FR7.
-- `ComplexSelector` carries a fifth copy, `min(480px, calc(100vh - 32px))`,
-  without the safe-area term; it inherits the placement-axis cap and keeps
-  480px as its lower cap.
+- `DropdownMenu` and `DropdownMenuSubMenu` read the runtime's gutter. An
+  explicit `menuWidth` is a minimum clamped by the viewport cap (FR7), never
+  by the room beside the trigger; the menus' 300px block cap is a lower cap
+  FR3 permits.
+- `BaseTypeahead` reads the runtime's gutter; `menuWidth` and its
+  match-trigger minimum are both clamped by the viewport cap (FR2, FR7).
+- `PowerSearch` clamps its 400px editor floor with the viewport cap (FR7).
+- `ComplexSelector` keeps 480px and `TopNavMegaMenu` keeps the room below its
+  trigger as lower caps on the placement axis (FR3).
 - `Tooltip`, `HoverCard`, `ContextMenu`, the Selector family, `TabMenu`, the
   TopNav menus, and the date inputs render through anchor mode or
-  `usePopover` with no viewport fit today. They gain FR1–FR5. A layer that
-  already fit is unchanged; one that overflowed the viewport is now capped,
-  flipped, or slid.
-
-### Open pull requests
-
-- [#6688](https://github.com/facebook/astryx/pull/6688) is superseded in
-  substance. Its width fix is a consequence of FR2 applied at the layer; its
-  Popover-local `span-all` fallbacks are FR4 applied at the layer; its
-  off-screen behavior is FR5. Its 352px end-aligned case becomes a Layer
-  story. Closing it is the owner's call.
-- [#6686](https://github.com/facebook/astryx/pull/6686) matches FR1 and FR6
-  in substance — a shared gutter module and four per-edge properties — and
-  rebases onto the consolidation: its Popover-record edits are replaced by
-  this record, and it must drop the span cap it currently preserves (FR2).
+  `usePopover` and receive FR1–FR5 with no change of their own. A layer that
+  fits is unchanged; one that would overflow the viewport is capped, flipped,
+  or slid.
 
 ## Verification
 
-Stories live under `Core/Layer`. Each row names the claim a person can open
-the story to check; "Rendered evidence" says whether real-Chromium geometry
-exists for it yet. Popover's stories keep only what is Popover's: scrolling,
-focus, dismissal, surface styling.
+Stories live under `Core/Layer` as "Viewport inset: …" and run in real
+Chromium under the story play guard; each is a claim a person can open and
+look at. Popover's stories keep only what is Popover's: its match-trigger
+preference, scrolling, focus, dismissal, and surface styling.
 
-| Contract      | Verification                                                                                                                                                                  | Representative states                                                                                 | Mutation or failure expectation                                                                  |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| FR1, FR7      | One gutter module; the four consumers' emitted styles reference it; Layer story "Gutter"                                                                                      | Default gutter at every edge; a layer flush against a viewport edge                                   | A second gutter constant anywhere in `packages/core/src`, or a layer closer to an edge than FR1  |
-| FR2           | Layer stories "Explicit size near an edge" and "Content-sized, fits beside trigger"; rendered width                                                                           | 352px end-aligned layer on a trigger 45px from the inline-start edge; a short content-sized layer     | The layer renders narrower than its explicit size, or `100%` of the anchor span appears in a cap |
-| FR3           | Layer story "Taller than the viewport"                                                                                                                                        | Content taller than the viewport; a consumer's lower cap                                              | The layer's block size exceeds the viewport minus gutters                                        |
-| FR4           | Layer stories "Content-sized, does not fit beside trigger", "Trigger near an edge flips", "Neither side fits"                                                                 | A flip across each axis; a slide while the anchor is in view, on the preferred side then the opposite | A fallback list authored outside the runtime; a layer clipped while a flip or slide would fit it |
-| FR5           | Layer story "Anchor leaves the viewport"                                                                                                                                      | Horizontal scroll carries the trigger out of view while the layer is open                             | The layer slides toward the viewport edge after the anchor is gone, or changes size              |
-| FR6           | Layer story "App-declared inset"; emitted gutter includes each property                                                                                                       | A persistent bottom bar declared on `:root`; the same story with the declaration removed              | A layer ends under the bar, or an unset property moves a layer                                   |
-| FR1 safe area | None in Storybook: `env(safe-area-inset-*)` is set only by a real device; Chromium emulation does not populate it. Evidence is a device run recorded on the consolidation PR. | Landscape phone with a notch on one side                                                              | A layer under the notch                                                                          |
-
-Stories that demonstrate a claim before the consolidation ships show the
-shipped defect — the explicit-size story renders 274px on current `main` —
-and are the fixtures the consolidation turns green.
+| Contract      | Verification                                                                                                                                        | Representative states                                                                                 | Mutation or failure expectation                                                                                      |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| FR1, FR7      | One gutter module; a source scan for a second gutter or a `100%`-of-span cap among anchor-mode layers; story "the gutter"                           | Default gutter at every edge; a wrapping layer beside a trigger flush with the edge                   | A second gutter constant among anchor-mode layers, or a layer inside the 16px gutter                                 |
+| FR2           | Stories "explicit size near an edge (352px)" and "content-sized, fits beside the trigger"; Popover and DropdownMenu clamp strings                   | 352px end-aligned layer on a trigger 45px from the edge; a short content-sized layer                  | The layer renders narrower than its explicit size, or `100%` of the anchor span appears in a cap                     |
+| FR3           | Story "taller than the viewport"; the runtime's viewport-fit style on every anchor-mode layer                                                       | Content taller than the viewport                                                                      | The layer's block size exceeds the viewport minus gutters                                                            |
+| FR4           | Stories "content-sized, does not fit beside the trigger", "trigger near an edge flips", "neither side fits"                                         | A flip to end alignment at content size and at an explicit size; a 1000px layer on a centred trigger  | A layer squeezed into the span, a flipped edge off the trigger's edge, or a layer outside the gutters                |
+| FR5           | Story "anchor leaves the viewport"; the runtime's anchor-visibility unit suite                                                                      | Horizontal scroll carries the trigger out of view while the layer is open, then back                  | The layer slides toward the viewport edge after the anchor is gone, changes size, or does not return with its anchor |
+| FR6           | Story "app-declared inset (floating bar)"; the gutter module's property names                                                                       | An 80px bar declared through `--astryx-layer-inset-block-end`; the same story without the declaration | A layer ends under the bar, or an unset property moves a layer                                                       |
+| FR1 safe area | A device run: `env(safe-area-inset-*)` is set only by a real device and Chromium emulation does not populate it, so no Storybook story can show it. | Landscape phone with a notch on one side                                                              | A layer under the notch                                                                                              |
 
 ## Decision log
 
@@ -330,29 +294,26 @@ sees the same edge behavior from a menu, a popover, a typeahead, and a
 tooltip.
 
 Rejected: a shared constant each component imports while keeping its own fit
-styles. It removes the drift and keeps the ownership problem — the next
-behavior would again be written into whichever component needed it first.
+styles — it removes the drift and keeps the ownership problem.
 
-### DEC-2 — A content-sized layer keeps its natural size and moves
+### DEC-2 — A content-sized layer wraps if it can and moves if it cannot
 
 **Reference:** `spec:AST-059/DEC-2`
 **Decider:** proposed by this record on the owner's observation of
 2026-10-03; pending owner approval
 
-A layer that does not fit beside its trigger keeps its natural size and
-moves: it flips to the other side, and when neither side fits it slides along
-the alignment axis into view (FR4). It is never shrunk to the span beside the
-trigger. The span cap did two jobs — it kept a content-sized surface from
-overhanging, and it silently shrank an explicit size — and the second is the
-defect. Dropping it for every layer means the runtime needs no knowledge of
-whether a size was explicit, so `Popover.width` and `DropdownMenu.menuWidth`
-become ordinary CSS sizes. Content with no intrinsic width, such as prose,
-takes the viewport cap; a caller gives such content a width, as today.
+A content-sized layer fits beside its trigger by wrapping its content into the
+room there, as an auto-width positioned box does on its own. A size that
+cannot shrink — an explicit width, a `menuWidth`, a label that does not wrap —
+keeps its size and moves: it flips to the other side, and when neither side
+fits it slides along the alignment axis into view (FR4). No size is ever capped
+to the span beside the trigger, so the runtime needs no knowledge of whether a
+size was given, and `Popover.width` and `DropdownMenu.menuWidth` are ordinary
+CSS sizes clamped only by the viewport.
 
-Rejected: shrinking a content-sized layer to fit beside its trigger while
-honoring an explicit size up to the viewport. It keeps every label readable
-only by truncating it, and it requires the layer to branch on whether a size
-was given — the branch whose absence makes the layer width-agnostic.
+Rejected: forcing every content-sized layer to its `max-content` width so it
+always moves rather than wraps — prose beside a trigger would open as wide as
+the viewport.
 
 ### DEC-3 — An aligned layer does not slide toward an off-screen anchor
 
@@ -363,13 +324,11 @@ The slide (FR4) serves a visible trigger whose layer fits on neither side. Once
 the anchor has left the viewport, the layer holds the position the flips give
 it and holds its size (FR5). A layer that kept sliding would pin itself into
 the narrowest strip at the edge, giving up room it had a moment earlier for
-an anchor nobody can see. Aligned layers ship today with flips only, so this
-is the shipped behavior for that state, stated in the ordering rules rather
-than left to emerge from a fallback list.
+an anchor nobody can see. The condition belongs in the ordering rules, not
+left to emerge from a fallback list.
 
-Rejected: closing the layer when its anchor leaves. That is a product
-decision about staleness, not a geometry rule, and it would take the layer
-away from a person still reading it.
+Rejected: closing the layer when its anchor leaves — a product decision about
+staleness, not a geometry rule, and it takes the layer from a person reading it.
 
 ### DEC-4 — An app's floating bar is app state, not a theme value
 
@@ -386,33 +345,8 @@ property names follow the `--astryx-<owner>-<concept>-<logical-edge>`
 grammar the container-padding protocol already uses.
 
 Rejected: routing the inset through the `popover` theme target — one
-component's theme would then govern DropdownMenu, BaseTypeahead, and every
-other consumer. Also rejected: a per-layer prop — the bar would be restated
-on every surface, and two surfaces could disagree about where the viewport
-ends.
-
-## Follow-up work
-
-Ordered so each item can land on its own:
-
-1. **Consolidation.** Add the runtime's gutter module and apply FR1–FR7 in
-   `useLayer` anchor mode; remove the four consumers' constants and
-   Popover's span cap and width branching; clamp `menuWidth` and
-   match-trigger minimums with the runtime's cap; gate the slide on anchor
-   visibility. Apply the `architecture:layer-runtime` and `component:Popover`
-   deltas above in the same change and move this record to `shipped`.
-2. **Story moves.** Move Popover's `ViewportFit` and
-   `MatchTriggerViewportFit` under `Core/Layer`; Popover keeps
-   `TallContentOverflow` (scrolling is Popover's) and its styling stories.
-   Record a device run for the safe-area row.
-3. **[#6686](https://github.com/facebook/astryx/pull/6686)** rebases onto 1:
-   its gutter module and properties are FR1 and FR6; its Popover-record edits
-   and its retained span cap come out.
-4. **[#6688](https://github.com/facebook/astryx/pull/6688)** is superseded by
-   1; the owner decides its disposition. Its 352px case is already a Layer
-   story.
-5. **Toast and fullscreen Dialog** read the shared gutter definition and the
-   owner decides whether FR6 reaches them.
+component's theme would govern every other consumer. Rejected: a per-layer
+prop — the bar would be restated on every surface, and two could disagree.
 
 ## Open questions
 
