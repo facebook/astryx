@@ -26,45 +26,77 @@ function AnchoredLayer() {
   );
 }
 
+function PortaledLayer() {
+  const layer = useLayer({mode: 'context'});
+  // A <p> cannot contain the layer's <div>, so the layer portals out of it.
+  return (
+    <p>
+      <button type="button" ref={layer.ref} onClick={layer.show}>
+        Open
+      </button>
+      {layer.render(<span>Layer</span>, {placement: 'below'})}
+    </p>
+  );
+}
+
 describe('LayerProvider inset (spec:AST-059 FR6)', () => {
   it('declares nothing by default, so a default provider matches no provider', () => {
-    expect(layerInsetProperties(undefined)).toEqual({display: 'contents'});
-    expect(layerInsetProperties({})).toEqual({display: 'contents'});
+    expect(layerInsetProperties(undefined)).toEqual({});
+    expect(layerInsetProperties({})).toEqual({});
     const {container} = render(
       <LayerProvider>
         <AnchoredLayer />
       </LayerProvider>,
     );
-    const wrapper = container.firstElementChild as HTMLElement;
-    expect(wrapper.style.display).toBe('contents');
-    expect(wrapper.getAttribute('style')).not.toContain('--astryx-layer-inset');
+    fireEvent.click(container.querySelector('button')!);
+    for (const el of Array.from(container.querySelectorAll<HTMLElement>('*'))) {
+      expect(el.getAttribute('style') ?? '').not.toContain(
+        '--astryx-layer-inset',
+      );
+    }
   });
 
   it('writes one custom property per declared edge, pixels for numbers and lengths as written', () => {
     expect(
       layerInsetProperties({blockEnd: 56, inlineStart: 'var(--rail, 0px)'}),
     ).toEqual({
-      display: 'contents',
       '--astryx-layer-inset-block-end': '56px',
       '--astryx-layer-inset-inline-start': 'var(--rail, 0px)',
     });
   });
 
-  it('places the anchored layer and the toast viewport under the declaring wrapper so both inherit it', () => {
+  it('writes the declared inset inline on the anchored layer and on the toast viewport', () => {
     const {container} = render(
       <LayerProvider inset={{blockEnd: 56}}>
         <AnchoredLayer />
       </LayerProvider>,
     );
     fireEvent.click(container.querySelector('button')!);
-    const wrapper = container.firstElementChild as HTMLElement;
+    const popovers = Array.from(
+      container.querySelectorAll<HTMLElement>('[popover]'),
+    );
+    expect(popovers.length).toBe(2);
+    for (const el of popovers) {
+      expect(el.style.getPropertyValue('--astryx-layer-inset-block-end')).toBe(
+        '56px',
+      );
+    }
+  });
+
+  it('reaches a layer that portals out of an unsafe host, because the value travels by context, not inheritance', () => {
+    const {container} = render(
+      <LayerProvider inset={{inlineEnd: 24}}>
+        <PortaledLayer />
+      </LayerProvider>,
+    );
+    fireEvent.click(container.querySelector('button')!);
+    const layer = container.querySelector<HTMLElement>(
+      '[popover="manual"][id]',
+    );
+    expect(layer?.closest('p')).toBeNull();
     expect(
-      wrapper.style.getPropertyValue('--astryx-layer-inset-block-end'),
-    ).toBe('56px');
-    const layer = container.querySelector('[popover="manual"]:not([role])');
-    const toastViewport = container.querySelector('[popover="manual"]');
-    expect(layer && wrapper.contains(layer)).toBe(true);
-    expect(toastViewport && wrapper.contains(toastViewport)).toBe(true);
+      layer?.style.getPropertyValue('--astryx-layer-inset-inline-end'),
+    ).toBe('24px');
   });
 
   it('lets toast.inset replace the provider value for the toast viewport on the edges it sets', () => {
@@ -78,6 +110,9 @@ describe('LayerProvider inset (spec:AST-059 FR6)', () => {
     ) as HTMLElement;
     // The inline override wins over the class that reads the provider value.
     expect(viewport.style.bottom).toBe('120px');
+    expect(
+      viewport.style.getPropertyValue('--astryx-layer-inset-block-end'),
+    ).toBe('56px');
     expect(viewport.style.insetInlineStart).toBe('');
   });
 });

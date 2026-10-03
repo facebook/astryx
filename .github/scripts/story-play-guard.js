@@ -100,61 +100,90 @@ const TARGETS = [
       'on a coarse pointer, the compact combobox and full Clear all hit area remain separate in RTL as well',
   },
   // spec:AST-059 — the layer runtime's viewport inset. Each story is one
-  // claim of the record; the guard is its rendered evidence.
-  {
-    component: 'Layer',
-    story: 'core-layer--content-fits-beside-trigger',
-    guards:
-      'FR2/FR4: a content-sized layer with room beside its trigger stays start-aligned at its content size',
-  },
-  {
-    component: 'Layer',
-    story: 'core-layer--content-does-not-fit-beside-trigger',
-    guards:
-      'FR2/FR4: unwrappable content near the edge keeps its size and flips instead of being squeezed into the span',
-  },
-  {
-    component: 'Layer',
-    story: 'core-layer--explicit-size-near-edge',
-    guards:
-      'FR2: a 352px end-aligned layer 45px from the edge renders 352px wide, on screen',
-  },
-  {
-    component: 'Layer',
-    story: 'core-layer--trigger-near-edge-flips',
-    guards:
-      'FR4: a 320px start-aligned layer near the end edge flips to end alignment and keeps the gutter',
-  },
-  {
-    component: 'Layer',
-    story: 'core-layer--neither-side-fits',
-    guards:
-      'FR4: a 1000px layer on a centred trigger keeps its size and slides inside the gutters',
-  },
-  {
-    component: 'Layer',
-    story: 'core-layer--taller-than-the-viewport',
-    guards:
-      'FR3: the layer box is capped to the viewport minus both block gutters',
-  },
-  {
-    component: 'Layer',
-    story: 'core-layer--anchor-leaves-the-viewport',
-    guards:
-      'FR5: an open layer follows its anchor out of the viewport with its size intact and does not pin to the edge',
-  },
-  {
-    component: 'Layer',
-    story: 'core-layer--app-declared-inset',
-    guards:
-      'FR6: --astryx-layer-inset-block-end lifts the bottom gutter so a layer flips above a trigger near a declared bar',
-  },
-  {
-    component: 'Layer',
-    story: 'core-layer--gutter-at-the-edge',
-    guards:
-      'FR1: a wrapping layer beside a flush trigger stops 16px short of the viewport edge',
-  },
+  // claim of the record; the guard is its rendered evidence, at a desktop
+  // viewport and at a phone's, because a cap that holds only where the
+  // viewport is wider than the layer is no cap. Every play also asserts the
+  // first painted frame equals the settled one (FR8).
+  ...[
+    {
+      story: 'core-layer--content-fits-beside-trigger',
+      guards:
+        'FR2/FR4: a content-sized layer with room beside its trigger stays start-aligned at its content size',
+    },
+    {
+      story: 'core-layer--content-does-not-fit-beside-trigger',
+      guards:
+        'FR2/FR4: unwrappable content flips at its size where it fits the viewport and is capped to the viewport where it does not',
+    },
+    {
+      story: 'core-layer--explicit-size-near-edge',
+      guards:
+        'FR2: a 352px end-aligned layer 45px from the edge renders at min(352px, cap), on screen',
+    },
+    {
+      story: 'core-layer--trigger-near-edge-flips',
+      guards:
+        'FR4: a 320px start-aligned layer near the end edge flips to end alignment and keeps the gutter',
+    },
+    {
+      story: 'core-layer--neither-side-fits',
+      guards:
+        'FR2/FR4: a 1000px layer on a centred trigger slides inside the gutters where it fits the viewport and is capped where it does not',
+    },
+    {
+      story: 'core-layer--taller-than-the-viewport',
+      guards:
+        'FR3: the layer box is capped to the viewport minus both block gutters',
+    },
+    {
+      story: 'core-layer--anchor-leaves-the-viewport',
+      guards:
+        'FR5: an open layer follows its anchor out of the viewport with its size intact and does not pin to the edge',
+    },
+    {
+      story: 'core-layer--anchor-already-off-screen',
+      guards:
+        'FR5/FR8: a layer opened with its anchor off-screen holds beside the anchor from its first frame',
+    },
+    {
+      story: 'core-layer--app-declared-inset',
+      guards:
+        'FR6: LayerProvider inset lifts the bottom gutter so a layer flips above a trigger near a declared bar',
+    },
+    {
+      story: 'core-layer--inset-changes-while-open',
+      guards:
+        'FR6/FR8: changing the provider inset moves an open layer in the same frame, with no later shift',
+    },
+    {
+      story: 'core-layer--layer-opens-as-inset-arrives',
+      guards:
+        'FR6/FR8: a layer mounted open in the same commit as its provider is above the bar in its first frame',
+    },
+    {
+      story: 'core-layer--measured-inset',
+      guards:
+        'FR6/FR8: an inset the app measures and declares before paint reaches the layer in that same frame',
+    },
+    {
+      story: 'core-layer--portaled-outside-the-provider-subtree',
+      guards:
+        'FR6: a layer portaled out of its JSX position still receives the provider inset',
+    },
+    {
+      story: 'core-layer--gutter-at-the-edge',
+      guards:
+        'FR1: a wrapping layer beside a flush trigger stops 16px short of the viewport edge',
+    },
+  ].flatMap(target => [
+    {component: 'Layer', ...target},
+    {
+      component: 'Layer (phone)',
+      ...target,
+      viewport: {width: 390, height: 844},
+      hasTouch: true,
+    },
+  ]),
   {
     component: 'TabList',
     story: 'core-tablist--full-bleed-geometry',
@@ -273,7 +302,7 @@ async function run() {
   try {
     for (const target of TARGETS) {
       const context = await browser.newContext({
-        viewport: {width: 1280, height: 900},
+        viewport: target.viewport ?? {width: 1280, height: 900},
         hasTouch: target.hasTouch === true,
       });
       const page = await context.newPage();

@@ -3,8 +3,8 @@
 /**
  * @file layerInset.ts
  * @input A LayerProvider inset declaration
- * @output The inline style that carries it to every layer and toast under the
- *   provider, through the custom properties the gutter reads
+ * @output The inline custom properties that carry it to a layer or the toast
+ *   viewport, where the gutter reads them
  * @position Layer runtime; the mechanism behind `LayerProvider.inset`
  *   (spec:AST-059 FR6). The property names are implementation; the provider
  *   prop is the public surface.
@@ -25,15 +25,15 @@ function toCssLength(value: number | string): string {
 }
 
 /**
- * Build the provider wrapper's inline style: `display: contents` so the
- * wrapper generates no box, plus one custom property per declared edge. An
- * undeclared edge sets nothing, so it reads `0px` through the gutter's
- * fallback exactly as it does with no provider at all.
+ * The inline custom properties that carry a declared inset to the element
+ * whose gutter reads them — the layer, or the toast viewport. One property
+ * per declared edge; an undeclared edge sets nothing, so it reads `0px`
+ * through the gutter's fallback exactly as it does with no provider at all.
  */
 export function layerInsetProperties(
   inset: LayerInset | undefined,
 ): CSSProperties {
-  const style: Record<string, string> = {display: 'contents'};
+  const style: Record<string, string> = {};
   if (inset) {
     for (const [edge, property] of INSET_PROPERTIES) {
       const value = inset[edge];
