@@ -465,6 +465,13 @@ export function SideNav({
   const collapsed = resizableHook.isCollapsed;
 
   const toggle = useCallback(() => {
+    // Without collapse the hook ignores collapse() and nothing re-renders, so
+    // writing the snapshot below would leave the handle reporting a collapse
+    // that never happened.
+    if (!isCollapsible) {
+      return;
+    }
+
     const next = !collapsed;
 
     // Deprecated `handleRef` path only: an out-of-tree button reads this
@@ -479,7 +486,7 @@ export function SideNav({
     } else {
       resizableHook.expand();
     }
-  }, [collapsed, resizableHook]);
+  }, [isCollapsible, collapsed, resizableHook]);
 
   const showResizeHandle = isResizable && !collapsed;
 
