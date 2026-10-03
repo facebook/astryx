@@ -506,37 +506,50 @@ review without anybody restructuring a component.
   spreads props, because the value's meaning does not change and the type only
   widens.
 
-- **OQ3 — Does the query become observable on `Selector` and `MultiSelector` as part of this record?** (`human-api`)
+- **OQ3 — ANSWERED. No.** (`human-api`)
 
-  Today it is not: `searchQuery` is internal `useState` on both, with no
-  callback out. That is precisely why #6829 needed a create callback at all —
-  a caller who cannot see the query cannot render their own create row outside
-  the component, so the only route is a hook inside it. FR8 defines
-  `search.onChange` as the key; it does not require either component to adopt
-  it. Adopting it is a public API addition in its own right under
-  `spec:AST-002` FR1, and it may be a cleaner answer to #6829's need than
-  `onCreate` is — or a second answer the system does not want.
+  `cixzhang`, 2026-10-02: observing the query does not become public on
+  `Selector` or `MultiSelector` as part of this record. `searchQuery` stays
+  internal state on both. A caller who needs to act on the query gets a
+  capability that names what it is for — creation, below — rather than a raw
+  query feed they must then re-implement the component's own behavior around.
 
-- **OQ4 — ANSWERED. Three adopters; the rest are governed by FR5 only.** (`human-api`)
+- **OQ4 — ANSWERED. Three adopters; the rest are governed by FR1 only.** (`human-api`)
 
   `cixzhang`, 2026-10-02: `Selector`, `MultiSelector` and `ComplexSelector`
-  adopt the `search` object. `Tokenizer`, `Typeahead`, `BaseTypeahead` and
-  `CommandPalette` keep `searchSource` and are bound by FR5 (one name, one
-  type for "the query matched nothing") and FR10 (no new top-level
-  `search*` prop) alone. `ChatComposerInput` stays cited as the precedent for
-  the shape; `PowerSearch` stays cited and excluded.
+  are where a `search` object would have gone, so they are the components this
+  record most directly addresses; with the object rejected (DEC-2) the
+  distinction mostly dissolves. `Tokenizer`, `Typeahead`, `BaseTypeahead`,
+  `CommandPalette` and `ChatComposerInput` keep `searchSource` and are bound by
+  FR1 (one name, one type for "the query matched nothing") and FR6 (no second
+  name for a state these props already express). `PowerSearch` stays cited and
+  excluded: a structured field/operator/value expression is not a typed query
+  over a list.
 
-- **OQ5 — Which neighbouring props move inside the object, and what happens to `Tokenizer.hasCreate`?** (`human-api`)
+- **OQ5 — ANSWERED. Creation stays flat, and the two `hasCreate` contracts are
+  not one capability.** (`human-api`)
 
-  `minQueryLength`, `debounceMs`, and the trigger-menu `loadingText` are
-  search-shaped and are placed inconsistently today. They are deliberately left
-  outside: they describe fetching, which only exists in one fulfillment mode,
-  and folding them in widens the migration without settling the question that
-  prompted this record. Separately, `Tokenizer.hasCreate` is a shipped boolean
-  whose contract — the component mints the token — differs from `onCreate`'s.
-  FR7 forbids the boolean form, but mapping it to `onCreate` moves real work to
-  every existing Tokenizer caller, so this record does not require that change
-  until the owner rules.
+  `cixzhang`, 2026-10-02: a create affordance is wanted on `MultiSelector` now
+  and plausibly on `Selector` later, and it will grow — a handler, an enable, a
+  row label, and more after that. Grouping it into a `create` object was
+  considered, since unlike the rejected `search` object it would cost no
+  deprecations (neither component has a create surface today), and set aside:
+  keep it flat for now, and revisit if the cluster actually grows.
+
+  `Tokenizer.hasCreate` is NOT the same capability under the same word.
+  `Tokenizer` owns its value (`value: T[]`), mints the token itself, and
+  reports it through the `onChange` the caller already passes, with
+  `type: 'create'` — so there is nothing for a handler to do, and a boolean is
+  the correct shape there. `MultiSelector` splits `options` from
+  `value: string[]` and cannot invent an option, so creation must be reported
+  out and a handler is the correct shape. Requiring a handler on `Tokenizer`
+  would either be busywork or move minting onto every existing caller. What is
+  owed is the FR1 treatment applied to the word itself: two contracts must not
+  share one name.
+
+  `minQueryLength`, `debounceMs` and the trigger-menu `loadingText` stay where
+  they are. They describe fetching, which only exists where the caller owns
+  the choices, and this record does not reorganize shipped props.
 
 ## Content boundary
 
