@@ -105,9 +105,24 @@ test('stays silent while loading, then announces when the load lands empty', asy
   // Land the results without touching anything outside the panel: an
   // outside click would light-dismiss it, and a closed panel announces
   // nothing because there is nothing on screen to announce.
-  await page.evaluate(() =>
-    (window as unknown as {__landResults?: () => void}).__landResults?.(),
+  const landed = await page.evaluate(() => {
+    const land = (window as unknown as {__landResults?: () => void})
+      .__landResults;
+    if (!land) {
+      return false;
+    }
+    land();
+    return true;
+  });
+  expect(landed, 'the story exposed its load hook').toBe(true);
+
+  // The message has to be on screen before the region can be asked to match
+  // it — and if it is not, the failure says the component never reached the
+  // state rather than blaming the announcement.
+  await expect(page.locator('.astryx-selector-empty-state')).toHaveText(
+    'Nothing like that here',
   );
+
   // The outcome arrives after the keystroke, so only something watching the
   // rendered state can report it.
   await expect(page.locator(politeRegion)).toHaveText('Nothing like that here');
