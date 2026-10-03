@@ -783,7 +783,7 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
         native,
       );
     },
-    [attach, fireLongPress, step],
+    [attach, step],
   );
 
   const handleTriggerContextMenu = useCallback(
