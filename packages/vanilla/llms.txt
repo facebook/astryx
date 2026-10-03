@@ -109,7 +109,7 @@ Templates (complete, standalone, already wired to the CDN links above):
 **Option 1 — install the preview CLI (Node 22.13+):**
 
 ```sh
-npm install -g https://cdn.jsdelivr.net/gh/facebook/astryx@3a3219da36ad6662fc59fda159f9fe2aa422db0e/packages/vanilla/dist/cli/astryx-cli-vanilla.tgz
+npm install -g https://cdn.jsdelivr.net/gh/facebook/astryx@58d9d777b33e79bcc3d0fff12be18f0718bc4e4f/packages/vanilla/dist/cli/astryx-cli-vanilla.tgz
 
 astryx template --list --html                  # the 9 template ids
 astryx template dashboard --html > page.html   # full standalone page
@@ -122,7 +122,7 @@ astryx component Selector --html               # theme switcher and dark mode co
 
 ```sh
 git clone https://github.com/facebook/astryx.git astryx
-git -C astryx checkout 3a3219da36ad6662fc59fda159f9fe2aa422db0e
+git -C astryx checkout 58d9d777b33e79bcc3d0fff12be18f0718bc4e4f
 cd astryx && npx --yes pnpm@11.10.0 install --frozen-lockfile
 node packages/cli/clients/cli/bin/astryx.mjs template dashboard --html > page.html
 ```
@@ -130,13 +130,13 @@ node packages/cli/clients/cli/bin/astryx.mjs template dashboard --html > page.ht
 **Option 2 — direct file URLs (no shell needed; fetch and save as .html):**
 
 ```
-https://raw.githubusercontent.com/facebook/astryx/3a3219da36ad6662fc59fda159f9fe2aa422db0e/packages/vanilla/demo/pinned/<template-id>.html
-https://raw.githubusercontent.com/facebook/astryx/3a3219da36ad6662fc59fda159f9fe2aa422db0e/packages/vanilla/markup/<ComponentName>.html
+https://raw.githubusercontent.com/facebook/astryx/58d9d777b33e79bcc3d0fff12be18f0718bc4e4f/packages/vanilla/demo/pinned/<template-id>.html
+https://raw.githubusercontent.com/facebook/astryx/58d9d777b33e79bcc3d0fff12be18f0718bc4e4f/packages/vanilla/markup/<ComponentName>.html
 ```
 
 These are served as plain text: download the content, don't link to it.
 Live preview of all templates (after a one-time notice page):
-https://raw.githack.com/facebook/astryx/3a3219da36ad6662fc59fda159f9fe2aa422db0e/packages/vanilla/demo/pinned/index.html
+https://raw.githack.com/facebook/astryx/58d9d777b33e79bcc3d0fff12be18f0718bc4e4f/packages/vanilla/demo/pinned/index.html
 
 ### A3. Then add components
 
