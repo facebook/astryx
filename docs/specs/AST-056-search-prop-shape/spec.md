@@ -228,15 +228,15 @@ copying.
 
 ### Behavioral contract
 
-| ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Basis                                                                        | Verification state                      |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------- |
-| FR1 | One observable state has one prop name and one type across every component with a typed query. "The query matched nothing" is `emptySearchText`, accepting `ReactNode`. `emptySearchResultsText` resolves to it and its `string` typing is widened, so a caller may pass an element. No component may name or type this state differently.                                                                                                                                                          | DEC-1; `architecture:public-component-api` INV2                              | Proposed; no evidence on `main`         |
-| FR2 | "The query matched nothing" and "the component was given no choices at all" are different states and MUST stay separately expressible under distinct names: `emptySearchText` and `emptyText`. `Selector` and `MultiSelector` already declare both, so neither name may absorb the other, and a component offering only one MUST still use the name that matches the state it means.                                                                                                                | DEC-1; `spec:AST-002` FR16                                                   | Proposed; shipped behavior, unspecified |
-| FR3 | Whatever a caller supplies for an empty state MUST reach the person operating the component, visually and non-visually alike. A component that announces this state MUST announce what it rendered. Announcing a built-in default while rendering the caller's element is a defect, not a fallback.                                                                                                                                                                                                 | AR1; `architecture:interaction-modality`                                     | Proposed; defect on `main` (see AR1)    |
-| FR4 | Who resolves the query is settled by who owns the choices, and is not restated per component. A component that holds its own choice set resolves the query itself, matching case-insensitively on each choice's displayed label at minimum, and exposes a boolean to turn the query input on. A component whose presented choices ARE the query's result takes a required `searchSource`. Both kinds reach the same observable states: a narrowed list, an empty result, and `emptyText`.           | DEC-2; `spec:AST-002` FR16                                                   | Proposed; shipped behavior, unspecified |
-| FR5 | A capability that cannot function without a typed query MUST say so in its own name, and its handler MUST be its only switch. It MUST NOT be paired with a boolean that also gates it: a caller must not be able to express a configuration that renders nothing and reports nothing, which `hasCreate && hasSearch && onCreate != null` permits whenever any one piece is missing. Supplying such a handler to a component with no query input MUST warn in development rather than fail silently. | DEC-3; `spec:AST-002` FR15 (never silently render a broken state)            | Proposed; no evidence on `main`         |
-| FR6 | A new search-related capability is admitted under `spec:AST-002` against this record, or not at all. A new top-level prop whose name carries the word `search` MUST name the state or capability it governs in the vocabulary this record fixes, and MUST NOT introduce a second name for a state one of these props already expresses.                                                                                                                                                             | DEC-4; `spec:AST-002` FR1, FR5, DEC-1                                        | Proposed; no evidence on `main`         |
-| FR7 | Every prop this record renames is a released public surface with a victim, so it MUST follow `spec:AST-017` FR28–FR31: the replacement ships first, old usage stays equivalent through the overlap, each old prop gets a `DEP-*` id and a distinct `CLN-*` id, and removal happens only in a minor whose frozen manifest carries both. While both exist, a component given both MUST resolve to the new prop and MUST fire a development warning.                                                   | `architecture:public-component-api` INV9; `spec:AST-017` FR1, FR3, FR28–FR31 | Proposed; cycle not started             |
+| ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Basis                                                                        | Verification state                      |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------- |
+| FR1 | One observable state has one prop name and one type across every component with a typed query. "The query matched nothing" is `emptySearchText`, accepting `ReactNode`. `emptySearchResultsText` resolves to it and its `string` typing is widened, so a caller may pass an element. No component may name or type this state differently.                                                                                                                                                                                                        | DEC-1; `architecture:public-component-api` INV2                              | Proposed; no evidence on `main`         |
+| FR2 | "The query matched nothing" and "the component was given no choices at all" are different states and MUST stay separately expressible under distinct names: `emptySearchText` and `emptyText`. `Selector` and `MultiSelector` already declare both, so neither name may absorb the other, and a component offering only one MUST still use the name that matches the state it means.                                                                                                                                                              | DEC-1; `spec:AST-002` FR16                                                   | Proposed; shipped behavior, unspecified |
+| FR3 | Whatever a caller supplies for an empty state MUST reach the person operating the component, visually and non-visually alike. A component that announces this state MUST announce what it rendered. Announcing a built-in default while rendering the caller's element is a defect, not a fallback.                                                                                                                                                                                                                                               | AR1; `architecture:interaction-modality`                                     | Proposed; defect on `main` (see AR1)    |
+| FR4 | Who resolves the query is settled by who owns the choices, and is not restated per component. A component that holds its own choice set resolves the query itself, matching case-insensitively on each choice's displayed label at minimum, and exposes a boolean to turn the query input on. A component whose presented choices ARE the query's result takes a required `searchSource`. Both kinds reach the same observable states: a narrowed list, an empty result, and `emptyText`.                                                         | DEC-2; `spec:AST-002` FR16                                                   | Proposed; shipped behavior, unspecified |
+| FR5 | A capability that cannot function without a typed query MUST have exactly one switch, and MUST report through the component's primary change callback with a descriptor naming the kind of change, rather than through a handler prop of its own. A caller MUST NOT be able to express a configuration that renders nothing and reports nothing, which `hasCreate && hasSearch && onCreate != null` permits whenever any one piece is missing. Enabling it on a component with no query input MUST warn in development rather than fail silently. | DEC-3; `spec:AST-002` FR15 (never silently render a broken state)            | Proposed; no evidence on `main`         |
+| FR6 | A new search-related capability is admitted under `spec:AST-002` against this record, or not at all. A new top-level prop whose name carries the word `search` MUST name the state or capability it governs in the vocabulary this record fixes, and MUST NOT introduce a second name for a state one of these props already expresses.                                                                                                                                                                                                           | DEC-4; `spec:AST-002` FR1, FR5, DEC-1                                        | Proposed; no evidence on `main`         |
+| FR7 | Every prop this record renames is a released public surface with a victim, so it MUST follow `spec:AST-017` FR28–FR31: the replacement ships first, old usage stays equivalent through the overlap, each old prop gets a `DEP-*` id and a distinct `CLN-*` id, and removal happens only in a minor whose frozen manifest carries both. While both exist, a component given both MUST resolve to the new prop and MUST fire a development warning.                                                                                                 | `architecture:public-component-api` INV9; `spec:AST-017` FR1, FR3, FR28–FR31 | Proposed; cycle not started             |
 
 ### Accessibility contract
 
@@ -352,8 +352,10 @@ require `Tokenizer` to change `hasCreate`.
   FR6 and FR7 here.
 - [#6829](https://github.com/facebook/astryx/pull/6829) is blocked on this
   ruling. Its `hasCreate` + `onCreate` pair is rejected by FR5, which admits
-  the same user need as a single handler whose name carries the dependency —
-  `onCreateFromSearch` — so the capability cannot be half-configured.
+  the same user need as `hasCreate` alone, reported through the component's
+  existing `onChange` with a descriptor naming the creation — the shape
+  `Tokenizer` already ships — so the capability cannot be half-configured and
+  one word does not carry two contracts.
 - `family:input-fields`, `spec:AST-002`, and `spec:AST-017` are read, not
   changed: field chrome, admission, and the deprecation lifecycle keep their
   owners.
@@ -443,31 +445,37 @@ first.
 What the drift actually called for was a shared vocabulary, which DEC-1 and
 FR6 give without restructuring anything.
 
-### DEC-3 — A capability that needs a query says so in its name
+### DEC-3 — A query-only capability is enabled by a boolean and reported through the existing change callback
 
 **Reference:** `spec:AST-056/DEC-3`
 **Decider:** `cixzhang`, `2026-10-02`
 
-With no object to put it in, a capability that only exists while a query does
-carries that dependency in its own name — `onCreateFromSearch` rather than
-`onCreate` — and its handler is its only switch.
+A capability that only exists while a query does — creating a value from text
+that matched nothing — is enabled by one boolean and reported through the
+component's primary change callback, carrying a descriptor that says what kind
+of change it was.
 
-The shape this rules out is live on `Tokenizer` and was proposed again for
-`MultiSelector`: a boolean and a handler gating each other, so
-`hasCreate && hasSearch && onCreate != null` has three ways to be half-set and
-every one of them renders nothing, reports nothing, and warns about nothing. A
-builder sets the boolean, sees no create row, and has no way to learn why.
+`Tokenizer` already does this: `hasCreate` turns the row on, and
+`onChange(items, change)` reports `{item, type: 'create'}` beside `'add'`,
+`'remove'` and `'reorder'`. A caller learns about a creation on the channel it
+already listens to for every other change, and nothing can be half-configured,
+because there is only one switch.
 
-Presence of the handler is the switch because a handler is the thing that can
-act; a boolean asking for a capability nobody will handle is not a
-configuration worth being able to express. The one case a name cannot prevent
-— a creation handler on a component whose query input is switched off —
-warns in development (FR5).
+The shape this rules out is a boolean and a handler gating each other, which
+is what `hasCreate && hasSearch && onCreate != null` produces: three ways to
+be half-set, every one of them rendering nothing, reporting nothing, and
+warning about nothing. A builder sets the boolean, sees no create row, and has
+no way to learn why.
 
-Note for the adopters: `Tokenizer.hasCreate` is a boolean with no handler at
-all, because `Tokenizer` owns its value (`value: T[]`) and mints the token
-itself. It is a different contract under the same word, and reconciling the
-two names is part of OQ5 rather than settled here.
+A component whose value does not carry the created object — `MultiSelector`
+holds `options` separately from `value: string[]` — reports the next value and
+the creation together, so the caller adds the option and accepts the value in
+one update. That obligation is the caller's and must be stated where the
+capability lands; it does not justify a second shape for the same capability.
+
+The one case a boolean cannot prevent is enabling creation on a component
+whose query input is switched off. That warns in development (FR5) rather than
+rendering nothing in silence.
 
 ### DEC-4 — The vocabulary is fixed; new capabilities join it
 
@@ -526,26 +534,34 @@ review without anybody restructuring a component.
   excluded: a structured field/operator/value expression is not a typed query
   over a list.
 
-- **OQ5 — ANSWERED. Creation stays flat, and the two `hasCreate` contracts are
-  not one capability.** (`human-api`)
+- **OQ5 — ANSWERED. One capability, a boolean plus a change descriptor.** (`human-api`)
 
-  `cixzhang`, 2026-10-02: a create affordance is wanted on `MultiSelector` now
-  and plausibly on `Selector` later, and it will grow — a handler, an enable, a
-  row label, and more after that. Grouping it into a `create` object was
-  considered, since unlike the rejected `search` object it would cost no
-  deprecations (neither component has a create surface today), and set aside:
-  keep it flat for now, and revisit if the cluster actually grows.
+  `cixzhang`, 2026-10-02: a create affordance is enabled by a boolean and
+  reported through the component's existing change callback, carrying a
+  descriptor that says the change was a creation. No separate handler prop,
+  and no `create` configuration object.
 
-  `Tokenizer.hasCreate` is NOT the same capability under the same word.
-  `Tokenizer` owns its value (`value: T[]`), mints the token itself, and
-  reports it through the `onChange` the caller already passes, with
-  `type: 'create'` — so there is nothing for a handler to do, and a boolean is
-  the correct shape there. `MultiSelector` splits `options` from
-  `value: string[]` and cannot invent an option, so creation must be reported
-  out and a handler is the correct shape. Requiring a handler on `Tokenizer`
-  would either be busywork or move minting onto every existing caller. What is
-  owed is the FR1 treatment applied to the word itself: two contracts must not
-  share one name.
+  `Tokenizer` already works this way: `onChange(items, change)` where `change`
+  is `{item, type: 'create'}`, alongside `'add'`, `'remove'` and `'reorder'`.
+  `MultiSelector` can report the same way — the next value together with a
+  descriptor naming the created query — so the caller adds the option and
+  accepts the value in one update, learning about creation on the channel it
+  already listens to for every other selection change.
+
+  This supersedes an earlier answer here that treated the two as different
+  capabilities needing different shapes, on the grounds that `MultiSelector`
+  splits `options` from `value: string[]` and so cannot mint an option the way
+  `Tokenizer` mints a token. That difference is real but does not force a
+  separate handler: reporting the value and the creation together is exactly
+  what the descriptor is for. `hasCreate` therefore means one thing in both
+  components, which is FR1's rule applied to a verb rather than a state.
+
+  Two things the contract owes, to be settled where the capability lands
+  rather than here: the descriptor's shape as a public type, and the caller's
+  obligation to add the created option — `Tokenizer` has no such obligation
+  because its value carries the object itself, while a `MultiSelector` caller
+  who accepts the value without adding the option holds an id that matches
+  nothing.
 
   `minQueryLength`, `debounceMs` and the trigger-menu `loadingText` stay where
   they are. They describe fetching, which only exists where the caller owns
