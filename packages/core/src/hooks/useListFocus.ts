@@ -187,6 +187,17 @@ const TEXT_INPUT_TYPES = new Set([
 ]);
 
 /**
+ * Whether `el` sits under a `hidden` or `inert` ancestor that is itself inside
+ * `listEl` (the list's own state is not consulted). Such a row cannot take
+ * focus — a drilled-in menu hides the rows a view replaced — so it
+ * leaves the roving order and the typeahead.
+ */
+function isHiddenWithin(el: HTMLElement, listEl: HTMLElement): boolean {
+  const hidden = el.parentElement?.closest<HTMLElement>('[hidden],[inert]');
+  return hidden != null && hidden !== listEl && listEl.contains(hidden);
+}
+
+/**
  * The nearest `contenteditable` root for `el`, or null when `el` is not inside
  * an editable region. Prefers the browser's `isContentEditable` property and
  * falls back to the closest `[contenteditable]` ancestor whose value is not
@@ -352,7 +363,7 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
     }
     const matched = Array.from(
       listEl.querySelectorAll<HTMLElement>(itemSelector),
-    );
+    ).filter(el => !isHiddenWithin(el, listEl));
     // When a boundary is set, keep only items that belong to THIS list level —
     // i.e. whose nearest boundary ancestor is our own container. This excludes
     // items inside nested lists (e.g. inline submenu flyouts) that would

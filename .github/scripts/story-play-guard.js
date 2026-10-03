@@ -49,6 +49,24 @@ const TARGETS = [
     guards: 'compact trigger variants match their size tokens',
   },
   {
+    component: 'Code',
+    story: 'core-code--colors',
+    guards:
+      'primary, secondary, and inherited text colors remain distinct and inheritance follows the surrounding text',
+  },
+  {
+    component: 'Code',
+    story: 'core-code--long-inline-content',
+    guards:
+      'an unbroken inline identifier wraps without overflowing its constrained prose container',
+  },
+  {
+    component: 'Code',
+    story: 'core-code--text-sizes',
+    guards:
+      'size="inherit" matches each surrounding font size and line height across distinct text roles',
+  },
+  {
     component: 'ChartTooltip',
     story: 'charts-chrome-tooltip--modal-layering',
     guards:

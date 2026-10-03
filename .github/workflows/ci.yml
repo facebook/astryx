@@ -1142,6 +1142,21 @@ jobs:
       - name: Run story play guard
         run: node .github/scripts/story-play-guard.js --storybook-dir apps/storybook/dist
 
+      # The empty-state announcement is a live-region claim: what a screen
+      # reader receives when a search dead-ends, and that the message element
+      # stays presentational so `role="listbox"` keeps only option/group
+      # children. jsdom proves the wiring; only a real engine shows the
+      # accessibility tree that results, and this contract is cheap enough to
+      # run on every PR rather than waiting for the release matrix. Its own
+      # --output directory so a later audit run cannot clear it, and it cannot
+      # clear theirs (Playwright wipes the default directory per run).
+      - name: Run empty-state announcement contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Selector/__tests__/EmptyStateAnnouncement.a11y.chromium.spec.ts \
+            --project chromium \
+            --output empty-state-announcement-output
+
       # ChatMessageBubble is nested under the shared Chat source directory, so
       # the generic stable-visual owner cannot select its dedicated fixture.
       # Run the component's bounded evidence matrix only when the PR scope names

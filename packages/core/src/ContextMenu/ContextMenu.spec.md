@@ -9,7 +9,7 @@ superseded_by: null
 approved_by: null
 approved_at: null
 owners: [cixzhang]
-review_triggers: [theming]
+review_triggers: [accessibility, behavior, public-api, theming]
 verified_by:
   [
     packages/core/src/ContextMenu/ContextMenu.test.tsx,
@@ -72,8 +72,12 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-No new public concept is introduced. Consumer props, content modes, and
-presentation policy remain documented in `ContextMenu.doc.mjs`.
+Consumer props, content modes, and presentation policy remain documented in
+`ContextMenu.doc.mjs`. One component-local concept is added by DEC-1:
+
+| Concept         | Closed values or states | Meaning                                                                                                                                            | Availability by variant/orientation/state | Default | Owner                   | Stability | Invalid-value behavior           |
+| --------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ------- | ----------------------- | --------- | -------------------------------- |
+| Trigger element | `div`, `span`           | What the Trigger area renders as: a block, or an inline wrapper so a reference inside prose can own a context menu without breaking the text flow. | Both presentations                        | `div`   | `component:ContextMenu` | stable    | An unknown value reads as `div`. |
 
 ## Behavioral and layout contract
 
@@ -84,7 +88,9 @@ presentation policy remain documented in `ContextMenu.doc.mjs`.
 | FR3 | Pointer action rows retain DropdownMenu ownership. The touch frame retains BottomSheet ownership, while data-driven touch lists and rows retain List ownership.                                                                                                                                                                                                                                                  | Current source and owner docs                                                                                  | Verified current delegation; no ownership change   |
 | FR4 | Compound `menuContent` remains a caller-supplied pointer-menu interior and may also render inside the touch frame; the data-driven touch path instead converts the same item data to List and ListItem presentation.                                                                                                                                                                                             | Current source and tests                                                                                       | Verified current branches; no behavior change      |
 | FR5 | The Pointer menu surface carries `data-astryx-menu-press` and follows `module:DropdownMenu/useMenuPress` FR1–FR7: the row under the release acts, the highlight follows a held pointer, a mouse released outside closes and a finger leaves the menu open, the stray click never acts, and `touch-action` follows overflow. Right-click, Shift+F10, long-press invocation and keyboard navigation are unchanged. | `module:DropdownMenu/useMenuPress`; `ContextMenu.test.tsx` press model suite                                   | Proposed; verified in jsdom                        |
-| FR6 | In the pointer menu ArrowDown on the last enabled row wraps to the first and ArrowUp on the first to the last; PageDown and PageUp page as in DropdownMenu FR6; a held key's auto-repeat does not activate; typeahead matches the row's label element alone.                                                                                                                                                     | Proposed in this change; `ContextMenu.test.tsx` keyboard case; shared `useListFocus` and `useTypeahead` suites | Proposed; verified in jsdom, pending owner review  |
+| FR6 | With `triggerAs="span"` the Trigger area MUST be an inline element that owns a box, so the cursor anchor measures from the trigger's own rect on every invocation path. Every invocation path (right-click, Shift+F10, long-press) and the `context-menu` target's placement are unchanged.                                                                                                                      | `component:ContextMenu/DEC-1`                                                                                  | Accepted; verified in jsdom                        |
+| FR7 | Sub-menu rows follow `component:DropdownMenu` FR12 inside the pointer menu: ContextMenu mounts the same drill-in view stack, named after its `label`, so a sub-menu drills in on a phone here too.                                                                                                                                                                                                               | `component:DropdownMenu/DEC-2`                                                                                 | Proposed; verified in jsdom                        |
+| FR8 | In the pointer menu ArrowDown on the last enabled row wraps to the first and ArrowUp on the first to the last; PageDown and PageUp page as in DropdownMenu FR6; a held key's auto-repeat does not activate; typeahead matches the row's label element alone.                                                                                                                                                     | Proposed in this change; `ContextMenu.test.tsx` keyboard case; shared `useListFocus` and `useTypeahead` suites | Proposed; verified in jsdom, pending owner review  |
 
 ### Allowed variation
 
@@ -122,6 +128,10 @@ This draft does not change ContextMenu's menu and dialog naming, keyboard
 invocation, long-press path, keyboard navigation, item semantics, focus
 return, or dismissal ordering. While a pointer is held in the pointer menu,
 the highlight is DOM focus per `module:DropdownMenu/useMenuPress` AR1.
+
+- **AR1 — An inline trigger keeps its semantics.** `triggerAs` changes the
+  Trigger area's element and box only; it carries no role or `aria-haspopup`
+  (menus-15) in any form, and the menu keeps its own name (`label`).
 
 ## Design relationships
 
@@ -195,12 +205,34 @@ anchor is positioning infrastructure rather than consumer anatomy.
 | FR5                 | `ContextMenu.test.tsx` press model case; `module:DropdownMenu/useMenuPress` map                   | Finger slide across rows, stray click         | A row acting on the press row or the stray click fails.                                            | `audit:ContextMenu/behavior` |
 | FR6                 | `ContextMenu.test.tsx` keyboard case; shared `useListFocus` and `useTypeahead` suites             | wrap at both ends                             | Clamping arrows fail.                                                                              | `audit:ContextMenu/behavior` |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                     | Canonical anatomy and current target          | Missing, extra, prefixed, stale, or unclassified mappings fail repository validation.              | `audit:ContextMenu/theming`  |
+| FR6, AR1            | `ContextMenu.test.tsx` "inline trigger (triggerAs)" suite                                         | `span` in a paragraph, default `div`          | A block trigger inside prose, or a lost invocation path, fails.                                    | `audit:ContextMenu/behavior` |
 
 ## Decision log
 
-None component-local. The press model decision lives in
-`module:DropdownMenu/useMenuPress`; this record introduces no design,
-theming, or layer-system decision of its own.
+The press model decision lives in `module:DropdownMenu/useMenuPress`.
+
+### DEC-1 — The trigger may be inline
+
+**Reference:** `component:ContextMenu/DEC-1`
+
+**Decider:** `cixzhang`, 2026-10-02
+
+An entity reference inside running prose (a task id, a diff id) needs the three
+doors of a context menu without becoming a block that breaks the paragraph.
+`triggerAs` renders the Trigger area as a `span`. The default `div` and its
+`position: relative` are unchanged.
+
+Rejected: a `triggerXstyle` recipe — cannot change the element, and a
+`display: inline` div inside a `<p>` is invalid HTML.
+
+Rejected: a third `contents` value, a span with `display: contents`. A
+box-less wrapper has no rect to measure the cursor anchor from, so the anchor
+falls back to the nearest positioned ancestor — which in running prose is
+usually the page. A mouse user gets the menu at the pointer and a keyboard
+user pressing Shift+F10 gets it at the page corner, and the keyboard path is
+the one with no way around it. A `span` is inline, owns a box, measures
+correctly, and is invisible to layout in every way the prose case cares
+about.
 
 ## Open questions
 

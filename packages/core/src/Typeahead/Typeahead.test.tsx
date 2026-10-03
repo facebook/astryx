@@ -2041,3 +2041,139 @@ describe('the value is bounded by the content lane', () => {
     expect(style.marginInlineEnd).toBe('auto');
   });
 });
+
+// `emptySearchResultsText` was renamed to `emptySearchText` and widened from
+// `string` to `ReactNode` (`spec:AST-056` FR1). It is a released prop with a
+// victim, so the replacement ships first and the old name keeps working
+// through the overlap (`spec:AST-017` FR28, FR29).
+describe('emptySearchText rename', () => {
+  function searchForNothing() {
+    fireEvent.change(screen.getByRole('combobox'), {
+      target: {value: 'zzzzz'},
+    });
+  }
+
+  describe('Typeahead', () => {
+    it('renders an element, which the old string type could not express', async () => {
+      render(
+        <Typeahead
+          label="Fruit"
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+          emptySearchText={
+            <span>
+              Nothing ripe. <a href="/add">Add a fruit</a>
+            </span>
+          }
+        />,
+      );
+      searchForNothing();
+
+      await waitFor(() => {
+        expect(screen.getByText('Add a fruit')).toBeInTheDocument();
+      });
+    });
+
+    it('keeps the deprecated name working, and says it is deprecated', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      render(
+        <Typeahead
+          label="Fruit"
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+          emptySearchResultsText="Nothing ripe"
+        />,
+      );
+      searchForNothing();
+
+      await waitFor(() => {
+        expect(screen.getByText('Nothing ripe')).toBeInTheDocument();
+      });
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'Typeahead: `emptySearchResultsText` is deprecated; use `emptySearchText`',
+        ),
+      );
+      warn.mockRestore();
+    });
+
+    it('lets the new name win when both are set, and warns', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      render(
+        <Typeahead
+          label="Fruit"
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+          emptySearchResultsText="Old copy"
+          emptySearchText="New copy"
+        />,
+      );
+      searchForNothing();
+
+      await waitFor(() => {
+        expect(screen.getByText('New copy')).toBeInTheDocument();
+      });
+      expect(screen.queryByText('Old copy')).not.toBeInTheDocument();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'Typeahead: `emptySearchResultsText` and `emptySearchText` are both set',
+        ),
+      );
+      warn.mockRestore();
+    });
+  });
+
+  describe('BaseTypeahead', () => {
+    it('announces the text of an element, not the catalog default', async () => {
+      render(
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+          emptySearchText={
+            <span>
+              Nothing ripe. <a href="/add">Add a fruit</a>
+            </span>
+          }
+        />,
+      );
+      searchForNothing();
+
+      // Widening to ReactNode without this would hand the live region an
+      // object: the AR1 defect, spread to a fourth component.
+      await waitFor(() => {
+        expect(
+          document.querySelector('[data-astryx-live-region="polite"]'),
+        ).toHaveTextContent('Nothing ripe. Add a fruit');
+      });
+    });
+
+    it('announces the deprecated name unchanged', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      render(
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+          emptySearchResultsText="Nothing ripe"
+        />,
+      );
+      searchForNothing();
+
+      await waitFor(() => {
+        expect(
+          document.querySelector('[data-astryx-live-region="polite"]'),
+        ).toHaveTextContent('Nothing ripe');
+      });
+      warn.mockRestore();
+    });
+  });
+});

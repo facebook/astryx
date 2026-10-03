@@ -6,7 +6,7 @@
  * @output Unit tests for DropdownMenuSubMenu (#3829)
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {useState} from 'react';
 import {render, screen, waitFor, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -14,6 +14,7 @@ import * as stylex from '@stylexjs/stylex';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuItem} from './DropdownMenuItem';
 import {DropdownMenuSubMenu} from './DropdownMenuSubMenu';
+import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
 import {rtlStyles} from '../utils';
 
 beforeEach(() => {
@@ -951,5 +952,221 @@ describe('DropdownMenuSubMenu press model', () => {
     expect(onMove).toHaveBeenCalledTimes(1);
     expect(onMove).toHaveBeenCalledWith('b');
     expect(root).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
+describe('DropdownMenuSubMenu drill-in on a phone', () => {
+  const originalMatchMedia = window.matchMedia;
+
+  // The drill-in resolves on the same query the root presentation uses for
+  // its bottom sheet, so one component carries one meaning of "adaptive".
+  function stubCompactTouch(matches: boolean) {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation((query: string) => ({
+        matches: matches && query === COMPACT_TOUCH_PRESENTATION_QUERY,
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+  }
+
+  afterEach(() => {
+    vi.stubGlobal('matchMedia', originalMatchMedia);
+  });
+
+  function PhoneMenu({onMove}: {onMove?: (folder: string) => void} = {}) {
+    return (
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Rename" onClick={() => {}} />
+        <DropdownMenuSubMenu label="Move to">
+          <DropdownMenuItem label="Folder A" onClick={() => onMove?.('a')} />
+          <DropdownMenuSubMenu label="Archive">
+            <DropdownMenuItem label="2025" onClick={() => onMove?.('2025')} />
+          </DropdownMenuSubMenu>
+        </DropdownMenuSubMenu>
+        <DropdownMenuItem label="Delete" onClick={() => {}} />
+      </DropdownMenu>
+    );
+  }
+
+  // The popover is not open for jsdom's accessibility tree, so every query
+  // passes `hidden`; the rows a drilled-in view replaced sit under a `hidden`
+  // wrapper, which is what "shown" means here.
+  const h = {hidden: true} as const;
+  const isShown = (el: HTMLElement) => el.closest('[hidden]') == null;
+  const visibleRows = () =>
+    screen
+      .getAllByRole('menuitem', h)
+      .filter(isShown)
+      .map(el => el.textContent);
+  const shownRow = (name: string) =>
+    screen.getAllByRole('menuitem', {name, ...h}).find(isShown)!;
+  const shownMenu = (name: string) =>
+    screen.getAllByRole('menu', {name, ...h}).find(isShown)!;
+
+  it('on a phone a sub-menu drills in, is named by its row, and Back returns', async () => {
+    stubCompactTouch(true);
+    const user = userEvent.setup();
+    const onMove = vi.fn();
+    render(<PhoneMenu onMove={onMove} />);
+    const trigger = screen.getByRole('button', {name: /Actions/});
+    await user.click(trigger);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+    const rootMenu = shownMenu('Actions');
+
+    const moveTo = shownRow('Move to');
+    expect(moveTo).toHaveAttribute('aria-haspopup', 'menu');
+    expect(moveTo).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(moveTo, {detail: 1});
+
+    // The list is replaced in place: the sibling rows are gone from view, the
+    // drilled list is named by its row and leads with a Back row.
+    const drilled = await waitFor(() => shownMenu('Move to'));
+    expect(rootMenu).toContainElement(drilled);
+    expect(visibleRows()).toEqual(['Back to Actions', 'Folder A', 'Archive']);
+    // The sibling row is still mounted (its state stays live) but hidden.
+    expect(screen.getByRole('menuitem', {name: 'Rename', ...h})).not.toBe(
+      undefined,
+    );
+    expect(isShown(screen.getByRole('menuitem', {name: 'Rename', ...h}))).toBe(
+      false,
+    );
+    // No flyout beside the menu: the drilled list has no popover of its own.
+    expect(drilled.closest('[popover]')).toBe(rootMenu.closest('[popover]'));
+
+    // Back returns to the sub-menu row.
+    fireEvent.click(shownRow('Back to Actions'), {
+      detail: 1,
+    });
+    await waitFor(() => expect(shownRow('Move to')).toHaveFocus());
+    expect(visibleRows()).toEqual(['Rename', 'Move to', 'Delete']);
+
+    // Escape and ArrowLeft pop too, and a second level names its parent.
+    fireEvent.keyDown(shownRow('Move to'), {
+      key: 'Enter',
+    });
+    await waitFor(() => shownMenu('Move to'));
+    // A keyboard drill-in lands on the first row after Back.
+    expect(shownRow('Folder A')).toHaveFocus();
+    fireEvent.keyDown(shownRow('Archive'), {
+      key: 'Enter',
+    });
+    await waitFor(() => shownMenu('Archive'));
+    expect(visibleRows()).toEqual(['Back to Move to', '2025']);
+    expect(shownRow('2025')).toHaveFocus();
+
+    fireEvent.keyDown(document.activeElement!, {key: 'ArrowLeft'});
+    await waitFor(() => expect(shownRow('Archive')).toHaveFocus());
+    expect(visibleRows()).toEqual(['Back to Actions', 'Folder A', 'Archive']);
+    fireEvent.keyDown(document.activeElement!, {key: 'Escape'});
+    await waitFor(() => expect(shownRow('Move to')).toHaveFocus());
+    // One Escape popped one level; the menu is still open.
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // A pick inside a drilled list acts and closes the whole menu.
+    fireEvent.click(shownRow('Move to'), {
+      detail: 1,
+    });
+    await waitFor(() => shownMenu('Move to'));
+    fireEvent.click(shownRow('Folder A'), {
+      detail: 1,
+    });
+    expect(onMove).toHaveBeenCalledWith('a');
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+    );
+  });
+
+  it('typeahead and arrows scope to the drilled rows', async () => {
+    stubCompactTouch(true);
+    const user = userEvent.setup();
+    render(<PhoneMenu />);
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    fireEvent.keyDown(await waitFor(() => shownRow('Move to')), {
+      key: 'Enter',
+    });
+    const drilled = await waitFor(() => shownMenu('Move to'));
+    const folderA = shownRow('Folder A');
+    expect(folderA).toHaveFocus();
+    // "d" matches Delete at the root, which is not shown: nothing moves.
+    fireEvent.keyDown(folderA, {key: 'd'});
+    expect(folderA).toHaveFocus();
+    // Arrows, Home and End walk the drilled list only, Back included; the
+    // hidden parent rows are not in the order.
+    fireEvent.keyDown(folderA, {key: 'ArrowUp'});
+    expect(shownRow('Back to Actions')).toHaveFocus();
+    fireEvent.keyDown(document.activeElement!, {key: 'End'});
+    expect(shownRow('Archive')).toHaveFocus();
+    fireEvent.keyDown(document.activeElement!, {key: 'Home'});
+    expect(shownRow('Back to Actions')).toHaveFocus();
+    expect(drilled).toBeInTheDocument();
+  });
+
+  it('presentation="flyout" keeps the flyout on a phone and "drill-in" drills on a laptop', async () => {
+    stubCompactTouch(true);
+    const user = userEvent.setup();
+    const {unmount} = render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuSubMenu label="Move to" presentation="flyout">
+          <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    fireEvent.click(await waitFor(() => shownRow('Move to')), {
+      detail: 1,
+    });
+    // The flyout renders in a popover of its own beside the row.
+    const flyout = await waitFor(() => shownMenu('Move to'));
+    expect(flyout.closest('[popover]')).not.toBe(
+      shownMenu('Actions').closest('[popover]'),
+    );
+    expect(screen.queryByRole('menuitem', {name: /^Back to/, ...h})).toBeNull();
+    unmount();
+
+    stubCompactTouch(false);
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuSubMenu label="Move to" presentation="drill-in">
+          <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    fireEvent.click(await waitFor(() => shownRow('Move to')), {
+      detail: 1,
+    });
+    await waitFor(() => shownRow('Back to Actions'));
+  });
+
+  it('closing the menu resets the drilled view', async () => {
+    stubCompactTouch(true);
+    const user = userEvent.setup();
+    render(<PhoneMenu />);
+    const trigger = screen.getByRole('button', {name: /Actions/});
+    await user.click(trigger);
+    fireEvent.click(await waitFor(() => shownRow('Move to')), {
+      detail: 1,
+    });
+    await waitFor(() => shownMenu('Move to'));
+    fireEvent.keyDown(document.activeElement!, {key: 'Escape'});
+    await waitFor(() => expect(shownRow('Move to')).toHaveFocus());
+    fireEvent.keyDown(document.activeElement!, {key: 'Escape'});
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+    );
+    await user.click(trigger);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+    expect(visibleRows()).toEqual(['Rename', 'Move to', 'Delete']);
   });
 });
