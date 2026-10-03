@@ -32,6 +32,10 @@ import {addAnchorName, removeAnchorName} from './anchorName';
 import {currentGesture, currentGestureHasClicked} from './gestureCounter';
 import {resolveLayerPortalTarget} from './layerHost';
 import {layerTextReset} from './layerTextReset.stylex';
+import {layerViewportInset} from './layerViewportInset.stylex';
+import {layerInsetProperties} from './layerInset';
+import {useLayerContext} from './LayerContext';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
 
 const styles = stylex.create({
@@ -67,6 +71,49 @@ const styles = stylex.create({
     marginInlineStart: offset,
     marginInlineEnd: offset,
   }),
+  // The viewport inset (spec:AST-059 FR1–FR3). Every anchor-mode layer is
+  // capped to the viewport minus both gutters on both axes and keeps the
+  // runtime's gutter from the far viewport edge of its alignment axis. The
+  // gutter is a margin on the far edge only — one on the anchor-facing edge
+  // would push the layer off its anchor — and the flip tactics swap it with
+  // the area. The cap is on the layer box itself: content wider than the
+  // viewport overflows inside the layer, where the composing component
+  // decides whether it scrolls or clips; the box never leaves the viewport.
+  viewportFit: {
+    boxSizing: 'border-box',
+    maxInlineSize: stylex.firstThatWorks(
+      layerViewportInset.maxInlineSize,
+      layerViewportInset.maxInlineSizeFallback,
+    ),
+    maxBlockSize: stylex.firstThatWorks(
+      layerViewportInset.maxBlockSize,
+      layerViewportInset.maxBlockSizeFallback,
+    ),
+  },
+  gutterInlineEnd: {
+    marginInlineEnd: stylex.firstThatWorks(
+      layerViewportInset.gutterInline,
+      layerViewportInset.gutterInlineFallback,
+    ),
+  },
+  gutterInlineStart: {
+    marginInlineStart: stylex.firstThatWorks(
+      layerViewportInset.gutterInline,
+      layerViewportInset.gutterInlineFallback,
+    ),
+  },
+  gutterBlockEnd: {
+    marginBlockEnd: stylex.firstThatWorks(
+      layerViewportInset.gutterBlockEnd,
+      layerViewportInset.gutterBlockEndFallback,
+    ),
+  },
+  gutterBlockStart: {
+    marginBlockStart: stylex.firstThatWorks(
+      layerViewportInset.gutterBlockStart,
+      layerViewportInset.gutterBlockStartFallback,
+    ),
+  },
 });
 
 /**
@@ -430,7 +477,11 @@ function getPositionArea(
  * axis maps center → center, so overflow on that axis renders clipped
  * (#3671). Centered alignments therefore append span-based fallbacks letting
  * the browser slide the layer along the alignment axis as a last resort
- * (same-side spans first). Flips already resolve non-centered alignments.
+ * (same-side spans first). Flips already resolve non-centered alignments; an
+ * aligned layer that fits on neither side keeps its size and is shifted into
+ * the viewport by the browser's own position-area overflow alignment
+ * (spec:AST-059 FR4), which `getSelfAlignment` withdraws once the anchor has
+ * left the viewport (FR5).
  */
 export function getPositionTryFallbacks(
   placement: LayerPlacement = 'above',
@@ -451,6 +502,60 @@ export function getPositionTryFallbacks(
   const [same, opposite] =
     placement === 'start' ? ['left', 'right'] : ['right', 'left'];
   return `${flips}, ${same} span-top, ${same} span-bottom, ${opposite} span-top, ${opposite} span-bottom`;
+}
+
+/**
+ * The self-alignment an aligned layer uses while its anchor is out of view
+ * (spec:AST-059 FR5). A position-area box that overflows the room beside its
+ * anchor is shifted by default to stay inside the viewport — the slide an
+ * aligned layer relies on when it fits on neither side (FR4). Once the anchor
+ * has left the viewport that shift would pin the layer into the narrowest
+ * strip at the edge, so the alignment is pinned `unsafe` toward the anchor
+ * instead and the layer holds the position its flips give it. `self-*`
+ * keywords resolve against the layer's own direction, matching the `self-*`
+ * position-area family; the flip tactics swap start/end with the area.
+ *
+ * Centered layers already slide through their span fallbacks and are
+ * unchanged; a visible anchor keeps the browser's default alignment.
+ */
+export function getSelfAlignment(
+  placement: LayerPlacement,
+  alignment: LayerAlignment,
+  isAnchorInView: boolean,
+): React.CSSProperties {
+  if (isAnchorInView || alignment === 'center') {
+    return {};
+  }
+  const edge = alignment === 'start' ? 'unsafe self-start' : 'unsafe self-end';
+  return placement === 'above' || placement === 'below'
+    ? {justifySelf: edge}
+    : {alignSelf: edge};
+}
+
+/**
+ * The gutter styles for a placement/alignment pair: the far viewport edge of
+ * the alignment axis, or both edges when centered (spec:AST-059 FR1).
+ */
+function getGutterStyles(
+  placement: LayerPlacement,
+  alignment: LayerAlignment,
+): ReadonlyArray<StyleXStyles> {
+  if (placement === 'above' || placement === 'below') {
+    if (alignment === 'start') {
+      return [styles.gutterInlineEnd];
+    }
+    if (alignment === 'end') {
+      return [styles.gutterInlineStart];
+    }
+    return [styles.gutterInlineStart, styles.gutterInlineEnd];
+  }
+  if (alignment === 'start') {
+    return [styles.gutterBlockEnd];
+  }
+  if (alignment === 'end') {
+    return [styles.gutterBlockStart];
+  }
+  return [styles.gutterBlockStart, styles.gutterBlockEnd];
 }
 
 /**
@@ -521,6 +626,15 @@ function useLayerImplementation(
   const anchorId = `--astryx-layer-${id.replace(/:/g, '')}`;
 
   const [isOpen, setIsOpen] = useState(false);
+  // Whether the anchor is inside the viewport (spec:AST-059 FR5). The slide
+  // fallback is withdrawn while it is not, so an aligned layer holds its
+  // position and size instead of chasing an anchor nobody can see.
+  const [isAnchorInView, setIsAnchorInView] = useState(true);
+  // The inset the app declared on LayerProvider (FR6). Read through context
+  // and written inline on the layer, so a corrective portal cannot escape it
+  // and no measurement is needed to apply it.
+  const layerContext = useLayerContext();
+  const declaredInset = layerContext?.inset;
   const popoverRef = useRef<HTMLElement | null>(null);
   // The DOM element on which the current logical open state was applied.
   // A portal target change replaces the popover element; retaining the old
@@ -850,6 +964,46 @@ function useLayerImplementation(
     };
   }, [handleToggle, bindToggleListener]);
 
+  // Anchor visibility (FR5). The first frame must already be right (FR8), so
+  // the opening read is synchronous — a layout effect runs before paint, and a
+  // state change inside it re-renders before paint — against the visual
+  // viewport. IntersectionObserver then tracks changes while open; with no
+  // root it reports against the viewport and through every ancestor clip, so
+  // an anchor scrolled out of a panel reads as out of view too.
+  useIsomorphicLayoutEffect(() => {
+    if (!isOpen || mode !== 'context') {
+      return;
+    }
+    const anchor = triggerRef.current;
+    if (!anchor) {
+      return;
+    }
+    const view = anchor.ownerDocument.defaultView;
+    if (view) {
+      // Edge-adjacent counts as in view, as IntersectionObserver reports it;
+      // an engine with no layout (a zero rect) therefore reads as in view too.
+      const rect = anchor.getBoundingClientRect();
+      const inView =
+        rect.bottom >= 0 &&
+        rect.right >= 0 &&
+        rect.top <= view.innerHeight &&
+        rect.left <= view.innerWidth;
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- read before paint so the first frame holds or slides correctly
+      setIsAnchorInView(inView);
+    }
+    if (typeof IntersectionObserver === 'undefined') {
+      return;
+    }
+    const observer = new IntersectionObserver(entries => {
+      const latest = entries[entries.length - 1];
+      if (latest) {
+        setIsAnchorInView(latest.isIntersecting);
+      }
+    });
+    observer.observe(anchor);
+    return () => observer.disconnect();
+  }, [isOpen, mode]);
+
   // Render function for context mode
   const renderContext = useCallback(
     (children: ReactNode, props?: ContextRenderProps) => {
@@ -890,6 +1044,7 @@ function useLayerImplementation(
                 placement,
                 alignment,
               ),
+              ...getSelfAlignment(placement, alignment, isAnchorInView),
             };
 
       const offsetStyle =
@@ -899,10 +1054,16 @@ function useLayerImplementation(
             : styles.offsetInline(toCssLength(offset))
           : null;
 
+      const viewportStyles =
+        positioning === 'anchor'
+          ? [styles.viewportFit, ...getGutterStyles(placement, alignment)]
+          : null;
+
       const stylexResult = stylex.props(
         layerTextReset.reset,
         styles.base,
         overlayPaddingReset.reset,
+        viewportStyles,
         offsetStyle,
         xstyle,
       );
@@ -924,6 +1085,7 @@ function useLayerImplementation(
           style={{
             ...stylexResult.style,
             ...anchorStyle,
+            ...layerInsetProperties(declaredInset),
             ...contextMount.portalStyle,
             ...extraStyle,
           }}
@@ -945,7 +1107,9 @@ function useLayerImplementation(
     [
       anchorId,
       contextMount,
+      declaredInset,
       id,
+      isAnchorInView,
       lightDismiss,
       popoverRefCallback,
       sentinelRefCallback,

@@ -24,6 +24,7 @@ import {
   useLayer,
   useLayerInternal,
   getPositionTryFallbacks,
+  getSelfAlignment,
 } from './useLayer';
 import {typeScaleVars} from '../theme/tokens.stylex';
 import type {
@@ -303,6 +304,130 @@ describe('getPositionTryFallbacks (issue #3671)', () => {
     expect(layerEl.style.positionTryFallbacks).toBe(
       `${FLIPS}, top span-left, top span-right, bottom span-left, bottom span-right`,
     );
+  });
+});
+
+describe('viewport inset (spec:AST-059)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('caps every anchor-mode layer on the placement axis and keeps the far-edge gutter of its alignment axis (FR1, FR3)', async () => {
+    const user = userEvent.setup();
+    const cases: [LayerPlacement, LayerAlignment, string[], string[]][] = [
+      ['below', 'start', ['gutterInlineEnd'], ['gutterInlineStart']],
+      ['below', 'end', ['gutterInlineStart'], ['gutterInlineEnd']],
+      ['above', 'center', ['gutterInlineStart', 'gutterInlineEnd'], []],
+      ['end', 'start', ['gutterBlockEnd'], ['gutterBlockStart']],
+      ['start', 'end', ['gutterBlockStart'], ['gutterBlockEnd']],
+      ['end', 'center', ['gutterBlockStart', 'gutterBlockEnd'], []],
+    ];
+    for (const [placement, alignment, present, absent] of cases) {
+      const {container, unmount} = render(
+        <ContextLayerHarness placement={placement} alignment={alignment} />,
+      );
+      await user.click(container.querySelector('button')!);
+      const layerEl = container.querySelector('[popover]') as HTMLElement;
+      expect(layerEl.className).toContain('useLayer__styles.viewportFit');
+      for (const key of present) {
+        expect(layerEl.className).toContain(`useLayer__styles.${key}`);
+      }
+      for (const key of absent) {
+        expect(layerEl.className).not.toContain(`useLayer__styles.${key}`);
+      }
+      // The gutter never caps the layer box's inline size: an auto-width
+      // layer shrinks to the room beside its trigger on its own, and a cap on
+      // the box keeps the browser from choosing a flip.
+      expect(layerEl.className).not.toMatch(/useLayer__styles\.maxInline/);
+      unmount();
+    }
+  });
+
+  it('leaves custom and fixed positioning without the viewport fit (INV3)', () => {
+    function CustomHarness() {
+      const layer = useLayer({mode: 'context'});
+      return (
+        <>
+          <button type="button" ref={layer.ref} onClick={layer.show}>
+            Trigger
+          </button>
+          {layer.render(<span>Custom</span>, {positioning: 'custom'})}
+        </>
+      );
+    }
+    const {container} = render(<CustomHarness />);
+    fireEvent.click(container.querySelector('button')!);
+    const layerEl = container.querySelector('[popover]') as HTMLElement;
+    expect(layerEl.className).not.toContain('useLayer__styles.viewportFit');
+    expect(layerEl.className).not.toMatch(/useLayer__styles\.gutter/);
+  });
+
+  it('pins an aligned layer unsafe toward its anchor only while the anchor is out of view (FR4, FR5)', () => {
+    expect(getSelfAlignment('below', 'start', true)).toEqual({});
+    expect(getSelfAlignment('below', 'start', false)).toEqual({
+      justifySelf: 'unsafe self-start',
+    });
+    expect(getSelfAlignment('above', 'end', false)).toEqual({
+      justifySelf: 'unsafe self-end',
+    });
+    expect(getSelfAlignment('end', 'start', false)).toEqual({
+      alignSelf: 'unsafe self-start',
+    });
+    expect(getSelfAlignment('start', 'end', false)).toEqual({
+      alignSelf: 'unsafe self-end',
+    });
+    // Centered layers slide through their span fallbacks and never pin.
+    expect(getSelfAlignment('below', 'center', false)).toEqual({});
+  });
+
+  it('withdraws the slide when the observed anchor leaves the viewport and restores it when it returns (FR5)', async () => {
+    let notify!: IntersectionObserverCallback;
+    const observed: Element[] = [];
+    const disconnect = vi.fn();
+    class Observer {
+      constructor(callback: IntersectionObserverCallback) {
+        notify = callback;
+      }
+      observe(target: Element) {
+        observed.push(target);
+      }
+      unobserve() {}
+      disconnect = disconnect;
+      takeRecords() {
+        return [];
+      }
+    }
+    vi.stubGlobal('IntersectionObserver', Observer);
+
+    const user = userEvent.setup();
+    const {container} = render(
+      <ContextLayerHarness placement="below" alignment="start" />,
+    );
+    const trigger = container.querySelector('button')!;
+    await user.click(trigger);
+    const layerEl = container.querySelector('[popover]') as HTMLElement;
+    expect(observed).toEqual([trigger]);
+    expect(layerEl.style.justifySelf).toBe('');
+
+    act(() => {
+      notify(
+        [{isIntersecting: false} as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      );
+    });
+    expect(layerEl.style.justifySelf).toBe('unsafe self-start');
+    // The flips stay; only the slide is withdrawn.
+    expect(layerEl.style.positionTryFallbacks).toBe(
+      'flip-block, flip-inline, flip-block flip-inline',
+    );
+
+    act(() => {
+      notify(
+        [{isIntersecting: true} as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      );
+    });
+    expect(layerEl.style.justifySelf).toBe('');
   });
 });
 

@@ -61,6 +61,8 @@ import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
+import {clampInlineSize} from '../Layer/clampInlineSize';
 // =============================================================================
 // Types
 // =============================================================================
@@ -273,10 +275,6 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
 // Styles
 // =============================================================================
 
-const TYPEAHEAD_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
-const TYPEAHEAD_POSITION_AREA_MAX_INLINE_SIZE = `calc(100% - max(${TYPEAHEAD_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)))`;
-const TYPEAHEAD_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK = `calc(100% - ${TYPEAHEAD_VIEWPORT_GUTTER})`;
-
 const styles = stylex.create({
   input: {
     display: 'block',
@@ -312,16 +310,19 @@ const styles = stylex.create({
     overflowY: 'auto',
     padding: spacingVars['--spacing-1'],
   },
+  // The menu prefers the input's width and renders an explicit menuWidth at
+  // its size, both clamped to the layer runtime's viewport cap rather than to
+  // the room beside the input (spec:AST-059 FR2, FR7).
   popover: {
     boxSizing: 'border-box',
-    minWidth: 'anchor-size(width)',
-    maxInlineSize: stylex.firstThatWorks(
-      TYPEAHEAD_POSITION_AREA_MAX_INLINE_SIZE,
-      TYPEAHEAD_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK,
+    minWidth: stylex.firstThatWorks(
+      `min(anchor-size(width), ${layerViewportInset.maxInlineSize})`,
+      `min(anchor-size(width), ${layerViewportInset.maxInlineSizeFallback})`,
+      'anchor-size(width)',
     ),
   },
-  popoverCustomWidth: (width: number) => ({
-    width: `${width}px`,
+  popoverCustomWidth: (width: string) => ({
+    width,
   }),
   groupHeading: {
     paddingInline: spacingVars['--spacing-2'],
@@ -1207,7 +1208,13 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           offset: spacingVars['--spacing-1'],
           xstyle: [
             styles.popover,
-            menuWidth != null && styles.popoverCustomWidth(menuWidth),
+            menuWidth != null &&
+              styles.popoverCustomWidth(
+                clampInlineSize(
+                  menuWidth,
+                  layerViewportInset.maxInlineSizeFallback,
+                ),
+              ),
           ],
         },
       )}
