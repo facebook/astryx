@@ -1,0 +1,54 @@
+<!-- docs: Choose one value from a moderate list with a native select control. -->
+<!-- variant: default -->
+<label class="ax-selector">
+  <span class="ax-selector__label">Workspace</span>
+  <span class="ax-selector__control">
+    <select class="ax-selector__select" name="workspace">
+      <option>Design systems</option>
+      <option>Developer tools</option>
+      <option>Business platform</option>
+    </select>
+    <span class="ax-selector__indicator" aria-hidden="true"></span>
+  </span>
+  <span class="ax-selector__description"
+    >Choose where this project belongs.</span
+  >
+</label>
+
+<!-- variant: compact -->
+<label class="ax-selector ax-selector--sm">
+  <span class="ax-selector__label">Status</span>
+  <span class="ax-selector__control">
+    <select class="ax-selector__select">
+      <option>Active</option>
+      <option>Paused</option>
+      <option>Archived</option>
+    </select>
+    <span class="ax-selector__indicator" aria-hidden="true"></span>
+  </span>
+</label>
+
+<!-- variant: error -->
+<label class="ax-selector ax-selector--error">
+  <span class="ax-selector__label">Owner</span>
+  <span class="ax-selector__control">
+    <select class="ax-selector__select" aria-invalid="true">
+      <option value="">Choose an owner</option>
+      <option>Alex Morgan</option>
+      <option>Sam Rivera</option>
+    </select>
+    <span class="ax-selector__indicator" aria-hidden="true"></span>
+  </span>
+  <span class="ax-selector__description">Select an owner to continue.</span>
+</label>
+
+<!-- variant: ghost -->
+<label class="ax-selector ax-selector--ghost">
+  <span class="ax-selector__control">
+    <select class="ax-selector__select" aria-label="Sort results">
+      <option>Newest first</option>
+      <option>Oldest first</option>
+    </select>
+    <span class="ax-selector__indicator" aria-hidden="true"></span>
+  </span>
+</label>

@@ -9,7 +9,7 @@ export const doc = {
   displayName: 'componentHtml()',
   summary: 'List or read vanilla HTML component markup.',
   description:
-    'Reads packages/vanilla/markup. List mode returns the available .html files; named mode returns one file verbatim, including its docs and variant comments.',
+    'Reads packages/vanilla/markup in a source checkout and falls back to the bundled CLI copy after installation. List mode returns the available .html files; named mode returns one file verbatim, including its docs and variant comments.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'componentHtml(name?: string, options?: ComponentHtmlOptions): ComponentHtmlListResponse | ComponentHtmlResponse',
@@ -23,7 +23,8 @@ export const doc = {
     {
       name: 'options.cwd',
       type: 'string',
-      description: 'Directory to locate packages/vanilla from.',
+      description:
+        'Directory to search upward for packages/vanilla before using the bundled CLI copy.',
       default: 'process.cwd()',
     },
     {
@@ -46,7 +47,7 @@ export const doc = {
   throws: [
     {
       code: 'ERR_FILE_NOT_FOUND',
-      when: 'packages/vanilla cannot be located from cwd',
+      when: 'neither checkout nor bundled vanilla assets are available',
     },
     {
       code: 'ERR_INVALID_ARGUMENT',

@@ -9,7 +9,7 @@ export const doc = {
   displayName: 'templateHtml()',
   summary: 'List or render vanilla standalone HTML templates.',
   description:
-    'Reads packages/vanilla/templates. Named mode replaces __ASTRYX_VANILLA_CDN__ with a commit-pinned jsDelivr base URL.',
+    'Reads packages/vanilla/templates in a source checkout and falls back to the bundled CLI copy after installation. Named mode replaces __ASTRYX_VANILLA_CDN__ with a commit-pinned jsDelivr base URL.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'templateHtml(name?: string, options?: TemplateHtmlOptions): TemplateHtmlListResponse | TemplateHtmlResponse',
@@ -19,7 +19,8 @@ export const doc = {
     {
       name: 'options.cwd',
       type: 'string',
-      description: 'Directory to locate packages/vanilla from.',
+      description:
+        'Directory to search upward for packages/vanilla before using the bundled CLI copy.',
       default: 'process.cwd()',
     },
     {
@@ -49,7 +50,7 @@ export const doc = {
   throws: [
     {
       code: 'ERR_FILE_NOT_FOUND',
-      when: 'packages/vanilla cannot be located from cwd',
+      when: 'neither checkout nor bundled vanilla assets are available',
     },
     {
       code: 'ERR_INVALID_ARGUMENT',

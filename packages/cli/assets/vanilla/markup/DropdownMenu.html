@@ -1,0 +1,30 @@
+<!-- docs: Offer a short list of contextual actions from an anchored trigger. -->
+<!-- variant: actions -->
+<div class="ax-dropdown-menu">
+  <button
+    class="ax-button ax-button--secondary"
+    type="button"
+    data-ax-dropdown-trigger="project-actions">
+    Actions
+  </button>
+  <div
+    class="ax-dropdown-menu__popover"
+    id="project-actions"
+    role="menu"
+    popover="auto"
+    data-ax-dropdown-menu>
+    <button class="ax-dropdown-menu__item" type="button" role="menuitem">
+      Edit project
+    </button>
+    <button class="ax-dropdown-menu__item" type="button" role="menuitem">
+      Duplicate project
+    </button>
+    <hr class="ax-dropdown-menu__divider" />
+    <button
+      class="ax-dropdown-menu__item ax-dropdown-menu__item--destructive"
+      type="button"
+      role="menuitem">
+      Archive project
+    </button>
+  </div>
+</div>

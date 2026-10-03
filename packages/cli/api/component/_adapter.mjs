@@ -3,7 +3,8 @@
 /**
  * @file Shared resolver for the `component` command leaves.
  *
- * @input  a component name (+ cwd / package scope) and doc-load options
+ * @input  a component name (+ cwd / package scope) and doc-load options;
+ *         vanilla HTML reads resolve checkout assets before the bundled copy
  * @output resolved subjects the leaves project into their one `{type, data}`
  *         envelope — owners across core/integration, the scoped/legacy/fuzzy
  *         resolution, and the doc-loading / prop-extraction / ownership shaping
@@ -40,6 +41,7 @@ import {Project} from '../../foundation/config/project.mjs';
 import {loadComponentDoc as loadValidatedComponentDoc} from '../../foundation/discovery/component-loader.mjs';
 import {searchComponents} from '../../foundation/text/string-utils.mjs';
 import {AstryxError} from '../error.mjs';
+import {requireVanillaAssetsDir} from '../_vanilla-assets.mjs';
 
 export {CORE_PACKAGE};
 
@@ -121,39 +123,12 @@ export function requireCoreDir(cwd) {
 }
 
 /**
- * Find the vanilla package owned by the current repository, walking upward from
- * cwd so the API works from the repository root or a nested directory.
- * @param {string} cwd
- * @returns {string}
- */
-function requireVanillaDir(cwd) {
-  let cursor = path.resolve(cwd);
-  while (true) {
-    const direct =
-      path.basename(cursor) === 'vanilla' &&
-      path.basename(path.dirname(cursor)) === 'packages'
-        ? cursor
-        : path.join(cursor, 'packages', 'vanilla');
-    if (fs.existsSync(direct) && fs.statSync(direct).isDirectory())
-      return direct;
-    const parent = path.dirname(cursor);
-    if (parent === cursor) break;
-    cursor = parent;
-  }
-  throw new AstryxError(
-    `Could not find packages/vanilla from "${cwd}"`,
-    undefined,
-    ERROR_CODES.ERR_FILE_NOT_FOUND,
-  );
-}
-
-/**
  * List the HTML component markup files shipped by packages/vanilla.
  * @param {string} cwd
  * @returns {{name: string, file: string}[]}
  */
 export function listVanillaComponentHtml(cwd) {
-  const markupDir = path.join(requireVanillaDir(cwd), 'markup');
+  const markupDir = path.join(requireVanillaAssetsDir(cwd), 'markup');
   if (!fs.existsSync(markupDir)) return [];
   return fs
     .readdirSync(markupDir, {withFileTypes: true})
@@ -191,7 +166,11 @@ export function readVanillaComponentHtml(name, cwd) {
       ERROR_CODES.ERR_UNKNOWN_COMPONENT,
     );
   }
-  const filePath = path.join(requireVanillaDir(cwd), 'markup', match.file);
+  const filePath = path.join(
+    requireVanillaAssetsDir(cwd),
+    'markup',
+    match.file,
+  );
   return {
     component: name,
     file: match.file,

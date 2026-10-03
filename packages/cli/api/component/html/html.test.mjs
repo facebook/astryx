@@ -1,6 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, expect, it} from 'vitest';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import {componentHtml} from './html.mjs';
 
@@ -15,6 +17,19 @@ describe('componentHtml()', () => {
       type: 'component.html.list',
       data: [{name: 'Button', file: 'Button.html'}],
     });
+  });
+
+  it('falls back to the bundled markup outside a checkout', () => {
+    const outsideCheckout = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'astryx-cli-installed-'),
+    );
+    try {
+      const result = componentHtml('Button', {cwd: outsideCheckout});
+      expect(result.type).toBe('component.html');
+      expect(result.data.source).toContain('ax-button');
+    } finally {
+      fs.rmSync(outsideCheckout, {recursive: true, force: true});
+    }
   });
 
   it('returns docs and variants verbatim', () => {

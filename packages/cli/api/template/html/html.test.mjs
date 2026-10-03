@@ -1,6 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, expect, it} from 'vitest';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import {
   ASTRYX_VANILLA_CDN_PLACEHOLDER,
@@ -19,6 +21,19 @@ describe('templateHtml()', () => {
       type: 'template.html.list',
       data: [{id: 'dashboard', file: 'dashboard.html'}],
     });
+  });
+
+  it('falls back to the bundled templates outside a checkout', () => {
+    const outsideCheckout = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'astryx-cli-installed-'),
+    );
+    try {
+      const result = templateHtml('dashboard', {cwd: outsideCheckout});
+      expect(result.type).toBe('template.html');
+      expect(result.data.source).toContain('<!doctype html>');
+    } finally {
+      fs.rmSync(outsideCheckout, {recursive: true, force: true});
+    }
   });
 
   it('substitutes every placeholder with the pinned default CDN base', () => {

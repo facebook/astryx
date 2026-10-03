@@ -94,9 +94,11 @@
     "typecheck:strict": "tsc --project tsconfig.strict.json",
     "typecheck:authoring": "tsc --project tsconfig.authoring-contract.json",
     "sync:api-types": "node scripts/sync-api-types.mjs",
+    "sync:vanilla-assets": "node scripts/sync-vanilla-assets.mjs",
+    "sync:vanilla-assets:check": "node scripts/sync-vanilla-assets.mjs --check",
     "readme": "node scripts/generate-cli-readme.mjs",
     "readme:check": "node scripts/generate-cli-readme.mjs --check",
-    "prepack": "pnpm sync:api-types"
+    "prepack": "pnpm sync:api-types && pnpm sync:vanilla-assets"
   },
   "dependencies": {
     "@babel/core": "7.29.7",

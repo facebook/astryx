@@ -1,0 +1,45 @@
+<!-- docs: Toggle a single value with native checkbox semantics and an Astryx-styled indicator. -->
+<!-- variant: default -->
+<label class="ax-checkbox-input">
+  <input class="ax-checkbox-input__control" type="checkbox" name="updates" />
+  <span class="ax-checkbox-input__box" aria-hidden="true"></span>
+  <span class="ax-checkbox-input__content">
+    <span class="ax-checkbox-input__label">Product updates</span>
+    <span class="ax-checkbox-input__description"
+      >Receive a monthly product digest.</span
+    >
+  </span>
+</label>
+
+<!-- variant: checked -->
+<label class="ax-checkbox-input">
+  <input class="ax-checkbox-input__control" type="checkbox" checked />
+  <span class="ax-checkbox-input__box" aria-hidden="true"></span>
+  <span class="ax-checkbox-input__content">
+    <span class="ax-checkbox-input__label">Share usage data</span>
+  </span>
+</label>
+
+<!-- variant: indeterminate -->
+<label class="ax-checkbox-input">
+  <input
+    class="ax-checkbox-input__control"
+    type="checkbox"
+    aria-checked="mixed" />
+  <span class="ax-checkbox-input__box" aria-hidden="true"></span>
+  <span class="ax-checkbox-input__content">
+    <span class="ax-checkbox-input__label">Select all projects</span>
+    <span class="ax-checkbox-input__description"
+      >Some projects are selected.</span
+    >
+  </span>
+</label>
+
+<!-- variant: compact-disabled -->
+<label class="ax-checkbox-input ax-checkbox-input--sm">
+  <input class="ax-checkbox-input__control" type="checkbox" checked disabled />
+  <span class="ax-checkbox-input__box" aria-hidden="true"></span>
+  <span class="ax-checkbox-input__content">
+    <span class="ax-checkbox-input__label">Managed by your organization</span>
+  </span>
+</label>
