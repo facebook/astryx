@@ -335,6 +335,7 @@ export function ClickableCard({
           href={isDisabled ? undefined : href}
           target={isDisabled ? undefined : target}
           onClick={isDisabled ? preventDisabledLinkClick : undefined}
+          role={isDisabled ? 'link' : undefined}
           aria-label={label}
           aria-disabled={isDisabled || undefined}
           tabIndex={isDisabled ? -1 : 0}

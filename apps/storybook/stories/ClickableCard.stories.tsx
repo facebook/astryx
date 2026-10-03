@@ -159,6 +159,35 @@ export const Disabled: Story = {
   },
 };
 
+export const DisabledNavigation: Story = {
+  name: 'Disabled Navigation',
+  render: () => (
+    <ClickableCard
+      label="Disabled settings card"
+      href="/settings"
+      target="_blank"
+      isDisabled
+      width={300}>
+      <VStack gap={1}>
+        <Text type="body" weight="bold">
+          Settings unavailable
+        </Text>
+        <Text type="supporting" color="secondary">
+          Navigation is disabled
+        </Text>
+      </VStack>
+    </ClickableCard>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A disabled navigation card keeps its accessible link identity while removing the live destination and leaving the tab order.',
+      },
+    },
+  },
+};
+
 export const ColorVariants: Story = {
   name: 'Color Variants',
   render: () => {

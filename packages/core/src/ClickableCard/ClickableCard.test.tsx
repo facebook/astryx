@@ -144,7 +144,7 @@ describe('ClickableCard', () => {
 
   it('disabled link has no live destination, leaves the tab order, and runs nothing', () => {
     const handleClick = vi.fn();
-    const {container} = render(
+    render(
       <ClickableCard
         label="Disabled link"
         href="/settings"
@@ -154,13 +154,12 @@ describe('ClickableCard', () => {
         <span>Content</span>
       </ClickableCard>,
     );
-    const link = container.querySelector('a');
-    expect(link).not.toBeNull();
+    const link = screen.getByRole('link', {name: 'Disabled link'});
     expect(link).toHaveAttribute('aria-disabled', 'true');
     expect(link).toHaveAttribute('tabindex', '-1');
     expect(link).not.toHaveAttribute('href');
     expect(link).not.toHaveAttribute('target');
-    expect(fireEvent.click(link!)).toBe(false);
+    expect(fireEvent.click(link)).toBe(false);
     fireEvent.click(screen.getByText('Content'));
     expect(handleClick).not.toHaveBeenCalled();
   });
