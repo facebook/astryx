@@ -3236,7 +3236,7 @@ describe('MultiSelector renderOptionAction', () => {
     {value: 'docs', label: 'Docs'},
   ];
 
-  it('renders the action as a sibling of the option, not inside it', async () => {
+  it('renders the action outside the listbox, beside its row', async () => {
     const user = userEvent.setup();
     const onEdit = vi.fn();
     const onChange = vi.fn();
@@ -3261,22 +3261,30 @@ describe('MultiSelector renderOptionAction', () => {
     );
     await user.click(screen.getByRole('combobox', {name: 'Labels'}));
 
+    const listbox = screen.getByRole('listbox', h);
     const option = screen.getByRole('option', {name: 'Bug', ...h});
     const action = screen.getByRole('button', {name: 'Edit Bug', ...h});
-    expect(option).not.toContainElement(action);
-    // option and the action's slot are siblings in one role="none" row
-    // wrapper that is a direct child of the listbox.
-    const slot = action.parentElement!;
-    expect(slot).toHaveAttribute('role', 'none');
-    expect(slot.parentElement).toBe(option.parentElement);
-    expect(option.parentElement).toHaveAttribute('role', 'none');
-    expect(option.parentElement!.parentElement).toBe(
-      screen.getByRole('listbox', h),
-    );
-    // Rows without an action keep their plain shape.
+    // A listbox may own only options and groups, so the action is not a
+    // descendant of the listbox at all: it sits in a column after the list,
+    // inside the same scrolling panel.
+    expect(listbox).not.toContainElement(action);
+    expect(listbox.parentElement).toContainElement(action);
+    expect(
+      listbox.compareDocumentPosition(action) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    // The listbox's own children are exactly the option rows.
+    expect(option.parentElement).toBe(listbox);
     expect(
       screen.getByRole('option', {name: 'Feature', ...h}).parentElement,
-    ).toBe(screen.getByRole('listbox', h));
+    ).toBe(listbox);
+    expect(
+      Array.from(listbox.children).every(
+        child => child.getAttribute('role') === 'option',
+      ),
+    ).toBe(true);
+    // Exactly one slot: only Bug has an action.
+    expect(screen.getAllByRole('button', h)).toHaveLength(1);
 
     await user.click(action);
     expect(onEdit).toHaveBeenCalledWith('bug');

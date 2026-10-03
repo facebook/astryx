@@ -52,11 +52,11 @@ interface UseMultiComboboxResult {
   onKeyDown: (e: React.KeyboardEvent) => void;
   onItemMouseEnter: (item: MultiSelectorOptionData, index: number) => void;
   /**
-   * For a listbox whose rows carry content beside the options (a per-row
-   * action): attach to the listbox. A pointer on anything in it that is not
-   * an option — the action, a heading, the gap between rows — lights no
-   * option. Derived from the event target on every `mouseover`, so it holds
-   * for any path the pointer takes.
+   * For a panel whose rows carry content beside the options (a per-row
+   * action): attach to the scrolling panel around the listbox. A pointer on
+   * anything in it that is not an option — the action, a heading, the gap
+   * between rows — lights no option. Derived from the event target on every
+   * `mouseover`, so it holds for any path the pointer takes.
    */
   onListboxMouseOver: (e: React.MouseEvent) => void;
 }
@@ -137,7 +137,7 @@ export function useMultiCombobox({
   // The highlight is state, not CSS :hover, so a pointer that leaves a row
   // for something that is not a row (the action beside it, another row's
   // action, a heading) would leave that row lit. Re-derive from the element
-  // under the pointer on every mouseover inside the listbox: not inside an
+  // under the pointer on every mouseover inside the panel: not inside an
   // option → nothing is lit. The options' own mouseenter still picks the row.
   const onListboxMouseOver = useCallback(
     (e: React.MouseEvent) => {

@@ -9,7 +9,7 @@
  *   the pointer path a mouse actually takes between a row and an action.
  */
 
-import {expect, test, type Page} from '@playwright/test';
+import {expect, test, type Locator, type Page} from '@playwright/test';
 import {
   DEFAULT_STORYBOOK_DIR,
   serveStorybook,
@@ -43,6 +43,14 @@ async function litRows(page: Page): Promise<string[]> {
   });
 }
 
+async function box(locator: Locator) {
+  const rect = await locator.boundingBox();
+  if (rect == null) {
+    throw new Error(`no box for ${String(locator)}`);
+  }
+  return rect;
+}
+
 async function center(page: Page, selector: string) {
   const box = await page.locator(selector).first().boundingBox();
   if (!box) {
@@ -50,6 +58,46 @@ async function center(page: Page, selector: string) {
   }
   return {x: box.x + box.width / 2, y: box.y + box.height / 2};
 }
+
+test('actions sit outside the listbox, aligned to their rows', async ({
+  page,
+}) => {
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-multiselector--row-actions&viewMode=story`,
+  );
+  const listbox = page.getByRole('listbox');
+  await expect(listbox).toBeVisible();
+  await expect(page.getByRole('option', {name: 'P1'})).toBeVisible();
+
+  // No control under the listbox element: the role may own only options and
+  // groups.
+  expect(await listbox.locator('button').count()).toBe(0);
+
+  const listboxBox = await box(listbox);
+  for (const label of ['Bug', 'Design review', 'P0', 'P1']) {
+    const row = await box(page.getByRole('option', {name: label}));
+    const action = await box(page.getByRole('button', {name: `Edit ${label}`}));
+    const rowMid = row.y + row.height / 2;
+    const actionMid = action.y + action.height / 2;
+    expect(Math.abs(rowMid - actionMid)).toBeLessThan(2);
+    expect(action.x + action.width).toBeLessThanOrEqual(
+      listboxBox.x + listboxBox.width + 1,
+    );
+    expect(action.x).toBeGreaterThan(row.x + row.width / 2);
+  }
+  // A row without an action gets no slot.
+  expect(await page.getByRole('button', {name: 'Edit Docs'}).count()).toBe(0);
+
+  // Filtering re-measures: after a search, the surviving row's action
+  // follows it to its new offset.
+  await page.getByRole('combobox').fill('P');
+  await expect(page.getByRole('option', {name: 'Bug'})).toHaveCount(0);
+  const p1 = await box(page.getByRole('option', {name: 'P1'}));
+  const p1Action = await box(page.getByRole('button', {name: 'Edit P1'}));
+  expect(
+    Math.abs(p1.y + p1.height / 2 - (p1Action.y + p1Action.height / 2)),
+  ).toBeLessThan(2);
+});
 
 test('a row stays lit only while the pointer is on it', async ({page}) => {
   await page.goto(
