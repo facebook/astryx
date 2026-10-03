@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, afterEach} from 'vitest';
 import {
   type PlainDate,
   plainDateCreate,
@@ -578,6 +578,42 @@ describe('plainDateGetWeekNumber', () => {
 
   it('returns week 1 for Jan 4 (always in ISO week 1)', () => {
     expect(plainDateGetWeekNumber({year: 2026, month: 1, day: 4})).toBe(1);
+  });
+
+  // A PlainDate carries no timezone, so its week number must not depend on
+  // the machine's own local zone. These assert against a southern-hemisphere
+  // DST zone (Sydney: DST ends in April, after New Year) specifically because
+  // a local-Date implementation leaks that DST shift into the day-count
+  // division and reports every Thursday from here to year-end one week high
+  // in a year that starts on a Friday, like 2021 (#6364). Save/restore TZ so
+  // this doesn't leak into other tests in the run.
+  describe('is timezone-independent (#6364)', () => {
+    const originalTZ = process.env.TZ;
+
+    afterEach(() => {
+      process.env.TZ = originalTZ;
+    });
+
+    it('matches the ISO week under a DST-observing zone, across the fallback boundary', () => {
+      process.env.TZ = 'Australia/Sydney';
+      // 2021 starts on a Friday. Sydney's DST (AEDT) ends 2021-04-04; from
+      // 2021-04-05 on, a local-Date implementation is off by exactly one week.
+      expect(plainDateGetWeekNumber({year: 2021, month: 4, day: 4})).toBe(13);
+      expect(plainDateGetWeekNumber({year: 2021, month: 4, day: 5})).toBe(14);
+      expect(plainDateGetWeekNumber({year: 2021, month: 4, day: 7})).toBe(14);
+      expect(plainDateGetWeekNumber({year: 2021, month: 4, day: 14})).toBe(15);
+    });
+
+    it('gives the same result for the same date regardless of the machine zone', () => {
+      process.env.TZ = 'Australia/Sydney';
+      const sydney = plainDateGetWeekNumber({year: 2021, month: 4, day: 7});
+      process.env.TZ = 'UTC';
+      const utc = plainDateGetWeekNumber({year: 2021, month: 4, day: 7});
+      process.env.TZ = 'America/New_York';
+      const newYork = plainDateGetWeekNumber({year: 2021, month: 4, day: 7});
+      expect(sydney).toBe(utc);
+      expect(newYork).toBe(utc);
+    });
   });
 });
 
