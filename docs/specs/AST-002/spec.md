@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-09-01
+approved_at: 2026-10-03
 phase: accepted
 owners: [cixzhang, imdreamrunner]
 affects_architecture: []
@@ -208,6 +208,10 @@ A public API proposal is admitted only when it passes both gates:
   hooks and utilities they explicitly co-own. Family, architecture, and system
   records own their respective shared semantics. The component's `.doc.mjs`
   remains the consumer syntax and reference authority.
+- `module:Markdown/headingLinks` applies FR18 and DEC-8 to one admitted public
+  module: its factory returns an opaque entry for the existing plugin list rather
+  than adding a broad Markdown prop. The module record owns the API and behavior;
+  this system record owns only that admission result.
 - Component specs inherit current family contracts and record only local public
   concepts, additions, and explicit exceptions; they do not copy shared rules.
 - Public module and utility function review compares the verb with the function's

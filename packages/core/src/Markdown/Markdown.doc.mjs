@@ -11,7 +11,7 @@ const anatomy = [
     name: 'Heading',
     required: false,
     description:
-      'Rendered heading block; a custom heading renderer replaces the default part.',
+      'Rendered semantic heading block; a custom heading renderer replaces the built-in part.',
   },
   {
     name: 'Paragraph',
@@ -305,7 +305,12 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Pair with Outline and useOutlineFromMarkdown for section navigation: headings render generated id attributes that match the outline item ids, so hash links scroll to their target.',
+          'Install createMarkdownHeadingLinks() through plugins when a document needs deterministic h1–h6 fragment IDs at every nesting depth. The returned entry carries its validated namespace across compatible Core package copies. The no-plugin path stays unchanged; the plugin shares one depth-first identity projection with Markdown-derived Outline.',
+      },
+      {
+        guidance: true,
+        description:
+          'For multiple documents, create one heading-links plugin per document with headingIdPrefix and pass that same plugin to Markdown and useOutlineFromMarkdown. Use the same stable value for Markdown id when the root also needs a DOM id.',
       },
       {
         guidance: false,
@@ -334,6 +339,30 @@ import {Text} from '@astryxdesign/core/Text';
   {'Visit https://example.com or email contact@example.com. ' +
     'You can also bracket links: <https://docs.example.com>.'}
 </Markdown>;
+`,
+    },
+    {
+      label: 'Linkable headings',
+      code: `
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {createMarkdownHeadingLinks} from '@astryxdesign/core/Markdown/plugins';
+import {Outline, useOutlineFromMarkdown} from '@astryxdesign/core/Outline';
+
+const documentId = 'guide';
+const headingLinks = createMarkdownHeadingLinks({
+  headingIdPrefix: documentId,
+});
+const plugins = [headingLinks];
+
+function Guide({source}) {
+  const items = useOutlineFromMarkdown(source, {plugins});
+  return (
+    <>
+      <Markdown id={documentId} plugins={plugins}>{source}</Markdown>
+      <Outline items={items} />
+    </>
+  );
+}
 `,
     },
     {
@@ -781,7 +810,12 @@ export const docsZh = {
       {
         guidance: true,
         description:
-          'Pair with Outline and useOutlineFromMarkdown for section navigation: headings render generated id attributes that match the outline item ids, so hash links scroll to their target.',
+          'Install createMarkdownHeadingLinks() through plugins when a document needs deterministic h1–h6 fragment IDs at every nesting depth. The returned entry carries its validated namespace across compatible Core package copies. The no-plugin path stays unchanged; the plugin shares one depth-first identity projection with Markdown-derived Outline.',
+      },
+      {
+        guidance: true,
+        description:
+          'For multiple documents, create one heading-links plugin per document with headingIdPrefix and pass that same plugin to Markdown and useOutlineFromMarkdown. Use the same stable value for Markdown id when the root also needs a DOM id.',
       },
       {
         guidance: false,
@@ -868,7 +902,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Headings render id attributes matching useOutlineFromMarkdown ids; pair with Outline for hash navigation.',
+          'Install createMarkdownHeadingLinks() through plugins to add all-depth stable IDs. Pass the same plugin entry to Markdown-derived Outline; use headingIdPrefix for multiple instances.',
       },
       {
         guidance: false,
@@ -895,7 +929,7 @@ export const docsDense = {
     contentAlign:
       "'start'|'center'. Prose alignment when contentWidth < container. Default: 'start'.",
     plugins:
-      'readonly MarkdownPluginEntry[]. Ordered syntax, immutable AST transforms, and typed extension renderers from createMarkdownPlugin(). Narrow observed extensions with isMarkdownExtensionNode(); renderer callbacks are pure. Default: omitted or empty.',
+      'readonly MarkdownPluginEntry[]. Ordered syntax, immutable AST transforms, and typed extension renderers from createMarkdownPlugin(), plus first-party helpers such as createMarkdownHeadingLinks(). Default: omitted or empty.',
     inlinePlugins:
       'MarkdownInlinePlugin[]. Regex matches in text nodes -> custom inline React elements. Skips inline/fenced code and math.',
     autolink:
