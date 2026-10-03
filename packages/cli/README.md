@@ -20,10 +20,10 @@ Once it's a project dependency (`npm install -D @astryxdesign/cli`), drop the sc
 Install the self-contained vanilla HTML preview from its immutable commit:
 
 ```bash
-npm install -g https://cdn.jsdelivr.net/gh/facebook/astryx@4855ea30514a6033a9abbe88069589b6ff15d64a/packages/vanilla/dist/cli/astryx-cli-vanilla.tgz
+npm install -g https://cdn.jsdelivr.net/gh/facebook/astryx@c11b28d74ce387f44ab224e516058cd31231285d/packages/vanilla/dist/cli/astryx-cli-vanilla.tgz
 ```
 
-The preview package is `@astryxdesign/cli@0.6.5-vanilla.9b37f3b9b`; it is not published to npm.
+The preview package is `@astryxdesign/cli@0.6.5-vanilla.c11b28d74`; it is not published to npm.
 
 ## Reading the CLI's own docs
 

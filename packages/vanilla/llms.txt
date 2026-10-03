@@ -43,7 +43,7 @@ If unsure and there is no package.json, choose **Path A**.
       href="https://cdn.jsdelivr.net/npm/@astryxdesign/core@0.6.5/src/reset.css" />
     <link
       rel="stylesheet"
-      href="https://cdn.jsdelivr.net/gh/facebook/astryx@3906c4ccda61f94bc6dd9777ec38131ac58e8a70/packages/vanilla/dist/astryx-vanilla.css" />
+      href="https://cdn.jsdelivr.net/gh/facebook/astryx@c11b28d74ce387f44ab224e516058cd31231285d/packages/vanilla/dist/astryx-vanilla.css" />
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-neutral@0.6.5/dist/theme.css" />
@@ -66,7 +66,7 @@ If unsure and there is no package.json, choose **Path A**.
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-gothic@0.6.5/dist/theme.css" />
     <script
-      src="https://cdn.jsdelivr.net/gh/facebook/astryx@3906c4ccda61f94bc6dd9777ec38131ac58e8a70/packages/vanilla/dist/astryx-vanilla.js"
+      src="https://cdn.jsdelivr.net/gh/facebook/astryx@c11b28d74ce387f44ab224e516058cd31231285d/packages/vanilla/dist/astryx-vanilla.js"
       defer></script>
   </head>
   <body>
@@ -87,7 +87,7 @@ If unsure and there is no package.json, choose **Path A**.
   `--color-background-body`. Run `astryx component Selector --html` for a
   complete purple brand example plus theme and dark-mode controls.
 - ES-module alternative to the classic script:
-  `https://cdn.jsdelivr.net/gh/facebook/astryx@3906c4ccda61f94bc6dd9777ec38131ac58e8a70/packages/vanilla/dist/astryx-vanilla.mjs`
+  `https://cdn.jsdelivr.net/gh/facebook/astryx@c11b28d74ce387f44ab224e516058cd31231285d/packages/vanilla/dist/astryx-vanilla.mjs`
   (exports `setTheme`, `setMode`, `initThemeModeSwitchers`).
 
 ### A2. Start every page from a template — never lay out a page from scratch
@@ -109,7 +109,7 @@ Templates (complete, standalone, already wired to the CDN links above):
 **Option 1 — install the preview CLI (Node 22.13+):**
 
 ```sh
-npm install -g https://cdn.jsdelivr.net/gh/facebook/astryx@4855ea30514a6033a9abbe88069589b6ff15d64a/packages/vanilla/dist/cli/astryx-cli-vanilla.tgz
+npm install -g https://cdn.jsdelivr.net/gh/facebook/astryx@c11b28d74ce387f44ab224e516058cd31231285d/packages/vanilla/dist/cli/astryx-cli-vanilla.tgz
 
 astryx template --list --html                  # the 9 template ids
 astryx template dashboard --html > page.html   # full standalone page
@@ -122,7 +122,7 @@ astryx component Selector --html               # theme switcher, dark mode, cust
 
 ```sh
 git clone https://github.com/facebook/astryx.git astryx
-git -C astryx checkout 4855ea30514a6033a9abbe88069589b6ff15d64a
+git -C astryx checkout c11b28d74ce387f44ab224e516058cd31231285d
 cd astryx && npx --yes pnpm@11.10.0 install --frozen-lockfile
 node packages/cli/clients/cli/bin/astryx.mjs template dashboard --html > page.html
 ```
@@ -130,13 +130,13 @@ node packages/cli/clients/cli/bin/astryx.mjs template dashboard --html > page.ht
 **Option 2 — direct file URLs (no shell needed; fetch and save as .html):**
 
 ```
-https://raw.githubusercontent.com/facebook/astryx/4855ea30514a6033a9abbe88069589b6ff15d64a/packages/vanilla/demo/pinned/<template-id>.html
-https://raw.githubusercontent.com/facebook/astryx/4855ea30514a6033a9abbe88069589b6ff15d64a/packages/vanilla/markup/<ComponentName>.html
+https://raw.githubusercontent.com/facebook/astryx/c11b28d74ce387f44ab224e516058cd31231285d/packages/vanilla/demo/pinned/<template-id>.html
+https://raw.githubusercontent.com/facebook/astryx/c11b28d74ce387f44ab224e516058cd31231285d/packages/vanilla/markup/<ComponentName>.html
 ```
 
 These are served as plain text: download the content, don't link to it.
 Live preview of all templates (after a one-time notice page):
-https://raw.githack.com/facebook/astryx/4855ea30514a6033a9abbe88069589b6ff15d64a/packages/vanilla/demo/pinned/index.html
+https://raw.githack.com/facebook/astryx/c11b28d74ce387f44ab224e516058cd31231285d/packages/vanilla/demo/pinned/index.html
 
 ### A3. Then add components
 
