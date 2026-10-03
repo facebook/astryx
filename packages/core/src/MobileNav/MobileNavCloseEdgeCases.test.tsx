@@ -401,26 +401,98 @@ describe('MobileNav close path edge cases', () => {
   });
 
   it('closes the AppShell drawer when dismissed with Escape', () => {
-    render(<TestShell />);
-    fireEvent.click(screen.getByRole('button', {name: /open navigation/i}));
-    const dialog = screen.getAllByRole('dialog', {hidden: true})[0];
-    expect(dialog).toHaveAttribute('open');
+    // Fake timers: AppShell now defers hiding this drawer's Activity boundary
+    // (#5701) so MobileNav's own close effect gets a real chance to run —
+    // the dialog closes via its normal deferred setTimeout, not synchronously.
+    vi.useFakeTimers();
+    try {
+      render(<TestShell />);
+      act(() => {
+        fireEvent.click(screen.getByRole('button', {name: /open navigation/i}));
+      });
+      const dialog = screen.getAllByRole('dialog', {hidden: true})[0];
+      expect(dialog).toHaveAttribute('open');
 
-    fireEvent(dialog, new Event('cancel', {cancelable: true, bubbles: false}));
+      act(() => {
+        fireEvent(
+          dialog,
+          new Event('cancel', {cancelable: true, bubbles: false}),
+        );
+      });
+      act(() => {
+        vi.advanceTimersByTime(300);
+      });
 
-    expect(dialog).not.toHaveAttribute('open');
+      expect(dialog).not.toHaveAttribute('open');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('closes the AppShell drawer when the backdrop is clicked', () => {
-    render(<TestShell />);
-    fireEvent.click(screen.getByRole('button', {name: /open navigation/i}));
-    const dialog = screen.getAllByRole('dialog', {hidden: true})[0];
-    expect(dialog).toHaveAttribute('open');
+    vi.useFakeTimers();
+    try {
+      render(<TestShell />);
+      act(() => {
+        fireEvent.click(screen.getByRole('button', {name: /open navigation/i}));
+      });
+      const dialog = screen.getAllByRole('dialog', {hidden: true})[0];
+      expect(dialog).toHaveAttribute('open');
 
-    // A click landing on the dialog itself, not the drawer panel, is a
-    // backdrop dismiss.
-    fireEvent.click(dialog);
+      // A click landing on the dialog itself, not the drawer panel, is a
+      // backdrop dismiss.
+      act(() => {
+        fireEvent.click(dialog);
+      });
+      act(() => {
+        vi.advanceTimersByTime(300);
+      });
 
-    expect(dialog).not.toHaveAttribute('open');
+      expect(dialog).not.toHaveAttribute('open');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // #5701: AppShell mounts the drawer inside a React.Activity boundary that
+  // used to flip to mode="hidden" in the SAME commit as the close, which
+  // forced this file's own unmount-only safety-net effect to call
+  // dialog.close() synchronously — closing correctly, but skipping the
+  // slide-out transition entirely, because Activity's display:none landed
+  // before any transition could run. AppShell now defers that flip, so the
+  // dialog should still be open (and rendered) for a beat after closing,
+  // not synchronously cut off.
+  it('keeps the drawer open long enough for its close transition to run (#5701)', () => {
+    vi.useFakeTimers();
+    try {
+      render(<TestShell />);
+      act(() => {
+        fireEvent.click(screen.getByRole('button', {name: /open navigation/i}));
+      });
+      const dialog = screen.getAllByRole('dialog', {hidden: true})[0];
+      expect(dialog).toHaveAttribute('open');
+
+      act(() => {
+        fireEvent.click(
+          screen.getByRole('button', {name: /close navigation/i}),
+        );
+      });
+
+      // Immediately after closing, with no timers advanced: the old
+      // synchronous-hide bug closed the dialog on this exact tick. The fix
+      // means it must still be open here — Activity hasn't hidden the
+      // subtree yet, so MobileNav's own deferred close effect is still the
+      // one in control.
+      expect(dialog).toHaveAttribute('open');
+
+      // MobileNav's own close delay (capped at 250ms) fires well before
+      // AppShell's Activity buffer (300ms), so it closes on its own timing.
+      act(() => {
+        vi.advanceTimersByTime(300);
+      });
+      expect(dialog).not.toHaveAttribute('open');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
