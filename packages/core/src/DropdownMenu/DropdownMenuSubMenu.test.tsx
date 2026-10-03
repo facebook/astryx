@@ -955,6 +955,110 @@ describe('DropdownMenuSubMenu press model', () => {
   });
 });
 
+describe('DropdownMenuSubMenu safe triangle', () => {
+  const flyoutRect = {
+    top: 0,
+    bottom: 200,
+    left: 300,
+    right: 500,
+    width: 200,
+    height: 200,
+    x: 300,
+    y: 0,
+    toJSON: () => ({}),
+  } as DOMRect;
+
+  async function openByHover() {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    render(<MoveMenu />);
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const trigger = screen.getByRole('menuitem', {
+      name: /Move to/,
+      hidden: true,
+    });
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    const flyout = screen.getByRole('menu', {name: /Move to/, hidden: true});
+    vi.spyOn(flyout, 'getBoundingClientRect').mockReturnValue(flyoutRect);
+    return {trigger, flyout};
+  }
+
+  it('a diagonal path toward the flyout keeps it open past the close delay', async () => {
+    const {trigger} = await openByHover();
+    // The pointer leaves the row at (250, 100), heading for the flyout's near
+    // (left) edge; every move inside the triangle restarts the close delay.
+    fireEvent.mouseLeave(trigger, {clientX: 250, clientY: 100});
+    for (const [x, y] of [
+      [260, 90],
+      [270, 80],
+      [280, 60],
+      [290, 40],
+    ]) {
+      act(() => {
+        vi.advanceTimersByTime(150);
+      });
+      fireEvent.pointerMove(document.body, {clientX: x, clientY: y});
+    }
+    act(() => {
+      vi.advanceTimersByTime(150);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    vi.useRealTimers();
+  });
+
+  it('leaving both the row and the triangle closes after the delay', async () => {
+    const {trigger} = await openByHover();
+    fireEvent.mouseLeave(trigger, {clientX: 250, clientY: 100});
+    // Straight down, away from the flyout: outside the triangle.
+    fireEvent.pointerMove(document.body, {clientX: 250, clientY: 400});
+    act(() => {
+      vi.advanceTimersByTime(250);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    vi.useRealTimers();
+  });
+
+  it('a pointer that pauses inside the triangle keeps the flyout open', async () => {
+    const {trigger} = await openByHover();
+    // The pointer leaves the row mid-diagonal and then STOPS, aiming at a
+    // row: no further pointermove fires. Pausing is not leaving, and this is
+    // the exact moment the triangle exists to protect — the close delay used
+    // to run out underneath it.
+    fireEvent.mouseLeave(trigger, {clientX: 250, clientY: 100});
+    fireEvent.pointerMove(document.body, {clientX: 275, clientY: 95});
+
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    vi.useRealTimers();
+  });
+
+  it('a pause inside the triangle still closes once the pointer leaves it', async () => {
+    const {trigger} = await openByHover();
+    fireEvent.mouseLeave(trigger, {clientX: 250, clientY: 100});
+    fireEvent.pointerMove(document.body, {clientX: 275, clientY: 95});
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // Re-arming is not the same as never closing: the first move out of the
+    // triangle lets the delay run.
+    fireEvent.pointerMove(document.body, {clientX: 250, clientY: 400});
+    act(() => {
+      vi.advanceTimersByTime(250);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    vi.useRealTimers();
+  });
+});
+
 describe('DropdownMenuSubMenu drill-in on a phone', () => {
   const originalMatchMedia = window.matchMedia;
 

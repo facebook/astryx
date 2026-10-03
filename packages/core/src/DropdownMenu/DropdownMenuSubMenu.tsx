@@ -438,6 +438,9 @@ export function DropdownMenuSubMenu(
       hide: hideLayer,
       isOpen: isFlyoutOpen,
       isEnabled: canOpen && !isDrillIn,
+      // The safe triangle toward the flyout's near edge is built from the
+      // flyout this component renders, not the hook's own list ref.
+      flyoutRef: menuRef,
     });
 
   // Where focus lands once a pushed view shows: the first row after Back for

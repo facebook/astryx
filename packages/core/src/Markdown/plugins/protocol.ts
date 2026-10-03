@@ -292,7 +292,11 @@ interface InternalMarkdownPluginEntry<
   readonly [markdownPluginDefinition]: MarkdownPluginBrand<Node>;
 }
 
-function getMarkdownPluginDefinition(
+/**
+ * @internal Validates an opaque entry and returns its frozen definition for
+ * first-party modules that carry their own Symbol.for-branded portable data.
+ */
+export function getMarkdownPluginDefinition(
   publicEntry: MarkdownPluginEntry,
 ): MarkdownPluginDefinition<string, MarkdownExtensionNode> {
   if (

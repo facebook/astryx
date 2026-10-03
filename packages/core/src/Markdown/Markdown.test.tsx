@@ -115,7 +115,6 @@ describe('Markdown', () => {
       );
       expect(received).toEqual(['overview', 'overview-1']);
     });
-
     it('does not assign ids to headings nested inside blockquotes', () => {
       // parseOutlineFromMarkdown only lists top-level headings. If nested
       // headings consumed slugs too, duplicate numbering would drift and
@@ -128,6 +127,7 @@ describe('Markdown', () => {
       expect(container.querySelector('blockquote')).toContainElement(nested);
       expect(nested).not.toHaveAttribute('id');
       expect(topLevel).toHaveAttribute('id', 'quoted');
+      expect(screen.queryByRole('link', {name: /Permalink to/})).toBeNull();
     });
   });
 

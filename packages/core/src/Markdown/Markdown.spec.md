@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-09-25
+approved_at: 2026-10-03
 owners: [cixzhang]
 review_triggers: [api, theming, behavior, layout, accessibility]
 verified_by:
@@ -24,7 +24,12 @@ verified_by:
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
-modules: [module:Markdown/remark, module:Markdown/softBreaks]
+modules:
+  [
+    module:Markdown/headingLinks,
+    module:Markdown/remark,
+    module:Markdown/softBreaks,
+  ]
 families: [family:navigation-destinations]
 design_specs: []
 architecture:
@@ -138,8 +143,9 @@ phases. Frontmatter is document metadata: it has no renderer, uses a bounded
 first-party key/value grammar rather than Remark compatibility, and exposes typed
 metadata through the helper that created it. `spec:AST-036`
 owns the shared protocol and limited Remark compatibility profile,
-`module:Markdown/remark` owns that profile's adapter, and this component owns
-aggregate application and fallback.
+`module:Markdown/remark` owns that profile's adapter,
+`module:Markdown/headingLinks` owns its opt-in identity projection, and this
+component owns aggregate application and fallback.
 
 ### Acceptance and implementation state
 
@@ -180,8 +186,8 @@ unions. Enabled calls return the explicit `InlineNodeWithMath` and
 | FR13 | Plugin-enabled parsing follows built-in lexical shields and ordered syntax claims, then uses one stable, strictly typed, MDAST-aligned canonical tree for transforms, rendering, and Outline. `MarkdownAstNodeMap` and `visitMarkdownNodes` narrow callbacks by node kind. Released parser functions preserve their existing result shape through a compatibility projection. Every returned root is finite, acyclic, representable, validated, and frozen before later plugins or rendering observe it.                                                |
 | FR14 | Plugin failures preserve the last valid document and readable authored source. Core retains heading, navigation, image, list, table, and document semantics and exposes no raw-markup parser channel, registry, package discovery, mutable shared AST, or unrestricted DOM hook. URL-like plugin data remains untrusted; Astryx-owned sinks follow `family:navigation-destinations`.                                                                                                                                                                    |
 | FR15 | Incremental parse identity contains every parse-affecting Markdown option and only ordered syntax-bearing plugin name, protocol version, and `parseKey`. Transform or renderer changes reuse settled parse output, rerun transformation, and do not remount unaffected extension output.                                                                                                                                                                                                                                                                |
-| FR16 | Plugin-enabled Markdown and Markdown-derived Outline use the same parse options, ordered transforms, extension text projection, slugger, and collision allocator so every visible heading, Outline label, heading ID, and target agree. A limited Remark adapter may run only synchronous transform plugins whose input and output round-trip through the documented supported MDAST subset.                                                                                                                                                            |
-| FR17 | An extension node declares `content` as `'none'`, `'phrasing'`, `'flow'`, or an explicit `{allow, min?, max?}` allowlist that narrows the category its `display` implies. Markdown parses every container's inner source span under the same grammar and shields, validates children at each transform boundary, renders children through the same built-in renderers and `components` seams, counts nesting toward the built-in depth bound, leaves FR16 heading traversal unchanged, and renders children in place when a container renderer fails.   |
+| FR16 | Plugin-enabled Markdown and Markdown-derived Outline use the same parse options, ordered transforms, extension text projection, and installed heading projection so every Outline target agrees with rendered identity. A first-party module may compose a different heading projection only under its own current module contract; Markdown owns only this shared invocation seam. A limited Remark adapter may run only synchronous transform plugins whose input and output round-trip through the documented supported MDAST subset.                |
+| FR17 | An extension node declares `content` as `'none'`, `'phrasing'`, `'flow'`, or an explicit `{allow, min?, max?}` allowlist that narrows the category its `display` implies. Markdown parses every container's inner source span under the same grammar and shields, validates children at each transform boundary, renders children through the same built-in renderers and `components` seams, counts nesting toward the built-in depth bound, uses the FR16 projection, and renders children in place when a container renderer fails.                  |
 | FR18 | A transform may read and remove another plugin's extension nodes, including a subtree containing them, and may insert or remove headings; it may not create, edit, internally reorder, or duplicate another plugin's nodes, change a source heading's depth, or forge or duplicate heading identity. `dependsOn` is validated at preparation; an unmet or misordered dependency skips only that plugin's transform. Every rejection names the rule and owning plugin.                                                                                   |
 | FR19 | `onPluginDiagnostic` is available on the component and parser options and receives one source-free event — plugin, phase, stable code, severity — per failure, advisory, or silent degradation, in development and production, rate-limited with a suppression code. Admission, duplicate-name, and protocol-version failures behave identically through the component and every parser entrypoint: the call succeeds with the last valid configuration and never throws into the caller.                                                               |
 | FR20 | `parseMarkdownAst()` and `parseInlineAst()` return the canonical tree and accept the same options and plugin list as the component; `@astryxdesign/core/Markdown/parser` exposes parsing, canonical AST types, and plugin admission with no client boundary. `createMarkdownPlugin()` infers the extension-node union, so no callsite needs explicit type arguments, and a declaration that yields no usable extension type is a type error rather than a silent `never`.                                                                               |
@@ -354,6 +360,9 @@ and this change preserves the existing spelling exactly.
 - `spec:AST-005/DEC-2` keeps embedded-resource policy separate. Markdown may
   reject a broader set of image/resource URLs without narrowing the shared
   navigation contract.
+- `module:Markdown/headingLinks` owns its opt-in public factory and heading
+  identity projection. Markdown supplies only the generic plugin and built-in/custom
+  heading ID application seams.
 - `spec:AST-036` owns the opaque syntax/transform/renderer protocol, immutable AST
   validation, limited Remark compatibility, performance, and resource boundaries.
   This record owns aggregate Markdown behavior in FR12–FR22;
@@ -443,7 +452,7 @@ This projects `spec:AST-036/DEC-1` through `DEC-4` into the component owner. It 
 **Reference:** `component:Markdown/DEC-3`
 **Decider:** `cixzhang`, `2026-09-16`
 
-Markdown parses every extension container's inner span itself and validates children against the plugin's declared content shape, so a callout holds real Markdown while heading identity, protected contexts, navigation policy, and Outline scope stay Core-owned. Containers change what a document can express, not which headings have identity: the released top-level traversal shared by heading IDs and Outline is untouched. A failed container renderer shows its children rather than literal source. Ownership rejections name the rule and owner; removal of another plugin's nodes is permitted and only minting, editing, internal reordering, duplication, and identity forgery are not.
+Markdown parses every extension container's inner span itself and validates children against the plugin's declared content shape, so a callout holds real Markdown while heading identity, protected contexts, navigation policy, and Outline scope stay Core-owned. Containers change what a document can express, not which projection owns heading identity: the released top-level traversal remains the default, and any opt-in widening belongs to a separate current module contract. A failed container renderer shows its children rather than literal source. Ownership rejections name the rule and owner; removal of another plugin's nodes is permitted and only minting, editing, internal reordering, duplication, and identity forgery are not.
 
 Markdown also owns the protocol's observability and entry surface: `onPluginDiagnostic` makes every failure visible in production without carrying document content, admission failures degrade instead of throwing at any entrypoint, canonical parse entrypoints and a server-safe parser entry exist beside the released projection, extension types are inferred, and extension output may opt into one theme target without becoming default anatomy.
 
