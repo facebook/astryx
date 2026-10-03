@@ -136,7 +136,8 @@ export const Disabled: Story = {
   render: () => (
     <ClickableCard
       label="Disabled card"
-      onClick={() => {}}
+      href="/settings"
+      target="_blank"
       isDisabled
       width={300}>
       <VStack gap={1}>
@@ -154,35 +155,6 @@ export const Disabled: Story = {
       description: {
         story:
           '`isDisabled` suppresses click, hover, and focus, removes any live link destination, sets `aria-disabled`, and leaves the card out of the tab order.',
-      },
-    },
-  },
-};
-
-export const DisabledNavigation: Story = {
-  name: 'Disabled Navigation',
-  render: () => (
-    <ClickableCard
-      label="Disabled settings card"
-      href="/settings"
-      target="_blank"
-      isDisabled
-      width={300}>
-      <VStack gap={1}>
-        <Text type="body" weight="bold">
-          Settings unavailable
-        </Text>
-        <Text type="supporting" color="secondary">
-          Navigation is disabled
-        </Text>
-      </VStack>
-    </ClickableCard>
-  ),
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'A disabled navigation card keeps its accessible link identity while removing the live destination and leaving the tab order.',
       },
     },
   },
