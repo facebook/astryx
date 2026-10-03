@@ -98,8 +98,8 @@ export const docs = {
     },
     {
       name: 'collapsible',
-      type: 'boolean | { defaultIsCollapsed?: boolean; isCollapsed?: boolean; onCollapsedChange?: (isCollapsed: boolean) => void; hasButton?: boolean; buttonLabel?: string }',
-      description: 'Enables collapse behavior. true for uncontrolled with default toggle button, or an object for controlled mode and advanced config (defaultIsCollapsed, isCollapsed + onCollapsedChange, hasButton, buttonLabel). A controlled config can also be passed to a SideNavCollapseButton rendered outside this SideNav, so both share one state.',
+      type: 'boolean | { defaultIsCollapsed?: boolean; isCollapsed?: boolean; onCollapsedChange?: (isCollapsed: boolean) => void; hasButton?: boolean; buttonLabel?: string; collapsedWidth?: number; isAnimated?: boolean }',
+      description: 'Enables collapse behavior. true for uncontrolled with default toggle button, or an object for controlled mode and advanced config (defaultIsCollapsed, isCollapsed + onCollapsedChange, hasButton, buttonLabel). A controlled config can also be passed to a SideNavCollapseButton rendered outside this SideNav, so both share one state. collapsedWidth sets the collapsed width in px. It defaults to the icon rail, and 0 hides the nav entirely: pair that with an outside SideNavCollapseButton, since the built-in one hides with the nav. A fully hidden nav is made inert, and if focus is inside it when the collapse starts, focus is parked before inert lands on the outside toggle that shares the collapse state of this nav (the same onCollapsedChange, or the same handleRef), else blurred with a dev warning, so it is never silently yanked. isAnimated slides the content out and back in for collapsedWidth: 0; any other width snaps and warns in development. Only transform animates; the box itself snaps in a single reflow, and the icon rail always snaps.',
       default: 'false',
     },
     {
