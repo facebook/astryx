@@ -210,6 +210,19 @@ const styles = stylex.create({
   }),
 });
 
+const MENU_VIEWPORT_BLOCK_GUTTERS = `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px)) - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))`;
+
+// `menuMaxHeight` lifts the 300px cap for a menu that must fit its rows; the
+// viewport still bounds it.
+const dynamicStyles = stylex.create({
+  menuMaxHeight: (maxHeight: string) => ({
+    maxHeight: `min(${maxHeight}, calc(100dvb - ${MENU_VIEWPORT_BLOCK_GUTTERS}))`,
+  }),
+  popoverViewportMaxBlockSize: (maxHeight: string) => ({
+    maxBlockSize: `min(${maxHeight}, calc(100dvb - ${MENU_VIEWPORT_BLOCK_GUTTERS}))`,
+  }),
+});
+
 const bottomSheetStyles = stylex.create({
   content: {
     width: '100%',
@@ -308,6 +321,12 @@ interface DropdownMenuBaseProps extends BaseProps {
    * Defaults to the trigger width.
    */
   menuWidth?: number | string;
+  /**
+   * Maximum menu height in pixels, for a menu that must fit its rows. Lifts
+   * the default 300px cap; the viewport still bounds it. Ignored by
+   * bottom-sheet presentation.
+   */
+  menuMaxHeight?: number;
   onClick?: () => void;
   hasChevron?: boolean;
   /**
@@ -389,6 +408,7 @@ function DropdownMenuBottomSheet({
   items,
   presentation: _presentation,
   menuWidth: _menuWidth,
+  menuMaxHeight: _menuMaxHeight,
   placement: _placement,
   alignment: _alignment,
   className,
@@ -588,6 +608,7 @@ function DropdownMenuPopover({
   isMenuOpen: controlledIsOpen,
   onOpenChange,
   menuWidth,
+  menuMaxHeight,
   onClick,
   hasChevron = true,
   placement = 'below',
@@ -951,6 +972,7 @@ function DropdownMenuPopover({
   // The name a drilled-in view's Back row returns to.
   const menuLabel = typeof button.label === 'string' ? button.label : undefined;
 
+  const resolvedMaxHeight = menuMaxHeight == null ? null : `${menuMaxHeight}px`;
   // Context for compound items
   const contextValue = useMemo<DropdownMenuContextValue>(
     () => ({closeMenu, menuSize, drillIn, menuLabel}),
@@ -1023,6 +1045,8 @@ function DropdownMenuPopover({
             themeProps('dropdown-menu'),
             stylex.props(
               styles.dropdown,
+              resolvedMaxHeight != null &&
+                dynamicStyles.menuMaxHeight(resolvedMaxHeight),
               hasOverflow ? styles.touchPanY : styles.touchNone,
               hasOverflow && styles.scrollable,
               xstyle,
@@ -1040,6 +1064,8 @@ function DropdownMenuPopover({
           offset: spacingVars['--spacing-1'],
           xstyle: [
             styles.popoverViewport,
+            resolvedMaxHeight != null &&
+              dynamicStyles.popoverViewportMaxBlockSize(resolvedMaxHeight),
             alignment === 'center'
               ? isSidePlacement
                 ? styles.popoverViewportBlockCentered
