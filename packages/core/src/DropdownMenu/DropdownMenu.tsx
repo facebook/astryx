@@ -57,6 +57,7 @@ import {
 } from './DropdownMenuContext';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useListFocus} from '../hooks/useListFocus';
+import {useMenuPress} from '../hooks/useMenuPress';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
 import {useMenuOverflow} from './useMenuOverflow';
@@ -106,6 +107,10 @@ const styles = stylex.create({
     // stay owned by the menu. It is an internal focus target, not a control,
     // so suppress the browser ring; keyboard focus moves to an item instead.
     outline: 'none',
+    // Menu rows never offer the browser's held-press link preview or text
+    // selection: a held finger is driving the highlight.
+    WebkitTouchCallout: 'none',
+    userSelect: 'none',
     maxInlineSize: stylex.firstThatWorks(
       MENU_MAX_INLINE_SIZE,
       MENU_MAX_INLINE_SIZE_FALLBACK,
@@ -126,6 +131,16 @@ const styles = stylex.create({
   scrollable: {
     overflowY: 'auto',
     overflowX: 'hidden',
+    overscrollBehavior: 'contain',
+  },
+  // Scroll ownership by the browser's own signal. A menu whose rows fit keeps
+  // every finger: a slide over its rows stays a slide. One that scrolls lets
+  // the browser pan it vertically and cancel the press when it does.
+  touchNone: {
+    touchAction: 'none',
+  },
+  touchPanY: {
+    touchAction: 'pan-y',
     overscrollBehavior: 'contain',
   },
   popoverViewport: {
@@ -615,6 +630,9 @@ function DropdownMenuPopover({
     resetFocusReturn,
   } = useFocusReturnVisibility();
   const contentRef = useRef<HTMLDivElement | null>(null);
+  // The press model is mounted below (it needs the popover); the hide path
+  // above it ends the gesture in flight through this ref.
+  const cancelMenuPressRef = useRef<() => void>(() => {});
 
   // Focus lands somewhere stated when the menu closes. A press outside that
   // landed on a focusable control has already moved focus there; leave it.
@@ -627,6 +645,7 @@ function DropdownMenuPopover({
       suppressControlledRollbackHideRef.current = false;
       return;
     }
+    cancelMenuPressRef.current();
     pendingControlledOpenRef.current = false;
     onOpenChange?.(false);
     if (!isControlled) {
@@ -834,6 +853,17 @@ function DropdownMenuPopover({
     [isControlled, popover],
   );
 
+  // The press model: the row under a release acts, the highlight follows a
+  // held pointer. A mouse released outside the menu dismisses it; a finger
+  // released outside leaves it open, so the hook never calls onDismiss then.
+  const menuPress = useMenuPress({
+    menuRef: listRef,
+    triggerRef: buttonRef,
+    itemSelector: MENU_ITEM_SELECTOR,
+    onDismiss: closeMenu,
+  });
+  cancelMenuPressRef.current = menuPress.cancel;
+
   const handleButtonClick = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
       // detail === 0 marks a synthesized click (screen reader / AT
@@ -977,10 +1007,12 @@ function DropdownMenuPopover({
           // menu (menus-13).
           aria-label={button.label}
           onKeyDown={listKeyDown}
+          {...menuPress.menuProps}
           {...mergeProps(
             themeProps('dropdown-menu'),
             stylex.props(
               styles.dropdown,
+              hasOverflow ? styles.touchPanY : styles.touchNone,
               hasOverflow && styles.scrollable,
               xstyle,
             ),

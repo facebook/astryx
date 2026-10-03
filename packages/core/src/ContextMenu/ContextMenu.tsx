@@ -58,7 +58,9 @@ import {
   MENU_ITEM_SELECTOR,
   MENU_BOUNDARY_SELECTOR,
 } from '../DropdownMenu/menuItemRoles';
+import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
 import {useListFocus} from '../hooks/useListFocus';
+import {useMenuPress} from '../hooks/useMenuPress';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useLongPress} from '../hooks/useLongPress';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
@@ -133,6 +135,15 @@ const styles = stylex.create({
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     userSelect: 'none',
+    WebkitTouchCallout: 'none',
+  },
+  // Scroll ownership by the browser's own signal; see DropdownMenu.
+  touchNone: {
+    touchAction: 'none',
+  },
+  touchPanY: {
+    touchAction: 'pan-y',
+    overscrollBehavior: 'contain',
   },
   popover: {
     minWidth: '160px',
@@ -572,6 +583,22 @@ export function ContextMenu({
   const resolvedMenuContent =
     itemsProp !== undefined ? renderDropdownItems(items) : menuContent;
 
+  const hasOverflow = useMenuOverflow(
+    listRef,
+    resolvedMenuContent,
+    isOpen && !usesBottomSheet,
+  );
+
+  // The press model: the row under a release acts, the highlight follows a
+  // held pointer, a mouse released outside dismisses and a finger leaves the
+  // menu open.
+  const menuPress = useMenuPress({
+    menuRef: listRef,
+    itemSelector: MENU_ITEM_SELECTOR,
+    onDismiss: closeMenu,
+    isEnabled: !usesBottomSheet,
+  });
+
   const renderedMenu = (
     <div
       ref={listRef}
@@ -582,9 +609,15 @@ export function ContextMenu({
       aria-label={label}
       onKeyDown={listKeyDown}
       onContextMenu={e => e.preventDefault()}
+      {...menuPress.menuProps}
       {...mergeProps(
         themeProps('context-menu'),
-        stylex.props(usesBottomSheet ? styles.sheetMenu : styles.menu, xstyle),
+        stylex.props(
+          usesBottomSheet ? styles.sheetMenu : styles.menu,
+          !usesBottomSheet &&
+            (hasOverflow ? styles.touchPanY : styles.touchNone),
+          xstyle,
+        ),
         className,
         style,
       )}>

@@ -40,6 +40,7 @@ export const doc = {
       type: 'string',
       description:
         'Directory to resolve @astryxdesign/core and templates from.',
+      default: 'process.cwd()',
     },
     {
       name: 'options.type',
@@ -69,7 +70,11 @@ export const doc = {
   throws: [
     {
       code: 'ERR_INVALID_ARGUMENT',
-      when: 'options.type is not a known domain, or options.limit is not a positive integer',
+      when: 'a query is given and options.type is not a known domain, or options.limit is not a positive integer',
+    },
+    {
+      code: 'ERR_CORE_NOT_FOUND',
+      when: 'a query is given and @astryxdesign/core cannot be found from cwd',
     },
   ],
   examples: [

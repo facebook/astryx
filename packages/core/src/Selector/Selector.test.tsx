@@ -4396,3 +4396,104 @@ describe('Selector option descriptions and trigger value', () => {
     expect(trigger).not.toHaveTextContent('Anyone at the company can join.');
   });
 });
+
+describe('Selector press model', () => {
+  const touch = {pointerType: 'touch', pointerId: 1};
+  const h = {hidden: true};
+
+  it('a finger release over an option selects it, not the option the press began on', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(<Selector label="Fruit" options={OPTIONS} onChange={onChange} />);
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+
+    const apple = screen.getByRole('option', {name: /Apple/, ...h});
+    const cherry = screen.getByRole('option', {name: /Cherry/, ...h});
+    fireEvent.pointerDown(apple, touch);
+    fireEvent.pointerMove(cherry, touch);
+    // The highlight moves through aria-activedescendant; focus stays put.
+    expect(trigger).toHaveAttribute('aria-activedescendant', cherry.id);
+    expect(cherry).not.toHaveFocus();
+    fireEvent.pointerUp(cherry, touch);
+    // The WebKit tail: a click aimed at the option the touch began on.
+    fireEvent.click(apple, {detail: 1});
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith('Cherry');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('a finger released outside acts on nothing and leaves the list open; a mouse closes it', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(<Selector label="Fruit" options={OPTIONS} onChange={onChange} />);
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+    const apple = screen.getByRole('option', {name: /Apple/, ...h});
+
+    fireEvent.pointerDown(apple, touch);
+    fireEvent.pointerUp(document.body, touch);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.pointerDown(apple, {
+      pointerType: 'mouse',
+      pointerId: 2,
+      button: 0,
+    });
+    fireEvent.pointerUp(document.body, {pointerType: 'mouse', pointerId: 2});
+    expect(onChange).not.toHaveBeenCalled();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('a pointer-driven highlight never scrolls the option into view (the rows would move under the finger)', async () => {
+    const scrollIntoView = vi.fn();
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scrollIntoView;
+    try {
+      const user = userEvent.setup();
+      render(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
+      await user.click(screen.getByRole('combobox'));
+      scrollIntoView.mockClear();
+      const apple = screen.getByRole('option', {name: /Apple/, ...h});
+      const cherry = screen.getByRole('option', {name: /Cherry/, ...h});
+      fireEvent.pointerDown(apple, touch);
+      fireEvent.pointerMove(cherry, touch);
+      expect(screen.getByRole('combobox')).toHaveAttribute(
+        'aria-activedescendant',
+        cherry.id,
+      );
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
+  });
+
+  it('the listbox owns touch scrolling: touch-action none while the options fit', async () => {
+    const user = userEvent.setup();
+    render(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
+    await user.click(screen.getByRole('combobox'));
+    const listbox = screen.getByRole('listbox', h);
+    // jsdom does not compute `touch-action`; StyleX class names hash the
+    // declaration, so the same declaration yields the same class (the dev
+    // build prefixes a debug name; the hash is the last token).
+    const touchStyles = stylex.create({
+      none: {touchAction: 'none'},
+      panY: {touchAction: 'pan-y'},
+    });
+    const hash = (style: stylex.StyleXStyles) =>
+      stylex.props(style).className!.split(' ').pop()!;
+    expect(listbox).toHaveClass(hash(touchStyles.none));
+    expect(listbox).not.toHaveClass(hash(touchStyles.panY));
+  });
+
+  it('marks the listbox as carrying the press model', async () => {
+    const user = userEvent.setup();
+    render(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
+    await user.click(screen.getByRole('combobox'));
+    expect(screen.getByRole('listbox', h)).toHaveAttribute(
+      'data-astryx-menu-press',
+    );
+  });
+});

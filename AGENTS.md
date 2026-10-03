@@ -147,7 +147,7 @@ Documentation lives in two places:
 
 **Update Protocol**: When modifying code, update the file's header comment. Look for `SYNC:` comments as reminders.
 
-**Audience**: every `.doc.mjs`, and everything under `packages/cli/assets/docs/`, is written for people **building with** Astryx — not for people building Astryx. Rubrics, readiness gates, audit checklists and lab→core criteria belong in the wiki. [`packages/cli/assets/docs/README.md`](packages/cli/assets/docs/README.md) has the test and the page each kind of material goes to.
+**Audience**: every `.doc.mjs`, and everything under `packages/cli/assets/docs/`, is written for people **building with** Astryx — not for people building Astryx. Internal review rubrics, readiness gates, audit checklists and lab→core criteria belong in the wiki. A public authoring-quality rubric belongs in shipped docs when callers use it to evaluate an artifact they create through Astryx and a current system spec assigns that ownership. [`packages/cli/assets/docs/README.md`](packages/cli/assets/docs/README.md) has the test and the page each kind of material goes to.
 
 ## Quick Reference
 
@@ -219,10 +219,10 @@ astryx component <Name> --dense # props, variants, usage, anatomy for one compon
 astryx template <name> # emit full page source
 astryx template <name> --skeleton # layout skeleton with spatial annotations
 astryx swizzle <Name> # eject component source for deep customization
-astryx upgrade --apply # run version migration codemods
+astryx upgrade --from <old version> --apply # run version migration codemods
 OPTIONS: --detail compact|brief less output | --dense token-efficient | --zh Chinese
 RULE: always run bootstrap on each branch — docs reflect the branch's actual API
 RULE: always run astryx component <Name> --dense before modifying a component
-RULE: after @astryxdesign/core bump, always run astryx upgrade --apply
+RULE: after @astryxdesign/core bump, always run astryx upgrade --from <old version> --apply
 
 <!-- ASTRYX-CLI:END -->

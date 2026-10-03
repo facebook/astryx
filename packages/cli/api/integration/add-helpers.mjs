@@ -5,7 +5,8 @@
  *
  * Hosts the atomic staged-write transaction, package.json files-array
  * maintenance, package-dir resolution, and project-path normalization that
- * every `integration add <kind>` command needs. Stateless and side-effect-free
+ * every `integration add <kind>` command needs. `theme add` and `theme build`
+ * write through the same transaction. Stateless and side-effect-free
  * outside of {@link applyWrites}.
  */
 
@@ -40,7 +41,7 @@ export function findPackageDir(startDir) {
 /**
  * @typedef {object} WritePlan
  * @property {string} path
- * @property {string} contents
+ * @property {string | Buffer} contents a Buffer is written byte for byte
  * @property {boolean} createOnly
  * @property {Buffer} [expectedOriginal] bytes captured before validation;
  *   a different current file is a concurrent edit and must never be overwritten
@@ -192,21 +193,29 @@ export function packageJsonUpdate(
 
 // ── Atomic staged-write transaction ─────────────────────────────────
 
-/** @param {string} file */
+/**
+ * @param {string} file
+ * @returns {boolean} false when the file is still there
+ */
 function removeTemporary(file) {
   try {
     fs.rmSync(file, {force: true});
+    return true;
   } catch {
     // Best effort. The transaction error remains the actionable failure.
+    return false;
   }
 }
 
 /**
  * Restore writes that already published.  Best-effort so callers preserve
- * the original actionable error.
+ * the original actionable error; returns every path it could not put back.
  * @param {Array<WritePlan & {temporary: string, original: Buffer|null, mode: number}>} published
+ * @returns {string[]}
  */
 function rollbackWrites(published) {
+  /** @type {string[]} */
+  const unrestored = [];
   for (const plan of [...published].reverse()) {
     let restore = null;
     try {
@@ -225,12 +234,18 @@ function rollbackWrites(published) {
         fs.renameSync(restore, plan.path);
         restore = null;
       }
-    } catch {
-      // Best effort. A concurrent edit belongs to its writer, not this rollback.
+    } catch (error) {
+      // A created file that is already gone needs nothing. Any other failure
+      // leaves this call's bytes, or no bytes, where the original was.
+      const gone =
+        error instanceof Error &&
+        /** @type {NodeJS.ErrnoException} */ (error).code === 'ENOENT';
+      if (!(gone && plan.original == null)) unrestored.push(plan.path);
     } finally {
       if (restore != null) removeTemporary(restore);
     }
   }
+  return unrestored;
 }
 
 /** @param {string} file */
@@ -325,10 +340,22 @@ export function applyWrites(plans) {
       }
       published.push(plan);
     }
-    return () => rollbackWrites(published);
+    return () => {
+      rollbackWrites(published);
+    };
   } catch (error) {
-    for (const plan of staged) removeTemporary(plan.temporary);
-    rollbackWrites(published);
+    const leftovers = staged
+      .filter(plan => !removeTemporary(plan.temporary))
+      .map(plan => plan.temporary);
+    const unrestored = rollbackWrites(published);
+    if (error instanceof Error) {
+      if (unrestored.length > 0) {
+        error.message += ` Could not restore: ${unrestored.join(', ')}.`;
+      }
+      if (leftovers.length > 0) {
+        error.message += ` Could not remove temporary files: ${leftovers.join(', ')}.`;
+      }
+    }
     throw error;
   }
 }

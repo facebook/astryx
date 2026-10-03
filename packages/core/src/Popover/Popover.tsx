@@ -33,6 +33,7 @@ import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {InteractiveRoleContext} from '../InteractiveRoleContext/InteractiveRoleContext';
+import type {SpacingStep} from '../utils/types';
 
 // =============================================================================
 // Helpers
@@ -167,6 +168,21 @@ export interface PopoverProps extends Pick<
    * @default 'auto'
    */
   width?: number | string;
+
+  /**
+   * Inner padding of the popover surface, using the spacing scale.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   * Matches the `padding` prop on `Card` and `Stack`.
+   *
+   * Pass `0` for a flush surface when the content owns its own edges — a
+   * list of rows whose hover paint reaches the edge, or a header row with a
+   * bottom rule — and pad the content itself.
+   *
+   * The padding sits on the painted surface (the `popover` theme target), so
+   * a theme's `padding` on that target replaces it rather than nesting.
+   * @default 3
+   */
+  padding?: SpacingStep;
 
   /**
    * Accessible label for the popover dialog.
@@ -310,14 +326,6 @@ const styles = stylex.create({
     overflow: 'auto',
     overscrollBehavior: 'contain',
   },
-  // Content padding, applied to the popup surface so a theme's `padding`
-  // replaces it instead of nesting inside it.
-  contentPadding: {
-    paddingBlockStart: spacingVars['--spacing-3'],
-    paddingBlockEnd: spacingVars['--spacing-3'],
-    paddingInlineStart: spacingVars['--spacing-3'],
-    paddingInlineEnd: spacingVars['--spacing-3'],
-  },
   customWidth: (width: string | number) => ({
     width: typeof width === 'number' ? `${width}px` : width,
   }),
@@ -386,6 +394,7 @@ export function Popover({
   onOpenChange,
   isEnabled = true,
   width,
+  padding = 3,
   label,
   role = 'dialog',
   isModal,
@@ -425,8 +434,10 @@ export function Popover({
     // it is the element the `popover` theme target has to sit on — a target on
     // the content div inside it styles a box that paints nothing.
     surfaceTarget: 'popover',
+    // Surface padding is a usePopover option so it lands on that same box,
+    // where a theme's `padding` replaces it instead of nesting inside it.
+    padding,
     xstyle: [
-      styles.contentPadding,
       styles.surfaceViewportFit,
       hasOverflow && styles.surfaceScrollable,
       xstyle,

@@ -33,8 +33,8 @@ export interface BaseTemplateDoc extends AuthoredDocGraphFields {
    *  replaces for unqualified lookup (find it with
    *  `astryx --json template --list --package @astryxdesign/core`). The Core
    *  original stays selectable with `--package @astryxdesign/core`. Needs
-   *  `@astryxdesign/cli` 0.7.0 or later: earlier CLIs reject the field and
-   *  withhold the package's templates and doc topics. */
+   *  `@astryxdesign/cli` 0.7.0 or later: earlier CLIs reject the field,
+   *  drop that template, and hide the package's doc topics. */
   replaces?: string;
   /** Whether this template is ready for use. Templates with
    *  isReady: false show as "(WIP)" in the gallery and CLI. */

@@ -43,6 +43,7 @@ export const doc = {
       name: 'options.cwd',
       type: 'string',
       description: 'Directory the target path resolves against.',
+      default: 'process.cwd()',
     },
   ],
   returns: [
@@ -64,5 +65,5 @@ export const doc = {
     },
   ],
   command: 'theme template',
-  related: ['themeAdd', 'themeBuild', 'themeList'],
+  related: ['themeAdd', 'themeBuild', 'themeListAvailable', 'themeTargets'],
 };

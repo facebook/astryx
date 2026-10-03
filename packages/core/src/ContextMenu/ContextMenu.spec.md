@@ -77,12 +77,13 @@ presentation policy remain documented in `ContextMenu.doc.mjs`.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                                                                                                                                     | Basis                           | Draft review state                                 |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | -------------------------------------------------- |
-| FR1 | Every render contains a caller-provided Trigger area. Pointer presentation opens a Pointer menu surface at the current local cursor anchor; touch presentation opens a Touch sheet frame containing a Touch menu surface and, for data mode, a Touch action list and Touch action rows. | Current source, docs, and tests | Verified current behavior; no new behavior decided |
-| FR2 | The current `context-menu` target remains on the painted Pointer menu surface and alternative Touch menu surface, not on the Trigger area or cursor anchor.                                                                                                                             | Current source, docs, and tests | Verified current inventory; no target change       |
-| FR3 | Pointer action rows retain DropdownMenu ownership. The touch frame retains BottomSheet ownership, while data-driven touch lists and rows retain List ownership.                                                                                                                         | Current source and owner docs   | Verified current delegation; no ownership change   |
-| FR4 | Compound `menuContent` remains a caller-supplied pointer-menu interior and may also render inside the touch frame; the data-driven touch path instead converts the same item data to List and ListItem presentation.                                                                    | Current source and tests        | Verified current branches; no behavior change      |
+| ID  | Candidate invariant                                                                                                                                                                                                                                                                                                                                                                                              | Basis                                                                        | Draft review state                                 |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------- |
+| FR1 | Every render contains a caller-provided Trigger area. Pointer presentation opens a Pointer menu surface at the current local cursor anchor; touch presentation opens a Touch sheet frame containing a Touch menu surface and, for data mode, a Touch action list and Touch action rows.                                                                                                                          | Current source, docs, and tests                                              | Verified current behavior; no new behavior decided |
+| FR2 | The current `context-menu` target remains on the painted Pointer menu surface and alternative Touch menu surface, not on the Trigger area or cursor anchor.                                                                                                                                                                                                                                                      | Current source, docs, and tests                                              | Verified current inventory; no target change       |
+| FR3 | Pointer action rows retain DropdownMenu ownership. The touch frame retains BottomSheet ownership, while data-driven touch lists and rows retain List ownership.                                                                                                                                                                                                                                                  | Current source and owner docs                                                | Verified current delegation; no ownership change   |
+| FR4 | Compound `menuContent` remains a caller-supplied pointer-menu interior and may also render inside the touch frame; the data-driven touch path instead converts the same item data to List and ListItem presentation.                                                                                                                                                                                             | Current source and tests                                                     | Verified current branches; no behavior change      |
+| FR5 | The Pointer menu surface carries `data-astryx-menu-press` and follows `module:DropdownMenu/useMenuPress` FR1–FR7: the row under the release acts, the highlight follows a held pointer, a mouse released outside closes and a finger leaves the menu open, the stray click never acts, and `touch-action` follows overflow. Right-click, Shift+F10, long-press invocation and keyboard navigation are unchanged. | `module:DropdownMenu/useMenuPress`; `ContextMenu.test.tsx` press model suite | Proposed; verified in jsdom                        |
 
 ### Allowed variation
 
@@ -116,9 +117,10 @@ presentation policy remain documented in `ContextMenu.doc.mjs`.
 
 ## Accessibility contract
 
-This draft does not change or extend ContextMenu's existing menu and dialog
-naming, keyboard invocation, long-press path, focus movement, item semantics, or
-dismissal behavior.
+This draft does not change ContextMenu's menu and dialog naming, keyboard
+invocation, long-press path, keyboard navigation, item semantics, focus
+return, or dismissal ordering. While a pointer is held in the pointer menu,
+the highlight is DOM focus per `module:DropdownMenu/useMenuPress` AR1.
 
 ## Design relationships
 
@@ -189,12 +191,14 @@ anchor is positioning infrastructure rather than consumer anatomy.
 | FR2                 | ContextMenu target tests, source inspection, and theming target inventories                       | Pointer and touch menu surfaces               | Moving `context-menu` to the trigger or removing it from a painted branch fails evidence.          | `audit:ContextMenu/theming`  |
 | FR3                 | ContextMenu, DropdownMenu, BottomSheet, and List owner tests                                      | Pointer rows, touch frame, touch list/rows    | A composed part loses its owner target or is documented as a new ContextMenu target.               | `audit:ContextMenu/theming`  |
 | Layer relationships | `ContextMenu.test.tsx` and current layer/dismissal architecture records                           | Outside click, Escape, context anchor, sheet  | Documentation claims shared dismissal where current source retains local behavior.                 | `audit:ContextMenu/behavior` |
+| FR5                 | `ContextMenu.test.tsx` press model case; `module:DropdownMenu/useMenuPress` map                   | Finger slide across rows, stray click         | A row acting on the press row or the stray click fails.                                            | `audit:ContextMenu/behavior` |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                     | Canonical anatomy and current target          | Missing, extra, prefixed, stale, or unclassified mappings fail repository validation.              | `audit:ContextMenu/theming`  |
 
 ## Decision log
 
-None. This draft records current facts and introduces no component-local design,
-API, theming, modality, or layer-system decision.
+None component-local. The press model decision lives in
+`module:DropdownMenu/useMenuPress`; this record introduces no design,
+theming, or layer-system decision of its own.
 
 ## Open questions
 

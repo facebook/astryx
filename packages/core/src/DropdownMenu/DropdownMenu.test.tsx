@@ -2287,6 +2287,75 @@ describe('DropdownMenu data/compound parity', () => {
   });
 });
 
+describe('DropdownMenu press model', () => {
+  const mouse = {pointerType: 'mouse', pointerId: 1, button: 0};
+  const touch = {pointerType: 'touch', pointerId: 1};
+
+  function renderMenu(onPick: (label: string) => void = () => {}) {
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" onClick={() => onPick('Edit')} />
+        <DropdownMenuItem
+          label="Duplicate"
+          onClick={() => onPick('Duplicate')}
+        />
+        <DropdownMenuItem label="Delete" onClick={() => onPick('Delete')} />
+      </DropdownMenu>,
+    );
+    return screen.getByRole('button', {name: /Actions/});
+  }
+
+  const item = (name: string) =>
+    screen.getByRole('menuitem', {name, hidden: true});
+
+  it('a finger that lands on one row and lifts on another acts on the second, once', async () => {
+    const onPick = vi.fn();
+    const user = userEvent.setup();
+    const trigger = renderMenu(onPick);
+    await user.click(trigger);
+    fireEvent.pointerDown(item('Edit'), touch);
+    fireEvent.pointerMove(item('Delete'), touch);
+    expect(item('Delete')).toHaveFocus();
+    fireEvent.pointerUp(item('Delete'), touch);
+    // The WebKit tail: a click aimed at the row the touch began on.
+    fireEvent.click(item('Edit'), {detail: 1});
+    expect(onPick).toHaveBeenCalledTimes(1);
+    expect(onPick).toHaveBeenCalledWith('Delete');
+  });
+
+  it('a mouse released outside closes the menu; a finger released outside leaves it open', async () => {
+    const user = userEvent.setup();
+    const trigger = renderMenu();
+    await user.click(trigger);
+    fireEvent.pointerDown(item('Edit'), touch);
+    fireEvent.pointerUp(document.body, touch);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.pointerDown(item('Edit'), mouse);
+    fireEvent.pointerUp(document.body, mouse);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('marks the menu as carrying the press model and owns touch scrolling', async () => {
+    const user = userEvent.setup();
+    const trigger = renderMenu();
+    await user.click(trigger);
+    const menu = screen.getByRole('menu', {hidden: true});
+    expect(menu).toHaveAttribute('data-astryx-menu-press');
+    // jsdom does not compute `touch-action`; StyleX class names are a hash of
+    // property and value, so the same declaration yields the same class (the
+    // dev build prefixes a debug name; the hash is the last token).
+    const touchStyles = stylex.create({
+      none: {touchAction: 'none'},
+      panY: {touchAction: 'pan-y'},
+    });
+    const hash = (style: stylex.StyleXStyles) =>
+      stylex.props(style).className!.split(' ').pop()!;
+    expect(menu).toHaveClass(hash(touchStyles.none));
+    expect(menu).not.toHaveClass(hash(touchStyles.panY));
+  });
+});
+
 describe('DropdownMenu focus return after a pointer pick', () => {
   function renderMenu(onPick: (label: string) => void = () => {}) {
     render(

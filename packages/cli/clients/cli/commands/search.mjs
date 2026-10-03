@@ -14,6 +14,7 @@
  *
  * Usage:
  *   astryx search button                 Ranked results across all domains
+ *   astryx search dark mode              Every word is part of the query
  *   astryx search modal --type component Filter to a single domain
  *   astryx search forms --limit 5        Cap the result count
  *   astryx search button --verbose       Also print score / reason
@@ -31,6 +32,7 @@ import {cliError} from '../lib/cli-error.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {search as searchApi} from '../../../api/search/search.mjs';
 import {Project} from '../../../foundation/config/project.mjs';
+import {findCoreDir} from '../../../foundation/fs/paths.mjs';
 import {warnOnIntegrationIssues} from '../../../foundation/integrations/integration-warnings.mjs';
 import {doc as searchCommand} from './search.doc.mjs';
 import {doc as searchFn} from '../../../api/search/search.doc.mjs';
@@ -42,10 +44,13 @@ export function registerSearch(program) {
   defineCommand(program, searchCommand, {
     fn: searchFn,
     action: async (
-      /** @type {string} */ query,
+      /** @type {string[] | string} */ words,
       /** @type {{type?: import('../../../api/search/search.type.mjs').SearchDomain, limit?: string, verbose?: boolean}} */ options,
     ) => {
       const json = program.opts().json || false;
+      // The query is variadic: `astryx search dark mode` is one query, "dark
+      // mode". Taking only the first word dropped the rest without a word.
+      const query = Array.isArray(words) ? words.join(' ') : words;
 
       try {
         const project = await Project.load(process.cwd());
@@ -99,12 +104,25 @@ export function registerSearch(program) {
       // ── Text output ──────────────────────────────────────────────
       const run = getCliInvocation();
       const {query: q, matchCount, results} = result.data;
+      // Outside an app an open search covers the docs alone. Say so, so a
+      // docs-only list does not read as "Astryx has no such component".
+      const note =
+        !options.type && !findCoreDir(process.cwd())
+          ? [
+              text(
+                '@astryxdesign/core is not installed here, so only the docs were searched.',
+              ),
+            ]
+          : [];
 
       // No matches is a valid, successful outcome — clean message, exit 0.
       if (results.length === 0) {
         emit(
           text(`No results for "${q}".`),
-          text(`Try a broader term, or browse: ${run} component --list`),
+          ...note,
+          text(
+            `Try a broader term, or browse: ${run} ${note.length > 0 ? 'docs' : 'component --list'}`,
+          ),
         );
         return answered;
       }
@@ -155,6 +173,7 @@ export function registerSearch(program) {
           fields,
           format: {command: formatCliCommand, parent: formatCliCommand},
         }),
+        ...note,
       );
       return answered;
     },

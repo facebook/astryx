@@ -8,6 +8,7 @@ export const docs = {
   category: 'guide',
   description:
     'How to set up AI coding tools to generate correct component code.',
+  keywords: ['claude', 'cursor', 'codex', 'copilot', 'agents', 'mcp'],
 
   sections: [
     {
@@ -24,7 +25,8 @@ export const docs = {
       ],
     },
     {
-      title: 'Quick Start',
+      id: 'quick-start',
+      title: 'Set up agent docs',
       content: [
         {
           type: 'prose',
@@ -38,7 +40,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: "That's it. The `init --features agents` command generates everything your AI needs (component index, behavioral rules, CLI reference, and package guidance from configured integrations) from the installed project. After a dependency bump, `astryx upgrade` reports a stale block and `astryx upgrade --apply` refreshes it.",
+          text: "That's it. The `init --features agents` command generates everything your AI needs (component index, behavioral rules, CLI reference, and package guidance from configured integrations) from the installed project. After a dependency bump, `astryx upgrade --from <old version>` reports a stale block and adding `--apply` refreshes it.",
         },
         {
           type: 'prose',
@@ -48,10 +50,12 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           label: 'Manual options',
-          code: `npx @astryxdesign/cli init --features agents --agent claude    # .claude/CLAUDE.md
-npx @astryxdesign/cli init --features agents --agent cursor    # .cursorrules
+          code: `npx @astryxdesign/cli init --features agents --agent claude    # CLAUDE.md if present, else .claude/CLAUDE.md
+npx @astryxdesign/cli init --features agents --agent cursor    # .cursorrules if present, else AGENTS.md
 npx @astryxdesign/cli init --features agents --agent codex     # AGENTS.md (Copilot, Codex, etc.)
-npx @astryxdesign/cli init --features agents --agent muse      # AGENTS.md (Muse)`,
+npx @astryxdesign/cli init --features agents --agent hermes    # .hermes.md or HERMES.md if present, else AGENTS.md
+npx @astryxdesign/cli init --features agents --agent muse      # AGENTS.md (Muse)
+npx @astryxdesign/cli init --features agents --agent all       # every agent file present, else AGENTS.md and .claude/CLAUDE.md`,
         },
       ],
     },
@@ -82,14 +86,17 @@ npx @astryxdesign/cli init --features agents --agent muse      # AGENTS.md (Muse
       content: [
         {
           type: 'prose',
-          text: 'Cursor project rules aren\'t always picked up; it selects which rules to apply based on relevance. For reliable inclusion, install the design system context as a User Rule instead. User Rules live at ~/.cursor/rules/ and apply across all projects.',
+          text: 'Cursor reads project rules from `.cursor/rules/`. To keep the Astryx context in a rule of its own, write it there. Give a path relative to the project root, such as `.cursor/rules/astryx.mdc`; an absolute path is refused.',
         },
         {
           type: 'code',
           lang: 'bash',
-          label: 'Install as a Cursor user rule',
-          code: `mkdir -p ~/.cursor/rules
-npx @astryxdesign/cli init --features agents --agent-docs-path ~/.cursor/rules/xds.mdc`,
+          label: 'Install as a Cursor project rule',
+          code: `npx @astryxdesign/cli init --features agents --agent-docs-path .cursor/rules/astryx.mdc`,
+        },
+        {
+          type: 'prose',
+          text: 'Rerunning the same command rewrites only the Astryx block, so frontmatter you add above it (such as `alwaysApply: true`) stays.',
         },
       ],
     },
@@ -98,7 +105,7 @@ npx @astryxdesign/cli init --features agents --agent-docs-path ~/.cursor/rules/x
       content: [
         {
           type: 'prose',
-          text: 'Paste this into your AI before writing any component code. These three questions have a 0% pass rate without docs; models confidently guess wrong on all of them. If your AI can\'t answer them, it\'ll know to install the agent docs first.',
+          text: 'Paste this into your AI before writing any component code. If your AI can\'t answer these questions, it\'ll know to install the agent docs first.',
         },
         {
           type: 'code',
@@ -107,7 +114,7 @@ npx @astryxdesign/cli init --features agents --agent-docs-path ~/.cursor/rules/x
           code: `Before writing any Astryx code, check your knowledge:
 
 1. What is the correct import path for Button?
-2. How do you make an Dialog non-dismissible?
+2. How do you make a Dialog non-dismissible?
 3. What prop does Selector use for its items?
 
 If you don't know all three, run \`npx @astryxdesign/cli init --features agents\` to generate agent docs, then read the generated file.`,
@@ -131,33 +138,34 @@ If you don't know all three, run \`npx @astryxdesign/cli init --features agents\
         },
         {
           type: 'prose',
-          text: 'With this alias, agents use `astryx component --list` instead of guessing the binary path. The `--` separator is standard npm convention for passing flags to scripts.',
+          text: 'With this alias, agents run `npm run astryx -- component --list` instead of guessing the binary path. The `--` separator is standard npm convention for passing flags to scripts.',
         },
         {
           type: 'code',
           lang: 'bash',
           label: 'Reliable CLI invocation',
-          code: `astryx component --list
-astryx component Dialog --dense
-astryx docs styling --dense
-astryx docs tokens --dense`,
+          code: `npm run astryx -- component --list
+npm run astryx -- component Dialog --dense
+npm run astryx -- docs styling --full --detail brief
+npm run astryx -- docs tokens --dense`,
         },
       ],
     },
     {
-      title: 'The --dense Flag',
+      id: 'the-dense-flag',
+      title: 'Shorter output: --detail and --dense',
       content: [
         {
           type: 'prose',
-          text: 'Every CLI command supports --dense, which outputs a token-efficient format designed for AI context windows. Use it when pasting CLI output into a web-based AI tool like ChatGPT or Claude.',
+          text: 'For a shorter read, add `--detail brief` (one line per section) or `--detail compact`. `--dense` swaps in a shorter text where a doc ships one. Use them when pasting CLI output into a web-based AI tool like ChatGPT or Claude.',
         },
         {
           type: 'code',
           lang: 'bash',
-          label: 'Dense output for pasting into AI conversations',
-          code: `astryx component Dialog --dense
-astryx docs styling --dense
-astryx docs tokens --dense`,
+          label: 'Short output for pasting into AI conversations',
+          code: `astryx docs styling --full --detail brief
+astryx component Dialog --detail compact
+astryx docs principles --dense`,
         },
       ],
     },
