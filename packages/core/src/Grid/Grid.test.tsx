@@ -10,7 +10,12 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
+import {readFileSync} from 'node:fs';
+import path from 'node:path';
+import {transformSync} from '@babel/core';
+import stylexBabelPlugin from '@stylexjs/babel-plugin';
 import {render, screen} from '@testing-library/react';
+import {renderToString} from 'react-dom/server';
 import {Grid} from './Grid';
 import {GridSpan} from './GridSpan';
 
@@ -26,7 +31,7 @@ function templateColumns(el: HTMLElement): string {
 }
 
 describe('Grid', () => {
-  it('renders with fixed columns', () => {
+  it('treats numeric columns as "at most N" with a 12rem floor (GRID-1)', () => {
     render(
       <Grid columns={3} data-testid="grid">
         <div>Item 1</div>
@@ -36,7 +41,145 @@ describe('Grid', () => {
     );
     const grid = screen.getByTestId('grid');
     expect(grid).toBeInTheDocument();
-    expect(templateColumns(grid)).toBe('repeat(3, 1fr)');
+    // Never the literal repeat(3, 1fr): that squeezes three columns into a
+    // 390px phone. Capped auto-fill keeps 3 columns while each can stay
+    // >= 12rem and drops to fewer (one full-width column) when narrower.
+    expect(templateColumns(grid)).toBe(
+      'repeat(auto-fill, minmax(min(100%, max(12rem, calc(100% / 3))), 1fr))',
+    );
+  });
+
+  it('includes the gap in the numeric column cap', () => {
+    render(
+      <Grid columns={2} gap={4} data-testid="grid">
+        <div>Item 1</div>
+      </Grid>,
+    );
+    expect(templateColumns(screen.getByTestId('grid'))).toBe(
+      'repeat(auto-fill, minmax(min(100%, max(12rem, calc((100% - 1 * var(--spacing-4)) / 2))), 1fr))',
+    );
+  });
+
+  it('keeps columns={1} as the released single track', () => {
+    render(
+      <Grid columns={1} data-testid="grid">
+        <div>Item 1</div>
+      </Grid>,
+    );
+    expect(templateColumns(screen.getByTestId('grid'))).toBe('repeat(1, 1fr)');
+  });
+
+  it('keeps the released fixed track list with {count, isFixed: true}', () => {
+    render(
+      <Grid columns={{count: 7, isFixed: true}} data-testid="grid">
+        <div>Mon</div>
+      </Grid>,
+    );
+    const grid = screen.getByTestId('grid');
+    // Exactly what columns={7} produced before it meant "at most 7".
+    expect(templateColumns(grid)).toBe('repeat(7, 1fr)');
+    expect(grid).toHaveClass('astryx-grid');
+    expect(grid).toHaveAttribute('data-columns', '7');
+  });
+
+  it('keeps a fixed grid exact with gap set (no floor, no cap)', () => {
+    render(
+      <Grid columns={{count: 2, isFixed: true}} gap={4} data-testid="grid">
+        <div>A</div>
+      </Grid>,
+    );
+    expect(templateColumns(screen.getByTestId('grid'))).toBe('repeat(2, 1fr)');
+  });
+
+  it('treats {count, isFixed: false} like the numeric form', () => {
+    render(
+      <Grid columns={{count: 4, isFixed: false}} data-testid="grid">
+        <div>A</div>
+      </Grid>,
+    );
+    expect(templateColumns(screen.getByTestId('grid'))).toBe(
+      'repeat(auto-fill, minmax(min(100%, max(12rem, calc(100% / 4))), 1fr))',
+    );
+  });
+
+  it('server-renders the final track list and span placement (no client measurement)', () => {
+    // The column count is resolved by CSS from the container width, so the
+    // server HTML already carries the phone-safe template: no hook, effect,
+    // or media query decides it after hydration.
+    const html = renderToString(
+      <Grid columns={3} gap={4}>
+        <GridSpan columns={2}>Wide</GridSpan>
+        <div>Item</div>
+      </Grid>,
+    );
+    expect(html).toContain(
+      'repeat(auto-fill, minmax(min(100%, max(12rem, calc((100% - 2 * var(--spacing-4)) / 3))), 1fr))',
+    );
+    expect(html).toContain('span 2');
+    expect(html).not.toContain('grid-column:span 2');
+  });
+
+  it('rejects mixing the fixed-count and minWidth shapes at the type level', () => {
+    // Checked by `tsc` (tests are in the typecheck project); rendering proves
+    // the valid shapes still compile and mount.
+    const valid = [
+      <Grid key="a" columns={{count: 3, isFixed: true}} />,
+      <Grid key="b" columns={{count: 3}} />,
+      <Grid key="c" columns={{minWidth: 200, max: 3}} />,
+    ];
+    // @ts-expect-error count and minWidth are separate column models
+    const mixedCount = <Grid columns={{count: 3, minWidth: 200}} />;
+    // @ts-expect-error isFixed only applies to the count shape
+    const mixedMinWidth = <Grid columns={{minWidth: 200, isFixed: true}} />;
+    render(<>{valid}</>);
+    expect(mixedCount).toBeTruthy();
+    expect(mixedMinWidth).toBeTruthy();
+  });
+
+  it('marks only numeric "at most N" grids as span fallback hosts', () => {
+    const {rerender} = render(
+      <Grid columns={3} data-testid="grid">
+        <div>A</div>
+      </Grid>,
+    );
+    const cappedClass = screen.getByTestId('grid').className;
+    expect(cappedClass).toContain('baseStyles.capped');
+
+    for (const columns of [
+      {count: 3, isFixed: true} as const,
+      {minWidth: 200, max: 3},
+      1,
+      undefined,
+    ]) {
+      rerender(
+        <Grid columns={columns} data-testid="grid">
+          <div>A</div>
+        </Grid>,
+      );
+      expect(screen.getByTestId('grid').className).not.toContain(
+        'baseStyles.capped',
+      );
+    }
+  });
+
+  it('treats {count} without isFixed like the numeric form', () => {
+    render(
+      <Grid columns={{count: 3}} data-testid="grid">
+        <div>Item 1</div>
+      </Grid>,
+    );
+    expect(templateColumns(screen.getByTestId('grid'))).toBe(
+      'repeat(auto-fill, minmax(min(100%, max(12rem, calc(100% / 3))), 1fr))',
+    );
+  });
+
+  it('falls back to 1fr when {count} is not positive', () => {
+    render(
+      <Grid columns={{count: 0, isFixed: true}} data-testid="grid">
+        <div>Item 1</div>
+      </Grid>,
+    );
+    expect(templateColumns(screen.getByTestId('grid'))).toBe('1fr');
   });
 
   it('does not write grid-template-columns as a raw inline style (regression: inline style defeats xstyle/@media overrides)', () => {
@@ -50,7 +193,7 @@ describe('Grid', () => {
     // as a raw inline property — inline would beat any consumer override.
     expect(grid.style.gridTemplateColumns).toBe('');
     expect(grid.style.gridAutoRows).toBe('');
-    expect(templateColumns(grid)).toBe('repeat(3, 1fr)');
+    expect(templateColumns(grid)).toContain('repeat(auto-fill');
     expect(grid.style.getPropertyValue('--x-gridAutoRows')).toBe('80px');
   });
 
@@ -391,6 +534,12 @@ describe('Grid', () => {
 });
 
 describe('GridSpan', () => {
+  // A numeric span is a per-element variable read by a class-level
+  // grid-column declaration, so the declaration can change inside the
+  // parent grid's container query.
+  const spanVar = (el: HTMLElement) =>
+    el.style.getPropertyValue('--x---_grid-span');
+
   it('spans correct number of columns', () => {
     render(
       <Grid columns={4}>
@@ -400,7 +549,9 @@ describe('GridSpan', () => {
       </Grid>,
     );
     const span = screen.getByTestId('span');
-    expect(span.style.gridColumn).toBe('span 2');
+    expect(span.style.gridColumn).toBe('');
+    expect(spanVar(span)).toBe('span 2');
+    expect(span.className).toContain('narrowStyles.2');
   });
 
   it('spans full width with columns="full"', () => {
@@ -436,8 +587,105 @@ describe('GridSpan', () => {
       </Grid>,
     );
     const span = screen.getByTestId('span');
-    expect(span.style.gridColumn).toBe('span 2');
+    expect(spanVar(span)).toBe('span 2');
     expect(span.style.gridRow).toBe('span 2');
+  });
+
+  it('uses the plain span class for spans outside 2..12', () => {
+    render(
+      <Grid columns={3}>
+        <GridSpan columns={1} data-testid="one">
+          One
+        </GridSpan>
+        <GridSpan columns={13} data-testid="thirteen">
+          Thirteen
+        </GridSpan>
+      </Grid>,
+    );
+    expect(spanVar(screen.getByTestId('one'))).toBe('span 1');
+    expect(screen.getByTestId('one').className).toContain('narrowStyles.1');
+    expect(spanVar(screen.getByTestId('thirteen'))).toBe('span 13');
+    expect(screen.getByTestId('thirteen').className).toContain(
+      'narrowStyles.1',
+    );
+  });
+
+  it('lets a caller style override the span (inline wins over the class)', () => {
+    render(
+      <Grid columns={3}>
+        <GridSpan columns={2} style={{gridColumn: '2 / 4'}} data-testid="span">
+          Placed
+        </GridSpan>
+      </Grid>,
+    );
+    expect(screen.getByTestId('span').style.gridColumn).toBe('2 / 4');
+  });
+
+  it('falls back to a full row only inside a numeric grid that is too narrow for the span', () => {
+    const repoRoot = path.resolve(__dirname, '../../../..');
+    const compile = (file: string) => {
+      const src = path.resolve(__dirname, file);
+      const result = transformSync(readFileSync(src, 'utf8'), {
+        babelrc: false,
+        configFile: false,
+        filename: src,
+        presets: [
+          ['@babel/preset-typescript', {isTSX: true, allExtensions: true}],
+          ['@babel/preset-react', {runtime: 'automatic'}],
+        ],
+        plugins: [
+          [
+            stylexBabelPlugin,
+            {
+              dev: false,
+              runtimeInjection: false,
+              unstable_moduleResolution: {type: 'commonJS', rootDir: repoRoot},
+            },
+          ],
+        ],
+      });
+      return (
+        (result?.metadata as {stylex?: [string, {ltr: string}, number][]})
+          ?.stylex ?? []
+      ).map(([, {ltr}]) => ltr);
+    };
+
+    const spanRules = compile('GridSpan.tsx');
+    // span N needs N × 12rem + (N − 1) gaps at the largest step (2.5rem)
+    for (const [span, width] of [
+      [2, '26.5rem'],
+      [3, '41rem'],
+      [12, '171.5rem'],
+    ] as const) {
+      expect(spanRules, `span ${span}`).toContainEqual(
+        expect.stringMatching(
+          new RegExp(
+            `^@container astryx-grid \\(width < ${width.replace('.', '\\.')}\\)\\{.*grid-column:var\\(--_grid-span-narrow,var\\(--_grid-span\\)\\)`,
+          ),
+        ),
+      );
+    }
+    expect(spanRules).toContainEqual(
+      expect.stringContaining('{grid-column:var(--_grid-span)}'),
+    );
+
+    const gridRules = compile('Grid.tsx');
+    // Every grid clears the fallback; only an "at most N" grid sets it, and
+    // only one with a GridSpan child becomes a size container.
+    expect(gridRules).toContainEqual(
+      expect.stringContaining('{--_grid-span-narrow:initial}'),
+    );
+    expect(gridRules).toContainEqual(
+      expect.stringContaining('{--_grid-span-narrow:1 / -1}'),
+    );
+    expect(gridRules).toContainEqual(
+      expect.stringMatching(
+        /:has\(> \.astryx-grid-span\)\{container-type:inline-size\}/,
+      ),
+    );
+    expect(gridRules).toContainEqual(
+      expect.stringContaining('{container-name:astryx-grid}'),
+    );
   });
 
   it('renders without span props', () => {

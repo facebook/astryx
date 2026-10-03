@@ -56,7 +56,7 @@ const meta: Meta<typeof Grid> = {
     columns: {
       control: 'object',
       description:
-        'Column configuration: number for fixed columns, or {minWidth, max?, repeat?} for responsive',
+        'Column configuration: number for at most N columns, {count, isFixed: true} for exactly N, or {minWidth, max?, repeat?} for responsive',
     },
     gap: {
       control: 'select',
@@ -127,7 +127,7 @@ export const FixedColumns: Story = {
         <Text type="supporting" xstyle={styles.sectionLabel}>
           2 Columns
         </Text>
-        <Grid columns={2} gap={4}>
+        <Grid columns={{count: 2, isFixed: true}} gap={4}>
           <GridItem>Item 1</GridItem>
           <GridItem>Item 2</GridItem>
           <GridItem>Item 3</GridItem>
@@ -138,7 +138,7 @@ export const FixedColumns: Story = {
         <Text type="supporting" xstyle={styles.sectionLabel}>
           4 Columns
         </Text>
-        <Grid columns={4} gap={4}>
+        <Grid columns={{count: 4, isFixed: true}} gap={4}>
           <GridItem>Item 1</GridItem>
           <GridItem>Item 2</GridItem>
           <GridItem>Item 3</GridItem>
@@ -174,7 +174,6 @@ export const ResponsiveAutoFit: Story = {
       </div>
       <div {...stylex.props(styles.container)}>
         <Text type="supporting" xstyle={styles.sectionLabel}>
-          
           Same grid with 6 items; looks fine because items fill the tracks
         </Text>
         <Grid columns={{minWidth: 200}} gap={4}>
@@ -434,5 +433,91 @@ export const DashboardLayout: Story = {
         </GridSpan>
       </Grid>
     </Section>
+  ),
+};
+
+const atMostStyles = stylex.create({
+  frames: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+    gap: spacingVars['--spacing-6'],
+  },
+  frame: {
+    boxSizing: 'border-box',
+    padding: spacingVars['--spacing-4'],
+    backgroundColor: colorVars['--color-background-surface'],
+    borderRadius: radiusVars['--radius-element'],
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-4'],
+  },
+  frame390: {width: 390},
+  frame768: {width: 768},
+  frame1200: {width: 1200},
+});
+
+const STATS = [
+  {label: 'Active users', value: '12,480'},
+  {label: 'Conversion', value: '4.2%'},
+  {label: 'Revenue', value: '$84,210'},
+  {label: 'Churn', value: '1.8%'},
+];
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+const AtMostFrame = ({width}: {width: 390 | 768 | 1200}) => (
+  <div
+    {...stylex.props(
+      atMostStyles.frame,
+      width === 390
+        ? atMostStyles.frame390
+        : width === 768
+          ? atMostStyles.frame768
+          : atMostStyles.frame1200,
+    )}>
+    <Text type="supporting">{width}px frame</Text>
+    <Grid columns={4} gap={4}>
+      {STATS.map(stat => (
+        <Card key={stat.label} padding={4}>
+          <VStack gap={1}>
+            <Text type="supporting" color="secondary">
+              {stat.label}
+            </Text>
+            <Text type="body" weight="semibold">
+              {stat.value}
+            </Text>
+          </VStack>
+        </Card>
+      ))}
+    </Grid>
+    <Grid columns={3} gap={4}>
+      <GridSpan columns={2}>
+        <FeaturedItem>Chart (span 2)</FeaturedItem>
+      </GridSpan>
+      <GridItem>Side</GridItem>
+    </Grid>
+    <Grid columns={{count: 7, isFixed: true}} gap={1}>
+      {DAYS.map(day => (
+        <GridItem key={day}>{day}</GridItem>
+      ))}
+    </Grid>
+  </div>
+);
+
+/**
+ * `columns={N}` means at most N columns (each at least 12rem wide): the stat
+ * tiles show 4 across at 1200px, fewer at 768px, and one per row at 390px. A
+ * GridSpan in a numeric grid takes the full row once the grid has fewer
+ * columns than it spans. The week row uses `{count: 7, isFixed: true}` and
+ * stays 7 across in every frame.
+ */
+export const AtMostNColumns: Story = {
+  name: 'At most N columns — 390 / 768 / 1200',
+  render: () => (
+    <div {...stylex.props(atMostStyles.frames)}>
+      <AtMostFrame width={390} />
+      <AtMostFrame width={768} />
+      <AtMostFrame width={1200} />
+    </div>
   ),
 };
