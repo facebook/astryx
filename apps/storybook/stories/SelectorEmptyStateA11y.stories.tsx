@@ -76,6 +76,7 @@ export const DeferredEmptyResult: StoryObj = {
           options={loaded ? OPTIONS : []}
           onChange={() => {}}
           hasSearch
+          isDefaultOpen
           isLoading={!loaded}
           emptySearchText="Nothing like that here"
         />

@@ -84,8 +84,12 @@ test('stays silent while loading, then announces when the load lands empty', asy
   );
   await page.locator('[data-empty-scenario="deferred"]').waitFor();
 
-  await page.getByRole('button', {name: 'Fruit'}).click();
-  await page.getByRole('combobox').fill('zzzzz');
+  // The panel opens with the story (`isDefaultOpen`), matching the jsdom
+  // fixture: the scenario is a fetch landing into an already-open panel, and
+  // opening it by click first is a different sequence.
+  const search = page.getByRole('combobox');
+  await expect(search).toBeVisible();
+  await search.fill('zzzzz');
 
   // The panel deliberately shows nothing while loading, so the one channel
   // the screen has gone quiet for stays quiet too.
