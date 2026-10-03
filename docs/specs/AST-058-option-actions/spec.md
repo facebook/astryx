@@ -42,7 +42,7 @@ review_triggers: [public-api, accessibility, behavior]
 | Behavior                | A popup whose options carry no action is the listbox it is today. Once any declared option carries one, the popup is a grid: each option is a row with two cells, the option and its action (FR2, FR3, DEC-2, DEC-3). Up/Down move rows; the inline-end arrow reaches the action; Enter activates it; pointer and touch press it directly (FR4, FR5). Activating an action never changes the selection (FR4). The action is always visible (FR8).                                                                       |
 | End-user impact         | A person picking a label can also edit it from the same panel, with a mouse, a finger, a keyboard, or a screen reader, and pressing Edit never also toggles the label. Today the only place a product can put that control fires the option too and is invalid for assistive technology.                                                                                                                                                                                                                                |
 | Builder impact          | One optional key on the option object holding the caller's own control — an `IconButton`, a `Button`, a menu trigger, anything with an accessible name. No new type, no render prop, no guard code for rows without one. Nothing changes for a caller who declares none.                                                                                                                                                                                                                                                |
-| Compatibility/readiness | Additive. Every current picker renders exactly as before; the grid exists only when a caller declares an action (DEC-5, decided). Authority: `draft`, `approved_by` `null`. No owner questions are open.                                                                                                                                                                                                                                                                                                                |
+| Compatibility/readiness | Additive. Every current picker renders exactly as before; the grid exists only when a caller declares an action (DEC-5). Authority: `draft`, `approved_by` `null`. No owner questions are open.                                                                                                                                                                                                                                                                                                                         |
 | Review checks           | Reject a control rendered inside `role="option"`; a `role="none"` or `role="group"` wrapper standing between a listbox and a control; a host that inspects, clones, or wraps the `action` node; a host-owned type or component for an action; an array-typed `action`; a popup whose role follows the filtered view rather than the declared options; a row with any number of cells other than two; an action reachable only by pointer; a Tab stop added inside the popup; a hover-revealed or swipe-revealed action. |
 | Governing rules         | [`spec:AST-002`](../AST-002/spec.md) FR1, FR4, FR15, FR16, `DEC-1`, `DEC-6`; [`architecture:public-component-api`](../../architecture/public-component-api.md) INV1, INV2, INV3, INV9; [`architecture:interaction-modality`](../../architecture/interaction-modality.md) INV4, INV7; [`spec:AST-056`](../AST-056/spec.md) AR1 for the empty state's announcement; `component:DropdownMenu` for the item-data vocabulary this record reuses.                                                                             |
 
@@ -69,12 +69,6 @@ inside the open popup; nothing here touches the collapsed trigger, whose
 own controls (clear, chevron, status) keep their current contracts. The combobox contract is kept, the keyboard path exists without a
 second surface, and no caller writes guard code for rows that have none.
 
-The trigger is [#6828](https://github.com/facebook/astryx/pull/6828), which
-proposes a `renderOptionAction` render prop on `MultiSelector`. The owner's
-direction on reading it: the need is real, the listbox is the wrong host, and
-the capability belongs to the shared option type so that `Selector`,
-`MultiSelector`, and the typeahead family receive it together.
-
 ## Ownership boundary
 
 **Owns**
@@ -93,7 +87,7 @@ the capability belongs to the shared option type so that `Selector`,
 
 **Why no existing record can hold it**
 
-- `spec:AST-057` (drafted in [#6908](https://github.com/facebook/astryx/pull/6908)) owns a touch gesture that
+- `spec:AST-057` owns a touch gesture that
   accelerates verbs a host already shows. Its FR9 and DEC-4 keep `Item`
   unchanged and exclude `option` rows from its `reveal` model by their own
   text. This record is the always-visible control in a selection widget —
@@ -101,8 +95,8 @@ the capability belongs to the shared option type so that `Selector`,
 - `component:Selector` is `current` and `component:MultiSelector` is
   `draft`; `SelectorOptionData` is one type shared by both, and a key on it
   belongs to neither alone (`architecture:knowledge-contracts` INV2).
-  `component:MultiSelector` drafts #6828's shape as its FR9 / DEC-2; that
-  claim is withdrawn in favour of this record.
+  `component:MultiSelector`'s draft claim about a per-row action (its FR9 /
+  DEC-2) is withdrawn in favour of this record.
 - `component:BaseTypeahead`, `component:Typeahead`, and
   `component:Tokenizer` are `draft` and render from `SearchableItem`, a
   second vocabulary. One rule binding two vocabularies across five components
@@ -165,7 +159,7 @@ Read from `packages/core/src` at this record's base commit.
 | `Selector.tsx` and `MultiSelector.tsx` — the divider is `aria-hidden`, the empty state is `role="presentation"`, the section heading sits `aria-hidden` inside a `role="group"` | Three workarounds, each commented "`role="listbox"` only permits option/group children". A grid's rule is different: rows and row groups, with hidden children excluded as before — so the divider and empty state keep working and the section wrapper must change role (FR7). |
 | `BaseTypeahead.tsx` — the empty state is `role="option" aria-disabled="true"`                                                                                                   | A fourth, divergent workaround: the "nothing matched" message is itself a disabled option. In a grid that element is an invalid child, and `spec:AST-056` AR1 already asks the announcement to carry what was rendered (FR7).                                                   |
 | `Selector.tsx` — `aria-haspopup` is `'listbox'`, or `'dialog'` for the bottom sheet; `BaseTypeahead.tsx` omits it (the combobox default is `listbox`)                           | The popup's role is already advertised per presentation. A grid popup needs `'grid'` advertised the same way (FR2).                                                                                                                                                             |
-| `MultiSelector.tsx` — the select-all row is a sentinel option rendered through the same row renderer; #6829's create row is a `role="option"`                                   | System-minted rows exist and will exist. They are rows like any other, with an empty action cell (FR3).                                                                                                                                                                         |
+| `MultiSelector.tsx` — the select-all row is a sentinel option rendered through the same row renderer; a create row for a query that matched nothing is an `option`              | System-minted rows exist and will exist. They are rows like any other, with an empty action cell (FR3).                                                                                                                                                                         |
 | `hooks/useGridFocus.ts` — `columns: number`, fixed; rows and columns computed over every cell in DOM order; `Calendar` consumes it                                              | The repository's grid model moves vertically by a fixed column count. Two cells per row, always, is the shape that model walks without a counting pass (DEC-3).                                                                                                                 |
 | `Selector.tsx` — Tab from the search input reaches the clear control inside the popover "keeping the popup open"                                                                | The only sequential stop inside a picker panel today, and it is the component's own. Actions add none (FR5, AR3).                                                                                                                                                               |
 | `SideNav/SideNavItem.tsx` — `actions?: ReactNode`; `Item.endContent` doc: "badges, metadata, timestamps, or action buttons"                                                     | Rows already take their controls as a node the caller renders and the row only places. `action` here is that convention, singular because the cell holds one (DEC-1, DEC-3).                                                                                                    |
@@ -192,7 +186,7 @@ how the action column is sized, and which hook walks the grid.
 | FR1 | An option carries its secondary control as `action?: ReactNode`, one node. The key has the same name and the same type on `SelectorOptionData` and on `SearchableItem`. The caller renders the control and owns its name, its handler, its disabled state, and its appearance; a caller with several verbs renders one menu trigger whose popup owns the rest. The host renders the node where FR3 says and MUST NOT inspect, clone, or wrap it to decide anything; checking that it is present (FR2) is not inspection. No host-owned type or component for an action exists. | DEC-1, DEC-3, DEC-4; `SideNavItem.actions`, `Item.endContent`; `architecture:public-component-api` INV2, INV3 | Proposed; no evidence on `main`                      |
 | FR2 | A popup is a listbox until a render in which any declared option — at any depth of sections, before any query filters it — carries an `action` that is not `null` or `undefined`; from that render it is a grid and stays a grid while the component is mounted. The control that owns the popup advertises the role in force through `aria-haspopup` (`grid`; the bottom sheet keeps `dialog`). A popup whose role followed the filtered view, or switched back, is a defect.                                                                                                 | DEC-2, DEC-5; `spec:AST-002` FR8, FR15                                                                        | Proposed                                             |
 | FR3 | In a grid, each option is one `role="row"` carrying the option's id, `aria-selected`, and `aria-disabled`, with exactly two `gridcell` children for every row: the first holds everything the option renders today — selection mark or checkbox, icon, label, description, `renderOption` output — and the second holds its `action` node, empty when it declares none. Rows the component mints (select-all, a create row) are rows of the same shape with an empty action cell. No row has one cell or three.                                                                | DEC-2, DEC-3; `useGridFocus` fixed columns                                                                    | Proposed                                             |
-| FR4 | Activating an action runs the caller's own handler and nothing else: the selection does not change, the highlighted row does not change on its account, and the panel neither closes nor re-filters. Pressing the option cell selects or toggles exactly as it does today. An option's `disabled` governs its selection only; whether an action is disabled is the caller's control's own state, and the host does not read it.                                                                                                                                                | `spec:AST-002` FR16, DEC-6; the user need in #6828                                                            | Proposed                                             |
+| FR4 | Activating an action runs the caller's own handler and nothing else: the selection does not change, the highlighted row does not change on its account, and the panel neither closes nor re-filters. Pressing the option cell selects or toggles exactly as it does today. An option's `disabled` governs its selection only; whether an action is disabled is the caller's control's own state, and the host does not read it.                                                                                                                                                | `spec:AST-002` FR16, DEC-6                                                                                    | Proposed                                             |
 | FR5 | Up and Down move the highlight between rows as today, landing on the option cell; the inline-end arrow moves it from the option cell to the row's action cell, and the inline-start arrow moves it back, so the keys follow visual direction under RTL. Enter or Space on the option cell selects as today; Enter or Space on the action cell activates the control there. Typing to jump, Home, End, PageUp, PageDown, Escape and Tab keep their current meanings. No action control is in the sequential tab order.                                                          | APG combobox with grid popup; `useGridFocus` RTL handling; `component:Selector` keys                          | Proposed                                             |
 | FR6 | `aria-activedescendant` on the element that holds focus — the trigger, the search input, or the bottom-sheet panel — references the row while the highlight is on the option cell, and the action's control while it is on the action cell. It never references an element the person cannot act on.                                                                                                                                                                                                                                                                           | AR3; current `aria-activedescendant` wiring in all three hosts                                                | Proposed                                             |
 | FR7 | In a grid, a section is a `rowgroup` named by its title, with its heading hidden as today. Dividers and the "nothing matched" message stay out of the accessibility tree, as `Selector` and `MultiSelector` already keep them; `BaseTypeahead`'s message, an `option` today, becomes presentational in every mode and is announced as `spec:AST-056` AR1 requires. The popover and the bottom sheet render the same tree.                                                                                                                                                      | ARIA grid required owned elements; `spec:AST-056` AR1                                                         | Proposed; the `BaseTypeahead` message diverges today |
@@ -248,13 +242,10 @@ how the action column is sized, and which hook walks the grid.
   concepts citing this record when adoption lands; `component:MultiSelector`,
   `component:BaseTypeahead`, `component:Typeahead`, and `component:Tokenizer`
   (`draft`) cite it rather than copying it. `component:MultiSelector`'s FR9 /
-  DEC-2 — #6828's wrapper — is withdrawn in favour of FR3 and AR1 here.
-- [#6828](https://github.com/facebook/astryx/pull/6828) is superseded in
-  shape: the need it names is served by FR1–FR8, and its render prop, its
-  wrapper, and its positioned column are each ruled out in DEC-1 and DEC-2.
-- [#6829](https://github.com/facebook/astryx/pull/6829)'s create row is a
-  system-minted row under FR3 whenever the panel is a grid; its own contract
-  is `spec:AST-056` DEC-3 and is not changed here.
+  DEC-2 is withdrawn in favour of FR3 and AR1 here.
+- A create row for a query that matched nothing is a system-minted row
+  under FR3 whenever the popup is a grid; its own contract is
+  `spec:AST-056` DEC-3 and is not changed here.
 - `architecture:public-component-api` gains `spec:AST-058` in its
   `deciding_specs` when this record becomes `current`; no invariant changes.
 - `architecture:interaction-modality` is read, not changed; AR3 applies its
@@ -291,14 +282,13 @@ govern review, and names no implementation.
 
 ## Decision log
 
-DEC-1 and DEC-5 record the owner's direction of 2026-10-02; the others are
-**proposed**. `approved_by` is `null` and the record is `draft` until the
-owner approves it as a whole.
+`approved_by` is `null` and the record is `draft` until the owner approves
+it as a whole.
 
 ### DEC-1 — The action is one node on the option, because the host only places it
 
 **Reference:** `spec:AST-058/DEC-1`
-**Decider:** `cixzhang`, `2026-10-02` (direction; record pending)
+**Decider:** `cixzhang`, `<pending>`
 
 `action?: ReactNode` on the option, rendered by the caller.
 
@@ -340,12 +330,12 @@ holds one focusable control.
 A shape test of four candidate shapes with isolated builders, given the
 behavior and no prop names, reached a declared array of
 `{label, icon, onClick}` on every recall probe and rejected a render prop
-unprompted. That measured what builders expect; the owner chose a single
-node because of what the component needs. Both are real, and a key on the
-option is what the two agree on. The report is held by the owner outside the
-repository.
+unprompted. That measures what builders expect; the node is what the
+component needs, since it renders nothing of the control itself. A key on
+the option is what the two agree on. The report is held by the owner outside
+the repository.
 
-Rejected: a render prop on the host (`renderOptionAction`, #6828) — a host
+Rejected: a render prop on the host — a host
 cannot tell "no actions anywhere" from "a function returning `null` for
 every row" without calling it for every row, so it cannot know its own
 structure, and the caller ends up guarding it. Rejected: a declared
@@ -369,13 +359,12 @@ trigger and the search input already fulfil — `aria-haspopup="grid"`,
 for free: Up and Down move rows as before, the inline-end arrow reaches the
 action. No second surface, no hidden panel, no Tab stop.
 
-Rejected: a `role="none"` wrapper around the option and its control (#6828's
-first shape) — `none` reparents its children to the nearest exposed
+Rejected: a `role="none"` wrapper around the option and its control —
+`none` reparents its children to the nearest exposed
 ancestor, so the control lands directly inside the listbox and fails the same
 required-children rule, the rule `MultiSelector`'s own source cites twice for
 its divider and its empty state. Rejected: an absolutely positioned column of
-controls outside the listbox, each at its row's measured offset (#6828's
-second shape) — valid, but it trades a structural fix for a position-sync
+controls outside the listbox, each at its row's measured offset — valid, but it trades a structural fix for a position-sync
 loop against resize, reflow, and virtualized mounts.
 
 ### DEC-3 — Two fixed cells per row
@@ -430,7 +419,7 @@ whose rows arrive asynchronously.
 ### DEC-5 — The grid is conditional: detection reads the declared options and latches
 
 **Reference:** `spec:AST-058/DEC-5`
-**Decider:** `cixzhang`, `2026-10-02` (direction; record pending)
+**Decider:** `cixzhang`, `<pending>`
 
 A host decides its role from the options it was given, before any query
 filters them: any option, at any depth of sections, whose `action` is not
@@ -453,10 +442,8 @@ changes role as a caller filters would be worse than either mode.
 
 ## Open questions
 
-None. The one question this record carried — how many controls a cell may
-hold before within-cell movement is specified — was answered by the owner on
-2026-10-02 with the type itself: the cell holds one node (DEC-1, DEC-3), and
-within-cell movement stays outside this record's scope.
+None. How many controls a cell may hold is answered by the type: one node
+(DEC-1, DEC-3). Within-cell movement is outside this record's scope.
 
 ## Content boundary
 
