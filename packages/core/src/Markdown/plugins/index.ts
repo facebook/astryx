@@ -29,6 +29,8 @@ export type {
 } from './sourceDecoration';
 export {createMarkdownFrontmatter} from './frontmatter';
 export {markdownSoftBreaksPlugin} from './softBreaks';
+export {createMarkdownHeadingLinks} from './headingLinks';
+export type {MarkdownHeadingLinksOptions} from './headingLinks';
 export type {
   MarkdownFrontmatter,
   MarkdownFrontmatterOptions,

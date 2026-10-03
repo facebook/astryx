@@ -17,6 +17,7 @@ import {
 } from './index';
 import {
   createMarkdownFenceTransform,
+  createMarkdownHeadingLinks,
   createMarkdownPlugin,
   createMarkdownTextTransform,
   isMarkdownExtensionNode,
@@ -25,6 +26,7 @@ import {
 import type {
   MarkdownExtensionNode,
   MarkdownFenceTransformOptions,
+  MarkdownHeadingLinksOptions,
   MarkdownPluginEntry,
   MarkdownSyntaxPluginDefinition,
   MarkdownTransform,
@@ -198,9 +200,17 @@ describe('Markdown public parser types', () => {
       },
     } satisfies MarkdownSyntaxPluginDefinition<'public-demo', PublicNode>;
     const plugin = createMarkdownPlugin<'public-demo', PublicNode>(definition);
+    const headingLinksOptions: MarkdownHeadingLinksOptions = {
+      headingIdPrefix: 'article',
+    };
+    const headingLinks = createMarkdownHeadingLinks(headingLinksOptions);
     const nodes = parseInline('plain', {plugins: [plugin] as const});
 
     expectTypeOf(nodes).toEqualTypeOf<InlineNode<PublicNode>[]>();
+    expectTypeOf(headingLinks).toEqualTypeOf<MarkdownPluginEntry<never>>();
+    expectTypeOf(createMarkdownHeadingLinks)
+      .parameter(0)
+      .toEqualTypeOf<MarkdownHeadingLinksOptions | undefined>();
     expectTypeOf(visitMarkdownNodes).toBeFunction();
     expectTypeOf(createMarkdownTextTransform).toBeFunction();
     expectTypeOf(markdownSoftBreaksPlugin).toEqualTypeOf<

@@ -3,12 +3,12 @@ schema_version: 4
 template_version: 1
 kind: system-spec
 id: spec:AST-057
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
-phase: proposed
+approved_by: cixzhang
+approved_at: 2026-10-03
+phase: accepted
 owners: [cixzhang]
 affects_architecture:
   [architecture:interaction-modality, architecture:public-component-api]
