@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-09-29
+approved_at: 2026-10-02
 phase: accepted
 owners: [cixzhang, josephfarina]
 affects_architecture:
@@ -81,7 +81,13 @@ affects_consumer_docs: [release-process, templates]
       "FR42",
       "FR43",
       "FR44",
-      "FR45"
+      "FR45",
+      "FR46",
+      "FR47",
+      "FR48",
+      "FR49",
+      "FR50",
+      "DEC-15"
     ]
   }
 }
@@ -107,6 +113,10 @@ For CLI controls, keep every supported behavior discoverable and put each contro
 the narrowest surface that owns it. Global controls require evidence that their value
 and meaning are global. Cross-cutting guarantees must be complete, observable, and
 independent for each invocation.
+
+Admission is part of that contract. Main is heading for a patch unless an owner has
+scheduled a minor, and incompatible work waits for that schedule. A release does not
+change shape because one removal merged ahead of the decision to allow it.
 
 ## Non-goals
 
@@ -524,6 +534,47 @@ independent for each invocation.
   schemas remain contractual under FR3 and FR13. Template identifiers, slugs, display
   names, and names are outside this requirement and remain governed separately by FR9,
   FR11, and applicable registry identity contracts.
+- **FR46 — Main targets a patch by default.** Between releases, main is heading
+  for the next patch of the version its published packages already share. That
+  default needs no file, no ceremony, and no per-change approval: it is simply
+  what main is for, and the overwhelming majority of work ships under it.
+- **FR47 — A minor is scheduled explicitly, by an owner, before its work
+  lands.** Main targets a minor only while a release owner has said so in the
+  repository, naming the version and the day it is scheduled for. That statement
+  is the only thing that switches the mode. Pending Changesets MUST NOT switch
+  it: a `[breaking]` entry waiting to merge is the work the mode governs, never
+  evidence for it, and treating it as evidence would let the release retarget
+  itself. The order is fixed — schedule the minor, then land the breaking work.
+- **FR48 — While main targets a patch, incompatible work is refused.** A
+  Changeset carrying the `[breaking]` category, or the `planned-removal` or
+  `incompatible-fix` classification of FR42, is inadmissible and MUST be
+  rejected before merge. The admissible route is FR28's replacement-first
+  deprecation: ship the working replacement, keep old usage equivalent, take the
+  patch bump, and let the removal land once a minor is scheduled. This gate
+  decides patch-versus-minor admission and nothing else; the lifecycle
+  conditions of FR28, FR31, FR32, and FR37, and every review and release
+  requirement outside this record, continue to apply on their own terms and are
+  neither restated nor enforced here.
+- **FR49 — The schedule fails closed.** A target statement admits incompatible
+  work only when it can be read with certainty and still applies. It is refused
+  when it is malformed or carries anything beyond the version and the date; when
+  its version is not the minor successor of the version the published packages
+  share, so that the schedule and the repository disagree; when its scheduled
+  day has passed, so that a forgotten statement cannot hold the mode open
+  indefinitely; and when the published packages do not all carry one identical
+  `MAJOR.MINOR.PATCH` version, so that there is no base to check it against. A
+  prerelease or canary identifier is publication metadata and is never that
+  base. In each case main stays on its patch default rather than inheriting a
+  mode from an input nobody can trust.
+- **FR50 — Returning to a patch target is ordinary cleanup.** Once the scheduled
+  minor has shipped, removing the target statement is part of the normal
+  post-release setup that readies main for the next release, alongside consuming
+  the Changesets. No separate approval is needed to go back to the default, and
+  FR49's expiry means a statement left behind stops admitting work on its own.
+  A rejection names the version main is targeting and both ways forward —
+  deprecate now under FR28 and keep the patch, or schedule the minor under
+  FR47 — and names no particular version, surface, or contributor as a special
+  case, so a contributor who has never read this spec can act on it.
 
 ### Platform support
 
@@ -582,7 +633,10 @@ than restating them:
   [`scripts/check-changesets.mjs`](../../../scripts/check-changesets.mjs), and
   [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml) implement fixed
   grouping, declaration validation, and checks. Their current behavior is not policy
-  when it differs from this spec.
+  when it differs from this spec. The `fixed` group in that config is why one
+  incompatible Changeset moves every published package, and `check-changesets.mjs`
+  is where the FR48 admission gate and its FR50 message belong; neither file may
+  narrow or widen the rule it implements.
 
 The direct current owner decides the intended product contract. This spec decides how
 that contract may change in a stable release. The public Release Process decides how
@@ -606,6 +660,15 @@ lifecycle around it:
 - documentation catalog display names and routes remain mutable data while the stable
   `docs` command and machine-readable schemas stay contractual; and
 - exact-main release comparison rejects unclassified deltas.
+
+This amendment adds the admission gate those lifecycle rules were missing. FR31 and
+FR37 already require an owner-approved plan before a removal ships, but they are
+evaluated by the release owner at freeze, and nothing evaluated them when a
+`[breaking]` Changeset merged into main. Because the fixed group publishes as one
+version, a single such Changeset moves the whole release to a minor. FR46–FR50 make
+the patch the default, require a minor to be scheduled before its breaking work
+lands, and otherwise change nothing: the gate answers patch-versus-minor admission
+only, and adds no per-change record, manifest, or approval path.
 
 These are specification changes only. They do not alter a published package and need
 no Changeset. Authoring helpers, validators, manifests, compatibility snapshots,
@@ -632,6 +695,10 @@ they land, maintainers apply these requirements in review and release approval.
 | FR36–FR40 | Minor plan, locked final-patch receipt, three-way delta classification, and separated release notes                                                | ordinary cadence, immediate pair, cleanup, release metadata, pre/post-lock compatible fix                                                              | Cadence becomes eligibility, the final patch is recut for bookkeeping, a feature or incompatible fix enters the incidental-fix lane, or release notes merge cleanup with fixes                                 |
 | FR41–FR44 | Schema validation, PR declaration, semantic stable/base/head comparisons, exact-main gate, and immutable publish/rollback receipt                  | duplicate ids, missing evidence, route/schema removal, old-client metadata, partial publish, safe rollback                                             | A label passes without semantics, a delta maps zero or multiple times, fixed-group membership drifts, or a release rebuilds under one identity                                                                 |
 | FR45      | Docs route inventory, repository-reference checks, and Changeset review                                                                            | catalog entry rename, former-route miss, stable command and JSON schema                                                                                | Catalog routing is frozen as API, or a rename silently changes the contractual command or response schema                                                                                                      |
+| FR46–FR47 | Admission tests pairing the default mode and an explicit scheduled minor with each Changeset category                                              | no target statement, a scheduled minor, a pending `[breaking]` entry with no statement                                                                 | A pending Changeset switches the mode by itself, or the default requires a file to be the default                                                                                                              |
+| FR48      | Category and classification admission under each mode                                                                                              | patch default with `[breaking]`, patch default with a deprecation, scheduled minor with `[breaking]`                                                   | Incompatible work passes under the patch default, or a deprecation is refused under it                                                                                                                         |
+| FR49      | Malformed, inconsistent, expired, and mixed-version target fixtures                                                                                | unknown field, non-semver version, version that is not the minor successor, past scheduled day, disagreeing published versions, canary identifier      | An untrustworthy statement grants the minor mode, or a past schedule still admits work                                                                                                                         |
+| FR50      | Removal of the statement, and message assertions on the rejection text                                                                             | statement removed after the minor ships, rejection under the patch default                                                                             | Returning to the default needs its own approval, or the refusal omits the target or either remedy                                                                                                              |
 
 ## Decision log
 
@@ -901,6 +968,42 @@ contracts.
 Rejected: treating every route-shaped positional value as stable CLI API. That would
 freeze documentation organization rather than protect the command and schema
 contracts readers and automation rely on.
+
+### DEC-15 — A minor is scheduled before its breaking work lands
+
+**Reference:** `spec:AST-017/DEC-15`
+**Decider:** `cixzhang`, `2026-10-02`
+
+Main targets a patch by default, and incompatible work is refused while it does. A
+minor becomes admissible only after a release owner schedules it in the repository,
+naming the version and the day. Scheduling comes first; the breaking work follows.
+
+The order is the whole point. The publishable packages are a fixed group, so one
+`[breaking]` Changeset moves every package to a new minor. If a pending Changeset
+could establish the mode that admits it, the release would retarget itself and the
+owner would learn the shape of the release from a merge. Requiring the schedule first
+puts that decision back where it belongs, and makes an accidental breaking merge
+impossible rather than merely discouraged.
+
+Deliberately small. The statement carries a version and a date and nothing else: no
+list of Changesets, no lifecycle ids, no per-change manifest, no second approval
+path. This gate answers one question — is main on a patch or a scheduled minor — and
+leaves every other requirement where it already lives. FR28's deprecation lifecycle,
+FR31's cleanup mapping, FR37's release planning, and ordinary spec and code review
+continue to apply on their own terms; none of them is restated or enforced here.
+
+Rejected: deriving the mode from the pending Changesets. It reads as elegant — the
+bumps already imply a version — but it is circular, because the entry being judged
+would be its own authorization.
+
+Rejected: a per-change authorization record enumerating each approved removal with
+cleanup and lifecycle ids. It answers a question this gate is not asking, and it buys
+accuracy at the cost of bureaucracy on every breaking change, when a scheduled day is
+enough to stop the accident this exists to stop.
+
+Rejected: leaving the schedule open-ended. A statement with no date would outlive its
+release and quietly keep main in minor mode. Expiry makes a forgotten statement fail
+back to the patch default instead of silently widening what may land.
 
 ## Open questions
 

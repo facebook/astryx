@@ -275,6 +275,7 @@ export const NoHeader: Story = {
     code: `const greeting = "Hello, world!";
 console.log(greeting);`,
     language: 'typescript',
+    hasLanguageLabel: false,
     hasCopyButton: true,
   },
 };

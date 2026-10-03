@@ -35,6 +35,10 @@ export const docs = {
   category: 'guide',
       content: [
         {
+          type: 'prose',
+          text: 'Eight rules that keep app code on-system.',
+        },
+        {
           type: 'list',
           style: 'ordered',
           items: [
@@ -68,6 +72,10 @@ export const docs = {
       title: 'Anti-Patterns',
   category: 'guide',
       content: [
+        {
+          type: 'prose',
+          text: 'Patterns that break theming, routing, or layout, and what to use instead.',
+        },
         {
           type: 'list',
           style: 'dont',

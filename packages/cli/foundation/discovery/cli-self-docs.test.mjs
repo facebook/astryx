@@ -315,6 +315,26 @@ describe('cliDocSection', () => {
     ]);
   });
 
+  it('marks required parameters and adds a Default column when a parameter has a default', () => {
+    const beta = fn('beta', {
+      params: [
+        {name: 'slug', type: 'string', description: 'The slug.', required: true},
+        {name: 'options.limit', type: 'number', description: 'How many.', default: '20'},
+      ],
+    });
+    const table = cliDocSection(beta, indexOf([beta])).content.find(
+      (/** @type {any} */ block) => block.type === 'table',
+    );
+    expect(table).toEqual({
+      type: 'table',
+      headers: ['Parameter', 'Type', 'Default', 'Description'],
+      rows: [
+        ['`slug` (required)', '`string`', '', 'The slug.'],
+        ['`options.limit`', '`number`', '20', 'How many.'],
+      ],
+    });
+  });
+
   it('renders an API function, an enum, and a schema', () => {
     const alpha = fn('alpha', {
       description: 'Longer.',

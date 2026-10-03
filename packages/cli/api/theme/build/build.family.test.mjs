@@ -251,23 +251,18 @@ describe('themeBuildFamily()', () => {
     const dir = makeDir();
     const files = writeFamily(dir);
     const outputDir = path.join(dir, 'themes');
-    const blockedTmp = path.join(
-      outputDir,
-      `${FAMILY_KEY}.js.${process.pid}.tmp`,
-    );
-    fs.mkdirSync(blockedTmp);
+    // A directory where the JS output goes fails its staging after the CSS
+    // output was already staged.
+    fs.mkdirSync(path.join(outputDir, `${FAMILY_KEY}.js`));
 
     await expect(build(dir, files)).rejects.toThrow(
       /Failed to write theme outputs/,
     );
-    for (const output of OUTPUTS) {
-      expect(fs.existsSync(path.join(outputDir, output))).toBe(false);
-    }
+    expect(fs.existsSync(path.join(outputDir, `${FAMILY_KEY}.css`))).toBe(false);
+    expect(fs.existsSync(path.join(outputDir, `${FAMILY_KEY}.d.ts`))).toBe(false);
     expect(
-      fs.existsSync(
-        path.join(outputDir, `${FAMILY_KEY}.css.${process.pid}.tmp`),
-      ),
-    ).toBe(false);
+      fs.readdirSync(outputDir).filter(name => name.includes('.tmp-')),
+    ).toEqual([]);
   });
 
   it('rejects invalid graphs and keys before touching an existing trio', async () => {

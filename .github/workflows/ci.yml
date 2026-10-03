@@ -9,18 +9,34 @@ name: CI
 
 on:
   pull_request:
-    branches: ['main']
+    branches: ['main', 'release/**']
   merge_group:
   # Explicit release checks and baseline capture share the canonical owners.
   # Reviewed captures are committed through a normal pull request.
   workflow_dispatch:
     inputs:
       operation:
-        description: 'Check exact main for release or capture a baseline candidate'
+        description: 'Check the marked release branch or capture a main baseline candidate'
         type: choice
         options: [capture, release-check]
         default: capture
         required: true
+      release-branch:
+        description: 'Marked release/vX.Y.Z branch; required for release-check'
+        type: string
+        required: false
+      release-version:
+        description: 'Exact X.Y.Z version recorded by the active marker; required for release-check'
+        type: string
+        required: false
+      expected-head:
+        description: 'Exact full release branch SHA; required for release-check'
+        type: string
+        required: false
+      plan-digest:
+        description: 'Exact SHA-256 digest recorded by the active marker; required for release-check'
+        type: string
+        required: false
 
 permissions: {}
 
@@ -51,24 +67,61 @@ jobs:
       docsite_only: ${{ steps.scope.outputs.docsite_only }}
       spec_only: ${{ steps.scope.outputs.spec_only }}
       tooling_only: ${{ steps.scope.outputs.tooling_only }}
+      release_bump: ${{ steps.scope.outputs.release_bump }}
+      release_branch: ${{ steps.release-authority.outputs.branch }}
+      release_head: ${{ steps.release-authority.outputs.head }}
+      release_plan_digest: ${{ steps.release-authority.outputs.planDigest }}
     steps:
-      - name: Require exact current main for release
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/github-script@v9
-        with:
-          script: |
-            if (context.ref !== 'refs/heads/main') {
-              throw new Error('Release checks must be dispatched from main.');
-            }
-            const {data} = await github.rest.git.getRef({...context.repo, ref: 'heads/main'});
-            if (data.object.sha !== context.sha) {
-              throw new Error('Main changed since dispatch; dispatch release-check again.');
-            }
-
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
-          fetch-depth: 50
+          fetch-depth: 0
+
+      - name: Fetch active release refs
+        if: >-
+          (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check') ||
+          (github.event_name == 'pull_request' && startsWith(github.base_ref, 'release/v'))
+        run: git fetch origin '+refs/heads/release/v*:refs/remotes/origin/release/v*'
+
+      - name: Validate active release authority
+        id: release-authority
+        if: >-
+          (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check') ||
+          (github.event_name == 'pull_request' && startsWith(github.base_ref, 'release/v'))
+        env:
+          RELEASE_BRANCH: ${{ github.event_name == 'workflow_dispatch' && inputs['release-branch'] || github.base_ref }}
+          RELEASE_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs['release-version'] || '' }}
+          EXPECTED_HEAD: ${{ github.event_name == 'workflow_dispatch' && inputs['expected-head'] || github.event.pull_request.head.sha }}
+          PLAN_DIGEST: ${{ github.event_name == 'workflow_dispatch' && inputs['plan-digest'] || '' }}
+          RECEIPT_HEAD: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.pull_request.head.sha }}
+          REF_NAME: ${{ github.event_name == 'workflow_dispatch' && github.ref_name || github.base_ref }}
+          MODE: ${{ github.event_name == 'workflow_dispatch' && 'check' || 'pr' }}
+        run: |
+          set -eu
+          TRUSTED_POLICY="$RUNNER_TEMP/release-policy"
+          mkdir -p "$TRUSTED_POLICY/scripts/release" "$TRUSTED_POLICY/scripts/lib"
+          git show "origin/$RELEASE_BRANCH:scripts/release/active-release.mjs" \
+            > "$TRUSTED_POLICY/scripts/release/active-release.mjs"
+          git show "origin/$RELEASE_BRANCH:scripts/lib/workspace-globs.mjs" \
+            > "$TRUSTED_POLICY/scripts/lib/workspace-globs.mjs"
+          VALIDATOR="$TRUSTED_POLICY/scripts/release/active-release.mjs"
+          ACTIVE_BRANCHES=$(node "$VALIDATOR" list-active --root "$GITHUB_WORKSPACE")
+          ARGS=(
+            validate
+            --root "$GITHUB_WORKSPACE"
+            --mode "$MODE"
+            --release-branch "$RELEASE_BRANCH"
+            --expected-head "$EXPECTED_HEAD"
+            --checkout-sha "$RECEIPT_HEAD"
+            --ref-name "$REF_NAME"
+            --active-branches "$ACTIVE_BRANCHES"
+          )
+          if [ "$MODE" = check ]; then
+            ARGS+=(--release-version "$RELEASE_VERSION" --plan-digest "$PLAN_DIGEST")
+            REMOTE_HEAD=$(git ls-remote origin "refs/heads/$RELEASE_BRANCH" | awk '{print $1}')
+            ARGS+=(--remote-head "$REMOTE_HEAD")
+          fi
+          node "$VALIDATOR" "${ARGS[@]}"
 
       - name: Fetch base branch
         if: github.event_name == 'pull_request'
@@ -76,16 +129,26 @@ jobs:
 
       - name: Determine change scope
         id: scope
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
-            printf 'docsite_only=false\nspec_only=false\ntooling_only=false\n' >> "$GITHUB_OUTPUT"
+          if [ "$EVENT_NAME" != pull_request ]; then
+            printf 'docsite_only=false\nspec_only=false\ntooling_only=false\nrelease_bump=false\n' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ "$BASE_REF" == release/v* ]]; then
+            # Release bump PRs contain generated bookkeeping only. The final
+            # branch head receives one full visual/a11y/RTL release-check.
+            printf 'docsite_only=false\nspec_only=true\ntooling_only=true\nrelease_bump=true\n' >> "$GITHUB_OUTPUT"
             exit 0
           fi
           MERGE_BASE=$(git merge-base HEAD origin/${{ github.base_ref }} 2>/dev/null || echo "")
           if [ -z "$MERGE_BASE" ]; then
-            printf 'docsite_only=false\nspec_only=false\ntooling_only=false\n' >> "$GITHUB_OUTPUT"
+            printf 'docsite_only=false\nspec_only=false\ntooling_only=false\nrelease_bump=false\n' >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          echo 'release_bump=false' >> "$GITHUB_OUTPUT"
           CLASSIFIER_ROOT="$RUNNER_TEMP/change-scope"
           CLASSIFIER_DIR="$CLASSIFIER_ROOT/.github/scripts"
           REGISTRY_DIR="$CLASSIFIER_ROOT/scripts"
@@ -104,10 +167,164 @@ jobs:
             printf 'docsite_only=false\nspec_only=false\ntooling_only=false\n' \
               >> "$GITHUB_OUTPUT"
           fi
+  # Generated-only version PR lane. It validates release bookkeeping in a few
+  # minutes; the merged branch head receives one full visual/a11y/RTL projection.
+  release-bump:
+    needs: [check-scope]
+    if: ${{ github.event_name == 'pull_request' && needs.check-scope.outputs.release_bump == 'true' }}
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Fetch release refs, base, and trusted release policy
+        run: |
+          git fetch origin '+refs/heads/release/v*:refs/remotes/origin/release/v*'
+          git fetch origin "${{ github.base_ref }}" --depth=50
+          TRUSTED_POLICY="$RUNNER_TEMP/release-policy"
+          mkdir -p "$TRUSTED_POLICY/scripts/release" "$TRUSTED_POLICY/scripts/lib"
+          git show "origin/${{ github.base_ref }}:scripts/release/active-release.mjs" \
+            > "$TRUSTED_POLICY/scripts/release/active-release.mjs"
+          git show "origin/${{ github.base_ref }}:scripts/lib/workspace-globs.mjs" \
+            > "$TRUSTED_POLICY/scripts/lib/workspace-globs.mjs"
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+
+      - name: Require generated-only release bookkeeping
+        run: |
+          node "$RUNNER_TEMP/release-policy/scripts/release/active-release.mjs" validate-diff \
+            --root "$GITHUB_WORKSPACE" \
+            --base "origin/${{ github.base_ref }}" \
+            --head "${{ github.event.pull_request.head.sha }}"
+
+      - name: Validate branch, head, plan, versions, and Changeset consumption
+        run: |
+          set -eu
+          VALIDATOR="$RUNNER_TEMP/release-policy/scripts/release/active-release.mjs"
+          ACTIVE_BRANCHES=$(node "$VALIDATOR" list-active --root "$GITHUB_WORKSPACE")
+          node "$VALIDATOR" validate \
+            --root "$GITHUB_WORKSPACE" \
+            --mode pr \
+            --release-branch "${{ github.base_ref }}" \
+            --expected-head "${{ github.event.pull_request.head.sha }}" \
+            --checkout-sha "${{ github.event.pull_request.head.sha }}" \
+            --ref-name "${{ github.base_ref }}" \
+            --active-branches "$ACTIVE_BRANCHES" \
+            | tee release-bump-receipt.json
+
+      - name: Validate generated changelogs and codemods
+        run: |
+          pnpm check:changesets
+          node scripts/format-changelogs.mjs --check
+          VERSION=$(node -p "require('./.release/active.json').version")
+          pnpm exec vitest run \
+            "packages/cli/assets/codemods/transforms/v${VERSION}/__tests__" \
+            packages/cli/assets/codemods/__tests__/registry.test.mjs
+
+      - name: Upload exact-head release bump receipt
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-bump-receipt-${{ github.event.pull_request.head.sha }}
+          path: release-bump-receipt.json
+          retention-days: 30
+
+  release-sync:
+    name: release-sync
+    if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout sync candidate
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Detect and require the release-sync branch contract
+        id: release-sync-scope
+        env:
+          SYNC_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -eu
+          git fetch origin main
+          BASE_VERSION=$(git show origin/main:packages/core/package.json | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s).version))")
+          HEAD_VERSION=$(node -p "require('./packages/core/package.json').version")
+          case "$SYNC_BRANCH" in
+            chore/sync-v*-to-main)
+              VERSION=${SYNC_BRANCH#chore/sync-v}
+              VERSION=${VERSION%-to-main}
+              printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'
+              test "$HEAD_VERSION" = "$VERSION"
+              echo 'required=true' >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              if [ "$HEAD_VERSION" != "$BASE_VERSION" ]; then
+                echo 'A stable package-version change on main must use chore/sync-vX.Y.Z-to-main and pass release-sync.'
+                exit 1
+              fi
+              echo 'required=false' >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+      - name: Fetch release authority and trusted validator
+        if: steps.release-sync-scope.outputs.required == 'true'
+        run: |
+          set -eu
+          git fetch origin main 'refs/tags/v*:refs/tags/v*' '+refs/heads/release/v*:refs/remotes/origin/release/v*'
+          TRUSTED_POLICY="$RUNNER_TEMP/release-policy"
+          mkdir -p "$TRUSTED_POLICY/scripts/release" "$TRUSTED_POLICY/scripts/lib"
+          git show origin/main:scripts/release/active-release.mjs \
+            > "$TRUSTED_POLICY/scripts/release/active-release.mjs"
+          git show origin/main:scripts/lib/workspace-globs.mjs \
+            > "$TRUSTED_POLICY/scripts/lib/workspace-globs.mjs"
+
+      - name: Validate published bytes and consumed-only Changeset sync
+        if: steps.release-sync-scope.outputs.required == 'true'
+        env:
+          SYNC_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -eu
+          VERSION=${SYNC_BRANCH#chore/sync-v}
+          VERSION=${VERSION%-to-main}
+          printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'
+          VALIDATOR="$RUNNER_TEMP/release-policy/scripts/release/active-release.mjs"
+          ACTIVE_BRANCHES=$(node "$VALIDATOR" list-active --root "$GITHUB_WORKSPACE")
+          node "$VALIDATOR" validate-sync \
+            --root "$GITHUB_WORKSPACE" \
+            --base origin/main \
+            --release-ref "v$VERSION" \
+            --active-branches "$ACTIVE_BRANCHES"
+
+      - name: Setup Node and pnpm for published-byte verification
+        if: steps.release-sync-scope.outputs.required == 'true'
+        uses: ./.github/actions/setup
+        with:
+          install: 'false'
+
+      - name: Verify immutable tag package bytes match npm
+        if: steps.release-sync-scope.outputs.required == 'true'
+        env:
+          SYNC_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -eu
+          VERSION=${SYNC_BRANCH#chore/sync-v}
+          VERSION=${VERSION%-to-main}
+          TAG_ROOT="$RUNNER_TEMP/release-tag"
+          git worktree add --detach "$TAG_ROOT" "v$VERSION"
+          cd "$TAG_ROOT"
+          pnpm install --frozen-lockfile
+          pnpm build
+          node scripts/release/verify-published.mjs --version "$VERSION"
+
   # Required docsite owner: data tests plus the production browser contract.
   docsite-test:
     needs: [check-scope, docsite-browser]
-    if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() }}
+    if: ${{ github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.release_bump != 'true' && always() && !cancelled() }}
     runs-on: 2-core-ubuntu-arm
     permissions:
       contents: read
@@ -924,6 +1141,21 @@ jobs:
       # the blocking job that runs whenever components change.
       - name: Run story play guard
         run: node .github/scripts/story-play-guard.js --storybook-dir apps/storybook/dist
+
+      # The empty-state announcement is a live-region claim: what a screen
+      # reader receives when a search dead-ends, and that the message element
+      # stays presentational so `role="listbox"` keeps only option/group
+      # children. jsdom proves the wiring; only a real engine shows the
+      # accessibility tree that results, and this contract is cheap enough to
+      # run on every PR rather than waiting for the release matrix. Its own
+      # --output directory so a later audit run cannot clear it, and it cannot
+      # clear theirs (Playwright wipes the default directory per run).
+      - name: Run empty-state announcement contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Selector/__tests__/EmptyStateAnnouncement.a11y.chromium.spec.ts \
+            --project chromium \
+            --output empty-state-announcement-output
 
       # ChatMessageBubble is nested under the shared Chat source directory, so
       # the generic stable-visual owner cannot select its dedicated fixture.
@@ -1767,10 +1999,13 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Require complete exact-main release checks
+      - name: Require complete exact-head release branch checks
         uses: actions/github-script@v9
         env:
           RELEASE_NEEDS: ${{ toJSON(needs) }}
+          RELEASE_BRANCH: ${{ inputs['release-branch'] }}
+          EXPECTED_HEAD: ${{ inputs['expected-head'] }}
+          PLAN_DIGEST: ${{ needs.check-scope.outputs.release_plan_digest }}
         with:
           script: |
             const needs = JSON.parse(process.env.RELEASE_NEEDS);
@@ -1779,15 +2014,22 @@ jobs:
                 throw new Error(`Required release job ${name} did not succeed: ${needs[name]?.result}`);
               }
             }
-            if (context.ref !== 'refs/heads/main') {
-              throw new Error('Release checks must be dispatched from main.');
+            const branch = process.env.RELEASE_BRANCH;
+            const expectedHead = process.env.EXPECTED_HEAD;
+            if (context.ref !== `refs/heads/${branch}`) {
+              throw new Error('Release checks must run from the marked release branch.');
             }
-            const {data} = await github.rest.git.getRef({...context.repo, ref: 'heads/main'});
-            if (data.object.sha !== context.sha) {
-              throw new Error('Main changed during checks; dispatch release-check again.');
+            if (context.sha !== expectedHead) {
+              throw new Error('Checked-out release commit does not match expected head.');
+            }
+            const {data} = await github.rest.git.getRef({...context.repo, ref: `heads/${branch}`});
+            if (data.object.sha !== expectedHead) {
+              throw new Error('Release branch moved during checks; dispatch release-check again for its new head.');
             }
             await core.summary
               .addHeading('Release checks complete')
-              .addRaw(`Exact main SHA: ${context.sha}\n\n`)
-              .addRaw('Canonical visual, accessibility, and RTL checks completed with full scope. Recheck main before release mutation; this run does not approve or publish a baseline.')
+              .addRaw(`Branch: ${branch}\n\n`)
+              .addRaw(`Exact head: ${expectedHead}\n\n`)
+              .addRaw(`Plan digest: ${process.env.PLAN_DIGEST}\n\n`)
+              .addRaw('Canonical visual, accessibility, and RTL checks completed with full scope. Main movement is not release input. This receipt is reusable only for this exact branch, head, and plan digest; any cherry-pick requires a new run.')
               .write();

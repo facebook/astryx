@@ -4,7 +4,7 @@
 
 import {useState} from 'react';
 import {InternationalizationProvider} from '@astryxdesign/core/i18n';
-import frFR from '@astryxdesign/core/locales/fr-FR.json';
+import frFR from '@astryxdesign/core/locales/fr-FR.generated.js';
 import {Stack} from '@astryxdesign/core/Layout';
 import {
   SegmentedControl,

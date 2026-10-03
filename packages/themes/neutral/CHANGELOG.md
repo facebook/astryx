@@ -1,5 +1,24 @@
 # @xds/theme-neutral
 
+# 0.6.4
+
+#### New Features
+
+- Ship a typed `ThemeDoc` descriptor beside each first-party theme source. (#6498)
+
+#### Documentation
+
+- Describe Neutral as Figtree typography and add the font-loading snippet; the README claimed system fonts while the theme declares Figtree. (#5991)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @AKnassa
+- @josephfarina
+
+---
+
 # 0.6.3
 
 ---

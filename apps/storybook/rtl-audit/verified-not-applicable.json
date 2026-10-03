@@ -122,6 +122,15 @@
     "reason": "Card is a block container with symmetric radius, border, shadow, and logical padding. It owns no directional glyph, inline-axis ordering, physical positioning, scrolling action, dragging, overlay, or keyboard behavior."
   },
   {
+    "component": "core/Citation",
+    "reason": "Citation renders a direction-neutral inline chip or superscript badge in normal text flow. Its optional icon is caller-owned or a source image; spacing uses logical margin and padding, and the component owns no directional glyph, physical inline positioning, reordering, horizontal scrolling or dragging, side-placed overlay, or horizontal keyboard behavior.",
+    "evidence": {
+      "apps/storybook/stories/Citation.stories.tsx": "sha256:c2cafac52d87682547ccfff6185008d704421ef770e22edd7759ccd4b9673554",
+      "packages/core/src/Citation/Citation.tsx": "sha256:3ddc76002e34bf99640b4d2ba3a62add63af29845dc1227825010a64628fc481",
+      "packages/core/src/Citation/index.ts": "sha256:27df0cd0fd0aed1f3722d2b5e1b7be08e940b29094ad23410d7b639b5b9ad976"
+    }
+  },
+  {
     "component": "core/Code",
     "reason": "Code is an inline typographic treatment with a monospace font, symmetric background/radius, and logical padding. The code string owns its own bidi content; the component adds no directional visual, positioning, ordering, interaction, or overlay."
   },

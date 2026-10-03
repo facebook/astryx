@@ -74,7 +74,7 @@ export function templateCopy(match, {targetPath, cwd, overwrite = false}) {
   if (!overwrite && fs.existsSync(outputFilePath)) {
     const rel = path.relative(cwd, outputFilePath) || outputFilePath;
     throw new AstryxError(
-      `Refusing to overwrite existing file ${rel}. Re-run with overwrite to replace it.`,
+      `Refusing to overwrite existing file ${rel}. Re-run with --overwrite (or -f) to replace it.`,
       undefined,
       ERROR_CODES.ERR_FILE_EXISTS,
     );

@@ -39,9 +39,11 @@ export interface DocPlacement {
 export interface AuthoredDocGraphFields {
   /** The doc's one parent in the docs tree: a namespace of its own package. */
   placement?: DocPlacement;
-  /** Prior routes or names the docs tree will keep resolving. Not read yet. */
+  /** Reserved: prior routes or names the docs tree will keep resolving.
+   *  Nothing reads it yet. */
   aliases?: string[];
-  /** Docs bundle audience; omit for public docs. Not read yet. */
+  /** Reserved: docs bundle audience; omit for public docs. Nothing reads it
+   *  yet. */
   audience?: DocAudience;
 }
 

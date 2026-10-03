@@ -276,10 +276,10 @@ defineTheme({name: 'brand', indicators: {check: RadioIndicator}});`,
     ],
     anatomy: [
       {
-        name: 'Chrome',
+        name: 'Chrome (checkbox, radio)',
         required: true,
         description:
-          'The persistent box or circle, present in every state. Carries the astryx-checkbox-indicator / astryx-radio-indicator theme target (the pre-indicator astryx-checkbox / astryx-radio names are still emitted on the same element).',
+          'The persistent box or circle rendered by CheckboxIndicator and RadioIndicator in every state. CheckIndicator is the state mark itself and intentionally owns no chrome.',
       },
       {
         name: 'State mark',

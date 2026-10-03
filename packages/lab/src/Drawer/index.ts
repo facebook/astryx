@@ -2,10 +2,12 @@
 
 /**
  * @file index.ts
- * @input Drawer.tsx
- * @output Re-exports Drawer component and DrawerProps type
+ * @input Drawer.tsx, DrawerHeader.tsx
+ * @output Re-exports Drawer and DrawerHeader components and their prop types
  * @position Lab entry point for the Drawer directory
  */
 
 export {Drawer} from './Drawer';
 export type {DrawerProps} from './Drawer';
+export {DrawerHeader} from './DrawerHeader';
+export type {DrawerHeaderProps} from './DrawerHeader';

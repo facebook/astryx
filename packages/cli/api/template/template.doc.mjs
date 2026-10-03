@@ -102,6 +102,7 @@ export const doc = {
       type: 'string',
       description:
         'Directory to discover templates and resolve the target path from.',
+      default: 'process.cwd()',
     },
   ],
   returns: [
@@ -134,7 +135,7 @@ export const doc = {
   throws: [
     {
       code: 'ERR_UNKNOWN_TEMPLATE',
-      when: 'the named template does not exist, or --skeleton is run without a name',
+      when: 'the named template does not exist, or options.skeleton is set without a name',
     },
     {
       code: 'ERR_AMBIGUOUS_TEMPLATE',

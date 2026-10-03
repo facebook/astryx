@@ -39,16 +39,13 @@ export const doc = {
           name: 'type',
           type: 'string',
           description:
-            'Discriminator naming the payload shape. Each command guarantees ' +
-            'its own `type` at its return; there is no central union.',
+            'Names the payload shape. Every value is listed in the response-types enum.',
           required: true,
         },
         {
           name: 'data',
           type: 'unknown',
-          description:
-            "The command's payload. Structural by design, narrowed by the " +
-            'per-command return type, not by a map in the serializer.',
+          description: "The command's payload; its shape depends on `type`.",
           required: true,
         },
         {
@@ -64,7 +61,7 @@ export const doc = {
       type: '{ apiVersion: number; error: string; code: ErrorCode; suggestions?: Suggestion[] }',
       description:
         'Emitted for every failure in --json mode, including uncaught throws ' +
-        'and Commander parse errors, which are converted to this shape.',
+        'and command-line parse errors, which are converted to this shape.',
       fields: [
         {
           name: 'apiVersion',
@@ -121,7 +118,7 @@ export const doc = {
       label: 'Success',
       code: `{
   "apiVersion": 1,
-  "type": "component",
+  "type": "component.detail",
   "data": { "name": "Button" }
 }`,
     },
@@ -153,9 +150,13 @@ export const doc = {
     {
       type: 'prose',
       text:
-        'The process exit code is part of the contract too: successful commands ' +
-        'exit 0, and a JSON error envelope is accompanied by a non-zero exit ' +
-        '(jsonError exits 1).',
+        'The process exit code is part of the contract too. Exit 0 means success, ' +
+        'and every error envelope exits 1. Some commands also exit 1 with a success ' +
+        'envelope when what they report failed: a failed check (layout check, doctor ' +
+        'and its integration subcommands, integration verify, theme build ' +
+        '--check), a gap report that was not delivered, an upgrade left incomplete, ' +
+        'or init agent docs refused for a path outside the project. Read the ' +
+        'envelope, not the exit code, to tell them apart.',
     },
   ],
 };

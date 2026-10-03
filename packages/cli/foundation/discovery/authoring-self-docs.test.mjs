@@ -63,7 +63,9 @@ describe('authoring self-docs', () => {
 describe('what the authoring docs say about the docs tree', () => {
   it('marks exactly the fields the docs tree does not read yet', () => {
     const notReadYet = graphFieldsDoc.fields
-      .filter(field => /Not read yet/.test(field.description))
+      .filter(field =>
+        /^Reserved: .*Nothing reads it today/.test(field.description),
+      )
       .map(field => field.name);
     // The tree reads `placement` for every guide (spec:AST-046); the other
     // graph fields are still refused by every topic reader.
@@ -79,7 +81,9 @@ describe('what the authoring docs say about the docs tree', () => {
     expect(placement.description).toMatch(
       /Read for every guide, the CLI's and each integration's/,
     );
-    expect(graphFieldsDoc.description).toMatch(/not built yet/);
+    expect(graphFieldsDoc.description).toMatch(
+      /Nothing reads `aliases` or `audience` today/,
+    );
   });
 
   it('keeps graph blocks behind the separate GraphContentBlock type, and a section takes a reference block', () => {

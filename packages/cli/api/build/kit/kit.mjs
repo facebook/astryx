@@ -28,6 +28,9 @@
  */
 
 import {search} from '../../search/search.mjs';
+import {findCoreDir} from '../../../foundation/fs/paths.mjs';
+import {AstryxError} from '../../error.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {getResultCoverage} from '../../search/coverage.mjs';
 import {loadPageTemplates} from '../_adapter.mjs';
 import {pickAlternatives, pickStart, rankPages} from './rank.mjs';
@@ -188,12 +191,30 @@ function chooseStart(ranked, pages, directMatch, catalog) {
  */
 export async function buildKit(query, options = {}) {
   const {cwd = process.cwd(), type, limit = 60} = options;
+  // A kit is built from Core's components, hooks, and templates. An open
+  // search without core covers the docs alone, so the kit asks for core here.
+  if (type !== 'doc' && !findCoreDir(cwd)) {
+    throw new AstryxError(
+      'Could not find @astryxdesign/core package',
+      undefined,
+      ERROR_CODES.ERR_CORE_NOT_FOUND,
+    );
+  }
   // search()'s JSDoc @returns widens results to object[]; the SearchResponse
   // shape is the contract (api/search/search.type.mjs). Cast locally rather than
   // tightening the search @returns (a separate follow-up).
   const result =
     /** @type {import('../../search/search.type.mjs').SearchResponse} */ (
-      await search(query, {cwd, type, limit})
+      await search(query, {
+        cwd,
+        type,
+        // Search wider than the surfaced kit so a flood of doc matches cannot
+        // bury the page templates past the cutoff; the caller's `limit` still
+        // caps the kit below. A non-positive or non-integer limit is passed
+        // through unchanged so search rejects it (ERR_INVALID_ARGUMENT).
+        limit:
+          Number.isInteger(limit) && limit > 0 ? Math.max(limit, 200) : limit,
+      })
     );
   const results = result.data.results;
   // The TOTAL number of matches, not the number that survived `limit`. The kit
@@ -257,6 +278,24 @@ export async function buildKit(query, options = {}) {
         command: `${page.command} --skeleton`,
       }));
 
+  // The caller's `limit` caps the surfaced kit, even though the search above
+  // ran wider to find templates that a flood of doc matches would otherwise
+  // bury past the cutoff. Keep pages first, then blocks, then components.
+  let budget = limit;
+  /**
+   * @template T
+   * @param {T[]} arr
+   * @returns {T[]}
+   */
+  const toLimit = arr => {
+    const out = arr.slice(0, Math.max(0, budget));
+    budget -= out.length;
+    return out;
+  };
+  const pagesKept = toLimit(pages);
+  const blocksKept = toLimit(blocks);
+  const domainKept = toLimit(domain);
+
   // A kit narrowed to components or hooks has no page to start from; every
   // other kit does, so the reader is never left to compose a page from scratch.
   const wantsPages = !type || type === 'template';
@@ -288,7 +327,7 @@ export async function buildKit(query, options = {}) {
   // not resolve — the same defect `getCliInvocation` exists to prevent, and
   // the renderer applies it. A JSON caller gets the parts, not a sentence.
   const hint =
-    pages.length + blocks.length + domain.length < THIN_KIT
+    pagesKept.length + blocksKept.length + domainKept.length < THIN_KIT
       ? {
           reason:
             'Few matches. This is keyword search, not semantic — try other wordings.',
@@ -306,9 +345,9 @@ export async function buildKit(query, options = {}) {
       matchCount,
       directMatch,
       start,
-      pages,
-      blocks,
-      domain,
+      pages: pagesKept,
+      blocks: blocksKept,
+      domain: domainKept,
       frame: FRAME,
       foundation: FOUNDATION,
       hint,

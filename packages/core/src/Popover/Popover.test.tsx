@@ -958,6 +958,85 @@ describe('Popover', () => {
     });
   });
 
+  describe('surface padding', () => {
+    // StyleX's dev runtime names the style object a class came from
+    // ("padding__paddingStyles.3"), which is the padding rung the surface
+    // was handed.
+    function paddingRungOf(surface: Element | null): string | null {
+      const match = surface?.className.match(
+        /padding__paddingStyles\.([\d.]+)/,
+      );
+      return match ? match[1] : null;
+    }
+
+    it('paints the spacing-3 rung by default, unchanged', () => {
+      render(
+        <Popover isOpen content={<span>Content</span>} label="Test">
+          <button type="button">Open</button>
+        </Popover>,
+      );
+      const surface = document.querySelector('.astryx-popover');
+      expect(paddingRungOf(surface)).toBe('3');
+      expect(surface?.className).not.toContain('contentPadding');
+    });
+
+    it('paints no padding on a flush surface (padding={0})', () => {
+      render(
+        <Popover
+          isOpen
+          padding={0}
+          content={<span data-testid="content">Content</span>}
+          label="Test">
+          <button type="button">Open</button>
+        </Popover>,
+      );
+      const surface = document.querySelector('.astryx-popover');
+      // The rung lands on the painted surface itself, not a wrapper inside
+      // it, so the content reaches the surface edge.
+      expect(surface).toContainElement(screen.getByTestId('content'));
+      expect(paddingRungOf(surface)).toBe('0');
+    });
+
+    it('paints the requested rung', () => {
+      render(
+        <Popover isOpen padding={4} content={<span>Content</span>} label="Test">
+          <button type="button">Open</button>
+        </Popover>,
+      );
+      const surface = document.querySelector('.astryx-popover');
+      expect(paddingRungOf(surface)).toBe('4');
+    });
+
+    it('lets a direct usePopover consumer opt into a rung, and paints none by default', () => {
+      function Direct({padding}: {padding?: 0 | 2}) {
+        const popover = usePopover({dialogLabel: 'Direct', padding});
+        return (
+          <>
+            <button
+              ref={popover.triggerRef}
+              type="button"
+              onClick={popover.toggle}
+              {...popover.triggerProps}>
+              Open
+            </button>
+            {popover.render(<span>Direct content</span>)}
+          </>
+        );
+      }
+      const {unmount} = render(<Direct />);
+      fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+      expect(paddingRungOf(document.querySelector('.astryx-popover'))).toBe(
+        null,
+      );
+      unmount();
+      render(<Direct padding={2} />);
+      fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+      expect(paddingRungOf(document.querySelector('.astryx-popover'))).toBe(
+        '2',
+      );
+    });
+  });
+
   it('puts the theme target and styling escape hatches on the popup surface', () => {
     render(
       <Popover
