@@ -67,6 +67,34 @@ export const docs = {
       description:
         "Set to 'inherit' to take the surrounding font size and line height. Omit it to use the code type-scale size.",
     },
+    {
+      name: 'ref',
+      type: 'React.Ref<HTMLElement>',
+      description: 'Ref forwarded to the semantic code element.',
+    },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for layout customization. Must be a stylex.create() value, not an inline style object like style={{}}.',
+    },
+    {
+      name: 'className',
+      type: 'string',
+      description:
+        'CSS class name for the root element. Prefer xstyle for styling.',
+    },
+    {
+      name: 'style',
+      type: 'CSSProperties',
+      description:
+        'Inline styles for the root element. Prefer xstyle for StyleX-optimized styling.',
+    },
+    {
+      name: 'data-testid',
+      type: 'string',
+      description: 'Test selector for automated testing frameworks.',
+    },
   ],
   theming: {
     targets: [{className: 'astryx-code', visualProps: ['color']}],
@@ -107,5 +135,11 @@ export const docsDense = {
     color:
       'text color: primary, secondary, or inherited from surrounding text.',
     size: "set to 'inherit' to take the surrounding font size and line height.",
+    ref: 'ref forwarded to the semantic code element.',
+    xstyle:
+      'StyleX layout styles; must be a stylex.create() value, not an inline style object.',
+    className: 'CSS class for the root; prefer xstyle.',
+    style: 'inline styles for the root; prefer xstyle.',
+    'data-testid': 'test selector for automated testing frameworks.',
   },
 };

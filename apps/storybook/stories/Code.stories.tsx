@@ -28,6 +28,23 @@ export const Default: Story = {
   },
 };
 
+export const Colors: Story = {
+  tags: ['visual-baseline'],
+  render: () => (
+    <Stack gap={2}>
+      <Text type="body">
+        Primary: <Code color="primary">const primary = true</Code>
+      </Text>
+      <Text type="body">
+        Secondary: <Code color="secondary">const secondary = true</Code>
+      </Text>
+      <Text type="body" color="secondary">
+        Inherited: <Code color="inherit">const inherited = true</Code>
+      </Text>
+    </Stack>
+  ),
+};
+
 export const InParagraph: Story = {
   name: 'Inline in paragraph',
   render: () => (
@@ -93,21 +110,34 @@ export const VariousContent: Story = {
   ),
 };
 
+export const LongInlineContent: Story = {
+  tags: ['visual-baseline'],
+  render: () => (
+    <Text type="body" style={{maxWidth: 240}}>
+      Long token:{' '}
+      <Code>
+        aVeryLongUnbrokenIdentifierThatMustWrapInsideItsProseContainer
+      </Code>
+    </Text>
+  ),
+};
+
 export const TextSizes: Story = {
   name: 'Across text sizes',
+  tags: ['visual-baseline'],
   render: () => (
     <Stack gap={2}>
       <Text type="large">
-        Heading with <Code>inline code</Code>
+        Heading with <Code size="inherit">inline code</Code>
       </Text>
       <Text type="body">
-        Body text with <Code>inline code</Code>
+        Body text with <Code size="inherit">inline code</Code>
       </Text>
       <Text type="supporting">
-        Detail text with <Code>inline code</Code>
+        Detail text with <Code size="inherit">inline code</Code>
       </Text>
       <Text type="label">
-        Label text with <Code>inline code</Code>
+        Label text with <Code size="inherit">inline code</Code>
       </Text>
     </Stack>
   ),
