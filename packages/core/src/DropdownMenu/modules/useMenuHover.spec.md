@@ -121,20 +121,20 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Behavioral contract
 
-| ID   | Candidate invariant                                                                                                                                                                                                                                                                                | Basis                                                                                 | Draft review state |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------ |
-| FR1  | A hover-capable pointer entering an enabled trigger MUST open the surface after `showDelay`, and MUST NOT move focus: the pointer is driving. `showDelay: 0` opens on contact.                                                                                                                     | Current behavior; `useMenuHover.test.tsx`, `SideNav.test.tsx`                         | settled            |
-| FR2  | Leaving the trigger or the surface MUST close a `hover-opened` surface after `hideDelay`; entering the surface MUST cancel a pending close. A `pinned` surface MUST NOT close on a pointer leave.                                                                                                  | Current behavior; `useMenuHover.test.tsx`, `SideNav.test.tsx`                         | settled            |
-| FR3  | A pointer press on the trigger MUST toggle the surface: it opens a closed one and closes an open one. This is the default answer, and FR4 is its only exception.                                                                                                                                   | DEC-1; `useMenuHover.test.tsx`, `DropdownMenuSubMenu.test.tsx`                        | settled            |
-| FR4  | A press landing within `clickGuardMs` of a HOVER-open MUST confirm that surface instead of closing it, pinning it (FR2) and moving focus in where the hook owns focus. After the window, a press MUST close it. `clickGuardMs: 0` opts out, making every press toggle.                             | DEC-1; `useMenuHover.test.tsx`, `DropdownMenuSubMenu.test.tsx`                        | settled            |
-| FR5  | The guard MUST key off the hover-open, never off the open. A surface opened by a press therefore has no window at all and the next press closes it immediately. This is the rule's intended consequence, not an edge case.                                                                         | DEC-1; `useMenuHover.test.tsx` click-only and re-entry cases                          | settled            |
-| FR6  | Re-entering the trigger of an already-open surface MUST NOT re-arm the guard and MUST NOT make the surface `hover-opened` again; otherwise the next deliberate press would confirm forever and the surface could never be dismissed by pointer.                                                    | Current behavior; `useMenuHover.test.tsx` re-entry case                               | settled            |
-| FR7  | For a fixed window after ANY close, a `mouseenter` on the trigger MUST NOT reopen the surface, because a panel positioned over its own trigger puts that trigger back under a stationary pointer. A real pointer leave MUST clear the window early, so a deliberate re-hover still opens.          | Current behavior; `useMenuHover.test.tsx` suppression and re-hover cases              | settled            |
-| FR8  | Where `(hover: hover)` does not match, `mouseenter` and `mouseleave` MUST schedule nothing — a tap's compatibility `mouseenter` must not leave a surface hanging open behind it — and the press path MUST behave exactly as it does with a hover-capable pointer.                                  | `architecture:interaction-modality` INV4; `useMenuHover.test.tsx`, `SideNav.test.tsx` | settled            |
-| FR9  | Keyboard activation of the trigger (Enter or Space, which the browser delivers as a click with no pointer detail) MUST always open and move focus into the surface, and MUST NEVER close it. The keyboard has no toggle; the toggle of FR3 is a pointer affordance and nothing mirrors it on keys. | Current behavior; `useMenuHover.test.tsx` keyboard suite                              | settled            |
-| FR10 | Escape MUST close the surface and return focus to the trigger when focus was inside it. Directional open and close keys are the consuming component's, not this hook's.                                                                                                                            | `family:overlay-dismissal`; `useMenuHover.test.tsx`, `DropdownMenuSubMenu.test.tsx`   | settled            |
-| FR11 | When a `popoverId` is supplied, the trigger MUST carry `popovertarget` for that panel, and the hook MUST cancel the resulting invoker toggle so its own handler is the single decision point for FR3 and FR4.                                                                                      | `architecture:layer-runtime`; `useMenuHover.test.tsx` invoker case                    | verify             |
-| FR12 | A disabled integration (`isEnabled: false`) MUST expose inert handlers and add no hover behavior to its trigger.                                                                                                                                                                                   | Current behavior; `SideNav.test.tsx` collapsed/expanded cases                         | settled            |
+| ID   | Candidate invariant                                                                                                                                                                                                                                                                       | Basis                                                                                 | Draft review state |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------ |
+| FR1  | A hover-capable pointer entering an enabled trigger MUST open the surface after `showDelay`, and MUST NOT move focus: the pointer is driving. `showDelay: 0` opens on contact.                                                                                                            | Current behavior; `useMenuHover.test.tsx`, `SideNav.test.tsx`                         | settled            |
+| FR2  | Leaving the trigger or the surface MUST close a `hover-opened` surface after `hideDelay`; entering the surface MUST cancel a pending close. A `pinned` surface MUST NOT close on a pointer leave.                                                                                         | Current behavior; `useMenuHover.test.tsx`, `SideNav.test.tsx`                         | settled            |
+| FR3  | A pointer press on the trigger MUST toggle the surface: it opens a closed one and closes an open one. This is the default answer, and FR4 is its only exception.                                                                                                                          | DEC-1; `useMenuHover.test.tsx`, `DropdownMenuSubMenu.test.tsx`                        | settled            |
+| FR4  | A press landing within `clickGuardMs` of a HOVER-open MUST confirm that surface instead of closing it, pinning it (FR2) and moving focus in where the hook owns focus. After the window, a press MUST close it. `clickGuardMs: 0` opts out, making every press toggle.                    | DEC-1; `useMenuHover.test.tsx`, `DropdownMenuSubMenu.test.tsx`                        | settled            |
+| FR5  | The guard MUST key off the hover-open, never off the open. A surface opened by a press therefore has no window at all and the next press closes it immediately. This is the rule's intended consequence, not an edge case.                                                                | DEC-1; `useMenuHover.test.tsx` click-only and re-entry cases                          | settled            |
+| FR6  | Re-entering the trigger of an already-open surface MUST NOT re-arm the guard and MUST NOT make the surface `hover-opened` again; otherwise the next deliberate press would confirm forever and the surface could never be dismissed by pointer.                                           | Current behavior; `useMenuHover.test.tsx` re-entry case                               | settled            |
+| FR7  | For a fixed window after ANY close, a `mouseenter` on the trigger MUST NOT reopen the surface, because a panel positioned over its own trigger puts that trigger back under a stationary pointer. A real pointer leave MUST clear the window early, so a deliberate re-hover still opens. | Current behavior; `useMenuHover.test.tsx` suppression and re-hover cases              | settled            |
+| FR8  | Where `(hover: hover)` does not match, `mouseenter` and `mouseleave` MUST schedule nothing — a tap's compatibility `mouseenter` must not leave a surface hanging open behind it — and the press path MUST behave exactly as it does with a hover-capable pointer.                         | `architecture:interaction-modality` INV4; `useMenuHover.test.tsx`, `SideNav.test.tsx` | settled            |
+| FR9  | Keyboard activation of the trigger MUST always open the surface and move focus into it, and MUST NEVER close it. The keyboard has no toggle; the toggle of FR3 is a pointer affordance and nothing mirrors it on keys.                                                                    | Current behavior; `useMenuHover.test.tsx` keyboard suite                              | settled            |
+| FR10 | Escape MUST close the surface and return focus to the trigger when focus was inside it. Directional open and close keys are the consuming component's, not this hook's.                                                                                                                   | `family:overlay-dismissal`; `useMenuHover.test.tsx`, `DropdownMenuSubMenu.test.tsx`   | settled            |
+| FR11 | When a `popoverId` is supplied, the trigger MUST carry `popovertarget` for that panel, and the hook MUST cancel the resulting invoker toggle so its own handler is the single decision point for FR3 and FR4.                                                                             | `architecture:layer-runtime`; `useMenuHover.test.tsx` invoker case                    | verify             |
+| FR12 | A disabled integration MUST add no hover behavior to its trigger, and MUST NOT open a surface: a trigger disabled while a hover is in progress stays closed, whether it was disabled before the pointer arrived or during the delay that would have opened it.                            | Current behavior; `SideNav.test.tsx` collapsed/expanded cases                         | verify             |
 
 ### Transformation and precedence order
 
@@ -143,19 +143,21 @@ Consumer migration instructions belong in consumer docs and release notes.
   The first matching branch decides; none of the later ones runs.
 - **ORD2 — Hover-enter resolution.** No hover-capable pointer, so do nothing
   (FR8) → inside the reopen-suppression window, so do nothing (FR7) → already
-  open, so cancel pending timers and change nothing else (FR6) → otherwise mark
-  the surface `hover-opened` and arm `showDelay` (FR1).
+  open, so abandon any pending close and change nothing else (FR6) →
+  otherwise the surface becomes `hover-opened` after `showDelay` (FR1).
 - **ORD3 — Provenance clearing.** Any close, whatever caused it, clears
   `hover-opened` and stamps the suppression window before the browser can
   hit-test the vanished panel; a confirm clears `hover-opened` without closing.
 
 ### Performance and resources
 
-- **PR1 — Two timers at most.** One pending show and one pending hide, cleared
-  whenever a new intent supersedes them and on unmount. The hook installs no
-  document- or window-level listeners.
-- **PR2 — One media query.** Hover capability is read through the shared media
-  query hook, not re-measured per event.
+- **PR1 — No pending intent outlives what supersedes it.** At most one open
+  and one close are ever pending; a newer intent replaces the pending one
+  rather than queueing behind it, and nothing pending survives the surface
+  unmounting. A trigger left behind by a removed surface cannot open it.
+- **PR2 — Nothing is observed outside the trigger and its surface.** Hover
+  intent is read from the trigger and the surface alone, so a page with many
+  triggers carries no document- or window-level cost per trigger.
 
 ## Accessibility contract
 
@@ -254,23 +256,24 @@ the trigger — has no ambiguity to resolve and sets `clickGuardMs: 0`.
 
 ## Open questions
 
-- **OQ1 — Two integration shapes enforce the guard in two places.** (`checkable`)
-  Nav consumers take the hook's own press handler; `DropdownMenuSubMenu` and
-  `SideNavItem` take hover intent plus `confirmHoverOpen` and keep their own
-  press handling, so the FR3/FR4 ordering exists both in the hook and in a
-  consumer and can drift. Whether the pointer-only shape should remain supported
-  is open; the behavior it must produce is not.
-- **OQ2 — Disabling during the hover delay.** (`checkable`) `isEnabled: false`
-  returns inert handlers but does not cancel a show timer already armed, so a
-  surface disabled mid-delay still opens. No test covers it and no decision
-  states it is wanted; it is described here as current behavior, not contracted
-  as intended.
-- **OQ3 — `detail === 0` is read as "keyboard" (FR9).** (`checkable`)
-  `module:DropdownMenu/useMenuPress` dispatches pointer activations as a click
-  with `detail: 0`, so on a menu row that detail no longer distinguishes a
-  keyboard. No shipped surface hits this — the row that mounts both models keeps
-  its own press handler — but a future row adopting the hook's press handler
-  inside a press-model root would stop toggling (FR3).
+- **OQ1 — One consumer resolves the press rules itself.** (`checkable`) Five
+  of the six consumers take the whole model. `DropdownMenuSubMenu` takes hover
+  intent alone and resolves FR3 and FR4 in its own press handling, so the rule
+  exists in two places and the two can diverge. The owner's direction is to
+  converge: every consumer should get FR3 and FR4 from one place. What a press
+  does to a menu row that is also a menu item is the open part, because that
+  row answers to `module:DropdownMenu/useMenuPress` as well; the behavior both
+  shapes must produce is settled either way.
+
+- **OQ2 — Keyboard activation is not reliably distinguishable.** (`checkable`)
+  FR9 requires a keyboard activation to open and never close, which depends on
+  telling it apart from a pointer activation on the same trigger. A trigger
+  that also hosts a model dispatching its own activations cannot be told apart
+  by the signal the browser gives a keypress, so FR9's guarantee does not hold
+  there. No shipped surface is affected, because the one row hosting both keeps
+  its own press handling (OQ1) — but converging OQ1 makes this reachable, and
+  the two should be settled together. What a dispatched activation should look
+  like belongs to `module:DropdownMenu/useMenuPress`, not here.
 
 ## Content boundary
 
