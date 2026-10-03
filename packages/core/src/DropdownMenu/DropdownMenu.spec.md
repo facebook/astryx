@@ -21,7 +21,7 @@ verified_by:
     packages/core/src/Icon/Icon.test.tsx,
     scripts/check-knowledge.mjs,
   ]
-modules: [module:DropdownMenu/useMenuPress]
+modules: [module:DropdownMenu/useMenuPress, module:DropdownMenu/useMenuHover]
 families: [family:overlay-dismissal]
 design_specs: []
 architecture:
