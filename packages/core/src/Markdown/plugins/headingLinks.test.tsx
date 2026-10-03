@@ -442,24 +442,30 @@ describe('createMarkdownHeadingLinks', () => {
     expect(clipboardWrite()).not.toHaveBeenCalled();
   });
 
-  it('copies on keyboard Enter without navigation semantics', async () => {
+  it('copies on keyboard Enter and Space without navigation semantics', async () => {
     const user = userEvent.setup();
     render(<Markdown plugins={[headingLinks]}>{'# Keyboard target'}</Markdown>);
     const permalink = screen.getByRole('button', {
       name: 'Copy link to Keyboard target',
     });
+    const canonicalUrl = new URL('#keyboard-target', window.location.href).href;
     permalink.focus();
 
     await user.keyboard('{Enter}');
 
     await waitFor(async () => {
-      expect(await navigator.clipboard.readText()).toBe(
-        new URL('#keyboard-target', window.location.href).href,
-      );
+      expect(await navigator.clipboard.readText()).toBe(canonicalUrl);
     });
     expect(permalink).toHaveFocus();
     expect(permalink).toHaveAttribute('type', 'button');
     expect(permalink).not.toHaveAttribute('href');
+
+    await navigator.clipboard.writeText('sentinel');
+    await user.keyboard(' ');
+    await waitFor(async () => {
+      expect(await navigator.clipboard.readText()).toBe(canonicalUrl);
+    });
+    expect(permalink).toHaveFocus();
   });
 
   it('keeps one feedback timer across re-click and clears it on unmount', async () => {
@@ -504,7 +510,7 @@ describe('createMarkdownHeadingLinks', () => {
 
     expect(heading.querySelectorAll('a')).toHaveLength(1);
     expect(
-      heading.parentElement?.querySelectorAll(':scope > button'),
+      heading.parentElement?.querySelectorAll(':scope > span > button'),
     ).toHaveLength(1);
     expect(container.querySelector('a a')).toBeNull();
   });

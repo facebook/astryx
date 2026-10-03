@@ -1,9 +1,18 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
+import * as stylex from '@stylexjs/stylex';
 import {Markdown} from '@astryxdesign/core/Markdown';
 import {createMarkdownHeadingLinks} from '@astryxdesign/core/Markdown/plugins';
 import {expect, userEvent, within} from 'storybook/test';
+
+const styles = stylex.create({
+  geometryReference: {
+    position: 'absolute',
+    visibility: 'hidden',
+    pointerEvents: 'none',
+  },
+});
 
 const meta: Meta<typeof Markdown> = {
   title: 'Core/Markdown/Plugins/Heading links',
@@ -22,6 +31,16 @@ const SOURCE = [
   '',
   '## Read the [guide](https://example.com/guide)',
   '',
+  '### Third-level heading',
+  '',
+  '#### Fourth-level heading',
+  '',
+  '##### Fifth-level heading',
+  '',
+  '###### Sixth-level heading',
+  '',
+  '## A narrow heading whose trailing control stays with its final text line',
+  '',
   '## Ｈｅｌｌｏ Привет 你好 😄 １２３',
   '',
   '## Repeat',
@@ -37,6 +56,9 @@ const ltrPlugins = [
 const rtlPlugins = [
   createMarkdownHeadingLinks({headingIdPrefix: 'heading-links-rtl'}),
 ];
+const compactPlugins = [
+  createMarkdownHeadingLinks({headingIdPrefix: 'heading-links-compact'}),
+];
 
 export const Overview: Story = {
   name: 'Heading links',
@@ -44,7 +66,7 @@ export const Overview: Story = {
     docs: {
       description: {
         story:
-          'The opt-in first-party module gives every built-in h1–h6 an inline trailing # copy button. It is hidden at fine-pointer rest, reveals when the heading row is hovered or receives keyboard focus, and follows useContainerReveal touch behavior. Activating it copies the canonical permalink without navigation, hash mutation, or scrolling; the fixed-space # becomes a check for ~1.5 seconds. Nested headings share the depth-first allocator, authored heading links remain valid, Unicode ids remain readable, and a caller-owned namespace keeps multiple documents distinct.',
+          'The opt-in first-party module gives every built-in h1–h6 an inline trailing # copy button. It is hidden at fine-pointer rest, reveals when the heading row is hovered or receives keyboard focus, and follows useContainerReveal touch behavior. Activating it copies the canonical permalink without navigation, hash mutation, or scrolling; the fixed-space # becomes a check for ~1.5 seconds. The coarse target keeps the 24px AA floor while its painted control remains centered on the heading line box. Nested headings share the depth-first allocator, authored heading links remain valid, Unicode ids remain readable, and a caller-owned namespace keeps multiple documents distinct.',
       },
     },
   },
@@ -58,6 +80,19 @@ export const Overview: Story = {
           {'# عنوان قابل للربط\n\n## تفاصيل'}
         </Markdown>
       </section>
+      <section aria-label="Compact heading links">
+        <Markdown
+          id="heading-links-compact"
+          density="compact"
+          plugins={compactPlugins}>
+          {
+            '# Compact first-level heading\n\n###### Compact sixth-level heading\n\n###### Compact sixth-level heading'
+          }
+        </Markdown>
+      </section>
+      <div aria-hidden="true" {...stylex.props(styles.geometryReference)}>
+        <Markdown id="heading-links-reference">{SOURCE}</Markdown>
+      </div>
     </>
   ),
   play: async ({canvasElement}) => {
@@ -79,8 +114,23 @@ export const Overview: Story = {
     });
     await expect(firstPermalink).toHaveAttribute('type', 'button');
     await expect(firstPermalink).not.toHaveAttribute('href');
-    await expect(firstPermalink.parentElement).toContainElement(firstHeading);
+    await expect(firstHeading.parentElement).toContainElement(firstPermalink);
     await expect(firstHeading).not.toContainElement(firstPermalink);
+
+    for (const [level, name] of [
+      [1, 'Linkable headings'],
+      [2, 'Read the guide'],
+      [3, 'Third-level heading'],
+      [4, 'Fourth-level heading'],
+      [5, 'Fifth-level heading'],
+      [6, 'Sixth-level heading'],
+    ] as const) {
+      const heading = within(ltr).getByRole('heading', {level, name});
+      const button = within(heading.parentElement as HTMLElement).getByRole(
+        'button',
+      );
+      await expect(button).toHaveAccessibleName(`Copy link to ${name}`);
+    }
 
     await expect(
       within(ltr).getByRole('heading', {name: 'Nested heading'}),

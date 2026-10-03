@@ -528,7 +528,7 @@
     "description": "Accessible name on the Markdown heading copy button and text announced to a polite live region for ~1.5s after a successful copy. Sentence meaning \"Link copied\"; pairs with `markdownHeadingLinks.copy`."
   },
   "@astryx.markdownHeadingLinks.copy": {
-    "defaultMessage": "Copy link to {heading}",
+    "defaultMessage": "Kopiér link til {heading}",
     "description": "Accessible name on the Markdown heading copy button in its default state. `{heading}` is the heading's plain text, or its generated id when the text is empty; pairs with `markdownHeadingLinks.copied`."
   },
   "@astryx.markdown.taskList": {

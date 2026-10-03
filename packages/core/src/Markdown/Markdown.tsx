@@ -1381,7 +1381,13 @@ function renderBlock(
           headingLabel={headingLabel}
           permalinkUrl={permalinkUrl}
           contentWidth={contentWidthValue}
-          contentAlign={contentAlign}>
+          contentAlign={contentAlign}
+          headingTextStyle={[styles.headingBase, headingStyles[level]]}
+          blockSpacingStyle={[
+            spacing,
+            isFirst && styles.noMarginBlockStart,
+            isLast && styles.noMarginBlockEnd,
+          ]}>
           <Tag
             id={headingId}
             {...mergeProps(
@@ -1390,9 +1396,6 @@ function renderBlock(
                 styles.headingBase,
                 headingLinksHeadingStyle,
                 headingStyles[level],
-                spacing,
-                isFirst && styles.noMarginBlockStart,
-                isLast && styles.noMarginBlockEnd,
               ),
             )}>
             {headingChildren}
