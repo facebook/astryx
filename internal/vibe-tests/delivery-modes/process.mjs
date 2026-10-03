@@ -471,10 +471,10 @@ export function auditAgentContext(agent, stdout, stderr) {
 
 export function auditTranscriptCommands(text) {
   const sensitivePaths = [
-    ['/proc', /\/proc(?:\/|\b)/],
-    ['/usr/local/bin', /\/usr\/local\/bin(?:\/|\b)/],
-    ['/var/facebook', /\/var\/facebook(?:\/|\b)/],
-    ['/data', /\/data(?:\/|\b)/],
+    ['/proc', /\/proc(?=\/|$|[\s"'`;&|),\]}])/],
+    ['/usr/local/bin', /\/usr\/local\/bin(?=\/|$|[\s"'`;&|),\]}])/],
+    ['/var/facebook', /\/var\/facebook(?=\/|$|[\s"'`;&|),\]}])/],
+    ['/data', /\/data(?=\/|$|[\s"'`;&|),\]}])/],
   ];
   const flaggedCommands = [];
   for (const command of extractToolCommands(text)) {

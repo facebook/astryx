@@ -368,6 +368,7 @@ test('all supported Astryx CLI invocation forms are counted', () => {
 test('transcript audit flags every sensitive host-path command', () => {
   const transcript = [
     'cat index.html',
+    'sed s/data-theme="light"/data-theme="dark"/ index.html',
     'cat /proc/1/root/secret',
     '/usr/local/bin/scsc ls',
     'ls /var/facebook/credentials',
