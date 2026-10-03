@@ -327,7 +327,7 @@ export const docsDense = {
     startIcon: 'Leading trigger icon.',
     placement: 'Popup placement.',
     alignment: 'Popup alignment.',
-    trigger:
+    renderTrigger:
       'Caller-rendered opener replacing the field+button; spread the given props; popup anchored to it, labelled by label.',
     handleRef: 'Imperative open/close/toggle handle.',
     onOpenChange: 'Notified on every open and close, whatever caused it.',

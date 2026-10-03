@@ -192,7 +192,8 @@ export type ComplexSelectorVariant = 'input' | 'ghost';
 export type ComplexSelectorSize = 'sm' | 'md' | 'lg';
 
 /**
- * Props the `trigger` render prop hands to the control the caller renders.
+ * Props the `renderTrigger` render prop hands to the control the caller
+ * renders.
  * Spread them onto that control: it becomes the popup's anchor, the element
  * focus returns to, and the control that announces the popup's state.
  */

@@ -38,9 +38,9 @@ styling, targets, or public API.
 ## Compatibility and migration
 
 - Released default preserved: `yes`
-- Compatibility class: additive. `trigger` is absent by default; when omitted,
+- Compatibility class: additive. `renderTrigger` is absent by default; when omitted,
   runtime, DOM, styling, targets, and public API remain unchanged. With
-  `trigger`, the caller-rendered control replaces the Field shell, Trigger, and
+  `renderTrigger`, the caller-rendered control replaces the Field shell, Trigger, and
   Indicator icon by the caller's choice.
 - Controlled/uncontrolled behavior: unchanged
 - Migration decision: none
@@ -70,21 +70,23 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-One additive concept: anchored mode, selected by the `trigger` render prop
-(absent by default). The caller renders the control the popup hangs off and
+One additive concept: anchored mode, selected by the `renderTrigger` render prop
+(absent by default). The prop's name, shape, and open-state documentation are
+governed by [`spec:AST-055`](../../../../docs/specs/AST-055-caller-rendered-trigger/spec.md);
+this record covers only what is local to `ComplexSelector`. The caller renders the control the popup hangs off and
 spreads the given props (`ref`, `id`, `onClick`, `onKeyDown`, `aria-haspopup`,
 `aria-expanded`, `aria-controls`, `aria-busy`) onto it. Consumer props and usage
 remain documented in `ComplexSelector.doc.mjs`.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                                                                                                                                                                            | Basis                           | Draft review state                                 |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------- | -------------------------------------------------- |
-| FR1 | The current render contains a Field, Trigger, Indicator icon, and mounted Popup; one optional start slot may contain either an Icon-rendered start icon or caller-rendered start content.                                                                                                                                      | Current source, docs, and tests | Verified current behavior; no new behavior decided |
-| FR2 | Trigger, Indicator icon, and Popup carry `complex-selector`, `complex-selector-indicator-icon`, and `complex-selector-popup`, respectively.                                                                                                                                                                                    | Current source, docs, and tests | Verified current behavior; no target change        |
-| FR3 | Field delegates to Field's `field` target, and a semantic name or icon component in the start slot delegates to Icon's `icon` target.                                                                                                                                                                                          | Current source and owner tests  | Verified current behavior; no target change        |
-| FR4 | Arbitrary ReactNode start content renders directly and carries no ComplexSelector-owned target.                                                                                                                                                                                                                                | Current source                  | Verified current behavior; no target change        |
-| FR5 | With `trigger`, the caller-rendered control is the popup's anchor and focus-return target, carries `aria-haspopup="dialog"`, `aria-expanded`, and `aria-controls` for the Popup, and opens it on click or ArrowDown; no Field, Trigger, or Indicator icon renders. `handleRef` and `onOpenChange` behave as without a trigger. | DEC-1, docs, and tests          | Proposed; awaiting owner approval                  |
+| ID  | Candidate invariant                                                                                                                                                                                                                                                                                                                  | Basis                           | Draft review state                                 |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------- | -------------------------------------------------- |
+| FR1 | The current render contains a Field, Trigger, Indicator icon, and mounted Popup; one optional start slot may contain either an Icon-rendered start icon or caller-rendered start content.                                                                                                                                            | Current source, docs, and tests | Verified current behavior; no new behavior decided |
+| FR2 | Trigger, Indicator icon, and Popup carry `complex-selector`, `complex-selector-indicator-icon`, and `complex-selector-popup`, respectively.                                                                                                                                                                                          | Current source, docs, and tests | Verified current behavior; no target change        |
+| FR3 | Field delegates to Field's `field` target, and a semantic name or icon component in the start slot delegates to Icon's `icon` target.                                                                                                                                                                                                | Current source and owner tests  | Verified current behavior; no target change        |
+| FR4 | Arbitrary ReactNode start content renders directly and carries no ComplexSelector-owned target.                                                                                                                                                                                                                                      | Current source                  | Verified current behavior; no target change        |
+| FR5 | With `renderTrigger`, the caller-rendered control is the popup's anchor and focus-return target, carries `aria-haspopup="dialog"`, `aria-expanded`, and `aria-controls` for the Popup, and opens it on click or ArrowDown; no Field, Trigger, or Indicator icon renders. `handleRef` and `onOpenChange` behave as without a trigger. | DEC-1, docs, and tests          | Proposed; awaiting owner approval                  |
 
 ### Allowed variation
 
@@ -113,8 +115,8 @@ remain documented in `ComplexSelector.doc.mjs`.
 
 ## Accessibility contract
 
-Without `trigger`, existing field, trigger, dialog, focus, and keyboard behavior
-is unchanged. With `trigger`, the caller's control carries the disclosure state
+Without `renderTrigger`, existing field, trigger, dialog, focus, and keyboard behavior
+is unchanged. With `renderTrigger`, the caller's control carries the disclosure state
 (`aria-haspopup="dialog"`, `aria-expanded`, `aria-controls`), the Popup keeps
 its dialog label from `label`, focus returns to that control on close, and
 ArrowDown on it opens the popup as it does on the built-in trigger.
@@ -186,7 +188,7 @@ caller-owned ReactNode content.
 
 ## Decision log
 
-- **DEC-1 — Anchored mode through `trigger`.** A picker anchored in a row the
+- **DEC-1 — Anchored mode through `renderTrigger`.** A picker anchored in a row the
   caller owns cannot host the Field shell or a nested button. The caller
   renders the control and spreads the given props; the component keeps owning
   open state through the existing `handleRef`/`onOpenChange`. Rejected: an

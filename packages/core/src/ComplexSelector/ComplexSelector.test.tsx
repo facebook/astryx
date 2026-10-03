@@ -506,7 +506,12 @@ describe('ComplexSelector trigger render prop', () => {
     await waitFor(() => {
       expect(opener).toHaveAttribute('aria-expanded', 'false');
     });
-    expect(opener).toHaveFocus();
+    // Focus return lands after the attribute flips, so it needs its own
+    // wait: asserting it synchronously passes alone and fails in a full-file
+    // run, where the surrounding work shifts the timing.
+    await waitFor(() => {
+      expect(opener).toHaveFocus();
+    });
   });
 
   it('ArrowDown on the caller control opens the popup', async () => {
