@@ -1,0 +1,102 @@
+[
+  {
+    "arm": "arm-a-render-prop",
+    "file": "arm-a-render-prop--p1.tsx",
+    "errors": []
+  },
+  {
+    "arm": "arm-a-render-prop",
+    "file": "arm-a-render-prop--p2.tsx",
+    "errors": []
+  },
+  {
+    "arm": "arm-a-render-prop",
+    "file": "arm-a-render-prop--p3.tsx",
+    "errors": []
+  },
+  {
+    "arm": "arm-a-render-prop",
+    "file": "arm-a-render-prop--p4.tsx",
+    "errors": []
+  },
+  {
+    "arm": "arm-a-render-prop",
+    "file": "arm-a-render-prop--p5.tsx",
+    "errors": []
+  },
+  {
+    "arm": "arm-b-node",
+    "file": "arm-b-node--p1.tsx",
+    "errors": []
+  },
+  {
+    "arm": "arm-b-node",
+    "file": "arm-b-node--p2.tsx",
+    "errors": []
+  },
+  {
+    "arm": "arm-b-node",
+    "file": "arm-b-node--p3.tsx",
+    "errors": []
+  },
+  {
+    "arm": "arm-b-node",
+    "file": "arm-b-node--p4.tsx",
+    "errors": []
+  },
+  {
+    "arm": "arm-b-node",
+    "file": "arm-b-node--p5.tsx",
+    "errors": []
+  },
+  {
+    "arm": "arm-c-declared",
+    "file": "arm-c-declared--p1.tsx",
+    "errors": []
+  },
+  {
+    "arm": "arm-c-declared",
+    "file": "arm-c-declared--p2.tsx",
+    "errors": []
+  },
+  {
+    "arm": "arm-c-declared",
+    "file": "arm-c-declared--p3.tsx",
+    "errors": []
+  },
+  {
+    "arm": "arm-c-declared",
+    "file": "arm-c-declared--p4.tsx",
+    "errors": []
+  },
+  {
+    "arm": "arm-c-declared",
+    "file": "arm-c-declared--p5.tsx",
+    "errors": []
+  },
+  {
+    "arm": "arm-d-array",
+    "file": "arm-d-array--p1.tsx",
+    "errors": []
+  },
+  {
+    "arm": "arm-d-array",
+    "file": "arm-d-array--p2.tsx",
+    "errors": []
+  },
+  {
+    "arm": "arm-d-array",
+    "file": "arm-d-array--p3.tsx",
+    "errors": []
+  },
+  {
+    "arm": "arm-d-array",
+    "file": "arm-d-array--p4.tsx",
+    "errors": []
+  },
+  {
+    "arm": "arm-d-array",
+    "file": "arm-d-array--p5.tsx",
+    "errors": []
+  }
+]

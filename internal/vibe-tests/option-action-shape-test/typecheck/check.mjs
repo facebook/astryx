@@ -22,7 +22,12 @@ const resultsDir = join(root, 'outputs');
 const srcDir = join(here, 'src');
 rmSync(srcDir, {recursive: true, force: true});
 
-const arms = ['arm-a-render-prop', 'arm-b-node', 'arm-c-declared', 'arm-d-array'];
+const arms = [
+  'arm-a-render-prop',
+  'arm-b-node',
+  'arm-c-declared',
+  'arm-d-array',
+];
 
 // Every task said these "already exist". Give the outputs the same promise,
 // identically across arms. An output that declares or receives its own typed
