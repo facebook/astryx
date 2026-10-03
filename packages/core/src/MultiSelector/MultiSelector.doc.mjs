@@ -384,8 +384,8 @@ export const docs = {
           default: 'false',
         },
         {
-          name: 'trigger',
-          type: '(props: MultiSelectorTriggerProps) => ReactNode',
+          name: 'renderTrigger',
+          type: '(props: MultiSelectorRenderTriggerProps) => ReactNode',
           description:
             "Render the control the panel hangs off — a glyph in a list row, a chip, an icon button — instead of the selector's own field and button. Spread the given props ({ref, id, onClick, onKeyDown, onFocus, aria-haspopup, aria-expanded, aria-controls, aria-busy}) onto it; the listbox is anchored to that control and named by `label`. The field chrome (Field, status, clear, spinner) is not rendered. Pair with handleRef to open from a keystroke elsewhere.",
         },

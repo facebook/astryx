@@ -3160,7 +3160,7 @@ describe('MultiSelector trigger render prop', () => {
         options={OPTIONS}
         value={[]}
         onChange={() => {}}
-        trigger={props => (
+        renderTrigger={props => (
           <button type="button" {...props}>
             Pick labels
           </button>
@@ -3184,7 +3184,7 @@ describe('MultiSelector trigger render prop', () => {
         options={OPTIONS}
         value={['bug']}
         onChange={() => {}}
-        trigger={props => (
+        renderTrigger={props => (
           <button type="button" {...props}>
             Pick labels
           </button>
@@ -3213,7 +3213,7 @@ describe('MultiSelector trigger render prop', () => {
         options={OPTIONS}
         value={[]}
         onChange={onChange}
-        trigger={props => (
+        renderTrigger={props => (
           <button type="button" {...props}>
             Pick labels
           </button>
@@ -3250,7 +3250,7 @@ describe('MultiSelector trigger render prop', () => {
             onChange={() => {}}
             handleRef={handleRef}
             onOpenChange={onOpenChange}
-            trigger={props => (
+            renderTrigger={props => (
               <button type="button" {...props}>
                 anchor
               </button>
@@ -3287,7 +3287,7 @@ describe('MultiSelector trigger render prop', () => {
         onChange={() => {}}
         isDisabled
         handleRef={handleRef}
-        trigger={props => (
+        renderTrigger={props => (
           <button type="button" {...props}>
             anchor
           </button>
@@ -3302,5 +3302,58 @@ describe('MultiSelector trigger render prop', () => {
       'aria-expanded',
       'false',
     );
+  });
+});
+
+describe('MultiSelector renderTrigger — read-only', () => {
+  it("a read-only selector advertises no panel on the caller's control", () => {
+    // spec:AST-011 FR4. A read-only selector has no surface to open, so a
+    // control that says "collapsed, has popup" sends a screen-reader user
+    // to press Enter on something that cannot respond — with nothing to
+    // tell them the value is read-only rather than the control broken.
+    const onOpen = vi.fn();
+    render(
+      <MultiSelector
+        label="Labels"
+        value={['a']}
+        onChange={() => {}}
+        isReadOnly
+        options={[
+          {value: 'a', label: 'Alpha'},
+          {value: 'b', label: 'Beta'},
+        ]}
+        renderTrigger={props => (
+          <button type="button" {...props} onClick={onOpen}>
+            Labels
+          </button>
+        )}
+      />,
+    );
+
+    const trigger = screen.getByRole('button', {name: 'Labels'});
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).not.toHaveAttribute('aria-haspopup');
+    expect(trigger).not.toHaveAttribute('aria-controls');
+  });
+
+  it('still advertises the panel when the selector is not read-only', () => {
+    render(
+      <MultiSelector
+        label="Labels"
+        value={[]}
+        onChange={() => {}}
+        options={[{value: 'a', label: 'Alpha'}]}
+        renderTrigger={props => (
+          <button type="button" {...props}>
+            Labels
+          </button>
+        )}
+      />,
+    );
+
+    const trigger = screen.getByRole('button', {name: 'Labels'});
+    expect(trigger).toHaveAttribute('aria-haspopup', 'listbox');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).toHaveAttribute('aria-controls');
   });
 });

@@ -443,7 +443,7 @@ export type {MultiSelectorStatus};
  * Spread them onto that control: it becomes the panel's anchor, the element
  * focus returns to, and the control that announces the panel's state.
  */
-export interface MultiSelectorTriggerProps {
+export interface MultiSelectorRenderTriggerProps {
   /** Attaches the control as the panel's anchor and focus-return target. */
   ref: (element: HTMLElement | null) => void;
   /** The id the field would have given its own button. */
@@ -750,16 +750,32 @@ export interface MultiSelectorProps<
    * rendered; the caller owns the opener. Pair with `handleRef` to open the
    * panel from a keystroke elsewhere.
    *
+   * Hover and pressed paint stay yours. The open state reaches your control
+   * as `aria-expanded` on the given props, so style it from the rendered
+   * attribute. A pressed look keyed to `:active` is not a substitute:
+   * `:active` does not behave the same under a coarse pointer, which is why
+   * menu rows drop coarse-pointer `:active` paint entirely.
+   *
+   * A read-only selector has no panel to open, so the disclosure attributes
+   * and the opening handlers are withheld: your control reports
+   * `aria-expanded="false"` and points at nothing.
+   *
    * @example
    * ```
    * <MultiSelector
    *   label="Labels"
-   *   trigger={props => <IconButton icon="tag" label="Labels" {...props} />}
+   *   renderTrigger={props => <IconButton icon="tag" label="Labels" {...props} />}
    *   …
    * />
    * ```
+   *
+   * @example
+   * ```
+   * // Styling the open state from the rendered attribute:
+   * // .my-trigger[aria-expanded='true'] { background: var(--color-overlay-pressed); }
+   * ```
    */
-  trigger?: (props: MultiSelectorTriggerProps) => ReactNode;
+  renderTrigger?: (props: MultiSelectorRenderTriggerProps) => ReactNode;
 
   /**
    * Imperative handle for opening and closing the panel. Prefer `handleRef`
@@ -860,7 +876,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   indicatorPosition = 'start',
   presentation = 'popover',
   isDefaultOpen = false,
-  trigger,
+  renderTrigger,
   handleRef,
   onOpenChange,
   'data-testid': testId,
@@ -1049,7 +1065,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   }, [searchQuery, options, selectedAtOpen, hasSelectAll, selectAllLabel]);
 
   // Layer for dropdown positioning
-  const hasExternalTrigger = trigger != null;
+  const hasExternalTrigger = renderTrigger != null;
 
   const handleLayerHide = useCallback(() => {
     setSearchQuery('');
@@ -1853,31 +1869,40 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     ),
   };
 
-  if (trigger != null) {
+  if (renderTrigger != null) {
     // Anchor-only mode: the caller renders the opener and spreads these props
     // on it. No Field, no status, no clear button — the caller owns the
     // control; the selector owns the panel, its anchor, and focus return.
-    const triggerProps: MultiSelectorTriggerProps = {
+    const triggerProps: MultiSelectorRenderTriggerProps = {
       ref: el => {
         popover.triggerRef(el);
         triggerRef.current = el;
       },
       id: triggerId,
-      onClick: onTriggerClick,
-      onKeyDown,
+      onClick: isEffectivelyReadOnly ? undefined : onTriggerClick,
+      onKeyDown: isEffectivelyReadOnly ? undefined : onKeyDown,
       onFocus: event => {
         onFocus?.(event);
         surface.onTriggerFocus(event);
       },
-      'aria-haspopup':
-        surface.activePresentation === 'bottom-sheet' ? 'dialog' : 'listbox',
-      'aria-expanded': surface.isOpen,
-      'aria-controls': listboxId,
+      // A read-only selector has no selection surface to open, so it must
+      // not advertise one: `spec:AST-011` FR4. Telling a screen-reader user
+      // "collapsed, has popup" on a control that cannot open leaves them
+      // pressing Enter with nothing happening and no way to tell the value
+      // is read-only rather than the control broken. The field path below
+      // already respects this; the anchor-only path must not regress it.
+      'aria-haspopup': isEffectivelyReadOnly
+        ? undefined
+        : surface.activePresentation === 'bottom-sheet'
+          ? 'dialog'
+          : 'listbox',
+      'aria-expanded': isEffectivelyReadOnly ? false : surface.isOpen,
+      'aria-controls': isEffectivelyReadOnly ? undefined : listboxId,
       'aria-busy': isBusy || undefined,
     };
     return (
       <>
-        {trigger(triggerProps)}
+        {renderTrigger(triggerProps)}
         {htmlName != null &&
           value.map(v => (
             <input
