@@ -107,7 +107,8 @@ export const docs = {
     {
       name: 'expand',
       type: '() => void',
-      description: 'Expand from collapsed state.',
+      description:
+        'Expand from collapsed state to the size the region had before it collapsed. After a drag-to-collapse, that is the size from before the drag began.',
     },
     {
       name: 'resize',
@@ -191,7 +192,8 @@ export const docsDense = {
     size: 'current size in px.',
     isCollapsed: 'whether region currently collapsed.',
     collapse: 'programmatically collapse region.',
-    expand: 'expand from collapsed state.',
+    expand:
+      'expand from collapsed state to pre-collapse size (pre-drag size after a drag-collapse).',
     resize: 'resize to specific px value.',
     props: 'props to spread on resizable component / pass to ResizeHandle.',
   },
