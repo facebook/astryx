@@ -9,10 +9,12 @@ superseded_by: null
 approved_by: cixzhang
 approved_at: 2026-09-07
 owners: [cixzhang, imdreamrunner]
-review_triggers: [public-api, layout, theming]
+review_triggers: [public-api, layout, theming, accessibility]
 verified_by:
   [
     packages/core/src/Banner/Banner.test.tsx,
+    packages/core/src/Banner/__tests__/Alert.a11y.test.tsx,
+    packages/core/src/Banner/__tests__/Alert.a11y.chromium.spec.ts,
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
@@ -26,7 +28,7 @@ architecture:
     architecture:theme-compilation,
   ]
 contributing: []
-system_specs: []
+system_specs: [spec:AST-009, spec:AST-020, spec:AST-021]
 ---
 
 # Banner component contract
@@ -122,8 +124,12 @@ runtime work.
 
 ## Accessibility contract
 
-This contract does not change Banner's current status roles, announcements,
-focus handoff, disclosure controls, or accessible control names.
+Banner's visual status mapping, focus handoff, disclosure controls, and accessible
+control names remain component-owned. The dedicated alert-state binding exercises
+only Banner renders that explicitly request `role="alert"` through the existing DOM
+prop surface; it proves the shared status-message contract's DOM,
+accessibility-tree, and focus-preservation outcomes without claiming what assistive
+technology announces. Announcement wording and timing remain under AST-009.
 
 ## Design relationships
 
@@ -174,13 +180,14 @@ the visible frame that owns whole-banner elevation and silhouette.
 
 ## Verification map
 
-| Contract            | Verification                                                   | Representative states                                  | Mutation or failure expectation                                                                                  | Audit section           |
-| ------------------- | -------------------------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| FR1, FR7            | `Banner.test.tsx` and `themingTargets.test.ts`                 | Status surface, content surface, current target axes   | Moving, removing, or changing an existing target breaks current assertions.                                      | `audit:Banner/theming`  |
-| FR2, FR3, FR4       | `Banner.test.tsx` plus current source inspection               | Flat/elevated card and elevated section                | Frame, status surface, content surface, shadow, or radius ownership changes from the recorded state.             | `audit:Banner/surfaces` |
-| FR5                 | Compiler output plus browser/computed-style evidence           | Card with and without content; elevated card           | `banner.borderRadius` unexpectedly reaches the frame/content, or docs claim that the current route already does. | `audit:Banner/radius`   |
-| FR6, FR7            | Implementation PR target, compiler, probe, and component tests | Card/section across none, low, med, and high elevation | `banner-frame` is absent, uses another name, misses an axis, or moves the existing `banner` target.              | `audit:Banner/theming`  |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                  | Eight anatomy entries and five current targets         | Missing, extra, prefixed, stale, or unclaimed current mappings fail validation.                                  | `audit:Banner/theming`  |
+| Contract            | Verification                                                   | Representative states                                      | Mutation or failure expectation                                                                                  | Audit section           |
+| ------------------- | -------------------------------------------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| FR1, FR7            | `Banner.test.tsx` and `themingTargets.test.ts`                 | Status surface, content surface, current target axes       | Moving, removing, or changing an existing target breaks current assertions.                                      | `audit:Banner/theming`  |
+| FR2, FR3, FR4       | `Banner.test.tsx` plus current source inspection               | Flat/elevated card and elevated section                    | Frame, status surface, content surface, shadow, or radius ownership changes from the recorded state.             | `audit:Banner/surfaces` |
+| FR5                 | Compiler output plus browser/computed-style evidence           | Card with and without content; elevated card               | `banner.borderRadius` unexpectedly reaches the frame/content, or docs claim that the current route already does. | `audit:Banner/radius`   |
+| FR6, FR7            | Implementation PR target, compiler, probe, and component tests | Card/section across none, low, med, and high elevation     | `banner-frame` is absent, uses another name, misses an axis, or moves the existing `banner` target.              | `audit:Banner/theming`  |
+| Alert state         | `Alert.a11y.test.tsx` and `Alert.a11y.chromium.spec.ts`        | Explicit urgent error; explicit urgent dismissible warning | Role, assertive channel, complete text, atomicity, or focus preservation regresses across a message update.      | `audit:Banner/a11y`     |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                  | Eight anatomy entries and five current targets             | Missing, extra, prefixed, stale, or unclaimed current mappings fail validation.                                  | `audit:Banner/theming`  |
 
 ## Decision log
 
