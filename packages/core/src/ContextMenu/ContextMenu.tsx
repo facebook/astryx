@@ -23,8 +23,8 @@
  * Both modes use useListFocus for DOM-based keyboard navigation.
  * Open state is managed internally — right-click opens, click-outside/Escape closes.
  * The trigger wrapper is a `div` by default; `triggerAs` makes it an inline
- * `span` or a box-less `contents` span, so a reference inside prose can own a
- * context menu without breaking the text flow.
+ * `span`, so a reference inside prose can own a context menu without
+ * breaking the text flow.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/ContextMenu/ContextMenu.doc.mjs
@@ -109,13 +109,6 @@ const styles = stylex.create({
     WebkitTouchCallout: 'none',
     WebkitUserSelect: 'none',
     userSelect: 'none',
-  },
-  // `triggerAs="contents"`: the trigger owns no box, so an inline reference in
-  // prose keeps its text flow; the cursor anchor then positions against the
-  // nearest positioned ancestor and the local point is computed from it.
-  triggerContents: {
-    display: 'contents',
-    position: 'static',
   },
   // Zero-size anchor placed at the cursor point within the trigger. The menu
   // is anchored to this element, so it sits under the cursor yet is positioned
@@ -211,12 +204,11 @@ interface ContextMenuBaseProps extends BaseProps {
   ref?: React.Ref<HTMLElement>;
   /**
    * The element the trigger wrapper renders as. `div` is a block; `span` an
-   * inline wrapper, so a reference inside prose can own a context menu without
-   * breaking the text flow; `contents` a span with no box of its own, so the
-   * children lay out exactly as they would without the menu.
+   * inline wrapper, so a reference inside prose can own a context menu
+   * without breaking the text flow.
    * @default 'div'
    */
-  triggerAs?: 'div' | 'span' | 'contents';
+  triggerAs?: 'div' | 'span';
   /**
    * Styles applied to the trigger wrapper element (the right-click target).
    * By default the trigger is a plain block that hugs its content — pass a
@@ -548,14 +540,11 @@ export function ContextMenu({
   );
 
   // The box the cursor anchor's offsets are measured from: the trigger, which
-  // is its containing block — or, for a box-less `contents` trigger, whatever
-  // positioned ancestor the anchor falls back to.
-  const getAnchorBaseRect = useCallback((): DOMRect | undefined => {
-    if (triggerAs === 'contents') {
-      return cursorAnchorRef.current?.offsetParent?.getBoundingClientRect();
-    }
-    return triggerRef.current?.getBoundingClientRect();
-  }, [triggerAs]);
+  // is its containing block.
+  const getAnchorBaseRect = useCallback(
+    (): DOMRect | undefined => triggerRef.current?.getBoundingClientRect(),
+    [],
+  );
 
   const handleContextMenu = useCallback(
     (e: React.MouseEvent) => {
@@ -701,8 +690,8 @@ export function ContextMenu({
       renderedMenu
     );
 
-  // An inline trigger (`span`, `contents`) lets prose own a context menu
-  // without breaking its flow.
+  // An inline trigger (`span`) lets prose own a context menu without
+  // breaking its flow.
   const TriggerElement = triggerAs === 'div' ? 'div' : 'span';
 
   return (
@@ -715,7 +704,6 @@ export function ContextMenu({
         data-testid={testId}
         {...stylex.props(
           styles.trigger,
-          triggerAs === 'contents' && styles.triggerContents,
           ...(triggerXstyle
             ? Array.isArray(triggerXstyle)
               ? triggerXstyle

@@ -145,9 +145,9 @@ export const docs = {
     },
     {
       name: 'triggerAs',
-      type: "'div' | 'span' | 'contents'",
+      type: "'div' | 'span'",
       description:
-        "The element the trigger wrapper renders as. 'div' is a block; 'span' an inline wrapper, so a reference inside prose can own a context menu without breaking the text flow; 'contents' a span with no box of its own, so the children lay out exactly as they would without the menu.",
+        "The element the trigger wrapper renders as. 'div' is a block; 'span' an inline wrapper, so a reference inside prose can own a context menu without breaking the text flow.",
       default: "'div'",
     },
   ],

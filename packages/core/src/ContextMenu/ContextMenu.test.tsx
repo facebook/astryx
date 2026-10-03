@@ -1086,28 +1086,6 @@ describe('ContextMenu inline trigger (triggerAs)', () => {
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
   });
 
-  it('triggerAs="contents" renders no box of its own', () => {
-    render(
-      <p>
-        <ContextMenu
-          triggerAs="contents"
-          data-testid="ref"
-          items={[{label: 'Open', onClick: () => {}}]}>
-          <a href="/t/123">T123</a>
-        </ContextMenu>
-      </p>,
-    );
-    const trigger = screen.getByTestId('ref');
-    expect(trigger.tagName).toBe('SPAN');
-    expect(trigger).toHaveStyle({display: 'contents'});
-    fireEvent.contextMenu(screen.getByRole('link', {name: 'T123'}), {
-      clientX: 20,
-      clientY: 10,
-      detail: 1,
-    });
-    expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
-  });
-
   it('defaults to a block trigger', () => {
     render(
       <ContextMenu data-testid="area" items={[{label: 'Open'}]}>
