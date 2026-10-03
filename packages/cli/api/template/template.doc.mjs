@@ -114,7 +114,7 @@ export const doc = {
     {
       type: 'template.show',
       description:
-        "The resolved template's raw source plus its description, kind, and the component names it composes.",
+        "The resolved template's source, exactly as a copy writes it, plus its description, kind, the component names it composes, and `demoMediaReplaced` — how many Astryx demo media references (images, posters, videos) in the source were replaced with placeholders for you to swap for your own media.",
     },
     {
       type: 'template.skeleton',
