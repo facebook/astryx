@@ -110,6 +110,7 @@ released default.
 | FR10                  | An action row with `href` MUST render as one anchor carrying `role="menuitem"` (the pointer menu) or the touch sheet's link row, routed through `LinkProvider`; a plain click MUST run `onClick`, then close the menu (`hasCloseOnSelect`), then let the browser navigate; a modified click or middle click MUST be left to the browser and MUST NOT run `onClick`; Enter and Space MUST activate through a synthesized click that carries the key's modifiers. A disabled link row has no `href`.                                                                                                                                                                                                                            | `component:DropdownMenu/DEC-2`; `family:navigation-destinations`                                                                                                              | Proposed; verified in jsdom; owner to confirm DEC-1                               |
 | Sub-menu presentation | `presentation` on a sub-menu row: `flyout`, `drill-in`, `adaptive`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Whether a sub-menu opens beside its row or replaces the menu's rows with its own and a Back row, in the same box. `adaptive` drills in when a coarse pointer opened the menu. | Pointer presentation, compound and data mode                                      | `adaptive`           | `component:DropdownMenu` | stable | An unknown value reads as `adaptive`.                            |
 | FR11                  | When a compact touch display opened the pointer menu (`COMPACT_TOUCH_PRESENTATION_QUERY`, the same query the root presentation uses for its bottom sheet, sampled once as it opens) an `adaptive` sub-menu row MUST drill in: its rows and a leading Back row named "Back to <parent>" replace the menu's rows in the same Pointer menu surface, no flyout opens, the drilled list is a `menu` named by the row's label, and Back, Escape and ArrowLeft MUST return to the row with focus on it; a pick inside closes the whole menu. Roving focus and typeahead scope to the shown rows; sibling rows and dividers need no knowledge of it. `presentation="flyout"` keeps the flyout; `"drill-in"` drills in on any pointer. | `component:DropdownMenu/DEC-2`; `architecture:interaction-modality`                                                                                                           | Proposed; verified in jsdom and Chromium (coarse pointer); owner to confirm DEC-5 |
+| FR12                  | In the pointer menu ArrowDown on the last enabled row wraps to the first and ArrowUp on the first to the last; PageDown and PageUp move to the last and first fully visible enabled row and, pressed there again, one viewport further without wrapping; ArrowUp on the trigger opens with the last enabled row highlighted; the key that opened the menu and its auto-repeats do not activate; typeahead matches the row's label element alone and ignores Control/Command chords and input-method composition.                                                                                                                                                                                                              | Proposed in this change; `DropdownMenu.test.tsx` keyboard suite, `useListFocus.test.tsx`, `useTypeahead.test.tsx`                                                             | Proposed; verified in jsdom, pending owner review                                 |
 
 ### Allowed variation
 
@@ -276,6 +277,8 @@ than adding a DropdownMenu-owned heading target.
 
 ### DEC-1 — Pointer dismissal returns focus to the trigger, ring suppressed
 
+### DEC-2 — Arrow keys wrap in a menu
+
 **Reference:** `component:DropdownMenu/DEC-1`
 **Decider:** pending owner review
 
@@ -308,8 +311,6 @@ viewport term cannot reason about.
 
 ### DEC-3 — Any control can open a menu
 
-### DEC-4 — Sub-menus drill in on a phone
-
 **Reference:** `component:DropdownMenu/DEC-3`
 
 **Decider:** `cixzhang`, 2026-10-02
@@ -339,9 +340,52 @@ Rejected: an `as` prop on the Button — an icon button, a chip, an avatar and a
 list row are not Button variants; a slot component — hides which props must
 reach the control.
 
-### DEC-4 — A row that goes somewhere is a link
+### DEC-4 — Sub-menus drill in on a phone
 
 **Reference:** `component:DropdownMenu/DEC-4`
+
+**Decider:** `cixzhang`, 2026-10-02
+
+A flyout beside a phone-width menu has no room. When a compact touch display
+opened the menu — sampled once, as it opens, so the menu never changes shape
+under a pointer — a sub-menu row pushes its view onto a stack the root keeps
+(`useMenuDrillIn`, internal) and the root shows that view in place of its rows:
+a "Back to <parent>" row, then the sub-menu's rows, inside the same menu box.
+The sub-menu portals its list into the root's host so the row stays mounted,
+its rows stay live, and Back has something to return focus to; sibling rows
+and dividers need no knowledge of it. Works in compound and data mode and in
+`ContextMenu`; `presentation` overrides the policy.
+
+The query is `COMPACT_TOUCH_PRESENTATION_QUERY`, the one the root
+presentation already uses to decide its bottom sheet, so one component
+carries one meaning of "adaptive". A bare `(pointer: coarse)` disagreed with
+it on a large touch tablet: the menu stayed an anchored popover while its
+sub-menus replaced rows in place, a combination nobody designed.
+
+The public surface is `presentation` alone. `useMenuDrillIn` and its
+`DropdownMenuDrillIn` view-stack controller stay internal: exporting them
+would make internal machinery permanent API that nothing here requires a
+caller to touch. A product that later needs to drive the stack earns a
+deliberate component or hook then, with its own contract.
+
+Rejected: a flipped flyout — lands over the parent rows and reads as a second
+menu; drill-in in data mode only — every menu in the app is compound; a
+`{label, children}` snapshot pushed onto the stack — unmounts the row and
+breaks focus return.
+
+## Open questions
+
+None.
+
+## Content boundary
+
+This file does not duplicate consumer prop tables, item examples, focus and
+positioning algorithms, implementation steps, or shared modality, layer,
+dismissal, and theming rules. It links to their owners.
+
+### DEC-5 — A row that goes somewhere is a link
+
+**Reference:** `component:DropdownMenu/DEC-5`
 
 **Decider:** vjeux, 2026-09-27 (owner confirmation pending)
 
