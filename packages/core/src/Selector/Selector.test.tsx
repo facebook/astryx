@@ -1145,6 +1145,124 @@ describe('Selector', () => {
       );
     });
 
+    // `emptySearchText` is typed ReactNode, which invites an element — a
+    // "no results, create one" row is exactly what a dead end is for. The
+    // announcement used to take the prop only when it was a string and
+    // announce the catalog default otherwise, so a screen-reader user was
+    // told something the sighted user was not reading (`spec:AST-056` AR1).
+    it('announces the text of an element emptySearchText', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+          emptySearchText={
+            <span>
+              Nothing like that here. <a href="/new">Add a fruit</a>
+            </span>
+          }
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'xyz');
+
+      await waitFor(() =>
+        expect(politeRegion()?.textContent).toBe(
+          'Nothing like that here. Add a fruit',
+        ),
+      );
+    });
+
+    it('announces the text of an element emptyText', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={[]}
+          onChange={() => {}}
+          emptyText={
+            <span>
+              Add a fruit first<span aria-hidden="true"> →</span>
+            </span>
+          }
+        />,
+      );
+      await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+
+      // The decorative arrow is hidden from the accessibility tree on screen,
+      // so it stays out of the announcement too.
+      await waitFor(() =>
+        expect(politeRegion()?.textContent).toBe('Add a fruit first'),
+      );
+    });
+
+    it('announces text a child component renders, which is only in the DOM', async () => {
+      const user = userEvent.setup();
+      // The words exist nowhere in the node the caller passed — they are
+      // produced inside this component's own render. Reading the DOM after
+      // render is what makes them announceable.
+      function Message() {
+        return <span>Nothing like that here</span>;
+      }
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+          emptySearchText={<Message />}
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'xyz');
+
+      await waitFor(() =>
+        expect(politeRegion()?.textContent).toBe('Nothing like that here'),
+      );
+    });
+
+    it('announces an empty result that arrives after the keystroke', async () => {
+      const user = userEvent.setup();
+      // The query is typed while the options are still loading, so the
+      // keystroke-time announcement cannot know the outcome. When the load
+      // lands with nothing that matches, the message appears on screen and
+      // the region has to say so too.
+      function Deferred() {
+        const [loaded, setLoaded] = useState(false);
+        return (
+          <>
+            <button type="button" onClick={() => setLoaded(true)}>
+              land
+            </button>
+            <Selector
+              label="Fruit"
+              options={loaded ? OPTIONS : []}
+              onChange={() => {}}
+              hasSearch
+              isLoading={!loaded}
+              isDefaultOpen
+              emptySearchText="Nothing like that here"
+            />
+          </>
+        );
+      }
+      render(<Deferred />);
+
+      await user.type(screen.getByRole('combobox', h), 'xyz');
+      // Loading: the panel shows nothing, so the region claims nothing.
+      expect(politeRegion()?.textContent ?? '').toBe('');
+
+      await user.click(screen.getByRole('button', {name: 'land'}));
+
+      await waitFor(() =>
+        expect(politeRegion()?.textContent).toBe('Nothing like that here'),
+      );
+    });
+
     it('announces the empty state when opened with no options', async () => {
       const user = userEvent.setup();
       render(
