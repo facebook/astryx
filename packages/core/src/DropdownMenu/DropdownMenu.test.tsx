@@ -2382,4 +2382,30 @@ describe('DropdownMenu focus return after a pointer pick', () => {
       ),
     );
   });
+
+  it('gives the ring back when the keyboard returns to the trigger', async () => {
+    const user = userEvent.setup();
+    const trigger = renderMenu();
+    await user.click(trigger);
+    await user.click(item('Edit'));
+    await waitFor(() =>
+      expect(trigger).toHaveClass(
+        stylex.props(focusOutlineStyles.suppressed).className!,
+      ),
+    );
+
+    // The suppression belongs to the pointer that dismissed the menu, not to
+    // the trigger. A keyboard user who tabs away and back is asking to see
+    // where they are, so the ring must come back: the trigger's own `onFocus`
+    // clears the suppression once the modality is keyboard again.
+    trigger.blur();
+    await user.keyboard('{Shift>}{Tab}{/Shift}');
+    trigger.focus();
+
+    await waitFor(() =>
+      expect(trigger).not.toHaveClass(
+        stylex.props(focusOutlineStyles.suppressed).className!,
+      ),
+    );
+  });
 });
