@@ -1,0 +1,55 @@
+{
+  "name": "option-action-shape",
+  "description": "Vibe test comparing four API shapes for a secondary action beside an option in MultiSelector's picker panel: a root render prop, a per-option node, a per-option declared descriptor, and a per-option array of nodes. The host is the same in every arm (the panel becomes a grid when actions are present); only how a caller declares the action varies. Prompts are identical across arms and never name a prop or key, and never use the words 'grid', 'cell' or 'render prop'.",
+  "arms": [
+    "arm-a-render-prop",
+    "arm-b-node",
+    "arm-c-declared",
+    "arm-d-array",
+    "arm-recall"
+  ],
+  "dimensions": {
+    "correctness": "Uses the arm's documented shape for the task; an option without an action gets none; the action does not toggle the option.",
+    "hallucination": "No invented props, keys, components or imports beyond the reference and plain React.",
+    "a11y": "Every action stays reachable by keyboard without a second hand-built UI, and the output does not put a control inside renderOption.",
+    "directness": "Nothing unrequested: no extra toolbar, no selection model, no second list.",
+    "detection": "Only the panel that has an action anywhere becomes a grid. In arm A this needs a caller-side guard when no row may have one; in B, C and D it follows from the data. Scored on p1 and p5."
+  },
+  "prompts": [
+    {
+      "id": "p1",
+      "cell": "an action on some rows but not others; the set with actions may be empty",
+      "correct": "Edit control beside team-made labels only; built-in labels get nothing; when no label is team-made the panel has no actions (arm A: the prop is not passed, or is passed conditionally)",
+      "text": "Build a label picker for an issue tracker. People can check any number of labels. Some labels are built in (bug, feature, docs) and some were made by the team; the team-made ones can be renamed, so each of those needs a small edit button next to it that opens the rename form, while the built-in ones get nothing. The team may not have made any yet. Assume `labels` (each with `id`, `name`, `isCustom`), `selectedIds`, `setSelectedIds` and `openRename(id)` already exist."
+    },
+    {
+      "id": "p2",
+      "cell": "an action that must not toggle the option",
+      "correct": "an info control beside every teammate, placed in the arm's action slot (never in renderOption), whose click opens the profile and does not change the selection",
+      "text": "Build a reviewer picker. People can check several teammates. Beside every teammate there is a small info button that opens that person's profile card; pressing it must open the profile and nothing else — it must not check or uncheck the teammate. Assume `teammates` (each with `id`, `name`, `title`), `selected`, `setSelected` and `showProfile(id)` already exist."
+    },
+    {
+      "id": "p3",
+      "cell": "several actions on one row",
+      "correct": "rename and delete controls beside every filter, both in the arm's action slot (arm C can hold only one and must say so or work around it honestly)",
+      "text": "Build a saved-filters picker for a dashboard. People can turn any number of saved filters on. Each saved filter can also be renamed or deleted right from its row, so every row needs those two controls. Assume `filters` (each with `id`, `name`), `activeIds`, `setActiveIds`, `rename(id)` and `remove(id)` already exist."
+    },
+    {
+      "id": "p4",
+      "cell": "search enabled; a keyboard-only colleague must reach every action",
+      "correct": "hasSearch with a pin control beside every project in the arm's action slot; no second keyboard path built; the output relies on the documented Right/Left route",
+      "text": "Build a project picker with a search box, since there are a few hundred projects. People can check several projects. Each project can be pinned to the sidebar from its row with a pin button. A colleague who uses only the keyboard must be able to pin any project and check any project. Assume `projects` (each with `id`, `name`), `chosen`, `setChosen` and `pin(id)` already exist."
+    },
+    {
+      "id": "p5",
+      "cell": "negative control: no actions at all",
+      "correct": "a plain MultiSelector; no action prop, key or array anywhere",
+      "text": "Build a country picker for a shipping form. People can check any number of countries. Nothing happens to a country other than checking or unchecking it. Assume `countries` (each with `code`, `name`), `selected` and `setSelected` already exist."
+    }
+  ],
+  "recall": {
+    "id": "recall",
+    "note": "Behavior described, prop and key names deliberately unnamed. The agent writes the API it expects for p1, p3 and p4 in one pass; one agent per sample, three samples. Deliberate deviation from one-agent-per-prompt, as in the row-actions test; recorded in RESULTS.md caveats.",
+    "scenarios": ["p1", "p3", "p4"]
+  }
+}
