@@ -216,9 +216,9 @@ export const docs = {
     },
     {
       name: 'menuMaxHeight',
-      type: 'number | string',
+      type: 'number',
       description:
-        'Maximum height for the popover presentation, for a menu that must fit its rows. Lifts the default 300px cap; the viewport still bounds it. A number is pixels.',
+        'Maximum height in pixels for the popover presentation, for a menu that must fit its rows. Lifts the default 300px cap; the viewport still bounds it.',
     },
     {
       name: 'placement',

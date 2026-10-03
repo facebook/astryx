@@ -321,11 +321,11 @@ interface DropdownMenuBaseProps extends BaseProps {
    */
   menuWidth?: number | string;
   /**
-   * Maximum menu height, for a menu that must fit its rows. Lifts the default
-   * 300px cap; the viewport still bounds it. A number is pixels. Ignored by
+   * Maximum menu height in pixels, for a menu that must fit its rows. Lifts
+   * the default 300px cap; the viewport still bounds it. Ignored by
    * bottom-sheet presentation.
    */
-  menuMaxHeight?: number | string;
+  menuMaxHeight?: number;
   onClick?: () => void;
   hasChevron?: boolean;
   /**
@@ -946,12 +946,7 @@ function DropdownMenuPopover({
       ? styles.popoverCentered
       : styles.popoverAligned;
   const isSidePlacement = placement === 'start' || placement === 'end';
-  const resolvedMaxHeight =
-    menuMaxHeight == null
-      ? null
-      : typeof menuMaxHeight === 'number'
-        ? `${menuMaxHeight}px`
-        : menuMaxHeight;
+  const resolvedMaxHeight = menuMaxHeight == null ? null : `${menuMaxHeight}px`;
   // Context for compound items
   const contextValue = useMemo<DropdownMenuContextValue>(
     () => ({closeMenu, menuSize}),

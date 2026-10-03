@@ -2332,15 +2332,18 @@ describe('DropdownMenu menuMaxHeight', () => {
     expect(popover?.getAttribute('style')).toContain('min(528px, calc(100dvb');
   });
 
-  it('takes a CSS length for menuMaxHeight', () => {
+  it('keeps the viewport bound below the raised cap', () => {
+    // The cap is the smaller of the two terms, so a tall menu on a short
+    // screen is still bounded by the viewport rather than by the number the
+    // caller asked for.
     render(
       <DropdownMenu
         button={{label: 'Actions'}}
-        menuMaxHeight="80dvh"
+        menuMaxHeight={720}
         items={[{label: 'Row'}]}
       />,
     );
     const menu = screen.getByRole('menu', {hidden: true});
-    expect(menu.getAttribute('style')).toContain('min(80dvh, calc(100dvb');
+    expect(menu.getAttribute('style')).toContain('min(720px, calc(100dvb');
   });
 });

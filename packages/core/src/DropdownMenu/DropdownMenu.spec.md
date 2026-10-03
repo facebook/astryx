@@ -84,9 +84,9 @@ Consumer props, item shapes, subcomponents, and presentation policy remain
 documented in `DropdownMenu.doc.mjs` and the subcomponent docs. One
 component-local concept is added by DEC-3; it keeps its released default.
 
-| Concept         | Closed values or states                          | Meaning                                                                              | Availability by variant/orientation/state | Default | Owner                    | Stability | Invalid-value behavior      |
-| --------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------ | ----------------------------------------- | ------- | ------------------------ | --------- | --------------------------- |
-| Menu height cap | `menuMaxHeight`: a length, or a number of pixels | Lifts the 300px cap for a menu that must fit its rows; the viewport still bounds it. | Pointer presentation                      | `300px` | `component:DropdownMenu` | stable    | Ignored by the touch sheet. |
+| Concept         | Closed values or states             | Meaning                                                                              | Availability by variant/orientation/state | Default | Owner                    | Stability | Invalid-value behavior      |
+| --------------- | ----------------------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------- | ------- | ------------------------ | --------- | --------------------------- |
+| Menu height cap | `menuMaxHeight`: a number of pixels | Lifts the 300px cap for a menu that must fit its rows; the viewport still bounds it. | Pointer presentation                      | `300px` | `component:DropdownMenu` | stable    | Ignored by the touch sheet. |
 
 ## Behavioral and layout contract
 
@@ -254,12 +254,21 @@ awaits the owner's confirmation (the record stays `draft` until then).
 
 **Reference:** `component:DropdownMenu/DEC-3`
 
-**Decider:** vjeux, 2026-09-27 (owner confirmation pending)
+**Decider:** `cixzhang`, 2026-10-02
 
 `menuMaxHeight` replaces only the 300px term of the cap; the viewport gutters
 still bound the menu, so a menu that must show all of its rows (a docked phone
 menu of eleven 44px rows) can, without ever overflowing the screen. The dynamic
 value uses `100dvb` alone; every browser with anchor positioning has it.
+
+A prop rather than a theme variable, because the need is situational — one
+menu with many rows — rather than a product-wide preference, and a prop reads
+more clearly at the callsite that has the problem.
+
+The value is a number of pixels. An arbitrary CSS length (`50vh`,
+`calc(...)`) is product-shaped tuning on a shared component, which
+`spec:AST-002` does not admit, and it would let a caller write a cap the
+viewport term cannot reason about.
 
 ## Open questions
 
