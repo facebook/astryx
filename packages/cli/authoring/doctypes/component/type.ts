@@ -48,6 +48,14 @@ export interface ComponentBaseDoc extends AuthoredDocGraphFields {
   displayName: string;
   /** Exact consumer import specifier for integration-owned components. */
   import?: string;
+  /** Integration components only: the exact `name` of the Core ComponentDoc
+   *  this component takes over for unqualified lookup, so every app that loads
+   *  the integration gets this component from component detail, lists, search,
+   *  swizzle, and issue routing. The Core original stays reachable with
+   *  `--package @astryxdesign/core`. Set it only to intentionally own a Core
+   *  identity; give an alternative or variant its own name instead. Older CLIs
+   *  that do not read `replaces` keep the component under its own name. */
+  replaces?: string;
   /** Search keywords for CLI discovery. Terms a developer might type when
    *  looking for this component: synonyms, related UI concepts, and common
    *  names from other design systems (MUI, Chakra, Radix, and others).

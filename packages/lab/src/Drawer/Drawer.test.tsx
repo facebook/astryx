@@ -13,6 +13,7 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, act} from '@testing-library/react';
 import {useState} from 'react';
 import {Drawer} from './Drawer';
+import {DrawerHeader} from './DrawerHeader';
 
 // Mock dialog methods since they're not fully implemented in jsdom
 beforeEach(() => {
@@ -445,10 +446,10 @@ describe('Drawer', () => {
     render(
       <Drawer isOpen onOpenChange={() => {}} label="Details">
         <button type="button">First action</button>
+        <button type="button">Last action</button>
       </Drawer>,
     );
-    const closeButton = screen.getByRole('button', {name: 'Close'});
-    closeButton.focus();
+    screen.getByRole('button', {name: 'Last action'}).focus();
 
     fireEvent.keyDown(document, {key: 'Tab'});
 
@@ -552,61 +553,152 @@ describe('Drawer', () => {
     });
   });
 
-  describe('close button', () => {
-    it('renders a close button by default when modal', () => {
-      const handleOpenChange = vi.fn();
-      render(
-        <Drawer isOpen onOpenChange={handleOpenChange} label="Details">
+  describe('close control', () => {
+    it('renders no close button of its own, modal or non-modal', () => {
+      const {rerender} = render(
+        <Drawer isOpen onOpenChange={() => {}} label="Details">
           Content
         </Drawer>,
       );
-      const closeButton = screen.getByRole('button', {name: 'Close'});
-      fireEvent.click(closeButton);
-      expect(handleOpenChange).toHaveBeenCalledWith(false);
+      expect(screen.queryByRole('button')).not.toBeInTheDocument();
+      rerender(
+        <Drawer isOpen onOpenChange={() => {}} label="Details" hasScrim={false}>
+          Content
+        </Drawer>,
+      );
+      expect(screen.queryByRole('button')).not.toBeInTheDocument();
     });
 
-    it('renders a close button by default when non-modal', () => {
+    it('closes through a DrawerHeader given the same onOpenChange', () => {
       const handleOpenChange = vi.fn();
       render(
-        <Drawer
-          isOpen
-          onOpenChange={handleOpenChange}
-          label="Details"
-          hasScrim={false}>
+        <Drawer isOpen onOpenChange={handleOpenChange} label="Details">
+          <DrawerHeader title="Details" onOpenChange={handleOpenChange} />
           Content
         </Drawer>,
       );
       fireEvent.click(screen.getByRole('button', {name: 'Close'}));
       expect(handleOpenChange).toHaveBeenCalledWith(false);
     });
+  });
 
-    it('hides the close button with hasCloseButton={false}', () => {
+  describe('purpose', () => {
+    it("defaults to 'info': Escape and a scrim click both request close", () => {
+      const handleOpenChange = vi.fn();
+      render(
+        <Drawer isOpen onOpenChange={handleOpenChange} label="Details">
+          Content
+        </Drawer>,
+      );
+      const dialog = screen.getByRole('dialog');
+      fireEvent.keyDown(dialog, {key: 'Escape'});
+      fireEvent.click(dialog);
+      expect(handleOpenChange).toHaveBeenCalledTimes(2);
+      expect(handleOpenChange).toHaveBeenNthCalledWith(1, false);
+      expect(handleOpenChange).toHaveBeenNthCalledWith(2, false);
+    });
+
+    it("'form' closes on Escape but ignores a scrim click", () => {
+      const handleOpenChange = vi.fn();
+      render(
+        <Drawer
+          isOpen
+          onOpenChange={handleOpenChange}
+          label="Details"
+          purpose="form">
+          Content
+        </Drawer>,
+      );
+      const dialog = screen.getByRole('dialog');
+      fireEvent.click(dialog);
+      expect(handleOpenChange).not.toHaveBeenCalled();
+      fireEvent.keyDown(dialog, {key: 'Escape'});
+      expect(handleOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it("'required' ignores Escape, the native cancel event, and a scrim click", () => {
+      const handleOpenChange = vi.fn();
+      render(
+        <Drawer
+          isOpen
+          onOpenChange={handleOpenChange}
+          label="Accept terms"
+          purpose="required">
+          Content
+        </Drawer>,
+      );
+      const dialog = screen.getByRole('alertdialog');
+      fireEvent.keyDown(dialog, {key: 'Escape'});
+      fireEvent.click(dialog);
+      const cancelEvent = new Event('cancel', {cancelable: true});
+      fireEvent(dialog, cancelEvent);
+      expect(cancelEvent.defaultPrevented).toBe(true);
+      expect(handleOpenChange).not.toHaveBeenCalled();
+    });
+
+    it("'required' consumes Escape so a drawer behind it stays open", () => {
+      const closeOuter = vi.fn();
+      const closeInner = vi.fn();
+      function Harness() {
+        const [isInnerOpen, setIsInnerOpen] = useState(false);
+        return (
+          <>
+            <Drawer
+              isOpen
+              onOpenChange={closeOuter}
+              label="Order"
+              hasScrim={false}>
+              <button type="button" onClick={() => setIsInnerOpen(true)}>
+                Open terms
+              </button>
+            </Drawer>
+            <Drawer
+              isOpen={isInnerOpen}
+              onOpenChange={closeInner}
+              label="Accept terms"
+              purpose="required">
+              Terms
+            </Drawer>
+          </>
+        );
+      }
+      render(<Harness />);
+      fireEvent.click(screen.getByRole('button', {name: 'Open terms'}));
+      fireEvent.keyDown(document, {key: 'Escape'});
+      expect(closeInner).not.toHaveBeenCalled();
+      expect(closeOuter).not.toHaveBeenCalled();
+    });
+
+    it("exposes a modal 'required' drawer as an alertdialog", () => {
       render(
         <Drawer
           isOpen
           onOpenChange={() => {}}
-          label="Details"
-          hasCloseButton={false}>
+          label="Accept terms"
+          purpose="required">
           Content
         </Drawer>,
       );
       expect(
-        screen.queryByRole('button', {name: 'Close'}),
-      ).not.toBeInTheDocument();
+        screen.getByRole('alertdialog', {name: 'Accept terms'}),
+      ).toHaveAttribute('aria-modal', 'true');
     });
 
-    it('keeps the close button when hasCloseButton is explicitly true in non-modal mode', () => {
+    it("keeps a non-modal 'required' drawer in the dialog role", () => {
       render(
         <Drawer
           isOpen
           onOpenChange={() => {}}
-          label="Details"
-          hasScrim={false}
-          hasCloseButton>
+          label="Accept terms"
+          purpose="required"
+          hasScrim={false}>
           Content
         </Drawer>,
       );
-      expect(screen.getByRole('button', {name: 'Close'})).toBeInTheDocument();
+      expect(
+        screen.getByRole('dialog', {name: 'Accept terms'}),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     });
   });
 

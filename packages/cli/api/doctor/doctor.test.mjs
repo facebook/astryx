@@ -354,16 +354,31 @@ describe('checkImplicitIntegrations', () => {
   });
 
   it('names the package, the field, and what it contributes', () => {
-    const c = checkImplicitIntegrations({
-      integrations: [
-        autolinked({templates: '/abs/templates', themes: '/abs/themes'}),
-      ],
-    });
-    expect(c.message).toContain('@acme/widgets@1.0.0');
-    expect(c.message).toContain('from dependencies');
-    expect(c.message).toContain(
-      'contributing components, templates, themes',
-    );
+    // Roots count only when they exist, so this one gives them real folders.
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-implicit-'));
+    try {
+      const dir = name => {
+        fs.mkdirSync(path.join(root, name));
+        return path.join(root, name);
+      };
+      const c = checkImplicitIntegrations({
+        integrations: [
+          autolinked({
+            components: dir('components'),
+            templates: dir('templates'),
+            themes: dir('themes'),
+          }),
+        ],
+      });
+      expect(c.message).toContain('@acme/widgets@1.0.0');
+      expect(c.message).toContain('from dependencies');
+      expect(c.message).toContain(
+        'contributing components, templates, themes',
+      );
+      expect(c.message).not.toContain('missing on disk');
+    } finally {
+      fs.rmSync(root, {recursive: true, force: true});
+    }
   });
 
   it('names the declared key too when an npm alias makes them differ', () => {
@@ -904,5 +919,102 @@ describe('checkDocsProgressiveDisclosure languages', () => {
     expect(c.message).toContain('deploying [zh]: zh overlay broken');
     expect(c.message).toContain('deploying [dense] overview: 41 KB');
     expect(c.message).not.toMatch(/deploying overview:/);
+  });
+});
+
+describe('doctor says what it could not check', () => {
+  const CORE = {
+    'node_modules/@astryxdesign/core/package.json': JSON.stringify({
+      name: '@astryxdesign/core',
+      version: '0.6.3',
+    }),
+  };
+
+  /** Installed dependency whose manifest declares roots that do not exist. */
+  const dangling = {
+    'node_modules/@acme/dangling/package.json': JSON.stringify({
+      name: '@acme/dangling',
+      version: '2.0.0',
+    }),
+    'node_modules/@acme/dangling/astryx.integration.mjs':
+      "export default {providerId: 'acme-dangling', components: './components', templates: './templates', docs: './docs'};\n",
+  };
+
+  /** Installed dependency whose manifest cannot be parsed at all. */
+  const broken = {
+    'node_modules/@acme/broken/package.json': JSON.stringify({
+      name: '@acme/broken',
+      version: '1.0.0',
+    }),
+    'node_modules/@acme/broken/astryx.integration.mjs':
+      'export default {  this is not valid javascript ((\n',
+  };
+
+  /** @param {Record<string, string>} extra @param {string[]} deps */
+  const project = (extra, deps) =>
+    mkProject({
+      'package.json': JSON.stringify({
+        name: 'consumer',
+        version: '1.0.0',
+        dependencies: Object.fromEntries(
+          ['@astryxdesign/core', ...deps].map(d => [d, '1.0.0']),
+        ),
+      }),
+      ...CORE,
+      ...extra,
+    });
+
+  // An unparseable manifest is kept out of the loaded set on purpose, and
+  // doctor used to report that no installed dependency ships a manifest.
+  it('names an installed dependency whose manifest cannot be loaded', async () => {
+    const report = (await doctor({cwd: project(broken, ['@acme/broken'])})).data;
+    const check = report.checks.find(c => c.id === 'implicit-integrations');
+
+    expect(check.status).toBe('info');
+    expect(check.message).toContain('@acme/broken');
+    expect(check.message).toContain('could not be loaded');
+    expect(check.message).not.toContain('no installed dependency ships');
+    expect(report.summary.fail).toBe(0);
+  }, SLOW);
+
+  it('does not claim contributions from roots that are missing on disk', async () => {
+    const report = (await doctor({cwd: project(dangling, ['@acme/dangling'])}))
+      .data;
+    const implicit = report.checks.find(c => c.id === 'implicit-integrations');
+    const issues = report.checks.find(c => c.id === 'integration-issues');
+
+    expect(implicit.message).toContain('contributing nothing');
+    expect(implicit.message).toContain('missing on disk');
+    expect(implicit.message).not.toContain('contributing components');
+    expect(issues.status).toBe('warn');
+    expect(issues.message).toContain('@acme/dangling');
+  }, SLOW);
+
+  it('still says no dependency ships a manifest when none does', async () => {
+    const report = (await doctor({cwd: project({}, [])})).data;
+    const check = report.checks.find(c => c.id === 'implicit-integrations');
+
+    expect(check.message).toBe(
+      'None — no installed dependency ships an astryx.integration.* manifest.',
+    );
+  }, SLOW);
+
+  it('says how many integrations could not be read, rather than counting silently', () => {
+    /** @type {any} */
+    const ctx = {
+      cwd: '/x',
+      nodeVersion: process.versions.node,
+      coreDir: null,
+      configPath: null,
+      configTheme: null,
+      integrations: [
+        {name: '@acme/ok', __spec: '@acme/ok', providerId: 'ok'},
+        {name: '@acme/bad', __spec: '@acme/bad', __loadError: 'boom'},
+      ],
+    };
+    const check = checkProviderIdentity(ctx);
+
+    expect(check.message).toContain('1 loaded integration has its own provider ID.');
+    expect(check.message).toContain('could not be read');
   });
 });

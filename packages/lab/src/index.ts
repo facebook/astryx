@@ -43,7 +43,12 @@ export {
 export * from './Chat';
 
 // Drawer — experimental overlay panel
-export {Drawer, type DrawerProps} from './Drawer';
+export {
+  Drawer,
+  DrawerHeader,
+  type DrawerProps,
+  type DrawerHeaderProps,
+} from './Drawer';
 
 // Tour — guided product-tour / NUX walkthrough (facebook/astryx#4239)
 export {

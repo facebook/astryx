@@ -32,6 +32,11 @@ describe('docsTreeCliProblem', () => {
     expect(docsTreeCliProblem({name: '@acme/kit'})).toContain(
       'declares no @astryxdesign/cli peer',
     );
+    // Stable releases: a canary built from main before its release reports
+    // the older version and reads every feature.
+    expect(docsTreeCliProblem({name: '@acme/kit'})).toContain(
+      'A stable CLI before 0.7.0 does not read the docs tree',
+    );
   });
 
   it.each(['^0.6.0', '^0.6.0 || >=0.7.0', '*', '>=0.6.3'])(
@@ -39,7 +44,7 @@ describe('docsTreeCliProblem', () => {
     range => {
       expect(
         docsTreeCliProblem({peerDependencies: {'@astryxdesign/cli': range}}),
-      ).toContain('admits a CLI older than');
+      ).toContain('admits a stable CLI before');
     },
   );
 
@@ -76,7 +81,7 @@ describe('replacesCliProblem', () => {
     );
     expect(
       replacesCliProblem({peerDependencies: {'@astryxdesign/cli': '^0.6.0'}}),
-    ).toContain('admits a CLI older than');
+    ).toContain('admits a stable CLI before');
     expect(
       replacesCliProblem({peerDependencies: {'@astryxdesign/cli': '>=0.7.0'}}),
     ).toBeNull();

@@ -53,6 +53,29 @@ function expectNamed(type, fields) {
 }
 
 describe('response-types EnumDoc names every field', () => {
+  it('component.batch names every row field and state', async () => {
+    const res = await data(['component', 'Button', 'Badge']);
+    expect(res.type).toBe('component.batch');
+    expect(describedAs('component.batch')).toMatch(/BatchResponse.*BatchRow/);
+    expectNamed('component.batch', [
+      'count',
+      'results',
+      'selector',
+      'status',
+      'result',
+      'code',
+      'error',
+      'candidates',
+      'package',
+      'component',
+      'kind',
+      'installed',
+      'suggestions',
+      'name',
+      'reason',
+    ]);
+  });
+
   it('component.detail: the ownership fields and parentDoc', async () => {
     const res = await data(['component', 'HStack']);
     expect(res.type).toBe('component.detail');

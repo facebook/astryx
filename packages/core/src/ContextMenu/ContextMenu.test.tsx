@@ -1033,6 +1033,37 @@ describe('ContextMenu keyboard access for menuitemradio/menuitemcheckbox (#3829)
   });
 });
 
+describe('ContextMenu press model', () => {
+  const touch = {pointerType: 'touch', pointerId: 1};
+  const item = (name: string) =>
+    screen.getByRole('menuitem', {name, hidden: true});
+  it('acts on the row under a finger release, once, and swallows the stray click', () => {
+    const onCut = vi.fn();
+    const onPaste = vi.fn();
+    render(
+      <ContextMenu
+        items={[
+          {label: 'Cut', onClick: onCut},
+          {label: 'Copy'},
+          {label: 'Paste', onClick: onPaste},
+        ]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    expect(screen.getByRole('menu', {hidden: true})).toHaveAttribute(
+      'data-astryx-menu-press',
+    );
+    fireEvent.pointerDown(item('Cut'), touch);
+    fireEvent.pointerMove(item('Paste'), touch);
+    expect(item('Paste')).toHaveFocus();
+    fireEvent.pointerUp(item('Paste'), touch);
+    fireEvent.click(item('Cut'), {detail: 1});
+    expect(onPaste).toHaveBeenCalledTimes(1);
+    expect(onCut).not.toHaveBeenCalled();
+  });
+});
+
 describe('ContextMenu keyboard', () => {
   const item = (name: string) =>
     screen.getByRole('menuitem', {name, hidden: true});

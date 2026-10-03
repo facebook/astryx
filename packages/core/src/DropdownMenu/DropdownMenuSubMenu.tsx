@@ -56,6 +56,7 @@ import {useLayer} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {useListFocus} from '../hooks/useListFocus';
 import {useMenuHover} from '../hooks/useMenuHover';
+import {useMenuPress} from '../hooks/useMenuPress';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useMenuOverflow} from './useMenuOverflow';
 import {resolveMenuWidth} from './menuWidth';
@@ -166,10 +167,22 @@ const flyoutStyles = stylex.create({
     transitionProperty: 'opacity',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
+    // A held finger drives the highlight; the browser's held-press callout
+    // and text selection must not compete with it.
+    WebkitTouchCallout: 'none',
+    userSelect: 'none',
   },
   scrollable: {
     overflowY: 'auto',
     overflowX: 'hidden',
+    overscrollBehavior: 'contain',
+  },
+  // Scroll ownership by the browser's own signal; see DropdownMenu.
+  touchNone: {
+    touchAction: 'none',
+  },
+  touchPanY: {
+    touchAction: 'pan-y',
     overscrollBehavior: 'contain',
   },
   popoverViewport: {
@@ -526,6 +539,15 @@ export function DropdownMenuSubMenu(
     [menuSize, close, menuCtx],
   );
 
+  // The press model for this flyout: the row under a release acts, the
+  // highlight follows a held pointer. A mouse released outside every level
+  // dismisses the whole menu; a finger leaves it open.
+  const menuPress = useMenuPress({
+    menuRef,
+    itemSelector: MENU_ITEM_SELECTOR,
+    onDismiss: nestedMenuContext.closeMenu,
+  });
+
   const endAffordance = hasSpinner ? (
     <span {...stylex.props(triggerStyles.caret)}>
       <Spinner size="sm" />
@@ -603,10 +625,12 @@ export function DropdownMenuSubMenu(
           onMouseEnter={contentProps.onMouseEnter}
           onMouseLeave={contentProps.onMouseLeave}
           data-testid={menuDataTestId}
+          {...menuPress.menuProps}
           {...mergeProps(
             themeProps('dropdown-menu'),
             stylex.props(
               flyoutStyles.menu,
+              hasOverflow ? flyoutStyles.touchPanY : flyoutStyles.touchNone,
               hasOverflow && flyoutStyles.scrollable,
             ),
           )}>

@@ -19,10 +19,9 @@ export const doc = {
     'Sets a project up with NO prompts, so it behaves identically for humans, ' +
     'agents, CI, and piped I/O. By default it installs the AGENTS.md/CLAUDE.md ' +
     'agent-docs cheat sheet, including guidance from configured integrations, and ' +
-    'prints getting-started guidance; `features` / ' +
-    '`all` add theme and page-building guidance and can scaffold a starter ' +
-    'template. With `removeAgents` it removes the managed agent-docs block ' +
-    'instead of installing.',
+    "prints getting-started guidance; `features` / `all` print only the chosen features' " +
+    'guidance instead (the theme feature also writes the annotated theme template). ' +
+    'With `removeAgents` it removes the managed agent-docs block instead of installing.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'init(options?: InitOptions, ctx?: {cwd?: string}): Promise<InitRunResponse | InitRemoveResponse>',
@@ -32,7 +31,7 @@ export const doc = {
       name: 'options.features',
       type: 'string',
       description:
-        'Comma-separated features to install: agents (agent docs), theme (writes the annotated theme.template.ts), template (page-template guidance).',
+        'Comma-separated features to install: agents (agent docs), theme (writes the annotated theme.template.ts), template (the page-building commands; writes a page only with templateName).',
     },
     {
       name: 'options.all',
@@ -47,7 +46,8 @@ export const doc = {
     {
       name: 'options.agent',
       type: 'string',
-      description: 'Agent preset: claude, cursor, codex, hermes, muse, all.',
+      description:
+        'Agent preset: claude, cursor, codex, hermes, muse, all. Used only when the agents feature runs.',
     },
     {
       name: 'options.agentDocsPath',
@@ -58,9 +58,14 @@ export const doc = {
       name: 'options.templateName',
       type: 'string',
       description:
-        'Scaffold a named page template (programmatic only; the CLI never sets it).',
+        'Scaffold this page template to src/pages/<name>/page.tsx. Used only when the template feature runs (features includes template, or all); otherwise ignored. Programmatic only; the CLI never sets it.',
     },
-    {name: 'ctx.cwd', type: 'string', description: 'Directory to set up.'},
+    {
+      name: 'ctx.cwd',
+      type: 'string',
+      description: 'Directory to set up.',
+      default: 'process.cwd()',
+    },
   ],
   returns: [
     {
@@ -71,13 +76,13 @@ export const doc = {
     {
       type: 'init.remove',
       description:
-        'Confirmation that the managed agent-docs block was removed (`data.removed: true`), returned when `removeAgents` is set.',
+        'Returned when `removeAgents` is set. `data.removed` is always true, even when no managed block was found.',
     },
   ],
   throws: [
     {
       code: 'ERR_UNKNOWN_AGENT',
-      when: '`agent` is not one of claude, cursor, codex, hermes, muse, all',
+      when: 'the agents feature runs (default mode, features includes agents, or all) and `agent` is not one of claude, cursor, codex, hermes, muse, all',
     },
     {
       code: 'ERR_UNKNOWN_FEATURE',
@@ -85,7 +90,7 @@ export const doc = {
     },
     {
       code: 'ERR_UNKNOWN_TEMPLATE',
-      when: '`templateName` matches no bundled template',
+      when: 'the template feature runs and `templateName` matches no bundled template',
     },
     {
       code: 'ERR_FILE_EXISTS',
@@ -93,7 +98,7 @@ export const doc = {
     },
     {
       code: 'ERR_PATH_TRAVERSAL',
-      when: 'the template output path resolves outside cwd, for example through a symlinked src directory',
+      when: 'the template output path resolves outside cwd (for example through a symlinked src directory), or, with removeAgents, a managed agent-docs file resolves outside cwd through a symlink',
     },
   ],
   examples: [

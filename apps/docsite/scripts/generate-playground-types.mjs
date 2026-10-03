@@ -2,8 +2,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Generates a JSON bundle of @astryxdesign/core, React, StyleX, icon, and
- * Recharts declarations for the playground's Monaco editor.
+ * Generates a JSON bundle of @astryxdesign/core, React, StyleX, icon,
+ * Recharts, and canary integration-package declarations for the playground's
+ * Monaco editor.
  * Output: public/playground-types.json
  *
  * Structure: { "@astryxdesign/core": { "Button/index.d.ts": "...", ... } }
@@ -23,6 +24,9 @@ import {
 import {createRequire} from 'node:module';
 import {join, dirname, relative} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import docsiteConfig from '../astryx.config.mjs';
+import {getTarget} from './resolve-content-root.mjs';
+import {integrationPackagesForTarget} from '../src/lib/integrationTargets.mjs';
 
 // Resolves from this script, so docsite's own dependencies are found wherever
 // the installer put them. Throws if one is missing, rather than emitting a
@@ -306,6 +310,20 @@ function buildThemeTypes() {
   return files;
 }
 
+// Integration packages the canary preview scope exposes (the same shared gate
+// generate-scope.mjs uses, so production declares none). Declared as shorthand
+// ambient modules: imports resolve, typed as `any`, so the editor shows no
+// unresolved-module error on code that renders. Like the theme packages, their
+// dist is not built in CI's docsite-test job, so real declarations are left
+// for a follow-up.
+function buildIntegrationTypes() {
+  const files = {};
+  for (const pkg of integrationPackagesForTarget(getTarget(), docsiteConfig)) {
+    files[pkg] = {'index.d.ts': `declare module '${pkg}';\n`};
+  }
+  return files;
+}
+
 // Runtime-only aliases the scope also serves: `next/image` renders a plain
 // <img>, and bare `stylex` is the same object as `@stylexjs/stylex`.
 const nextImageTypes = `
@@ -326,11 +344,15 @@ const heroiconTypes = buildHeroiconTypes();
 const rechartsTypes = buildRechartsTypes();
 const lucideTypes = buildLucideTypes();
 const themeTypes = buildThemeTypes();
+const integrationTypes = buildIntegrationTypes();
 console.log(
   `Generated Lucide types: ${(lucideTypes['index.d.ts'].match(/: LucideIcon;/g) ?? []).length} icon exports`,
 );
 console.log(
   `Generated theme types: ${Object.keys(themeTypes).length} packages`,
+);
+console.log(
+  `Generated integration types: ${Object.keys(integrationTypes).length} packages`,
 );
 console.log(
   `Generated heroicon types: ${Object.keys(heroiconTypes).length} variants`,
@@ -349,6 +371,7 @@ const output = {
   'lucide-react': lucideTypes,
   'next/image': {'index.d.ts': nextImageTypes},
   ...themeTypes,
+  ...integrationTypes,
 };
 
 const json = JSON.stringify(output);

@@ -122,3 +122,8 @@ export {
   DISCLOSURE_PATTERN,
   type DisclosureStateFacts,
 } from './patterns/disclosure';
+
+export {
+  BREADCRUMB_PATTERN,
+  type BreadcrumbStateFacts,
+} from './patterns/breadcrumb';

@@ -46,7 +46,7 @@ export const doc = {
   ],
   examples: [
     {label: 'List swizzlable components', cli: 'astryx swizzle --list'},
-    {label: 'Eject a component', cli: 'astryx swizzle XDSButton'},
+    {label: 'Eject a component', cli: 'astryx swizzle Button'},
   ],
   exitCodes: [
     {code: 0, when: 'success'},

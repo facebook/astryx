@@ -20,6 +20,7 @@ export {
   parseGapReportHandler,
   parseGapReportReceipt,
 } from './gap-report/parse.mjs';
+export {parseDiscoverCatalog} from './discover/parse.mjs';
 export {parseCodemod} from './codemod/parse.mjs';
 export {parseDebugEvent} from './debug/parse.mjs';
 export {parseDoc} from './doctypes/parse.mjs';
