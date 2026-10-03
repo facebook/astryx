@@ -3,6 +3,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {Badge} from '@astryxdesign/core/Badge';
+import {IconButton} from '@astryxdesign/core/IconButton';
 import {useState} from 'react';
 import {
   DropdownMenu,
@@ -1271,6 +1272,42 @@ export const SubmenuViewportFit: Story = {
   },
 };
 
+export const CustomTrigger: Story = {
+  name: 'Custom trigger (any control)',
+  render: () => (
+    <DropdownMenu
+      renderTrigger={props => (
+        <IconButton
+          icon={<EllipsisHorizontalIcon />}
+          label="More actions"
+          variant="ghost"
+          {...props}
+        />
+      )}>
+      <DropdownMenuItem icon={PencilIcon} label="Rename" onClick={() => {}} />
+      <DropdownMenuItem
+        icon={DocumentDuplicateIcon}
+        label="Duplicate"
+        onClick={() => {}}
+      />
+      <DropdownMenuItem
+        icon={TrashIcon}
+        label="Delete"
+        variant="destructive"
+        onClick={() => {}}
+      />
+    </DropdownMenu>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Any control can open a menu: `trigger` renders it and receives the props to spread — the press model (a mouse opens on press-down, a held finger opens with the finger down), the keyboard opens, the toggle click, and the ARIA wiring. The menu is named by that control through `aria-labelledby`.',
+      },
+    },
+  },
+};
+
 export const SubmenuDrillIn: Story = {
   name: 'Submenu / drill-in on a phone',
   parameters: {
@@ -1301,13 +1338,6 @@ export const SubmenuDrillIn: Story = {
   ),
 };
 
-/**
- * Browser-evidence fixture for the drill-in contract (component:DropdownMenu
- * FR12): the sub-menu keeps the default `adaptive` presentation, so what the
- * Chromium spec exercises is the pointer decision itself — a coarse pointer
- * drills in, a fine one flies out. Driven by
- * `packages/core/src/DropdownMenu/__tests__/DropdownMenuDrillIn.a11y.chromium.spec.ts`.
- */
 export const SubmenuAdaptiveFixture: Story = {
   name: 'Submenu / adaptive fixture',
   parameters: {docs: {disable: true}},

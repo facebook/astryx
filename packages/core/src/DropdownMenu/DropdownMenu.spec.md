@@ -84,12 +84,13 @@ Consumer migration instructions belong in consumer docs and release notes.
 ## Public concepts
 
 Consumer props, item shapes, subcomponents, and presentation policy remain
-documented in `DropdownMenu.doc.mjs` and the subcomponent docs. One
-component-local concept is added by DEC-3; it keeps its released default.
+documented in `DropdownMenu.doc.mjs` and the subcomponent docs. Two component-local concepts are added, by DEC-2 and DEC-3; each keeps its
+released default.
 
-| Concept         | Closed values or states             | Meaning                                                                              | Availability by variant/orientation/state | Default | Owner                    | Stability | Invalid-value behavior      |
-| --------------- | ----------------------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------- | ------- | ------------------------ | --------- | --------------------------- |
-| Menu height cap | `menuMaxHeight`: a number of pixels | Lifts the 300px cap for a menu that must fit its rows; the viewport still bounds it. | Pointer presentation                      | `300px` | `component:DropdownMenu` | stable    | Ignored by the touch sheet. |
+| Concept         | Closed values or states                                  | Meaning                                                                                                                                                               | Availability by variant/orientation/state | Default  | Owner                    | Stability | Invalid-value behavior                              |
+| --------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | -------- | ------------------------ | --------- | --------------------------------------------------- |
+| Menu height cap | `menuMaxHeight`: a number of pixels                      | Lifts the 300px cap for a menu that must fit its rows; the viewport still bounds it.                                                                                  | Pointer presentation                      | `300px`  | `component:DropdownMenu` | stable    | Ignored by the touch sheet.                         |
+| Trigger source  | `button` (Button props) or `renderTrigger` (render prop) | Which control the menu hangs off. `trigger` receives `DropdownMenuTriggerProps` — the press model, keyboard opens, toggle click and ARIA wiring — and names the menu. | Both presentations                        | `button` | `component:DropdownMenu` | stable    | Both given: `trigger` wins and a dev warning fires. |
 
 ## Behavioral and layout contract
 
@@ -103,8 +104,10 @@ component-local concept is added by DEC-3; it keeps its released default.
 | FR6                   | When the pointer menu closes, focus returns to the Trigger button with a visible ring only when the menu was driven by keyboard; a press outside that landed on a focusable control keeps focus there.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `architecture:interaction-modality` INV1; proposed in this change; `DropdownMenu.test.tsx` closing suite                                                                      | Proposed; verified in jsdom, pending owner review                                 |
 | FR7                   | `menuMaxHeight` MUST replace the 300px term of the menu's and its popover viewport's block-size cap while the viewport gutters still bound both; the touch sheet ignores it.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | `component:DropdownMenu/DEC-3`                                                                                                                                                | Proposed; verified in jsdom; owner to confirm DEC-3                               |
 | FR8                   | The Trigger button opens the pointer menu on a mouse press-down and on a finger held for the long-press delay, with the module's settle rule on the opening release; pressing the trigger of an open menu closes it without reopening in the same gesture; a tap and the keyboard open as before (`module:DropdownMenu/useMenuPress` proposed FR8, FR9).                                                                                                                                                                                                                                                                                                                                                                      | Proposed `module:DropdownMenu/useMenuPress/DEC-4`; `DropdownMenu.test.tsx` press model suite                                                                                  | Proposed; verified in jsdom, pending owner review                                 |
-| Sub-menu presentation | `presentation` on a sub-menu row: `flyout`, `drill-in`, `adaptive`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Whether a sub-menu opens beside its row or replaces the menu's rows with its own and a Back row, in the same box. `adaptive` drills in when a coarse pointer opened the menu. | Pointer presentation, compound and data mode                                      | `adaptive` | `component:DropdownMenu` | stable | An unknown value reads as `adaptive`. |
-| FR9                   | When a compact touch display opened the pointer menu (`COMPACT_TOUCH_PRESENTATION_QUERY`, the same query the root presentation uses for its bottom sheet, sampled once as it opens) an `adaptive` sub-menu row MUST drill in: its rows and a leading Back row named "Back to <parent>" replace the menu's rows in the same Pointer menu surface, no flyout opens, the drilled list is a `menu` named by the row's label, and Back, Escape and ArrowLeft MUST return to the row with focus on it; a pick inside closes the whole menu. Roving focus and typeahead scope to the shown rows; sibling rows and dividers need no knowledge of it. `presentation="flyout"` keeps the flyout; `"drill-in"` drills in on any pointer. | `component:DropdownMenu/DEC-2`; `architecture:interaction-modality`                                                                                                           | Proposed; verified in jsdom and Chromium (coarse pointer); owner to confirm DEC-5 |
+| Trigger source        | `button` (Button props) or `renderTrigger` (render prop)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Which control the menu hangs off. `trigger` receives `DropdownMenuTriggerProps` — the press model, keyboard opens, toggle click and ARIA wiring — and names the menu.         | Both presentations                                                                | `button`   | `component:DropdownMenu` | stable | Both given: `trigger` wins and a dev warning fires. |
+| FR9                   | With `renderTrigger`, the rendered control MUST carry `aria-haspopup`, `aria-expanded`, `aria-controls` and the `id` the menu's `aria-labelledby` points at, and MUST receive the same press-model, keyboard-open and toggle-click handlers as the Button path; the menu is named by that control. `button` and `trigger` are mutually exclusive: both given, `trigger` wins and a dev warning fires, in both presentations.                                                                                                                                                                                                                                                                                                  | `component:DropdownMenu/DEC-2`                                                                                                                                                | Proposed; verified in jsdom; owner to confirm DEC-2                               |
+| Sub-menu presentation | `presentation` on a sub-menu row: `flyout`, `drill-in`, `adaptive`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Whether a sub-menu opens beside its row or replaces the menu's rows with its own and a Back row, in the same box. `adaptive` drills in when a coarse pointer opened the menu. | Pointer presentation, compound and data mode                                      | `adaptive` | `component:DropdownMenu` | stable | An unknown value reads as `adaptive`.               |
+| FR10                  | When a compact touch display opened the pointer menu (`COMPACT_TOUCH_PRESENTATION_QUERY`, the same query the root presentation uses for its bottom sheet, sampled once as it opens) an `adaptive` sub-menu row MUST drill in: its rows and a leading Back row named "Back to <parent>" replace the menu's rows in the same Pointer menu surface, no flyout opens, the drilled list is a `menu` named by the row's label, and Back, Escape and ArrowLeft MUST return to the row with focus on it; a pick inside closes the whole menu. Roving focus and typeahead scope to the shown rows; sibling rows and dividers need no knowledge of it. `presentation="flyout"` keeps the flyout; `"drill-in"` drills in on any pointer. | `component:DropdownMenu/DEC-2`; `architecture:interaction-modality`                                                                                                           | Proposed; verified in jsdom and Chromium (coarse pointer); owner to confirm DEC-5 |
 
 ### Allowed variation
 
@@ -126,6 +129,7 @@ component-local concept is added by DEC-3; it keeps its released default.
 | Bottom-sheet root actions   | Trigger button opens Touch sheet frame, Touch menu surface, heading, action list, and action rows.             | Icons, sections, dividers, and action descriptions may vary.   |
 | Bottom-sheet nested actions | The same frame and list owners remain while heading and rows change to the selected action level.              | Back control and drill-in indicator follow current navigation. |
 | Selectable pointer action   | Pointer action row may contain shared checkbox or radio chrome.                                                | Checked and disabled state follow the current item contracts.  |
+| Custom-trigger menu         | The caller's control carries the trigger ARIA and names the menu; the Pointer menu surface is unchanged.       | Any focusable control: icon button, chip, avatar, list row.    |
 | Drilled-in sub-menu         | The Pointer menu surface shows a Back row then the sub-menu's rows; the parent rows are hidden, not unmounted. | Depth; which pointer opened the menu; a forced `presentation`. |
 
 ### Transformation and precedence order
@@ -149,10 +153,10 @@ pointer is held, the highlight is DOM focus per
 `architecture:interaction-modality` INV1 through the shared focus-return
 visibility helper.
 
-- **AR3 — A drilled-in list is a named menu.** The drilled list is a `menu`
-  named by its row's label, its Back row is a `menuitem` named
-  "Back to <parent>", and the parent rows leave the accessibility tree while it
-  shows.
+- **AR1 — A custom trigger still names the menu.** With `trigger`, the menu
+  carries `aria-labelledby` pointing at the control's `id` (the Button path
+  keeps `aria-label`), and the control carries `aria-haspopup="menu"`,
+  `aria-expanded` and `aria-controls`.
 
 ## Design relationships
 
@@ -262,6 +266,7 @@ than adding a DropdownMenu-owned heading target.
 | FR7                 | `menuMaxHeight` MUST replace the 300px term of the menu's and its popover viewport's block-size cap while the viewport gutters still bound both; the touch sheet ignores it. | `component:DropdownMenu/DEC-3`                                                                        | Proposed; verified in jsdom; owner to confirm DEC-3                                                                                   |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                                                                                | Canonical anatomy and current target inventory                                                        | Missing, extra, prefixed, stale, or unclassified mappings fail repository validation.                                                 | `audit:DropdownMenu/theming`  |
 | FR8                 | `DropdownMenu.test.tsx` press model suite (trigger cases)                                                                                                                    | Press-open + drag-release, unsettled opening release, trigger toggle, held touch, tap                 | A menu that does not open on a mouse press, an unsettled release that acts, or a trigger that reopens in the same gesture fails.      | `audit:DropdownMenu/behavior` |
+| FR9                 | `DropdownMenu.test.tsx` custom trigger suite                                                                                                                                 | Icon button, chip, list row; open, toggle, keyboard open, name                                        | A rendered control missing `aria-haspopup`, `aria-expanded` or `aria-controls`, an unnamed menu, or a lost keyboard open, fails.      | `audit:DropdownMenu/anatomy`  |
 | FR12, AR3           | `DropdownMenuSubMenu.test.tsx` "drill-in on a phone" suite; `__tests__/DropdownMenuDrillIn.a11y.chromium.spec.ts` (real Chromium, coarse pointer)                            | Drill in, Back, Escape, ArrowLeft, nested level, scoped typeahead, forced presentations, close resets | A flyout opening on a coarse pointer, a missing Back row, sibling rows staying in the order, or focus not returning to the row fails. | `audit:DropdownMenu/behavior` |
 
 ## Decision log
@@ -298,38 +303,38 @@ The value is a number of pixels. Rejected: an arbitrary CSS length (`50vh`,
 `spec:AST-002` does not admit, and which lets a caller write a cap the
 viewport term cannot reason about.
 
-### DEC-3 — Sub-menus drill in on a phone
+### DEC-3 — Any control can open a menu
+
+### DEC-4 — Sub-menus drill in on a phone
 
 **Reference:** `component:DropdownMenu/DEC-3`
 
 **Decider:** `cixzhang`, 2026-10-02
 
-A flyout beside a phone-width menu has no room. When a compact touch display
-opened the menu — sampled once, as it opens, so the menu never changes shape
-under a pointer — a sub-menu row pushes its view onto a stack the root keeps
-(`useMenuDrillIn`, internal) and the root shows that view in place of its rows:
-a "Back to <parent>" row, then the sub-menu's rows, inside the same menu box.
-The sub-menu portals its list into the root's host so the row stays mounted,
-its rows stay live, and Back has something to return focus to; sibling rows
-and dividers need no knowledge of it. Works in compound and data mode and in
-`ContextMenu`; `presentation` overrides the policy.
+`renderTrigger` is a render prop handing the caller `DropdownMenuTriggerProps`
+to spread, so the press model, the keyboard opens and the ARIA wiring ride the
+same code path as the built-in Button, and the menu is named by the control
+through `aria-labelledby`. `button` and `renderTrigger` are mutually exclusive
+(a dev warning); the Button path is unchanged.
 
-The query is `COMPACT_TOUCH_PRESENTATION_QUERY`, the one the root
-presentation already uses to decide its bottom sheet, so one component
-carries one meaning of "adaptive". A bare `(pointer: coarse)` disagreed with
-it on a large touch tablet: the menu stayed an anchored popover while its
-sub-menus replaced rows in place, a combination nobody designed.
+The prop is named for `spec:AST-055` DEC-5 and DEC-6: `render<X>` is the
+prefix for every render prop in the system, and a bare `trigger` is already
+public with a different shape on `Collapsible`, where it is a `ReactNode`
+slot, so one word would otherwise mean two things.
 
-The public surface is `presentation` alone. `useMenuDrillIn` and its
-`DropdownMenuDrillIn` view-stack controller stay internal: exporting them
-would make internal machinery permanent API that nothing here requires a
-caller to touch. A product that later needs to drive the stack earns a
-deliberate component or hook then, with its own contract.
+Rejected: a content slot taking a rendered element. A slot cannot hand the
+caller the props the control must carry, so the component would have to
+reach into the element to attach them.
 
-Rejected: a flipped flyout — lands over the parent rows and reads as a second
-menu; drill-in in data mode only — every menu in the app is compound; a
-`{label, children}` snapshot pushed onto the stack — unmounts the row and
-breaks focus return.
+The open state reaches the caller's control as `aria-expanded` on the spread
+props, and the prop's documentation shows styling from that attribute. A
+pressed look keyed to `:active` is not a substitute: `:active` does not
+behave the same under a coarse pointer, which is why menu rows drop
+coarse-pointer `:active` paint entirely.
+
+Rejected: an `as` prop on the Button — an icon button, a chip, an avatar and a
+list row are not Button variants; a slot component — hides which props must
+reach the control.
 
 ## Open questions
 

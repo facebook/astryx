@@ -16,6 +16,9 @@
  *
  * Both modes use useListFocus for DOM-based keyboard navigation.
  *
+ * The trigger is the design system's Button (`button`) or any control the
+ * caller renders (`renderTrigger`).
+ *
  * A sub-menu drills in on a phone through the view stack useMenuDrillIn
  * keeps; the root shows the drilled view in place of its rows.
  *
@@ -65,6 +68,7 @@ import type {MenuPressPointerType} from '../hooks/menuPressGesture';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
 import {useMenuOverflow} from './useMenuOverflow';
+import {useDevWarning} from '../hooks/useDevWarning';
 import {useMenuDrillIn} from './useMenuDrillIn';
 import {resolveMenuWidth} from './menuWidth';
 import {
@@ -319,8 +323,58 @@ export type DropdownMenuButtonProps = Omit<ButtonProps, 'onClick'>;
 
 export type DropdownMenuPresentation = AdaptivePresentation;
 
+/**
+ * The props a custom `trigger` spreads onto the control that opens the menu.
+ * They carry the press model — a mouse opens on press-down, a held finger
+ * opens with the finger down — the keyboard opens (Enter, Space, ArrowDown,
+ * ArrowUp), the toggle click, and the ARIA wiring that names the menu after
+ * the control. Spread them all; add your own handlers beside them.
+ */
+export interface DropdownMenuTriggerProps {
+  /** Attaches the control as the menu's anchor and focus-return target. */
+  ref: (element: HTMLElement | null) => void;
+  /** The menu points at this id with `aria-labelledby`. */
+  id: string;
+  onClick: (event: React.MouseEvent<HTMLElement>) => void;
+  onClickCapture: (event: React.MouseEvent<HTMLElement>) => void;
+  onPointerDown: (event: React.PointerEvent<HTMLElement>) => void;
+  onContextMenu: (event: React.MouseEvent<HTMLElement>) => void;
+  onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void;
+  onFocus: (event: React.FocusEvent<HTMLElement>) => void;
+  'aria-haspopup': 'menu' | 'dialog';
+  'aria-expanded': boolean;
+  'aria-controls': string;
+}
+
 interface DropdownMenuBaseProps extends BaseProps {
+  /**
+   * The design system's own button as the trigger. Mutually exclusive with
+   * `renderTrigger`.
+   */
   button?: DropdownMenuButtonProps;
+  /**
+   * Render the control the menu hangs off — an icon button, a chip, an
+   * avatar, a list row. Spread the given props onto it; the menu is then
+   * named by that control. Mutually exclusive with `button`.
+   *
+   * Hover and pressed paint stay yours. The open state reaches your control
+   * as `aria-expanded` on the given props, so style it from the rendered
+   * attribute. A pressed look keyed to `:active` is not a substitute:
+   * `:active` does not behave the same under a coarse pointer, which is why
+   * menu rows drop coarse-pointer `:active` paint entirely.
+   *
+   * @example
+   * ```
+   * <DropdownMenu renderTrigger={props => <IconButton icon="more" label="More" {...props} />}>
+   * ```
+   *
+   * @example
+   * ```
+   * // Styling the open state from the rendered attribute:
+   * // .my-trigger[aria-expanded='true'] { background: var(--color-overlay-pressed); }
+   * ```
+   */
+  renderTrigger?: (props: DropdownMenuTriggerProps) => ReactNode;
   isMenuOpen?: boolean;
   onOpenChange?: (isOpen: boolean) => void;
   /**
@@ -436,6 +490,7 @@ function holdInvokerThroughPress(
 
 function DropdownMenuBottomSheet({
   button: buttonFromProps,
+  renderTrigger,
   isMenuOpen: controlledIsOpen,
   onOpenChange,
   onClick,
@@ -455,7 +510,9 @@ function DropdownMenuBottomSheet({
   const t = useTranslator();
   const button = buttonFromProps ?? {label: t(DEFAULT_BUTTON_I18N_KEY)};
   const backLabel = t('@astryx.dropdownMenu.back');
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const buttonRef = useRef<HTMLElement>(null);
+  const triggerId = useId();
+  const sheetId = useId();
   const actionListRef = useRef<HTMLDivElement>(null);
   const openModalityRef = useRef<'keyboard' | 'pointer'>('pointer');
   const {
@@ -546,44 +603,70 @@ function DropdownMenuBottomSheet({
     return () => cancelAnimationFrame(frame);
   }, [isOpen, submenuPath.length]);
 
+  const handleSheetTriggerPointerDown = () => {
+    openModalityRef.current = 'pointer';
+  };
+  const handleSheetTriggerKeyDown = (event: React.KeyboardEvent) => {
+    if (
+      event.key === 'ArrowDown' ||
+      event.key === 'Enter' ||
+      event.key === ' '
+    ) {
+      openModalityRef.current = 'keyboard';
+    }
+  };
+  const handleSheetTriggerClick = () => {
+    onClick?.();
+    setOpen(!isOpen);
+  };
+
   return (
     <>
-      <Button
-        {...button}
-        ref={buttonRef}
-        xstyle={[
-          isOpen && styles.triggerOpen,
-          button.xstyle,
-          isFocusRingSuppressed && focusOutlineStyles.suppressed,
-        ]}
-        tooltip={isOpen ? undefined : button.tooltip}
-        endContent={resolvedEndContent}
-        onPointerDown={event => {
-          button.onPointerDown?.(event);
-          openModalityRef.current = 'pointer';
-        }}
-        onKeyDown={event => {
-          button.onKeyDown?.(event);
-          if (
-            event.key === 'ArrowDown' ||
-            event.key === 'Enter' ||
-            event.key === ' '
-          ) {
-            openModalityRef.current = 'keyboard';
-          }
-        }}
-        onFocus={event => {
-          button.onFocus?.(event);
-          onFocusReturnTargetFocus();
-        }}
-        onClick={() => {
-          onClick?.();
-          setOpen(!isOpen);
-        }}
-        aria-haspopup="dialog"
-        aria-expanded={isOpen}
-        data-testid={testId}
-      />
+      {renderTrigger != null ? (
+        renderTrigger({
+          ref: el => {
+            buttonRef.current = el;
+          },
+          id: triggerId,
+          onClick: handleSheetTriggerClick,
+          onClickCapture: () => {},
+          onPointerDown: handleSheetTriggerPointerDown,
+          onContextMenu: () => {},
+          onKeyDown: handleSheetTriggerKeyDown,
+          onFocus: onFocusReturnTargetFocus,
+          'aria-haspopup': 'dialog',
+          'aria-expanded': isOpen,
+          'aria-controls': sheetId,
+        })
+      ) : (
+        <Button
+          {...button}
+          ref={buttonRef as React.Ref<HTMLButtonElement>}
+          xstyle={[
+            isOpen && styles.triggerOpen,
+            button.xstyle,
+            isFocusRingSuppressed && focusOutlineStyles.suppressed,
+          ]}
+          tooltip={isOpen ? undefined : button.tooltip}
+          endContent={resolvedEndContent}
+          onPointerDown={event => {
+            button.onPointerDown?.(event);
+            handleSheetTriggerPointerDown();
+          }}
+          onKeyDown={event => {
+            button.onKeyDown?.(event);
+            handleSheetTriggerKeyDown(event);
+          }}
+          onFocus={event => {
+            button.onFocus?.(event);
+            onFocusReturnTargetFocus();
+          }}
+          onClick={handleSheetTriggerClick}
+          aria-haspopup="dialog"
+          aria-expanded={isOpen}
+          data-testid={testId}
+        />
+      )}
 
       <MenuBottomSheet
         isOpen={isOpen}
@@ -592,6 +675,7 @@ function DropdownMenuBottomSheet({
         label={sheetLabel}>
         <div
           ref={actionListRef}
+          id={sheetId}
           {...rest}
           {...mergeProps(
             themeProps('dropdown-menu', {presentation: 'bottom-sheet'}),
@@ -640,6 +724,7 @@ function DropdownMenuBottomSheet({
 
 function DropdownMenuPopover({
   button: buttonFromProps,
+  renderTrigger,
   isMenuOpen: controlledIsOpen,
   onOpenChange,
   menuWidth,
@@ -670,8 +755,9 @@ function DropdownMenuPopover({
   } = props as Record<string, unknown>;
 
   const menuId = useId();
+  const triggerId = useId();
   const menuSize = button.size ?? 'md';
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const buttonRef = useRef<HTMLElement>(null);
 
   // Open state
   const [internalIsOpen, setInternalIsOpen] = useState(false);
@@ -963,7 +1049,7 @@ function DropdownMenuPopover({
   cancelMenuPressRef.current = menuPress.cancel;
 
   const handleButtonClick = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => {
+    (e: React.MouseEvent<HTMLElement>) => {
       // The press already opened or closed the menu; its click is spent.
       if (menuPress.isTriggerClickFromPress()) {
         return;
@@ -998,7 +1084,7 @@ function DropdownMenuPopover({
   );
 
   const handleTriggerClickCapture = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => {
+    (e: React.MouseEvent<HTMLElement>) => {
       const control = e.currentTarget;
       if (control.hasAttribute('popovertarget')) {
         // Still the invoker from a press-open: the browser would toggle the
@@ -1076,54 +1162,76 @@ function DropdownMenuPopover({
   );
   const hasOverflow = useMenuOverflow(listRef, menuContent, popover.isOpen);
 
+  const triggerProps: DropdownMenuTriggerProps = {
+    ref: el => {
+      buttonRef.current = el;
+      popover.triggerRef(el);
+    },
+    id: triggerId,
+    onClick: handleButtonClick,
+    onClickCapture: handleTriggerClickCapture,
+    onPointerDown: menuPress.triggerProps.onPointerDown,
+    onContextMenu: menuPress.triggerProps.onContextMenu,
+    onKeyDown: handleButtonKeyDown,
+    // The popover's focus-return hook is a separate change; until it lands
+    // the control's focus needs no bookkeeping here.
+    onFocus: () => {},
+    'aria-haspopup': 'menu',
+    'aria-expanded': isOpen,
+    'aria-controls': menuId,
+  };
+
   return (
     <>
-      <Button
-        {...button}
-        ref={el => {
-          buttonRef.current = el;
-          popover.triggerRef(el);
-          const consumerRef = button.ref;
-          if (typeof consumerRef === 'function') {
-            consumerRef(el);
-          } else if (consumerRef) {
-            /* eslint-disable react-compiler/react-compiler -- ref callback: forwarding consumer ref object */
-            consumerRef.current = el;
-            /* eslint-enable react-compiler/react-compiler */
-          }
-        }}
-        xstyle={[
-          styles.triggerPressable,
-          isOpen && styles.triggerOpen,
-          button.xstyle,
-          isFocusRingSuppressed && focusOutlineStyles.suppressed,
-        ]}
-        tooltip={isOpen ? undefined : button.tooltip}
-        endContent={resolvedEndContent}
-        onClick={handleButtonClick}
-        onClickCapture={event => {
-          button.onClickCapture?.(event);
-          handleTriggerClickCapture(event);
-        }}
-        onKeyDown={handleButtonKeyDown}
-        onPointerDown={event => {
-          button.onPointerDown?.(event);
-          menuPress.triggerProps.onPointerDown(event);
-        }}
-        onContextMenu={event => {
-          button.onContextMenu?.(event);
-          menuPress.triggerProps.onContextMenu(event);
-        }}
-        onFocus={event => {
-          button.onFocus?.(event);
-          onFocusReturnTargetFocus();
-        }}
-        aria-haspopup="menu"
-        aria-expanded={isOpen}
-        aria-controls={menuId}
-        data-testid={testId}
-      />
-
+      {renderTrigger != null ? (
+        renderTrigger(triggerProps)
+      ) : (
+        <Button
+          {...button}
+          ref={el => {
+            buttonRef.current = el;
+            popover.triggerRef(el);
+            const consumerRef = button.ref;
+            if (typeof consumerRef === 'function') {
+              consumerRef(el);
+            } else if (consumerRef) {
+              /* eslint-disable react-compiler/react-compiler -- ref callback: forwarding consumer ref object */
+              consumerRef.current = el;
+              /* eslint-enable react-compiler/react-compiler */
+            }
+          }}
+          xstyle={[
+            styles.triggerPressable,
+            isOpen && styles.triggerOpen,
+            button.xstyle,
+            isFocusRingSuppressed && focusOutlineStyles.suppressed,
+          ]}
+          tooltip={isOpen ? undefined : button.tooltip}
+          endContent={resolvedEndContent}
+          onClick={handleButtonClick}
+          onClickCapture={event => {
+            button.onClickCapture?.(event);
+            handleTriggerClickCapture(event);
+          }}
+          onKeyDown={handleButtonKeyDown}
+          onPointerDown={event => {
+            button.onPointerDown?.(event);
+            menuPress.triggerProps.onPointerDown(event);
+          }}
+          onContextMenu={event => {
+            button.onContextMenu?.(event);
+            menuPress.triggerProps.onContextMenu(event);
+          }}
+          onFocus={event => {
+            button.onFocus?.(event);
+            onFocusReturnTargetFocus();
+          }}
+          aria-haspopup="menu"
+          aria-expanded={isOpen}
+          aria-controls={menuId}
+          data-testid={testId}
+        />
+      )}
       {popover.render(
         <div
           {...rest}
@@ -1141,8 +1249,17 @@ function DropdownMenuPopover({
           tabIndex={hasOverflow ? 0 : -1}
           // Give the menu an accessible name from its trigger's label, so
           // screen readers announce e.g. "Actions menu" rather than an unnamed
-          // menu (menus-13).
-          aria-label={button.label}
+          // menu (menus-13). A custom trigger names it by reference.
+          aria-label={
+            renderTrigger != null
+              ? (rest['aria-label'] as string | undefined)
+              : button.label
+          }
+          aria-labelledby={
+            renderTrigger != null && rest['aria-label'] == null
+              ? triggerId
+              : (rest['aria-labelledby'] as string | undefined)
+          }
           onKeyDown={listKeyDown}
           {...menuPress.menuProps}
           {...mergeProps(
@@ -1195,6 +1312,13 @@ function DropdownMenuPopover({
 
 export function DropdownMenu(props: DropdownMenuProps) {
   const {onOpenChange} = props;
+  // Both presentations hang the menu off ONE control.
+  useDevWarning(
+    'DropdownMenu',
+    '`button` and `trigger` are mutually exclusive: the menu hangs off one ' +
+      'control. `trigger` wins; drop `button`.',
+    props.button != null && props.renderTrigger != null,
+  );
   const requestedPresentation =
     'items' in props ? (props.presentation ?? 'popover') : 'popover';
   const resolvedPresentation = useAdaptivePresentation(requestedPresentation);

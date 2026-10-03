@@ -2451,6 +2451,134 @@ describe('DropdownMenu trigger handler composition', () => {
   });
 });
 
+describe('DropdownMenu custom trigger', () => {
+  it('a custom trigger opens, toggles and names the menu', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        renderTrigger={props => (
+          <span {...props} role="button" tabIndex={0}>
+            Ada Lovelace
+          </span>
+        )}>
+        <DropdownMenuItem label="Profile" onClick={() => {}} />
+      </DropdownMenu>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Ada Lovelace'});
+    expect(trigger.tagName).toBe('SPAN');
+    expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    const menu = screen.getByRole('menu', {hidden: true});
+    expect(trigger).toHaveAttribute('aria-controls', menu.id);
+    // The menu is named by the control it hangs off.
+    expect(menu).toHaveAttribute('aria-labelledby', trigger.id);
+    expect(menu).not.toHaveAttribute('aria-label');
+    expect(screen.getByRole('menu', {name: 'Ada Lovelace', hidden: true})).toBe(
+      menu,
+    );
+
+    await user.click(trigger);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+    await user.click(trigger);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+    );
+  });
+
+  it('a custom trigger opens from the keyboard and lands on the first row', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        renderTrigger={props => (
+          <button type="button" {...props}>
+            More
+          </button>
+        )}>
+        <DropdownMenuItem label="Profile" onClick={() => {}} />
+      </DropdownMenu>,
+    );
+    const trigger = screen.getByRole('button', {name: 'More'});
+    trigger.focus();
+    await user.keyboard('{ArrowDown}');
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', {name: 'Profile', hidden: true}),
+      ).toHaveFocus(),
+    );
+  });
+
+  it('a mouse press on a custom trigger opens the menu', () => {
+    render(
+      <DropdownMenu
+        renderTrigger={props => (
+          <button type="button" {...props}>
+            More
+          </button>
+        )}>
+        <DropdownMenuItem label="Profile" onClick={() => {}} />
+      </DropdownMenu>,
+    );
+    const trigger = screen.getByRole('button', {name: 'More'});
+    fireEvent.pointerDown(trigger, {
+      pointerType: 'mouse',
+      pointerId: 1,
+      button: 0,
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('warns when both button and trigger are given in the bottom-sheet presentation too', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      render(
+        <DropdownMenu
+          button={{label: 'Actions'}}
+          presentation="bottom-sheet"
+          renderTrigger={props => (
+            <button type="button" {...props}>
+              More
+            </button>
+          )}
+          items={[{label: 'Profile'}]}
+        />,
+      );
+      expect(screen.getByRole('button', {name: 'More'})).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', {name: /Actions/}),
+      ).not.toBeInTheDocument();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('mutually exclusive'),
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('warns when both button and trigger are given', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      render(
+        <DropdownMenu
+          button={{label: 'Actions'}}
+          renderTrigger={props => (
+            <button type="button" {...props}>
+              More
+            </button>
+          )}>
+          <DropdownMenuItem label="Profile" onClick={() => {}} />
+        </DropdownMenu>,
+      );
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('mutually exclusive'),
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+});
+
 describe('DropdownMenu menuMaxHeight', () => {
   it('a menu taller than the cap keeps the height it is given', () => {
     render(
