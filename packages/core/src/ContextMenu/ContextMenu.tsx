@@ -63,6 +63,7 @@ import {
   activateMenuItem,
 } from '../DropdownMenu/menuItemRoles';
 import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
+import {useMenuDrillIn} from '../DropdownMenu/useMenuDrillIn';
 import {useListFocus} from '../hooks/useListFocus';
 import {useMenuPress} from '../hooks/useMenuPress';
 import {useTypeahead} from '../hooks/useTypeahead';
@@ -595,13 +596,17 @@ export function ContextMenu({
     ? styles.popoverCustomWidth(menuWidth)
     : styles.popover;
 
+  // The drill-in view stack for sub-menus on a phone; the bottom sheet has
+  // its own drill-in.
+  const {drillIn, wrapContent} = useMenuDrillIn(isOpen && !usesBottomSheet);
   const contextValue = useMemo<DropdownMenuContextValue>(
-    () => ({closeMenu, menuSize: size}),
-    [closeMenu, size],
+    () => ({closeMenu, menuSize: size, drillIn, menuLabel: label}),
+    [closeMenu, size, drillIn, label],
   );
 
-  const resolvedMenuContent =
-    itemsProp !== undefined ? renderDropdownItems(items) : menuContent;
+  const resolvedMenuContent = wrapContent(
+    itemsProp !== undefined ? renderDropdownItems(items) : menuContent,
+  );
 
   const hasOverflow = useMenuOverflow(
     listRef,

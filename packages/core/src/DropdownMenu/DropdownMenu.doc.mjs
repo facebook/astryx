@@ -258,7 +258,7 @@ export const docs = {
       name: 'children',
       type: 'ReactNode',
       description:
-        'Compound-mode menu content: DropdownMenuItem, DropdownMenuDivider, DropdownMenuSubMenu, and the selectable items. Mutually exclusive with `items`.',
+        'Compound-mode menu content: DropdownMenuItem, DropdownMenuDivider, DropdownMenuSubMenu (a flyout on a laptop, a drilled-in view with a Back row on a phone), and the selectable items. Mutually exclusive with `items`.',
     },
   ],
   components: [{name: 'DropdownMenuItem'}],

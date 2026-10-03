@@ -9,7 +9,7 @@ superseded_by: null
 approved_by: null
 approved_at: null
 owners: [cixzhang]
-review_triggers: [theming, public-api, behavior, accessibility]
+review_triggers: [accessibility, behavior, public-api, theming]
 verified_by:
   [
     packages/core/src/ContextMenu/ContextMenu.test.tsx,
@@ -89,6 +89,7 @@ Consumer props, content modes, and presentation policy remain documented in
 | FR4 | Compound `menuContent` remains a caller-supplied pointer-menu interior and may also render inside the touch frame; the data-driven touch path instead converts the same item data to List and ListItem presentation.                                                                                                                                                                                             | Current source and tests                                                     | Verified current branches; no behavior change      |
 | FR5 | The Pointer menu surface carries `data-astryx-menu-press` and follows `module:DropdownMenu/useMenuPress` FR1–FR7: the row under the release acts, the highlight follows a held pointer, a mouse released outside closes and a finger leaves the menu open, the stray click never acts, and `touch-action` follows overflow. Right-click, Shift+F10, long-press invocation and keyboard navigation are unchanged. | `module:DropdownMenu/useMenuPress`; `ContextMenu.test.tsx` press model suite | Proposed; verified in jsdom                        |
 | FR6 | With `triggerAs="span"` the Trigger area MUST be an inline element that owns a box, so the cursor anchor measures from the trigger's own rect on every invocation path. Every invocation path (right-click, Shift+F10, long-press) and the `context-menu` target's placement are unchanged.                                                                                                                      | `component:ContextMenu/DEC-1`                                                | Accepted; verified in jsdom                        |
+| FR7 | Sub-menu rows follow `component:DropdownMenu` FR12 inside the pointer menu: ContextMenu mounts the same drill-in view stack, named after its `label`, so a sub-menu drills in on a phone here too.                                                                                                                                                                                                               | `component:DropdownMenu/DEC-2`                                               | Proposed; verified in jsdom                        |
 
 ### Allowed variation
 
