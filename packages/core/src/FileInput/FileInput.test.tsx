@@ -16,6 +16,7 @@ import {
   fireEvent,
   createEvent,
   waitFor,
+  act,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {FileInput} from './FileInput';
@@ -604,6 +605,68 @@ describe('FileInput', () => {
       expect(handleChange).toHaveBeenCalledWith(null);
     });
 
+    it('calls onChange and changeAction with null when clear is clicked', async () => {
+      const user = userEvent.setup();
+      const order: string[] = [];
+      const handleChange = vi.fn(() => {
+        order.push('onChange');
+      });
+      const changeAction = vi.fn(async () => {
+        order.push('changeAction');
+      });
+      const file = createFile('test.txt', 100);
+      render(
+        <FileInput
+          label="Upload"
+          value={file}
+          onChange={handleChange}
+          changeAction={changeAction}
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Clear Upload'}));
+      expect(handleChange).toHaveBeenCalledWith(null);
+      expect(changeAction).toHaveBeenCalledWith(null);
+      expect(order).toEqual(['onChange', 'changeAction']);
+    });
+
+    it('presents optimistic cleared state and busy indicator while clear changeAction is pending', async () => {
+      const user = userEvent.setup();
+      let resolveAction: () => void = () => {};
+      const changeAction = vi.fn(
+        async () =>
+          new Promise<void>(resolve => {
+            resolveAction = resolve;
+          }),
+      );
+      const file = createFile('test.txt', 100);
+      render(
+        <FileInput
+          label="Upload"
+          value={file}
+          onChange={() => {}}
+          changeAction={changeAction}
+        />,
+      );
+      const trigger = screen.getByRole('button', {
+        name: 'Upload, test.txt',
+      });
+      expect(trigger).not.toHaveAttribute('aria-busy');
+      expect(
+        screen.getByRole('button', {name: 'Clear Upload'}),
+      ).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', {name: 'Clear Upload'}));
+
+      expect(trigger).toHaveAttribute('aria-busy', 'true');
+      expect(
+        screen.queryByRole('button', {name: 'Clear Upload'}),
+      ).not.toBeInTheDocument();
+
+      await act(async () => {
+        resolveAction();
+      });
+    });
+
     it('does not show clear button during loading', () => {
       const file = createFile('test.txt', 100);
       render(
@@ -612,6 +675,66 @@ describe('FileInput', () => {
       expect(
         screen.queryByRole('button', {name: 'Clear Upload'}),
       ).not.toBeInTheDocument();
+    });
+  });
+
+  describe('changeAction and optimistic updates', () => {
+    it('calls changeAction with selected file in a transition', async () => {
+      const order: string[] = [];
+      const handleChange = vi.fn(() => {
+        order.push('onChange');
+      });
+      const changeAction = vi.fn(async () => {
+        order.push('changeAction');
+      });
+      render(
+        <FileInput
+          label="Upload"
+          value={null}
+          onChange={handleChange}
+          changeAction={changeAction}
+        />,
+      );
+      const input = fileInputEl();
+      const file = createFile('resume.pdf', 200, 'application/pdf');
+      await act(async () => {
+        fireEvent.change(input, {target: {files: [file]}});
+      });
+
+      expect(handleChange).toHaveBeenCalledWith(file);
+      expect(changeAction).toHaveBeenCalledWith(file);
+      expect(order).toEqual(['onChange', 'changeAction']);
+    });
+
+    it('presents optimistic file name and aria-busy while changeAction is pending', async () => {
+      let resolveAction: () => void = () => {};
+      const changeAction = vi.fn(
+        async () =>
+          new Promise<void>(resolve => {
+            resolveAction = resolve;
+          }),
+      );
+      render(
+        <FileInput
+          label="Upload"
+          value={null}
+          onChange={() => {}}
+          changeAction={changeAction}
+        />,
+      );
+      const trigger = screen.getByRole('button', {name: 'Upload'});
+      expect(trigger).not.toHaveAttribute('aria-busy');
+
+      const input = fileInputEl();
+      const file = createFile('report.pdf', 300, 'application/pdf');
+      fireEvent.change(input, {target: {files: [file]}});
+
+      expect(trigger).toHaveAttribute('aria-busy', 'true');
+      expect(screen.getByText('report.pdf')).toBeInTheDocument();
+
+      await act(async () => {
+        resolveAction();
+      });
     });
   });
 
