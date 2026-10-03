@@ -2203,15 +2203,19 @@ async function themeBuildInternal(
     logger.warn(`  [warn] ${w}`);
   }
 
-  // Validate no private vars are set directly
+  // Private vars are build errors, not receipt warnings. Reject them before CSS
+  // generation or output planning so neither standalone nor family builds can
+  // leave artifacts for a theme the compiler declared invalid.
   const privateVarErrors = validatePrivateVars(themeDef);
-  for (const e of privateVarErrors) {
-    warningMessages.push(e);
-    logger.error(`  [error] ${e}`);
-  }
   if (privateVarErrors.length > 0) {
-    logger.error(
-      `\n  ${privateVarErrors.length} private var error(s). Use standard CSS properties instead.`,
+    throw new AstryxError(
+      [
+        ...privateVarErrors,
+        '',
+        `${privateVarErrors.length} private var error(s). Use standard CSS properties instead.`,
+      ].join('\n'),
+      undefined,
+      ERROR_CODES.ERR_THEME_INVALID,
     );
   }
 

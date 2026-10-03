@@ -16,6 +16,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {ensureCoreBuilt} from './ensure-core-built.mjs';
 import {runCli} from '../../../test-utils/run-cli.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 
 // Under the CLI package so fixtures resolve `@astryxdesign/core/theme`.
 const CLI_ROOT = path.resolve(import.meta.dirname, '../../..');
@@ -27,7 +28,6 @@ export const oceanTheme = defineTheme({
   tokens: {'--color-background-body': '#ffffff'},
   components: {
     progressbar: {base: {color: 'red'}},
-    button: {base: {'--_button-radius': '2px'}},
   },
 });
 `;
@@ -37,6 +37,14 @@ export const oceanCalmTheme = defineTheme({
   name: 'ocean-calm',
   extends: oceanTheme,
   tokens: {'--color-background-body': '#eeeeee'},
+});
+`;
+const PRIVATE_VAR = `import {defineTheme} from '@astryxdesign/core/theme';
+export const privateVarTheme = defineTheme({
+  name: 'private-var',
+  components: {
+    field: {base: {'--_field-radius': '8px'}},
+  },
 });
 `;
 
@@ -52,6 +60,7 @@ beforeEach(() => {
   fs.writeFileSync(path.join(dir, 'package.json'), '{"type":"module"}\n');
   fs.writeFileSync(path.join(dir, 'ocean.mjs'), OCEAN);
   fs.writeFileSync(path.join(dir, 'ocean-calm.mjs'), CALM);
+  fs.writeFileSync(path.join(dir, 'private-var.mjs'), PRIVATE_VAR);
 });
 
 afterEach(() => {
@@ -71,16 +80,42 @@ function run(args) {
 }
 
 describe('theme command human output is plain ASCII', () => {
-  it('a standalone build: ok, warning, error, notice, and font help lines', async () => {
+  it('a successful standalone build: ok, warning, notice, and font help lines', async () => {
     const result = await run(['build', 'ocean.mjs']);
 
     expect(result.code).toBe(0);
     expect(result.stdout).toContain('[ok] ocean.css');
     expect(result.stderr).toContain('[warn] Deprecated component target');
-    expect(result.stderr).toContain('[error] Component "button"');
     expect(result.stdout).toContain('note: Font "Inter"');
     expect(result.stdout).toContain('[note] Theme "ocean" names fonts');
     expect(nonAscii(result)).toEqual([]);
+  });
+
+  it('a private-variable error fails before writing outputs in every mode', async () => {
+    for (const args of [
+      ['build', 'private-var.mjs'],
+      ['build', 'private-var.mjs', '--check'],
+    ]) {
+      const result = await run(args);
+      expect(result.code).toBe(1);
+      expect(result.stderr).toContain('private var "--_field-radius"');
+      expect(nonAscii(result)).toEqual([]);
+    }
+
+    const json = await runCli(
+      ['--json', 'theme', 'build', 'private-var.mjs'],
+      dir,
+    );
+    expect(json.code).toBe(1);
+    const envelope = JSON.parse(json.stdout);
+    expect(envelope.code).toBe(ERROR_CODES.ERR_THEME_INVALID);
+    expect(envelope.error).toContain('private var "--_field-radius"');
+
+    for (const extension of ['css', 'js', 'd.ts']) {
+      expect(fs.existsSync(path.join(dir, `private-var.${extension}`))).toBe(
+        false,
+      );
+    }
   });
 
   it('--check, up to date and stale', async () => {

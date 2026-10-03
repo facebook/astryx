@@ -18,11 +18,10 @@
  * cannot actually set. It covers every component with public vars, so the
  * next one is covered without touching this file.
  *
- * Asserted on the receipt's `warnings` rather than on a rejection: a private
- * var is reported (logged `[error]`, collected into the receipt) and the build then
- * emits its CSS and resolves anyway. Asserting a throw would pass for the
- * wrong reason — it never throws, which is why a throwaway build read as a
- * pass on the first version of #5214.
+ * The negative control rejects one private var and verifies that no generated
+ * output survives. That proves the public-var sweep above is passing because
+ * every documented var is authorable, not because private-var validation was
+ * disabled.
  *
  * `themeBuild` compiles via @astryxdesign/core's generator, so it needs a built
  * core — the `node` project's globalSetup builds it once before workers fork.
@@ -43,6 +42,7 @@ import * as os from 'node:os';
 import {fileURLToPath} from 'node:url';
 import {themeBuild} from './build.mjs';
 import {loadComponentDoc} from '../../../foundation/discovery/component-loader.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 
 vi.setConfig({testTimeout: 60000});
 
@@ -139,13 +139,20 @@ describe('documented component vars build cleanly', () => {
     expect(privateVarWarnings(result)).toEqual([]);
   });
 
-  it('still reports a private var, so the rule this relies on is real', async () => {
-    // The negative control: if the builder stopped reporting `--_*`, the test
-    // above would pass for the wrong reason.
-    const result = await buildTheme('privatevar', {
-      spinner: {'size:xl': {'--_spinner-diameter': '40px'}},
+  it('rejects a private var before writing any output', async () => {
+    await expect(
+      buildTheme('privatevar', {
+        spinner: {'size:xl': {'--_spinner-diameter': '40px'}},
+      }),
+    ).rejects.toMatchObject({
+      code: ERROR_CODES.ERR_THEME_INVALID,
+      message: expect.stringContaining('private var "--_spinner-diameter"'),
     });
 
-    expect(privateVarWarnings(result)).toHaveLength(1);
+    for (const extension of ['css', 'js', 'd.ts']) {
+      expect(
+        fs.existsSync(path.join(tmpDir, `privatevar.${extension}`)),
+      ).toBe(false);
+    }
   });
 });

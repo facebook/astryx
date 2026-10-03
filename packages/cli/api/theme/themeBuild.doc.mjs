@@ -90,7 +90,7 @@ export const doc = {
     },
     {
       code: 'ERR_THEME_INVALID',
-      when: 'the resolved theme is invalid, for example it has no name, or a custom Heading type has no standalone rule with a declaration the compiler can emit',
+      when: 'the resolved theme is invalid, for example it has no name, sets a private `--_*` component variable, or a custom Heading type has no standalone rule with a declaration the compiler can emit',
     },
     {
       code: 'ERR_PATH_TRAVERSAL',
