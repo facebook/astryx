@@ -159,9 +159,17 @@ export const docs = {
       default: '1',
     },
     {
+      name: 'emptySearchText',
+      type: 'ReactNode',
+      description:
+        'Content shown when the query matched nothing. Takes a ReactNode, so the dead end can carry a link or a create row. Announced in a polite live region as the text it renders.',
+      default: "'No results found'",
+    },
+    {
       name: 'emptySearchResultsText',
       type: 'string',
-      description: 'Text shown when search returns no results.',
+      description:
+        'Deprecated: renamed to emptySearchText, which takes a ReactNode rather than a string, so every existing value stays valid. Still works exactly as released; emptySearchText wins when both are set.',
       default: "'No results found'",
     },
     {
@@ -317,9 +325,17 @@ export const docsZh = {
       default: '1',
     },
     {
+      name: 'emptySearchText',
+      type: 'ReactNode',
+      description:
+        '查询无匹配结果时显示的内容。接受 ReactNode，因此可在无结果处放置链接或创建入口。会以其渲染出的文本在礼貌性实时区域中播报。',
+      default: "'No results found'",
+    },
+    {
       name: 'emptySearchResultsText',
       type: 'string',
-      description: '搜索无结果时显示的文本。',
+      description:
+        '已弃用：改名为 emptySearchText，其类型由 string 放宽为 ReactNode，原有取值全部仍然有效。仍按已发布行为工作；两者同时设置时以 emptySearchText 为准。',
       default: "'No results found'",
     },
     {
@@ -462,7 +478,9 @@ export const docsDense = {
     menuWidth: 'Requested px width before viewport clamping.',
     minQueryLength:
       'Min query length before searching. Menu stays closed below it.',
-    emptySearchResultsText: 'Text when no results.',
+    emptySearchText: 'Content when the query matched nothing. ReactNode.',
+    emptySearchResultsText:
+      'deprecated, use emptySearchText (ReactNode). still works as released; emptySearchText wins if both set.',
     isDisabled: 'Whether input disabled.',
     isFocusableDisabled:
       'Keeps disabled input focusable and blocks text entry; an already-open highlight can still be selected with Enter.',

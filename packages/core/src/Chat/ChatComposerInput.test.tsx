@@ -1143,6 +1143,74 @@ describe('ChatComposerInput', () => {
       const {container} = render(<ChatComposerInput triggers={[trigger]} />);
       expect(container).toBeTruthy();
     });
+
+    // A trigger's `emptySearchResultsText` was renamed to `emptySearchText`
+    // and widened from `string` to `ReactNode` (`spec:AST-056` FR1). The
+    // released key keeps working through the overlap (`spec:AST-017` FR28).
+    it('renders an element emptySearchText when the query matched nothing', async () => {
+      const user = userEvent.setup();
+      const trigger = createMentionTrigger({
+        emptySearchText: (
+          <span>
+            Nobody by that name. <a href="/invite">Invite them</a>
+          </span>
+        ),
+      });
+      render(<ChatComposerInput triggers={[trigger]} />);
+
+      await user.click(screen.getByRole('combobox'));
+      await user.keyboard('@zzzzz');
+
+      await waitFor(() => {
+        expect(screen.getByText('Invite them')).toBeInTheDocument();
+      });
+    });
+
+    it('keeps the deprecated key working, and says it is deprecated', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const user = userEvent.setup();
+      const trigger = createMentionTrigger({
+        emptySearchResultsText: 'Nobody found',
+      });
+      render(<ChatComposerInput triggers={[trigger]} />);
+
+      await user.click(screen.getByRole('combobox'));
+      await user.keyboard('@zzzzz');
+
+      await waitFor(() => {
+        expect(screen.getByText('Nobody found')).toBeInTheDocument();
+      });
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'ChatComposerInput: A trigger sets `emptySearchResultsText`, which is deprecated',
+        ),
+      );
+      warn.mockRestore();
+    });
+
+    it('lets the new key win when a trigger sets both, and warns', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const user = userEvent.setup();
+      const trigger = createMentionTrigger({
+        emptySearchResultsText: 'Old copy',
+        emptySearchText: 'New copy',
+      });
+      render(<ChatComposerInput triggers={[trigger]} />);
+
+      await user.click(screen.getByRole('combobox'));
+      await user.keyboard('@zzzzz');
+
+      await waitFor(() => {
+        expect(screen.getByText('New copy')).toBeInTheDocument();
+      });
+      expect(screen.queryByText('Old copy')).not.toBeInTheDocument();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'ChatComposerInput: A trigger sets both `emptySearchResultsText` and `emptySearchText`',
+        ),
+      );
+      warn.mockRestore();
+    });
   });
 
   describe('accessibility', () => {

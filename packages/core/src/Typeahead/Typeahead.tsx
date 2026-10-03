@@ -61,6 +61,7 @@ import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useRenamedProp} from '../hooks/useRenamedProp';
 export type {
   InputStatus as TypeaheadStatus,
   InputStatusType as TypeaheadStatusType,
@@ -126,7 +127,28 @@ export interface TypeaheadProps<T extends SearchableItem> extends Omit<
    * @default 1
    */
   minQueryLength?: number;
-  /** Text shown when no results found. @default 'No results found' */
+  /**
+   * Content shown when the query matched nothing (`spec:AST-056` FR1).
+   * Takes a `ReactNode`, so a dead end can carry a link or a create row.
+   *
+   * The message is announced in a polite live region as the text it renders,
+   * so an element is announced as written. Content carrying no readable text
+   * falls back to the default and warns in development.
+   *
+   * @default 'No results found'
+   */
+  emptySearchText?: ReactNode;
+
+  /**
+   * Text shown when no results found.
+   * @default 'No results found'
+   * @deprecated `DEP-0002`. Renamed to `emptySearchText`, which takes a
+   * `ReactNode` rather than a `string` — every existing value stays valid
+   * (`spec:AST-056` FR1, FR7). Still works exactly as released;
+   * `emptySearchText` wins when both are set. Removal is `CLN-0002`, in a
+   * later minor whose frozen manifest carries both ids (`spec:AST-017`
+   * FR31).
+   */
   emptySearchResultsText?: string;
   /** Whether the input is disabled. @default false */
   isDisabled?: boolean;
@@ -356,6 +378,7 @@ export function Typeahead<T extends SearchableItem>({
   maxMenuItems,
   minQueryLength,
   emptySearchResultsText,
+  emptySearchText: emptySearchTextFromProps,
   isDisabled = false,
   disabledMessage,
   hasClear = true,
@@ -377,6 +400,16 @@ export function Typeahead<T extends SearchableItem>({
   const descriptionId = useId();
   const statusMessageId = useId();
   const inputGroup = useInputGroup();
+
+  // The replacement wins, the released name keeps working, and development
+  // says which one was read (`spec:AST-056` FR7, `spec:AST-017` FR28).
+  const emptySearchText = useRenamedProp<ReactNode>({
+    component: 'Typeahead',
+    deprecated: 'emptySearchResultsText',
+    deprecatedValue: emptySearchResultsText,
+    replacement: 'emptySearchText',
+    value: emptySearchTextFromProps,
+  });
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -587,7 +620,7 @@ export function Typeahead<T extends SearchableItem>({
               hasEntriesOnFocus={hasEntriesOnFocus}
               maxMenuItems={maxMenuItems}
               minQueryLength={minQueryLength}
-              emptySearchResultsText={emptySearchResultsText}
+              emptySearchText={emptySearchText}
               isDisabled={isDisabled}
               hasAutoFocus={hasAutoFocus}
               isFocusableDisabled={showsDisabledMessage}
