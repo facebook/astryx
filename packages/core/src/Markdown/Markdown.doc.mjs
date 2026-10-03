@@ -305,12 +305,12 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Install createMarkdownHeadingLinks() through plugins when a document needs deterministic h1–h6 fragment IDs at every nesting depth. The returned entry carries its validated namespace across compatible Core package copies. The no-plugin path stays unchanged; the plugin shares one depth-first identity projection with Markdown-derived Outline.',
+          'Install createMarkdownHeadingLinks() through plugins when a document needs copyable h1–h6 permalinks. The returned entry carries its validated namespace and URL base across compatible Core package copies. Each built-in heading keeps its incoming fragment ID and gains an inline trailing # copy button: it is hidden at fine-pointer rest through useContainerReveal, reveals on heading-row hover or keyboard focus, and stays visible under the hook’s coarse/touch semantics. Unmodified tap, click, Enter, or Space copies the canonical URL without navigation, hash mutation, or scrolling; a check confirms success for 1.5 seconds. The no-plugin path stays unchanged, and nested headings use the same depth-first identity projection as Markdown-derived Outline.',
       },
       {
         guidance: true,
         description:
-          'For multiple documents, create one heading-links plugin per document with headingIdPrefix and pass that same plugin to Markdown and useOutlineFromMarkdown. Use the same stable value for Markdown id when the root also needs a DOM id.',
+          'For multiple documents, create one heading-links plugin per document with headingIdPrefix and pass that same plugin to Markdown and useOutlineFromMarkdown. Use the same stable value for Markdown id when the root also needs a DOM id; permalinkBaseUrl may supply a safe caller-owned URL before the fragment.',
       },
       {
         guidance: false,
@@ -810,12 +810,12 @@ export const docsZh = {
       {
         guidance: true,
         description:
-          'Install createMarkdownHeadingLinks() through plugins when a document needs deterministic h1–h6 fragment IDs at every nesting depth. The returned entry carries its validated namespace across compatible Core package copies. The no-plugin path stays unchanged; the plugin shares one depth-first identity projection with Markdown-derived Outline.',
+          'Install createMarkdownHeadingLinks() through plugins when a document needs copyable h1–h6 permalinks. The returned entry carries its validated namespace and URL base across compatible Core package copies. Each built-in heading keeps its incoming fragment ID and gains an inline trailing # copy button: it is hidden at fine-pointer rest through useContainerReveal, reveals on heading-row hover or keyboard focus, and stays visible under the hook’s coarse/touch semantics. Unmodified tap, click, Enter, or Space copies the canonical URL without navigation, hash mutation, or scrolling; a check confirms success for 1.5 seconds. The no-plugin path stays unchanged, and nested headings use the same depth-first identity projection as Markdown-derived Outline.',
       },
       {
         guidance: true,
         description:
-          'For multiple documents, create one heading-links plugin per document with headingIdPrefix and pass that same plugin to Markdown and useOutlineFromMarkdown. Use the same stable value for Markdown id when the root also needs a DOM id.',
+          'For multiple documents, create one heading-links plugin per document with headingIdPrefix and pass that same plugin to Markdown and useOutlineFromMarkdown. Use the same stable value for Markdown id when the root also needs a DOM id; permalinkBaseUrl may supply a safe caller-owned URL before the fragment.',
       },
       {
         guidance: false,
@@ -902,7 +902,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Install createMarkdownHeadingLinks() through plugins to add all-depth stable IDs. Pass the same plugin entry to Markdown-derived Outline; use headingIdPrefix for multiple instances.',
+          'Install createMarkdownHeadingLinks() through plugins to add all-depth stable IDs and inline trailing # copy buttons to built-in headings. useContainerReveal keeps each button hidden at fine-pointer rest and keyboard/touch reachable. Unmodified activation copies the canonical URL without navigation, hash mutation, or scrolling and shows a 1.5-second check; failures stay silent. Pass the same plugin entry to Markdown-derived Outline; use headingIdPrefix for multiple instances.',
       },
       {
         guidance: false,

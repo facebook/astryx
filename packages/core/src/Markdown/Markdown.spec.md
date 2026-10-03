@@ -144,8 +144,8 @@ first-party key/value grammar rather than Remark compatibility, and exposes type
 metadata through the helper that created it. `spec:AST-036`
 owns the shared protocol and limited Remark compatibility profile,
 `module:Markdown/remark` owns that profile's adapter,
-`module:Markdown/headingLinks` owns its opt-in identity projection, and this
-component owns aggregate application and fallback.
+`module:Markdown/headingLinks` owns its opt-in identity projection and permalink
+composition, and this component owns aggregate application and fallback.
 
 ### Acceptance and implementation state
 
@@ -360,9 +360,9 @@ and this change preserves the existing spelling exactly.
 - `spec:AST-005/DEC-2` keeps embedded-resource policy separate. Markdown may
   reject a broader set of image/resource URLs without narrowing the shared
   navigation contract.
-- `module:Markdown/headingLinks` owns its opt-in public factory and heading
-  identity projection. Markdown supplies only the generic plugin and built-in/custom
-  heading ID application seams.
+- `module:Markdown/headingLinks` owns its opt-in public factory, heading projection,
+  built-in sibling renderer, i18n, styles, accessibility behavior, and evidence.
+  Markdown supplies only the generic plugin and built-in-heading composition seams.
 - `spec:AST-036` owns the opaque syntax/transform/renderer protocol, immutable AST
   validation, limited Remark compatibility, performance, and resource boundaries.
   This record owns aggregate Markdown behavior in FR12–FR22;
