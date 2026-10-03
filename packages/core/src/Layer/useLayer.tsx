@@ -33,6 +33,9 @@ import {currentGesture, currentGestureHasClicked} from './gestureCounter';
 import {resolveLayerPortalTarget} from './layerHost';
 import {layerTextReset} from './layerTextReset.stylex';
 import {layerViewportInset} from './layerViewportInset.stylex';
+import {layerInsetProperties} from './layerInset';
+import {useLayerContext} from './LayerContext';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
 
 const styles = stylex.create({
@@ -68,18 +71,20 @@ const styles = stylex.create({
     marginInlineStart: offset,
     marginInlineEnd: offset,
   }),
-  // The viewport inset (spec:AST-059 FR1, FR3). Every anchor-mode layer is
-  // capped to the viewport on the placement axis and keeps the runtime's
-  // gutter from the far viewport edge of its alignment axis. The gutter is a
-  // margin on the far edge only — one on the anchor-facing edge would push the
-  // layer off its anchor — and the flip tactics swap it with the area. Nothing
-  // here caps the inline size of the layer box itself: an auto-width layer
-  // shrinks to the room beside its trigger on its own, and a cap on the box
-  // keeps Chromium from choosing a flip (see DropdownMenuSubMenu), so
-  // consumers clamp their own inline sizes with
-  // `layerViewportInset.maxInlineSize`.
+  // The viewport inset (spec:AST-059 FR1–FR3). Every anchor-mode layer is
+  // capped to the viewport minus both gutters on both axes and keeps the
+  // runtime's gutter from the far viewport edge of its alignment axis. The
+  // gutter is a margin on the far edge only — one on the anchor-facing edge
+  // would push the layer off its anchor — and the flip tactics swap it with
+  // the area. The cap is on the layer box itself: content wider than the
+  // viewport overflows inside the layer, where the composing component
+  // decides whether it scrolls or clips; the box never leaves the viewport.
   viewportFit: {
     boxSizing: 'border-box',
+    maxInlineSize: stylex.firstThatWorks(
+      layerViewportInset.maxInlineSize,
+      layerViewportInset.maxInlineSizeFallback,
+    ),
     maxBlockSize: stylex.firstThatWorks(
       layerViewportInset.maxBlockSize,
       layerViewportInset.maxBlockSizeFallback,
@@ -625,6 +630,11 @@ function useLayerImplementation(
   // fallback is withdrawn while it is not, so an aligned layer holds its
   // position and size instead of chasing an anchor nobody can see.
   const [isAnchorInView, setIsAnchorInView] = useState(true);
+  // The inset the app declared on LayerProvider (FR6). Read through context
+  // and written inline on the layer, so a corrective portal cannot escape it
+  // and no measurement is needed to apply it.
+  const layerContext = useLayerContext();
+  const declaredInset = layerContext?.inset;
   const popoverRef = useRef<HTMLElement | null>(null);
   // The DOM element on which the current logical open state was applied.
   // A portal target change replaces the popover element; retaining the old
@@ -954,16 +964,34 @@ function useLayerImplementation(
     };
   }, [handleToggle, bindToggleListener]);
 
-  // Observe the anchor while open. IntersectionObserver with no root reports
-  // against the viewport and through every ancestor clip, so an anchor
-  // scrolled out of a panel reads as out of view too. The observer fires once
-  // on observe, so reopening re-reads the current state.
-  useEffect(() => {
+  // Anchor visibility (FR5). The first frame must already be right (FR8), so
+  // the opening read is synchronous — a layout effect runs before paint, and a
+  // state change inside it re-renders before paint — against the visual
+  // viewport. IntersectionObserver then tracks changes while open; with no
+  // root it reports against the viewport and through every ancestor clip, so
+  // an anchor scrolled out of a panel reads as out of view too.
+  useIsomorphicLayoutEffect(() => {
     if (!isOpen || mode !== 'context') {
       return;
     }
     const anchor = triggerRef.current;
-    if (!anchor || typeof IntersectionObserver === 'undefined') {
+    if (!anchor) {
+      return;
+    }
+    const view = anchor.ownerDocument.defaultView;
+    if (view) {
+      // Edge-adjacent counts as in view, as IntersectionObserver reports it;
+      // an engine with no layout (a zero rect) therefore reads as in view too.
+      const rect = anchor.getBoundingClientRect();
+      const inView =
+        rect.bottom >= 0 &&
+        rect.right >= 0 &&
+        rect.top <= view.innerHeight &&
+        rect.left <= view.innerWidth;
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- read before paint so the first frame holds or slides correctly
+      setIsAnchorInView(inView);
+    }
+    if (typeof IntersectionObserver === 'undefined') {
       return;
     }
     const observer = new IntersectionObserver(entries => {
@@ -1057,6 +1085,7 @@ function useLayerImplementation(
           style={{
             ...stylexResult.style,
             ...anchorStyle,
+            ...layerInsetProperties(declaredInset),
             ...contextMount.portalStyle,
             ...extraStyle,
           }}
@@ -1078,6 +1107,7 @@ function useLayerImplementation(
     [
       anchorId,
       contextMount,
+      declaredInset,
       id,
       isAnchorInView,
       lightDismiss,

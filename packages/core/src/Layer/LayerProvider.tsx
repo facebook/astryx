@@ -11,7 +11,6 @@ import {
   type LayerToastConfig,
 } from './LayerContext';
 import {ToastViewport} from '../Toast/ToastViewport';
-import {layerInsetProperties} from './layerInset';
 
 export interface LayerProviderProps {
   children: ReactNode;
@@ -56,31 +55,29 @@ export function LayerProvider({
   const existingContext = useLayerContext();
 
   const contextValue = useMemo<LayerContextValue>(
-    () => ({toastConfig, isProvider: true}),
-    [toastConfig],
+    () => ({toastConfig, inset, isProvider: true}),
+    [toastConfig, inset],
   );
-  const insetStyle = useMemo(() => layerInsetProperties(inset), [inset]);
 
   // Nested provider — pass through
   if (existingContext) {
     return <>{children}</>;
   }
 
-  // The declared inset reaches every anchored layer and the toast viewport by
-  // CSS inheritance from this box-less wrapper; nothing resolves placement
-  // through the provider (spec:AST-059 FR6). With no inset the wrapper
-  // carries no declaration, so a surface with no provider renders as one
-  // under the default provider.
+  // The declared inset reaches anchored layers through context — each layer
+  // writes it inline on itself, so a corrective portal cannot escape it — and
+  // the toast viewport through its prop. Nothing resolves placement through
+  // the provider (spec:AST-059 FR6). With no inset nothing is written, so a
+  // surface with no provider renders as one under the default provider.
   return (
     <LayerContext value={contextValue}>
-      <div style={insetStyle}>
-        <ToastViewport
-          position={toastConfig.position}
-          maxVisible={toastConfig.maxVisible}
-          inset={toastConfig.inset}>
-          {children}
-        </ToastViewport>
-      </div>
+      <ToastViewport
+        position={toastConfig.position}
+        maxVisible={toastConfig.maxVisible}
+        inset={toastConfig.inset}
+        layerInset={inset}>
+        {children}
+      </ToastViewport>
     </LayerContext>
   );
 }

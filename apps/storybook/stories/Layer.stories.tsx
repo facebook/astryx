@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useRef, useState} from 'react';
+import {useLayoutEffect, useRef, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {useLayer} from '@astryxdesign/core/Layer';
@@ -413,8 +413,12 @@ export const InlineTriggerHosting: Story = {
 //
 // Each story below is a claim in `docs/specs/AST-059-layer-viewport-inset`
 // a person can open and look at, and a geometry assertion the story play
-// guard runs in real Chromium (jsdom has no layout). The viewport is 1280×900
-// under the guard; triggers are placed so each case holds there.
+// guard runs in real Chromium at two viewports — 1280×900 and a 390×844
+// phone — so a claim that holds only where the viewport is wider than the
+// layer is caught. The assertions read the layer's rectangle synchronously
+// after the opening click commits: that is the geometry of the first frame
+// the browser paints (FR8). Each then settles and reads again; any
+// difference is a paint-then-shift and fails.
 
 const GUTTER = 16; // --spacing-4
 const TOLERANCE = 1.5;
@@ -436,11 +440,16 @@ const viewportStyles = stylex.create({
     position: 'absolute',
     insetBlockStart: 16,
     insetInlineStart: 16,
-    maxInlineSize: 480,
+    maxInlineSize: 'calc(100% - 32px)',
     fontSize: 13,
     lineHeight: 1.5,
     color: 'var(--color-text-secondary)',
+    margin: 0,
   },
+  // A raw useLayer surface. The runtime caps the layer box to the viewport;
+  // what happens to content wider or taller than that is the surface's — here
+  // it reads the same cap and scrolls, as Popover does once it measures
+  // overflow.
   surface: {
     boxSizing: 'border-box',
     backgroundColor: 'var(--color-background-surface)',
@@ -449,6 +458,15 @@ const viewportStyles = stylex.create({
     padding: 12,
     fontSize: 14,
     lineHeight: 1.4,
+    maxInlineSize: stylex.firstThatWorks(
+      'calc(100vi - 32px)',
+      'calc(100vw - 32px)',
+    ),
+    maxBlockSize: stylex.firstThatWorks(
+      'calc(100dvb - 32px)',
+      'calc(100vh - 32px)',
+    ),
+    overflow: 'auto',
   },
   nowrap: {whiteSpace: 'nowrap'},
   tall: {
@@ -456,28 +474,27 @@ const viewportStyles = stylex.create({
     background:
       'repeating-linear-gradient(to bottom, transparent 0 39px, var(--color-border-default) 39px 40px)',
   },
-  // A surface inside a block-capped layer scrolls when its content is taller
-  // than the layer; the cap it reads is the runtime's.
-  scrollSurface: {
-    overflow: 'auto',
-    maxBlockSize: stylex.firstThatWorks(
-      'calc(100dvb - 32px)',
-      'calc(100vh - 32px)',
-    ),
-  },
   explicitWidth: (width: number) => ({width}),
   bottomBar: {
     position: 'fixed',
     insetBlockEnd: 0,
     insetInlineStart: 0,
     insetInlineEnd: 0,
-    blockSize: 80,
     backgroundColor: 'var(--color-background-inverse, #111)',
     color: 'var(--color-text-inverse, #fff)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     fontSize: 13,
+  },
+  barHeight: (height: number) => ({blockSize: height}),
+  controls: {
+    position: 'fixed',
+    insetBlockStart: 8,
+    insetInlineEnd: 8,
+    display: 'flex',
+    gap: 8,
+    zIndex: 1,
   },
 });
 
@@ -487,29 +504,38 @@ type Pos = {
   right?: number | string;
   bottom?: number | string;
 };
+type Placement = 'above' | 'below' | 'start' | 'end';
+type Alignment = 'start' | 'center' | 'end';
 
 function ViewportLayer({
   at,
   placement = 'below',
   alignment = 'start',
   width,
-  surfaceXstyle,
   children,
   caption,
   canvasXstyle,
   extra,
+  isOpenInitially = false,
 }: {
   at: Pos;
-  placement?: 'above' | 'below' | 'start' | 'end';
-  alignment?: 'start' | 'center' | 'end';
+  placement?: Placement;
+  alignment?: Alignment;
   width?: number;
-  surfaceXstyle?: stylex.StyleXStyles;
   children: React.ReactNode;
   caption: string;
   canvasXstyle?: stylex.StyleXStyles;
   extra?: React.ReactNode;
+  isOpenInitially?: boolean;
 }) {
   const layer = useLayer({mode: 'context', lightDismiss: true});
+  const openedRef = useRef(false);
+  useLayoutEffect(() => {
+    if (isOpenInitially && !openedRef.current) {
+      openedRef.current = true;
+      layer.show();
+    }
+  }, [isOpenInitially, layer]);
   return (
     <div
       {...stylex.props(viewportStyles.canvas, canvasXstyle)}
@@ -520,13 +546,12 @@ function ViewportLayer({
           ref={layer.ref}
           label="Open"
           size="sm"
+          data-testid="trigger"
           onClick={() => (layer.isOpen ? layer.hide() : layer.show())}
         />
       </div>
       {layer.render(
-        <div {...stylex.props(viewportStyles.surface, surfaceXstyle)}>
-          {children}
-        </div>,
+        <div {...stylex.props(viewportStyles.surface)}>{children}</div>,
         {
           placement,
           alignment,
@@ -545,9 +570,20 @@ const settle = async () => {
   await nextFrame();
 };
 
-function rects(canvasElement: HTMLElement) {
-  const trigger = canvasElement.querySelector('button');
-  const layer = document.querySelector<HTMLElement>('[popover]:popover-open');
+type Rects = {
+  trigger: DOMRect;
+  layer: DOMRect;
+  vw: number;
+  vh: number;
+};
+
+function rects(canvasElement: HTMLElement): Rects {
+  const trigger = canvasElement.querySelector<HTMLElement>(
+    '[data-testid="trigger"]',
+  );
+  const layer = document.querySelector<HTMLElement>(
+    '[popover]:popover-open[id]',
+  );
   if (!trigger || !layer) {
     throw new Error('No open layer');
   }
@@ -559,17 +595,44 @@ function rects(canvasElement: HTMLElement) {
   };
 }
 
-async function open(canvasElement: HTMLElement) {
-  canvasElement.querySelector('button')?.click();
-  await settle();
-  return rects(canvasElement);
+/** The largest inline size a layer may take at this viewport (FR2). */
+const inlineCap = (r: Rects) => r.vw - 2 * GUTTER;
+
+function sameRect(a: DOMRect, b: DOMRect) {
+  return (
+    Math.abs(a.left - b.left) <= TOLERANCE &&
+    Math.abs(a.top - b.top) <= TOLERANCE &&
+    Math.abs(a.width - b.width) <= TOLERANCE &&
+    Math.abs(a.height - b.height) <= TOLERANCE
+  );
 }
 
-function assertOnScreen(
-  r: ReturnType<typeof rects>,
-  label: string,
-  gutter = GUTTER,
-) {
+/**
+ * Click the trigger, read the first frame's geometry synchronously (the
+ * discrete event flushes React and the rect read forces layout), then settle
+ * and read again. A difference is a paint-then-shift (FR8).
+ */
+async function open(canvasElement: HTMLElement): Promise<Rects> {
+  canvasElement.querySelector<HTMLElement>('[data-testid="trigger"]')?.click();
+  const first = rects(canvasElement);
+  await settle();
+  const settled = rects(canvasElement);
+  assertNoShift(first, settled, 'after opening');
+  return settled;
+}
+
+function assertNoShift(first: Rects, settled: Rects, when: string) {
+  if (!sameRect(first.layer, settled.layer)) {
+    throw new Error(
+      `Paint-then-shift ${when}: first frame ${fmt(first.layer)}, settled ${fmt(settled.layer)}`,
+    );
+  }
+}
+
+const fmt = (r: DOMRect) =>
+  `${Math.round(r.left)}..${Math.round(r.right)} × ${Math.round(r.top)}..${Math.round(r.bottom)} (${Math.round(r.width)}w)`;
+
+function assertOnScreen(r: Rects, label: string, gutter = GUTTER) {
   const {layer, vw, vh} = r;
   if (
     layer.left < gutter - TOLERANCE ||
@@ -578,7 +641,17 @@ function assertOnScreen(
     layer.bottom > vh - gutter + TOLERANCE
   ) {
     throw new Error(
-      `${label}: layer ${Math.round(layer.left)}..${Math.round(layer.right)} × ${Math.round(layer.top)}..${Math.round(layer.bottom)} leaves the ${gutter}px gutter in a ${vw}×${vh} viewport`,
+      `${label}: layer ${fmt(layer)} leaves the ${gutter}px gutter in a ${vw}×${vh} viewport`,
+    );
+  }
+}
+
+/** An explicit width renders at its size, or at the cap when it is larger. */
+function assertWidth(r: Rects, asked: number, label: string) {
+  const expected = Math.min(asked, inlineCap(r));
+  if (Math.abs(r.layer.width - expected) > TOLERANCE) {
+    throw new Error(
+      `${label}: asked ${asked}px, cap ${inlineCap(r)}px, rendered ${Math.round(r.layer.width)}px`,
     );
   }
 }
@@ -593,11 +666,9 @@ export const ContentFitsBesideTrigger: Story = {
   parameters: viewportParameters,
   render: () => (
     <ViewportLayer
-      at={{top: 120, left: 200}}
+      at={{top: 120, left: 40}}
       caption="FR2, FR4 — A content-sized layer with room beside its trigger sizes to its content and stays start-aligned to the trigger. Nothing caps it to the span; nothing moves it.">
-      <span {...stylex.props(viewportStyles.nowrap)}>
-        Four short menu rows would sit here
-      </span>
+      <span {...stylex.props(viewportStyles.nowrap)}>Four short rows</span>
     </ViewportLayer>
   ),
   play: async ({canvasElement}) => {
@@ -607,7 +678,7 @@ export const ContentFitsBesideTrigger: Story = {
         `Expected the layer to stay start-aligned to the trigger (${r.trigger.left}), got ${r.layer.left}`,
       );
     }
-    if (r.layer.width < 200) {
+    if (r.layer.width < 120) {
       throw new Error(`Layer shrank to ${r.layer.width}px`);
     }
     assertOnScreen(r, 'fits beside');
@@ -620,7 +691,7 @@ export const ContentDoesNotFitBesideTrigger: Story = {
   render: () => (
     <ViewportLayer
       at={{top: 120, right: 60}}
-      caption="FR2, FR4 — The trigger sits 60px from the inline-end edge and the layer's content cannot wrap below ~340px. The layer keeps its size and flips to end alignment instead of being squeezed into the 44px beside the trigger.">
+      caption="FR2, FR4 — The trigger sits 60px from the inline-end edge and the layer's content cannot wrap. Where the content fits the viewport (desktop), the layer keeps its size and flips to end alignment instead of being squeezed into the room beside the trigger. Where it does not fit the viewport at all (a phone), the layer is capped to the viewport minus its gutters and the content scrolls inside it.">
       <span {...stylex.props(viewportStyles.nowrap)}>
         Unbreakable-label-that-cannot-wrap-to-fit-beside-the-trigger
       </span>
@@ -628,10 +699,17 @@ export const ContentDoesNotFitBesideTrigger: Story = {
   ),
   play: async ({canvasElement}) => {
     const r = await open(canvasElement);
-    if (r.layer.width < 300) {
+    const cap = inlineCap(r);
+    if (r.layer.width < Math.min(300, cap) - TOLERANCE) {
       throw new Error(`Layer was squeezed to ${r.layer.width}px`);
     }
-    if (Math.abs(r.layer.right - r.trigger.right) > TOLERANCE) {
+    if (r.layer.width > cap + TOLERANCE) {
+      throw new Error(`Layer ${r.layer.width}px exceeds the cap ${cap}px`);
+    }
+    if (
+      r.layer.width < cap - TOLERANCE &&
+      Math.abs(r.layer.right - r.trigger.right) > TOLERANCE
+    ) {
       throw new Error(
         `Expected a flip to end alignment (right ${r.trigger.right}), got right ${r.layer.right}`,
       );
@@ -648,17 +726,13 @@ export const ExplicitSizeNearEdge: Story = {
       at={{top: 120, left: 45}}
       alignment="end"
       width={352}
-      caption="FR2 — An end-aligned layer given width 352 on a trigger 45px from the inline-start edge. The span beside the trigger is 45px + the trigger; the layer renders at 352px anyway, flipped to start alignment, never shrunk to 274px.">
+      caption="FR2 — An end-aligned layer given width 352 on a trigger 45px from the inline-start edge. The room beside the trigger is 45px plus the trigger; the layer renders at 352px anyway, flipped to start alignment, never shrunk to 274px.">
       A 352px panel
     </ViewportLayer>
   ),
   play: async ({canvasElement}) => {
     const r = await open(canvasElement);
-    if (Math.abs(r.layer.width - 352) > TOLERANCE) {
-      throw new Error(
-        `Explicit width was not honoured: layer is ${r.layer.width}px wide`,
-      );
-    }
+    assertWidth(r, 352, 'explicit size');
     assertOnScreen(r, 'explicit size');
   },
 };
@@ -676,10 +750,11 @@ export const TriggerNearEdgeFlips: Story = {
   ),
   play: async ({canvasElement}) => {
     const r = await open(canvasElement);
-    if (Math.abs(r.layer.width - 320) > TOLERANCE) {
-      throw new Error(`Layer width changed: ${r.layer.width}px`);
-    }
-    if (Math.abs(r.layer.right - r.trigger.right) > TOLERANCE) {
+    assertWidth(r, 320, 'flip');
+    if (
+      r.layer.width < inlineCap(r) - TOLERANCE &&
+      Math.abs(r.layer.right - r.trigger.right) > TOLERANCE
+    ) {
       throw new Error(
         `Expected the flipped layer's end edge at ${r.trigger.right}, got ${r.layer.right}`,
       );
@@ -695,15 +770,13 @@ export const NeitherSideFits: Story = {
     <ViewportLayer
       at={{top: 120, left: 'calc(50% - 20px)'}}
       width={1000}
-      caption="FR4 — A 1000px layer on a centred trigger fits on neither side of it. It keeps its size and slides along the inline axis the least distance that brings it inside the gutters.">
+      caption="FR2, FR4 — A 1000px layer on a centred trigger fits on neither side of it. Where 1000px fits the viewport, it keeps its size and slides along the inline axis the least distance that brings it inside the gutters. Where it does not, it is capped to the viewport minus the gutters.">
       Too wide for either side; slid into view
     </ViewportLayer>
   ),
   play: async ({canvasElement}) => {
     const r = await open(canvasElement);
-    if (Math.abs(r.layer.width - 1000) > TOLERANCE) {
-      throw new Error(`Layer width changed: ${r.layer.width}px`);
-    }
+    assertWidth(r, 1000, 'neither side fits');
     assertOnScreen(r, 'neither side fits');
   },
 };
@@ -713,9 +786,8 @@ export const TallerThanTheViewport: Story = {
   parameters: viewportParameters,
   render: () => (
     <ViewportLayer
-      at={{top: 120, left: 200}}
-      surfaceXstyle={viewportStyles.scrollSurface}
-      caption="FR3 — Content 2000px tall. The layer box is capped to the viewport minus both block gutters; the surface inside reads the same cap and scrolls.">
+      at={{top: 120, left: 40}}
+      caption="FR3 — Content 2000px tall. The layer box is capped to the viewport minus both block gutters; the surface inside scrolls.">
       <div {...stylex.props(viewportStyles.tall)} />
     </ViewportLayer>
   ),
@@ -726,7 +798,15 @@ export const TallerThanTheViewport: Story = {
         `Layer block size ${r.layer.height}px exceeds the viewport minus gutters (${r.vh - 2 * GUTTER}px)`,
       );
     }
+    assertOnScreen(r, 'taller than the viewport');
   },
+};
+
+const scrollAndSettle = async (x: number) => {
+  window.scrollTo(x, 0);
+  await settle();
+  await new Promise(resolve => setTimeout(resolve, 250));
+  await settle();
 };
 
 export const AnchorLeavesTheViewport: Story = {
@@ -743,10 +823,7 @@ export const AnchorLeavesTheViewport: Story = {
   ),
   play: async ({canvasElement}) => {
     const before = await open(canvasElement);
-    window.scrollTo(700, 0);
-    await settle();
-    await new Promise(resolve => setTimeout(resolve, 250));
-    await settle();
+    await scrollAndSettle(before.trigger.right + 400);
     const away = rects(canvasElement);
     if (away.trigger.right > 0) {
       throw new Error(
@@ -763,10 +840,7 @@ export const AnchorLeavesTheViewport: Story = {
         `Layer slid toward the viewport edge (left ${away.layer.left}) while its anchor is at ${away.trigger.left}`,
       );
     }
-    window.scrollTo(0, 0);
-    await settle();
-    await new Promise(resolve => setTimeout(resolve, 250));
-    await settle();
+    await scrollAndSettle(0);
     const back = rects(canvasElement);
     if (Math.abs(back.layer.left - before.layer.left) > TOLERANCE) {
       throw new Error(
@@ -776,35 +850,250 @@ export const AnchorLeavesTheViewport: Story = {
   },
 };
 
-export const AppDeclaredInset: Story = {
-  name: 'Viewport inset: app-declared inset (floating bar)',
+export const AnchorAlreadyOffScreen: Story = {
+  name: 'Viewport inset: anchor already off-screen when the layer opens',
   parameters: viewportParameters,
   render: () => (
-    // The app's one declaration (FR6): inset on the LayerProvider it already
-    // mounts. Anchored layers and toasts both clear the bar.
-    <LayerProvider inset={{blockEnd: 80}}>
+    <ViewportLayer
+      at={{top: 120, left: 200}}
+      width={320}
+      canvasXstyle={viewportStyles.wideCanvas}
+      caption="FR5, FR8 — The page is scrolled so the trigger is off-screen before the layer opens. The first painted frame already holds beside the anchor; it does not open pinned to the viewport edge and then move.">
+      Opened with its anchor out of view
+    </ViewportLayer>
+  ),
+  play: async ({canvasElement}) => {
+    const trigger = canvasElement.querySelector<HTMLElement>(
+      '[data-testid="trigger"]',
+    );
+    if (!trigger) {
+      throw new Error('No trigger');
+    }
+    await scrollAndSettle(trigger.getBoundingClientRect().right + 400);
+    if (trigger.getBoundingClientRect().right > 0) {
+      throw new Error('Fixture: trigger still in view');
+    }
+    const r = await open(canvasElement);
+    if (r.layer.left >= 0) {
+      throw new Error(
+        `First frame pinned the layer to the viewport (left ${r.layer.left}) while its anchor is at ${r.trigger.left}`,
+      );
+    }
+    await scrollAndSettle(0);
+  },
+};
+
+function AppInsetDemo({
+  initialInset,
+  isOpenInitially,
+}: {
+  initialInset: number;
+  isOpenInitially?: boolean;
+}) {
+  const [inset, setInset] = useState(initialInset);
+  return (
+    <LayerProvider inset={{blockEnd: inset}}>
       <ViewportLayer
-        at={{bottom: 140, left: 200}}
-        caption="FR6 — The app floats an 80px bar over the bottom edge and declares it once: <LayerProvider inset={{blockEnd: 80}}>. The layer's bottom gutter becomes 96px, so a layer that would have ended under the bar flips above its trigger instead; a toast under the same provider rises by the same 80px. Remove the declaration and the layer opens below, under the bar."
+        at={{bottom: 140, left: 40}}
+        isOpenInitially={isOpenInitially}
+        caption={`FR6, FR8 — The app floats a ${inset}px bar over the bottom edge and declares it once: <LayerProvider inset={{blockEnd: ${inset}}}>. The layer's bottom gutter becomes ${inset + 16}px, so a layer that would end under the bar flips above its trigger instead; a toast under the same provider rises by the same amount. Change the inset while the layer is open: the layer and the bar move in the same frame.`}
         extra={
-          <div {...stylex.props(viewportStyles.bottomBar)}>
-            persistent bar — 80px, outside layout flow
-          </div>
+          <>
+            <div
+              {...stylex.props(
+                viewportStyles.bottomBar,
+                viewportStyles.barHeight(inset),
+              )}>
+              persistent bar — {inset}px, outside layout flow
+            </div>
+            <div {...stylex.props(viewportStyles.controls)}>
+              <Button
+                label="Bar 80"
+                size="sm"
+                variant="secondary"
+                data-testid="inset-80"
+                onClick={() => setInset(80)}
+              />
+              <Button
+                label="Bar 160"
+                size="sm"
+                variant="secondary"
+                data-testid="inset-160"
+                onClick={() => setInset(160)}
+              />
+            </div>
+          </>
         }>
         <div style={{blockSize: 200}}>200px of rows</div>
       </ViewportLayer>
     </LayerProvider>
-  ),
+  );
+}
+
+function assertAboveBar(r: Rects, bar: number, label: string) {
+  if (r.layer.bottom > r.vh - bar - GUTTER + TOLERANCE) {
+    throw new Error(
+      `${label}: layer ends at ${r.layer.bottom}px, under the ${bar}px bar (viewport ${r.vh}px)`,
+    );
+  }
+}
+
+export const AppDeclaredInset: Story = {
+  name: 'Viewport inset: app-declared inset (floating bar)',
+  parameters: viewportParameters,
+  render: () => <AppInsetDemo initialInset={80} />,
   play: async ({canvasElement}) => {
     const r = await open(canvasElement);
-    if (r.layer.bottom > r.vh - 80 - GUTTER + TOLERANCE) {
-      throw new Error(
-        `Layer ends at ${r.layer.bottom}px, under the 80px bar (viewport ${r.vh}px)`,
-      );
-    }
+    assertAboveBar(r, 80, 'declared 80px');
     if (r.layer.bottom > r.trigger.top) {
       throw new Error('Expected the layer to flip above the trigger');
     }
+  },
+};
+
+export const InsetChangesWhileOpen: Story = {
+  name: 'Viewport inset: inset changes while the layer is open',
+  parameters: viewportParameters,
+  render: () => <AppInsetDemo initialInset={80} />,
+  play: async ({canvasElement}) => {
+    await open(canvasElement);
+    canvasElement
+      .querySelector<HTMLElement>('[data-testid="inset-160"]')
+      ?.click();
+    const first = rects(canvasElement);
+    assertAboveBar(first, 160, 'first frame after the inset changed');
+    await settle();
+    assertNoShift(first, rects(canvasElement), 'after the inset changed');
+  },
+};
+
+export const LayerOpensAsInsetArrives: Story = {
+  name: 'Viewport inset: layer opens in the frame the inset arrives',
+  parameters: viewportParameters,
+  render: () => <AppInsetDemo initialInset={160} isOpenInitially />,
+  play: async ({canvasElement}) => {
+    // The provider mounts with its inset and the layer opens in the same
+    // commit; the first frame is already above the bar.
+    const first = rects(canvasElement);
+    assertAboveBar(first, 160, 'first frame');
+    await settle();
+    assertNoShift(first, rects(canvasElement), 'after mounting open');
+  },
+};
+
+function MeasuredBarDemo() {
+  const barRef = useRef<HTMLDivElement>(null);
+  const [tall, setTall] = useState(false);
+  const [measured, setMeasured] = useState(0);
+  // The app measures its own bar before paint and declares what it found.
+  useLayoutEffect(() => {
+    const bar = barRef.current;
+    if (!bar) {
+      return;
+    }
+    setMeasured(bar.getBoundingClientRect().height);
+  }, [tall]);
+  return (
+    <LayerProvider inset={{blockEnd: measured}}>
+      <ViewportLayer
+        at={{bottom: 140, left: 40}}
+        caption={`FR6, FR8 — The bar's height is measured by the app (${measured}px) and declared on LayerProvider. The runtime measures nothing: it renders at whatever the provider declares, in the same frame the declaration changes.`}
+        extra={
+          <>
+            <div
+              ref={barRef}
+              {...stylex.props(
+                viewportStyles.bottomBar,
+                viewportStyles.barHeight(tall ? 160 : 80),
+              )}>
+              measured bar — {measured}px
+            </div>
+            <div {...stylex.props(viewportStyles.controls)}>
+              <Button
+                label={tall ? 'Shrink bar' : 'Grow bar'}
+                size="sm"
+                variant="secondary"
+                data-testid="toggle-bar"
+                onClick={() => setTall(v => !v)}
+              />
+            </div>
+          </>
+        }>
+        <div style={{blockSize: 200}}>200px of rows</div>
+      </ViewportLayer>
+    </LayerProvider>
+  );
+}
+
+export const MeasuredInset: Story = {
+  name: 'Viewport inset: inset measured by the app',
+  parameters: viewportParameters,
+  render: () => <MeasuredBarDemo />,
+  play: async ({canvasElement}) => {
+    const r = await open(canvasElement);
+    assertAboveBar(r, 80, 'measured 80px');
+    canvasElement
+      .querySelector<HTMLElement>('[data-testid="toggle-bar"]')
+      ?.click();
+    // The app's layout effect re-measured and re-declared before this paint.
+    const first = rects(canvasElement);
+    assertAboveBar(first, 160, 'first frame after the bar grew');
+    await settle();
+    assertNoShift(first, rects(canvasElement), 'after the bar grew');
+  },
+};
+
+function PortaledLayerDemo() {
+  const layer = useLayer({mode: 'context', lightDismiss: true});
+  return (
+    <LayerProvider inset={{blockEnd: 160}}>
+      <div {...stylex.props(viewportStyles.canvas)} data-testid="canvas">
+        <p {...stylex.props(viewportStyles.caption)}>
+          FR6, FR8 — The trigger sits inside a paragraph, which cannot contain
+          the layer, so the layer portals out of it. The declared 160px inset
+          still reaches it: the value travels by context and is written on the
+          layer itself, not inherited from the provider&apos;s subtree.
+        </p>
+        <p style={{position: 'absolute', bottom: 140, left: 40, margin: 0}}>
+          <Button
+            ref={layer.ref}
+            label="Open"
+            size="sm"
+            data-testid="trigger"
+            onClick={() => (layer.isOpen ? layer.hide() : layer.show())}
+          />
+          {layer.render(
+            <div {...stylex.props(viewportStyles.surface)}>
+              <div style={{blockSize: 200}}>200px of rows</div>
+            </div>,
+            {placement: 'below', alignment: 'start', offset: 4},
+          )}
+        </p>
+        <div
+          {...stylex.props(
+            viewportStyles.bottomBar,
+            viewportStyles.barHeight(160),
+          )}>
+          persistent bar — 160px
+        </div>
+      </div>
+    </LayerProvider>
+  );
+}
+
+export const PortaledOutsideTheProviderSubtree: Story = {
+  name: 'Viewport inset: layer portaled out of its JSX position',
+  parameters: viewportParameters,
+  render: () => <PortaledLayerDemo />,
+  play: async ({canvasElement}) => {
+    const r = await open(canvasElement);
+    const layer = document.querySelector<HTMLElement>(
+      '[popover]:popover-open[id]',
+    );
+    if (layer?.closest('p')) {
+      throw new Error('Fixture: the layer did not portal out of the paragraph');
+    }
+    assertAboveBar(r, 160, 'portaled layer');
   },
 };
 
@@ -829,4 +1118,245 @@ export const GutterAtTheEdge: Story = {
       );
     }
   },
+};
+
+// -----------------------------------------------------------------------------
+// Playground — an exploration instrument, not a claim. Drag the trigger
+// anywhere (touch or mouse); the layer stays open and follows. Adjust width,
+// placement, and alignment from the canvas; read the resolved geometry.
+// -----------------------------------------------------------------------------
+
+const playgroundStyles = stylex.create({
+  canvas: {
+    position: 'fixed',
+    inset: 0,
+    overflow: 'clip',
+    touchAction: 'none',
+  },
+  handle: {
+    position: 'absolute',
+    touchAction: 'none',
+    userSelect: 'none',
+    cursor: 'grab',
+  },
+  panel: {
+    position: 'fixed',
+    insetBlockStart: 8,
+    insetInlineStart: 8,
+    insetInlineEnd: 8,
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 6,
+    alignItems: 'center',
+    fontSize: 12,
+    lineHeight: 1.4,
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'var(--color-background-surface)',
+    boxShadow: 'var(--shadow-low)',
+    zIndex: 1,
+  },
+  readout: {
+    position: 'fixed',
+    insetBlockEnd: 8,
+    insetInlineStart: 8,
+    insetInlineEnd: 8,
+    fontFamily: 'ui-monospace, monospace',
+    fontSize: 11,
+    lineHeight: 1.5,
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'var(--color-background-surface)',
+    boxShadow: 'var(--shadow-low)',
+    whiteSpace: 'pre-wrap',
+    zIndex: 1,
+  },
+  select: {
+    fontSize: 12,
+    padding: 4,
+  },
+});
+
+type Readout = {
+  box: string;
+  within: string;
+  resolved: string;
+};
+
+function readGeometry(trigger: HTMLElement, layer: HTMLElement): Readout {
+  const t = trigger.getBoundingClientRect();
+  const l = layer.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const side =
+    l.bottom <= t.top + 1
+      ? 'above'
+      : l.top >= t.bottom - 1
+        ? 'below'
+        : l.right <= t.left + 1
+          ? 'start'
+          : l.left >= t.right - 1
+            ? 'end'
+            : 'overlapping';
+  const isBlock = side === 'above' || side === 'below';
+  const align = isBlock
+    ? Math.abs(l.left - t.left) <= 1
+      ? 'start'
+      : Math.abs(l.right - t.right) <= 1
+        ? 'end'
+        : Math.abs(l.left + l.width / 2 - (t.left + t.width / 2)) <= 1
+          ? 'center'
+          : 'slid'
+    : Math.abs(l.top - t.top) <= 1
+      ? 'start'
+      : Math.abs(l.bottom - t.bottom) <= 1
+        ? 'end'
+        : Math.abs(l.top + l.height / 2 - (t.top + t.height / 2)) <= 1
+          ? 'center'
+          : 'slid';
+  const inside =
+    l.left >= GUTTER - 1 &&
+    l.right <= vw - GUTTER + 1 &&
+    l.top >= GUTTER - 1 &&
+    l.bottom <= vh - GUTTER + 1;
+  return {
+    box: `layer ${Math.round(l.width)}×${Math.round(l.height)} at ${Math.round(l.left)},${Math.round(l.top)} · viewport ${vw}×${vh} · cap ${vw - 2 * GUTTER}`,
+    within: inside
+      ? 'inside the 16px gutters'
+      : `OUTSIDE the gutters: left ${Math.round(l.left)} right ${Math.round(vw - l.right)} top ${Math.round(l.top)} bottom ${Math.round(vh - l.bottom)}`,
+    resolved: `resolved ${side} / ${align} · anchor ${Math.round(t.left)},${Math.round(t.top)}`,
+  };
+}
+
+function PlaygroundDemo() {
+  const [pos, setPos] = useState({x: 160, y: 200});
+  const [width, setWidth] = useState(240);
+  const [placement, setPlacement] = useState<Placement>('below');
+  const [alignment, setAlignment] = useState<Alignment>('start');
+  const [readout, setReadout] = useState<Readout | null>(null);
+  const layer = useLayer({mode: 'context', lightDismiss: false});
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const layerElRef = useRef<HTMLElement | null>(null);
+  const dragRef = useRef<{dx: number; dy: number} | null>(null);
+  const openedRef = useRef(false);
+
+  useLayoutEffect(() => {
+    if (!openedRef.current) {
+      openedRef.current = true;
+      layer.show();
+    }
+  }, [layer]);
+
+  // Read after each commit; the readout is display, never an input to layout.
+  useLayoutEffect(() => {
+    const trigger = triggerRef.current;
+    const el =
+      layerElRef.current ??
+      document.querySelector<HTMLElement>('[popover]:popover-open[id]');
+    if (trigger && el) {
+      layerElRef.current = el;
+      setReadout(readGeometry(trigger, el));
+    }
+  });
+
+  return (
+    <div {...stylex.props(playgroundStyles.canvas)}>
+      <div {...stylex.props(playgroundStyles.panel)}>
+        <label>
+          width{' '}
+          <input
+            type="range"
+            min={80}
+            max={1400}
+            step={10}
+            value={width}
+            onChange={e => setWidth(Number(e.target.value))}
+          />{' '}
+          {width}px
+        </label>
+        <select
+          {...stylex.props(playgroundStyles.select)}
+          value={placement}
+          aria-label="placement"
+          onChange={e => setPlacement(e.target.value as Placement)}>
+          {(['above', 'below', 'start', 'end'] as const).map(p => (
+            <option key={p} value={p}>
+              placement: {p}
+            </option>
+          ))}
+        </select>
+        <select
+          {...stylex.props(playgroundStyles.select)}
+          value={alignment}
+          aria-label="alignment"
+          onChange={e => setAlignment(e.target.value as Alignment)}>
+          {(['start', 'center', 'end'] as const).map(a => (
+            <option key={a} value={a}>
+              alignment: {a}
+            </option>
+          ))}
+        </select>
+        <span>Drag the trigger anywhere; the layer stays open.</span>
+      </div>
+      <button
+        type="button"
+        ref={el => {
+          triggerRef.current = el;
+          layer.ref(el);
+        }}
+        {...stylex.props(playgroundStyles.handle)}
+        style={{left: pos.x, top: pos.y}}
+        onPointerDown={e => {
+          dragRef.current = {dx: e.clientX - pos.x, dy: e.clientY - pos.y};
+          e.currentTarget.setPointerCapture(e.pointerId);
+        }}
+        onPointerMove={e => {
+          const d = dragRef.current;
+          if (d) {
+            setPos({x: e.clientX - d.dx, y: e.clientY - d.dy});
+          }
+        }}
+        onPointerUp={() => {
+          dragRef.current = null;
+        }}
+        onPointerCancel={() => {
+          dragRef.current = null;
+        }}>
+        drag me
+      </button>
+      {layer.render(
+        <div {...stylex.props(viewportStyles.surface)}>
+          <div style={{blockSize: 120}}>
+            {placement}/{alignment}, {width}px
+          </div>
+        </div>,
+        {
+          placement,
+          alignment,
+          offset: 4,
+          xstyle: viewportStyles.explicitWidth(width),
+        },
+      )}
+      <div {...stylex.props(playgroundStyles.readout)}>
+        {readout
+          ? `${readout.box}\n${readout.resolved}\n${readout.within}`
+          : '…'}
+      </div>
+    </div>
+  );
+}
+
+export const Playground: Story = {
+  name: 'Viewport inset: playground (drag the trigger)',
+  parameters: {
+    ...viewportParameters,
+    docs: {
+      ...viewportParameters.docs,
+      description: {
+        story:
+          'An exploration instrument, not a claim: drag the trigger to any edge or corner, on a phone or with a mouse, while the layer stays open; change width (past the viewport), placement, and alignment; read the resolved geometry. The pinned stories above are the evidence for each rule — this is how to find the configuration nobody pinned.',
+      },
+    },
+  },
+  render: () => <PlaygroundDemo />,
 };

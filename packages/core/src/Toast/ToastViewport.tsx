@@ -35,6 +35,8 @@ import {ToastSurface} from './Toast';
 import {ToastContext, type ToastContextValue} from './ToastContext';
 import type {ToastEntry, ToastPosition, ToastDismissReason} from './types';
 import {useTranslator} from '../i18n';
+import {layerInsetProperties} from '../Layer/layerInset';
+import type {LayerInset} from '../Layer/LayerContext';
 
 const SAFE_AREA_INLINE_START = `max(${spacingVars['--spacing-4']}, env(safe-area-inset-left, 0px))`;
 const SAFE_AREA_INLINE_END = `max(${spacingVars['--spacing-4']}, env(safe-area-inset-right, 0px))`;
@@ -189,6 +191,11 @@ export interface ToastViewportProps {
   maxVisible?: number;
   inset?: {top?: number; bottom?: number; start?: number; end?: number};
   /**
+   * The app-declared viewport inset from LayerProvider (spec:AST-059 FR6).
+   * The viewport sits at it on each edge unless `inset` overrides that edge.
+   */
+  layerInset?: LayerInset;
+  /**
    * Promote viewport to CSS top layer via popover="manual".
    * Set to false when inside a dialog or other top-layer element.
    * @default true
@@ -316,6 +323,7 @@ export function ToastViewport({
   position = 'bottomEnd',
   maxVisible = 5,
   inset,
+  layerInset,
   isTopLayer = true,
   children,
 }: ToastViewportProps) {
@@ -524,7 +532,9 @@ export function ToastViewport({
 
   const visibleToasts = toasts.slice(-maxVisible);
 
-  const insetStyle: React.CSSProperties = {};
+  const insetStyle: React.CSSProperties = {
+    ...layerInsetProperties(layerInset),
+  };
   if (inset?.top) {
     insetStyle.top = inset.top;
   }

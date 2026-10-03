@@ -58,6 +58,8 @@ export interface LayerToastConfig {
 export interface LayerContextValue {
   /** Toast configuration from the provider. */
   toastConfig: LayerToastConfig;
+  /** The app-declared viewport inset from the provider; undefined is zero on every edge. */
+  inset: LayerInset | undefined;
   /** Whether this is a real provider (not fallback). */
   isProvider: true;
 }
