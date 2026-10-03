@@ -39,6 +39,13 @@ record accepts a pure `generateTonalPalette()` authoring API and the
 `astryx theme palette generate` command. Both use one versioned engine and remain
 outside Core theme normalization and runtime behavior.
 
+New-authoring interfaces must preserve that boundary. They may direct authors to
+the supported generator, but they must not present the legacy color-scale helper
+as though choosing one accent were an isolated edit or an approved palette. The
+Playground therefore removes its `Create from accent` affordance while retaining
+explicit token editing. Existing `defineTheme({color})` and `expandColorScale()`
+callers remain supported and unchanged.
+
 ## Non-goals
 
 - Add palette data, generation, or mapping to `DefineThemeInput`, `DefinedTheme`,
@@ -179,6 +186,20 @@ outside Core theme normalization and runtime behavior.
   preserve explicit decimal and custom layouts; omit an accent when none is
   requested; and ask whether an ambiguous accent is one theme value or a light
   and dark family rather than guessing.
+- **FR17 — New-authoring interfaces do not disguise legacy expansion as palette
+  creation.** A theme authoring interface MUST NOT present one accent input as an
+  isolated edit when it also replaces neutral, surface, text, border, or other
+  derived values. The Playground MUST remove its `Create from accent` control and
+  MUST retain direct editing of explicit color tokens. The CLI theme docs and
+  generated theme template MUST recommend `astryx theme palette generate` for a
+  new complete palette, then explicit reviewed mapping to semantic tokens. They
+  MUST continue to document `defineTheme({color})` accurately as supported broad
+  existing-theme behavior rather than removing or changing it. Candidate
+  generation MUST remain separate from semantic mapping and MUST NOT rewrite the
+  current theme automatically. Existing `defineTheme({color})` and
+  `expandColorScale()` inputs, normalization, builds, and output remain supported
+  and unchanged; removing the Playground affordance is not API deprecation or
+  migration.
 
 ## Implementation contract
 
@@ -267,13 +288,16 @@ not become universal accessibility or contrast guarantees for isolated colors.
 | Mapping accepted        | One reviewed patch saves explicit values; failure leaves no partial edit.                         |
 | New candidate generated | Adopted palettes and rendered output stay unchanged until an explicit review and save.            |
 | Adopted palette edited  | Literal mappings stay unchanged; explicit references change intentionally and are reviewed.       |
+| Playground color edit   | Explicit token editing remains; no accent edit silently expands into unrelated color tokens.      |
 
 ## Verification
 
 Verification MUST cover cross-platform deterministic vectors; hard failures;
 every candidate source and provenance state; complete-family regression/CVD
 evidence; candidate-versus-accepted identity; optional atomic suggest/apply;
-runtime/default-bundle absence; and real-Chromium evidence for accepted mappings.
+runtime/default-bundle absence; real-Chromium evidence for accepted mappings;
+and Playground evidence that accent editing does not invoke legacy color-scale
+expansion or mutate unrelated tokens.
 
 This specification-only pull request changes no runtime, build, theme, or package
 behavior and carries no Changeset.
@@ -343,6 +367,24 @@ The committed TypeScript then exposes `family[12.5]` as an actual typed key.
 Rejected: restricting palette authors to two stop counts, renumbering stops when
 the layout changes, or adding a runtime `family.get(12.5)` that creates an
 unreviewed color after authoring.
+
+### DEC-14 — Playground color editing does not imply palette generation
+
+**Decider:** `rubyycheung`, `2026-09-30`
+
+The Playground keeps direct semantic-token editing and removes `Create from
+accent`. That control called the legacy color-scale helper, so one apparently
+local accent choice also replaced neutral, surface, text, border, and related
+values without exposing a candidate palette or a separate mapping decision.
+Authors who want a complete palette use the supported candidate generator and
+review its families and modes before mapping selected values.
+
+Rejected: swapping the Playground control to the OKLCH recipe while preserving
+its automatic token rewrite. That would collapse generation, palette review, and
+semantic mapping into one action, contrary to FR7, FR9, and FR10.
+
+This decision does not deprecate or remove `defineTheme({color})` or
+`expandColorScale()`. Existing source and generated output remain compatible.
 
 ## Open questions
 
