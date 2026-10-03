@@ -2667,3 +2667,237 @@ describe('DropdownMenu focus return after a pointer pick', () => {
     );
   });
 });
+
+describe('DropdownMenuItem href', () => {
+  it('renders an anchor when given href', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'Places'}}>
+        <DropdownMenuItem
+          label="Inbox"
+          href="/inbox"
+          target="_blank"
+          onClick={onClick}
+        />
+      </DropdownMenu>,
+    );
+    const row = screen.getByRole('menuitem', {name: 'Inbox', hidden: true});
+    expect(row.tagName).toBe('A');
+    expect(row).toHaveAttribute('href', '/inbox');
+    expect(row).toHaveAttribute('target', '_blank');
+    expect(row).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(row).toHaveAttribute('tabindex', '-1');
+    // The anchor IS the row: no inner anchor or button doubles the control.
+    expect(row.querySelector('a, button')).toBeNull();
+
+    await user.click(screen.getByRole('button', {name: /Places/}));
+    // onClick runs on the row's click, before the browser navigates, and the
+    // row closes the menu after it.
+    const order: string[] = [];
+    onClick.mockImplementation(() => order.push('onClick'));
+    (HTMLElement.prototype.hidePopover as ReturnType<typeof vi.fn>).mockClear();
+    fireEvent.click(row);
+    expect(order).toEqual(['onClick']);
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+  });
+
+  it('a modified click is left to the browser', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'Places'}}>
+        <DropdownMenuItem label="Inbox" href="/inbox" onClick={onClick} />
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Places/}));
+    const row = screen.getByRole('menuitem', {name: 'Inbox', hidden: true});
+
+    const event = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      metaKey: true,
+    });
+    row.dispatchEvent(event);
+    // Nothing prevents the browser's meaning of a ⌘-click (a new tab), and
+    // the row's own handler stays out of it — the browser is acting.
+    expect(event.defaultPrevented).toBe(false);
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('Enter on an href row synthesizes a click that keeps the key modifiers', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Places'}}>
+        <DropdownMenuItem label="Inbox" href="/inbox" />
+      </DropdownMenu>,
+    );
+    const trigger = screen.getByRole('button', {name: /Places/});
+    trigger.focus();
+    await user.keyboard('{Enter}');
+    const row = screen.getByRole('menuitem', {name: 'Inbox', hidden: true});
+    await waitFor(() => expect(row).toHaveFocus());
+
+    const clicks: MouseEvent[] = [];
+    row.addEventListener('click', e => {
+      clicks.push(e);
+      e.preventDefault();
+    });
+    fireEvent.keyDown(row, {key: 'Enter', metaKey: true, shiftKey: true});
+    expect(clicks).toHaveLength(1);
+    expect(clicks[0].metaKey).toBe(true);
+    expect(clicks[0].shiftKey).toBe(true);
+    expect(clicks[0].ctrlKey).toBe(false);
+  });
+
+  it('a data item with href is a real link in the bottom sheet and still closes it', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    render(
+      <DropdownMenu
+        button={{label: 'Places'}}
+        presentation="bottom-sheet"
+        items={[
+          {label: 'Inbox', href: '/inbox', target: '_blank', onClick},
+          {label: 'Rename', onClick: () => {}},
+        ]}
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: /Places/});
+    await user.click(trigger);
+    const row = await screen.findByRole('link', {name: 'Inbox'});
+    expect(row).toHaveAttribute('href', '/inbox');
+    expect(row).toHaveAttribute('target', '_blank');
+    expect(row).toHaveAttribute('rel', 'noopener noreferrer');
+    // The plain row stays a button.
+    expect(screen.getByRole('button', {name: 'Rename'})).toBeInTheDocument();
+
+    // A plain click runs onClick and closes the sheet (the browser navigates).
+    const plain = new MouseEvent('click', {bubbles: true, cancelable: true});
+    row.dispatchEvent(plain);
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(plain.defaultPrevented).toBe(false);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+    );
+  });
+
+  it('a modified click on a bottom-sheet link row is left to the browser', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    render(
+      <DropdownMenu
+        button={{label: 'Places'}}
+        presentation="bottom-sheet"
+        items={[{label: 'Inbox', href: '/inbox', onClick}]}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: /Places/}));
+    const row = await screen.findByRole('link', {name: 'Inbox'});
+    const event = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      metaKey: true,
+    });
+    row.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('a disabled href row renders no address', () => {
+    render(
+      <DropdownMenu button={{label: 'Places'}}>
+        <DropdownMenuItem label="Inbox" href="/inbox" isDisabled />
+      </DropdownMenu>,
+    );
+    const row = screen.getByRole('menuitem', {name: 'Inbox', hidden: true});
+    expect(row.tagName).toBe('A');
+    expect(row).not.toHaveAttribute('href');
+    expect(row).toHaveAttribute('aria-disabled', 'true');
+  });
+});
+
+describe("DropdownMenu link rows — the browser's own clicks", () => {
+  async function openWithLinkRow(props: {
+    onClick?: () => void;
+    isDisabled?: boolean;
+  }) {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Docs" href="/docs" {...props} />
+      </DropdownMenu>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Actions'});
+    await user.click(trigger);
+    return {
+      trigger,
+      row: screen.getByRole('menuitem', {name: 'Docs', hidden: true}),
+    };
+  }
+
+  const auxClick = (el: Element, button: number) =>
+    fireEvent(
+      el,
+      new MouseEvent('auxclick', {bubbles: true, cancelable: true, button}),
+    );
+
+  it('closes the menu on a middle click, which fires auxclick not click', async () => {
+    // A middle click never fires `click`, so the row's click handler never
+    // saw it: the browser opened the tab and the menu stayed open behind it.
+    const onClick = vi.fn();
+    const {trigger, row} = await openWithLinkRow({onClick});
+    expect(row.tagName).toBe('A');
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    auxClick(row, 1);
+
+    // The browser does the navigating, so the row's own handler stays out of
+    // it exactly as it does for a modified click — but the row acted, so the
+    // menu closes.
+    expect(onClick).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+    );
+  });
+
+  it('leaves a right click to the context menu', async () => {
+    const {trigger, row} = await openWithLinkRow({});
+
+    // Button 2 is the right button: it opens the browser's context menu over
+    // the link, and closing the menu out from under it would be wrong.
+    auxClick(row, 2);
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('does not navigate a disabled link row on a middle click', async () => {
+    const {trigger, row} = await openWithLinkRow({isDisabled: true});
+
+    // A disabled row keeps its place in the tree but carries no address, so
+    // there is nothing for the browser to open and the menu stays put.
+    expect(row).not.toHaveAttribute('href');
+    auxClick(row, 1);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('renders a blocked destination inertly', async () => {
+    // A menu row is a place an address can arrive from data. The row's root
+    // is the application's link component, so the shared destination rule
+    // applies by construction rather than by a check of this component's
+    // own: a rejected scheme renders with no href at all and goes nowhere.
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        {/* eslint-disable-next-line @eslint-react/dom-no-script-url -- the test proves this URL never navigates */}
+        <DropdownMenuItem label="Trap" href="javascript:window.__fired=true" />
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Actions'}));
+    const row = screen.getByRole('menuitem', {name: 'Trap', hidden: true});
+
+    expect(row).not.toHaveAttribute('href');
+    await user.click(row);
+    expect((window as unknown as {__fired?: boolean}).__fired).toBeUndefined();
+  });
+});

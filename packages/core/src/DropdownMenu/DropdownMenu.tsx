@@ -53,6 +53,7 @@ import {
   MENU_ITEM_ROLES,
   MENU_ITEM_SELECTOR,
   MENU_BOUNDARY_SELECTOR,
+  activateMenuItem,
 } from './menuItemRoles';
 import {
   DropdownMenuContext,
@@ -273,6 +274,9 @@ export interface DropdownMenuItemData extends Pick<
   | 'description'
   | 'endContent'
   | 'hasCloseOnSelect'
+  | 'href'
+  | 'target'
+  | 'rel'
 > {
   /**
    * Stable identity for the row, used as its React key (as on
@@ -553,11 +557,11 @@ function DropdownMenuBottomSheet({
   );
 
   const handleSelect = useCallback(
-    (item: DropdownMenuItemData) => {
+    (item: DropdownMenuItemData, event: React.MouseEvent) => {
       if (item.isDisabled) {
         return;
       }
-      item.onClick?.();
+      item.onClick?.(event);
       if (item.hasCloseOnSelect !== false) {
         setOpen(false);
       }
@@ -949,7 +953,9 @@ function DropdownMenuPopover({
           focused &&
           MENU_ITEM_ROLES.has(focused.getAttribute('role') ?? '')
         ) {
-          focused.click();
+          // The synthesized click keeps the key's modifiers, so a modified
+          // Enter on a link row opens the way a modified click would.
+          activateMenuItem(focused, e);
         }
         return;
       }
