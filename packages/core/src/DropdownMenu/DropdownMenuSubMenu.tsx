@@ -408,7 +408,9 @@ export function DropdownMenuSubMenu(
   } = useListFocus<HTMLDivElement>({
     itemSelector: MENU_ITEM_SELECTOR,
     boundarySelector: MENU_BOUNDARY_SELECTOR,
-    wrap: false,
+    // Menus wrap.
+    wrap: true,
+    hasPaging: true,
     onEscape: () => close({focusTrigger: true}),
   });
   // A drilled-in list scrolls with the root menu, not on its own.
@@ -631,6 +633,10 @@ export function DropdownMenuSubMenu(
       }
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
+        // A held key's auto-repeat never activates.
+        if (e.repeat) {
+          return;
+        }
         const focused = document.activeElement as HTMLElement | null;
         if (
           focused &&
