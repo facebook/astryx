@@ -303,11 +303,12 @@ Shape:
 ```
 
 The manifest is **derived from Commander metadata** (commands, arguments, options)
-so it can't drift from the real command definitions. The two facts Commander
-doesn't track (`--json` support and emitted response types) are layered on from
-the `JSON_SUPPORTED` allowlist and a small declarative `RESPONSE_TYPES` map in
-`src/lib/manifest.mjs`, guarded by a drift test (`manifest.test.mjs`) so adding a
-command without describing it fails CI.
+so it can't drift from the real command definitions. The facts Commander doesn't
+track come from each command's docs: examples from its CommandDoc, and emitted
+response types from the returns of the FunctionDoc it wraps (plus the few
+envelopes the CLI layer builds itself). `--json` support comes from the
+`JSON_SUPPORTED` allowlist. Drift tests (`manifest.test.mjs`) fail CI when a
+command is added without describing it.
 
 **Backwards-compat:** the bare `astryx --json` envelope keeps `type: "help"` and its
 original shallow fields (`name`, `version`, `commands` as a `string[]` of names,

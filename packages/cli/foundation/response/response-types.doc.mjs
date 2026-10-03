@@ -2,11 +2,11 @@
 
 /**
  * @file EnumDoc for the `type` discriminant carried on every --json success
- * envelope. The vocabulary mirrors the RESPONSE_TYPES map (each command's
- * `jsonOut(...)` call sites) plus ROOT_RESPONSE_TYPES (help, version) in
- * `clients/cli/lib/manifest.mjs`; a consumer switches on `type` to narrow the
- * `data` payload. Descriptions follow the currently published response
- * projection, not a future package-version boundary.
+ * envelope. The vocabulary equals the manifest's response types (each
+ * command's FunctionDoc returns; see `clients/cli/lib/manifest.mjs`) plus
+ * ROOT_RESPONSE_TYPES (help, version) there; a consumer switches on `type` to
+ * narrow the `data` payload. Descriptions follow the currently published
+ * response projection, not a future package-version boundary.
  *
  * @input Public response discriminants and their currently released payloads.
  * @output Generated consumer reference for every typed JSON success response.
