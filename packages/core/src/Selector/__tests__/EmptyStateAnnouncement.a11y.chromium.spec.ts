@@ -89,7 +89,18 @@ test('stays silent while loading, then announces when the load lands empty', asy
 
   // The panel deliberately shows nothing while loading, so the one channel
   // the screen has gone quiet for stays quiet too.
-  await expect(page.locator(politeRegion)).toHaveText('');
+  //
+  // Asserted as "nothing has been announced" rather than "the region is
+  // empty": `useAnnounce` creates its regions lazily on the first
+  // announcement, so on a page that has not announced yet the element does
+  // not exist at all. Both shapes are silence, and demanding the element
+  // would fail on the quieter one.
+  expect(
+    await page.evaluate(
+      selector => document.querySelector(selector)?.textContent ?? '',
+      politeRegion,
+    ),
+  ).toBe('');
 
   await page.getByRole('button', {name: 'land'}).click();
 
