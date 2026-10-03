@@ -68,6 +68,43 @@ ruleTester.run('no-hover-on-disabled', rule, {
     {
       code: `const handlers = {':hover': () => {}};`,
     },
+    // :hover combined with a pseudo-ELEMENT, under the exact hand-verified
+    // `hoverOnPointer` style key (facebook/astryx#5442), stays unreported —
+    // everywhere else, and under any OTHER key in these same files, the same
+    // shape is still reported (see invalid below).
+    {
+      code: `
+        import * as stylex from '@stylexjs/stylex';
+        const styles = stylex.create({
+          hoverOnPointer: {
+            '@media (hover: hover)': {opacity: {default: 0, ':hover::after': 1}},
+          },
+        });
+      `,
+      filename: '/repo/packages/core/src/SelectableCard/SelectableCard.tsx',
+    },
+    {
+      code: `
+        import * as stylex from '@stylexjs/stylex';
+        const styles = stylex.create({
+          hoverOnPointer: {
+            '@media (hover: hover)': {opacity: {default: 0, ':hover::before': 1}},
+          },
+        });
+      `,
+      filename: '/repo/packages/core/src/Thumbnail/Thumbnail.tsx',
+    },
+    {
+      code: `
+        import * as stylex from '@stylexjs/stylex';
+        const styles = stylex.create({
+          hoverOnPointer: {
+            '@media (hover: hover)': {opacity: {default: 0, ':hover::after': 1}},
+          },
+        });
+      `,
+      filename: '/repo/packages/core/src/ClickableCard/ClickableCard.tsx',
+    },
   ],
   invalid: [
     // The bare key, property-first.
@@ -118,22 +155,6 @@ ruleTester.run('no-hover-on-disabled', rule, {
         });
       `,
     },
-    // A pseudo-ELEMENT has to stay last, so the guard goes before it.
-    {
-      code: `
-        import * as stylex from '@stylexjs/stylex';
-        const styles = stylex.create({
-          tab: {opacity: {default: 0, ':hover::after': 1}},
-        });
-      `,
-      errors: [{messageId: 'unguardedHover'}],
-      output: `
-        import * as stylex from '@stylexjs/stylex';
-        const styles = stylex.create({
-          tab: {opacity: {default: 0, ':hover${GUARD}::after': 1}},
-        });
-      `,
-    },
     // A double-quoted key is rewritten single-quoted: the guard carries its
     // own double quotes.
     {
@@ -150,6 +171,66 @@ ruleTester.run('no-hover-on-disabled', rule, {
           item: {color: {default: 'red', ':hover${GUARD}': 'blue'}},
         });
       `,
+    },
+    // :hover + a pseudo-element outside the three hand-verified files is
+    // reported (unlike the exempt cases above), but not autofixed: the
+    // fixer would hit the tokenizer bug and reintroduce facebook/astryx#5442.
+    {
+      code: `
+        import * as stylex from '@stylexjs/stylex';
+        const styles = stylex.create({
+          tab: {opacity: {default: 0, ':hover::after': 1}},
+        });
+      `,
+      filename: '/repo/packages/core/src/Tabs/Tabs.tsx',
+      errors: [{messageId: 'unguardedHoverPseudoElement'}],
+      output: null,
+    },
+    {
+      code: `
+        import * as stylex from '@stylexjs/stylex';
+        const styles = stylex.create({
+          tab: {opacity: {default: 0, ':hover::before': 1}},
+        });
+      `,
+      errors: [{messageId: 'unguardedHoverPseudoElement'}],
+      output: null,
+    },
+    // The exemption is scoped to the verified `hoverOnPointer` style key,
+    // not the whole file: a second, unrelated `:hover::before` under a
+    // different key in one of the three exempt files is still reported.
+    {
+      code: `
+        import * as stylex from '@stylexjs/stylex';
+        const styles = stylex.create({
+          badge: {opacity: {default: 0, ':hover::before': 1}},
+        });
+      `,
+      filename: '/repo/packages/core/src/SelectableCard/SelectableCard.tsx',
+      errors: [{messageId: 'unguardedHoverPseudoElement'}],
+      output: null,
+    },
+    {
+      code: `
+        import * as stylex from '@stylexjs/stylex';
+        const styles = stylex.create({
+          badge: {opacity: {default: 0, ':hover::after': 1}},
+        });
+      `,
+      filename: '/repo/packages/core/src/Thumbnail/Thumbnail.tsx',
+      errors: [{messageId: 'unguardedHoverPseudoElement'}],
+      output: null,
+    },
+    {
+      code: `
+        import * as stylex from '@stylexjs/stylex';
+        const styles = stylex.create({
+          badge: {opacity: {default: 0, ':hover::before': 1}},
+        });
+      `,
+      filename: '/repo/packages/core/src/ClickableCard/ClickableCard.tsx',
+      errors: [{messageId: 'unguardedHoverPseudoElement'}],
+      output: null,
     },
   ],
 });
