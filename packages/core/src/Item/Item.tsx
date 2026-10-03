@@ -24,7 +24,9 @@ import {
   spacingVars,
   durationVars,
   easeVars,
+  fontWeightVars,
   typeScaleVars,
+  typographyVars,
 } from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {isRenderable, mergeProps} from '../utils';
@@ -37,6 +39,8 @@ import {useDevWarning} from '../hooks/useDevWarning';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {useMediaQuery} from '../hooks/useMediaQuery';
+import {useSwipeAction, type SwipeActionDirection} from './useSwipeAction';
 
 // =============================================================================
 // Types
@@ -45,12 +49,54 @@ import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 export type ItemAlign = 'center' | 'start';
 export type ItemDensity = 'compact' | 'balanced' | 'spacious';
 
+/** The tone of a revealed swipe panel: a state colour, never decoration. */
+export type ItemSwipeActionTone = 'accent' | 'success' | 'warning' | 'error';
+
+export interface ItemSwipeAction {
+  /** The panel's verb, e.g. "Archive": what releasing here will do. */
+  label: ReactNode;
+  /** The verb's glyph, drawn beside the label. */
+  icon?: ReactNode;
+  /** Fired once, after the row has slid out. */
+  onAction: () => void;
+  /** @default 'accent' */
+  tone?: ItemSwipeActionTone;
+}
+
+export interface ItemSwipeActions {
+  /** Revealed by a drag toward the inline end (rightward in LTR, leftward in RTL). */
+  leading: ItemSwipeAction;
+  /** Revealed by a drag toward the inline start; omitted, that drag is not this row's gesture. */
+  trailing?: ItemSwipeAction;
+}
+
+const swipeToneStyles = stylex.create({
+  accent: {
+    backgroundColor: colorVars['--color-accent'],
+    color: colorVars['--color-on-accent'],
+  },
+  success: {
+    backgroundColor: colorVars['--color-success'],
+    color: colorVars['--color-on-success'],
+  },
+  warning: {
+    backgroundColor: colorVars['--color-warning'],
+    color: colorVars['--color-on-warning'],
+  },
+  error: {
+    backgroundColor: colorVars['--color-error'],
+    color: colorVars['--color-on-error'],
+  },
+});
+
 export interface ItemProps extends BaseProps<HTMLElement> {
   /** Ref forwarded to the root element. */
   ref?: React.Ref<HTMLElement>;
 
   /**
-   * HTML element to render as the root.
+   * HTML element to render as the root. With `swipeActions` this element is
+   * the clipping container around the row (so a swipeable `li` stays its
+   * list's direct child) and the row inside it is a `div`.
    * @default 'div'
    */
   as?: 'div' | 'li' | 'span';
@@ -169,6 +215,20 @@ export interface ItemProps extends BaseProps<HTMLElement> {
    * @default false
    */
   isSelected?: boolean;
+
+  /**
+   * Swipe actions for touch: drag the row sideways and a labelled panel is
+   * revealed behind it; release past the commit point (a third of the row,
+   * within 72–160 px) or fling to fire it, and the row slides out. Touch
+   * only, and each action must exist somewhere a pointer and a keyboard can
+   * reach it: the gesture is an accelerator for a verb the row already has,
+   * never the only way to reach one. Directions are logical (`leading` is
+   * toward the inline end), so the gesture reads the same under RTL. With
+   * this set the `as` element becomes a plain container that clips the
+   * slide; `ref`, `role` and every other attribute still land on the row
+   * itself.
+   */
+  swipeActions?: ItemSwipeActions;
 
   /**
    * Disabled state.
@@ -299,6 +359,61 @@ const styles = stylex.create({
     flexShrink: 1,
     minWidth: 0,
   },
+  // Swipe actions. The container clips the slide and owns the gesture; the
+  // row translates inside it; the panel behind is exactly as wide as the
+  // row has moved, so nothing needs an opaque cover.
+  swipeContainer: {
+    position: 'relative',
+    // `pan-y` lets the browser keep scrolling the list vertically while the
+    // row owns horizontal movement, without fighting the scroller from a
+    // passive listener.
+    touchAction: 'pan-y',
+  },
+  swipeContainerActive: {
+    overflow: 'hidden',
+  },
+  // The panel's box is exactly the revealed width and nothing else: its
+  // padding lives on the content inside, because a padded box at `width: 0`
+  // is still as wide as its padding, and that sliver of the tone showed at the
+  // row's edge at rest and whenever a drag came back to the start.
+  swipePanel: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 0,
+    display: 'flex',
+    alignItems: 'center',
+    boxSizing: 'border-box',
+    overflow: 'hidden',
+    pointerEvents: 'none',
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    whiteSpace: 'nowrap',
+    // Below the commit point the panel is provisional; past it, it reads as
+    // "let go now".
+    opacity: 0.7,
+    transitionProperty: 'opacity',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  swipePanelArmed: {
+    opacity: 1,
+  },
+  swipePanelLeading: {
+    insetInlineStart: 0,
+    justifyContent: 'flex-start',
+  },
+  swipePanelTrailing: {
+    insetInlineEnd: 0,
+    justifyContent: 'flex-end',
+  },
+  swipePanelContent: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-3'],
+  },
   label: {
     // Falls back to the primary text token; a parent (e.g. a destructive menu
     // item) can recolor the label by setting --_item-label-color.
@@ -402,6 +517,7 @@ export function Item({
   isHighlighted = false,
   isSelected = false,
   isDisabled = false,
+  swipeActions,
   xstyle,
   className,
   style,
@@ -589,9 +705,47 @@ export function Item({
 
   const mergedRef = useMergedRefs(ref, containerRef);
 
-  return (
-    <Component
-      ref={(isDelegate ? mergedRef : ref) as React.Ref<never>}
+  // Swipe actions: the gesture lives on a container that clips the slide, the
+  // row itself translates, and the panel behind grows to the revealed width.
+  // The container takes the `as` element so a swipeable `li` stays its list's
+  // direct child; the row inside it is a div, and `ref`, `role` and every
+  // other attribute still land on the row.
+  const swipeContainerRef = useRef<HTMLElement | null>(null);
+  const swipeRowRef = useRef<HTMLElement | null>(null);
+  const swipePanelRef = useRef<HTMLElement | null>(null);
+  const isReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+  const hasSwipe = swipeActions != null && !isDisabled;
+  const swipe = useSwipeAction({
+    isEnabled: hasSwipe,
+    onCommit: () => swipeActions?.leading.onAction(),
+    onCommitTrailing:
+      swipeActions?.trailing != null
+        ? () => swipeActions.trailing?.onAction()
+        : undefined,
+    isReducedMotion,
+    containerRef: swipeContainerRef,
+    rowRef: swipeRowRef,
+    onReveal: (width, _direction, transitionMs) => {
+      const panel = swipePanelRef.current;
+      if (panel == null) {
+        return;
+      }
+      // Settling (the spring back, the slide out) runs on the row's own
+      // clock; the panel keeps pace so the revealed gap keeps its colour.
+      panel.style.transition =
+        transitionMs > 0 ? `width ${transitionMs}ms ease-out` : '';
+      panel.style.width = `${width}px`;
+    },
+  });
+  const swipeRef = useMergedRefs(
+    (isDelegate ? mergedRef : ref) as React.Ref<HTMLElement>,
+    swipeActions != null ? swipeRowRef : undefined,
+  );
+  const Row: React.ElementType = swipeActions != null ? 'div' : Component;
+
+  const row = (
+    <Row
+      ref={swipeRef}
       {...restProps}
       aria-selected={(allowsAriaSelected && isSelected) || undefined}
       // aria-selected is invalid on roles that don't permit it (listitem, a
@@ -633,6 +787,50 @@ export function Item({
         value={hasRenderableDescription ? descriptionID : null}>
         {innerContent}
       </ItemDescriptionContext>
+    </Row>
+  );
+
+  if (swipeActions == null) {
+    return row;
+  }
+
+  const revealed: ItemSwipeAction | undefined =
+    swipe.state.direction === 'trailing'
+      ? swipeActions.trailing
+      : swipeActions.leading;
+  const isSwiping = swipe.state.phase !== 'idle';
+  const direction: SwipeActionDirection = swipe.state.direction;
+
+  return (
+    <Component
+      ref={swipeContainerRef as React.Ref<never>}
+      {...stylex.props(
+        styles.swipeContainer,
+        isSwiping && styles.swipeContainerActive,
+      )}
+      {...(hasSwipe ? swipe.handlers : undefined)}>
+      {/* Always in the tree while swipeable, at zero width until a drag reveals
+          it: the gesture writes the width per frame, and a panel mounted
+          mid-drag would paint its full label for a frame first. */}
+      {hasSwipe && revealed != null ? (
+        <div
+          ref={swipePanelRef as React.Ref<HTMLDivElement>}
+          aria-hidden="true"
+          {...stylex.props(
+            styles.swipePanel,
+            direction === 'trailing'
+              ? styles.swipePanelTrailing
+              : styles.swipePanelLeading,
+            swipeToneStyles[revealed.tone ?? 'accent'],
+            swipe.state.isArmed && styles.swipePanelArmed,
+          )}>
+          <span {...stylex.props(styles.swipePanelContent)}>
+            {revealed.icon}
+            {revealed.label}
+          </span>
+        </div>
+      ) : null}
+      {row}
     </Component>
   );
 }
