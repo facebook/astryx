@@ -54,11 +54,17 @@ export interface ResolvedColumnWidths {
  * the `tableMinWidth` IIFE and the header cell rendering loop.
  *
  * @param columns - Resolved column definitions (after auto-generation)
+ * @param data - Table rows; the first few size the minimum of columns
+ *   declared without `width` (see `contentMinColumnWidth`)
  * @returns Pre-computed widths for each column and the table minimum width
  */
 export function resolveColumnWidths<T extends Record<string, unknown>>(
   columns: TableColumn<T>[],
+  data?: ReadonlyArray<T>,
 ): ResolvedColumnWidths {
+  // Width-less columns get a content-derived floor (see
+  // contentMinColumnWidth) so a narrow table scrolls instead of crushing.
+  const sampleRows = data?.slice(0, CONTENT_SAMPLE_ROWS) ?? [];
   // --- Pass 1: Categorize columns and compute totals ---
   let totalProportion = 0;
   let pixelTotal = 0;
@@ -67,6 +73,7 @@ export function resolveColumnWidths<T extends Record<string, unknown>>(
     proportion: number;
     minWidth: number;
   }[] = [];
+  const minWidths = new Map<string, number>();
 
   for (const col of columns) {
     const w = col.width;
@@ -74,10 +81,16 @@ export function resolveColumnWidths<T extends Record<string, unknown>>(
       pixelTotal += w.value;
     } else {
       const proportion = w?.value ?? 1;
-      // Only count minWidth for columns that explicitly used proportional().
-      // Columns with no width set (w === undefined) have no minimum —
-      // they flex freely and the scroll wrapper handles overflow.
-      const minW = w != null ? (w.minWidth ?? DEFAULT_MIN_COLUMN_WIDTH) : 0;
+      // proportional() columns use their own minWidth (default 120px).
+      // Width-less columns are proportional(1) with a content-derived
+      // minimum: under `table-layout: fixed` a column with no floor shrinks
+      // with the viewport, breaks words mid-glyph, and never engages the
+      // horizontal scroll region.
+      const minW =
+        w != null
+          ? (w.minWidth ?? DEFAULT_MIN_COLUMN_WIDTH)
+          : contentMinColumnWidth(col, sampleRows);
+      minWidths.set(col.key, minW);
       totalProportion += proportion;
       proportionalCols.push({key: col.key, proportion, minWidth: minW});
     }
@@ -112,11 +125,8 @@ export function resolveColumnWidths<T extends Record<string, unknown>>(
       if (totalProportion > 0) {
         style.width = `${(proportion / totalProportion) * 100}%`;
       }
-      // Only apply minWidth if the column explicitly used proportional().
-      // Columns with no width set (w === undefined) have no minimum —
-      // they flex freely and the scroll wrapper handles overflow.
-      if (w != null) {
-        const minW = w.minWidth ?? DEFAULT_MIN_COLUMN_WIDTH;
+      const minW = minWidths.get(col.key);
+      if (minW != null && minW > 0) {
         style.minWidth = `${minW}px`;
       }
     }
@@ -125,6 +135,89 @@ export function resolveColumnWidths<T extends Record<string, unknown>>(
   }
 
   return {columns: result, tableMinWidth};
+}
+
+/** Rows sampled when deriving a width-less column's minimum. */
+const CONTENT_SAMPLE_ROWS = 5;
+
+/** Floor for a width-less column's derived minimum (px). */
+const MIN_CONTENT_COLUMN_WIDTH = 80;
+
+/**
+ * Cap for a width-less column's derived minimum (px), so one long token
+ * (a URL, a hash) does not make the column enormous; it wraps instead.
+ */
+const MAX_CONTENT_COLUMN_WIDTH = 240;
+
+/**
+ * Estimated px per character of a body word: one digit width at the default
+ * 14px body text, so order numbers and dates fit as well as prose.
+ */
+const BODY_PX_PER_CHAR = 9;
+
+/**
+ * Estimated px per character of a header label. Header text is semibold
+ * label text that averages under 8px per character at the default size.
+ */
+const HEADER_PX_PER_CHAR = 8;
+
+/**
+ * Inline padding of a cell at the default density (spacing-3 on each side).
+ * Cells are `box-sizing: border-box`, so the minimum must include it or the
+ * padding eats the room the text needs.
+ */
+const CELL_INLINE_PADDING = 24;
+
+/**
+ * Text a sampled value renders as by default, for width estimation. Mirrors
+ * `defaultCellRenderer`; values it renders as nothing measure as empty.
+ */
+function sampleText(value: unknown): string {
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean' ||
+    typeof value === 'bigint'
+  ) {
+    return String(value);
+  }
+  return '';
+}
+
+/**
+ * Minimum width for a column declared without `width`: room for the whole
+ * header label (header cells never wrap; they truncate) or the longest
+ * single word in the first few rows (body cells wrap between words, never
+ * inside one), plus the cell's inline padding, clamped to [80px, 240px].
+ * Mirrors the floor that `generateColumns` derives for auto-generated
+ * columns.
+ */
+function contentMinColumnWidth<T extends Record<string, unknown>>(
+  col: TableColumn<T>,
+  sampleRows: ReadonlyArray<T>,
+): number {
+  // BaseTable renders `header ?? key`; a non-text header (an icon, a
+  // checkbox) contributes nothing and the data decides.
+  const header =
+    col.header == null
+      ? col.key
+      : typeof col.header === 'string' || typeof col.header === 'number'
+        ? String(col.header)
+        : '';
+  let contentWidth = header.trim().length * HEADER_PX_PER_CHAR;
+  for (const row of sampleRows) {
+    const wordWidth = longestWord(sampleText(row[col.key])) * BODY_PX_PER_CHAR;
+    if (wordWidth > contentWidth) {
+      contentWidth = wordWidth;
+    }
+  }
+  return Math.min(
+    Math.max(contentWidth + CELL_INLINE_PADDING, MIN_CONTENT_COLUMN_WIDTH),
+    MAX_CONTENT_COLUMN_WIDTH,
+  );
 }
 
 /**

@@ -403,7 +403,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
 
   // Resolve all column widths in a single pass — produces per-column
   // inline styles and the aggregate table min-width.
-  const resolvedWidths = resolveColumnWidths(resolvedColumns);
+  const resolvedWidths = resolveColumnWidths(resolvedColumns, data);
 
   // --- Plugin pipeline: table ---
   const tableRenderProps = applyPlugins(plugins, p => p.transformTable, {

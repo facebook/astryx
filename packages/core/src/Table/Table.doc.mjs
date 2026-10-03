@@ -146,7 +146,7 @@ export const docs = {
     {
       name: 'columns',
       type: 'TableColumn<T>[]',
-      description: 'Column definitions: each column has {key, header, width?, align?, renderCell?}. The `header` field sets the column heading text. If omitted, columns are auto-generated from data object keys. The `width` field is typed as `ColumnWidth` (not a number); use `proportional(n)` or `pixel(n)` helpers imported from `@astryxdesign/core/Table`. Example: `width: pixel(120)` for 120px fixed, `width: proportional(1)` for flex distribution.',
+      description: 'Column definitions: each column has {key, header, width?, align?, renderCell?}. The `header` field sets the column heading text. If omitted, columns are auto-generated from data object keys. The `width` field is typed as `ColumnWidth` (not a number); use `proportional(n)` or `pixel(n)` helpers imported from `@astryxdesign/core/Table`. Example: `width: pixel(120)` for 120px fixed, `width: proportional(1)` for flex distribution. Width is optional: a column without it shares space equally with a minimum derived from its header label and the longest word in its first rows (80–240px), so a narrow table scrolls instead of crushing.',
     },
     {
       name: 'idKey',
@@ -241,14 +241,49 @@ export const docs = {
       { guidance: true, description: 'Use density and divider variants to match the information density and scanning needs of your data.' },
       { guidance: true, description: 'Compose rich cell content with Astryx components like Badge, StatusDot, and Avatar via renderCell.' },
       { guidance: true, description: 'In children mode, put every row inside TableHeader, TableBody, or TableFooter. <table> cannot contain a <tr> directly: the HTML parser inserts an implied <tbody> for server-rendered markup and React does not on the client, so unwrapped rows mismatch on hydration.' },
-      { guidance: true, description: 'Set explicit width on every column using proportional() or pixel(). proportional(1) gives equal flex distribution with a 120px minimum that prevents columns from collapsing on narrow viewports. Omitting width skips the minimum.' },
+      { guidance: true, description: 'Width is optional. A column without width shares space equally and gets a minimum that fits its header label and the longest word in its first rows (80–240px), so on a phone the table scrolls sideways instead of crushing text. Set proportional(n, {minWidth}) or pixel(n) when renderCell draws more than the raw value (an avatar beside a name) or a column deserves a larger share: proportional(2) for a title column, pixel(48) for an actions column.' },
       { guidance: true, description: 'Use the data-driven API from React Server Components: proportional(), pixel(), and column definitions without function props are server-safe. Columns using renderCell (or any function prop) need the table wrapped in a "use client" component, since functions cannot cross the server-client boundary.' },
       { guidance: false, description: 'Use a table for data without consistent columns. Use a list or card layout for heterogeneous content.' },
       { guidance: false, description: 'Enable every plugin at once. Add only the features your use case requires to keep the interface focused.' },
-      { guidance: false, description: 'Omit width on text-heavy columns; without an explicit proportional() width they have no minimum and can squish to near-zero on mobile.' },
+      { guidance: false, description: 'Wrap a Table in your own overflow container or add a media query to make it fit a phone; the table already scrolls horizontally once its columns reach their minimum widths.' },
     ],
     anatomy,
   },
+  examples: [
+    {
+      label: 'Issue table without column widths (scrolls on a phone instead of crushing)',
+      code: `
+import {Table} from '@astryxdesign/core/Table';
+
+const issues = [
+  {id: 'AST-1287', title: 'Checkout button clips on narrow phones', status: 'In progress', assignee: 'Priya Raman', priority: 'High', updated: 'Sep 28, 2026'},
+  {id: 'AST-1291', title: 'Invoice export drops the currency symbol', status: 'Open', assignee: 'Marcus Oyelaran', priority: 'Medium', updated: 'Sep 27, 2026'},
+  {id: 'AST-1302', title: 'Search results flash before filters apply', status: 'In review', assignee: 'Lena Fischer', priority: 'Low', updated: 'Sep 26, 2026'},
+];
+
+// No widths: each column shares the row equally and stops shrinking at a
+// minimum that fits its header and longest word. At 1440px the columns
+// split the width; on a 390px phone the table scrolls sideways and every
+// ID, name, and date stays whole.
+function IssueTable() {
+  return (
+    <Table
+      data={issues}
+      idKey="id"
+      columns={[
+        {key: 'id', header: 'Issue'},
+        {key: 'title', header: 'Title'},
+        {key: 'status', header: 'Status'},
+        {key: 'assignee', header: 'Assignee'},
+        {key: 'priority', header: 'Priority'},
+        {key: 'updated', header: 'Updated'},
+      ]}
+    />
+  );
+}
+`,
+    },
+  ],
 };
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
@@ -276,11 +311,11 @@ export const docsDense = {
       { guidance: true, description: 'Use density and divider variants to match the information density and scanning needs of your data.' },
       { guidance: true, description: 'Compose rich cell content with Astryx components like Badge, StatusDot, and Avatar via renderCell.' },
       { guidance: true, description: 'Children mode: wrap rows in TableHeader/TableBody/TableFooter. <table> cannot hold a <tr> directly; the parser adds an implied <tbody> for SSR markup, React does not on the client, so unwrapped rows mismatch on hydration.' },
-      { guidance: true, description: 'Set explicit width on every column via proportional() or pixel(). proportional(1) = equal flex w/ 120px min preventing collapse on narrow viewports. Omitting width skips the minimum.' },
+      { guidance: true, description: 'width optional. No width = equal share + min fitting header label/longest word in first rows (80-240px) → table scrolls on phone instead of crushing. proportional(n,{minWidth}) / pixel(n) when renderCell draws more than the raw value or a column needs a bigger share.' },
       { guidance: true, description: 'Data-driven API is RSC-safe: proportional(), pixel(), column defs w/o function props work in Server Components. renderCell (any function prop) requires a "use client" wrapper.' },
       { guidance: false, description: 'Use a table for data without consistent columns. Use a list or card layout for heterogeneous content.' },
       { guidance: false, description: 'Enable every plugin at once. Add only the features your use case requires to keep the interface focused.' },
-      { guidance: false, description: 'Omit width on text-heavy columns; w/o explicit proportional() width they have no minimum and can squish to near-zero on mobile.' },
+      { guidance: false, description: 'Add your own overflow wrapper/media query for phones; table already scrolls once cols hit their min widths.' },
     ],
     anatomy,
   },

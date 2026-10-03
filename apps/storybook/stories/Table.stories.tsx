@@ -1,9 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {useState, type ReactNode} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {
   Table,
+  useTableSelection,
+  useTableSelectionState,
+  useTableStickyColumns,
   TableRow,
   TableCell,
   TableHeaderCell,
@@ -860,9 +864,10 @@ const mobileColumns: TableColumn<Employee>[] = [
  * minimums) exceeds the container width. Instead of squishing columns
  * to illegible widths, the table scrolls horizontally.
  *
- * Each column — even those without an explicit `width` — gets a default
- * minimum of 120px, so six columns require at least 720px. In a 320px
- * container, the table becomes horizontally scrollable.
+ * Each column — even those without an explicit `width` — gets a minimum
+ * that fits its header label and longest word, so these six columns need
+ * well over 320px. In a 320px container, the table becomes horizontally
+ * scrollable.
  */
 export const ResponsiveScroll: Story = {
   render: () => (
@@ -947,6 +952,137 @@ export const ResponsiveScrollInCard: Story = {
           textOverflow="truncate"
         />
       </Card>
+    </div>
+  ),
+};
+
+interface Issue extends Record<string, unknown> {
+  id: string;
+  title: string;
+  status: string;
+  assignee: string;
+  priority: string;
+  updated: string;
+}
+
+const issues: Issue[] = [
+  {
+    id: 'AST-1287',
+    title: 'Checkout button clips on narrow phones',
+    status: 'In progress',
+    assignee: 'Priya Raman',
+    priority: 'High',
+    updated: 'Sep 28, 2026',
+  },
+  {
+    id: 'AST-1291',
+    title: 'Invoice export drops the currency symbol',
+    status: 'Open',
+    assignee: 'Marcus Oyelaran',
+    priority: 'Medium',
+    updated: 'Sep 27, 2026',
+  },
+  {
+    id: 'AST-1302',
+    title: 'Search results flash before filters apply',
+    status: 'In review',
+    assignee: 'Lena Fischer',
+    priority: 'Low',
+    updated: 'Sep 26, 2026',
+  },
+  {
+    id: 'AST-1310',
+    title: 'Password reset email arrives twice',
+    status: 'Blocked',
+    assignee: 'Tomás Herrera',
+    priority: 'Urgent',
+    updated: 'Sep 25, 2026',
+  },
+];
+
+// Written the way most product code writes a table: no widths at all.
+const issueColumns: TableColumn<Issue>[] = [
+  {key: 'id', header: 'Issue'},
+  {key: 'title', header: 'Title'},
+  {key: 'status', header: 'Status'},
+  {key: 'assignee', header: 'Assignee'},
+  {key: 'priority', header: 'Priority'},
+  {key: 'updated', header: 'Updated'},
+];
+
+function IssueFrame({
+  label,
+  width,
+  children,
+}: {
+  label: string;
+  width?: number;
+  children: ReactNode;
+}) {
+  return (
+    <div>
+      <p style={{margin: '0 0 8px', fontWeight: 600}}>{label}</p>
+      <div
+        style={{
+          width: width != null ? `${width}px` : undefined,
+          border: '1px dashed #ccc',
+          borderRadius: '8px',
+        }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function SelectableStickyIssues() {
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(
+    () => new Set(['AST-1291']),
+  );
+  const {selectionConfig} = useTableSelectionState<Issue>({
+    data: issues,
+    idKey: 'id',
+    selectedKeys,
+    setSelectedKeys,
+  });
+  const selection = useTableSelection<Issue>(selectionConfig);
+  const sticky = useTableStickyColumns<Issue>({startKeys: ['id']});
+  return (
+    <Table
+      data={issues}
+      columns={issueColumns}
+      idKey="id"
+      plugins={{selection, sticky}}
+    />
+  );
+}
+
+/**
+ * Columns declared without `width` share the row equally and stop shrinking
+ * at a minimum that fits their header label and longest word. In a phone-
+ * width frame the table scrolls sideways instead of breaking IDs, names,
+ * and dates mid-word; at full width nothing changes. The last frame adds
+ * row selection and a pinned Issue column: the 36px checkbox column stays
+ * fixed and the pinned column stays flush beside it while the rest scroll.
+ */
+export const WidthlessColumns: Story = {
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: '32px'}}>
+      <IssueFrame label="320px frame — scrolls, words stay whole" width={320}>
+        <Table data={issues} columns={issueColumns} idKey="id" />
+      </IssueFrame>
+      <IssueFrame
+        label="390px frame (phone) — scrolls, words stay whole"
+        width={390}>
+        <Table data={issues} columns={issueColumns} idKey="id" />
+      </IssueFrame>
+      <IssueFrame label="Full width — equal shares, no scroll">
+        <Table data={issues} columns={issueColumns} idKey="id" />
+      </IssueFrame>
+      <IssueFrame
+        label="390px frame — with selection and a pinned Issue column"
+        width={390}>
+        <SelectableStickyIssues />
+      </IssueFrame>
     </div>
   ),
 };

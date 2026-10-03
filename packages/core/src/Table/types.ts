@@ -115,9 +115,10 @@ export interface TableColumn<T extends Record<string, unknown>> {
    *   Enforces a 120px minimum width to prevent squishing on narrow viewports.
    * - `proportional(2)` — gets twice the space of `proportional(1)`.
    * - `pixel(200)` — fixed 200px width.
-   * - Omitted — treated as `proportional(1)` for distribution, but with **no**
-   *   minimum width. Prefer explicit `proportional(1)` for text-heavy columns
-   *   so they don't collapse on mobile.
+   * - Omitted — treated as `proportional(1)` for distribution, with a minimum
+   *   derived from the header label and the longest word in the first rows
+   *   (80–240px). Below the sum of the minimums the table scrolls
+   *   horizontally instead of crushing its columns.
    *
    * @example
    * ```

@@ -9,6 +9,7 @@
  * SYNC: When BaseTable.tsx or Table.tsx change, update tests to match new behavior
  */
 
+import {useState} from 'react';
 import {describe, it, expect, vi} from 'vitest';
 import {act, render, screen} from '@testing-library/react';
 import * as stylex from '@stylexjs/stylex';
@@ -28,6 +29,8 @@ import {
   DEFAULT_MIN_COLUMN_WIDTH,
 } from './columnUtils';
 import type {TablePlugin, TableColumn, ProportionalWidth} from './types';
+import {useTableSelection, useTableSelectionState} from './plugins/selection';
+import {useTableStickyColumns} from './plugins/stickyColumns';
 
 // =============================================================================
 // Test Data
@@ -443,7 +446,7 @@ describe('BaseTable', () => {
     });
 
     it('keeps the computed column min-width over a consumer style.minWidth', () => {
-      const {tableMinWidth} = resolveColumnWidths(columns);
+      const {tableMinWidth} = resolveColumnWidths(columns, users);
       render(
         <Table data={users} columns={columns} style={{minWidth: '10px'}} />,
       );
@@ -452,10 +455,13 @@ describe('BaseTable', () => {
       );
     });
 
-    it('lets a consumer style.minWidth survive when columns compute none', () => {
+    it('gives width-less columns a computed min-width over a consumer style.minWidth', () => {
+      // Width-less columns carry a content-derived floor, so the table
+      // always computes a min-width and it wins, like above. "Charlie" =
+      // 7 × 9 + 24 = 87px; two equal shares need 174px.
       const plain: TableColumn<User>[] = [{key: 'name'}, {key: 'age'}];
       render(<Table data={users} columns={plain} style={{minWidth: '10px'}} />);
-      expect(screen.getByRole('table').style.minWidth).toBe('10px');
+      expect(screen.getByRole('table').style.minWidth).toBe('174px');
     });
 
     it('keeps the astryx theme classes alongside a consumer className', () => {
@@ -694,6 +700,212 @@ describe('BaseTable', () => {
   });
 
   describe('column min-widths', () => {
+    // Width-less columns: max(header length × 8, longest body word × 9)
+    // + 24px default cell padding, clamped to [80, 240].
+    it('gives width-less columns a content-derived min-width so narrow tables scroll', () => {
+      const cols: TableColumn<User>[] = [
+        {key: 'name', header: 'Name'},
+        {key: 'email', header: 'Email address'},
+      ];
+      const resolved = resolveColumnWidths(cols, users);
+      // "Charlie" = 7 × 9 = 63 (> "Name" = 4 × 8) + 24 = 87
+      expect(resolved.columns.get('name')?.style).toEqual({
+        width: '50%',
+        minWidth: '87px',
+      });
+      // "charlie@example.com" = 19 × 9 = 171 (> header 13 × 8) + 24 = 195
+      expect(resolved.columns.get('email')?.style.minWidth).toBe('195px');
+      // Two equal shares, each at least 195px → the table needs 390px and
+      // the scroll wrapper engages below that instead of crushing columns.
+      expect(resolved.tableMinWidth).toBe(390);
+    });
+
+    it('sizes a width-less minimum to the whole header label, which never wraps', () => {
+      const cols: TableColumn<User>[] = [
+        {key: 'name', header: 'Customer lifetime value'},
+        {key: 'age'},
+      ];
+      const resolved = resolveColumnWidths(cols);
+      // Header cells truncate rather than wrap, so the full label counts:
+      // 23 × 8 + 24 = 208
+      expect(resolved.columns.get('name')?.style.minWidth).toBe('208px');
+      // No header → the rendered key "age" → 3 × 8 + 24 = 48 → floor 80
+      expect(resolved.columns.get('age')?.style.minWidth).toBe('80px');
+    });
+
+    it('caps the width-less minimum so one long token wraps instead', () => {
+      type Row = {url: string};
+      const cols: TableColumn<Row>[] = [{key: 'url', header: 'URL'}];
+      const resolved = resolveColumnWidths(cols, [
+        {url: 'https://example.com/a/very/long/path/that/never/breaks/at/all'},
+      ]);
+      expect(resolved.columns.get('url')?.style.minWidth).toBe('240px');
+    });
+
+    it('measures numbers and dates as rendered and ignores non-text values', () => {
+      type Row = {
+        order: number;
+        placed: Date;
+        meta: {note: string};
+        icon: string;
+      };
+      const cols: TableColumn<Row>[] = [
+        {key: 'order', header: '#'},
+        {key: 'placed', header: 'Placed'},
+        {key: 'meta', header: 'Meta'},
+        // A non-text header contributes nothing; the data decides.
+        {key: 'icon', header: <span aria-label="Kind" />},
+      ];
+      const resolved = resolveColumnWidths(cols, [
+        {
+          order: 1234567890123,
+          placed: new Date('2026-09-28T00:00:00.000Z'),
+          meta: {note: 'a very long note that is never rendered'},
+          icon: 'spreadsheet',
+        },
+      ]);
+      // 13 digits × 9 + 24 = 141
+      expect(resolved.columns.get('order')?.style.minWidth).toBe('141px');
+      // ISO string (the default renderer) = 24 × 9 + 24 = 240 (the cap)
+      expect(resolved.columns.get('placed')?.style.minWidth).toBe('240px');
+      // Objects render as nothing: "Meta" = 4 × 8 + 24 = 56 → floor 80
+      expect(resolved.columns.get('meta')?.style.minWidth).toBe('80px');
+      // "spreadsheet" = 11 × 9 + 24 = 123
+      expect(resolved.columns.get('icon')?.style.minWidth).toBe('123px');
+    });
+
+    it('samples only the first five rows', () => {
+      type Row = {code: string};
+      const cols: TableColumn<Row>[] = [{key: 'code', header: 'Code'}];
+      const rows: Row[] = [
+        ...Array.from({length: 5}, () => ({code: 'AB-12'})),
+        {code: 'a-much-longer-code-than-the-rest'},
+      ];
+      // "AB-12" = 5 × 9 + 24 = 69 → floor 80; row 6 is not sampled.
+      expect(
+        resolveColumnWidths(cols, rows).columns.get('code')?.style.minWidth,
+      ).toBe('80px');
+    });
+
+    it('scales the table minimum by share when width-less and proportional columns mix', () => {
+      const cols: TableColumn<User>[] = [
+        {key: 'name', header: 'Name', width: proportional(2)},
+        {key: 'email', header: 'Email'},
+        {key: 'age', header: 'Age', width: pixel(64)},
+      ];
+      const resolved = resolveColumnWidths(cols, users);
+      // proportional(2) keeps its 120px default min and 2/3 of the share.
+      expect(resolved.columns.get('name')?.style).toEqual({
+        width: `${(2 / 3) * 100}%`,
+        minWidth: '120px',
+      });
+      // The width-less email column is proportional(1) with a 195px floor
+      // and 1/3 of the share, so the shared space must be 3 × 195 = 585.
+      expect(resolved.columns.get('email')?.style).toEqual({
+        width: `${(1 / 3) * 100}%`,
+        minWidth: '195px',
+      });
+      expect(resolved.tableMinWidth).toBe(64 + 585);
+    });
+
+    it('leaves tables whose columns all declare widths unchanged', () => {
+      const cols: TableColumn<User>[] = [
+        {key: 'name', header: 'Name', width: proportional(1)},
+        {key: 'age', header: 'Age', width: pixel(80)},
+        {
+          key: 'email',
+          header: 'Email',
+          width: proportional(2, {minWidth: 180}),
+        },
+      ];
+      // Data never changes explicit widths.
+      expect(resolveColumnWidths(cols, users)).toEqual(
+        resolveColumnWidths(cols),
+      );
+      expect(resolveColumnWidths(cols).tableMinWidth).toBe(80 + 360);
+    });
+
+    it('renders the width-less minimum on header cells', () => {
+      const cols: TableColumn<User>[] = [
+        {key: 'name', header: 'Name'},
+        {key: 'email', header: 'Email'},
+      ];
+      render(<BaseTable data={users} columns={cols} />);
+      const headers = screen.getAllByRole('columnheader');
+      expect(headers[0]).toHaveStyle({minWidth: '87px'});
+      expect(headers[1]).toHaveStyle({minWidth: '195px'});
+      expect(screen.getByRole('table').style.minWidth).toBe('390px');
+    });
+
+    it('keeps the selection column fixed and pins beside it when width-less columns carry floors', () => {
+      interface Row extends Record<string, unknown> {
+        id: string;
+        title: string;
+        status: string;
+      }
+      const rows: Row[] = [
+        {id: 'AST-1287', title: 'Checkout button clips', status: 'In progress'},
+        {
+          id: 'AST-1291',
+          title: 'Invoice export drops currency',
+          status: 'Open',
+        },
+      ];
+      const cols: TableColumn<Row>[] = [
+        {key: 'id', header: 'Issue'},
+        {key: 'title', header: 'Title'},
+        {key: 'status', header: 'Status'},
+      ];
+      function Harness() {
+        const [selectedKeys, setSelectedKeys] = useState<Set<string>>(
+          new Set(),
+        );
+        const {selectionConfig} = useTableSelectionState<Row>({
+          data: rows,
+          idKey: 'id',
+          selectedKeys,
+          setSelectedKeys,
+        });
+        const selection = useTableSelection<Row>(selectionConfig);
+        const sticky = useTableStickyColumns<Row>({startKeys: ['id']});
+        return (
+          <Table
+            data={rows}
+            columns={cols}
+            idKey="id"
+            plugins={{selection, sticky}}
+          />
+        );
+      }
+      render(<Harness />);
+      const [selectionHeader, issue, title, status] =
+        screen.getAllByRole('columnheader');
+      // The synthetic selection column keeps its fixed 36px track.
+      expect(selectionHeader).toHaveStyle({width: '36px', minWidth: '36px'});
+      // "AST-1287" = 8 × 9 + 24 = 96
+      expect(issue).toHaveStyle({minWidth: '96px'});
+      // The pinned Issue column sits flush against the selection column.
+      expect(issue.style.insetInlineStart).toBe('36px');
+      // "currency" / "progress" = 8 × 9 + 24 = 96
+      expect(title).toHaveStyle({minWidth: '96px'});
+      expect(status).toHaveStyle({minWidth: '96px'});
+      // Pixel column + three equal shares of the largest floor.
+      expect(screen.getByRole('table').style.minWidth).toBe(`${36 + 3 * 96}px`);
+    });
+
+    it('computes no minimum in children mode', () => {
+      render(
+        <Table>
+          <TableBody>
+            <TableRow>
+              <TableCell>A cell without column definitions</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>,
+      );
+      expect(screen.getByRole('table').style.minWidth).toBe('');
+    });
+
     it('applies default minWidth on header cells for proportional columns', () => {
       const cols: TableColumn<User>[] = [
         {key: 'name', header: 'Name', width: proportional(1)},
