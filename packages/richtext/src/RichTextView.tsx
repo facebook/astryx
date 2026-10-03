@@ -5,7 +5,7 @@
 /**
  * @file RichTextView.tsx
  * @input Uses React, Lexical (lexical + @lexical/react, composed through
- *   LexicalExtensionComposer), design tokens
+ *   LexicalExtensionComposer), warnOnce from core utils, design tokens
  * @output Exports RichTextView component and RichTextViewProps
  * @position Read-only renderer for serialized Lexical editor state; experimental
  *   (richtext), exported from @astryxdesign/richtext
@@ -20,6 +20,7 @@ import {useEffect, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {sharedEditorTheme} from './editorTheme';
 import type {BaseProps} from '@astryxdesign/core';
+import {warnOnce} from '@astryxdesign/core/utils';
 
 import {LexicalExtensionComposer} from '@lexical/react/LexicalExtensionComposer';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
@@ -62,6 +63,15 @@ export interface RichTextViewProps extends BaseProps {
    */
   value: string;
   /**
+   * Accessible name for the read-only text surface. Required: the view
+   * renders a `role="textbox"` element, and a textbox without a name fails
+   * axe's `aria-input-field-name`; pass a label describing the content
+   * (e.g. "Meeting notes"). A blank or whitespace-only string names nothing,
+   * so no `aria-label` is emitted and the dev warning fires — the same as a
+   * JavaScript caller omitting the prop.
+   */
+  label: string;
+  /**
    * Additional Lexical nodes to register beyond the default OSS set. Must match
    * the nodes used to author `value` so custom node types deserialize.
    */
@@ -94,10 +104,11 @@ export interface RichTextViewProps extends BaseProps {
  * Keeps the rendered content in sync with the `value` prop after mount.
  *
  * The editor's initial state is seeded once, when the composer mounts, so a
- * plain `<RichTextView value={changingValue} />` would freeze at its first
- * value — the content would never update when `value` changed. This plugin runs
- * inside the composer context and re-applies `value` whenever it changes, so the
- * read-only view stays reactive (e.g. previewing content edited elsewhere).
+ * plain `<RichTextView label="Preview" value={changingValue} />` would freeze
+ * at its first value — the content would never update when `value` changed.
+ * This plugin runs inside the composer context and re-applies `value` whenever
+ * it changes, so the read-only view stays reactive (e.g. previewing content
+ * edited elsewhere).
  *
  * The initial `value` is already applied via the extension's
  * `$initialEditorState`, so we skip the first run to avoid a redundant re-parse
@@ -136,11 +147,12 @@ function SyncValuePlugin({value}: {value: string}): null {
  * @example
  * ```
  * import {RichTextView} from '@astryxdesign/richtext';
- * <RichTextView value={storedEditorStateJSON} />
+ * <RichTextView label="Meeting notes" value={storedEditorStateJSON} />
  * ```
  */
 export function RichTextView({
   value,
+  label,
   nodes,
   plugins,
   namespace = 'astryx-view',
@@ -151,6 +163,19 @@ export function RichTextView({
   style,
   ...rest
 }: RichTextViewProps) {
+  // A blank label names nothing: `aria-label=""` resolves to the same empty
+  // accessible name as no attribute at all, and role=textbox takes no name
+  // from its content. Treat blank exactly like absent — warn, and emit no
+  // attribute — so the guard cannot be silenced by an empty string.
+  const trimmedLabel = label?.trim();
+  if (!trimmedLabel) {
+    warnOnce(
+      'richtext:view-needs-label',
+      'RichTextView',
+      'RichTextView renders a keyboard-reachable textbox; pass a non-blank `label` so it has an accessible name (axe aria-input-field-name).',
+    );
+  }
+
   const themeRef = useRef<EditorThemeClasses | null>(null);
   if (themeRef.current === null) {
     themeRef.current = sharedEditorTheme();
@@ -231,7 +256,16 @@ export function RichTextView({
         contentEditable={null}>
         <SyncValuePlugin value={value} />
         <RichTextPlugin
-          contentEditable={<ContentEditable />}
+          contentEditable={
+            // A read-only textbox still needs a name and must stay in the
+            // tab order so keyboard and screen-reader users can reach and
+            // read it.
+            <ContentEditable
+              ariaLabel={trimmedLabel ? label : undefined}
+              ariaMultiline
+              tabIndex={0}
+            />
+          }
           placeholder={null}
           ErrorBoundary={LexicalErrorBoundary}
         />

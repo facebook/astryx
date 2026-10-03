@@ -57,13 +57,15 @@ export const docs = {
     {
       name: 'isReadOnly',
       type: 'boolean',
-      description: 'Whether the editor is read-only (non-editable).',
+      description:
+        'Whether the editor is read-only (non-editable). Content stays keyboard-reachable at full opacity and is announced as read-only.',
       default: 'false',
     },
     {
       name: 'isDisabled',
       type: 'boolean',
-      description: 'Whether the editor is disabled (non-editable, dimmed).',
+      description:
+        'Whether the editor is disabled: non-editable, dimmed, out of the tab order, and announced as disabled.',
       default: 'false',
     },
     {
@@ -171,7 +173,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Persist content by serializing editorState.toJSON() in onChange; rehydrate via defaultValue / RichTextView value.',
+          'Persist content by serializing editorState.toJSON() in onChange; rehydrate via defaultValue / RichTextView value. RichTextView requires a non-blank label — it renders a keyboard-reachable role="textbox" surface, and without an accessible name it fails axe aria-input-field-name (a blank label emits no aria-label and dev-warns).',
       },
       {
         guidance: true,

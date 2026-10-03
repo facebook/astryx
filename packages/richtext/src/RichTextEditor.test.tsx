@@ -5,15 +5,16 @@
  * @input Uses vitest, @testing-library/react, RichTextEditor + RichTextView
  * @output Unit tests for the opt-in Lexical editor components, including
  *   accessible label wiring, shared input visuals/status variants,
- *   placeholder semantics, canonical link-dialog layout, and top-toolbar
- *   ordering and horizontal scrolling
+ *   placeholder semantics, canonical link-dialog layout, top-toolbar
+ *   ordering and horizontal scrolling, and the read-only vs disabled ARIA
+ *   split with editable-state sync across prop toggles
  * @position Testing; validates RichTextEditor.tsx and RichTextView.tsx
  *
  * SYNC: When the editor components change, update these tests to match.
  */
 
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
-import {render, screen, waitFor, fireEvent} from '@testing-library/react';
+import {render, screen, waitFor, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {createRef, useEffect} from 'react';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
@@ -89,6 +90,18 @@ afterAll(() => {
     delete (HTMLDialogElement.prototype as {close?: unknown}).close;
   }
 });
+
+// jsdom's Range does not implement getBoundingClientRect, which Lexical
+// calls (via scroll-into-view) whenever it reconciles a selection while the
+// editor is focused. Guarded stub shared by every describe that focuses the
+// editor (Tab-escape, imperative ref toggles).
+function stubRangeRects() {
+  beforeAll(() => {
+    if (typeof Range.prototype.getBoundingClientRect !== 'function') {
+      Range.prototype.getBoundingClientRect = () => new DOMRect();
+    }
+  });
+}
 
 // Small plugin that captures the editor instance so tests can drive real
 // Lexical updates (jsdom does not implement contenteditable editing).
@@ -356,6 +369,39 @@ describe('RichTextEditor', () => {
       'contenteditable',
       'false',
     );
+  });
+
+  it('keeps a read-only editor reachable and announced as read-only', () => {
+    render(<RichTextEditor label="Notes" isReadOnly />);
+    const textbox = screen.getByRole('textbox');
+    // A read-only textbox must stay in the tab order so keyboard and
+    // screen-reader users can reach, read, and copy its content.
+    expect(textbox).toHaveAttribute('tabindex', '0');
+    expect(textbox).toHaveAttribute('aria-readonly', 'true');
+    expect(textbox).not.toHaveAttribute('aria-disabled');
+  });
+
+  it('does not dim a read-only editor with the disabled treatment', () => {
+    const {container} = render(<RichTextEditor label="Notes" isReadOnly />);
+    const wrapper = container.querySelector('.astryx-rich-text-editor');
+    expect(wrapper).not.toBeNull();
+    expect(getComputedStyle(wrapper as Element).opacity).not.toBe('0.5');
+  });
+
+  it('announces a disabled editor as disabled, not read-only', () => {
+    render(<RichTextEditor label="Notes" isDisabled />);
+    const textbox = screen.getByRole('textbox');
+    expect(textbox).toHaveAttribute('aria-disabled', 'true');
+    expect(textbox).not.toHaveAttribute('aria-readonly');
+    // Disabled controls leave the tab order.
+    expect(textbox).not.toHaveAttribute('tabindex', '0');
+  });
+
+  it('keeps the dimmed treatment on a disabled editor', () => {
+    const {container} = render(<RichTextEditor label="Notes" isDisabled />);
+    const wrapper = container.querySelector('.astryx-rich-text-editor');
+    expect(wrapper).not.toBeNull();
+    expect(getComputedStyle(wrapper as Element).opacity).toBe('0.5');
   });
 
   it('marks the textbox invalid on error status', () => {
@@ -779,15 +825,7 @@ describe('RichTextEditor', () => {
 describe('RichTextEditor Tab keyboard trap escape (WCAG 2.1.2)', () => {
   const DEFAULT_HINT = 'Press Escape then Tab to move focus out of the editor.';
 
-  beforeAll(() => {
-    // jsdom's Range does not implement getBoundingClientRect, which Lexical
-    // calls (via scroll-into-view) whenever it reconciles a collapsed
-    // selection while the editor is focused. Stub it so the focused-editor
-    // keyboard tests below can run without uncaught exceptions.
-    if (typeof Range.prototype.getBoundingClientRect !== 'function') {
-      Range.prototype.getBoundingClientRect = () => new DOMRect();
-    }
-  });
+  stubRangeRects();
 
   /**
    * Renders the editor followed by a button, focuses the contenteditable and
@@ -910,7 +948,7 @@ describe('RichTextEditor Tab keyboard trap escape (WCAG 2.1.2)', () => {
 
 describe('RichTextView', () => {
   it('renders serialized content read-only', async () => {
-    render(<RichTextView value={HELLO_STATE} />);
+    render(<RichTextView label="Notes" value={HELLO_STATE} />);
     await waitFor(() =>
       expect(screen.getByText('Hello world')).toBeInTheDocument(),
     );
@@ -923,6 +961,7 @@ describe('RichTextView', () => {
   it('renders custom read-only plugins passed via the plugins prop', () => {
     render(
       <RichTextView
+        label="Notes"
         value={HELLO_STATE}
         plugins={<div data-testid="view-plugin" />}
       />,
@@ -931,7 +970,13 @@ describe('RichTextView', () => {
   });
 
   it('accepts a custom namespace without throwing', async () => {
-    render(<RichTextView value={HELLO_STATE} namespace="custom-view-ns" />);
+    render(
+      <RichTextView
+        label="Notes"
+        value={HELLO_STATE}
+        namespace="custom-view-ns"
+      />,
+    );
     await waitFor(() =>
       expect(screen.getByText('Hello world')).toBeInTheDocument(),
     );
@@ -940,7 +985,9 @@ describe('RichTextView', () => {
   it('registers extra nodes via the nodes prop without throwing', async () => {
     // Passing the default node set again is a no-op but exercises the merge
     // path; the point is that supplying `nodes` does not break rendering.
-    render(<RichTextView value={HELLO_STATE} nodes={[HeadingNode]} />);
+    render(
+      <RichTextView label="Notes" value={HELLO_STATE} nodes={[HeadingNode]} />,
+    );
     await waitFor(() =>
       expect(screen.getByText('Hello world')).toBeInTheDocument(),
     );
@@ -951,6 +998,7 @@ describe('RichTextView', () => {
     expect(() =>
       render(
         <RichTextView
+          label="Notes"
           value={'{ not valid json'}
           onParseError={onError}
           errorFallback={<div data-testid="view-fallback">Unavailable</div>}
@@ -966,7 +1014,7 @@ describe('RichTextView', () => {
 
   it('renders bullet lists with a disc marker (not bare indentation)', async () => {
     const {container} = render(
-      <RichTextView value={makeListState('bullet')} />,
+      <RichTextView label="Notes" value={makeListState('bullet')} />,
     );
     await waitFor(() =>
       expect(screen.getByText('Item one')).toBeInTheDocument(),
@@ -982,7 +1030,7 @@ describe('RichTextView', () => {
 
   it('renders numbered lists with a decimal marker (not bare indentation)', async () => {
     const {container} = render(
-      <RichTextView value={makeListState('number')} />,
+      <RichTextView label="Notes" value={makeListState('number')} />,
     );
     await waitFor(() =>
       expect(screen.getByText('Item one')).toBeInTheDocument(),
@@ -995,7 +1043,7 @@ describe('RichTextView', () => {
 
   it('renders nested bullet lists with a distinct depth-2 marker (circle)', async () => {
     const {container} = render(
-      <RichTextView value={makeNestedBulletState()} />,
+      <RichTextView label="Notes" value={makeNestedBulletState()} />,
     );
     await waitFor(() =>
       expect(screen.getByText('Nested item')).toBeInTheDocument(),
@@ -1011,7 +1059,9 @@ describe('RichTextView', () => {
   });
 
   it('renders nothing (no crash) on malformed JSON with no fallback', () => {
-    expect(() => render(<RichTextView value={'garbage'} />)).not.toThrow();
+    expect(() =>
+      render(<RichTextView label="Notes" value={'garbage'} />),
+    ).not.toThrow();
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
   });
 
@@ -1022,13 +1072,21 @@ describe('RichTextView', () => {
     // exact bug in the "Markdown Serializers" story (RichTextView stayed stale
     // while the Markdown input changed).
     const {rerender} = render(
-      <RichTextView value={makeParagraphState('first version')} />,
+      <RichTextView
+        label="Notes"
+        value={makeParagraphState('first version')}
+      />,
     );
     await waitFor(() =>
       expect(screen.getByText('first version')).toBeInTheDocument(),
     );
 
-    rerender(<RichTextView value={makeParagraphState('second version')} />);
+    rerender(
+      <RichTextView
+        label="Notes"
+        value={makeParagraphState('second version')}
+      />,
+    );
     await waitFor(() =>
       expect(screen.getByText('second version')).toBeInTheDocument(),
     );
@@ -1040,13 +1098,16 @@ describe('RichTextView', () => {
     // the composer and render the new content (hasError resets on change).
     const {rerender} = render(
       <RichTextView
+        label="Notes"
         value={'{ not valid json'}
         errorFallback={<div data-testid="view-fallback">Unavailable</div>}
       />,
     );
     expect(screen.getByTestId('view-fallback')).toBeInTheDocument();
 
-    rerender(<RichTextView value={makeParagraphState('recovered')} />);
+    rerender(
+      <RichTextView label="Notes" value={makeParagraphState('recovered')} />,
+    );
     await waitFor(() =>
       expect(screen.getByText('recovered')).toBeInTheDocument(),
     );
@@ -1667,5 +1728,239 @@ describe('RichTextEditorToolbar — new-tab links', () => {
       expect(sawLink).toBe(true);
       expect(target).toBeNull();
     });
+  });
+});
+
+describe('editable state follows prop changes', () => {
+  it('disables editing and announces it when isDisabled turns on after mount', () => {
+    const {rerender} = render(<RichTextEditor label="Notes" />);
+    expect(screen.getByRole('textbox')).toHaveAttribute(
+      'contenteditable',
+      'true',
+    );
+    rerender(<RichTextEditor label="Notes" isDisabled />);
+    const textbox = screen.getByRole('textbox');
+    // The surface must actually stop accepting input, not only announce it.
+    expect(textbox).toHaveAttribute('contenteditable', 'false');
+    expect(textbox).toHaveAttribute('aria-disabled', 'true');
+    expect(textbox).not.toHaveAttribute('aria-readonly');
+  });
+
+  it('becomes editable when isReadOnly turns off after mount', () => {
+    const {rerender} = render(<RichTextEditor label="Notes" isReadOnly />);
+    expect(screen.getByRole('textbox')).toHaveAttribute(
+      'contenteditable',
+      'false',
+    );
+    rerender(<RichTextEditor label="Notes" />);
+    const textbox = screen.getByRole('textbox');
+    expect(textbox).toHaveAttribute('contenteditable', 'true');
+    expect(textbox).not.toHaveAttribute('aria-readonly');
+  });
+
+  it("keeps Lexical's read-only announcement when a plugin disables editing", () => {
+    let captured: LexicalEditor | null = null;
+    render(
+      <RichTextEditor
+        label="Notes"
+        plugins={<CaptureEditor onReady={editor => (captured = editor)} />}
+      />,
+    );
+    act(() => {
+      (captured as unknown as LexicalEditor).setEditable(false);
+    });
+    const textbox = screen.getByRole('textbox');
+    expect(textbox).toHaveAttribute('contenteditable', 'false');
+    // Neither prop is set, so the component must not clobber Lexical's own
+    // state-derived aria-readonly with undefined.
+    expect(textbox).toHaveAttribute('aria-readonly', 'true');
+  });
+
+  it('keeps a plugin that disables editing during mount in charge', () => {
+    // The prop sync renders after `plugins`, so its mount effect runs after
+    // theirs; it must only react to prop changes, never re-assert the mount
+    // value over a plugin that already locked the editor.
+    function DisableOnMount() {
+      const [editor] = useLexicalComposerContext();
+      useEffect(() => {
+        editor.setEditable(false);
+      }, [editor]);
+      return null;
+    }
+    let captured: LexicalEditor | null = null;
+    render(
+      <RichTextEditor
+        label="Notes"
+        plugins={
+          <>
+            <DisableOnMount />
+            <CaptureEditor onReady={editor => (captured = editor)} />
+          </>
+        }
+      />,
+    );
+    expect((captured as unknown as LexicalEditor).isEditable()).toBe(false);
+    expect(screen.getByRole('textbox')).toHaveAttribute(
+      'contenteditable',
+      'false',
+    );
+  });
+});
+
+describe('isReadOnly + isDisabled combined', () => {
+  it('lets disabled win everywhere when both flags are set', () => {
+    const {container} = render(
+      <RichTextEditor label="Notes" isReadOnly isDisabled />,
+    );
+    const textbox = screen.getByRole('textbox');
+
+    // Non-editable either way.
+    expect(textbox).toHaveAttribute('contenteditable', 'false');
+    // Disabled semantics take precedence: announced disabled, never
+    // read-only, and out of the tab order.
+    expect(textbox).toHaveAttribute('aria-disabled', 'true');
+    expect(textbox).not.toHaveAttribute('aria-readonly');
+    expect(textbox).not.toHaveAttribute('tabindex', '0');
+    // The wrapper carries the dimmed disabled treatment.
+    const wrapper = container.querySelector('.astryx-rich-text-editor');
+    expect(wrapper).not.toBeNull();
+    expect(getComputedStyle(wrapper as Element).opacity).toBe('0.5');
+  });
+
+  it('swaps disabled semantics for read-only semantics on rerender', () => {
+    const {container, rerender} = render(
+      <RichTextEditor label="Notes" isDisabled />,
+    );
+    expect(screen.getByRole('textbox')).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+
+    rerender(<RichTextEditor label="Notes" isReadOnly />);
+    const textbox = screen.getByRole('textbox');
+
+    // Still non-editable, but the announcement and reachability flip from
+    // disabled to read-only.
+    expect(textbox).toHaveAttribute('contenteditable', 'false');
+    expect(textbox).not.toHaveAttribute('aria-disabled');
+    expect(textbox).toHaveAttribute('aria-readonly', 'true');
+    expect(textbox).toHaveAttribute('tabindex', '0');
+    // The dimmed disabled treatment is gone. (jsdom computes unset opacity
+    // as '' rather than the initial '1', so assert the 0.5 rule no longer
+    // applies — matching the read-only dimming test above.)
+    const wrapper = container.querySelector('.astryx-rich-text-editor');
+    expect(wrapper).not.toBeNull();
+    expect(getComputedStyle(wrapper as Element).opacity).not.toBe('0.5');
+  });
+});
+
+describe('imperative ref across editable prop toggles', () => {
+  stubRangeRects();
+
+  it('unlocks focus() once isDisabled is removed', async () => {
+    const ref = createRef<RichTextEditorRef>();
+    const {rerender} = render(
+      <RichTextEditor ref={ref} label="Notes" isDisabled />,
+    );
+    const disabledTextbox = screen.getByRole('textbox');
+    expect(disabledTextbox).toHaveAttribute('contenteditable', 'false');
+
+    // While disabled, focus() is gated: focus must not move and no caret is
+    // placed inside the editor.
+    ref.current?.focus();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(document.activeElement).toBe(document.body);
+    expect(
+      disabledTextbox.contains(window.getSelection()?.anchorNode ?? null),
+    ).toBe(false);
+
+    rerender(<RichTextEditor ref={ref} label="Notes" />);
+    const textbox = screen.getByRole('textbox');
+    // The editor.setEditable sync must re-enable the actual surface, not
+    // just the wrapper styling.
+    expect(textbox).toHaveAttribute('contenteditable', 'true');
+
+    // The same handle now drives real focus into the editor. Lexical focuses
+    // by placing the DOM selection inside the contenteditable; the browser
+    // side effect that moves document.activeElement along with it is not
+    // implemented by jsdom (see the ref.focus() test above), so assert the
+    // jsdom-observable outcome: the caret lands inside the textbox.
+    ref.current?.focus();
+    await waitFor(() => {
+      const anchorNode = window.getSelection()?.anchorNode ?? null;
+      expect(anchorNode).not.toBeNull();
+      expect(textbox.contains(anchorNode)).toBe(true);
+    });
+  });
+});
+
+describe('read-only keyboard traversal (WCAG 2.1.2)', () => {
+  it('lets Tab leave a read-only editor without the Escape dance', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <button type="button">before</button>
+        <RichTextEditor label="Notes" isReadOnly />
+        <button type="button">after</button>
+      </>,
+    );
+
+    screen.getByRole('button', {name: 'before'}).focus();
+    await user.tab();
+    expect(document.activeElement).toBe(screen.getByRole('textbox'));
+
+    // A non-editable editor renders no tab-escape hint, so there must be no
+    // trap to escape: a bare Tab has to move on, with no Escape first.
+    await user.tab();
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', {name: 'after'}),
+    );
+  });
+
+  it('skips a disabled editor entirely', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <button type="button">before</button>
+        <RichTextEditor label="Notes" isDisabled />
+        <button type="button">after</button>
+      </>,
+    );
+    screen.getByRole('button', {name: 'before'}).focus();
+    await user.tab();
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', {name: 'after'}),
+    );
+  });
+});
+
+describe('toolbar follows the editable props after mount', () => {
+  // The extension's `editable` is only applied when the composer builds the
+  // editor, so without the editor.setEditable sync the toolbar would stay
+  // stuck at its mount state while the wrapper styling and ARIA followed the
+  // props.
+  it('re-enables and re-disables the formatting controls on rerender', () => {
+    const {rerender} = render(
+      <RichTextEditor
+        label="Notes"
+        isDisabled
+        toolbar={<RichTextEditorToolbar />}
+      />,
+    );
+    expect(screen.getByRole('button', {name: 'Bold'})).toBeDisabled();
+
+    rerender(
+      <RichTextEditor label="Notes" toolbar={<RichTextEditorToolbar />} />,
+    );
+    expect(screen.getByRole('button', {name: 'Bold'})).toBeEnabled();
+
+    rerender(
+      <RichTextEditor
+        label="Notes"
+        isReadOnly
+        toolbar={<RichTextEditorToolbar />}
+      />,
+    );
+    expect(screen.getByRole('button', {name: 'Bold'})).toBeDisabled();
   });
 });

@@ -330,12 +330,15 @@ export interface RichTextEditorProps extends Omit<
   /** Placeholder text shown when the editor is empty. */
   placeholder?: string;
   /**
-   * Whether the editor is read-only (non-editable).
+   * Whether the editor is read-only (non-editable). The content stays
+   * keyboard-reachable at full opacity and is announced as read-only, so
+   * users can still read and copy it.
    * @default false
    */
   isReadOnly?: boolean;
   /**
-   * Whether the editor is disabled (non-editable, dimmed).
+   * Whether the editor is disabled (non-editable, dimmed, out of the tab
+   * order, announced as disabled).
    * @default false
    */
   isDisabled?: boolean;
@@ -616,7 +619,9 @@ export const RichTextEditor = forwardRef<
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,
-            (isDisabled || isReadOnly) && inputWrapperStyles.disabled,
+            // Only disabled gets the dimmed treatment; a read-only editor
+            // keeps full-opacity text and stays keyboard-reachable.
+            isDisabled && inputWrapperStyles.disabled,
             isDisabled && styles.disabled,
             status && inputStatusBorderStyles[status.type],
             status &&
@@ -650,6 +655,8 @@ export const RichTextEditor = forwardRef<
                     ariaDescribedBy={ariaDescribedBy}
                     ariaRequired={isRequired && !isOptional}
                     ariaInvalid={status?.type === 'error'}
+                    isReadOnly={isReadOnly}
+                    isDisabled={isDisabled}
                     placeholderText={placeholder}
                     placeholderID={placeholderID}
                     minHeight={minHeight}
@@ -835,6 +842,23 @@ function EditorRefBridge({
   transformers: Array<Transformer>;
 }): null {
   const [editor] = useLexicalComposerContext();
+
+  // The mount value comes from the `defineExtension({editable})` built once on
+  // first render — a later isReadOnly/isDisabled prop change would otherwise
+  // leave contenteditable frozen at its mount value while the wrapper styling
+  // and ARIA follow the props. Keep the actual Lexical editable state in sync,
+  // but only on a prop change: the mount value is already applied, and this
+  // bridge renders after `plugins`, so re-asserting it would undo a plugin
+  // that set editability during its own mount.
+  const syncedEditableRef = useRef(editable);
+  useEffect(() => {
+    if (syncedEditableRef.current === editable) {
+      return;
+    }
+    syncedEditableRef.current = editable;
+    editor.setEditable(editable);
+  }, [editor, editable]);
+
   useImperativeHandle(
     editorRef,
     () => ({
@@ -918,6 +942,8 @@ function EditorContentEditable({
   ariaDescribedBy,
   ariaRequired,
   ariaInvalid,
+  isReadOnly,
+  isDisabled,
   placeholderText,
   placeholderID,
   minHeight,
@@ -929,6 +955,8 @@ function EditorContentEditable({
   ariaDescribedBy?: string;
   ariaRequired: boolean;
   ariaInvalid: boolean;
+  isReadOnly: boolean;
+  isDisabled: boolean;
   placeholderText?: string;
   placeholderID: string;
   minHeight: SizeValue;
@@ -943,6 +971,19 @@ function EditorContentEditable({
     'aria-describedby': ariaDescribedBy,
     'aria-required': ariaRequired ? ('true' as const) : undefined,
     'aria-invalid': ariaInvalid ? ('true' as const) : undefined,
+    // Lexical announces every non-editable surface as aria-readonly and
+    // leaves it out of the tab order. Split the two states: read-only stays
+    // reachable (tabIndex 0) and announced read-only; disabled is announced
+    // disabled instead. The keys land after Lexical's computed attributes,
+    // so the disabled branch's explicit `undefined` removes the wrong
+    // read-only announcement. When neither prop is set, no keys are passed
+    // at all — a consumer plugin may drive editor.setEditable directly, and
+    // Lexical's own state-derived aria-readonly must survive.
+    ...(isDisabled
+      ? {'aria-disabled': 'true' as const, 'aria-readonly': undefined}
+      : isReadOnly
+        ? {tabIndex: 0, 'aria-readonly': 'true' as const}
+        : null),
     ...stylex.props(
       styles.contentEditable,
       dynamicStyles.contentEditableMinHeight(minHeight),
