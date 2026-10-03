@@ -14,8 +14,17 @@
  *
  * States:
  * - `idle` — no gesture is live.
- * - `tracking` — a pointer is held inside the menu and the highlight follows
- *   it.
+ * - `triggerPress` — a finger rests on the trigger; the menu is not open yet.
+ *   A mouse skips this state: a mouse press on the trigger opens at once.
+ * - `open` — the menu opened under a held pointer (a mouse press, or a finger
+ *   held for the long-press delay) and the pointer has not entered it yet.
+ * - `tracking` — the pointer is held and the highlight follows it.
+ *
+ * The settle rule: the release of the gesture that OPENED the menu acts only
+ * once the pointer has entered the menu or the press has lasted
+ * `MENU_PRESS_SETTLE_MS`; otherwise it acts on nothing and the menu stays
+ * open. Without it a menu that opens under the pointer would pick a row
+ * nobody chose.
  *
  * Rows are opaque (`T`): the machine never touches the DOM. The hook resolves
  * the enabled row under the pointer and feeds it in; `null` means the pointer
@@ -26,13 +35,28 @@
  * - /packages/core/src/hooks/useMenuPress.ts
  */
 
+/** How long the opening press must last before its release may act. */
+export const MENU_PRESS_SETTLE_MS = 300;
+
 export type MenuPressPointerType = 'mouse' | 'touch' | 'pen';
 
 export type MenuPressGesture<T> =
   | {phase: 'idle'}
   | {
+      phase: 'triggerPress';
+      pointerType: MenuPressPointerType;
+      startedAt: number;
+    }
+  | {
+      phase: 'open';
+      pointerType: MenuPressPointerType;
+      openedAt: number;
+    }
+  | {
       phase: 'tracking';
       pointerType: MenuPressPointerType;
+      /** Where the press began. */
+      origin: 'trigger' | 'menu';
       /** The enabled row currently under the pointer, if any. */
       row: T | null;
     };
@@ -40,11 +64,14 @@ export type MenuPressGesture<T> =
 export type MenuPressEvent<T> =
   | {
       type: 'down';
+      target: 'trigger' | 'menu';
       pointerType: MenuPressPointerType;
-      /** The enabled row under the press, if any. */
+      /** The enabled row under the press when it lands inside the menu. */
       row: T | null;
       time: number;
     }
+  /** The menu opened while the trigger press is still held. */
+  | {type: 'opened'; time: number}
   | {type: 'move'; row: T | null; isInMenu: boolean; time: number}
   | {
       type: 'up';
@@ -58,6 +85,8 @@ export type MenuPressEvent<T> =
 
 export type MenuPressEffect<T> =
   | {type: 'none'}
+  /** A mouse pressed the trigger: open the menu now, under the held pointer. */
+  | {type: 'open'}
   | {type: 'highlight'; row: T}
   | {type: 'clear'}
   | {type: 'act'; row: T}
@@ -114,6 +143,10 @@ export function menuPressStep<T>(
   switch (gesture.phase) {
     case 'idle':
       return stepIdle(gesture, event);
+    case 'triggerPress':
+      return stepTriggerPress(gesture, event);
+    case 'open':
+      return stepOpen(gesture, event);
     case 'tracking':
       return stepTracking(gesture, event);
   }
@@ -126,14 +159,103 @@ function stepIdle<T>(
   if (event.type !== 'down') {
     return {gesture, effect: NONE};
   }
+  if (event.target === 'menu') {
+    return {
+      gesture: {
+        phase: 'tracking',
+        pointerType: event.pointerType,
+        origin: 'menu',
+        row: event.row,
+      },
+      effect: highlightEffect(event.row),
+    };
+  }
+  if (event.pointerType === 'mouse') {
+    return {
+      gesture: {
+        phase: 'open',
+        pointerType: 'mouse',
+        openedAt: event.time,
+      },
+      effect: {type: 'open'},
+    };
+  }
   return {
     gesture: {
-      phase: 'tracking',
+      phase: 'triggerPress',
       pointerType: event.pointerType,
-      row: event.row,
+      startedAt: event.time,
     },
-    effect: highlightEffect(event.row),
+    effect: NONE,
   };
+}
+
+function stepTriggerPress<T>(
+  gesture: Extract<MenuPressGesture<T>, {phase: 'triggerPress'}>,
+  event: MenuPressEvent<T>,
+): MenuPressStep<T> {
+  switch (event.type) {
+    case 'opened':
+      return {
+        gesture: {
+          phase: 'open',
+          pointerType: gesture.pointerType,
+          openedAt: event.time,
+        },
+        effect: NONE,
+      };
+    case 'up':
+      // A tap. The browser's click on the trigger is what opens the menu, so
+      // it must pass, and no gesture is live afterwards.
+      return idle({type: 'settle', stray: false, dismiss: false});
+    case 'cancel':
+      // The browser took the gesture (an incoming call, a system gesture).
+      // Settle rather than going quiet: a held finger has already installed
+      // the document's touchmove preventer, and only the end of a gesture
+      // takes it back off. No click follows a cancelled pointer.
+      return idle({type: 'settle', stray: false, dismiss: false});
+    case 'down':
+    case 'move':
+      return {gesture, effect: NONE};
+  }
+}
+
+function stepOpen<T>(
+  gesture: Extract<MenuPressGesture<T>, {phase: 'open'}>,
+  event: MenuPressEvent<T>,
+): MenuPressStep<T> {
+  switch (event.type) {
+    case 'move':
+      if (!event.isInMenu) {
+        return {gesture, effect: NONE};
+      }
+      return {
+        gesture: {
+          phase: 'tracking',
+          pointerType: gesture.pointerType,
+          origin: 'trigger',
+          row: event.row,
+        },
+        effect: highlightEffect(event.row),
+      };
+    case 'up': {
+      const hasSettled = event.time - gesture.openedAt >= MENU_PRESS_SETTLE_MS;
+      if (!hasSettled) {
+        // The pointer never entered the menu and the press was short: the
+        // menu stays open and nothing acts. The trigger's own click for this
+        // gesture must not toggle it shut either.
+        return idle({type: 'settle', stray: true, dismiss: false});
+      }
+      return release(gesture.pointerType, event);
+    }
+    case 'cancel':
+      // As above: the gesture ends, so its document listeners come off. The
+      // menu stays open — a cancelled pointer did not ask to close it.
+      return idle({type: 'settle', stray: false, dismiss: false});
+    case 'down':
+    case 'opened':
+      return {gesture, effect: NONE};
+  }
 }
 
 function stepTracking<T>(
@@ -157,6 +279,7 @@ function stepTracking<T>(
       // acts, the menu stays, and no click follows a cancelled pointer.
       return idle({type: 'settle', stray: false, dismiss: false});
     case 'down':
+    case 'opened':
       return {gesture, effect: NONE};
   }
 }

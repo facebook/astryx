@@ -51,7 +51,8 @@ highlight follows the pointer — is contracted by
 - Compatibility class: additive documentation; the press-model behavior
   delta is recorded in `module:DropdownMenu/useMenuPress`
 - Controlled/uncontrolled behavior: unchanged
-- Migration decision: `module:DropdownMenu/useMenuPress/DEC-3`
+- Migration decision: `module:DropdownMenu/useMenuPress/DEC-3`; proposed
+  `module:DropdownMenu/useMenuPress/DEC-4`
 
 Consumer migration instructions belong in consumer docs and release notes.
 
@@ -66,8 +67,9 @@ Consumer migration instructions belong in consumer docs and release notes.
   current DropdownMenu targets.
 - Selecting between the current pointer and touch render paths after presentation
   policy resolves.
-- Mounting the shared press model on both menu surfaces; the model itself is
-  owned by `module:DropdownMenu/useMenuPress`.
+- Mounting the shared press model on both menu surfaces and (proposed) on
+  the Trigger button for mouse press-open and held-finger open; the model
+  itself is owned by `module:DropdownMenu/useMenuPress`.
 
 **Does not own / non-goals**
 
@@ -99,7 +101,8 @@ component-local concept is added by DEC-3; it keeps its released default.
 | FR5 | Both menu surfaces carry `data-astryx-menu-press` and follow `module:DropdownMenu/useMenuPress` FR1–FR7: the row under the release acts, the highlight follows a held pointer, a mouse released outside closes and a finger leaves the menu open, the browser's stray click never acts, and the Pointer menu surface declares `touch-action` by overflow. Trigger opening and keyboard navigation are unchanged. | `module:DropdownMenu/useMenuPress`; `DropdownMenu.test.tsx` press model suite                            | Proposed; verified in jsdom and real Chromium       |
 | FR6 | When the pointer menu closes, focus returns to the Trigger button with a visible ring only when the menu was driven by keyboard; a press outside that landed on a focusable control keeps focus there.                                                                                                                                                                                                           | `architecture:interaction-modality` INV1; proposed in this change; `DropdownMenu.test.tsx` closing suite | Proposed; verified in jsdom, pending owner review   |
 | FR7 | `menuMaxHeight` MUST replace the 300px term of the menu's and its popover viewport's block-size cap while the viewport gutters still bound both; the touch sheet ignores it.                                                                                                                                                                                                                                     | `component:DropdownMenu/DEC-3`                                                                           | Proposed; verified in jsdom; owner to confirm DEC-3 |
-| FR8 | On a mouse, a nested flyout stays open while the pointer is inside the triangle from where it left its row to the flyout's near edge — including while the pointer is paused there — and closes after the existing delay once the pointer has left both the row and that triangle. The row's click toggle and its guard window are unchanged.                                                                    | Proposed in this change; `DropdownMenuSubMenu.test.tsx` safe-triangle suite, `useMenuHover.test.tsx`     | Proposed; verified in jsdom, pending owner review   |
+| FR8 | The Trigger button opens the pointer menu on a mouse press-down and on a finger held for the long-press delay, with the module's settle rule on the opening release; pressing the trigger of an open menu closes it without reopening in the same gesture; a tap and the keyboard open as before (`module:DropdownMenu/useMenuPress` proposed FR8, FR9).                                                         | Proposed `module:DropdownMenu/useMenuPress/DEC-4`; `DropdownMenu.test.tsx` press model suite             | Proposed; verified in jsdom, pending owner review   |
+| FR9 | On a mouse, a nested flyout stays open while the pointer is inside the triangle from where it left its row to the flyout's near edge — including while the pointer is paused there — and closes after the existing delay once the pointer has left both the row and that triangle. The row's click toggle and its guard window are unchanged.                                                                    | Proposed in this change; `DropdownMenuSubMenu.test.tsx` safe-triangle suite, `useMenuHover.test.tsx`     | Proposed; verified in jsdom, pending owner review   |
 
 ### Allowed variation
 
@@ -247,7 +250,8 @@ than adding a DropdownMenu-owned heading target.
 | FR6                 | `DropdownMenu.test.tsx` dismissal and closing suites                                                                                                                         | keyboard dismissal, pointer dismissal, press outside on a control, pointer pick, closed menu               | Focus left on the body after a pointer pick, or a ring after pointer input, fails.                                                                            | `audit:DropdownMenu/behavior` |
 | FR7                 | `menuMaxHeight` MUST replace the 300px term of the menu's and its popover viewport's block-size cap while the viewport gutters still bound both; the touch sheet ignores it. | `component:DropdownMenu/DEC-3`                                                                             | Proposed; verified in jsdom; owner to confirm DEC-3                                                                                                           |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                                                                                | Canonical anatomy and current target inventory                                                             | Missing, extra, prefixed, stale, or unclassified mappings fail repository validation.                                                                         | `audit:DropdownMenu/theming`  |
-| FR8                 | `DropdownMenuSubMenu.test.tsx` safe-triangle suite; `useMenuHover.test.tsx` `isPointInSafeTriangle` and click-guard suites                                                   | diagonal path toward the flyout, a pause inside it, path away, click-opened and hover-opened guard windows | A flyout that closes while the pointer is inside the triangle or paused in it, one that never closes after leaving it, or a changed guard-window rule, fails. | `audit:DropdownMenu/behavior` |
+| FR8                 | `DropdownMenu.test.tsx` press model suite (trigger cases)                                                                                                                    | Press-open + drag-release, unsettled opening release, trigger toggle, held touch, tap                      | A menu that does not open on a mouse press, an unsettled release that acts, or a trigger that reopens in the same gesture fails.                              | `audit:DropdownMenu/behavior` |
+| FR9                 | `DropdownMenuSubMenu.test.tsx` safe-triangle suite; `useMenuHover.test.tsx` `isPointInSafeTriangle` and click-guard suites                                                   | diagonal path toward the flyout, a pause inside it, path away, click-opened and hover-opened guard windows | A flyout that closes while the pointer is inside the triangle or paused in it, one that never closes after leaving it, or a changed guard-window rule, fails. | `audit:DropdownMenu/behavior` |
 
 ## Decision log
 
