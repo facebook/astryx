@@ -178,8 +178,8 @@ export const docs = {
           default: "'start'",
         },
         {
-          name: 'trigger',
-          type: '(props: ComplexSelectorTriggerProps) => ReactNode',
+          name: 'renderTrigger',
+          type: '(props: ComplexSelectorRenderTriggerProps) => ReactNode',
           description:
             "Render the control the popup hangs off — a glyph in a list row, a chip, an icon button — instead of the selector's own field and button. Spread the given props ({ref, id, onClick, onKeyDown, aria-haspopup, aria-expanded, aria-controls, aria-busy}) onto it; the popup is anchored to that control and still labelled by `label`. The field chrome is not rendered. Pair with handleRef to open from a keystroke elsewhere.",
         },

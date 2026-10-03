@@ -457,7 +457,7 @@ describe('ComplexSelector trigger render prop', () => {
       <ComplexSelector
         label="View options"
         value={[]}
-        trigger={props => (
+        renderTrigger={props => (
           <button type="button" {...props}>
             Options
           </button>
@@ -481,7 +481,7 @@ describe('ComplexSelector trigger render prop', () => {
         label="View options"
         value={[]}
         handleRef={handleRef}
-        trigger={props => (
+        renderTrigger={props => (
           <button type="button" {...props}>
             Options
           </button>
@@ -514,7 +514,7 @@ describe('ComplexSelector trigger render prop', () => {
       <ComplexSelector
         label="View options"
         value={[]}
-        trigger={props => (
+        renderTrigger={props => (
           <button type="button" {...props}>
             Options
           </button>

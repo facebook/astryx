@@ -15,6 +15,6 @@ export {
   type ComplexSelectorRenderState,
   type ComplexSelectorSize,
   type ComplexSelectorStatus,
-  type ComplexSelectorTriggerProps,
+  type ComplexSelectorRenderTriggerProps,
   type ComplexSelectorVariant,
 } from './ComplexSelector';

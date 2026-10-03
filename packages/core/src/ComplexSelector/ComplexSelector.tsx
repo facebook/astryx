@@ -196,7 +196,7 @@ export type ComplexSelectorSize = 'sm' | 'md' | 'lg';
  * Spread them onto that control: it becomes the popup's anchor, the element
  * focus returns to, and the control that announces the popup's state.
  */
-export interface ComplexSelectorTriggerProps {
+export interface ComplexSelectorRenderTriggerProps {
   /** Attaches the control as the popup's anchor and focus-return target. */
   ref: (element: HTMLElement | null) => void;
   /** The id the field would have given its own button. */
@@ -312,8 +312,28 @@ export interface ComplexSelectorProps<Value> extends Omit<
    * still labelled by `label`. The field chrome (`Field`, status, spinner,
    * chevron) is not rendered; the caller owns the opener. Pair with
    * `handleRef` to open the popup from a keystroke elsewhere.
+   *
+   * Hover and pressed paint stay yours. The open state reaches your control
+   * as `aria-expanded` on the given props, so style it from the rendered
+   * attribute. A pressed look keyed to `:active` is not a substitute:
+   * `:active` does not behave the same under a coarse pointer, which is why
+   * menu rows drop coarse-pointer `:active` paint entirely.
+   *
+   * @example
+   * ```
+   * <ComplexSelector
+   *   label="Assignee"
+   *   renderTrigger={props => <IconButton icon="user" label="Assign" {...props} />}
+   * />
+   * ```
+   *
+   * @example
+   * ```
+   * // Styling the open state from the rendered attribute:
+   * // .my-trigger[aria-expanded='true'] { background: var(--color-overlay-pressed); }
+   * ```
    */
-  trigger?: (props: ComplexSelectorTriggerProps) => ReactNode;
+  renderTrigger?: (props: ComplexSelectorRenderTriggerProps) => ReactNode;
   /**
    * Called whenever the selector surface opens or closes, however it happened
    * — the trigger, the keyboard, a light dismiss, Escape, content that calls
@@ -378,7 +398,7 @@ export function ComplexSelector<Value>({
   placement = 'below',
   alignment = 'start',
   handleRef,
-  trigger,
+  renderTrigger,
   onOpenChange,
   contentXstyle,
   xstyle,
@@ -514,11 +534,11 @@ export function ComplexSelector<Value>({
     xstyle: [styles.popover, layerAnimations[placement]],
   });
 
-  if (trigger != null) {
+  if (renderTrigger != null) {
     // Anchor-only mode: the caller renders the opener and spreads these props
     // on it. No Field, no status, no chevron — the caller owns the control;
     // the selector owns the popup, its anchor, and focus return.
-    const triggerProps: ComplexSelectorTriggerProps = {
+    const triggerProps: ComplexSelectorRenderTriggerProps = {
       ref: el => {
         popover.triggerRef(el);
         triggerRef.current = el;
@@ -538,7 +558,7 @@ export function ComplexSelector<Value>({
     };
     return (
       <>
-        {trigger(triggerProps)}
+        {renderTrigger(triggerProps)}
         {popup}
       </>
     );
