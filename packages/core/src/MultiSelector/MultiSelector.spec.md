@@ -302,8 +302,9 @@ owner evidence rather than new MultiSelector targets.
   from a keystroke elsewhere and report every change — the rule already written
   on `ComplexSelectorHandle`. Rejected: an `anchorRef` plus controlled
   `isOpen`, which mirrors open state in the parent and reintroduces the focus
-  pitfalls that rule names. Proposed in `github:facebook/astryx#6689`; FR8
-  becomes policy only when an owner approves this record.
+  pitfalls that rule names.
+
+  **Decider:** `cixzhang`, 2026-10-03
 
 ## Open questions
 
