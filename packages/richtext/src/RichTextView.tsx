@@ -11,7 +11,7 @@
  *   (richtext), exported from @astryxdesign/richtext
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/richtext/src/RichTextView.test.tsx
+ * - /packages/richtext/src/RichTextEditor.test.tsx
  * - /packages/richtext/src/index.ts
  * - /apps/storybook/stories/RichTextEditor.stories.tsx
  */
@@ -54,6 +54,34 @@ const DEFAULT_NODES: ReadonlyArray<Klass<LexicalNode>> = [
   CodeNode,
   CodeHighlightNode,
 ];
+
+/**
+ * Lexical's `ContentEditable` renders `role="textbox"` with widget-only ARIA
+ * (`aria-autocomplete`, `aria-readonly`) even when the editor is not editable.
+ * A view renders published content, not a form field, so all three are cleared:
+ *
+ * - `textbox` is a widget role, so an unnamed one is an axe
+ *   `aria-input-field-name` violation — and a view has no name to give, because
+ *   it is content rather than a labelled input.
+ * - The role also flattens the content to the field's *value* for assistive
+ *   technology, suppressing exactly the heading/list/link structure this
+ *   component exists to render.
+ * - Widget-only ARIA is invalid without a widget role, so removing the role
+ *   alone would trade one axe violation (`aria-input-field-name`) for another
+ *   (`aria-allowed-attr`).
+ *
+ * `role` must be `null` rather than `undefined`: Lexical applies its `textbox`
+ * default to `undefined`. Upstream fix: facebook/lexical#9270, after which
+ * these overrides become no-ops rather than wrong.
+ *
+ * A consumer who wants the read-only *form field* semantics instead wants
+ * `<RichTextEditor isDisabled />`, which is a labelled field by construction.
+ */
+const VIEW_CONTENT_EDITABLE_PROPS = {
+  'aria-autocomplete': undefined,
+  'aria-readonly': undefined,
+  role: null as unknown as undefined,
+} as const;
 
 export interface RichTextViewProps extends BaseProps {
   /**
@@ -231,7 +259,7 @@ export function RichTextView({
         contentEditable={null}>
         <SyncValuePlugin value={value} />
         <RichTextPlugin
-          contentEditable={<ContentEditable />}
+          contentEditable={<ContentEditable {...VIEW_CONTENT_EDITABLE_PROPS} />}
           placeholder={null}
           ErrorBoundary={LexicalErrorBoundary}
         />

@@ -910,14 +910,40 @@ describe('RichTextEditor Tab keyboard trap escape (WCAG 2.1.2)', () => {
 
 describe('RichTextView', () => {
   it('renders serialized content read-only', async () => {
-    render(<RichTextView value={HELLO_STATE} />);
+    const {container} = render(<RichTextView value={HELLO_STATE} />);
     await waitFor(() =>
       expect(screen.getByText('Hello world')).toBeInTheDocument(),
     );
-    expect(screen.getByRole('textbox')).toHaveAttribute(
+    expect(container.querySelector('[data-lexical-editor]')).toHaveAttribute(
       'contenteditable',
       'false',
     );
+  });
+
+  it('renders content rather than a form field', async () => {
+    const {container} = render(<RichTextView value={HELLO_STATE} />);
+    await waitFor(() =>
+      expect(screen.getByText('Hello world')).toBeInTheDocument(),
+    );
+
+    // A view renders published content: `role="textbox"` would make it an
+    // unnamed widget (axe aria-input-field-name) and would flatten the
+    // heading/list/link structure to a single field value for assistive
+    // technology. Lexical's ContentEditable applies that role, and the
+    // widget-only ARIA that depends on it, even when not editable.
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+
+    const content = container.querySelector('[data-lexical-editor]')!;
+    expect(content.getAttribute('role')).toBeNull();
+    expect(content.getAttribute('aria-autocomplete')).toBeNull();
+    expect(content.getAttribute('aria-readonly')).toBeNull();
+  });
+
+  it('exposes heading and list structure to assistive technology', async () => {
+    render(<RichTextView value={makeListState('bullet')} />);
+    // The structural roles the textbox role would have suppressed.
+    await waitFor(() => expect(screen.getByRole('list')).toBeInTheDocument());
+    expect(screen.getAllByRole('listitem').length).toBeGreaterThan(0);
   });
 
   it('renders custom read-only plugins passed via the plugins prop', () => {
