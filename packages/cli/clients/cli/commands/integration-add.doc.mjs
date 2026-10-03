@@ -8,7 +8,7 @@ export const doc = {
   namespace: 'cli/commands',
   summary: 'Add one working contribution to an integration package',
   description:
-    'Writes the complete minimum shape the selected contribution needs, creates the integration manifest on first use, declares the root only after a valid contribution exists, and verifies the result through the same discovery contract the packed-package check uses.',
+    'Writes the files one contribution needs, creates the integration manifest on first use, and declares a root only after a contribution the CLI can read exists behind it. A component or template import also needs an `exports` entry: add writes one only when package.json already has an `exports` map, so start a new package with `"exports": {}`. See {@link generic:quick-start}.',
   fn: 'integrationAdd',
   args: [
     {
@@ -60,10 +60,14 @@ export const doc = {
       flag: '--to <version>',
       param: 'options.to',
       description:
-        'Exact semver the codemod migrates to (e.g. 1.2.0); required for codemod and only valid there',
+        'Exact semver of the @astryxdesign/core version whose upgrade runs the codemod (e.g. 0.7.0); required for codemod and only valid there',
     },
   ],
   examples: [
+    {
+      label: 'Preview',
+      cli: 'astryx integration add component AcmeWidget --dry-run --json',
+    },
     {
       label: 'Add a component',
       cli: 'astryx integration add component AcmeWidget',
@@ -71,7 +75,7 @@ export const doc = {
     {label: 'Add a doc topic', cli: 'astryx integration add doc deploying'},
     {
       label: 'Add a page template',
-      cli: 'astryx integration add template dashboard',
+      cli: 'astryx integration add template acme-dashboard',
     },
     {
       label: 'Add a block template',
@@ -87,7 +91,7 @@ export const doc = {
     },
     {
       label: 'Add a guide to the package\'s own docs section',
-      cli: 'astryx integration add doc deploying --parent acme',
+      cli: 'astryx integration add doc releasing --parent acme',
     },
     {
       label: 'Add a codemod',
@@ -98,10 +102,6 @@ export const doc = {
       cli: "astryx integration add agent-doc 'Run acme verify before finishing.'",
     },
     {label: 'Add a source theme', cli: 'astryx integration add theme ocean'},
-    {
-      label: 'Preview',
-      cli: 'astryx integration add component AcmeWidget --dry-run --json',
-    },
   ],
   exitCodes: [
     {code: 0, when: 'the contribution is written or the dry run succeeds'},
@@ -110,5 +110,5 @@ export const doc = {
       when: 'the kind, name, options, package, or target files are invalid or conflict',
     },
   ],
-  related: ['integration pack', 'doctor integration validate', 'theme add'],
+  related: ['integration verify', 'doctor integration validate', 'theme add'],
 };

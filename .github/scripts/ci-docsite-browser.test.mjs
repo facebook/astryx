@@ -28,7 +28,7 @@ describe('docsite browser required-check projection', () => {
   it('joins the existing required context and uses the same surface route', () => {
     expect(owner.needs).toEqual(['check-scope', 'docsite-browser']);
     expect(owner.if).toBe(
-      "${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() }}",
+      "${{ github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.release_bump != 'true' && always() && !cancelled() }}",
     );
     expect(browser.needs).toEqual(['check-scope']);
     expect(browser.if).toBe(

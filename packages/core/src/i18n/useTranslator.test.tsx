@@ -12,17 +12,25 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {useState} from 'react';
+import {use, useState} from 'react';
 import {render, screen, fireEvent, renderHook} from '@testing-library/react';
 import {useTranslator, type TranslatorFn} from './useTranslator';
 import {InternationalizationProvider} from './InternationalizationProvider';
+import {InternationalizationContext} from './InternationalizationContext';
 import {__resetForTests} from './resolve';
-import type {MessagesByLocale, Overrides} from './types';
+import type {
+  MessagesByLocale,
+  Overrides,
+  ProviderMessagesByLocale,
+} from './types';
 
 // Module scope: the provider memoizes on prop identity, so inline object
 // literals would hand back a fresh context value on every render.
 const FR_MESSAGES: MessagesByLocale = {
   fr: {'@astryx.pagination.next': {defaultMessage: 'Page suivante'}},
+};
+const FR_RUNTIME_MESSAGES: ProviderMessagesByLocale = {
+  fr: {'@astryx.pagination.next': 'Page suivante compacte'},
 };
 const FR_OVERRIDES: Overrides = {
   fr: {'@astryx.pagination.next': 'Suivant'},
@@ -66,6 +74,31 @@ describe('useTranslator — resolution', () => {
       ),
     });
     expect(result.current('@astryx.pagination.next')).toBe('Page suivante');
+  });
+
+  it('accepts a generated runtime catalog and preserves the rich context shape', () => {
+    const {result} = renderHook(
+      () => ({
+        context: use(InternationalizationContext),
+        translate: useTranslator(),
+      }),
+      {
+        wrapper: ({children}) => (
+          <InternationalizationProvider
+            locale="fr"
+            messages={FR_RUNTIME_MESSAGES}>
+            {children}
+          </InternationalizationProvider>
+        ),
+      },
+    );
+
+    expect(result.current.translate('@astryx.pagination.next')).toBe(
+      'Page suivante compacte',
+    );
+    expect(
+      result.current.context.messages.fr['@astryx.pagination.next'],
+    ).toEqual({defaultMessage: 'Page suivante compacte'});
   });
 
   it('lets a provider override beat the provider catalog', () => {

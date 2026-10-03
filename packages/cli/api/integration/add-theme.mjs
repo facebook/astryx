@@ -25,6 +25,10 @@ import {loadManifestObject} from '../../foundation/integrations/integrations.mjs
 import {themeDescriptorSource} from '../../foundation/integrations/theme-descriptor.mjs';
 import {assertContributionVisible} from '../../foundation/integrations/contribution-inventory.mjs';
 import {
+  themesCliProblem,
+  withDocsTreeCli,
+} from '../../foundation/integrations/cli-requirement.mjs';
+import {
   applyWrites,
   findPackageDir,
   packageJsonUpdate,
@@ -233,11 +237,28 @@ export async function integrationAddTheme(name, options = {}) {
       createOnly: true,
     },
   ];
-  const packageUpdate = packageJsonUpdate(
+  let packageUpdate = packageJsonUpdate(
     packageFile,
     rootPath,
     path.basename(manifestFile),
   );
+  // A CLI older than the one that reads typed theme descriptors rejects the
+  // themes root and withholds the package's themes and docs. Declare the CLI
+  // that reads them as a peer, so an older one is flagged at install instead.
+  {
+    const expectedOriginal =
+      packageUpdate?.expectedOriginal ?? fs.readFileSync(packageFile);
+    const text = packageUpdate?.contents ?? expectedOriginal.toString('utf-8');
+    const current = JSON.parse(text);
+    if (themesCliProblem(current) != null) {
+      packageUpdate = {
+        contents:
+          JSON.stringify(withDocsTreeCli(current), null, 2) +
+          (text.endsWith('\n') ? '\n' : ''),
+        expectedOriginal,
+      };
+    }
+  }
   if (packageUpdate != null) {
     plans.push({
       path: packageFile,

@@ -38,6 +38,21 @@ export type {Hotkey} from './useHotkeys';
 
 export {useTypeahead} from './useTypeahead';
 
+export {
+  useMenuPress,
+  MENU_PRESS_MARKER,
+  isMenuPressActivation,
+} from './useMenuPress';
+export type {UseMenuPressOptions, UseMenuPressReturn} from './useMenuPress';
+export {menuPressStep} from './menuPressGesture';
+export type {
+  MenuPressEffect,
+  MenuPressEvent,
+  MenuPressGesture,
+  MenuPressPointerType,
+  MenuPressStep,
+} from './menuPressGesture';
+
 export {useKeyboardHint} from './useKeyboardHint';
 export type {
   UseKeyboardHintOptions,

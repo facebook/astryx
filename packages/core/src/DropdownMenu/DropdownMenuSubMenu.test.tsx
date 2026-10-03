@@ -910,6 +910,53 @@ describe('DropdownMenuSubMenu hover/click guard', () => {
   });
 });
 
+describe('DropdownMenuSubMenu press model', () => {
+  it('a press released on the sub-menu row opens it and keeps the menu', async () => {
+    const user = userEvent.setup();
+    render(<MoveMenu />);
+    const root = screen.getByRole('button', {name: /Actions/});
+    await user.click(root);
+    const trigger = screen.getByRole('menuitem', {
+      name: /Move to/,
+      hidden: true,
+    });
+    const rename = screen.getByRole('menuitem', {name: 'Rename', hidden: true});
+    fireEvent.pointerDown(rename, {pointerType: 'touch', pointerId: 1});
+    fireEvent.pointerMove(trigger, {pointerType: 'touch', pointerId: 1});
+    fireEvent.pointerUp(trigger, {pointerType: 'touch', pointerId: 1});
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(root).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('a release inside the flyout acts on the flyout row and closes the whole menu', async () => {
+    const onMove = vi.fn();
+    const user = userEvent.setup();
+    render(<MoveMenu onMove={onMove} />);
+    const root = screen.getByRole('button', {name: /Actions/});
+    await user.click(root);
+    const trigger = screen.getByRole('menuitem', {
+      name: /Move to/,
+      hidden: true,
+    });
+    await user.click(trigger);
+    const folderB = screen.getByRole('menuitem', {
+      name: 'Folder B',
+      hidden: true,
+    });
+    const folderA = screen.getByRole('menuitem', {
+      name: 'Folder A',
+      hidden: true,
+    });
+    fireEvent.pointerDown(folderA, {pointerType: 'touch', pointerId: 1});
+    fireEvent.pointerMove(folderB, {pointerType: 'touch', pointerId: 1});
+    fireEvent.pointerUp(folderB, {pointerType: 'touch', pointerId: 1});
+    fireEvent.click(folderA, {detail: 1});
+    expect(onMove).toHaveBeenCalledTimes(1);
+    expect(onMove).toHaveBeenCalledWith('b');
+    expect(root).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
 describe('DropdownMenuSubMenu safe triangle', () => {
   const flyoutRect = {
     top: 0,

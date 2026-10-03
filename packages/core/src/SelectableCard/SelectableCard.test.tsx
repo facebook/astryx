@@ -111,6 +111,22 @@ describe('SelectableCard', () => {
     expect(handleChange).not.toHaveBeenCalled();
   });
 
+  it('does not toggle on Space when disabled', () => {
+    const handleChange = vi.fn();
+    render(
+      <SelectableCard
+        label="Disabled"
+        isSelected={false}
+        onChange={handleChange}
+        isDisabled>
+        Content
+      </SelectableCard>,
+    );
+    const checkbox = screen.getByRole('checkbox', {name: 'Disabled'});
+    fireEvent.keyDown(checkbox, {key: ' '});
+    expect(handleChange).not.toHaveBeenCalled();
+  });
+
   it('toggles exactly once on Space (native), not doubled by the Enter handler', () => {
     const handleChange = vi.fn();
     render(

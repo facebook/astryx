@@ -15,6 +15,7 @@ import {
 import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {listAvailableThemes, findTheme} from '../_adapter.mjs';
+import {applyWrites} from '../../integration/add-helpers.mjs';
 // Scaffolded files must not carry our repo boilerplate into a consumer's tree.
 import {stripCopyrightHeader} from '../../../foundation/text/copyright-header.mjs';
 
@@ -136,37 +137,28 @@ export async function themeAdd(slug, options = {}) {
     }
   }
 
-  // Stage to temp files then rename, rolling back partials on failure so a
-  // failed write never leaves a half-written theme. mkdir is inside the try so
-  // a failure (e.g. an ancestor is a file → EEXIST/ENOTDIR) surfaces as a
-  // stable ERR_WRITE_FAILED rather than leaking a raw fs errno + absolute path.
-  const staged = [];
+  // One transaction: every file publishes, or every replaced file gets its
+  // previous bytes back and every created file is removed. mkdir is inside the
+  // try so a failure (e.g. an ancestor is a file → EEXIST/ENOTDIR) surfaces as
+  // a stable ERR_WRITE_FAILED rather than leaking a raw fs errno + absolute path.
   try {
     fs.mkdirSync(resolvedDir, {recursive: true});
-    for (const w of writes) {
+    const plans = writes.map(w => {
+      fs.mkdirSync(path.dirname(w.dest), {recursive: true});
+      // Confine again once the directories exist: one may have been swapped
+      // for a link since the destination was first checked.
       const dest = assertWithin(w.name, resolvedDir, {
         label: `theme destination for ${w.name}`,
       });
-      fs.mkdirSync(path.dirname(dest), {recursive: true});
-      // The staging file is an output path too: confine it, and never write
-      // through an entry that already exists under its name.
-      const tmp = assertWithin(`${w.name}.${process.pid}.tmp`, resolvedDir, {
-        label: `theme staging file for ${w.name}`,
-      });
-      fs.writeFileSync(tmp, scaffoldContents(fs.readFileSync(w.src)), {flag: 'wx'});
-      staged.push({tmp, dest});
-    }
-    for (const s of staged) {
-      fs.renameSync(s.tmp, s.dest);
-    }
+      return {
+        path: dest,
+        contents: scaffoldContents(fs.readFileSync(w.src)),
+        createOnly: !overwrite,
+      };
+    });
+    applyWrites(plans);
   } catch (err) {
-    for (const s of staged) {
-      try {
-        fs.rmSync(s.tmp, {force: true});
-      } catch {
-        /* best-effort */
-      }
-    }
+    if (err instanceof AstryxError) throw err;
     if (err instanceof PathSafetyError) {
       throw new AstryxError(
         err.message,

@@ -9,18 +9,28 @@
  * @position Shared implementation for menu bottom-sheet presentations
  */
 
-import type {ReactElement} from 'react';
+import {useRef, type ReactElement} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Divider} from '../Divider';
 import {Heading} from '../Heading';
 import {Icon, renderIconSlot} from '../Icon';
 import {List, ListItem} from '../List';
+import {useMenuPress} from '../hooks/useMenuPress';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {rtlStyles} from '../utils';
 import {getInteractionModality} from '../utils/interactionModality';
 import type {DropdownMenuItemData, DropdownMenuOption} from './DropdownMenu';
 
+/** The action rows: ListItem renders its action as a button (or a link). */
+const SHEET_ROW_SELECTOR = 'button:not(:disabled), a[href]';
+
 const styles = stylex.create({
+  // The row under a held finger is the highlight; the browser's held-press
+  // callout and text selection must not compete with it.
+  list: {
+    WebkitTouchCallout: 'none',
+    userSelect: 'none',
+  },
   destructiveAction: {
     '--_item-label-color': colorVars['--color-error'],
     '--_item-description-color': colorVars['--color-error'],
@@ -55,6 +65,15 @@ export function MenuBottomSheetActionList({
   onSelect: (item: DropdownMenuItemData) => void;
   onOpenSubmenu: (item: DropdownMenuItemData) => void;
 }) {
+  const listRef = useRef<HTMLUListElement>(null);
+  // The press model: the row under a finger's RELEASE acts, and the
+  // highlight (focus) follows the finger across the rows. The sheet is modal,
+  // so a release outside it is the scrim's, not a dismissal of ours.
+  const menuPress = useMenuPress({
+    menuRef: listRef,
+    itemSelector: SHEET_ROW_SELECTOR,
+  });
+
   const renderItem = (
     item: DropdownMenuItemData,
     index: number,
@@ -104,7 +123,11 @@ export function MenuBottomSheetActionList({
   };
 
   return (
-    <List density="spacious">
+    <List
+      ref={listRef}
+      density="spacious"
+      xstyle={styles.list}
+      {...menuPress.menuProps}>
       {items.map((option, index) => {
         if ('type' in option && option.type === 'divider') {
           return (

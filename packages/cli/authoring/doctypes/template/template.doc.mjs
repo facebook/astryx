@@ -56,7 +56,7 @@ export const doc = {
       name: 'replaces',
       type: 'string',
       description:
-        "Integration templates only: the exact id of the Core template this one replaces for unqualified lookup. Find it with `astryx --json template --list --package @astryxdesign/core`; the Core original stays selectable with `--package @astryxdesign/core`. A page replaces only a Core page and a block only a Core block. Needs @astryxdesign/cli 0.7.0 or later: earlier CLIs reject the field and withhold the package's templates and doc topics.",
+        "Integration templates only: the exact id of the Core template this one replaces for unqualified lookup. Find it with `astryx --json template --list --package @astryxdesign/core`; the Core original stays selectable with `--package @astryxdesign/core`. A page replaces only a Core page and a block only a Core block. Needs @astryxdesign/cli 0.7.0 or later: earlier CLIs reject the field, drop that template, and hide the package's doc topics.",
     },
     {
       name: 'isReady',

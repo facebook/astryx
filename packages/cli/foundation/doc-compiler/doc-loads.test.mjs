@@ -53,8 +53,8 @@ const RUNNERS = {
     sites: ['import(node:child_process)', 'worker_threads.Worker'],
   },
   'api/integration/pack-check.mjs': {
-    runs: '`npm pack`, `tar`, and a Node script that resolves the packed specifiers, to check a package as published',
-    sites: ['child_process.spawnSync ×3'],
+    runs: '`npm pack`, `tar`, and a Node script that resolves the packed specifiers, to check a package as published, and the package\'s doc modules, to see which need a newer CLI',
+    sites: ['child_process.spawnSync ×3', 'loadTopicModule'],
   },
   'api/swizzle/_github.mjs': {
     runs: '`gh auth status`, to check the GitHub CLI is signed in',
@@ -188,6 +188,7 @@ const RUNNERS = {
       'import ../../../api/integration/integrationPackCheck.doc.mjs',
       'import ./integration-add.doc.mjs',
       'import ./integration-pack.doc.mjs',
+      'import ./integration-verify.doc.mjs',
       'import ./integration.doc.mjs',
     ],
   },

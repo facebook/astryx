@@ -33,6 +33,7 @@ export const AUTHORING_SELF_DOCS = [
   'config/config.doc.mjs',
   'debug/debug.doc.mjs',
   'gap-report/gap-report.doc.mjs',
+  'discover/discover.doc.mjs',
   'codemod/codemod.doc.mjs',
   'identity/identity.doc.mjs',
   'doctypes/base/graph-fields.doc.mjs',

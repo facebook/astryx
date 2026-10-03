@@ -214,7 +214,7 @@ export const oceanTheme = defineTheme({
     ]);
 
     const checked = await runCli(
-      ['integration', 'pack', '--check', '--json'],
+      ['integration', 'verify', '--json'],
       providerDir,
     );
     expect(checked.status, checked.stderr).toBe(0);

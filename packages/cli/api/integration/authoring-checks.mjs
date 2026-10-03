@@ -368,11 +368,11 @@ export async function integrationDocConflicts(pkg, options = {}) {
   // and placed guides this package adds to the docs tree, and every link in
   // its docs (spec:AST-046, spec:AST-047).
   if (errors.length === 0) {
-    for (const message of await packageDocsProblems(
+    for (const {severity, message} of await packageDocsProblems(
       /** @type {{name: string}} */ (resolved.integration),
       discovered,
     )) {
-      issues.push({code: 'invalid_doc_graph', severity: 'warning', message});
+      issues.push({code: 'invalid_doc_graph', severity, message});
     }
 
     // A reference block includes content rather than linking to it, so one

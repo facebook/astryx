@@ -53,6 +53,7 @@ import {
 } from '../../../foundation/fs/path-safety.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../../error.mjs';
+import {applyWrites} from '../../integration/add-helpers.mjs';
 import {logger} from '../../logger.mjs';
 import {loadComponentDoc} from '../../../foundation/discovery/component-loader.mjs';
 import {
@@ -224,26 +225,15 @@ function staleBuildOutputs(writes, cwd) {
 /** @param {Array<{dest: string, content: string}>} writes */
 function writeBuildOutputs(writes) {
   if (writes.length === 0) return;
-  /** @type {Array<{tmp: string, dest: string}>} */
-  const staged = [];
   try {
-    fs.mkdirSync(path.dirname(writes[0].dest), {recursive: true});
-    for (const write of writes) {
-      const tmp = `${write.dest}.${process.pid}.tmp`;
-      fs.writeFileSync(tmp, write.content);
-      staged.push({tmp, dest: write.dest});
-    }
-    for (const stagedWrite of staged) {
-      fs.renameSync(stagedWrite.tmp, stagedWrite.dest);
-    }
+    applyWrites(
+      writes.map(write => ({
+        path: write.dest,
+        contents: write.content,
+        createOnly: false,
+      })),
+    );
   } catch (error) {
-    for (const stagedWrite of staged) {
-      try {
-        fs.rmSync(stagedWrite.tmp, {force: true});
-      } catch {
-        // Best effort: the command still fails and never reports success.
-      }
-    }
     const message = `Failed to write theme outputs: ${/** @type {Error} */ (error).message}`;
     throw new AstryxError(message, undefined, ERROR_CODES.ERR_WRITE_FAILED);
   }

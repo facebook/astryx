@@ -491,7 +491,7 @@ export function generateCompressedIndex(
   }
   lines.push('  docs cli           commands, API reference, integration authoring (one level at a time)');
   lines.push('  swizzle <Name>     eject component source for deep customization');
-  lines.push('  upgrade --apply    run after any Astryx or integration dependency bump');
+  lines.push('  upgrade --from <old version> --apply   run after any Astryx or integration dependency bump');
   const appendCount = agentDocs.reduce(
     (count, contribution) => count + contribution.append.length,
     0,
