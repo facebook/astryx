@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file DialogHeroHeaderShowcase.template.mjs
+ * @file DialogHeroHeaderShowcase.doc.mjs
  * @input DialogHeroHeaderShowcase.tsx
  * @output Showcase ownership and preview metadata
  * @position Lab integration template registration for DialogHeroHeader
