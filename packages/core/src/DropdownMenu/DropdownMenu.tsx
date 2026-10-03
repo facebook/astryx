@@ -634,6 +634,41 @@ function DropdownMenuPopover({
   // above it ends the gesture in flight through this ref.
   const cancelMenuPressRef = useRef<() => void>(() => {});
 
+  // Submenu flyouts are `popover="manual"` elements nested inside the menu's
+  // `popover="auto"` element, so the browser's light dismiss of the menu never
+  // reaches them: without a sweep they keep their open state and their
+  // top-layer entry while the menu is hidden, and re-anchor to the viewport
+  // corner when the menu reopens (#6893). Closing them through the popover
+  // API lets useLayer's toggle handling reset their state — hidePopover on an
+  // already-closed popover is a no-op. On browsers without the popover API
+  // useLayer toggles the element's display, so mirror that and notify its
+  // reconciler with a synthetic toggle event.
+  const hideOpenFlyouts = useCallback(() => {
+    const menuPopover = contentRef.current;
+    if (!menuPopover) {
+      return;
+    }
+    // Innermost first: hiding a flyout may unmount the flyouts nested inside
+    // it, and a detached element no longer has the toggle listener that
+    // resets its open state.
+    const flyouts = [
+      ...menuPopover.querySelectorAll<HTMLElement>('[popover]'),
+    ].reverse();
+    for (const flyout of flyouts) {
+      if (typeof flyout.hidePopover === 'function') {
+        flyout.hidePopover();
+      } else if (flyout.style.display === 'block') {
+        flyout.style.display = 'none';
+        const toggle = new Event('toggle', {bubbles: false});
+        Object.defineProperty(toggle, 'newState', {
+          value: 'closed',
+          configurable: true,
+        });
+        flyout.dispatchEvent(toggle);
+      }
+    }
+  }, []);
+
   // Focus lands somewhere stated when the menu closes. A press outside that
   // landed on a focusable control has already moved focus there; leave it.
   // Otherwise — a row acted, Escape, a press on nothing — focus returns to
@@ -641,6 +676,9 @@ function DropdownMenuPopover({
   // keyboard (the modality tracker decides; the suppressed style hides the
   // pointer case, which Safari would otherwise paint after a touch pick).
   const handleLayerHide = useCallback(() => {
+    // Whatever closed the menu — light dismiss, the dismissal stack, Escape
+    // or a controlled close — its flyouts close with it.
+    hideOpenFlyouts();
     if (suppressControlledRollbackHideRef.current) {
       suppressControlledRollbackHideRef.current = false;
       return;
@@ -666,7 +704,7 @@ function DropdownMenuPopover({
     }
     prepareFocusReturn();
     trigger.focus({preventScroll: true});
-  }, [isControlled, onOpenChange, prepareFocusReturn]);
+  }, [hideOpenFlyouts, isControlled, onOpenChange, prepareFocusReturn]);
 
   // Defer item focus until the layer has committed open, so focus restore
   // captures the trigger instead of the first menu item.
