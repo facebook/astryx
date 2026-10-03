@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx integration pack --check` — verify an integration package is
+ * @file `astryx integration verify` — verify an integration package is
  * ready to publish by cross-referencing its declared contributions against the
  * real npm tarball.
  *
@@ -30,8 +30,13 @@ import {resolvePackageDir} from '../../foundation/integrations/integrations.mjs'
 import {
   docsTreeCliProblem,
   replacesCliProblem,
+  sectionIdsCliProblem,
+  themesCliProblem,
 } from '../../foundation/integrations/cli-requirement.mjs';
-import {discoverIntegrationDocs} from '../../foundation/discovery/docs-discovery.mjs';
+import {
+  discoverIntegrationDocs,
+  loadTopicModule,
+} from '../../foundation/discovery/docs-discovery.mjs';
 import {
   discoverIntegrationComponents,
   resolveIntegrationImportPath,
@@ -334,6 +339,23 @@ function moduleExportsName(file, exportName, seen = new Set()) {
 }
 
 /**
+ * Whether any of these doc files has a section that sets `id`.
+ * @param {string[]} files
+ * @returns {Promise<boolean>}
+ */
+async function setsSectionIds(files) {
+  for (const file of files) {
+    if (typeof file !== 'string') continue;
+    const doc = /** @type {any} */ (await loadTopicModule(file).catch(() => null));
+    const sections = Array.isArray(doc?.sections) ? doc.sections : [];
+    if (sections.some((/** @type {any} */ section) => section?.id != null)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Resolve package specifiers through Node's real ESM resolver from the scratch
  * consumer. Resolution does not execute the target module, so source `.tsx`
  * exports and built `.mjs` exports are both safe to inspect.
@@ -625,19 +647,31 @@ export async function integrationPackCheck(options = {}) {
   // (spec:AST-046 FR11): an older CLI can hide every doc topic the package
   // ships, so the declared CLI range must admit only CLIs that read it.
   if (loaded.docs) {
-    const {namespaces, guides} = await discoverIntegrationDocs(loaded).catch(
-      () => ({namespaces: [], guides: []}),
-    );
+    const {records, namespaces, guides} = await discoverIntegrationDocs(
+      loaded,
+    ).catch(() => ({records: [], namespaces: [], guides: []}));
     const problem =
       namespaces.length > 0 || guides.length > 0
         ? docsTreeCliProblem(pkg)
         : null;
     if (problem != null) {
       issues.push(error('docs_tree_needs_cli', problem));
+    } else if (
+      await setsSectionIds([
+        ...records.map(record => record.path),
+        ...guides.map(guide => /** @type {any} */ (guide.ref).topicFile),
+      ])
+    ) {
+      // A section `id` is also a field an older CLI rejects, hiding the
+      // package's doc topics; the same peer range fixes both.
+      const idProblem = sectionIdsCliProblem(pkg);
+      if (idProblem != null) {
+        issues.push(error('section_ids_need_cli', idProblem));
+      }
     }
   }
   // A template that sets `replaces` needs a CLI that reads the field
-  // (spec:AST-035): an older CLI withholds the package's templates and docs.
+  // (spec:AST-035): an older CLI drops that template and hides the package's docs.
   if (loaded.templates) {
     const found = await discoverIntegrationTemplatesForOne(loaded).catch(
       () => ({templates: [], errors: []}),
@@ -649,6 +683,12 @@ export async function integrationPackCheck(options = {}) {
       );
     const problem = setsReplaces ? replacesCliProblem(pkg) : null;
     if (problem != null) issues.push(error('replaces_needs_cli', problem));
+  }
+  // A theme needs a CLI that reads typed theme descriptors: an older CLI
+  // rejects the themes root and withholds the package's themes and docs.
+  if (localIdentities.themes.length > 0) {
+    const problem = themesCliProblem(pkg);
+    if (problem != null) issues.push(error('themes_need_cli', problem));
   }
 
   // Temp resources — always cleaned up
@@ -682,6 +722,14 @@ export async function integrationPackCheck(options = {}) {
     // package's already-installed dependencies. The unique suffix makes
     // concurrent checks independent.
     scratchBase = fs.mkdtempSync(path.join(packageDir, '.astryx-pack-check-'));
+    // The consumer's own package.json makes it the package scope for its
+    // imports. Without one, Node resolves the package's name through the
+    // SOURCE package.json (self-reference), so an export target left out of
+    // the tarball would still resolve.
+    fs.writeFileSync(
+      path.join(scratchBase, 'package.json'),
+      `${JSON.stringify({name: 'astryx-verify-consumer', private: true})}\n`,
+    );
 
     // Cross-reference file inventory vs pack list
     if (!packResult.packedPaths.has(fileInv.manifest)) {

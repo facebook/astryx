@@ -52,8 +52,14 @@ const menuItemStyles = stylex.create({
     backgroundColor: {
       default: 'transparent',
       ':focus': colorVars['--color-overlay-hover'],
-      ':active:where(:not(:disabled,[aria-disabled="true"]))':
-        colorVars['--color-overlay-pressed'],
+      // The pressed look only where hover exists. Under a finger the row a
+      // press BEGAN on would otherwise stay painted while the highlight (focus)
+      // moves to the row under the finger — two rows lit.
+      '@media (hover: hover)': {
+        default: null,
+        ':active:where(:not(:disabled,[aria-disabled="true"]))':
+          colorVars['--color-overlay-pressed'],
+      },
     },
     borderWidth: 0,
     borderStyle: 'none',

@@ -14,14 +14,13 @@ export const doc = {
   name: 'themeBuild',
   namespace: 'cli/api',
   displayName: 'themeBuild()',
-  summary: 'Compile a defineTheme file to CSS + JS + type declarations.',
+  summary:
+    'Compile a defineTheme() file to scoped CSS, a JS module, and type declarations, or check committed outputs for drift in CI.',
   description:
-    'The compiler behind `astryx theme build`. Reads a file that calls defineTheme() and, ' +
-    "via @astryxdesign/core's shared generator (the single source of truth, so the build " +
-    'emits the exact CSS the <Theme> runtime does), writes a scoped CSS file, a JS module ' +
-    'that re-exports the built theme, and a .d.ts (plus an optional .variants.d.ts when the ' +
-    'theme adds custom prop values). When another build step emits the icon registry, ' +
-    '{iconsSpecifier} declares the fully specified module path for the generated JS import. ' +
+    'The compiler behind `astryx theme build`. Reads a file that calls defineTheme() and ' +
+    'writes a scoped CSS file, a JS module that re-exports the built theme, and a .d.ts ' +
+    '(plus an optional .variants.d.ts when the theme adds custom prop values). It uses ' +
+    "@astryxdesign/core's own generator, so the CSS matches what the <Theme> runtime emits. " +
     'With {check: true} it writes nothing and instead compares ' +
     'each output against disk, returning the drift: the CI guard for committed, generated theme CSS.',
   importPath: '@astryxdesign/cli/api',
@@ -48,7 +47,7 @@ export const doc = {
       name: 'options.out',
       type: 'string',
       description:
-        'Override the output CSS path; the sibling .js and .d.ts derive from it. A relative path must stay within cwd.',
+        'Override the output CSS path. The .js, .d.ts and any .variants.d.ts are written in the same directory, named after the theme (<name>.js), not after the CSS file. A relative path must stay within cwd.',
     },
     {
       name: 'options.check',
@@ -61,13 +60,14 @@ export const doc = {
       name: 'options.iconsSpecifier',
       type: 'string',
       description:
-        'Override the icon-registry import specifier in the generated JS module, for example ./icons.mjs. When omitted, the source specifier is preserved.',
+        'Override the import specifier of the icon registry in the generated JS module, for example ./icons.mjs. Takes effect only when the theme sets icons: to a named import; when omitted, the source specifier is kept.',
     },
     {
       name: 'ctx.cwd',
       type: 'string',
       description:
-        'Directory the theme file and @astryxdesign/core resolve against.',
+        'Directory the theme file, a relative out path, and the returned output paths resolve against.',
+      default: 'process.cwd()',
     },
   ],
   returns: [
@@ -79,7 +79,7 @@ export const doc = {
     {
       type: 'theme.build.check',
       description:
-        'The {check: true} receipt: theme name, an upToDate flag, the stale outputs (each {path, reason: "missing" | "outdated"}), and the full list of checked paths. Writes nothing.',
+        'The {check: true} receipt: theme name, an upToDate flag, the stale outputs (each {path, reason: "missing" | "outdated"}), and the full list of checked paths. Writes nothing. Resolves to null, like a normal build, when the theme produces no CSS.',
     },
   ],
   throws: [
@@ -102,7 +102,7 @@ export const doc = {
     },
     {
       code: 'ERR_CORE_INCOMPATIBLE',
-      when: 'the selected theme carries ordered-adaptation intent but the installed @astryxdesign/core does not export generateAdaptationCSS (upgrade core)',
+      when: 'the installed @astryxdesign/core does not export generateAdaptationCSS and the theme either declares ordered adaptations or has lineage whose adaptation use could not be observed (upgrade core)',
     },
     {
       code: 'ERR_WRITE_FAILED',
@@ -124,5 +124,5 @@ export const doc = {
     },
   ],
   command: 'theme build',
-  related: ['themeAdd', 'themeList', 'listThemes'],
+  related: ['themeTemplate', 'themeAdd', 'themeListAvailable', 'listThemes'],
 };

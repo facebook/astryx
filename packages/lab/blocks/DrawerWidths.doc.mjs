@@ -15,8 +15,7 @@ export default {
     'Button',
     'Section',
     'HStack',
-    'VStack',
-    'Heading',
+    'DrawerHeader',
     'Text',
   ],
 };

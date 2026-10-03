@@ -34,6 +34,7 @@ export const doc = {
       name: 'options.cwd',
       type: 'string',
       description: 'Directory to resolve @astryxdesign/core from.',
+      default: 'process.cwd()',
     },
     {
       name: 'options.list',
@@ -43,7 +44,8 @@ export const doc = {
     {
       name: 'options.category',
       type: 'string',
-      description: 'List only hooks in this category.',
+      description:
+        "List only the hooks in this category, a key of the unfiltered list such as 'Media' or 'Focus'.",
     },
     {
       name: 'options.params',
@@ -54,7 +56,8 @@ export const doc = {
       name: 'options.detail',
       type: "'full' | 'compact' | 'brief'",
       description: 'Detail level for list views.',
-      default: "'full' for a named hook, 'brief' for list views",
+      default:
+        "'full' for a named hook; 'brief' for lists (returned as data.detail: 'names')",
     },
     {
       name: 'options.lang',
@@ -104,7 +107,7 @@ export const doc = {
     },
     {
       label: 'Browse a category',
-      code: "await hook(undefined, {category: 'State', detail: 'compact'});",
+      code: "await hook(undefined, {category: 'Media', detail: 'compact'});",
     },
   ],
   command: 'hook',

@@ -16,7 +16,9 @@ export const doc = {
   summary: 'Diagnose Astryx projects and integration packages',
   description:
     'Runs read-only project health diagnostics by default: Node version, @astryxdesign/core ' +
-    'install and version alignment, themes, config, agent docs, and package manager. ' +
+    'install and version alignment, themes, config, integrations (linked without a config entry, ' +
+    'provider identity, contribution issues), agent docs, core peer dependencies, package manager, ' +
+    "and the docs the CLI reads. It writes nothing, but loading astryx.config runs that file's code. " +
     'The `integration` subcommands provide authoring checks for one integration package.',
   fn: 'doctor',
   subcommands: ['integration'],

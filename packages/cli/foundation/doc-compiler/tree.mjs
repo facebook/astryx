@@ -58,7 +58,7 @@ export const KIND_GROUPS = Object.freeze({
   schema: {
     segment: 'schemas',
     title: 'Schemas',
-    summary: 'Every shape the CLI reads or returns, field by field.',
+    summary: 'Data shapes, field by field.',
   },
   enum: {
     segment: 'enums',
@@ -140,6 +140,7 @@ export const UNORGANIZED = 'unorganized';
  * @property {string} name
  * @property {string} title
  * @property {string} summary
+ * @property {string[]} [keywords] an authored namespace's search keywords
  * @property {string | null} parent the parent's route; null at the top
  * @property {string | null} slot the parent slot this node sits in
  * @property {number | null} order
@@ -420,10 +421,14 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
         name: input.doc.name,
         title: input.doc.title,
         summary: input.doc.summary,
+        ...(Array.isArray(input.doc.keywords)
+          ? {keywords: input.doc.keywords}
+          : {}),
         parent: parentRoute,
         slot: home?.slot ?? null,
         order: home?.order ?? null,
         generated: false,
+        ref: {selfDoc: input.doc},
         slots: Object.entries(input.doc.slots).map(([name, slot]) => ({
           name,
           title: slot.title,

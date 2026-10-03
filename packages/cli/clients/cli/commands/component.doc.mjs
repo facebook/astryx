@@ -37,12 +37,13 @@ export const doc = {
     {
       flag: '--list',
       param: 'options.list',
-      description: 'List all components grouped by category',
+      description: 'List every component (the same as giving no name)',
     },
     {
       flag: '--category <category>',
       param: 'options.category',
-      description: 'List components in a specific category',
+      description:
+        'List one component group, e.g. --category Layout or --category Avatar (an unknown group lists the valid ones)',
     },
     {
       flag: '--props',
@@ -79,7 +80,7 @@ export const doc = {
     },
     {
       label: 'Props table as JSON',
-      cli: 'astryx component XDSButton --props --json',
+      cli: 'astryx component Button --props --json',
     },
   ],
   exitCodes: [

@@ -41,7 +41,7 @@ describe('command exit codes', () => {
   });
 
   it.each(commandDocs.map((d) => [d.name, d]))(
-    '`astryx %s --help` lists the documented exit codes',
+    '`astryx %s --help` lists the documented exit codes, then the examples and the docs route',
     async (name, doc) => {
       const {status, stdout} = await runCli([...name.split(' '), '--help']);
       expect(status).toBe(0);
@@ -51,6 +51,22 @@ describe('command exit codes', () => {
       for (const {code, when} of doc.exitCodes) {
         expect(section).toContain(`\n  ${code}  ${when}\n`);
       }
+      // Examples follow the exit codes, each under its label, and a `More:`
+      // line names the route that reads the whole command.
+      const examples = section.indexOf('\nExamples:\n');
+      expect(examples > 0, stdout).toBe((doc.examples ?? []).length > 0);
+      for (const {label, cli} of doc.examples ?? []) {
+        const line = ` ${cli.replace(/^astryx\s+/, '')}\n`;
+        expect(section.slice(examples), stdout).toContain(
+          label ? `\n  # ${label}\n` : line,
+        );
+        expect(section.slice(examples)).toContain(line);
+      }
+      const route = `docs cli/commands/${name.replace(/ /g, '-')}`;
+      expect(section, stdout).toMatch(
+        new RegExp(`\\n\\nMore: \\S.* ${route}\\n`),
+      );
+      expect(section.indexOf('\nMore: ')).toBeGreaterThan(examples);
     },
   );
 

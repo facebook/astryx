@@ -562,6 +562,11 @@
       "aliases": []
     },
     {
+      "name": "component-lab-drawer-header",
+      "path": "components/lab/drawer-header",
+      "aliases": []
+    },
+    {
       "name": "component-lab-info-tip",
       "path": "components/lab/info-tip",
       "aliases": []
@@ -3783,6 +3788,11 @@
     {
       "name": "hook-use-media-query",
       "path": "hooks/use-media-query",
+      "aliases": []
+    },
+    {
+      "name": "hook-use-menu-press",
+      "path": "hooks/use-menu-press",
       "aliases": []
     },
     {

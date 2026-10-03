@@ -12,6 +12,9 @@
  *   2. Every changeset body must carry a recognized [category] tag.
  *   3. Every changeset body must credit at least one @contributor.
  *   4. Frontmatter packages must be real, publishable, non-ignored packages.
+ *   5. Patch-versus-minor admission (spec:AST-017 FR46-FR50): main targets a
+ *      patch by default, so incompatible work is refused until an owner
+ *      schedules a minor in `.release/target.json`. See release-admission.mjs.
  *
  * Exits 1 with a readable report on any violation. config.json and README.md
  * are skipped.
@@ -22,6 +25,11 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createRequire} from 'node:module';
 import {expandWorkspaceDirs} from './lib/workspace-globs.mjs';
+import {
+  checkAdmission,
+  utcToday,
+  TARGET_FILE,
+} from './release-admission.mjs';
 
 const require = createRequire(import.meta.url);
 const {parseEntry} = require('./changeset-entry-format.cjs');
@@ -59,6 +67,27 @@ function parseFrontmatter(contents) {
 const SKIP = new Set(['config.json', 'README.md']);
 function isChangesetFile(name) {
   return name.endsWith('.md') && !SKIP.has(name);
+}
+
+/**
+ * Read the owner's minor schedule, when one is set. Absent is the ordinary
+ * case and means main is on its patch default. Present but unreadable is an
+ * untrustworthy input, so it is reported and main stays on the default.
+ *
+ * @param {string} root
+ * @returns {{target: unknown|null, problems: string[]}}
+ */
+function readSchedule(root) {
+  const file = path.join(root, TARGET_FILE);
+  if (!fs.existsSync(file)) return {target: null, problems: []};
+  try {
+    return {target: JSON.parse(fs.readFileSync(file, 'utf8')), problems: []};
+  } catch (err) {
+    return {
+      target: null,
+      problems: [`${TARGET_FILE}: is not valid JSON (${err.message}).`],
+    };
+  }
 }
 
 /**
@@ -150,10 +179,35 @@ function main() {
 
   const files = fs.readdirSync(CS_DIR).filter(isChangesetFile);
   const problems = [];
+  const entries = [];
   for (const f of files) {
     const contents = fs.readFileSync(path.join(CS_DIR, f), 'utf8');
     problems.push(...validateChangeset(f, contents, ctx));
+
+    // What the admission gate reads. A changeset whose frontmatter does not
+    // parse is already reported above; it contributes nothing here rather
+    // than a guessed category or bump.
+    const fm = parseFrontmatter(contents);
+    if (fm) {
+      entries.push({
+        file: f,
+        category: parseEntry(fm.summary).category,
+        releases: fm.releases,
+      });
+    }
   }
+
+  const {target, problems: scheduleReadProblems} = readSchedule(ROOT);
+  problems.push(...scheduleReadProblems);
+
+  const admission = checkAdmission({
+    fixedGroups: config.fixed || [],
+    versionByName: new Map(pub.map(p => [p.name, p.version])),
+    entries,
+    target,
+    today: utcToday(),
+  });
+  problems.push(...admission.problems);
 
   if (problems.length) {
     console.error(
@@ -163,8 +217,15 @@ function main() {
     console.error('\nSee the Release-Process wiki and `pnpm changeset:new`.\n');
     process.exit(1);
   }
+
+  const mode =
+    admission.mode === 'minor'
+      ? ` — main targets ${admission.scheduled.version}, a minor scheduled for ${admission.scheduled.scheduledFor}`
+      : admission.base
+        ? ` — main targets a patch (published at ${admission.base})`
+        : '';
   console.log(
-    `✓ check:changesets — ${files.length} changeset(s) valid${ctx.pre1 ? ' (0.x: [breaking] -> minor, [experimental] and other categories -> patch)' : ''}`,
+    `✓ check:changesets — ${files.length} changeset(s) valid${ctx.pre1 ? ' (0.x: [breaking] -> minor, [experimental] and other categories -> patch)' : ''}${mode}`,
   );
 }
 

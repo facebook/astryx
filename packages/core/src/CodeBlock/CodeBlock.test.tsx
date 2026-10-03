@@ -374,6 +374,29 @@ describe('CodeBlock', () => {
       expect(container.querySelector('.astryx-codeblock-title')).toBeNull();
     });
 
+    it('keeps copy available when a known language label is hidden', async () => {
+      const {container} = render(
+        <CodeBlock
+          code="const x = 1;"
+          language="javascript"
+          hasLanguageLabel={false}
+        />,
+      );
+
+      expect(container.querySelector('.astryx-codeblock-header')).toBeNull();
+      expect(container.querySelector('.astryx-codeblock-title')).toBeNull();
+      expect(screen.getByRole('group')).toHaveAttribute('aria-label', 'Code');
+
+      const copyButton = screen.getByRole('button', {name: 'Copy code'});
+      expect(copyButton.parentElement).toBe(container.querySelector('pre'));
+      await act(async () => {
+        fireEvent.click(copyButton);
+      });
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+        'const x = 1;',
+      );
+    });
+
     it('exposes the header and title as themeable defineTheme targets', () => {
       // jsdom can't resolve the @layer cascade, so this asserts the targets are
       // reachable by a theme via the sanctioned defineTheme channel — replacing

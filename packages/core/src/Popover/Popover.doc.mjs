@@ -90,6 +90,13 @@ export const docs = {
           default: "'auto'",
         },
         {
+          name: 'padding',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            'Inner padding of the popover surface on the spacing scale (0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10), matching the padding prop on Card and Stack. Pass 0 for a flush surface when the content owns its own edges, such as a list of rows or a header with a rule, and pad the content itself. The padding sits on the painted popover target, so a theme padding on that target replaces it.',
+          default: '3',
+        },
+        {
           name: 'label',
           type: 'string',
           description: 'Accessible label for the popover dialog.',
@@ -149,6 +156,31 @@ export const docs = {
             'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
         },
       ],
+    },
+  ],
+  examples: [
+    {
+      label: 'Flush surface for a list of rows',
+      code: `<Popover
+  label="Recent files"
+  padding={0}
+  content={
+    <List>
+      <ListItem label="Quarterly report.pdf" />
+      <ListItem label="Roadmap.key" />
+    </List>
+  }>
+  <Button label="Recent" variant="secondary" />
+</Popover>`,
+    },
+    {
+      label: 'Roomier surface for a form',
+      code: `<Popover
+  label="Save search"
+  padding={4}
+  content={<SaveSearchForm />}>
+  <Button label="Save search" variant="secondary" />
+</Popover>`,
     },
   ],
   playground: {
@@ -311,6 +343,13 @@ export const docsZh = {
           description:
             '弹出框容器的宽度。弹出层仍会限制在视口和安全区域留白内，长内容再滚动。',
           default: "'auto'",
+        },
+        {
+          name: 'padding',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description:
+            '弹出框表面的内边距，使用间距刻度（0、0.5、1、1.5、2、3、4、5、6、8、10），与 Card 和 Stack 的 padding 属性一致。当内容自行管理边缘（如行列表或带分隔线的标题）时传入 0 使表面无内边距，并由内容自行设置内边距。',
+          default: '3',
         },
         {
           name: 'label',

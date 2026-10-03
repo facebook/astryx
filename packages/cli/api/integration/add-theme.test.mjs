@@ -77,6 +77,40 @@ describe('integrationAddTheme', () => {
     expect((await validateLocalIntegration(tmpDir)).issues).toEqual([]);
   });
 
+  it('declares the optional CLI peer that reads typed theme descriptors', async () => {
+    setup({includeFiles: false});
+    const result = await integrationAddTheme('ocean', {cwd: tmpDir});
+    expect(result.data.files).toContain('package.json');
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'),
+    );
+    expect(pkg.peerDependencies).toEqual({'@astryxdesign/cli': '>=0.7.0'});
+    expect(pkg.peerDependenciesMeta).toEqual({
+      '@astryxdesign/cli': {optional: true},
+    });
+  });
+
+  it('keeps a CLI peer that already reads typed theme descriptors', async () => {
+    const pkg = {
+      name: '@acme/themes',
+      version: '1.0.0',
+      peerDependencies: {'@astryxdesign/cli': '^0.7.2'},
+    };
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      `${JSON.stringify(pkg, null, 2)}\n`,
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.integration.mjs'),
+      'export default {};\n',
+    );
+    const result = await integrationAddTheme('ocean', {cwd: tmpDir});
+    expect(result.data.files).not.toContain('package.json');
+    expect(
+      JSON.parse(fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8')),
+    ).toEqual(pkg);
+  });
+
   it('dry-runs the identical receipt without writing anything', async () => {
     setup();
     const beforeManifest = fs.readFileSync(

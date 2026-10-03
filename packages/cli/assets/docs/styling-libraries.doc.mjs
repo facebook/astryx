@@ -185,6 +185,7 @@ const styles = stylex.create({
       ],
     },
     {
+      id: 'semantic-token-systems',
       title: 'Panda, Chakra, and Other Semantic Token Systems',
       category: 'guide',
       content: [
@@ -246,7 +247,7 @@ tokens: {
       content: [
         {
           type: 'prose',
-          text: 'MUI expects palette slots such as primary, background, text, and divider. Map those slots to system variables for ordinary component styling. Use raw values only when MUI or your code needs to parse colors for contrast, alpha, lighten, or darken calculations.',
+          text: '`MUI` expects palette slots such as primary, background, text, and divider. Map those slots to system variables for ordinary component styling. Use raw values only when MUI or your code needs to parse colors for contrast, alpha, lighten, or darken calculations.',
         },
         {
           type: 'code',
@@ -293,12 +294,13 @@ tokens: {
       ],
     },
     {
+      id: 'css-in-js',
       title: 'Emotion, styled-components, Theme UI, and Styled System',
       category: 'guide',
       content: [
         {
           type: 'prose',
-          text: 'Runtime CSS-in-JS libraries usually accept arbitrary theme objects. Keep those objects semantic, but store system CSS variable references as the values. This keeps generated classes stable while the system updates values through the CSS cascade.',
+          text: 'Runtime CSS-in-JS libraries such as `Emotion` and `styled-components` usually accept arbitrary theme objects. Keep those objects semantic, but store system CSS variable references as the values. This keeps generated classes stable while the system updates values through the CSS cascade.',
         },
         {
           type: 'code',
@@ -327,6 +329,7 @@ tokens: {
       ],
     },
     {
+      id: 'unocss',
       title: 'UnoCSS and Custom Utility Systems',
       category: 'guide',
       content: [
@@ -422,6 +425,7 @@ function RevenueChart({data}: {data: Array<{x: string; y: number}>}) {
       ],
     },
     {
+      id: 'non-css-best-practices',
       title: 'Non-CSS Processing Best Practices',
       category: 'guide',
       content: [

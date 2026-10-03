@@ -10,7 +10,7 @@
 export const doc = {
   type: 'schema',
   name: 'config',
-  displayName: 'Astryx Config',
+  displayName: 'astryx.config',
   namespace: 'authoring',
   description:
     'The optional astryx.config.* file at your project root. Declares which ' +
