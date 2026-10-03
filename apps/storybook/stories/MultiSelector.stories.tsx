@@ -4,6 +4,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {expect} from 'storybook/test';
 import {useState} from 'react';
 import {Button} from '@astryxdesign/core/Button';
+import {IconButton} from '@astryxdesign/core/IconButton';
 import {MultiSelector} from '@astryxdesign/core/MultiSelector';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
 
@@ -747,6 +748,55 @@ export const EndIndicatorPosition: Story = {
         onChange={setValue}
         indicatorPosition="end"
         isDefaultOpen
+      />
+    );
+  },
+};
+
+export const RowActions: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>(['feature']);
+    return (
+      <MultiSelector
+        label="Labels"
+        options={[
+          {
+            type: 'section',
+            title: 'Type',
+            options: [
+              {value: 'feature', label: 'Feature'},
+              {value: 'bug', label: 'Bug'},
+              {value: 'docs', label: 'Docs'},
+              {value: 'review', label: 'Design review'},
+            ],
+          },
+          {
+            type: 'section',
+            title: 'Priority',
+            options: [
+              {value: 'p0', label: 'P0'},
+              {value: 'p1', label: 'P1'},
+            ],
+          },
+        ]}
+        value={value}
+        onChange={setValue}
+        hasSearch
+        hasSelectAll
+        hasClear
+        triggerDisplay="badges"
+        isDefaultOpen
+        renderOptionAction={option =>
+          option.value === 'feature' || option.value === 'docs' ? null : (
+            <IconButton
+              label={`Edit ${option.label}`}
+              icon="moreHorizontal"
+              variant="ghost"
+              size="sm"
+              tooltip={`Edit ${option.label}`}
+            />
+          )
+        }
       />
     );
   },

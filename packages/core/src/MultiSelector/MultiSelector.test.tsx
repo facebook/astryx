@@ -3228,3 +3228,228 @@ describe('MultiSelector popup theme target', () => {
     );
   });
 });
+
+describe('MultiSelector renderOptionAction', () => {
+  const OPTIONS = [
+    {value: 'bug', label: 'Bug'},
+    {value: 'feature', label: 'Feature'},
+    {value: 'docs', label: 'Docs'},
+  ];
+
+  it('renders the action outside the listbox, beside its row', async () => {
+    const user = userEvent.setup();
+    const onEdit = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={onChange}
+        renderOptionAction={option =>
+          option.value === 'bug' ? (
+            <button
+              type="button"
+              onClick={() => {
+                onEdit(option.value);
+              }}>
+              Edit Bug
+            </button>
+          ) : null
+        }
+      />,
+    );
+    await user.click(screen.getByRole('combobox', {name: 'Labels'}));
+
+    const listbox = screen.getByRole('listbox', h);
+    const option = screen.getByRole('option', {name: 'Bug', ...h});
+    const action = screen.getByRole('button', {name: 'Edit Bug', ...h});
+    // A listbox may own only options and groups, so the action is not a
+    // descendant of the listbox at all: it sits in a column after the list,
+    // inside the same scrolling panel.
+    expect(listbox).not.toContainElement(action);
+    expect(listbox.parentElement).toContainElement(action);
+    expect(
+      listbox.compareDocumentPosition(action) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    // The listbox's own children are exactly the option rows.
+    expect(option.parentElement).toBe(listbox);
+    expect(
+      screen.getByRole('option', {name: 'Feature', ...h}).parentElement,
+    ).toBe(listbox);
+    expect(
+      Array.from(listbox.children).every(
+        child => child.getAttribute('role') === 'option',
+      ),
+    ).toBe(true);
+    // Exactly one slot: only Bug has an action.
+    expect(screen.getAllByRole('button', h)).toHaveLength(1);
+
+    await user.click(action);
+    expect(onEdit).toHaveBeenCalledWith('bug');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('a pointer on anything that is not an option lights no row', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={[
+          {
+            type: 'section',
+            title: 'Type',
+            options: [
+              {value: 'docs', label: 'Docs'},
+              {value: 'review', label: 'Design review'},
+            ],
+          },
+          {
+            type: 'section',
+            title: 'Priority',
+            options: [{value: 'p0', label: 'P0'}],
+          },
+        ]}
+        value={[]}
+        onChange={() => {}}
+        renderOptionAction={option =>
+          option.value === 'docs' ? null : (
+            <button type="button">{`Edit ${option.label}`}</button>
+          )
+        }
+      />,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Labels'});
+    await user.click(trigger);
+    const docs = screen.getByRole('option', {name: 'Docs', ...h});
+    const review = screen.getByRole('option', {name: 'Design review', ...h});
+    const reviewAction = screen.getByRole('button', {
+      name: 'Edit Design review',
+      ...h,
+    });
+    const p0Action = screen.getByRole('button', {name: 'Edit P0', ...h});
+    const heading = screen.getByText('Priority');
+
+    // Browser-shaped events: mouseout(from → to) then mouseover(to ← from).
+    const move = (from: Element, to: Element) => {
+      fireEvent.mouseOut(from, {relatedTarget: to});
+      fireEvent.mouseOver(to, {relatedTarget: from});
+    };
+
+    fireEvent.mouseOver(docs, {relatedTarget: document.body});
+    expect(trigger).toHaveAttribute('aria-activedescendant', docs.id);
+
+    // A plain row (no action) straight onto a far row's action: nothing lit.
+    move(docs, p0Action);
+    expect(trigger).not.toHaveAttribute('aria-activedescendant');
+
+    // Up the action column: still nothing.
+    move(p0Action, reviewAction);
+    expect(trigger).not.toHaveAttribute('aria-activedescendant');
+
+    // Onto the row beside that action, then its own action: lit, then not.
+    move(reviewAction, review);
+    expect(trigger).toHaveAttribute('aria-activedescendant', review.id);
+    move(review, reviewAction);
+    expect(trigger).not.toHaveAttribute('aria-activedescendant');
+
+    // A section heading is not an option either.
+    move(reviewAction, docs);
+    expect(trigger).toHaveAttribute('aria-activedescendant', docs.id);
+    move(docs, heading);
+    expect(trigger).not.toHaveAttribute('aria-activedescendant');
+  });
+
+  it('without actions, leaving a row for a heading keeps the row lit (unchanged)', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={[
+          {
+            type: 'section',
+            title: 'Type',
+            options: [{value: 'docs', label: 'Docs'}],
+          },
+        ]}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Labels'});
+    await user.click(trigger);
+    const docs = screen.getByRole('option', {name: 'Docs', ...h});
+    fireEvent.mouseOver(docs, {relatedTarget: document.body});
+    expect(trigger).toHaveAttribute('aria-activedescendant', docs.id);
+    const heading = screen.getByText('Type');
+    fireEvent.mouseOut(docs, {relatedTarget: heading});
+    fireEvent.mouseOver(heading, {relatedTarget: docs});
+    expect(trigger).toHaveAttribute('aria-activedescendant', docs.id);
+  });
+
+  it('is not called for the select-all row', async () => {
+    const user = userEvent.setup();
+    const renderOptionAction = vi.fn((_option: {value: string}) => null);
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSelectAll
+        renderOptionAction={renderOptionAction}
+      />,
+    );
+    await user.click(screen.getByRole('combobox', {name: 'Labels'}));
+    const values = renderOptionAction.mock.calls.map(
+      ([option]) => option.value,
+    );
+    expect(values).toEqual(expect.arrayContaining(['bug', 'feature', 'docs']));
+    expect(values.every(v => ['bug', 'feature', 'docs'].includes(v))).toBe(
+      true,
+    );
+  });
+
+  it('Tab moves into the panel instead of closing it when rows carry actions', async () => {
+    const user = userEvent.setup();
+    const {rerender} = render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    // Baseline: without actions, Tab from the trigger dismisses the panel.
+    const trigger = screen.getByRole('combobox', {name: 'Labels'});
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.keyDown(trigger, {key: 'Tab'});
+    await waitFor(() => {
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    rerender(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        renderOptionAction={option => (
+          <button type="button">{`Edit ${option.label}`}</button>
+        )}
+      />,
+    );
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    // The action is a plain, tabbable control: the browser's Tab lands on
+    // it (jsdom cannot walk into a popover, so the stop is asserted by
+    // shape), and the panel stays open for it.
+    const action = screen.getByRole('button', {name: 'Edit Bug', ...h});
+    expect(action).not.toHaveAttribute('tabindex', '-1');
+    expect(action).not.toBeDisabled();
+    fireEvent.keyDown(trigger, {key: 'Tab'});
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+});

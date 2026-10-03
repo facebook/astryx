@@ -347,6 +347,12 @@ export const docs = {
             'Custom render function for each selectable option in the dropdown. Not called for dividers, sections, or the select-all row.',
         },
         {
+          name: 'renderOptionAction',
+          type: '(option: MultiSelectorOptionData) => ReactNode',
+          description:
+            'Secondary action rendered beside an option, outside its click target: the option row and the action are siblings in a role="none" wrapper, so the action is a real, Tab-reachable control, Tab moves into the panel instead of closing it, and a pointer on the action (or anything else in the list that is not an option) lights no option. Return null for a row without one. Not called for the select-all row.',
+        },
+        {
           name: 'indicatorPosition',
           type: "'start' | 'end'",
           description:
@@ -493,6 +499,8 @@ export const docsZh = {
           '状态消息的放置方式：attached 直接叠加在输入框下方；detached 作为独立元素浮于下方并留有间距。',
         renderOption:
           '每个可选选项的自定义渲染函数。不会用于分隔线、分组或全选行。',
+        renderOptionAction:
+          '在选项旁（选项点击目标之外）渲染的次要操作；与选项行同为 role="none" 容器的兄弟元素。',
         presentation:
           '选项列表的呈现方式：锚定弹出框、底部抽屉，或根据紧凑触控屏自适应。',
         xstyle: '布局自定义的 StyleX 样式，必须是 stylex.create() 值。',
@@ -635,6 +643,8 @@ export const docsDense = {
           'status message placement; ghost detaches attached by default; use tooltip for compact toolbars.',
         renderOption:
           'custom render fn per selectable option; not dividers/sections/select-all',
+        renderOptionAction:
+          'secondary action beside an option, outside its click target (sibling in a role=none wrapper); Tab moves in',
         presentation:
           'popover, bottom-sheet, or compact-touch adaptive presentation',
         xstyle: 'StyleX layout styles; stylex.create() only',

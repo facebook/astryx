@@ -36,6 +36,12 @@ interface UseMultiComboboxOptions {
    */
   hasValue?: boolean;
   listboxId: string;
+  /**
+   * Whether the open panel holds focusable content besides the options (a
+   * per-row action button). Tab then moves into that content instead of
+   * closing the panel.
+   */
+  hasTabbableContent?: boolean;
 }
 
 interface UseMultiComboboxResult {
@@ -45,6 +51,14 @@ interface UseMultiComboboxResult {
   onTriggerClick: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
   onItemMouseEnter: (item: MultiSelectorOptionData, index: number) => void;
+  /**
+   * For a panel whose rows carry content beside the options (a per-row
+   * action): attach to the scrolling panel around the listbox. A pointer on
+   * anything in it that is not an option — the action, a heading, the gap
+   * between rows — lights no option. Derived from the event target on every
+   * `mouseover`, so it holds for any path the pointer takes.
+   */
+  onListboxMouseOver: (e: React.MouseEvent) => void;
 }
 
 /**
@@ -64,6 +78,7 @@ export function useMultiCombobox({
   onClear,
   hasValue = false,
   listboxId,
+  hasTabbableContent = false,
 }: UseMultiComboboxOptions): UseMultiComboboxResult {
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
   const [typeahead, setTypeahead] = useState('');
@@ -114,6 +129,21 @@ export function useMultiCombobox({
     (item: MultiSelectorOptionData, index: number) => {
       if (!item.disabled) {
         highlightOnHover(index);
+      }
+    },
+    [highlightOnHover],
+  );
+
+  // The highlight is state, not CSS :hover, so a pointer that leaves a row
+  // for something that is not a row (the action beside it, another row's
+  // action, a heading) would leave that row lit. Re-derive from the element
+  // under the pointer on every mouseover inside the panel: not inside an
+  // option → nothing is lit. The options' own mouseenter still picks the row.
+  const onListboxMouseOver = useCallback(
+    (e: React.MouseEvent) => {
+      const target = e.target as Element | null;
+      if (target?.closest?.('[role="option"]') == null) {
+        highlightOnHover(-1);
       }
     },
     [highlightOnHover],
@@ -178,7 +208,7 @@ export function useMultiCombobox({
           break;
 
         case 'Tab':
-          if (isOpen) {
+          if (isOpen && !hasTabbableContent) {
             closeAndReset();
           }
           break;
@@ -272,6 +302,7 @@ export function useMultiCombobox({
       hasSearch,
       onClear,
       hasValue,
+      hasTabbableContent,
     ],
   );
 
@@ -282,5 +313,6 @@ export function useMultiCombobox({
     onTriggerClick,
     onKeyDown,
     onItemMouseEnter,
+    onListboxMouseOver,
   };
 }

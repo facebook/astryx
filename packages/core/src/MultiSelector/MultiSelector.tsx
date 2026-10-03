@@ -20,6 +20,7 @@ import React, {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useOptimistic,
   useRef,
@@ -358,6 +359,30 @@ const styles = stylex.create({
   },
 
   // Empty state
+  // Row actions live OUTSIDE the listbox — a listbox may own only options and
+  // groups, and a presentational wrapper is transparent to that rule — in an
+  // absolutely positioned column inside the same scroll container, each slot
+  // placed at its row's measured offset so it scrolls with the row. A row
+  // with an action reserves the column's width at its inline end.
+  dropdownWithActions: {
+    position: 'relative',
+  },
+  optionWithAction: {
+    paddingInlineEnd: `calc(var(--_multi-selector-action-width, 2.25rem) + ${spacingVars['--spacing-1']})`,
+  },
+  actionsColumn: {
+    position: 'absolute',
+    top: 0,
+    insetInlineEnd: spacingVars['--spacing-1'],
+    width: 0,
+  },
+  actionSlot: {
+    position: 'absolute',
+    insetInlineEnd: 0,
+    display: 'flex',
+    alignItems: 'center',
+    whiteSpace: 'nowrap',
+  },
   emptyState: {
     padding: spacingVars['--spacing-3'],
     textAlign: 'center',
@@ -683,6 +708,17 @@ export interface MultiSelectorProps<
   renderOption?: (option: MultiSelectorOptionData) => ReactNode;
 
   /**
+   * Renders a secondary action beside an option — an Edit button for a
+   * carried label. The action is placed OUTSIDE the listbox, in a column
+   * aligned to its row inside the same scrolling panel: a listbox may own
+   * only options and groups, so the `role="option"` element stays a single
+   * click target and the action is a real, Tab-reachable control after the
+   * list. Return `null` for a row without one. Not called for the select-all
+   * row.
+   */
+  renderOptionAction?: (option: MultiSelectorOptionData) => ReactNode;
+
+  /**
    * Which edge of the option row carries the checkbox.
    *
    * @default 'start'
@@ -787,6 +823,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   formatValue,
   maxBadges = 3,
   renderOption,
+  renderOptionAction,
   indicatorPosition = 'start',
   presentation = 'popover',
   isDefaultOpen = false,
@@ -1214,6 +1251,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     onTriggerClick,
     onKeyDown,
     onItemMouseEnter,
+    onListboxMouseOver,
   } = useMultiCombobox({
     selectableItems: sortedItems,
     isDisabled: isDisabled || isEffectivelyReadOnly,
@@ -1225,6 +1263,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     onClear: hasClear ? clearValues : undefined,
     hasValue,
     listboxId,
+    hasTabbableContent: renderOptionAction != null,
   });
 
   // Highlight scrolling (and its hover/keyboard split) lives in useMultiCombobox.
@@ -1395,6 +1434,83 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     t,
   ]);
 
+  // One action per rendered row, in sortedItems order, or null. Computed once
+  // so the row can reserve space and the column can render the control.
+  const rowActions = useMemo<ReactNode[] | null>(() => {
+    if (renderOptionAction == null) {
+      return null;
+    }
+    return sortedItems.map((item): ReactNode =>
+      item.value === SELECT_ALL_VALUE
+        ? null
+        : (renderOptionAction(item) ?? null),
+    );
+  }, [renderOptionAction, sortedItems]);
+  const hasRowActions =
+    rowActions != null && rowActions.some(action => action != null);
+
+  // Where each option sits inside the scroll container, so its action can be
+  // placed beside it. Measured after layout and on resize; the column and the
+  // listbox share the same offset parent (the padded scroll container).
+  const actionsColumnRef = useRef<HTMLDivElement>(null);
+  const [actionLayout, setActionLayout] = useState<
+    Record<string, {top: number; height: number}>
+  >({});
+  const [actionWidth, setActionWidth] = useState<number | null>(null);
+  const measureActions = useCallback(() => {
+    const listbox = listboxRef.current;
+    if (listbox == null) {
+      return;
+    }
+    const next: Record<string, {top: number; height: number}> = {};
+    for (const el of Array.from(
+      listbox.querySelectorAll<HTMLElement>('[role="option"]'),
+    )) {
+      next[el.id] = {top: el.offsetTop, height: el.offsetHeight};
+    }
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- row offsets are a measurement; layout is the only place they exist
+    setActionLayout(prev => {
+      const prevKeys = Object.keys(prev);
+      const nextKeys = Object.keys(next);
+      if (
+        prevKeys.length === nextKeys.length &&
+        nextKeys.every(
+          k =>
+            prev[k] != null &&
+            prev[k].top === next[k].top &&
+            prev[k].height === next[k].height,
+        )
+      ) {
+        return prev;
+      }
+      return next;
+    });
+    const column = actionsColumnRef.current;
+    if (column != null) {
+      let widest = 0;
+      for (const slot of Array.from(column.children)) {
+        widest = Math.max(widest, (slot as HTMLElement).offsetWidth);
+      }
+      setActionWidth(prev => (prev === widest ? prev : widest));
+    }
+  }, []);
+  useLayoutEffect(() => {
+    if (!hasRowActions || !surface.isOpen) {
+      return;
+    }
+    measureActions();
+    const listbox = listboxRef.current;
+    if (listbox == null || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+    const observer = new ResizeObserver(() => measureActions());
+    observer.observe(listbox);
+    for (const el of Array.from(listbox.children)) {
+      observer.observe(el);
+    }
+    return () => observer.disconnect();
+  }, [hasRowActions, surface.isOpen, measureActions, sortedItems, size]);
+
   // Render an individual item (index-based)
   const renderItem = useCallback(
     (item: MultiSelectorOptionData, flatIndex: number) => {
@@ -1427,6 +1543,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           />
         </div>
       );
+
+      const hasAction = rowActions?.[flatIndex] != null;
 
       return (
         <div
@@ -1465,6 +1583,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               isSelectAll && styles.selectAllWrapper,
               isHighlighted && styles.itemHighlighted,
               item.disabled && styles.itemDisabled,
+              hasAction && styles.optionWithAction,
             ),
           )}>
           {indicatorPosition === 'start' && checkbox}
@@ -1481,6 +1600,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     },
     [
       renderOption,
+      rowActions,
       indicatorPosition,
       highlightedIndex,
       optimisticValue,
@@ -1639,11 +1759,57 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const showStatusTooltip =
     status != null && effectiveStatusVariant === 'tooltip' && !!status.message;
 
+  // With row actions there is hoverable content in the panel that is not an
+  // option; the row the pointer left must not stay lit while the pointer is
+  // on it. Without actions nothing in the panel but options takes the
+  // pointer, so the per-row mouseenter stays the whole story.
+  const panelMouseOver = hasRowActions ? onListboxMouseOver : undefined;
+
+  // The action column: outside the listbox (which may own only options and
+  // groups), inside the scroll container, one slot per row at its measured
+  // offset. Slots come after the listbox in DOM order, so Tab reaches them
+  // after the list.
+  const actionsColumn = hasRowActions ? (
+    <div ref={actionsColumnRef} {...stylex.props(styles.actionsColumn)}>
+      {rowActions.map((action, index) => {
+        if (action == null) {
+          return null;
+        }
+        const id = getItemId(index);
+        const layout = actionLayout[id];
+        return (
+          <div
+            key={id}
+            {...mergeProps(
+              stylex.props(styles.actionSlot),
+              undefined,
+              layout
+                ? {top: layout.top, height: layout.height}
+                : {visibility: 'hidden'},
+            )}>
+            {action}
+          </div>
+        );
+      })}
+    </div>
+  ) : null;
+  const actionWidthStyle: React.CSSProperties | undefined =
+    hasRowActions && actionWidth != null
+      ? {['--_multi-selector-action-width' as string]: `${actionWidth}px`}
+      : undefined;
+  const dropdownProps = mergeProps(
+    stylex.props(styles.dropdown, hasRowActions && styles.dropdownWithActions),
+    {
+      onMouseOver: panelMouseOver,
+      style: actionWidthStyle,
+    },
+  );
+
   const panelContent = hasSearch ? (
     <div>
       {renderSearch()}
       <Divider />
-      <div {...stylex.props(styles.dropdown)}>
+      <div {...dropdownProps}>
         <div
           ref={listboxRef}
           id={listboxId}
@@ -1653,10 +1819,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           {...stylex.props(styles.listbox)}>
           {renderOptions()}
         </div>
+        {actionsColumn}
       </div>
     </div>
   ) : (
-    <div {...stylex.props(styles.dropdown)}>
+    <div {...dropdownProps}>
       <div
         ref={listboxRef}
         id={listboxId}
@@ -1675,6 +1842,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         {...stylex.props(styles.listbox)}>
         {renderOptions()}
       </div>
+      {actionsColumn}
     </div>
   );
 
