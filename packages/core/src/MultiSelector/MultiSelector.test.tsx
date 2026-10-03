@@ -3264,7 +3264,11 @@ describe('MultiSelector renderOptionAction', () => {
     const option = screen.getByRole('option', {name: 'Bug', ...h});
     const action = screen.getByRole('button', {name: 'Edit Bug', ...h});
     expect(option).not.toContainElement(action);
-    expect(action.parentElement).toBe(option.parentElement);
+    // option and the action's slot are siblings in one role="none" row
+    // wrapper that is a direct child of the listbox.
+    const slot = action.parentElement!;
+    expect(slot).toHaveAttribute('role', 'none');
+    expect(slot.parentElement).toBe(option.parentElement);
     expect(option.parentElement).toHaveAttribute('role', 'none');
     expect(option.parentElement!.parentElement).toBe(
       screen.getByRole('listbox', h),
@@ -3277,6 +3281,103 @@ describe('MultiSelector renderOptionAction', () => {
     await user.click(action);
     expect(onEdit).toHaveBeenCalledWith('bug');
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('a pointer on anything that is not an option lights no row', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={[
+          {
+            type: 'section',
+            title: 'Type',
+            options: [
+              {value: 'docs', label: 'Docs'},
+              {value: 'review', label: 'Design review'},
+            ],
+          },
+          {
+            type: 'section',
+            title: 'Priority',
+            options: [{value: 'p0', label: 'P0'}],
+          },
+        ]}
+        value={[]}
+        onChange={() => {}}
+        renderOptionAction={option =>
+          option.value === 'docs' ? null : (
+            <button type="button">{`Edit ${option.label}`}</button>
+          )
+        }
+      />,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Labels'});
+    await user.click(trigger);
+    const docs = screen.getByRole('option', {name: 'Docs', ...h});
+    const review = screen.getByRole('option', {name: 'Design review', ...h});
+    const reviewAction = screen.getByRole('button', {
+      name: 'Edit Design review',
+      ...h,
+    });
+    const p0Action = screen.getByRole('button', {name: 'Edit P0', ...h});
+    const heading = screen.getByText('Priority');
+
+    // Browser-shaped events: mouseout(from → to) then mouseover(to ← from).
+    const move = (from: Element, to: Element) => {
+      fireEvent.mouseOut(from, {relatedTarget: to});
+      fireEvent.mouseOver(to, {relatedTarget: from});
+    };
+
+    fireEvent.mouseOver(docs, {relatedTarget: document.body});
+    expect(trigger).toHaveAttribute('aria-activedescendant', docs.id);
+
+    // A plain row (no action) straight onto a far row's action: nothing lit.
+    move(docs, p0Action);
+    expect(trigger).not.toHaveAttribute('aria-activedescendant');
+
+    // Up the action column: still nothing.
+    move(p0Action, reviewAction);
+    expect(trigger).not.toHaveAttribute('aria-activedescendant');
+
+    // Onto the row beside that action, then its own action: lit, then not.
+    move(reviewAction, review);
+    expect(trigger).toHaveAttribute('aria-activedescendant', review.id);
+    move(review, reviewAction);
+    expect(trigger).not.toHaveAttribute('aria-activedescendant');
+
+    // A section heading is not an option either.
+    move(reviewAction, docs);
+    expect(trigger).toHaveAttribute('aria-activedescendant', docs.id);
+    move(docs, heading);
+    expect(trigger).not.toHaveAttribute('aria-activedescendant');
+  });
+
+  it('without actions, leaving a row for a heading keeps the row lit (unchanged)', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={[
+          {
+            type: 'section',
+            title: 'Type',
+            options: [{value: 'docs', label: 'Docs'}],
+          },
+        ]}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Labels'});
+    await user.click(trigger);
+    const docs = screen.getByRole('option', {name: 'Docs', ...h});
+    fireEvent.mouseOver(docs, {relatedTarget: document.body});
+    expect(trigger).toHaveAttribute('aria-activedescendant', docs.id);
+    const heading = screen.getByText('Type');
+    fireEvent.mouseOut(docs, {relatedTarget: heading});
+    fireEvent.mouseOver(heading, {relatedTarget: docs});
+    expect(trigger).toHaveAttribute('aria-activedescendant', docs.id);
   });
 
   it('is not called for the select-all row', async () => {

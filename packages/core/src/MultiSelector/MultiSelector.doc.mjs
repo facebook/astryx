@@ -350,7 +350,7 @@ export const docs = {
           name: 'renderOptionAction',
           type: '(option: MultiSelectorOptionData) => ReactNode',
           description:
-            'Secondary action rendered beside an option, outside its click target: the option row and the action are siblings in a role="none" wrapper, so the action is a real, Tab-reachable control and Tab moves into the panel instead of closing it. Return null for a row without one. Not called for the select-all row.',
+            'Secondary action rendered beside an option, outside its click target: the option row and the action are siblings in a role="none" wrapper, so the action is a real, Tab-reachable control, Tab moves into the panel instead of closing it, and a pointer on the action (or anything else in the list that is not an option) lights no option. Return null for a row without one. Not called for the select-all row.',
         },
         {
           name: 'indicatorPosition',

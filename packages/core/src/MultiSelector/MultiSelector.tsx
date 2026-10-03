@@ -371,6 +371,11 @@ const styles = stylex.create({
     flexShrink: 1,
     minWidth: 0,
   },
+  optionAction: {
+    display: 'flex',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
   emptyState: {
     padding: spacingVars['--spacing-3'],
     textAlign: 'center',
@@ -1238,6 +1243,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     onTriggerClick,
     onKeyDown,
     onItemMouseEnter,
+    onListboxMouseOver,
   } = useMultiCombobox({
     selectableItems: sortedItems,
     isDisabled: isDisabled || isEffectivelyReadOnly,
@@ -1517,7 +1523,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       return (
         <div key={item.value} role="none" {...stylex.props(styles.optionRow)}>
           {row}
-          {action}
+          <div role="none" {...stylex.props(styles.optionAction)}>
+            {action}
+          </div>
         </div>
       );
     },
@@ -1682,6 +1690,13 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const showStatusTooltip =
     status != null && effectiveStatusVariant === 'tooltip' && !!status.message;
 
+  // With row actions there is hoverable content in the listbox that is not an
+  // option; the row the pointer left must not stay lit while the pointer is
+  // on it. Without actions nothing in the listbox but options takes the
+  // pointer, so the per-row mouseenter stays the whole story.
+  const listboxMouseOver =
+    renderOptionAction != null ? onListboxMouseOver : undefined;
+
   const panelContent = hasSearch ? (
     <div>
       {renderSearch()}
@@ -1693,6 +1708,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           role="listbox"
           aria-multiselectable="true"
           aria-labelledby={triggerId}
+          onMouseOver={listboxMouseOver}
           {...stylex.props(styles.listbox)}>
           {renderOptions()}
         </div>
@@ -1706,6 +1722,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         role="listbox"
         aria-multiselectable="true"
         aria-labelledby={triggerId}
+        onMouseOver={listboxMouseOver}
         aria-activedescendant={
           surface.isOpen && highlightedIndex >= 0
             ? getItemId(highlightedIndex)
