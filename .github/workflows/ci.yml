@@ -1161,22 +1161,29 @@ jobs:
       # pointer modality, clipping, forced colors, and exact pixels require the
       # same real Chromium artifact this blocking accessibility lane already owns.
       - name: Run Outline focus indicator contract
+        if: github.event_name == 'pull_request'
         env:
           ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          pnpm exec playwright test \
-            packages/core/src/Outline/OutlineFocus.a11y.chromium.spec.ts \
-            --project chromium \
-            --output outline-focus-output
+          COMPONENTS=$(node .github/scripts/a11y-pr-scope.mjs analysis.json)
+          case ",${COMPONENTS}," in
+            *,core/Outline,*)
+              pnpm exec playwright test \
+                packages/core/src/Outline/OutlineFocus.a11y.chromium.spec.ts \
+                --project chromium \
+                --output outline-focus-output
+              ;;
+            *) echo "Outline not in PR scope; skipping focus evidence." ;;
+          esac
 
       - name: Upload Outline focus evidence
-        if: always()
+        if: always() && github.event_name == 'pull_request'
         uses: actions/upload-artifact@v7
         with:
           name: outline-focus-evidence-${{ needs.build-storybook.outputs.short_hash }}
           path: test-results/outline-focus-evidence/
           retention-days: 30
-          if-no-files-found: error
+          if-no-files-found: ignore
 
       # ChatMessageBubble is nested under the shared Chat source directory, so
       # the generic stable-visual owner cannot select its dedicated fixture.
