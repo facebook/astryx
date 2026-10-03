@@ -86,9 +86,9 @@ Consumer props, item shapes, subcomponents, and presentation policy remain
 documented in `DropdownMenu.doc.mjs` and the subcomponent docs. One
 component-local concept is added by DEC-2; it keeps its released default.
 
-| Concept        | Closed values or states                            | Meaning                                                                                                                                                               | Availability by variant/orientation/state | Default  | Owner                    | Stability | Invalid-value behavior                              |
-| -------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | -------- | ------------------------ | --------- | --------------------------------------------------- |
-| Trigger source | `button` (Button props) or `trigger` (render prop) | Which control the menu hangs off. `trigger` receives `DropdownMenuTriggerProps` — the press model, keyboard opens, toggle click and ARIA wiring — and names the menu. | Both presentations                        | `button` | `component:DropdownMenu` | stable    | Both given: `trigger` wins and a dev warning fires. |
+| Concept        | Closed values or states                                  | Meaning                                                                                                                                                               | Availability by variant/orientation/state | Default  | Owner                    | Stability | Invalid-value behavior                              |
+| -------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | -------- | ------------------------ | --------- | --------------------------------------------------- |
+| Trigger source | `button` (Button props) or `renderTrigger` (render prop) | Which control the menu hangs off. `trigger` receives `DropdownMenuTriggerProps` — the press model, keyboard opens, toggle click and ARIA wiring — and names the menu. | Both presentations                        | `button` | `component:DropdownMenu` | stable    | Both given: `trigger` wins and a dev warning fires. |
 
 ## Behavioral and layout contract
 
@@ -266,7 +266,7 @@ awaits the owner's confirmation (the record stays `draft` until then).
 
 **Decider:** vjeux, 2026-09-27 (owner confirmation pending)
 
-`trigger` is a render prop handing the caller `DropdownMenuTriggerProps` to
+`renderTrigger` is a render prop handing the caller `DropdownMenuTriggerProps` to
 spread, so the press model, the keyboard opens and the ARIA wiring ride the
 same code path as the built-in Button, and the menu is named by the control
 through `aria-labelledby`. `button` and `trigger` are mutually exclusive (a dev

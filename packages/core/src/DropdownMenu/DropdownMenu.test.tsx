@@ -2318,7 +2318,7 @@ describe('DropdownMenu custom trigger', () => {
     const user = userEvent.setup();
     render(
       <DropdownMenu
-        trigger={props => (
+        renderTrigger={props => (
           <span {...props} role="button" tabIndex={0}>
             Ada Lovelace
           </span>
@@ -2353,7 +2353,7 @@ describe('DropdownMenu custom trigger', () => {
     const user = userEvent.setup();
     render(
       <DropdownMenu
-        trigger={props => (
+        renderTrigger={props => (
           <button type="button" {...props}>
             More
           </button>
@@ -2374,7 +2374,7 @@ describe('DropdownMenu custom trigger', () => {
   it('a mouse press on a custom trigger opens the menu', () => {
     render(
       <DropdownMenu
-        trigger={props => (
+        renderTrigger={props => (
           <button type="button" {...props}>
             More
           </button>
@@ -2398,7 +2398,7 @@ describe('DropdownMenu custom trigger', () => {
         <DropdownMenu
           button={{label: 'Actions'}}
           presentation="bottom-sheet"
-          trigger={props => (
+          renderTrigger={props => (
             <button type="button" {...props}>
               More
             </button>
@@ -2424,7 +2424,7 @@ describe('DropdownMenu custom trigger', () => {
       render(
         <DropdownMenu
           button={{label: 'Actions'}}
-          trigger={props => (
+          renderTrigger={props => (
             <button type="button" {...props}>
               More
             </button>

@@ -1276,7 +1276,7 @@ export const CustomTrigger: Story = {
   name: 'Custom trigger (any control)',
   render: () => (
     <DropdownMenu
-      trigger={props => (
+      renderTrigger={props => (
         <IconButton
           icon={<EllipsisHorizontalIcon />}
           label="More actions"

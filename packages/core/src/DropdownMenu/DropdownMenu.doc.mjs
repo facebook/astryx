@@ -184,7 +184,7 @@ export const docs = {
       default: "{ label: 'Menu' }",
     },
     {
-      name: 'trigger',
+      name: 'renderTrigger',
       type: '(props: DropdownMenuTriggerProps) => ReactNode',
       description:
         'Render the control the menu hangs off — an IconButton, a chip, an avatar, a list row — instead of the built-in Button. Spread the given props onto it: they carry the press model (a mouse opens on press-down, a held finger opens with the finger down), the keyboard opens, the toggle click, and `aria-haspopup`/`aria-expanded`/`aria-controls`/`id`; the menu is then named by that control through `aria-labelledby`. Mutually exclusive with `button`.',

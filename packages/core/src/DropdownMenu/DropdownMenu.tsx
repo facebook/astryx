@@ -335,7 +335,7 @@ export interface DropdownMenuTriggerProps {
 interface DropdownMenuBaseProps extends BaseProps {
   /**
    * The design system's own button as the trigger. Mutually exclusive with
-   * `trigger`.
+   * `renderTrigger`.
    */
   button?: DropdownMenuButtonProps;
   /**
@@ -343,12 +343,24 @@ interface DropdownMenuBaseProps extends BaseProps {
    * avatar, a list row. Spread the given props onto it; the menu is then
    * named by that control. Mutually exclusive with `button`.
    *
+   * Hover and pressed paint stay yours. The open state reaches your control
+   * as `aria-expanded` on the given props, so style it from the rendered
+   * attribute. A pressed look keyed to `:active` is not a substitute:
+   * `:active` does not behave the same under a coarse pointer, which is why
+   * menu rows drop coarse-pointer `:active` paint entirely.
+   *
    * @example
    * ```
-   * <DropdownMenu trigger={props => <IconButton icon="more" label="More" {...props} />}>
+   * <DropdownMenu renderTrigger={props => <IconButton icon="more" label="More" {...props} />}>
+   * ```
+   *
+   * @example
+   * ```
+   * // Styling the open state from the rendered attribute:
+   * // .my-trigger[aria-expanded='true'] { background: var(--color-overlay-pressed); }
    * ```
    */
-  trigger?: (props: DropdownMenuTriggerProps) => ReactNode;
+  renderTrigger?: (props: DropdownMenuTriggerProps) => ReactNode;
   isMenuOpen?: boolean;
   onOpenChange?: (isOpen: boolean) => void;
   /**
@@ -458,7 +470,7 @@ function holdInvokerThroughPress(
 
 function DropdownMenuBottomSheet({
   button: buttonFromProps,
-  trigger,
+  renderTrigger,
   isMenuOpen: controlledIsOpen,
   onOpenChange,
   onClick,
@@ -589,8 +601,8 @@ function DropdownMenuBottomSheet({
 
   return (
     <>
-      {trigger != null ? (
-        trigger({
+      {renderTrigger != null ? (
+        renderTrigger({
           ref: el => {
             buttonRef.current = el;
           },
@@ -691,7 +703,7 @@ function DropdownMenuBottomSheet({
 
 function DropdownMenuPopover({
   button: buttonFromProps,
-  trigger,
+  renderTrigger,
   isMenuOpen: controlledIsOpen,
   onOpenChange,
   menuWidth,
@@ -1122,8 +1134,8 @@ function DropdownMenuPopover({
 
   return (
     <>
-      {trigger != null ? (
-        trigger(triggerProps)
+      {renderTrigger != null ? (
+        renderTrigger(triggerProps)
       ) : (
         <Button
           {...button}
@@ -1179,12 +1191,12 @@ function DropdownMenuPopover({
           // screen readers announce e.g. "Actions menu" rather than an unnamed
           // menu (menus-13). A custom trigger names it by reference.
           aria-label={
-            trigger != null
+            renderTrigger != null
               ? (rest['aria-label'] as string | undefined)
               : button.label
           }
           aria-labelledby={
-            trigger != null && rest['aria-label'] == null
+            renderTrigger != null && rest['aria-label'] == null
               ? triggerId
               : (rest['aria-labelledby'] as string | undefined)
           }
@@ -1241,7 +1253,7 @@ export function DropdownMenu(props: DropdownMenuProps) {
     'DropdownMenu',
     '`button` and `trigger` are mutually exclusive: the menu hangs off one ' +
       'control. `trigger` wins; drop `button`.',
-    props.button != null && props.trigger != null,
+    props.button != null && props.renderTrigger != null,
   );
   const requestedPresentation =
     'items' in props ? (props.presentation ?? 'popover') : 'popover';
