@@ -215,6 +215,12 @@ export const docs = {
         'Minimum width for the popover presentation. Length values may grow for content; intrinsic and CSS-wide keywords select the preferred inline size. Every form is capped to the available viewport space. Defaults to matching the trigger width up to that cap.',
     },
     {
+      name: 'menuMaxHeight',
+      type: 'number',
+      description:
+        'Maximum height in pixels for the popover presentation, for a menu that must fit its rows. Lifts the default 300px cap; the viewport still bounds it.',
+    },
+    {
       name: 'placement',
       type: "'above' | 'below' | 'start' | 'end'",
       description:
