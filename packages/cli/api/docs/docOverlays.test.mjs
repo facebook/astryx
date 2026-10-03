@@ -99,10 +99,7 @@ describe('reference doc overlays (#2182)', () => {
           }
         });
       }
-      expect(
-        dropped,
-        `${topic}.doc.${variant}.mjs overrides that never apply`,
-      ).toEqual([]);
+      expect(dropped, `${topic}.doc.${variant}.mjs overrides that never apply`).toEqual([]);
     });
 
     it(`${topic} --${variant}: no base section is overridden twice`, async () => {
@@ -110,10 +107,7 @@ describe('reference doc overlays (#2182)', () => {
       const overlay = overlayMod.docsDense || overlayMod.docsZh;
       const anchors = (overlay.sections || []).map(s => s.section);
       const dupes = anchors.filter((a, i) => anchors.indexOf(a) !== i);
-      expect(
-        dupes,
-        `${topic}.doc.${variant}.mjs overrides the same base section twice`,
-      ).toEqual([]);
+      expect(dupes, `${topic}.doc.${variant}.mjs overrides the same base section twice`).toEqual([]);
     });
   }
 });

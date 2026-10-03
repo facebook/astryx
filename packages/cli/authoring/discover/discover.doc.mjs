@@ -101,8 +101,7 @@ export const doc = {
             {
               name: 'packages[].latest',
               type: 'string | null',
-              description:
-                'The latest release. Null when there are only prereleases.',
+              description: 'The latest release. Null when there are only prereleases.',
               required: true,
             },
             {
@@ -116,7 +115,7 @@ export const doc = {
               name: 'packages[].contributions',
               type: 'DiscoverContribution[]',
               description:
-                'What the requested (else latest) version adds: `{kind, name, title?, summary?, keywords?}`, where kind is `component`, `template`, `doc`, `theme`, `codemod`, or `agent-doc` (a DiscoverKind) and name is the name the CLI uses for it.',
+                "What the requested (else latest) version adds: `{kind, name, title?, summary?, keywords?}`, where kind is `component`, `template`, `doc`, `theme`, `codemod`, or `agent-doc` (a DiscoverKind) and name is the name the CLI uses for it.",
               required: true,
             },
           ],

@@ -242,9 +242,7 @@ describe('exact release branch completion', () => {
   );
 
   it('accepts only complete exact-branch evidence', async () => {
-    await expect(
-      githubScript(join, {needs: complete}),
-    ).resolves.toBeUndefined();
+    await expect(githubScript(join, {needs: complete})).resolves.toBeUndefined();
     expect(jobs['release-check'].needs).toEqual([
       'check-scope',
       'check-components',
@@ -258,9 +256,9 @@ describe('exact release branch completion', () => {
   it.each(['refs/heads/main', 'refs/tags/v0.6.5', ''])(
     'rejects ref %s',
     async ref => {
-      await expect(githubScript(join, {ref, needs: complete})).rejects.toThrow(
-        'marked release branch',
-      );
+      await expect(
+        githubScript(join, {ref, needs: complete}),
+      ).rejects.toThrow('marked release branch');
     },
   );
 

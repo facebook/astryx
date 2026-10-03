@@ -118,10 +118,7 @@ describe('one branch per release lifecycle', () => {
     writeAuthority(root, values, false);
     const markerPath = path.join(root, '.release/active.json');
     const marker = JSON.parse(fs.readFileSync(markerPath, 'utf8'));
-    fs.writeFileSync(
-      markerPath,
-      `${JSON.stringify({...marker, state: 'closed'})}\n`,
-    );
+    fs.writeFileSync(markerPath, `${JSON.stringify({...marker, state: 'closed'})}\n`);
 
     expect(() => writeAuthority(root, values, true)).toThrow(
       'marker state must be active',

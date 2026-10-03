@@ -214,10 +214,7 @@ export function browserSideMeasure() {
     function findByExactText(text, root, candidateSelectors) {
       const scope = root || document.body;
       const els = Array.from(
-        scope.querySelectorAll(
-          candidateSelectors ||
-            '[role="option"], button, span, div, li, a, p, h1, h2, h3, h4',
-        ),
+        scope.querySelectorAll(candidateSelectors || '[role="option"], button, span, div, li, a, p, h1, h2, h3, h4'),
       );
       let best = null;
       for (const el of els) {
@@ -251,12 +248,8 @@ export function browserSideMeasure() {
       const cy = parseFloat(el.getAttribute('data-crowdin-vy') || '');
       const cw = parseFloat(el.getAttribute('data-crowdin-vw') || '');
       const ch = parseFloat(el.getAttribute('data-crowdin-vh') || '');
-      if (
-        Number.isFinite(cx) &&
-        Number.isFinite(cy) &&
-        Number.isFinite(cw) &&
-        Number.isFinite(ch)
-      ) {
+      if (Number.isFinite(cx) && Number.isFinite(cy) &&
+          Number.isFinite(cw) && Number.isFinite(ch)) {
         return {x: cx, y: cy, width: cw, height: ch};
       }
       return null;
@@ -401,8 +394,7 @@ export function browserSideMeasure() {
       );
       for (const el of inputs) {
         if (!visible(el)) continue;
-        if (!matchText(el.getAttribute('placeholder'), text, Infinity))
-          continue;
+        if (!matchText(el.getAttribute('placeholder'), text, Infinity)) continue;
         const r = rectOf(el);
         if (r) return r;
       }
@@ -474,9 +466,7 @@ export function browserSideMeasure() {
       const scope = containers.length ? containers : [document.body];
       let selector = 'input, textarea';
       if (kind === 'number') selector = 'input[type="number"]';
-      else if (kind === 'date')
-        selector =
-          'input[type="date"], input[type="datetime-local"], input[role="combobox"]';
+      else if (kind === 'date') selector = 'input[type="date"], input[type="datetime-local"], input[role="combobox"]';
       else if (kind === 'search') selector = 'input[placeholder*="Search" i]';
       for (const root of scope) {
         const inputs = Array.from(root.querySelectorAll(selector));
@@ -521,9 +511,7 @@ export function browserSideMeasure() {
           best = {x: r.x, y: r.y, w: r.width, h: r.height};
         }
       }
-      return best
-        ? {x: best.x, y: best.y, width: best.w, height: best.h}
-        : null;
+      return best ? {x: best.x, y: best.y, width: best.w, height: best.h} : null;
     }
 
     // srOnlyLabel(text) — find a <label>/<span>/[aria-hidden] whose exact
@@ -531,9 +519,7 @@ export function browserSideMeasure() {
     // Useful for `isLabelHidden` controls where the label is in the DOM
     // (1×1 sr-only) but translators need to see the whole control.
     function srOnlyLabel(text) {
-      const cands = Array.from(
-        document.querySelectorAll('label, span, [aria-hidden="true"]'),
-      );
+      const cands = Array.from(document.querySelectorAll('label, span, [aria-hidden="true"]'));
       for (const el of cands) {
         if ((el.textContent || '').trim() !== text) continue;
         const r = el.getBoundingClientRect();
@@ -630,10 +616,7 @@ export function browserSideMeasure() {
     // textRun(text) — Range-measure a bare text node reading `text`, for a
     // string sharing its element with other content ("↑↓" + "Navigate").
     function textRun(text) {
-      const walker = document.createTreeWalker(
-        document.body,
-        NodeFilter.SHOW_TEXT,
-      );
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
       let node;
       let best = null;
       while ((node = walker.nextNode())) {
@@ -667,12 +650,9 @@ export function browserSideMeasure() {
       if (cached !== undefined) return cached;
 
       const regions = Array.from(
-        document.querySelectorAll(
-          '[aria-live], [role="status"], [role="alert"]',
-        ),
+        document.querySelectorAll('[aria-live], [role="status"], [role="alert"]'),
       );
-      if (!regions.some(el => (el.textContent || '').trim() === text))
-        return null;
+      if (!regions.some(el => (el.textContent || '').trim() === text)) return null;
 
       const anchor = anchorSelector
         ? document.querySelector(anchorSelector)
@@ -686,30 +666,18 @@ export function browserSideMeasure() {
 
     // Dispatcher --------------------------------------------------------------
     switch (strategy) {
-      case 'visibleText':
-        return visibleText(args[0]);
-      case 'option':
-        return option(args[0]);
-      case 'placeholder':
-        return placeholder(args[0]);
-      case 'ariaLabel':
-        return ariaLabel(args[0]);
-      case 'chipOperator':
-        return chipOperator(args[0], args[1]);
-      case 'filterInput':
-        return filterInput(args[0]);
-      case 'footerButton':
-        return footerButton(args[0]);
-      case 'srOnlyLabel':
-        return srOnlyLabel(args[0]);
-      case 'srOnlyReveal':
-        return srOnlyReveal(args[0], args[1]);
-      case 'textRun':
-        return textRun(args[0]);
-      case 'liveRegionReveal':
-        return liveRegionReveal(args[0], args[1], args[2]);
-      default:
-        return null;
+      case 'visibleText': return visibleText(args[0]);
+      case 'option': return option(args[0]);
+      case 'placeholder': return placeholder(args[0]);
+      case 'ariaLabel': return ariaLabel(args[0]);
+      case 'chipOperator': return chipOperator(args[0], args[1]);
+      case 'filterInput': return filterInput(args[0]);
+      case 'footerButton': return footerButton(args[0]);
+      case 'srOnlyLabel': return srOnlyLabel(args[0]);
+      case 'srOnlyReveal': return srOnlyReveal(args[0], args[1]);
+      case 'textRun': return textRun(args[0]);
+      case 'liveRegionReveal': return liveRegionReveal(args[0], args[1], args[2]);
+      default: return null;
     }
   };
 }

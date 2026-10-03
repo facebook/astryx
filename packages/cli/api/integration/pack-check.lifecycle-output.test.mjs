@@ -91,7 +91,8 @@ describe('integrationPackCheck with lifecycle script output', () => {
 
   it('keeps a failing lifecycle script output in the pack_failed issue', async () => {
     writeThemePackage({
-      prepack: 'node -e "console.error(\'prepack exploded\'); process.exit(3)"',
+      prepack:
+        'node -e "console.error(\'prepack exploded\'); process.exit(3)"',
     });
 
     const result = await integrationPackCheck({cwd: tmpDir});

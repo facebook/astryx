@@ -53,14 +53,7 @@ function createFixture({
   packageExports = null,
   entryPoint = null,
 } = {}) {
-  const realCoreDir = path.resolve(
-    import.meta.dirname,
-    '..',
-    '..',
-    '..',
-    '..',
-    'core',
-  );
+  const realCoreDir = path.resolve(import.meta.dirname, '..', '..', '..', '..', 'core');
   const coreDir = path.join(tmpDir, 'packages', 'core');
   fs.mkdirSync(path.dirname(coreDir), {recursive: true});
   fs.symlinkSync(realCoreDir, coreDir);
@@ -175,19 +168,13 @@ describe('discoverOwnedComponents (core + integrations)', () => {
 describe('findIntegrationComponentDoc / Source', () => {
   it('finds doc + source by name', () => {
     const {integration} = createFixture();
-    expect(findIntegrationComponentDoc(integration, 'MetaAppShell')).toContain(
-      'MetaAppShell.doc.mjs',
-    );
-    expect(
-      findIntegrationComponentSource(integration, 'MetaAppShell'),
-    ).toContain('MetaAppShell.tsx');
+    expect(findIntegrationComponentDoc(integration, 'MetaAppShell')).toContain('MetaAppShell.doc.mjs');
+    expect(findIntegrationComponentSource(integration, 'MetaAppShell')).toContain('MetaAppShell.tsx');
   });
 
   it('returns null source when none present', () => {
     const {integration} = createFixture({withSource: false});
-    expect(
-      findIntegrationComponentSource(integration, 'MetaAppShell'),
-    ).toBeNull();
+    expect(findIntegrationComponentSource(integration, 'MetaAppShell')).toBeNull();
   });
 });
 
@@ -206,10 +193,7 @@ describe('component() — integration ownership via config', () => {
 
   it('--package resolves the integration component', async () => {
     createFixture();
-    const result = await component('MetaAppShell', {
-      cwd: tmpDir,
-      package: INTEGRATION_NAME,
-    });
+    const result = await component('MetaAppShell', {cwd: tmpDir, package: INTEGRATION_NAME});
     expect(result.type).toBe('component.detail');
     expect(result.data.package).toBe(INTEGRATION_NAME);
   });
@@ -247,20 +231,14 @@ describe('component() — integration ownership via config', () => {
 
   it('--package disambiguates an ambiguous name to core', async () => {
     createFixture({extraComponent: 'AppShell'});
-    const result = await component('AppShell', {
-      cwd: tmpDir,
-      package: CORE_PACKAGE,
-    });
+    const result = await component('AppShell', {cwd: tmpDir, package: CORE_PACKAGE});
     expect(result.type).toBe('component.detail');
     expect(result.data.package).toBe(CORE_PACKAGE);
   });
 
   it('--package disambiguates an ambiguous name to the integration', async () => {
     createFixture({extraComponent: 'AppShell'});
-    const result = await component('AppShell', {
-      cwd: tmpDir,
-      package: INTEGRATION_NAME,
-    });
+    const result = await component('AppShell', {cwd: tmpDir, package: INTEGRATION_NAME});
     expect(result.type).toBe('component.detail');
     expect(result.data.package).toBe(INTEGRATION_NAME);
   });
@@ -270,10 +248,7 @@ describe('component() — integration ownership via config', () => {
     // `ToolbarSearch`, so a specifier built from the component name would
     // point at a subpath the package does not export.
     createFixture({
-      packageExports: {
-        '.': './index.js',
-        './Toolbar': './components/Toolbar/index.js',
-      },
+      packageExports: {'.': './index.js', './Toolbar': './components/Toolbar/index.js'},
       entryPoint: {directory: 'Toolbar', component: 'ToolbarSearch'},
     });
     const result = await component('ToolbarSearch', {cwd: tmpDir});
@@ -291,10 +266,7 @@ describe('component() — integration ownership via config', () => {
 
   it('keeps a specifier the doc file states for itself', async () => {
     createFixture({
-      packageExports: {
-        '.': './index.js',
-        './Toolbar': './components/Toolbar/index.js',
-      },
+      packageExports: {'.': './index.js', './Toolbar': './components/Toolbar/index.js'},
       entryPoint: {
         directory: 'Toolbar',
         component: 'ToolbarSearch',
@@ -351,7 +323,10 @@ describe('component() — integration ownership via config', () => {
   it('resolves an exact installed package version and refuses another version', async () => {
     createFixture();
     const result = await component(
-      ['@test/meta@1.2.3/MetaAppShell', '@test/meta@9.9.9/MetaAppShell'],
+      [
+        '@test/meta@1.2.3/MetaAppShell',
+        '@test/meta@9.9.9/MetaAppShell',
+      ],
       {cwd: tmpDir},
     );
     expect(result.type).toBe('component.batch');
@@ -375,10 +350,10 @@ describe('component() — integration ownership via config', () => {
 
   it('reports a package-qualified selector that conflicts with --package', async () => {
     createFixture();
-    const result = await component(['@test/meta/MetaAppShell', 'Button'], {
-      cwd: tmpDir,
-      package: CORE_PACKAGE,
-    });
+    const result = await component(
+      ['@test/meta/MetaAppShell', 'Button'],
+      {cwd: tmpDir, package: CORE_PACKAGE},
+    );
     expect(result.type).toBe('component.batch');
     expect(result.data.results[0]).toMatchObject({
       selector: '@test/meta/MetaAppShell',

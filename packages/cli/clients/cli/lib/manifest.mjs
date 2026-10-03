@@ -95,12 +95,7 @@ export const RESPONSE_TYPES = {
   'integration add': ['integration.add'],
   'integration verify': ['integration.pack-check'],
   'integration pack': ['integration.pack-check'],
-  upgrade: [
-    'upgrade.list',
-    'upgrade.registry',
-    'upgrade.status',
-    'upgrade.run',
-  ],
+  upgrade: ['upgrade.list', 'upgrade.registry', 'upgrade.status', 'upgrade.run'],
   manifest: ['manifest'],
   doctor: ['doctor'],
   'doctor integration validate': ['integration.validate'],

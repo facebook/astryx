@@ -104,8 +104,8 @@ export default {
           type: 'list',
           style: 'unordered',
           items: [
-            "`subComponentOf` must exactly match the parent doc's `name`.",
-            "`description` explains this member's role in the family. `usage` is optional; add it when the member needs guidance beyond that sentence.",
+            '`subComponentOf` must exactly match the parent doc\'s `name`.',
+            '`description` explains this member\'s role in the family. `usage` is optional; add it when the member needs guidance beyond that sentence.',
             'The child inherits family fields such as `group`, `category`, `keywords`, `theming`, and `playground` unless it overrides them.',
           ],
         },

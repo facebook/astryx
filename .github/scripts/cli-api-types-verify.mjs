@@ -52,9 +52,7 @@ const nm = path.join(VERIFY_DIR, 'node_modules', '@astryxdesign');
 fs.mkdirSync(nm, {recursive: true});
 
 // 1. Pack (fires prepack → sync:api-types).
-console.log(
-  'Packing @astryxdesign/cli (fires prepack \u2192 sync:api-types)...',
-);
+console.log('Packing @astryxdesign/cli (fires prepack \u2192 sync:api-types)...');
 let packed;
 try {
   const out = execFileSync('pnpm', ['pack', '--pack-destination', VERIFY_DIR], {
@@ -65,9 +63,7 @@ try {
 } catch (e) {
   fail('pnpm pack failed', e.stdout || e.message);
 }
-const tarball = path.isAbsolute(packed)
-  ? packed
-  : path.join(VERIFY_DIR, path.basename(packed));
+const tarball = path.isAbsolute(packed) ? packed : path.join(VERIFY_DIR, path.basename(packed));
 if (!fs.existsSync(tarball)) fail(`packed tarball not found at ${tarball}`);
 
 // 2. Extract into node_modules/@astryxdesign/cli; link core as a sibling.
@@ -75,9 +71,7 @@ const pkgDir = path.join(nm, 'cli');
 fs.mkdirSync(pkgDir, {recursive: true});
 execFileSync('tar', ['-xzf', tarball, '-C', pkgDir, '--strip-components=1']);
 if (!fs.existsSync(path.join(pkgDir, 'api', 'index.d.mts'))) {
-  fail(
-    'packaged tarball is missing api/index.d.mts \u2014 the ./api types did not ship',
-  );
+  fail('packaged tarball is missing api/index.d.mts \u2014 the ./api types did not ship');
 }
 console.log('\u2713 tarball ships api/index.d.mts');
 // The authoring parser declarations are generated too, so the same "did it
@@ -91,11 +85,7 @@ console.log('\u2713 tarball ships the generated ./authoring declarations');
 // The api declarations re-export from foundation (e.g. api/template re-exports
 // the template adapter), so foundation's declarations have to ship too or those
 // re-exports resolve to `any` for a strict consumer.
-if (
-  !fs.existsSync(
-    path.join(pkgDir, 'foundation', 'discovery', 'template-adapter.d.mts'),
-  )
-) {
+if (!fs.existsSync(path.join(pkgDir, 'foundation', 'discovery', 'template-adapter.d.mts'))) {
   fail(
     'packaged tarball is missing foundation/discovery/template-adapter.d.mts \u2014 the api declarations re-export from foundation, so its declarations must ship too',
   );
@@ -242,30 +232,20 @@ fs.writeFileSync(
 );
 
 const tsc = path.join(ROOT, 'node_modules', '.bin', 'tsc');
-const res = spawnSync(
-  tsc,
-  ['--project', path.join(VERIFY_DIR, 'tsconfig.json')],
-  {
-    cwd: ROOT,
-    encoding: 'utf8',
-  },
-);
+const res = spawnSync(tsc, ['--project', path.join(VERIFY_DIR, 'tsconfig.json')], {
+  cwd: ROOT,
+  encoding: 'utf8',
+});
 if (res.error) fail('failed to run tsc', String(res.error));
 const output = `${res.stdout || ''}\n${res.stderr || ''}`;
 const errors = output.split('\n').filter(line => /error TS/.test(line));
 // Fail closed: a non-zero exit with no parseable diagnostics still means the
 // packaged surface did not cleanly type-check.
 if (res.status !== 0 && errors.length === 0) {
-  fail(
-    'tsc exited non-zero while checking the packaged ./api surface',
-    output.trim(),
-  );
+  fail('tsc exited non-zero while checking the packaged ./api surface', output.trim());
 }
 if (errors.length > 0) {
-  fail(
-    'a consumer of the packaged @astryxdesign/cli/api does not type-check',
-    errors.join('\n'),
-  );
+  fail('a consumer of the packaged @astryxdesign/cli/api does not type-check', errors.join('\n'));
 }
 
 console.log(
@@ -310,14 +290,8 @@ void [parseConfig, parseIntegration];
 `;
 fs.writeFileSync(path.join(VERIFY_DIR, 'authoring.mts'), authoringScenario);
 for (const [label, options] of [
-  [
-    'nodenext resolution and no Node types',
-    {module: 'nodenext', moduleResolution: 'nodenext'},
-  ],
-  [
-    'bundler resolution and no Node types',
-    {module: 'esnext', moduleResolution: 'bundler'},
-  ],
+  ['nodenext resolution and no Node types', {module: 'nodenext', moduleResolution: 'nodenext'}],
+  ['bundler resolution and no Node types', {module: 'esnext', moduleResolution: 'bundler'}],
 ]) {
   const config = path.join(VERIFY_DIR, 'tsconfig.authoring.json');
   fs.writeFileSync(
@@ -325,22 +299,14 @@ for (const [label, options] of [
     JSON.stringify(
       {
         extends: '../../../tsconfig.json',
-        compilerOptions: {
-          noEmit: true,
-          skipLibCheck: false,
-          types: [],
-          ...options,
-        },
+        compilerOptions: {noEmit: true, skipLibCheck: false, types: [], ...options},
         files: ['authoring.mts'],
       },
       null,
       2,
     ),
   );
-  const run = spawnSync(tsc, ['--project', config], {
-    cwd: ROOT,
-    encoding: 'utf8',
-  });
+  const run = spawnSync(tsc, ['--project', config], {cwd: ROOT, encoding: 'utf8'});
   if (run.error) fail('failed to run tsc', String(run.error));
   const out = `${run.stdout || ''}\n${run.stderr || ''}`;
   const found = out.split('\n').filter(line => /error TS/.test(line));

@@ -92,16 +92,10 @@ describe('FR47 — an explicitly scheduled minor admits breaking work', () => {
   });
 
   it('reads a declared minor as incompatible even without the category', () => {
-    expect(isIncompatible(entry('x.md', 'fix', {'@scope/a': 'minor'}))).toBe(
-      true,
-    );
-    expect(isIncompatible(entry('x.md', 'fix', {'@scope/a': 'patch'}))).toBe(
-      false,
-    );
-    expect(
-      run({entries: [entry('sneaky.md', 'fix', {'@scope/a': 'minor'})]})
-        .problems,
-    ).toHaveLength(1);
+    expect(isIncompatible(entry('x.md', 'fix', {'@scope/a': 'minor'}))).toBe(true);
+    expect(isIncompatible(entry('x.md', 'fix', {'@scope/a': 'patch'}))).toBe(false);
+    expect(run({entries: [entry('sneaky.md', 'fix', {'@scope/a': 'minor'})]})
+      .problems).toHaveLength(1);
   });
 });
 
@@ -132,9 +126,7 @@ describe('FR49 — the schedule fails closed', () => {
     expect(denied(schedule({version: '1.2.4'}))).toMatch(
       /schedules 1\.2\.4, but the published packages are at 1\.2\.3, whose next minor is 1\.3\.0/,
     );
-    expect(denied(schedule({version: '2.0.0'}))).toMatch(
-      /whose next minor is 1\.3\.0/,
-    );
+    expect(denied(schedule({version: '2.0.0'}))).toMatch(/whose next minor is 1\.3\.0/);
   });
 
   it('denies a schedule whose day has passed', () => {
@@ -170,9 +162,7 @@ describe('FR49 — the schedule fails closed', () => {
       versionByName: versions('1.2.3', {'@scope/b': '1.2.3-canary.abc1234'}),
       target: schedule(),
     });
-    expect(result.problems.join('\n')).toMatch(
-      /is never the published version/,
-    );
+    expect(result.problems.join('\n')).toMatch(/is never the published version/);
   });
 
   it('stays quiet about the published version when nothing asks', () => {

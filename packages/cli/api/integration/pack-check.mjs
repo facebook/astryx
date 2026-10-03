@@ -346,9 +346,7 @@ function moduleExportsName(file, exportName, seen = new Set()) {
 async function setsSectionIds(files) {
   for (const file of files) {
     if (typeof file !== 'string') continue;
-    const doc = /** @type {any} */ (
-      await loadTopicModule(file).catch(() => null)
-    );
+    const doc = /** @type {any} */ (await loadTopicModule(file).catch(() => null));
     const sections = Array.isArray(doc?.sections) ? doc.sections : [];
     if (sections.some((/** @type {any} */ section) => section?.id != null)) {
       return true;

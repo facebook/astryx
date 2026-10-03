@@ -13,10 +13,7 @@ import {program, JSON_SUPPORTED} from '../index.mjs';
 import {buildManifest} from './manifest.mjs';
 import {runCli} from '../../../test-utils/run-cli.mjs';
 
-const COMMANDS = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '../commands',
-);
+const COMMANDS = path.join(path.dirname(fileURLToPath(import.meta.url)), '../commands');
 
 /** @type {any[]} */
 const commandDocs = [];
@@ -26,10 +23,7 @@ for (const file of fs.readdirSync(COMMANDS).sort()) {
   if (doc?.type === 'command') commandDocs.push(doc);
 }
 
-const manifest = buildManifest(program, {
-  jsonSupported: JSON_SUPPORTED,
-  version: '0.0.0-test',
-});
+const manifest = buildManifest(program, {jsonSupported: JSON_SUPPORTED, version: '0.0.0-test'});
 /** @type {Map<string, any>} */
 const entries = new Map();
 const walk = (/** @type {any} */ c) => {
@@ -46,17 +40,14 @@ describe('command exit codes', () => {
     }
   });
 
-  it.each(commandDocs.map(d => [d.name, d]))(
+  it.each(commandDocs.map((d) => [d.name, d]))(
     '`astryx %s --help` lists the documented exit codes, then the examples and the docs route',
     async (name, doc) => {
       const {status, stdout} = await runCli([...name.split(' '), '--help']);
       expect(status).toBe(0);
       const section = stdout.slice(stdout.indexOf('\nExit codes:\n'));
       expect(section.startsWith('\nExit codes:\n'), stdout).toBe(true);
-      expect(
-        stdout.match(/\nExit codes?:\n/g),
-        'one exit-code section',
-      ).toHaveLength(1);
+      expect(stdout.match(/\nExit codes?:\n/g), 'one exit-code section').toHaveLength(1);
       for (const {code, when} of doc.exitCodes) {
         expect(section).toContain(`\n  ${code}  ${when}\n`);
       }
@@ -80,55 +71,30 @@ describe('command exit codes', () => {
   );
 
   it('bare `astryx layout` exits 1 in both modes, as documented', async () => {
-    const doc = commandDocs.find(d => d.name === 'layout');
-    expect(doc.exitCodes.find(e => e.code === 1)?.when).toMatch(
-      /^no subcommand/,
-    );
+    const doc = commandDocs.find((d) => d.name === 'layout');
+    expect(doc.exitCodes.find((e) => e.code === 1)?.when).toMatch(/^no subcommand/);
     expect((await runCli(['layout'])).status).toBe(1);
     expect((await runCli(['layout', '--json'])).status).toBe(1);
   });
 
   it('`astryx discover` with a blank query exits 1 only when packages are discovered', async () => {
-    const doc = commandDocs.find(d => d.name === 'discover');
-    expect(doc.exitCodes.find(e => e.code === 1)?.when).toMatch(
-      /blank query when packages are discovered/,
-    );
-    const project = fs.mkdtempSync(
-      path.join(os.tmpdir(), 'astryx-exit-discover-'),
-    );
+    const doc = commandDocs.find((d) => d.name === 'discover');
+    expect(doc.exitCodes.find((e) => e.code === 1)?.when).toMatch(/blank query when packages are discovered/);
+    const project = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-exit-discover-'));
     try {
-      expect(
-        (await runCli(['discover', '   ', '--json'], {cwd: project})).status,
-      ).toBe(0);
+      expect((await runCli(['discover', '   ', '--json'], {cwd: project})).status).toBe(0);
       const pkg = path.join(project, 'node_modules/@acme/ui');
       fs.mkdirSync(path.join(pkg, 'components'), {recursive: true});
-      fs.writeFileSync(
-        path.join(pkg, 'package.json'),
-        '{"name":"@acme/ui","version":"1.0.0","type":"module"}',
-      );
-      fs.writeFileSync(
-        path.join(pkg, 'astryx.integration.mjs'),
-        "export default {components: './components'};\n",
-      );
+      fs.writeFileSync(path.join(pkg, 'package.json'), '{"name":"@acme/ui","version":"1.0.0","type":"module"}');
+      fs.writeFileSync(path.join(pkg, 'astryx.integration.mjs'), "export default {components: './components'};\n");
       fs.writeFileSync(
         path.join(pkg, 'components/Widget.doc.mjs'),
         'export const doc = {type: "component", name: "Widget", description: "A widget"};\n',
       );
-      fs.writeFileSync(
-        path.join(pkg, 'components/Widget.tsx'),
-        'export function Widget() { return null; }\n',
-      );
-      fs.writeFileSync(
-        path.join(project, 'package.json'),
-        '{"name":"app","type":"module"}',
-      );
-      fs.writeFileSync(
-        path.join(project, 'astryx.config.mjs'),
-        "export default {integrations: ['@acme/ui']};\n",
-      );
-      expect(
-        (await runCli(['discover', '--json'], {cwd: project})).status,
-      ).toBe(0);
+      fs.writeFileSync(path.join(pkg, 'components/Widget.tsx'), 'export function Widget() { return null; }\n');
+      fs.writeFileSync(path.join(project, 'package.json'), '{"name":"app","type":"module"}');
+      fs.writeFileSync(path.join(project, 'astryx.config.mjs'), "export default {integrations: ['@acme/ui']};\n");
+      expect((await runCli(['discover', '--json'], {cwd: project})).status).toBe(0);
       const blank = await runCli(['discover', '   ', '--json'], {cwd: project});
       expect(blank.status).toBe(1);
       expect(JSON.parse(blank.stdout).code).toBe('ERR_INVALID_ARGUMENT');

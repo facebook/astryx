@@ -67,19 +67,8 @@ describe('discover.list leaf with discover sources', () => {
     }),
   ];
   const available = [
-    {
-      name: '@acme/charts',
-      version: '2.0.0',
-      components: ['Chart'],
-      source: 'Acme',
-    },
-    {
-      name: '@acme/themes',
-      version: '1.0.0',
-      components: [],
-      themes: ['ocean'],
-      source: 'Acme',
-    },
+    {name: '@acme/charts', version: '2.0.0', components: ['Chart'], source: 'Acme'},
+    {name: '@acme/themes', version: '1.0.0', components: [], themes: ['ocean'], source: 'Acme'},
   ];
   const sources = [{name: 'Acme', from: 'astryx.config', status: 'fresh'}];
 
@@ -103,23 +92,13 @@ describe('discover.list leaf with discover sources', () => {
       list(installed, {configured: true, available, sources, only: 'installed'})
         .meta?.available,
     ).toEqual([]);
-    const res = list(installed, {
-      configured: true,
-      available,
-      sources,
-      only: 'available',
-    });
+    const res = list(installed, {configured: true, available, sources, only: 'available'});
     expect(res.data).toEqual([]);
     expect(res.meta).toEqual({configured: true, available, sources});
   });
 
   it('keeps only packages that add a kind with type', () => {
-    const res = list(installed, {
-      configured: true,
-      available,
-      sources,
-      type: 'theme',
-    });
+    const res = list(installed, {configured: true, available, sources, type: 'theme'});
     expect(res.data).toEqual([]);
     expect(res.meta?.available?.map(e => e.name)).toEqual(['@acme/themes']);
   });

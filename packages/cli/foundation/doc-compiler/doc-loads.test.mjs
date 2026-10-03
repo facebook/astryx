@@ -53,7 +53,7 @@ const RUNNERS = {
     sites: ['import(node:child_process)', 'worker_threads.Worker'],
   },
   'api/integration/pack-check.mjs': {
-    runs: "`npm pack`, `tar`, and a Node script that resolves the packed specifiers, to check a package as published, and the package's doc modules, to see which need a newer CLI",
+    runs: '`npm pack`, `tar`, and a Node script that resolves the packed specifiers, to check a package as published, and the package\'s doc modules, to see which need a newer CLI',
     sites: ['child_process.spawnSync ×3', 'loadTopicModule'],
   },
   'api/swizzle/_github.mjs': {

@@ -69,7 +69,8 @@ export function patchSuccessor(base) {
 function isRealDay(day) {
   const parsed = new Date(`${day}T00:00:00Z`);
   return (
-    !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === day
+    !Number.isNaN(parsed.getTime()) &&
+    parsed.toISOString().slice(0, 10) === day
   );
 }
 
@@ -140,9 +141,7 @@ export function readSchedule({target, base, today}) {
   };
 
   if (typeof target !== 'object' || Array.isArray(target)) {
-    return deny(
-      'must be a JSON object with exactly "version" and "scheduledFor".',
-    );
+    return deny('must be a JSON object with exactly "version" and "scheduledFor".');
   }
 
   const keys = Object.keys(target).sort();
@@ -152,10 +151,7 @@ export function readSchedule({target, base, today}) {
     );
   }
 
-  if (
-    typeof target.version !== 'string' ||
-    !STABLE_VERSION.test(target.version)
-  ) {
+  if (typeof target.version !== 'string' || !STABLE_VERSION.test(target.version)) {
     return deny(`"version" must be a MAJOR.MINOR.PATCH version.`);
   }
   if (

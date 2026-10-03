@@ -89,7 +89,7 @@ export const doc = {
       type: 'string',
       description:
         'Destination (relative to cwd) to scaffold the template into. Its presence switches a named lookup into a copy. ' +
-        "A path that ends in .tsx, .ts, .jsx, .js, .mjs, .cjs, .css, .scss, .json, .md or .html is the file to write; any other path is a directory, which receives page.tsx for a page template or the block's own file name for a block.",
+        'A path that ends in .tsx, .ts, .jsx, .js, .mjs, .cjs, .css, .scss, .json, .md or .html is the file to write; any other path is a directory, which receives page.tsx for a page template or the block\'s own file name for a block.',
     },
     {
       name: 'options.overwrite',

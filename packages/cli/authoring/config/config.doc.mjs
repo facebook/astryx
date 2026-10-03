@@ -66,7 +66,7 @@ export const doc = {
       description:
         'Tell `astryx discover` which integrations this project could add: an async function that returns a catalog. An integration can provide one too, as a `discover` named export from its manifest. Discover calls every source, yours first, and one that fails never hides the others. Discover only reads; your package manager installs.',
       example:
-        'async ({signal, package: name, version}) => fetchCatalog({signal, name, version})',
+        "async ({signal, package: name, version}) => fetchCatalog({signal, name, version})",
     },
     {
       name: 'experimental',

@@ -191,13 +191,10 @@ function linkLines(links) {
   if (!links) return [];
   return [
     `Up: ${formatCliCommand(links.up)}`,
-    ...(links.previous
-      ? [`Previous: ${formatCliCommand(links.previous)}`]
-      : []),
+    ...(links.previous ? [`Previous: ${formatCliCommand(links.previous)}`] : []),
     ...(links.next ? [`Next: ${formatCliCommand(links.next)}`] : []),
     ...(links.related ?? []).map(
-      (command, i) =>
-        `${i === 0 ? 'Related: ' : '         '}${formatCliCommand(command)}`,
+      (command, i) => `${i === 0 ? 'Related: ' : '         '}${formatCliCommand(command)}`,
     ),
   ];
 }
@@ -289,9 +286,7 @@ function emitNode(node, detail, run) {
           // A child's route is its parent's route and its name, except a flat
           // topic in the Unorganized level, which keeps its own name.
           node.slots.every(slot =>
-            slot.children.every(child =>
-              child.route.startsWith(`${node.route}/`),
-            ),
+            slot.children.every(child => child.route.startsWith(`${node.route}/`)),
           )
             ? `Open one: ${run} docs ${node.route}/<name>`
             : `Open one: ${run} docs <name>`,

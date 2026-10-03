@@ -78,7 +78,7 @@ export const docs = {
               "The `exports` map has no entry for it. Run `npm pkg set 'exports[./components/AcmeCarousel]=./components/AcmeCarousel.tsx'`, or `'exports[./templates/acme-dashboard]=./templates/acme-dashboard.tsx'` for a template.",
             ],
             [
-              "`component_import_unresolvable`: `…but a consumer cannot resolve it: Cannot find package '@acme/old-name'`",
+              '`component_import_unresolvable`: `…but a consumer cannot resolve it: Cannot find package \'@acme/old-name\'`',
               "You renamed the package after the add wrote each doc's `import`. Change `import` in every component doc to the new name.",
             ],
             [

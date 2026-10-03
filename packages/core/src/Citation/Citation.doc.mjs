@@ -89,7 +89,9 @@ export const docs = {
     },
   ],
   theming: {
-    targets: [{className: 'astryx-citation', visualProps: ['variant']}],
+    targets: [
+      {className: 'astryx-citation', visualProps: ['variant']},
+    ],
   },
 };
 
@@ -122,7 +124,6 @@ export const docsDense = {
     source:
       'citation source with title, url, optional image src, and optional icon. url follows the Link href navigation rule; rejected destinations stay visible without navigation. Image src handling is separate.',
     number: 'display index for this citation.',
-    variant:
-      'display style: label chip with source title or compact numbered badge.',
+    variant: 'display style: label chip with source title or compact numbered badge.',
   },
 };

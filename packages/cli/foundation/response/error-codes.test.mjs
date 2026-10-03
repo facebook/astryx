@@ -272,17 +272,13 @@ describe('error codes: human mode stays clean', () => {
       expect(json.status, args.join(' ')).toBe(1);
       expect(JSON.parse(json.stdout), args.join(' ')).toMatchObject({
         code: 'ERR_UNKNOWN_SUBCOMMAND',
-        suggestions: expect.arrayContaining([
-          expect.objectContaining({reason: 'available subcommand'}),
-        ]),
+        suggestions: expect.arrayContaining([expect.objectContaining({reason: 'available subcommand'})]),
       });
     }
     // Text and JSON agree for a group that shows help when run bare.
     const text = await runCli(['doctor', 'integration', 'bogus-sub']);
     expect(text.status).toBe(1);
-    expect(text.stderr).toContain(
-      "unknown subcommand 'doctor integration bogus-sub'",
-    );
+    expect(text.stderr).toContain("unknown subcommand 'doctor integration bogus-sub'");
     const doctor = await runCli(['doctor', 'integrations']);
     expect(doctor.status).toBe(1);
     expect(doctor.stderr).toContain("unknown subcommand 'doctor integrations'");

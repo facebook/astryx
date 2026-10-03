@@ -23,19 +23,9 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import {
-  MIN_NODE_VERSION,
-  isNodeVersionSupported,
-} from '../../foundation/env/node-version.mjs';
-import {
-  CLI_ROOT,
-  findCoreDir,
-  findInstalledPackage,
-} from '../../foundation/fs/paths.mjs';
-import {
-  explainPackageManager,
-  getCliInvocation,
-} from '../../foundation/env/package-manager.mjs';
+import {MIN_NODE_VERSION, isNodeVersionSupported} from '../../foundation/env/node-version.mjs';
+import {CLI_ROOT, findCoreDir, findInstalledPackage} from '../../foundation/fs/paths.mjs';
+import {explainPackageManager, getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {
   findConfigPath,
   Project,
@@ -59,11 +49,7 @@ import {
 } from '../docs/_adapter.mjs';
 import {typedEdges} from '../docs/node/node.mjs';
 import {detailView, indexView} from '../../foundation/doc-compiler/lenses.mjs';
-import {
-  semverCompare,
-  isValidSemver,
-  satisfiesRange,
-} from '../../foundation/env/semver.mjs';
+import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
 
 /**
  * @typedef {'pass'|'warn'|'fail'|'info'} DoctorStatus
@@ -190,13 +176,11 @@ function findThemePackages(cwd) {
  * @returns {{wired: boolean, source: string|null}}
  */
 function detectThemeWiring(cwd) {
-  if (process.env.ASTRYX_THEME)
-    return {wired: true, source: 'ASTRYX_THEME env var'};
+  if (process.env.ASTRYX_THEME) return {wired: true, source: 'ASTRYX_THEME env var'};
   const nm = findNodeModules(cwd);
   const projectDir = nm ? path.dirname(nm) : cwd;
   const pkg = readPkg(path.join(projectDir, 'package.json'));
-  if (pkg?.astryx?.theme)
-    return {wired: true, source: 'package.json astryx.theme'};
+  if (pkg?.astryx?.theme) return {wired: true, source: 'package.json astryx.theme'};
   return {wired: false, source: null};
 }
 
@@ -239,9 +223,7 @@ export function checkCoreInstalled(ctx) {
       : '@astryxdesign/core could not be resolved from this project.',
     ...(found
       ? {}
-      : {
-          fix: 'Install the design system: `npm install @astryxdesign/core` (or yarn/pnpm/bun).',
-        }),
+      : {fix: 'Install the design system: `npm install @astryxdesign/core` (or yarn/pnpm/bun).'}),
   };
 }
 
@@ -260,8 +242,7 @@ export function checkVersionAlignment(ctx) {
       id: 'version-alignment',
       label: '@astryxdesign/core <-> @astryxdesign/cli alignment',
       status: 'info',
-      message:
-        'Skipped — could not read both @astryxdesign/core and @astryxdesign/cli versions.',
+      message: 'Skipped — could not read both @astryxdesign/core and @astryxdesign/cli versions.',
     };
   }
 
@@ -377,10 +358,7 @@ export async function checkConfig(ctx) {
     const {pathToFileURL} = await import('node:url');
     const mod = await import(pathToFileURL(ctx.configPath).href);
     const config = mod.default;
-    if (
-      config !== undefined &&
-      (typeof config !== 'object' || config === null)
-    ) {
+    if (config !== undefined && (typeof config !== 'object' || config === null)) {
       return {
         id: 'config',
         label: 'astryx.config.mjs',
@@ -475,13 +453,9 @@ export function checkImplicitIntegrations(ctx) {
         : '';
     // A declared root counts only when it exists: the manifest's keys are a
     // claim, and `integration-issues` reports the ones that are not true.
-    const declared = [
-      'components',
-      'templates',
-      'themes',
-      'docs',
-      'codemods',
-    ].filter(root => integration[/** @type {'components'} */ (root)]);
+    const declared = ['components', 'templates', 'themes', 'docs', 'codemods'].filter(
+      root => integration[/** @type {'components'} */ (root)],
+    );
     const missing = declared.filter(root => {
       const dir = integration[/** @type {'components'} */ (root)];
       if (typeof dir !== 'string') return false;
@@ -489,16 +463,12 @@ export function checkImplicitIntegrations(ctx) {
         typeof integration.__packageDir === 'string'
           ? integration.__packageDir
           : (ctx.cwd ?? process.cwd());
-      return !fs.existsSync(
-        path.isAbsolute(dir) ? dir : path.resolve(base, dir),
-      );
+      return !fs.existsSync(path.isAbsolute(dir) ? dir : path.resolve(base, dir));
     });
     const roots = declared.filter(root => !missing.includes(root));
     const contributes = roots.length > 0 ? roots.join(', ') : 'nothing';
     const absent =
-      missing.length > 0
-        ? ` (declared ${missing.join(', ')} missing on disk)`
-        : '';
+      missing.length > 0 ? ` (declared ${missing.join(', ')} missing on disk)` : '';
     return `${integration.name}${version}${alias} from ${integration.__dependencyField}, contributing ${contributes}${absent}`;
   });
 
@@ -555,9 +525,7 @@ export function checkAgentDocs(ctx) {
     path.join('.claude', 'CLAUDE.md'),
     '.cursorrules',
   ];
-  const present = candidates.filter(rel =>
-    fs.existsSync(path.join(ctx.cwd, rel)),
-  );
+  const present = candidates.filter(rel => fs.existsSync(path.join(ctx.cwd, rel)));
 
   if (present.length === 0) {
     return {
@@ -573,10 +541,8 @@ export function checkAgentDocs(ctx) {
     try {
       const content = fs.readFileSync(path.join(ctx.cwd, rel), 'utf-8');
       return (
-        (content.includes('<!-- ASTRYX:START -->') ||
-          content.includes('<!-- XDS:START -->')) &&
-        (content.includes('<!-- ASTRYX:END -->') ||
-          content.includes('<!-- XDS:END -->'))
+        (content.includes('<!-- ASTRYX:START -->') || content.includes('<!-- XDS:START -->')) &&
+        (content.includes('<!-- ASTRYX:END -->') || content.includes('<!-- XDS:END -->'))
       );
     } catch {
       return false;
@@ -661,12 +627,8 @@ export function checkPeerDeps(ctx) {
     // Pin the required range for anything wrong so the hint fixes it even when a
     // stale consumer range would otherwise resolve an incompatible version.
     // Quote targets containing shell metacharacters (e.g. `react@>=19.0.0`).
-    const quote = (/** @type {string} */ s) =>
-      /[<>|() ]/.test(s) ? `'${s}'` : s;
-    const targets = [
-      ...missing,
-      ...mismatched.map(m => `${m.name}@${m.want}`),
-    ].map(quote);
+    const quote = (/** @type {string} */ s) => (/[<>|() ]/.test(s) ? `'${s}'` : s);
+    const targets = [...missing, ...mismatched.map(m => `${m.name}@${m.want}`)].map(quote);
     return {
       id: 'peer-deps',
       label: '@astryxdesign/core peer dependencies',
@@ -704,8 +666,7 @@ export function checkIntegrationIssues(ctx) {
       id: 'integration-issues',
       label: 'Integration contributions',
       status: 'pass',
-      message:
-        'Integration contributions and cross-package relationships are valid.',
+      message: 'Integration contributions and cross-package relationships are valid.',
     };
   }
   const errors = issues.filter(issue => issue.severity === 'error').length;
@@ -1034,7 +995,7 @@ export async function checkAuthoringDocs(_ctx, options = {}) {
 
 /** How the CLI-docs audit's problems are fixed. */
 const CLI_DOCS_FIX =
-  'Set `namespace` on each CLI doc to the one that reads it: cli/commands for a command, cli/api for an API function or the output schema, error codes, and response types, and authoring for a file an author writes (and list it in AUTHORING_SELF_DOCS).';
+  "Set `namespace` on each CLI doc to the one that reads it: cli/commands for a command, cli/api for an API function or the output schema, error codes, and response types, and authoring for a file an author writes (and list it in AUTHORING_SELF_DOCS).";
 
 /** How the docs-tree check's problems are fixed. */
 const DOCS_TREE_FIX =
@@ -1114,7 +1075,8 @@ export async function checkDocsTree(_ctx, options = {}) {
   const id = 'docs-tree';
   const label = 'Docs tree';
   try {
-    const catalog = /** @type {any} */ (_ctx)?.docsCatalog ?? builtinCatalog();
+    const catalog =
+      /** @type {any} */ (_ctx)?.docsCatalog ?? builtinCatalog();
     const tree = options.tree ?? (await projectTree(catalog, {fresh: true}));
     const problems = tree.diagnostics
       .filter(d => d.severity === 'error')
@@ -1129,9 +1091,7 @@ export async function checkDocsTree(_ctx, options = {}) {
       );
       for (const {source, doc} of (await loadCliSelfDocs()).loaded) {
         if (CLI_DOC_NAMESPACES[doc.namespace]?.reader !== 'tree') continue;
-        if (
-          !placed.has(`@astryxdesign/cli\u0000${doc.type}\u0000${doc.name}`)
-        ) {
+        if (!placed.has(`@astryxdesign/cli\u0000${doc.type}\u0000${doc.name}`)) {
           problems.push(
             `${source} has namespace "${doc.namespace}", but no docs-tree namespace adopts it`,
           );
@@ -1194,9 +1154,7 @@ export async function checkDocsProgressiveDisclosure(ctx) {
   /** @type {string[]} */
   const problems = [];
   if (ctx.docsCatalogError) {
-    problems.push(
-      `The docs catalog could not be built: ${ctx.docsCatalogError}`,
-    );
+    problems.push(`The docs catalog could not be built: ${ctx.docsCatalogError}`);
   }
   for (const issue of ctx.docsCatalogIssues ?? []) {
     problems.push(`${issue.package ?? 'a contributed doc'}: ${issue.message}`);

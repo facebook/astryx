@@ -15,11 +15,7 @@ const scorecardRows = TEMPLATE_RUBRIC.categories
 export const docs = {
   type: 'generic',
   name: 'grade-template-with-agent',
-  placement: {
-    parent: 'namespace:write-good-templates',
-    slot: 'guides',
-    order: 20,
-  },
+  placement: {parent: 'namespace:write-good-templates', slot: 'guides', order: 20},
   title: 'Grade and improve with an agent',
   category: 'guide',
   description:

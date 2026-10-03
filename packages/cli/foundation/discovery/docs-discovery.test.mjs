@@ -168,7 +168,9 @@ describe('discoverIntegrationDocs', () => {
             {
               id: 'steps',
               title: 'Steps',
-              content: [{type: 'collection', source: {slot: 'guides'}}],
+              content: [
+                {type: 'collection', source: {slot: 'guides'}},
+              ],
             },
           ],
         }),

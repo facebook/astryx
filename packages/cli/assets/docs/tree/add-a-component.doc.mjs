@@ -21,13 +21,13 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "Choose a unique PascalCase name, such as `AcmeCarousel`. The name is the component's public export and CLI identity, so keep it stable. Use `displayName` when you only want to change the label people read.",
+          text: 'Choose a unique PascalCase name, such as `AcmeCarousel`. The name is the component\'s public export and CLI identity, so keep it stable. Use `displayName` when you only want to change the label people read.',
         },
         {
           type: 'list',
           style: 'unordered',
           items: [
-            "Prefer a name that describes the component's purpose in your product.",
+            'Prefer a name that describes the component\'s purpose in your product.',
             'Avoid a Core component name unless you are deliberately replacing that component.',
             'If replacement is truly required, read {@link generic:replace-a-core-component}.',
           ],

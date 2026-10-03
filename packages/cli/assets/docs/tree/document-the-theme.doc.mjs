@@ -21,7 +21,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "Give your theme a doc topic that extends the core `theme` topic, so an app that lists your package sees your theme at the end of `astryx docs theme`. Add it with `extends: 'theme'` ({@link generic:extend-or-replace}).",
+          text: 'Give your theme a doc topic that extends the core `theme` topic, so an app that lists your package sees your theme at the end of `astryx docs theme`. Add it with `extends: \'theme\'` ({@link generic:extend-or-replace}).',
         },
         {
           type: 'code',
@@ -60,7 +60,7 @@ export default {
       content: [
         {
           type: 'prose',
-          text: "Do not put theme usage in `agentDocs`. Agent lines land in every app's agent file and are for guidance needed every session; a theme's install-and-use steps belong in a doc topic that people and agents read on demand. See {@link generic:agent-guidance}.",
+          text: 'Do not put theme usage in `agentDocs`. Agent lines land in every app\'s agent file and are for guidance needed every session; a theme\'s install-and-use steps belong in a doc topic that people and agents read on demand. See {@link generic:agent-guidance}.',
         },
       ],
     },

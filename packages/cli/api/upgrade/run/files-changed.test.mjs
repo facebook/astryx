@@ -28,8 +28,7 @@ async function authoringTier() {
   const tier = all.find(({transforms}) =>
     transforms.some(t => t.name === 'migrate-authoring-imports'),
   );
-  if (!tier)
-    throw new Error('no registry version ships the authoring migration');
+  if (!tier) throw new Error('no registry version ships the authoring migration');
   return tier.version;
 }
 
@@ -84,15 +83,12 @@ describe('upgrade receipt — filesChanged across core and integration codemods'
   /** @type {string[]} */
   const dirs = [];
   afterEach(() => {
-    for (const dir of dirs.splice(0))
-      fs.rmSync(dir, {recursive: true, force: true});
+    for (const dir of dirs.splice(0)) fs.rmSync(dir, {recursive: true, force: true});
   });
 
   /** @param {{integrationCodemod: boolean}} options */
   async function run(options) {
-    const dir = fs.mkdtempSync(
-      path.join(process.cwd(), '.astryx-files-changed-'),
-    );
+    const dir = fs.mkdtempSync(path.join(process.cwd(), '.astryx-files-changed-'));
     dirs.push(dir);
     seed(dir, options);
     const tier = await authoringTier();
@@ -102,18 +98,14 @@ describe('upgrade receipt — filesChanged across core and integration codemods'
     return res.data;
   }
 
-  it(
-    'counts a file changed by both a core and an integration codemod once',
-    async () => {
-      const coreOnly = await run({integrationCodemod: false});
-      expect(coreOnly.filesChanged).toBe(1);
-      expect(coreOnly.transformsApplied).toBeGreaterThan(0);
+  it('counts a file changed by both a core and an integration codemod once', async () => {
+    const coreOnly = await run({integrationCodemod: false});
+    expect(coreOnly.filesChanged).toBe(1);
+    expect(coreOnly.transformsApplied).toBeGreaterThan(0);
 
-      const both = await run({integrationCodemod: true});
-      expect(both.integrations).toEqual(['@acme/widgets']);
-      expect(both.filesChanged).toBe(1);
-      expect(both.transformsApplied).toBe(coreOnly.transformsApplied + 1);
-    },
-    SLOW,
-  );
+    const both = await run({integrationCodemod: true});
+    expect(both.integrations).toEqual(['@acme/widgets']);
+    expect(both.filesChanged).toBe(1);
+    expect(both.transformsApplied).toBe(coreOnly.transformsApplied + 1);
+  }, SLOW);
 });

@@ -107,8 +107,7 @@ export async function runCli(args, cwdOrOpts) {
   try {
     await program.parseAsync(['node', 'astryx', ...args]);
     // Text-mode error paths set process.exitCode rather than calling exit.
-    if (status === 0 && process.exitCode)
-      status = Number(process.exitCode) || 0;
+    if (status === 0 && process.exitCode) status = Number(process.exitCode) || 0;
   } catch (e) {
     if (e instanceof ExitSignal) {
       status = e.code;

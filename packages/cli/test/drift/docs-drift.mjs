@@ -186,10 +186,7 @@ export async function runDrift() {
     errors,
     docs,
     'response-types',
-    new Set([
-      ...Object.values(manifest.responseTypes).flat(),
-      ...ROOT_RESPONSE_TYPES,
-    ]),
+    new Set([...Object.values(manifest.responseTypes).flat(), ...ROOT_RESPONSE_TYPES]),
   );
 
   return {count: docs.length, errors};

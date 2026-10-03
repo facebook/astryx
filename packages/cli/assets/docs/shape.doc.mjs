@@ -13,7 +13,7 @@ export const docs = {
   sections: [
     {
       title: 'Overview',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -23,7 +23,7 @@ export const docs = {
     },
     {
       title: 'Radius Scale',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -38,7 +38,7 @@ export const docs = {
     },
     {
       title: 'Concentric Radius',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -56,7 +56,7 @@ export const docs = {
     },
     {
       title: 'Best Practices',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'list',

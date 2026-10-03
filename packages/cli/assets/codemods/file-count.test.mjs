@@ -26,7 +26,7 @@ beforeEach(() => {
 afterEach(() => fs.rmSync(dir, {recursive: true, force: true}));
 
 /** A transform that rewrites one distinctive token, so several can stack. */
-const renaming = (from, to) => file =>
+const renaming = (from, to) => (file) =>
   file.source.includes(from) ? file.source.split(from).join(to) : null;
 
 /** @param {string} name @param {string[]} contents */
@@ -47,37 +47,14 @@ describe('core codemod runner — filesChanged counts files', () => {
         {
           version: '0.0.2',
           transforms: [
-            {
-              name: 'one',
-              transform: renaming('ONE', '1'),
-              meta: {title: 'one'},
-            },
-            {
-              name: 'two',
-              transform: renaming('TWO', '2'),
-              meta: {title: 'two'},
-            },
-            {
-              name: 'three',
-              transform: renaming('THREE', '3'),
-              meta: {title: 'three'},
-            },
-            {
-              name: 'four',
-              transform: renaming('FOUR', '4'),
-              meta: {title: 'four'},
-            },
+            {name: 'one', transform: renaming('ONE', '1'), meta: {title: 'one'}},
+            {name: 'two', transform: renaming('TWO', '2'), meta: {title: 'two'}},
+            {name: 'three', transform: renaming('THREE', '3'), meta: {title: 'three'}},
+            {name: 'four', transform: renaming('FOUR', '4'), meta: {title: 'four'}},
           ],
         },
       ],
-      {
-        apply: true,
-        path: dir,
-        root: dir,
-        codemod: undefined,
-        skipCodemods: new Set(),
-        silent: true,
-      },
+      {apply: true, path: dir, root: dir, codemod: undefined, skipCodemods: new Set(), silent: true},
     );
 
     expect(result.totalTransformsApplied).toBe(4);
@@ -93,22 +70,11 @@ describe('core codemod runner — filesChanged counts files', () => {
         {
           version: '0.0.2',
           transforms: [
-            {
-              name: 'one',
-              transform: renaming('ONE', '1'),
-              meta: {title: 'one'},
-            },
+            {name: 'one', transform: renaming('ONE', '1'), meta: {title: 'one'}},
           ],
         },
       ],
-      {
-        apply: true,
-        path: dir,
-        root: dir,
-        codemod: undefined,
-        skipCodemods: new Set(),
-        silent: true,
-      },
+      {apply: true, path: dir, root: dir, codemod: undefined, skipCodemods: new Set(), silent: true},
     );
 
     expect(result.totalTransformsApplied).toBe(2);
@@ -123,22 +89,11 @@ describe('core codemod runner — filesChanged counts files', () => {
         {
           version: '0.0.2',
           transforms: [
-            {
-              name: 'one',
-              transform: renaming('ONE', '1'),
-              meta: {title: 'one'},
-            },
+            {name: 'one', transform: renaming('ONE', '1'), meta: {title: 'one'}},
           ],
         },
       ],
-      {
-        apply: true,
-        path: dir,
-        root: dir,
-        codemod: undefined,
-        skipCodemods: new Set(),
-        silent: true,
-      },
+      {apply: true, path: dir, root: dir, codemod: undefined, skipCodemods: new Set(), silent: true},
     );
 
     expect(result.totalFilesChanged).toBe(0);
@@ -168,14 +123,7 @@ describe('integration codemod runner — filesChanged counts files', () => {
           ],
         },
       ],
-      {
-        apply: true,
-        path: dir,
-        root: dir,
-        skipCodemods: new Set(),
-        jscodeshift,
-        silent: true,
-      },
+      {apply: true, path: dir, root: dir, skipCodemods: new Set(), jscodeshift, silent: true},
     );
 
     expect(result.totalTransformsApplied).toBe(3);
@@ -206,14 +154,7 @@ describe('core codemod runner — a project codemod', () => {
           ],
         },
       ],
-      {
-        apply: true,
-        path: dir,
-        root: dir,
-        codemod: undefined,
-        skipCodemods: new Set(),
-        silent: true,
-      },
+      {apply: true, path: dir, root: dir, codemod: undefined, skipCodemods: new Set(), silent: true},
     );
 
     expect(result.totalFilesChanged).toBe(2);

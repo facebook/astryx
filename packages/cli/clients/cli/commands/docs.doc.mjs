@@ -32,8 +32,7 @@ export const doc = {
     {
       flag: '--index',
       param: 'options.index',
-      description:
-        "List the topic's sections and their keys, even for a topic with one section",
+      description: "List the topic's sections and their keys, even for a topic with one section",
     },
     {
       flag: '--full',
@@ -48,10 +47,7 @@ export const doc = {
     {label: 'One section', cli: 'astryx docs theme quick-start'},
     {label: 'The CLI docs tree', cli: 'astryx docs cli'},
     {label: 'One API function', cli: 'astryx docs cli/api/functions/search'},
-    {
-      label: 'A whole guide',
-      cli: 'astryx docs cli/integrations/quick-start --full',
-    },
+    {label: 'A whole guide', cli: 'astryx docs cli/integrations/quick-start --full'},
   ],
   exitCodes: [
     {code: 0, when: 'success'},

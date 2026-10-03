@@ -12,10 +12,7 @@ export const docs = {
     'Set how your integration behaves in an app: agent guidance, debug and gap reports, and more as it grows.',
   keywords: ['configuration', 'agent guidance', 'debug', 'gap reports'],
   slots: {
-    guides: {
-      title: 'Configuration',
-      accepts: {kinds: ['generic', 'namespace']},
-    },
+    guides: {title: 'Configuration', accepts: {kinds: ['generic', 'namespace']}},
   },
   blocks: [
     {

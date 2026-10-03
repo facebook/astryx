@@ -41,17 +41,9 @@
  * such as help printed as the failure report, still passes through.
  */
 
-import {
-  API_VERSION,
-  isJsonMode,
-  toErrorEnvelope,
-} from '../../../foundation/response/json.mjs';
+import {API_VERSION, isJsonMode, toErrorEnvelope} from '../../../foundation/response/json.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
-import {
-  setCommand,
-  setOutcome,
-  recordHelp,
-} from '../../../foundation/debug/index.mjs';
+import {setCommand, setOutcome, recordHelp} from '../../../foundation/debug/index.mjs';
 
 /**
  * Fully-qualified name of a command relative to the root program, e.g.
@@ -105,18 +97,17 @@ export function buildHelpEnvelope(cmd) {
   }
 
   /** @type {Array<{flags: string, description: string, defaultValue?: unknown, choices?: string[]}>} */
-  const options = cmd.options.map(o => {
+  const options = cmd.options.map((o) => {
     /** @type {any} */
     const opt = {flags: o.flags, description: o.description || ''};
     if (o.defaultValue !== undefined) opt.defaultValue = o.defaultValue;
-    if (Array.isArray(o.argChoices) && o.argChoices.length)
-      opt.choices = o.argChoices;
+    if (Array.isArray(o.argChoices) && o.argChoices.length) opt.choices = o.argChoices;
     return opt;
   });
 
   const subcommands = cmd.commands
-    .filter(s => !/** @type {any} */ (s)._hidden)
-    .map(s => ({name: s.name(), description: s.description() || ''}));
+    .filter((s) => !(/** @type {any} */ (s))._hidden)
+    .map((s) => ({name: s.name(), description: s.description() || ''}));
 
   return {
     apiVersion: API_VERSION,
@@ -141,7 +132,7 @@ export function buildHelpEnvelope(cmd) {
  */
 export function buildHelpErrorEnvelope(cmd) {
   const available = cmd.commands
-    .filter(s => !/** @type {any} */ (s)._hidden && s.name() !== 'help')
+    .filter(s => !(/** @type {any} */ (s))._hidden && s.name() !== 'help')
     .map(s => s.name());
   if (!cmd.parent) {
     // Commander dispatches `help <name>` with ['help', <name>, ...] in args.
@@ -155,10 +146,7 @@ export function buildHelpErrorEnvelope(cmd) {
   const group = fullNameOf(cmd);
   return toErrorEnvelope(
     `'${group}' needs a subcommand`,
-    available.map(name => ({
-      name: `${group} ${name}`,
-      reason: 'available subcommand',
-    })),
+    available.map(name => ({name: `${group} ${name}`, reason: 'available subcommand'})),
     ERROR_CODES.ERR_MISSING_ARGUMENT,
   );
 }
@@ -262,7 +250,7 @@ function applyShimRecursively(cmd) {
     throw err;
   });
   cmd.configureOutput({
-    writeOut: str => process.stdout.write(str),
+    writeOut: (str) => process.stdout.write(str),
     // Commander's own "error: ..." line never reaches the user. Under --json a
     // consumer parsing both streams must not see it alongside the envelope;
     // in text mode it is Commander's format, not Astryx's, so an invalid
@@ -274,7 +262,7 @@ function applyShimRecursively(cmd) {
     // ONLY that line. Commander also writes HELP through this channel when it
     // shows help because the invocation failed (a command group with no
     // subcommand), and that output is still wanted in text mode.
-    writeErr: str => {
+    writeErr: (str) => {
       if (jsonActive()) return;
       if (/^error:\s/i.test(str)) return;
       process.stderr.write(str);
@@ -361,9 +349,7 @@ function patchOutputHelp(cmd) {
   if (anyCmd.__xdsHelpPatched) return;
   anyCmd.__xdsHelpPatched = true;
   const original = cmd.outputHelp.bind(cmd);
-  anyCmd.outputHelp = function patchedOutputHelp(
-    /** @type {any} */ contextOptions,
-  ) {
+  anyCmd.outputHelp = function patchedOutputHelp(/** @type {any} */ contextOptions) {
     if (jsonActive()) {
       if (!process.__xdsJsonHandled) {
         process.__xdsJsonHandled = true;
@@ -389,9 +375,7 @@ function patchPrototype(CommandCtor) {
   if (proto.__xdsHelpPatched) return;
   proto.__xdsHelpPatched = true;
   const original = proto.outputHelp;
-  proto.outputHelp = function patchedProtoOutputHelp(
-    /** @type {any} */ contextOptions,
-  ) {
+  proto.outputHelp = function patchedProtoOutputHelp(/** @type {any} */ contextOptions) {
     if (jsonActive()) {
       if (!process.__xdsJsonHandled) {
         process.__xdsJsonHandled = true;
@@ -427,9 +411,7 @@ function patchPrototype(CommandCtor) {
  */
 export function handleCommanderError(err) {
   if (!err || typeof err !== 'object' || !('code' in err)) return false;
-  const code =
-    /** @type {{code?: string, exitCode?: number, message?: string}} */ (err)
-      .code;
+  const code = /** @type {{code?: string, exitCode?: number, message?: string}} */ (err).code;
   if (typeof code !== 'string' || !code.startsWith('commander.')) return false;
 
   const exitCode = /** @type {{exitCode?: number}} */ (err).exitCode ?? 1;

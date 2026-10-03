@@ -242,8 +242,7 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
   // without case, as topic names do, so `CLI` claims `cli`.
   const cliRoutes = new Set(topics.length > 0 ? [UNORGANIZED] : []);
   for (const topic of topics) {
-    if (topic.provider === CLI_PROVIDER)
-      cliRoutes.add(topic.name.toLowerCase());
+    if (topic.provider === CLI_PROVIDER) cliRoutes.add(topic.name.toLowerCase());
   }
   // Every other name a topic answers to (the topics it replaced, directly or
   // through a chain) is that topic's route too: `astryx docs <name>` opens the

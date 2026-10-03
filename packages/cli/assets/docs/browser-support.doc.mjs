@@ -32,12 +32,7 @@ export const docs = {
         },
         {
           type: 'table',
-          headers: [
-            'Tier',
-            'Baseline',
-            'Representative versions',
-            'What your users experience',
-          ],
+          headers: ['Tier', 'Baseline', 'Representative versions', 'What your users experience'],
           rows: [
             [
               'Tier 1: Full fidelity',

@@ -232,7 +232,9 @@ describe('spec-only workflow contract', () => {
   it('keeps the schema approval roster within the ENGOWNERS set', () => {
     const {parseOwnerFile} = require('./knowledge-frontmatter.cjs');
     const latestSchema = JSON.parse(read('docs/schemas/knowledge/v4.json'));
-    const engineeringOwners = parseOwnerFile(read('.github/ENGOWNERS'));
+    const engineeringOwners = parseOwnerFile(
+      read('.github/ENGOWNERS'),
+    );
 
     for (const owner of latestSchema.approvalOwners) {
       expect(engineeringOwners).toContain(owner);

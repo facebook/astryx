@@ -32,11 +32,7 @@ export const docs = {
           type: 'table',
           headers: ['Template', 'Directory target', 'Explicit file target'],
           rows: [
-            [
-              'Page',
-              'Writes `<target>/page.tsx`',
-              'Writes the exact file path',
-            ],
+            ['Page', 'Writes `<target>/page.tsx`', 'Writes the exact file path'],
             [
               'Block',
               'Writes `<target>/<source-basename>.tsx`',

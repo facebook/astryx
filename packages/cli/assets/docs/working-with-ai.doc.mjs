@@ -44,7 +44,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: "By default this creates `AGENTS.md` (the tool-agnostic standard most agents read). To target a specific tool's file instead:",
+          text: 'By default this creates `AGENTS.md` (the tool-agnostic standard most agents read). To target a specific tool\'s file instead:',
         },
         {
           type: 'code',
@@ -105,7 +105,7 @@ npx @astryxdesign/cli init --features agents --agent all       # every agent fil
       content: [
         {
           type: 'prose',
-          text: "Paste this into your AI before writing any component code. If your AI can't answer these questions, it'll know to install the agent docs first.",
+          text: 'Paste this into your AI before writing any component code. If your AI can\'t answer these questions, it\'ll know to install the agent docs first.',
         },
         {
           type: 'code',

@@ -459,7 +459,7 @@ describe('provider identity conflicts', () => {
     ]);
   });
 
-  it("reports an unversioned set-aside package whose spec is the winner's name", async () => {
+  it('reports an unversioned set-aside package whose spec is the winner\'s name', async () => {
     installPackage(
       'widgets-old',
       {name: '@acme/widgets', version: '1.0.0'},

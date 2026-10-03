@@ -26,8 +26,7 @@ export const doc = {
     {
       name: 'result',
       type: 'unknown',
-      description:
-        'A parsed response envelope, typically from parseResponse().',
+      description: 'A parsed response envelope, typically from parseResponse().',
       required: true,
     },
   ],
@@ -41,7 +40,8 @@ export const doc = {
   examples: [
     {
       label: 'Branch on the stable code',
-      code: "const result = parseResponse(stdout);\nif (isError(result)) {\n  if (result.code === 'ERR_UNKNOWN_COMPONENT') suggest(result.suggestions);\n}",
+      code:
+        "const result = parseResponse(stdout);\nif (isError(result)) {\n  if (result.code === 'ERR_UNKNOWN_COMPONENT') suggest(result.suggestions);\n}",
     },
   ],
   related: ['parseResponse', 'assertResponse'],

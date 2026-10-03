@@ -26,8 +26,7 @@ export const CLI_PACKAGE = '@astryxdesign/cli';
  */
 export const DOCS_TREE_CLI = '0.7.0';
 
-const VERSION_RE =
-  /^v?(\d+|[xX*])(?:\.(\d+|[xX*]))?(?:\.(\d+|[xX*]))?(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+const VERSION_RE = /^v?(\d+|[xX*])(?:\.(\d+|[xX*]))?(?:\.(\d+|[xX*]))?(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 
 /**
  * A version or partial version as MAJOR.MINOR.PATCH, a wildcard part as 0.

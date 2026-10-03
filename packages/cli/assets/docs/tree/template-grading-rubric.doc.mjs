@@ -102,11 +102,7 @@ const gradeRows = TEMPLATE_RUBRIC.grades.map(({grade, min, max, meaning}) => [
 export const docs = {
   type: 'generic',
   name: 'template-grading-rubric',
-  placement: {
-    parent: 'namespace:write-good-templates',
-    slot: 'guides',
-    order: 10,
-  },
+  placement: {parent: 'namespace:write-good-templates', slot: 'guides', order: 10},
   title: 'Full grading rubric',
   category: 'guide',
   description:

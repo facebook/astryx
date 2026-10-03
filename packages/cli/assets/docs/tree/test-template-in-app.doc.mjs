@@ -91,10 +91,7 @@ npm run build`,
           type: 'table',
           headers: ['Dimension', 'Required checks'],
           rows: [
-            [
-              'Width',
-              'Wide and narrow; include the smallest supported viewport',
-            ],
+            ['Width', 'Wide and narrow; include the smallest supported viewport'],
             ['Color', 'Every supported color mode and theme'],
             ['Input', 'Keyboard and pointer for the primary task'],
             [

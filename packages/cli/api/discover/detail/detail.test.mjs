@@ -66,24 +66,9 @@ describe('discover.detail leaf with a discover source', () => {
     latest: '2.0.0',
     source: 'Acme',
     versions: [
-      {
-        version: '2.1.0-beta.1',
-        publishedAt: '2026-09-30T00:00:00.000Z',
-        prerelease: true,
-        status: 'ok',
-      },
-      {
-        version: '2.0.0',
-        publishedAt: '2026-09-20T00:00:00.000Z',
-        prerelease: false,
-        status: 'ok',
-      },
-      {
-        version: '1.0.0',
-        publishedAt: null,
-        prerelease: false,
-        status: 'manifest_load_error',
-      },
+      {version: '2.1.0-beta.1', publishedAt: '2026-09-30T00:00:00.000Z', prerelease: true, status: 'ok'},
+      {version: '2.0.0', publishedAt: '2026-09-20T00:00:00.000Z', prerelease: false, status: 'ok'},
+      {version: '1.0.0', publishedAt: null, prerelease: false, status: 'manifest_load_error'},
     ],
     contributions: [
       {kind: 'component', name: 'Chart'},
@@ -91,8 +76,7 @@ describe('discover.detail leaf with a discover source', () => {
     ],
   };
   /** @param {string} name @param {string} [version] */
-  const add = (name, version) =>
-    `pnpm add ${version ? `${name}@${version}` : name}`;
+  const add = (name, version) => `pnpm add ${version ? `${name}@${version}` : name}`;
 
   it('describes a package the project does not have, with the command that adds it', () => {
     expect(detail(PACKAGES, '@acme/charts', {catalog, add}).data).toEqual({
@@ -111,11 +95,7 @@ describe('discover.detail leaf with a discover source', () => {
   });
 
   it('describes any version, prereleases included', () => {
-    const {data} = detail(PACKAGES, '@acme/charts', {
-      catalog,
-      add,
-      version: '2.1.0-beta.1',
-    });
+    const {data} = detail(PACKAGES, '@acme/charts', {catalog, add, version: '2.1.0-beta.1'});
     expect(data.version).toBe('2.1.0-beta.1');
     expect(data.install).toBe('pnpm add @acme/charts@2.1.0-beta.1');
   });

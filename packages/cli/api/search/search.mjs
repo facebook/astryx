@@ -469,11 +469,7 @@ const STRONG_TOKEN_SCORE = 70;
  * @returns {string[]}
  */
 function phraseWords(text) {
-  return (
-    unlinkText(text)
-      .toLowerCase()
-      .match(/[a-z0-9]+/g) ?? []
-  );
+  return unlinkText(text).toLowerCase().match(/[a-z0-9]+/g) ?? [];
 }
 
 /**
@@ -660,7 +656,8 @@ export function scoreQuery(term, tokens, candidate) {
   if (matched === tokens.length && strongest >= STRONG_TOKEN_SCORE) {
     return {
       score:
-        FULL_COVERAGE_SCORE + Math.floor((strongest - MIN_TOKEN_SCORE) / 6.25),
+        FULL_COVERAGE_SCORE +
+        Math.floor((strongest - MIN_TOKEN_SCORE) / 6.25),
       reason,
       matched,
       total,
@@ -1096,11 +1093,7 @@ async function gatherDocs(cwd) {
     const packages = new Map([
       [entry.providerId ?? entry.package, entry.package],
       ...entry.extensions.map(
-        ext =>
-          /** @type {[string, string]} */ ([
-            ext.providerId ?? ext.package,
-            ext.package,
-          ]),
+        ext => /** @type {[string, string]} */ ([ext.providerId ?? ext.package, ext.package]),
       ),
     ]);
     candidates.push(
@@ -1178,8 +1171,7 @@ async function gatherDocs(cwd) {
       _topic: node.route,
       _title: path.join(' › '),
       _command: `astryx docs ${node.route}`,
-      _parent:
-        node.parent == null ? 'astryx docs' : `astryx docs ${node.parent}`,
+      _parent: node.parent == null ? 'astryx docs' : `astryx docs ${node.parent}`,
       _package: node.provider,
     });
   }
@@ -1343,9 +1335,7 @@ function topicCandidates(
       _title: `${docTitle} › ${section.title}`,
       _command: `astryx docs ${name} ${key}`,
       _parent: `astryx docs ${name} --index`,
-      ...((sectionPackage?.(key) ?? pkg)
-        ? {_package: sectionPackage?.(key) ?? pkg}
-        : {}),
+      ...((sectionPackage?.(key) ?? pkg) ? {_package: sectionPackage?.(key) ?? pkg} : {}),
     });
   }
   return out;

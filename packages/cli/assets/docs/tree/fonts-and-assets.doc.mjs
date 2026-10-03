@@ -13,7 +13,7 @@ export const docs = {
   title: 'Fonts',
   category: 'guide',
   description:
-    "Name your theme's fonts in its tokens, then have the app load them — Astryx never loads a font file.",
+    'Name your theme\'s fonts in its tokens, then have the app load them — Astryx never loads a font file.',
   sections: [
     {
       id: 'name-the-font',
@@ -48,14 +48,14 @@ export const oceanTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: "Naming a family does not load it — Astryx never downloads a font file. The app that uses your theme loads the font itself, so your job is to tell your users which families and weights to load, in your theme's docs ({@link generic:document-the-theme}). An app loads a font one of two ways:",
+          text: 'Naming a family does not load it — Astryx never downloads a font file. The app that uses your theme loads the font itself, so your job is to tell your users which families and weights to load, in your theme\'s docs ({@link generic:document-the-theme}). An app loads a font one of two ways:',
         },
         {
           type: 'list',
           style: 'unordered',
           items: [
-            "Link a hosted stylesheet in the app's `<head>` — for example a Google Fonts `<link>` covering every weight the UI uses.",
-            "Self-host: serve the font files and add an `@font-face` for each weight and style to the app's global CSS.",
+            'Link a hosted stylesheet in the app\'s `<head>` — for example a Google Fonts `<link>` covering every weight the UI uses.',
+            'Self-host: serve the font files and add an `@font-face` for each weight and style to the app\'s global CSS.',
           ],
         },
         {

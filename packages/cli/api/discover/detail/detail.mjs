@@ -63,10 +63,7 @@ export function detail(packages, name, options = {}) {
     : {
         ...catalogEntry(
           /** @type {NonNullable<typeof catalog>} */ (catalog),
-          version ??
-            defaultVersion(
-              /** @type {NonNullable<typeof catalog>} */ (catalog),
-            ),
+          version ?? defaultVersion(/** @type {NonNullable<typeof catalog>} */ (catalog)),
         ),
         installed: pkg != null,
         ...(pkg?.version ? {installedVersion: pkg.version} : {}),

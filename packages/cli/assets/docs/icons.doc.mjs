@@ -15,7 +15,7 @@ export const docs = {
   sections: [
     {
       title: 'Available Names',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -59,7 +59,7 @@ export const docs = {
     },
     {
       title: 'Custom Icons',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -79,7 +79,7 @@ import { HeartIcon } from 'lucide-react';
     },
     {
       title: 'Theme Overrides',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -104,7 +104,7 @@ export const brandTheme = defineTheme({
     },
     {
       title: 'Component and Library Icons',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'prose',

@@ -318,8 +318,7 @@ function functionSection(fn, index) {
     // A Default column only when some parameter declares a default, so a
     // function with none keeps a three-column table.
     const defaults = params.some(
-      (/** @type {any} */ p) =>
-        typeof p.default === 'string' && p.default !== '',
+      (/** @type {any} */ p) => typeof p.default === 'string' && p.default !== '',
     );
     content.push({
       type: 'table',

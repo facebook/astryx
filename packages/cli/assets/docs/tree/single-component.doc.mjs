@@ -25,7 +25,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "`integration add component` creates the normal doc for one public component. Keep the generated identity and import, then replace its sample text and props with the component's real public contract.",
+          text: '`integration add component` creates the normal doc for one public component. Keep the generated identity and import, then replace its sample text and props with the component\'s real public contract.',
         },
         {
           type: 'code',

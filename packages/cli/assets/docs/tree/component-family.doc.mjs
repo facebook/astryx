@@ -32,7 +32,7 @@ export const docs = {
           style: 'unordered',
           items: [
             'Put the primary or most-used export first.',
-            "Use a full entry when this file owns that export's description and signature.",
+            'Use a full entry when this file owns that export\'s description and signature.',
             'Use `props` for a component entry. Use `params` and `returns` for a hook entry.',
             'Do not add private implementation helpers or exports that people should not use directly.',
           ],
@@ -105,7 +105,7 @@ export default {
       content: [
         {
           type: 'prose',
-          text: "When one family member needs its own doc, replace its full entry with `{name: 'MemberName'}` and move the details into a sibling doc. The parent keeps the family relationship without copying the child's content. Continue with {@link generic:subcomponent}.",
+          text: 'When one family member needs its own doc, replace its full entry with `{name: \'MemberName\'}` and move the details into a sibling doc. The parent keeps the family relationship without copying the child\'s content. Continue with {@link generic:subcomponent}.',
         },
       ],
     },

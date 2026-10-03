@@ -29,7 +29,7 @@ export const docs = {
   blocks: [
     {
       type: 'prose',
-      text: "A component's `.doc.mjs` is part of the integration's public contract, not optional commentary. Astryx uses it for CLI output and search, and people and agents read it to decide whether the component fits and how to use it.",
+      text: 'A component\'s `.doc.mjs` is part of the integration\'s public contract, not optional commentary. Astryx uses it for CLI output and search, and people and agents read it to decide whether the component fits and how to use it.',
     },
     {
       type: 'list',

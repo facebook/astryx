@@ -15,7 +15,7 @@ export const docs = {
     // ── Overview ────────────────────────────────────────────────────────────
     {
       title: 'Overview',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -31,7 +31,7 @@ export const docs = {
     // ── Font Families ───────────────────────────────────────────────────────
     {
       title: 'Font Families',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -49,11 +49,11 @@ export const docs = {
     {
       id: 'loading-custom-fonts',
       title: 'Custom fonts',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
-          text: "Astryx never loads font files. defineTheme and the built CSS only set font-family: naming a webfont (Fraunces, JetBrains Mono, and so on) makes every browser look for it, and quietly fall back when the app has not loaded it. `astryx theme build` warns when a theme names families that are neither CSS generics nor common system fonts and prints the snippet to add; loading the font is always the app's job.",
+          text: 'Astryx never loads font files. defineTheme and the built CSS only set font-family: naming a webfont (Fraunces, JetBrains Mono, and so on) makes every browser look for it, and quietly fall back when the app has not loaded it. `astryx theme build` warns when a theme names families that are neither CSS generics nor common system fonts and prints the snippet to add; loading the font is always the app\'s job.',
         },
         {
           type: 'code',
@@ -87,7 +87,7 @@ export const docs = {
     // ── Font Sizes ──────────────────────────────────────────────────────────
     {
       title: 'Font Sizes',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -104,7 +104,7 @@ export const docs = {
     // ── Font Weights ────────────────────────────────────────────────────────
     {
       title: 'Font Weights',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -121,7 +121,7 @@ export const docs = {
     // ── Line Height ─────────────────────────────────────────────────────────
     {
       title: 'Line Height',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -137,7 +137,7 @@ export const docs = {
     // ── Type Scale ──────────────────────────────────────────────────────────
     {
       title: 'Type Scale',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -154,7 +154,7 @@ export const docs = {
     // ── Display Text ────────────────────────────────────────────────────────
     {
       title: 'Display Text',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -171,7 +171,7 @@ export const docs = {
     {
       id: 'usage',
       title: 'Headings and text',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -219,7 +219,7 @@ export const docs = {
     {
       id: 'custom-type-scale',
       title: 'Custom type scale',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -255,7 +255,7 @@ const denseTheme = defineTheme({
     // ── Best Practices ──────────────────────────────────────────────────────
     {
       title: 'Best Practices',
-      category: 'foundations',
+  category: 'foundations',
       content: [
         {
           type: 'list',

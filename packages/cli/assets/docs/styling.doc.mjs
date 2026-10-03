@@ -13,7 +13,7 @@ export const docs = {
   sections: [
     {
       title: 'Overview',
-      category: 'guide',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -23,26 +23,10 @@ export const docs = {
           type: 'table',
           headers: ['Approach', 'Use for', 'Example'],
           rows: [
-            [
-              'StyleX',
-              'Component-specific overrides, reusable styles, pseudo-classes, and typed tokens',
-              '`const styles = stylex.create(...); <Button xstyle={styles.save} />`',
-            ],
-            [
-              'Tailwind utilities',
-              'Page layout, wrappers, and utility styling',
-              '`className="flex gap-3 p-4"`',
-            ],
-            [
-              'className',
-              'Integrating with external CSS or Tailwind on components',
-              '`className="my-card shadow-lg"`',
-            ],
-            [
-              'Styling-library token aliases',
-              'Keeping Panda, Chakra, MUI, Emotion, styled-components, UnoCSS, CSS Modules, or Sass in sync with the system',
-              "`colors.surface = 'var(--color-background-surface)'`",
-            ],
+            ['StyleX', 'Component-specific overrides, reusable styles, pseudo-classes, and typed tokens', '`const styles = stylex.create(...); <Button xstyle={styles.save} />`'],
+            ['Tailwind utilities', 'Page layout, wrappers, and utility styling', '`className="flex gap-3 p-4"`'],
+            ['className', 'Integrating with external CSS or Tailwind on components', '`className="my-card shadow-lg"`'],
+            ['Styling-library token aliases', 'Keeping Panda, Chakra, MUI, Emotion, styled-components, UnoCSS, CSS Modules, or Sass in sync with the system', "`colors.surface = 'var(--color-background-surface)'`"],
           ],
         },
         {
@@ -53,7 +37,7 @@ export const docs = {
     },
     {
       title: 'xstyle Prop',
-      category: 'guide',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -104,7 +88,7 @@ const overrides = stylex.create({
     },
     {
       title: 'Tailwind Integration',
-      category: 'guide',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -131,11 +115,11 @@ const overrides = stylex.create({
     },
     {
       title: 'className and style Props',
-      category: 'guide',
+  category: 'guide',
       content: [
         {
           type: 'prose',
-          text: "Every component also accepts standard `className` and `style` props. `className` is appended after the component's own classes. `style` is merged after StyleX inline styles, so consumer values win on conflict.",
+          text: 'Every component also accepts standard `className` and `style` props. `className` is appended after the component\'s own classes. `style` is merged after StyleX inline styles, so consumer values win on conflict.',
         },
         {
           type: 'code',
@@ -148,13 +132,13 @@ const overrides = stylex.create({
         },
         {
           type: 'prose',
-          text: "For layout and wrapper styling, Tailwind utilities on className work well. For component-specific overrides (padding, colors, borders), prefer xstyle; it integrates with StyleX deduplication and the component's internal style pipeline.",
+          text: 'For layout and wrapper styling, Tailwind utilities on className work well. For component-specific overrides (padding, colors, borders), prefer xstyle; it integrates with StyleX deduplication and the component\'s internal style pipeline.',
         },
       ],
     },
     {
       title: 'Rest Props (Prop Drilling)',
-      category: 'guide',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -182,13 +166,13 @@ const overrides = stylex.create({
         },
         {
           type: 'prose',
-          text: "A few HTML attributes are intentionally omitted from the base type (contentEditable, dangerouslySetInnerHTML). children is not in the base type either; components that accept children declare it explicitly, so slot-based components don't silently drop JSX children.",
+          text: 'A few HTML attributes are intentionally omitted from the base type (contentEditable, dangerouslySetInnerHTML). children is not in the base type either; components that accept children declare it explicitly, so slot-based components don\'t silently drop JSX children.',
         },
       ],
     },
     {
       title: 'Compound Components',
-      category: 'guide',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -237,7 +221,7 @@ const overrides = stylex.create({
       // preferred-selector-surface-data-attributes` keeps working.
       id: 'preferred-selector-surface-data-attributes',
       title: 'Data attribute selectors',
-      category: 'guide',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -280,7 +264,7 @@ const overrides = stylex.create({
     {
       id: 'deprecated-classes',
       title: 'Deprecated: Bare Prop and State Classes',
-      category: 'guide',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -301,13 +285,13 @@ const overrides = stylex.create({
         },
         {
           type: 'prose',
-          text: "The upgrade rewrites a selector only when an `.astryx-*` component class qualifies it, turning the old class into an `:is(...)` union of that class and the data attributes it stood for. The union keeps the selector's specificity and your own `className` matches, and keeps matching once the bare classes are gone; the `.astryx-*` classes themselves stay. It leaves unqualified classes (a bare `.primary`), unknown classes, and selectors in JavaScript or TypeScript alone: migrate those by hand, and only where they target Astryx.",
+          text: 'The upgrade rewrites a selector only when an `.astryx-*` component class qualifies it, turning the old class into an `:is(...)` union of that class and the data attributes it stood for. The union keeps the selector\'s specificity and your own `className` matches, and keeps matching once the bare classes are gone; the `.astryx-*` classes themselves stay. It leaves unqualified classes (a bare `.primary`), unknown classes, and selectors in JavaScript or TypeScript alone: migrate those by hand, and only where they target Astryx.',
         },
       ],
     },
     {
       title: 'Design Tokens',
-      category: 'guide',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -356,7 +340,7 @@ const styles = stylex.create({
     {
       id: 'stylex-setup',
       title: 'StyleX Build Setup (required for swizzled components)',
-      category: 'guide',
+  category: 'guide',
       content: [
         {
           type: 'prose',
@@ -367,33 +351,23 @@ const styles = stylex.create({
           headers: ['Bundler', 'StyleX plugin'],
           rows: [
             ['Webpack', '@stylexjs/webpack-plugin'],
-            [
-              'Vite / Rollup',
-              '@stylexjs/rollup-plugin (or a community Vite plugin)',
-            ],
-            [
-              'Babel (any bundler)',
-              '@stylexjs/babel-plugin + @stylexjs/postcss-plugin',
-            ],
-            [
-              'Next.js (App Router, SWC)',
-              'An SWC-based transform; see the Next.js note below',
-            ],
+            ['Vite / Rollup', '@stylexjs/rollup-plugin (or a community Vite plugin)'],
+            ['Babel (any bundler)', '@stylexjs/babel-plugin + @stylexjs/postcss-plugin'],
+            ['Next.js (App Router, SWC)', 'An SWC-based transform; see the Next.js note below'],
           ],
         },
         {
           type: 'prose',
-          text: "Next.js (App Router) is the sharp edge. StyleX's canonical compiler is a Babel plugin, but introducing a Babel config in Next.js disables the SWC compiler, and with it SWC-dependent features like `next/font`.",
+          text: 'Next.js (App Router) is the sharp edge. StyleX\'s canonical compiler is a Babel plugin, but introducing a Babel config in Next.js disables the SWC compiler, and with it SWC-dependent features like `next/font`.',
         },
         {
           type: 'prose',
-          text: "The repo's `apps/example-nextjs-stylex` takes the Babel path (`next/babel`, `@stylexjs/babel-plugin`, `@stylexjs/postcss-plugin`). Babel turns off SWC, so that app does not use `next/font`. To keep `next/font`, use an SWC transform such as `@stylexswc/nextjs-plugin`.",
+          text: 'The repo\'s `apps/example-nextjs-stylex` takes the Babel path (`next/babel`, `@stylexjs/babel-plugin`, `@stylexjs/postcss-plugin`). Babel turns off SWC, so that app does not use `next/font`. To keep `next/font`, use an SWC transform such as `@stylexswc/nextjs-plugin`.',
         },
         {
           type: 'code',
           lang: 'js',
-          label:
-            'next.config.mjs: SWC-based StyleX transform (keeps next/font working)',
+          label: 'next.config.mjs: SWC-based StyleX transform (keeps next/font working)',
           code: `import stylexPlugin from '@stylexswc/nextjs-plugin';
 
 export default stylexPlugin({
@@ -419,7 +393,7 @@ export default stylexPlugin({
     },
     {
       title: 'What NOT to Do',
-      category: 'guide',
+  category: 'guide',
       content: [
         {
           type: 'list',
@@ -429,7 +403,7 @@ export default stylexPlugin({
             'Hardcoded colors (#fff, rgb(...)). Use var(--color-*) tokens or Tailwind semantic classes (text-primary, bg-surface).',
             'Hardcoded spacing (16px, 1rem). Use var(--spacing-*) tokens or Tailwind spacing utilities (p-4, gap-3).',
             'Wrapping a component in a <div> just to add margin. Use xstyle with stylex.create on the component.',
-            "Using !important. If styles aren't applying, check specificity; xstyle is merged last.",
+            'Using !important. If styles aren\'t applying, check specificity; xstyle is merged last.',
           ],
         },
       ],

@@ -21,7 +21,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: "Apps copy the component doc's `import` field into their code, so that exact specifier must resolve from your packed package. `integration add` writes it together with an `exports` entry in package.json.",
+          text: 'Apps copy the component doc\'s `import` field into their code, so that exact specifier must resolve from your packed package. `integration add` writes it together with an `exports` entry in package.json.',
         },
         {
           type: 'code',

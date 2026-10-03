@@ -18,16 +18,8 @@ import {installJsonShim} from './json-shim.mjs';
 
 describe('a parse error prints the Astryx error format', () => {
   it.each([
-    [
-      'invalid --lang value',
-      ['theme', 'list', '--lang', 'zh-Hans'],
-      'ERR_INVALID_LANG',
-    ],
-    [
-      'invalid --detail value',
-      ['theme', 'list', '--detail', 'nope'],
-      'ERR_INVALID_DETAIL',
-    ],
+    ['invalid --lang value', ['theme', 'list', '--lang', 'zh-Hans'], 'ERR_INVALID_LANG'],
+    ['invalid --detail value', ['theme', 'list', '--detail', 'nope'], 'ERR_INVALID_DETAIL'],
     ['unknown option', ['component', '--bogus-flag'], 'ERR_INVALID_OPTION'],
     ['missing argument', ['theme', 'build'], 'ERR_MISSING_ARGUMENT'],
   ])('%s', async (_label, args, code) => {
@@ -45,7 +37,7 @@ describe('a parse error prints the Astryx error format', () => {
     expect(json.stderr).toBe('');
   });
 
-  it("carries Commander's explanation, not just a generic line", async () => {
+  it('carries Commander\'s explanation, not just a generic line', async () => {
     const {stderr} = await runCli(['theme', 'list', '--lang', 'zh-Hans']);
     expect(stderr).toContain("'zh-Hans' is invalid");
     expect(stderr).toContain('en, zh, dense');

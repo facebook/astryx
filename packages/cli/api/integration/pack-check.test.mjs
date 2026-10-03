@@ -340,10 +340,7 @@ describe('integrationPackCheck', () => {
   });
 
   it('fails a package that ships a namespace doc on a CLI range that cannot read it', async () => {
-    writePackage({
-      manifest: "export default {docs: './docs'};\n",
-      themes: false,
-    });
+    writePackage({manifest: "export default {docs: './docs'};\n", themes: false});
     fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
     fs.writeFileSync(
       path.join(tmpDir, 'docs', 'acme.doc.mjs'),
@@ -374,10 +371,7 @@ describe('integrationPackCheck', () => {
   }, 120_000);
 
   it('fails a package with only a placed guide on a CLI range that cannot read the docs tree, and passes flat topics', async () => {
-    writePackage({
-      manifest: "export default {docs: './docs'};\n",
-      themes: false,
-    });
+    writePackage({manifest: "export default {docs: './docs'};\n", themes: false});
     fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
     fs.writeFileSync(
       path.join(tmpDir, 'docs', 'notes.doc.mjs'),
@@ -402,10 +396,7 @@ describe('integrationPackCheck', () => {
   }, 120_000);
 
   it('fails a package whose doc section sets id on a CLI range that rejects the field', async () => {
-    writePackage({
-      manifest: "export default {docs: './docs'};\n",
-      themes: false,
-    });
+    writePackage({manifest: "export default {docs: './docs'};\n", themes: false});
     fs.mkdirSync(path.join(tmpDir, 'docs'), {recursive: true});
     const topic = (/** @type {string} */ section) =>
       `export default {type: 'generic', name: 'notes', title: 'Notes', description: 'Notes.', sections: [${section}]};\n`;
@@ -416,9 +407,7 @@ describe('integrationPackCheck', () => {
       );
     fs.writeFileSync(
       file,
-      topic(
-        "{title: 'Take notes', content: [{type: 'prose', text: 'Notes.'}]}",
-      ),
+      topic("{title: 'Take notes', content: [{type: 'prose', text: 'Notes.'}]}"),
     );
     expect(await codes()).not.toContain('section_ids_need_cli');
     // A fresh file name: the module loader caches a path once it is imported.
@@ -438,10 +427,7 @@ describe('integrationPackCheck', () => {
   }, 120_000);
 
   it('fails a package with a template that sets replaces on a CLI range that rejects the field', async () => {
-    writePackage({
-      manifest: "export default {templates: './templates'};\n",
-      themes: false,
-    });
+    writePackage({manifest: "export default {templates: './templates'};\n", themes: false});
     fs.mkdirSync(path.join(tmpDir, 'templates'), {recursive: true});
     fs.writeFileSync(
       path.join(tmpDir, 'templates', 'acme-shell.doc.mjs'),

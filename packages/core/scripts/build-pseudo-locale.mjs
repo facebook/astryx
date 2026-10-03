@@ -26,78 +26,23 @@ const EN_PATH = resolve(HERE, '..', 'locales', 'en.json');
 const PSEUDO_PATH = resolve(HERE, '..', 'locales', 'pseudo.json');
 
 const ACCENTED = {
-  a: 'à',
-  b: 'ƀ',
-  c: 'ç',
-  d: 'ð',
-  e: 'é',
-  f: 'ƒ',
-  g: 'ĝ',
-  h: 'ĥ',
-  i: 'í',
-  j: 'ĵ',
-  k: 'ķ',
-  l: 'ł',
-  m: 'ɱ',
-  n: 'ñ',
-  o: 'ó',
-  p: 'þ',
-  q: 'ɋ',
-  r: 'ř',
-  s: 'š',
-  t: 'ţ',
-  u: 'ú',
-  v: 'ṽ',
-  w: 'ŵ',
-  x: 'ẋ',
-  y: 'ý',
-  z: 'ž',
-  A: 'À',
-  B: 'Ɓ',
-  C: 'Ç',
-  D: 'Ð',
-  E: 'É',
-  F: 'Ƒ',
-  G: 'Ĝ',
-  H: 'Ĥ',
-  I: 'Í',
-  J: 'Ĵ',
-  K: 'Ķ',
-  L: 'Ł',
-  M: 'Ṁ',
-  N: 'Ñ',
-  O: 'Ó',
-  P: 'Þ',
-  Q: 'Ǫ',
-  R: 'Ř',
-  S: 'Š',
-  T: 'Ţ',
-  U: 'Ú',
-  V: 'Ṽ',
-  W: 'Ŵ',
-  X: 'Ẋ',
-  Y: 'Ý',
-  Z: 'Ž',
+  a: 'à', b: 'ƀ', c: 'ç', d: 'ð', e: 'é', f: 'ƒ', g: 'ĝ', h: 'ĥ',
+  i: 'í', j: 'ĵ', k: 'ķ', l: 'ł', m: 'ɱ', n: 'ñ', o: 'ó', p: 'þ',
+  q: 'ɋ', r: 'ř', s: 'š', t: 'ţ', u: 'ú', v: 'ṽ', w: 'ŵ', x: 'ẋ',
+  y: 'ý', z: 'ž',
+  A: 'À', B: 'Ɓ', C: 'Ç', D: 'Ð', E: 'É', F: 'Ƒ', G: 'Ĝ', H: 'Ĥ',
+  I: 'Í', J: 'Ĵ', K: 'Ķ', L: 'Ł', M: 'Ṁ', N: 'Ñ', O: 'Ó', P: 'Þ',
+  Q: 'Ǫ', R: 'Ř', S: 'Š', T: 'Ţ', U: 'Ú', V: 'Ṽ', W: 'Ŵ', X: 'Ẋ',
+  Y: 'Ý', Z: 'Ž',
 };
 
 export function pseudoTranslate(msg) {
   let out = '';
   let depth = 0;
   for (const ch of msg) {
-    if (ch === '{') {
-      depth++;
-      out += ch;
-      continue;
-    }
-    if (ch === '}') {
-      depth--;
-      out += ch;
-      continue;
-    }
-    if (depth > 0) {
-      out += ch;
-      continue;
-    }
+    if (ch === '{') { depth++; out += ch; continue; }
+    if (ch === '}') { depth--; out += ch; continue; }
+    if (depth > 0) { out += ch; continue; }
     out += ACCENTED[ch] ?? ch;
   }
   return `\u27E6${out}\u27E7`;

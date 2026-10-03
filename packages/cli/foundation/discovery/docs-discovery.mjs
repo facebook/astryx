@@ -384,11 +384,7 @@ export function problemsInNamespace(doc) {
     }
   }
   const slots = doc?.slots;
-  if (
-    slots == null ||
-    typeof slots !== 'object' ||
-    Object.keys(slots).length === 0
-  ) {
+  if (slots == null || typeof slots !== 'object' || Object.keys(slots).length === 0) {
     problems.push('slots: expected at least one slot');
     return problems;
   }
@@ -396,10 +392,7 @@ export function problemsInNamespace(doc) {
     if (typeof slot?.title !== 'string' || slot.title === '') {
       problems.push(`slots.${name}.title: expected a non-empty string`);
     }
-    if (
-      !Array.isArray(slot?.accepts?.kinds) ||
-      slot.accepts.kinds.length === 0
-    ) {
+    if (!Array.isArray(slot?.accepts?.kinds) || slot.accepts.kinds.length === 0) {
       problems.push(`slots.${name}.accepts.kinds: expected at least one kind`);
     }
   }

@@ -22,7 +22,7 @@ it('accepts byte-identical package trees', () => {
     'package.json': '{}\n',
     'dist/index.js': 'export {};\n',
   });
-  expect(comparePackageTrees(local, published)).toEqual([]);
+  expect(comparePackageTrees(local, published)).toEqual( []);
 });
 
 it('reports missing, unexpected, and changed package bytes', () => {
@@ -36,7 +36,7 @@ it('reports missing, unexpected, and changed package bytes', () => {
     'dist/index.js': 'published\n',
     'dist/only-published.js': 'published\n',
   });
-  expect(comparePackageTrees(local, published)).toEqual([
+  expect(comparePackageTrees(local, published)).toEqual( [
     'published package differs at dist/index.js',
     'published package is missing dist/only-local.js',
     'published package has unexpected dist/only-published.js',

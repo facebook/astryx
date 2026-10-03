@@ -6,7 +6,8 @@ export const docs = {
   name: 'getting-started',
   title: 'Getting Started',
   category: 'guide',
-  description: 'Add the design system to your project and start building.',
+  description:
+    'Add the design system to your project and start building.',
   keywords: ['quick start', 'setup', 'install'],
 
   sections: [
@@ -31,7 +32,7 @@ export const docs = {
           type: 'code',
           lang: 'text',
           label: 'Give it a look',
-          code: 'Ask me what look and feel this app should have. Run `npx @astryxdesign/cli theme list` and start from the closest available theme with `theme add <slug>`; the list includes bundled themes and themes from installed integrations, with each owner shown. Use `--package` if owners share a slug. The command copies the theme in as editable source. If none fit, run `npx @astryxdesign/cli theme template` and fill in the annotated template it writes. Default to neutral if I have no preference, and show me the result before moving on.',
+          code: "Ask me what look and feel this app should have. Run `npx @astryxdesign/cli theme list` and start from the closest available theme with `theme add <slug>`; the list includes bundled themes and themes from installed integrations, with each owner shown. Use `--package` if owners share a slug. The command copies the theme in as editable source. If none fit, run `npx @astryxdesign/cli theme template` and fill in the annotated template it writes. Default to neutral if I have no preference, and show me the result before moving on.",
         },
       ],
     },
@@ -149,36 +150,12 @@ const overrides = stylex.create({
           type: 'table',
           headers: ['Example', 'Stack', 'Path'],
           rows: [
-            [
-              'Next.js',
-              'Next.js + theme CSS',
-              '[apps/example-nextjs](https://github.com/facebook/astryx/tree/main/apps/example-nextjs)',
-            ],
-            [
-              'Next.js + StyleX',
-              'Next.js + StyleX for custom styles',
-              '[apps/example-nextjs-stylex](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-stylex)',
-            ],
-            [
-              'Next.js + Tailwind',
-              'Next.js + Tailwind bridge',
-              '[apps/example-nextjs-tailwind](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-tailwind)',
-            ],
-            [
-              'Next.js Source',
-              'Next.js importing from source',
-              '[apps/example-nextjs-source](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-source)',
-            ],
-            [
-              'Vite',
-              'Vite',
-              '[apps/example-vite](https://github.com/facebook/astryx/tree/main/apps/example-vite)',
-            ],
-            [
-              'Vite + Tailwind',
-              'Vite + Tailwind bridge',
-              '[apps/example-vite-tailwind](https://github.com/facebook/astryx/tree/main/apps/example-vite-tailwind)',
-            ],
+            ['Next.js', 'Next.js + theme CSS', '[apps/example-nextjs](https://github.com/facebook/astryx/tree/main/apps/example-nextjs)'],
+            ['Next.js + StyleX', 'Next.js + StyleX for custom styles', '[apps/example-nextjs-stylex](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-stylex)'],
+            ['Next.js + Tailwind', 'Next.js + Tailwind bridge', '[apps/example-nextjs-tailwind](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-tailwind)'],
+            ['Next.js Source', 'Next.js importing from source', '[apps/example-nextjs-source](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-source)'],
+            ['Vite', 'Vite', '[apps/example-vite](https://github.com/facebook/astryx/tree/main/apps/example-vite)'],
+            ['Vite + Tailwind', 'Vite + Tailwind bridge', '[apps/example-vite-tailwind](https://github.com/facebook/astryx/tree/main/apps/example-vite-tailwind)'],
           ],
         },
         {
@@ -209,7 +186,7 @@ pnpm dev`,
         },
         {
           type: 'prose',
-          text: "Then discover what's available:",
+          text: 'Then discover what\'s available:',
         },
         {
           type: 'code',

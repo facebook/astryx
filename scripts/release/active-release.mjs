@@ -498,9 +498,7 @@ function writeAuthority(root, values, refresh) {
 
   if (refresh) {
     if (!markerExists || !planExists)
-      throw new Error(
-        'release refresh requires an existing active marker and plan',
-      );
+      throw new Error('release refresh requires an existing active marker and plan');
     const existingMarker = readJson(markerPath);
     const existingPlan = readJson(planPath);
     const identityErrors = validateIdentity(existingMarker, existingPlan);

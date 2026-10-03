@@ -314,11 +314,8 @@ export async function collectIdentities(loaded) {
 
   if (loaded.docs && fs.existsSync(loaded.docs)) {
     try {
-      const {
-        records,
-        guides,
-        errors: docErrors,
-      } = await discoverIntegrationDocs(loaded);
+      const {records, guides, errors: docErrors} =
+        await discoverIntegrationDocs(loaded);
       for (const docError of docErrors) {
         errors.push({kind: 'docs', message: docError.message});
       }

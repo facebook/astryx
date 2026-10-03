@@ -25,15 +25,7 @@ export const doc = {
   importPath: '@astryxdesign/cli/api',
   signature:
     'themeTemplate(options?: {targetPath?: string, overwrite?: boolean, cwd?: string}): ThemeTemplateResponse',
-  keywords: [
-    'theme',
-    'template',
-    'starter',
-    'defineTheme',
-    'scaffold',
-    'reference',
-    'tokens',
-  ],
+  keywords: ['theme', 'template', 'starter', 'defineTheme', 'scaffold', 'reference', 'tokens'],
   params: [
     {
       name: 'options.targetPath',
@@ -44,8 +36,7 @@ export const doc = {
     {
       name: 'options.overwrite',
       type: 'boolean',
-      description:
-        'Replace an existing file instead of reporting it untouched.',
+      description: 'Replace an existing file instead of reporting it untouched.',
       default: 'false',
     },
     {

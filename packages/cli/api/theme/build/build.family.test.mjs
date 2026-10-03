@@ -258,12 +258,8 @@ describe('themeBuildFamily()', () => {
     await expect(build(dir, files)).rejects.toThrow(
       /Failed to write theme outputs/,
     );
-    expect(fs.existsSync(path.join(outputDir, `${FAMILY_KEY}.css`))).toBe(
-      false,
-    );
-    expect(fs.existsSync(path.join(outputDir, `${FAMILY_KEY}.d.ts`))).toBe(
-      false,
-    );
+    expect(fs.existsSync(path.join(outputDir, `${FAMILY_KEY}.css`))).toBe(false);
+    expect(fs.existsSync(path.join(outputDir, `${FAMILY_KEY}.d.ts`))).toBe(false);
     expect(
       fs.readdirSync(outputDir).filter(name => name.includes('.tmp-')),
     ).toEqual([]);

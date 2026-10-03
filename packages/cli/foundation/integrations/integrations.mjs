@@ -182,9 +182,7 @@ function parseGapReportHandlerExport(value, label) {
 function parseDiscoverSourceExport(value, label) {
   if (value === undefined) return {};
   try {
-    return {
-      source: parseDiscoverSource(value, `${label} named export "discover"`),
-    };
+    return {source: parseDiscoverSource(value, `${label} named export "discover"`)};
   } catch (error) {
     return {error: error instanceof Error ? error.message : String(error)};
   }

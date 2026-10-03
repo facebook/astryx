@@ -55,7 +55,8 @@ export const doc = {
   examples: [
     {
       label: 'Require one type',
-      code: "const r = assertResponse(stdout, 'component.detail');\nr.data.name; // safe: any other outcome threw",
+      code:
+        "const r = assertResponse(stdout, 'component.detail');\nr.data.name; // safe: any other outcome threw",
     },
   ],
   related: ['parseResponse', 'isError'],

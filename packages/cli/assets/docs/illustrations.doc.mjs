@@ -22,22 +22,10 @@ export const docs = {
           type: 'table',
           headers: ['Context', 'Examples'],
           rows: [
-            [
-              'Empty states',
-              'No data, first-time experience, search with no results',
-            ],
-            [
-              'Onboarding',
-              'Welcome screens, feature introduction, setup wizards',
-            ],
-            [
-              'Feature highlights',
-              'New feature announcements, upgrade prompts',
-            ],
-            [
-              'Error states',
-              'Permission denied, not found, service unavailable',
-            ],
+            ['Empty states', 'No data, first-time experience, search with no results'],
+            ['Onboarding', 'Welcome screens, feature introduction, setup wizards'],
+            ['Feature highlights', 'New feature announcements, upgrade prompts'],
+            ['Error states', 'Permission denied, not found, service unavailable'],
           ],
         },
       ],

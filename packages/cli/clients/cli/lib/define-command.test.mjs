@@ -91,20 +91,13 @@ describe('defineCommand', () => {
     const program = new Command();
     const cmd = defineCommand(
       program,
-      {
-        type: 'command',
-        name: 'solo',
-        summary: 'Solo.',
-        exitCodes: [{code: 0, when: 'ok'}],
-      },
+      {type: 'command', name: 'solo', summary: 'Solo.', exitCodes: [{code: 0, when: 'ok'}]},
       {action: () => {}},
     );
     let out = '';
     cmd.configureOutput({writeOut: s => (out += s)});
     cmd.outputHelp();
     expect(out).not.toContain('Examples:');
-    expect(
-      out.endsWith(`\n\nMore: ${formatCliCommand('docs cli/commands/solo')}\n`),
-    ).toBe(true);
+    expect(out.endsWith(`\n\nMore: ${formatCliCommand('docs cli/commands/solo')}\n`)).toBe(true);
   });
 });

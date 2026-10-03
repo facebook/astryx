@@ -28,14 +28,11 @@ const CATALOG = {
   latest: '2.0.0',
   source: 'Acme',
   versions: [],
-  contributions: [
-    {kind: 'template', name: 'pages/Report', title: 'Report page'},
-  ],
+  contributions: [{kind: 'template', name: 'pages/Report', title: 'Report page'}],
 };
 
 /** @param {string} name @param {string} [version] */
-const add = (name, version) =>
-  `pnpm add ${version ? `${name}@${version}` : name}`;
+const add = (name, version) => `pnpm add ${version ? `${name}@${version}` : name}`;
 
 describe('discover.item leaf', () => {
   it("finds an installed package's own template, doc, theme, or codemod", () => {
@@ -71,8 +68,6 @@ describe('discover.item leaf', () => {
 
   it('returns null when neither the project nor a source has it', () => {
     expect(item(PACKAGES, '@acme/widgets', 'Nope')).toBeNull();
-    expect(
-      item(PACKAGES, '@acme/charts', 'Nope', {catalog: CATALOG}),
-    ).toBeNull();
+    expect(item(PACKAGES, '@acme/charts', 'Nope', {catalog: CATALOG})).toBeNull();
   });
 });
