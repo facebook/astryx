@@ -278,10 +278,9 @@ than adding a DropdownMenu-owned heading target.
 
 ### DEC-1 — Pointer dismissal returns focus to the trigger, ring suppressed
 
-### DEC-2 — Arrow keys wrap in a menu
-
 **Reference:** `component:DropdownMenu/DEC-1`
-**Decider:** pending owner review
+
+**Decider:** `cixzhang`, 2026-10-02
 
 The shipped behavior blurred the trigger after a pointer dismissal so Safari
 would not paint a ring after a touch pick. Focus falling to the page loses a
@@ -409,3 +408,30 @@ None.
 This file does not duplicate consumer prop tables, item examples, focus and
 positioning algorithms, implementation steps, or shared modality, layer,
 dismissal, and theming rules. It links to their owners.
+
+### DEC-6 — A titled group of rows is `DropdownMenuGroup`
+
+**Reference:** `component:DropdownMenu/DEC-6`
+
+**Decider:** `cixzhang`, 2026-10-03
+
+Data mode could title a run of rows through `{type: 'section', title}` and
+compound mode could not, so the menus that most need grouping — checkbox
+rows, radio groups, rows mounted conditionally, all of which must be
+compound — left a screen reader a run of loose rows where a sighted user saw
+two clusters. The compound peer names its rows through `aria-labelledby` on
+the visible heading and reuses the `dropdown-menu-section-heading` treatment,
+so one heading looks and reads the same in both modes.
+
+The component is named for the `role="group"` it renders. The data model
+keeps `DropdownMenuSection` for its `{type: 'section'}` entry: the two words
+describe the same concept, and one name across both would collide with that
+exported type. Rejected: renaming the component to `DropdownMenuSection`,
+which collides; renaming both, which breaks a public type for a wording
+change.
+
+`title` is `ReactNode`. A rich heading is a legitimate need, and the data
+mode's string title is the narrower case rather than the model to match. A
+focusable node inside a heading lands in the group but outside the roving
+focus order, so the arrow keys cannot reach it; the type does not prevent
+that and a case pins the behavior instead.
