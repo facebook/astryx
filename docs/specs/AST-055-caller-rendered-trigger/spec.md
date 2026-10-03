@@ -3,12 +3,12 @@ schema_version: 4
 template_version: 1
 kind: system-spec
 id: spec:AST-055
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
-phase: proposed
+approved_by: cixzhang
+approved_at: 2026-10-02
+phase: accepted
 owners: [cixzhang]
 affects_architecture:
   [
@@ -47,11 +47,11 @@ verified_by:
 
 | Area                    | Contract                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | One shape for every component that lets a caller supply the control opening its overlay: a render prop. The component calls the caller's function with one props object and renders what it returns, unwrapped. The props object's type is exported. No existing shipped prop changes. The prop's own name is unsettled (OQ1).                                                                                                                                                                        |
+| Public contract         | One shape for every component that lets a caller supply the control opening its overlay: a render prop. The component calls the caller's function with one props object and renders what it returns, unwrapped. The props object's type is exported. The prop is named `renderTrigger` (DEC-5). No existing shipped prop changes.                                                                                                                                                                     |
 | Behavior                | The caller owns the element; the component owns the behavior it hands back. Spreading the given props is the whole integration. Both a built-in control and the render prop given, the caller's control wins and a development warning fires. Hover and pressed paint stay the caller's CSS; the open state reaches CSS through `aria-expanded`.                                                                                                                                                      |
 | End-user impact         | Someone operating an icon button, a chip, an avatar, or a list row that opens a menu or picker gets the system's keyboard opens, press model, focus return, and disclosure semantics instead of whatever a hand-rolled copy kept. Nothing changes for a caller who keeps the built-in control.                                                                                                                                                                                                        |
 | Builder impact          | A builder supplying the control renders one element and spreads one object onto it; no `ref` plumbing, no ARIA to re-derive. New caller responsibility: the control's own hover, pressed, and focus paint, and its open-state style keyed to `aria-expanded`. A control that cannot take focus needs the component's documented alternative path (AR4).                                                                                                                                               |
-| Compatibility/readiness | Additive: the render prop is absent by default and every current built-in-control path is unchanged. Authority: `draft`. Three owner questions remain open (OQ1–OQ3); none of them changes FR1–FR8 or AR1–AR4. Real-browser evidence for the focus ring and the overlay's position against the caller's control is not yet recorded.                                                                                                                                                                  |
+| Compatibility/readiness | Additive: the render prop is absent by default and every current built-in-control path is unchanged. Authority: `current`; `cixzhang` approved this record on 2026-10-02. One owner question remains open (OQ3), and it does not change FR1–FR8 or AR1–AR4. Real-browser evidence for the focus ring and the overlay's position against the caller's control is not yet recorded.                                                                                                                     |
 | Review checks           | Reject a caller-supplied control rendered inside a component-owned `<button>`, link, or `tabindex` host; a caller's control wrapped in a box-less element the component then anchors or paints focus against; disclosure ARIA missing from the handed-back props; hover or pressed paint the component writes onto an element it does not render; both controls rendering, or a silently dropped one.                                                                                                 |
 | Governing rules         | [`spec:AST-002`](../AST-002/spec.md) FR4, FR15, FR16 and `spec:AST-002/DEC-1` for admission and one responsibility per input; [`architecture:public-component-api`](../../architecture/public-component-api.md) INV2, INV3, INV5 for the shared naming and pass-through grammar; [`architecture:layer-runtime`](../../architecture/layer-runtime.md) for anchoring the overlay to the trigger; [`family:overlay-dismissal`](../../families/overlay-dismissal.md) for dismissal order, unchanged here. |
 
@@ -123,7 +123,7 @@ INV2), so the decision lives here and those records cite it.
   owns, such as `Collapsible`'s `trigger: ReactNode` inside its own `<button>`.
   That shape stays valid for content and is unchanged; FR3 only forbids using it
   for a caller-supplied control.
-- The name of the prop (OQ1) and a system-wide prefix for render props (OQ2).
+- The system-wide `render<X>` prefix rule itself (DEC-6): this record follows it; `spec:AST-002` and the API Conventions page own it.
 - Hook-shaped trigger APIs (FR8).
 - Anchoring, dismissal order, the press model, focus trapping, and overlay
   anatomy. Their owners are linked, not restated.
@@ -152,13 +152,13 @@ INV2), so the decision lives here and those records cite it.
 
 | ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                  | Basis                                                                                                | Verification state                       |
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| FR1 | A component that lets a caller supply the control which opens its overlay MUST take that control as a render prop: a function the component calls with one props object, whose returned element the component renders as given. The component MUST NOT wrap the returned element in an element of its own, and MUST NOT require a particular tag or a particular Astryx component.                                         | DEC-1; `spec:AST-002` FR4                                                                            | Proposed; jsdom evidence pending         |
-| FR2 | Spreading the handed-back props onto one element MUST be the whole integration. The object MUST carry the ref or anchor the overlay positions against, the `id` AR1 needs, every handler that opens, toggles, and closes the overlay from that control on the component's supported input paths, and the disclosure attributes of AR1. The object's type MUST be exported from the component's public entry point.         | DEC-1; `architecture:public-component-api` INV1, INV5                                                | Proposed; jsdom evidence pending         |
-| FR3 | A caller-supplied control MUST NOT be taken as a `ReactNode` slot that the component renders inside an interactive element of its own. Callers routinely pass an interactive component, and that shape nests one interactive element inside another (AR2). A content slot rendered inside a component-owned control remains valid for non-interactive content and is unchanged.                                            | DEC-1; AR2                                                                                           | Proposed; jsdom evidence pending         |
-| FR4 | The caller's control MUST own a box. A component MUST NOT render it inside a wrapper with no box of its own (`display: contents`), and MUST NOT depend on such a wrapper where it paints or offsets a focus indicator on the trigger, or positions the overlay against the trigger's rect: there is no rect to anchor to and no box on which to paint. FR1 removes the need for any wrapper.                               | DEC-2; `architecture:layer-runtime` anchor contract                                                  | Proposed; real-browser evidence required |
-| FR5 | Hover, pressed, and every other pointer paint on the caller's control MUST remain the caller's own CSS. The component MUST NOT write paint onto an element it does not render. The component MUST publish the overlay's open state on the handed-back props as `aria-expanded`, so a caller styles the open state from the rendered attribute and no additional public API is added for it.                                | DEC-3; `spec:AST-002` FR1, FR2                                                                       | Proposed; jsdom evidence pending         |
-| FR6 | The prop's consumer documentation MUST show styling the open state from `aria-expanded` on the caller's control, and MUST state that a pressed look keyed to `:active` is not a substitute, because `:active` does not behave the same under a coarse pointer — `module:DropdownMenu/useMenuPress` FR6 drops coarse-pointer `:active` paint on menu rows for that reason.                                                  | DEC-3; no current core component styles off `aria-expanded`, so callers have no example to copy      | Proposed; documentation evidence pending |
-| FR7 | Where a component offers both a built-in control and this prop, exactly one control MUST render. The caller's control MUST win, identically in every presentation the component supports, and a development warning MUST fire; the component's own chrome for the replaced control MUST NOT render. Silently ignoring a supplied prop, or rendering both, is rejected.                                                     | `spec:AST-002` FR15 (never silently render a broken state); `architecture:public-component-api` INV3 | Proposed; jsdom evidence pending         |
+| FR1 | A component that lets a caller supply the control which opens its overlay MUST take that control as a render prop named `renderTrigger` (DEC-5): a function the component calls with one props object, whose returned element the component renders as given. The component MUST NOT wrap the returned element in an element of its own, and MUST NOT require a particular tag or a particular Astryx component.           | DEC-1; `spec:AST-002` FR4                                                                            | Accepted; jsdom evidence pending         |
+| FR2 | Spreading the handed-back props onto one element MUST be the whole integration. The object MUST carry the ref or anchor the overlay positions against, the `id` AR1 needs, every handler that opens, toggles, and closes the overlay from that control on the component's supported input paths, and the disclosure attributes of AR1. The object's type MUST be exported from the component's public entry point.         | DEC-1; `architecture:public-component-api` INV1, INV5                                                | Accepted; jsdom evidence pending         |
+| FR3 | A caller-supplied control MUST NOT be taken as a `ReactNode` slot that the component renders inside an interactive element of its own. Callers routinely pass an interactive component, and that shape nests one interactive element inside another (AR2). A content slot rendered inside a component-owned control remains valid for non-interactive content and is unchanged.                                            | DEC-1; AR2                                                                                           | Accepted; jsdom evidence pending         |
+| FR4 | The caller's control MUST own a box. A component MUST NOT render it inside a wrapper with no box of its own (`display: contents`), and MUST NOT depend on such a wrapper where it paints or offsets a focus indicator on the trigger, or positions the overlay against the trigger's rect: there is no rect to anchor to and no box on which to paint. FR1 removes the need for any wrapper.                               | DEC-2; `architecture:layer-runtime` anchor contract                                                  | Accepted; real-browser evidence required |
+| FR5 | Hover, pressed, and every other pointer paint on the caller's control MUST remain the caller's own CSS. The component MUST NOT write paint onto an element it does not render. The component MUST publish the overlay's open state on the handed-back props as `aria-expanded`, so a caller styles the open state from the rendered attribute and no additional public API is added for it.                                | DEC-3; `spec:AST-002` FR1, FR2                                                                       | Accepted; jsdom evidence pending         |
+| FR6 | The prop's consumer documentation MUST show styling the open state from `aria-expanded` on the caller's control, and MUST state that a pressed look keyed to `:active` is not a substitute, because `:active` does not behave the same under a coarse pointer — `module:DropdownMenu/useMenuPress` FR6 drops coarse-pointer `:active` paint on menu rows for that reason.                                                  | DEC-3; no current core component styles off `aria-expanded`, so callers have no example to copy      | Accepted; documentation evidence pending |
+| FR7 | Where a component offers both a built-in control and this prop, exactly one control MUST render. The caller's control MUST win, identically in every presentation the component supports, and a development warning MUST fire; the component's own chrome for the replaced control MUST NOT render. Silently ignoring a supplied prop, or rendering both, is rejected.                                                     | `spec:AST-002` FR15 (never silently render a broken state); `architecture:public-component-api` INV3 | Accepted; jsdom evidence pending         |
 | FR8 | A hook that returns props for a trigger — `triggerProps` and `getTriggerProps` on `useLightbox`, `usePopover`, `useMenuHover`, and `useHoverCard` — follows hook conventions and is unchanged by this record. Those return-value names are NOT precedent for a component prop's name or shape. This record does not require a hook to grow a render prop, nor a component to republish its trigger props as a hook return. | DEC-4                                                                                                | Settled by DEC-4; no code change         |
 
 ### Accessibility contract
@@ -205,8 +205,8 @@ INV2), so the decision lives here and those records cite it.
   becomes `current`. No invariant of that record changes: FR1–FR8 sit inside its
   INV2, INV3, and INV5 grammar rather than amending it.
 - `contributing:api-conventions` gains the render-prop composition rule for a
-  caller-supplied control. The prop's spelling waits on OQ1, and any system-wide
-  `render<X>` prefix waits on OQ2 and lands in `spec:AST-002` and the API
+  caller-supplied control, spelled `renderTrigger` (DEC-5). The system-wide
+  `render<X>` prefix rule (DEC-6) lands in `spec:AST-002` and the API
   Conventions page, not here.
 - `component:DropdownMenu`, `component:ComplexSelector`, and
   `component:MultiSelector` cite this record instead of each recording a private
@@ -306,46 +306,44 @@ name or shape. A hook hands back a value the caller destructures; a component
 prop hands the caller a callback. They are different conventions, and neither
 one settles the other.
 
+### DEC-5 — The prop is named `renderTrigger`
+
+**Reference:** `spec:AST-055/DEC-5`
+**Decider:** `cixzhang`, `2026-10-02`
+
+`render*` is the existing convention for function-valued public component
+props, with no counterexample in core: `renderOption`, `renderValue`,
+`renderItem`, `renderToken`, `renderContent`, `renderSelectionLabel`,
+`renderLineContent`, `renderExpanded`, `renderGroupHeader`, `renderCell`,
+`renderTooltip`, `renderHoverCard`, `renderMenu`, `renderOverlay`. A bare noun
+holding a function appears only inside config objects a caller passes, never as
+a public component prop.
+
+Rejected: a bare `trigger`. It reads well at a callsite, but the name is
+already public in the system with a different shape — `Collapsible`'s
+`trigger: ReactNode` — so reusing it for a function would give one name two
+shapes, which `spec:AST-002` FR16 and `architecture:public-component-api` INV2
+both push against. The builder reading `renderTrigger` also knows from the name
+alone that a function is expected.
+
+### DEC-6 — `render<X>` is the prefix for every render prop
+
+**Reference:** `spec:AST-055/DEC-6`
+**Decider:** `cixzhang`, `2026-10-02`
+
+A public component prop whose value is a function returning rendered output is
+named `render<X>`. The convention was already near-universal; this writes it
+down so a builder can predict the name and a reviewer can cite it instead of
+re-arguing it.
+
+This record follows the rule rather than owning it: a naming rule for public
+API is `spec:AST-002`'s fact — it already owns operation and function naming in
+FR11 and FR17 — together with the API Conventions page's `Prop Naming` section,
+which today rules on booleans, callbacks, enums, direction, and HTML collisions
+but says nothing about function-valued props. Both owe an amendment carrying
+this rule; until they carry it, cite this decision.
+
 ## Open questions
-
-- **OQ1 — Is the prop named `trigger` or `renderTrigger`?** (`human-api`)
-
-  Evidence for `render*`: it is the existing convention for function-valued
-  public component props, with no counterexample in core. `renderOption`
-  (`Selector`, `MultiSelector`), `renderValue` (`Selector`), `renderItem`
-  (`Typeahead`, `BaseTypeahead`, `Tokenizer`, `CommandPalette`,
-  `ChatComposerInput`), `renderToken` (`Tokenizer`), `renderContent` (`Toast`),
-  `renderSelectionLabel` (`TableSelectionToolbar`), `renderLineContent`
-  (`CodeBlock`), `renderExpanded` and `renderGroupHeader` (Table plugins),
-  `renderCell` (Table column definitions), `renderTooltip` (`useTooltip`),
-  `renderHoverCard` (`useHoverCard`), `renderMenu` (`useTriggerMenu`), and
-  `renderOverlay` (`useOverlay`). A bare noun holding a function appears only
-  inside config objects a caller passes — `search` and `bootstrap` on a
-  PowerSearch source, `keywords` on a static source — never as a public
-  component prop.
-
-  Evidence for `trigger`: it reads naturally at the callsite, and all four
-  in-flight pull requests chose it independently (non-authoritative coordination
-  evidence only, `architecture:knowledge-contracts` INV10). Against it: `trigger`
-  is already a public prop name in the system with a different shape —
-  `Collapsible`'s `trigger: ReactNode` — so reusing it for a function would give
-  one name two shapes across the system, which `spec:AST-002` FR16 and
-  `architecture:public-component-api` INV2 both push against.
-
-- **OQ2 — Does `render<X>` become the system-wide prefix for every render prop?** (`human-api`)
-
-  The survey above is the evidence: `render*` is already overwhelmingly the
-  convention, so the question is whether to write it down as a rule rather than
-  whether to adopt it. Writing it down would also settle open pull request
-  #6828's proposed `renderOptionAction` by citation instead of by argument, and
-  would decide OQ1 as a consequence.
-
-  Where the answer lands is not this record. A naming rule for public API is
-  `spec:AST-002`'s fact — it already owns operation and function naming in FR11
-  and FR17 — together with the API Conventions page's `Prop Naming` section,
-  which today rules on booleans, callbacks, enums, direction, and HTML
-  collisions but says nothing about function-valued props. This record follows
-  that ruling; it does not make it.
 
 - **OQ3 — Does a trigger region that wraps arbitrary content fall inside this record?** (`human-api`)
 
