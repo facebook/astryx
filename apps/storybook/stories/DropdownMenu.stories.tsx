@@ -1270,3 +1270,25 @@ export const SubmenuViewportFit: Story = {
     }
   },
 };
+
+export const TallMenu: Story = {
+  name: 'menuMaxHeight',
+  render: () => (
+    <DropdownMenu
+      button={{label: 'Eleven rows, no scroll'}}
+      menuMaxHeight={560}
+      items={Array.from({length: 11}, (_, i) => ({
+        label: `Row ${i + 1}`,
+        onClick: () => {},
+      }))}
+    />
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A menu is capped at 300px and scrolls past it. `menuMaxHeight` lifts the cap for a menu that must show all of its rows; the viewport still bounds it.',
+      },
+    },
+  },
+};

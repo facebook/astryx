@@ -9,7 +9,7 @@ superseded_by: null
 approved_by: null
 approved_at: null
 owners: [cixzhang]
-review_triggers: [theming]
+review_triggers: [theming, public-api, layout]
 verified_by:
   [
     packages/core/src/DropdownMenu/DropdownMenu.test.tsx,
@@ -49,7 +49,7 @@ highlight follows the pointer — is contracted by
 
 - Released default preserved: `yes`
 - Compatibility class: additive documentation; the press-model behavior
-  delta is recorded in `module:DropdownMenu/useMenuPress` (DEC-3)
+  delta is recorded in `module:DropdownMenu/useMenuPress`
 - Controlled/uncontrolled behavior: unchanged
 - Migration decision: `module:DropdownMenu/useMenuPress/DEC-3`
 
@@ -80,21 +80,26 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-No new public concept is introduced. Consumer props, item shapes,
-subcomponents, and presentation policy remain documented in
-`DropdownMenu.doc.mjs` and the subcomponent docs.
+Consumer props, item shapes, subcomponents, and presentation policy remain
+documented in `DropdownMenu.doc.mjs` and the subcomponent docs. One
+component-local concept is added by DEC-3; it keeps its released default.
+
+| Concept         | Closed values or states             | Meaning                                                                              | Availability by variant/orientation/state | Default | Owner                    | Stability | Invalid-value behavior      |
+| --------------- | ----------------------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------- | ------- | ------------------------ | --------- | --------------------------- |
+| Menu height cap | `menuMaxHeight`: a number of pixels | Lifts the 300px cap for a menu that must fit its rows; the viewport still bounds it. | Pointer presentation                      | `300px` | `component:DropdownMenu` | stable    | Ignored by the touch sheet. |
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                                                                                                                                                                                                                                                              | Basis                                                                                                    | Draft review state                                 |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| FR1 | Every current render contains a Trigger button. Pointer presentation renders a Pointer menu surface with pointer-owned rows and optional pointer headings, dividers, indicators, and nested flyouts. Touch presentation renders a Touch sheet frame containing a Touch menu surface, Touch heading, Touch action list, and Touch action rows.                                                                    | Current source, docs, and tests                                                                          | Verified current behavior; no new behavior decided |
-| FR2 | The six current local targets are `dropdown-menu`, `dropdown-menu-item`, `dropdown-menu-radio`, `dropdown-menu-section-heading`, `dropdown-menu-divider`, and `dropdown-menu-indicator-icon`; every target remains on its current painted element.                                                                                                                                                               | Current source, docs, and tests                                                                          | Verified current inventory; no target change       |
-| FR3 | Button owns the Trigger button, BottomSheet owns the Touch sheet frame, List owns the Touch action list and Touch action rows, Indicator owns checkbox chrome, and Icon owns ordinary rendered icons.                                                                                                                                                                                                            | Current source and owner docs                                                                            | Verified current delegation; no ownership change   |
-| FR4 | The same `dropdown-menu` target reaches the alternative Pointer menu surface and Touch menu surface. Pointer action rows retain `dropdown-menu-item`; touch action rows instead use List's `list-item` target.                                                                                                                                                                                                   | Current source and tests                                                                                 | Verified modality split; no target change          |
-| FR5 | Both menu surfaces carry `data-astryx-menu-press` and follow `module:DropdownMenu/useMenuPress` FR1–FR7: the row under the release acts, the highlight follows a held pointer, a mouse released outside closes and a finger leaves the menu open, the browser's stray click never acts, and the Pointer menu surface declares `touch-action` by overflow. Trigger opening and keyboard navigation are unchanged. | `module:DropdownMenu/useMenuPress`; `DropdownMenu.test.tsx` press model suite                            | Proposed; verified in jsdom and real Chromium      |
-| FR6 | When the pointer menu closes, focus returns to the Trigger button with a visible ring only when the menu was driven by keyboard; a press outside that landed on a focusable control keeps focus there.                                                                                                                                                                                                           | `architecture:interaction-modality` INV1; proposed in this change; `DropdownMenu.test.tsx` closing suite | Proposed; verified in jsdom, pending owner review  |
-| FR7 | On a mouse, a nested flyout stays open while the pointer is inside the triangle from where it left its row to the flyout's near edge — including while the pointer is paused there — and closes after the existing delay once the pointer has left both the row and that triangle. The row's click toggle and its guard window are unchanged.                                                                    | Proposed in this change; `DropdownMenuSubMenu.test.tsx` safe-triangle suite, `useMenuHover.test.tsx`     | Proposed; verified in jsdom, pending owner review  |
+| ID  | Candidate invariant                                                                                                                                                                                                                                                                                                                                                                                              | Basis                                                                                                    | Draft review state                                  |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| FR1 | Every current render contains a Trigger button. Pointer presentation renders a Pointer menu surface with pointer-owned rows and optional pointer headings, dividers, indicators, and nested flyouts. Touch presentation renders a Touch sheet frame containing a Touch menu surface, Touch heading, Touch action list, and Touch action rows.                                                                    | Current source, docs, and tests                                                                          | Verified current behavior; no new behavior decided  |
+| FR2 | The six current local targets are `dropdown-menu`, `dropdown-menu-item`, `dropdown-menu-radio`, `dropdown-menu-section-heading`, `dropdown-menu-divider`, and `dropdown-menu-indicator-icon`; every target remains on its current painted element.                                                                                                                                                               | Current source, docs, and tests                                                                          | Verified current inventory; no target change        |
+| FR3 | Button owns the Trigger button, BottomSheet owns the Touch sheet frame, List owns the Touch action list and Touch action rows, Indicator owns checkbox chrome, and Icon owns ordinary rendered icons.                                                                                                                                                                                                            | Current source and owner docs                                                                            | Verified current delegation; no ownership change    |
+| FR4 | The same `dropdown-menu` target reaches the alternative Pointer menu surface and Touch menu surface. Pointer action rows retain `dropdown-menu-item`; touch action rows instead use List's `list-item` target.                                                                                                                                                                                                   | Current source and tests                                                                                 | Verified modality split; no target change           |
+| FR5 | Both menu surfaces carry `data-astryx-menu-press` and follow `module:DropdownMenu/useMenuPress` FR1–FR7: the row under the release acts, the highlight follows a held pointer, a mouse released outside closes and a finger leaves the menu open, the browser's stray click never acts, and the Pointer menu surface declares `touch-action` by overflow. Trigger opening and keyboard navigation are unchanged. | `module:DropdownMenu/useMenuPress`; `DropdownMenu.test.tsx` press model suite                            | Proposed; verified in jsdom and real Chromium       |
+| FR6 | When the pointer menu closes, focus returns to the Trigger button with a visible ring only when the menu was driven by keyboard; a press outside that landed on a focusable control keeps focus there.                                                                                                                                                                                                           | `architecture:interaction-modality` INV1; proposed in this change; `DropdownMenu.test.tsx` closing suite | Proposed; verified in jsdom, pending owner review   |
+| FR7 | `menuMaxHeight` MUST replace the 300px term of the menu's and its popover viewport's block-size cap while the viewport gutters still bound both; the touch sheet ignores it.                                                                                                                                                                                                                                     | `component:DropdownMenu/DEC-3`                                                                           | Proposed; verified in jsdom; owner to confirm DEC-3 |
+| FR8 | On a mouse, a nested flyout stays open while the pointer is inside the triangle from where it left its row to the flyout's near edge — including while the pointer is paused there — and closes after the existing delay once the pointer has left both the row and that triangle. The row's click toggle and its guard window are unchanged.                                                                    | Proposed in this change; `DropdownMenuSubMenu.test.tsx` safe-triangle suite, `useMenuHover.test.tsx`     | Proposed; verified in jsdom, pending owner review   |
 
 ### Allowed variation
 
@@ -232,16 +237,17 @@ than adding a DropdownMenu-owned heading target.
 
 ## Verification map
 
-| Contract            | Verification                                                                                                               | Representative states                                                                                      | Mutation or failure expectation                                                                                                                               | Audit section                 |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| FR1, FR4            | `DropdownMenu.test.tsx` pointer, bottom-sheet, adaptive, section, divider, and drill-in suites                             | Root pointer, nested pointer, root touch, drill-in                                                         | Collapsing presentation-specific parts or owners fails structure, target, or role assertions.                                                                 | `audit:DropdownMenu/anatomy`  |
-| FR2                 | DropdownMenu target suites, source inspection, and theming target inventories                                              | All six local targets                                                                                      | Removing, renaming, or assigning a current target to the wrong part fails evidence or inventory.                                                              | `audit:DropdownMenu/theming`  |
-| FR3                 | `DropdownMenuSelectable.test.tsx` plus BottomSheet, List, Indicator, Icon, and Divider owner tests                         | Trigger, touch actions, icons, checkbox, radio                                                             | A composed part loses its owner target or is documented as a new local target.                                                                                | `audit:DropdownMenu/theming`  |
-| Layer relationships | `DropdownMenu.test.tsx`, `DropdownMenuSubMenu.test.tsx`, and current layer/dismissal architecture records                  | Light dismiss, nested flyout, sheet dismissal                                                              | Documentation claims a shared owner where current source retains local behavior, or the reverse.                                                              | `audit:DropdownMenu/behavior` |
-| FR5                 | `DropdownMenu.test.tsx` press model suite; the module record's own map                                                     | Finger slide across rows, outside release by mouse and finger, `touch-action`, root marker                 | A row acting on the press or the stray click, a lost `touch-action`, or a finger release that closes fails.                                                   | `audit:DropdownMenu/behavior` |
-| FR6                 | `DropdownMenu.test.tsx` dismissal and closing suites                                                                       | keyboard dismissal, pointer dismissal, press outside on a control, pointer pick, closed menu               | Focus left on the body after a pointer pick, or a ring after pointer input, fails.                                                                            | `audit:DropdownMenu/behavior` |
-| FR7                 | `DropdownMenuSubMenu.test.tsx` safe-triangle suite; `useMenuHover.test.tsx` `isPointInSafeTriangle` and click-guard suites | diagonal path toward the flyout, a pause inside it, path away, click-opened and hover-opened guard windows | A flyout that closes while the pointer is inside the triangle or paused in it, one that never closes after leaving it, or a changed guard-window rule, fails. | `audit:DropdownMenu/behavior` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                              | Canonical anatomy and current target inventory                                                             | Missing, extra, prefixed, stale, or unclassified mappings fail repository validation.                                                                         | `audit:DropdownMenu/theming`  |
+| Contract            | Verification                                                                                                                                                                 | Representative states                                                                                      | Mutation or failure expectation                                                                                                                               | Audit section                 |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| FR1, FR4            | `DropdownMenu.test.tsx` pointer, bottom-sheet, adaptive, section, divider, and drill-in suites                                                                               | Root pointer, nested pointer, root touch, drill-in                                                         | Collapsing presentation-specific parts or owners fails structure, target, or role assertions.                                                                 | `audit:DropdownMenu/anatomy`  |
+| FR2                 | DropdownMenu target suites, source inspection, and theming target inventories                                                                                                | All six local targets                                                                                      | Removing, renaming, or assigning a current target to the wrong part fails evidence or inventory.                                                              | `audit:DropdownMenu/theming`  |
+| FR3                 | `DropdownMenuSelectable.test.tsx` plus BottomSheet, List, Indicator, Icon, and Divider owner tests                                                                           | Trigger, touch actions, icons, checkbox, radio                                                             | A composed part loses its owner target or is documented as a new local target.                                                                                | `audit:DropdownMenu/theming`  |
+| Layer relationships | `DropdownMenu.test.tsx`, `DropdownMenuSubMenu.test.tsx`, and current layer/dismissal architecture records                                                                    | Light dismiss, nested flyout, sheet dismissal                                                              | Documentation claims a shared owner where current source retains local behavior, or the reverse.                                                              | `audit:DropdownMenu/behavior` |
+| FR5                 | `DropdownMenu.test.tsx` press model suite; the module record's own map                                                                                                       | Finger slide across rows, outside release by mouse and finger, `touch-action`, root marker                 | A row acting on the press or the stray click, a lost `touch-action`, or a finger release that closes fails.                                                   | `audit:DropdownMenu/behavior` |
+| FR6                 | `DropdownMenu.test.tsx` dismissal and closing suites                                                                                                                         | keyboard dismissal, pointer dismissal, press outside on a control, pointer pick, closed menu               | Focus left on the body after a pointer pick, or a ring after pointer input, fails.                                                                            | `audit:DropdownMenu/behavior` |
+| FR7                 | `menuMaxHeight` MUST replace the 300px term of the menu's and its popover viewport's block-size cap while the viewport gutters still bound both; the touch sheet ignores it. | `component:DropdownMenu/DEC-3`                                                                             | Proposed; verified in jsdom; owner to confirm DEC-3                                                                                                           |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                                                                                | Canonical anatomy and current target inventory                                                             | Missing, extra, prefixed, stale, or unclassified mappings fail repository validation.                                                                         | `audit:DropdownMenu/theming`  |
+| FR8                 | `DropdownMenuSubMenu.test.tsx` safe-triangle suite; `useMenuHover.test.tsx` `isPointInSafeTriangle` and click-guard suites                                                   | diagonal path toward the flyout, a pause inside it, path away, click-opened and hover-opened guard windows | A flyout that closes while the pointer is inside the triangle or paused in it, one that never closes after leaving it, or a changed guard-window rule, fails. | `audit:DropdownMenu/behavior` |
 
 ## Decision log
 
@@ -258,33 +264,26 @@ after pointer input (`architecture:interaction-modality` INV1), as the
 bottom-sheet presentation already did. The press model's own decisions remain
 in `module:DropdownMenu/useMenuPress`.
 
-### DEC-2 — A safe triangle protects the diagonal to a flyout
+### DEC-2 — `menuMaxHeight` is a number of pixels
+
+### DEC-3 — A safe triangle protects the diagonal to a flyout
 
 **Reference:** `component:DropdownMenu/DEC-2`
 **Decider:** `cixzhang`, `2026-10-02`
 
-A pointer travelling from a sub-menu row to its flyout crosses rows it does
-not mean to open, and the shipped hide delay alone is not enough: the
-diagonal is exactly the path a person takes to reach the flyout. While the
-pointer is inside the triangle from where it left the row to the flyout's
-near edge, it is heading for the flyout, so the delay is re-armed. A pointer
-that PAUSES mid-diagonal, aiming at a row, is still heading there — pausing
-is not leaving — so the delay re-arms on the last known point rather than
-only on movement. The first move outside the triangle lets the delay run.
+`menuMaxHeight` replaces only the 300px term of the cap; the viewport gutters
+still bound the menu, so a menu that must show all of its rows (a docked phone
+menu of eleven 44px rows) can, without ever overflowing the screen. The dynamic
+value uses `100dvb` alone; every browser with anchor positioning has it.
 
-The capability lives in `useMenuHover`, so every menu that uses hover intent
-inherits it rather than only sub-menus.
+A prop rather than a theme variable, because the need is situational — one
+menu with many rows — rather than a product-wide preference, and a prop reads
+more clearly at the callsite that has the problem.
 
-The click toggle and its guard window are unchanged by this. Hover opens the
-flyout; a click inside the guard window confirms it, because the person was
-reaching for the row they already meant to open; a click after the window
-closes it, because by then it is a second, deliberate press on something
-visibly open. The guard distinguishes the accidental press from the
-deliberate one. Rejected: making a press on an open sub-menu row never close
-it, which removes the second half of that rule and leaves a flyout the
-person is finished with with no way to dismiss it by the row that opened it.
-
-The press model's own decisions remain in `module:DropdownMenu/useMenuPress`.
+The value is a number of pixels. Rejected: an arbitrary CSS length (`50vh`,
+`calc(...)`), which is product-shaped tuning on a shared component that
+`spec:AST-002` does not admit, and which lets a caller write a cap the
+viewport term cannot reason about.
 
 ## Open questions
 
