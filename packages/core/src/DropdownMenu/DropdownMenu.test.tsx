@@ -2624,11 +2624,6 @@ describe("DropdownMenu link rows — the browser's own clicks", () => {
   });
 
   it('renders a blocked destination inertly', async () => {
-    // Assembled rather than written out: a literal of this shape is a lint
-    // error in source, and the point is what the component does with an
-    // address that arrived from data at runtime.
-    const blockedHref = ['java', 'script:window.__fired=true'].join('');
-
     // A menu row is a place an address can arrive from data. The row's root
     // is the application's link component, so the shared destination rule
     // applies by construction rather than by a check of this component's
@@ -2636,7 +2631,8 @@ describe("DropdownMenu link rows — the browser's own clicks", () => {
     const user = userEvent.setup();
     render(
       <DropdownMenu button={{label: 'Actions'}}>
-        <DropdownMenuItem label="Trap" href={blockedHref} />
+        {/* eslint-disable-next-line @eslint-react/dom-no-script-url -- the test proves this URL never navigates */}
+        <DropdownMenuItem label="Trap" href="javascript:window.__fired=true" />
       </DropdownMenu>,
     );
     await user.click(screen.getByRole('button', {name: 'Actions'}));
