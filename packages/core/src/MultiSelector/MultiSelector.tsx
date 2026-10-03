@@ -890,10 +890,6 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   // Toggling options / select-all previously produced no audible feedback.
   const announce = useAnnounce();
 
-  // The panel's empty message is role="presentation" and reaches assistive tech
-  // only through this live region, so the region has to speak whatever the
-  // panel shows. A ReactNode override cannot be spoken; fall back to the
-  // catalog copy for that case rather than announcing nothing.
   const announceSelection = useCallback(
     (nextValue: string[]) => {
       const total = selectableItems.length;
