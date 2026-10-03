@@ -485,7 +485,7 @@ export const InlineTrigger: Story = {
     docs: {
       description: {
         story:
-          'A reference inside running text owns a context menu without breaking the flow: `triggerAs="span"` wraps it inline, `triggerAs="contents"` adds no box at all. Right-click, a held press or Shift+F10 on the reference opens the menu at the pointer.',
+          'A reference inside running text owns a context menu without breaking the flow: `triggerAs="span"` wraps it inline. Right-click, a held press or Shift+F10 on the reference opens the menu at the pointer.',
       },
     },
   },
@@ -493,7 +493,7 @@ export const InlineTrigger: Story = {
     <p style={{maxWidth: 480, lineHeight: 1.6}}>
       The regression was tracked in{' '}
       <ContextMenu
-        triggerAs="contents"
+        triggerAs="span"
         label="Task actions"
         items={[
           {label: 'Open', onClick: () => {}},
