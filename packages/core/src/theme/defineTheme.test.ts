@@ -1045,6 +1045,24 @@ describe('container padding mapping', () => {
     expect(css).toContain('--astryx-dialog-padding-block-start: 24px');
   });
 
+  it('maps drawer padding to its container tokens', () => {
+    const theme = defineTheme({
+      name: 'test',
+      components: {
+        drawer: {
+          base: {padding: '24px 20px'},
+        },
+      },
+    });
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('--astryx-drawer-padding-inline: 20px');
+    expect(css).toContain('--astryx-drawer-padding-block-start: 24px');
+    expect(css).toContain('--astryx-drawer-padding-block-end: 24px');
+    // The panel is the overlay boundary; the value reaches the content area
+    // through the token, never as padding on the panel itself.
+    expect(css).not.toMatch(/(^|[\s{;])padding:\s*24px 20px/);
+  });
+
   it('does NOT map padding on non-container components', () => {
     const theme = defineTheme({
       name: 'test',

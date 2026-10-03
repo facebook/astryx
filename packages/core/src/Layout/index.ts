@@ -23,6 +23,18 @@ export type {
 // padding system does not cross a fixed/top-layer boundary)
 export {overlayPaddingReset} from './padding.stylex';
 
+// Explicit-padding lowering maps shared by container publishers (Dialog and
+// BottomSheet in core, Drawer in lab): spacing-step padding plus the matching
+// published container variables. Internal geometry protocol, not theme API —
+// see docs/architecture/container-padding.md.
+export {
+  containerPaddingBlockEndVarStyles,
+  containerPaddingBlockStartVarStyles,
+  containerPaddingInlineVarStyles,
+  paddingStyles,
+  spacingStepToToken,
+} from './padding.stylex';
+
 // Edge compensation utility
 export {edgeCompSlot, EDGE_COMP_ATTR} from './edgeCompensation.stylex';
 

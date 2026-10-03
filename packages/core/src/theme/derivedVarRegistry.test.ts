@@ -220,6 +220,10 @@ const DIR_TO_REGISTRY_KEY: Record<string, string> = {
   Chat: 'chat',
   ContextMenu: 'context-menu',
   Dialog: 'dialog',
+  // The Drawer doc file lives in packages/lab/src/Drawer, outside this
+  // package's scan; the mapping keeps the registry orphan check honest and
+  // defineTheme.test.ts pins the expansion.
+  Drawer: 'drawer',
   DropdownMenu: 'dropdown-menu',
   Field: 'field',
   HoverCard: 'hover-card',

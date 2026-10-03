@@ -19,7 +19,7 @@ const anatomy = [
     name: 'Content area',
     required: true,
     description:
-      'Full-bleed scrollable region that receives children; compose your own header, body, and footer inside it.',
+      'Scrollable container that receives children; compose your own header, body, and footer inside it. Unpadded by default; the padding prop or a theme sets its container inset.',
   },
   {
     name: 'Header',
@@ -82,6 +82,7 @@ export const docs = {
     },
   },
   theming: {
+    container: true,
     targets: [
       {className: 'astryx-drawer', visualProps: ['side']},
       {className: 'astryx-drawer-header'},
@@ -90,9 +91,10 @@ export const docs = {
       {className: 'astryx-drawer-header-end-content'},
       {className: 'astryx-drawer-header-close-icon'},
     ],
+    derived: [{property: 'padding', expand: 'container'}],
   },
   description:
-    'Side panel that floats above page content, using the native <dialog> element. Slides in from the inline start or end edge; full height, never reflows the layout underneath.',
+    "Side panel that floats above page content, using the native <dialog> element. Slides in from the inline start or end edge; full height, never reflows the layout underneath. Like Dialog, it is a container: set padding (or a theme's drawer padding) and a lone Section child or bleed children such as Table and Divider align against that inset. By default the content area has no padding.",
   props: [
     {
       name: 'isOpen',
@@ -157,11 +159,17 @@ export const docs = {
         'Configures implicit dismissal, matching Dialog. info: Escape and a scrim click close. form: Escape closes, a scrim click does not. required: neither closes (Escape is consumed) and a modal drawer is exposed as an alertdialog, so give its content a way out. A non-modal drawer has no scrim, so form and info behave the same.',
       default: "'info'",
     },
+    {
+      name: 'padding',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description:
+        "Internal padding of the drawer content using the spacing scale, matching Dialog. When omitted, uses the theme default for drawers: no padding unless the theme sets padding on drawer. A lone Section child escapes the padding, bleed children such as Table and Divider compensate against it, and a Layout picks it up for its regions. The content area's block-end edge adds the home-indicator safe area on top in every mode.",
+    },
   ],
   usage: {
     anatomy,
     description:
-      'A side panel that floats above page content for inspectors and detail views: the "click a table row, see its details" pattern. Unlike a docked panel it overlays the layout instead of reflowing it. Works on desktop and touch: the width budget applies on desktop and the panel preserves a 56px page reveal below 640px without exceeding the width budget. Escape closes the drawer (unless purpose is required) and focus returns to the element that opened it. Entry/exit slide animation respects prefers-reduced-motion. Stacking contract: sibling drawers stack last-opened on top, Escape closes only the topmost, and closing peels innermost-first; render them as siblings, never nested.\n\nThe content area is full-bleed: compose the header, body, and footer. Start with DrawerHeader, a title row that shows a close button when you pass it onOpenChange, like DialogHeader; follow it with the body, for example Section padding={4}. Drawer renders no close button of its own, so give every drawer a visible way to close, especially a non-modal one, which has no scrim to click. Put data-autofocus on the control that should receive focus on open.\n\nChoosing a surface: use Dialog for a centered decision or short form, Drawer for full-height side detail that keeps the page in sight, BottomSheet for block-axis sheets on touch, and a docked panel (a layout column) when content should reflow the page instead of floating over it.\n\nTheming: the panel is the single stable target (astryx-drawer, with data-side reflecting side), and the scrim is the panel\'s native ::backdrop. DrawerHeader exposes astryx-drawer-header targets for its row, slots, and close icon.',
+      'A side panel that floats above page content for inspectors and detail views: the "click a table row, see its details" pattern. Unlike a docked panel it overlays the layout instead of reflowing it. Works on desktop and touch: the width budget applies on desktop and the panel preserves a 56px page reveal below 640px without exceeding the width budget. Escape closes the drawer (unless purpose is required) and focus returns to the element that opened it. Entry/exit slide animation respects prefers-reduced-motion. Stacking contract: sibling drawers stack last-opened on top, Escape closes only the topmost, and closing peels innermost-first; render them as siblings, never nested.\n\nThe content area is unpadded by default: compose the header, body, and footer. Start with DrawerHeader, a title row that shows a close button when you pass it onOpenChange, like DialogHeader; follow it with the body, for example Section padding={4}. Like Dialog, the drawer is a container: the padding prop (or a theme\'s padding on drawer) insets the content area, a lone Section child escapes that inset, and a Layout inside redistributes it to its header, content, and footer regions — wrap content in a Layout when you use drawer padding together with DrawerHeader, so the header does not sit inside the inset twice. Drawer renders no close button of its own, so give every drawer a visible way to close, especially a non-modal one, which has no scrim to click. Put data-autofocus on the control that should receive focus on open.\n\nChoosing a surface: use Dialog for a centered decision or short form, Drawer for full-height side detail that keeps the page in sight, BottomSheet for block-axis sheets on touch, and a docked panel (a layout column) when content should reflow the page instead of floating over it.\n\nTheming: the panel is the single stable target (astryx-drawer, with data-side reflecting side), and the scrim is the panel\'s native ::backdrop. DrawerHeader exposes astryx-drawer-header targets for its row, slots, and close icon.',
     bestPractices: [
       {
         guidance: true,
@@ -327,7 +335,7 @@ export const docsZh = {
         name: 'Content area',
         required: true,
         description:
-          '不带内边距的可滚动区域，承载 children；页眉、正文、页脚在其中自行组合。',
+          '承载 children 的可滚动容器；页眉、正文、页脚在其中自行组合。默认不带内边距；padding 属性或主题的 drawer padding 为其设置容器内边距。',
       },
       {
         name: 'Header',
@@ -343,7 +351,7 @@ export const docsZh = {
       },
     ],
     description:
-      '浮在页面内容之上的侧边面板，用于检查器和详情视图——"点击表格行查看详情"的模式。与停靠面板不同，它覆盖在布局之上，不会挤压页面。桌面端按 width 设定宽度，宽度小于 640px 时保留 56px 的底层页面，并且不超过 width 上限。按 Escape 关闭抽屉（purpose 为 required 时除外），焦点返回到打开它的元素。滑入/滑出动画遵循 prefers-reduced-motion。堆叠约定：同级抽屉后开的在上层，Escape 只关闭最上层的，关闭顺序由内向外——请以同级方式渲染，切勿嵌套。\n\n内容区域不带内边距：页眉、正文、页脚由你自行组合。先放 DrawerHeader——传入 onOpenChange 时显示关闭按钮的标题行，与 DialogHeader 相同；再放正文，例如 Section padding={4}。Drawer 本身不渲染关闭按钮，所以每个抽屉都要提供可见的关闭方式，非模态抽屉尤其如此，因为它没有可点击的遮罩。在打开时应获得焦点的控件上加 data-autofocus。\n\n如何选择：居中的决定或短表单用 Dialog；保持页面可见的全高侧边详情用 Drawer；触屏上的块轴面板用 BottomSheet；内容应当把页面挤开重排时用停靠面板（布局分栏），而不是浮层。\n\n主题化：面板是唯一的稳定目标（astryx-drawer，data-side 反映 side 值），遮罩是面板的原生 ::backdrop。DrawerHeader 为其标题行、插槽和关闭图标提供 astryx-drawer-header 系列目标。',
+      '浮在页面内容之上的侧边面板，用于检查器和详情视图——"点击表格行查看详情"的模式。与停靠面板不同，它覆盖在布局之上，不会挤压页面。桌面端按 width 设定宽度，宽度小于 640px 时保留 56px 的底层页面，并且不超过 width 上限。按 Escape 关闭抽屉（purpose 为 required 时除外），焦点返回到打开它的元素。滑入/滑出动画遵循 prefers-reduced-motion。堆叠约定：同级抽屉后开的在上层，Escape 只关闭最上层的，关闭顺序由内向外——请以同级方式渲染，切勿嵌套。\n\n内容区域默认不带内边距：页眉、正文、页脚由你自行组合。先放 DrawerHeader——传入 onOpenChange 时显示关闭按钮的标题行，与 DialogHeader 相同；再放正文，例如 Section padding={4}。与 Dialog 一样，Drawer 是一个容器：padding 属性（或主题中 drawer 的 padding）为内容区域设置内边距，作为唯一子元素的 Section 会越出该内边距，内部的 Layout 则把它分配给页眉、内容与页脚区域——同时使用 drawer padding 和 DrawerHeader 时，请用 Layout 包裹内容，以免页眉在内边距内再次缩进。Drawer 本身不渲染关闭按钮，所以每个抽屉都要提供可见的关闭方式，非模态抽屉尤其如此，因为它没有可点击的遮罩。在打开时应获得焦点的控件上加 data-autofocus。\n\n如何选择：居中的决定或短表单用 Dialog；保持页面可见的全高侧边详情用 Drawer；触屏上的块轴面板用 BottomSheet；内容应当把页面挤开重排时用停靠面板（布局分栏），而不是浮层。\n\n主题化：面板是唯一的稳定目标（astryx-drawer，data-side 反映 side 值），遮罩是面板的原生 ::backdrop。DrawerHeader 为其标题行、插槽和关闭图标提供 astryx-drawer-header 系列目标。',
     bestPractices: [
       {
         guidance: true,
@@ -401,11 +409,11 @@ export const docsZh = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'side panel floating over content (native <dialog>): start/end edge, full height',
+    'side panel floating over content (native <dialog>): start/end edge, full height, Dialog-like container padding (padding prop or theme drawer padding; none by default)',
   usage: {
     anatomy,
     description:
-      'Overlay side panel for inspectors and detail views; floats over content, never reflows it. width = desktop budget; 56px page reveal below 640px, capped by width (isFullWidthOnMobile for all of it). Escape closes topmost (not when purpose=required); focus restores to the opener. Siblings stack last-opened on top; never nest. Slide animation respects prefers-reduced-motion. Compose header/body/footer in the full-bleed scroll area: DrawerHeader first (close button only when given onOpenChange, like DialogHeader), then the body (e.g. Section padding={4}); no built-in close button, so every drawer needs a visible exit; data-autofocus picks the focus target. purpose matches Dialog: info = Escape + scrim click, form = Escape only, required = neither (modal → alertdialog). Choose: Dialog for centered decisions/short forms, Drawer for full-height side detail, BottomSheet for block-axis sheets, docked layout column to reflow instead of float. Theming: single target astryx-drawer (data-side); scrim is its ::backdrop; DrawerHeader has astryx-drawer-header targets.',
+      'Overlay side panel for inspectors and detail views; floats over content, never reflows it. width = desktop budget; 56px page reveal below 640px, capped by width (isFullWidthOnMobile for all of it). Escape closes topmost (not when purpose=required); focus restores to the opener. Siblings stack last-opened on top; never nest. Slide animation respects prefers-reduced-motion. Compose header/body/footer in the scroll area (unpadded by default): DrawerHeader first (close button only when given onOpenChange, like DialogHeader), then the body (e.g. Section padding={4}); no built-in close button, so every drawer needs a visible exit; data-autofocus picks the focus target. Dialog-like container: the padding prop or a theme\'s drawer padding insets the content area (a lone Section escapes it, Layout regions pick it up; wrap content in Layout when combining drawer padding with DrawerHeader). purpose matches Dialog: info = Escape + scrim click, form = Escape only, required = neither (modal → alertdialog). Choose: Dialog for centered decisions/short forms, Drawer for full-height side detail, BottomSheet for block-axis sheets, docked layout column to reflow instead of float. Theming: single target astryx-drawer (data-side); scrim is its ::backdrop; DrawerHeader has astryx-drawer-header targets.',
     bestPractices: [
       {
         guidance: true,

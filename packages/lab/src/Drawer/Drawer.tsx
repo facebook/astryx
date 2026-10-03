@@ -4,7 +4,7 @@
 
 /**
  * @file Drawer.tsx
- * @input Uses React, StyleX, theme tokens and text defaults, the Dialog purpose type, shared focus/dismissal/depth primitives, scroll locking/dialog presence, BaseProps, merged refs/props, themeProps
+ * @input Uses React, StyleX, theme tokens and text defaults, the Dialog purpose type, shared focus/dismissal/depth primitives, container padding lowering, scroll locking/dialog presence, BaseProps, merged refs/props, themeProps
  * @output Exports Drawer component and DrawerProps
  * @position Lab implementation; consumed by index.ts, tested by Drawer.test.tsx, demonstrated in Storybook
  *
@@ -40,6 +40,13 @@
  * `DrawerHeader` with `onOpenChange` for a visible close action, as with
  * `DialogHeader`.
  *
+ * The scrolling content area is the drawer's container, like Dialog's inner
+ * box: the `padding` prop, else the theme's `padding` on `drawer`, insets it
+ * through container tokens, and the applied inset is published so a lone
+ * Section child escapes it and a Layout redistributes it to its regions. With
+ * neither set the area keeps its released full-bleed default. The root dialog
+ * stays the overlay boundary (`overlayPaddingReset`).
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/lab/src/Drawer/Drawer.doc.mjs (props table, features, usage)
  * - /packages/lab/src/Drawer/Drawer.test.tsx (tests for new/changed behavior)
@@ -72,7 +79,16 @@ import {
   mergeProps,
   themeProps,
 } from '@astryxdesign/core/utils';
-import {overlayPaddingReset} from '@astryxdesign/core/Layout';
+import {
+  container,
+  containerPaddingBlockEndVarStyles,
+  containerPaddingBlockStartVarStyles,
+  containerPaddingInlineVarStyles,
+  overlayPaddingReset,
+  paddingStyles,
+  spacingStepToToken,
+} from '@astryxdesign/core/Layout';
+import type {SpacingStep, SpacingToken} from '@astryxdesign/core/Layout';
 import {useDrawerDialogPresence} from './useDrawerDialogPresence';
 
 // =============================================================================
@@ -222,11 +238,12 @@ const styles = stylex.create({
       },
     },
   },
-  // Scrollable content area — full-bleed; consumers compose their own
-  // header/body/footer padding.
+  // Scrollable content area, and the drawer's container: it carries the
+  // container padding (none unless the `padding` prop or the theme sets it)
+  // and publishes it, so a lone Section child escapes it exactly as in Dialog
+  // and a Layout picks it up for its regions.
   // touch-action + overscroll containment keep momentum scrolling inside
-  // the panel on touch devices; the safe-area inset keeps the last row of
-  // content clear of the home indicator.
+  // the panel on touch devices.
   content: {
     flexGrow: 1,
     minHeight: 0,
@@ -235,8 +252,28 @@ const styles = stylex.create({
     overflowX: 'hidden',
     overscrollBehavior: 'contain',
     touchAction: 'pan-y',
-    paddingBlockEnd: 'env(safe-area-inset-bottom, 0px)',
     outline: 'none',
+    // The scrolling area paints the surface itself, covering the panel's whole
+    // inner box. Without it the panel's edge is not uniform: a theme that packs
+    // an inset ring into --shadow-high (the bundled themes all add one in dark
+    // mode) draws that ring just inside the dialog, where an opaque content
+    // wrapper such as Section paints over it — so the ring shows only in the
+    // gap below where the content ends, and the panel's edges appear to change
+    // partway down. Painting the surface here hides the ring evenly, leaving
+    // the anchored-side border as the drawer's one edge (same treatment as
+    // BottomSheetPanel's body, #5305).
+    backgroundColor: colorVars['--color-background-surface'],
+  },
+  // Block-end inset of the content area = container padding + the home
+  // indicator's safe area, so the last row of content stays clear of the
+  // indicator in every padding mode (the released full-bleed behavior was
+  // 0px + the inset). Applied after container()'s own padding so this
+  // composed value wins on the block-end edge; the published
+  // --container-padding-block-end keeps the safe area OUT, so a bleed child
+  // subtracts only the container inset and the safe area survives below it.
+  contentSafeArea: {
+    paddingBlockEnd:
+      'calc(var(--container-padding-block-end, 0px) + env(safe-area-inset-bottom, 0px))',
   },
 });
 
@@ -330,6 +367,16 @@ export interface DrawerProps extends BaseProps<HTMLDialogElement> {
   purpose?: DialogPurpose;
 
   /**
+   * Internal padding of the drawer content using the spacing scale, matching
+   * Dialog. Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8,
+   * 10. When omitted, uses the theme default for drawers: no padding unless
+   * the theme sets `padding` on `drawer`. The content area is a container: a
+   * Section that is its only child escapes the padding, and bleed children
+   * such as Table and Divider compensate against it.
+   */
+  padding?: SpacingStep;
+
+  /**
    * Drawer content. Rendered inside a full-height scrollable area.
    * Focus the element with `data-autofocus` on open, if present.
    */
@@ -361,6 +408,11 @@ export interface DrawerProps extends BaseProps<HTMLDialogElement> {
  * close the drawer, and `DrawerHeader` renders a close button when given
  * `onOpenChange`.
  *
+ * Like Dialog, the drawer is a container: `padding` (or a theme's `padding`
+ * on `drawer`) insets the content area, a lone Section child escapes that
+ * inset, and a Layout inside picks it up for its header, content, and footer
+ * regions. By default the content area has no padding.
+ *
  * @example
  * ```
  * const [selected, setSelected] = useState(null);
@@ -383,6 +435,7 @@ export function Drawer({
   label,
   hasScrim = true,
   purpose = 'info',
+  padding,
   children,
   xstyle,
   className,
@@ -400,6 +453,12 @@ export function Drawer({
   // Derive dismissal behavior from purpose, as Dialog does.
   const allowEscape = purpose !== 'required';
   const allowScrimClick = purpose === 'info';
+  // Same lowering as Dialog: with no padding prop the content area reads the
+  // theme's --astryx-drawer-padding chain (no padding when unset), else the
+  // explicit step.
+  const usesThemePadding = padding == null;
+  const effectivePadding = padding ?? 4;
+  const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
   // Whether the panel paints: true while open and for the whole slide-out.
   const [isRendered, setIsRendered] = useState(isOpen);
 
@@ -519,7 +578,34 @@ export function Drawer({
       <LayerDepthProvider>
         {/* Scrollable content area — tabIndex so the dialog's focusing steps
             land on the panel body rather than the first button inside. */}
-        <div tabIndex={-1} {...stylex.props(styles.content)}>
+        <div
+          tabIndex={-1}
+          {...stylex.props(
+            styles.content,
+            ...container(
+              usesThemePadding
+                ? {useThemeDefault: 'drawer'}
+                : {
+                    paddingInnerX: paddingToken,
+                    paddingInnerY: paddingToken,
+                    paddingOuterX: paddingToken,
+                    paddingOuterY: paddingToken,
+                  },
+            ),
+            !usesThemePadding &&
+              effectivePadding !== 4 &&
+              paddingStyles[effectivePadding],
+            !usesThemePadding &&
+              effectivePadding !== 4 &&
+              containerPaddingInlineVarStyles[effectivePadding],
+            !usesThemePadding &&
+              effectivePadding !== 4 &&
+              containerPaddingBlockStartVarStyles[effectivePadding],
+            !usesThemePadding &&
+              effectivePadding !== 4 &&
+              containerPaddingBlockEndVarStyles[effectivePadding],
+            styles.contentSafeArea,
+          )}>
           {children}
         </div>
       </LayerDepthProvider>

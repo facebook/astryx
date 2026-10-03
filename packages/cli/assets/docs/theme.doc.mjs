@@ -400,7 +400,7 @@ const brandTheme = defineTheme({
           code: `components: {
   // Standard CSS properties are expanded automatically.
   // borderRadius also sets the internal radius var for concentric math.
-  // padding on container components (card, section, dialog) expands to layout tokens.
+  // padding on container components (card, section, dialog, drawer) expands to layout tokens.
   card: {
     base: { borderRadius: '20px', padding: '24px' },
   },

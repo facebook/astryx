@@ -4,7 +4,7 @@
  * @file container.stylex.ts
  * @input Uses @stylexjs/stylex, spacing from theme
  * @output StyleX utility for layout container styling
- * @position Layout utility; used by Card, Section components
+ * @position Layout utility; used by Card, Section, Dialog, and the Lab Drawer
  *
  * ## Public API for themes
  *
@@ -18,13 +18,16 @@
  *   --astryx-card-padding-block-end
  *
  * Read order per level: `var(--astryx-…, <next level>)`, terminating at
- * `--spacing-4`. Same pattern for section and dialog.
+ * `--spacing-4`. Same pattern for section and dialog. The Lab drawer keeps its
+ * released full-bleed default: its edges terminate at 0px and its Layout
+ * insets at no value, so an unthemed drawer changes nothing for descendants.
  *
  * ```ts
  * components: {
  *   card: { base: { padding: '20px' } },          // → --astryx-card-padding: 20px
  *   section: { base: { padding: '12px 20px' } },  // → directional tokens
  *   dialog: { base: { padding: '16px' } },
+ *   drawer: { base: { padding: '16px' } },
  * }
  * ```
  *
@@ -72,8 +75,8 @@ const baseStyles = stylex.create({
 /**
  * Component-scoped padding tokens.
  *
- * Each container component (card, section, dialog) has public CSS custom
- * properties that themes can set. The pipeline emits the `--astryx-*` names,
+ * Each container component (card, section, dialog, drawer) has public CSS
+ * custom properties that themes can set. The pipeline emits the `--astryx-*` names,
  * which the component reads via `var(--astryx-…, …)`:
  *
  *   --astryx-card-padding          (shorthand — all sides)
@@ -129,6 +132,25 @@ const dialogInlineStart = `var(--astryx-dialog-padding-inline-start, ${dialogInl
 const dialogInlineEnd = `var(--astryx-dialog-padding-inline-end, ${dialogInline})`;
 const dialogBlockStart = `var(--astryx-dialog-padding-block-start, ${dialogShorthand})`;
 const dialogBlockEnd = `var(--astryx-dialog-padding-block-end, ${dialogShorthand})`;
+
+// Drawer (Lab) padding chains: --astryx-* then the next specificity level.
+// Unlike card/section/dialog, the drawer's released default is no padding, so
+// the edge chains terminate at 0px. The Layout inset chains have NO terminal
+// value: with no theme padding they are invalid at computed-value time, which
+// leaves the overlay reset in force and lets a Layout inside the drawer fall
+// back to its own default, exactly as before the drawer was a container. Built
+// as chained const strings (no function calls) so StyleX can statically
+// analyze them; see naming.ts for the prefix policy.
+const drawerThemeShorthand = 'var(--astryx-drawer-padding)';
+const drawerThemeInline = `var(--astryx-drawer-padding-inline, ${drawerThemeShorthand})`;
+const drawerThemeInlineStart = `var(--astryx-drawer-padding-inline-start, ${drawerThemeInline})`;
+const drawerThemeBlockStart = `var(--astryx-drawer-padding-block-start, ${drawerThemeShorthand})`;
+const drawerShorthand = 'var(--astryx-drawer-padding, 0px)';
+const drawerInline = `var(--astryx-drawer-padding-inline, ${drawerShorthand})`;
+const drawerInlineStart = `var(--astryx-drawer-padding-inline-start, ${drawerInline})`;
+const drawerInlineEnd = `var(--astryx-drawer-padding-inline-end, ${drawerInline})`;
+const drawerBlockStart = `var(--astryx-drawer-padding-block-start, ${drawerShorthand})`;
+const drawerBlockEnd = `var(--astryx-drawer-padding-block-end, ${drawerShorthand})`;
 
 const cardDefaultPaddingStyles = stylex.create({
   containerPaddingInlineStart: {
@@ -211,6 +233,33 @@ const dialogDefaultPaddingStyles = stylex.create({
   },
 });
 
+const drawerDefaultPaddingStyles = stylex.create({
+  containerPaddingInlineStart: {
+    '--container-padding-inline-start': drawerInlineStart,
+  },
+  containerPaddingInlineEnd: {
+    '--container-padding-inline-end': drawerInlineEnd,
+  },
+  containerPaddingBlockStart: {
+    '--container-padding-block-start': drawerBlockStart,
+  },
+  containerPaddingBlockEnd: {
+    '--container-padding-block-end': drawerBlockEnd,
+  },
+  layoutPaddingOuterX: {
+    '--layout-padding-outer-x': drawerThemeInlineStart,
+  },
+  layoutPaddingOuterY: {
+    '--layout-padding-outer-y': drawerThemeBlockStart,
+  },
+  layoutPaddingInnerX: {
+    '--layout-padding-inner-x': drawerThemeInlineStart,
+  },
+  layoutPaddingInnerY: {
+    '--layout-padding-inner-y': drawerThemeBlockStart,
+  },
+});
+
 /**
  * Map from component name to its theme default padding styles.
  * Each component reads from its own public CSS custom property.
@@ -219,6 +268,7 @@ const themeDefaultStyles = {
   card: cardDefaultPaddingStyles,
   section: sectionDefaultPaddingStyles,
   dialog: dialogDefaultPaddingStyles,
+  drawer: drawerDefaultPaddingStyles,
 };
 
 export type ContainerComponent = keyof typeof themeDefaultStyles;
@@ -426,15 +476,16 @@ export interface ContainerOptions {
   paddingInnerY?: SpacingToken;
 
   /**
-   * When set to a component name ('card' | 'section'), internal layout
-   * padding variables cascade from the component-specific public CSS
-   * container tokens (set by theme pipeline from `padding` shorthand)
-   * instead of being set to explicit spacing token values.
+   * When set to a component name ('card' | 'section' | 'dialog' | 'drawer'),
+   * internal layout padding variables cascade from the component-specific
+   * public CSS container tokens (set by theme pipeline from `padding`
+   * shorthand) instead of being set to explicit spacing token values.
    *
    * This allows themes to override container padding via component-specific
    * public CSS custom properties without touching internal vars.
    *
-   * Used by Card and Section when no explicit padding prop is provided.
+   * Used by Card, Section, Dialog, and the Lab Drawer when no explicit
+   * padding prop is provided.
    * @default undefined (uses explicit spacing token values)
    */
   useThemeDefault?: ContainerComponent;
