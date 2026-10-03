@@ -20,6 +20,7 @@ import {
 } from './evaluator.mjs';
 import {
   auditAgentContext,
+  auditTranscriptCommands,
   countAstryxInvocations,
   countCliLookups,
   createPrivateRunRoot,
@@ -83,6 +84,26 @@ test('stratified sampling chooses distinct categories first', () => {
   assert.deepEqual(
     selectPrompts(testSet, {sample: 3}).map(prompt => prompt.id),
     ['a1', 'b1', 'c1'],
+  );
+});
+
+test('seeded stratified sampling is stable and covers every category first', () => {
+  const testSet = {
+    prompts: [
+      {id: 'a1', category: 'a'},
+      {id: 'a2', category: 'a'},
+      {id: 'b1', category: 'b'},
+      {id: 'b2', category: 'b'},
+      {id: 'c1', category: 'c'},
+      {id: 'c2', category: 'c'},
+    ],
+  };
+  const first = selectPrompts(testSet, {sample: 4, seed: 'fixed-seed'});
+  const second = selectPrompts(testSet, {sample: 4, seed: 'fixed-seed'});
+  assert.deepEqual(first, second);
+  assert.equal(
+    new Set(first.slice(0, 3).map(prompt => prompt.category)).size,
+    3,
   );
 });
 
@@ -344,6 +365,32 @@ test('all supported Astryx CLI invocation forms are counted', () => {
   assert.equal(countCliLookups(transcript), commands.length);
 });
 
+test('transcript audit flags every sensitive host-path command', () => {
+  const transcript = [
+    'cat index.html',
+    'cat /proc/1/root/secret',
+    '/usr/local/bin/scsc ls',
+    'ls /var/facebook/credentials',
+    'ls /data/users',
+  ]
+    .map(command =>
+      JSON.stringify({
+        type: 'assistant',
+        message: {content: [{type: 'tool_use', input: {command}}]},
+      }),
+    )
+    .join('\n');
+  const audit = auditTranscriptCommands(transcript);
+  assert.equal(audit.passed, false);
+  assert.equal(audit.flaggedCommandCount, 4);
+  assert.deepEqual(audit.touchedPaths, [
+    '/data',
+    '/proc',
+    '/usr/local/bin',
+    '/var/facebook',
+  ]);
+});
+
 test('context audit rejects external Claude context and accepts bare init', () => {
   const clean = JSON.stringify({
     type: 'system',
@@ -402,6 +449,7 @@ test('summary includes failure zeros in medians and reports sample counts', () =
   const [row] = summarize(results);
   assert.equal(row.passRate, 0.5);
   assert.equal(row.timeouts, 1);
+  assert.equal(row.transcriptFlaggedRuns, 0);
   assert.equal(row.medianAdoptionShare, 0.4);
   assert.equal(row.medianPromptFulfillment, 40);
   assert.equal(row.medianVisualQuality, 40);
@@ -424,6 +472,7 @@ function makeResult({passed, value, timedOut = false}) {
       cliLookups: 0,
       timedOut,
       contextAudit: {passed: true},
+      transcriptAudit: {passed: true},
     },
     evaluation: {
       build: {passed},

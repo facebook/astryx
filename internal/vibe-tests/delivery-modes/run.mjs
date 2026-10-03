@@ -21,6 +21,7 @@ import {captureAuthoredSources, evaluateRun} from './evaluator.mjs';
 import {
   SANDBOX_PROJECT,
   auditAgentContext,
+  auditTranscriptCommands,
   countCliLookups,
   countToolCalls,
   createPrivateRunRoot,
@@ -49,6 +50,7 @@ async function main() {
   const prompts = selectPrompts(testSet, {
     sample: options.sample,
     promptIds: options.prompts,
+    seed: options.seed,
   });
 
   if (options.dryRun) {
@@ -64,12 +66,23 @@ async function main() {
     options.outputDir ?? path.join('/tmp/astryx-delivery-modes', iterationId),
   );
   await fsp.mkdir(path.join(outputDir, 'screenshots'), {recursive: true});
+  const manifestPath = path.join(outputDir, 'manifest.json');
+  let priorManifest = null;
+  if (fs.existsSync(manifestPath)) {
+    if (!options.resume) {
+      throw new Error(
+        `Output directory already has a manifest; pass --resume or choose another directory: ${outputDir}`,
+      );
+    }
+    priorManifest = JSON.parse(await fsp.readFile(manifestPath, 'utf8'));
+  }
   const manifest = {
     iterationId,
-    createdAt: new Date().toISOString(),
+    createdAt: priorManifest?.createdAt ?? new Date().toISOString(),
     configs: options.configs,
     agents: options.agents,
     prompts: prompts.map(prompt => prompt.id),
+    seed: options.seed,
     reactVersion: options.reactVersion,
     vanillaCdnRef: options.vanillaCdnRef,
     vanillaTarballUrl: options.vanillaTarballUrl,
@@ -84,19 +97,37 @@ async function main() {
       mountNamespace: true,
       freshHomeTmpAndProject: true,
       sharedResultsAfterCompletionOnly: true,
-      path: '/mnt/run/bin:/usr/bin:/bin (sandbox blocks sudo and meta)',
-      hiddenHostPaths: ['/home', '/tmp', '/data', '/var/tmp', '/dev/shm'],
+      path: '/mnt/run/bin:/usr/bin:/bin (sandbox hides /usr/local/bin and blocks internal executable roots)',
+      hiddenHostPaths: [
+        '/home',
+        '/tmp',
+        '/data',
+        '/var/tmp',
+        '/dev/shm',
+        '/usr/local/bin',
+        '/opt/facebook',
+      ],
+      protectedHostPaths: [
+        '/var/facebook (writable/noexec for model auth; transcript access forbidden)',
+      ],
       browserTool: 'screenshot <file-or-url> [output.png]',
       startupProbe: await probeIsolation(),
     },
     runnerVersions: await runnerVersions(),
   };
-  await fsp.writeFile(
-    path.join(outputDir, 'manifest.json'),
-    `${JSON.stringify(manifest, null, 2)}\n`,
-  );
+  if (priorManifest) {
+    assertCompatibleManifest(priorManifest, manifest);
+    manifest.resumedAt = new Date().toISOString();
+  }
+  await fsp.writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
-  if (options.configs.includes('react-nobuild')) {
+  if (
+    options.configs.includes('react-nobuild') &&
+    !(
+      options.resume &&
+      fs.existsSync(path.join(outputDir, 'starter-verification.json'))
+    )
+  ) {
     console.log('Verifying the React no-build starter with hooks and icons…');
     await verifyStarter(specs['react-nobuild'], outputDir);
   }
@@ -109,12 +140,21 @@ async function main() {
       }
     }
   }
-  console.log(
-    `Running ${jobs.length} jobs (${options.concurrency} concurrent, ${options.timeoutMinutes} minute agent timeout)…`,
+  const results = options.resume
+    ? await loadCheckpointResults({jobs, outputDir, specs, options})
+    : [];
+  const completedIds = new Set(results.map(result => result.id));
+  const pendingJobs = jobs.filter(
+    job => !completedIds.has(jobId(job.prompt.id, job.config, job.agent)),
   );
-  const results = [];
-  let completed = 0;
-  await runWithConcurrency(jobs, options.concurrency, async job => {
+  const scheduledJobs = options.maxNewJobs
+    ? pendingJobs.slice(0, options.maxNewJobs)
+    : pendingJobs;
+  console.log(
+    `Running ${scheduledJobs.length} new of ${jobs.length} total jobs (${results.length} resumed, ${options.concurrency} concurrent, ${options.timeoutMinutes} minute agent timeout)…`,
+  );
+  let completed = results.length;
+  await runWithConcurrency(scheduledJobs, options.concurrency, async job => {
     const result = await runOne({
       ...job,
       spec: specs[job.config],
@@ -128,7 +168,11 @@ async function main() {
     );
   });
   results.sort((a, b) => a.id.localeCompare(b.id));
-  manifest.completedAt = new Date().toISOString();
+  manifest.completedJobs = results.length;
+  manifest.totalJobs = jobs.length;
+  if (results.length === jobs.length) {
+    manifest.completedAt = new Date().toISOString();
+  }
   manifest.runnerVersions.claude =
     results.find(result => result.runner?.contextAudit?.runnerVersion)?.runner
       .contextAudit.runnerVersion ??
@@ -136,10 +180,7 @@ async function main() {
       result => result.evaluation?.judge?.contextAudit?.runnerVersion,
     )?.evaluation.judge.contextAudit.runnerVersion ??
     null;
-  await fsp.writeFile(
-    path.join(outputDir, 'manifest.json'),
-    `${JSON.stringify(manifest, null, 2)}\n`,
-  );
+  await fsp.writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
   const report = await buildReports({outputDir, iterationId, results});
   console.log(`\nReport: ${report.htmlPath}`);
@@ -150,6 +191,64 @@ async function main() {
       `${row.config}/${row.agent}: ${row.passed}/${row.runs} render pass, median adoption ${formatPercent(row.medianAdoptionShare)}, visual ${formatNumber(row.medianVisualQuality)}`,
     );
   }
+}
+
+function assertCompatibleManifest(prior, current) {
+  const keys = [
+    'iterationId',
+    'configs',
+    'agents',
+    'prompts',
+    'seed',
+    'reactVersion',
+    'vanillaCdnRef',
+    'vanillaTarballUrl',
+    'concurrency',
+    'agentTimeoutMinutes',
+  ];
+  for (const key of keys) {
+    if (JSON.stringify(prior[key]) !== JSON.stringify(current[key])) {
+      throw new Error(
+        `Cannot resume: manifest field ${key} changed (${JSON.stringify(prior[key])} != ${JSON.stringify(current[key])})`,
+      );
+    }
+  }
+}
+
+async function loadCheckpointResults({jobs, outputDir, specs, options}) {
+  const results = [];
+  for (const job of jobs) {
+    const id = jobId(job.prompt.id, job.config, job.agent);
+    const checkpointPath = path.join(outputDir, 'runs', id, 'run.json');
+    if (!fs.existsSync(checkpointPath)) {
+      continue;
+    }
+    const result = JSON.parse(await fsp.readFile(checkpointPath, 'utf8'));
+    const expectedTaskPrompt = buildTaskPrompt(
+      job.prompt,
+      specs[job.config],
+      SANDBOX_PROJECT,
+      {timeoutMinutes: options.timeoutMinutes},
+    );
+    if (
+      result.id !== id ||
+      result.promptId !== job.prompt.id ||
+      result.config !== job.config ||
+      result.agent !== job.agent ||
+      result.taskPromptHash !== stableId(expectedTaskPrompt) ||
+      !result.finishedAt
+    ) {
+      throw new Error(
+        `Cannot resume from mismatched checkpoint: ${checkpointPath}`,
+      );
+    }
+    results.push(result);
+  }
+  return results;
+}
+
+function jobId(promptId, config, agent) {
+  return `${promptId}-${config}-${agent}`;
 }
 
 async function verifyStarter(spec, outputDir) {
@@ -186,7 +285,7 @@ async function verifyStarter(spec, outputDir) {
 }
 
 async function runOne({prompt, config, agent, spec, outputDir, options}) {
-  const id = `${prompt.id}-${config}-${agent}`;
+  const id = jobId(prompt.id, config, agent);
   const sharedRunDir = path.join(outputDir, 'runs', id);
   const sharedScreenshot = path.join(outputDir, 'screenshots', `${id}.png`);
   const privateRun = await createPrivateRunRoot(`${id}-`);
@@ -197,6 +296,7 @@ async function runOne({prompt, config, agent, spec, outputDir, options}) {
   const result = {
     id,
     promptId: prompt.id,
+    category: prompt.category,
     prompt: prompt.prompt,
     config,
     agent,
@@ -283,7 +383,7 @@ async function runAgent({agent, privateRun, taskPrompt, timeoutMs}) {
   let args;
   let input;
   if (agent === 'claude') {
-    command = '/usr/local/bin/claude';
+    command = '/usr/local/bin/claude_code/os/claude';
     args = [
       '--safe-mode',
       '--strict-mcp-config',
@@ -303,7 +403,7 @@ async function runAgent({agent, privateRun, taskPrompt, timeoutMs}) {
     ];
     input = taskPrompt;
   } else if (agent === 'muse') {
-    command = '/usr/local/bin/muse';
+    command = '/usr/local/bin/muse_code/muse';
     args = [
       'exec',
       '--json',
@@ -342,6 +442,13 @@ async function runAgent({agent, privateRun, taskPrompt, timeoutMs}) {
     execution.stdout,
     execution.stderr,
   );
+  const transcriptAudit = auditTranscriptCommands(execution.stdout);
+  if (!transcriptAudit.passed) {
+    contextAudit.passed = false;
+    contextAudit.violations.push(
+      `Transcript touched sensitive host paths: ${transcriptAudit.touchedPaths.join(', ')}`,
+    );
+  }
   return {
     command: agent,
     code: execution.code,
@@ -359,6 +466,7 @@ async function runAgent({agent, privateRun, taskPrompt, timeoutMs}) {
     toolCalls: countToolCalls(execution.stdout),
     cliLookups: countCliLookups(execution.stdout),
     contextAudit,
+    transcriptAudit,
     limits:
       agent === 'muse'
         ? {maxModelSteps: MUSE_MAX_MODEL_STEPS}
@@ -452,7 +560,7 @@ async function probeIsolation() {
       '/bin/sh',
       [
         '-c',
-        'set -eu; test "$(cat /mnt/run/project/allowed.html | grep -c allowed)" -ge 1; printf written > /mnt/run/project/written.txt; test ! -e "$1"; test ! -e "$2"; test ! -e "$3"; test ! -e "$4"; ! /usr/bin/sudo -n true >/dev/null 2>&1; ! /usr/bin/nsenter -t 1 -m true >/dev/null 2>&1; ! /usr/local/bin/meta --help >/dev/null 2>&1; ! command -v meta >/dev/null 2>&1; screenshot /mnt/run/project/allowed.html /mnt/run/project/browser-probe.png >/dev/null; test -s /mnt/run/project/browser-probe.png; printf "own-root=read-write\\nsibling=hidden\\nvar-tmp=private\\ndev-shm=private\\ndata=hidden\\nsudo=blocked\\nnsenter=blocked\\nmeta-absolute=blocked\\nbrowser=available\\n"',
+        'set -eu; test "$(cat /mnt/run/project/allowed.html | grep -c allowed)" -ge 1; printf written > /mnt/run/project/written.txt; test ! -e "$1"; test ! -e "$2"; test ! -e "$3"; test ! -e "$4"; ! /usr/bin/sudo -n true >/dev/null 2>&1; ! /usr/bin/nsenter -t 1 -m true >/dev/null 2>&1; ! /usr/local/bin/meta --help >/dev/null 2>&1; for tool in /usr/local/bin/scsc /usr/local/jellyfish/jf /usr/local/bin/sl /usr/local/bin/knots; do ! "$tool" --help >/dev/null 2>&1; done; ! /opt/facebook/network-seal-status >/dev/null 2>&1; findmnt -n -o OPTIONS --target /var/facebook | grep -qw noexec; findmnt -n -o OPTIONS --target /opt/facebook | grep -qw noexec; ! command -v meta >/dev/null 2>&1; screenshot /mnt/run/project/allowed.html /mnt/run/project/browser-probe.png >/dev/null; test -s /mnt/run/project/browser-probe.png; printf "own-root=read-write\\nsibling=hidden\\nvar-tmp=private\\ndev-shm=private\\ndata=hidden\\nsudo=blocked\\nnsenter=blocked\\nmeta-absolute=blocked\\ninternal-cli-absolute=blocked\\nusr-local-bin=hidden\\nvar-facebook=noexec\\nopt-facebook=noexec\\nbrowser=available\\n"',
         'probe',
         siblingSecret,
         varTmpSecret,
@@ -480,6 +588,10 @@ async function probeIsolation() {
       sudoBlocked: true,
       nsenterBlocked: true,
       metaAbsolutePathBlocked: true,
+      internalCliAbsolutePathsBlocked: true,
+      usrLocalBinHidden: true,
+      varFacebookExecutablesBlocked: true,
+      optFacebookExecutablesBlocked: true,
       metaAbsentFromPath: true,
       identicalBrowserHelperAvailable: true,
       output: execution.stdout.trim().split('\n'),
@@ -567,8 +679,11 @@ function parseArgs(args) {
     agents: [...AGENT_NAMES],
     sample: undefined,
     prompts: undefined,
-    concurrency: 6,
+    seed: undefined,
+    concurrency: 1,
+    maxNewJobs: undefined,
     timeoutMinutes: 15,
+    resume: false,
     dryRun: false,
     skipJudge: false,
     reactVersion: DEFAULT_REACT_VERSION,
@@ -593,8 +708,14 @@ function parseArgs(args) {
     } else if (argument === '--prompts') {
       options.prompts = value.split(',').filter(Boolean);
       index += 1;
+    } else if (argument === '--seed') {
+      options.seed = value;
+      index += 1;
     } else if (argument === '--concurrency') {
       options.concurrency = positiveInteger(value, '--concurrency');
+      index += 1;
+    } else if (argument === '--max-new-jobs') {
+      options.maxNewJobs = positiveInteger(value, '--max-new-jobs');
       index += 1;
     } else if (argument === '--timeout-minutes') {
       options.timeoutMinutes = positiveInteger(value, '--timeout-minutes');
@@ -614,6 +735,8 @@ function parseArgs(args) {
     } else if (argument === '--vanilla-tarball-url') {
       options.vanillaTarballUrl = value;
       index += 1;
+    } else if (argument === '--resume') {
+      options.resume = true;
     } else if (argument === '--dry-run') {
       options.dryRun = true;
     } else if (argument === '--skip-judge') {
@@ -655,10 +778,13 @@ function printHelp() {
 Options:
   --configs <names>              react-build,react-nobuild,vanilla
   --agents <names>               claude,muse
-  --sample <n>                   deterministic category-stratified sample
+  --sample <n>                   category-stratified sample
+  --seed <value>                 stable sample order; recorded in the manifest
   --prompts <ids>                comma-separated prompt ids
+  --resume                       reuse matching completed cell checkpoints
   --dry-run                      print generated task prompts only
-  --concurrency <n>              concurrent fresh agent processes (default 6)
+  --concurrency <n>              concurrent fresh agent processes (default 1)
+  --max-new-jobs <n>             stop after this many new cells; resume later
   --timeout-minutes <n>          per-agent timeout (default 15)
   --output-dir <path>            run artifacts directory (default /tmp)
   --iteration <id>               stable report identifier

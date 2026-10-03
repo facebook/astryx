@@ -87,6 +87,9 @@ export function summarize(results) {
         contextFailures: runs.filter(
           run => run.runner?.contextAudit?.passed === false,
         ).length,
+        transcriptFlaggedRuns: runs.filter(
+          run => run.runner?.transcriptAudit?.passed === false,
+        ).length,
         buildFailures: runs.filter(
           run => run.evaluation?.build?.passed === false,
         ).length,
@@ -133,15 +136,35 @@ function markdownReport(iterationId, summary, results) {
     '',
     'Known delivery asymmetry: `react-nobuild` receives the published React CLI guide, which has no CDN-specific workflow, and its CLI cannot show component docs because `@astryxdesign/core` is loaded only from the CDN rather than installed locally. Known runner asymmetry: Muse emits built-in skill and final-verification reminder lifecycle records even with external plugins, foreign context, MCP, external skill content, and llm-rules disabled; the same minimal preset is used for every config.',
     '',
-    '| Config | Agent | Runs | Pass | Timeouts | Context failures | Wall | Tokens | CLI | Adoption | Hard-coded | Theme defs | axe | Type errors | Prompt | Visual | Best-before timeout P/V |',
-    '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
+    '**Adoption is coarse.** Ancestor credit is symmetric but can credit hand-rolled controls placed inside Astryx content slots; with the smaller Vanilla component set, use render, blind-judge, axe, hard-coded-style, theme-definition, and efficiency metrics as the primary comparison. Any tool command touching `/proc`, `/usr/local/bin`, `/var/facebook`, or `/data` fails the cell context audit and is listed below.',
+    '',
+    '| Config | Agent | Runs | Pass | Timeouts | Context failures | Transcript flags | Wall | Tokens | CLI | Adoption (coarse) | Hard-coded | Theme defs | axe | Type errors | Prompt | Visual | Best-before timeout P/V |',
+    '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
   ];
   for (const row of summary) {
     lines.push(
-      `| ${row.config} | ${row.agent} | ${row.runs} | ${percent(row.passRate)} | ${row.timeouts} | ${row.contextFailures} | ${metricText(seconds(row.medianWallTimeMs), row.samples.wall)} | ${metricText(formatNumber(row.medianTokens), row.samples.tokens)} | ${metricText(formatNumber(row.medianCliLookups), row.samples.cli)} | ${metricText(percent(row.medianAdoptionShare), row.samples.adoption)} | ${metricText(formatNumber(row.medianHardCodedStyles), row.samples.hardCoded)} | ${metricText(formatNumber(row.medianThemeDefinitions), row.samples.themeDefinitions)} | ${metricText(formatNumber(row.medianAxeViolations), row.samples.axe)} | ${metricText(formatNumber(row.medianTypeErrors), row.samples.typeErrors)} | ${metricText(formatNumber(row.medianPromptFulfillment), row.samples.prompt)} | ${metricText(formatNumber(row.medianVisualQuality), row.samples.visual)} | ${formatBestBefore(row)} |`,
+      `| ${row.config} | ${row.agent} | ${row.runs} | ${percent(row.passRate)} | ${row.timeouts} | ${row.contextFailures} | ${row.transcriptFlaggedRuns} | ${metricText(seconds(row.medianWallTimeMs), row.samples.wall)} | ${metricText(formatNumber(row.medianTokens), row.samples.tokens)} | ${metricText(formatNumber(row.medianCliLookups), row.samples.cli)} | ${metricText(percent(row.medianAdoptionShare), row.samples.adoption)} | ${metricText(formatNumber(row.medianHardCodedStyles), row.samples.hardCoded)} | ${metricText(formatNumber(row.medianThemeDefinitions), row.samples.themeDefinitions)} | ${metricText(formatNumber(row.medianAxeViolations), row.samples.axe)} | ${metricText(formatNumber(row.medianTypeErrors), row.samples.typeErrors)} | ${metricText(formatNumber(row.medianPromptFulfillment), row.samples.prompt)} | ${metricText(formatNumber(row.medianVisualQuality), row.samples.visual)} | ${formatBestBefore(row)} |`,
     );
   }
-  lines.push('', '## Screenshots', '');
+  lines.push('', '## Transcript audit flags', '');
+  const flaggedResults = results.filter(
+    result => result.runner?.transcriptAudit?.passed === false,
+  );
+  if (flaggedResults.length === 0) {
+    lines.push('None.', '');
+  } else {
+    for (const result of flaggedResults) {
+      const audit = result.runner.transcriptAudit;
+      lines.push(
+        `- **${result.id}** — ${audit.touchedPaths.map(value => `\`${value}\``).join(', ')}`,
+      );
+      for (const entry of audit.flaggedCommands) {
+        lines.push(`  - \`${markdownCode(entry.command)}\``);
+      }
+    }
+    lines.push('');
+  }
+  lines.push('## Screenshots', '');
   for (const promptId of [...new Set(results.map(result => result.promptId))]) {
     lines.push(`### ${promptId}`, '');
     for (const result of results.filter(run => run.promptId === promptId)) {
@@ -164,7 +187,7 @@ async function htmlReport(iterationId, summary, results) {
     .map(
       row => `<tr>
 <td>${escapeHtml(row.config)}</td><td>${escapeHtml(row.agent)}</td><td>${row.runs}</td><td>${percent(row.passRate)}</td>
-<td>${row.timeouts}</td><td>${row.contextFailures}</td><td>${metricText(seconds(row.medianWallTimeMs), row.samples.wall)}</td>
+<td>${row.timeouts}</td><td>${row.contextFailures}</td><td>${row.transcriptFlaggedRuns}</td><td>${metricText(seconds(row.medianWallTimeMs), row.samples.wall)}</td>
 <td>${metricText(formatNumber(row.medianTokens), row.samples.tokens)}</td><td>${metricText(formatNumber(row.medianCliLookups), row.samples.cli)}</td>
 <td>${metricText(percent(row.medianAdoptionShare), row.samples.adoption)}</td><td>${metricText(formatNumber(row.medianHardCodedStyles), row.samples.hardCoded)}</td>
 <td>${metricText(formatNumber(row.medianThemeDefinitions), row.samples.themeDefinitions)}</td><td>${metricText(formatNumber(row.medianAxeViolations), row.samples.axe)}</td><td>${metricText(formatNumber(row.medianTypeErrors), row.samples.typeErrors)}</td>
@@ -183,7 +206,7 @@ async function htmlReport(iterationId, summary, results) {
       }
       cards.push(`<article><h3>${escapeHtml(result.config)} · ${escapeHtml(result.agent)}</h3>${image}<dl>
 <dt>Render</dt><dd>${result.evaluation?.render?.passed ? 'pass' : 'fail'}</dd>
-<dt>Adoption</dt><dd>${percent(result.evaluation?.render?.adoptionShare)}</dd>
+<dt>Adoption (coarse)</dt><dd>${percent(result.evaluation?.render?.adoptionShare)}</dd>
 <dt>axe</dt><dd>${formatNumber(result.evaluation?.accessibility?.violationCount)}</dd>
 <dt>Type errors</dt><dd>${formatNumber(result.evaluation?.typecheck?.errorCount)}</dd>
 <dt>Hard-coded / theme defs</dt><dd>${formatNumber(result.evaluation?.source?.hardCodedStyleCount)} / ${formatNumber(result.evaluation?.source?.themeDefinitionCount)}</dd>
@@ -196,6 +219,24 @@ async function htmlReport(iterationId, summary, results) {
     );
   }
 
+  const flaggedResults = results.filter(
+    result => result.runner?.transcriptAudit?.passed === false,
+  );
+  const transcriptAuditHtml =
+    flaggedResults.length === 0
+      ? '<p>None.</p>'
+      : `<ul>${flaggedResults
+          .map(result => {
+            const audit = result.runner.transcriptAudit;
+            const commands = audit.flaggedCommands
+              .map(
+                entry => `<li><code>${escapeHtml(entry.command)}</code></li>`,
+              )
+              .join('');
+            return `<li><strong>${escapeHtml(result.id)}</strong> — ${audit.touchedPaths.map(escapeHtml).join(', ')}<ul>${commands}</ul></li>`;
+          })
+          .join('')}</ul>`;
+
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Delivery-mode vibe test — ${escapeHtml(iterationId)}</title>
@@ -205,7 +246,9 @@ async function htmlReport(iterationId, summary, results) {
 <h1>Delivery-mode vibe test</h1>
 <p>Iteration <code>${escapeHtml(iterationId)}</code>. Every config uses the same evaluator. Failed builds, runtime errors, and blank renders contribute 0 to adoption, prompt, and visual metrics and stay in every denominator. Parenthetical <code>n</code> is the sample count for each median.</p>
 <p>TypeScript diagnostics are non-gating. Comments are excluded from hard-coded scanning, and token/theme definitions are reported separately. Timed-out runs keep zero primary scores and expose their last complete screenshot under best-before-timeout. The blind judge sees only an anonymized default-state screenshot and prompt in a private filesystem namespace. Muse uses one minimal preset across configs; its built-in skill and final-verification reminder lifecycle remains a documented runner asymmetry.</p>
-<div class="table-wrap"><table><thead><tr><th>Config</th><th>Agent</th><th>Runs</th><th>Pass</th><th>Timeouts</th><th>Context</th><th>Wall</th><th>Tokens</th><th>CLI</th><th>Adoption</th><th>Hard-coded</th><th>Theme defs</th><th>axe</th><th>Type errors</th><th>Prompt</th><th>Visual</th><th>Best-before P/V</th></tr></thead><tbody>${rows}</tbody></table></div>
+<p><strong>Adoption is coarse.</strong> Symmetric ancestor credit can count hand-rolled controls inside Astryx content slots, so the smaller Vanilla component set can saturate this metric. Render, blind-judge, axe, hard-coded-style, theme-definition, and efficiency metrics lead the comparison. Any tool command touching <code>/proc</code>, <code>/usr/local/bin</code>, <code>/var/facebook</code>, or <code>/data</code> fails the context audit.</p>
+<div class="table-wrap"><table><thead><tr><th>Config</th><th>Agent</th><th>Runs</th><th>Pass</th><th>Timeouts</th><th>Context</th><th>Transcript flags</th><th>Wall</th><th>Tokens</th><th>CLI</th><th>Adoption (coarse)</th><th>Hard-coded</th><th>Theme defs</th><th>axe</th><th>Type errors</th><th>Prompt</th><th>Visual</th><th>Best-before P/V</th></tr></thead><tbody>${rows}</tbody></table></div>
+<section><h2>Transcript audit flags</h2>${transcriptAuditHtml}</section>
 ${grids.join('\n')}
 </body></html>\n`;
 }
@@ -251,6 +294,9 @@ function formatNumber(value) {
   return Number.isFinite(value)
     ? Math.round(value).toLocaleString('en-US')
     : '—';
+}
+function markdownCode(value) {
+  return String(value).replaceAll('`', "'").replaceAll(/\s+/g, ' ').trim();
 }
 function escapeHtml(value) {
   return String(value)

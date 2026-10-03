@@ -16,8 +16,13 @@ The Linux host must support passwordless `sudo` for constructing mount namespace
 pnpm -F @astryxdesign/vibe-tests delivery:run \
   --configs react-build,react-nobuild,vanilla \
   --agents claude,muse \
-  --sample 3
+  --sample 15 \
+  --seed 20261003 \
+  --concurrency 1 \
+  --resume
 ```
+
+The fixed seed and selected IDs are recorded in `manifest.json`. Concurrency defaults to 1 because mount namespaces still share PID and network namespaces; parallel agents can otherwise kill or reuse another cell's preview server. Each completed cell is checkpointed as `runs/<id>/run.json`. Re-run the same command with `--resume` after an interruption; `--max-new-jobs <n>` can intentionally stop after a checkpoint batch.
 
 Before running agents, the harness renders the no-build React starter at the pinned package version and saves its screenshot. The starter exercises an icon-bearing Banner, component hooks, theme context, and a controlled TextInput; the self-check types into the field and verifies its controlled value. Both the core and theme ESM imports carry `?external=react,react-dom` so esm.sh reuses the import-mapped React runtime.
 
@@ -41,9 +46,9 @@ The output directory contains `report.md`, a self-contained `report.html`, `repo
 
 ## Isolation and context audit
 
-Every agent and judge runs in its own mode-`0700` root with a unique project, `HOME`, configuration directory, and `TMPDIR`. A private mount namespace replaces `/home`, `/tmp`, `/data`, `/var/tmp`, and `/dev/shm`; sibling-run and host-user paths therefore do not exist inside the run. The namespace binds `/bin/false` over `sudo` and the host `meta` binary, so neither privilege escalation nor an absolute-path CLI escape works. Shared results are copied out only after the agent and evaluator finish, and shared output paths are outside every agent-readable namespace. The blind judge gets a separate root containing only its screenshot.
+Every agent and judge runs in its own mode-`0700` root with a unique project, `HOME`, configuration directory, and `TMPDIR`. A private mount namespace replaces `/home`, `/tmp`, `/data`, `/var/tmp`, and `/dev/shm`; sibling-run and host-user paths therefore do not exist inside the run. The namespace hides `/usr/local/bin` except the two agent runtime trees and their model-auth transport, hides `/opt/facebook`, and remounts `/var/facebook` writable but `noexec` for model authentication; tool-command access to that path is forbidden by the transcript audit. Shared results are copied out only after the agent and evaluator finish, and shared output paths are outside every agent-readable namespace. The blind judge gets a separate root containing only its screenshot.
 
-The isolated `PATH` is `/mnt/run/bin:/usr/bin:/bin`, with Node, Git, and the identical screenshot helper added to the private bin. The startup probe must prove that `sudo`, `nsenter`, absolute-path `meta`, `/data/users/*`, an exact sibling path, `/var/tmp`, and `/dev/shm` are inaccessible before any matrix cell runs.
+The isolated `PATH` is `/mnt/run/bin:/usr/bin:/bin`, with Node, Git, and the identical screenshot helper added to the private bin. The startup probe must prove that privilege escalation, the required absolute-path internal CLI probes, `/data/users/*`, an exact sibling path, `/var/tmp`, and `/dev/shm` are inaccessible before any matrix cell runs. A post-run transcript audit context-fails and reports every cell whose tool commands touch `/proc`, `/usr/local/bin`, `/var/facebook`, or `/data`.
 
 - Claude runs in safe mode with strict empty MCP configuration, no session persistence, no slash commands, and an explicit tool allowlist. Its init event must report no MCP servers, external plugins, or hooks. A host wrapper may print plugin-install attempts before Claude starts; the private `PATH` blocks the installer, and the init-event audit—not wrapper intent—proves that nothing loaded.
 - Muse runs the same `native-basic` preset for every config with plugins gated off, foreign personal context disabled, web tools disabled, no session log, and `--disable-muse-llm-rules`. Muse still emits built-in skill and final-verification reminder lifecycle records; this is reported as a runner-wide asymmetry, with no external skill content loaded. Any external plugin install or MCP event fails the run.

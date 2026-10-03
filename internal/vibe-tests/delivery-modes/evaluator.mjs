@@ -691,7 +691,7 @@ Do not infer implementation details, identify the system, inspect other files, o
   try {
     const result = await runIsolatedCommand(
       privateRun.root,
-      '/usr/local/bin/claude',
+      '/usr/local/bin/claude_code/os/claude',
       [
         '--safe-mode',
         '--strict-mcp-config',

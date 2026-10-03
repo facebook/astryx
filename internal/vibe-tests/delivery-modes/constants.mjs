@@ -68,7 +68,7 @@ Output:
 Implement the complete runnable solution in ${spec.outputFile}. Preserve the project's delivery mechanism. Work directly in the project files; do not merely describe the solution. Ensure the result can be opened or built using the scripts and dependencies already provided.`;
 }
 
-export function selectPrompts(testSet, {sample, promptIds} = {}) {
+export function selectPrompts(testSet, {sample, promptIds, seed} = {}) {
   const prompts = testSet.prompts ?? [];
   if (promptIds?.length) {
     const byId = new Map(prompts.map(prompt => [prompt.id, prompt]));
@@ -80,13 +80,21 @@ export function selectPrompts(testSet, {sample, promptIds} = {}) {
       return prompt;
     });
   }
-  if (!sample || sample >= prompts.length) {
-    return prompts;
+  const orderedPrompts =
+    seed == null
+      ? prompts
+      : [...prompts].sort((left, right) =>
+          stableId(String(seed), left.category, left.id).localeCompare(
+            stableId(String(seed), right.category, right.id),
+          ),
+        );
+  if (!sample || sample >= orderedPrompts.length) {
+    return orderedPrompts;
   }
 
   const selected = [];
   const seenCategories = new Set();
-  for (const prompt of prompts) {
+  for (const prompt of orderedPrompts) {
     if (!seenCategories.has(prompt.category)) {
       selected.push(prompt);
       seenCategories.add(prompt.category);
@@ -95,7 +103,7 @@ export function selectPrompts(testSet, {sample, promptIds} = {}) {
       }
     }
   }
-  for (const prompt of prompts) {
+  for (const prompt of orderedPrompts) {
     if (!selected.includes(prompt)) {
       selected.push(prompt);
       if (selected.length === sample) {

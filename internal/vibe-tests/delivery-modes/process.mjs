@@ -15,22 +15,61 @@ uid="$1"
 gid="$2"
 private_root="$3"
 browser_cache="$4"
-shift 4
+username="$5"
+shift 5
+command="$1"
+shift
 mount --make-rprivate /
 mount -t tmpfs tmpfs /mnt
 mkdir -p ${SANDBOX_ROOT} ${SANDBOX_ROOT}/browser-cache
 mount --bind "$private_root" ${SANDBOX_ROOT}
 mount --bind "$browser_cache" ${SANDBOX_ROOT}/browser-cache
 mount -o remount,bind,ro ${SANDBOX_ROOT}/browser-cache
+mkdir -p /mnt/host-claude-code /mnt/host-muse-code
+mount --bind /usr/local/bin/claude_code /mnt/host-claude-code
+mount --bind /usr/local/bin/muse_code /mnt/host-muse-code
+touch /mnt/host-servicerouter
+mount --bind /usr/local/bin/servicerouter /mnt/host-servicerouter
 mount -t tmpfs tmpfs /tmp
 mount -t tmpfs tmpfs /home
 mount -t tmpfs tmpfs /data
 mount -t tmpfs tmpfs /var/tmp
 mount -t tmpfs tmpfs /dev/shm
-mount --bind /bin/false /usr/bin/sudo
-if [ -e /usr/local/bin/meta ]; then
-  mount --bind /bin/false /usr/local/bin/meta
-fi
+mount -t tmpfs -o noexec,nosuid,nodev tmpfs /usr/local/bin
+mkdir -p /usr/local/bin/claude_code /usr/local/bin/muse_code
+mount --bind /mnt/host-claude-code /usr/local/bin/claude_code
+mount -o remount,bind,ro /usr/local/bin/claude_code
+mount --bind /mnt/host-muse-code /usr/local/bin/muse_code
+mount -o remount,bind,ro /usr/local/bin/muse_code
+touch /usr/local/bin/servicerouter
+mount --bind /mnt/host-servicerouter /usr/local/bin/servicerouter
+mount -o remount,bind,ro /usr/local/bin/servicerouter
+mount --rbind /var/facebook /var/facebook
+mount --make-rprivate /var/facebook
+mount -o remount,bind,rw,noexec,nosuid,nodev /var/facebook
+mount -t tmpfs -o noexec,nosuid,nodev tmpfs /opt/facebook
+umount /mnt/host-claude-code
+umount /mnt/host-muse-code
+umount /mnt/host-servicerouter
+rmdir /mnt/host-claude-code /mnt/host-muse-code
+rm /mnt/host-servicerouter
+for forbidden in \
+  /usr/bin/sudo \
+  /usr/bin/nsenter \
+  /usr/bin/hg \
+  /usr/bin/arc \
+  /usr/bin/dotslash \
+  /usr/local/jellyfish/jf \
+  /usr/local/fbcode/platform010/bin/fbpython \
+  /usr/local/fbcode/bin/fbpython
+do
+  if [ -e "$forbidden" ]; then
+    mount --bind /bin/false "$forbidden"
+  fi
+done
+mount -o remount,bind,ro,noexec,nosuid,nodev /usr/local/bin
+mount -o remount,bind,rw,noexec,nosuid,nodev /var/facebook
+mount -o remount,bind,ro,noexec,nosuid,nodev /opt/facebook
 cd ${SANDBOX_PROJECT}
 exec setpriv --reuid="$uid" --regid="$gid" --clear-groups -- env \
   HOME=${SANDBOX_ROOT}/home \
@@ -42,8 +81,9 @@ exec setpriv --reuid="$uid" --regid="$gid" --clear-groups -- env \
   PATH=${SANDBOX_ROOT}/bin:/usr/bin:/bin \
   PLAYWRIGHT_BROWSERS_PATH=${SANDBOX_ROOT}/browser-cache \
   MUSE_EXPERIMENTAL_PLUGINS=0 \
+  MCP_TIMEOUT=60000 \
   LANG=C.UTF-8 \
-  "$@"`;
+  "$command" "$@"`;
 
 const SCREENSHOT_HELPER = `#!/bin/sh
 set -eu
@@ -209,6 +249,7 @@ export async function runIsolatedCommand(
       String(gid),
       privateRoot,
       browserCache,
+      os.userInfo().username,
       command,
       ...args,
     ],
@@ -384,7 +425,7 @@ export function auditAgentContext(agent, stdout, stderr) {
         (stderr.match(/^Installing /gm) ?? []).length > 0 &&
         externalPlugins.length === 0,
       pathPolicy:
-        'private bin + /usr/bin + /bin; sudo and absolute meta are sandbox-blocked',
+        'private bin + /usr/bin + /bin; internal executable roots and sensitive host paths are sandbox-blocked',
     };
   }
 
@@ -424,7 +465,36 @@ export function auditAgentContext(agent, stdout, stderr) {
     knownAsymmetry:
       'Muse emits built-in skill and final-verification reminder lifecycle events; external rules, foreign context, plugins, MCP, and external skill content are disabled identically for every config.',
     pathPolicy:
-      'private bin + /usr/bin + /bin; sudo and absolute meta are sandbox-blocked',
+      'private bin + /usr/bin + /bin; internal executable roots and sensitive host paths are sandbox-blocked',
+  };
+}
+
+export function auditTranscriptCommands(text) {
+  const sensitivePaths = [
+    ['/proc', /\/proc(?:\/|\b)/],
+    ['/usr/local/bin', /\/usr\/local\/bin(?:\/|\b)/],
+    ['/var/facebook', /\/var\/facebook(?:\/|\b)/],
+    ['/data', /\/data(?:\/|\b)/],
+  ];
+  const flaggedCommands = [];
+  for (const command of extractToolCommands(text)) {
+    const touchedPaths = sensitivePaths
+      .filter(([, pattern]) => pattern.test(command))
+      .map(([label]) => label);
+    if (touchedPaths.length > 0) {
+      flaggedCommands.push({
+        command: command.slice(0, 1000),
+        touchedPaths,
+      });
+    }
+  }
+  return {
+    passed: flaggedCommands.length === 0,
+    flaggedCommandCount: flaggedCommands.length,
+    touchedPaths: [
+      ...new Set(flaggedCommands.flatMap(entry => entry.touchedPaths)),
+    ].sort(),
+    flaggedCommands,
   };
 }
 
