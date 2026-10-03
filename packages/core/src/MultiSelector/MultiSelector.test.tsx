@@ -3228,3 +3228,200 @@ describe('MultiSelector popup theme target', () => {
     );
   });
 });
+
+describe('MultiSelector hasCreate', () => {
+  const OPTIONS = [
+    {value: 'bug', label: 'Bug'},
+    {value: 'feature', label: 'Feature'},
+    {value: 'docs', label: 'Docs'},
+  ];
+
+  it('offers Create "<query>" first when the query matches no option label', async () => {
+    const user = userEvent.setup();
+    const onCreate = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={onChange}
+        hasSearch
+        hasCreate
+        onCreate={onCreate}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    const search = screen.getByRole('combobox', h);
+    await user.type(search, 'Urgent');
+
+    const options = screen.getAllByRole('option', h);
+    expect(options).toHaveLength(1);
+    expect(options[0]).toHaveTextContent('Create "Urgent"');
+    expect(options[0]).toHaveAttribute('aria-selected', 'false');
+    expect(options[0].querySelector('input[type="checkbox"]')).toBeNull();
+    expect(screen.queryByText('No results found')).toBeNull();
+
+    await user.click(options[0]);
+    expect(onCreate).toHaveBeenCalledWith('Urgent');
+    expect(onChange).not.toHaveBeenCalled();
+    // The filter is cleared so the option the caller adds is visible.
+    expect(search).toHaveValue('');
+  });
+
+  it('sits above partial matches and is skipped for an exact label match', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        hasCreate
+        onCreate={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    const search = screen.getByRole('combobox', h);
+
+    await user.type(search, 'Bu');
+    let options = screen.getAllByRole('option', h);
+    expect(options.map(o => o.textContent)).toEqual(['Create "Bu"', 'Bug']);
+
+    await user.type(search, 'g');
+    options = screen.getAllByRole('option', h);
+    expect(options.map(o => o.textContent)).toEqual(['Bug']);
+
+    await user.clear(search);
+    await user.type(search, 'bug');
+    // Case-insensitive: "bug" is Bug.
+    expect(screen.getAllByRole('option', h)).toHaveLength(1);
+  });
+
+  it('leads the select-all row and is not handed to renderOption', async () => {
+    const user = userEvent.setup();
+    const renderOption = vi.fn((option: {label?: string}) => (
+      <span>{`row:${option.label}`}</span>
+    ));
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        hasSelectAll
+        hasCreate
+        onCreate={() => {}}
+        renderOption={renderOption}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    await user.type(screen.getByRole('combobox', h), 'Bu');
+    const options = screen.getAllByRole('option', h);
+    expect(options[0]).toHaveTextContent('Create "Bu"');
+    expect(options[1]).toHaveTextContent('Select all');
+    expect(options[2]).toHaveTextContent('row:Bug');
+    expect(
+      renderOption.mock.calls.some(([option]) =>
+        (option.label ?? '').startsWith('Create'),
+      ),
+    ).toBe(false);
+  });
+
+  it('Enter with nothing highlighted commits the create row; ArrowDown reaches it', async () => {
+    const user = userEvent.setup();
+    const onCreate = vi.fn();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        hasCreate
+        onCreate={onCreate}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    const search = screen.getByRole('combobox', h);
+    await user.type(search, 'Urgent');
+    await user.keyboard('{Enter}');
+    expect(onCreate).toHaveBeenCalledWith('Urgent');
+
+    await user.type(search, 'Later');
+    fireEvent.keyDown(search, {key: 'ArrowDown'});
+    const createRow = screen.getByRole('option', {
+      name: 'Create "Later"',
+      ...h,
+    });
+    expect(search).toHaveAttribute('aria-activedescendant', createRow.id);
+    fireEvent.keyDown(search, {key: 'Enter'});
+    expect(onCreate).toHaveBeenLastCalledWith('Later');
+  });
+
+  it('offers nothing and announces nothing created without onCreate', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        hasCreate
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    const search = screen.getByRole('combobox', h);
+    await user.type(search, 'Urgent');
+    expect(screen.queryAllByRole('option', h)).toHaveLength(0);
+    expect(screen.getByText('No results found')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(politeRegion()?.textContent).toBe('No results found');
+    });
+    await user.keyboard('{Enter}');
+    expect(search).toHaveValue('Urgent');
+    expect(politeRegion()?.textContent).toBe('No results found');
+  });
+
+  it('announces the create row, not "No results found", when it is the only result', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        hasCreate
+        onCreate={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    await user.type(screen.getByRole('combobox', h), 'Urgent');
+    // The empty-state message is role="presentation", so the live region is
+    // what a screen reader gets — it must say what is on screen: a row.
+    await waitFor(() => {
+      expect(politeRegion()?.textContent).toBe('Create "Urgent"');
+    });
+  });
+
+  it('is off by default and never shows without hasSearch', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    await user.type(screen.getByRole('combobox', h), 'Urgent');
+    expect(screen.queryAllByRole('option', h)).toHaveLength(0);
+    expect(screen.getByText('No results found')).toBeInTheDocument();
+  });
+});

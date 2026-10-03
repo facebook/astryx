@@ -341,6 +341,19 @@ export const docs = {
             "'attached' for input selectors; 'detached' for ghost selectors",
         },
         {
+          name: 'hasCreate',
+          type: 'boolean',
+          description:
+            'With hasSearch and onCreate, offers a `Create "<query>"` row first in the list when the typed text matches no option label exactly (Tokenizer.hasCreate\'s rule). Picking it, or pressing Enter with nothing highlighted, calls onCreate and clears the search. Without onCreate no row is offered.',
+          default: 'false',
+        },
+        {
+          name: 'onCreate',
+          type: '(query: string) => void',
+          description:
+            'Called with the trimmed query when the create row is picked. The caller mints the option and usually selects it through onChange.',
+        },
+        {
           name: 'renderOption',
           type: '(option: MultiSelectorOptionData) => ReactNode',
           description:
@@ -493,6 +506,9 @@ export const docsZh = {
           '状态消息的放置方式：attached 直接叠加在输入框下方；detached 作为独立元素浮于下方并留有间距。',
         renderOption:
           '每个可选选项的自定义渲染函数。不会用于分隔线、分组或全选行。',
+        hasCreate:
+          '配合 hasSearch 与 onCreate：当输入的文本与任何选项标签都不完全匹配时，在列表首行提供“创建 "<query>"”行。',
+        onCreate: '选中创建行时以修剪后的查询文本调用。',
         presentation:
           '选项列表的呈现方式：锚定弹出框、底部抽屉，或根据紧凑触控屏自适应。',
         xstyle: '布局自定义的 StyleX 样式，必须是 stylex.create() 值。',
@@ -635,6 +651,9 @@ export const docsDense = {
           'status message placement; ghost detaches attached by default; use tooltip for compact toolbars.',
         renderOption:
           'custom render fn per selectable option; not dividers/sections/select-all',
+        hasCreate:
+          'with hasSearch+onCreate: first row is Create "<query>" when no option label matches exactly; commits via onCreate',
+        onCreate: 'receives the trimmed query when the create row is picked',
         presentation:
           'popover, bottom-sheet, or compact-touch adaptive presentation',
         xstyle: 'StyleX layout styles; stylex.create() only',

@@ -1347,6 +1347,14 @@
     "defaultMessage": "{count, number} of {total, number} selected",
     "description": "Polite screen-reader announcement of how many MultiSelector options are selected out of the total, spoken after each toggle. Live-region text, never shown on screen; example: `3 of 12 selected`."
   },
+  "@astryx.multiSelector.createOption": {
+    "defaultMessage": "Create \"{query}\"",
+    "description": "Label of the first row in a MultiSelector's search panel when `hasCreate` is set and the typed text matches no option. Picking it mints a new option. `{query}` is the trimmed text the person typed, shown in quotes."
+  },
+  "@astryx.multiSelector.optionCreated": {
+    "defaultMessage": "{label} created",
+    "description": "Polite screen-reader announcement after the create row of a MultiSelector is picked. Live-region text, never shown on screen; `{label}` is the text the person typed."
+  },
   "@astryx.multiSelector.emptySearchResults": {
     "defaultMessage": "No results found",
     "description": "Shown in a MultiSelector's dropdown panel when the search query matches no options, and announced in a polite live region at the same time. Short; neutral tone (not error-y)."
