@@ -18,7 +18,7 @@ affects_consumer_docs:
 review_triggers: [public-api, accessibility, compatibility]
 ---
 
-# Search prop shape system spec
+# Search state vocabulary system spec
 
 <!-- review-applicability:v1 -->
 
@@ -34,15 +34,13 @@ review_triggers: [public-api, accessibility, compatibility]
       "FR5",
       "FR6",
       "FR7",
-      "FR8",
-      "FR10",
       "DEC-1",
       "DEC-2",
       "DEC-3",
       "DEC-4"
     ],
     "accessibility": ["AR1", "AR2"],
-    "compatibility": ["FR9", "DEC-5"]
+    "compatibility": ["FR7"]
   }
 }
 ```
@@ -51,12 +49,12 @@ review_triggers: [public-api, accessibility, compatibility]
 
 | Area                    | Contract                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | One shape for every component that lets a person narrow its choices by typing: a single object-valued prop named `search`, with a closed key set — `source`, `placeholder`, `emptyText`, `onChange`, `onCreate` — none of which repeats the word `search` (DEC-2, DEC-3). The object's type is exported. The prop's presence is the only switch (FR3).                                                                                                                                                          |
-| Behavior                | `search` absent means no query exists at all. `search.source` chooses who resolves the query, not whether a query exists: absent, the component filters the choices it was already given; present, the caller resolves it (FR4, DEC-1). A capability that cannot work without a query is only representable inside the object, never beside it (FR6, FR7).                                                                                                                                                      |
-| End-user impact         | Unchanged today — this record contracts shape, not behavior. What changes is downstream: a person meets one placeholder convention, one "nothing matched" message, and one create affordance across pickers instead of six spellings, and a half-configured create row stops silently rendering nothing (FR7).                                                                                                                                                                                                  |
-| Builder impact          | A builder sets one prop and discovers every search option through its type instead of scanning a flat prop list for the word `search`. New caller burden: one nested object literal, and — on components whose choices are the query's result — `search.source` becomes required where `searchSource` was. Every shipped prop keeps working during the cycle.                                                                                                                                                   |
-| Compatibility/readiness | Not additive. Nine shipped public props across seven components are replaced by keys, four of them on a required prop (`searchSource`). The replacement-first deprecation cycle and its cost are stated in `Migration and compatibility`; FR9 is the only requirement that constrains it. Authority: `draft`; nobody has approved this. Five owner questions remain open, and OQ1, OQ2, and OQ4 change FR3, FR4, and FR9.                                                                                       |
-| Review checks           | Reject a new top-level prop whose name contains `search`; a key inside the object that repeats the prefix; a boolean that gates a handler key; a capability that renders inert when its sibling prop is missing; an `emptyText` whose value cannot reach assistive technology (AR1); a query input named only by its placeholder (AR2).                                                                                                                                                                         |
+| Public contract         | One vocabulary, not one structure. "The query matched nothing" is `emptySearchText` taking `ReactNode`, on every component that has the state; "there is nothing here at all" stays `emptyText` and the two never merge (FR1, FR2, DEC-1). A capability that needs a query names that in its own prop name, and its handler is its only switch (FR5, DEC-3). No configuration object (DEC-2).                                                                                                                   |
+| Behavior                | Unchanged. Who resolves a query is settled by who owns the choices and is not restated per component: a component holding its own choice set filters them and exposes a boolean to show the input; a component whose presented choices ARE the query's result takes a required `searchSource` (FR4, DEC-2).                                                                                                                                                                                                     |
+| End-user impact         | A person meets the same dead end everywhere, and can be offered the same way out of it: widening `emptySearchResultsText` to `ReactNode` lets a product put a link or a create row in a `Tokenizer`'s empty result as it already can in a `Selector`'s. A half-configured create row stops silently rendering nothing (FR5). Whatever a caller supplies is also what gets announced (FR3, AR1).                                                                                                                 |
+| Builder impact          | One rename to learn: `emptySearchResultsText` becomes `emptySearchText`. No prop moves, no object literal, no restructuring. Every shipped prop keeps working through the cycle.                                                                                                                                                                                                                                                                                                                                |
+| Compatibility/readiness | Not additive, but small: one prop renamed on three components, with its type widened from `string` to `ReactNode`. No required prop moves. The replacement-first cycle and its cost are in `Migration and compatibility`; FR7 is the only requirement that constrains it. Authority: `draft`. Three owner questions remain open; none of them changes FR1 or FR2.                                                                                                                                               |
+| Review checks           | Reject a second name for a state these props already express; a boolean that gates a handler; a capability that renders inert when a sibling prop is missing; an empty-state value that cannot reach assistive technology (AR1); a query input named only by its placeholder (AR2).                                                                                                                                                                                                                             |
 | Governing rules         | [`spec:AST-002`](../AST-002/spec.md) FR1, FR4, FR15, FR16 and `spec:AST-002/DEC-1`, `DEC-6` for admission and one responsibility per input; [`architecture:public-component-api`](../../architecture/public-component-api.md) INV1, INV2, INV3, INV9 for the shared naming grammar and released-API lifecycle; [`spec:AST-017`](../AST-017/spec.md) FR28–FR31 for deprecation and cleanup; [`family:input-fields`](../../families/input-fields.md) for the field chrome around the query input, unchanged here. |
 
 This table is a review projection; the body below is authoritative.
@@ -71,10 +69,16 @@ is broken for the person using the product, but every new search-adjacent
 capability lands as another flat prop on one component, with its own name, and
 the next component copies whichever neighbour it happened to read.
 
-This record owns one answer: **everything a caller says about the typed query
-goes in one object-valued prop named `search`.** It states the key set, which
-keys are required and when, what happens when the prop is absent, and how a
-capability that depends on the query is kept from existing without one.
+This record owns one answer: **a shared vocabulary for the states a typed
+query produces, with no restructuring.** It fixes the name and type of "the
+query matched nothing", keeps that state distinct from "there is nothing here
+at all", and says how a capability that cannot work without a query declares
+that dependency.
+
+An earlier draft proposed collecting these props into one object-valued
+`search` prop. That is rejected in DEC-2: it would have cost nine
+deprecations across seven components, four of them a required prop, to solve
+a tidiness problem rather than one a person using an Astryx product meets.
 
 The trigger is [#6829](https://github.com/facebook/astryx/pull/6829), which
 proposes `hasCreate` + `onCreate` on `MultiSelector` — a sixth and seventh
@@ -87,14 +91,14 @@ component copies.
 
 **Owns**
 
-- The shape a component uses for every caller-owned aspect of a typed query
-  over the choices it presents: one object-valued prop, its name, and its
-  closed key set.
-- What the prop's absence means, and when it is required rather than optional.
-- Which key governs who resolves the query, and that this choice does not
-  govern whether a query exists.
-- That a capability which cannot function without a query has no
-  representation outside the object.
+- The name and type of each observable state a typed query produces, shared
+  across every component that has that state.
+- That "the query matched nothing" and "there is nothing here at all" are
+  distinct states under distinct names, and neither absorbs the other.
+- How a capability that cannot function without a query declares that
+  dependency, and what gates it.
+- Whether a newly proposed search-related prop joins this vocabulary or
+  introduces a second name for something it already says.
 - The accessibility floor the arrangement must keep for the empty-result
   message and the query input's name.
 
@@ -118,13 +122,15 @@ component copies.
   behavior in a product contract.
 - [`family:input-fields`](../../families/input-fields.md) is `current` and owns
   the field chrome — label, status, size, theming — shared by its members. Two
-  of the six adopters here, `BaseTypeahead` and `CommandPalette`, are not
-  members and are not input fields; `CommandPalette` is a dialog. The adopters
-  are not one sibling family.
+  of the components this record binds, `BaseTypeahead` and `CommandPalette`,
+  are not members and are not input fields; `CommandPalette` is a dialog. They
+  are not one sibling family, which is why the vocabulary is owned here rather
+  than by that contract.
 - `contributing:api-conventions` and the wiki's `Prop Naming` section document
   conventions for booleans, callbacks, enums, direction, and HTML collisions.
-  They say nothing about object-valued configuration props, and guidance is not
-  an authority record. Both owe an amendment once this record is `current`.
+  They say nothing about one state keeping one name across components, and
+  guidance is not an authority record. Both owe an amendment once this record
+  is `current`.
 - The six component records would each hold a private copy of the same
   decision, which `architecture:knowledge-contracts` INV2 forbids.
   `component:MultiSelector` is already drafting one as its FR10 / DEC-3.
@@ -143,8 +149,8 @@ component copies.
   set is empty" is a different observable state from "the query matched
   nothing"; it stays a top-level prop.
 - **The trigger-menu configuration on `ChatComposerInput`.** Its per-trigger
-  object is cited as the repository's existing precedent for this shape, and
-  whether it adopts the key set is OQ4.
+  objects each carry an `emptySearchResultsText`, so FR1 reaches them, but
+  whether that nested rename rides this record's cycle is OQ4.
 - **Internal filtering implementation.** Equivalent internal implementations
   remain valid when they satisfy this contract. Internal modules, files,
   function names, algorithms, data structures, storage layouts, manifests,
@@ -210,48 +216,42 @@ copying.
 
 ## Public API and concepts
 
-| Concept              | Closed values or states                      | Meaning                                                                                                     | Default                                   | Owner          | Stability |
-| -------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------- | -------------- | --------- |
-| the `search` prop    | absent, present                              | Absent: no query input, no query state, no key reachable. Present: the component offers a typed query       | absent, where the component may omit it   | `spec:AST-056` | proposed  |
-| `search.source`      | absent, a `SearchSource<T>`                  | Who resolves the query. Absent: the component filters the choices it holds. Present: the caller resolves it | absent, where the component holds choices | `spec:AST-056` | proposed  |
-| `search.placeholder` | `string`                                     | Placeholder text in the query input                                                                         | the component's localized `'Search…'`     | `spec:AST-056` | proposed  |
-| `search.emptyText`   | `ReactNode`                                  | What the panel shows when the query matched nothing                                                         | the component's localized default         | `spec:AST-056` | proposed  |
-| `search.onChange`    | `(query: string) => void`                    | Reports the query after every change; never replaces the component's own resolution                         | —                                         | `spec:AST-056` | proposed  |
-| `search.onCreate`    | `(query: string) => void`                    | Offers a create affordance for a query that matched nothing; presence is the switch                         | —                                         | `spec:AST-056` | proposed  |
-| "no choices at all"  | the component's own top-level `emptyText`    | A different observable state from "the query matched nothing"; unchanged by this record                     | the component's localized default         | the component  | stable    |
-| fetch tuning         | `minQueryLength`, `debounceMs`, loading text | Not placed by this record; they belong to whoever fetches, and OQ5 asks whether they move inside            | per component                             | the component  | stable    |
+| Concept                 | Closed values or states                      | Meaning                                                                                                | Default                           | Owner          | Stability |
+| ----------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------ | --------------------------------- | -------------- | --------- |
+| `emptySearchText`       | `ReactNode`                                  | What the component shows when the query matched nothing. One name and one type everywhere (FR1)        | per component                     | `spec:AST-056` | proposed  |
+| showing the input       | a boolean, or a required `searchSource`      | A component holding its own choices exposes a boolean; one whose choices ARE the result takes a source | per component                     | the component  | shipped   |
+| a query-only capability | a handler whose name says it needs a query   | Presence of the handler is the switch; no boolean beside it (FR5)                                      | absent                            | `spec:AST-056` | proposed  |
+| "no choices at all"     | the component's own top-level `emptyText`    | A different observable state from "the query matched nothing"; unchanged by this record                | the component's localized default | the component  | stable    |
+| fetch tuning            | `minQueryLength`, `debounceMs`, loading text | Not placed by this record; they belong to whoever fetches, and OQ5 asks whether they move inside       | per component                     | the component  | stable    |
 
 ## Requirements
 
 ### Behavioral contract
 
-| ID   | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Basis                                                                            | Verification state                      |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------- |
-| FR1  | A component that offers a person a typed query over the choices it presents MUST take every caller-owned aspect of that query in exactly one object-valued public prop named `search`. No sibling top-level prop may configure the same query. A component that offers no typed query MUST NOT declare the prop.                                                                                                                                                     | DEC-2; `architecture:public-component-api` INV2, INV3                            | Proposed; no evidence on `main`         |
-| FR2  | The object's keys are exactly `source`, `placeholder`, `emptyText`, `onChange`, and `onCreate`. A key's name MUST NOT repeat the `search` prefix the prop already supplies. The object's type MUST be exported from the package entry point, named for the component that takes it, so a caller can hold and pass one configuration by type.                                                                                                                         | DEC-3; `architecture:public-component-api` INV1, INV2                            | Proposed; no evidence on `main`         |
-| FR3  | The prop's presence is the only switch. With `search` absent, no query input renders, no query state exists, and no key's behavior is reachable. A component whose presented choices **are** the query's result MUST declare `search` required; a component that holds a choice set of its own MUST declare it optional, defaulting to absent, and MUST remain fully usable without it.                                                                              | DEC-1; `spec:AST-002` FR15                                                       | Proposed; no evidence on `main`         |
-| FR4  | `search.source` governs who resolves the query, not whether a query exists. Absent, the component resolves the query against the choices it already holds, matching case-insensitively on each choice's displayed label at minimum. Present, the caller resolves it and the component renders what comes back without re-filtering. Both modes MUST reach the same observable states: a narrowed result list, an empty result, and `emptyText`.                      | DEC-1; `spec:AST-002` FR16                                                       | Proposed; shipped behavior, unspecified |
-| FR5  | One observable state has one key across every component. "The query matched nothing" is `search.emptyText` and accepts `ReactNode` everywhere; no component may name or type it differently. "The component was given no choices at all" keeps its own top-level `emptyText` and is not merged into the object.                                                                                                                                                      | DEC-3; `architecture:public-component-api` INV2                                  | Proposed; no evidence on `main`         |
-| FR6  | A capability that cannot function without a typed query MUST be represented only as a key of `search`. It MUST NOT be reachable through a top-level prop, so that configuring it without search is unrepresentable rather than silently inert. `onCreate` is such a capability: a create row is offered for a query, and there is no query to offer it for when `search` is absent.                                                                                  | DEC-4; `spec:AST-002` FR15 (never silently render a broken state)                | Proposed; no evidence on `main`         |
-| FR7  | A key whose value is a handler MUST NOT be paired with a boolean that also gates it. Presence of the handler is the switch. A caller MUST NOT be able to reach a configuration that renders nothing and reports nothing, which `hasCreate && hasSearch && onCreate != null` permits when any one piece is missing.                                                                                                                                                   | DEC-4; `spec:AST-002` FR15, FR16                                                 | Proposed; no evidence on `main`         |
-| FR8  | Observing the query is `search.onChange`, the primary change callback for the query concept, reporting the query after every change. It is a report, not a control: it MUST NOT suppress, defer, or replace the component's own resolution of that query, and a component MUST NOT require it. Whether each adopter gains it is OQ3.                                                                                                                                 | `contributing:api-conventions` primary-change-callback rule; `spec:AST-002` FR16 | Proposed; shipped as `onChangeQuery`    |
-| FR9  | Every prop this record replaces is a released public surface with a victim, so it MUST follow `spec:AST-017` FR28–FR31: the replacement ships first, old usage stays equivalent through the overlap, each old prop gets a `DEP-*` id and a distinct `CLN-*` id, and removal happens only in a minor whose frozen manifest carries both. While both exist, a component given a key and its replaced prop MUST resolve to the key and MUST fire a development warning. | `architecture:public-component-api` INV9; `spec:AST-017` FR1, FR3, FR28–FR31     | Proposed; cycle not started             |
-| FR10 | A new search-related capability is admitted as a key of `search` under `spec:AST-002`, or not at all. It MUST NOT be added as a new top-level prop whose name carries the word `search`, and adding a key is itself a public API addition subject to the same admission argument.                                                                                                                                                                                    | DEC-2; `spec:AST-002` FR1, FR5, DEC-1                                            | Proposed; no evidence on `main`         |
+| ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Basis                                                                        | Verification state                      |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------- |
+| FR1 | One observable state has one prop name and one type across every component with a typed query. "The query matched nothing" is `emptySearchText`, accepting `ReactNode`. `emptySearchResultsText` resolves to it and its `string` typing is widened, so a caller may pass an element. No component may name or type this state differently.                                                                                                                                                          | DEC-1; `architecture:public-component-api` INV2                              | Proposed; no evidence on `main`         |
+| FR2 | "The query matched nothing" and "the component was given no choices at all" are different states and MUST stay separately expressible under distinct names: `emptySearchText` and `emptyText`. `Selector` and `MultiSelector` already declare both, so neither name may absorb the other, and a component offering only one MUST still use the name that matches the state it means.                                                                                                                | DEC-1; `spec:AST-002` FR16                                                   | Proposed; shipped behavior, unspecified |
+| FR3 | Whatever a caller supplies for an empty state MUST reach the person operating the component, visually and non-visually alike. A component that announces this state MUST announce what it rendered. Announcing a built-in default while rendering the caller's element is a defect, not a fallback.                                                                                                                                                                                                 | AR1; `architecture:interaction-modality`                                     | Proposed; defect on `main` (see AR1)    |
+| FR4 | Who resolves the query is settled by who owns the choices, and is not restated per component. A component that holds its own choice set resolves the query itself, matching case-insensitively on each choice's displayed label at minimum, and exposes a boolean to turn the query input on. A component whose presented choices ARE the query's result takes a required `searchSource`. Both kinds reach the same observable states: a narrowed list, an empty result, and `emptyText`.           | DEC-2; `spec:AST-002` FR16                                                   | Proposed; shipped behavior, unspecified |
+| FR5 | A capability that cannot function without a typed query MUST say so in its own name, and its handler MUST be its only switch. It MUST NOT be paired with a boolean that also gates it: a caller must not be able to express a configuration that renders nothing and reports nothing, which `hasCreate && hasSearch && onCreate != null` permits whenever any one piece is missing. Supplying such a handler to a component with no query input MUST warn in development rather than fail silently. | DEC-3; `spec:AST-002` FR15 (never silently render a broken state)            | Proposed; no evidence on `main`         |
+| FR6 | A new search-related capability is admitted under `spec:AST-002` against this record, or not at all. A new top-level prop whose name carries the word `search` MUST name the state or capability it governs in the vocabulary this record fixes, and MUST NOT introduce a second name for a state one of these props already expresses.                                                                                                                                                             | DEC-4; `spec:AST-002` FR1, FR5, DEC-1                                        | Proposed; no evidence on `main`         |
+| FR7 | Every prop this record renames is a released public surface with a victim, so it MUST follow `spec:AST-017` FR28–FR31: the replacement ships first, old usage stays equivalent through the overlap, each old prop gets a `DEP-*` id and a distinct `CLN-*` id, and removal happens only in a minor whose frozen manifest carries both. While both exist, a component given both MUST resolve to the new prop and MUST fire a development warning.                                                   | `architecture:public-component-api` INV9; `spec:AST-017` FR1, FR3, FR28–FR31 | Proposed; cycle not started             |
 
 ### Accessibility contract
 
 - **AR1 — The empty-result message reaches assistive technology as written.**
-  Whatever `search.emptyText` renders on screen MUST be what a screen reader
+  Whatever `emptySearchText` renders on screen MUST be what a screen reader
   receives when the panel becomes empty. Today it is not: `Selector` and
   `MultiSelector` announce `typeof emptySearchText === 'string' ? emptySearchText
 : t('@astryx.selector.emptySearchResults')`, so a caller who passes an element
   — which the `ReactNode` type invites — is silently announced the default
-  string instead of their own message. Accepting `ReactNode` (FR5) obliges the
+  string instead of their own message. Accepting `ReactNode` (FR1) obliges the
   component to derive an announceable string from it, or to document and
   require a separate announceable form; it may not announce something the
   person on screen is not reading.
 - **AR2 — The query input has an accessible name that is not its placeholder.**
-  `search.placeholder` is placeholder text and MUST NOT be the input's only
+  A placeholder is placeholder text and MUST NOT be the input's only
   accessible name. The component supplies the name — `Selector` and
   `MultiSelector` use a localized "Search options" today — and a component
   that falls back to the placeholder, as `CommandPaletteInput` does and its own
@@ -307,23 +307,19 @@ coexist indefinitely, not replace.
 
 **What each option actually costs.**
 
-- **Deprecate with a cycle (recommended).** The search surface roughly doubles
-  for the length of the overlap: two ways to set the placeholder, two ways to
-  set the empty text, both in the types, both in `.doc.mjs`, both in the
-  consumer docs a builder reads. Nine `DEP-*` records and nine `CLN-*` ids to
-  write and track. The flat-to-nested rename is mechanically codemoddable where
-  callers pass literals — `searchPlaceholder={x}` becomes `search={{placeholder:
-x}}` — and is **not** codemoddable where a caller spreads props or builds them
-  conditionally. `Tokenizer.hasCreate` is not codemoddable at all, because its
-  contract differs from `onCreate` (below). Then one minor that breaks every
-  unmigrated callsite of four components.
-- **Coexist indefinitely.** Nothing breaks, ever. The drift the record exists to
-  end survives permanently in the type signature; a builder still meets
-  `searchPlaceholder` and `search.placeholder` side by side, and the standard
-  governs only components built after it. That is a real option — it answers
-  "so when we add it later on other components we match the pattern" — but it
-  leaves today's seven inconsistent forever and makes the record a convention
-  for newcomers rather than a system contract.
+- **Deprecate with a cycle (recommended).** One prop doubles for the length of
+  the overlap, on three components: `emptySearchResultsText` and
+  `emptySearchText` both present in the types, both in `.doc.mjs`, both in the
+  consumer docs. Three `DEP-*` records and three `CLN-*` ids. The rename is
+  mechanically codemoddable, including where a caller spreads props, because
+  the value's meaning does not change and the type only widens. Then one minor
+  that breaks unmigrated callsites of three components — and a caller who
+  passed a `string` needs no edit beyond the name.
+- **Coexist indefinitely.** Nothing breaks, ever. The drift survives in the
+  type signature: a builder still meets `emptySearchResultsText` on one
+  component and `emptySearchText` on another, and the standard governs only
+  components built after it. That answers "so when we add it later on other
+  components we match the pattern" and leaves today's inconsistency in place.
 - **Replace outright.** A major version, or a minor that breaks four
   components' entire callsite base at once with no overlap. Rejected: no user
   problem here justifies it.
@@ -344,10 +340,10 @@ require `Tokenizer` to change `hasCreate`.
   becomes `current`. No invariant of that record changes: FR1–FR10 sit inside
   its INV2, INV3, and INV9 grammar rather than amending it.
 - `contributing:api-conventions` and the wiki's `Prop Naming` section gain the
-  object-valued configuration-prop rule: when several props configure one
-  caller-owned concept, they become keys of one object named for the concept,
-  and the keys drop the prefix the prop name supplies. Neither surface rules on
-  this today.
+  state-naming rule: one observable state has one prop name and one type
+  across every component that has it, and a new prop may not introduce a
+  second name for a state an existing one already expresses. Neither surface
+  rules on this today.
 - `component:Selector`, `component:MultiSelector`, `component:Tokenizer`,
   `component:Typeahead`, `component:BaseTypeahead`, and
   `component:CommandPalette` cite this record instead of each recording a
@@ -355,9 +351,9 @@ require `Tokenizer` to change `hasCreate`.
   exactly such a copy as its FR10 / DEC-3; that claim is withdrawn in favour of
   FR6 and FR7 here.
 - [#6829](https://github.com/facebook/astryx/pull/6829) is blocked on this
-  ruling. Its `hasCreate` + `onCreate` pair is rejected by FR7 as written, and
-  its capability is admitted by FR6 as `search.onCreate` — the same user need,
-  a shape that cannot be half-configured.
+  ruling. Its `hasCreate` + `onCreate` pair is rejected by FR5, which admits
+  the same user need as a single handler whose name carries the dependency —
+  `onCreateFromSearch` — so the capability cannot be half-configured.
 - `family:input-fields`, `spec:AST-002`, and `spec:AST-017` are read, not
   changed: field chrome, admission, and the deprecation lifecycle keep their
   owners.
@@ -390,161 +386,125 @@ shipped behavior rather than a passing contract.
 Every decision below is **proposed**. None has been ruled on; `approved_by` is
 `null` and the record is `draft`.
 
-### DEC-1 — Filtering in place and calling a source are one concept with two fulfillment modes
+### DEC-1 — One name and one type for "the query matched nothing"
 
 **Reference:** `spec:AST-056/DEC-1`
-**Decider:** proposed for `cixzhang`; not yet ruled (OQ1)
+**Decider:** `cixzhang`, `2026-10-02`
 
-"Filter the options I gave you" and "call my async source" are the same
-caller-owned concept — a typed query narrows what the panel offers — fulfilled
-two ways. The evidence is in the repository, not in the abstraction:
+`emptySearchText`, accepting `ReactNode`, everywhere.
 
-- `createStaticSource` ships in `packages/core/src/Typeahead`. It converts a
-  static array into a `SearchSource`, which is the system already saying in code
-  that filtering in place is a degenerate case of resolving a query.
-- The matching rule is the same one twice. `Selector` and `MultiSelector` use a
-  case-insensitive substring match on `label ?? value`; `createStaticSource`
-  uses a case-insensitive substring match on the trimmed `label`, plus optional
-  keywords. Nobody coordinated that; it is what the concept is.
-- The person using the product cannot tell them apart. They type, fewer rows
-  remain, and an empty result reads the same sentence.
+This is the drift that reached people. A person who searches a `Selector` and
+a `Tokenizer` in the same product meets the same dead end, and today the two
+components do not even agree what to call it, let alone what a caller may put
+there. `Selector`, `MultiSelector` and `CommandPalette` say `emptySearchText`
+and accept a `ReactNode`; `Tokenizer`, `Typeahead`, `BaseTypeahead` and
+`ChatComposerInput` say `emptySearchResultsText` and accept a `string` — so
+the same product cannot offer the same "no results, try X" row in both, and a
+builder who learns one component has to discover the other.
 
-So the standard covers both, and `search.source` names the fulfillment mode
-inside the one prop rather than splitting the concept across two props.
+The name resolves toward `emptySearchText` rather than a shorter one, and the
+reason is load-bearing: `Selector` and `MultiSelector` already declare BOTH
+`emptyText` and `emptySearchText`, for two genuinely different sentences —
+"there is nothing here at all" and "nothing matched what you typed". Shortening
+the search state's name would collide with a shipped prop meaning the other
+thing, on the two components with the most search surface. So three components
+rename toward the majority spelling instead of seven renaming away from it.
 
-What is genuinely different, and is why FR3 has a required/optional clause
-rather than one answer: **who owns the candidate set.** `Selector` and
-`MultiSelector` hold `options` — a tree with groups, dividers, select-all, and
-selected state — and remain completely usable with no query at all. `Tokenizer`,
-`Typeahead`, `BaseTypeahead`, and `CommandPalette` hold nothing; their presented
-choices _are_ the query's result, which is why `searchSource` is required on all
-four and why only they carry `debounceMs`, `minQueryLength`, and `cancel()`.
-That difference changes whether the prop may be omitted. It does not change what
-the prop is.
+The type resolves toward `ReactNode`, not toward `string`. A dead end is
+exactly where a product wants a link, an illustration, or a create
+affordance, and narrowing the four components that already allow it would
+remove a shipped capability to win consistency. Widening the other three is
+what lets a product offer the same dead end everywhere, which is the whole
+point of agreeing on the name.
 
-Rejected: two separate standards, one per mode. It would put `placeholder` and
-"nothing matched" — observably identical to the person using the product — under
-two different contracts, and would leave `createStaticSource` straddling both
-with no owner.
-
-### DEC-2 — One object-valued prop named `search`
+### DEC-2 — No `search` configuration object
 
 **Reference:** `spec:AST-056/DEC-2`
-**Decider:** proposed for `cixzhang`; not yet ruled
+**Decider:** `cixzhang`, `2026-10-02`
 
-Everything a caller says about the typed query goes in one prop. The next
-capability becomes a key, not a tenth flat prop, and a builder discovers the
-whole surface from one type instead of scanning a prop list for a substring.
+An earlier draft of this record proposed collecting every search-related prop
+into one object-valued `search` prop, with `placeholder`, `emptyText`,
+`onChange` and `onCreate` as keys. Rejected.
 
-The repository already does this where the configuration got complex enough to
-force the issue: `ChatComposerTrigger` carries `searchSource`, `renderItem`,
-`onSelect`, `emptySearchResultsText`, `loadingText`, and `menuLabel` as one
-value, and nobody has asked for it to be flattened.
+The object would have solved tidiness rather than anything a person using an
+Astryx product meets. Three flat props are not hard to pass, and the survey
+below shows the repository has no settled convention to appeal to: every
+`*Config` object in core configures a hook, and the only object-valued
+component props are `collapsible` and `button`.
 
-Rejected: continuing flat, and naming each new prop carefully. That is what
-produced two names and two types for one message across seven components, and
-it has no stopping condition — Cindy's own prediction is that once a create row
-exists, callers will want to change its label, which under the flat shape is
-another top-level prop on every adopter.
+Against that, the cost was concrete. Nine shipped props would have entered a
+deprecation cycle, four of them a **required** `searchSource`, breaking every
+callsite of four components in the cleanup minor. `ComplexSelector` would
+have taken a `search` object with one meaningful key, since it owns its own
+content. And autocomplete gets worse, not better: typing inside a component's
+tag lists flat props immediately, while `search={{` has to be known about
+first.
 
-Rejected: `searchConfig`, the name an earlier reading suggested as prior art.
-The `-Config` suffix names the mechanism rather than the concept
-(`spec:AST-002` FR7), and the actual `searchConfig` in the repository is a
-`PowerSearchConfig` variable for the structured filter builder, not evidence for
-this shape at all.
+What the drift actually called for was a shared vocabulary, which DEC-1 and
+FR6 give without restructuring anything.
 
-### DEC-3 — Keys drop the prefix the prop already supplies
+### DEC-3 — A capability that needs a query says so in its name
 
 **Reference:** `spec:AST-056/DEC-3`
-**Decider:** proposed for `cixzhang`; not yet ruled
+**Decider:** `cixzhang`, `2026-10-02`
 
-Inside `search`, the word `search` is already said. The keys are `source`,
-`placeholder`, `emptyText`, `onChange`, and `onCreate` — not `searchSource`,
-`searchPlaceholder`, `emptySearchText`. `spec:AST-055/DEC-5` already observed
-that a bare noun holding a value is the normal shape inside a config object a
-caller passes, as against a public component prop.
+With no object to put it in, a capability that only exists while a query does
+carries that dependency in its own name — `onCreateFromSearch` rather than
+`onCreate` — and its handler is its only switch.
 
-This also settles the two-names problem by construction: `search.emptyText` is
-the one spelling of "the query matched nothing", typed `ReactNode` everywhere,
-so `emptySearchText` and `emptySearchResultsText` both resolve to one key rather
-than one of them winning.
+The shape this rules out is live on `Tokenizer` and was proposed again for
+`MultiSelector`: a boolean and a handler gating each other, so
+`hasCreate && hasSearch && onCreate != null` has three ways to be half-set and
+every one of them renders nothing, reports nothing, and warns about nothing. A
+builder sets the boolean, sees no create row, and has no way to learn why.
 
-Rejected: `noResultsText` instead of `emptyText`. It is unambiguous, and it
-avoids `emptyText` meaning "the query matched nothing" inside the object while
-the top-level `emptyText` on `Selector` and `MultiSelector` means "there were no
-choices to begin with". The two are disambiguated by scope at every callsite —
-`emptyText` versus `search.emptyText` — and `empty*` is the vocabulary those
-components already use, so this record follows the owner's indicated shape. The
-alternative is recorded because the collision is real and the owner may prefer
-to spend one extra word on it.
+Presence of the handler is the switch because a handler is the thing that can
+act; a boolean asking for a capability nobody will handle is not a
+configuration worth being able to express. The one case a name cannot prevent
+— a creation handler on a component whose query input is switched off —
+warns in development (FR5).
 
-### DEC-4 — A capability that needs the query lives inside the object, and its handler is its switch
+Note for the adopters: `Tokenizer.hasCreate` is a boolean with no handler at
+all, because `Tokenizer` owns its value (`value: T[]`) and mints the token
+itself. It is a different contract under the same word, and reconciling the
+two names is part of OQ5 rather than settled here.
+
+### DEC-4 — The vocabulary is fixed; new capabilities join it
 
 **Reference:** `spec:AST-056/DEC-4`
-**Decider:** proposed for `cixzhang`; not yet ruled
+**Decider:** `cixzhang`, `2026-10-02`
 
-Putting `onCreate` inside `search` makes the dependency structural: there is
-nowhere to put a create row when there is no search, so the invalid combination
-cannot be expressed. And because the handler's presence is the switch, there is
-no boolean to set without a handler, or handler to supply without a boolean.
+Every prop in the survey below was a reasonable local decision. The drift came
+from each one being made alone: two names for one state, two types for one
+name, `searchLabel` in lab, `maxSearchResults` on one component.
 
-The shape #6829 proposes needs three things to line up —
-`hasCreate && hasSearch && onCreate != null` — and failing any one of them
-renders nothing and reports nothing. `spec:AST-002` FR15 forbids exactly that:
-make statically knowable invalid combinations unrepresentable where practical,
-and never silently render a broken state. Here it is entirely practical.
-
-Rejected: `onCreateFromSearch` as a flat prop. It encodes the dependency in a
-name, which a type checker cannot read and a caller can ignore; it still
-silently does nothing when search is off; and it leaves the next
-search-dependent capability to invent its own `...FromSearch` suffix.
-
-Rejected: `create?: boolean | ((query: string) => void)`, which would let
-`Tokenizer`'s self-minting create and `MultiSelector`'s caller-minting create
-share a key. The value's _shape_ would decide which axis it controls, which
-`spec:AST-002` FR16 and DEC-6 reject.
-
-### DEC-5 — Shipped props deprecate with a replacement-first cycle
-
-**Reference:** `spec:AST-056/DEC-5`
-**Decider:** proposed for `cixzhang`; not yet ruled (OQ2)
-
-Nine shipped props have released victims, four of them required. The
-replacement ships first and old usage keeps working until a cleanup minor whose
-frozen manifest carries the matching `DEP-*` and `CLN-*` ids, per
-`spec:AST-017` FR28–FR31. The overlap is the cost: the search surface roughly
-doubles while it lasts.
-
-Rejected: removing `searchSource` in the same change that adds `search.source`.
-It is required on four components, so that is not a long tail of broken
-callsites — it is all of them, at once, with no overlap in which to migrate.
-
-Rejected: coexisting indefinitely. It is genuinely safe and it does answer the
-original ask for new components, but it leaves today's seven inconsistent
-permanently and makes this a convention rather than a contract. The owner may
-still prefer it (OQ2); the record would then drop FR9's cleanup clause and say
-so plainly.
+So the standard is a vocabulary rather than a structure. A new search-related
+prop names its state in the words this record fixes, and does not introduce a
+second name for something an existing prop already says. That is checkable in
+review without anybody restructuring a component.
 
 ## Open questions
 
-- **OQ1 — Is filter-in-place the same concept as calling a source?** (`human-api`)
+- **OQ1 — ANSWERED. Two concepts, split by who owns the choices.** (`human-api`)
 
-  DEC-1 says yes: one concept, two fulfillment modes, with `createStaticSource`
-  and the identical matching rule as the evidence, and with "who owns the
-  candidate set" as the real difference that FR3 encodes as required-versus-
-  optional. If the owner reads them as two concepts instead, this record scopes
-  to the component-filters-its-own-choices mode — `Selector`, `MultiSelector` —
-  FR4 drops `source`, and the source-driven components need their own record,
-  which would leave `placeholder` and "nothing matched" split across two
-  contracts.
+  `cixzhang`, 2026-10-02: a component that holds its own choices takes the
+  `search` object; a component whose choices arrive from the caller keeps
+  `searchSource`. The shared matching rule and `createStaticSource` show the
+  two can be unified, but unifying them would make `source` a required member
+  of an otherwise-optional object on four components, and would move a shipped
+  required prop for no gain to its callers. FR1 and FR4 record the split, and
+  DEC-1 carries the reasoning.
 
-- **OQ2 — Deprecate with a cycle, coexist indefinitely, or replace?** (`human-api`)
+- **OQ2 — ANSWERED. Deprecate with a cycle.** (`human-api`)
 
-  DEC-5 recommends the cycle. The honest trade is in `Migration and
-compatibility`: the cycle costs nine `DEP-*`/`CLN-*` pairs, a doubled surface
-  during the overlap, and one later minor that breaks every unmigrated callsite
-  of four components; coexisting costs nothing and fixes nothing that already
-  shipped. This answer changes FR9.
+  `cixzhang`, 2026-10-02: `emptySearchResultsText` is marked `@deprecated`
+  pointing at `emptySearchText`, both work through the overlap, and removal
+  happens in a later minor under `spec:AST-017` FR28–FR31. The cost is three
+  `DEP-*`/`CLN-*` pairs and one doubled prop on three components, which is
+  what FR7 already describes — far less than the nine pairs the rejected
+  object form would have cost. The rename is codemoddable even where a caller
+  spreads props, because the value's meaning does not change and the type only
+  widens.
 
 - **OQ3 — Does the query become observable on `Selector` and `MultiSelector` as part of this record?** (`human-api`)
 
@@ -557,17 +517,14 @@ compatibility`: the cycle costs nine `DEP-*`/`CLN-*` pairs, a doubled surface
   `spec:AST-002` FR1, and it may be a cleaner answer to #6829's need than
   `onCreate` is — or a second answer the system does not want.
 
-- **OQ4 — Which components are adopters, and which are only cited?** (`human-api`)
+- **OQ4 — ANSWERED. Three adopters; the rest are governed by FR5 only.** (`human-api`)
 
-  This record proposes six adopters: `Selector`, `MultiSelector`, `Tokenizer`,
-  `Typeahead`, `BaseTypeahead`, `CommandPalette`. `ChatComposerInput` is cited
-  as the precedent for the shape but not required to adopt, because its query
-  belongs to a trigger menu rather than to the component's own value, and its
-  per-trigger object already follows the pattern under different key names.
-  `PowerSearch` is cited and excluded, because a structured field/operator/value
-  expression is not a typed query over a list. The owner may pull either in —
-  which for `ChatComposerInput` means renaming keys inside a shipped object
-  type — or push `BaseTypeahead` out as an implementation seam.
+  `cixzhang`, 2026-10-02: `Selector`, `MultiSelector` and `ComplexSelector`
+  adopt the `search` object. `Tokenizer`, `Typeahead`, `BaseTypeahead` and
+  `CommandPalette` keep `searchSource` and are bound by FR5 (one name, one
+  type for "the query matched nothing") and FR10 (no new top-level
+  `search*` prop) alone. `ChatComposerInput` stays cited as the precedent for
+  the shape; `PowerSearch` stays cited and excluded.
 
 - **OQ5 — Which neighbouring props move inside the object, and what happens to `Tokenizer.hasCreate`?** (`human-api`)
 
