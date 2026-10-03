@@ -55,6 +55,7 @@ import {
   type MenuPressGesture,
   type MenuPressPointerType,
 } from './menuPressGesture';
+import {useLongPress, type UseLongPressHandlers} from './useLongPress';
 
 /** Marks a menu root that carries this press model. */
 export const MENU_PRESS_MARKER = 'data-astryx-menu-press';
@@ -64,7 +65,6 @@ const MENU_PRESS_ROOT_SELECTOR = `[${MENU_PRESS_MARKER}]`;
 export const MENU_PRESS_STRAY_CLICK_MS = 400;
 /** How long a finger must rest on the trigger before the menu opens under it. */
 export const MENU_PRESS_LONG_PRESS_MS = 500;
-const LONG_PRESS_MOVE_CANCEL_PX = 10;
 /** Distance from a scrolling menu's edge within which a resting pointer scrolls. */
 export const MENU_PRESS_AUTOSCROLL_ZONE_PX = 24;
 const AUTOSCROLL_STEP_PX = 6;
@@ -293,11 +293,12 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
   const gestureRef = useRef<MenuPressGesture<HTMLElement>>(IDLE_MENU_PRESS);
   const pointerIdRef = useRef<number | null>(null);
   const detachRef = useRef<(() => void) | null>(null);
-  const longPressRef = useRef<{
-    x: number;
-    y: number;
-    timer: ReturnType<typeof setTimeout>;
-  } | null>(null);
+  // The held finger is detected by `useLongPress`, the same hook ContextMenu
+  // uses, so the hold duration and the movement tolerance have one home. The
+  // handle is held in a ref because the pointer handlers below are stable
+  // callbacks and the hook is created further down, once `fireLongPress`
+  // exists.
+  const longPressApiRef = useRef<UseLongPressHandlers | null>(null);
   const touchMovePreventerRef = useRef<(() => void) | null>(null);
   const autoscrollRef = useRef<{
     timer: ReturnType<typeof setInterval>;
@@ -355,10 +356,7 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
   }, []);
 
   const endGesture = useCallback(() => {
-    if (longPressRef.current != null) {
-      clearTimeout(longPressRef.current.timer);
-      longPressRef.current = null;
-    }
+    longPressApiRef.current?.cancel();
     touchMovePreventerRef.current?.();
     touchMovePreventerRef.current = null;
     stopAutoscroll();
@@ -583,13 +581,13 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
         lastPointerEventRef.current = event;
         const gesture = gestureRef.current;
         if (gesture.phase === 'triggerPress') {
-          // A finger that travels is scrolling, not holding.
-          const press = longPressRef.current;
-          if (
-            press != null &&
-            (Math.abs(event.clientX - press.x) > LONG_PRESS_MOVE_CANCEL_PX ||
-              Math.abs(event.clientY - press.y) > LONG_PRESS_MOVE_CANCEL_PX)
-          ) {
+          // A finger that travels is scrolling, not holding. The tolerance is
+          // the shared hook's, so it cannot drift from ContextMenu's.
+          const isPending = longPressApiRef.current?.moveTo({
+            x: event.clientX,
+            y: event.clientY,
+          });
+          if (isPending === false) {
             stepRef.current({type: 'cancel'});
           }
           return;
@@ -659,7 +657,6 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
   // --- The held finger on the trigger ----------------------------
 
   const fireLongPress = useCallback(() => {
-    longPressRef.current = null;
     const gesture = gestureRef.current;
     if (gesture.phase !== 'triggerPress') {
       return;
@@ -685,6 +682,15 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
     };
     step({type: 'opened', time: Date.now()});
   }, [getDocument, step]);
+
+  // One long-press detector for the system: the same hook ContextMenu spreads
+  // onto its trigger, driven here from the pointer stream this model already
+  // observes. Its touch handlers go unused; the hold duration, the movement
+  // tolerance and the timer are what matter, and they now have one home.
+  longPressApiRef.current = useLongPress({
+    onLongPress: fireLongPress,
+    delayMs: options.longPressDelayMs ?? MENU_PRESS_LONG_PRESS_MS,
+  });
 
   // --- Handlers ------------------------------------------------------------
 
@@ -744,8 +750,7 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
 
   const handleTriggerPointerDown = useCallback(
     (event: React.PointerEvent<HTMLElement>) => {
-      const {isEnabled = true, longPressDelayMs = MENU_PRESS_LONG_PRESS_MS} =
-        optionsRef.current;
+      const {isEnabled = true} = optionsRef.current;
       if (event.pointerId === ignoredPointerIdRef.current) {
         ignoredPointerIdRef.current = null;
         return;
@@ -765,11 +770,7 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
       attach(native.pointerId);
       lastPointerEventRef.current = native;
       if (pointerType !== 'mouse') {
-        longPressRef.current = {
-          x: native.clientX,
-          y: native.clientY,
-          timer: setTimeout(fireLongPress, longPressDelayMs),
-        };
+        longPressApiRef.current?.start({x: native.clientX, y: native.clientY});
       }
       step(
         {

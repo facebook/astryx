@@ -2389,3 +2389,21 @@ describe('DropdownMenu press model', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 });
+
+describe('DropdownMenu trigger handler composition', () => {
+  it('still calls a consumer onClickCapture passed through button', () => {
+    // The press model needs its own click-capture handler on the trigger to
+    // swallow the click that follows a press-open. Setting it directly after
+    // spreading the caller's button props dropped theirs silently, while the
+    // pointer and context-menu handlers either side composed correctly.
+    const onClickCapture = vi.fn();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions', onClickCapture}}
+        items={[{label: 'Edit'}]}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', {name: 'Actions'}));
+    expect(onClickCapture).toHaveBeenCalled();
+  });
+});

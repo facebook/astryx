@@ -209,7 +209,11 @@ function stepTriggerPress<T>(
       // it must pass, and no gesture is live afterwards.
       return idle({type: 'settle', stray: false, dismiss: false});
     case 'cancel':
-      return idle(NONE);
+      // The browser took the gesture (an incoming call, a system gesture).
+      // Settle rather than going quiet: a held finger has already installed
+      // the document's touchmove preventer, and only the end of a gesture
+      // takes it back off. No click follows a cancelled pointer.
+      return idle({type: 'settle', stray: false, dismiss: false});
     case 'down':
     case 'move':
       return {gesture, effect: NONE};
@@ -245,7 +249,9 @@ function stepOpen<T>(
       return release(gesture.pointerType, event);
     }
     case 'cancel':
-      return idle(NONE);
+      // As above: the gesture ends, so its document listeners come off. The
+      // menu stays open — a cancelled pointer did not ask to close it.
+      return idle({type: 'settle', stray: false, dismiss: false});
     case 'down':
     case 'opened':
       return {gesture, effect: NONE};

@@ -1051,7 +1051,10 @@ function DropdownMenuPopover({
         tooltip={isOpen ? undefined : button.tooltip}
         endContent={resolvedEndContent}
         onClick={handleButtonClick}
-        onClickCapture={handleTriggerClickCapture}
+        onClickCapture={event => {
+          button.onClickCapture?.(event);
+          handleTriggerClickCapture(event);
+        }}
         onKeyDown={handleButtonKeyDown}
         onPointerDown={event => {
           button.onPointerDown?.(event);
