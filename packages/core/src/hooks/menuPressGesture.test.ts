@@ -159,10 +159,14 @@ describe('menuPressStep — the trigger', () => {
     expect(last).toEqual({type: 'none'});
   });
 
-  it('TriggerPress → Idle: a cancel before the delay ends the gesture quietly', () => {
+  it('TriggerPress → Idle: a cancel before the delay ends the gesture', () => {
+    // The effect has to be a settle, not nothing: a held finger installs a
+    // document touchmove preventer for the gesture, and only the end of a
+    // gesture takes it back off. Returning `none` here left the page unable
+    // to scroll after an interrupted press.
     const {gesture, last} = run([downOnTrigger('touch'), {type: 'cancel'}]);
     expect(gesture.phase).toBe('idle');
-    expect(last).toEqual({type: 'none'});
+    expect(last).toEqual({type: 'settle', stray: false, dismiss: false});
   });
 
   it('Open → Tracking: the pointer moving onto the menu starts tracking from the trigger', () => {
@@ -240,8 +244,10 @@ describe('menuPressStep — the trigger', () => {
   });
 
   it('Open → Idle: a cancel while open ends the gesture and keeps the menu', () => {
+    // As above: the gesture's document listeners come off, and the menu is
+    // left open because a cancelled pointer never asked to close it.
     const {gesture, last} = run([downOnTrigger('mouse'), {type: 'cancel'}]);
     expect(gesture.phase).toBe('idle');
-    expect(last).toEqual({type: 'none'});
+    expect(last).toEqual({type: 'settle', stray: false, dismiss: false});
   });
 });

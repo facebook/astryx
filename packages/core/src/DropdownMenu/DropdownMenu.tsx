@@ -1198,12 +1198,11 @@ function DropdownMenuPopover({
           tooltip={isOpen ? undefined : button.tooltip}
           endContent={resolvedEndContent}
           onClick={handleButtonClick}
-          onClickCapture={handleTriggerClickCapture}
-          onKeyDown={handleButtonKeyDown}
-          onFocus={event => {
-            button.onFocus?.(event);
-            onFocusReturnTargetFocus();
+          onClickCapture={event => {
+            button.onClickCapture?.(event);
+            handleTriggerClickCapture(event);
           }}
+          onKeyDown={handleButtonKeyDown}
           onPointerDown={event => {
             button.onPointerDown?.(event);
             menuPress.triggerProps.onPointerDown(event);
@@ -1211,6 +1210,10 @@ function DropdownMenuPopover({
           onContextMenu={event => {
             button.onContextMenu?.(event);
             menuPress.triggerProps.onContextMenu(event);
+          }}
+          onFocus={event => {
+            button.onFocus?.(event);
+            onFocusReturnTargetFocus();
           }}
           aria-haspopup="menu"
           aria-expanded={isOpen}

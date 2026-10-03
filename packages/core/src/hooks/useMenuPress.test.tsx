@@ -503,4 +503,34 @@ describe('useMenuPress — edge autoscroll', () => {
     });
     expect(menu.scrollTop).toBe(atRest);
   });
+
+  it('gives the page back its scroll when a held finger is cancelled', () => {
+    // A held finger installs a document-level touchmove preventer so the page
+    // does not scroll under the opening menu. Only the end of a gesture takes
+    // it off again, and a pointercancel is ordinary on touch — an incoming
+    // call, a system gesture. Cancelling used to leave the preventer live and
+    // the page unable to scroll at all.
+    vi.useFakeTimers();
+    render(<Harness />);
+    const trigger = screen.getByRole('button', {name: 'Open'});
+
+    fireEvent.pointerDown(trigger, {...touch(), clientX: 10, clientY: 10});
+    act(() => {
+      vi.advanceTimersByTime(MENU_PRESS_LONG_PRESS_MS);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    const held = new Event('touchmove', {bubbles: true, cancelable: true});
+    document.dispatchEvent(held);
+    expect(held.defaultPrevented).toBe(true);
+
+    fireEvent.pointerCancel(trigger, touch());
+
+    const afterCancel = new Event('touchmove', {
+      bubbles: true,
+      cancelable: true,
+    });
+    document.dispatchEvent(afterCancel);
+    expect(afterCancel.defaultPrevented).toBe(false);
+  });
 });
