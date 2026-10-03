@@ -725,32 +725,78 @@ describe('swipeActions', () => {
   const isClipping = (container: Element) =>
     rulesDeclaredFor(container).some(rule => rule.includes('overflow: hidden'));
 
-  /** Is the panel hidden (at rest) or shown (while a drag owns the row)? */
-  const panelVisibility = (panel: Element) =>
-    rulesDeclaredFor(panel)
-      .map(rule => rule.match(/visibility: (\w+)/)?.[1])
-      .filter(Boolean)
-      .at(-1);
+  /** The declared padding on an element, from the injected rules. */
+  const declaredPadding = (el: Element) =>
+    rulesDeclaredFor(el).filter(rule => rule.includes('padding'));
 
-  it('renders nothing that moves at rest: the panel waits hidden at zero width and the row is untransformed', () => {
+  it('renders nothing that moves at rest: the panel is a zero-width box and the row is untransformed', () => {
     const {row, container} = renderRow();
-    expect(panelFor('Archive')).toBeInTheDocument();
-    expect(panelFor('Archive').style.width).toBe('');
-    // Hidden, not merely empty: at zero width the box is still as wide as its
-    // padding, and a visible panel would paint a sliver of its tone.
-    expect(panelVisibility(panelFor('Archive'))).toBe('hidden');
+    const panel = panelFor('Archive');
+    expect(panel).toBeInTheDocument();
+    expect(panel.style.width).toBe('');
+    // The box is exactly the revealed width: a padded box at `width: 0` is
+    // still as wide as its padding and paints a sliver of the tone, so the
+    // padding lives on the content inside the panel, never on the panel.
+    expect(declaredPadding(panel)).toEqual([]);
+    expect(
+      declaredPadding(panel.firstElementChild as Element).join('\n'),
+    ).toMatch(/padding-inline/);
     expect(row.style.transform).toBe('');
     expect(isClipping(container)).toBe(false);
   });
 
-  it('shows the panel only while a drag owns the row', () => {
-    const {container} = renderRow();
+  it('shrinks the panel with the row when a short swipe springs back', () => {
+    const {row, container} = renderRow();
     touch(container, 'pointerDown', 10);
     touch(container, 'pointerMove', 40);
-    expect(panelVisibility(panelFor('Archive'))).toBe('visible');
-    touch(container, 'pointerUp', 40);
+    // A slow last step: short of the commit point and too slow for a fling.
+    touch(container, 'pointerMove', 50);
+    const panel = panelFor('Archive');
+    touch(container, 'pointerUp', 50);
+    // Released short of the commit point: the row springs back on its clock
+    // and the panel's width runs on the same one, so the revealed gap keeps
+    // its colour until the row is home.
+    expect(row.style.transition).toMatch(/transform 180ms/);
+    expect(panel.style.transition).toMatch(/width 180ms/);
+    expect(panel.style.width).toBe('0px');
     void act(() => vi.advanceTimersByTime(250));
-    expect(panelVisibility(panelFor('Archive'))).toBe('hidden');
+    expect(panel.style.transition).toBe('');
+  });
+
+  it('tells the browser the row owns the drag: cancels touchmove once the axis is horizontal, never before', () => {
+    const {container} = renderRow();
+    const touchMove = (x: number, y = 10) =>
+      fireEvent.touchMove(container, {
+        cancelable: true,
+        touches: [{clientX: x, clientY: y}],
+      });
+    touch(container, 'pointerDown', 10);
+    // Before the axis is decided the scroller may still take the gesture:
+    // the default stands (fireEvent answers false once it is prevented).
+    expect(touchMove(14)).toBe(true);
+    touch(container, 'pointerMove', 14);
+    expect(touchMove(14)).toBe(true);
+    // Claimed: every further touchmove is cancelled, which is what keeps
+    // iOS Safari's pan from taking a drag that is not perfectly level.
+    touch(container, 'pointerMove', 40);
+    expect(touchMove(40)).toBe(false);
+    touch(container, 'pointerMove', 70, 14);
+    expect(touchMove(70, 14)).toBe(false);
+    touch(container, 'pointerUp', 70, 14);
+    void act(() => vi.advanceTimersByTime(250));
+  });
+
+  it('leaves touchmove alone on a drag the scroller got', () => {
+    const {container} = renderRow();
+    touch(container, 'pointerDown', 10, 10);
+    touch(container, 'pointerMove', 14, 40);
+    expect(
+      fireEvent.touchMove(container, {
+        cancelable: true,
+        touches: [{clientX: 14, clientY: 40}],
+      }),
+    ).toBe(true);
+    touch(container, 'pointerUp', 14, 40);
   });
 
   it('claims a horizontal drag, reveals the leading action and fires it past the commit point', () => {
@@ -781,7 +827,7 @@ describe('swipeActions', () => {
     expect(isClipping(container)).toBe(false);
   });
 
-  it('leaves a mostly vertical drag to the scroller', () => {
+  it('leaves a mostly vertical drag to the scroller, and a level one is the row\x27s even with some drift', () => {
     const {container, onAction} = renderRow();
     touch(container, 'pointerDown', 10, 10);
     touch(container, 'pointerMove', 20, 60);
@@ -810,6 +856,19 @@ describe('swipeActions', () => {
     touch(withTrailing.container, 'pointerUp', 60);
     void act(() => vi.advanceTimersByTime(250));
     expect(onTrailing).toHaveBeenCalledTimes(1);
+  });
+
+  it('claims a sideways drag that drifts: a finger is never perfectly level', () => {
+    const {container, onAction} = renderRow();
+    touch(container, 'pointerDown', 10, 10);
+    // 12 px across, 8 px down at the lock: more horizontal than vertical,
+    // so the row takes it (a stricter cone refused real thumb swipes).
+    touch(container, 'pointerMove', 22, 18);
+    expect(isClipping(container)).toBe(true);
+    touch(container, 'pointerMove', 130, 30);
+    touch(container, 'pointerUp', 130, 30);
+    void act(() => vi.advanceTimersByTime(250));
+    expect(onAction).toHaveBeenCalledTimes(1);
   });
 
   it('reads the direction logically under RTL: the leading action is toward the inline end', () => {

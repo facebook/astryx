@@ -5,8 +5,9 @@
  * @input The checked-in Core/Item › Swipe Actions story, a built Storybook and
  *   real Chromium touch input
  * @output Pixel proof that a swipeable row paints none of its panel at rest,
- *   reveals it under a touch drag, and hides it again after a release short of
- *   the commit point
+ *   reveals it under a touch drag, paints none again when the drag comes back
+ *   to its start without lifting, and, released short of the commit point,
+ *   shrinks the panel with the row instead of dropping it
  * @position Browser-only regression test for Item's swipeActions. jsdom can
  *   hold the declared rule but not the paint: a zero-width panel is still as
  *   wide as its padding, so only real pixels prove the resting row is clean.
@@ -131,13 +132,58 @@ test('paints no panel at rest, reveals it under a touch drag, and hides it again
     .poll(async () => paintedAtEdge(await container.screenshot()))
     .toBeGreaterThan(0);
 
+  // Back to the start and past it without lifting: the row is home and the
+  // panel is a zero-width box again, so nothing of it paints — not the sliver
+  // a padded box at `width: 0` would leave at the edge while the finger is
+  // still down.
+  for (const dx of [40, 20, 4, -6]) {
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{x: startX + dx, y}],
+    });
+  }
+  await expect(panel).toBeHidden();
+  await expect
+    .poll(async () => paintedAtEdge(await container.screenshot()))
+    .toBe(0);
+
+  // Out again, then released short of the commit point.
+  for (const dx of [10, 30, 50, 60]) {
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{x: startX + dx, y}],
+    });
+  }
+  await expect(panel).toBeVisible();
   await cdp.send('Input.dispatchTouchEvent', {
     type: 'touchEnd',
     touchPoints: [],
   });
 
-  // Released short of the commit point: the row springs back and the panel is
-  // hidden again, with nothing left at the edge.
+  // The spring back: the row slides home over its clock and the panel's width
+  // runs on the same one, so mid-flight the revealed gap is still the panel.
+  // Sampled a few frames in, before the row is home.
+  const midFlight = await container.evaluate(
+    async (node, args) =>
+      new Promise<{rowX: number; panelWidth: number}>(resolve => {
+        setTimeout(() => {
+          const rowEl = node.querySelector(args.rowSelector) as HTMLElement;
+          const panelEl = node.querySelector(args.panelSelector) as HTMLElement;
+          const matrix = new DOMMatrix(getComputedStyle(rowEl).transform);
+          resolve({
+            rowX: Math.abs(matrix.e),
+            panelWidth: parseFloat(getComputedStyle(panelEl).width),
+          });
+        }, 70);
+      }),
+    {rowSelector: '.astryx-item', panelSelector: '[aria-hidden="true"]'},
+  );
+  expect(midFlight.rowX).toBeGreaterThan(4);
+  expect(Math.abs(midFlight.panelWidth - midFlight.rowX)).toBeLessThanOrEqual(
+    6,
+  );
+
+  // Settled: hidden again, with nothing left at the edge.
   await expect(panel).toBeHidden();
   await expect
     .poll(async () => paintedAtEdge(await container.screenshot()))

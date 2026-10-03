@@ -29,6 +29,16 @@
  * `trailing` a drag toward the inline start, read against the container's
  * computed `direction` at the touch, so under `dir="rtl"` the finger, the
  * revealed edge and the panel's logical inset all agree.
+ *
+ * The claim is told to the browser. `touch-action: pan-y` is not enough on
+ * iOS Safari: its scroller treats any drag with a vertical component as a
+ * pan it may take (measured on an iOS 26 simulator, a 4:1 drag got
+ * `pointercancel` 40 px in, while the same drag after a one-second hold,
+ * which fails the native pan, ran to the commit), so a swipe that is not
+ * perfectly level dies unless the finger first holds still. A non-passive
+ * `touchmove` listener on the container cancels the default while the row
+ * owns the drag, which is the one signal WebKit honours; before the axis is
+ * decided, and for a drag the scroller got, nothing is cancelled.
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
@@ -37,8 +47,13 @@ import {isRtlElement} from '../hooks/isRtlElement';
 
 /** Travel before the axis is decided. */
 const AXIS_LOCK_PX = 10;
-/** How much more horizontal than vertical a drag must be to be claimed. */
-const HORIZONTAL_DOMINANCE = 1.5;
+/**
+ * How much more horizontal than vertical a drag must be to be claimed: more
+ * horizontal than vertical, the split a native list's directional lock makes.
+ * A thumb's swipe arcs, and at the lock's 10 px a stricter cone refused real
+ * swipes that were plainly sideways.
+ */
+const HORIZONTAL_DOMINANCE = 1;
 /** The commit point, as a fraction of the row's width, within the bounds below. */
 const COMMIT_FRACTION = 0.32;
 const MIN_COMMIT_PX = 72;
@@ -85,8 +100,16 @@ export interface UseSwipeActionOptions {
   containerRef: React.RefObject<HTMLElement | null>;
   /** The element that translates with the finger. */
   rowRef: React.RefObject<HTMLElement | null>;
-  /** Written once per frame with the revealed width, in px; the panel reads it. */
-  onReveal?: (width: number, direction: SwipeActionDirection) => void;
+  /**
+   * Written once per frame with the revealed width, in px; the panel reads it.
+   * `transitionMs` is the clock the row is settling on (0 while the finger
+   * drives it), so the panel can shrink or grow with the row.
+   */
+  onReveal?: (
+    width: number,
+    direction: SwipeActionDirection,
+    transitionMs: number,
+  ) => void;
 }
 
 export interface UseSwipeActionResult {
@@ -205,10 +228,29 @@ export function useSwipeAction({
         return;
       }
       translateRow(row, offset, transitionMs);
-      onRevealRef.current?.(Math.abs(offset), direction);
+      onRevealRef.current?.(Math.abs(offset), direction, transitionMs);
     },
     [rowRef],
   );
+
+  // The browser's half of the claim (see the header). React's own touch
+  // listeners are passive, so this one is attached by hand; it is removed
+  // with the element.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container == null || !isEnabled) {
+      return undefined;
+    }
+    const onTouchMove = (event: TouchEvent) => {
+      if (dragRef.current?.claimed === true && event.cancelable) {
+        event.preventDefault();
+      }
+    };
+    container.addEventListener('touchmove', onTouchMove, {passive: false});
+    return () => {
+      container.removeEventListener('touchmove', onTouchMove);
+    };
+  }, [containerRef, isEnabled]);
 
   const cancelPendingPaint = useCallback(() => {
     if (frameRef.current != null) {

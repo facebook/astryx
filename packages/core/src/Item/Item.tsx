@@ -372,6 +372,10 @@ const styles = stylex.create({
   swipeContainerActive: {
     overflow: 'hidden',
   },
+  // The panel's box is exactly the revealed width and nothing else: its
+  // padding lives on the content inside, because a padded box at `width: 0`
+  // is still as wide as its padding, and that sliver of the tone showed at the
+  // row's edge at rest and whenever a drag came back to the start.
   swipePanel: {
     position: 'absolute',
     top: 0,
@@ -380,26 +384,18 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     boxSizing: 'border-box',
-    paddingInline: spacingVars['--spacing-3'],
     overflow: 'hidden',
     pointerEvents: 'none',
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     whiteSpace: 'nowrap',
-    // Hidden until a drag claims the row: at zero width the box is still as
-    // wide as its padding, and a painted sliver of the tone would show at the
-    // row's edge at rest.
-    visibility: 'hidden',
     // Below the commit point the panel is provisional; past it, it reads as
     // "let go now".
     opacity: 0.7,
     transitionProperty: 'opacity',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
-  },
-  swipePanelRevealed: {
-    visibility: 'visible',
   },
   swipePanelArmed: {
     opacity: 1,
@@ -416,6 +412,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-3'],
   },
   label: {
     // Falls back to the primary text token; a parent (e.g. a destructive menu
@@ -728,10 +725,16 @@ export function Item({
     isReducedMotion,
     containerRef: swipeContainerRef,
     rowRef: swipeRowRef,
-    onReveal: width => {
-      if (swipePanelRef.current != null) {
-        swipePanelRef.current.style.width = `${width}px`;
+    onReveal: (width, _direction, transitionMs) => {
+      const panel = swipePanelRef.current;
+      if (panel == null) {
+        return;
       }
+      // Settling (the spring back, the slide out) runs on the row's own
+      // clock; the panel keeps pace so the revealed gap keeps its colour.
+      panel.style.transition =
+        transitionMs > 0 ? `width ${transitionMs}ms ease-out` : '';
+      panel.style.width = `${width}px`;
     },
   });
   const swipeRef = useMergedRefs(
@@ -819,7 +822,6 @@ export function Item({
               ? styles.swipePanelTrailing
               : styles.swipePanelLeading,
             swipeToneStyles[revealed.tone ?? 'accent'],
-            isSwiping && styles.swipePanelRevealed,
             swipe.state.isArmed && styles.swipePanelArmed,
           )}>
           <span {...stylex.props(styles.swipePanelContent)}>
