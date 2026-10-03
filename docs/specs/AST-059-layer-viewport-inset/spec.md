@@ -3,12 +3,12 @@ schema_version: 4
 template_version: 1
 kind: system-spec
 id: spec:AST-059
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
-phase: proposed
+approved_by: cixzhang
+approved_at: 2026-10-03
+phase: accepted
 owners: [cixzhang]
 affects_architecture: [architecture:layer-runtime]
 affects_families: []
@@ -51,7 +51,7 @@ review_triggers: [layering, layout, behavior, public-api]
 | Behavior                | A layer renders at its own size — the caller's explicit size, or its content's — up to the viewport minus its gutters, and never beyond: content that cannot fit the viewport overflows inside the layer, where the composing component scrolls or clips it (FR2, FR3). Content that can wrap fits beside the trigger by wrapping; a size that cannot shrink flips to the other side, and when it fits on neither side it keeps its size and slides along the alignment axis into view while the anchor is in view (FR4, DEC-2). A layer whose anchor has left the viewport holds its position and its size (FR5, DEC-3). The first frame a layer paints is its settled frame; it never paints and then moves (FR8).                                                             |
 | End-user impact         | A person who opens a 352px menu from a control near the edge of a panel gets a 352px menu, not a 274px one. A long menu on a phone keeps its labels readable instead of squeezing beside its trigger. A layer never ends under a phone navigation bar the app has declared (FR6). Nothing moves for an app that declares no bar.                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Builder impact          | `Popover.width` and `DropdownMenu.menuWidth` become ordinary sizes. An app with a floating bar declares it once, as `inset` on the `LayerProvider` it already mounts, beside `toast`; toasts and anchored layers both clear it. Components that compose `useLayer` or `usePopover` inherit the gutter, the caps, and the fallbacks without a record change (FR7).                                                                                                                                                                                                                                                                                                                                                                                                                |
-| Compatibility/readiness | Behavior change, one additive prop. An explicit size near an edge renders at its size instead of shrinking; unwrappable content near an edge flips or slides instead of overflowing its box; prose still wraps beside its trigger (DEC-2). Every anchor-mode layer gains the gutter and caps (FR7). `LayerProvider.inset` defaults to zero on every edge, so an app that declares none renders as before, with or without a provider; an existing `toast.inset` keeps its meaning (DEC-5). Authority: `draft`, `approved_by` `null`. DEC-2 and DEC-5 are proposed here; DEC-4 records an owner ruling.                                                                                                                                                                           |
+| Compatibility/readiness | Behavior change, one additive prop. An explicit size near an edge renders at its size instead of shrinking; unwrappable content near an edge flips or slides instead of overflowing its box; prose still wraps beside its trigger (DEC-2). Every anchor-mode layer gains the gutter and caps (FR7). `LayerProvider.inset` defaults to zero on every edge, so an app that declares none renders as before, with or without a provider; an existing `toast.inset` keeps its meaning (DEC-5). Authority: `current`, approved by the owner on 2026-10-03.                                                                                                                                                                                                                            |
 | Review checks           | Reject a second definition of the viewport gutter outside the layer runtime; a `max-inline-size` resolved against the anchor's span; a layer box that can exceed the viewport on either axis; a fallback list authored by a component for an anchor-mode layer; a branch on whether a size was explicit; a slide that continues once the anchor has left the viewport; a `layer` theme target or a theme value standing in for an app's bar; a second place to declare the bar beside `LayerProvider.inset`; a consumer minimum that is not clamped by the runtime's cap; a layer under a default provider that renders differently from one with no provider; any geometry input the runtime measures after paint and then applies; a story that asserts only settled geometry. |
 | Governing rules         | [`architecture:layer-runtime`](../../architecture/layer-runtime.md) INV3, INV5 for anchor-mode placement, fallbacks, and direction, INV10 for what `LayerProvider` is; [`spec:AST-003`](../AST-003/spec.md) FR21–FR23 for the reduced behavior where CSS Anchor Positioning is absent; `component:Popover` FR4, ORD4 for Popover's conditional scrolling, which this record leaves in place.                                                                                                                                                                                                                                                                                                                                                                                     |
 
@@ -354,8 +354,7 @@ styles — it removes the drift and keeps the ownership problem.
 ### DEC-2 — A content-sized layer wraps if it can and moves if it cannot
 
 **Reference:** `spec:AST-059/DEC-2`
-**Decider:** proposed by this record on the owner's observation of
-2026-10-03; pending owner approval
+**Decider:** Cindy Zhang, 2026-10-03
 
 A content-sized layer fits beside its trigger by wrapping its content into the
 room there, as an auto-width positioned box does on its own. A size that
@@ -407,9 +406,7 @@ undiscoverable beside `toast`, and unable to carry a default.
 ### DEC-5 — One declaration serves toasts and anchored layers; zero is the default
 
 **Reference:** `spec:AST-059/DEC-5`
-**Decider:** proposed by this record on the owner's direction of
-2026-10-03 ("oftentimes people want to inset to avoid the same UI elements
-for both toast and layers"); pending owner approval
+**Decider:** Cindy Zhang, 2026-10-03
 
 `LayerProvider.inset` is the provider-level declaration. The toast viewport
 and every anchored layer under the provider read it, because a bar at a
@@ -432,5 +429,4 @@ clear a control an anchored layer may cover would have no route.
 
 ## Open questions
 
-None. DEC-2 and DEC-5 are proposed here for the owner to approve or
-overturn; they are not open designs with alternatives to weigh.
+None. Every decision above is the owner's.
