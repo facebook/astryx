@@ -8,13 +8,14 @@ export const docs = {
   category: 'foundations',
   description:
     'Font families, geometric type scale, weight, line-height, and semantic text tokens for consistent, accessible text styling.',
+  keywords: ['font', 'fonts', 'font size'],
   tokenCategory: 'typography',
 
   sections: [
     // ── Overview ────────────────────────────────────────────────────────────
     {
       title: 'Overview',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -30,7 +31,7 @@ export const docs = {
     // ── Font Families ───────────────────────────────────────────────────────
     {
       title: 'Font Families',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -44,14 +45,15 @@ export const docs = {
       ],
     },
 
-    // ── Loading Custom Fonts ────────────────────────────────────────────────
+    // ── Custom Fonts ────────────────────────────────────────────────────────
     {
-      title: 'Loading Custom Fonts',
-  category: 'foundations',
+      id: 'loading-custom-fonts',
+      title: 'Custom fonts',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
-          text: 'Astryx never loads font files. defineTheme and the built CSS only set font-family: naming a webfont (Fraunces, JetBrains Mono, and so on) makes every browser look for it, and quietly fall back when the app has not loaded it. `astryx theme build` warns when a theme names families that are neither CSS generics nor common system fonts and prints the snippet to add; loading the font is always the app\'s job.',
+          text: "Astryx never loads font files. defineTheme and the built CSS only set font-family: naming a webfont (Fraunces, JetBrains Mono, and so on) makes every browser look for it, and quietly fall back when the app has not loaded it. `astryx theme build` warns when a theme names families that are neither CSS generics nor common system fonts and prints the snippet to add; loading the font is always the app's job.",
         },
         {
           type: 'code',
@@ -85,7 +87,7 @@ export const docs = {
     // ── Font Sizes ──────────────────────────────────────────────────────────
     {
       title: 'Font Sizes',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -102,7 +104,7 @@ export const docs = {
     // ── Font Weights ────────────────────────────────────────────────────────
     {
       title: 'Font Weights',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -119,7 +121,7 @@ export const docs = {
     // ── Line Height ─────────────────────────────────────────────────────────
     {
       title: 'Line Height',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -135,7 +137,7 @@ export const docs = {
     // ── Type Scale ──────────────────────────────────────────────────────────
     {
       title: 'Type Scale',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -152,7 +154,7 @@ export const docs = {
     // ── Display Text ────────────────────────────────────────────────────────
     {
       title: 'Display Text',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -165,11 +167,16 @@ export const docs = {
       ],
     },
 
-    // ── Usage ────────────────────────────────────────────────────────────────
+    // ── Headings and text ───────────────────────────────────────────────────
     {
-      title: 'Usage',
-  category: 'foundations',
+      id: 'usage',
+      title: 'Headings and text',
+      category: 'foundations',
       content: [
+        {
+          type: 'prose',
+          text: 'Use `Heading` for document structure and `Text` for everything else; each maps its props to the type scale tokens.',
+        },
         {
           type: 'code',
           lang: 'tsx',
@@ -205,6 +212,19 @@ export const docs = {
 // Display without heading semantics (data callouts, decorative)
 <Text type="display-2">$1.2M Revenue</Text>`,
         },
+      ],
+    },
+
+    // ── Custom type scale ───────────────────────────────────────────────────
+    {
+      id: 'custom-type-scale',
+      title: 'Custom type scale',
+      category: 'foundations',
+      content: [
+        {
+          type: 'prose',
+          text: 'Change the whole ramp with `base` and `ratio` in `defineTheme`; every font size and line height recomputes from them.',
+        },
         {
           type: 'code',
           lang: 'tsx',
@@ -235,7 +255,7 @@ const denseTheme = defineTheme({
     // ── Best Practices ──────────────────────────────────────────────────────
     {
       title: 'Best Practices',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'list',

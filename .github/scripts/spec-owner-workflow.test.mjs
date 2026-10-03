@@ -218,7 +218,7 @@ describe('spec-only workflow contract', () => {
   it('fails closed when file APIs are truncated or scope classification fails', () => {
     const ci = read('.github/workflows/ci.yml');
     expect(ci).toContain(
-      "if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() }}",
+      "if: ${{ github.event_name != 'workflow_dispatch' && needs.check-scope.outputs.release_bump != 'true' && always() && !cancelled() }}",
     );
     expect(ci).toContain("if: needs.check-scope.result != 'success'");
 
@@ -232,9 +232,7 @@ describe('spec-only workflow contract', () => {
   it('keeps the schema approval roster within the ENGOWNERS set', () => {
     const {parseOwnerFile} = require('./knowledge-frontmatter.cjs');
     const latestSchema = JSON.parse(read('docs/schemas/knowledge/v4.json'));
-    const engineeringOwners = parseOwnerFile(
-      read('.github/ENGOWNERS'),
-    );
+    const engineeringOwners = parseOwnerFile(read('.github/ENGOWNERS'));
 
     for (const owner of latestSchema.approvalOwners) {
       expect(engineeringOwners).toContain(owner);

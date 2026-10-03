@@ -14,20 +14,20 @@ export const doc = {
   namespace: 'cli/api',
   displayName: 'docs()',
   summary:
-    'Read the reference docs: list every topic, one topic\'s sections, one section, or a whole topic.',
+    "Read the reference docs: list every topic, one topic's sections, one section, or a whole topic.",
   description:
     'No topic lists every reference-doc topic; a topic returns its whole ' +
     'ReferenceDoc, and `index: true` returns its section index (each ' +
-    'section\'s key, title, and summary); a topic plus a section returns ' +
+    "section's key, title, and summary); a topic plus a section returns " +
     'that one section. Token-ref blocks are ' +
-    'inlined in every read, and so is a section\'s reference block: the doc it ' +
-    'includes, then the command that opens that doc. The topic set is the CLI\'s own docs plus the ' +
-    'ones the project\'s configured integrations contribute, including any ' +
+    "inlined in every read, and so is a section's reference block: the doc it " +
+    "includes, then the command that opens that doc. The topic set is the CLI's own docs plus the " +
+    "ones the project's configured integrations contribute, including any " +
     'topic an integration replaces or extends, so it depends on the cwd. ' +
     'A route opens a node of the docs tree instead: a namespace such as ' +
-    "`cli/api` returns its children one level down, a typed doc such as " +
-    "`cli/api/functions/search` returns its content, and a guide the tree " +
-    'places (`cli/integrations`) reads like any topic. ' +
+    '`cli/api` returns its children one level down, a typed doc such as ' +
+    '`cli/api/functions/search` returns its content, and a guide the tree ' +
+    'places (`cli/integrations/quick-start`) reads like any topic. ' +
     'Every read but the list carries `links`, the commands that move from it: ' +
     '`up` to the level it sits in, `previous` and `next` to its neighbors, and, ' +
     'for a typed doc, `related` to the docs it names (its command or function, ' +
@@ -134,10 +134,13 @@ export const doc = {
       code: "await docs('principles', undefined, {index: true});",
     },
     {label: 'A docs-tree namespace', code: "await docs('cli/api');"},
-    {label: 'One API function', code: "await docs('cli/api/functions/search');"},
+    {
+      label: 'One API function',
+      code: "await docs('cli/api/functions/search');",
+    },
     {
       label: 'A whole guide from the docs tree',
-      code: "await docs('cli/integrations');",
+      code: "await docs('cli/integrations/quick-start');",
     },
     {label: 'One section by key', code: "await docs('tokens', 'spacing');"},
   ],

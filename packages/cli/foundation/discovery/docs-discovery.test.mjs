@@ -168,9 +168,7 @@ describe('discoverIntegrationDocs', () => {
             {
               id: 'steps',
               title: 'Steps',
-              content: [
-                {type: 'collection', source: {slot: 'guides'}},
-              ],
+              content: [{type: 'collection', source: {slot: 'guides'}}],
             },
           ],
         }),
@@ -507,6 +505,27 @@ describe('mergeTopic', () => {
     expect(merged.sections[1].content[0].text).toBe('use tokens');
     // The base is untouched.
     expect(base.sections[0].content[0].text).toBe('npm i');
+  });
+
+  it('finds a retitled base section by the key its old title derives', () => {
+    // A base section retitled later keeps its old key as its `id`; an
+    // extension that still names it by the old title replaces it.
+    const merged = mergeTopic(
+      {
+        ...base,
+        sections: [
+          {id: 'quick-start', title: 'Wrap your app in a theme', content: []},
+          {id: 'tokens', title: 'Tokens', content: []},
+        ],
+      },
+      {sections: [{title: 'Quick Start', content: []}]},
+    );
+    expect(merged.sections.map(section => [section.id, section.title])).toEqual(
+      [
+        ['quick-start', 'Quick Start'],
+        ['tokens', 'Tokens'],
+      ],
+    );
   });
 
   it('replaces a section by stable ID even when its title changes', () => {

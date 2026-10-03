@@ -4,10 +4,10 @@
  * @file Programmatic API for the component command — DISPATCHER + BARREL.
  *
  * Returns the same typed envelope { type, data } that `astryx --json component`
- * outputs. `component(name, opts)` parses the (name, options) pair, resolves the
- * subject once via `_adapter`, and routes to the correct leaf
- * (list · detail · detail.props/source/showcase/blocks), returning that leaf's
- * envelope. The CLI command handler is a thin wrapper around this function.
+ * outputs. `component(name, opts)` parses one selector or an ordered selector
+ * list, resolves each subject through `_adapter`, and routes to the correct leaf
+ * (list · detail · detail.props/source/showcase/blocks). The CLI command handler
+ * is a thin wrapper around this function.
  *
  * Every leaf is also re-exported for direct scripting use.
  */
@@ -26,6 +26,8 @@ import {
   resolveUnscopedDoc,
   loadComponentDoc,
   scopeSubComponent,
+  ComponentAmbiguityError,
+  installedComponentPackageVersion,
 } from './_adapter.mjs';
 import {componentList} from './list/list.mjs';
 import {componentDetail} from './detail/detail.mjs';
@@ -34,13 +36,199 @@ import {componentDetailSource} from './detail/source/source.mjs';
 import {componentDetailShowcase} from './detail/showcase/showcase.mjs';
 import {componentDetailBlocks} from './detail/blocks/blocks.mjs';
 
+/** Maximum selectors accepted before any component resolution starts. */
+export const COMPONENT_BATCH_SELECTOR_LIMIT = 100;
+
 /** @type {ReadonlyArray<string>} */
 const DETAIL_LEVELS = ['full', 'compact', 'brief'];
 /** @type {ReadonlyArray<string>} */
 const LANGS = ['en', 'zh', 'dense'];
+/** @type {Set<string>} */
+const NOT_FOUND_CODES = new Set([
+  ERROR_CODES.ERR_UNKNOWN_COMPONENT,
+  ERROR_CODES.ERR_UNKNOWN_PACKAGE,
+  ERROR_CODES.ERR_NOT_FOUND,
+]);
 
 /**
- * @param {string} [name]
+ * Discover-compatible package target grammar. Versions belong to the package
+ * head, never the item after the package slash.
+ * @param {string} selector
+ * @returns {{scoped: boolean, name: string, version?: string, item?: string}}
+ */
+function splitSelector(selector) {
+  const scoped = selector.startsWith('@');
+  const firstSlash = selector.indexOf('/');
+  let head = selector;
+  /** @type {string | undefined} */
+  let rest;
+  const split = scoped
+    ? firstSlash < 0
+      ? -1
+      : selector.indexOf('/', firstSlash + 1)
+    : firstSlash;
+  if (split > 0) {
+    head = selector.slice(0, split);
+    rest = selector.slice(split + 1) || undefined;
+  }
+  const at = head.indexOf('@', 1);
+  return {
+    scoped,
+    name: at > 0 ? head.slice(0, at) : head,
+    ...(at > 0 && head.slice(at + 1) ? {version: head.slice(at + 1)} : {}),
+    ...(rest ? {item: rest} : {}),
+  };
+}
+
+/**
+ * Resolve one component selector into the existing single-component API inputs.
+ * @param {unknown} value
+ * @param {string|undefined} packageScope
+ * @returns {{selector: string, name: string, package?: string, version?: string}}
+ */
+function parseComponentSelector(value, packageScope) {
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new AstryxError(
+      `Invalid component selector "${String(value)}"`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
+  const target = splitSelector(value);
+  const packageShaped =
+    target.scoped || target.item != null || target.version != null;
+  if (!packageShaped) {
+    return {selector: value, name: target.name, package: packageScope};
+  }
+  if (!target.item) {
+    throw new AstryxError(
+      `Component selector "${value}" names a package but no component`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
+  if (packageScope && packageScope !== target.name) {
+    throw new AstryxError(
+      `Component selector "${value}" conflicts with --package "${packageScope}"`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
+  return {
+    selector: value,
+    name: target.item,
+    package: target.name,
+    ...(target.version ? {version: target.version} : {}),
+  };
+}
+
+/**
+ * A version-qualified selector never falls through to another installed
+ * version. Its structured suggestion points at the command that can discover
+ * the requested package release.
+ * @param {{package?: string, version?: string}} target
+ * @param {string} coreDir
+ * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} loadedIntegrations
+ * @returns {void}
+ */
+function requireInstalledSelectorVersion(target, coreDir, loadedIntegrations) {
+  if (!target.version) return;
+  const packageName = /** @type {string} */ (target.package);
+  const installed = installedComponentPackageVersion(
+    coreDir,
+    loadedIntegrations,
+    packageName,
+  );
+  if (installed === target.version) return;
+  const exact = `${packageName}@${target.version}`;
+  throw new AstryxError(
+    `Package "${exact}" is not installed`,
+    [
+      {
+        name: `astryx discover ${exact}`,
+        reason: 'look up this package version',
+      },
+    ],
+    ERROR_CODES.ERR_UNKNOWN_PACKAGE,
+  );
+}
+
+/**
+ * Turn a single-lookup failure into one complete batch row.
+ * @param {string} selector
+ * @param {unknown} error
+ * @returns {import('./component.type.mjs').ComponentBatchResult}
+ */
+function batchFailure(selector, error) {
+  const err =
+    error instanceof AstryxError
+      ? error
+      : new AstryxError(
+          error instanceof Error ? error.message : String(error),
+          undefined,
+          ERROR_CODES.ERR_UNKNOWN,
+        );
+  if (err instanceof ComponentAmbiguityError) {
+    return {
+      selector,
+      status: 'ambiguous',
+      code: err.code,
+      error: err.message,
+      candidates: err.candidates,
+    };
+  }
+  return {
+    selector,
+    status: NOT_FOUND_CODES.has(err.code) ? 'not_found' : 'error',
+    code: err.code,
+    error: err.message,
+    ...(err.suggestions ? {suggestions: err.suggestions} : {}),
+  };
+}
+
+/**
+ * @param {unknown[]} selectors
+ * @param {object} options
+ * @param {string} options.cwd
+ * @param {string} [options.package]
+ * @param {boolean} [options.props]
+ * @param {boolean} [options.source]
+ * @param {boolean} [options.showcase]
+ * @param {boolean} [options.blocks]
+ * @param {'full'|'compact'|'brief'} [options.detail]
+ * @param {string|null} [options.lang]
+ * @param {boolean} [options.zh]
+ * @param {boolean} [options.dense]
+ * @param {string} coreDir
+ * @returns {Promise<import('./component.type.mjs').ComponentBatchResponse>}
+ */
+async function componentBatch(selectors, options, coreDir) {
+  const loadedIntegrations = await loadIntegrationsSafely(options.cwd);
+  /** @type {import('./component.type.mjs').ComponentBatchResult[]} */
+  const results = [];
+  for (const value of selectors) {
+    const selector = typeof value === 'string' ? value : String(value);
+    try {
+      const target = parseComponentSelector(value, options.package);
+      requireInstalledSelectorVersion(target, coreDir, loadedIntegrations);
+      const result =
+        /** @type {import('./component.type.mjs').ComponentSingleResponse} */ (
+          await component(target.name, {
+            ...options,
+            lang: options.lang ?? undefined,
+            package: target.package,
+          })
+        );
+      results.push({selector, status: 'found', result});
+    } catch (error) {
+      results.push(batchFailure(selector, error));
+    }
+  }
+  return {type: 'component.batch', data: {count: results.length, results}};
+}
+
+/**
+ * @param {string|string[]} [name]
  * @param {object} [options]
  * @param {string} [options.cwd]
  * @param {boolean} [options.list]
@@ -56,6 +244,7 @@ const LANGS = ['en', 'zh', 'dense'];
  * @param {boolean} [options.dense]
  * @returns {Promise<(
  *   import('./component.type.mjs').ComponentListResponse
+ *   | import('./component.type.mjs').ComponentBatchResponse
  *   | import('./component.type.mjs').ComponentDetailResponse
  *   | import('./component.type.mjs').ComponentDetailPropsResponse
  *   | import('./component.type.mjs').ComponentDetailSourceResponse
@@ -79,11 +268,16 @@ export async function component(name, options = {}) {
     dense = false,
   } = options;
 
+  const selectorList = Array.isArray(name) ? name : null;
+  const noName = selectorList == null && !name;
+
   // Default detail level mirrors the CLI (see commands/component/index.mjs):
   // single-component views default to 'full', list-style views (--list,
   // --category, or no name) default to 'brief' (scannable name lists).
-  // Keeping this in sync with the CLI is what the API↔CLI parity test checks.
-  const isListView = list || category != null || !name;
+  // An explicit array remains a batch even when it is empty or a caller also
+  // passes a list-only option.
+  const isListView =
+    selectorList == null && (list || category != null || noName);
   const detail = detailOption ?? (isListView ? 'brief' : 'full');
 
   // Same accepted values and codes as the CLI's --detail and --lang, checked
@@ -103,6 +297,14 @@ export async function component(name, options = {}) {
     );
   }
 
+  if (selectorList && selectorList.length > COMPONENT_BATCH_SELECTOR_LIMIT) {
+    throw new AstryxError(
+      `Component batch accepts at most ${COMPONENT_BATCH_SELECTOR_LIMIT} selectors; received ${selectorList.length}`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
+
   const coreDir = requireCoreDir(cwd);
 
   // A public API caller could pass a non-string category; the list leaf does
@@ -116,9 +318,44 @@ export async function component(name, options = {}) {
     );
   }
 
+  // ── Explicit batch selector list ─────────────────────────────────
+  // Array shape owns cardinality even if a caller also supplies a list-only
+  // option. The aggregate limit above is checked before core or integrations
+  // are resolved, so an oversized request can never emit a partial receipt.
+  if (selectorList) {
+    return componentBatch(
+      selectorList,
+      {
+        cwd,
+        package: packageScope,
+        props,
+        source,
+        showcase,
+        blocks,
+        detail,
+        lang,
+        zh,
+        dense,
+      },
+      coreDir,
+    );
+  }
+
   // ── List mode ──────────────────────────────────────────────────
-  if (category || list || !name) {
+  if (category || list || noName) {
     return componentList(coreDir, {cwd, category, detail, zh, dense, lang});
+  }
+
+  if (typeof name === 'string') {
+    const target = parseComponentSelector(name, packageScope);
+    if (target.version) {
+      const loadedIntegrations = await loadIntegrationsSafely(cwd);
+      requireInstalledSelectorVersion(target, coreDir, loadedIntegrations);
+    }
+    if (target.name !== name || target.package !== packageScope) {
+      return component(target.name, {...options, package: target.package});
+    }
+    name = target.name;
   }
 
   // ── Single component ───────────────────────────────────────────
@@ -186,7 +423,10 @@ export async function component(name, options = {}) {
     if (extDocPath) {
       // Legacy packages ship docs, never source.
       if (source) {
-        return componentDetailSource(dirName, null, {name, notFoundInPackage: packageScope});
+        return componentDetailSource(dirName, null, {
+          name,
+          notFoundInPackage: packageScope,
+        });
       }
       if (blocks) {
         return componentDetailBlocks(dirName, cwd);

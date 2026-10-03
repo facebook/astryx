@@ -83,7 +83,7 @@ export const docs = {
           items: [
             'Copy raw hex/px values into a second theme object when a `var(...)` reference would work.',
             'Run a second unsynchronized dark-mode provider that disagrees with Theme.',
-            'Make another library\'s CSS variables the source of truth for the system. Some consumers need token values outside the DOM.',
+            "Make another library's CSS variables the source of truth for the system. Some consumers need token values outside the DOM.",
           ],
         },
       ],
@@ -180,17 +180,18 @@ const styles = stylex.create({
         },
         {
           type: 'prose',
-          text: 'The Tailwind bridge is the concrete example of the general interop pattern: expose another library\'s semantic API, but point the values at system token variables.',
+          text: "The Tailwind bridge is the concrete example of the general interop pattern: expose another library's semantic API, but point the values at system token variables.",
         },
       ],
     },
     {
+      id: 'semantic-token-systems',
       title: 'Panda, Chakra, and Other Semantic Token Systems',
       category: 'guide',
       content: [
         {
           type: 'prose',
-          text: 'Libraries like Panda CSS and Chakra UI have first-class semantic token objects. Put system CSS variables at the leaves of those objects so product code can use the library\'s semantic names while the system still owns the values.',
+          text: "Libraries like Panda CSS and Chakra UI have first-class semantic token objects. Put system CSS variables at the leaves of those objects so product code can use the library's semantic names while the system still owns the values.",
         },
         {
           type: 'code',
@@ -246,7 +247,7 @@ tokens: {
       content: [
         {
           type: 'prose',
-          text: 'MUI expects palette slots such as primary, background, text, and divider. Map those slots to system variables for ordinary component styling. Use raw values only when MUI or your code needs to parse colors for contrast, alpha, lighten, or darken calculations.',
+          text: '`MUI` expects palette slots such as primary, background, text, and divider. Map those slots to system variables for ordinary component styling. Use raw values only when MUI or your code needs to parse colors for contrast, alpha, lighten, or darken calculations.',
         },
         {
           type: 'code',
@@ -293,12 +294,13 @@ tokens: {
       ],
     },
     {
+      id: 'css-in-js',
       title: 'Emotion, styled-components, Theme UI, and Styled System',
       category: 'guide',
       content: [
         {
           type: 'prose',
-          text: 'Runtime CSS-in-JS libraries usually accept arbitrary theme objects. Keep those objects semantic, but store system CSS variable references as the values. This keeps generated classes stable while the system updates values through the CSS cascade.',
+          text: 'Runtime CSS-in-JS libraries such as `Emotion` and `styled-components` usually accept arbitrary theme objects. Keep those objects semantic, but store system CSS variable references as the values. This keeps generated classes stable while the system updates values through the CSS cascade.',
         },
         {
           type: 'code',
@@ -327,6 +329,7 @@ tokens: {
       ],
     },
     {
+      id: 'unocss',
       title: 'UnoCSS and Custom Utility Systems',
       category: 'guide',
       content: [
@@ -357,7 +360,7 @@ tokens: {
         },
         {
           type: 'prose',
-          text: 'Static utility extractors cannot see dynamically constructed class names. Prefer explicit class strings or the library\'s safelist/source-registration mechanism.',
+          text: "Static utility extractors cannot see dynamically constructed class names. Prefer explicit class strings or the library's safelist/source-registration mechanism.",
         },
       ],
     },
@@ -422,6 +425,7 @@ function RevenueChart({data}: {data: Array<{x: string; y: number}>}) {
       ],
     },
     {
+      id: 'non-css-best-practices',
       title: 'Non-CSS Processing Best Practices',
       category: 'guide',
       content: [
@@ -454,7 +458,7 @@ function RevenueChart({data}: {data: Array<{x: string; y: number}>}) {
           items: [
             'Import the reset/base CSS and a theme CSS file early enough for first paint. For production SSR, prefer built themes from `astryx theme build` or published `/built` theme imports plus `theme.css`.',
             'Choose one owner for color mode. Theme uses `data-theme="light|dark"` and `color-scheme` to resolve `light-dark()` tokens.',
-            'Map the external library\'s semantic layer to system variables by intent, not by exact naming. For example, MUI `background.paper` maps to `--color-background-surface`.',
+            "Map the external library's semantic layer to system variables by intent, not by exact naming. For example, MUI `background.paper` maps to `--color-background-surface`.",
             'Use {@link generic:tokens} and focused token docs when building mappings. Keep mappings small at first: text, surface/body/card/popover, border, accent, status, spacing, radius, typography, shadow.',
             'Use token resolver APIs only for non-CSS APIs that need resolved values.',
           ],

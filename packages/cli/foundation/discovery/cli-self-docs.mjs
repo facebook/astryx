@@ -315,12 +315,21 @@ function functionSection(fn, index) {
   }
   const params = fn.params ?? [];
   if (params.length > 0) {
+    // A Default column only when some parameter declares a default, so a
+    // function with none keeps a three-column table.
+    const defaults = params.some(
+      (/** @type {any} */ p) =>
+        typeof p.default === 'string' && p.default !== '',
+    );
     content.push({
       type: 'table',
-      headers: ['Parameter', 'Type', 'Description'],
+      headers: defaults
+        ? ['Parameter', 'Type', 'Default', 'Description']
+        : ['Parameter', 'Type', 'Description'],
       rows: params.map((/** @type {any} */ p) => [
-        `\`${p.name}\``,
+        `\`${p.name}\`${p.required ? ' (required)' : ''}`,
         `\`${p.type ?? ''}\``,
+        ...(defaults ? [p.default ?? ''] : []),
         p.description ?? '',
       ]),
     });
@@ -405,6 +414,12 @@ export function cliDocSection(doc, index) {
   if (doc.type === 'command') return commandSection(doc, index);
   if (doc.type === 'function') return functionSection(doc, index);
   if (doc.type === 'enum') return enumSection(doc);
+  if (doc.type === 'namespace')
+    return {
+      id: routeSegment(doc.name),
+      title: doc.title,
+      content: doc.blocks ?? [],
+    };
   return {...selfDocSection(doc), id: routeSegment(doc.name)};
 }
 

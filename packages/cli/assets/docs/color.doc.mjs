@@ -13,7 +13,7 @@ export const docs = {
   sections: [
     {
       title: 'Overview',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -22,8 +22,9 @@ export const docs = {
       ],
     },
     {
-      title: 'Surface Colors',
-  category: 'foundations',
+      id: 'surface-colors',
+      title: 'Color Tokens',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -37,9 +38,14 @@ export const docs = {
       ],
     },
     {
-      title: 'Usage',
-  category: 'foundations',
+      id: 'usage',
+      title: 'Use color tokens in StyleX',
+      category: 'foundations',
       content: [
+        {
+          type: 'prose',
+          text: 'Import the typed color tokens and use them in `stylex.create()`; they resolve to the active theme and color mode.',
+        },
         {
           type: 'code',
           lang: 'tsx',
@@ -62,7 +68,7 @@ const styles = stylex.create({
     },
     {
       title: 'Best Practices',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'list',

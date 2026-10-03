@@ -4,13 +4,14 @@
 
 /**
  * @file MobileTokenizer.tsx
- * @input Uses public @astryxdesign/core components only (BottomSheet,
- *   BottomSheetSwitcher, Button, Field, Heading, Icon, IconButton, Text,
- *   TextInput, Token)
+ * @input Uses public @astryxdesign/core components only (AlertDialog,
+ *   BottomSheet, BottomSheetSwitcher, Button, CheckboxIndicator, EmptyState,
+ *   Field, Icon, Text, TextInput, Token)
  * @output Exports MobileTokenizer — Lab prototype of the touch Tokenizer
- *   flow (stacked manage + add sheets)
+ *   flow with a single searchable sheet, stable in-session checkbox ordering,
+ *   and progressive long-list rendering
  * @position Lab (canary) stack layer 1: validates the design before the
- *   Core promotion (Tokenizer presentation="bottom-sheet") stacked after it.
+ *   Core promotion (Tokenizer presentation="bottom-sheet").
  *
  * API mirrors Core Tokenizer (label/searchSource/value/onChange/change,
  * hasCreate, maxEntries) so graduation is an import swap. Differences from
@@ -25,27 +26,26 @@ import {
   useMemo,
   useRef,
   useState,
-  type ReactNode,
+  type SVGProps,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '@astryxdesign/core';
+import {AlertDialog} from '@astryxdesign/core/AlertDialog';
 import {BottomSheet} from '@astryxdesign/core/BottomSheet';
 import {BottomSheetSwitcher} from '@astryxdesign/core/BottomSheet';
 import {Button} from '@astryxdesign/core/Button';
-import {Divider} from '@astryxdesign/core/Divider';
+import {EmptyState} from '@astryxdesign/core/EmptyState';
 import {Field} from '@astryxdesign/core/Field';
 import {Icon} from '@astryxdesign/core/Icon';
-import {IconButton} from '@astryxdesign/core/IconButton';
+import {CheckboxIndicator} from '@astryxdesign/core/Indicator';
 import {Text} from '@astryxdesign/core/Text';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {Token} from '@astryxdesign/core/Token';
-import type {
-  SearchableItem,
-  SearchSource,
-} from '@astryxdesign/core/Typeahead';
+import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
 import {
   colorVars,
   radiusVars,
+  sizeVars,
   spacingVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 
@@ -63,7 +63,6 @@ export interface MobileTokenizerProps<T extends SearchableItem> extends Omit<
   searchSource: SearchSource<T>;
   value: T[];
   onChange: (items: T[], change: MobileTokenizerChange<T>) => void;
-  renderItem?: (item: T) => ReactNode;
   placeholder?: string;
   description?: string;
   isOptional?: boolean;
@@ -77,8 +76,26 @@ export interface MobileTokenizerProps<T extends SearchableItem> extends Omit<
   onChangeQuery?: (query: string) => void;
 }
 
-type SheetId = 'manage' | 'add';
+type SheetId = 'manage';
 const CREATABLE_ID_PREFIX = '__xds_create__';
+const LIST_RENDER_BATCH_SIZE = 50;
+const LIST_LOAD_MORE_THRESHOLD_PX = 200;
+
+function ListBulletIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" {...props}>
+      <path
+        d="M8.5 6h11M8.5 12h11M8.5 18h11"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <circle cx="4.5" cy="6" r="1" fill="currentColor" />
+      <circle cx="4.5" cy="12" r="1" fill="currentColor" />
+      <circle cx="4.5" cy="18" r="1" fill="currentColor" />
+    </svg>
+  );
+}
 
 const styles = stylex.create({
   trigger: {
@@ -104,35 +121,48 @@ const styles = stylex.create({
   triggerPlaceholder: {
     color: colorVars['--color-text-secondary'],
   },
-  chevron: {
-    marginInlineStart: 'auto',
-    display: 'flex',
-    flexShrink: 0,
-  },
   sheetBody: {
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
     minHeight: 0,
     paddingInline: spacingVars['--spacing-3'],
-    paddingBlockStart: spacingVars['--spacing-3'],
+    paddingBlockStart: spacingVars['--spacing-8'],
     paddingBlockEnd: spacingVars['--spacing-3'],
   },
-  // Sketch has no visible sheet headings — manage is rows + a top-end
-  // close affordance only. The sheet's accessible name still comes from
-  // BottomSheet's `label`, not a rendered heading.
-  closeRow: {
-    display: 'flex',
-    justifyContent: 'flex-end',
-    marginBlockEnd: spacingVars['--spacing-2'],
-  },
+  // The manage sheet intentionally has no dedicated close button; the sheet
+  // keeps its standard gesture, scrim, and Escape dismissal paths.
   list: {
     display: 'flex',
     flexDirection: 'column',
+    flexGrow: 1,
     overflowY: 'auto',
     minHeight: 0,
   },
   row: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacingVars['--spacing-2'],
+    width: '100%',
+    minHeight: 44,
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-1'],
+    borderWidth: 0,
+    borderRadius: radiusVars['--radius-element'],
+    backgroundColor: 'transparent',
+    color: colorVars['--color-text-primary'],
+    textAlign: 'start',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
+  },
+  rowLabel: {
+    flexGrow: 1,
+    minWidth: 0,
+  },
+  createRow: {
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
@@ -140,50 +170,40 @@ const styles = stylex.create({
     minHeight: 44,
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-1'],
-    textAlign: 'start',
-    backgroundColor: 'transparent',
-    borderWidth: 0,
-    color: colorVars['--color-text-primary'],
-    cursor: {
-      default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'default',
-    },
   },
-  rowDisabled: {opacity: 0.5},
-  rowLabel: {flexGrow: 1, minWidth: 0},
-  toggleMark: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 28,
-    height: 28,
-    flexShrink: 0,
-    borderRadius: radiusVars['--radius-full'],
-    borderWidth: 1,
-    borderStyle: 'solid',
-    borderColor: colorVars['--color-border'],
-    fontSize: 18,
-    lineHeight: 1,
+  createLabel: {
+    flexGrow: 1,
+    minWidth: 0,
   },
   footer: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: spacingVars['--spacing-2'],
     paddingBlockStart: spacingVars['--spacing-3'],
     marginTop: 'auto',
   },
+  footerAction: {
+    flexGrow: 1,
+    flexBasis: 0,
+  },
   filterRow: {
     display: 'flex',
     alignItems: 'flex-end',
-    gap: spacingVars['--spacing-2'],
-    paddingBlockStart: spacingVars['--spacing-2'],
-    marginTop: 'auto',
+    paddingBlockEnd: spacingVars['--spacing-2'],
   },
   // TextInput renders Field (block, shrink-to-fit); xstyle lands on that
-  // root, so it must flex — the filter takes all row space minus Done+gap.
-  filterInput: {flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0},
-  empty: {paddingBlock: spacingVars['--spacing-4']},
+  // root, so it must fill the available search row width.
+  filterInput: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    minWidth: 0,
+    height: sizeVars['--size-element-lg'],
+    minHeight: sizeVars['--size-element-lg'],
+  },
+  empty: {
+    flexGrow: 1,
+  },
 });
 
 export function MobileTokenizer<T extends SearchableItem>({
@@ -191,7 +211,6 @@ export function MobileTokenizer<T extends SearchableItem>({
   searchSource,
   value,
   onChange,
-  renderItem,
   placeholder,
   description,
   isOptional,
@@ -207,6 +226,7 @@ export function MobileTokenizer<T extends SearchableItem>({
 }: MobileTokenizerProps<T>) {
   const triggerId = useId();
   const [activeSheet, setActiveSheet] = useState<SheetId | null>(null);
+  const [isClearConfirmationOpen, setIsClearConfirmationOpen] = useState(false);
   const selectedIds = useMemo(() => new Set(value.map(v => v.id)), [value]);
   const isAtMax = maxEntries != null && value.length >= maxEntries;
 
@@ -223,7 +243,8 @@ export function MobileTokenizer<T extends SearchableItem>({
       if (selectedIds.has(created)) {
         return;
       }
-      const real = {id: created, label: created} as T;
+      const createdItem: SearchableItem = {id: created, label: created};
+      const real = createdItem as T;
       onChange([...value, real], {item: real, type: 'create'});
       return;
     }
@@ -240,14 +261,19 @@ export function MobileTokenizer<T extends SearchableItem>({
     }
   };
 
-  // ---- add-sheet search ----
+  // ---- sheet search ----
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<T[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [renderedItemCount, setRenderedItemCount] = useState(
+    LIST_RENDER_BATCH_SIZE,
+  );
   const seqRef = useRef(0);
-  const isAddOpen = activeSheet === 'add';
+  const lastLoadScrollHeightRef = useRef<number | null>(null);
+  const [selectedItemsAtOpen, setSelectedItemsAtOpen] = useState<T[]>(value);
+  const isSheetOpen = activeSheet === 'manage';
   useEffect(() => {
-    if (!isAddOpen) {
+    if (!isSheetOpen) {
       return;
     }
     const seq = ++seqRef.current;
@@ -281,7 +307,42 @@ export function MobileTokenizer<T extends SearchableItem>({
       return () => clearTimeout(timer);
     }
     void run();
-  }, [isAddOpen, query, searchSource, minQueryLength, maxMenuItems, debounceMs]);
+  }, [
+    isSheetOpen,
+    query,
+    searchSource,
+    minQueryLength,
+    maxMenuItems,
+    debounceMs,
+  ]);
+
+  const visibleItems = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    const matchesQuery = (item: T) =>
+      normalizedQuery === '' ||
+      item.label.toLowerCase().includes(normalizedQuery);
+    const selectedAtOpenMatches = selectedItemsAtOpen.filter(matchesQuery);
+    const selectedAtOpenIds = new Set(
+      selectedAtOpenMatches.map(item => item.id),
+    );
+    const resultIds = new Set(results.map(item => item.id));
+    const selectedItemsMissingFromResults = value.filter(
+      item =>
+        !selectedAtOpenIds.has(item.id) &&
+        !resultIds.has(item.id) &&
+        matchesQuery(item),
+    );
+
+    // Selection changes update checkbox state without moving an existing row.
+    // The next open snapshots the latest value and applies selected-first order.
+    return [
+      ...selectedAtOpenMatches,
+      ...selectedItemsMissingFromResults,
+      ...results.filter(item => !selectedAtOpenIds.has(item.id)),
+    ];
+  }, [query, results, selectedItemsAtOpen, value]);
+
+  const renderedItems = visibleItems.slice(0, renderedItemCount);
 
   const createItem = useMemo<T | null>(() => {
     const trimmed = query.trim();
@@ -290,6 +351,7 @@ export function MobileTokenizer<T extends SearchableItem>({
     }
     if (
       selectedIds.has(trimmed) ||
+      value.some(item => item.label.toLowerCase() === trimmed.toLowerCase()) ||
       results.some(r => r.label.toLowerCase() === trimmed.toLowerCase())
     ) {
       return null;
@@ -298,7 +360,7 @@ export function MobileTokenizer<T extends SearchableItem>({
       id: `${CREATABLE_ID_PREFIX}${trimmed}`,
       label: `Create "${trimmed}"`,
     } as unknown as T;
-  }, [hasCreate, query, results, selectedIds, isAtMax]);
+  }, [hasCreate, query, results, selectedIds, isAtMax, value]);
 
   return (
     <Field
@@ -315,7 +377,12 @@ export function MobileTokenizer<T extends SearchableItem>({
         aria-expanded={activeSheet != null}
         aria-label={label}
         disabled={isDisabled}
-        onClick={() => setActiveSheet('manage')}
+        onClick={() => {
+          setSelectedItemsAtOpen(value);
+          lastLoadScrollHeightRef.current = null;
+          setRenderedItemCount(LIST_RENDER_BATCH_SIZE);
+          setActiveSheet('manage');
+        }}
         {...stylex.props(styles.trigger)}>
         {value.length > 0 ? (
           value.map(item => (
@@ -326,143 +393,164 @@ export function MobileTokenizer<T extends SearchableItem>({
             {placeholder ?? ''}
           </span>
         )}
-        <span {...stylex.props(styles.chevron)} aria-hidden="true">
-          <Icon icon="chevronDown" size="sm" color="secondary" />
-        </span>
       </button>
 
       {!isDisabled && (
         <BottomSheetSwitcher
           activeSheet={activeSheet}
           onActiveSheetChange={id => setActiveSheet(id as SheetId | null)}>
-          <BottomSheet sheetId="manage" label={label} height="hug">
+          <BottomSheet sheetId="manage" label={label} height="tall">
             <div {...stylex.props(styles.sheetBody)}>
-              <div {...stylex.props(styles.closeRow)}>
-                <IconButton
-                  label="Close"
-                  icon={<Icon icon="close" />}
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setActiveSheet(null)}
+              <div {...stylex.props(styles.filterRow)}>
+                <TextInput
+                  label={`Search ${label}`}
+                  isLabelHidden
+                  placeholder="Search..."
+                  startIcon="search"
+                  value={query}
+                  size="lg"
+                  width="100%"
+                  hasClear
+                  onChange={next => {
+                    lastLoadScrollHeightRef.current = null;
+                    setRenderedItemCount(LIST_RENDER_BATCH_SIZE);
+                    setQuery(next);
+                    onChangeQuery?.(next);
+                  }}
+                  xstyle={styles.filterInput}
                 />
               </div>
-              <div {...stylex.props(styles.list)} data-testid="mobile-tokenizer-manage-list">
-                {value.length === 0 ? (
-                  <Text type="supporting" color="secondary" xstyle={styles.empty}>
-                    No items yet
-                  </Text>
-                ) : (
-                  value.map((item, i) => (
-                    <div key={item.id}>
-                      {i > 0 && <Divider />}
-                      <div {...stylex.props(styles.row)}>
-                        <span {...stylex.props(styles.rowLabel)}>
-                          <Text type="body">{item.label}</Text>
-                        </span>
-                        <IconButton
-                          label={`Remove ${item.label}`}
-                          icon={<Icon icon="close" />}
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemove(item)}
-                        />
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-              <div {...stylex.props(styles.footer)}>
-                <Button
-                  label="Clear all"
-                  variant="ghost"
-                  isDisabled={value.length === 0}
-                  onClick={handleClearAll}
-                />
-                <Button
-                  label="Add item"
-                  variant="primary"
-                  isDisabled={isAtMax}
-                  onClick={() => setActiveSheet('add')}
-                />
-              </div>
-            </div>
-          </BottomSheet>
-
-          <BottomSheet sheetId="add" label="Add item" height="tall">
-            <div {...stylex.props(styles.sheetBody)}>
               <div
                 {...stylex.props(styles.list)}
-                role="listbox"
-                aria-multiselectable="true"
+                role="group"
                 aria-label={label}
-                data-testid="mobile-tokenizer-add-list">
+                data-testid="mobile-tokenizer-list"
+                data-rendered-count={renderedItems.length}
+                data-total-count={visibleItems.length}
+                onScroll={event => {
+                  const list = event.currentTarget;
+                  const distanceFromBottom =
+                    list.scrollHeight - list.scrollTop - list.clientHeight;
+                  if (
+                    distanceFromBottom <= LIST_LOAD_MORE_THRESHOLD_PX &&
+                    lastLoadScrollHeightRef.current !== list.scrollHeight
+                  ) {
+                    lastLoadScrollHeightRef.current = list.scrollHeight;
+                    setRenderedItemCount(current =>
+                      Math.min(
+                        current + LIST_RENDER_BATCH_SIZE,
+                        visibleItems.length,
+                      ),
+                    );
+                  }
+                }}>
                 {createItem != null && (
-                  <button
-                    type="button"
-                    role="option"
-                    aria-selected={false}
-                    {...stylex.props(styles.row)}
-                    onClick={() => {
-                      handleAdd(createItem);
-                      setQuery('');
-                    }}>
-                    <span {...stylex.props(styles.rowLabel)}>
+                  <div
+                    data-testid="mobile-tokenizer-create-row"
+                    {...stylex.props(styles.createRow)}>
+                    <span {...stylex.props(styles.createLabel)}>
                       <Text type="body">{createItem.label}</Text>
                     </span>
-                    <span {...stylex.props(styles.toggleMark)} aria-hidden="true">+</span>
-                  </button>
+                    <Button
+                      label="Add"
+                      aria-label={`Add ${query.trim()}`}
+                      variant="secondary"
+                      size="lg"
+                      onClick={() => {
+                        handleAdd(createItem);
+                        lastLoadScrollHeightRef.current = null;
+                        setRenderedItemCount(LIST_RENDER_BATCH_SIZE);
+                        setQuery('');
+                      }}
+                    />
+                  </div>
                 )}
-                {!isSearching && results.length === 0 && createItem == null ? (
-                  <Text type="supporting" color="secondary" xstyle={styles.empty}>
-                    {emptySearchResultsText}
-                  </Text>
+                {!isSearching &&
+                visibleItems.length === 0 &&
+                createItem == null ? (
+                  <EmptyState
+                    icon={
+                      <Icon
+                        icon={query.trim() === '' ? ListBulletIcon : 'search'}
+                        size="lg"
+                        color="secondary"
+                      />
+                    }
+                    title={
+                      query.trim() === ''
+                        ? 'No items available'
+                        : emptySearchResultsText
+                    }
+                    description={
+                      query.trim() === ''
+                        ? 'There are no items to choose from.'
+                        : 'Try a different search.'
+                    }
+                    isCompact
+                    xstyle={styles.empty}
+                  />
                 ) : (
-                  results.map(item => {
+                  renderedItems.map(item => {
                     const isSelected = selectedIds.has(item.id);
                     const rowDisabled = !isSelected && isAtMax;
                     return (
                       <button
                         key={item.id}
                         type="button"
-                        role="option"
-                        aria-selected={isSelected}
-                        aria-disabled={rowDisabled || undefined}
-                        {...stylex.props(styles.row, rowDisabled && styles.rowDisabled)}
+                        role="checkbox"
+                        aria-checked={isSelected}
+                        aria-label={item.label}
+                        disabled={rowDisabled}
                         onClick={() =>
                           isSelected ? handleRemove(item) : handleAdd(item)
-                        }>
+                        }
+                        {...stylex.props(styles.row)}>
                         <span {...stylex.props(styles.rowLabel)}>
-                          {renderItem ? renderItem(item) : <Text type="body">{item.label}</Text>}
+                          <Text type="body">{item.label}</Text>
                         </span>
-                        <span {...stylex.props(styles.toggleMark)} aria-hidden="true">
-                          {isSelected ? <Icon icon="check" size="sm" /> : '+'}
-                        </span>
+                        <CheckboxIndicator
+                          state={isSelected ? 'checked' : 'unchecked'}
+                          size="md"
+                          isDisabled={rowDisabled}
+                        />
                       </button>
                     );
                   })
                 )}
               </div>
-              <Divider />
-              <div {...stylex.props(styles.filterRow)}>
-                <TextInput
-                  label={`Search ${label}`}
-                  isLabelHidden
-                  placeholder="Search..."
-                  value={query}
-                  width="100%"
-                  hasClear
-                  onChange={next => {
-                    setQuery(next);
-                    onChangeQuery?.(next);
-                  }}
-                  xstyle={styles.filterInput}
-                />
-                <Button
-                  label="Done"
-                  variant="primary"
-                  onClick={() => setActiveSheet('manage')}
-                />
-              </div>
+              {query.trim() === '' && (
+                <div {...stylex.props(styles.footer)}>
+                  <Button
+                    label="Clear all"
+                    variant="secondary"
+                    size="lg"
+                    isDisabled={value.length === 0}
+                    onClick={() => setIsClearConfirmationOpen(true)}
+                    xstyle={styles.footerAction}
+                  />
+                  <Button
+                    label="Done"
+                    variant="primary"
+                    size="lg"
+                    onClick={() => {
+                      setQuery('');
+                      setActiveSheet(null);
+                    }}
+                    xstyle={styles.footerAction}
+                  />
+                </div>
+              )}
+              <AlertDialog
+                isOpen={isClearConfirmationOpen}
+                onOpenChange={setIsClearConfirmationOpen}
+                title="Clear all selected items?"
+                description={`This removes all selected items from ${label}.`}
+                actionLabel="Clear selection"
+                onAction={() => {
+                  handleClearAll();
+                  setIsClearConfirmationOpen(false);
+                }}
+              />
             </div>
           </BottomSheet>
         </BottomSheetSwitcher>

@@ -6,10 +6,19 @@ export const docs = {
   displayName: 'Code Block',
   category: 'Content',
   keywords: [
-    'code', 'syntax', 'highlight', 'snippet', 'prism', 'shiki',
-    'pre', 'monospace', 'codeblock', 'inline',
+    'code',
+    'syntax',
+    'highlight',
+    'snippet',
+    'prism',
+    'shiki',
+    'pre',
+    'monospace',
+    'codeblock',
+    'inline',
   ],
-  description: 'Fenced code block with syntax highlighting. Use for multi-line code snippets.',
+  description:
+    'Fenced code block with syntax highlighting. Use for multi-line code snippets.',
   props: [
     {
       name: 'code',
@@ -20,7 +29,8 @@ export const docs = {
     {
       name: 'language',
       type: 'string',
-      description: 'Language for syntax highlighting. Use "plaintext" to disable.',
+      description:
+        'Language for syntax highlighting. Use "plaintext" to disable.',
       default: "'plaintext'",
     },
     {
@@ -31,7 +41,8 @@ export const docs = {
     {
       name: 'hasLanguageLabel',
       type: 'boolean',
-      description: 'Show the language name in the header bar. Hidden when language is "plaintext".',
+      description:
+        'Show the language name in the header bar. Hidden when language is "plaintext".',
       default: 'true',
     },
     {
@@ -76,13 +87,15 @@ export const docs = {
     {
       name: 'width',
       type: 'string',
-      description: "Width of the code block. Any CSS width value. 'fit-content' (default) shrinks to longest line. '100%' fills parent width.",
+      description:
+        "Width of the code block. Any CSS width value. 'fit-content' (default) shrinks to longest line. '100%' fills parent width.",
       default: "'fit-content'",
     },
     {
       name: 'container',
       type: "'card' | 'section'",
-      description: "Container presentation style. 'card' (default): border and radius with the muted syntax background for a standalone card look. 'section': no border or radius and a transparent background so the block blends into the card or panel it's embedded in.",
+      description:
+        "Container presentation style. 'card' (default): border and radius with the muted syntax background for a standalone card look. 'section': no border or radius and a transparent background so the block blends into the card or panel it's embedded in.",
       default: "'card'",
     },
     {
@@ -93,7 +106,8 @@ export const docs = {
     {
       name: 'syntaxTheme',
       type: 'SyntaxThemeDefinition',
-      description: 'Per-instance syntax theme override. Shorthand for wrapping the block in <SyntaxTheme theme={...}>. Accepts a preset from @astryxdesign/core/theme/syntax or a theme created with defineSyntaxTheme(). Defaults to the nearest SyntaxTheme ancestor or the theme-level syntax colors.',
+      description:
+        'Per-instance syntax theme override. Shorthand for wrapping the block in <SyntaxTheme theme={...}>. Accepts a preset from @astryxdesign/core/theme/syntax or a theme created with defineSyntaxTheme(). Defaults to the nearest SyntaxTheme ancestor or the theme-level syntax colors.',
     },
     {
       name: 'highlightMode',
@@ -104,24 +118,28 @@ export const docs = {
     {
       name: 'isCollapsible',
       type: 'boolean',
-      description: 'Allow collapsing the code body into just the header bar. Starts expanded; the header becomes clickable to toggle. Only shows the toggle when the code exceeds collapsibleThreshold lines.',
+      description:
+        'Allow collapsing the code body into just the header bar. Starts expanded; the header becomes clickable to toggle. Only shows the toggle when the code exceeds collapsibleThreshold lines.',
       default: 'false',
     },
     {
       name: 'collapsibleThreshold',
       type: 'number',
-      description: 'Minimum number of lines before the collapse toggle appears. Below this threshold the code block renders normally even when isCollapsible is true.',
+      description:
+        'Minimum number of lines before the collapse toggle appears. Below this threshold the code block renders normally even when isCollapsible is true.',
       default: '10',
     },
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization. Must be a stylex.create() value.',
+      description:
+        'StyleX styles for layout customization. Must be a stylex.create() value.',
     },
     {
       name: 'className',
       type: 'string',
-      description: 'CSS class name for the root element. Prefer xstyle for styling.',
+      description:
+        'CSS class name for the root element. Prefer xstyle for styling.',
     },
     {
       name: 'style',
@@ -134,49 +152,117 @@ export const docs = {
       description: 'Test selector for automated testing frameworks.',
     },
   ],
-  components: [
-    {name: 'Code'},
-  ],
+  components: [{name: 'Code'}],
   playground: {
     defaults: {
-      code: "import {Button} from '@astryxdesign/core/Button';\n\nexport function App() {\n  return <Button label=\"Hello\" variant=\"primary\" />;\n}",
+      code: 'import {Button} from \'@astryxdesign/core/Button\';\n\nexport function App() {\n  return <Button label="Hello" variant="primary" />;\n}',
       language: 'tsx',
       hasCopyButton: true,
     },
   },
   theming: {
     targets: [
-      {className: 'astryx-code', visualProps: ['color']},
-      {className: 'astryx-code-block', visualProps: ['size', 'language', 'container']},
-      {className: 'astryx-code-block-header', visualProps: ['size', 'language', 'container']},
+      {
+        className: 'astryx-code-block',
+        visualProps: ['size', 'language', 'container'],
+      },
+      {
+        className: 'astryx-code-block-header',
+        visualProps: ['size', 'language', 'container'],
+      },
       {className: 'astryx-code-block-title', visualProps: ['size', 'language']},
       {className: 'astryx-code-block-copy-button'},
       // Retained beside the canonical names for backwards compatibility.
       // New themes use the canonical targets above.
-      {className: 'astryx-codeblock', visualProps: ['size', 'language', 'container'], deprecatedFor: 'code-block'},
-      {className: 'astryx-codeblock-header', visualProps: ['size', 'language', 'container'], deprecatedFor: 'code-block-header'},
-      {className: 'astryx-codeblock-title', visualProps: ['size', 'language'], deprecatedFor: 'code-block-title'},
-      {className: 'astryx-codeblock-copy-button', deprecatedFor: 'code-block-copy-button'},
+      {
+        className: 'astryx-codeblock',
+        visualProps: ['size', 'language', 'container'],
+        deprecatedFor: 'code-block',
+      },
+      {
+        className: 'astryx-codeblock-header',
+        visualProps: ['size', 'language', 'container'],
+        deprecatedFor: 'code-block-header',
+      },
+      {
+        className: 'astryx-codeblock-title',
+        visualProps: ['size', 'language'],
+        deprecatedFor: 'code-block-title',
+      },
+      {
+        className: 'astryx-codeblock-copy-button',
+        deprecatedFor: 'code-block-copy-button',
+      },
     ],
     vars: [
-      {name: '--_codeblock-gutter-width', description: 'Width of the line-number gutter, computed from the digit count of the last line so the code column starts at a stable offset.', default: '2ch', private: true},
+      {
+        name: '--_codeblock-gutter-width',
+        description:
+          'Width of the line-number gutter, computed from the digit count of the last line so the code column starts at a stable offset.',
+        default: '2ch',
+        private: true,
+      },
     ],
   },
   usage: {
-    description: 'CodeBlock renders syntax-highlighted code with line numbers, a copy button, and optional collapsible sections. Use CodeBlock for multi-line snippets like source files, terminal commands, and configuration examples. Use Code for inline references to function names, variables, or CLI flags within body text.',
+    description:
+      'CodeBlock renders syntax-highlighted code with line numbers, a copy button, and optional collapsible sections. Use CodeBlock for multi-line snippets like source files, terminal commands, and configuration examples. Use Code for inline references to function names, variables, or CLI flags within body text.',
     bestPractices: [
-      {guidance: true, description: 'Set the language prop to match the code content so syntax highlighting is accurate. Use "plaintext" when the language is unknown.'},
-      {guidance: true, description: 'Add a title when the code represents a file. It gives readers context and appears in the header bar alongside the copy button.'},
-      {guidance: true, description: 'Use Code for short inline references like function names or CLI flags, and CodeBlock for standalone multi-line snippets.'},
-      {guidance: false, description: 'Enable line numbers on short snippets (under 5 lines) where they add clutter without helping navigation.'},
-      {guidance: false, description: 'Nest a code block inside a scrollable container. Use the maxHeight prop instead, which handles overflow natively.'},
+      {
+        guidance: true,
+        description:
+          'Set the language prop to match the code content so syntax highlighting is accurate. Use "plaintext" when the language is unknown.',
+      },
+      {
+        guidance: true,
+        description:
+          'Add a title when the code represents a file. It gives readers context and appears in the header bar alongside the copy button.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use Code for short inline references like function names or CLI flags, and CodeBlock for standalone multi-line snippets.',
+      },
+      {
+        guidance: false,
+        description:
+          'Enable line numbers on short snippets (under 5 lines) where they add clutter without helping navigation.',
+      },
+      {
+        guidance: false,
+        description:
+          'Nest a code block inside a scrollable container. Use the maxHeight prop instead, which handles overflow natively.',
+      },
     ],
     anatomy: [
-      {name: 'Header Bar', required: false, description: 'Shows the title, language label, and copy button. Appears when any of these props are set.'},
-      {name: 'Line Numbers', required: false, description: 'Numbered gutter along the left edge. Enable with hasLineNumbers.'},
-      {name: 'Code Body', required: true, description: 'The syntax-highlighted code content.'},
-      {name: 'Highlighted Lines', required: false, description: 'Background accent on specific lines to draw attention.'},
-      {name: 'Copy Button', required: false, description: 'Copies the code string to the clipboard. Shown by default.'},
+      {
+        name: 'Header Bar',
+        required: false,
+        description:
+          'Shows the title, visible language label, and copy button when a header is present. A title or visible language label creates the header; the copy button alone floats at the top-end of a headerless block.',
+      },
+      {
+        name: 'Line Numbers',
+        required: false,
+        description:
+          'Numbered gutter along the left edge. Enable with hasLineNumbers.',
+      },
+      {
+        name: 'Code Body',
+        required: true,
+        description: 'The syntax-highlighted code content.',
+      },
+      {
+        name: 'Highlighted Lines',
+        required: false,
+        description: 'Background accent on specific lines to draw attention.',
+      },
+      {
+        name: 'Copy Button',
+        required: false,
+        description:
+          'Copies the code string to the clipboard. Shown by default.',
+      },
     ],
   },
 };
@@ -184,27 +270,66 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsZh = {
   usage: {
-    description: 'CodeBlock displays syntax-highlighted code snippets with optional line numbers, copy button, and collapsible sections. Use CodeBlock for fenced multi-line code and Code for inline code within prose.',
+    description:
+      'CodeBlock displays syntax-highlighted code snippets with optional line numbers, copy button, and collapsible sections. Use CodeBlock for fenced multi-line code and Code for inline code within prose.',
     bestPractices: [
-      { guidance: true, description: 'Set the language prop to enable syntax highlighting. Use "plaintext" when the language is unknown or not supported.' },
-      { guidance: true, description: 'Use Code for short inline code references within body text, and CodeBlock for standalone multi-line snippets.' },
-      { guidance: false, description: 'Enable line numbers for short snippets where they add visual noise without aiding comprehension.' },
-      { guidance: false, description: 'Wrap code blocks in a scrollable container when isWrapped or maxHeight already handles overflow.' },
+      {
+        guidance: true,
+        description:
+          'Set the language prop to enable syntax highlighting. Use "plaintext" when the language is unknown or not supported.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use Code for short inline code references within body text, and CodeBlock for standalone multi-line snippets.',
+      },
+      {
+        guidance: false,
+        description:
+          'Enable line numbers for short snippets where they add visual noise without aiding comprehension.',
+      },
+      {
+        guidance: false,
+        description:
+          'Wrap code blocks in a scrollable container when isWrapped or maxHeight already handles overflow.',
+      },
     ],
   },
 };
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
-  description: 'syntax-highlighted code block via CSS Custom Highlight API (0-DOM overhead); span-based fallback; Code for inline code in prose',
+  description:
+    'syntax-highlighted code block via CSS Custom Highlight API (0-DOM overhead); span-based fallback; Code for inline code in prose',
   usage: {
-    description: 'CodeBlock renders syntax-highlighted code with line numbers, a copy button, and optional collapsible sections. Use CodeBlock for multi-line snippets like source files, terminal commands, and configuration examples. Use Code for inline references to function names, variables, or CLI flags within body text.',
+    description:
+      'CodeBlock renders syntax-highlighted code with line numbers, a copy button, and optional collapsible sections. Use CodeBlock for multi-line snippets like source files, terminal commands, and configuration examples. Use Code for inline references to function names, variables, or CLI flags within body text.',
     bestPractices: [
-      {guidance: true, description: 'Set the language prop to match the code content so syntax highlighting is accurate. Use "plaintext" when the language is unknown.'},
-      {guidance: true, description: 'Add a title when the code represents a file. It gives readers context and appears in the header bar alongside the copy button.'},
-      {guidance: true, description: 'Use Code for short inline references like function names or CLI flags, and CodeBlock for standalone multi-line snippets.'},
-      {guidance: false, description: 'Enable line numbers on short snippets (under 5 lines) where they add clutter without helping navigation.'},
-      {guidance: false, description: 'Nest a code block inside a scrollable container. Use the maxHeight prop instead, which handles overflow natively.'},
+      {
+        guidance: true,
+        description:
+          'Set the language prop to match the code content so syntax highlighting is accurate. Use "plaintext" when the language is unknown.',
+      },
+      {
+        guidance: true,
+        description:
+          'Add a title when the code represents a file. It gives readers context and appears in the header bar alongside the copy button.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use Code for short inline references like function names or CLI flags, and CodeBlock for standalone multi-line snippets.',
+      },
+      {
+        guidance: false,
+        description:
+          'Enable line numbers on short snippets (under 5 lines) where they add clutter without helping navigation.',
+      },
+      {
+        guidance: false,
+        description:
+          'Nest a code block inside a scrollable container. Use the maxHeight prop instead, which handles overflow natively.',
+      },
     ],
   },
 };

@@ -33,15 +33,25 @@
  *      shows help because the invocation failed (`help <unknown>`, or a
  *      command group with no subcommand), which exits 1.
  *
- * Non-JSON behavior is preserved exactly: every code path that printed
- * to stderr before still prints to stderr. Commander writes its
- * "error: ..." line via configureOutput.writeErr, which we pass
- * through verbatim outside of --json mode.
+ * Commander writes its own "error: ..." line via configureOutput.writeErr.
+ * The shim drops that line in both modes. Under --json the error envelope
+ * replaces it; in text mode `handleCommanderError` writes the Astryx line
+ * instead (`Error: <message>`, the same message the envelope carries), so
+ * a parse failure reads like every other CLI error. Other stderr output,
+ * such as help printed as the failure report, still passes through.
  */
 
-import {API_VERSION, isJsonMode, toErrorEnvelope} from '../../../foundation/response/json.mjs';
+import {
+  API_VERSION,
+  isJsonMode,
+  toErrorEnvelope,
+} from '../../../foundation/response/json.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
-import {setCommand, setOutcome, recordHelp} from '../../../foundation/debug/index.mjs';
+import {
+  setCommand,
+  setOutcome,
+  recordHelp,
+} from '../../../foundation/debug/index.mjs';
 
 /**
  * Fully-qualified name of a command relative to the root program, e.g.
@@ -95,17 +105,18 @@ export function buildHelpEnvelope(cmd) {
   }
 
   /** @type {Array<{flags: string, description: string, defaultValue?: unknown, choices?: string[]}>} */
-  const options = cmd.options.map((o) => {
+  const options = cmd.options.map(o => {
     /** @type {any} */
     const opt = {flags: o.flags, description: o.description || ''};
     if (o.defaultValue !== undefined) opt.defaultValue = o.defaultValue;
-    if (Array.isArray(o.argChoices) && o.argChoices.length) opt.choices = o.argChoices;
+    if (Array.isArray(o.argChoices) && o.argChoices.length)
+      opt.choices = o.argChoices;
     return opt;
   });
 
   const subcommands = cmd.commands
-    .filter((s) => !(/** @type {any} */ (s))._hidden)
-    .map((s) => ({name: s.name(), description: s.description() || ''}));
+    .filter(s => !/** @type {any} */ (s)._hidden)
+    .map(s => ({name: s.name(), description: s.description() || ''}));
 
   return {
     apiVersion: API_VERSION,
@@ -130,7 +141,7 @@ export function buildHelpEnvelope(cmd) {
  */
 export function buildHelpErrorEnvelope(cmd) {
   const available = cmd.commands
-    .filter(s => !(/** @type {any} */ (s))._hidden && s.name() !== 'help')
+    .filter(s => !/** @type {any} */ (s)._hidden && s.name() !== 'help')
     .map(s => s.name());
   if (!cmd.parent) {
     // Commander dispatches `help <name>` with ['help', <name>, ...] in args.
@@ -144,7 +155,10 @@ export function buildHelpErrorEnvelope(cmd) {
   const group = fullNameOf(cmd);
   return toErrorEnvelope(
     `'${group}' needs a subcommand`,
-    available.map(name => ({name: `${group} ${name}`, reason: 'available subcommand'})),
+    available.map(name => ({
+      name: `${group} ${name}`,
+      reason: 'available subcommand',
+    })),
     ERROR_CODES.ERR_MISSING_ARGUMENT,
   );
 }
@@ -248,12 +262,21 @@ function applyShimRecursively(cmd) {
     throw err;
   });
   cmd.configureOutput({
-    writeOut: (str) => process.stdout.write(str),
-    writeErr: (str) => {
-      // Suppress Commander's "error: ..." stderr line when --json is
-      // active, so a JSON consumer parsing both streams doesn't see
-      // it alongside the envelope. Non-JSON callers are unaffected.
+    writeOut: str => process.stdout.write(str),
+    // Commander's own "error: ..." line never reaches the user. Under --json a
+    // consumer parsing both streams must not see it alongside the envelope;
+    // in text mode it is Commander's format, not Astryx's, so an invalid
+    // global option (`--lang zh-Hans`) printed `error: option '--lang
+    // <locale>' argument 'zh-Hans' is invalid…` where every other CLI error
+    // prints `Error: …`. handleCommanderError writes the Astryx line below,
+    // for both modes, from the same message.
+    //
+    // ONLY that line. Commander also writes HELP through this channel when it
+    // shows help because the invocation failed (a command group with no
+    // subcommand), and that output is still wanted in text mode.
+    writeErr: str => {
       if (jsonActive()) return;
+      if (/^error:\s/i.test(str)) return;
       process.stderr.write(str);
     },
   });
@@ -338,7 +361,9 @@ function patchOutputHelp(cmd) {
   if (anyCmd.__xdsHelpPatched) return;
   anyCmd.__xdsHelpPatched = true;
   const original = cmd.outputHelp.bind(cmd);
-  anyCmd.outputHelp = function patchedOutputHelp(/** @type {any} */ contextOptions) {
+  anyCmd.outputHelp = function patchedOutputHelp(
+    /** @type {any} */ contextOptions,
+  ) {
     if (jsonActive()) {
       if (!process.__xdsJsonHandled) {
         process.__xdsJsonHandled = true;
@@ -364,7 +389,9 @@ function patchPrototype(CommandCtor) {
   if (proto.__xdsHelpPatched) return;
   proto.__xdsHelpPatched = true;
   const original = proto.outputHelp;
-  proto.outputHelp = function patchedProtoOutputHelp(/** @type {any} */ contextOptions) {
+  proto.outputHelp = function patchedProtoOutputHelp(
+    /** @type {any} */ contextOptions,
+  ) {
     if (jsonActive()) {
       if (!process.__xdsJsonHandled) {
         process.__xdsJsonHandled = true;
@@ -400,7 +427,9 @@ function patchPrototype(CommandCtor) {
  */
 export function handleCommanderError(err) {
   if (!err || typeof err !== 'object' || !('code' in err)) return false;
-  const code = /** @type {{code?: string, exitCode?: number, message?: string}} */ (err).code;
+  const code =
+    /** @type {{code?: string, exitCode?: number, message?: string}} */ (err)
+      .code;
   if (typeof code !== 'string' || !code.startsWith('commander.')) return false;
 
   const exitCode = /** @type {{exitCode?: number}} */ (err).exitCode ?? 1;
@@ -432,16 +461,15 @@ export function handleCommanderError(err) {
     code: commanderCodeToErrorCode(code, message),
   });
 
-  // Real error paths.
+  // Real error paths. Strip Commander's "error: " prefix once: in the envelope
+  // the key is already `error`, and in text mode the Astryx prefix replaces it.
+  const cleaned = message.replace(/^error:\s*/i, '');
   if (jsonActive()) {
-    // Strip Commander's "error: " prefix — the envelope key is `error`
-    // already, doubled "error" is noise.
-    const cleaned = message.replace(/^error:\s*/i, '');
     emitJsonError(cleaned, undefined, commanderCodeToErrorCode(code, cleaned));
   } else {
-    // Non-JSON mode: Commander already wrote the "error: ..." line
-    // to stderr via configureOutput.writeErr before throwing the
-    // CommanderError. Nothing to do — exit with the original code.
+    // Commander's own line was suppressed above, so a parse failure reads the
+    // same as every other CLI error — the `Error: …` line cliError prints.
+    process.stderr.write(`Error: ${cleaned}\n`);
   }
   process.exit(exitCode || 1);
 }

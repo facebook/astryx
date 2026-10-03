@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Contribution inventory for integration pack-check.
+ * @file Contribution inventory for `astryx integration verify`.
  *
  * Enumerates the files and contribution identities an integration package
  * declares, for cross-referencing against the npm tarball. The file inventory
@@ -314,8 +314,11 @@ export async function collectIdentities(loaded) {
 
   if (loaded.docs && fs.existsSync(loaded.docs)) {
     try {
-      const {records, guides, errors: docErrors} =
-        await discoverIntegrationDocs(loaded);
+      const {
+        records,
+        guides,
+        errors: docErrors,
+      } = await discoverIntegrationDocs(loaded);
       for (const docError of docErrors) {
         errors.push({kind: 'docs', message: docError.message});
       }

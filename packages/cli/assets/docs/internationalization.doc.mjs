@@ -41,15 +41,17 @@ function App() {
           lang: 'tsx',
           label: 'Load an astryx locale catalog',
           code: `import {InternationalizationProvider} from '@astryxdesign/core/i18n';
-import fr from '@astryxdesign/core/locales/fr.json';
+import frFR from '@astryxdesign/core/locales/fr-FR.generated.js';
 
-<InternationalizationProvider locale="fr" messages={{fr}}>
+<InternationalizationProvider
+  locale="fr-FR"
+  messages={{'fr-FR': frFR}}>
   <App />
 </InternationalizationProvider>;`,
         },
         {
           type: 'prose',
-          text: 'Astryx ships English today, with first-party translations for other locales on the roadmap. Until a locale is available from `@astryxdesign/core/locales/*`, apps can pass a local catalog with the same shape. See `@astryxdesign/core/locales/en.json` for the current key inventory. Missing keys fall back through the locale chain to English (for example, `pt-BR` walks to `pt`, then to shipped `en`).',
+          text: 'Astryx ships English and first-party translations for supported locales. Compact runtime modules from `@astryxdesign/core/locales/*.generated.js` contain only the messages apps need; the existing `@astryxdesign/core/locales/*.json` files retain translator context. Until a locale is available, apps can pass a local catalog in either shape. Missing keys fall back through the locale chain to English (for example, `pt-BR` walks to `pt`, then to shipped `en`).',
         },
         {
           type: 'prose',
@@ -290,7 +292,7 @@ export default function App() {
         },
         {
           type: 'prose',
-          text: '`Catalog` types a single locale file; `MessagesByLocale` types the map passed to `messages`. A catalog entry uses the same `{defaultMessage, description?}` shape as `@astryxdesign/core/locales/en.json`.',
+          text: '`Catalog` types the rich `{defaultMessage, description?}` authoring shape. `RuntimeCatalog` types the generated key-to-message string map. `ProviderMessagesByLocale` accepts either shape for the provider, while `MessagesByLocale` keeps the original rich-only context shape.',
         },
       ],
     },
@@ -307,7 +309,7 @@ export default function App() {
           lang: 'tsx',
           label: 'Turn on pseudo-localization',
           code: `import {InternationalizationProvider} from '@astryxdesign/core/i18n';
-import pseudo from '@astryxdesign/core/locales/pseudo.json';
+import pseudo from '@astryxdesign/core/locales/pseudo.generated.js';
 
 <InternationalizationProvider locale="pseudo" messages={{pseudo}}>
   <App />

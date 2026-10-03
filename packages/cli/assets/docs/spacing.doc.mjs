@@ -8,12 +8,13 @@ export const docs = {
   category: 'foundations',
   description:
     'Spacing scale tokens for padding, gap, and margin: the rhythmic foundation of design system layouts.',
+  keywords: ['padding', 'margin', 'gap'],
   tokenCategory: 'spacing',
 
   sections: [
     {
       title: 'Overview',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -23,8 +24,12 @@ export const docs = {
     },
     {
       title: 'Scale',
-  category: 'foundations',
+      category: 'foundations',
       content: [
+        {
+          type: 'prose',
+          text: 'Fifteen spacing tokens, from 0px to 48px.',
+        },
         {
           type: 'token-ref',
           topic: 'tokens',
@@ -34,11 +39,11 @@ export const docs = {
     },
     {
       title: 'Usage',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
-          text: 'Most components accept a `gap` prop using step values (0 through 12). For custom layouts, use the spacing tokens directly in StyleX.',
+          text: 'Stack, HStack, VStack, Grid, Toolbar, OverflowList, and ChatMessageList take a `gap` step: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, or 10 (×4px). Carousel takes the steps from 0 to 4. For custom layouts, use the spacing tokens in StyleX.',
         },
         {
           type: 'code',
@@ -48,7 +53,7 @@ export const docs = {
 <Stack gap={4}>{/* 16px gap */}</Stack>
 
 // Via StyleX tokens (custom layouts)
-import {spacingVars} from '@astryxdesign/core';
+import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   custom: {
@@ -61,7 +66,7 @@ const styles = stylex.create({
     },
     {
       title: 'Best Practices',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'list',

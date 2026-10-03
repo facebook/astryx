@@ -6,14 +6,13 @@ export const docs = {
   name: 'motion',
   title: 'Motion',
   category: 'foundations',
-  description:
-    'Duration and easing tokens for animations and transitions.',
+  description: 'Duration and easing tokens for animations and transitions.',
   tokenCategory: 'duration',
 
   sections: [
     {
       title: 'Overview',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -21,7 +20,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'At the same time, well-tuned motion gives an application a sense of craft and polish that users notice, even if they can\'t name it.',
+          text: "At the same time, well-tuned motion gives an application a sense of craft and polish that users notice, even if they can't name it.",
         },
         {
           type: 'prose',
@@ -31,8 +30,12 @@ export const docs = {
     },
     {
       title: 'Duration',
-  category: 'foundations',
+      category: 'foundations',
       content: [
+        {
+          type: 'prose',
+          text: 'Nine duration tokens in fast, medium, and slow bands.',
+        },
         {
           type: 'token-ref',
           topic: 'tokens',
@@ -42,8 +45,12 @@ export const docs = {
     },
     {
       title: 'Easing',
-  category: 'foundations',
+      category: 'foundations',
       content: [
+        {
+          type: 'prose',
+          text: 'One easing curve, `--ease-standard`.',
+        },
         {
           type: 'token-ref',
           topic: 'tokens',
@@ -53,7 +60,7 @@ export const docs = {
     },
     {
       title: 'Where Motion Helps',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -67,11 +74,11 @@ export const docs = {
     },
     {
       title: 'Where Motion Hurts',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
-          text: 'Table row hovers. List item highlights. Anything the user does dozens of times per minute. Adding perceptible duration to these interactions makes the interface feel like it\'s catching up to the cursor. Keep these fast enough that the user never notices a delay.',
+          text: "Table row hovers. List item highlights. Anything the user does dozens of times per minute. Adding perceptible duration to these interactions makes the interface feel like it's catching up to the cursor. Keep these fast enough that the user never notices a delay.",
         },
         {
           type: 'prose',
@@ -81,39 +88,44 @@ export const docs = {
     },
     {
       title: 'Movement Principles',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'list',
           style: 'unordered',
           items: [
-            'Not everything needs an animated exit. Elements the user is moving away from, such as tooltips, hover cards, and dropdown menus, can disappear instantly. The user has already shifted their attention. Animate the exit only when it helps orient the user, like a panel closing or a dialog dismissing to reveal what\'s underneath.',
+            "Not everything needs an animated exit. Elements the user is moving away from, such as tooltips, hover cards, and dropdown menus, can disappear instantly. The user has already shifted their attention. Animate the exit only when it helps orient the user, like a panel closing or a dialog dismissing to reveal what's underneath.",
             'When you do animate exit, match the entrance. A panel that slides in from the right should slide back out to the right.',
             'Direction should match the action. Navigating deeper into content should feel like moving forward. Going back should feel like returning. This keeps the user oriented in the structure of the application.',
-            'Contextual UI should feel connected to its trigger. A dropdown should expand from the button that opened it. A popover should appear near the element it describes. This doesn\'t apply to global UI like command palettes or toasts, which have their own fixed positions.',
+            "Contextual UI should feel connected to its trigger. A dropdown should expand from the button that opened it. A popover should appear near the element it describes. This doesn't apply to global UI like command palettes or toasts, which have their own fixed positions.",
           ],
         },
       ],
     },
     {
       title: 'Respecting User Preferences',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
-          text: 'Some users experience motion sensitivity; animation that feels polished to one person can cause discomfort for another. Components should honor the operating system\'s reduced motion setting. When it\'s enabled, replace animations with instant state changes.',
+          text: 'Some users experience motion sensitivity; animation that feels polished to one person can cause discomfort for another. Astryx components already switch to instant changes when the OS reduced-motion setting is on. Do the same in your own animations with `@media (prefers-reduced-motion: reduce)`.',
         },
       ],
     },
     {
-      title: 'Usage',
-  category: 'foundations',
+      id: 'usage',
+      title: 'Animate with motion tokens',
+      category: 'foundations',
       content: [
+        {
+          type: 'prose',
+          text: 'Set transition durations and easing from the motion tokens, so a theme that retunes motion retunes your animations too.',
+        },
         {
           type: 'code',
           lang: 'tsx',
           label: 'Applying motion tokens',
-          code: `import {durationVars, easeVars} from '@astryxdesign/core';
+          code: `import {durationVars, easeVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   fadeIn: {
@@ -132,7 +144,7 @@ const styles = stylex.create({
     },
     {
       title: 'Best Practices',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'list',
@@ -147,9 +159,9 @@ const styles = stylex.create({
           type: 'list',
           style: 'dont',
           items: [
-            'Let hover states or high-frequency interactions feel like they\'re lagging behind the user.',
+            "Let hover states or high-frequency interactions feel like they're lagging behind the user.",
             'Let animation delay when a user can interact with new content. The transition should complete before (or not block) the next action.',
-            'Move elements in ways that contradict where they came from or where they\'re going.',
+            "Move elements in ways that contradict where they came from or where they're going.",
           ],
         },
       ],

@@ -6,14 +6,13 @@ export const docs = {
   name: 'elevation',
   title: 'Elevation',
   category: 'foundations',
-  description:
-    'Shadow tokens for visual elevation and inset state rings.',
+  description: 'Shadow tokens for visual elevation and inset state rings.',
   tokenCategory: 'shadow',
 
   sections: [
     {
       title: 'Overview',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -23,7 +22,7 @@ export const docs = {
     },
     {
       title: 'Elevation Scale',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -38,7 +37,7 @@ export const docs = {
     },
     {
       title: 'Choosing a level',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -78,11 +77,11 @@ export const docs = {
     },
     {
       title: 'The elevation prop',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
-          text: 'Configurable surfaces expose a single `elevation` prop instead of asking consumers to hand-write a box-shadow. It takes the graded enum `none | low | med | high`, narrowed per component to the steps that surface needs: Card, ClickableCard, SelectableCard, Button, IconButton, ButtonGroup, and Banner expose the full scale, while ChatComposer exposes only `none | low`. `none` is a flat literal (`box-shadow: none`); the other levels map to the `--shadow-*` tokens above, so a surface stays theme-agnostic.',
+          text: 'Configurable surfaces expose a single `elevation` prop instead of asking consumers to hand-write a box-shadow. It takes the graded enum `none | low | med | high`, narrowed per component to the steps that surface needs: Card, ClickableCard, SelectableCard, Button, IconButton, ButtonGroup, ToggleButton, and Banner expose the full scale, while ChatComposer exposes only `none | low`. `none` is a flat literal (`box-shadow: none`); the other levels map to the `--shadow-*` tokens above, so a surface stays theme-agnostic.',
         },
         {
           type: 'prose',
@@ -92,11 +91,13 @@ export const docs = {
           type: 'code',
           lang: 'tsx',
           label: 'Raising a surface with the elevation prop',
-          code: `// Flat by default; raise only when the surface needs to float.
+          code: `import {Plus} from 'lucide-react';
+
+// Flat by default; raise only when the surface needs to float.
 <Card elevation="low">Raised card</Card>
 
 // A floating action button.
-<IconButton icon={<Icon icon="add" />} label="New" variant="primary" elevation="med" />
+<IconButton icon={<Icon icon={Plus} />} label="New" variant="primary" elevation="med" />
 
 // Flatten the composer (defaults to 'low').
 <ChatComposer elevation="none" onSubmit={handleSubmit} />`,
@@ -109,7 +110,7 @@ export const docs = {
     },
     {
       title: 'Usage',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -119,7 +120,7 @@ export const docs = {
           type: 'code',
           lang: 'tsx',
           label: 'Applying elevation',
-          code: `import {shadowVars} from '@astryxdesign/core';
+          code: `import {shadowVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   dropdown: {
@@ -137,7 +138,7 @@ const styles = stylex.create({
     },
     {
       title: 'Best Practices',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'list',

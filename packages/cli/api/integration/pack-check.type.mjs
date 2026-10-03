@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Colocated types for `astryx integration pack --check`.
+ * @file Colocated types for `astryx integration verify`.
  */
 
 /**

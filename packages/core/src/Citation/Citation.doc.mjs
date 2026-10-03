@@ -33,7 +33,7 @@ export const docs = {
         name: 'Container',
         required: true,
         description:
-          'The interactive wrapper. Renders as an anchor when a URL is provided, or a span otherwise.',
+          'The root wrapper. Accepted source URLs render an anchor; missing or rejected URLs render an inert span.',
       },
       {
         name: 'Icon',
@@ -89,9 +89,7 @@ export const docs = {
     },
   ],
   theming: {
-    targets: [
-      {className: 'astryx-citation', visualProps: ['variant']},
-    ],
+    targets: [{className: 'astryx-citation', visualProps: ['variant']}],
   },
 };
 
@@ -124,6 +122,7 @@ export const docsDense = {
     source:
       'citation source with title, url, optional image src, and optional icon. url follows the Link href navigation rule; rejected destinations stay visible without navigation. Image src handling is separate.',
     number: 'display index for this citation.',
-    variant: 'display style: label chip with source title or compact numbered badge.',
+    variant:
+      'display style: label chip with source title or compact numbered badge.',
   },
 };

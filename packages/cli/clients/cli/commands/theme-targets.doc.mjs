@@ -20,15 +20,18 @@ export const doc = {
     'the component that declares it, and the props and states that are legal override keys ' +
     'under it. This is the whole themeable surface in one command: what auditing a theme, or ' +
     'answering "which key paints this pixel?", used to need one `astryx component <Name>` per ' +
-    'component to assemble. Pass a component name to scope it; pass any substring to search ' +
-    'keys. `--json` for a list a repo can lint its own theme against.',
+    'component to assemble. Pass a component name to scope it; pass any other text to search ' +
+    'target keys, classes, and components. `--json` for a list a repo can lint its own theme against.',
   fn: 'themeTargets',
   args: [{name: 'filter', param: 'filter', required: false}],
   examples: [
     {label: 'The whole themeable surface', cli: 'astryx theme targets'},
     {label: "One component's targets", cli: 'astryx theme targets Switch'},
     {label: 'Search keys', cli: 'astryx theme targets thumb'},
-    {label: 'For a lint or an audit script', cli: 'astryx --json theme targets'},
+    {
+      label: 'For a lint or an audit script',
+      cli: 'astryx --json theme targets',
+    },
   ],
   exitCodes: [
     {code: 0, when: 'success'},

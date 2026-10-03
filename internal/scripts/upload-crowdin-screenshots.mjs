@@ -53,6 +53,7 @@ import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {
   buildMeasureSource,
+  MUTATING_STRATEGIES,
   STRATEGY_NAMES,
   toDevicePixelRect,
 } from './lib/crowdin-strategies.mjs';
@@ -78,16 +79,28 @@ let ONLY = null;
 {
   const idx = argv.findIndex(a => a === '--only' || a.startsWith('--only='));
   if (idx !== -1) {
-    const val = argv[idx].includes('=') ? argv[idx].split('=', 2)[1] : argv[idx + 1];
-    if (val) ONLY = new Set(val.split(',').map(s => s.trim()).filter(Boolean));
+    const val = argv[idx].includes('=')
+      ? argv[idx].split('=', 2)[1]
+      : argv[idx + 1];
+    if (val)
+      ONLY = new Set(
+        val
+          .split(',')
+          .map(s => s.trim())
+          .filter(Boolean),
+      );
   }
 }
 
 fs.mkdirSync(OUT_DIR, {recursive: true});
 
 // ---------- helpers ----------
-function log(...a) { console.log('[crowdin-screens]', ...a); }
-function warn(...a) { console.warn('[crowdin-screens]', ...a); }
+function log(...a) {
+  console.log('[crowdin-screens]', ...a);
+}
+function warn(...a) {
+  console.warn('[crowdin-screens]', ...a);
+}
 function run(cmd, opts = {}) {
   return execSync(cmd, {stdio: 'inherit', ...opts});
 }
@@ -116,9 +129,10 @@ function loadCatalogDefaults() {
   const out = new Map();
   for (const k of Object.keys(raw)) {
     const bare = k.replace(/^@/, '');
-    const msg = raw[k] && typeof raw[k].defaultMessage === 'string'
-      ? raw[k].defaultMessage
-      : null;
+    const msg =
+      raw[k] && typeof raw[k].defaultMessage === 'string'
+        ? raw[k].defaultMessage
+        : null;
     if (msg != null) out.set(bare, msg);
   }
   return out;
@@ -126,10 +140,13 @@ function loadCatalogDefaults() {
 const CATALOG_DEFAULTS = loadCatalogDefaults();
 
 // ---------- Crowdin API ----------
-async function crowdinFetch(pathAndQuery, {token, method = 'GET', body = null} = {}) {
+async function crowdinFetch(
+  pathAndQuery,
+  {token, method = 'GET', body = null} = {},
+) {
   const url = `https://api.crowdin.com/api/v2${pathAndQuery}`;
   const headers = {
-    'Authorization': `Bearer ${token}`,
+    Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
   };
   const opts = {method, headers};
@@ -137,7 +154,9 @@ async function crowdinFetch(pathAndQuery, {token, method = 'GET', body = null} =
   const res = await fetch(url, opts);
   const text = await res.text();
   if (!res.ok) {
-    throw new Error(`Crowdin ${method} ${pathAndQuery} → ${res.status}: ${text.slice(0, 400)}`);
+    throw new Error(
+      `Crowdin ${method} ${pathAndQuery} → ${res.status}: ${text.slice(0, 400)}`,
+    );
   }
   return text ? JSON.parse(text) : null;
 }
@@ -166,10 +185,18 @@ async function loadStringIdMap(token) {
 
 // ---------- static server ----------
 const MIME = {
-  '.html': 'text/html', '.js': 'application/javascript', '.mjs': 'application/javascript',
-  '.css': 'text/css', '.json': 'application/json', '.png': 'image/png',
-  '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.woff': 'font/woff',
-  '.woff2': 'font/woff2', '.ttf': 'font/ttf', '.map': 'application/json',
+  '.html': 'text/html',
+  '.js': 'application/javascript',
+  '.mjs': 'application/javascript',
+  '.css': 'text/css',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.map': 'application/json',
 };
 function serveStatic(dir) {
   return new Promise((resolve, reject) => {
@@ -177,10 +204,18 @@ function serveStatic(dir) {
       let urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
       if (urlPath === '/') urlPath = '/index.html';
       const filePath = path.join(dir, urlPath);
-      if (!filePath.startsWith(dir) || !fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
-        res.writeHead(404); res.end('Not found'); return;
+      if (
+        !filePath.startsWith(dir) ||
+        !fs.existsSync(filePath) ||
+        fs.statSync(filePath).isDirectory()
+      ) {
+        res.writeHead(404);
+        res.end('Not found');
+        return;
       }
-      const ct = MIME[path.extname(filePath).toLowerCase()] || 'application/octet-stream';
+      const ct =
+        MIME[path.extname(filePath).toLowerCase()] ||
+        'application/octet-stream';
       res.writeHead(200, {'Content-Type': ct});
       fs.createReadStream(filePath).pipe(res);
     });
@@ -215,7 +250,7 @@ function serveStatic(dir) {
 //
 // Per-strategy convention for which arg slot is the "text" arg:
 //   visibleText / option / placeholder / ariaLabel / footerButton /
-//   srOnlyLabel / srOnlyReveal   → args[0]
+//   srOnlyLabel / srOnlyReveal / textRun / liveRegionReveal   → args[0]
 //   chipOperator                  → args[1]  (args[0] = field name)
 //   filterInput                   → no text arg (kind string only)
 const TEXT_ARG_INDEX = {
@@ -228,6 +263,8 @@ const TEXT_ARG_INDEX = {
   footerButton: 0,
   srOnlyLabel: 0,
   srOnlyReveal: 0,
+  textRun: 0,
+  liveRegionReveal: 0,
 };
 
 function t(key, strategy, ...args) {
@@ -237,6 +274,13 @@ function t(key, strategy, ...args) {
     if (def != null) args[idx] = def;
   }
   return {key, strategy, args};
+}
+
+// Every palette capture starts by opening the modal behind the trigger.
+async function openCommandPalette(page) {
+  await page.getByRole('button', {name: 'Open'}).click();
+  await page.waitForSelector('dialog[open]', {timeout: 3000});
+  await page.waitForTimeout(400);
 }
 
 const TARGETS = [
@@ -260,7 +304,11 @@ const TARGETS = [
       t('astryx.powersearch.operator.is', 'chipOperator', 'Priority'),
       t('astryx.powersearch.operator.contains', 'chipOperator', 'Title'),
       t('astryx.powersearch.operator.isAnyOf', 'chipOperator', 'Assignee'),
-      t('astryx.powersearch.operator.greaterThan', 'chipOperator', 'Line count'),
+      t(
+        'astryx.powersearch.operator.greaterThan',
+        'chipOperator',
+        'Line count',
+      ),
       t('astryx.powersearch.operator.after', 'chipOperator', 'Created'),
     ],
   },
@@ -270,13 +318,18 @@ const TARGETS = [
     storyId: 'core-powersearch--with-date-filters',
     viewport: {width: 900, height: 400},
     interact: async page => {
-      const chip = page.getByRole('button', {name: /Created:\s*is after/i}).first();
+      const chip = page
+        .getByRole('button', {name: /Created:\s*is after/i})
+        .first();
       await chip.waitFor({state: 'visible', timeout: 5000});
       await chip.click();
       const createdOption = page.getByRole('option', {name: 'Created'}).first();
       await createdOption.waitFor({state: 'visible', timeout: 5000});
       await createdOption.click();
-      await page.getByRole('button', {name: 'Apply'}).first().waitFor({timeout: 5000});
+      await page
+        .getByRole('button', {name: 'Apply'})
+        .first()
+        .waitFor({timeout: 5000});
       await page.waitForTimeout(400);
     },
     selector: null,
@@ -365,7 +418,9 @@ const TARGETS = [
       await page.getByRole('option', {name: 'Title'}).first().click();
       await page.waitForTimeout(400);
       await page.locator('button[role="combobox"]').nth(1).click();
-      await page.waitForSelector('[role="listbox"]:not(:empty)', {timeout: 3000}).catch(() => {});
+      await page
+        .waitForSelector('[role="listbox"]:not(:empty)', {timeout: 3000})
+        .catch(() => {});
       await page.waitForTimeout(400);
     },
     selector: null,
@@ -378,7 +433,11 @@ const TARGETS = [
       t('astryx.powersearch.operator.notEndsWith', 'option'),
       t('astryx.powersearch.operator.is', 'option'),
       t('astryx.powersearch.operator.isNot', 'option'),
-      t('astryx.powersearch.valueEditor.enterValuePlaceholder', 'placeholder', 'Enter value'),
+      t(
+        'astryx.powersearch.valueEditor.enterValuePlaceholder',
+        'placeholder',
+        'Enter value',
+      ),
       t('astryx.powersearch.editor.cancel', 'footerButton'),
       t('astryx.powersearch.editor.apply', 'footerButton'),
     ],
@@ -390,10 +449,15 @@ const TARGETS = [
     interact: async page => {
       await page.locator('[role="combobox"]').first().click();
       await page.waitForTimeout(300);
-      await page.getByRole('option', {name: 'Publication Year'}).first().click();
+      await page
+        .getByRole('option', {name: 'Publication Year'})
+        .first()
+        .click();
       await page.waitForTimeout(400);
       await page.locator('button[role="combobox"]').nth(1).click();
-      await page.waitForSelector('[role="listbox"]:not(:empty)', {timeout: 3000}).catch(() => {});
+      await page
+        .waitForSelector('[role="listbox"]:not(:empty)', {timeout: 3000})
+        .catch(() => {});
       await page.waitForTimeout(400);
     },
     selector: null,
@@ -415,12 +479,17 @@ const TARGETS = [
     storyId: 'core-powersearchwithtable--with-preset-filters',
     viewport: {width: 1000, height: 700},
     interact: async page => {
-      await page.getByRole('button', {name: /^Genre: is/i}).first().click();
+      await page
+        .getByRole('button', {name: /^Genre: is/i})
+        .first()
+        .click();
       await page.waitForTimeout(400);
       await page.getByRole('option', {name: 'Genre'}).first().click();
       await page.waitForTimeout(400);
       await page.locator('button[role="combobox"]').nth(1).click();
-      await page.waitForSelector('[role="listbox"]:not(:empty)', {timeout: 3000}).catch(() => {});
+      await page
+        .waitForSelector('[role="listbox"]:not(:empty)', {timeout: 3000})
+        .catch(() => {});
       await page.waitForTimeout(400);
     },
     selector: null,
@@ -442,12 +511,20 @@ const TARGETS = [
     storyId: 'core-powersearchwithtable--with-mixed-filters',
     viewport: {width: 1100, height: 750},
     interact: async page => {
-      await page.getByRole('button', {name: /Published Date:\s*is after/i}).first().click();
+      await page
+        .getByRole('button', {name: /Published Date:\s*is after/i})
+        .first()
+        .click();
       await page.waitForTimeout(400);
-      await page.getByRole('option', {name: /^Published Date$/}).first().click();
+      await page
+        .getByRole('option', {name: /^Published Date$/})
+        .first()
+        .click();
       await page.waitForTimeout(400);
       await page.locator('button[role="combobox"]').nth(1).click();
-      await page.waitForSelector('[role="listbox"]:not(:empty)', {timeout: 3000}).catch(() => {});
+      await page
+        .waitForSelector('[role="listbox"]:not(:empty)', {timeout: 3000})
+        .catch(() => {});
       await page.waitForTimeout(400);
     },
     selector: null,
@@ -482,19 +559,31 @@ const TARGETS = [
     storyId: 'core-powersearchwithtable--with-mixed-filters',
     viewport: {width: 1100, height: 750},
     interact: async page => {
-      await page.getByRole('button', {name: /Themes:\s*is any of/i}).first().click();
+      await page
+        .getByRole('button', {name: /Themes:\s*is any of/i})
+        .first()
+        .click();
       await page.waitForTimeout(400);
-      await page.getByRole('option', {name: /^Themes$/}).first().click();
+      await page
+        .getByRole('option', {name: /^Themes$/})
+        .first()
+        .click();
       await page.waitForTimeout(400);
       await page.locator('button[role="combobox"]').nth(1).click();
-      await page.waitForSelector('[role="listbox"]:not(:empty)', {timeout: 3000}).catch(() => {});
+      await page
+        .waitForSelector('[role="listbox"]:not(:empty)', {timeout: 3000})
+        .catch(() => {});
       await page.waitForTimeout(400);
     },
     selector: null,
     manualTags: [
       t('astryx.powersearch.operator.isAnyOf', 'option'),
       t('astryx.powersearch.operator.isNoneOf', 'option'),
-      t('astryx.powersearch.valueEditor.selectValuesPlaceholder', 'placeholder', 'Select values'),
+      t(
+        'astryx.powersearch.valueEditor.selectValuesPlaceholder',
+        'placeholder',
+        'Select values',
+      ),
       t('astryx.powersearch.editor.cancel', 'footerButton'),
       t('astryx.powersearch.editor.apply', 'footerButton'),
     ],
@@ -508,9 +597,15 @@ const TARGETS = [
     storyId: 'core-powersearchwithtable--with-mixed-filters',
     viewport: {width: 1100, height: 750},
     interact: async page => {
-      await page.getByRole('button', {name: /Published Date:\s*is after/i}).first().click();
+      await page
+        .getByRole('button', {name: /Published Date:\s*is after/i})
+        .first()
+        .click();
       await page.waitForTimeout(400);
-      await page.getByRole('option', {name: /^Published Date$/}).first().click();
+      await page
+        .getByRole('option', {name: /^Published Date$/})
+        .first()
+        .click();
       await page.waitForTimeout(500);
     },
     selector: null,
@@ -526,17 +621,31 @@ const TARGETS = [
     storyId: 'core-powersearchwithtable--with-mixed-filters',
     viewport: {width: 1100, height: 750},
     interact: async page => {
-      await page.getByRole('button', {name: /Author \(entity\):\s*is any of/i}).first().click();
+      await page
+        .getByRole('button', {name: /Author \(entity\):\s*is any of/i})
+        .first()
+        .click();
       await page.waitForTimeout(400);
-      await page.getByRole('option', {name: /^Author \(entity\)$/}).first().click();
+      await page
+        .getByRole('option', {name: /^Author \(entity\)$/})
+        .first()
+        .click();
       await page.waitForTimeout(500);
-      await page.locator('input[placeholder="Search…"]').first().click({trial: false}).catch(() => {});
+      await page
+        .locator('input[placeholder="Search…"]')
+        .first()
+        .click({trial: false})
+        .catch(() => {});
       await page.waitForTimeout(300);
     },
     selector: null,
     manualTags: [
       t('astryx.powersearch.operator.isAnyOf', 'visibleText'),
-      t('astryx.powersearch.valueEditor.searchPlaceholder', 'placeholder', 'Search'),
+      t(
+        'astryx.powersearch.valueEditor.searchPlaceholder',
+        'placeholder',
+        'Search',
+      ),
       t('astryx.powersearch.editor.cancel', 'footerButton'),
       t('astryx.powersearch.editor.apply', 'footerButton'),
     ],
@@ -548,13 +657,20 @@ const TARGETS = [
     interact: async page => {
       await page.locator('[role="combobox"]').first().click();
       await page.waitForTimeout(300);
-      await page.getByRole('option', {name: /^Title$/}).first().click();
+      await page
+        .getByRole('option', {name: /^Title$/})
+        .first()
+        .click();
       await page.waitForTimeout(500);
     },
     selector: null,
     manualTags: [
       t('astryx.powersearch.operator.contains', 'visibleText'),
-      t('astryx.powersearch.valueEditor.enterValuePlaceholder', 'placeholder', 'Enter value'),
+      t(
+        'astryx.powersearch.valueEditor.enterValuePlaceholder',
+        'placeholder',
+        'Enter value',
+      ),
       t('astryx.powersearch.editor.cancel', 'footerButton'),
       t('astryx.powersearch.editor.apply', 'footerButton'),
     ],
@@ -566,14 +682,21 @@ const TARGETS = [
     interact: async page => {
       await page.locator('[role="combobox"]').first().click();
       await page.waitForTimeout(300);
-      await page.getByRole('option', {name: /^Publication Year$/}).first().click();
+      await page
+        .getByRole('option', {name: /^Publication Year$/})
+        .first()
+        .click();
       await page.waitForTimeout(500);
     },
     selector: null,
     manualTags: [
       // Number-field default operator label is "is" (equals key).
       t('astryx.powersearch.operator.equals', 'visibleText'),
-      t('astryx.powersearch.valueEditor.enterNumberPlaceholder', 'placeholder', 'Enter number'),
+      t(
+        'astryx.powersearch.valueEditor.enterNumberPlaceholder',
+        'placeholder',
+        'Enter number',
+      ),
       t('astryx.powersearch.editor.cancel', 'footerButton'),
       t('astryx.powersearch.editor.apply', 'footerButton'),
     ],
@@ -585,13 +708,20 @@ const TARGETS = [
     interact: async page => {
       await page.locator('[role="combobox"]').first().click();
       await page.waitForTimeout(300);
-      await page.getByRole('option', {name: /^Themes$/}).first().click();
+      await page
+        .getByRole('option', {name: /^Themes$/})
+        .first()
+        .click();
       await page.waitForTimeout(500);
     },
     selector: null,
     manualTags: [
       t('astryx.powersearch.operator.isAnyOf', 'visibleText'),
-      t('astryx.powersearch.valueEditor.selectValuesPlaceholder', 'placeholder', 'Select values'),
+      t(
+        'astryx.powersearch.valueEditor.selectValuesPlaceholder',
+        'placeholder',
+        'Select values',
+      ),
       t('astryx.powersearch.editor.cancel', 'footerButton'),
       t('astryx.powersearch.editor.apply', 'footerButton'),
     ],
@@ -611,14 +741,14 @@ const TARGETS = [
       await btn.waitFor({state: 'visible', timeout: 5000});
       await btn.click();
       // Wait for the Close button inside the dialog header.
-      await page.getByRole('button', {name: 'Close'}).first()
+      await page
+        .getByRole('button', {name: 'Close'})
+        .first()
         .waitFor({state: 'visible', timeout: 5000});
       await page.waitForTimeout(300);
     },
     selector: null,
-    manualTags: [
-      t('astryx.dialog.close', 'srOnlyReveal', undefined, 'left'),
-    ],
+    manualTags: [t('astryx.dialog.close', 'srOnlyReveal', undefined, 'left')],
   },
   {
     name: 'alertdialog-cancel',
@@ -630,7 +760,9 @@ const TARGETS = [
       const btn = page.getByRole('button', {name: /Delete item/i}).first();
       await btn.waitFor({state: 'visible', timeout: 5000});
       await btn.click();
-      await page.getByRole('button', {name: 'Cancel'}).first()
+      await page
+        .getByRole('button', {name: 'Cancel'})
+        .first()
         .waitFor({state: 'visible', timeout: 5000});
       await page.waitForTimeout(300);
     },
@@ -671,9 +803,7 @@ const TARGETS = [
     viewport: {width: 900, height: 250},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.banner.expand', 'srOnlyReveal', undefined, 'below'),
-    ],
+    manualTags: [t('astryx.banner.expand', 'srOnlyReveal', undefined, 'below')],
   },
   {
     name: 'banner-collapsible-expanded',
@@ -705,8 +835,11 @@ const TARGETS = [
       await header.waitFor({state: 'visible', timeout: 5000});
       await header.click({button: 'right'});
       // Wait for context menu.
-      await page.locator('[role="menu"], [aria-label="Context menu"]').first()
-        .waitFor({state: 'visible', timeout: 3000}).catch(() => {});
+      await page
+        .locator('[role="menu"], [aria-label="Context menu"]')
+        .first()
+        .waitFor({state: 'visible', timeout: 3000})
+        .catch(() => {});
       await page.waitForTimeout(400);
     },
     selector: null,
@@ -727,7 +860,12 @@ const TARGETS = [
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.table.selection.selectAllRows', 'srOnlyReveal', undefined, 'below'),
+      t(
+        'astryx.table.selection.selectAllRows',
+        'srOnlyReveal',
+        undefined,
+        'below',
+      ),
       t('astryx.table.selection.selectRow', 'srOnlyReveal', undefined, 'right'),
     ],
   },
@@ -743,8 +881,11 @@ const TARGETS = [
       await filterBtn.waitFor({state: 'visible', timeout: 5000});
       await filterBtn.click();
       // "Apply" appears when the panel is open.
-      await page.getByRole('button', {name: 'Apply'}).first()
-        .waitFor({state: 'visible', timeout: 3000}).catch(() => {});
+      await page
+        .getByRole('button', {name: 'Apply'})
+        .first()
+        .waitFor({state: 'visible', timeout: 3000})
+        .catch(() => {});
       await page.waitForTimeout(400);
     },
     selector: null,
@@ -769,9 +910,24 @@ const TARGETS = [
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.tableRowExpansion.expandRow', 'srOnlyReveal', undefined, 'right'),
-      t('astryx.tableRowExpansion.collapseRow', 'srOnlyReveal', undefined, 'right'),
-      t('astryx.tableRowExpansion.expandAllRows', 'srOnlyReveal', undefined, 'below'),
+      t(
+        'astryx.tableRowExpansion.expandRow',
+        'srOnlyReveal',
+        undefined,
+        'right',
+      ),
+      t(
+        'astryx.tableRowExpansion.collapseRow',
+        'srOnlyReveal',
+        undefined,
+        'right',
+      ),
+      t(
+        'astryx.tableRowExpansion.expandAllRows',
+        'srOnlyReveal',
+        undefined,
+        'below',
+      ),
     ],
   },
   {
@@ -786,8 +942,18 @@ const TARGETS = [
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.tableGroupedRows.collapseGroup', 'srOnlyReveal', 'Collapse group Design Systems', 'right'),
-      t('astryx.tableGroupedRows.expandGroup', 'srOnlyReveal', 'Expand group Infra', 'right'),
+      t(
+        'astryx.tableGroupedRows.collapseGroup',
+        'srOnlyReveal',
+        'Collapse group Design Systems',
+        'right',
+      ),
+      t(
+        'astryx.tableGroupedRows.expandGroup',
+        'srOnlyReveal',
+        'Expand group Infra',
+        'right',
+      ),
     ],
   },
 
@@ -812,12 +978,16 @@ const TARGETS = [
     selector: null,
     manualTags: [
       t('astryx.transferList.addAll', 'visibleText'),
-      t('astryx.transferList.addOption', 'visibleText', "Add all"),
+      t('astryx.transferList.addOption', 'visibleText', 'Add all'),
       t('astryx.transferList.clear', 'visibleText'),
-      t('astryx.transferList.removeOption', 'ariaLabel', "Remove Name"),
+      t('astryx.transferList.removeOption', 'ariaLabel', 'Remove Name'),
       t('astryx.transferList.reorderInstructions', 'srOnlyLabel'),
-      t('astryx.transferList.reorderOption', 'ariaLabel', "Reorder Name"),
-      t('astryx.transferListSelector.triggerLabel', 'visibleText', "Move fields between the panels. The selected order is the display order."),
+      t('astryx.transferList.reorderOption', 'ariaLabel', 'Reorder Name'),
+      t(
+        'astryx.transferListSelector.triggerLabel',
+        'visibleText',
+        'Move fields between the panels. The selected order is the display order.',
+      ),
     ],
   },
   {
@@ -840,7 +1010,7 @@ const TARGETS = [
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.dateTimeInput.openTimePicker', 'ariaLabel', "Open calendar"),
+      t('astryx.dateTimeInput.openTimePicker', 'ariaLabel', 'Open calendar'),
       t('astryx.dateTimeInput.timePlaceholder', 'placeholder'),
     ],
   },
@@ -851,8 +1021,8 @@ const TARGETS = [
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.listInput.removeItem', 'ariaLabel', "Remove tag 1"),
-      t('astryx.listInput.reorderItem', 'ariaLabel', "Reorder tag 1"),
+      t('astryx.listInput.removeItem', 'ariaLabel', 'Remove tag 1'),
+      t('astryx.listInput.reorderItem', 'ariaLabel', 'Reorder tag 1'),
     ],
   },
   {
@@ -862,7 +1032,7 @@ const TARGETS = [
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.pagination.goToPage', 'ariaLabel', "Go to page 1"),
+      t('astryx.pagination.goToPage', 'ariaLabel', 'Go to page 1'),
       t('astryx.pagination.label', 'ariaLabel'),
       t('astryx.pagination.next', 'ariaLabel'),
       t('astryx.pagination.previous', 'ariaLabel'),
@@ -875,8 +1045,16 @@ const TARGETS = [
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.step.goToStep', 'ariaLabel', "Go to step 1: Create workspace, completed"),
-      t('astryx.step.goToStepWithStatus', 'ariaLabel', "Go to step 1: Create workspace, completed"),
+      t(
+        'astryx.step.goToStep',
+        'ariaLabel',
+        'Go to step 1: Create workspace, completed',
+      ),
+      t(
+        'astryx.step.goToStepWithStatus',
+        'ariaLabel',
+        'Go to step 1: Create workspace, completed',
+      ),
       t('astryx.step.status.completed', 'srOnlyLabel'),
       t('astryx.stepper.label', 'ariaLabel'),
     ],
@@ -890,7 +1068,7 @@ const TARGETS = [
     manualTags: [
       t('astryx.carousel.scrollLeft', 'ariaLabel'),
       t('astryx.carousel.scrollRight', 'ariaLabel'),
-      t('astryx.carousel.slideLabel', 'ariaLabel', "Slide 1 of 8"),
+      t('astryx.carousel.slideLabel', 'ariaLabel', 'Slide 1 of 8'),
     ],
   },
   {
@@ -900,9 +1078,17 @@ const TARGETS = [
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.listInput.addItem', 'visibleText', "Add a subscriber to get started."),
-      t('astryx.listInput.emptyDescription', 'visibleText', "Add a subscriber to get started."),
-      t('astryx.listInput.emptyTitle', 'visibleText', "No subscribers yet"),
+      t(
+        'astryx.listInput.addItem',
+        'visibleText',
+        'Add a subscriber to get started.',
+      ),
+      t(
+        'astryx.listInput.emptyDescription',
+        'visibleText',
+        'Add a subscriber to get started.',
+      ),
+      t('astryx.listInput.emptyTitle', 'visibleText', 'No subscribers yet'),
     ],
   },
   {
@@ -922,9 +1108,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.dateRangeInput.placeholder', 'visibleText'),
-    ],
+    manualTags: [t('astryx.dateRangeInput.placeholder', 'visibleText')],
   },
   {
     name: 'fileinput-required',
@@ -932,9 +1116,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.fileInput.placeholder', 'visibleText'),
-    ],
+    manualTags: [t('astryx.fileInput.placeholder', 'visibleText')],
   },
   {
     name: 'markdown-default',
@@ -985,8 +1167,8 @@ const TARGETS = [
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.numberInput.decrementLabel', 'ariaLabel', "Decrement Quantity"),
-      t('astryx.numberInput.incrementLabel', 'ariaLabel', "Increment Quantity"),
+      t('astryx.numberInput.decrementLabel', 'ariaLabel', 'Decrement Quantity'),
+      t('astryx.numberInput.incrementLabel', 'ariaLabel', 'Increment Quantity'),
     ],
   },
   {
@@ -1038,7 +1220,7 @@ const TARGETS = [
     selector: null,
     manualTags: [
       t('astryx.transferList.availableLabel', 'visibleText'),
-      t('astryx.transferList.searchLabel', 'placeholder', "Search 200 fields"),
+      t('astryx.transferList.searchLabel', 'placeholder', 'Search 200 fields'),
     ],
   },
   {
@@ -1047,9 +1229,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.avatarGroup.label', 'ariaLabel'),
-    ],
+    manualTags: [t('astryx.avatarGroup.label', 'ariaLabel')],
   },
   {
     name: 'avatargroup-server-side-count',
@@ -1057,9 +1237,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.avatarGroup.overflow', 'ariaLabel', "44 more"),
-    ],
+    manualTags: [t('astryx.avatarGroup.overflow', 'ariaLabel', '44 more')],
   },
   {
     name: 'breadcrumbs-default',
@@ -1067,9 +1245,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.breadcrumbs.label', 'ariaLabel'),
-    ],
+    manualTags: [t('astryx.breadcrumbs.label', 'ariaLabel')],
   },
   {
     name: 'button-loading',
@@ -1077,9 +1253,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.button.loading', 'ariaLabel'),
-    ],
+    manualTags: [t('astryx.button.loading', 'ariaLabel')],
   },
   {
     name: 'calendar-with-selected-date',
@@ -1088,7 +1262,11 @@ const TARGETS = [
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.calendar.daySelected', 'ariaLabel', "Thursday, January 15, 2026, selected"),
+      t(
+        'astryx.calendar.daySelected',
+        'ariaLabel',
+        'Thursday, January 15, 2026, selected',
+      ),
     ],
   },
   {
@@ -1098,7 +1276,7 @@ const TARGETS = [
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.chatMessage.messageFrom', 'ariaLabel', "Message from user"),
+      t('astryx.chatMessage.messageFrom', 'ariaLabel', 'Message from user'),
     ],
   },
   {
@@ -1107,9 +1285,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.chatToolCalls.status.error', 'visibleText'),
-    ],
+    manualTags: [t('astryx.chatToolCalls.status.error', 'visibleText')],
   },
   {
     name: 'citation-label',
@@ -1118,7 +1294,11 @@ const TARGETS = [
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.citation.label', 'ariaLabel', "Citation 1: React Documentation"),
+      t(
+        'astryx.citation.label',
+        'ariaLabel',
+        'Citation 1: React Documentation',
+      ),
     ],
   },
   {
@@ -1127,9 +1307,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.codeBlock.copyCode', 'ariaLabel'),
-    ],
+    manualTags: [t('astryx.codeBlock.copyCode', 'ariaLabel')],
   },
   {
     name: 'daterangeinput-with-warning-status',
@@ -1137,9 +1315,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.dateInput.clear', 'ariaLabel', "Clear Date range"),
-    ],
+    manualTags: [t('astryx.dateInput.clear', 'ariaLabel', 'Clear Date range')],
   },
   {
     name: 'dropdownmenu-compact-drill-in-presentation',
@@ -1147,9 +1323,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.dropdownMenu.back', 'ariaLabel'),
-    ],
+    manualTags: [t('astryx.dropdownMenu.back', 'ariaLabel')],
   },
   {
     name: 'fileinput-multiple-files',
@@ -1157,9 +1331,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.fileInput.placeholderMultiple', 'visibleText'),
-    ],
+    manualTags: [t('astryx.fileInput.placeholderMultiple', 'visibleText')],
   },
   {
     name: 'metadatalist-show-more',
@@ -1167,9 +1339,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.metadataList.showMore', 'visibleText'),
-    ],
+    manualTags: [t('astryx.metadataList.showMore', 'visibleText')],
   },
   {
     name: 'moremenu-default',
@@ -1177,9 +1347,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.moreMenu.label', 'ariaLabel'),
-    ],
+    manualTags: [t('astryx.moreMenu.label', 'ariaLabel')],
   },
   {
     name: 'multiselector-searchable',
@@ -1187,9 +1355,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.multiSelector.selectAll', 'srOnlyLabel'),
-    ],
+    manualTags: [t('astryx.multiSelector.selectAll', 'srOnlyLabel')],
   },
   {
     name: 'multiselector-default',
@@ -1198,7 +1364,7 @@ const TARGETS = [
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.multiSelector.selectionCount', 'visibleText', "2 selected"),
+      t('astryx.multiSelector.selectionCount', 'visibleText', '2 selected'),
     ],
   },
   {
@@ -1207,9 +1373,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.outline.label', 'ariaLabel'),
-    ],
+    manualTags: [t('astryx.outline.label', 'ariaLabel')],
   },
   {
     name: 'pagination-compact-variant',
@@ -1218,7 +1382,7 @@ const TARGETS = [
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.pagination.pageAnnounce', 'visibleText', "Page 1 of 10"),
+      t('astryx.pagination.pageAnnounce', 'visibleText', 'Page 1 of 10'),
     ],
   },
   {
@@ -1227,9 +1391,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.pagination.pageIndicators', 'ariaLabel'),
-    ],
+    manualTags: [t('astryx.pagination.pageIndicators', 'ariaLabel')],
   },
   {
     name: 'popover-default',
@@ -1237,9 +1399,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.popover.close', 'srOnlyLabel'),
-    ],
+    manualTags: [t('astryx.popover.close', 'srOnlyLabel')],
   },
   {
     name: 'powersearch-default',
@@ -1247,9 +1407,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.powersearch.label', 'ariaLabel'),
-    ],
+    manualTags: [t('astryx.powersearch.label', 'ariaLabel')],
   },
   {
     name: 'sidenav-with-header-menu',
@@ -1257,9 +1415,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.sideNav.heading.openMenu', 'ariaLabel'),
-    ],
+    manualTags: [t('astryx.sideNav.heading.openMenu', 'ariaLabel')],
   },
   {
     name: 'sidenav-default',
@@ -1267,9 +1423,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.sideNav.label', 'ariaLabel'),
-    ],
+    manualTags: [t('astryx.sideNav.label', 'ariaLabel')],
   },
   {
     name: 'spinner-default',
@@ -1277,9 +1431,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.spinner.loading', 'ariaLabel'),
-    ],
+    manualTags: [t('astryx.spinner.loading', 'ariaLabel')],
   },
   {
     name: 'stepper-status-all-states',
@@ -1287,9 +1439,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.step.status.warning', 'srOnlyLabel'),
-    ],
+    manualTags: [t('astryx.step.status.warning', 'srOnlyLabel')],
   },
   {
     name: 'tablist-default',
@@ -1297,9 +1447,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.tabList.label', 'ariaLabel'),
-    ],
+    manualTags: [t('astryx.tabList.label', 'ariaLabel')],
   },
   {
     name: 'table-default',
@@ -1307,9 +1455,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.table.label', 'ariaLabel'),
-    ],
+    manualTags: [t('astryx.table.label', 'ariaLabel')],
   },
   {
     name: 'thumbnail-with-remove',
@@ -1318,7 +1464,11 @@ const TARGETS = [
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.thumbnail.remove', 'ariaLabel', "Remove photo.png — Removable thumbnail"),
+      t(
+        'astryx.thumbnail.remove',
+        'ariaLabel',
+        'Remove photo.png — Removable thumbnail',
+      ),
     ],
   },
   {
@@ -1328,7 +1478,7 @@ const TARGETS = [
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.timeInput.clearLabel', 'ariaLabel', "Clear Start time"),
+      t('astryx.timeInput.clearLabel', 'ariaLabel', 'Clear Start time'),
     ],
   },
   {
@@ -1338,7 +1488,11 @@ const TARGETS = [
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.timeInput.openPicker', 'ariaLabel', "Open nativePicker='always'"),
+      t(
+        'astryx.timeInput.openPicker',
+        'ariaLabel',
+        "Open nativePicker='always'",
+      ),
     ],
   },
   {
@@ -1347,9 +1501,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.timeInput.placeholder', 'placeholder'),
-    ],
+    manualTags: [t('astryx.timeInput.placeholder', 'placeholder')],
   },
   {
     name: 'token-with-remove',
@@ -1357,9 +1509,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.token.remove', 'ariaLabel', "Remove Removable"),
-    ],
+    manualTags: [t('astryx.token.remove', 'ariaLabel', 'Remove Removable')],
   },
   {
     name: 'treelist-fully-expanded',
@@ -1367,9 +1517,7 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
-    manualTags: [
-      t('astryx.treeList.toggleChildren', 'ariaLabel'),
-    ],
+    manualTags: [t('astryx.treeList.toggleChildren', 'ariaLabel')],
   },
   {
     name: 'typeahead-status-variant-comparison',
@@ -1377,8 +1525,95 @@ const TARGETS = [
     viewport: {width: 1200, height: 800},
     interact: async () => {},
     selector: null,
+    manualTags: [t('astryx.typeahead.searchPlaceholder', 'placeholder')],
+  },
+
+  // ==========================================================================
+  // CommandPalette
+  // ==========================================================================
+  // Four moments of one flow on the BuiltInStrings story, which overrides no
+  // string. Each announcement replaces the one before it, so each needs its
+  // own capture.
+  {
+    name: 'commandpalette-bootstrap-empty',
+    storyId: 'core-commandpalette--built-in-strings',
+    viewport: {width: 900, height: 700},
+    interact: openCommandPalette,
+    selector: null,
     manualTags: [
-      t('astryx.typeahead.searchPlaceholder', 'placeholder'),
+      t('astryx.commandPalette.input.placeholder', 'placeholder'),
+      t('astryx.commandPalette.emptyBootstrap', 'visibleText'),
+      // Each hint is `<span><Kbd/>Navigate</span>`, so tag the text node.
+      t('astryx.commandPalette.footer.navigate', 'textRun'),
+      t('astryx.commandPalette.footer.select', 'textRun'),
+      t('astryx.commandPalette.footer.close', 'textRun'),
+      // aria-label only, but on surfaces a translator can see and identify.
+      t('astryx.commandPalette.label', 'ariaLabel'),
+      t('astryx.commandPalette.list.label', 'ariaLabel'),
+    ],
+  },
+  {
+    name: 'commandpalette-no-results',
+    storyId: 'core-commandpalette--built-in-strings',
+    viewport: {width: 900, height: 700},
+    interact: async page => {
+      await openCommandPalette(page);
+      await page.locator('dialog[open] input').first().fill('zzz');
+      await page.waitForTimeout(1100);
+    },
+    selector: null,
+    manualTags: [
+      t('astryx.commandPalette.emptySearch', 'visibleText'),
+      // "No results for {query}" — the story's query is "zzz".
+      t(
+        'astryx.commandPalette.noResultsFor',
+        'liveRegionReveal',
+        'No results for zzz',
+        '.astryx-command-palette-input',
+        'below',
+      ),
+    ],
+  },
+  {
+    name: 'commandpalette-result-count',
+    storyId: 'core-commandpalette--built-in-strings',
+    viewport: {width: 900, height: 700},
+    interact: async page => {
+      await openCommandPalette(page);
+      await page.locator('dialog[open] input').first().fill('e');
+      await page.waitForTimeout(1100);
+    },
+    selector: null,
+    manualTags: [
+      // All three of the story's commands match "e".
+      t(
+        'astryx.commandPalette.resultCount',
+        'liveRegionReveal',
+        '3 results',
+        '.astryx-command-palette-input',
+        'below',
+      ),
+    ],
+  },
+  {
+    name: 'commandpalette-loading',
+    storyId: 'core-commandpalette--built-in-strings',
+    viewport: {width: 900, height: 700},
+    interact: async page => {
+      await openCommandPalette(page);
+      // Capture inside the story's 600ms in-flight window.
+      await page.locator('dialog[open] input').first().fill('e');
+      await page.waitForTimeout(120);
+    },
+    selector: null,
+    manualTags: [
+      t(
+        'astryx.commandPalette.loading',
+        'liveRegionReveal',
+        undefined,
+        '.astryx-command-palette-input',
+        'below',
+      ),
     ],
   },
 ];
@@ -1390,7 +1625,9 @@ function validateAllTargets(catalogKeys) {
   for (const target of TARGETS) {
     for (const tag of target.manualTags || []) {
       if (!STRATEGY_NAMES.includes(tag.strategy)) {
-        errors.push(`${target.name}: unknown strategy "${tag.strategy}" for key ${tag.key}`);
+        errors.push(
+          `${target.name}: unknown strategy "${tag.strategy}" for key ${tag.key}`,
+        );
       }
       if (!catalogKeys.has(tag.key)) {
         unknown.add(`${target.name} :: ${tag.key}`);
@@ -1406,7 +1643,10 @@ async function ensureStorybookBuild() {
     log('Reusing existing storybook build at', STORYBOOK_DIST);
     return;
   }
-  if (fs.existsSync(path.join(STORYBOOK_DIST, 'iframe.html')) && !args.has('--rebuild')) {
+  if (
+    fs.existsSync(path.join(STORYBOOK_DIST, 'iframe.html')) &&
+    !args.has('--rebuild')
+  ) {
     log('Storybook build already exists at', STORYBOOK_DIST, '(skipping)');
     return;
   }
@@ -1428,18 +1668,24 @@ async function main() {
     process.exit(2);
   }
   if (unknown.length) {
-    warn(`⚠ ${unknown.length} declared key(s) NOT in en.json (will be skipped):`);
+    warn(
+      `⚠ ${unknown.length} declared key(s) NOT in en.json (will be skipped):`,
+    );
     for (const u of unknown) warn('   ·', u);
   }
   if (VALIDATE_ONLY) {
-    log(`Validation complete. ${TARGETS.length} targets checked, ${unknown.length} unknown keys.`);
+    log(
+      `Validation complete. ${TARGETS.length} targets checked, ${unknown.length} unknown keys.`,
+    );
     process.exit(unknown.length ? 1 : 0);
   }
 
   // 2. Storybook.
   await ensureStorybookBuild();
   if (!fs.existsSync(path.join(STORYBOOK_DIST, 'iframe.html'))) {
-    throw new Error(`Missing ${STORYBOOK_DIST}/iframe.html — storybook build failed`);
+    throw new Error(
+      `Missing ${STORYBOOK_DIST}/iframe.html — storybook build failed`,
+    );
   }
 
   // 3. Browser + measurement.
@@ -1449,9 +1695,12 @@ async function main() {
   const captured = [];
   const targets = ONLY ? TARGETS.filter(x => ONLY.has(x.name)) : TARGETS;
   if (ONLY) {
-    log(`--only filter: ${targets.length}/${TARGETS.length}: ${targets.map(x => x.name).join(', ')}`);
+    log(
+      `--only filter: ${targets.length}/${TARGETS.length}: ${targets.map(x => x.name).join(', ')}`,
+    );
     const missing = [...ONLY].filter(n => !TARGETS.some(x => x.name === n));
-    if (missing.length) warn(`⚠ --only names not found in TARGETS: ${missing.join(', ')}`);
+    if (missing.length)
+      warn(`⚠ --only names not found in TARGETS: ${missing.join(', ')}`);
   }
 
   const measureFnSource = buildMeasureSource();
@@ -1459,19 +1708,26 @@ async function main() {
   try {
     for (const target of targets) {
       const t0 = Date.now();
-      const ctx = await browser.newContext({viewport: target.viewport, deviceScaleFactor: DPR});
+      const ctx = await browser.newContext({
+        viewport: target.viewport,
+        deviceScaleFactor: DPR,
+      });
       const page = await ctx.newPage();
       const url = `${server.url}/iframe.html?id=${target.storyId}&viewMode=story`;
       log(`→ ${target.name} :: ${url}`);
       page.on('pageerror', e => warn('  [page error]', e.message));
       await page.goto(url, {waitUntil: 'load'});
-      await page.waitForLoadState('networkidle', {timeout: 15000}).catch(() => {});
+      await page
+        .waitForLoadState('networkidle', {timeout: 15000})
+        .catch(() => {});
       await page.waitForTimeout(500);
 
       try {
         await target.interact(page);
       } catch (err) {
-        warn(`  ⚠ interact() failed for ${target.name}: ${err.message} — screenshotting current state anyway`);
+        warn(
+          `  ⚠ interact() failed for ${target.name}: ${err.message} — screenshotting current state anyway`,
+        );
       }
 
       // Pre-screenshot pass: run any strategies that need to mutate the DOM
@@ -1479,8 +1735,9 @@ async function main() {
       // screenshot is captured. Strategies are idempotent: the same call
       // during the measurement pass below returns the already-injected
       // rect instead of duplicating.
-      const revealTags =
-        (target.manualTags || []).filter(t => t.strategy === 'srOnlyReveal');
+      const revealTags = (target.manualTags || []).filter(t =>
+        MUTATING_STRATEGIES.includes(t.strategy),
+      );
       if (revealTags.length) {
         for (const tag of revealTags) {
           await page.evaluate(
@@ -1503,14 +1760,20 @@ async function main() {
         await page.screenshot({path: outPath, fullPage: false});
       }
       const size = fs.statSync(outPath).size;
-      log(`  ✓ ${outPath} (${(size / 1024).toFixed(1)} KB, ${((Date.now() - t0) / 1000).toFixed(1)}s)`);
+      log(
+        `  ✓ ${outPath} (${(size / 1024).toFixed(1)} KB, ${((Date.now() - t0) / 1000).toFixed(1)}s)`,
+      );
 
       // Measure each declared tag's rect via its strategy.
       const measured = [];
       if (target.manualTags && target.manualTags.length) {
         for (const tag of target.manualTags) {
           if (!catalogKeys.has(tag.key)) {
-            measured.push({key: tag.key, position: null, reason: 'not-in-catalog'});
+            measured.push({
+              key: tag.key,
+              position: null,
+              reason: 'not-in-catalog',
+            });
             continue;
           }
           const rect = await page.evaluate(
@@ -1521,7 +1784,13 @@ async function main() {
             {fnSource: measureFnSource, strategy: tag.strategy, args: tag.args},
           );
           if (!rect) {
-            measured.push({key: tag.key, position: null, reason: 'no-rect', strategy: tag.strategy, args: tag.args});
+            measured.push({
+              key: tag.key,
+              position: null,
+              reason: 'no-rect',
+              strategy: tag.strategy,
+              args: tag.args,
+            });
           } else {
             measured.push({
               key: tag.key,
@@ -1534,11 +1803,15 @@ async function main() {
         log(`  ↳ measured ${hit}/${measured.length} tag positions`);
         for (const m of measured) {
           if (!m.position) {
-            warn(`     · skip ${m.key} (${m.reason}${m.strategy ? ` via ${m.strategy}` : ''})`);
+            warn(
+              `     · skip ${m.key} (${m.reason}${m.strategy ? ` via ${m.strategy}` : ''})`,
+            );
           } else if (DRY_RUN || SKIP_UPLOAD) {
             // Print the rect against the image size on inspectable runs.
             const p = m.position;
-            log(`     · ${m.key} [${p.x},${p.y} ${p.width}×${p.height}] → ${p.x + p.width},${p.y + p.height} of ${imageWidth}×${imageHeight}`);
+            log(
+              `     · ${m.key} [${p.x},${p.y} ${p.width}×${p.height}] → ${p.x + p.width},${p.y + p.height} of ${imageWidth}×${imageHeight}`,
+            );
           }
         }
       }
@@ -1553,13 +1826,19 @@ async function main() {
 
   // 4. Upload + tag.
   if (SKIP_UPLOAD || DRY_RUN) {
-    log(`Skipping upload (${DRY_RUN ? '--dry-run' : '--skip-upload'}). ${captured.length} screenshots captured.`);
+    log(
+      `Skipping upload (${DRY_RUN ? '--dry-run' : '--skip-upload'}). ${captured.length} screenshots captured.`,
+    );
     log(`Total: ${((Date.now() - totalT0) / 1000).toFixed(1)}s`);
     return;
   }
 
   const token = getToken();
-  const env = {...process.env, CROWDIN_PERSONAL_TOKEN: token, CROWDIN_PROJECT_ID: PROJECT_ID};
+  const env = {
+    ...process.env,
+    CROWDIN_PERSONAL_TOKEN: token,
+    CROWDIN_PROJECT_ID: PROJECT_ID,
+  };
 
   log('Fetching Crowdin string-id map…');
   const stringIdMap = await loadStringIdMap(token);
@@ -1574,23 +1853,35 @@ async function main() {
         const list = await crowdinFetch(q, {token});
         for (const x of list?.data ?? []) {
           if (x?.data?.name === `${c.name}.png`) {
-            log(`  ✂ deleting existing screenshot id=${x.data.id} (${c.name}.png)`);
-            await crowdinFetch(`/projects/${PROJECT_ID}/screenshots/${x.data.id}`, {token, method: 'DELETE'});
+            log(
+              `  ✂ deleting existing screenshot id=${x.data.id} (${c.name}.png)`,
+            );
+            await crowdinFetch(
+              `/projects/${PROJECT_ID}/screenshots/${x.data.id}`,
+              {token, method: 'DELETE'},
+            );
           }
         }
       } catch (err) {
-        warn(`  ⚠ delete-first failed for ${c.name}: ${err.message.slice(0, 300)}`);
+        warn(
+          `  ⚠ delete-first failed for ${c.name}: ${err.message.slice(0, 300)}`,
+        );
       }
     }
 
     const cmdArgs = [
-      'screenshot', 'upload', c.path,
+      'screenshot',
+      'upload',
+      c.path,
       // NOTE: --auto-tag intentionally OMITTED. All tags come from manualTags.
       // -f / -d / -b would REQUIRE --auto-tag per the CLI's own validation,
       // so we omit them too.
-      '--project-id', PROJECT_ID,
-      '--label', LABEL,
-      '-o', 'json',
+      '--project-id',
+      PROJECT_ID,
+      '--label',
+      LABEL,
+      '-o',
+      'json',
     ];
     log(`↑ crowdin screenshot upload ${c.name}  (no auto-tag)`);
     const res = spawnSyncCapture('crowdin', cmdArgs, {env, cwd: REPO_ROOT});
@@ -1608,7 +1899,9 @@ async function main() {
     try {
       const q = `/projects/${PROJECT_ID}/screenshots?limit=25&search=${encodeURIComponent(c.name)}`;
       const list = await crowdinFetch(q, {token});
-      const match = (list?.data ?? []).find(x => x?.data?.name === `${c.name}.png`);
+      const match = (list?.data ?? []).find(
+        x => x?.data?.name === `${c.name}.png`,
+      );
       if (!match) {
         warn(`     ⚠ could not resolve screenshot ID for ${c.name}`);
         continue;
@@ -1636,23 +1929,35 @@ async function main() {
             );
           }
           if (tags.length) {
-            log(`     ✗ deleted ${tags.length} existing tag(s) (--replace-tags)`);
+            log(
+              `     ✗ deleted ${tags.length} existing tag(s) (--replace-tags)`,
+            );
           }
         } catch (err) {
-          warn(`     ⚠ tag-clear failed for ${c.name}: ${err.message.slice(0, 300)}`);
+          warn(
+            `     ⚠ tag-clear failed for ${c.name}: ${err.message.slice(0, 300)}`,
+          );
         }
       }
 
       const body = [];
       const skipped = [];
       for (const m of c.measured) {
-        if (!m.position) { skipped.push(`${m.key}(${m.reason || 'no-pos'})`); continue; }
+        if (!m.position) {
+          skipped.push(`${m.key}(${m.reason || 'no-pos'})`);
+          continue;
+        }
         const sid = stringIdMap.get(m.key);
-        if (!sid) { skipped.push(`${m.key}(no-string-id)`); continue; }
+        if (!sid) {
+          skipped.push(`${m.key}(no-string-id)`);
+          continue;
+        }
         body.push({stringId: sid, position: m.position});
       }
       if (!body.length) {
-        warn(`     ⚠ no manual tags to post; skipped=${skipped.join(',') || 'none'}`);
+        warn(
+          `     ⚠ no manual tags to post; skipped=${skipped.join(',') || 'none'}`,
+        );
         continue;
       }
       const postRes = await crowdinFetch(
@@ -1660,9 +1965,13 @@ async function main() {
         {token, method: 'POST', body},
       );
       const postedCount = (postRes?.data ?? []).length;
-      log(`     ↑ POSTed ${postedCount} tag(s) → screenshotId=${screenshotId}${skipped.length ? `, skipped=${skipped.join(',')}` : ''}`);
+      log(
+        `     ↑ POSTed ${postedCount} tag(s) → screenshotId=${screenshotId}${skipped.length ? `, skipped=${skipped.join(',')}` : ''}`,
+      );
     } catch (err) {
-      warn(`     ✗ manual tagging failed for ${c.name}: ${err.message.slice(0, 300)}`);
+      warn(
+        `     ✗ manual tagging failed for ${c.name}: ${err.message.slice(0, 300)}`,
+      );
     }
   }
 
@@ -1673,4 +1982,7 @@ function spawnSyncCapture(cmd, argv, opts) {
   return spawnSync(cmd, argv, {encoding: 'utf8', ...opts});
 }
 
-main().catch(e => { console.error(e); process.exit(1); });
+main().catch(e => {
+  console.error(e);
+  process.exit(1);
+});

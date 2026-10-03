@@ -19,7 +19,10 @@ import {program, JSON_SUPPORTED} from '../index.mjs';
 import {buildManifest, RESPONSE_TYPES} from './manifest.mjs';
 import {runCli} from '../../../test-utils/run-cli.mjs';
 
-const manifest = buildManifest(program, {jsonSupported: JSON_SUPPORTED, version: '0.0.0-test'});
+const manifest = buildManifest(program, {
+  jsonSupported: JSON_SUPPORTED,
+  version: '0.0.0-test',
+});
 
 /** Flatten the manifest command tree into fully-qualified names. */
 function flatten(cmds, out = []) {
@@ -30,7 +33,7 @@ function flatten(cmds, out = []) {
   return out;
 }
 const allEntries = flatten(manifest.commands);
-const allNames = new Set(allEntries.map((c) => c.name));
+const allNames = new Set(allEntries.map(c => c.name));
 
 /** Fully-qualified names of every registered, non-hidden command in the program. */
 function registeredNames() {
@@ -50,14 +53,19 @@ function registeredNames() {
 describe('manifest: drift guards', () => {
   it('lists every registered (non-hidden) command', () => {
     for (const name of registeredNames()) {
-      expect(allNames.has(name), `manifest is missing command "${name}"`).toBe(true);
+      expect(allNames.has(name), `manifest is missing command "${name}"`).toBe(
+        true,
+      );
     }
   });
 
   it('marks every JSON_SUPPORTED command as json:true', () => {
     for (const name of JSON_SUPPORTED) {
-      const entry = allEntries.find((c) => c.name === name);
-      expect(entry, `JSON_SUPPORTED command "${name}" not in manifest`).toBeDefined();
+      const entry = allEntries.find(c => c.name === name);
+      expect(
+        entry,
+        `JSON_SUPPORTED command "${name}" not in manifest`,
+      ).toBeDefined();
       expect(entry.json, `"${name}" should be json:true`).toBe(true);
     }
   });
@@ -74,14 +82,20 @@ describe('manifest: drift guards', () => {
 
   it('has no response-type entry for a command that does not exist', () => {
     for (const name of Object.keys(RESPONSE_TYPES)) {
-      expect(allNames.has(name), `RESPONSE_TYPES key "${name}" is not a real command`).toBe(true);
+      expect(
+        allNames.has(name),
+        `RESPONSE_TYPES key "${name}" is not a real command`,
+      ).toBe(true);
     }
   });
 
   it('every command with response types is json-supported', () => {
     for (const entry of allEntries) {
       if (entry.responseTypes) {
-        expect(entry.json, `"${entry.name}" emits types but isn't json-supported`).toBe(true);
+        expect(
+          entry.json,
+          `"${entry.name}" emits types but isn't json-supported`,
+        ).toBe(true);
       }
     }
   });
@@ -101,7 +115,7 @@ describe('manifest: drift guards', () => {
   it('sorts subcommands by name (stable, agent-facing order)', () => {
     for (const entry of allEntries) {
       if (!entry.subcommands) continue;
-      const names = entry.subcommands.map((s) => s.name);
+      const names = entry.subcommands.map(s => s.name);
       expect(names, `subcommands of "${entry.name}" are not sorted`).toEqual(
         [...names].sort((a, b) => a.localeCompare(b)),
       );
@@ -127,18 +141,22 @@ describe('manifest: shape', () => {
   });
 
   it('describes global options once at top level (--json, --lang, --detail, --version)', () => {
-    const flags = manifest.globalOptions.map((o) => o.flag).join(' ');
+    const flags = manifest.globalOptions.map(o => o.flag).join(' ');
     expect(flags).toContain('--json');
     expect(flags).toContain('--lang');
     expect(flags).toContain('--detail');
     expect(flags).toContain('--version');
     // No duplicate --version
-    const versionCount = manifest.globalOptions.filter((o) => /--version\b/.test(o.flag)).length;
+    const versionCount = manifest.globalOptions.filter(o =>
+      /--version\b/.test(o.flag),
+    ).length;
     expect(versionCount).toBe(1);
   });
 
   it('surfaces enum choices and defaults on options', () => {
-    const detail = manifest.globalOptions.find((o) => o.flag.includes('--detail'));
+    const detail = manifest.globalOptions.find(o =>
+      o.flag.includes('--detail'),
+    );
     expect(detail.type).toBe('enum');
     expect(detail.choices).toEqual(['full', 'compact', 'brief']);
     expect(detail.default).toBe('full');
@@ -155,11 +173,14 @@ describe('manifest: shape', () => {
   });
 
   it('derives arguments from Commander metadata', () => {
-    const component = allEntries.find((c) => c.name === 'component');
-    expect(component.arguments.map((a) => a.name)).toContain('name');
-    const themeBuild = allEntries.find((c) => c.name === 'theme build');
-    expect(themeBuild.arguments.map((a) => a.name)).toContain('files');
-    const files = themeBuild.arguments.find((a) => a.name === 'files');
+    const component = allEntries.find(c => c.name === 'component');
+    const names = component.arguments.find(a => a.name === 'names');
+    expect(names.required).toBe(false);
+    expect(names.variadic).toBe(true);
+    expect(names.description).toContain('Two or more return one ordered batch');
+    const themeBuild = allEntries.find(c => c.name === 'theme build');
+    expect(themeBuild.arguments.map(a => a.name)).toContain('files');
+    const files = themeBuild.arguments.find(a => a.name === 'files');
     expect(files.required).toBe(true);
     expect(files.variadic).toBe(true);
   });
@@ -173,7 +194,7 @@ describe('manifest: e2e', () => {
     expect(parsed.apiVersion).toBe(1);
     expect(parsed.type).toBe('manifest');
     expect(parsed.data.name).toBe('astryx');
-    const names = parsed.data.commands.map((c) => c.name);
+    const names = parsed.data.commands.map(c => c.name);
     expect(names).toContain('component');
     expect(names).toContain('theme');
     expect(names).toContain('manifest');
@@ -187,13 +208,15 @@ describe('manifest: e2e', () => {
     expect(parsed.type).toBe('help');
     expect(parsed.data.name).toBe('astryx');
     expect(Array.isArray(parsed.data.commands)).toBe(true);
-    expect(parsed.data.commands.every((c) => typeof c === 'string')).toBe(true);
+    expect(parsed.data.commands.every(c => typeof c === 'string')).toBe(true);
     expect(parsed.data.commands).toContain('component');
     expect(Array.isArray(parsed.data.jsonSupported)).toBe(true);
     // Enriched: the full structured manifest is embedded.
     expect(parsed.data.manifest).toBeDefined();
-    expect(parsed.data.manifest.commands.find((c) => c.name === 'component').responseTypes)
-      .toContain('component.list');
+    expect(
+      parsed.data.manifest.commands.find(c => c.name === 'component')
+        .responseTypes,
+    ).toEqual(expect.arrayContaining(['component.list', 'component.batch']));
   });
 });
 
@@ -202,11 +225,11 @@ describe('manifest: text projection', () => {
     const text = await runCli(['manifest']);
     expect(text.status).toBe(0);
     const json = JSON.parse((await runCli(['manifest', '--json'])).stdout);
-    const jsonKeys = new Set(json.data.commands.flatMap((c) => Object.keys(c)));
+    const jsonKeys = new Set(json.data.commands.flatMap(c => Object.keys(c)));
     const textKeys = new Set(
       text.stdout
         .split('\n')
-        .map((line) => /^([A-Za-z]+):\s/.exec(line)?.[1])
+        .map(line => /^([A-Za-z]+):\s/.exec(line)?.[1])
         .filter(Boolean),
     );
     expect(textKeys).toContain('name');

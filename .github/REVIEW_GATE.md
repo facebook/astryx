@@ -71,6 +71,10 @@ A PR changes only spec records when every changed path is one of:
 - a colocated Core/Lab `<Name>.spec.md`.
 
 Draft-only spec records can merge after validation without owner approval.
+Approval reads the record against the `## Writing rubric results` the author
+reports in the pull request description (`docs/contributing/spec-writing.md`);
+a record pull request without them is incomplete. That is a review convention,
+not a status this gate publishes.
 Pure spec-record PRs do not add Changesets because they do not release packages;
 CI rejects a PR containing only spec records and `.changeset` entries.
 That classification fails closed on an empty or truncated file list and checks

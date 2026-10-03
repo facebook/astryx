@@ -33,8 +33,12 @@ describe('build API', () => {
     }
     expect(r.data.rules.length).toBeGreaterThan(0);
     // Bare subcommands: the caller adds its own invocation.
-    const commands = [...r.data.steps.flatMap(s => s.commands), ...r.data.related];
-    for (const {command} of commands) expect(command).not.toMatch(/^(astryx|npx|pnpm|yarn|bunx?)\b/);
+    const commands = [
+      ...r.data.steps.flatMap(s => s.commands),
+      ...r.data.related,
+    ];
+    for (const {command} of commands)
+      expect(command).not.toMatch(/^(astryx|npx|pnpm|yarn|bunx?)\b/);
   });
 
   it('the playbook scaffolds the named template before composing', async () => {
@@ -163,7 +167,9 @@ describe('build kit — coverage gates the pages group', () => {
     if (r.type !== 'build.kit') return;
     expect(r.data.directMatch).toBe(false);
     for (const p of r.data.pages) {
-      expect(['login', 'contact-form', 'documentation-design']).not.toContain(p.name);
+      expect(['login', 'contact-form', 'documentation-design']).not.toContain(
+        p.name,
+      );
     }
   });
 
@@ -177,6 +183,34 @@ describe('build kit — coverage gates the pages group', () => {
       expect(page).not.toHaveProperty('matchedTerms');
       expect(page).not.toHaveProperty('queryTerms');
     }
+  });
+
+  it('does not call a page that only mentions every word a direct match', async () => {
+    // `empty state` and `command palette` name components. A page whose text
+    // mentions both words, or that renders the component, is a layout
+    // reference, not the page the reader asked for.
+    for (const query of ['empty state', 'command palette']) {
+      const r = await build(query, {cwd: REPO});
+      if (r.type !== 'build.kit') throw new Error('expected build.kit');
+      expect(r.data.directMatch, query).toBe(false);
+    }
+  });
+
+  it('keeps the page and component a query names first', async () => {
+    const pageOf = async (/** @type {string} */ query) => {
+      const r = await build(query, {cwd: REPO});
+      if (r.type !== 'build.kit') throw new Error('expected build.kit');
+      return r.data;
+    };
+    expect((await pageOf('checkout flow')).pages[0]).toMatchObject({
+      name: 'checkout-wizard',
+    });
+    expect((await pageOf('sign in with sso')).pages[0]).toMatchObject({
+      name: 'login-sso',
+    });
+    expect((await pageOf('search results')).domain.map(e => e.name)).toContain(
+      'PowerSearch',
+    );
   });
 
   it('leaves single-concept queries alone (nothing to cover)', async () => {
@@ -195,9 +229,14 @@ describe('build kit — a thin kit says what to try next', () => {
     const r = await build('quantum flux capacitor telemetry', {cwd: REPO});
     expect(r.type).toBe('build.kit');
     if (r.type !== 'build.kit') return;
-    expect(r.data.pages.length + r.data.blocks.length + r.data.domain.length).toBeLessThan(3);
+    expect(
+      r.data.pages.length + r.data.blocks.length + r.data.domain.length,
+    ).toBeLessThan(3);
     expect(r.data.hint?.reason).toMatch(/keyword search/i);
-    expect(r.data.hint?.commands).toEqual(['component --list', 'template --list']);
+    expect(r.data.hint?.commands).toEqual([
+      'component --list',
+      'template --list',
+    ]);
   });
 
   it('carries no hint when the kit is healthy', async () => {
@@ -214,7 +253,9 @@ describe('build kit — a thin kit says what to try next', () => {
     expect(r.type).toBe('build.kit');
     if (r.type !== 'build.kit') return;
     expect(r.data.hasResults).toBe(true);
-    expect(r.data.pages.length + r.data.blocks.length + r.data.domain.length).toBe(0);
+    expect(
+      r.data.pages.length + r.data.blocks.length + r.data.domain.length,
+    ).toBe(0);
     expect(r.data.hint).toBeTruthy();
   });
 
@@ -254,7 +295,10 @@ describe('build kit — a thin kit says what to try next', () => {
     if (r.type !== 'build.kit') return;
     expect(r.data.directMatch).toBe(true);
     expect(r.data.pages.length).toBeGreaterThan(0);
-    expect(r.data.start).toMatchObject({name: r.data.pages[0].name, basis: 'direct'});
+    expect(r.data.start).toMatchObject({
+      name: r.data.pages[0].name,
+      basis: 'direct',
+    });
     for (const page of r.data.pages) {
       expect(page.command).not.toMatch(/--skeleton/);
     }
@@ -319,7 +363,9 @@ describe('build kit — every page starts from a template', () => {
     expect(r.data.directMatch).toBe(true);
     expect(r.data.pages[0].name).toBe('incident-console');
     expect(r.data.start?.name).not.toBe('incident-console');
-    expect(r.data.start?.reason).toMatch(/`incident-console` matches but is not ready yet/);
+    expect(r.data.start?.reason).toMatch(
+      /`incident-console` matches but is not ready yet/,
+    );
   });
 
   it('does not start from a page that matched one incidental word', async () => {
@@ -332,12 +378,20 @@ describe('build kit — every page starts from a template', () => {
   });
 
   it('starts a part from the page it is placed in, else from the app shell', async () => {
-    const placed = await build('an empty state for a settings page', {cwd: REPO});
+    const placed = await build('an empty state for a settings page', {
+      cwd: REPO,
+    });
     if (placed.type !== 'build.kit') throw new Error(placed.type);
-    expect(placed.data.start).toMatchObject({name: 'settings', basis: 'closest'});
+    expect(placed.data.start).toMatchObject({
+      name: 'settings',
+      basis: 'closest',
+    });
     const loose = await build('a date range picker', {cwd: REPO});
     if (loose.type !== 'build.kit') throw new Error(loose.type);
-    expect(loose.data.start).toMatchObject({name: 'shell-top-nav', basis: 'fallback'});
+    expect(loose.data.start).toMatchObject({
+      name: 'shell-top-nav',
+      basis: 'fallback',
+    });
   });
 
   it('names a direct match the ranker outweighed in the reason', async () => {
@@ -354,15 +408,23 @@ describe('build kit — every page starts from a template', () => {
     if (r.type !== 'build.kit') throw new Error(r.type);
     expect(r.data.pages.length).toBeGreaterThan(0);
     expect(r.data.start?.basis).toBe('fallback');
-    for (const page of r.data.pages) expect(r.data.start?.reason).toContain(`\`${page.name}\``);
+    for (const page of r.data.pages)
+      expect(r.data.start?.reason).toContain(`\`${page.name}\``);
   });
 
   it('never gives a reason that denies a match the response reports', async () => {
-    for (const q of ['news feed', 'dashboard with a login form', 'user profile', 'incident console']) {
+    for (const q of [
+      'news feed',
+      'dashboard with a login form',
+      'user profile',
+      'incident console',
+    ]) {
       const r = await build(q, {cwd: REPO});
       if (r.type !== 'build.kit') throw new Error(r.type);
-      if (r.data.pages.length) expect(r.data.start?.reason).not.toMatch(/No template matched/);
-      if (r.data.directMatch) expect(r.data.start?.reason).not.toMatch(/none is exactly this page/);
+      if (r.data.pages.length)
+        expect(r.data.start?.reason).not.toMatch(/No template matched/);
+      if (r.data.directMatch)
+        expect(r.data.start?.reason).not.toMatch(/none is exactly this page/);
     }
   });
 
@@ -373,8 +435,6 @@ describe('build kit — every page starts from a template', () => {
     expect(r.data.start).toBeNull();
   });
 
-
-
   it('keeps incidental description matches out of blocks and components', async () => {
     // Toast, Popover and TextInput all say "brief" somewhere in their
     // descriptions; none of them is part of a brief.
@@ -382,10 +442,11 @@ describe('build kit — every page starts from a template', () => {
     expect(r.type).toBe('build.kit');
     if (r.type !== 'build.kit') return;
     const names = [...r.data.blocks, ...r.data.domain].map(e => e.name);
-    for (const noise of ['Toast', 'Popover', 'TextInput']) expect(names).not.toContain(noise);
+    for (const noise of ['Toast', 'Popover', 'TextInput'])
+      expect(names).not.toContain(noise);
   });
 
-  it('names the ranker\'s next two templates beside every start', async () => {
+  it("names the ranker's next two templates beside every start", async () => {
     for (const idea of ['quarterly revenue dashboard', 'contact form']) {
       const r = await build(idea, {cwd: REPO});
       expect(r.type).toBe('build.kit');
@@ -396,7 +457,9 @@ describe('build kit — every page starts from a template', () => {
       for (const alt of alternatives) {
         expect(alt.name).not.toBe(r.data.start?.name);
         expect(alt.description).toBeTruthy();
-        expect(alt.command).toBe(`astryx template ${alt.name} --type page <path>`);
+        expect(alt.command).toBe(
+          `astryx template ${alt.name} --type page <path>`,
+        );
       }
     }
   });
@@ -406,13 +469,19 @@ describe('build kit — every page starts from a template', () => {
     expect(r.type).toBe('build.kit');
     if (r.type !== 'build.kit') return;
     expect(r.data.directMatch).toBe(true);
-    expect(r.data.start).toMatchObject({name: r.data.pages[0].name, basis: 'direct'});
+    expect(r.data.start).toMatchObject({
+      name: r.data.pages[0].name,
+      basis: 'direct',
+    });
   });
 
   it('never lets a noisy search match pick the start', async () => {
     // Search once matched "site" to the gallery's "side" and started a
     // navigation bar from a gallery. The ranker alone picks the start now.
-    const r = await build('horizontal site navigation with a current section indicator', {cwd: REPO});
+    const r = await build(
+      'horizontal site navigation with a current section indicator',
+      {cwd: REPO},
+    );
     expect(r.type).toBe('build.kit');
     if (r.type !== 'build.kit') return;
     expect(r.data.start?.name).toBe('shell-top-nav');
@@ -422,7 +491,10 @@ describe('build kit — every page starts from a template', () => {
   it('starts a component in a container from a template with that frame', async () => {
     // "in a modal": the modal is the frame, so the dialog template leads
     // instead of the app shell.
-    const r = await build('saved drafts in a modal with resume and delete row actions', {cwd: REPO});
+    const r = await build(
+      'saved drafts in a modal with resume and delete row actions',
+      {cwd: REPO},
+    );
     expect(r.type).toBe('build.kit');
     if (r.type !== 'build.kit') return;
     expect(r.data.start?.name).toBe('settings-dialog');
@@ -430,7 +502,10 @@ describe('build kit — every page starts from a template', () => {
 
   it('does not start from a template named only by a word that modifies another', async () => {
     // "product" describes the response; it is not a product page.
-    const r = await build('an interactive command catalog with side-by-side product response and trace', {cwd: REPO});
+    const r = await build(
+      'an interactive command catalog with side-by-side product response and trace',
+      {cwd: REPO},
+    );
     expect(r.type).toBe('build.kit');
     if (r.type !== 'build.kit') return;
     expect(r.data.start?.name).not.toMatch(/^product-/);

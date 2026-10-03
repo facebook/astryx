@@ -25,6 +25,8 @@
  */
 
 import {recordCommandResult} from '../../../foundation/debug/index.mjs';
+import {routeSegment} from '../../../foundation/discovery/docs-section-key.mjs';
+import {formatCliCommand} from '../../../foundation/env/package-manager.mjs';
 import {text} from '../formatters/index.mjs';
 
 /**
@@ -118,7 +120,10 @@ export function defineCommand(parent, doc, {fn, action} = {}) {
     .join(' ');
 
   const cmd = parent.command(argSpec ? `${token} ${argSpec}` : token);
-  Object.defineProperty(cmd, COMMAND_DOCS, {value: {doc, fn}, configurable: true});
+  Object.defineProperty(cmd, COMMAND_DOCS, {
+    value: {doc, fn},
+    configurable: true,
+  });
   if (doc.summary) cmd.description(doc.summary);
 
   const paramDesc = (/** @type {string | undefined} */ name) =>
@@ -131,7 +136,9 @@ export function defineCommand(parent, doc, {fn, action} = {}) {
     // current CLI has none. (Docsite/`astryx docs` read the arg's `param` for
     // its description instead.)
     if (arg.description) {
-      const argument = cmd.registeredArguments?.find(a => a.name() === arg.name);
+      const argument = cmd.registeredArguments?.find(
+        a => a.name() === arg.name,
+      );
       if (argument) argument.description = arg.description;
     }
   }
@@ -143,10 +150,11 @@ export function defineCommand(parent, doc, {fn, action} = {}) {
     cmd.addOption(option);
   }
 
-  // Help ends with the documented exit codes. `choices` stay in the option
-  // text: Commander `.choices()` would replace the api layer's
-  // ERR_INVALID_ARGUMENT validation.
-  addExitCodesHelp(cmd, doc.exitCodes);
+  // Help ends with the documented exit codes, the examples, and the docs
+  // route that reads the whole command. `choices` stay in the option text:
+  // Commander `.choices()` would replace the api layer's ERR_INVALID_ARGUMENT
+  // validation.
+  addDocHelp(cmd, doc);
 
   if (action) {
     // The recording seam. An action's job ends at "here is what I answered
@@ -166,6 +174,30 @@ export function defineCommand(parent, doc, {fn, action} = {}) {
 }
 
 /**
+ * End `cmd`'s help with what its CommandDoc says: the exit codes, then the
+ * examples, then `More:`, the `astryx docs` route that reads the whole command.
+ * @param {import('commander').Command} cmd
+ * @param {import('@astryxdesign/cli/authoring').CommandDoc} doc
+ */
+export function addDocHelp(cmd, doc) {
+  addExitCodesHelp(cmd, doc.exitCodes);
+  // Rendered when help is shown, so the run prefix (npx astryx, pnpm astryx,
+  // ...) is looked up then, not on every start.
+  cmd.addHelpText('after', () => {
+    const examples = (doc.examples ?? []).flatMap(({label, cli}) => [
+      ...(label ? [`  # ${label}`] : []),
+      `  ${formatCliCommand(cli)}`,
+    ]);
+    const more = `More: ${formatCliCommand(`docs cli/commands/${routeSegment(doc.name)}`)}`;
+    const blocks =
+      examples.length > 0
+        ? [['Examples:', ...examples].join('\n'), more]
+        : [more];
+    return `\n${text(blocks.join('\n\n')).toString()}`;
+  });
+}
+
+/**
  * End `cmd`'s help with a CommandDoc's exit codes.
  * @param {import('commander').Command} cmd
  * @param {import('@astryxdesign/cli/authoring').CommandDoc['exitCodes']} exitCodes
@@ -173,5 +205,8 @@ export function defineCommand(parent, doc, {fn, action} = {}) {
 export function addExitCodesHelp(cmd, exitCodes) {
   if (!exitCodes?.length) return;
   const lines = exitCodes.map(({code, when}) => `  ${code}  ${when}`);
-  cmd.addHelpText('after', `\n${text(['Exit codes:', ...lines].join('\n')).toString()}`);
+  cmd.addHelpText(
+    'after',
+    `\n${text(['Exit codes:', ...lines].join('\n')).toString()}`,
+  );
 }

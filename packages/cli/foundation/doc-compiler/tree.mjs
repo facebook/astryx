@@ -58,7 +58,7 @@ export const KIND_GROUPS = Object.freeze({
   schema: {
     segment: 'schemas',
     title: 'Schemas',
-    summary: 'Every shape the CLI reads or returns, field by field.',
+    summary: 'Data shapes, field by field.',
   },
   enum: {
     segment: 'enums',
@@ -140,6 +140,7 @@ export const UNORGANIZED = 'unorganized';
  * @property {string} name
  * @property {string} title
  * @property {string} summary
+ * @property {string[]} [keywords] an authored namespace's search keywords
  * @property {string | null} parent the parent's route; null at the top
  * @property {string | null} slot the parent slot this node sits in
  * @property {number | null} order
@@ -241,7 +242,8 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
   // without case, as topic names do, so `CLI` claims `cli`.
   const cliRoutes = new Set(topics.length > 0 ? [UNORGANIZED] : []);
   for (const topic of topics) {
-    if (topic.provider === CLI_PROVIDER) cliRoutes.add(topic.name.toLowerCase());
+    if (topic.provider === CLI_PROVIDER)
+      cliRoutes.add(topic.name.toLowerCase());
   }
   // Every other name a topic answers to (the topics it replaced, directly or
   // through a chain) is that topic's route too: `astryx docs <name>` opens the
@@ -420,10 +422,14 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
         name: input.doc.name,
         title: input.doc.title,
         summary: input.doc.summary,
+        ...(Array.isArray(input.doc.keywords)
+          ? {keywords: input.doc.keywords}
+          : {}),
         parent: parentRoute,
         slot: home?.slot ?? null,
         order: home?.order ?? null,
         generated: false,
+        ref: {selfDoc: input.doc},
         slots: Object.entries(input.doc.slots).map(([name, slot]) => ({
           name,
           title: slot.title,

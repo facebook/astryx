@@ -11,9 +11,12 @@ export const doc = {
   name: 'gap-report',
   displayName: 'astryx gap-report',
   namespace: 'cli/commands',
-  summary: 'Route a design-system gap to its owning package',
+  summary: 'Report a missing component or feature to the package that owns it',
   description:
-    'Reports a missing component, variant, layout, styling, accessibility, API, or documentation capability. The command selects an explicit package first, then a unique component owner, then Core. The report fans out to every effective handler: project config first, then each loaded integration in config order. Public handlers require --confirm-public per handler; internal handlers always run. A handler failure is isolated and does not prevent later handlers.',
+    'Reports a missing component, variant, layout, styling, accessibility, API, or documentation capability to the package that owns it: the --package you name, else the one package that provides the component, else Core. ' +
+    'Every configured handler receives the report: the project config handler first, then each integration handler in config order. Public handlers run only with --confirm-public; internal handlers always run. A failing handler does not stop the others. ' +
+    "With no handler it files a GitHub issue for the owning package, only with --confirm-public (without it nothing is sent), or returns the package's issues URL when that is not on GitHub. " +
+    'The report records whether an agent or a person ran it.',
   fn: 'gapReport',
   args: [
     {
@@ -45,12 +48,14 @@ export const doc = {
     {
       flag: '--package <pkg>',
       param: 'options.package',
-      description: 'Route to a specific loaded package',
+      description:
+        'Package that owns the gap: @astryxdesign/core or a loaded integration. Overrides automatic routing; needed when more than one package provides the component',
     },
     {
       flag: '--confirm-public',
       param: 'options.confirmPublic',
-      description: 'Consent to public handlers or GitHub issue creation',
+      description:
+        'Allow public delivery: public handlers run, and with no handler it files a GitHub issue with your gh login',
     },
     {
       flag: '--list-categories',
@@ -62,12 +67,9 @@ export const doc = {
   examples: [
     {label: 'List categories', cli: 'astryx gap-report --list-categories'},
     {
-      label: 'Route an agent report',
+      label:
+        'Prepare a report (nothing public happens without --confirm-public)',
       cli: "astryx gap-report Button --category missing_variant --reason 'Need a compact size'",
-    },
-    {
-      label: 'Confirm public filing',
-      cli: "astryx gap-report Button --category docs_gap --reason 'Missing keyboard example' --confirm-public",
     },
   ],
   exitCodes: [

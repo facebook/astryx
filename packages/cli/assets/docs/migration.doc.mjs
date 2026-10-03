@@ -30,12 +30,12 @@ export const docs = {
           type: 'list',
           style: 'ordered',
           items: [
-            'Install the design system and run init so the project has package scripts, theme CSS, and agent docs.',
+            'Install the packages and run `astryx init` for agent docs, then add the reset, `astryx.css`, and theme CSS imports (see Theme and CSS Setup).',
             'Wrap the app root with Theme and choose the initial light, dark, or system mode behavior.',
             'Make Tailwind and design system CSS layer order explicit before replacing components.',
             'Render the foundation smoke test page and confirm primitives keep their padding before migrating any surface.',
             'Move the persistent frame first: AppShell, TopNav, SideNav, page content, and mobile navigation.',
-            'Replace shared primitives: Button, IconButton, TextInput, NumberInput, Switch, CheckboxInput, RadioList, Selector, Tabs, Dialog, AlertDialog, Banner, Toast, Badge, Card, Table, and ListItem.',
+            'Replace shared primitives: Button, IconButton, TextInput, NumberInput, Switch, CheckboxInput, RadioList, Selector, TabList, Dialog, AlertDialog, Banner, Toast, Badge, Card, Table, and ListItem.',
             'Replace global workflows: command palette, settings popover, theme toggle, search, filters, create flows, and destructive confirmation dialogs.',
             'Remove legacy Tailwind classes from each completed surface, keeping only token-backed layout utilities or local wrappers that still need to be migrated.',
             'Verify both light and dark modes, keyboard navigation, responsive layout, and empty/error/loading states before moving to the next route.',
@@ -69,13 +69,13 @@ astryx component TextInput`,
         },
         {
           type: 'prose',
-          text: 'Use --dense when pasting output into an AI coding tool, and use --json when building automated migration reports.',
+          text: 'For a shorter read to paste into an AI coding tool, add `--detail brief` (one line per section) or `--detail compact`. Use `--json` when building automated migration reports.',
         },
         {
           type: 'code',
           lang: 'bash',
-          label: 'Dense and JSON modes',
-          code: `astryx docs migration --dense
+          label: 'Short and JSON modes',
+          code: `astryx docs migration --full --detail brief
 astryx component Button --json`,
         },
       ],
@@ -110,21 +110,7 @@ export function AppRoot({children}: {children: React.ReactNode}) {
         },
         {
           type: 'prose',
-          text: 'When Tailwind remains in the app, declare layer order once in the global CSS file. design system reset and theme CSS should load before Tailwind utilities so migrated components keep design system defaults while legacy utility classes still work.',
-        },
-        {
-          type: 'code',
-          lang: 'css',
-          label: 'Tailwind v4 coexistence',
-          code: `@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
-
-@import "tailwindcss/theme.css" layer(theme);
-@import "tailwindcss/preflight.css" layer(base);
-@import "@astryxdesign/core/reset.css";
-@import "@astryxdesign/core/astryx.css";
-@import "@astryxdesign/theme-neutral/theme.css";
-@import "@astryxdesign/core/tailwind-theme.css";
-@import "tailwindcss/utilities.css" layer(utilities);`,
+          text: 'When Tailwind remains in the app, declare layer order once in the global CSS file. Load the Astryx reset and theme CSS before Tailwind utilities so migrated components keep design system defaults while legacy utility classes still work. On Tailwind v4, use the imports and layer order in the Tailwind section of {@link generic:styling-libraries}.',
         },
         {
           type: 'prose',
@@ -149,7 +135,8 @@ export function AppRoot({children}: {children: React.ReactNode}) {
       ],
     },
     {
-      title: 'Cascade Layer Safety',
+      id: 'cascade-layer-safety',
+      title: 'Why resets break cascade layers',
       content: [
         {
           type: 'prose',
@@ -166,6 +153,16 @@ export function AppRoot({children}: {children: React.ReactNode}) {
           code: `/* was: @import "./legacy-reset.css";  (unlayered: beats every layer) */
 @import "./legacy-reset.css" layer(reset);`,
         },
+        {
+          type: 'prose',
+          text: 'Before building screens, check every stylesheet against Cascade layer audit.',
+        },
+      ],
+    },
+    {
+      id: 'layer-audit',
+      title: 'Cascade layer audit',
+      content: [
         {
           type: 'prose',
           text: 'Audit the layers around the design system with this checklist before building screens.',
@@ -272,11 +269,31 @@ if (getComputedStyle(button).paddingInline === '0px') {
           type: 'table',
           headers: ['Legacy surface', 'Component', 'Notes'],
           rows: [
-            ['Header', 'TopNav', 'Use for product identity, global actions, account entry, and command/search trigger.'],
-            ['Sidebar', 'SideNav', 'Use sections and nested nav items for route groups. Keep selection state driven by the router.'],
-            ['Main page wrapper', 'AppShell + Layout', 'Let the shell own persistent structure; let route components own page content.'],
-            ['Mobile drawer nav', 'MobileNav or AppShell mobile behavior', 'Verify focus, close behavior, and route changes on narrow viewports.'],
-            ['Settings menu', 'Popover + Layout + Switch', 'Use as the home for theme mode and app preferences.'],
+            [
+              'Header',
+              'TopNav',
+              'Use for product identity, global actions, account entry, and command/search trigger.',
+            ],
+            [
+              'Sidebar',
+              'SideNav',
+              'Use sections and nested nav items for route groups. Keep selection state driven by the router.',
+            ],
+            [
+              'Main page wrapper',
+              'AppShell + Layout',
+              'Let the shell own persistent structure; let route components own page content.',
+            ],
+            [
+              'Mobile drawer nav',
+              'MobileNav or AppShell mobile behavior',
+              'Verify focus, close behavior, and route changes on narrow viewports.',
+            ],
+            [
+              'Settings menu',
+              'Popover + Layout + Switch',
+              'Use as the home for theme mode and app preferences.',
+            ],
           ],
         },
       ],
@@ -292,24 +309,77 @@ if (getComputedStyle(button).paddingInline === '0px') {
           type: 'table',
           headers: ['Existing primitive', 'Component', 'Migration note'],
           rows: [
-            ['button / shadcn Button', 'Button or IconButton', 'Use Button for labeled commands and IconButton for icon-only toolbar actions.'],
-            ['input', 'TextInput', 'Keep validation state in status props rather than ad hoc border classes.'],
-            ['textarea', 'TextArea', 'Use when multiline editing is the primary action.'],
-            ['switch', 'Switch', 'Use for persisted boolean settings, including theme mode when represented as a binary choice.'],
-            ['checkbox', 'CheckboxInput or CheckboxList', 'Use list variants for grouped selection.'],
-            ['radio group', 'RadioList', 'Use when one option must be selected from a visible set.'],
-            ['select / combobox', 'Selector or Typeahead', 'Use Selector for bounded options and Typeahead for searchable async options.'],
-            ['tabs used as page nav', 'TabList', 'Use route state or current page state as the source of truth.'],
-            ['command dialog', 'CommandPalette', 'Keep app-specific search sources outside the shell and feed searchable items.'],
-            ['dropdown action menu', 'DropdownMenu or MoreMenu', 'Use MoreMenu for compact overflow actions.'],
-            ['alert / callout', 'Banner or Toast', 'Use Banner for page or section messages and Toast for transient feedback.'],
-            ['dialog', 'Dialog or AlertDialog', 'Use AlertDialog for destructive confirmation and Dialog for task flows.'],
-            ['card-like list row', 'ListItem', 'Prefer ListItem for selectable rows instead of styling Button as a row.'],
+            [
+              'button / shadcn Button',
+              'Button or IconButton',
+              'Use Button for labeled commands and IconButton for icon-only toolbar actions.',
+            ],
+            [
+              'input',
+              'TextInput',
+              'Keep validation state in status props rather than ad hoc border classes.',
+            ],
+            [
+              'textarea',
+              'TextArea',
+              'Use when multiline editing is the primary action.',
+            ],
+            [
+              'switch',
+              'Switch',
+              'Use for persisted boolean settings, including theme mode when represented as a binary choice.',
+            ],
+            [
+              'checkbox',
+              'CheckboxInput or CheckboxList',
+              'Use list variants for grouped selection.',
+            ],
+            [
+              'radio group',
+              'RadioList',
+              'Use when one option must be selected from a visible set.',
+            ],
+            [
+              'select / combobox',
+              'Selector or Typeahead',
+              'Use Selector for bounded options and Typeahead for searchable async options.',
+            ],
+            [
+              'tabs used as page nav',
+              'TabList',
+              'Use route state or current page state as the source of truth.',
+            ],
+            [
+              'command dialog',
+              'CommandPalette',
+              'Keep app-specific search sources outside the shell and feed searchable items.',
+            ],
+            [
+              'dropdown action menu',
+              'DropdownMenu or MoreMenu',
+              'Use MoreMenu for compact overflow actions.',
+            ],
+            [
+              'alert / callout',
+              'Banner or Toast',
+              'Use Banner for page or section messages and Toast for transient feedback.',
+            ],
+            [
+              'dialog',
+              'Dialog or AlertDialog',
+              'Use AlertDialog for destructive confirmation and Dialog for task flows.',
+            ],
+            [
+              'card-like list row',
+              'ListItem',
+              'Prefer ListItem for selectable rows instead of styling Button as a row.',
+            ],
           ],
         },
       ],
     },
     {
+      id: 'command-palette',
       title: 'Command Palette, Settings, and Theme',
       content: [
         {

@@ -56,8 +56,14 @@ const MANAGED_MARKER_TEXT = /(?:ASTRYX|XDS):(START|END)/u;
 
 /** @param {unknown} value @returns {string} */
 function validateIntegrationLabel(value) {
-  if (typeof value !== 'string' || value.length === 0 || value !== value.trim()) {
-    throw new Error('Integration package name is not safe to render in agent docs.');
+  if (
+    typeof value !== 'string' ||
+    value.length === 0 ||
+    value !== value.trim()
+  ) {
+    throw new Error(
+      'Integration package name is not safe to render in agent docs.',
+    );
   }
   for (const character of value) {
     const codePoint = character.codePointAt(0) ?? 0;
@@ -67,11 +73,15 @@ function validateIntegrationLabel(value) {
       codePoint === 0x2028 ||
       codePoint === 0x2029
     ) {
-      throw new Error('Integration package name is not safe to render in agent docs.');
+      throw new Error(
+        'Integration package name is not safe to render in agent docs.',
+      );
     }
   }
   if (MANAGED_MARKER_TEXT.test(value) || value.includes('`')) {
-    throw new Error('Integration package name is not safe to render in agent docs.');
+    throw new Error(
+      'Integration package name is not safe to render in agent docs.',
+    );
   }
   return value;
 }
@@ -266,7 +276,11 @@ export function inspectAgentDocs(targetDir, installedVersion, expectedBlock) {
   const staleEntries = files.filter(f => f.stale);
   const staleFiles = staleEntries.map(f => f.path);
   const blockVersions = [
-    ...new Set(staleEntries.map(f => f.blockVersion).filter(/** @returns {v is string} */ (v) => v != null)),
+    ...new Set(
+      staleEntries
+        .map(f => f.blockVersion)
+        .filter(/** @returns {v is string} */ v => v != null),
+    ),
   ];
 
   /** @type {'missing' | 'stale' | 'current'} */
@@ -297,7 +311,9 @@ export function resolveAgentPaths(targetDir, agent) {
     return {inject: [], create: [AGENTS_MD, CLAUDE_DIR_MD]};
   }
 
-  const searchPaths = /** @type {Record<string, string[]>} */ (AGENT_PRESETS)[agent];
+  const searchPaths = /** @type {Record<string, string[]>} */ (AGENT_PRESETS)[
+    agent
+  ];
   if (!searchPaths) {
     return {inject: [], create: [AGENTS_MD]};
   }
@@ -424,36 +440,62 @@ export function generateCompressedIndex(
 
   // Required setup — components ship precompiled CSS; without these imports
   // everything renders unstyled. Theme is optional (a default ships in astryx.css).
-  lines.push('SETUP (once, in your app entry e.g. main.tsx) — without these, components render unstyled:');
+  lines.push(
+    'SETUP (once, in your app entry e.g. main.tsx) — without these, components render unstyled:',
+  );
   lines.push('  import "@astryxdesign/core/reset.css";');
   lines.push('  import "@astryxdesign/core/astryx.css";');
   lines.push('');
 
   // Workflow — `build` is the front door, and every page starts from the
   // template it names.
-  lines.push('WORKFLOW — start every page from a template. Never lay out a page from scratch:');
-  lines.push('1. `astryx build "<idea>"` — START HERE: names the [page] template to start from (always one: the closest match, or the app shell), two other templates, and the [block]s + [component]s for parts it lacks. No args = full playbook.');
-  lines.push('2. `astryx template <name> <path>` — scaffold that template into your project. Keep its frame, gap and padding; replace its data, copy and sections; delete sections you do not need.');
-  lines.push('3. `astryx template <Block>` for a part the template lacks; `astryx component <Name>` for props + examples before you use or change a component.');
-  lines.push('Changing a page you already have? Keep it: skip step 2 and add blocks and components inside its sections.');
+  lines.push(
+    'WORKFLOW — start every page from a template. Never lay out a page from scratch:',
+  );
+  lines.push(
+    '1. `astryx build "<idea>"` — START HERE: names the [page] template to start from (always one: the closest match, or the app shell), two other templates, and the [block]s + [component]s for parts it lacks. No args = full playbook.',
+  );
+  lines.push(
+    '2. `astryx template <name> <path>` — scaffold that template into your project. Keep its frame, gap and padding; replace its data, copy and sections; delete sections you do not need.',
+  );
+  lines.push(
+    '3. `astryx template <Block>` for a part the template lacks; `astryx component <Name>` for props + examples before you use or change a component.',
+  );
+  lines.push(
+    'Changing a page you already have? Keep it: skip step 2 and add blocks and components inside its sections.',
+  );
   lines.push('');
 
   // Rules — the top error-preventers.
   lines.push('RULES:');
-  lines.push('- No <div> — components do all layout/spacing, page frame included.');
-  lines.push('- Frame first: the template you scaffold sets the page frame. Read `astryx docs layout` before you change it — region widths, breakpoint behavior.');
-  lines.push('- Dense data = rows (Table, List/Item), never Card-wrapped list items; Card is for standalone widgets. Status = StatusDot/Token; Badge = counts only.');
+  lines.push(
+    '- No <div> — components do all layout/spacing, page frame included.',
+  );
+  lines.push(
+    '- Frame first: the template you scaffold sets the page frame. Read `astryx docs layout` before you change it — region widths, breakpoint behavior.',
+  );
+  lines.push(
+    '- Dense data = rows (Table, List/Item), never Card-wrapped list items; Card is for standalone widgets. Status = StatusDot/Token; Badge = counts only.',
+  );
   // Styling guidance tailored to the project's configured system — never
   // recommend a path that isn't compiled here (xstyle needs the StyleX compiler;
   // utilities need Tailwind). Tokens are always the source of truth.
   if (stylingSystem === 'stylex') {
-    lines.push('- Custom styling: component props first; else the xstyle prop / StyleX tokens (@astryxdesign/core/theme/tokens.stylex). No raw hex/px.');
+    lines.push(
+      '- Custom styling: component props first; else the xstyle prop / StyleX tokens (@astryxdesign/core/theme/tokens.stylex). No raw hex/px.',
+    );
   } else if (stylingSystem === 'tailwind') {
-    lines.push('- Custom styling: component props first; else Tailwind utilities backed by tokens (bg-surface, text-primary, rounded-lg) via tailwind-theme.css. No raw hex/px.');
+    lines.push(
+      '- Custom styling: component props first; else Tailwind utilities backed by tokens (bg-surface, text-primary, rounded-lg) via tailwind-theme.css. No raw hex/px.',
+    );
   } else {
-    lines.push("- Custom styling: component props first; else style/className with tokens — var(--color-*|--spacing-*|--radius-*). No raw hex/px. (No StyleX/Tailwind compiler here — don't use xstyle/utility classes.)");
+    lines.push(
+      "- Custom styling: component props first; else style/className with tokens — var(--color-*|--spacing-*|--radius-*). No raw hex/px. (No StyleX/Tailwind compiler here — don't use xstyle/utility classes.)",
+    );
   }
-  lines.push('- Tokens for every value (`astryx docs tokens`). Brand/accent belongs in the theme (`astryx theme list` / `theme add <slug>`, or `astryx theme template` for a custom one) — never override --color-* in :root.');
+  lines.push(
+    '- Tokens for every value (`astryx docs tokens`). Brand/accent belongs in the theme (`astryx theme list` / `theme add <slug>`, or `astryx theme template` for a custom one) — never override --color-* in :root.',
+  );
   // Self-check — post-generation pass. Validated via vibe tests (internal/vibe-tests/
   // prompt-purity-test): on complex multi-step UIs the rules above alone still leave raw
   // CSS in ~11-13% of runs; a re-read-and-fix pass cuts that ~4x at negligible token cost.
@@ -472,7 +514,9 @@ export function generateCompressedIndex(
 
   // Command reference — build/template/component are covered in WORKFLOW above.
   lines.push('MORE CLI:');
-  lines.push('  search "<query>"   find any component / hook / doc / template / block');
+  lines.push(
+    '  search "<query>"   find any component / hook / doc / template / block',
+  );
   lines.push(`  component --list   ${componentCount} components by category`);
   lines.push('  template --list    page + block recipes');
   const docsDir = path.join(CLI_ROOT, 'assets', 'docs');
@@ -482,16 +526,22 @@ export function generateCompressedIndex(
       ? fs
           .readdirSync(docsDir)
           .map(f => f.match(/^([\w-]+)\.doc\.mjs$/))
-          .filter(/** @returns {m is RegExpMatchArray} */ (m) => m != null)
+          .filter(/** @returns {m is RegExpMatchArray} */ m => m != null)
           .map(m => m[1])
           .sort()
       : []);
   if (resolvedTopics.length > 0) {
     lines.push(`  docs <topic>       ${resolvedTopics.join(', ')}`);
   }
-  lines.push('  docs cli           commands, API reference, integration authoring (one level at a time)');
-  lines.push('  swizzle <Name>     eject component source for deep customization');
-  lines.push('  upgrade --apply    run after any Astryx or integration dependency bump');
+  lines.push(
+    '  docs cli           commands, API reference, integration authoring (one level at a time)',
+  );
+  lines.push(
+    '  swizzle <Name>     eject component source for deep customization',
+  );
+  lines.push(
+    '  upgrade --from <old version> --apply   run after any Astryx or integration dependency bump',
+  );
   const appendCount = agentDocs.reduce(
     (count, contribution) => count + contribution.append.length,
     0,
@@ -604,7 +654,11 @@ export function getXdsVersion(coreDir) {
  * @param {boolean} [options.onlyReplace] - Only write if Astryx markers already exist (skip files without markers)
  * @returns {boolean} Whether the file was written
  */
-export function injectXdsBlock(filePath, compressedIndex, {createIfMissing = false, header = '', onlyReplace = false} = {}) {
+export function injectXdsBlock(
+  filePath,
+  compressedIndex,
+  {createIfMissing = false, header = '', onlyReplace = false} = {},
+) {
   let content;
 
   if (fs.existsSync(filePath)) {
@@ -618,7 +672,10 @@ export function injectXdsBlock(filePath, compressedIndex, {createIfMissing = fal
         content.slice(0, block.start) +
         compressedIndex +
         content.slice(block.end);
-    } else if (content.includes(MARKER_START) || content.includes(LEGACY_MARKER_START)) {
+    } else if (
+      content.includes(MARKER_START) ||
+      content.includes(LEGACY_MARKER_START)
+    ) {
       // A START with no matching END (e.g. an interrupted previous write). Don't
       // append a second block below the broken one — that leaves two STARTs the
       // tool can never converge. Refuse and ask the user to clean it up.
@@ -633,7 +690,9 @@ export function injectXdsBlock(filePath, compressedIndex, {createIfMissing = fal
       content = content.trimEnd() + '\n\n' + compressedIndex + '\n';
     }
   } else if (createIfMissing) {
-    content = header ? header + '\n\n' + compressedIndex + '\n' : compressedIndex + '\n';
+    content = header
+      ? header + '\n\n' + compressedIndex + '\n'
+      : compressedIndex + '\n';
   } else {
     return false;
   }
@@ -718,7 +777,9 @@ export function removeXdsBlock(filePath, {deleteIfEmpty = false} = {}) {
 function hasManagedMarker(filePath) {
   try {
     const content = fs.readFileSync(filePath, 'utf-8');
-    return content.includes(MARKER_START) || content.includes(LEGACY_MARKER_START);
+    return (
+      content.includes(MARKER_START) || content.includes(LEGACY_MARKER_START)
+    );
   } catch {
     return false;
   }
@@ -904,7 +965,11 @@ export function installAgentDocs(
     ]);
 
     for (const p of targets) {
-      const didWrite = injectXdsBlock(path.join(targetDir, p), compressedIndex, {onlyReplace});
+      const didWrite = injectXdsBlock(
+        path.join(targetDir, p),
+        compressedIndex,
+        {onlyReplace},
+      );
       if (didWrite) written.push(p);
     }
     for (const p of wrappers) {
@@ -913,7 +978,10 @@ export function installAgentDocs(
         written.push(p);
       } else {
         const content = fs.readFileSync(filePath, 'utf-8');
-        if (content.includes(MARKER_START) || content.includes(LEGACY_MARKER_START)) {
+        if (
+          content.includes(MARKER_START) ||
+          content.includes(LEGACY_MARKER_START)
+        ) {
           // Preserve the existing fail-closed behavior for malformed blocks.
           injectXdsBlock(filePath, compressedIndex, {onlyReplace: true});
         }

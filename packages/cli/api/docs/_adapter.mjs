@@ -403,7 +403,9 @@ async function docFinder(catalog, fromProvider) {
         problem: `"${target}" names "${parsed.provider}", which is not a provider id: an npm package name, or the \`providerId\` its manifest declares`,
       };
     }
-    const node = identities.get(identityKey(provider, parsed.kind, parsed.name));
+    const node = identities.get(
+      identityKey(provider, parsed.kind, parsed.name),
+    );
     if (node) {
       return {
         link: {
@@ -667,10 +669,12 @@ export async function docsLinkProblems(
 /**
  * What \`astryx doctor integration docs\` checks in one integration's docs: the
  * docs tree they build beside the CLI's (namespaces, placements, routes) and
- * every link in them (spec:AST-046, spec:AST-047).
+ * every link in them (spec:AST-046, spec:AST-047). A tree problem hides a doc,
+ * so it is an error; a link that names no doc prints as written, so it is a
+ * warning.
  * @param {{name: string}} integration
  * @param {{records: import('../../foundation/discovery/docs-discovery.mjs').DocsTopicRecord[], namespaces: import('../../foundation/doc-compiler/tree.mjs').TreeNamespaceInput[], guides: import('../../foundation/doc-compiler/tree.mjs').TreeDocInput[]}} discovered
- * @returns {Promise<string[]>}
+ * @returns {Promise<Array<{severity: 'error' | 'warning', message: string}>>}
  */
 export async function packageDocsProblems(integration, discovered) {
   const catalog = DocsCatalog.fromBuiltins();
@@ -680,12 +684,18 @@ export async function packageDocsProblems(integration, discovered) {
     guides: discovered.guides.map(input => ({...input, rank: 1})),
   });
   const tree = await projectTree(catalog);
+  /** @type {Array<{severity: 'error' | 'warning', message: string}>} */
   const problems = tree.diagnostics
     .filter(d => d.severity === 'error' && d.provider === integration.name)
-    .map(d => `${d.source ?? integration.name}: ${d.message}`);
-  problems.push(
-    ...(await docsLinkProblems(catalog, tree, {owner: integration.name})),
-  );
+    .map(d => ({
+      severity: /** @type {const} */ ('error'),
+      message: `${d.source ?? integration.name}: ${d.message}`,
+    }));
+  for (const message of await docsLinkProblems(catalog, tree, {
+    owner: integration.name,
+  })) {
+    problems.push({severity: 'warning', message});
+  }
   return problems;
 }
 
@@ -847,7 +857,8 @@ export async function topicLinks(catalog, entry) {
   const tree = await projectTree(catalog);
   const node = tree.get(entry.tree ? (entry.route ?? entry.name) : entry.name);
   const placed =
-    node && (entry.tree ? node.kind === 'generic' : node.ref?.flatTopic === entry.name);
+    node &&
+    (entry.tree ? node.kind === 'generic' : node.ref?.flatTopic === entry.name);
   return placed ? placeLinks(tree, node) : {up: topicUp(entry)};
 }
 
@@ -870,7 +881,8 @@ export async function resolveDocsArgument(topic, {cwd} = {}) {
   const tree = await projectTree(catalog);
   const owner = nameOwner(tree, catalog, topic);
   if (owner == null) return {kind: 'unknown', catalog};
-  if (owner.kind === 'topic') return {kind: 'topic', catalog, entry: owner.entry};
+  if (owner.kind === 'topic')
+    return {kind: 'topic', catalog, entry: owner.entry};
   return treeArgument(catalog, tree, owner.node);
 }
 

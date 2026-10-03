@@ -384,7 +384,11 @@ export function problemsInNamespace(doc) {
     }
   }
   const slots = doc?.slots;
-  if (slots == null || typeof slots !== 'object' || Object.keys(slots).length === 0) {
+  if (
+    slots == null ||
+    typeof slots !== 'object' ||
+    Object.keys(slots).length === 0
+  ) {
     problems.push('slots: expected at least one slot');
     return problems;
   }
@@ -392,7 +396,10 @@ export function problemsInNamespace(doc) {
     if (typeof slot?.title !== 'string' || slot.title === '') {
       problems.push(`slots.${name}.title: expected a non-empty string`);
     }
-    if (!Array.isArray(slot?.accepts?.kinds) || slot.accepts.kinds.length === 0) {
+    if (
+      !Array.isArray(slot?.accepts?.kinds) ||
+      slot.accepts.kinds.length === 0
+    ) {
       problems.push(`slots.${name}.accepts.kinds: expected at least one kind`);
     }
   }
@@ -626,7 +633,11 @@ function findMergeTarget(sections, section) {
   const sameTitle = sections.findIndex(
     candidate => sourceTitle(candidate) === title,
   );
-  return sameTitle;
+  if (sameTitle !== -1) return sameTitle;
+  // A base section retitled later keeps its old key as its `id`, so an
+  // extension that still names it by the old title finds it by that id. A
+  // title variant of a section with no id stays a separate section.
+  return sections.findIndex(candidate => candidate.id === key);
 }
 
 /**

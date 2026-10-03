@@ -12,7 +12,7 @@ export const docs = {
   sections: [
     {
       title: 'Design Philosophy',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -32,8 +32,12 @@ export const docs = {
     },
     {
       title: 'Rules',
-  category: 'guide',
+      category: 'guide',
       content: [
+        {
+          type: 'prose',
+          text: 'Eight rules that keep app code on-system.',
+        },
         {
           type: 'list',
           style: 'ordered',
@@ -52,7 +56,7 @@ export const docs = {
     },
     {
       title: 'Styling Approach',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -66,8 +70,12 @@ export const docs = {
     },
     {
       title: 'Anti-Patterns',
-  category: 'guide',
+      category: 'guide',
       content: [
+        {
+          type: 'prose',
+          text: 'Patterns that break theming, routing, or layout, and what to use instead.',
+        },
         {
           type: 'list',
           style: 'dont',
@@ -85,7 +93,7 @@ export const docs = {
     },
     {
       title: 'Design Tokens',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',

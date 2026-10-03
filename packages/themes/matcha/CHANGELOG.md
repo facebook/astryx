@@ -1,5 +1,19 @@
 # @xds/theme-matcha
 
+# 0.6.4
+
+#### New Features
+
+- Ship a typed `ThemeDoc` descriptor beside each first-party theme source. (#6498)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @josephfarina
+
+---
+
 # 0.6.3
 
 ---

@@ -15,7 +15,8 @@ const anatomy = [
   {
     name: 'Label',
     required: false,
-    description: 'Visible text identifying a segment when its label is not hidden.',
+    description:
+      'Visible text identifying a segment when its label is not hidden.',
   },
   {
     name: 'Icon',
@@ -31,27 +32,98 @@ export const docs = {
   displayName: 'Segmented Control',
   group: 'SegmentedControl',
   category: 'Action',
-  keywords: ['radio', 'tabs', 'toggle', 'toggle-group', 'pill', 'button-group', 'switch', 'segment', 'control'],
+  keywords: [
+    'radio',
+    'tabs',
+    'toggle',
+    'toggle-group',
+    'pill',
+    'button-group',
+    'switch',
+    'segment',
+    'control',
+  ],
   playground: {
     defaults: {
       value: 'option-1',
     },
   },
+  examples: [
+    {
+      label: 'In a narrow card',
+      code: `
+import {useState} from 'react';
+import {Card} from '@astryxdesign/core/Card';
+import {Heading} from '@astryxdesign/core/Heading';
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from '@astryxdesign/core/SegmentedControl';
+import {Text} from '@astryxdesign/core/Text';
+import {VStack} from '@astryxdesign/core/VStack';
+
+const SUMMARY = {
+  overview: '4 projects, 2 due this week.',
+  activity: '18 updates since Monday.',
+  members: '12 members, 3 pending invites.',
+  billing: 'Next invoice on October 1.',
+};
+
+// Inside a VStack the default hug layout keeps its content width; it does not
+// stretch to the card. When the card is narrower than the control (a 320px
+// phone column), the control caps at the card width and each label truncates
+// with an ellipsis instead of running past the card edge. The full label stays
+// each segment's accessible name. Keep labels short for phone widths.
+function WorkspaceCard() {
+  const [view, setView] = useState('overview');
+  return (
+    <Card maxWidth={480}>
+      <VStack gap={3}>
+        <Heading level={3}>Team workspace</Heading>
+        <SegmentedControl label="Workspace view" value={view} onChange={setView}>
+          <SegmentedControlItem value="overview" label="Overview" />
+          <SegmentedControlItem value="activity" label="Activity" />
+          <SegmentedControlItem value="members" label="Members" />
+          <SegmentedControlItem value="billing" label="Billing" />
+        </SegmentedControl>
+        <Text color="secondary">{SUMMARY[view]}</Text>
+      </VStack>
+    </Card>
+  );
+}
+`,
+    },
+  ],
   theming: {
     targets: [
       {className: 'astryx-segmented-control', visualProps: ['size']},
-      {className: 'astryx-segmented-control-item', visualProps: ['size'], states: ['selected', 'disabled']},
+      {
+        className: 'astryx-segmented-control-item',
+        visualProps: ['size'],
+        states: ['selected', 'disabled'],
+      },
     ],
     vars: [
-      {name: '--_segmented-control-radius', description: 'Border radius of the segmented control', default: 'var(--radius-element)', private: true},
-      {name: '--_segmented-control-padding', description: 'Inner padding of the segmented control', default: 'var(--spacing-0-5)', private: true},
+      {
+        name: '--_segmented-control-radius',
+        description: 'Border radius of the segmented control',
+        default: 'var(--radius-element)',
+        private: true,
+      },
+      {
+        name: '--_segmented-control-padding',
+        description: 'Inner padding of the segmented control',
+        default: 'var(--spacing-0-5)',
+        private: true,
+      },
     ],
     derived: [
       {property: 'borderRadius', vars: ['--_segmented-control-radius']},
       {property: 'padding', vars: ['--_segmented-control-padding']},
     ],
   },
-  description: 'Container wrapper providing context (value, onChange, size, isDisabled) to SegmentedControlItem children.',
+  description:
+    'Container wrapper providing context (value, onChange, size, isDisabled) to SegmentedControlItem children.',
   props: [
     {
       name: 'value',
@@ -68,7 +140,8 @@ export const docs = {
     {
       name: 'label',
       type: 'string',
-      description: 'Accessible label for the radio group (used as aria-label, never rendered visually).',
+      description:
+        'Accessible label for the radio group (used as aria-label, never rendered visually).',
       required: true,
     },
     {
@@ -80,7 +153,8 @@ export const docs = {
     {
       name: 'layout',
       type: "'hug' | 'fill'",
-      description: 'Layout mode. hug (default) sizes segments to content; fill stretches them equally to fill the container.',
+      description:
+        'Layout mode. hug (default) sizes segments to content, capped at the container width (segment labels truncate when it is too narrow); fill stretches them equally to fill the container.',
       default: "'hug'",
     },
     {
@@ -113,12 +187,11 @@ export const docs = {
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
+      description:
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
   ],
-  components: [
-    {name: 'SegmentedControlItem'},
-  ],
+  components: [{name: 'SegmentedControlItem'}],
   usage: {
     anatomy,
     description:
@@ -180,11 +253,31 @@ export const docs = {
       },
     ],
     bestPractices: [
-      {guidance: true, description: 'Use for switching between 2–5 mutually exclusive views or modes where all options should be visible.'},
-      {guidance: true, description: 'Provide a descriptive label for the control to ensure the group is accessible to screen readers.'},
-      {guidance: false, description: 'Use for page-level navigation; use TabList instead. TabList is a navigation component, while SegmentedControl is an input that always has exactly one selected option.'},
-      {guidance: false, description: 'Use for simple on/off states; use ToggleButton instead. ToggleButton can be toggled on or off independently, while SegmentedControl enforces a single selection from a group.'},
-      {guidance: false, description: 'Wrap a disabled SegmentedControl in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.'},
+      {
+        guidance: true,
+        description:
+          'Use for switching between 2–5 mutually exclusive views or modes where all options should be visible.',
+      },
+      {
+        guidance: true,
+        description:
+          'Provide a descriptive label for the control to ensure the group is accessible to screen readers.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use for page-level navigation; use TabList instead. TabList is a navigation component, while SegmentedControl is an input that always has exactly one selected option.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use for simple on/off states; use ToggleButton instead. ToggleButton can be toggled on or off independently, while SegmentedControl enforces a single selection from a group.',
+      },
+      {
+        guidance: false,
+        description:
+          'Wrap a disabled SegmentedControl in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+      },
     ],
   },
 };
@@ -196,11 +289,31 @@ export const docsZh = {
     description:
       'A segmented button group that allows users to make a single selection from a small set of mutually exclusive options. Use SegmentedControl when all options should be visible at once and the selection controls a value or mode, not page navigation.',
     bestPractices: [
-      {guidance: true, description: 'Use for switching between 2–5 mutually exclusive views or modes where all options should be visible.'},
-      {guidance: true, description: 'Provide a descriptive label for the control to ensure the group is accessible to screen readers.'},
-      {guidance: false, description: 'Use for page-level navigation; use TabList instead. TabList is a navigation component, while SegmentedControl is an input that always has exactly one selected option.'},
-      {guidance: false, description: 'Use for simple on/off states; use ToggleButton instead. ToggleButton can be toggled on or off independently, while SegmentedControl enforces a single selection from a group.'},
-      {guidance: false, description: 'Wrap a disabled SegmentedControl in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.'},
+      {
+        guidance: true,
+        description:
+          'Use for switching between 2–5 mutually exclusive views or modes where all options should be visible.',
+      },
+      {
+        guidance: true,
+        description:
+          'Provide a descriptive label for the control to ensure the group is accessible to screen readers.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use for page-level navigation; use TabList instead. TabList is a navigation component, while SegmentedControl is an input that always has exactly one selected option.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use for simple on/off states; use ToggleButton instead. ToggleButton can be toggled on or off independently, while SegmentedControl enforces a single selection from a group.',
+      },
+      {
+        guidance: false,
+        description:
+          'Wrap a disabled SegmentedControl in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+      },
     ],
   },
 };
@@ -212,11 +325,31 @@ export const docsDense = {
     description:
       'A segmented button group that allows users to make a single selection from a small set of mutually exclusive options. Use SegmentedControl when all options should be visible at once and the selection controls a value or mode, not page navigation.',
     bestPractices: [
-      {guidance: true, description: 'Use for switching between 2–5 mutually exclusive views or modes where all options should be visible.'},
-      {guidance: true, description: 'Provide a descriptive label for the control to ensure the group is accessible to screen readers.'},
-      {guidance: false, description: 'Use for page-level navigation; use TabList instead. TabList is a navigation component, while SegmentedControl is an input that always has exactly one selected option.'},
-      {guidance: false, description: 'Use for simple on/off states; use ToggleButton instead. ToggleButton can be toggled on or off independently, while SegmentedControl enforces a single selection from a group.'},
-      {guidance: false, description: 'Wrap a disabled SegmentedControl in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.'},
+      {
+        guidance: true,
+        description:
+          'Use for switching between 2–5 mutually exclusive views or modes where all options should be visible.',
+      },
+      {
+        guidance: true,
+        description:
+          'Provide a descriptive label for the control to ensure the group is accessible to screen readers.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use for page-level navigation; use TabList instead. TabList is a navigation component, while SegmentedControl is an input that always has exactly one selected option.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use for simple on/off states; use ToggleButton instead. ToggleButton can be toggled on or off independently, while SegmentedControl enforces a single selection from a group.',
+      },
+      {
+        guidance: false,
+        description:
+          'Wrap a disabled SegmentedControl in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+      },
     ],
   },
   propDescriptions: {
@@ -224,7 +357,8 @@ export const docsDense = {
     onChange: 'callback on segment selection',
     label: 'aria-label for radio group (never rendered)',
     size: 'size variant',
-    layout: 'hug (default) sizes to content; fill stretches equally',
+    layout:
+      'hug (default) sizes to content, capped at container; fill stretches equally',
     isDisabled: 'disables entire control',
     children: 'SegmentedControlItem children',
     xstyle: 'additional StyleX styles for container',

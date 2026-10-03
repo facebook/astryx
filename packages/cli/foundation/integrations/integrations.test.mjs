@@ -459,7 +459,7 @@ describe('provider identity conflicts', () => {
     ]);
   });
 
-  it('reports an unversioned set-aside package whose spec is the winner\'s name', async () => {
+  it("reports an unversioned set-aside package whose spec is the winner's name", async () => {
     installPackage(
       'widgets-old',
       {name: '@acme/widgets', version: '1.0.0'},
@@ -783,5 +783,36 @@ describe('the `gapReport` named export', () => {
 
     expect(loaded.__gapReport).toBeUndefined();
     expect(loaded.__unknownKeys).toEqual(['gapReport']);
+  });
+});
+
+describe('the `discover` named export', () => {
+  it('is carried out of the manifest module as __discover', async () => {
+    writeManifestPackage(tmpDir, {
+      body:
+        `export async function discover() { return {schemaVersion: 1}; }\n` +
+        `export default {issuesUrl: 'https://example.com/i'};\n`,
+    });
+
+    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
+
+    expect(typeof loaded.__discover).toBe('function');
+    expect(loaded.__discoverError).toBeUndefined();
+    expect(loaded.__unknownKeys).toEqual([]);
+    expect(loaded.issuesUrl).toBe('https://example.com/i');
+  });
+
+  it('keeps the manifest and records why when the export is not a function', async () => {
+    writeManifestPackage(tmpDir, {
+      body:
+        `export const discover = {url: 'https://example.com/catalog.json'};\n` +
+        `export default {issuesUrl: 'https://example.com/i'};\n`,
+    });
+
+    const [loaded] = await loadIntegrations(['@acme/widgets'], {cwd: tmpDir});
+
+    expect(loaded.__discover).toBeUndefined();
+    expect(loaded.__discoverError).toContain('must be a function');
+    expect(loaded.issuesUrl).toBe('https://example.com/i');
   });
 });

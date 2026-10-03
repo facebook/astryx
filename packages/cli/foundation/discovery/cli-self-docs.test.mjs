@@ -180,7 +180,11 @@ describe('auditCliSelfDocs', () => {
       ),
       'api/small/small.doc.mjs': docModule(fn('small')),
     });
-    const result = await auditCliSelfDocs({root, authoringSources: [], budget: 1_000});
+    const result = await auditCliSelfDocs({
+      root,
+      authoringSources: [],
+      budget: 1_000,
+    });
     expect(result.oversized.map(entry => entry.key)).toEqual(['big']);
   });
 
@@ -218,7 +222,7 @@ describe('cliDocSection', () => {
     );
   });
 
-  it("links a function to the command its command line starts with, or to none", () => {
+  it('links a function to the command its command line starts with, or to none', () => {
     const docs = [
       fn('integrationAddTheme', {command: 'integration add theme'}),
       command('integration add'),
@@ -240,7 +244,12 @@ describe('cliDocSection', () => {
         description: 'The long form.',
         fn: 'grpSub',
         args: [
-          {name: 'files', required: true, variadic: true, description: 'Files.'},
+          {
+            name: 'files',
+            required: true,
+            variadic: true,
+            description: 'Files.',
+          },
         ],
         options: [
           {flag: '--fast', description: 'Go fast'},
@@ -313,6 +322,36 @@ describe('cliDocSection', () => {
         text: 'It runs `grpSub()` from `@astryxdesign/cli/api`. Read it with {@link function:grpSub}.',
       },
     ]);
+  });
+
+  it('marks required parameters and adds a Default column when a parameter has a default', () => {
+    const beta = fn('beta', {
+      params: [
+        {
+          name: 'slug',
+          type: 'string',
+          description: 'The slug.',
+          required: true,
+        },
+        {
+          name: 'options.limit',
+          type: 'number',
+          description: 'How many.',
+          default: '20',
+        },
+      ],
+    });
+    const table = cliDocSection(beta, indexOf([beta])).content.find(
+      (/** @type {any} */ block) => block.type === 'table',
+    );
+    expect(table).toEqual({
+      type: 'table',
+      headers: ['Parameter', 'Type', 'Default', 'Description'],
+      rows: [
+        ['`slug` (required)', '`string`', '', 'The slug.'],
+        ['`options.limit`', '`number`', '20', 'How many.'],
+      ],
+    });
   });
 
   it('renders an API function, an enum, and a schema', () => {

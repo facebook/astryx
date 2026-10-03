@@ -49,14 +49,13 @@ export const doc = {
   throws: [
     {
       code: 'Error',
-      when: 'the CLI returned an error envelope (the CLI message is rethrown), or the response `type` is not expectedType',
+      when: 'a plain Error with no code: the CLI returned an error envelope (its message is rethrown; code and suggestions are dropped), or the response `type` is not expectedType',
     },
   ],
   examples: [
     {
       label: 'Require one type',
-      code:
-        "const r = assertResponse(stdout, 'component.detail');\nr.data.name; // safe: any other outcome threw",
+      code: "const r = assertResponse(stdout, 'component.detail');\nr.data.name; // safe: any other outcome threw",
     },
   ],
   related: ['parseResponse', 'isError'],

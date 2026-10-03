@@ -8,11 +8,13 @@ export const doc = {
   name: 'doctor integration docs',
   displayName: 'astryx doctor integration docs',
   namespace: 'cli/commands',
-  summary: 'Check an integration\'s docs: the docs tree they add, every link, and overlaps with Core topics',
+  summary:
+    "Check an integration's docs: the docs tree they add, every link, and overlaps with Core topics",
   description:
-    'Reports intentional Core topic replacements and extensions as information. ' +
+    'Checks the docs tree the package adds, every link in its docs, and overlaps with Core topics. ' +
+    'Intentional replacements and extensions are information. ' +
     'A same-name topic without `replaces` or `extends` is an accidental conflict ' +
-    'and fails until the author declares the relationship or renames it.',
+    'and fails until the author declares the relationship or renames it. See {@link generic:check-your-docs}.',
   fn: 'integrationDocConflicts',
   args: [
     {
@@ -24,15 +26,24 @@ export const doc = {
     },
   ],
   examples: [
-    {label: 'Check the local integration', cli: 'astryx doctor integration docs'},
+    {
+      label: 'Check the local integration',
+      cli: 'astryx doctor integration docs',
+    },
     {
       label: 'Check an installed integration',
       cli: 'astryx doctor integration docs @acme/widgets --json',
     },
   ],
   exitCodes: [
-    {code: 0, when: 'all Core overlaps are explicitly declared or no overlap exists'},
-    {code: 1, when: 'an overlap is accidental, a doc is invalid, a namespace or placement fails, or a reference block cannot include what it names. A link that names no doc is a warning, and does not change the exit code'},
+    {
+      code: 0,
+      when: 'all Core overlaps are explicitly declared or no overlap exists',
+    },
+    {
+      code: 1,
+      when: 'an overlap is accidental, a doc is invalid, a namespace or placement fails, or a reference block cannot include what it names. A link that names no doc is a warning, and does not change the exit code',
+    },
   ],
   related: ['doctor integration validate', 'docs'],
 };

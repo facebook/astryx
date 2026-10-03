@@ -15,7 +15,7 @@ export const doc = {
   displayName: 'isError()',
   summary: 'Did the CLI return an error envelope?',
   description:
-    'Tests a parsed response for an `error` key. Branch on this before touching `data`: ' +
+    'Tests a parsed response for an `error` key. Branch on this before touching `data`, ' +
     'and prefer the stable `code` field over matching the human-readable message, which is ' +
     'not a contract. Note this returns a plain boolean, not a TypeScript type predicate, so ' +
     'it does not narrow on its own: cast to the matching *Response type to get typed access.',
@@ -26,7 +26,8 @@ export const doc = {
     {
       name: 'result',
       type: 'unknown',
-      description: 'A parsed response envelope, typically from parseResponse().',
+      description:
+        'A parsed response envelope, typically from parseResponse().',
       required: true,
     },
   ],
@@ -40,8 +41,7 @@ export const doc = {
   examples: [
     {
       label: 'Branch on the stable code',
-      code:
-        "const result = parseResponse(stdout);\nif (isError(result)) {\n  if (result.code === 'ERR_UNKNOWN_COMPONENT') suggest(result.suggestions);\n}",
+      code: "const result = parseResponse(stdout);\nif (isError(result)) {\n  if (result.code === 'ERR_UNKNOWN_COMPONENT') suggest(result.suggestions);\n}",
     },
   ],
   related: ['parseResponse', 'assertResponse'],

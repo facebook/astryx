@@ -100,7 +100,8 @@ function extractListItems(text) {
  * @returns {string[]}
  */
 function extractTextBlocks(text) {
-  const HINT_PREFIXES = /^(Usage|Summary|Read|Example|Tip|Import from|Related blocks|Each key|Props take|One component|No results|Try a|Browse instead|No failures|All checks|Some checks|Pass --\w)[:.]?/i;
+  const HINT_PREFIXES =
+    /^(Usage|Summary|Read|Example|Tip|Import from|Related blocks|Each key|Props take|One component|No results|Try a|Browse instead|No failures|All checks|Some checks|Pass --\w)[:.]?/i;
   const lines = text.split('\n');
   /** @type {string[]} */
   const blocks = [];
@@ -115,9 +116,15 @@ function extractTextBlocks(text) {
     if (HINT_PREFIXES.test(trimmed)) continue;
     // Skip lines that look like code, commands, or status tokens
     if (trimmed.startsWith('`') || trimmed.startsWith('$')) continue;
-    if (trimmed.startsWith('[ok]') || trimmed.startsWith('[skip]') ||
-        trimmed.startsWith('[fail]') || trimmed.startsWith('[warn]') ||
-        trimmed.startsWith('!') || trimmed.startsWith('(')) continue;
+    if (
+      trimmed.startsWith('[ok]') ||
+      trimmed.startsWith('[skip]') ||
+      trimmed.startsWith('[fail]') ||
+      trimmed.startsWith('[warn]') ||
+      trimmed.startsWith('!') ||
+      trimmed.startsWith('(')
+    )
+      continue;
     // Skip continuation lines (indented, part of a wrapped record or list)
     if (/^\s{2,}\S/.test(lines[i])) continue;
     // Skip section headings: a line preceded by blank (or start) that belongs
@@ -140,7 +147,8 @@ function extractTextBlocks(text) {
     if (!prevBlank && nextBlank && i >= 1) {
       const prevLine = lines[i - 1]?.trim() ?? '';
       const prevPrevBlank = i < 2 || !lines[i - 2]?.trim();
-      if (prevPrevBlank && prevLine.length <= 80 && !/[.!?]$/.test(prevLine)) continue;
+      if (prevPrevBlank && prevLine.length <= 80 && !/[.!?]$/.test(prevLine))
+        continue;
     }
     blocks.push(normalize(trimmed));
   }
@@ -157,10 +165,25 @@ function jsonLeafValues(obj) {
   /** @type {Set<string>} */
   const values = new Set();
   if (obj == null) return values;
-  if (typeof obj === 'string') { values.add(normalize(obj)); return values; }
-  if (typeof obj === 'number' || typeof obj === 'boolean') { values.add(String(obj)); return values; }
-  if (Array.isArray(obj)) { for (const item of obj) { for (const v of jsonLeafValues(item)) values.add(v); } return values; }
-  if (typeof obj === 'object') { for (const value of Object.values(obj)) { for (const v of jsonLeafValues(value)) values.add(v); } }
+  if (typeof obj === 'string') {
+    values.add(normalize(obj));
+    return values;
+  }
+  if (typeof obj === 'number' || typeof obj === 'boolean') {
+    values.add(String(obj));
+    return values;
+  }
+  if (Array.isArray(obj)) {
+    for (const item of obj) {
+      for (const v of jsonLeafValues(item)) values.add(v);
+    }
+    return values;
+  }
+  if (typeof obj === 'object') {
+    for (const value of Object.values(obj)) {
+      for (const v of jsonLeafValues(value)) values.add(v);
+    }
+  }
   return values;
 }
 
@@ -191,7 +214,11 @@ function jsonLeafKeys(obj) {
         keys.add(key);
       } else {
         for (const item of value) {
-          if (item != null && typeof item === 'object' && !Array.isArray(item)) {
+          if (
+            item != null &&
+            typeof item === 'object' &&
+            !Array.isArray(item)
+          ) {
             for (const k of jsonLeafKeys(item)) keys.add(k);
           }
         }
@@ -214,7 +241,10 @@ function jsonKeyValues(obj) {
   const map = new Map();
   function walk(/** @type {unknown} */ node) {
     if (node == null || typeof node !== 'object') return;
-    if (Array.isArray(node)) { for (const item of node) walk(item); return; }
+    if (Array.isArray(node)) {
+      for (const item of node) walk(item);
+      return;
+    }
     for (const [key, value] of Object.entries(node)) {
       if (value == null) continue;
       if (typeof value !== 'object') {
@@ -246,7 +276,8 @@ function jsonKeyValues(obj) {
  */
 function jsonContainsKey(obj, target) {
   if (obj == null || typeof obj !== 'object') return false;
-  if (Array.isArray(obj)) return obj.some(item => jsonContainsKey(item, target));
+  if (Array.isArray(obj))
+    return obj.some(item => jsonContainsKey(item, target));
   for (const [key, value] of Object.entries(obj)) {
     if (key === target) return true;
     if (jsonContainsKey(value, target)) return true;
@@ -372,9 +403,15 @@ const CASES = [
     skipFieldChecks: true,
   },
   {
+    name: 'integration verify',
+    args: ['integration', 'verify'],
+    // Needs a packable project; pack itself may exit differently.
+    skipFieldChecks: true,
+  },
+  {
+    // The deprecated alias of `integration verify`.
     name: 'integration pack',
     args: ['integration', 'pack', '--check'],
-    // Needs a packable project; pack itself may exit differently.
     skipFieldChecks: true,
   },
   // ── Layout command: remove these cases when the layout command is deleted ──
@@ -516,7 +553,7 @@ describe('text-json-parity', () => {
       let run;
 
       beforeAll(async () => {
-        let cwd = tc.cwd === '__TMP__' ? tmpDir : (tc.cwd || REPO_ROOT);
+        let cwd = tc.cwd === '__TMP__' ? tmpDir : tc.cwd || REPO_ROOT;
         if (tc.cwd === '__TMP__') {
           const sub = path.join(tmpDir, tc.name.replace(/\s+/g, '-'));
           fs.mkdirSync(sub, {recursive: true});
@@ -588,14 +625,17 @@ describe('text-json-parity', () => {
           for (const key of jsonKeys) {
             const inRecords = textKeys.has(key);
             // Check for `key:` as a field label at start of line.
-            const asLabel = new RegExp(`(?:^|\\n)\\s*${key}:`, 'm').test(run.text);
+            const asLabel = new RegExp(`(?:^|\\n)\\s*${key}:`, 'm').test(
+              run.text,
+            );
             // For inline records (no labels): check if THIS KEY's values
             // appear in the text.  This catches inline-layout projections
             // where the key name is only in the section subtitle.
             const myVals = keyVals.get(key) ?? new Set();
-            const valuesInText = !inRecords && !asLabel && [...myVals].some(v =>
-              v.length > 2 && run.text.includes(v),
-            );
+            const valuesInText =
+              !inRecords &&
+              !asLabel &&
+              [...myVals].some(v => v.length > 2 && run.text.includes(v));
             const allowed = allowedKeys.has(key);
             if (!inRecords && !asLabel && !valuesInText && !allowed) {
               missing.push(key);
@@ -630,9 +670,9 @@ describe('text-json-parity', () => {
             // the JSON values.  A block with no JSON overlap is a fact the
             // envelope does not carry.  Numbers (even short) count because
             // they are data.
-            const words = block.split(/\s+/).filter(w =>
-              w.length > 3 || /^\d+$/.test(w),
-            );
+            const words = block
+              .split(/\s+/)
+              .filter(w => w.length > 3 || /^\d+$/.test(w));
             const anyOverlap = words.some(w =>
               [...jsonValues].some(jv => jv.includes(w)),
             );
@@ -655,7 +695,10 @@ describe('text-json-parity', () => {
           const stale = [];
           for (const entry of tc.jsonFieldAllowlist) {
             const key = entry.split(' — ')[0].trim();
-            if (!jsonContainsKey(searchTarget, key) && !jsonContainsKey(run.json.meta, key)) {
+            if (
+              !jsonContainsKey(searchTarget, key) &&
+              !jsonContainsKey(run.json.meta, key)
+            ) {
               stale.push(entry);
             }
           }
@@ -687,7 +730,9 @@ describe('text-json-parity', () => {
     it('upgrade --list --registry emits one error envelope in --json mode', async () => {
       const sub = path.join(tmpDir, 'upgrade-list-fail-json');
       fs.mkdirSync(sub, {recursive: true});
-      const r = await runCli(['upgrade', '--list', '--registry', '--json'], {cwd: sub});
+      const r = await runCli(['upgrade', '--list', '--registry', '--json'], {
+        cwd: sub,
+      });
       expect(r.status).toBe(1);
       const parsed = JSON.parse(r.stdout);
       expect(parsed).toHaveProperty('error');
@@ -701,16 +746,23 @@ describe('text-json-parity', () => {
       expect(r.status).toBe(1);
       // The error should appear exactly once.
       const combined = r.stdout + r.stderr;
-      const lines = combined.split('\n').filter(l => l.includes('notsemver') || l.includes('ERR'));
+      const lines = combined
+        .split('\n')
+        .filter(l => l.includes('notsemver') || l.includes('ERR'));
       // At most one line carries the error; zero is OK if the API formats
       // differently, but more than one means duplication.
-      expect(lines.length, 'error should not be duplicated').toBeLessThanOrEqual(1);
+      expect(
+        lines.length,
+        'error should not be duplicated',
+      ).toBeLessThanOrEqual(1);
     });
 
     it('non-list upgrade failure emits one error envelope in --json mode', async () => {
       const sub = path.join(tmpDir, 'upgrade-nonlist-fail-json');
       fs.mkdirSync(sub, {recursive: true});
-      const r = await runCli(['upgrade', '--from', 'notsemver', '--json'], {cwd: sub});
+      const r = await runCli(['upgrade', '--from', 'notsemver', '--json'], {
+        cwd: sub,
+      });
       expect(r.status).toBe(1);
       const parsed = JSON.parse(r.stdout);
       expect(parsed).toHaveProperty('error');
