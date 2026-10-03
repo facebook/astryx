@@ -37,11 +37,11 @@ If unsure and there is no package.json, choose **Path A**.
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@astryxdesign/core@0.6.5/src/reset.css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/facebook/astryx@d5d638c97f617e7ac7dad7357e7acaabcbc7c6df/packages/vanilla/dist/astryx-vanilla.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/facebook/astryx@3906c4ccda61f94bc6dd9777ec38131ac58e8a70/packages/vanilla/dist/astryx-vanilla.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-neutral@0.6.5/dist/theme.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-butter@0.6.5/dist/theme.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-y2k@0.6.5/dist/theme.css" />
-  <script src="https://cdn.jsdelivr.net/gh/facebook/astryx@d5d638c97f617e7ac7dad7357e7acaabcbc7c6df/packages/vanilla/dist/astryx-vanilla.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/gh/facebook/astryx@3906c4ccda61f94bc6dd9777ec38131ac58e8a70/packages/vanilla/dist/astryx-vanilla.js" defer></script>
 </head>
 <body>
   <!-- ax-* markup here -->
@@ -53,7 +53,7 @@ If unsure and there is no package.json, choose **Path A**.
   (all three theme files are loaded above, so switching is just the attribute).
 - Mode: set `data-theme` to `light` or `dark`.
 - ES-module alternative to the classic script:
-  `https://cdn.jsdelivr.net/gh/facebook/astryx@d5d638c97f617e7ac7dad7357e7acaabcbc7c6df/packages/vanilla/dist/astryx-vanilla.mjs`
+  `https://cdn.jsdelivr.net/gh/facebook/astryx@3906c4ccda61f94bc6dd9777ec38131ac58e8a70/packages/vanilla/dist/astryx-vanilla.mjs`
   (exports `setTheme`, `setMode`, `initThemeModeSwitchers`).
 
 ### A2. Start every page from a template — never lay out a page from scratch
@@ -70,7 +70,7 @@ Templates (complete, standalone, already wired to the CDN links above):
 **Option 1 — install the preview CLI (Node 22.13+):**
 
 ```sh
-npm install -g https://cdn.jsdelivr.net/gh/facebook/astryx@940c121f93411c2551fa84a6dd50ab50dcd6feb4/packages/vanilla/dist/cli/astryx-cli-vanilla.tgz
+npm install -g https://cdn.jsdelivr.net/gh/facebook/astryx@4855ea30514a6033a9abbe88069589b6ff15d64a/packages/vanilla/dist/cli/astryx-cli-vanilla.tgz
 
 astryx template --list --html                  # the 4 template ids
 astryx template dashboard --html > page.html   # full standalone page
@@ -82,7 +82,7 @@ astryx component Dialog --html                 # docs + copyable markup variants
 
 ```sh
 git clone https://github.com/facebook/astryx.git astryx
-git -C astryx checkout 940c121f93411c2551fa84a6dd50ab50dcd6feb4
+git -C astryx checkout 4855ea30514a6033a9abbe88069589b6ff15d64a
 cd astryx && npx --yes pnpm@11.10.0 install --frozen-lockfile
 node packages/cli/clients/cli/bin/astryx.mjs template dashboard --html > page.html
 ```
@@ -90,13 +90,13 @@ node packages/cli/clients/cli/bin/astryx.mjs template dashboard --html > page.ht
 **Option 2 — direct file URLs (no shell needed; fetch and save as .html):**
 
 ```
-https://raw.githubusercontent.com/facebook/astryx/38103ea0ea69290fb02edf9e14212ad736806ba7/packages/vanilla/demo/pinned/<template-id>.html
-https://raw.githubusercontent.com/facebook/astryx/38103ea0ea69290fb02edf9e14212ad736806ba7/packages/vanilla/markup/<ComponentName>.html
+https://raw.githubusercontent.com/facebook/astryx/4855ea30514a6033a9abbe88069589b6ff15d64a/packages/vanilla/demo/pinned/<template-id>.html
+https://raw.githubusercontent.com/facebook/astryx/4855ea30514a6033a9abbe88069589b6ff15d64a/packages/vanilla/markup/<ComponentName>.html
 ```
 
 These are served as plain text: download the content, don't link to it.
 Live preview of all templates (after a one-time notice page):
-https://raw.githack.com/facebook/astryx/38103ea0ea69290fb02edf9e14212ad736806ba7/packages/vanilla/demo/pinned/index.html
+https://raw.githack.com/facebook/astryx/4855ea30514a6033a9abbe88069589b6ff15d64a/packages/vanilla/demo/pinned/index.html
 
 ### A3. Then add components
 
