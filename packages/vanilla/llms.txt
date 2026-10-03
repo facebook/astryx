@@ -1,0 +1,179 @@
+# Astryx
+
+> An open source design system that's fully customizable and agent ready.
+> Astryx grew inside Meta over eight years and powers 13,000+ apps. It ships
+> two ways: React components (built on React + StyleX) and a build-less HTML
+> flavor (one CSS file + one JS file from a CDN, readable `ax-*` classes).
+
+Everything on this site — component docs, markup, page templates, tokens and
+design rules — is also available through the Astryx CLI, in a form built for
+agents. Prefer the CLI (or the direct file URLs below) over crawling pages.
+
+## Step 1 — Choose a path
+
+Pick ONE path before writing any code:
+
+- **Path A — Build-less HTML.** Use when: there is no existing React project,
+  the user wants a single page / prototype / static file / "just an HTML
+  file", you cannot run a dev server, or you are producing an artifact that
+  must open directly in a browser. No install, no bundler, no React.
+- **Path B — React with a dev server.** Use when: the workspace already has
+  React (package.json lists `react`), or the user asks for a React/Next/Vite
+  app.
+
+If unsure and there is no package.json, choose **Path A**.
+
+---
+
+## Path A — Build-less HTML
+
+### A1. Page setup (copy exactly; versions are pinned)
+
+```html
+<!doctype html>
+<html lang="en" data-astryx-theme="neutral" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@astryxdesign/core@0.6.5/src/reset.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/facebook/astryx@d5d638c97f617e7ac7dad7357e7acaabcbc7c6df/packages/vanilla/dist/astryx-vanilla.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-neutral@0.6.5/dist/theme.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-butter@0.6.5/dist/theme.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-y2k@0.6.5/dist/theme.css" />
+  <script src="https://cdn.jsdelivr.net/gh/facebook/astryx@d5d638c97f617e7ac7dad7357e7acaabcbc7c6df/packages/vanilla/dist/astryx-vanilla.js" defer></script>
+</head>
+<body>
+  <!-- ax-* markup here -->
+</body>
+</html>
+```
+
+- Theme: set `data-astryx-theme` on `<html>` to `neutral`, `butter`, or `y2k`
+  (all three theme files are loaded above, so switching is just the attribute).
+- Mode: set `data-theme` to `light` or `dark`.
+- ES-module alternative to the classic script:
+  `https://cdn.jsdelivr.net/gh/facebook/astryx@d5d638c97f617e7ac7dad7357e7acaabcbc7c6df/packages/vanilla/dist/astryx-vanilla.mjs`
+  (exports `setTheme`, `setMode`, `initThemeModeSwitchers`).
+
+### A2. Start every page from a template — never lay out a page from scratch
+
+Templates (complete, standalone, already wired to the CDN links above):
+
+| id | use for |
+|---|---|
+| `dashboard` | metrics, charts, overview pages |
+| `table-filter` | search + filters + results table |
+| `form-two-column` | data entry / settings-style forms |
+| `detail-page` | a single record with tabs, metadata, actions |
+
+**Option 1 — CLI (if you can run a shell with git and Node 24+):**
+
+```sh
+git clone --depth 1 --branch poc/vanilla-astryx https://github.com/facebook/astryx.git astryx
+cd astryx && npx --yes pnpm@11.10.0 install --frozen-lockfile
+
+# run from the astryx/ directory (the HTML commands are not in the npm release yet)
+node packages/cli/clients/cli/bin/astryx.mjs template --list --html                  # the 4 template ids
+node packages/cli/clients/cli/bin/astryx.mjs template dashboard --html > page.html   # full standalone page
+node packages/cli/clients/cli/bin/astryx.mjs component --list --html                 # all HTML components
+node packages/cli/clients/cli/bin/astryx.mjs component Dialog --html                 # docs + copyable markup variants
+```
+
+**Option 2 — direct file URLs (no shell needed; fetch and save as .html):**
+
+```
+https://raw.githubusercontent.com/facebook/astryx/38103ea0ea69290fb02edf9e14212ad736806ba7/packages/vanilla/demo/pinned/<template-id>.html
+https://raw.githubusercontent.com/facebook/astryx/38103ea0ea69290fb02edf9e14212ad736806ba7/packages/vanilla/markup/<ComponentName>.html
+```
+
+These are served as plain text: download the content, don't link to it.
+Live preview of all templates (after a one-time notice page):
+https://raw.githack.com/facebook/astryx/38103ea0ea69290fb02edf9e14212ad736806ba7/packages/vanilla/demo/pinned/index.html
+
+### A3. Then add components
+
+Available components (use these exact names with `component <Name> --html`
+or the markup URL): Badge, Button, Card, CheckboxInput, Collapsible, Dialog,
+Divider, DropdownMenu, Heading, Layout, Link, Selector, SideNav, Stack,
+Switch, TabList, Table, Text, TextInput, Toast, Tooltip, TopNav.
+
+Each markup file starts with `<!-- docs: ... -->` and lists examples under
+`<!-- variant: <name> -->`. Copy a variant, then change its content.
+
+### A4. Rules for Path A
+
+- Classes are readable BEM: block `ax-button`, modifier `ax-button--primary`,
+  element `ax-card__header`. Only use classes that appear in the CLI output or
+  markup files — never invent `ax-*` classes.
+- Layout with components (`ax-layout`, `ax-stack ax-stack--gap-3`,
+  `ax-stack--horizontal`, `ax-card`), not ad-hoc `<div style>` layout.
+- Interactivity comes from `data-ax-*` attributes handled by the JS file
+  (e.g. `data-ax-dialog-open="<dialog-id>"`, `data-ax-dropdown-menu`,
+  `data-ax-tab-list`, `data-ax-tooltip`, `data-ax-collapsible`). Markup added
+  later is enhanced automatically. Toasts: `window.astryx.toast('Saved')`.
+- Use native elements and ARIA for state (`<dialog>`, `<details>`,
+  `aria-selected`, `disabled`, `:checked`).
+- Custom CSS only with tokens: `var(--color-*)`, `var(--spacing-*)`,
+  `var(--radius-*)`. No raw hex or px. Put it in `@layer astryx-base`.
+- Keep every CDN URL pinned exactly as given. Never use unpinned or
+  branch-name URLs.
+- No React, no JSX, no bundler, no npm install in the user's project.
+- Self-check: open the file in a browser; it must be fully styled with zero
+  console errors, and switching `data-astryx-theme` / `data-theme` must work.
+
+---
+
+## Path B — React with a dev server
+
+### B1. Install (React 19+)
+
+```sh
+npm install @astryxdesign/core @astryxdesign/theme-neutral @stylexjs/stylex
+npm install -D @astryxdesign/cli
+npx astryx init      # writes the Astryx component guide into AGENTS.md / CLAUDE.md
+```
+
+Use the scoped name `@astryxdesign/cli` with npx before installing; bare
+`npx astryx` resolves to an unrelated package until the CLI is a dependency.
+
+### B2. App setup (once)
+
+```css
+/* global stylesheet — order matters */
+@import '@astryxdesign/core/reset.css';
+@import '@astryxdesign/core/astryx.css';
+@import '@astryxdesign/theme-neutral/theme.css';
+```
+
+```tsx
+import {Theme} from '@astryxdesign/core/theme';
+import {neutralTheme} from '@astryxdesign/theme-neutral/built';
+
+export function Providers({children}: {children: React.ReactNode}) {
+  return <Theme theme={neutralTheme}>{children}</Theme>;
+}
+```
+
+Run your framework's dev server (e.g. `npm run dev` for Vite or Next.js).
+
+### B3. Workflow — start every page from a template
+
+```sh
+npx astryx build "<idea>"            # START HERE: names the template + blocks/components to use
+npx astryx template <name> <path>    # scaffold that template into your project
+npx astryx component <Name>          # props, variants, examples before using a component
+npx astryx search "<query>"          # search components, hooks, docs, templates
+npx astryx docs tokens               # spacing, color, radius, typography tokens
+```
+
+Rules: components do all layout (no raw `<div>` layout); keep the template's
+frame, gap and padding; style with component props first, then tokens; theme
+via `@astryxdesign/theme-*`, never hard-coded colors.
+
+---
+
+## More
+
+- Component docs and CLI reference: https://github.com/facebook/astryx
+- Use the CLI for authoritative, version-matched answers instead of crawling.
