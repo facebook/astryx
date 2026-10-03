@@ -172,8 +172,8 @@ export interface ClickableCardProps extends BaseProps {
 
   /**
    * Set to true to disable the card.
-   * Disabled cards remain focusable (tabIndex 0) with aria-disabled
-   * so screen reader users can discover them.
+   * Disabled action cards use a native disabled button. Disabled link cards
+   * render no live destination, leave the tab order, and expose aria-disabled.
    */
   isDisabled?: boolean;
 
@@ -216,6 +216,10 @@ export interface ClickableCardProps extends BaseProps {
 // =============================================================================
 // Component
 // =============================================================================
+
+function preventDisabledLinkClick(event: MouseEvent<HTMLAnchorElement>): void {
+  event.preventDefault();
+}
 
 /**
  * An interactive card that acts as a single navigation or action target.
@@ -328,8 +332,9 @@ export function ClickableCard({
       {isLink ? (
         <LinkComponent
           ref={interactiveRef as React.Ref<HTMLAnchorElement>}
-          href={href}
-          target={target}
+          href={isDisabled ? undefined : href}
+          target={isDisabled ? undefined : target}
+          onClick={isDisabled ? preventDisabledLinkClick : undefined}
           aria-label={label}
           aria-disabled={isDisabled || undefined}
           tabIndex={isDisabled ? -1 : 0}

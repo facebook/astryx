@@ -153,7 +153,7 @@ export const Disabled: Story = {
     docs: {
       description: {
         story:
-          '`isDisabled` suppresses click, hover, focus, and sets `aria-disabled`. `tabIndex` becomes -1.',
+          '`isDisabled` suppresses click, hover, and focus, removes any live link destination, sets `aria-disabled`, and leaves the card out of the tab order.',
       },
     },
   },
