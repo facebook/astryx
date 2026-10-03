@@ -15,6 +15,16 @@ npx @astryxdesign/cli template --list
 
 Once it's a project dependency (`npm install -D @astryxdesign/cli`), drop the scope and use the shorter `astryx` — e.g. `npx astryx component Button` or `pnpm exec astryx component Button`. Bare `astryx` resolves to an unrelated npm package until the CLI is installed, so prefer the scoped form above for first-run/one-off use.
 
+## Install the preview CLI
+
+Install the self-contained vanilla HTML preview from its immutable commit:
+
+```bash
+npm install -g https://cdn.jsdelivr.net/gh/facebook/astryx@940c121f93411c2551fa84a6dd50ab50dcd6feb4/packages/vanilla/dist/cli/astryx-cli-vanilla.tgz
+```
+
+The preview package is `@astryxdesign/cli@0.6.5-vanilla.f633013d2`; it is not published to npm.
+
 ## Reading the CLI's own docs
 
 The CLI documents itself, so these commands print what the installed version does:

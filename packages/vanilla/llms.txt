@@ -67,17 +67,24 @@ Templates (complete, standalone, already wired to the CDN links above):
 | `form-two-column` | data entry / settings-style forms |
 | `detail-page` | a single record with tabs, metadata, actions |
 
-**Option 1 — CLI (if you can run a shell with git and Node 24+):**
+**Option 1 — install the preview CLI (Node 22.13+):**
 
 ```sh
-git clone --depth 1 --branch poc/vanilla-astryx https://github.com/facebook/astryx.git astryx
-cd astryx && npx --yes pnpm@11.10.0 install --frozen-lockfile
+npm install -g https://cdn.jsdelivr.net/gh/facebook/astryx@940c121f93411c2551fa84a6dd50ab50dcd6feb4/packages/vanilla/dist/cli/astryx-cli-vanilla.tgz
 
-# run from the astryx/ directory (the HTML commands are not in the npm release yet)
-node packages/cli/clients/cli/bin/astryx.mjs template --list --html                  # the 4 template ids
-node packages/cli/clients/cli/bin/astryx.mjs template dashboard --html > page.html   # full standalone page
-node packages/cli/clients/cli/bin/astryx.mjs component --list --html                 # all HTML components
-node packages/cli/clients/cli/bin/astryx.mjs component Dialog --html                 # docs + copyable markup variants
+astryx template --list --html                  # the 4 template ids
+astryx template dashboard --html > page.html   # full standalone page
+astryx component --list --html                 # all HTML components
+astryx component Dialog --html                 # docs + copyable markup variants
+```
+
+**Fallback — clone the pinned source commit:**
+
+```sh
+git clone https://github.com/facebook/astryx.git astryx
+git -C astryx checkout 940c121f93411c2551fa84a6dd50ab50dcd6feb4
+cd astryx && npx --yes pnpm@11.10.0 install --frozen-lockfile
+node packages/cli/clients/cli/bin/astryx.mjs template dashboard --html > page.html
 ```
 
 **Option 2 — direct file URLs (no shell needed; fetch and save as .html):**
