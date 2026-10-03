@@ -20,8 +20,13 @@ export const docs = {
   ],
   usage: {
     description:
-      'Layer utilities provide the app-level provider used by overlay systems. Use LayerProvider at the app root for toast/layer configuration; use higher-level Popover, HoverCard, or Tooltip APIs for most overlay UI. Rendered layer content, not the provider’s application subtree, uses theme body text defaults and exits ancestor surface/group membership. Establish intentional groups and complete required providers inside each layer.',
+      'Layer utilities provide the app-level provider used by overlay systems. Use LayerProvider at the app root for toast/layer configuration; use higher-level Popover, HoverCard, or Tooltip APIs for most overlay UI. Rendered layer content, not the provider’s application subtree, uses theme body text defaults and exits ancestor surface/group membership. Establish intentional groups and complete required providers inside each layer. Every anchored layer keeps a gutter from each viewport edge — the spacing-4 step or the device safe-area inset, whichever is larger — and is capped to the viewport, never to the room beside its trigger: an explicit width renders at its size, flips when it does not fit beside the trigger, and slides into view when it fits on neither side. An app that floats a persistent bar over a viewport edge declares it once, usually on :root, through --astryx-layer-inset-block-start, --astryx-layer-inset-block-end, --astryx-layer-inset-inline-start, or --astryx-layer-inset-inline-end; each adds to that edge\u2019s gutter and reads 0px when unset. They are app declarations, not theme values.',
     bestPractices: [
+      {
+        guidance: true,
+        description:
+          'Declare a persistent bar floating over the viewport once, on :root, through the matching --astryx-layer-inset-* property; every anchored layer then stays clear of it.',
+      },
       {
         guidance: true,
         description:
@@ -49,7 +54,8 @@ export const docs = {
         {
           name: 'children',
           type: 'ReactNode',
-          description: 'Application subtree that can use the shared layer context.',
+          description:
+            'Application subtree that can use the shared layer context.',
           required: true,
         },
         {
@@ -76,7 +82,8 @@ export const docsDense = {
       },
       {
         guidance: true,
-        description: 'Use Popover/HoverCard/Tooltip for common overlay patterns.',
+        description:
+          'Use Popover/HoverCard/Tooltip for common overlay patterns.',
       },
       {
         guidance: false,
