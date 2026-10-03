@@ -32,26 +32,60 @@ If unsure and there is no package.json, choose **Path A**.
 ```html
 <!doctype html>
 <html lang="en" data-astryx-theme="neutral" data-theme="light">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@astryxdesign/core@0.6.5/src/reset.css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/facebook/astryx@3906c4ccda61f94bc6dd9777ec38131ac58e8a70/packages/vanilla/dist/astryx-vanilla.css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-neutral@0.6.5/dist/theme.css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-butter@0.6.5/dist/theme.css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-y2k@0.6.5/dist/theme.css" />
-  <script src="https://cdn.jsdelivr.net/gh/facebook/astryx@3906c4ccda61f94bc6dd9777ec38131ac58e8a70/packages/vanilla/dist/astryx-vanilla.js" defer></script>
-</head>
-<body>
-  <!-- ax-* markup here -->
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700&family=Crimson+Text:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&family=Figtree:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Fustat:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Manufacturing+Consent&family=Montserrat:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Playwrite+US+Trad:wght@100..400&family=Poppins:wght@400;500;600;700&family=Sarina&display=swap" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/core@0.6.5/src/reset.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/facebook/astryx@3906c4ccda61f94bc6dd9777ec38131ac58e8a70/packages/vanilla/dist/astryx-vanilla.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-neutral@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-butter@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-y2k@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-stone@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-matcha@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-chocolate@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-gothic@0.6.5/dist/theme.css" />
+    <script
+      src="https://cdn.jsdelivr.net/gh/facebook/astryx@3906c4ccda61f94bc6dd9777ec38131ac58e8a70/packages/vanilla/dist/astryx-vanilla.js"
+      defer></script>
+  </head>
+  <body>
+    <!-- ax-* markup here -->
+  </body>
 </html>
 ```
 
-- Theme: set `data-astryx-theme` on `<html>` to `neutral`, `butter`, or `y2k`
-  (all three theme files are loaded above, so switching is just the attribute).
+- Theme: set `data-astryx-theme` on `<html>` to `neutral`, `butter`, `y2k`,
+  `stone`, `matcha`, `chocolate`, or `gothic` (all seven theme files are loaded
+  above, so switching is just the attribute). Gothic is intentionally dark-only.
 - Mode: set `data-theme` to `light` or `dark`.
+- Switchers marked with `data-ax-theme-switch`, `data-ax-mode-switch`,
+  `data-ax-theme-toggle`, or `data-ax-mode-toggle` persist across reloads.
+- Custom theme: add a named `[data-astryx-theme="brand"]` rule after the shipped
+  styles in `@layer astryx-theme` and override semantic custom properties such
+  as `--color-accent`, `--color-on-accent`, `--color-text-accent`, and
+  `--color-background-body`. Run `astryx component Selector --html` for a
+  complete purple brand example plus theme and dark-mode controls.
 - ES-module alternative to the classic script:
   `https://cdn.jsdelivr.net/gh/facebook/astryx@3906c4ccda61f94bc6dd9777ec38131ac58e8a70/packages/vanilla/dist/astryx-vanilla.mjs`
   (exports `setTheme`, `setMode`, `initThemeModeSwitchers`).
@@ -60,12 +94,12 @@ If unsure and there is no package.json, choose **Path A**.
 
 Templates (complete, standalone, already wired to the CDN links above):
 
-| id | use for |
-|---|---|
-| `dashboard` | metrics, charts, overview pages |
-| `table-filter` | search + filters + results table |
-| `form-two-column` | data entry / settings-style forms |
-| `detail-page` | a single record with tabs, metadata, actions |
+| id                | use for                                      |
+| ----------------- | -------------------------------------------- |
+| `dashboard`       | metrics, charts, overview pages              |
+| `table-filter`    | search + filters + results table             |
+| `form-two-column` | data entry / settings-style forms            |
+| `detail-page`     | a single record with tabs, metadata, actions |
 
 **Option 1 — install the preview CLI (Node 22.13+):**
 
@@ -76,6 +110,7 @@ astryx template --list --html                  # the 4 template ids
 astryx template dashboard --html > page.html   # full standalone page
 astryx component --list --html                 # all HTML components
 astryx component Dialog --html                 # docs + copyable markup variants
+astryx component Selector --html               # theme switcher, dark mode, custom brand theme
 ```
 
 **Fallback — clone the pinned source commit:**

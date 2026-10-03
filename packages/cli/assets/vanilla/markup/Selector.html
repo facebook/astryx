@@ -1,4 +1,4 @@
-<!-- docs: Choose one value from a moderate list with a native select control. -->
+<!-- docs: Choose one value from a moderate list. Theme and mode hooks persist the active appearance across reloads. -->
 <!-- variant: default -->
 <label class="ax-selector">
   <span class="ax-selector__label">Workspace</span>
@@ -52,3 +52,52 @@
     <span class="ax-selector__indicator" aria-hidden="true"></span>
   </span>
 </label>
+
+<!-- variant: theme-switcher -->
+<label class="ax-selector">
+  <span class="ax-selector__label">Theme</span>
+  <span class="ax-selector__control">
+    <select class="ax-selector__select" data-ax-theme-switch>
+      <option value="neutral">Neutral</option>
+      <option value="butter">Butter</option>
+      <option value="y2k">Y2K</option>
+      <option value="stone">Stone</option>
+      <option value="matcha">Matcha</option>
+      <option value="chocolate">Chocolate</option>
+      <option value="gothic">Gothic</option>
+    </select>
+    <span class="ax-selector__indicator" aria-hidden="true"></span>
+  </span>
+</label>
+
+<!-- variant: dark-mode-toggle -->
+<button
+  class="ax-button ax-button--secondary"
+  type="button"
+  data-ax-mode-toggle>
+  Toggle light or dark mode
+</button>
+
+<!-- variant: custom-brand-theme -->
+<style>
+  @layer astryx-theme {
+    [data-astryx-theme='brand'] {
+      --color-accent: light-dark(#6d28d9, #a78bfa);
+      --color-accent-muted: light-dark(#ede9fe, #2e1a47);
+      --color-on-accent: light-dark(#ffffff, #1f1235);
+      --color-text-accent: light-dark(#5b21b6, #c4b5fd);
+      --color-icon-accent: light-dark(#5b21b6, #c4b5fd);
+      --color-background-body: light-dark(#f5f3ff, #171126);
+      --focus-outline-color: var(--color-accent);
+    }
+  }
+</style>
+<section
+  class="ax-card ax-stack ax-stack--horizontal ax-stack--gap-3 ax-stack--wrap"
+  data-astryx-theme="brand">
+  <button class="ax-button ax-button--primary" type="button">
+    Brand action
+  </button>
+  <span class="ax-badge ax-badge--info">Brand badge</span>
+  <a class="ax-link" href="#brand-details">Brand link</a>
+</section>

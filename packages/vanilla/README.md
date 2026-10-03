@@ -12,7 +12,7 @@ Experimental no-build Astryx assets for plain HTML pages. Vanilla Astryx combine
   - [`table-filter.html`](templates/table-filter.html)
   - [`form-two-column.html`](templates/form-two-column.html)
   - [`detail-page.html`](templates/detail-page.html)
-- A browsable [`demo/index.html`](demo/index.html) with neutral, butter, and Y2K theme controls plus light and dark modes.
+- A browsable [`demo/index.html`](demo/index.html) with all seven shipped themes, a custom brand example, and light and dark modes.
 - A committed, ready-to-open [`demo/pinned/index.html`](demo/pinned/index.html) and four pinned templates.
 
 The canonical templates use `__ASTRYX_VANILLA_CDN__` as the base for their CSS and JavaScript URLs. The Astryx CLI and the demo renderer replace that placeholder with the same commit-pinned jsDelivr URL.
@@ -57,7 +57,21 @@ Then serve the repository root with any static file server. The canonical HTML d
 - Component styles live one-per-file in `src/components/` and are discovered automatically by the build.
 - `markup/<ComponentName>.html` contains CLI-ready examples beginning with a `docs` comment and labeled `variant` blocks.
 - CSS custom-property defaults are generated from `packages/core/src/theme/tokens.stylex.ts`.
-- The document root selects appearance with `data-astryx-theme="neutral|butter|y2k"` and `data-theme="light|dark"`.
+- The document root selects a shipped or custom theme with `data-astryx-theme` and selects `light` or `dark` with `data-theme`.
+
+## Theming
+
+Vanilla Astryx supports Neutral, Butter, Y2K, Stone, Matcha, Chocolate, and Gothic. Load the corresponding `@astryxdesign/theme-*` stylesheets, then switch themes by changing `data-astryx-theme` on the document root. Gothic is intentionally dark-only.
+
+The JavaScript bundle persists controls marked with `data-ax-theme-switch`, `data-ax-mode-switch`, `data-ax-theme-toggle`, or `data-ax-mode-toggle`. The demo and templates restore the saved choice before styles load, and template query parameters named `theme` and `mode` take precedence.
+
+Custom themes override semantic CSS variables in the `astryx-theme` layer. The included purple brand example changes the accent used by Button, Badge, and Link plus the page wash without restyling component classes.
+
+See [`docs/theming.md`](docs/theming.md) for the complete stylesheet, font, switcher, persistence, and custom-theme examples. Copy the switcher and brand variants from the CLI with:
+
+```sh
+node packages/cli/clients/cli/bin/astryx.mjs component Selector --html
+```
 
 ## Known gaps
 

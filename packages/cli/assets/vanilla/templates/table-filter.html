@@ -4,10 +4,40 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Astryx service jobs</title>
+    <script>
+      (() => {
+        const root = document.documentElement;
+        const params = new URLSearchParams(location.search);
+        const themeKey = 'astryx-vanilla-theme';
+        const modeKey = 'astryx-vanilla-mode';
+        const read = key => {
+          try {
+            return localStorage.getItem(key);
+          } catch {
+            return null;
+          }
+        };
+        const remember = (key, value) => {
+          try {
+            localStorage.setItem(key, value);
+          } catch {}
+        };
+        const theme = params.get('theme') || read(themeKey);
+        const mode = params.get('mode') || read(modeKey);
+        if (/^[a-z][a-z0-9-]*$/.test(theme || '')) {
+          root.dataset.astryxTheme = theme;
+          if (params.has('theme')) remember(themeKey, theme);
+        }
+        if (['light', 'dark'].includes(mode)) {
+          root.dataset.theme = mode;
+          if (params.has('mode')) remember(modeKey, mode);
+        }
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700&amp;family=Crimson+Text:wght@400;600;700&amp;family=DM+Sans:wght@400;500;600;700&amp;family=Figtree:wght@400;500;600;700&amp;family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&amp;family=Fustat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;family=Manufacturing+Consent&amp;family=Montserrat:wght@400;500;600;700&amp;family=Outfit:wght@400;500;600;700&amp;family=Playwrite+US+Trad:wght@100..400&amp;family=Poppins:wght@400;500;600;700&amp;family=Sarina&amp;display=swap"
       rel="stylesheet" />
     <link
       rel="stylesheet"
@@ -22,7 +52,30 @@
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-y2k@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-stone@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-matcha@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-chocolate@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-gothic@0.6.5/dist/theme.css" />
     <style>
+      @layer astryx-theme {
+        :root[data-astryx-theme='brand'] {
+          --color-accent: light-dark(#6d28d9, #a78bfa);
+          --color-accent-muted: light-dark(#ede9fe, #2e1a47);
+          --color-on-accent: light-dark(#ffffff, #1f1235);
+          --color-text-accent: light-dark(#5b21b6, #c4b5fd);
+          --color-icon-accent: light-dark(#5b21b6, #c4b5fd);
+          --color-background-body: light-dark(#f5f3ff, #171126);
+          --focus-outline-color: var(--color-accent);
+        }
+      }
       @layer astryx-base {
         .jobs-shell {
           min-height: 100vh;
@@ -86,15 +139,6 @@
         }
       }
     </style>
-    <script>
-      const params = new URLSearchParams(location.search);
-      const theme = params.get('theme');
-      const mode = params.get('mode');
-      if (['neutral', 'butter', 'y2k'].includes(theme))
-        document.documentElement.dataset.astryxTheme = theme;
-      if (['light', 'dark'].includes(mode))
-        document.documentElement.dataset.theme = mode;
-    </script>
     <script defer src="__ASTRYX_VANILLA_CDN__/astryx-vanilla.js"></script>
   </head>
   <body class="jobs-shell">
@@ -136,6 +180,11 @@
                 <option value="neutral">Neutral</option>
                 <option value="butter">Butter</option>
                 <option value="y2k">Y2K</option>
+                <option value="stone">Stone</option>
+                <option value="matcha">Matcha</option>
+                <option value="chocolate">Chocolate</option>
+                <option value="gothic">Gothic</option>
+                <option value="brand">Brand</option>
               </select>
               <span class="ax-selector__indicator" aria-hidden="true"></span>
             </span>
