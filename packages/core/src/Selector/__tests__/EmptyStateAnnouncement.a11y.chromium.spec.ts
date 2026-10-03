@@ -120,12 +120,29 @@ test('stays silent while loading, then announces when the load lands empty', asy
   });
   expect(landed, 'the story exposed its load hook').toBe(true);
 
-  // The message has to be on screen before the region can be asked to match
-  // it — and if it is not, the failure says the component never reached the
-  // state rather than blaming the announcement.
-  await expect(page.locator('.astryx-selector-empty-state')).toHaveText(
-    'Nothing like that here',
+  // Each precondition is asserted at its own step, so a failure names what
+  // actually broke rather than blaming the announcement four steps later.
+  //
+  // The query in particular has to SURVIVE the load: `handleLayerHide`
+  // clears it, so a panel that hides for even one frame while the options
+  // arrive leaves the full list matching and no empty state to announce —
+  // correct behavior for the state the component would then be in, and a
+  // different scenario from this one.
+  await expect(search, 'the typed query survived the load').toHaveValue(
+    'zzzzz',
   );
+  await expect(
+    page.getByRole('listbox'),
+    'the panel is still open',
+  ).toBeVisible();
+  await expect(
+    page.getByRole('listbox').getByRole('option'),
+    'the query still matches nothing',
+  ).toHaveCount(0);
+  await expect(
+    page.locator('.astryx-selector-empty-state'),
+    'the empty message reached the screen',
+  ).toHaveText('Nothing like that here');
 
   // The outcome arrives after the keystroke, so only something watching the
   // rendered state can report it.
