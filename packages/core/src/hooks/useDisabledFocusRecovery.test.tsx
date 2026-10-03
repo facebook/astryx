@@ -3,7 +3,7 @@
 /**
  * @file useDisabledFocusRecovery.test.tsx
  * @input React, Testing Library and private disabled-focus recovery
- * @output Regression coverage for focus ownership across committed disablement
+ * @output Regression coverage for focus ownership and native button disablement
  * @position Tests for useDisabledFocusRecovery.ts
  */
 
@@ -88,7 +88,7 @@ describe('useDisabledFocusRecovery', () => {
 
   it('retains ownership through the native blur caused by disablement', () => {
     const {rerender} = render(<Fixture />);
-    const next = screen.getByRole('button', {
+    const next = screen.getByRole<HTMLButtonElement>('button', {
       name: 'Next',
     });
     next.focus();
