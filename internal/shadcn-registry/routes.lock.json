@@ -362,6 +362,11 @@
       "aliases": []
     },
     {
+      "name": "component-dropdown-menu-group",
+      "path": "components/dropdown-menu-group",
+      "aliases": []
+    },
+    {
       "name": "component-dropdown-menu-item",
       "path": "components/dropdown-menu-item",
       "aliases": []
@@ -2008,6 +2013,11 @@
     {
       "name": "example-drawer-width-budget-pixels-or-any-css-length",
       "path": "examples/drawer/width-budget-pixels-or-any-css-length",
+      "aliases": []
+    },
+    {
+      "name": "example-dropdown-menu-group-selectable-rows",
+      "path": "examples/dropdown-menu-group/selectable-rows",
       "aliases": []
     },
     {
@@ -4238,6 +4248,11 @@
     {
       "name": "showcase-drawer-basic",
       "path": "showcases/drawer/basic",
+      "aliases": []
+    },
+    {
+      "name": "showcase-dropdown-menu-group-default",
+      "path": "showcases/dropdown-menu-group/default",
       "aliases": []
     },
     {
