@@ -3,12 +3,12 @@ schema_version: 4
 template_version: 1
 kind: system-spec
 id: spec:AST-056
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
-phase: proposed
+approved_by: cixzhang
+approved_at: 2026-10-02
+phase: accepted
 owners: [cixzhang]
 affects_architecture: [architecture:public-component-api]
 affects_families: [family:input-fields]
@@ -284,60 +284,58 @@ core components: `hasSearch`, `searchPlaceholder`, and `emptySearchText` on
 `architecture:public-component-api` INV9, removing or retyping any of them is a
 breaking change.
 
-**The expensive one is `searchSource`.** It is **required** on `Tokenizer`,
-`Typeahead`, `BaseTypeahead`, and `CommandPalette`. The cut that removes it does
-not degrade a long tail of callsites — it fails every existing callsite of those
-four components at type-check. Nothing else here is close to that.
+**Nothing required moves.** An earlier draft would have folded the **required**
+`searchSource` on `Tokenizer`, `Typeahead`, `BaseTypeahead` and
+`CommandPalette` into an object, failing every existing callsite of those four
+components at type-check. DEC-2 rejected that, so the whole migration is now
+one optional prop renamed on four surfaces, with its type widened.
 
 **This record's recommendation: deprecate with a replacement-first cycle.** Not
 coexist indefinitely, not replace.
 
-- A patch ships `search` on each adopter while every old prop keeps working,
+- A patch ships `emptySearchText` on each renaming component while the old prop keeps working,
   carries `@deprecated` naming its replacement, and behaves exactly as before
   (`spec:AST-017` FR28, FR29). During the overlap a component reads both and
-  the key wins, with one development warning on conflict (FR9).
+  the new prop wins, with one development warning on conflict (FR7).
 - Each old prop gets a `DEP-*` id and a distinct `CLN-*` id. Removal happens in
   a later minor only when both ids are in that minor's frozen manifest
   (`spec:AST-017` FR31). This record sets no clock; FR30 forbids reading
   release cadence as one.
-- Until that cleanup minor, FR3's "MUST declare `search` required" cannot be
-  true on the four components where `searchSource` is required, because
-  `searchSource` still satisfies them. FR3's required clause becomes
-  enforceable at cleanup, not at adoption.
+- A caller who passed a `string` needs no edit beyond the name: the type only
+  widens, so every existing value stays valid.
 
 **What each option actually costs.**
 
 - **Deprecate with a cycle (recommended).** One prop doubles for the length of
-  the overlap, on three components: `emptySearchResultsText` and
-  `emptySearchText` both present in the types, both in `.doc.mjs`, both in the
-  consumer docs. Three `DEP-*` records and three `CLN-*` ids. The rename is
-  mechanically codemoddable, including where a caller spreads props, because
-  the value's meaning does not change and the type only widens. Then one minor
-  that breaks unmigrated callsites of three components — and a caller who
-  passed a `string` needs no edit beyond the name.
+  the overlap, on `Tokenizer`, `Typeahead`, `BaseTypeahead` and
+  `ChatComposerTrigger`: `emptySearchResultsText` and `emptySearchText` both
+  present in the types, both in `.doc.mjs`, both in the consumer docs. Four
+  `DEP-*` records and four `CLN-*` ids. The rename is mechanically
+  codemoddable, including where a caller spreads props, because the value's
+  meaning does not change and the type only widens. Then one minor that breaks
+  unmigrated callsites of those four surfaces.
 - **Coexist indefinitely.** Nothing breaks, ever. The drift survives in the
   type signature: a builder still meets `emptySearchResultsText` on one
   component and `emptySearchText` on another, and the standard governs only
   components built after it. That answers "so when we add it later on other
   components we match the pattern" and leaves today's inconsistency in place.
-- **Replace outright.** A major version, or a minor that breaks four
-  components' entire callsite base at once with no overlap. Rejected: no user
-  problem here justifies it.
+- **Replace outright.** A minor that renames with no overlap. Rejected: the
+  deprecation costs little here and no user problem justifies breaking
+  callsites that a cycle would carry.
 
-**`Tokenizer.hasCreate` is the one genuine collision, and it is not mechanical.**
-Tokenizer's shipped `hasCreate` is a boolean with no callback: the component
-mints the token from the typed text itself, because a token _is_ a string.
-#6829's `onCreate` exists precisely because `MultiSelector` cannot do that — an
-option needs a value the caller defines. Under FR7 the boolean cannot survive as
-a boolean, but mapping it to `onCreate` moves work onto every existing Tokenizer
-caller. OQ5 puts that to the owner; until it is answered, this record does not
-require `Tokenizer` to change `hasCreate`.
+**`Tokenizer.hasCreate` needs no migration.** An earlier reading treated it as
+a collision, because `Tokenizer`'s `hasCreate` is a boolean with no callback
+while #6829 proposed a handler for `MultiSelector`. OQ5 settles it the other
+way: `Tokenizer` mints the token itself and reports it through
+`onChange(items, {item, type: 'create'})`, which is exactly the shape DEC-3
+describes, so `Tokenizer` already conforms and changes nothing.
+`MultiSelector` converges on it when #6829 returns.
 
 ## Current-state impact
 
 - `architecture:public-component-api` gains `spec:AST-056` in its
   `deciding_specs` and a line in its `Deciding specs` list when this record
-  becomes `current`. No invariant of that record changes: FR1–FR10 sit inside
+  becomes `current`. No invariant of that record changes: FR1–FR7 sit inside
   its INV2, INV3, and INV9 grammar rather than amending it.
 - `contributing:api-conventions` and the wiki's `Prop Naming` section gain the
   state-naming rule: one observable state has one prop name and one type
@@ -348,8 +346,7 @@ require `Tokenizer` to change `hasCreate`.
   `component:Typeahead`, `component:BaseTypeahead`, and
   `component:CommandPalette` cite this record instead of each recording a
   private copy. `component:MultiSelector` is `authority: draft` and is drafting
-  exactly such a copy as its FR10 / DEC-3; that claim is withdrawn in favour of
-  FR6 and FR7 here.
+  exactly such a copy; that claim is withdrawn in favour of FR5 and FR6 here.
 - [#6829](https://github.com/facebook/astryx/pull/6829) is blocked on this
   ruling. Its `hasCreate` + `onCreate` pair is rejected by FR5, which admits
   the same user need as `hasCreate` alone, reported through the component's
@@ -385,8 +382,8 @@ shipped behavior rather than a passing contract.
 
 ## Decision log
 
-Every decision below is **proposed**. None has been ruled on; `approved_by` is
-`null` and the record is `draft`.
+Every decision below was ruled by `cixzhang` on 2026-10-02, on this record's
+pull request.
 
 ### DEC-1 — One name and one type for "the query matched nothing"
 
