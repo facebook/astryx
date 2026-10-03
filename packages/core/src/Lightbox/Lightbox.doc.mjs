@@ -18,7 +18,8 @@ const anatomy = [
   {
     name: 'Media',
     required: true,
-    description: 'Active image, video, or custom React content presented inside the viewer.',
+    description:
+      'Active image, video, or custom React content presented inside the viewer.',
   },
   {
     name: 'Close button',
@@ -53,7 +54,21 @@ export const docs = {
   name: 'Lightbox',
   displayName: 'Lightbox',
   category: 'Overlay',
-  keywords: ["lightbox","image","video","viewer","gallery","zoom","fullscreen","media","photo","preview","custom","content","react"],
+  keywords: [
+    'lightbox',
+    'image',
+    'video',
+    'viewer',
+    'gallery',
+    'zoom',
+    'fullscreen',
+    'media',
+    'photo',
+    'preview',
+    'custom',
+    'content',
+    'react',
+  ],
   props: [
     {
       name: 'isOpen',
@@ -75,7 +90,8 @@ export const docs = {
       // where a media object belongs. The shape and its legal values live in
       // the description instead (#1645).
       type: 'LightboxItem | LightboxItem[]',
-      description: 'Items to display. Pass a single object for one item, or an array for gallery mode with prev/next navigation. Each item is either an image/video (src, alt, optional caption and type) or an arbitrary React subtree (type custom, content, label, optional caption). Both kinds can be mixed in one gallery.',
+      description:
+        'Items to display. Pass a single object for one item, or an array for gallery mode with prev/next navigation. Each item is either an image/video (src, alt, optional caption and type) or an arbitrary React subtree (type custom, content, label, optional caption). Both kinds can be mixed in one gallery.',
       required: true,
     },
     {
@@ -125,12 +141,35 @@ export const docs = {
     description:
       'A fullscreen overlay for viewing images, videos, and arbitrary React content at full resolution. Supports single-item and gallery modes with prev/next navigation, optional zoom and pan for images, and native video controls. Items with type custom host a rich React subtree and reuse the same gallery navigation, keyboard, scroll lock, and backdrop dismissal.',
     bestPractices: [
-      { guidance: true, description: 'Use the viewer or gallery buttons for Left/Right shortcuts. Custom content retains its own keyboard events; Lightbox does not cancel them or change the gallery index.' },
-      { guidance: true, description: 'Always provide alt text for every image, and a label for every custom item, for screen reader accessibility.' },
-      { guidance: true, description: 'Use gallery mode with onIndexChange for multi-item sets.' },
-      { guidance: true, description: 'Enable hasZoom only when viewing high-resolution images that benefit from close inspection; zoom and pan apply to images only.' },
-      { guidance: true, description: 'Use type custom items to host rich React previews, embeds, or cards inside the same gallery as images.' },
-      { guidance: false, description: 'Nest interactive controls inside a caption; put interactive footers inside a custom item content instead.' },
+      {
+        guidance: true,
+        description:
+          'Use the viewer or gallery buttons for Left/Right shortcuts. Custom content retains its own keyboard events; Lightbox does not cancel them or change the gallery index.',
+      },
+      {
+        guidance: true,
+        description:
+          'Always provide alt text for every image, and a label for every custom item, for screen reader accessibility.',
+      },
+      {
+        guidance: true,
+        description: 'Use gallery mode with onIndexChange for multi-item sets.',
+      },
+      {
+        guidance: true,
+        description:
+          'Enable hasZoom only when viewing high-resolution images that benefit from close inspection; zoom and pan apply to images only.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use type custom items to host rich React previews, embeds, or cards inside the same gallery as images.',
+      },
+      {
+        guidance: false,
+        description:
+          'Nest interactive controls inside a caption; put interactive footers inside a custom item content instead.',
+      },
     ],
   },
   // The lightbox opens via showModal() and renders nothing while closed —
@@ -170,7 +209,8 @@ export const docsZh = {
     {
       name: 'media',
       type: 'LightboxItem | LightboxItem[]',
-      description: '要显示的项目。传入单个对象或数组（用于画廊模式的上一张/下一张导航）。每项可以是图片/视频（src、alt、可选 caption 和 type），也可以是任意 React 子树（type 为 custom、content、label、可选 caption）。两种类型可在同一画廊中混用。',
+      description:
+        '要显示的项目。传入单个对象或数组（用于画廊模式的上一张/下一张导航）。每项可以是图片/视频（src、alt、可选 caption 和 type），也可以是任意 React 子树（type 为 custom、content、label、可选 caption）。两种类型可在同一画廊中混用。',
       required: true,
     },
     {
@@ -204,36 +244,84 @@ export const docsZh = {
     description:
       'A fullscreen overlay for viewing images, videos, and arbitrary React content at full resolution. Supports single-item and gallery modes with prev/next navigation, optional zoom and pan for images, and native video controls. Items with type custom host a rich React subtree and reuse the same gallery navigation, keyboard, scroll lock, and backdrop dismissal.',
     bestPractices: [
-      { guidance: true, description: 'Use the viewer or gallery buttons for Left/Right shortcuts. Custom content retains its own keyboard events; Lightbox does not cancel them or change the gallery index.' },
-      { guidance: true, description: 'Always provide alt text for every image, and a label for every custom item, for screen reader accessibility.' },
-      { guidance: true, description: 'Use gallery mode with onIndexChange for multi-item sets.' },
-      { guidance: true, description: 'Enable hasZoom only when viewing high-resolution images that benefit from close inspection; zoom and pan apply to images only.' },
-      { guidance: true, description: 'Use type custom items to host rich React previews, embeds, or cards inside the same gallery as images.' },
-      { guidance: false, description: 'Nest interactive controls inside a caption; put interactive footers inside a custom item content instead.' },
+      {
+        guidance: true,
+        description:
+          'Use the viewer or gallery buttons for Left/Right shortcuts. Custom content retains its own keyboard events; Lightbox does not cancel them or change the gallery index.',
+      },
+      {
+        guidance: true,
+        description:
+          'Always provide alt text for every image, and a label for every custom item, for screen reader accessibility.',
+      },
+      {
+        guidance: true,
+        description: 'Use gallery mode with onIndexChange for multi-item sets.',
+      },
+      {
+        guidance: true,
+        description:
+          'Enable hasZoom only when viewing high-resolution images that benefit from close inspection; zoom and pan apply to images only.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use type custom items to host rich React previews, embeds, or cards inside the same gallery as images.',
+      },
+      {
+        guidance: false,
+        description:
+          'Nest interactive controls inside a caption; put interactive footers inside a custom item content instead.',
+      },
     ],
   },
 };
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
-  description: 'Fullscreen overlay for viewing images, videos, and arbitrary React content at full resolution with gallery navigation and zoom.',
+  description:
+    'Fullscreen overlay for viewing images, videos, and arbitrary React content at full resolution with gallery navigation and zoom.',
   usage: {
     anatomy,
     description:
       'A fullscreen overlay for viewing images, videos, and arbitrary React content at full resolution. Supports single-item and gallery modes with prev/next navigation, optional zoom and pan for images, and native video controls. Items with type custom host a rich React subtree and reuse the gallery navigation, keyboard, scroll lock, and backdrop dismissal.',
     bestPractices: [
-      { guidance: true, description: 'Use the viewer or gallery buttons for Left/Right shortcuts. Custom content retains its own keyboard events; Lightbox does not cancel them or change the gallery index.' },
-      { guidance: true, description: 'Always provide alt text for every image and a label for every custom item.' },
-      { guidance: true, description: 'Use gallery mode with onIndexChange for multi-item sets.' },
-      { guidance: true, description: 'Enable hasZoom only for high-resolution images; zoom and pan apply to images only.' },
-      { guidance: true, description: 'Use type custom items to host rich React previews inside the same gallery as images.' },
-      { guidance: false, description: 'Nest interactive controls inside a caption; use a custom item content instead.' },
+      {
+        guidance: true,
+        description:
+          'Use the viewer or gallery buttons for Left/Right shortcuts. Custom content retains its own keyboard events; Lightbox does not cancel them or change the gallery index.',
+      },
+      {
+        guidance: true,
+        description:
+          'Always provide alt text for every image and a label for every custom item.',
+      },
+      {
+        guidance: true,
+        description: 'Use gallery mode with onIndexChange for multi-item sets.',
+      },
+      {
+        guidance: true,
+        description:
+          'Enable hasZoom only for high-resolution images; zoom and pan apply to images only.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use type custom items to host rich React previews inside the same gallery as images.',
+      },
+      {
+        guidance: false,
+        description:
+          'Nest interactive controls inside a caption; use a custom item content instead.',
+      },
     ],
   },
   propDescriptions: {
     isOpen: 'Whether the lightbox is open.',
     onOpenChange: 'Callback when open state changes.',
-    media: 'Single item or array for gallery mode; each item is an image/video or a custom React subtree (type custom).',
+    media:
+      'Single item or array for gallery mode; each item is an image/video or a custom React subtree (type custom).',
     index: 'Current index in gallery mode.',
     onIndexChange: 'Callback when gallery index changes.',
     hasZoom:
