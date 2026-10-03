@@ -94,6 +94,10 @@ export const docs = {
               'Same fix: an older CLI rejects `replaces`, drops that template, and hides your doc topics.',
             ],
             [
+              '`keywords_needs_cli`: The package has a template that sets `keywords` but declares no @astryxdesign/cli peer.',
+              'Same fix: an older CLI rejects `keywords`, drops that template, and hides your doc topics.',
+            ],
+            [
               '`themes_need_cli`: The package ships a theme but declares no @astryxdesign/cli peer.',
               'Same fix: an older CLI cannot read typed theme descriptors, so it drops your themes and can hide your doc topics.',
             ],

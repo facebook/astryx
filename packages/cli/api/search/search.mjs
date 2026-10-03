@@ -1008,6 +1008,64 @@ async function gatherComponents(coreDir, cwd) {
 }
 
 /**
+ * The components each search response was scored against, by response:
+ * `build` reads them to tell a part of a page from a page without gathering
+ * them again. Module-private, so they never enter search's JSON.
+ * @type {WeakMap<object, {name: string, keywords: string[]}[]>}
+ */
+const searchedComponentsOf = new WeakMap();
+
+/**
+ * The components (name and keywords) a search response was scored against, or
+ * null when that search was narrowed away from components.
+ * @param {object} response
+ * @returns {{name: string, keywords: string[]}[] | null}
+ */
+export function searchedComponents(response) {
+  return searchedComponentsOf.get(response) ?? null;
+}
+
+/**
+ * Every component the project can use, Core's and its integrations', with the
+ * keywords its own doc declares: the discovery and doc reads search's own
+ * candidates use, without the import paths and prose a result carries. `build`
+ * reads it to tell a part of a page from a page when its search was narrowed
+ * away from components.
+ * @param {string} coreDir
+ * @param {string} cwd
+ * @returns {Promise<{name: string, keywords: string[]}[]>}
+ */
+export async function componentKeywords(coreDir, cwd) {
+  /** @param {any} doc */
+  const keywordsOf = doc => (Array.isArray(doc?.keywords) ? doc.keywords : []);
+  const core = Object.values(discoverComponents(coreDir))
+    .flat()
+    .map(async name => {
+      const readme = findComponentReadme(coreDir, name);
+      const doc =
+        readme && readme.endsWith('.doc.mjs')
+          ? await loadModuleDoc(readme)
+          : null;
+      return {name, keywords: keywordsOf(doc)};
+    });
+  const integrations = (await loadIntegrationsSafely(cwd)).map(
+    async integration => {
+      const {components} = await discoverValidIntegrationComponents(integration);
+      return Promise.all(
+        components.map(async rec => ({
+          name: rec.name,
+          keywords: keywordsOf(await loadModuleDoc(rec.docPath)),
+        })),
+      );
+    },
+  );
+  return [
+    ...(await Promise.all(core)),
+    ...(await Promise.all(integrations)).flat(),
+  ];
+}
+
+/**
  * Build hook candidates: name + keywords + usage/description from the hook's
  * .doc.mjs.
  * @param {string} coreDir
@@ -1393,6 +1451,10 @@ async function gatherTemplates(cwd) {
       keywords,
       weakKeywords,
       description: t.description || '',
+      // A template's own keywords name the many ideas it serves, so they score
+      // as its prose does, not as a name: one of them matching one word of a
+      // short idea is not a direct match.
+      prose: t.keywords ?? [],
       _displayName: t.name,
       _kind: t.type, // 'page' | 'block'
       _resultName: t.dirName,
@@ -1563,7 +1625,8 @@ export async function search(query, options = {}) {
   // 57 things and one matching exactly 20 would be indistinguishable.
   const limited = scored.slice(0, limit);
 
-  return {
+  /** @type {import('./search.type.mjs').SearchResponse} */
+  const response = {
     type: 'search',
     data: {
       query: String(query).trim(),
@@ -1574,4 +1637,11 @@ export async function search(query, options = {}) {
       ),
     },
   };
+  if (wants('component')) {
+    searchedComponentsOf.set(
+      response,
+      components.map(c => ({name: c.name, keywords: c.keywords ?? []})),
+    );
+  }
+  return response;
 }
