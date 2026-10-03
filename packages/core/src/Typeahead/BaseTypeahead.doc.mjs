@@ -162,7 +162,7 @@ export const docs = {
       name: 'emptySearchText',
       type: 'ReactNode',
       description:
-        'Content shown when the query matched nothing. Takes a ReactNode, so the dead end can carry a link or a create row. Announced in a polite live region as the text it renders.',
+        'Content shown when the query matched nothing. Takes a ReactNode, so the dead end can carry a link or a create row. Announced in a polite live region as the text it renders, read from the DOM; aria-hidden parts stay out of both, and content that renders no text announces nothing. null counts as not given, like undefined, and falls through to the default; pass an empty string to render nothing.',
       default: "'No results found'",
     },
     {
@@ -328,7 +328,7 @@ export const docsZh = {
       name: 'emptySearchText',
       type: 'ReactNode',
       description:
-        '查询无匹配结果时显示的内容。接受 ReactNode，因此可在无结果处放置链接或创建入口。会以其渲染出的文本在礼貌性实时区域中播报。',
+        '查询无匹配结果时显示的内容。接受 ReactNode，因此可在无结果处放置链接或创建入口。会从 DOM 读取其渲染出的文本在礼貌性实时区域中播报；aria-hidden 的部分两处都不包含，不渲染任何文本的内容则不会播报。null 与 undefined 同样视为未提供，将回退到默认值；若要不渲染任何内容，请传入空字符串。',
       default: "'No results found'",
     },
     {

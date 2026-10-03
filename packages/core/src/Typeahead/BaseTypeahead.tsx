@@ -128,8 +128,12 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
    * Takes a `ReactNode`, so a dead end can carry a link or a create row.
    *
    * The message is announced in a polite live region as the text it renders,
-   * so an element is announced as written. Content carrying no readable text
-   * falls back to the default and warns in development.
+   * read from the DOM, so an element is announced as written and anything
+   * marked `aria-hidden` is left out of both. Content that renders no text
+   * announces nothing, matching the screen.
+   *
+   * `null` means "not given", exactly as `undefined` does, so it falls
+   * through to the default. Pass an empty string to render nothing.
    *
    * @default 'No results found'
    */

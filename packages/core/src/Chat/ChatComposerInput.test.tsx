@@ -1188,6 +1188,30 @@ describe('ChatComposerInput', () => {
       warn.mockRestore();
     });
 
+    it('treats an explicit null key as not given, falling through to the old one', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const user = userEvent.setup();
+      const trigger = createMentionTrigger({
+        emptySearchResultsText: 'Nobody found',
+        emptySearchText: null,
+      });
+      render(<ChatComposerInput triggers={[trigger]} />);
+
+      await user.click(screen.getByRole('combobox'));
+      await user.keyboard('@zzzzz');
+
+      // The same meaning the typeahead family gives `null`: not given, so
+      // the released key still supplies the message and no warning claims a
+      // winner the menu did not pick.
+      await waitFor(() => {
+        expect(screen.getByText('Nobody found')).toBeInTheDocument();
+      });
+      expect(warn).not.toHaveBeenCalledWith(
+        expect.stringContaining('sets both'),
+      );
+      warn.mockRestore();
+    });
+
     it('lets the new key win when a trigger sets both, and warns', async () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const user = userEvent.setup();

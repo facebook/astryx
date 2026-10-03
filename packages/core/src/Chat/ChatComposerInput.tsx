@@ -161,6 +161,9 @@ export type ChatComposerTrigger = {
   /**
    * Content shown when the query matched nothing (`spec:AST-056` FR1).
    * Takes a `ReactNode`, so a dead end can carry a link or a create row.
+   *
+   * `null` means "not given", exactly as `undefined` does, so it falls
+   * through to the default. Pass an empty string to render nothing.
    * @default 'No results'
    */
   emptySearchText?: ReactNode;
@@ -604,11 +607,13 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
   // Each trigger's empty-result message was renamed (`spec:AST-056` FR1); the
   // released key keeps working through the overlap and development says which
   // one was read (`spec:AST-017` FR28).
+  // `!= null` matches the `??` the menu resolves with, so an explicit `null`
+  // counts as "not given" on both names and the warnings cannot claim a
+  // winner the render did not pick.
   const triggersWithDeprecatedEmptyText =
-    triggers?.filter(trigger => trigger.emptySearchResultsText !== undefined) ??
-    [];
+    triggers?.filter(trigger => trigger.emptySearchResultsText != null) ?? [];
   const triggersWithBothEmptyTexts = triggersWithDeprecatedEmptyText.filter(
-    trigger => trigger.emptySearchText !== undefined,
+    trigger => trigger.emptySearchText != null,
   );
   useDevWarning(
     'ChatComposerInput',

@@ -1793,6 +1793,81 @@ describe('Tokenizer emptySearchText', () => {
     });
   });
 
+  it('leaves an aria-hidden decoration out of the announcement', async () => {
+    render(
+      <Tokenizer
+        label="People"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        debounceMs={0}
+        emptySearchText={
+          <span>
+            Nobody by that name<span aria-hidden="true"> →</span>
+          </span>
+        }
+      />,
+    );
+    await searchForNothing();
+
+    // The arrow is hidden from the accessibility tree on screen, so reading
+    // it into the live region would announce something the sighted user is
+    // not being shown either.
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-astryx-live-region="polite"]'),
+      ).toHaveTextContent('Nobody by that name');
+    });
+    expect(
+      document.querySelector('[data-astryx-live-region="polite"]')?.textContent,
+    ).not.toContain('→');
+  });
+
+  it('treats an explicit null as not given, falling through to the old name', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <Tokenizer
+        label="People"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        debounceMs={0}
+        emptySearchResultsText="Nobody found"
+        emptySearchText={null}
+      />,
+    );
+    await searchForNothing();
+
+    // `null` is what this prop's own `??` default already treats as absent,
+    // so the released name still supplies the message and the warning says
+    // only that it is deprecated.
+    await waitFor(() => {
+      expect(screen.getByText('Nobody found')).toBeInTheDocument();
+    });
+    expect(warn).not.toHaveBeenCalledWith(
+      expect.stringContaining('are both set'),
+    );
+    warn.mockRestore();
+  });
+
+  it('falls through to the default when null is the only value given', async () => {
+    render(
+      <Tokenizer
+        label="People"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        debounceMs={0}
+        emptySearchText={null}
+      />,
+    );
+    await searchForNothing();
+
+    await waitFor(() => {
+      expect(screen.getByText('No results found')).toBeInTheDocument();
+    });
+  });
+
   it('keeps the deprecated name working, and says it is deprecated', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     render(

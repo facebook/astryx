@@ -60,6 +60,28 @@ describe('useRenamedProp', () => {
     );
   });
 
+  it('treats an explicit null replacement as not given', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // `null` is what the adopting components' own `??` already treats as
+    // absent, so it must fall through to the deprecated value rather than
+    // winning — and the warning must not claim a winner the render did not
+    // pick.
+    const {getByTestId} = render(
+      <Probe deprecatedValue="old" value={null as unknown as string} />,
+    );
+    expect(getByTestId('resolved').textContent).toBe('old');
+    expect(warn).toHaveBeenCalledExactlyOnceWith(
+      expect.stringContaining('`oldName` is deprecated'),
+    );
+  });
+
+  it('falls through to the caller default when null is the only value', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const {getByTestId} = render(<Probe value={null as unknown as string} />);
+    expect(getByTestId('resolved').textContent).toBe('(none)');
+    expect(warn).not.toHaveBeenCalled();
+  });
+
   it('distinguishes an explicit falsy replacement from an absent one', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     // An empty string is a deliberate "render nothing here", not an omission,

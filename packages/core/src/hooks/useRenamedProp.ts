@@ -44,6 +44,13 @@ export interface RenamedPropOptions<T> {
  * Resolve a renamed prop: the replacement wins, the old name still works,
  * and development warns on use of the old name and again when both are set.
  *
+ * `null` and `undefined` both count as "not given", matching the `??` the
+ * adopting components already apply to their own defaults — so an explicit
+ * `null` replacement falls through to the deprecated value if there is one,
+ * and otherwise to the component's default, without a both-are-set warning
+ * for a value that was never really set. An empty string is different: it is
+ * a deliberate "render nothing" and wins like any other value.
+ *
  * Returns `undefined` when neither is given, so the caller still applies its
  * own default.
  *
@@ -65,8 +72,11 @@ export function useRenamedProp<T>({
   replacement,
   value,
 }: RenamedPropOptions<T>): T | undefined {
-  const hasDeprecated = deprecatedValue !== undefined;
-  const hasBoth = hasDeprecated && value !== undefined;
+  // `!= null` catches undefined too: one notion of "not given", shared by
+  // both names, so the warnings and the resolved value cannot disagree.
+  const hasDeprecated = deprecatedValue != null;
+  const hasValue = value != null;
+  const hasBoth = hasDeprecated && hasValue;
 
   useDevWarning(
     component,
@@ -81,5 +91,5 @@ export function useRenamedProp<T>({
     hasBoth,
   );
 
-  return value !== undefined ? value : deprecatedValue;
+  return hasValue ? value : deprecatedValue;
 }
