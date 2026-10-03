@@ -41,7 +41,8 @@ const TARGETS = [
   {
     component: 'Selector',
     story: 'core-selector--size-variants',
-    guards: 'compact and wide-spacing triggers match their size tokens, large label text stays unclipped, and multiline values grow by one text row',
+    guards:
+      'compact and wide-spacing triggers match their size tokens, large label text stays unclipped, and multiline values grow by one text row',
   },
   {
     component: 'MultiSelector',
@@ -97,6 +98,62 @@ const TARGETS = [
     hasTouch: true,
     guards:
       'on a coarse pointer, the compact combobox and full Clear all hit area remain separate in RTL as well',
+  },
+  // spec:AST-059 — the layer runtime's viewport inset. Each story is one
+  // claim of the record; the guard is its rendered evidence.
+  {
+    component: 'Layer',
+    story: 'core-layer--content-fits-beside-trigger',
+    guards:
+      'FR2/FR4: a content-sized layer with room beside its trigger stays start-aligned at its content size',
+  },
+  {
+    component: 'Layer',
+    story: 'core-layer--content-does-not-fit-beside-trigger',
+    guards:
+      'FR2/FR4: unwrappable content near the edge keeps its size and flips instead of being squeezed into the span',
+  },
+  {
+    component: 'Layer',
+    story: 'core-layer--explicit-size-near-edge',
+    guards:
+      'FR2: a 352px end-aligned layer 45px from the edge renders 352px wide, on screen',
+  },
+  {
+    component: 'Layer',
+    story: 'core-layer--trigger-near-edge-flips',
+    guards:
+      'FR4: a 320px start-aligned layer near the end edge flips to end alignment and keeps the gutter',
+  },
+  {
+    component: 'Layer',
+    story: 'core-layer--neither-side-fits',
+    guards:
+      'FR4: a 1000px layer on a centred trigger keeps its size and slides inside the gutters',
+  },
+  {
+    component: 'Layer',
+    story: 'core-layer--taller-than-the-viewport',
+    guards:
+      'FR3: the layer box is capped to the viewport minus both block gutters',
+  },
+  {
+    component: 'Layer',
+    story: 'core-layer--anchor-leaves-the-viewport',
+    guards:
+      'FR5: an open layer follows its anchor out of the viewport with its size intact and does not pin to the edge',
+  },
+  {
+    component: 'Layer',
+    story: 'core-layer--app-declared-inset',
+    guards:
+      'FR6: --astryx-layer-inset-block-end lifts the bottom gutter so a layer flips above a trigger near a declared bar',
+  },
+  {
+    component: 'Layer',
+    story: 'core-layer--gutter-at-the-edge',
+    guards:
+      'FR1: a wrapping layer beside a flush trigger stops 16px short of the viewport edge',
   },
   {
     component: 'TabList',
