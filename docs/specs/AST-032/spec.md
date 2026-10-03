@@ -3,12 +3,12 @@ schema_version: 4
 template_version: 1
 kind: system-spec
 id: spec:AST-032
-authority: current
-archive_reason: null
+authority: archived
+archive_reason: withdrawn
 superseded_by: null
 approved_by: cixzhang
 approved_at: 2026-09-22
-phase: accepted
+phase: withdrawn
 owners: [cixzhang, imdreamrunner]
 affects_architecture: [architecture:icon-resolution-and-component-slots]
 affects_families: []
@@ -17,6 +17,11 @@ affects_consumer_docs: [FileInput, ChatSendButton]
 ---
 
 # Component-owned upload and send icon slots
+
+> **Withdrawn before implementation.** FileInput now uses the shared `upload`
+> semantic icon directly, while ChatSendButton remains unchanged. Themes can
+> customize the FileInput artwork through `icons.upload`, so component-specific
+> slots are unnecessary for this correction.
 
 ## Intent
 

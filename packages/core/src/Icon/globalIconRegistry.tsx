@@ -45,6 +45,7 @@ export type IconName =
   | 'menu'
   | 'moreHorizontal'
   | 'search'
+  | 'upload'
   | 'arrowUp'
   | 'arrowDown'
   | 'arrowsUpDown'
@@ -84,8 +85,13 @@ export type ExtendedIconName = IconName | (string & {});
 
 /**
  * Icon registry mapping semantic names to React nodes.
+ *
+ * `upload` remains optional so complete registries authored before that semantic
+ * name was introduced stay source-compatible. Resolved registry snapshots are
+ * complete because missing entries fall back to {@link defaultIcons}.
  */
-export type IconRegistry = Record<IconName, ReactNode>;
+export type IconRegistry = Record<Exclude<IconName, 'upload'>, ReactNode> &
+  Partial<Record<'upload', ReactNode>>;
 
 export type IconRegistrySource = DefinedTheme | string | null | undefined;
 
@@ -163,7 +169,7 @@ export function registerIcons(
  */
 export function getIconRegistry(
   source?: IconRegistrySource,
-): Readonly<IconRegistry> {
+): Readonly<Record<IconName, ReactNode>> {
   const registry: Record<string, ReactNode> = {};
 
   // Only surface built-in IconName keys here — namespaced keys, whether
@@ -187,7 +193,7 @@ export function getIconRegistry(
     }
   }
 
-  return registry as IconRegistry;
+  return registry as Record<IconName, ReactNode>;
 }
 
 /**

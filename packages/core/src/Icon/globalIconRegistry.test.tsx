@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import {render} from '@testing-library/react';
 import {defineTheme} from '../theme/defineTheme';
 import {resetThemes} from '../theme/themeRegistry';
 import {__resetDevWarnings} from '../utils/devWarning';
@@ -11,7 +12,9 @@ import {
   getIcon,
   getExtendedIcon,
   resetIcons,
+  type IconRegistry,
 } from './globalIconRegistry';
+import {Icon} from './Icon';
 
 describe('iconRegistry (global, RSC-compatible)', () => {
   beforeEach(() => {
@@ -41,6 +44,23 @@ describe('iconRegistry (global, RSC-compatible)', () => {
     expect(icon).toBe(defaultIcons['numberInput:stepperDown']);
     expect(icon).toBeDefined();
     expect(icon).not.toBe(defaultIcons.chevronDown);
+  });
+
+  it('provides a distinct upload-to-tray affordance', () => {
+    const {container} = render(<Icon icon="upload" />);
+
+    expect(getIcon('upload')).toBe(defaultIcons.upload);
+    expect(container.querySelector('path')).toHaveAttribute(
+      'd',
+      'M12 16V4m0 0L7 9m5-5l5 5M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4',
+    );
+  });
+
+  it('keeps complete registries authored before upload assignable', () => {
+    const {upload: _upload, ...legacyIcons} = defaultIcons;
+    const legacyRegistry: IconRegistry = legacyIcons;
+
+    expect(legacyRegistry.search).toBe(defaultIcons.search);
   });
 
   it('returns default icons when nothing is registered', () => {
