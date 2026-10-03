@@ -274,3 +274,39 @@ export const AlignStart: Story = {
     />
   ),
 };
+
+/**
+ * `isUnread`: the label takes the semibold weight and the description the
+ * primary text colour. The row's ground is the theme's (the `unread` state of
+ * the `item` target), so an app paints its own unread tint without a
+ * call-site colour.
+ */
+export const Unread: Story = {
+  render: () => (
+    <Stack gap={0}>
+      <Item
+        startContent={<Avatar name="Alice" size={40} />}
+        label="Alice Johnson"
+        description="Can you look at the draft before Thursday?"
+        endContent={<Text color="secondary">2m</Text>}
+        isUnread
+        onClick={() => {}}
+      />
+      <Item
+        startContent={<Avatar name="Bob" size={40} />}
+        label="Bob Smith"
+        description="Thanks, merged."
+        endContent={<Text color="secondary">1h</Text>}
+        onClick={() => {}}
+      />
+      <Item
+        startContent={<Avatar name="Carol" size={40} />}
+        label="Carol Williams"
+        description="Two more comments on the design review"
+        endContent={<Text color="secondary">3h</Text>}
+        isUnread
+        onClick={() => {}}
+      />
+    </Stack>
+  ),
+};

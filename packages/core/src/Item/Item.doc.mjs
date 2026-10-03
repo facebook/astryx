@@ -17,7 +17,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-item', visualProps: ['density', 'align']},
+      {className: 'astryx-item', visualProps: ['density', 'align'], states: ['unread']},
     ],
     vars: [
       {name: '--_item-label-color', description: 'Color of the label line. Unset by default (the label uses the primary text token); a parent sets it to recolor the label it renders, as the destructive dropdown/context menu item does.', default: 'var(--color-text-primary)', private: true},
@@ -52,6 +52,7 @@ export const docs = {
         {name: 'rel', type: 'string', description: 'Link relationship tokens. noopener noreferrer are merged automatically for target="_blank".'},
         {name: 'isHighlighted', type: 'boolean', description: 'Highlighted state (hover/keyboard focus appearance).', default: 'false'},
         {name: 'isSelected', type: 'boolean', description: 'Selected state.', default: 'false'},
+        {name: 'isUnread', type: 'boolean', description: 'Unread emphasis for a row standing for something not yet seen (an inbox row): the label takes the semibold weight and the description the primary text color. The row ground is the theme\'s, through the unread state of the item target, so an app paints its own unread tint without a call-site color.', default: 'false'},
         {name: 'isDisabled', type: 'boolean', description: 'Disabled state.', default: 'false'},
         {name: 'ref', type: 'React.Ref<HTMLDivElement>', description: 'Ref forwarded to the root element.'},
         {name: 'xstyle', type: 'StyleXStyles', description: 'StyleX styles for layout customization. Must be a stylex.create() value.'},
@@ -69,7 +70,7 @@ export const docs = {
       {guidance: true, description: 'Use align="start" when start or end content is taller than a single line of text.'},
       {guidance: false, description: "Don't nest interactive elements (buttons, links) inside an interactive Item; it creates confusing focus and click targets."},
       {guidance: false, description: "Don't use Item for navigation between views; use proper navigation components instead."},
-      {guidance: false, description: "Don't add read/unread or inbox-specific behavior directly; compose a thin wrapper like PreviewItem instead."},
+      {guidance: false, description: "Don't add inbox-specific behavior (snooze, archive, threading) directly; use isUnread for the unread emphasis and compose a thin wrapper like PreviewItem for the rest."},
     ],
     anatomy: [
       {name: 'Marker', required: false, description: 'Optional list bullet/counter rendered before start content.'},
@@ -107,6 +108,8 @@ export const docsZh = {
         rel: '链接关系标记。target="_blank" 会自动合并 noopener noreferrer。',
         isHighlighted: '高亮状态（悬停/键盘焦点外观）。',
         isSelected: '选中状态。',
+        isUnread:
+          '未读强调，用于代表尚未查看内容的行（如收件箱行）：标签使用半粗字重，描述使用主文本颜色。行的底色由主题通过 item 目标的 unread 状态决定，无需在调用处指定颜色。',
         isDisabled: '禁用状态。',
         ref: '转发到根元素的引用。',
         xstyle: 'StyleX 样式，用于布局自定义。必须是 stylex.create() 的值。',
@@ -124,7 +127,7 @@ export const docsZh = {
       {guidance: true, description: '当起始或结束内容高于单行文本时使用 align="start"。'},
       {guidance: false, description: '不要在交互式 Item 内嵌套交互元素（按钮、链接）。'},
       {guidance: false, description: '不要使用 Item 进行视图间导航：使用适当的导航组件。'},
-      {guidance: false, description: '不要直接添加已读/未读行为：组合一个薄包装器如 PreviewItem。'},
+      {guidance: false, description: '不要直接添加收件箱特有的行为（延后、归档、会话串联）：未读强调使用 isUnread，其余组合一个薄包装器如 PreviewItem。'},
     ],
     anatomy: [
       {name: '标记', required: false, description: '在起始内容之前渲染的可选列表项目符号/计数器。'},
@@ -149,7 +152,7 @@ export const docsDense = {
       {guidance: true, description: 'align="start" when start/end content is taller than one text line.'},
       {guidance: false, description: "Don't nest interactive elements inside interactive Item."},
       {guidance: false, description: "Don't use for view navigation; use nav components."},
-      {guidance: false, description: "Don't add inbox-specific behavior; compose a wrapper."},
+      {guidance: false, description: "Don't add inbox-specific behavior; isUnread for the emphasis, a wrapper for the rest."},
     ],
   },
   components: [
@@ -177,6 +180,8 @@ export const docsDense = {
         rel: 'Link relationship tokens. noopener noreferrer are merged for target="_blank".',
         isHighlighted: 'Highlighted state.',
         isSelected: 'Selected state.',
+        isUnread:
+          'Unread emphasis: semibold label, primary-colour description; the row ground is the theme\'s via the unread state of the item target.',
         isDisabled: 'Disabled state.',
         xstyle: 'StyleX layout styles; must be stylex.create() value.',
         'data-testid': 'Test selector.',
