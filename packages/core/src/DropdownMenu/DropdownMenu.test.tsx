@@ -2558,3 +2558,90 @@ describe('DropdownMenuItem href', () => {
     expect(row).toHaveAttribute('aria-disabled', 'true');
   });
 });
+
+describe("DropdownMenu link rows — the browser's own clicks", () => {
+  async function openWithLinkRow(props: {
+    onClick?: () => void;
+    isDisabled?: boolean;
+  }) {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Docs" href="/docs" {...props} />
+      </DropdownMenu>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Actions'});
+    await user.click(trigger);
+    return {
+      trigger,
+      row: screen.getByRole('menuitem', {name: 'Docs', hidden: true}),
+    };
+  }
+
+  const auxClick = (el: Element, button: number) =>
+    fireEvent(
+      el,
+      new MouseEvent('auxclick', {bubbles: true, cancelable: true, button}),
+    );
+
+  it('closes the menu on a middle click, which fires auxclick not click', async () => {
+    // A middle click never fires `click`, so the row's click handler never
+    // saw it: the browser opened the tab and the menu stayed open behind it.
+    const onClick = vi.fn();
+    const {trigger, row} = await openWithLinkRow({onClick});
+    expect(row.tagName).toBe('A');
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    auxClick(row, 1);
+
+    // The browser does the navigating, so the row's own handler stays out of
+    // it exactly as it does for a modified click — but the row acted, so the
+    // menu closes.
+    expect(onClick).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+    );
+  });
+
+  it('leaves a right click to the context menu', async () => {
+    const {trigger, row} = await openWithLinkRow({});
+
+    // Button 2 is the right button: it opens the browser's context menu over
+    // the link, and closing the menu out from under it would be wrong.
+    auxClick(row, 2);
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('does not navigate a disabled link row on a middle click', async () => {
+    const {trigger, row} = await openWithLinkRow({isDisabled: true});
+
+    // A disabled row keeps its place in the tree but carries no address, so
+    // there is nothing for the browser to open and the menu stays put.
+    expect(row).not.toHaveAttribute('href');
+    auxClick(row, 1);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('renders a blocked destination inertly', async () => {
+    // A menu row is a place an address can arrive from data. The row's root
+    // is the application's link component, so the shared destination rule
+    // applies by construction rather than by a check of this component's
+    // own: a rejected scheme renders with no href at all and goes nowhere.
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem
+          label="Trap"
+          href={'javascript:window.__fired=true'}
+        />
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Actions'}));
+    const row = screen.getByRole('menuitem', {name: 'Trap', hidden: true});
+
+    expect(row).not.toHaveAttribute('href');
+    await user.click(row);
+    expect((window as unknown as {__fired?: boolean}).__fired).toBeUndefined();
+  });
+});

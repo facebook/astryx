@@ -107,9 +107,9 @@ export const docs = {
         },
         {
           name: 'as',
-          type: "'div' | 'li' | 'span'",
+          type: "'div' | 'li' | 'span' | ElementType",
           description:
-            "HTML element to render as the root. Ignored when the row has both a role and an href: that row's root is the link itself.",
+            "What the root renders as: an HTML element, or a component for a caller that needs the root to be something else. A menu row that navigates passes the application's link component here, so the row's root IS the anchor. Give a component only when the row carries a role, and only when no interactive node sits in startContent or endContent.",
           default: "'div'",
         },
         {
@@ -158,7 +158,7 @@ export const docs = {
           name: 'href',
           type: 'string',
           description:
-            'Link URL. Makes the item a link via an invisible anchor element; with a role (a menu row, where the parent owns keyboard access) the root itself renders as the link through LinkProvider, so the row is a real anchor carrying the role. The destination follows the shared navigation rule described on the Link `href` prop.',
+            'Link URL. Makes the item a link via an invisible anchor element. A row whose root is already a link component (see `as`) carries the address on that root instead, and no invisible anchor is rendered.',
         },
         {
           name: 'target',

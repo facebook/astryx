@@ -33,6 +33,7 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import {renderIconSlot, type IconType} from '../Icon';
 import {Item} from '../Item';
+import {useLinkComponent} from '../Link/useLinkComponent';
 import {
   colorVars,
   spacingVars,
@@ -216,6 +217,27 @@ export function DropdownMenuItem({
     [isDisabled, href, onClick, hasCloseOnSelect, ctx],
   );
 
+  // A middle click fires `auxclick`, never `click`, so the row's own click
+  // handler never sees it: the tab opened and the menu stayed open behind
+  // it. The browser does the navigating; the row only has to close.
+  const handleAuxClick = useCallback(
+    (event: MouseEvent) => {
+      if (isDisabled) {
+        event.preventDefault();
+        return;
+      }
+      // Button 1 is the middle button. A right click opens the context menu
+      // and must leave the row's menu alone.
+      if (href == null || event.button !== 1) {
+        return;
+      }
+      if (hasCloseOnSelect) {
+        ctx?.closeMenu();
+      }
+    },
+    [isDisabled, href, hasCloseOnSelect, ctx],
+  );
+
   const handlePointerMove = useCallback(
     (e: PointerEvent<HTMLElement>) => focusMenuItemOnHover(e, isDisabled),
     [isDisabled],
@@ -223,9 +245,16 @@ export function DropdownMenuItem({
 
   const isDestructive = variant === 'destructive';
 
+  const LinkComponent = useLinkComponent();
+
   return (
     <Item
       ref={ref}
+      // A row that navigates IS the link: its root is the application's
+      // anchor, so a modified click, a middle click, copying the address and
+      // the status bar all keep the browser's meaning. A row without an
+      // address keeps the default root.
+      as={href != null ? LinkComponent : undefined}
       role="menuitem"
       tabIndex={isDisabled ? undefined : -1}
       onPointerMove={handlePointerMove}
@@ -241,6 +270,7 @@ export function DropdownMenuItem({
       description={description}
       endContent={endContent}
       onClick={handleClick}
+      onAuxClick={handleAuxClick}
       href={href}
       target={target}
       rel={rel}
