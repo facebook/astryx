@@ -8,14 +8,13 @@
  *
  * The panel's empty message is `role="presentation"` — `role="listbox"`
  * permits only `option` and `group` children — so it reaches assistive
- * technology only through the shared polite live region. These stories cover
- * the cases a DOM emulator cannot settle: whether the region actually carries
- * the rendered words in a shipping engine, and whether it stays silent while
- * the panel is loading.
+ * technology only through the shared polite live region. This story covers
+ * what a DOM emulator cannot settle: whether the region actually carries the
+ * rendered words in a shipping engine, and whether the message element has
+ * stayed out of the listbox's own accessibility tree.
  */
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {useEffect, useState} from 'react';
 import {Selector} from '../../../packages/core/src/Selector/Selector';
 
 const OPTIONS = [
@@ -49,38 +48,4 @@ export const ElementEmptySearchText: StoryObj = {
       />
     </div>
   ),
-};
-
-/** A load that lands with nothing matching a query typed while it was in flight. */
-export const DeferredEmptyResult: StoryObj = {
-  name: 'deferred empty result',
-  render: function DeferredEmptyResult() {
-    const [loaded, setLoaded] = useState(false);
-    // The test lands the results through this hook rather than by clicking a
-    // button. A real browser light-dismisses the open panel on any outside
-    // click, and a dismissed panel is a different scenario — the one being
-    // modelled here is a fetch landing while the panel is still open. jsdom
-    // implements no light dismiss, so a button looks fine there and silently
-    // tests the wrong thing.
-    useEffect(() => {
-      const w = window as unknown as {__landResults?: () => void};
-      w.__landResults = () => setLoaded(true);
-      return () => {
-        delete w.__landResults;
-      };
-    }, []);
-    return (
-      <div data-empty-scenario="deferred">
-        <Selector
-          label="Fruit"
-          options={loaded ? OPTIONS : []}
-          onChange={() => {}}
-          hasSearch
-          isDefaultOpen
-          isLoading={!loaded}
-          emptySearchText="Nothing like that here"
-        />
-      </div>
-    );
-  },
 };

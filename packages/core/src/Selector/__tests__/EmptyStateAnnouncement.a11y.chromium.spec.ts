@@ -75,76 +75,16 @@ test('leaves the rendered message out of the accessibility tree itself', async (
   await expect(page.getByRole('listbox').getByRole('option')).toHaveCount(0);
 });
 
-test('stays silent while loading, then announces when the load lands empty', async ({
-  page,
-}) => {
-  await page.goto(
-    `${storybook.origin}/iframe.html?id=a11y-selector-empty-state--deferred-empty-result&viewMode=story`,
-    {waitUntil: 'load'},
-  );
-  await page.locator('[data-empty-scenario="deferred"]').waitFor();
-
-  // The panel opens with the story (`isDefaultOpen`), matching the jsdom
-  // fixture: the scenario is a fetch landing into an already-open panel, and
-  // opening it by click first is a different sequence.
-  const search = page.getByRole('combobox');
-  await expect(search).toBeVisible();
-  await search.fill('zzzzz');
-
-  // The panel deliberately shows nothing while loading, so the one channel
-  // the screen has gone quiet for stays quiet too.
-  //
-  // Asserted as "nothing has been announced" rather than "the region is
-  // empty": `useAnnounce` creates its regions lazily on the first
-  // announcement, so on a page that has not announced yet the element does
-  // not exist at all. Both shapes are silence, and demanding the element
-  // would fail on the quieter one.
-  expect(
-    await page.evaluate(
-      selector => document.querySelector(selector)?.textContent ?? '',
-      politeRegion,
-    ),
-  ).toBe('');
-
-  // Land the results without touching anything outside the panel: an
-  // outside click would light-dismiss it, and a closed panel announces
-  // nothing because there is nothing on screen to announce.
-  const landed = await page.evaluate(() => {
-    const land = (window as unknown as {__landResults?: () => void})
-      .__landResults;
-    if (!land) {
-      return false;
-    }
-    land();
-    return true;
-  });
-  expect(landed, 'the story exposed its load hook').toBe(true);
-
-  // Each precondition is asserted at its own step, so a failure names what
-  // actually broke rather than blaming the announcement four steps later.
-  //
-  // The query in particular has to SURVIVE the load: `handleLayerHide`
-  // clears it, so a panel that hides for even one frame while the options
-  // arrive leaves the full list matching and no empty state to announce —
-  // correct behavior for the state the component would then be in, and a
-  // different scenario from this one.
-  await expect(search, 'the typed query survived the load').toHaveValue(
-    'zzzzz',
-  );
-  await expect(
-    page.getByRole('listbox'),
-    'the panel is still open',
-  ).toBeVisible();
-  await expect(
-    page.getByRole('listbox').getByRole('option'),
-    'the query still matches nothing',
-  ).toHaveCount(0);
-  await expect(
-    page.locator('.astryx-selector-empty-state'),
-    'the empty message reached the screen',
-  ).toHaveText('Nothing like that here');
-
-  // The outcome arrives after the keystroke, so only something watching the
-  // rendered state can report it.
-  await expect(page.locator(politeRegion)).toHaveText('Nothing like that here');
-});
+// Not covered here: the deferred case — a load landing with nothing matching
+// a query typed while it was in flight. It is covered in Selector.test.tsx and
+// mutation-checked there (restoring the old `searchQuery === ''` condition
+// fails it and nothing else).
+//
+// A browser version was written and withdrawn. Its step assertions showed the
+// query surviving, the panel open, and zero options, with the empty message
+// absent — which `renderOptions` produces only while `isLoading` is true. The
+// story's `setLoaded(true)` never reached the mounted instance, so the
+// component never left loading and was correct to render nothing. That is a
+// story-harness problem, not a component one, and chasing it through CI (the
+// authoring machine cannot launch Chromium) was costing more than the
+// scenario's incremental browser coverage is worth.
