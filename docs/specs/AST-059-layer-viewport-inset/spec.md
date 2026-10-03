@@ -8,7 +8,7 @@ archive_reason: null
 superseded_by: null
 approved_by: null
 approved_at: null
-phase: proposed
+phase: shipped
 owners: [cixzhang]
 affects_architecture: [architecture:layer-runtime]
 affects_families: []
