@@ -146,7 +146,6 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-code', visualProps: ['color']},
       {className: 'astryx-code-block', visualProps: ['size', 'language', 'container']},
       {className: 'astryx-code-block-header', visualProps: ['size', 'language', 'container']},
       {className: 'astryx-code-block-title', visualProps: ['size', 'language']},
