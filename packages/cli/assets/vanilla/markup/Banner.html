@@ -1,0 +1,49 @@
+<!-- docs: Present a persistent page or section message with semantic status, concise guidance, and optional supporting content. -->
+<!-- variant: informational-card -->
+<section
+  class="ax-banner ax-banner--info"
+  role="status"
+  aria-labelledby="banner-info-title">
+  <div class="ax-banner__surface">
+    <span class="ax-banner__icon" aria-hidden="true">i</span>
+    <div class="ax-banner__body">
+      <h3 class="ax-banner__title" id="banner-info-title">
+        Your trial ends in 5 days
+      </h3>
+      <p class="ax-banner__description">
+        Choose a plan to keep your workspace active.
+      </p>
+    </div>
+    <div class="ax-banner__actions">
+      <button
+        class="ax-button ax-button--secondary ax-button--sm"
+        type="button">
+        View plans
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- variant: error-with-content -->
+<section
+  class="ax-banner ax-banner--error ax-banner--elevation-low"
+  role="alert"
+  aria-labelledby="banner-error-title">
+  <div class="ax-banner__surface">
+    <span class="ax-banner__icon" aria-hidden="true">!</span>
+    <div class="ax-banner__body">
+      <h3 class="ax-banner__title" id="banner-error-title">
+        3 fields need attention
+      </h3>
+      <p class="ax-banner__description">
+        Fix the highlighted fields before publishing.
+      </p>
+    </div>
+  </div>
+  <div class="ax-banner__content">
+    <ul>
+      <li>Project owner is required</li>
+      <li>Launch date must be in the future</li>
+    </ul>
+  </div>
+</section>

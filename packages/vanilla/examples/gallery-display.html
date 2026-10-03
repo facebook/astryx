@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="en" data-astryx-theme="neutral" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vanilla Astryx display and feedback gallery</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/core@0.6.5/src/reset.css" />
+    <link rel="stylesheet" href="../dist/astryx-vanilla.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-neutral@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-butter@0.6.5/dist/theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/theme-y2k@0.6.5/dist/theme.css" />
+    <script defer src="../dist/astryx-vanilla.js"></script>
+    <style>
+      @layer astryx-base {
+        .ax-display-gallery {
+          min-height: 100vh;
+          background: var(--color-background-body);
+          color: var(--color-text-primary);
+        }
+        .ax-display-gallery__toolbar {
+          position: sticky;
+          z-index: 20;
+          top: 0;
+          display: flex;
+          align-items: end;
+          gap: var(--spacing-3);
+          padding: var(--spacing-3) var(--spacing-4);
+          border-block-end: var(--border-width) solid var(--color-border);
+          background: color-mix(
+            in srgb,
+            var(--color-background-surface),
+            transparent 6%
+          );
+          backdrop-filter: blur(12px);
+        }
+        .ax-display-gallery__title {
+          margin-inline-end: auto;
+        }
+        .ax-display-gallery__page {
+          display: grid;
+          max-width: 90rem;
+          margin-inline: auto;
+          gap: var(--spacing-6);
+          padding: var(--spacing-6);
+        }
+        .ax-display-gallery__intro {
+          max-width: 52rem;
+        }
+        .ax-display-gallery__grid {
+          display: grid;
+          grid-template-columns: repeat(
+            auto-fit,
+            minmax(min(100%, 21rem), 1fr)
+          );
+          gap: var(--spacing-4);
+        }
+        .ax-display-gallery__demo {
+          min-width: 0;
+          padding: var(--spacing-4);
+          border: var(--border-width) solid var(--color-border);
+          border-radius: var(--radius-container);
+          background: var(--color-background-surface);
+        }
+        .ax-display-gallery__wide {
+          grid-column: 1 / -1;
+        }
+        .ax-display-gallery__identity-row {
+          display: flex;
+          align-items: center;
+          gap: var(--spacing-3);
+        }
+        .ax-display-gallery__thumbnail {
+          width: min(11rem, 35vw);
+        }
+        .ax-display-gallery__lightbox-grid {
+          display: flex;
+          flex-wrap: wrap;
+          gap: var(--spacing-3);
+        }
+        .ax-display-gallery__status-list {
+          display: grid;
+          gap: var(--spacing-2);
+          padding: 0;
+          margin: 0;
+          list-style: none;
+        }
+        .ax-display-gallery__status-item {
+          display: flex;
+          align-items: center;
+          gap: var(--spacing-2);
+        }
+        @media (max-width: 44rem) {
+          .ax-display-gallery__toolbar {
+            align-items: stretch;
+            flex-direction: column;
+          }
+          .ax-display-gallery__title {
+            margin-inline-end: 0;
+          }
+          .ax-display-gallery__page {
+            padding: var(--spacing-3);
+          }
+        }
+      }
+    </style>
+  </head>
+  <body class="ax-display-gallery">
+    <header class="ax-display-gallery__toolbar">
+      <div class="ax-display-gallery__title">
+        <strong>Display &amp; feedback</strong>
+        <div class="ax-text ax-text--supporting">Vanilla Astryx</div>
+      </div>
+      <label class="ax-selector ax-selector--sm">
+        <span class="ax-selector__label">Theme</span>
+        <span class="ax-selector__control">
+          <select class="ax-selector__select" data-gallery-theme>
+            <option value="neutral">Neutral</option>
+            <option value="butter">Butter</option>
+            <option value="y2k">Y2K</option>
+          </select>
+          <span class="ax-selector__indicator" aria-hidden="true"></span>
+        </span>
+      </label>
+      <label class="ax-selector ax-selector--sm">
+        <span class="ax-selector__label">Mode</span>
+        <span class="ax-selector__control">
+          <select class="ax-selector__select" data-gallery-mode>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+          <span class="ax-selector__indicator" aria-hidden="true"></span>
+        </span>
+      </label>
+    </header>
+
+    <main class="ax-display-gallery__page">
+      <section class="ax-display-gallery__intro ax-stack ax-stack--gap-2">
+        <span class="ax-badge ax-badge--info">Delivery-mode gallery</span>
+        <h1 class="ax-heading ax-heading--1">
+          Display and feedback components
+        </h1>
+        <p class="ax-text ax-text--large ax-text--secondary">
+          Theme-aware status, progress, loading, empty-state, preview, media,
+          and named-region patterns built from semantic HTML and readable
+          <code>ax-</code> classes.
+        </p>
+      </section>
+
+      <section
+        class="ax-display-gallery__grid"
+        aria-labelledby="identity-heading">
+        <article class="ax-display-gallery__demo ax-stack ax-stack--gap-4">
+          <h2 class="ax-heading ax-heading--3" id="identity-heading">Avatar</h2>
+          <div class="ax-display-gallery__identity-row">
+            <span
+              class="ax-avatar ax-avatar--lg ax-avatar--circle"
+              role="img"
+              aria-label="Ada Lovelace, Online">
+              <span class="ax-avatar__content" aria-hidden="true">AL</span>
+              <span class="ax-avatar__status" aria-hidden="true">
+                <span class="ax-status-dot ax-status-dot--success"></span>
+              </span>
+            </span>
+            <span class="ax-stack ax-stack--gap-1">
+              <strong>Ada Lovelace</strong>
+              <span class="ax-text ax-text--supporting"
+                >Foundations · Online</span
+              >
+            </span>
+          </div>
+          <div class="ax-display-gallery__identity-row">
+            <span
+              class="ax-avatar ax-avatar--md ax-avatar--rounded"
+              role="img"
+              aria-label="Grace Hopper, Away">
+              <span class="ax-avatar__content" aria-hidden="true">GH</span>
+              <span class="ax-avatar__status" aria-hidden="true">
+                <span class="ax-status-dot ax-status-dot--warning"></span>
+              </span>
+            </span>
+            <span class="ax-text">Rounded avatar</span>
+          </div>
+        </article>
+
+        <article class="ax-display-gallery__demo ax-stack ax-stack--gap-3">
+          <h2 class="ax-heading ax-heading--3">StatusDot</h2>
+          <ul class="ax-display-gallery__status-list">
+            <li class="ax-display-gallery__status-item">
+              <span
+                class="ax-status-dot ax-status-dot--success"
+                role="img"
+                aria-label="Healthy"></span>
+              <span>Healthy</span>
+            </li>
+            <li class="ax-display-gallery__status-item">
+              <span
+                class="ax-status-dot ax-status-dot--warning"
+                role="img"
+                aria-label="At risk"></span>
+              <span>At risk</span>
+            </li>
+            <li class="ax-display-gallery__status-item">
+              <span
+                class="ax-status-dot ax-status-dot--error ax-status-dot--pulsing"
+                role="img"
+                aria-label="Incident"></span>
+              <span>Incident</span>
+            </li>
+            <li class="ax-display-gallery__status-item">
+              <span
+                class="ax-status-dot ax-status-dot--neutral"
+                role="img"
+                aria-label="Offline"></span>
+              <span>Offline</span>
+            </li>
+          </ul>
+        </article>
+
+        <article class="ax-display-gallery__demo ax-stack ax-stack--gap-4">
+          <h2 class="ax-heading ax-heading--3">ProgressBar</h2>
+          <div class="ax-progress-bar" style="--ax-progress-value: 64%">
+            <div class="ax-progress-bar__header">
+              <span class="ax-progress-bar__label" id="gallery-progress-label"
+                >Publishing release</span
+              >
+              <span class="ax-progress-bar__value">64%</span>
+            </div>
+            <div
+              class="ax-progress-bar__track"
+              role="progressbar"
+              aria-labelledby="gallery-progress-label"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="64"
+              aria-valuetext="64%">
+              <div class="ax-progress-bar__fill"></div>
+            </div>
+          </div>
+          <div class="ax-progress-bar ax-progress-bar--indeterminate">
+            <div class="ax-progress-bar__header">
+              <span
+                class="ax-progress-bar__label"
+                id="gallery-indeterminate-label"
+                >Indexing changes</span
+              >
+            </div>
+            <div
+              class="ax-progress-bar__track"
+              role="progressbar"
+              aria-labelledby="gallery-indeterminate-label">
+              <div class="ax-progress-bar__fill"></div>
+            </div>
+          </div>
+        </article>
+
+        <article
+          class="ax-display-gallery__demo ax-stack ax-stack--gap-3"
+          aria-busy="true"
+          aria-label="Loading account summary">
+          <h2 class="ax-heading ax-heading--3">Skeleton</h2>
+          <div class="ax-display-gallery__identity-row">
+            <span
+              class="ax-skeleton ax-skeleton--avatar"
+              aria-hidden="true"></span>
+            <span class="ax-stack ax-stack--gap-2" style="flex: 1">
+              <span
+                class="ax-skeleton ax-skeleton--text ax-skeleton--short"
+                aria-hidden="true"></span>
+              <span
+                class="ax-skeleton ax-skeleton--text"
+                aria-hidden="true"></span>
+            </span>
+          </div>
+          <span class="ax-skeleton ax-skeleton--card" aria-hidden="true"></span>
+        </article>
+      </section>
+
+      <section
+        class="ax-display-gallery__grid"
+        aria-labelledby="feedback-heading">
+        <h2
+          class="ax-heading ax-heading--2 ax-display-gallery__wide"
+          id="feedback-heading">
+          Feedback and wayfinding
+        </h2>
+        <article
+          class="ax-display-gallery__demo ax-display-gallery__wide ax-stack ax-stack--gap-3">
+          <h3 class="ax-heading ax-heading--3">Breadcrumbs</h3>
+          <nav class="ax-breadcrumbs" aria-label="Gallery breadcrumb">
+            <ol class="ax-breadcrumbs__list">
+              <li class="ax-breadcrumbs__item">
+                <span class="ax-breadcrumbs__separator" aria-hidden="true"
+                  >/</span
+                ><a class="ax-breadcrumbs__link" href="#home">Home</a>
+              </li>
+              <li class="ax-breadcrumbs__item">
+                <span class="ax-breadcrumbs__separator" aria-hidden="true"
+                  >/</span
+                ><a class="ax-breadcrumbs__link" href="#components"
+                  >Components</a
+                >
+              </li>
+              <li class="ax-breadcrumbs__item">
+                <span class="ax-breadcrumbs__separator" aria-hidden="true"
+                  >/</span
+                ><span class="ax-breadcrumbs__current" aria-current="page"
+                  >Display and feedback</span
+                >
+              </li>
+            </ol>
+          </nav>
+        </article>
+
+        <article
+          class="ax-display-gallery__demo ax-display-gallery__wide ax-stack ax-stack--gap-3">
+          <h3 class="ax-heading ax-heading--3">Banner</h3>
+          <section
+            class="ax-banner ax-banner--warning"
+            role="alert"
+            aria-labelledby="gallery-banner-title">
+            <div class="ax-banner__surface">
+              <span class="ax-banner__icon" aria-hidden="true">!</span>
+              <div class="ax-banner__body">
+                <h4 class="ax-banner__title" id="gallery-banner-title">
+                  Your trial ends in 5 days
+                </h4>
+                <p class="ax-banner__description">
+                  Choose a plan to keep this workspace and its automations
+                  active.
+                </p>
+              </div>
+              <div class="ax-banner__actions">
+                <button
+                  class="ax-button ax-button--secondary ax-button--sm"
+                  type="button">
+                  View plans
+                </button>
+              </div>
+            </div>
+          </section>
+        </article>
+
+        <article class="ax-display-gallery__demo">
+          <section
+            class="ax-empty-state"
+            role="status"
+            aria-labelledby="gallery-empty-title">
+            <span class="ax-empty-state__icon" aria-hidden="true">＋</span>
+            <div class="ax-empty-state__text">
+              <h3 class="ax-empty-state__title" id="gallery-empty-title">
+                No projects yet
+              </h3>
+              <p class="ax-empty-state__description">
+                Create a project to start organizing your team's work.
+              </p>
+            </div>
+            <div class="ax-empty-state__actions">
+              <button class="ax-button ax-button--primary" type="button">
+                Create project
+              </button>
+            </div>
+          </section>
+        </article>
+
+        <article class="ax-display-gallery__demo ax-stack ax-stack--gap-4">
+          <h3 class="ax-heading ax-heading--3">HoverCard</h3>
+          <p class="ax-text">
+            Meet
+            <span
+              class="ax-hover-card"
+              data-ax-hover-card
+              data-ax-hover-card-delay="0"
+              data-ax-hover-card-hide-delay="100">
+              <button
+                id="gallery-hover-trigger"
+                class="ax-hover-card__trigger ax-hover-card__trigger--text"
+                type="button"
+                data-ax-hover-card-trigger>
+                Jordan Lee
+              </button>
+              <span
+                id="gallery-hover-card"
+                class="ax-hover-card__surface"
+                data-ax-hover-card-content
+                data-ax-placement="above"
+                data-ax-alignment="start"
+                role="dialog"
+                aria-label="Jordan Lee profile preview">
+                <span class="ax-hover-card__header">
+                  <span
+                    class="ax-avatar ax-avatar--lg ax-avatar--circle"
+                    role="img"
+                    aria-label="Jordan Lee"
+                    ><span class="ax-avatar__content" aria-hidden="true"
+                      >JL</span
+                    ></span
+                  >
+                  <span class="ax-hover-card__body"
+                    ><strong>Jordan Lee</strong
+                    ><span class="ax-text ax-text--supporting"
+                      >Product designer · New York</span
+                    ></span
+                  >
+                </span>
+                <span class="ax-hover-card__actions"
+                  ><button
+                    class="ax-button ax-button--secondary ax-button--sm"
+                    type="button"
+                    id="gallery-hover-action">
+                    View profile
+                  </button></span
+                >
+              </span>
+            </span>
+            from the product design team.
+          </p>
+          <p class="ax-text ax-text--secondary">
+            Hover or focus the underlined name; tab into the card, then press
+            Escape.
+          </p>
+        </article>
+      </section>
+
+      <section
+        class="ax-display-gallery__demo ax-display-gallery__wide ax-stack ax-stack--gap-4"
+        aria-labelledby="layout-heading">
+        <h2 class="ax-heading ax-heading--2" id="layout-heading">
+          Layout regions and Stack guidance
+        </h2>
+        <div class="ax-layout ax-layout--regions">
+          <header class="ax-layout__header">
+            <div
+              class="ax-stack ax-stack--horizontal ax-stack--wrap ax-stack--gap-3">
+              <strong>LayoutHeader</strong>
+              <span class="ax-text ax-text--supporting"
+                >Named regions for a bounded tool area</span
+              >
+            </div>
+          </header>
+          <aside
+            class="ax-layout__panel ax-layout__panel--start"
+            aria-label="Example panel">
+            <div class="ax-stack ax-stack--gap-2">
+              <strong>LayoutPanel</strong>
+              <a class="ax-link" href="#overview">Overview</a>
+              <a class="ax-link" href="#activity">Activity</a>
+              <a class="ax-link" href="#settings">Settings</a>
+            </div>
+          </aside>
+          <div
+            class="ax-layout__content"
+            role="region"
+            aria-label="Example content">
+            <div class="ax-stack ax-stack--gap-3">
+              <h3 class="ax-heading ax-heading--3">LayoutContent</h3>
+              <p class="ax-text">
+                Use LayoutHeader, LayoutContent, and LayoutPanel for named
+                regions. Inside a region, the default vertical Stack acts as
+                VStack; add <code>ax-stack--horizontal</code> for HStack.
+              </p>
+              <div
+                class="ax-stack ax-stack--horizontal ax-stack--wrap ax-stack--gap-2">
+                <span class="ax-badge ax-badge--info">HStack</span
+                ><span class="ax-badge ax-badge--success">Wraps</span
+                ><span class="ax-badge">Token gaps</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="ax-display-gallery__demo ax-display-gallery__wide ax-stack ax-stack--gap-4"
+        aria-labelledby="lightbox-heading">
+        <h2 class="ax-heading ax-heading--2" id="lightbox-heading">Lightbox</h2>
+        <p class="ax-text ax-text--secondary">
+          Open any image with mouse or keyboard, navigate with buttons or arrow
+          keys, and press Escape to return focus.
+        </p>
+        <div class="ax-display-gallery__lightbox-grid">
+          <button
+            id="gallery-lightbox-trigger-1"
+            class="ax-lightbox__trigger ax-display-gallery__thumbnail"
+            type="button"
+            data-ax-lightbox-open="gallery-display-lightbox"
+            data-ax-lightbox-index="0"
+            aria-label="Open blue Orbit artwork">
+            <img
+              class="ax-lightbox__thumbnail"
+              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='480'%3E%3Crect width='640' height='480' fill='%230064e0'/%3E%3Ccircle cx='320' cy='220' r='100' fill='none' stroke='white' stroke-width='22'/%3E%3Ccircle cx='420' cy='220' r='24' fill='white'/%3E%3Ctext x='320' y='400' text-anchor='middle' font-family='sans-serif' font-size='38' fill='white'%3EOrbit%3C/text%3E%3C/svg%3E"
+              alt="Blue Orbit artwork" />
+          </button>
+          <button
+            id="gallery-lightbox-trigger-2"
+            class="ax-lightbox__trigger ax-display-gallery__thumbnail"
+            type="button"
+            data-ax-lightbox-open="gallery-display-lightbox"
+            data-ax-lightbox-index="1"
+            aria-label="Open green Field artwork">
+            <img
+              class="ax-lightbox__thumbnail"
+              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='480'%3E%3Crect width='640' height='480' fill='%230d8626'/%3E%3Cpath d='M80 360 Q220 120 360 330 T600 160' fill='none' stroke='white' stroke-width='24'/%3E%3Ctext x='320' y='420' text-anchor='middle' font-family='sans-serif' font-size='38' fill='white'%3EField%3C/text%3E%3C/svg%3E"
+              alt="Green Field artwork" />
+          </button>
+          <button
+            id="gallery-lightbox-trigger-3"
+            class="ax-lightbox__trigger ax-display-gallery__thumbnail"
+            type="button"
+            data-ax-lightbox-open="gallery-display-lightbox"
+            data-ax-lightbox-index="2"
+            aria-label="Open purple Prism artwork">
+            <img
+              class="ax-lightbox__thumbnail"
+              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='480'%3E%3Crect width='640' height='480' fill='%237952ff'/%3E%3Cpath d='M320 80 L520 350 L120 350 Z' fill='none' stroke='white' stroke-width='24'/%3E%3Ctext x='320' y='420' text-anchor='middle' font-family='sans-serif' font-size='38' fill='white'%3EPrism%3C/text%3E%3C/svg%3E"
+              alt="Purple Prism artwork" />
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <dialog
+      class="ax-lightbox"
+      id="gallery-display-lightbox"
+      data-ax-lightbox
+      aria-label="Artwork gallery viewer">
+      <div class="ax-lightbox__container" data-ax-lightbox-backdrop>
+        <span
+          class="ax-lightbox__counter"
+          data-ax-lightbox-counter
+          aria-live="polite"></span>
+        <button
+          class="ax-lightbox__control ax-lightbox__close"
+          type="button"
+          data-ax-lightbox-close
+          aria-label="Close viewer">
+          ×
+        </button>
+        <button
+          class="ax-lightbox__control ax-lightbox__previous"
+          type="button"
+          data-ax-lightbox-previous
+          aria-label="Previous image">
+          ‹
+        </button>
+        <figure class="ax-lightbox__item" data-ax-lightbox-item>
+          <img
+            class="ax-lightbox__media"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='900'%3E%3Crect width='1200' height='900' fill='%230064e0'/%3E%3Ccircle cx='600' cy='410' r='200' fill='none' stroke='white' stroke-width='42'/%3E%3Ccircle cx='800' cy='410' r='48' fill='white'/%3E%3Ctext x='600' y='760' text-anchor='middle' font-family='sans-serif' font-size='80' fill='white'%3EOrbit%3C/text%3E%3C/svg%3E"
+            alt="Blue Orbit artwork" />
+          <figcaption class="ax-lightbox__caption">
+            Orbit explores motion around a stable center.
+          </figcaption>
+        </figure>
+        <figure class="ax-lightbox__item" data-ax-lightbox-item>
+          <img
+            class="ax-lightbox__media"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='900'%3E%3Crect width='1200' height='900' fill='%230d8626'/%3E%3Cpath d='M140 690 Q420 150 690 620 T1100 280' fill='none' stroke='white' stroke-width='46'/%3E%3Ctext x='600' y='800' text-anchor='middle' font-family='sans-serif' font-size='80' fill='white'%3EField%3C/text%3E%3C/svg%3E"
+            alt="Green Field artwork" />
+          <figcaption class="ax-lightbox__caption">
+            Field traces a path through changing terrain.
+          </figcaption>
+        </figure>
+        <figure class="ax-lightbox__item" data-ax-lightbox-item>
+          <img
+            class="ax-lightbox__media"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='900'%3E%3Crect width='1200' height='900' fill='%237952ff'/%3E%3Cpath d='M600 130 L1000 700 L200 700 Z' fill='none' stroke='white' stroke-width='46'/%3E%3Ctext x='600' y='820' text-anchor='middle' font-family='sans-serif' font-size='80' fill='white'%3EPrism%3C/text%3E%3C/svg%3E"
+            alt="Purple Prism artwork" />
+          <figcaption class="ax-lightbox__caption">
+            Prism studies balance and perspective.
+          </figcaption>
+        </figure>
+        <button
+          class="ax-lightbox__control ax-lightbox__next"
+          type="button"
+          data-ax-lightbox-next
+          aria-label="Next image">
+          ›
+        </button>
+      </div>
+    </dialog>
+
+    <script>
+      addEventListener('DOMContentLoaded', () => {
+        const theme = document.querySelector('[data-gallery-theme]');
+        const mode = document.querySelector('[data-gallery-mode]');
+        theme.addEventListener('change', () => {
+          document.documentElement.dataset.astryxTheme = theme.value;
+        });
+        mode.addEventListener('change', () => {
+          document.documentElement.dataset.theme = mode.value;
+        });
+      });
+    </script>
+  </body>
+</html>

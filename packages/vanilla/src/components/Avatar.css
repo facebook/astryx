@@ -1,0 +1,91 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+:where(.ax-avatar) {
+  --ax-avatar-size: 36px;
+  --ax-avatar-radius: var(--radius-full);
+  position: relative;
+  display: inline-flex;
+  width: var(--ax-avatar-size);
+  height: var(--ax-avatar-size);
+  flex: 0 0 var(--ax-avatar-size);
+  border-radius: var(--ax-avatar-radius);
+  vertical-align: middle;
+}
+:where(.ax-avatar--xsm) {
+  --ax-avatar-size: 20px;
+}
+:where(.ax-avatar--sm) {
+  --ax-avatar-size: 24px;
+}
+:where(.ax-avatar--md) {
+  --ax-avatar-size: 36px;
+}
+:where(.ax-avatar--lg) {
+  --ax-avatar-size: 48px;
+}
+:where(.ax-avatar--xl) {
+  --ax-avatar-size: 128px;
+}
+:where(.ax-avatar--rounded) {
+  --ax-avatar-radius: var(--radius-element);
+}
+:where(.ax-avatar--square) {
+  --ax-avatar-radius: var(--radius-none);
+}
+:where(.ax-avatar__content) {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: inherit;
+  background: var(--color-neutral);
+  color: var(--color-text-secondary);
+  font-size: calc(var(--ax-avatar-size) * 0.4);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  text-transform: uppercase;
+  user-select: none;
+}
+:where(.ax-avatar__image) {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+:where(.ax-avatar__status) {
+  position: absolute;
+  inset-inline-end: 0;
+  bottom: 0;
+  display: flex;
+  padding: 2px;
+  border-radius: var(--radius-full);
+  background: var(--color-background-surface);
+  transform: translate(25%, 25%);
+}
+:where([dir='rtl'] .ax-avatar__status) {
+  transform: translate(-25%, 25%);
+}
+:where(.ax-avatar--circle .ax-avatar__status) {
+  inset-inline-end: 14.6%;
+  bottom: 14.6%;
+  transform: translate(50%, 50%);
+}
+:where([dir='rtl'] .ax-avatar--circle .ax-avatar__status) {
+  transform: translate(-50%, 50%);
+}
+:where(a.ax-avatar, button.ax-avatar) {
+  appearance: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-decoration: none;
+}
+:where(a.ax-avatar, button.ax-avatar):focus-visible {
+  outline: var(--focus-outline-width) var(--focus-outline-style)
+    var(--focus-outline-color);
+  outline-offset: var(--focus-outline-offset);
+}

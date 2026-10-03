@@ -22,6 +22,19 @@ import {
   setupTooltips,
   showTooltip,
 } from './tooltip.js';
+import {
+  enhanceHoverCards,
+  hideHoverCard,
+  setupHoverCards,
+  showHoverCard,
+} from './hover-card.js';
+import {
+  closeLightbox,
+  enhanceLightboxes,
+  openLightbox,
+  setupLightboxes,
+  updateLightbox,
+} from './lightbox.js';
 import {dismissToast, enhanceToasts, setupToasts, toast} from './toast.js';
 import {enhanceSideNavs, setupSideNavs} from './side-nav.js';
 import {
@@ -40,6 +53,8 @@ function enhanceRoot(root) {
   enhanceTabLists(root);
   enhanceCollapsibles(root);
   enhanceTooltips(root);
+  enhanceHoverCards(root);
+  enhanceLightboxes(root);
   enhanceToasts(root);
   enhanceSideNavs(root);
   enhanceThemeModeSwitchers(root);
@@ -65,6 +80,8 @@ function initializeAstryx(root = document) {
   setupTabLists(doc);
   setupCollapsibles(doc);
   setupTooltips(doc);
+  setupHoverCards(doc);
+  setupLightboxes(doc);
   setupToasts(doc);
   setupSideNavs(doc);
   setupThemeModeSwitchers(doc);
@@ -93,11 +110,16 @@ export {
   activateTab,
   closeDialog,
   closeDropdownMenu,
+  closeLightbox,
   dismissToast,
+  hideHoverCard,
   hideTooltip,
   initializeAstryx,
   openDialog,
   openDropdownMenu,
+  openLightbox,
+  showHoverCard,
   showTooltip,
   toast,
+  updateLightbox,
 };

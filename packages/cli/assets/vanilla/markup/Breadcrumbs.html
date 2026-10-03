@@ -1,0 +1,38 @@
+<!-- docs: Show a short navigation trail above the page heading; mark the current location with aria-current. -->
+<!-- variant: default -->
+<nav class="ax-breadcrumbs" aria-label="Breadcrumb">
+  <ol class="ax-breadcrumbs__list">
+    <li class="ax-breadcrumbs__item">
+      <span class="ax-breadcrumbs__separator" aria-hidden="true">/</span
+      ><a class="ax-breadcrumbs__link" href="#home">Home</a>
+    </li>
+    <li class="ax-breadcrumbs__item">
+      <span class="ax-breadcrumbs__separator" aria-hidden="true">/</span
+      ><a class="ax-breadcrumbs__link" href="#projects">Projects</a>
+    </li>
+    <li class="ax-breadcrumbs__item">
+      <span class="ax-breadcrumbs__separator" aria-hidden="true">/</span
+      ><span class="ax-breadcrumbs__current" aria-current="page"
+        >Vanilla Astryx</span
+      >
+    </li>
+  </ol>
+</nav>
+
+<!-- variant: supporting -->
+<nav
+  class="ax-breadcrumbs ax-breadcrumbs--supporting"
+  aria-label="Settings breadcrumb">
+  <ol class="ax-breadcrumbs__list">
+    <li class="ax-breadcrumbs__item">
+      <span class="ax-breadcrumbs__separator" aria-hidden="true">/</span
+      ><a class="ax-breadcrumbs__link" href="#settings">Settings</a>
+    </li>
+    <li class="ax-breadcrumbs__item">
+      <span class="ax-breadcrumbs__separator" aria-hidden="true">/</span
+      ><span class="ax-breadcrumbs__current" aria-current="page"
+        >Notifications</span
+      >
+    </li>
+  </ol>
+</nav>

@@ -1,0 +1,24 @@
+<!-- docs: Represent a person or team with an image, initials, or a fallback icon; include identity in the accessible name. -->
+<!-- variant: initials-with-status -->
+<span
+  class="ax-avatar ax-avatar--md ax-avatar--circle"
+  role="img"
+  aria-label="Ada Lovelace, Online">
+  <span class="ax-avatar__content" aria-hidden="true">AL</span>
+  <span class="ax-avatar__status" aria-hidden="true">
+    <span class="ax-status-dot ax-status-dot--success"></span>
+  </span>
+</span>
+
+<!-- variant: linked-image -->
+<a
+  class="ax-avatar ax-avatar--lg ax-avatar--rounded"
+  href="#profile"
+  aria-label="Grace Hopper profile">
+  <span class="ax-avatar__content">
+    <img
+      class="ax-avatar__image"
+      src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Crect width='96' height='96' fill='%237952ff'/%3E%3Ccircle cx='48' cy='35' r='17' fill='white'/%3E%3Cpath d='M17 92c2-24 14-36 31-36s29 12 31 36' fill='white'/%3E%3C/svg%3E"
+      alt="" />
+  </span>
+</a>

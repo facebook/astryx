@@ -7,11 +7,88 @@
   gap: var(--spacing-6);
   padding: var(--spacing-6);
 }
-:where(.ax-layout__header, .ax-layout__main, .ax-layout__footer) {
+:where(
+  .ax-layout__header,
+  .ax-layout__main,
+  .ax-layout__content,
+  .ax-layout__footer
+) {
   width: 100%;
   max-width: 1200px;
   margin-inline: auto;
 }
-:where(.ax-layout__main) {
+:where(.ax-layout__main, .ax-layout__content) {
+  min-width: 0;
   flex: 1;
+}
+
+/* Named LayoutHeader / LayoutContent / LayoutPanel regions. Use this form for
+   a bounded application area; use the default page shell above for simple
+   header-main-footer pages and Stack for one-dimensional flow. */
+:where(.ax-layout--regions) {
+  display: grid;
+  min-height: 32rem;
+  grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-container);
+  background: var(--color-background-surface);
+}
+:where(.ax-layout--regions.ax-layout--three-column) {
+  grid-template-columns:
+    minmax(12rem, 16rem) minmax(0, 1fr)
+    minmax(12rem, 16rem);
+}
+:where(.ax-layout--regions .ax-layout__header) {
+  grid-column: 1 / -1;
+  max-width: none;
+  padding: var(--spacing-4);
+  border-block-end: var(--border-width) solid var(--color-border);
+  margin: 0;
+}
+:where(.ax-layout--regions .ax-layout__content) {
+  grid-column: 2;
+  max-width: none;
+  padding: var(--spacing-4);
+  margin: 0;
+  overflow: auto;
+}
+:where(.ax-layout--regions .ax-layout__panel) {
+  min-width: 0;
+  padding: var(--spacing-4);
+  overflow: auto;
+  background: var(--color-background-muted);
+}
+:where(.ax-layout--regions .ax-layout__panel--start) {
+  grid-column: 1;
+  border-inline-end: var(--border-width) solid var(--color-border);
+}
+:where(.ax-layout--regions .ax-layout__panel--end) {
+  grid-column: 3;
+  border-inline-start: var(--border-width) solid var(--color-border);
+}
+@media (max-width: 48rem) {
+  :where(.ax-layout--regions, .ax-layout--regions.ax-layout--three-column) {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+  }
+  :where(.ax-layout--regions .ax-layout__header) {
+    grid-column: 1;
+  }
+  :where(.ax-layout--regions .ax-layout__panel--start) {
+    grid-column: 1;
+    border-inline-end: 0;
+    border-block-end: var(--border-width) solid var(--color-border);
+  }
+  :where(.ax-layout--regions .ax-layout__content) {
+    grid-column: 1;
+  }
+  :where(.ax-layout--regions .ax-layout__panel--end) {
+    grid-column: 1;
+    border-inline-start: 0;
+    border-block-start: var(--border-width) solid var(--color-border);
+  }
 }

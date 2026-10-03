@@ -1,0 +1,59 @@
+<!-- docs: Reveal supplementary rich content on hover or keyboard focus; keep critical information and required actions outside the card. -->
+<!-- variant: profile-preview -->
+<span
+  class="ax-hover-card"
+  data-ax-hover-card
+  data-ax-hover-card-delay="200"
+  data-ax-hover-card-hide-delay="150">
+  <button
+    class="ax-hover-card__trigger ax-hover-card__trigger--text"
+    type="button"
+    data-ax-hover-card-trigger>
+    Jordan Lee
+  </button>
+  <span
+    class="ax-hover-card__surface"
+    data-ax-hover-card-content
+    data-ax-placement="above"
+    data-ax-alignment="start"
+    role="dialog"
+    aria-label="Jordan Lee profile preview">
+    <span class="ax-hover-card__header">
+      <span
+        class="ax-avatar ax-avatar--lg ax-avatar--circle"
+        role="img"
+        aria-label="Jordan Lee"
+        ><span class="ax-avatar__content" aria-hidden="true">JL</span></span
+      >
+      <span class="ax-hover-card__body"
+        ><strong>Jordan Lee</strong
+        ><span class="ax-text ax-text--supporting"
+          >Product designer · New York</span
+        ></span
+      >
+    </span>
+  </span>
+</span>
+
+<!-- variant: link-summary -->
+<span class="ax-hover-card" data-ax-hover-card data-ax-hover-card-delay="0">
+  <a
+    class="ax-hover-card__trigger ax-link"
+    href="#roadmap"
+    data-ax-hover-card-trigger
+    >View the roadmap</a
+  >
+  <span
+    class="ax-hover-card__surface"
+    data-ax-hover-card-content
+    data-ax-placement="below"
+    data-ax-alignment="start"
+    role="group">
+    <span class="ax-hover-card__body"
+      ><strong>Q4 product roadmap</strong
+      ><span class="ax-text ax-text--secondary"
+        >Milestones, owners, and current delivery status.</span
+      ></span
+    >
+  </span>
+</span>

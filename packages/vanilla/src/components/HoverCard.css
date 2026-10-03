@@ -1,0 +1,59 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+:where(.ax-hover-card) {
+  display: inline-flex;
+}
+:where(.ax-hover-card__trigger--text) {
+  padding: 0;
+  border: 0;
+  border-block-end: var(--border-width) dashed var(--color-border-emphasized);
+  background: transparent;
+  color: inherit;
+  cursor: help;
+  font: inherit;
+}
+:where(.ax-hover-card__trigger):focus-visible {
+  border-radius: var(--radius-inner);
+  outline: var(--focus-outline-width) var(--focus-outline-style)
+    var(--focus-outline-color);
+  outline-offset: var(--focus-outline-offset);
+}
+:where(.ax-hover-card__surface) {
+  position: fixed;
+  z-index: 1200;
+  width: min(20rem, calc(100vw - var(--spacing-4)));
+  padding: var(--spacing-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-container);
+  background: var(--color-background-surface);
+  box-shadow: var(--shadow-med);
+  color: var(--color-text-primary);
+}
+:where(.ax-hover-card__surface[data-ax-open='true']) {
+  animation: ax-hover-card-enter var(--duration-fast-min) var(--ease-standard);
+}
+:where(.ax-hover-card__header) {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+:where(.ax-hover-card__body) {
+  display: grid;
+  gap: var(--spacing-2);
+}
+:where(.ax-hover-card__actions) {
+  display: flex;
+  gap: var(--spacing-2);
+  margin-block-start: var(--spacing-3);
+}
+@keyframes ax-hover-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :where(.ax-hover-card__surface[data-ax-open='true']) {
+    animation: none;
+  }
+}

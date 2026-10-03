@@ -1,0 +1,56 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+:where(.ax-skeleton) {
+  display: block;
+  width: 100%;
+  height: var(--spacing-4);
+  border-radius: var(--radius-container);
+  background: var(--color-skeleton);
+  opacity: 0.25;
+  animation: ax-skeleton-fade var(--duration-medium-max) steps(10, end) 1s
+    infinite alternate;
+}
+:where(.ax-skeleton--text) {
+  height: var(--spacing-3);
+  border-radius: var(--radius-inner);
+}
+:where(.ax-skeleton--short) {
+  width: 62%;
+}
+:where(.ax-skeleton--avatar) {
+  width: var(--spacing-10);
+  height: var(--spacing-10);
+  flex: 0 0 var(--spacing-10);
+  border-radius: var(--radius-full);
+}
+:where(.ax-skeleton--card) {
+  min-height: 8rem;
+}
+@keyframes ax-skeleton-fade {
+  from {
+    opacity: 0.25;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :where(.ax-skeleton) {
+    animation: none;
+  }
+}
+@media (prefers-contrast: more) {
+  :where(.ax-skeleton) {
+    background: color-mix(
+      in srgb,
+      var(--color-skeleton),
+      var(--color-text-primary) 30%
+    );
+  }
+}
+@media (forced-colors: active) {
+  :where(.ax-skeleton) {
+    background: GrayText;
+    opacity: 1;
+  }
+}

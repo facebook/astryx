@@ -1,0 +1,22 @@
+<!-- docs: Pair a compact semantic status signal with visible text so meaning never depends on color alone. -->
+<!-- variant: labeled-status -->
+<span
+  class="ax-stack ax-stack--horizontal ax-stack--gap-2"
+  style="align-items: center">
+  <span
+    class="ax-status-dot ax-status-dot--success"
+    role="img"
+    aria-label="Online"></span>
+  <span class="ax-text">Online</span>
+</span>
+
+<!-- variant: pulsing-attention -->
+<span
+  class="ax-stack ax-stack--horizontal ax-stack--gap-2"
+  style="align-items: center">
+  <span
+    class="ax-status-dot ax-status-dot--error ax-status-dot--pulsing"
+    role="img"
+    aria-label="Service incident"></span>
+  <span class="ax-text">Service incident</span>
+</span>

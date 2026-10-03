@@ -1,0 +1,41 @@
+<!-- docs: Explain an empty result or first-run state with a specific title and a useful next action. -->
+<!-- variant: default -->
+<section
+  class="ax-empty-state"
+  role="status"
+  aria-labelledby="empty-projects-title">
+  <span class="ax-empty-state__icon" aria-hidden="true">＋</span>
+  <div class="ax-empty-state__text">
+    <h3 class="ax-empty-state__title" id="empty-projects-title">
+      No projects yet
+    </h3>
+    <p class="ax-empty-state__description">
+      Create a project to start organizing your work.
+    </p>
+  </div>
+  <div class="ax-empty-state__actions">
+    <button class="ax-button ax-button--primary" type="button">
+      Create project
+    </button>
+  </div>
+</section>
+
+<!-- variant: compact -->
+<section
+  class="ax-empty-state ax-empty-state--compact"
+  role="status"
+  aria-labelledby="empty-search-title">
+  <div class="ax-empty-state__text">
+    <h3 class="ax-empty-state__title" id="empty-search-title">
+      No matching results
+    </h3>
+    <p class="ax-empty-state__description">
+      Try a broader search or clear your filters.
+    </p>
+  </div>
+  <div class="ax-empty-state__actions">
+    <button class="ax-button ax-button--secondary ax-button--sm" type="button">
+      Clear filters
+    </button>
+  </div>
+</section>

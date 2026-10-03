@@ -1,0 +1,107 @@
+<!-- docs: Open images in a native modal viewer with labelled controls, Escape dismissal, focus restoration, and optional gallery navigation. -->
+<!-- variant: single-image -->
+<button
+  class="ax-lightbox__trigger"
+  type="button"
+  data-ax-lightbox-open="example-lightbox-single"
+  aria-label="Open launch photo">
+  <img
+    class="ax-lightbox__thumbnail"
+    src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='480'%3E%3Crect width='640' height='480' fill='%230064e0'/%3E%3Ccircle cx='320' cy='210' r='96' fill='%23ffffff' fill-opacity='.88'/%3E%3Ctext x='320' y='390' text-anchor='middle' font-family='sans-serif' font-size='34' fill='white'%3ELaunch%3C/text%3E%3C/svg%3E"
+    alt="Blue launch artwork" />
+</button>
+<dialog
+  class="ax-lightbox"
+  id="example-lightbox-single"
+  data-ax-lightbox
+  aria-label="Launch photo viewer">
+  <div class="ax-lightbox__container" data-ax-lightbox-backdrop>
+    <button
+      class="ax-lightbox__control ax-lightbox__close"
+      type="button"
+      data-ax-lightbox-close
+      aria-label="Close viewer">
+      ×
+    </button>
+    <figure class="ax-lightbox__item" data-ax-lightbox-item>
+      <img
+        class="ax-lightbox__media"
+        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='900'%3E%3Crect width='1200' height='900' fill='%230064e0'/%3E%3Ccircle cx='600' cy='390' r='190' fill='%23ffffff' fill-opacity='.88'/%3E%3Ctext x='600' y='730' text-anchor='middle' font-family='sans-serif' font-size='72' fill='white'%3ELaunch%3C/text%3E%3C/svg%3E"
+        alt="Blue launch artwork with a white circle" />
+      <figcaption class="ax-lightbox__caption">Launch day artwork</figcaption>
+    </figure>
+  </div>
+</dialog>
+
+<!-- variant: gallery -->
+<div class="ax-stack ax-stack--horizontal ax-stack--gap-2">
+  <button
+    class="ax-lightbox__trigger"
+    type="button"
+    data-ax-lightbox-open="example-lightbox-gallery"
+    data-ax-lightbox-index="0"
+    aria-label="Open first gallery image">
+    <img
+      class="ax-lightbox__thumbnail"
+      src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='240'%3E%3Crect width='320' height='240' fill='%230d8626'/%3E%3Ctext x='160' y='135' text-anchor='middle' font-family='sans-serif' font-size='44' fill='white'%3EOne%3C/text%3E%3C/svg%3E"
+      alt="Green artwork labelled One" />
+  </button>
+  <button
+    class="ax-lightbox__trigger"
+    type="button"
+    data-ax-lightbox-open="example-lightbox-gallery"
+    data-ax-lightbox-index="1"
+    aria-label="Open second gallery image">
+    <img
+      class="ax-lightbox__thumbnail"
+      src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='240'%3E%3Crect width='320' height='240' fill='%237952ff'/%3E%3Ctext x='160' y='135' text-anchor='middle' font-family='sans-serif' font-size='44' fill='white'%3ETwo%3C/text%3E%3C/svg%3E"
+      alt="Purple artwork labelled Two" />
+  </button>
+</div>
+<dialog
+  class="ax-lightbox"
+  id="example-lightbox-gallery"
+  data-ax-lightbox
+  aria-label="Project gallery viewer">
+  <div class="ax-lightbox__container" data-ax-lightbox-backdrop>
+    <span
+      class="ax-lightbox__counter"
+      data-ax-lightbox-counter
+      aria-live="polite"></span>
+    <button
+      class="ax-lightbox__control ax-lightbox__close"
+      type="button"
+      data-ax-lightbox-close
+      aria-label="Close viewer">
+      ×
+    </button>
+    <button
+      class="ax-lightbox__control ax-lightbox__previous"
+      type="button"
+      data-ax-lightbox-previous
+      aria-label="Previous image">
+      ‹
+    </button>
+    <figure class="ax-lightbox__item" data-ax-lightbox-item>
+      <img
+        class="ax-lightbox__media"
+        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='900'%3E%3Crect width='1200' height='900' fill='%230d8626'/%3E%3Ctext x='600' y='500' text-anchor='middle' font-family='sans-serif' font-size='140' fill='white'%3EOne%3C/text%3E%3C/svg%3E"
+        alt="Green artwork labelled One" />
+      <figcaption class="ax-lightbox__caption">First concept</figcaption>
+    </figure>
+    <figure class="ax-lightbox__item" data-ax-lightbox-item>
+      <img
+        class="ax-lightbox__media"
+        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='900'%3E%3Crect width='1200' height='900' fill='%237952ff'/%3E%3Ctext x='600' y='500' text-anchor='middle' font-family='sans-serif' font-size='140' fill='white'%3ETwo%3C/text%3E%3C/svg%3E"
+        alt="Purple artwork labelled Two" />
+      <figcaption class="ax-lightbox__caption">Second concept</figcaption>
+    </figure>
+    <button
+      class="ax-lightbox__control ax-lightbox__next"
+      type="button"
+      data-ax-lightbox-next
+      aria-label="Next image">
+      ›
+    </button>
+  </div>
+</dialog>

@@ -1,0 +1,123 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+:where(.ax-lightbox) {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+  color: var(--color-on-dark);
+}
+.ax-lightbox::backdrop {
+  background: var(--color-overlay);
+  backdrop-filter: blur(2px);
+}
+:where(.ax-lightbox__container) {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(var(--spacing-6), 7vw, var(--spacing-12));
+}
+:where(.ax-lightbox__item) {
+  display: flex;
+  max-width: 100%;
+  max-height: 100%;
+  align-items: center;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+:where(.ax-lightbox__media) {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100vh - 8rem);
+  border-radius: var(--radius-element);
+  object-fit: contain;
+  box-shadow: var(--shadow-high);
+}
+:where(.ax-lightbox__caption) {
+  max-width: 600px;
+  padding-inline: var(--spacing-3);
+  color: var(--color-on-dark);
+  font-size: var(--text-large-size);
+  line-height: var(--text-large-leading);
+  text-align: center;
+}
+:where(.ax-lightbox__control) {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  min-width: var(--size-element-lg);
+  min-height: var(--size-element-lg);
+  place-items: center;
+  padding: var(--spacing-2);
+  border: 0;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-on-light), transparent 35%);
+  color: var(--color-on-dark);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--font-size-xl);
+}
+:where(.ax-lightbox__control):hover {
+  background: color-mix(in srgb, var(--color-on-light), transparent 15%);
+}
+:where(.ax-lightbox__control):focus-visible {
+  outline: var(--focus-outline-width) var(--focus-outline-style)
+    var(--color-on-dark);
+  outline-offset: var(--focus-outline-offset);
+}
+:where(.ax-lightbox__control:disabled) {
+  opacity: 0.35;
+  cursor: default;
+}
+:where(.ax-lightbox__close) {
+  inset-block-start: var(--spacing-3);
+  inset-inline-end: var(--spacing-3);
+}
+:where(.ax-lightbox__previous, .ax-lightbox__next) {
+  inset-block-start: 50%;
+  translate: 0 -50%;
+}
+:where(.ax-lightbox__previous) {
+  inset-inline-start: var(--spacing-3);
+}
+:where(.ax-lightbox__next) {
+  inset-inline-end: var(--spacing-3);
+}
+:where(.ax-lightbox__counter) {
+  position: absolute;
+  z-index: 1;
+  inset-block-start: var(--spacing-3);
+  inset-inline-start: var(--spacing-3);
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-leading);
+}
+:where(.ax-lightbox__trigger) {
+  display: inline-grid;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-element);
+  background: transparent;
+  cursor: zoom-in;
+  overflow: hidden;
+}
+:where(.ax-lightbox__trigger):focus-visible {
+  outline: var(--focus-outline-width) var(--focus-outline-style)
+    var(--focus-outline-color);
+  outline-offset: var(--focus-outline-offset);
+}
+:where(.ax-lightbox__thumbnail) {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}

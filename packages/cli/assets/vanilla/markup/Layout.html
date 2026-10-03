@@ -1,4 +1,4 @@
-<!-- docs: Provide a full-page shell with centered header, main, and footer regions. -->
+<!-- docs: Use the page shell for simple header-main-footer pages; use named Header, Content, and Panel regions for bounded application layouts. -->
 <!-- variant: page-shell -->
 <div class="ax-layout">
   <header class="ax-layout__header">
@@ -8,4 +8,28 @@
   <footer class="ax-layout__footer">
     <span class="ax-text ax-text--supporting">Footer</span>
   </footer>
+</div>
+
+<!-- variant: named-regions -->
+<div class="ax-layout ax-layout--regions">
+  <header class="ax-layout__header">
+    <h2 class="ax-heading ax-heading--3">LayoutHeader</h2>
+  </header>
+  <aside
+    class="ax-layout__panel ax-layout__panel--start"
+    role="navigation"
+    aria-label="Workspace navigation">
+    <strong>LayoutPanel</strong>
+    <nav class="ax-stack ax-stack--gap-2">
+      <a class="ax-link" href="#overview">Overview</a
+      ><a class="ax-link" href="#activity">Activity</a>
+    </nav>
+  </aside>
+  <main class="ax-layout__content">
+    <h2 class="ax-heading ax-heading--2">LayoutContent</h2>
+    <p class="ax-text">
+      Use named regions when content needs a header, a scrollable center, or
+      logical start/end panels.
+    </p>
+  </main>
 </div>

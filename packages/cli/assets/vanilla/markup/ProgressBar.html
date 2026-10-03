@@ -1,0 +1,37 @@
+<!-- docs: Communicate determinate or indeterminate task progress with a visible and programmatic label. Set --ax-progress-value for determinate width. -->
+<!-- variant: determinate -->
+<div
+  class="ax-progress-bar ax-progress-bar--success"
+  style="--ax-progress-value: 72%">
+  <div class="ax-progress-bar__header">
+    <span class="ax-progress-bar__label" id="upload-label"
+      >Uploading files</span
+    >
+    <span class="ax-progress-bar__value">72%</span>
+  </div>
+  <div
+    class="ax-progress-bar__track"
+    role="progressbar"
+    aria-labelledby="upload-label"
+    aria-valuemin="0"
+    aria-valuemax="100"
+    aria-valuenow="72"
+    aria-valuetext="72%">
+    <div class="ax-progress-bar__fill"></div>
+  </div>
+</div>
+
+<!-- variant: indeterminate -->
+<div class="ax-progress-bar ax-progress-bar--indeterminate">
+  <div class="ax-progress-bar__header">
+    <span class="ax-progress-bar__label" id="processing-label"
+      >Processing report</span
+    >
+  </div>
+  <div
+    class="ax-progress-bar__track"
+    role="progressbar"
+    aria-labelledby="processing-label">
+    <div class="ax-progress-bar__fill"></div>
+  </div>
+</div>

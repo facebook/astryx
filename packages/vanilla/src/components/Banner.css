@@ -1,0 +1,95 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+:where(.ax-banner) {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-container);
+  color: var(--color-text-primary);
+}
+:where(.ax-banner--elevation-low) {
+  box-shadow: var(--shadow-low);
+}
+:where(.ax-banner--elevation-med) {
+  box-shadow: var(--shadow-med);
+}
+:where(.ax-banner--elevation-high) {
+  box-shadow: var(--shadow-high);
+}
+:where(.ax-banner--section) {
+  border-radius: 0;
+}
+:where(.ax-banner__surface) {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  padding-block: var(--spacing-3);
+  padding-inline: var(--spacing-4);
+  border-radius: inherit;
+  background: var(--color-accent-muted);
+}
+:where(.ax-banner--warning .ax-banner__surface) {
+  background: var(--color-warning-muted);
+}
+:where(.ax-banner--error .ax-banner__surface) {
+  background: var(--color-error-muted);
+}
+:where(.ax-banner--success .ax-banner__surface) {
+  background: var(--color-success-muted);
+}
+:where(.ax-banner:has(.ax-banner__content) .ax-banner__surface) {
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+}
+:where(.ax-banner__icon) {
+  display: grid;
+  width: var(--spacing-5);
+  height: var(--spacing-5);
+  flex: 0 0 var(--spacing-5);
+  place-items: center;
+  border-radius: var(--radius-full);
+  color: var(--color-icon-accent);
+  font-weight: var(--font-weight-bold);
+}
+:where(.ax-banner--warning .ax-banner__icon) {
+  color: var(--color-warning);
+}
+:where(.ax-banner--error .ax-banner__icon) {
+  color: var(--color-error);
+}
+:where(.ax-banner--success .ax-banner__icon) {
+  color: var(--color-success);
+}
+:where(.ax-banner__body) {
+  min-width: 0;
+  flex: 1;
+}
+:where(.ax-banner__title) {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--text-label-size);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--text-label-leading);
+}
+:where(.ax-banner__description) {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-supporting-size);
+  line-height: var(--text-supporting-leading);
+  overflow-wrap: anywhere;
+}
+:where(.ax-banner__actions) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  margin-inline-start: auto;
+}
+:where(.ax-banner__content) {
+  padding-block: var(--spacing-3);
+  padding-inline: var(--spacing-4);
+  border: var(--border-width) solid var(--color-border);
+  border-block-start: 0;
+  border-end-start-radius: inherit;
+  border-end-end-radius: inherit;
+  background: var(--color-background-card);
+}

@@ -1,0 +1,53 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+:where(.ax-status-dot) {
+  display: inline-flex;
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--color-icon-secondary);
+  color: var(--color-background-surface);
+  line-height: 0;
+  vertical-align: middle;
+}
+:where(.ax-status-dot--success) {
+  background: var(--color-success);
+  color: var(--color-on-success);
+}
+:where(.ax-status-dot--warning) {
+  background: var(--color-warning);
+  color: var(--color-on-warning);
+}
+:where(.ax-status-dot--error) {
+  background: var(--color-error);
+  color: var(--color-on-error);
+}
+:where(.ax-status-dot--accent) {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+:where(.ax-status-dot--neutral) {
+  background: var(--color-icon-secondary);
+  color: var(--color-background-surface);
+}
+:where(.ax-status-dot__icon) {
+  width: 8px;
+  height: 8px;
+  fill: currentColor;
+}
+:where(.ax-status-dot--pulsing) {
+  animation: ax-status-dot-pulse 2s ease-in-out infinite;
+}
+@keyframes ax-status-dot-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :where(.ax-status-dot--pulsing) {
+    animation: none;
+  }
+}
