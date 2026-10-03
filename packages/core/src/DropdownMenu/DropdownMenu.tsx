@@ -59,6 +59,7 @@ import {
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useListFocus} from '../hooks/useListFocus';
 import {useMenuPress} from '../hooks/useMenuPress';
+import type {MenuPressPointerType} from '../hooks/menuPressGesture';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
 import {useMenuOverflow} from './useMenuOverflow';
@@ -98,6 +99,13 @@ const MENU_TRIGGER_OPEN_BACKGROUND = `linear-gradient(${colorVars['--color-overl
 const styles = stylex.create({
   triggerOpen: {
     backgroundImage: MENU_TRIGGER_OPEN_BACKGROUND,
+  },
+  // A finger held on the trigger opens the menu; the browser's own held-press
+  // affordances — the link preview callout, text selection — must not compete
+  // with it.
+  triggerPressable: {
+    WebkitTouchCallout: 'none',
+    userSelect: 'none',
   },
   dropdown: {
     boxSizing: 'border-box',
@@ -398,6 +406,33 @@ export type DropdownMenuProps =
 // at render time so it respects the active InternationalizationProvider
 // locale.
 const DEFAULT_BUTTON_I18N_KEY = '@astryx.dropdownMenu.label' as const;
+
+/**
+ * Keep `control` the invoker of popover `popoverId` for the rest of the press
+ * in flight, so the native light dismiss of a `popover="auto"` does not read
+ * the release over the trigger as a dismissal. The attribute is dropped a
+ * task after the release, once light dismiss has run.
+ */
+function holdInvokerThroughPress(
+  control: HTMLElement | null,
+  popoverId: string,
+): void {
+  if (control == null) {
+    return;
+  }
+  const doc = control.ownerDocument;
+  control.setAttribute('popovertarget', popoverId);
+  const onPressEnd = () => {
+    doc.removeEventListener('pointerup', onPressEnd, true);
+    doc.removeEventListener('pointercancel', onPressEnd, true);
+    // Light dismiss runs as the pointerup default action after listeners.
+    doc.defaultView?.setTimeout(() => {
+      control.removeAttribute('popovertarget');
+    }, 0);
+  };
+  doc.addEventListener('pointerup', onPressEnd, true);
+  doc.addEventListener('pointercancel', onPressEnd, true);
+}
 
 function DropdownMenuBottomSheet({
   button: buttonFromProps,
@@ -880,6 +915,43 @@ function DropdownMenuPopover({
     [isControlled, popover],
   );
 
+  const isMenuOpenNow = isControlled
+    ? controlledIsOpen === true
+    : popover.isOpen;
+
+  // A mouse opens on press-down; a finger held on the trigger opens after
+  // the long-press delay. Pressing the trigger of an open menu closes it, and
+  // the click of that same gesture — reported by `isTriggerClickFromPress` —
+  // neither toggles nor reopens.
+  const handleTriggerPress = useCallback(
+    (pointerType: MenuPressPointerType): boolean => {
+      if (isMenuOpenNow) {
+        if (pointerType !== 'mouse') {
+          // A finger's tap toggles through its click, as it always did.
+          return false;
+        }
+        onClick?.();
+        if (isControlled) {
+          onOpenChange?.(false);
+        } else {
+          popover.hide();
+        }
+        return false;
+      }
+      const didOpen = openAndFocus('pointer', true);
+      if (didOpen && pointerType === 'mouse') {
+        // The menu is `popover="auto"`: the browser's light dismiss would
+        // read the release of this very press, on the trigger outside the
+        // popover, as a dismissal. Holding the invoker relationship through
+        // the press exempts the trigger, the way useKeepLayerOpenProps does
+        // for controls beside an open layer.
+        holdInvokerThroughPress(buttonRef.current, popover.id);
+      }
+      return didOpen;
+    },
+    [isMenuOpenNow, isControlled, onClick, onOpenChange, openAndFocus, popover],
+  );
+
   // The press model: the row under a release acts, the highlight follows a
   // held pointer. A mouse released outside the menu dismisses it; a finger
   // released outside leaves it open, so the hook never calls onDismiss then.
@@ -887,12 +959,17 @@ function DropdownMenuPopover({
     menuRef: listRef,
     triggerRef: buttonRef,
     itemSelector: MENU_ITEM_SELECTOR,
+    onTriggerPress: handleTriggerPress,
     onDismiss: closeMenu,
   });
   cancelMenuPressRef.current = menuPress.cancel;
 
   const handleButtonClick = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
+      // The press already opened or closed the menu; its click is spent.
+      if (menuPress.isTriggerClickFromPress()) {
+        return;
+      }
       // detail === 0 marks a synthesized click (screen reader / AT
       // activation): treat it as keyboard so those users still land on the
       // first item. Real pointer clicks report detail >= 1.
@@ -912,6 +989,7 @@ function DropdownMenuPopover({
       }
     },
     [
+      menuPress,
       onClick,
       isControlled,
       onOpenChange,
@@ -919,6 +997,19 @@ function DropdownMenuPopover({
       popover,
       openAndFocus,
     ],
+  );
+
+  const handleTriggerClickCapture = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      const control = e.currentTarget;
+      if (control.hasAttribute('popovertarget')) {
+        // Still the invoker from a press-open: the browser would toggle the
+        // menu shut on this click.
+        e.preventDefault();
+        control.removeAttribute('popovertarget');
+      }
+    },
+    [],
   );
 
   const handleButtonKeyDown = useCallback(
@@ -997,6 +1088,7 @@ function DropdownMenuPopover({
           }
         }}
         xstyle={[
+          styles.triggerPressable,
           isOpen && styles.triggerOpen,
           button.xstyle,
           isFocusRingSuppressed && focusOutlineStyles.suppressed,
@@ -1004,7 +1096,19 @@ function DropdownMenuPopover({
         tooltip={isOpen ? undefined : button.tooltip}
         endContent={resolvedEndContent}
         onClick={handleButtonClick}
+        onClickCapture={event => {
+          button.onClickCapture?.(event);
+          handleTriggerClickCapture(event);
+        }}
         onKeyDown={handleButtonKeyDown}
+        onPointerDown={event => {
+          button.onPointerDown?.(event);
+          menuPress.triggerProps.onPointerDown(event);
+        }}
+        onContextMenu={event => {
+          button.onContextMenu?.(event);
+          menuPress.triggerProps.onContextMenu(event);
+        }}
         onFocus={event => {
           button.onFocus?.(event);
           onFocusReturnTargetFocus();

@@ -44,7 +44,7 @@ export {
   isMenuPressActivation,
 } from './useMenuPress';
 export type {UseMenuPressOptions, UseMenuPressReturn} from './useMenuPress';
-export {menuPressStep} from './menuPressGesture';
+export {menuPressStep, MENU_PRESS_SETTLE_MS} from './menuPressGesture';
 export type {
   MenuPressEffect,
   MenuPressEvent,
