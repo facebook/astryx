@@ -27,6 +27,7 @@ verified_by:
   [
     packages/core/src/Layer/useLayer.test.tsx,
     packages/core/src/Layer/layerViewportInset.test.ts,
+    packages/core/src/Layer/LayerProvider.test.tsx,
     packages/core/src/Layer/layerHost.test.ts,
     packages/core/src/Layer/anchorName.test.ts,
     packages/core/src/Layer/useLayerDismissal.test.tsx,
@@ -122,14 +123,18 @@ applied to both edges of the placement axis so a flip retains the gap.
 
 Anchor mode owns the viewport inset (`spec:AST-059`). Every anchor-mode layer
 keeps a gutter from each viewport edge equal to `max(--spacing-4,
-env(safe-area-inset-<edge>))` plus the inset an app declares for that edge
-through the inherited custom properties `--astryx-layer-inset-block-start`,
-`--astryx-layer-inset-block-end`, `--astryx-layer-inset-inline-start`, and
-`--astryx-layer-inset-inline-end` (`0px` unless set; app state, not a theme
-value). The inline gutter reads the larger of the two physical safe-area insets
-so a flipped layer still clears a notch. `Layer/layerViewportInset.stylex.ts`
-holds the one definition; the gutter rides the far viewport edge of the
-alignment axis as a margin the flip tactics swap with the area.
+env(safe-area-inset-<edge>))` plus the inset the app declares for that edge as
+`inset` on `LayerProvider` (`blockStart`, `blockEnd`, `inlineStart`,
+`inlineEnd`; zero by default; app configuration, not a theme value). The
+provider carries the declaration to its subtree as the custom properties
+`--astryx-layer-inset-<logical-edge>` on a box-less wrapper, and the gutter and
+the toast viewport read them by inheritance; a corrective portal always lands
+on an ancestor inside that subtree, so the declaration reaches a portaled layer
+too. A hand-written property is an unsupported escape hatch. The inline gutter
+reads the larger of the two physical safe-area insets so a flipped layer still
+clears a notch. `Layer/layerViewportInset.stylex.ts` holds the one definition;
+the gutter rides the far viewport edge of the alignment axis as a margin the
+flip tactics swap with the area.
 
 A layer's size is capped to the viewport minus both gutters, never to the span
 of viewport beside the trigger: the runtime caps the placement axis on the layer
@@ -310,13 +315,17 @@ layers use Layer rendering without joining Escape/platform dismissal.
 - **INV9 — Outside channels remain component-owned and uncoordinated.** Current
   backdrop, pointer, touch, hover/focus, and swipe handlers act through their
   owning component or browser mechanism rather than one shared branch operation.
-- **INV10 — LayerProvider is Toast configuration, not a universal layer host.**
-  Trigger-associated layers resolve near their JSX position independently of the
-  provider.
+- **INV10 — LayerProvider is configuration, not a universal layer host.** It
+  carries Toast configuration and the app-declared viewport inset. Trigger-
+  associated layers resolve near their JSX position independently of the
+  provider; the inset reaches them by CSS inheritance from the provider's
+  subtree, never by resolving through it, and a layer with no provider renders
+  as one under a provider with the default inset.
 - **INV11 — One viewport gutter.** The gutter, the viewport caps, and the
   app-declared inset have one definition in the runtime; every anchor-mode layer
-  inherits them, no consumer defines its own, no size is capped to the span
-  beside the trigger, and a consumer minimum is clamped by the runtime's cap.
+  inherits them, the toast viewport reads the same inset, no consumer defines
+  its own, no size is capped to the span beside the trigger, and a consumer
+  minimum is clamped by the runtime's cap.
 
 This record does not make future eligible-owner, branch-association, global-host,
 or browser-support requirements current. It does not own component focus entry or
@@ -376,8 +385,9 @@ be updated only as that work ships.
   anchor/fixed/custom rendering, trigger source, and current same-gesture memory.
 - `Layer/layerHost.ts` owns safe inline versus nearest corrective portal placement.
 - `Layer/anchorName.ts` owns composition of anchor names on one trigger.
-- `Layer/layerViewportInset.stylex.ts` owns the gutter, the viewport caps, and
-  the `--astryx-layer-inset-*` custom-property names; `Layer/clampInlineSize.ts`
+- `Layer/layerViewportInset.stylex.ts` owns the gutter and the viewport caps;
+  `LayerProvider` and `Layer/layerInset.ts` own the declared inset and the
+  `--astryx-layer-inset-*` properties that carry it; `Layer/clampInlineSize.ts`
   owns the clamp a consumer applies to a size of its own.
 - `Layer/gestureCounter.ts` owns physical pointer/key gesture identity.
 - `Layer/layerStack.ts`, `Layer/useLayerDismissal.ts`, and
@@ -398,7 +408,9 @@ be updated only as that work ships.
 - Lab Drawer owns modal `showModal()` and non-modal `showPopover()` hosting while
   the shared dismissal stack owns Escape and platform close routing.
 - `LayerProvider`, `ToastContext`, `useToast`, and `ToastViewport` own current
-  notification state, dispatch, and viewport rendering.
+  notification state, dispatch, and viewport rendering; the viewport sits at
+  the provider's inset on each edge unless its own `toast.inset` overrides that
+  edge.
 - CommandPalette owns command search and selection; Dialog owns its native modal
   host.
 - `family:overlay-dismissal` owns Escape/platform-close membership.
@@ -429,7 +441,7 @@ this current architecture record.
 | INV6, INV7 | `useLayer.test.tsx`, `Popover.test.tsx`, `DropdownMenu.test.tsx`, and `useMenuHover.test.tsx`                             | Duplicate close callback or the same press/re-hover reopens a surface                                                                                                    |
 | INV8       | `useLayerDismissal.test.tsx`, `layerDismissalInvariants.test.tsx`, and `useFocusTrap.test.tsx`                            | Current top registered layer is skipped, two layers close, or a blocker leaks through                                                                                    |
 | INV9       | Representative Dialog, ContextMenu, Tooltip/HoverCard, and BottomSheet source/tests                                       | A current local channel silently changes ownership or policy                                                                                                             |
-| INV10      | `LayerProvider.tsx`, `useToast.tsx`, and `ToastViewport.test.tsx`                                                         | Provider begins relocating ordinary layers or Toast fallback loses its current lifecycle                                                                                 |
+| INV10      | `LayerProvider.tsx`, `LayerProvider.test.tsx`, `useToast.tsx`, and `ToastViewport.test.tsx`                               | Provider begins relocating ordinary layers, Toast fallback loses its current lifecycle, or a default provider renders differently from no provider                       |
 
 Current unit coverage proves emitted styles, reducers, state transitions, and DOM
 placement. Native Popover, `<dialog>`, focus, top-layer ordering, and rendered

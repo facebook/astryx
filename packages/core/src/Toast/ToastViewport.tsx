@@ -81,19 +81,28 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     overflow: 'visible',
   },
+  // The viewport sits at the inset the app declared on LayerProvider for a
+  // bar floating over that edge (spec:AST-059 FR6); unset, each reads 0px.
+  // A toast-only `inset` prop writes the same edges inline and wins.
   viewportInlineSpan: {
-    insetInlineStart: 0,
-    insetInlineEnd: 0,
+    insetInlineStart: 'var(--astryx-layer-inset-inline-start, 0px)',
+    insetInlineEnd: 'var(--astryx-layer-inset-inline-end, 0px)',
   },
-  bottomEnd: {bottom: 0, alignItems: 'flex-end'},
-  bottomStart: {bottom: 0, alignItems: 'flex-start'},
+  bottomEnd: {
+    bottom: 'var(--astryx-layer-inset-block-end, 0px)',
+    alignItems: 'flex-end',
+  },
+  bottomStart: {
+    bottom: 'var(--astryx-layer-inset-block-end, 0px)',
+    alignItems: 'flex-start',
+  },
   topEnd: {
-    top: 0,
+    top: 'var(--astryx-layer-inset-block-start, 0px)',
     alignItems: 'flex-end',
     flexDirection: 'column-reverse',
   },
   topStart: {
-    top: 0,
+    top: 'var(--astryx-layer-inset-block-start, 0px)',
     alignItems: 'flex-start',
     flexDirection: 'column-reverse',
   },
