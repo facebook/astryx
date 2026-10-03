@@ -75,13 +75,6 @@ so the component knows everything it needs before the finger moves: what to
 paint, what to fire, and where the row rests when it is done. The row's own root moves
 and its panels stay put, so no element is added to any row.
 
-The trigger is [#6821](https://github.com/facebook/astryx/pull/6821), a port
-of a shipping product's mail row. The owner's direction on reading it: swipe
-actions only, scoped to mobile; both rest-open and fire-on-release; declared data rather than nodes; scope by the row's role, not by
-model; no new container
-DOM; no public slots; the
-row's own end content is the row's business, not this record's.
-
 ## Ownership boundary
 
 **Owns**
@@ -128,11 +121,10 @@ row's own end content is the row's business, not this record's.
   are not governed, paired, or checked here. The consumer documentation
   states the obligation; the component does not police it.
 - **A hover-revealed action panel on a fine pointer** (DEC-4).
-- **Animating a row's exit or enter.** Deliberately parked, not open: a row
-  the caller removes after an action unmounts as any row does today. The
-  owner is not ready to settle the shape; the likely form is imperative
-  (`handleRef`, as `Selector` and `MultiSelector` expose open/close) so enter
-  can be animated too. `hasRemoval` is not it: it says only where the row
+- **Animating a row's exit or enter.** Not settled here: a row the caller
+  removes after an action unmounts as any row does today. When it is
+  settled, the likely form is imperative (`handleRef`, as `Selector` and
+  `MultiSelector` expose open/close) so enter can be animated too. `hasRemoval` is not it: it says only where the row
   rests after an action, and a row that holds out and is never removed sits
   off-screen — the caller's bug, which that eventual API is what makes
   graceful.
@@ -152,7 +144,7 @@ row's own end content is the row's business, not this record's.
 - **A programmatic open or close.** Not admitted: a swipe panel's open state
   belongs to the gesture, and the one coordination case met in practice — a
   resting row closing when a neighbour's drag starts — is already a pointer
-  outside the row (FR7). No product has asked; the source product exposes no
+  outside the row (FR7). No product has asked, and the row this gesture was modelled on exposes no
   such handle. If one ever does, `handleRef` is the established pattern to add
   it with, as `Selector` and `MultiSelector` expose open/close/toggle.
 - **Rows whose role forbids interactive descendants.** Swipe actions are
@@ -189,8 +181,8 @@ row's own end content is the row's business, not this record's.
 | `hasSearch`, `hasCreate`, `hasPaging`, `hasHomeEnd` vs `isLoading`, `isOpen`, `isDisabled`                                                                                                         | Core's two boolean prefixes: `has*` declares that a thing has a property; `is*` names a state it is currently in. Whether the row holds out after an action is a property of the action, so `has*`.                                                                                                                                                                                                                                                                                                                                                               |
 | `Item` consumers: `DropdownMenuItem`, `DropdownMenuCheckboxItem`, `DropdownMenuRadioItem`, `DropdownMenuSubMenu`, `SelectorOption`, `RadioListItem`, `ListItem`                                    | Six of seven in-core renderers give the row a role that forbids interactive descendants (`option` from `Selector`'s listbox, the three `menuitem*` roles, and `RadioListItem`'s delegation to a native radio where the input is the option's sole focusable); they are out of scope. `ListItem` renders `role="listitem"` under `role="list"`. The system's own templates render a bare `Item` with no `role` at all (a `BottomSheet` snap-point demo, a table-filter page, a hook demo), so the standalone row is a real consumer and sorts in by the same rule. |
 | `Toast/useToastGesture.ts`                                                                                                                                                                         | A shipped commit-only swipe whose one meaning is dismissal, with constants (`SWIPE_DISMISS_RATIO`) in source.                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| #6821 real-device feedback                                                                                                                                                                         | On an iOS device the swipe required a press-and-hold before it would start, and the row background did not restore until release. The gesture craft is not yet settled on a device.                                                                                                                                                                                                                                                                                                                                                                               |
-| The source product's row (#6821 is its port)                                                                                                                                                       | Its panel names the **state** ("Unread") where a menu would name the sentence ("Mark as unread"). A toggle swipes back; a verb with no single instant (snooze) opens a chooser.                                                                                                                                                                                                                                                                                                                                                                                   |
+| Real-device feedback on an earlier implementation of this gesture                                                                                                                                  | On an iOS device the swipe required a press-and-hold before it would start, and the row background did not restore until release. Chromium evidence alone did not predict device behavior.                                                                                                                                                                                                                                                                                                                                                                        |
+| The product row this gesture was modelled on                                                                                                                                                       | Its panel names the **state** ("Unread") where a menu would name the sentence ("Mark as unread"). A toggle swipes back; a verb with no single instant (snooze) opens a chooser.                                                                                                                                                                                                                                                                                                                                                                                   |
 
 ## Cases the contract serves
 
@@ -235,17 +227,17 @@ constants.
 
 ### Behavioral contract
 
-| ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Basis                                                                           | Verification state                                              |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| FR1 | `Item` MUST take its swipe actions as `swipeActions: {leading?: ItemSwipeAction[]; trailing?: ItemSwipeAction[]}`, where `ItemSwipeAction` is `{id?, label: string, icon?: ReactNode, onActivate, isDisabled?, variant?: 'neutral' \| 'accent' \| 'destructive', hasRemoval?: boolean}` with `variant` defaulting to `accent`. An entry MUST NOT carry a node the component renders as the control. `ListItem` MUST pass the prop through unchanged.                                                                                                                                                                                                                                                                                                                                                                                                  | DEC-1; `DropdownMenuItemData`; `useMenuPress.onActivate`; `ProgressBar.variant` | Proposed; no evidence on `main`                                 |
-| FR2 | `Item` MUST render each side's panel from its entries into an out-of-flow position on its existing root and MUST add no element to the row for it. The gesture MUST drive the row's travel by writing a custom property on the root; the root's transform MUST read it and each panel's transform its negation.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | DEC-5; `useToastGesture`                                                        | Proposed; real-Chromium evidence required                       |
-| FR3 | `swipeBehavior` MUST be one enum with the closed values `reveal` and `commit`, default `reveal`. `commit` with more than one entry on a side MUST warn in development, because the other entries have no touch path.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | DEC-2; `spec:AST-002` FR15                                                      | Proposed                                                        |
-| FR4 | A sideways drag on a coarse pointer MUST move the row and uncover the side's panel, showing each entry's `label` and `icon` as a filled surface in its `variant`'s colour; the panel MUST NOT be visible at rest, by any pixel.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | #6821 review (resting-panel sliver)                                             | Proposed; real-Chromium evidence required                       |
-| FR5 | Under `reveal`, a release past the panel's width MUST leave the row resting open with every entry tappable, and a drag past the commit point or a fling MUST fire the **outermost** entry and no other. Under `commit`, a release past the commit point or a fling MUST slide the row out and fire the outermost entry; nothing MUST rest. After any entry fires, under either model, the row MUST spring back unless the entry has `hasRemoval`, in which case it MUST hold out at the edge it travelled toward. That bit is the only thing an entry declares about the row; the component MUST NOT wait on, observe, or act on what the caller does next, and MUST NOT warn if a held-out row is never removed. A release short of the threshold MUST spring back under both models. `onActivate` MUST fire at activation and may return a Promise. | DEC-1, DEC-2; UIKit `performsFirstActionWithFullSwipe`; source product          | Proposed; real-device evidence required                         |
-| FR6 | The drag MUST decide its axis once, early, and a mostly vertical drag MUST stay the scroller's. A mouse MUST NOT start the drag. The click the browser synthesizes after a drag MUST NOT fire the row's primary action.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | #6821's gesture; press-model ORD1                                               | Proposed; device feedback on #6821 shows the first is unsettled |
-| FR7 | A resting row MUST close on a pointer landing anywhere outside it, on Escape with focus inside it, on firing an entry, and on unmount. Because a drag on a neighbour is a pointer outside it, at most one row rests open at a time without any shared state.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | DEC-3; SwiftUI `swipeActionsContainer()` for the outcome                        | Proposed                                                        |
-| FR8 | Directions MUST be logical: `trailing` is uncovered by a drag toward the inline start and sits at the inline end; `leading` the reverse; so the finger, the uncovered edge, and the panel agree under RTL.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | #6821; `architecture:public-component-api` INV2 (logical direction)             | Proposed                                                        |
-| FR9 | The element containing swipe-capable rows MUST clip in the inline axis with `overflow-inline: clip`, never `hidden`. `List` MUST set it; `Item`'s consumer documentation MUST state the obligation for any other host.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | DEC-5; `List` root styles                                                       | Proposed                                                        |
+| ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Basis                                                                           | Verification state                        |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------- |
+| FR1 | `Item` MUST take its swipe actions as `swipeActions: {leading?: ItemSwipeAction[]; trailing?: ItemSwipeAction[]}`, where `ItemSwipeAction` is `{id?, label: string, icon?: ReactNode, onActivate, isDisabled?, variant?: 'neutral' \| 'accent' \| 'destructive', hasRemoval?: boolean}` with `variant` defaulting to `accent`. An entry MUST NOT carry a node the component renders as the control. `ListItem` MUST pass the prop through unchanged.                                                                                                                                                                                                                                                                                                                                                                                                  | DEC-1; `DropdownMenuItemData`; `useMenuPress.onActivate`; `ProgressBar.variant` | Proposed; no evidence on `main`           |
+| FR2 | `Item` MUST render each side's panel from its entries into an out-of-flow position on its existing root and MUST add no element to the row for it. The gesture MUST drive the row's travel by writing a custom property on the root; the root's transform MUST read it and each panel's transform its negation.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | DEC-5; `useToastGesture`                                                        | Proposed; real-Chromium evidence required |
+| FR3 | `swipeBehavior` MUST be one enum with the closed values `reveal` and `commit`, default `reveal`. `commit` with more than one entry on a side MUST warn in development, because the other entries have no touch path.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | DEC-2; `spec:AST-002` FR15                                                      | Proposed                                  |
+| FR4 | A sideways drag on a coarse pointer MUST move the row and uncover the side's panel, showing each entry's `label` and `icon` as a filled surface in its `variant`'s colour; the panel MUST NOT be visible at rest, by any pixel.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Real-browser finding: a zero-width panel still paints its padding               | Proposed; real-Chromium evidence required |
+| FR5 | Under `reveal`, a release past the panel's width MUST leave the row resting open with every entry tappable, and a drag past the commit point or a fling MUST fire the **outermost** entry and no other. Under `commit`, a release past the commit point or a fling MUST slide the row out and fire the outermost entry; nothing MUST rest. After any entry fires, under either model, the row MUST spring back unless the entry has `hasRemoval`, in which case it MUST hold out at the edge it travelled toward. That bit is the only thing an entry declares about the row; the component MUST NOT wait on, observe, or act on what the caller does next, and MUST NOT warn if a held-out row is never removed. A release short of the threshold MUST spring back under both models. `onActivate` MUST fire at activation and may return a Promise. | DEC-1, DEC-2; UIKit `performsFirstActionWithFullSwipe`                          | Proposed; real-device evidence required   |
+| FR6 | The drag MUST decide its axis once, early, and a mostly vertical drag MUST stay the scroller's. A mouse MUST NOT start the drag. The click the browser synthesizes after a drag MUST NOT fire the row's primary action.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Press-model ORD1                                                                | Proposed; real-device evidence required   |
+| FR7 | A resting row MUST close on a pointer landing anywhere outside it, on Escape with focus inside it, on firing an entry, and on unmount. Because a drag on a neighbour is a pointer outside it, at most one row rests open at a time without any shared state.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | DEC-3; SwiftUI `swipeActionsContainer()` for the outcome                        | Proposed                                  |
+| FR8 | Directions MUST be logical: `trailing` is uncovered by a drag toward the inline start and sits at the inline end; `leading` the reverse; so the finger, the uncovered edge, and the panel agree under RTL.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `architecture:public-component-api` INV2 (logical direction)                    | Proposed                                  |
+| FR9 | The element containing swipe-capable rows MUST clip in the inline axis with `overflow-inline: clip`, never `hidden`. `List` MUST set it; `Item`'s consumer documentation MUST state the obligation for any other host.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | DEC-5; `List` root styles                                                       | Proposed                                  |
 
 ### Accessibility contract
 
@@ -275,8 +267,8 @@ constants.
   no swipe and nothing else changes.
 - Browser evidence: FR2 and FR4–FR9 are paint and gesture claims. jsdom has
   neither; real-Chromium evidence with dispatched touch is required, and
-  FR5/FR6 additionally need a physical touch device because #6821's device
-  feedback contradicts its Chromium evidence.
+  FR5/FR6 additionally need a physical touch device, because Chromium evidence
+  for this gesture has not predicted device behavior.
 
 ## Current-state impact
 
@@ -293,15 +285,8 @@ constants.
 - `contributing:api-conventions` gains the rule this record relies on: a
   gesture is an accelerator and never a component's only path to its own
   behavior.
-- `spec:AST-058` ([#6910](https://github.com/facebook/astryx/pull/6910))
-  takes nodes where this record takes objects, on the shared principle in
+- `spec:AST-058` takes nodes where this record takes objects, on the shared principle in
   DEC-1: the picker places its actions; `Item` renders its panel.
-- [#6821](https://github.com/facebook/astryx/pull/6821) is superseded in
-  shape by this record; its commit-only model survives as
-  `swipeBehavior="commit"` and its gesture engineering — axis lock, logical
-  directions, click suppression, reduced-motion handling, the Chromium
-  harness — is the starting point for FR4–FR8 once the device findings are
-  resolved. Its clipping container does not survive (DEC-5).
 - No shipped public API changes on this record's own merge.
 - While this record is `draft` its `review-applicability:v1` block routes
   nothing: global routing loads `current` claims only
@@ -325,13 +310,13 @@ review, and names no implementation.
 
 ## Decision log
 
-Every decision below is **proposed**. None has been ruled on; `approved_by`
-is `null` and the record is `draft`.
+Every decision below records the owner's direction; the record is `draft`
+until `approved_by` is set.
 
 ### DEC-1 — Swipe actions are declared as data
 
 **Reference:** `spec:AST-057/DEC-1`
-**Decider:** `cixzhang`, `2026-10-02` (direction; record pending)
+**Decider:** `cixzhang`, `2026-10-02`
 
 `swipeActions.leading` and `.trailing` are `ItemSwipeAction[]`: `{id?, label,
 icon?, onActivate, isDisabled?, variant?, hasRemoval?}`. `Item` renders each entry —
@@ -339,10 +324,9 @@ under `reveal` as a real button, under `commit` as a presentational block —
 and paints the panel during the drag from the data.
 
 An object is needed where the component renders the thing; a node works where it only places it (`spec:AST-058` DEC-1 draws the same line from the other side, and its picker-row actions are nodes because the picker only places them in a cell). `Item` paints and animates the panel, so every field is known before the gesture begins; a caller's own node could do neither without registering through a context, which splits the API into nodes that get the behavior and nodes that silently do not. Core already declares a verb as data
-in `DropdownMenu.items` and `MoreMenu.items`, and two independent recall
-probes found builders
-reaching for exactly this array with no prop names given, and none reaching
-for child components or a render prop.
+in `DropdownMenu.items` and `MoreMenu.items`, and two independent vibe-test recall probes — one for this record, one for
+`spec:AST-058` — found every builder reaching for exactly this array with no
+prop names given, and none reaching for child components or a render prop.
 
 The vocabulary: `onActivate` is core's word for a row's verb firing by a
 path that is not a click (`useMenuPress`, `useTreeFocus`, `Selector`,
@@ -366,13 +350,14 @@ row leaves, and how a kept row returns, is not this record's (Non-goals).
 
 Rejected: nodes per side with a shipped `ItemSwipeAction` component — it
 needed context registration for `commit`, and left any caller-supplied node
-silently without it. Rejected: one action per side with `onAction` and a
-four-tone `tone` (#6821) — a second verb vocabulary. Rejected: a wider `hasRemoval` that promised the caller would remove the row, owned the exit animation, and fired `onActivate` after it — it made a confirm-first delete an exception and tangled the resting bit with the parked exit question. Rejected: `isCommitExit` — the bit applies under `reveal` too, so naming it after commit is wrong.
+silently without it. Rejected: one action per side with `onAction` and a four-tone `tone` — a
+second verb vocabulary. Rejected: a wider `hasRemoval` that promised the caller would remove the row, owned the exit animation, and fired `onActivate` after it — it made a confirm-first delete an exception and tied the resting bit to
+the unsettled exit animation. Rejected: `isCommitExit` — the bit applies under `reveal` too, so naming it after commit is wrong.
 
 ### DEC-2 — Rest is the default; commit is a caller choice for one verb
 
 **Reference:** `spec:AST-057/DEC-2`
-**Decider:** `cixzhang`, `<pending>`
+**Decider:** `cixzhang`, `2026-10-02`
 
 `swipeBehavior: 'reveal' | 'commit'`, default `reveal`. Under `reveal` the
 row rests open and a long drag fires the outermost entry; under `commit` the row slides out and the outermost entry fires. The slide-out is the gesture's own confirmation; where the row rests afterwards is the entry's `hasRemoval`, not the model's — a commit is not a removal — and the component waits for nothing after firing. `commit` means the same on every row that has swipe actions; no host narrows it.
@@ -384,11 +369,11 @@ indexing the resting actions — so resting is the model that holds several
 verbs and commit is the one that holds exactly one; the count and the rest
 state are one question, which is why `commit` with several entries on a side
 warns. A resting panel also gives a touch user something to see before a
-destructive verb fires, which is why it is the default. Commit is kept because the owner asked for both models, and it is what the
-source product chose for its one-verb rows.
+destructive verb fires, which is why it is the default. Commit is kept because both models are wanted, and it is what the row this
+gesture was modelled on uses for its one-verb rows.
 
-Rejected: commit-only as the sole model (#6821) — it cannot grow into
-resting without a default change. Rejected: a boolean `hasFullSwipe` — under `reveal` the full swipe is already on and under `commit` it is the whole behavior, so a boolean gates the wrong axis. Rejected: a `hasCommitAnimation` flag — the slide-out is how a commit confirms and `commit` already decides it; a second switch for one thing is the boolean-plus-handler duplication rejected on `hasCreate`. Rejected: requiring the row to stay out after every commit (#6821) — a committed "Mark read" row is still there.
+Rejected: commit-only as the sole model — it cannot grow into resting
+without a default change. Rejected: a boolean `hasFullSwipe` — under `reveal` the full swipe is already on and under `commit` it is the whole behavior, so a boolean gates the wrong axis. Rejected: a `hasCommitAnimation` flag — the slide-out is how a commit confirms and `commit` already decides it; a second switch for one thing is the boolean-plus-handler duplication rejected on `hasCreate`. Rejected: requiring the row to stay out after every commit (#6821) — a committed "Mark read" row is still there.
 
 ### DEC-3 — The capability is `Item`'s; where it is available follows the row's role
 
@@ -432,7 +417,7 @@ owns the one coordination case.
 ### DEC-4 — No hover reveal
 
 **Reference:** `spec:AST-057/DEC-4`
-**Decider:** `cixzhang`, `2026-10-02` (direction; record pending)
+**Decider:** `cixzhang`, `2026-10-02`
 
 On a pointer that can hover, `swipeActions` does nothing. The gesture is a
 touch accelerator and changes nothing on any other input; what a row offers
@@ -448,7 +433,7 @@ alternative this decision sets aside.
 ### DEC-5 — The root translates and the panels counter-translate; no element is added
 
 **Reference:** `spec:AST-057/DEC-5`
-**Decider:** `cixzhang`, `2026-10-02` (direction; record pending)
+**Decider:** `cixzhang`, `2026-10-02`
 
 `Item` renders each side's panel as an absolutely positioned child of its
 existing root, at the inline start or end, above the root's background and
@@ -473,8 +458,8 @@ would create a scroll container and fight the list's vertical scroller.
 
 Rejected: a wrapper element inside `Item`, conditional or not — a second
 row shape for CSS and tests to straddle, for a problem the root's transform
-already solves. Rejected: #6821's clipping container around a new inner
-row — the element the owner asked to avoid. Rejected: panels as siblings at
+already solves. Rejected: a clipping container around a new inner row — an element on
+every swiping row. Rejected: panels as siblings at
 the list level, positioned at each row's offset — a position-sync loop
 against resize, reflow and virtualized mounts. Rejected: animating
 `padding-inline-start` on the root — layout on every frame under a finger
@@ -502,9 +487,8 @@ error. `spec:AST-058` takes the same set for picker-row actions with
 `neutral` as its default, so the vocabulary is one across the two surfaces
 where a verb gets a colour.
 
-Rejected: the status set — it would make a verb claim a state. Rejected:
-#6821's `tone: 'accent' | 'success' | 'warning' | 'error'` — a status set
-with one decorative member. Rejected: `Badge`'s variant map — it carries
+Rejected: the status set — it would make a verb claim a state. Rejected: a `tone: 'accent' | 'success' | 'warning' | 'error'` — a status
+set with one decorative member. Rejected: `Badge`'s variant map — it carries
 decorative colours (`blue`, `cyan`, …) that a verb slot must not admit.
 Rejected: the menu row's two-value `'default' | 'destructive'` — it has no
 word for the one action a panel exists to offer.
@@ -516,9 +500,7 @@ None.
 ## Content boundary
 
 The research that produced this record — the cross-library survey, the
-shapes weighed, and the vibe test's design and scores — is a report, not a
-contract, and lives outside it, linked from the pull request that
-introduced the record.
+shapes weighed, and the vibe test's design and scores — is a report, not a contract, and lives outside it.
 
 This record does not duplicate `Item`'s or `List`'s anatomy, prop tables,
 theming targets, or geometry contracts; the modality invariants in
