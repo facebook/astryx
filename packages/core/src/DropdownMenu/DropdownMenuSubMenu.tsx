@@ -8,7 +8,8 @@
  *   useTypeahead, the shared viewport-safe menu-width resolver, Item, Icon,
  *   Spinner, and DropdownMenu context + item roles
  * @output Exports DropdownMenuSubMenu — a single menu row that reveals a nested
- *   flyout menu of its own children/items.
+ *   menu of its own children/items: a flyout beside the row, or, on a phone,
+ *   a drilled-in view in place of the parent rows.
  * @position Sub-component; place inside a DropdownMenu (or ContextMenu)
  *   alongside plain items.
  *
@@ -28,6 +29,14 @@
  *   Enter / Space opens the flyout and focuses its first item; Left (Right in
  *   RTL) / Escape closes it and returns focus to the trigger row.
  *
+ * Drill-in (the phone presentation): the root menu keeps a view stack
+ * (useMenuDrillIn) and this row pushes its view onto it; the root shows the
+ * view — a Back row named "Back to <parent>", then these rows — in place of
+ * its own, portalled into the root's host so the row stays mounted and its
+ * rows stay live. Back, Escape and ArrowLeft pop the view and return focus to
+ * the row. The list keeps this level's own roving focus, typeahead and press
+ * model, so nothing beside the row needs to know.
+ *
  * Prior art: legacy internal XDS `XDSDropdownSubMenuItem` (APG menubar-
  * navigation submenu). This re-expresses the same contract on Astryx primitives.
  *
@@ -41,6 +50,7 @@
 
 import React, {
   useCallback,
+  useEffect,
   useId,
   useMemo,
   useRef,
@@ -48,6 +58,7 @@ import React, {
   type PointerEvent,
   type ReactNode,
 } from 'react';
+import {createPortal} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
@@ -56,7 +67,7 @@ import {useLayer} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {useListFocus} from '../hooks/useListFocus';
 import {useMenuHover} from '../hooks/useMenuHover';
-import {useMenuPress} from '../hooks/useMenuPress';
+import {isMenuPressActivation, useMenuPress} from '../hooks/useMenuPress';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useMenuOverflow} from './useMenuOverflow';
 import {resolveMenuWidth} from './menuWidth';
@@ -77,6 +88,7 @@ import {
   MENU_ITEM_ROLES,
   MENU_ITEM_SELECTOR,
   MENU_BOUNDARY_SELECTOR,
+  activateMenuItem,
 } from './menuItemRoles';
 import {
   DropdownMenuContext,
@@ -84,6 +96,8 @@ import {
   type DropdownMenuContextValue,
 } from './DropdownMenuContext';
 import {focusMenuItemOnHover} from './menuItemHover';
+import {DropdownMenuItem} from './DropdownMenuItem';
+import {useTranslator} from '../i18n';
 
 const MENU_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
 // `useLayer` adds 4px of anchor clearance. An 8px collision margin resolves
@@ -209,6 +223,25 @@ const flyoutStyles = stylex.create({
   }),
 });
 
+// The drilled-in list shows in place of the parent rows, inside the parent's
+// own box: no surface, shadow or cap of its own.
+const drillInStyles = stylex.create({
+  list: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-0-5'],
+    outline: 'none',
+    WebkitTouchCallout: 'none',
+    userSelect: 'none',
+  },
+  hidden: {
+    display: 'none',
+  },
+});
+
+export type DropdownMenuSubMenuPresentation =
+  'flyout' | 'drill-in' | 'adaptive';
+
 interface DropdownMenuSubMenuBaseProps extends Pick<
   BaseProps,
   'xstyle' | 'className' | 'style'
@@ -238,6 +271,15 @@ interface DropdownMenuSubMenuBaseProps extends Pick<
   menuWidth?: number | string;
   /** Called when the flyout opens or closes. */
   onOpenChange?: (isOpen: boolean) => void;
+  /**
+   * How the sub-menu shows its rows. `flyout` opens them beside the row;
+   * `drill-in` replaces the menu's rows with them and a Back row, in the same
+   * box; `adaptive` drills in when a finger opened the menu — a
+   * `(pointer: coarse)` device, decided when the menu opened — and flies out
+   * otherwise. Drill-in needs a `DropdownMenu` or `ContextMenu` root.
+   *  'adaptive'
+   */
+  presentation?: DropdownMenuSubMenuPresentation;
   /** Test id for the trigger row. */
   'data-testid'?: string;
   /** Test id for the flyout menu. */
@@ -288,6 +330,7 @@ export function DropdownMenuSubMenu(
     hasSpinner = false,
     menuWidth,
     onOpenChange,
+    presentation = 'adaptive',
     children,
     xstyle,
     className,
@@ -296,6 +339,7 @@ export function DropdownMenuSubMenu(
     menuDataTestId,
   } = props;
 
+  const t = useTranslator();
   const menuCtx = useDropdownMenuContext();
   const menuSize = menuCtx?.menuSize ?? 'md';
   const canOpen = !isDisabled;
@@ -304,17 +348,39 @@ export function DropdownMenuSubMenu(
   const triggerId = useId();
   const triggerRef = useRef<HTMLDivElement | null>(null);
 
-  const [isOpen, setIsOpen] = useState(false);
+  // Drill-in: the root keeps a view stack; this row pushes its
+  // view and the root shows it in place of its rows. Decided from the root's
+  // pointer kind at open time, or forced by `presentation`.
+  const drillIn = menuCtx?.drillIn;
+  const activeDrillIn =
+    drillIn != null &&
+    (presentation === 'drill-in' ||
+      (presentation === 'adaptive' && drillIn.isCompactTouch))
+      ? drillIn
+      : null;
+  const isDrillIn = activeDrillIn != null;
+  const viewId = useId();
+  const isOnStack = activeDrillIn?.viewStack.includes(viewId) === true;
+  const isTopView = isOnStack && activeDrillIn?.viewStack.at(-1) === viewId;
+  const stringLabel = typeof label === 'string' ? label : undefined;
+  const parentLabel = menuCtx?.menuLabel;
+  const backLabel =
+    parentLabel != null
+      ? t('@astryx.dropdownMenu.backTo', {parent: parentLabel})
+      : t('@astryx.dropdownMenu.back');
+
+  const [isFlyoutOpen, setIsFlyoutOpen] = useState(false);
+  const isOpen = isDrillIn ? isOnStack : isFlyoutOpen;
 
   const layer = useLayer({
     mode: 'context',
     lightDismiss: false,
     onShow: useCallback(() => {
-      setIsOpen(true);
+      setIsFlyoutOpen(true);
       onOpenChange?.(true);
     }, [onOpenChange]),
     onHide: useCallback(() => {
-      setIsOpen(false);
+      setIsFlyoutOpen(false);
       onOpenChange?.(false);
     }, [onOpenChange]),
   });
@@ -345,7 +411,8 @@ export function DropdownMenuSubMenu(
     wrap: false,
     onEscape: () => close({focusTrigger: true}),
   });
-  const hasOverflow = useMenuOverflow(menuRef, children, isOpen);
+  // A drilled-in list scrolls with the root menu, not on its own.
+  const hasOverflow = useMenuOverflow(menuRef, children, isOpen && !isDrillIn);
 
   const typeahead = useTypeahead({
     getItemLabels: () => getItems().map(el => el.textContent),
@@ -361,18 +428,33 @@ export function DropdownMenuSubMenu(
   // either surface closes after a delay. Hover-open does not steal focus.
   // Hover intent and the shared hover→click guard only: this level owns its own
   // click handling, roving focus and typeahead. popover="manual", so the
-  // invoker wiring other consumers need does not apply.
+  // invoker wiring other consumers need does not apply. A drill-in row has no
+  // hover: a finger drives it, and a press opens it.
   const {triggerProps, contentProps, confirmHoverOpen} =
     useMenuHover<HTMLDivElement>({
       show: showLayer,
       hide: hideLayer,
-      isOpen,
-      isEnabled: canOpen,
+      isOpen: isFlyoutOpen,
+      isEnabled: canOpen && !isDrillIn,
     });
+
+  // Where focus lands once a pushed view shows: the first row after Back for
+  // a keyboard open, the list itself for a pointer open; and the row itself
+  // once its view is popped.
+  const pendingViewFocusRef = useRef<'first' | 'container' | null>(null);
+  const pendingTriggerFocusRef = useRef(false);
 
   const open = useCallback(
     (options?: {focusFirst?: boolean}) => {
       if (!canOpen) {
+        return;
+      }
+      if (activeDrillIn != null) {
+        pendingViewFocusRef.current = options?.focusFirst
+          ? 'first'
+          : 'container';
+        activeDrillIn.push(viewId);
+        onOpenChange?.(true);
         return;
       }
       layer.show();
@@ -385,18 +467,56 @@ export function DropdownMenuSubMenu(
         }
       }
     },
-    [canOpen, layer, focusFirst, menuRef],
+    [canOpen, activeDrillIn, viewId, onOpenChange, layer, focusFirst, menuRef],
   );
 
   const close = useCallback(
     (options?: {focusTrigger?: boolean}) => {
+      if (activeDrillIn != null) {
+        if (isOnStack) {
+          pendingTriggerFocusRef.current = options?.focusTrigger !== false;
+          activeDrillIn.pop();
+          onOpenChange?.(false);
+        }
+        return;
+      }
       layer.hide();
       if (options?.focusTrigger !== false) {
         triggerRef.current?.focus();
       }
     },
-    [layer],
+    [activeDrillIn, isOnStack, onOpenChange, layer],
   );
+
+  // The pushed view has just shown (its rows are in the host and visible):
+  // land focus as the open asked.
+  useEffect(() => {
+    if (!isTopView || activeDrillIn?.host == null) {
+      return;
+    }
+    const mode = pendingViewFocusRef.current;
+    if (mode == null) {
+      return;
+    }
+    pendingViewFocusRef.current = null;
+    const items = getItems();
+    // Back is the first row; a keyboard open lands on the first row after it.
+    const target = mode === 'first' ? (items[1] ?? items[0]) : null;
+    if (target != null) {
+      target.focus({preventScroll: true});
+    } else {
+      menuRef.current?.focus({preventScroll: true});
+    }
+  }, [isTopView, activeDrillIn?.host, getItems, menuRef]);
+
+  // The view was popped: the row is visible again, focus returns to it.
+  useEffect(() => {
+    if (isOnStack || !pendingTriggerFocusRef.current) {
+      return;
+    }
+    pendingTriggerFocusRef.current = false;
+    triggerRef.current?.focus({preventScroll: true});
+  }, [isOnStack]);
 
   // Single ref for the trigger row: store it for focus management AND wire it
   // as the flyout's positioning anchor (CSS anchor positioning).
@@ -408,23 +528,44 @@ export function DropdownMenuSubMenu(
     [layer],
   );
 
-  const handleTriggerClick = useCallback(() => {
-    if (isDisabled) {
-      return;
-    }
-    // Toggles, except for the click that follows a hover-open (#3121).
-    if (isOpen) {
-      if (confirmHoverOpen()) {
-        if (!focusFirst()) {
-          menuRef.current?.focus();
-        }
+  const handleTriggerClick = useCallback(
+    (event: React.MouseEvent) => {
+      if (isDisabled) {
         return;
       }
-      close({focusTrigger: true});
-    } else {
-      open({focusFirst: true});
-    }
-  }, [isDisabled, isOpen, open, close, confirmHoverOpen, focusFirst, menuRef]);
+      if (isDrillIn) {
+        // A keyboard activation (a synthesized click, `detail` 0, outside the
+        // press model) lands on the first row; a pointer's drill-in — a real
+        // click, or the press model's own activation, which is also `detail`
+        // 0 — lights nothing until the pointer moves.
+        const isPointer = event.detail > 0 || isMenuPressActivation();
+        open({focusFirst: !isPointer});
+        return;
+      }
+      // Toggles, except for the click that follows a hover-open (#3121).
+      if (isFlyoutOpen) {
+        if (confirmHoverOpen()) {
+          if (!focusFirst()) {
+            menuRef.current?.focus();
+          }
+          return;
+        }
+        close({focusTrigger: true});
+      } else {
+        open({focusFirst: true});
+      }
+    },
+    [
+      isDisabled,
+      isDrillIn,
+      isFlyoutOpen,
+      open,
+      close,
+      confirmHoverOpen,
+      focusFirst,
+      menuRef,
+    ],
+  );
 
   const handleTriggerKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -492,7 +633,9 @@ export function DropdownMenuSubMenu(
           focused &&
           MENU_ITEM_ROLES.has(focused.getAttribute('role') ?? '')
         ) {
-          focused.click();
+          // The synthesized click keeps the key's modifiers, so a modified
+          // Enter on a link row opens the way a modified click would.
+          activateMenuItem(focused, e);
         }
         return;
       }
@@ -520,7 +663,9 @@ export function DropdownMenuSubMenu(
   // flyout: close this level (without stealing focus back to the trigger) and
   // propagate up via the parent menu's closeMenu. Because every level
   // re-provides the context, this chains from the deepest flyout all the way to
-  // the root DropdownMenu (whose closeMenu hides the popover).
+  // the root DropdownMenu (whose closeMenu hides the popover). The drill-in
+  // stack passes through untouched — the root owns it — and this level's label
+  // names the Back row of a view drilled in from here.
   const nestedMenuContext = useMemo<DropdownMenuContextValue>(
     () => ({
       menuSize,
@@ -528,8 +673,10 @@ export function DropdownMenuSubMenu(
         close({focusTrigger: false});
         menuCtx?.closeMenu();
       },
+      drillIn,
+      menuLabel: stringLabel,
     }),
-    [menuSize, close, menuCtx],
+    [menuSize, close, menuCtx, drillIn, stringLabel],
   );
 
   // The press model for this flyout: the row under a release acts, the
@@ -565,6 +712,27 @@ export function DropdownMenuSubMenu(
       ? flyoutStyles.popoverCustomIntrinsicWidth(resolvedMenuWidth.value)
       : flyoutStyles.popoverCustomWidth(resolvedMenuWidth.value)
     : flyoutStyles.popover;
+
+  const nestedContent = (
+    <DropdownMenuContext value={nestedMenuContext}>
+      {isDrillIn && (
+        <DropdownMenuItem
+          icon={
+            <Icon
+              icon="chevronLeft"
+              size="sm"
+              color="secondary"
+              xstyle={rtlStyles.mirror}
+            />
+          }
+          label={backLabel}
+          hasCloseOnSelect={false}
+          onClick={() => close({focusTrigger: true})}
+        />
+      )}
+      {children}
+    </DropdownMenuContext>
+  );
 
   return (
     <>
@@ -604,44 +772,68 @@ export function DropdownMenuSubMenu(
           style,
         })}
       />
-      {layer.render(
-        <div
-          ref={menuRef}
-          id={contentId}
-          role="menu"
-          // Focusable as a fallback target so an empty/loading flyout can own
-          // arrow/Escape keys. An overflowing flyout joins the Tab order so its
-          // scrollable region is keyboard-accessible.
-          tabIndex={hasOverflow ? 0 : -1}
-          aria-labelledby={triggerId}
-          onKeyDown={handleContentKeyDown}
-          onMouseEnter={contentProps.onMouseEnter}
-          onMouseLeave={contentProps.onMouseLeave}
-          data-testid={menuDataTestId}
-          {...menuPress.menuProps}
-          {...mergeProps(
-            themeProps('dropdown-menu'),
-            stylex.props(
-              flyoutStyles.menu,
-              hasOverflow ? flyoutStyles.touchPanY : flyoutStyles.touchNone,
-              hasOverflow && flyoutStyles.scrollable,
-            ),
-          )}>
-          <DropdownMenuContext value={nestedMenuContext}>
-            {children}
-          </DropdownMenuContext>
-        </div>,
-        {
-          placement: 'end',
-          alignment: 'start',
-          offset: spacingVars['--spacing-1'],
-          xstyle: [
-            flyoutStyles.popoverViewport,
-            popoverXstyle,
-            layerAnimations.end,
-          ],
-        },
-      )}
+      {activeDrillIn != null
+        ? isOnStack &&
+          activeDrillIn.host != null &&
+          createPortal(
+            <div
+              ref={menuRef}
+              id={contentId}
+              role="menu"
+              tabIndex={-1}
+              // The drilled-in list is named by its row's label.
+              aria-label={stringLabel}
+              aria-labelledby={stringLabel == null ? triggerId : undefined}
+              // A deeper view shows in its place; this one waits, hidden.
+              hidden={!isTopView}
+              inert={!isTopView}
+              onKeyDown={handleContentKeyDown}
+              data-testid={menuDataTestId}
+              {...menuPress.menuProps}
+              {...stylex.props(
+                drillInStyles.list,
+                !isTopView && drillInStyles.hidden,
+              )}>
+              {nestedContent}
+            </div>,
+            activeDrillIn.host,
+          )
+        : layer.render(
+            <div
+              ref={menuRef}
+              id={contentId}
+              role="menu"
+              // Focusable as a fallback target so an empty/loading flyout can own
+              // arrow/Escape keys. An overflowing flyout joins the Tab order so its
+              // scrollable region is keyboard-accessible.
+              tabIndex={hasOverflow ? 0 : -1}
+              aria-labelledby={triggerId}
+              onKeyDown={handleContentKeyDown}
+              onMouseEnter={contentProps.onMouseEnter}
+              onMouseLeave={contentProps.onMouseLeave}
+              data-testid={menuDataTestId}
+              {...menuPress.menuProps}
+              {...mergeProps(
+                themeProps('dropdown-menu'),
+                stylex.props(
+                  flyoutStyles.menu,
+                  hasOverflow ? flyoutStyles.touchPanY : flyoutStyles.touchNone,
+                  hasOverflow && flyoutStyles.scrollable,
+                ),
+              )}>
+              {nestedContent}
+            </div>,
+            {
+              placement: 'end',
+              alignment: 'start',
+              offset: spacingVars['--spacing-1'],
+              xstyle: [
+                flyoutStyles.popoverViewport,
+                popoverXstyle,
+                layerAnimations.end,
+              ],
+            },
+          )}
     </>
   );
 }

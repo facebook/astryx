@@ -43,7 +43,13 @@ export const docs = {
       name: 'options.triggerRef',
       type: 'RefObject<HTMLElement | null>',
       description:
-        'The control that opens the menu. A release over it is not outside: it acts on nothing and leaves the menu open under every pointer.',
+        'The control that opens the menu, when a press may start there.',
+    },
+    {
+      name: 'options.onTriggerPress',
+      type: '(pointerType: MenuPressPointerType) => boolean',
+      description:
+        'A mouse pressed the trigger, or a finger rested on it for the long-press delay: open the menu under the held pointer and return whether it opened. Return false when the press closed an open menu instead.',
     },
     {
       name: 'options.onHighlight',
@@ -70,6 +76,13 @@ export const docs = {
         'The element to scroll while a tracked pointer rests near its top or bottom edge. Defaults to the menu root when it overflows.',
     },
     {
+      name: 'options.longPressDelayMs',
+      type: 'number',
+      description:
+        'How long a finger must rest on the trigger before the menu opens under it.',
+      default: '500',
+    },
+    {
       name: 'options.isEnabled',
       type: 'boolean',
       description: 'Whether the model is live.',
@@ -84,6 +97,18 @@ export const docs = {
         'Spread onto the menu root. Claims presses that begin inside it and marks the root as carrying the press model.',
     },
     {
+      name: 'triggerProps',
+      type: '{onPointerDown; onContextMenu}',
+      description:
+        'Spread onto the trigger: a mouse press opens the menu at once; a finger held for the delay opens it with the finger still down.',
+    },
+    {
+      name: 'isTriggerClickFromPress',
+      type: '() => boolean',
+      description:
+        'Whether the click reaching the trigger belongs to the gesture that just pressed it. That press already opened or closed the menu, so the click must neither toggle nor reopen.',
+    },
+    {
       name: 'cancel',
       type: '() => void',
       description:
@@ -92,7 +117,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'The press model of macOS and iOS menus, for any pointer: the row under the pointer when it is RELEASED is the row that acts, and the highlight follows the pointer while it is held. The pointer is tracked at document level by pointerId, so a finger that slid off the row it landed on is still followed; the click the browser reports at the end of a touch, aimed at the row where the touch began, is swallowed so nothing acts twice. DropdownMenu, ContextMenu, DropdownMenuSubMenu, Selector and the menu bottom sheet already mount it; reach for it directly only when building a menu-like surface of your own.',
+      'The press model of macOS and iOS menus, for any pointer: the row under the pointer when it is RELEASED is the row that acts, the highlight follows the pointer while it is held, a mouse opens the menu on press and can drag straight into it, and a finger held on the trigger opens it with the finger still down. The pointer is tracked at document level by pointerId, so a finger that slid off the row it landed on is still followed; the click the browser reports at the end of a touch, aimed at the row where the touch began, is swallowed so nothing acts twice. DropdownMenu, ContextMenu, DropdownMenuSubMenu, Selector and the menu bottom sheet already mount it; reach for it directly only when building a menu-like surface of your own.',
     bestPractices: [
       {
         guidance: true,
@@ -130,13 +155,14 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description:
-    'macOS/iOS menu press model for any pointer: the row under the RELEASE acts, the highlight follows a held pointer. Document-level pointerId tracking; the browser stray click after a touch is swallowed. Already mounted by DropdownMenu / ContextMenu / DropdownMenuSubMenu / Selector / menu bottom sheet.',
+    'macOS/iOS menu press model for any pointer: the row under the RELEASE acts, the highlight follows a held pointer, a mouse opens on press and drags in, a held finger opens with the finger down. Document-level pointerId tracking; the browser stray click after a touch is swallowed. Already mounted by DropdownMenu / ContextMenu / DropdownMenuSubMenu / Selector / menu bottom sheet.',
   paramDescriptions: {
     options: 'config.',
     'options.menuRef': 'menu / listbox root.',
     'options.itemSelector': 'selector for ENABLED rows; anything else clears.',
-    'options.triggerRef':
-      'the control that opens the menu; a release over it is not outside.',
+    'options.triggerRef': 'the control that opens the menu.',
+    'options.onTriggerPress':
+      'mouse press / held finger on trigger: open, return whether it opened (false = the press closed it).',
     'options.onHighlight':
       'move highlight (null clears); default = focus w/ preventScroll, menu root when no row.',
     'options.onActivate':
@@ -144,15 +170,19 @@ export const docsDense = {
     'options.onDismiss': 'MOUSE released outside: close. Finger: never called.',
     'options.getScroller':
       'element to edge-autoscroll while tracking; default = menu root if it overflows.',
+    'options.longPressDelayMs': 'finger hold before open, ms.',
     'options.isEnabled': 'false = inert.',
   },
   returnDescriptions: {
     menuProps: 'spread on menu root (claims presses, marks the root).',
+    triggerProps: 'spread on trigger (press-open, held-finger open).',
+    isTriggerClickFromPress:
+      'true = the trigger click belongs to the press that already opened / closed; ignore it.',
     cancel: 'end the gesture w/o acting.',
   },
   usage: {
     description:
-      'Release decides; highlight follows the pointer. Use directly only for a menu-like surface of your own.',
+      'Release decides; highlight follows the pointer; mouse press-opens; held finger opens. Use directly only for a menu-like surface of your own.',
     bestPractices: [
       {
         guidance: true,

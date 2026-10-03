@@ -159,9 +159,17 @@ export const docs = {
       default: '1',
     },
     {
+      name: 'emptySearchText',
+      type: 'ReactNode',
+      description:
+        'Content shown when the query matched nothing. Takes a ReactNode, so the dead end can carry a link or a create row. Announced in a polite live region as the text it renders, read from the DOM; aria-hidden parts stay out of both, and content that renders no text announces nothing. null counts as not given, like undefined, and falls through to the default; pass an empty string to render nothing.',
+      default: "'No results found'",
+    },
+    {
       name: 'emptySearchResultsText',
       type: 'string',
-      description: 'Text shown when search returns no results.',
+      description:
+        'Deprecated: renamed to emptySearchText, which takes a ReactNode rather than a string, so every existing value stays valid. Still works exactly as released; emptySearchText wins when both are set.',
       default: "'No results found'",
     },
     {
@@ -317,9 +325,17 @@ export const docsZh = {
       default: '1',
     },
     {
+      name: 'emptySearchText',
+      type: 'ReactNode',
+      description:
+        '查询无匹配结果时显示的内容。接受 ReactNode，因此可在无结果处放置链接或创建入口。会从 DOM 读取其渲染出的文本在礼貌性实时区域中播报；aria-hidden 的部分两处都不包含，不渲染任何文本的内容则不会播报。null 与 undefined 同样视为未提供，将回退到默认值；若要不渲染任何内容，请传入空字符串。',
+      default: "'No results found'",
+    },
+    {
       name: 'emptySearchResultsText',
       type: 'string',
-      description: '搜索无结果时显示的文本。',
+      description:
+        '已弃用：改名为 emptySearchText，其类型由 string 放宽为 ReactNode，原有取值全部仍然有效。仍按已发布行为工作；两者同时设置时以 emptySearchText 为准。',
       default: "'No results found'",
     },
     {
@@ -462,7 +478,9 @@ export const docsDense = {
     menuWidth: 'Requested px width before viewport clamping.',
     minQueryLength:
       'Min query length before searching. Menu stays closed below it.',
-    emptySearchResultsText: 'Text when no results.',
+    emptySearchText: 'Content when the query matched nothing. ReactNode.',
+    emptySearchResultsText:
+      'deprecated, use emptySearchText (ReactNode). still works as released; emptySearchText wins if both set.',
     isDisabled: 'Whether input disabled.',
     isFocusableDisabled:
       'Keeps disabled input focusable and blocks text entry; an already-open highlight can still be selected with Enter.',

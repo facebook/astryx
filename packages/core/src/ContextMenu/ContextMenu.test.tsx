@@ -1101,3 +1101,35 @@ describe('ContextMenuGroup', () => {
     );
   });
 });
+
+describe('ContextMenu inline trigger (triggerAs)', () => {
+  it('an inline trigger keeps its flow', () => {
+    render(
+      <p>
+        Filed under{' '}
+        <ContextMenu
+          triggerAs="span"
+          data-testid="ref"
+          items={[{label: 'Open', onClick: () => {}}]}>
+          T123
+        </ContextMenu>{' '}
+        yesterday.
+      </p>,
+    );
+    const trigger = screen.getByTestId('ref');
+    expect(trigger.tagName).toBe('SPAN');
+    expect(trigger.parentElement?.tagName).toBe('P');
+    expect(trigger).not.toHaveStyle({display: 'block'});
+    fireEvent.contextMenu(trigger, {clientX: 20, clientY: 10, detail: 1});
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+  });
+
+  it('defaults to a block trigger', () => {
+    render(
+      <ContextMenu data-testid="area" items={[{label: 'Open'}]}>
+        Area
+      </ContextMenu>,
+    );
+    expect(screen.getByTestId('area').tagName).toBe('DIV');
+  });
+});
