@@ -274,13 +274,6 @@ An exact-source audit at `067b176` found:
 
 ## Decision log
 
-### Recovered draft — 2026-09-02
-
-This record recovers the architecture half of [#5915](https://github.com/facebook/astryx/pull/5915)
-without copying the rubric or changing `design:template-composition`. It replaces
-that draft's proposed stable-slug invariant with the accepted
-`spec:AST-017/DEC-2` boundary.
-
 ### Catalog convergence direction — 2026-09-05
 
 One validated catalog owns template membership. Source-specific authoring shapes may
