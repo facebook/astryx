@@ -116,6 +116,22 @@ describe('latchIsCurrent', () => {
         ),
       ).toBe(false);
     });
+
+    it('breaks when a hole in a shared array is filled', () => {
+      const marks = new Array<unknown>(1);
+      const latch = latchViewInputs(
+        inputs({spec: {$schema: 'x', marks} as unknown as AnySpec}),
+      );
+
+      marks[0] = {type: 'rect'};
+
+      expect(
+        latchIsCurrent(
+          latch,
+          inputs({spec: {$schema: 'x', marks} as unknown as AnySpec}),
+        ),
+      ).toBe(false);
+    });
   });
 
   describe('values compared by reference', () => {
