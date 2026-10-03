@@ -16,7 +16,7 @@ import {
   isFilePathArg,
   PathSafetyError,
 } from '../../../foundation/fs/path-safety.mjs';
-import {AstryxError} from '../../error.mjs';
+import {AstryxError, writeFailed} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {stripTemplateAssetRefs} from '../../../foundation/discovery/template-adapter.mjs';
 
@@ -80,13 +80,17 @@ export function templateCopy(match, {targetPath, cwd, overwrite = false}) {
     );
   }
 
-  fs.mkdirSync(outputDir, {recursive: true});
-
   // Strip demo image references so the scaffolded file renders without a
-  // Meta-only network dependency.
+  // Meta-only network dependency. Read before any write, so a failure below
+  // leaves nothing behind.
   const source = fs.readFileSync(match.filePath, 'utf-8');
   const outputSource = stripTemplateAssetRefs(source);
-  fs.writeFileSync(outputFilePath, outputSource);
+  try {
+    fs.mkdirSync(outputDir, {recursive: true});
+    fs.writeFileSync(outputFilePath, outputSource);
+  } catch (err) {
+    throw writeFailed(outputFilePath, cwd, err);
+  }
 
   const relOutput = path.relative(cwd, outputDir) || '.';
   return {

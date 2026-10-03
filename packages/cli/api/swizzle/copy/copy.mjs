@@ -25,7 +25,7 @@ import {
   findIntegrationComponentSource,
 } from '../../../foundation/discovery/component-discovery.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
-import {AstryxError} from '../../error.mjs';
+import {AstryxError, writeFailed} from '../../error.mjs';
 
 /** Default issue tracker for maintainer feedback after swizzling. */
 const DEFAULT_ISSUES_URL = 'https://github.com/facebook/astryx/issues/new';
@@ -290,11 +290,21 @@ export async function swizzleCopy(component, options = {}) {
     );
   }
 
-  fs.mkdirSync(outputDir, {recursive: true});
+  const outputDirExisted = fs.existsSync(outputDir);
+  try {
+    fs.mkdirSync(outputDir, {recursive: true});
+  } catch (err) {
+    throw writeFailed(outputDir, cwd, err);
+  }
 
   const files = fs.readdirSync(componentDir);
   let copied = 0;
   let usesStyleX = false;
+  // A copy that fails part-way undoes what it already wrote, so the report is
+  // true and a retry does not trip over half a component. Each entry keeps
+  // the bytes the file had before this run (null when the copy created it).
+  /** @type {Array<{dest: string, original: Buffer|null}>} */
+  const written = [];
   for (const file of files) {
     if (isExcludedFromCopy(file)) continue;
     const srcPath = path.join(componentDir, file);
@@ -309,7 +319,25 @@ export async function swizzleCopy(component, options = {}) {
     ) {
       usesStyleX = true;
     }
-    fs.writeFileSync(path.join(outputDir, file), content);
+    const dest = path.join(outputDir, file);
+    try {
+      // The snapshot read is guarded too: a destination that cannot be read
+      // back (no permission, or a directory with this name) must still undo
+      // the earlier writes and report ERR_WRITE_FAILED.
+      const original = fs.existsSync(dest) ? fs.readFileSync(dest) : null;
+      written.push({dest, original});
+      fs.writeFileSync(dest, content);
+    } catch (err) {
+      const unrestored = undoCopy(written);
+      if (!outputDirExisted) {
+        try {
+          fs.rmdirSync(outputDir);
+        } catch {
+          // Not empty (something could not be undone), or already gone.
+        }
+      }
+      throw writeFailed(dest, cwd, err, unrestored);
+    }
     copied++;
   }
 
@@ -332,4 +360,39 @@ export async function swizzleCopy(component, options = {}) {
   };
   if (feedback) data.feedback = feedback;
   return {type: 'swizzle.copy', data};
+}
+
+/**
+ * Undo the writes of a copy that failed part-way, newest first: delete the
+ * files the copy created and put back the bytes of the files it replaced. A
+ * file whose bytes are already the original ones is left alone, so a write
+ * that failed before changing anything is not reported as unrestored.
+ *
+ * @param {Array<{dest: string, original: Buffer|null}>} written
+ * @returns {string[]} the files it could not restore
+ */
+function undoCopy(written) {
+  /** @type {string[]} */
+  const unrestored = [];
+  for (const {dest, original} of [...written].reverse()) {
+    try {
+      if (original == null) {
+        fs.rmSync(dest, {force: true});
+        continue;
+      }
+      /** @type {Buffer|null} */
+      let current = null;
+      try {
+        current = fs.readFileSync(dest);
+      } catch {
+        current = null;
+      }
+      if (current == null || !current.equals(original)) {
+        fs.writeFileSync(dest, original);
+      }
+    } catch {
+      unrestored.push(dest);
+    }
+  }
+  return unrestored;
 }
