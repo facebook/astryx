@@ -23,6 +23,7 @@ import {
   readTimeGrid,
   record,
   setScrollLeft,
+  setScrollTop,
   startEvidence,
   WEEKLY,
   WEEKLY_FIXED_HEIGHT,
@@ -276,11 +277,11 @@ test('Tab reaches the time grid after the header controls', async ({page}) => {
   // A painted ring changes at least half the viewport's perimeter in pixels
   // (the classic scrollbar covers one edge of an inset ring).
   expect(ringPixels).toBeGreaterThan((clip?.width ?? 0) + (clip?.height ?? 0));
-  const before = await readTimeGrid(page);
+  // Start from the top so the key has somewhere to go whatever offset the
+  // grid opened at.
+  await setScrollTop(page, 0);
   await page.keyboard.press('ArrowDown');
   await page.waitForTimeout(150);
   const after = await readTimeGrid(page);
-  expect(after.scroller?.scrollTop ?? 0).toBeGreaterThan(
-    before.scroller?.scrollTop ?? 0,
-  );
+  expect(after.scroller?.scrollTop ?? 0).toBeGreaterThan(0);
 });
