@@ -1879,7 +1879,7 @@ function PointerDateTimeField({
           <Calendar
             handleRef={calendarRef}
             mode="single"
-            value={valueParts.date}
+            value={valueParts.date ?? null}
             onChange={(d: ISODateString) => handleDateChange(d, 'calendar')}
             min={calendarMin}
             max={calendarMax}

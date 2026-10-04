@@ -20,7 +20,7 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import {Calendar} from './Calendar';
 import type {CalendarHandle} from './Calendar';
-import type {ISODateString} from './Calendar';
+import type {ISODateString, DateRange} from './Calendar';
 import {calendarStyles} from './styles';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
@@ -218,6 +218,64 @@ describe('Calendar', () => {
 
     expect(handleChange).toHaveBeenCalledTimes(1);
     expect(handleChange).toHaveBeenCalledWith('2026-01-15', expect.any(Date));
+  });
+
+  it('keeps null single selection empty until the parent accepts a date', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const calendar = (value: ISODateString | null) => (
+      <Calendar
+        value={value}
+        onChange={onChange}
+        defaultValue="2026-01-10"
+        focusDate="2026-01-01"
+      />
+    );
+    const {rerender} = render(calendar(null));
+    expect(screen.queryAllByRole('gridcell', {selected: true})).toHaveLength(0);
+
+    const day15 = getDayButton(15);
+    await user.click(day15);
+    expect(onChange).toHaveBeenCalledWith('2026-01-15', expect.any(Date));
+    expect(screen.queryAllByRole('gridcell', {selected: true})).toHaveLength(0);
+
+    rerender(calendar('2026-01-15'));
+    expect(screen.getByRole('gridcell', {selected: true})).toContainElement(
+      day15,
+    );
+
+    rerender(calendar(null));
+    expect(screen.queryAllByRole('gridcell', {selected: true})).toHaveLength(0);
+  });
+
+  it('keeps null range selection controlled while allowing two-click selection', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const calendar = (value: DateRange | null) => (
+      <Calendar
+        mode="range"
+        value={value}
+        onChange={onChange}
+        defaultValue={{start: '2026-01-10', end: '2026-01-12'}}
+        focusDate="2026-01-01"
+      />
+    );
+    const {rerender} = render(calendar(null));
+    expect(screen.queryAllByRole('gridcell', {selected: true})).toHaveLength(0);
+
+    await user.click(getDayButton(15));
+    await user.click(getDayButton(17));
+    expect(onChange).toHaveBeenCalledWith({
+      start: '2026-01-15',
+      end: '2026-01-17',
+    });
+    expect(screen.queryAllByRole('gridcell', {selected: true})).toHaveLength(0);
+
+    rerender(calendar({start: '2026-01-15', end: '2026-01-17'}));
+    expect(screen.getAllByRole('gridcell', {selected: true})).toHaveLength(3);
+
+    rerender(calendar(null));
+    expect(screen.queryAllByRole('gridcell', {selected: true})).toHaveLength(0);
   });
 
   // ─── Navigation ──────────────────────────────────────────────

@@ -762,7 +762,7 @@ export function DateRangeInput({
           )}
           <Calendar
             mode="range"
-            value={value ?? undefined}
+            value={value}
             onChange={handleRangeSelect}
             min={min}
             max={max}
