@@ -814,6 +814,51 @@ export const NeitherSideFits: Story = {
   },
 };
 
+function assertAbove(r: Rects, label: string) {
+  if (r.layer.bottom > r.trigger.top + TOLERANCE) {
+    fail(
+      `${label}: expected the layer above its trigger (trigger top ${Math.round(r.trigger.top)}), layer ${fmt(r.layer)}`,
+    );
+  }
+}
+
+export const TriggerNearTheBottomFlips: Story = {
+  name: 'Viewport inset: trigger near the bottom flips above',
+  parameters: viewportParameters,
+  render: () => (
+    <ViewportLayer
+      at={{bottom: 60, left: 40}}
+      width={240}
+      caption="FR4 — A 240px layer placed below a trigger 60px from the bottom edge has no room below and flips above. The block axis follows the same rule as the inline axis.">
+      <div style={{blockSize: 90}}>90px of rows</div>
+    </ViewportLayer>
+  ),
+  play: async ({canvasElement}) => {
+    const r = await open(canvasElement);
+    assertAbove(r, 'near the bottom');
+    assertOnScreen(r, 'near the bottom');
+  },
+};
+
+export const WideLayerNearTheBottomFlips: Story = {
+  name: 'Viewport inset: wide layer, trigger near the bottom',
+  parameters: viewportParameters,
+  render: () => (
+    <ViewportLayer
+      at={{bottom: 60, left: 40}}
+      width={690}
+      caption="FR2, FR4 — A 690px layer placed below a trigger 60px from the bottom edge. On a phone the width is capped to the viewport and fits beside the trigger on neither side; the layer still flips above, because the slide option spans the whole inline axis and leaves the block axis free to choose the side with room.">
+      <div style={{blockSize: 90}}>90px of rows</div>
+    </ViewportLayer>
+  ),
+  play: async ({canvasElement}) => {
+    const r = await open(canvasElement);
+    assertWidth(r, 690, 'wide near the bottom');
+    assertAbove(r, 'wide near the bottom');
+    assertOnScreen(r, 'wide near the bottom');
+  },
+};
+
 export const TallerThanTheViewport: Story = {
   name: 'Viewport inset: taller than the viewport',
   parameters: viewportParameters,

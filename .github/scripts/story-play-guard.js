@@ -131,6 +131,16 @@ const TARGETS = [
         'FR2/FR4: a 1000px layer on a centred trigger slides inside the gutters where it fits the viewport and is capped where it does not',
     },
     {
+      story: 'core-layer--trigger-near-the-bottom-flips',
+      guards:
+        'FR4: a layer placed below a trigger with no room below flips above, inside the block gutters',
+    },
+    {
+      story: 'core-layer--wide-layer-near-the-bottom-flips',
+      guards:
+        'FR2/FR4: a layer wider than the room beside its trigger, placed below with no room below, is capped to the viewport and flips above',
+    },
+    {
       story: 'core-layer--taller-than-the-viewport',
       guards:
         'FR3: the layer box is capped to the viewport minus both block gutters',

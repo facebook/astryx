@@ -107,28 +107,56 @@ const styles = stylex.create({
       layerViewportInset.maxBlockSizeFallback,
     ),
   },
-  gutterInlineEnd: {
+  // Alignment-axis gutter (spec:AST-059 FR1). Both edges carry the gutter
+  // as a margin, so wherever the browser's overflow shift or a span option
+  // lands the layer, its margin box — and so a gutter on both sides — stays
+  // inside the viewport. On the anchor-facing edge of an aligned layer a
+  // negative inset of the same size widens the position-area region by the
+  // margin, so the layer's own edge still meets the trigger's; the flip
+  // tactic mirrors inset and margin together. A centered layer needs no
+  // inset: it is centered on its anchor, not aligned to an edge.
+  gutterInline: {
+    marginInlineStart: stylex.firstThatWorks(
+      layerViewportInset.gutterInline,
+      layerViewportInset.gutterInlineFallback,
+    ),
     marginInlineEnd: stylex.firstThatWorks(
       layerViewportInset.gutterInline,
       layerViewportInset.gutterInlineFallback,
     ),
   },
-  gutterInlineStart: {
-    marginInlineStart: stylex.firstThatWorks(
-      layerViewportInset.gutterInline,
-      layerViewportInset.gutterInlineFallback,
+  alignInlineStart: {
+    insetInlineStart: stylex.firstThatWorks(
+      `calc(-1 * ${layerViewportInset.gutterInline})`,
+      `calc(-1 * ${layerViewportInset.gutterInlineFallback})`,
     ),
   },
-  gutterBlockEnd: {
-    marginBlockEnd: stylex.firstThatWorks(
-      layerViewportInset.gutterBlockEnd,
-      layerViewportInset.gutterBlockEndFallback,
+  alignInlineEnd: {
+    insetInlineEnd: stylex.firstThatWorks(
+      `calc(-1 * ${layerViewportInset.gutterInline})`,
+      `calc(-1 * ${layerViewportInset.gutterInlineFallback})`,
     ),
   },
-  gutterBlockStart: {
+  gutterBlock: {
     marginBlockStart: stylex.firstThatWorks(
-      layerViewportInset.gutterBlockStart,
-      layerViewportInset.gutterBlockStartFallback,
+      layerViewportInset.gutterBlock,
+      layerViewportInset.gutterBlockFallback,
+    ),
+    marginBlockEnd: stylex.firstThatWorks(
+      layerViewportInset.gutterBlock,
+      layerViewportInset.gutterBlockFallback,
+    ),
+  },
+  alignBlockStart: {
+    insetBlockStart: stylex.firstThatWorks(
+      `calc(-1 * ${layerViewportInset.gutterBlock})`,
+      `calc(-1 * ${layerViewportInset.gutterBlockFallback})`,
+    ),
+  },
+  alignBlockEnd: {
+    insetBlockEnd: stylex.firstThatWorks(
+      `calc(-1 * ${layerViewportInset.gutterBlock})`,
+      `calc(-1 * ${layerViewportInset.gutterBlockFallback})`,
     ),
   },
 });
@@ -491,15 +519,19 @@ function getPositionArea(
  * Compute the `position-try-fallbacks` list for a placement/alignment pair
  * (spec:AST-059 FR4).
  *
- * Flips first; they also mirror the placement-axis inset and the
- * alignment-axis gutter margin with the area. Flips alone cannot rescue a
- * centered layer — flipping along the alignment axis maps center → center,
- * so overflow on that axis renders clipped (#3671) — so centered alignments
- * append span-based fallbacks letting the browser slide the layer along the
- * alignment axis (same-side spans first). An aligned layer that fits on
- * neither side keeps its size and is shifted into the viewport by the
- * browser's own position-area overflow alignment, which `getSelfAlignment`
- * withdraws once the anchor has left the viewport (FR5).
+ * Flips first; they mirror the placement-axis margins (clearance and gutter)
+ * and the alignment-axis inset with the area. Then the slide: position
+ * options that span the whole alignment axis, same side of the trigger first,
+ * opposite side second. Flips alone cannot rescue a layer wider than the room
+ * on either side of its trigger — every flipped option overflows the
+ * alignment axis too, and the browser keeps the base option, so the layer
+ * never moves to the side of the trigger that has room on the placement axis
+ * (#3671 for centered layers, where a flip maps center → center). A span
+ * option's region is the whole axis, so it fits wherever the layer fits the
+ * viewport, and its default anchor-center alignment plus the browser's
+ * overflow shift keep the layer's margin box — and so the gutter on both
+ * edges — inside the viewport. Centered layers keep their one-sided spans
+ * ahead of the full span so they slide the least distance first.
  */
 export function getPositionTryFallbacks(
   placement: LayerPlacement = 'above',
@@ -507,19 +539,29 @@ export function getPositionTryFallbacks(
 ): string {
   const flips = 'flip-block, flip-inline, flip-block flip-inline';
 
-  if (alignment !== 'center') {
-    return flips;
-  }
-
   if (placement === 'above' || placement === 'below') {
     const [same, opposite] =
+      placement === 'above'
+        ? ['self-block-start', 'self-block-end']
+        : ['self-block-end', 'self-block-start'];
+    if (alignment !== 'center') {
+      return `${flips}, ${same} span-all, ${opposite} span-all`;
+    }
+    const [samePhysical, oppositePhysical] =
       placement === 'above' ? ['top', 'bottom'] : ['bottom', 'top'];
-    return `${flips}, ${same} span-left, ${same} span-right, ${opposite} span-left, ${opposite} span-right`;
+    return `${flips}, ${samePhysical} span-left, ${samePhysical} span-right, ${oppositePhysical} span-left, ${oppositePhysical} span-right, ${same} span-all, ${opposite} span-all`;
   }
 
   const [same, opposite] =
+    placement === 'start'
+      ? ['self-inline-start', 'self-inline-end']
+      : ['self-inline-end', 'self-inline-start'];
+  if (alignment !== 'center') {
+    return `${flips}, ${same} span-all, ${opposite} span-all`;
+  }
+  const [samePhysical, oppositePhysical] =
     placement === 'start' ? ['left', 'right'] : ['right', 'left'];
-  return `${flips}, ${same} span-top, ${same} span-bottom, ${opposite} span-top, ${opposite} span-bottom`;
+  return `${flips}, ${samePhysical} span-top, ${samePhysical} span-bottom, ${oppositePhysical} span-top, ${oppositePhysical} span-bottom, ${same} span-all, ${opposite} span-all`;
 }
 
 /**
@@ -560,20 +602,20 @@ function getGutterStyles(
 ): ReadonlyArray<StyleXStyles> {
   if (placement === 'above' || placement === 'below') {
     if (alignment === 'start') {
-      return [styles.gutterInlineEnd];
+      return [styles.gutterInline, styles.alignInlineStart];
     }
     if (alignment === 'end') {
-      return [styles.gutterInlineStart];
+      return [styles.gutterInline, styles.alignInlineEnd];
     }
-    return [styles.gutterInlineStart, styles.gutterInlineEnd];
+    return [styles.gutterInline];
   }
   if (alignment === 'start') {
-    return [styles.gutterBlockEnd];
+    return [styles.gutterBlock, styles.alignBlockStart];
   }
   if (alignment === 'end') {
-    return [styles.gutterBlockStart];
+    return [styles.gutterBlock, styles.alignBlockEnd];
   }
-  return [styles.gutterBlockStart, styles.gutterBlockEnd];
+  return [styles.gutterBlock];
 }
 
 /**

@@ -190,41 +190,40 @@ describe('useLayer identity', () => {
   });
 });
 
-describe('getPositionTryFallbacks (issue #3671)', () => {
+describe('getPositionTryFallbacks (issue #3671, spec:AST-059 FR4)', () => {
   const FLIPS = 'flip-block, flip-inline, flip-block flip-inline';
 
-  it('appends inline span fallbacks for centered above/below layers so inline overflow can resolve (flip-inline is a no-op on center)', () => {
+  it('appends inline span fallbacks for centered above/below layers so inline overflow can resolve (flip-inline is a no-op on center), then the full-axis spans', () => {
     expect(getPositionTryFallbacks('above', 'center')).toBe(
-      `${FLIPS}, top span-left, top span-right, bottom span-left, bottom span-right`,
+      `${FLIPS}, top span-left, top span-right, bottom span-left, bottom span-right, self-block-start span-all, self-block-end span-all`,
     );
     expect(getPositionTryFallbacks('below', 'center')).toBe(
-      `${FLIPS}, bottom span-left, bottom span-right, top span-left, top span-right`,
+      `${FLIPS}, bottom span-left, bottom span-right, top span-left, top span-right, self-block-end span-all, self-block-start span-all`,
     );
   });
 
-  it('appends block span fallbacks for centered start/end layers so block overflow can resolve (flip-block is a no-op on center)', () => {
+  it('appends block span fallbacks for centered start/end layers so block overflow can resolve (flip-block is a no-op on center), then the full-axis spans', () => {
     expect(getPositionTryFallbacks('start', 'center')).toBe(
-      `${FLIPS}, left span-top, left span-bottom, right span-top, right span-bottom`,
+      `${FLIPS}, left span-top, left span-bottom, right span-top, right span-bottom, self-inline-start span-all, self-inline-end span-all`,
     );
     expect(getPositionTryFallbacks('end', 'center')).toBe(
-      `${FLIPS}, right span-top, right span-bottom, left span-top, left span-bottom`,
+      `${FLIPS}, right span-top, right span-bottom, left span-top, left span-bottom, self-inline-end span-all, self-inline-start span-all`,
     );
   });
 
-  it('keeps flip-only fallbacks for non-centered alignments (flips already resolve overflow there)', () => {
-    const nonCentered: [LayerPlacement, LayerAlignment][] = [
-      ['above', 'start'],
-      ['above', 'end'],
-      ['below', 'start'],
-      ['below', 'end'],
-      ['start', 'start'],
-      ['start', 'end'],
-      ['end', 'start'],
-      ['end', 'end'],
-    ];
-    for (const [placement, alignment] of nonCentered) {
-      expect(getPositionTryFallbacks(placement, alignment)).toBe(FLIPS);
-    }
+  it('gives aligned layers the flips, then a full-axis span on the same side and on the opposite side', () => {
+    expect(getPositionTryFallbacks('below', 'start')).toBe(
+      `${FLIPS}, self-block-end span-all, self-block-start span-all`,
+    );
+    expect(getPositionTryFallbacks('above', 'end')).toBe(
+      `${FLIPS}, self-block-start span-all, self-block-end span-all`,
+    );
+    expect(getPositionTryFallbacks('end', 'start')).toBe(
+      `${FLIPS}, self-inline-end span-all, self-inline-start span-all`,
+    );
+    expect(getPositionTryFallbacks('start', 'end')).toBe(
+      `${FLIPS}, self-inline-start span-all, self-inline-end span-all`,
+    );
   });
 
   it('defaults to above/center when called without arguments (matches renderContext defaults)', () => {
@@ -232,7 +231,7 @@ describe('getPositionTryFallbacks (issue #3671)', () => {
       getPositionTryFallbacks('above', 'center'),
     );
     expect(getPositionTryFallbacks(undefined, undefined)).toBe(
-      `${FLIPS}, top span-left, top span-right, bottom span-left, bottom span-right`,
+      getPositionTryFallbacks('above', 'center'),
     );
   });
 
@@ -240,17 +239,17 @@ describe('getPositionTryFallbacks (issue #3671)', () => {
     const placements: LayerPlacement[] = ['above', 'below', 'start', 'end'];
     const alignments: LayerAlignment[] = ['start', 'center', 'end'];
     const spanPattern: Record<LayerPlacement, RegExp> = {
-      above: /^(top|bottom) span-(left|right)$/,
-      below: /^(top|bottom) span-(left|right)$/,
-      start: /^(left|right) span-(top|bottom)$/,
-      end: /^(left|right) span-(top|bottom)$/,
+      above:
+        /^(top|bottom) span-(left|right)$|^self-block-(start|end) span-all$/,
+      below:
+        /^(top|bottom) span-(left|right)$|^self-block-(start|end) span-all$/,
+      start:
+        /^(left|right) span-(top|bottom)$|^self-inline-(start|end) span-all$/,
+      end: /^(left|right) span-(top|bottom)$|^self-inline-(start|end) span-all$/,
     };
-
     for (const placement of placements) {
       for (const alignment of alignments) {
-        const list = getPositionTryFallbacks(placement, alignment);
-        const items = list.split(', ');
-
+        const items = getPositionTryFallbacks(placement, alignment).split(', ');
         expect(items.slice(0, 3)).toEqual([
           'flip-block',
           'flip-inline',
@@ -260,7 +259,7 @@ describe('getPositionTryFallbacks (issue #3671)', () => {
         for (const item of items.slice(3)) {
           expect(item).toMatch(spanPattern[placement]);
         }
-        expect(items.length).toBe(alignment === 'center' ? 7 : 3);
+        expect(items.length).toBe(alignment === 'center' ? 9 : 5);
       }
     }
   });
@@ -275,11 +274,13 @@ describe('getPositionTryFallbacks (issue #3671)', () => {
     expect(layerEl.style.positionTryFallbacks).toContain('top span-left');
 
     rerender(<ContextLayerHarness placement="above" alignment="start" />);
-    expect(layerEl.style.positionTryFallbacks).toBe(FLIPS);
+    expect(layerEl.style.positionTryFallbacks).toBe(
+      getPositionTryFallbacks('above', 'start'),
+    );
 
     rerender(<ContextLayerHarness placement="start" alignment="center" />);
     expect(layerEl.style.positionTryFallbacks).toBe(
-      `${FLIPS}, left span-top, left span-bottom, right span-top, right span-bottom`,
+      getPositionTryFallbacks('start', 'center'),
     );
   });
 
@@ -302,7 +303,7 @@ describe('getPositionTryFallbacks (issue #3671)', () => {
     const layerEl = container.querySelector('[popover]') as HTMLElement;
     expect(layerEl).not.toBeNull();
     expect(layerEl.style.positionTryFallbacks).toBe(
-      `${FLIPS}, top span-left, top span-right, bottom span-left, bottom span-right`,
+      getPositionTryFallbacks('above', 'center'),
     );
   });
 });
@@ -318,24 +319,39 @@ describe('viewport inset (spec:AST-059)', () => {
       [
         'below',
         'start',
-        ['farBelow', 'gutterInlineEnd'],
-        ['gutterInlineStart', 'farAbove'],
+        ['farBelow', 'gutterInline', 'alignInlineStart'],
+        ['alignInlineEnd', 'farAbove'],
       ],
-      ['below', 'end', ['farBelow', 'gutterInlineStart'], ['gutterInlineEnd']],
+      [
+        'below',
+        'end',
+        ['farBelow', 'gutterInline', 'alignInlineEnd'],
+        ['alignInlineStart'],
+      ],
       [
         'above',
         'center',
-        ['farAbove', 'gutterInlineStart', 'gutterInlineEnd'],
-        ['farBelow'],
+        ['farAbove', 'gutterInline'],
+        ['alignInlineStart', 'alignInlineEnd', 'farBelow'],
       ],
       [
         'end',
         'start',
-        ['farEnd', 'gutterBlockEnd'],
-        ['gutterBlockStart', 'farStart'],
+        ['farEnd', 'gutterBlock', 'alignBlockStart'],
+        ['alignBlockEnd', 'farStart'],
       ],
-      ['start', 'end', ['farStart', 'gutterBlockStart'], ['gutterBlockEnd']],
-      ['end', 'center', ['farEnd', 'gutterBlockStart', 'gutterBlockEnd'], []],
+      [
+        'start',
+        'end',
+        ['farStart', 'gutterBlock', 'alignBlockEnd'],
+        ['alignBlockStart'],
+      ],
+      [
+        'end',
+        'center',
+        ['farEnd', 'gutterBlock'],
+        ['alignBlockStart', 'alignBlockEnd'],
+      ],
     ];
     for (const [placement, alignment, present, absent] of cases) {
       const {container, unmount} = render(
@@ -431,9 +447,9 @@ describe('viewport inset (spec:AST-059)', () => {
       );
     });
     expect(layerEl.style.justifySelf).toBe('unsafe self-start');
-    // The flips stay; only the slide is withdrawn.
+    // The fallback list stays; only the overflow shift is withdrawn.
     expect(layerEl.style.positionTryFallbacks).toBe(
-      'flip-block, flip-inline, flip-block flip-inline',
+      getPositionTryFallbacks('below', 'start'),
     );
 
     act(() => {

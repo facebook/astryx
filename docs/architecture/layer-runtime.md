@@ -136,16 +136,17 @@ property reading `0px` — renders exactly as one under a default provider. A
 hand-written property is an unsupported escape hatch. The inline gutter reads
 the larger of the two physical safe-area insets so a flipped layer still clears
 a notch. `Layer/layerViewportInset.stylex.ts` holds the one definition. The
-gutter is a margin on the far viewport edge of each axis — on the placement
-axis beside the anchor clearance, which rides the anchor-facing edge — so the
-margin box is what must fit a position option and what the browser's overflow
-shift keeps inside the viewport: a layer that would end inside the gutter or
-under a declared bar does not fit there and the next option is tried. The flip
-tactics swap the two margins with the area, so the clearance stays on the
-anchor side and the gutter on the far side, and the placement-axis gutter is
-one value for both edges — the larger of the two block gutters — so a bar
-declared on one block edge keeps a layer the same distance from the opposite
-edge.
+gutter is a margin, so the margin box is what must fit a position option and
+what the browser's overflow shift keeps inside the viewport: a layer that would
+end inside the gutter or under a declared bar does not fit there and the next
+option is tried. On the placement axis the gutter rides the far edge beside
+the anchor clearance on the near edge; on the alignment axis it rides both
+edges, and an aligned layer carries a negative inset of the same size on its
+anchor-facing edge so its own edge still meets the trigger's. The flip tactics
+swap margins and insets with the area, so the clearance stays on the anchor
+side and the gutter on the far side, and the placement-axis gutter is one value
+for both edges — the larger of the two block gutters — so a bar declared on one
+block edge keeps a layer the same distance from the opposite edge.
 
 The layer box is capped to the viewport minus both gutters on both axes, never
 to the span of viewport beside the trigger, and never exceeds that cap. An
@@ -160,8 +161,14 @@ expression, because a CSS minimum otherwise wins over a maximum.
 
 The fallback order is the runtime's: preferred position; flip across the
 placement axis; flip across the alignment axis; both; then, while the anchor is
-in view, the browser's position-area overflow alignment slides an aligned layer
-that fits on neither side the least distance that brings it inside the gutters.
+in view, the slide: position options whose area spans the whole alignment axis
+(`span-all`), same side of the trigger first, opposite side second, which the
+browser's overflow alignment shifts the least distance that brings the margin
+box inside the viewport. Centered layers keep their one-sided spans ahead of
+the full span. The slide is its own option because a layer wider than the room
+on either side of its trigger overflows every flipped option on the alignment
+axis, and the browser would otherwise keep the base option and never move the
+layer to the side of the trigger with room on the placement axis.
 Content taller than the placement axis can hold on either side is capped to the
 viewport minus both gutters and shifted into the viewport by the browser; its
 margin box stays inside the viewport, so it keeps its anchor clearance from the
