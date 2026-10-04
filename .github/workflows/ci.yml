@@ -1185,11 +1185,11 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
-      # The Schedule time grid owns scroll geometry: sticky header and gutter
-      # alignment under classic scrollbars, the one-time initial scroll, the
-      # side-by-side layout of simultaneous events, and keyboard reach into
-      # the grid. None of that exists in jsdom, so the contract runs here, in
-      # the same real Chromium artifact, whenever the PR scope names Schedule.
+      # The Schedule time grid owns scroll geometry — pinned header and gutter
+      # alignment under classic scrollbars, inline scroll ownership, keyboard
+      # reach and its focus ring — none of which exists in jsdom. Every
+      # contract file under the Schedule tests directory runs here, in the
+      # same real Chromium artifact, whenever the PR scope names Schedule.
       - name: Run Schedule time-grid contract
         if: github.event_name == 'pull_request'
         env:

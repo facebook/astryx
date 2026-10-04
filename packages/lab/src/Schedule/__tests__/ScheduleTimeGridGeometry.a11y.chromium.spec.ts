@@ -22,6 +22,7 @@ import {
   openStory,
   readTimeGrid,
   record,
+  ringEdgeCoverage,
   setScrollLeft,
   setScrollTop,
   startEvidence,
@@ -216,15 +217,19 @@ test('Tab reaches the time grid after the header controls', async ({page}) => {
       break;
     }
   }
-  // The ring must be visible pixels, not just a computed outline: the frame
-  // clips its own border box, so an outside ring would vanish.
+  // The ring must be visible pixels on every edge, not just a computed
+  // outline: the frame clips its own border box, and the viewport's own
+  // outline would sit under its pinned header and gutter, so the ring is an
+  // overlay laid over the focused viewport.
   const ring = await page.evaluate(() => {
     const element = document.activeElement as HTMLElement | null;
-    if (element == null) {
+    const overlay = element?.nextElementSibling;
+    if (element == null || overlay == null) {
       return null;
     }
-    const style = getComputedStyle(element);
+    const style = getComputedStyle(overlay);
     return {
+      viewportOutline: getComputedStyle(element).outlineStyle,
       outlineStyle: style.outlineStyle,
       outlineWidth: Number.parseFloat(style.outlineWidth),
       outlineOffset: Number.parseFloat(style.outlineOffset),
@@ -242,6 +247,7 @@ test('Tab reaches the time grid after the header controls', async ({page}) => {
           },
         });
   let ringPixels = 0;
+  let edges = {top: 0, bottom: 0, left: 0, right: 0};
   if (restFrame != null && focusedFrame != null) {
     const before = decode(restFrame);
     const after = decode(focusedFrame);
@@ -253,11 +259,13 @@ test('Tab reaches the time grid after the header controls', async ({page}) => {
       before.height,
       {threshold: 0.1},
     );
+    edges = ringEdgeCoverage(before, after);
   }
   await record(evidence, page, 'keyboard-reach', WEEKLY, 'ltr', {
     sequence,
     ring,
     ringPixels,
+    edges,
   });
   const reached = sequence.find(stop => stop.insideTimeGrid);
   expect(
@@ -274,9 +282,18 @@ test('Tab reaches the time grid after the header controls', async ({page}) => {
     ring?.outlineOffset ?? 1,
     'the ring sits inside the clipped frame',
   ).toBeLessThanOrEqual(0);
-  // A painted ring changes at least half the viewport's perimeter in pixels
-  // (the classic scrollbar covers one edge of an inset ring).
-  expect(ringPixels).toBeGreaterThan((clip?.width ?? 0) + (clip?.height ?? 0));
+  // A complete ring: at least a one-pixel perimeter of changed pixels, and
+  // every edge — including the ones over the pinned header and gutter —
+  // mostly changed.
+  expect(ringPixels).toBeGreaterThan(
+    2 * ((clip?.width ?? 0) + (clip?.height ?? 0)),
+  );
+  for (const [edge, coverage] of Object.entries(edges)) {
+    expect(
+      coverage,
+      `${edge} edge of the focus ring is painted`,
+    ).toBeGreaterThan(0.9);
+  }
   // Start from the top so the key has somewhere to go whatever offset the
   // grid opened at.
   await setScrollTop(page, 0);

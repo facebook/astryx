@@ -34,6 +34,7 @@ import {
 } from '@astryxdesign/core/utils';
 import {isDayEvent} from './dateMath';
 import {useScheduleContext} from './context';
+import {timeGridViewportScope} from './schedule.stylex';
 import type {
   CalendarEvent,
   CalendarInstantEvent,
@@ -824,28 +825,58 @@ export const styles = stylex.create({
   // would grow to its full hours and the page, not the viewport, would scroll.
   // The basis gives a 640px scrolling viewport by default and still fills or
   // shrinks to a root the caller sizes.
-  timeGridViewport: {
+  timeGridFrame: {
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
     flexGrow: 1,
     flexShrink: 1,
     flexBasis: '640px',
     minHeight: 0,
     minWidth: 0,
+  },
+  // The viewport paints no focus outline of its own: the frame clips outside
+  // its border box, and an inset outline is painted under the viewport's
+  // pinned header and gutter. The ring is the overlay below instead.
+  timeGridViewport: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    minHeight: 0,
+    minWidth: 0,
     scrollbarGutter: 'stable',
     isolation: 'isolate',
+    outlineStyle: 'none',
+  },
+  // The keyboard focus ring of the viewport: a pointer-transparent overlay
+  // laid over the whole viewport (scrollbar included) and painted after the
+  // viewport's stacking context, so every edge of the ring is visible above
+  // the pinned parts. It shows while the viewport before it has keyboard
+  // focus, drawn just inside the edge the frame clips at.
+  timeGridFocusRing: {
+    position: 'absolute',
+    inset: 0,
+    pointerEvents: 'none',
+    outlineWidth: {
+      default: 0,
+      [stylex.when.siblingBefore(':focus-visible', timeGridViewportScope)]:
+        focusVars['--focus-outline-width'],
+    },
+    outlineStyle: {
+      default: 'none',
+      [stylex.when.siblingBefore(':focus-visible', timeGridViewportScope)]:
+        focusVars['--focus-outline-style'],
+    },
+    outlineColor: {
+      default: 'transparent',
+      [stylex.when.siblingBefore(':focus-visible', timeGridViewportScope)]:
+        focusVars['--focus-outline-color'],
+    },
+    outlineOffset: `calc(-1 * ${focusVars['--focus-outline-width']})`,
   },
   // The minimum width keeps the grid box as wide as its tracks when the
   // viewport is narrower, so the pinned gutter has the whole scrolled extent as
   // its sticky containing block instead of only the first viewport width.
-  // The frame clips at its border, so the viewport's keyboard focus ring is
-  // drawn just inside its own edge rather than outside it where the clip
-  // would swallow it. The viewport is a stacking context, so its outline
-  // paints above the pinned header and gutter.
-  timeGridViewportFocusRing: {
-    outlineOffset: {
-      default: '0',
-      ':focus-visible': `calc(-1 * ${focusVars['--focus-outline-width']})`,
-    },
-  },
   timeGridContent: (columnCount: number) => ({
     display: 'grid',
     gridTemplateColumns: `60px repeat(${Math.max(1, columnCount)}, minmax(140px, 1fr))`,

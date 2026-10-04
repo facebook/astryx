@@ -432,3 +432,72 @@ export function blockOverlap(a: Box, b: Box): number {
   );
   return horizontal * vertical;
 }
+
+/**
+ * How much of each edge of a frame changed between two same-size PNG
+ * buffers: the share of columns (top/bottom) or rows (left/right) in a
+ * 4-pixel band along that edge with at least one changed pixel. A complete
+ * focus ring scores near 1 on all four edges; a ring hidden under a pinned
+ * part scores near 0 there.
+ */
+export function ringEdgeCoverage(
+  before: {width: number; height: number; data: Uint8Array},
+  after: {width: number; height: number; data: Uint8Array},
+  band = 4,
+): {top: number; bottom: number; left: number; right: number} {
+  const {width, height} = before;
+  const changed = (x: number, y: number) => {
+    const index = (y * width + x) * 4;
+    for (let channel = 0; channel < 3; channel += 1) {
+      if (
+        Math.abs(before.data[index + channel] - after.data[index + channel]) >
+        24
+      ) {
+        return true;
+      }
+    }
+    return false;
+  };
+  const columnChanged = (x: number, fromY: number, toY: number) => {
+    for (let y = fromY; y < toY; y += 1) {
+      if (changed(x, y)) {
+        return true;
+      }
+    }
+    return false;
+  };
+  const rowChanged = (y: number, fromX: number, toX: number) => {
+    for (let x = fromX; x < toX; x += 1) {
+      if (changed(x, y)) {
+        return true;
+      }
+    }
+    return false;
+  };
+  let top = 0;
+  let bottom = 0;
+  for (let x = 0; x < width; x += 1) {
+    if (columnChanged(x, 0, band)) {
+      top += 1;
+    }
+    if (columnChanged(x, height - band, height)) {
+      bottom += 1;
+    }
+  }
+  let left = 0;
+  let right = 0;
+  for (let y = 0; y < height; y += 1) {
+    if (rowChanged(y, 0, band)) {
+      left += 1;
+    }
+    if (rowChanged(y, width - band, width)) {
+      right += 1;
+    }
+  }
+  return {
+    top: top / width,
+    bottom: bottom / width,
+    left: left / height,
+    right: right / height,
+  };
+}
