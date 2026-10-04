@@ -15,6 +15,7 @@ import type {Locale} from '@astryxdesign/core/i18n';
 import {
   borderVars,
   colorVars,
+  focusVars,
   fontWeightVars,
   radiusVars,
   spacingVars,
@@ -835,6 +836,16 @@ export const styles = stylex.create({
   // The minimum width keeps the grid box as wide as its tracks when the
   // viewport is narrower, so the pinned gutter has the whole scrolled extent as
   // its sticky containing block instead of only the first viewport width.
+  // The frame clips at its border, so the viewport's keyboard focus ring is
+  // drawn just inside its own edge rather than outside it where the clip
+  // would swallow it. The viewport is a stacking context, so its outline
+  // paints above the pinned header and gutter.
+  timeGridViewportFocusRing: {
+    outlineOffset: {
+      default: '0',
+      ':focus-visible': `calc(-1 * ${focusVars['--focus-outline-width']})`,
+    },
+  },
   timeGridContent: (columnCount: number) => ({
     display: 'grid',
     gridTemplateColumns: `60px repeat(${Math.max(1, columnCount)}, minmax(140px, 1fr))`,

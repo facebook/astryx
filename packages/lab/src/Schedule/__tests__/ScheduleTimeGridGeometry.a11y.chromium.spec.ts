@@ -12,6 +12,9 @@
  */
 
 import {expect, test} from '@playwright/test';
+import pixelmatch from 'pixelmatch';
+// @ts-expect-error -- pngjs ships no declarations; runtime support is pinned.
+import {PNG} from 'pngjs';
 import {
   columnDeltas,
   finishEvidence,
@@ -149,8 +152,29 @@ test('a narrow viewport scrolls header, gutter, and columns as one owner', async
   expect(after.pageOverflows, 'no whole-page overflow').toBe(false);
 });
 
+function decode(buffer: Buffer): {
+  width: number;
+  height: number;
+  data: Buffer;
+} {
+  return PNG.sync.read(buffer) as {width: number; height: number; data: Buffer};
+}
+
 test('Tab reaches the time grid after the header controls', async ({page}) => {
   await openStory(evidence, page, WEEKLY, WIDE);
+  const rest = await readTimeGrid(page);
+  const clip = rest.scroller?.box;
+  const restFrame =
+    clip == null
+      ? null
+      : await page.screenshot({
+          clip: {
+            x: clip.left,
+            y: clip.top,
+            width: clip.width,
+            height: clip.height,
+          },
+        });
   const sequence: Array<{
     tag: string;
     role: string | null;
@@ -191,7 +215,49 @@ test('Tab reaches the time grid after the header controls', async ({page}) => {
       break;
     }
   }
-  await record(evidence, page, 'keyboard-reach', WEEKLY, 'ltr', {sequence});
+  // The ring must be visible pixels, not just a computed outline: the frame
+  // clips its own border box, so an outside ring would vanish.
+  const ring = await page.evaluate(() => {
+    const element = document.activeElement as HTMLElement | null;
+    if (element == null) {
+      return null;
+    }
+    const style = getComputedStyle(element);
+    return {
+      outlineStyle: style.outlineStyle,
+      outlineWidth: Number.parseFloat(style.outlineWidth),
+      outlineOffset: Number.parseFloat(style.outlineOffset),
+    };
+  });
+  const focusedFrame =
+    clip == null
+      ? null
+      : await page.screenshot({
+          clip: {
+            x: clip.left,
+            y: clip.top,
+            width: clip.width,
+            height: clip.height,
+          },
+        });
+  let ringPixels = 0;
+  if (restFrame != null && focusedFrame != null) {
+    const before = decode(restFrame);
+    const after = decode(focusedFrame);
+    ringPixels = pixelmatch(
+      before.data,
+      after.data,
+      undefined,
+      before.width,
+      before.height,
+      {threshold: 0.1},
+    );
+  }
+  await record(evidence, page, 'keyboard-reach', WEEKLY, 'ltr', {
+    sequence,
+    ring,
+    ringPixels,
+  });
   const reached = sequence.find(stop => stop.insideTimeGrid);
   expect(
     reached,
@@ -201,6 +267,16 @@ test('Tab reaches the time grid after the header controls', async ({page}) => {
   // move it.
   expect(reached?.role).toBe('region');
   expect(reached?.label).toMatch(/time grid$/);
+  expect(ring?.outlineStyle).not.toBe('none');
+  expect(ring?.outlineWidth ?? 0).toBeGreaterThan(0);
+  expect(
+    ring?.outlineOffset ?? 1,
+    'the ring sits inside the clipped frame',
+  ).toBeLessThanOrEqual(0);
+  // At least the ring's perimeter changed between rest and focus.
+  expect(ringPixels).toBeGreaterThan(
+    2 * ((clip?.width ?? 0) + (clip?.height ?? 0)),
+  );
   const before = await readTimeGrid(page);
   await page.keyboard.press('ArrowDown');
   await page.waitForTimeout(150);

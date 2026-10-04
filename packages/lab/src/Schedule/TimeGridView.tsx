@@ -108,7 +108,11 @@ export function TimeGridView({
     },
   });
   const viewportProps = getViewportProps<HTMLDivElement>(
-    stylex.props(styles.timeGridViewport, focusOutlineStyles.focusVisible),
+    stylex.props(
+      styles.timeGridViewport,
+      focusOutlineStyles.focusVisible,
+      styles.timeGridViewportFocusRing,
+    ),
   );
   const contentProps = getContentProps<HTMLDivElement>(
     stylex.props(styles.timeGridContent(days.length)),
