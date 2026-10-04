@@ -624,7 +624,7 @@ async function open(canvasElement: HTMLElement): Promise<Rects> {
 
 function assertNoShift(first: Rects, settled: Rects, when: string) {
   if (!sameRect(first.layer, settled.layer)) {
-    throw new Error(
+    fail(
       `Paint-then-shift ${when}: first frame ${fmt(first.layer)}, settled ${fmt(settled.layer)}`,
     );
   }
@@ -632,6 +632,31 @@ function assertNoShift(first: Rects, settled: Rects, when: string) {
 
 const fmt = (r: DOMRect) =>
   `${Math.round(r.left)}..${Math.round(r.right)} × ${Math.round(r.top)}..${Math.round(r.bottom)} (${Math.round(r.width)}w)`;
+
+/** What the browser resolved for the open layer; appended to every failure. */
+function diagnose(): string {
+  const layer = document.querySelector<HTMLElement>(
+    '[popover]:popover-open[id]',
+  );
+  if (!layer) {
+    return 'no open layer';
+  }
+  const cs = getComputedStyle(layer);
+  const read = (prop: string) => cs.getPropertyValue(prop).trim();
+  return [
+    `position-area=${read('position-area')}`,
+    `fallbacks=${read('position-try-fallbacks')}`,
+    `justify-self=${read('justify-self')} align-self=${read('align-self')}`,
+    `inset t/r/b/l=${read('top')}/${read('right')}/${read('bottom')}/${read('left')}`,
+    `margin t/r/b/l=${read('margin-top')}/${read('margin-right')}/${read('margin-bottom')}/${read('margin-left')}`,
+    `max w/h=${read('max-width')}/${read('max-height')}`,
+    `inline style=${layer.getAttribute('style') ?? ''}`,
+  ].join('\n  ');
+}
+
+function fail(message: string): never {
+  throw new Error(`${message}\n  ${diagnose()}`);
+}
 
 function assertOnScreen(r: Rects, label: string, gutter = GUTTER) {
   const {layer, vw, vh} = r;
@@ -641,7 +666,7 @@ function assertOnScreen(r: Rects, label: string, gutter = GUTTER) {
     layer.top < gutter - TOLERANCE ||
     layer.bottom > vh - gutter + TOLERANCE
   ) {
-    throw new Error(
+    fail(
       `${label}: layer ${fmt(layer)} leaves the ${gutter}px gutter in a ${vw}×${vh} viewport`,
     );
   }
@@ -798,11 +823,22 @@ export const TallerThanTheViewport: Story = {
   play: async ({canvasElement}) => {
     const r = await open(canvasElement);
     if (r.layer.height > r.vh - 2 * GUTTER + TOLERANCE) {
-      throw new Error(
+      fail(
         `Layer block size ${r.layer.height}px exceeds the viewport minus gutters (${r.vh - 2 * GUTTER}px)`,
       );
     }
-    assertOnScreen(r, 'taller than the viewport');
+    // Taller than either side can hold: capped and shifted into the viewport,
+    // keeping its anchor clearance rather than the gutter on the edge it
+    // meets (FR4). Inside the viewport on the block axis; gutters inline.
+    if (r.layer.top < -TOLERANCE || r.layer.bottom > r.vh + TOLERANCE) {
+      fail(`Layer ${fmt(r.layer)} leaves the viewport`);
+    }
+    if (
+      r.layer.left < GUTTER - TOLERANCE ||
+      r.layer.right > r.vw - GUTTER + TOLERANCE
+    ) {
+      fail(`Layer ${fmt(r.layer)} leaves the inline gutter`);
+    }
   },
 };
 
@@ -951,8 +987,8 @@ function AppInsetDemo({
 
 function assertAboveBar(r: Rects, bar: number, label: string) {
   if (r.layer.bottom > r.vh - bar - GUTTER + TOLERANCE) {
-    throw new Error(
-      `${label}: layer ends at ${r.layer.bottom}px, under the ${bar}px bar (viewport ${r.vh}px)`,
+    fail(
+      `${label}: layer ends at ${r.layer.bottom}px (trigger ${fmt(r.trigger)}), under the ${bar}px bar (viewport ${r.vh}px)`,
     );
   }
 }

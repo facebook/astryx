@@ -318,29 +318,39 @@ describe('viewport inset (spec:AST-059)', () => {
       [
         'below',
         'start',
-        ['insetBelow', 'gutterInlineEnd'],
-        ['gutterInlineStart', 'insetAbove'],
+        ['placementBelow', 'gutterInlineEnd'],
+        ['gutterInlineStart', 'placementAbove'],
       ],
       [
         'below',
         'end',
-        ['insetBelow', 'gutterInlineStart'],
+        ['placementBelow', 'gutterInlineStart'],
         ['gutterInlineEnd'],
       ],
       [
         'above',
         'center',
-        ['insetAbove', 'gutterInlineStart', 'gutterInlineEnd'],
-        ['insetBelow'],
+        ['placementAbove', 'gutterInlineStart', 'gutterInlineEnd'],
+        ['placementBelow'],
       ],
       [
         'end',
         'start',
-        ['insetEnd', 'gutterBlockEnd'],
-        ['gutterBlockStart', 'insetStart'],
+        ['placementEnd', 'gutterBlockEnd'],
+        ['gutterBlockStart', 'placementStart'],
       ],
-      ['start', 'end', ['insetStart', 'gutterBlockStart'], ['gutterBlockEnd']],
-      ['end', 'center', ['insetEnd', 'gutterBlockStart', 'gutterBlockEnd'], []],
+      [
+        'start',
+        'end',
+        ['placementStart', 'gutterBlockStart'],
+        ['gutterBlockEnd'],
+      ],
+      [
+        'end',
+        'center',
+        ['placementEnd', 'gutterBlockStart', 'gutterBlockEnd'],
+        [],
+      ],
     ];
     for (const [placement, alignment, present, absent] of cases) {
       const {container, unmount} = render(
@@ -1052,24 +1062,33 @@ describe('useLayer context positioning', () => {
 
     const NONE = {blockStart: '', blockEnd: '', inlineStart: '', inlineEnd: ''};
 
-    it('is flush by default', async () => {
+    // The clearance rides the anchor-facing edge of the placement axis; the
+    // far edge carries the static viewport gutter (spec:AST-059 FR1), which is
+    // a class, not a dynamic variable, so it does not appear here.
+    it('is flush against the anchor by default', async () => {
       expect(
         await openAndGetOffsets(<OffsetHarness placement="below" />),
-      ).toEqual(NONE);
+      ).toEqual({...NONE, blockStart: '0px'});
     });
 
-    // Both edges of the axis, so the gap survives a position-try-fallbacks
-    // flip to the opposite side (#4803).
-    it('clears both block edges for a block placement', async () => {
+    // The flip tactic swaps the two block margins with the area, so the gap
+    // survives a position-try-fallbacks flip to the opposite side (#4803).
+    it('clears the anchor-facing block edge for a block placement', async () => {
       expect(
         await openAndGetOffsets(<OffsetHarness placement="above" offset={8} />),
-      ).toEqual({...NONE, blockStart: '8px', blockEnd: '8px'});
+      ).toEqual({...NONE, blockEnd: '8px'});
     });
 
-    it('clears both inline edges for an inline placement', async () => {
+    it('clears the opposite block edge when placed below', async () => {
+      expect(
+        await openAndGetOffsets(<OffsetHarness placement="below" offset={8} />),
+      ).toEqual({...NONE, blockStart: '8px'});
+    });
+
+    it('clears the anchor-facing inline edge for an inline placement', async () => {
       expect(
         await openAndGetOffsets(<OffsetHarness placement="end" offset={8} />),
-      ).toEqual({...NONE, inlineStart: '8px', inlineEnd: '8px'});
+      ).toEqual({...NONE, inlineStart: '8px'});
     });
 
     it('takes a CSS length string', async () => {
@@ -1077,11 +1096,18 @@ describe('useLayer context positioning', () => {
         await openAndGetOffsets(
           <OffsetHarness placement="below" offset="var(--spacing-1)" />,
         ),
-      ).toEqual({
-        ...NONE,
-        blockStart: 'var(--spacing-1)',
-        blockEnd: 'var(--spacing-1)',
-      });
+      ).toEqual({...NONE, blockStart: 'var(--spacing-1)'});
+    });
+
+    it('puts the viewport gutter on the far edge of the placement axis (FR1, FR6)', async () => {
+      const user = userEvent.setup();
+      const {container, getByRole} = render(
+        <OffsetHarness placement="below" offset={8} />,
+      );
+      await user.click(getByRole('button', {name: 'trigger'}));
+      const el = container.querySelector('[popover]') as HTMLElement;
+      expect(el.className).toContain('useLayer__styles.placementBelow');
+      expect(el.className).not.toContain('useLayer__styles.placementAbove');
     });
 
     it('is ignored under custom positioning, which owns its own insets', async () => {

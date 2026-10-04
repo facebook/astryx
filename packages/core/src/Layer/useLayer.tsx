@@ -59,26 +59,38 @@ const styles = stylex.create({
   fixed: {
     position: 'fixed',
   },
-  // Clearance from the anchor. Set on BOTH edges of the placement axis, not
-  // just the one facing the anchor: `position-try-fallbacks` can flip the
-  // layer to the opposite side at paint time, and a single-edge margin then
-  // lands on the far side and the gap vanishes (#4803).
-  offsetBlock: (offset: string) => ({
+  // Margins on the placement axis: the anchor clearance on the edge facing
+  // the anchor, the viewport gutter on the far edge (spec:AST-059 FR1, FR6).
+  // The margin box is what must fit a position option and what the browser's
+  // overflow shift keeps inside the viewport, so a layer that would end
+  // inside the gutter — or under a declared bar — does not fit there and the
+  // next option is tried. A flip tactic swaps the two values with the area,
+  // so the clearance stays on the anchor side and the gutter on the far side
+  // (#4803); for the same reason the gutter is one value for both edges, the
+  // larger of the two block gutters.
+  placementBelow: (offset: string) => ({
     marginBlockStart: offset,
+    marginBlockEnd: layerViewportInset.gutterBlock,
+  }),
+  placementAbove: (offset: string) => ({
+    marginBlockStart: layerViewportInset.gutterBlock,
     marginBlockEnd: offset,
   }),
-  offsetInline: (offset: string) => ({
+  placementEnd: (offset: string) => ({
     marginInlineStart: offset,
+    marginInlineEnd: layerViewportInset.gutterInline,
+  }),
+  placementStart: (offset: string) => ({
+    marginInlineStart: layerViewportInset.gutterInline,
     marginInlineEnd: offset,
   }),
   // The viewport inset (spec:AST-059 FR1–FR3). Every anchor-mode layer is
   // capped to the viewport minus both gutters on both axes and keeps the
-  // runtime's gutter from the far viewport edge of its alignment axis. The
-  // gutter is a margin on the far edge only — one on the anchor-facing edge
-  // would push the layer off its anchor — and the flip tactics swap it with
-  // the area. The cap is on the layer box itself: content wider than the
-  // viewport overflows inside the layer, where the composing component
-  // decides whether it scrolls or clips; the box never leaves the viewport.
+  // runtime's gutter from the far viewport edge of its alignment axis as a
+  // margin (the placement-axis gutter rides the placement margins above).
+  // The cap is on the layer box itself: content wider than the viewport
+  // overflows inside the layer, where the composing component decides
+  // whether it scrolls or clips; the box never leaves the viewport.
   viewportFit: {
     boxSizing: 'border-box',
     maxInlineSize: stylex.firstThatWorks(
@@ -113,40 +125,6 @@ const styles = stylex.create({
       layerViewportInset.gutterBlockStart,
       layerViewportInset.gutterBlockStartFallback,
     ),
-  },
-  // The gutter on the placement axis is an inset on the far edge of the
-  // position-area region, so a layer that would end inside the gutter — or
-  // under an app-declared bar — overflows its region and the browser tries
-  // the next option, instead of fitting flush against the viewport edge. The
-  // anchor-facing edge stays at 0. A flip tactic mirrors the two declarations,
-  // so the value is the same for both edges: the larger of the two gutters.
-  insetBelow: {
-    insetBlockStart: 0,
-    insetBlockEnd: stylex.firstThatWorks(
-      layerViewportInset.gutterBlock,
-      layerViewportInset.gutterBlockFallback,
-    ),
-  },
-  insetAbove: {
-    insetBlockStart: stylex.firstThatWorks(
-      layerViewportInset.gutterBlock,
-      layerViewportInset.gutterBlockFallback,
-    ),
-    insetBlockEnd: 0,
-  },
-  insetEnd: {
-    insetInlineStart: 0,
-    insetInlineEnd: stylex.firstThatWorks(
-      layerViewportInset.gutterInline,
-      layerViewportInset.gutterInlineFallback,
-    ),
-  },
-  insetStart: {
-    insetInlineStart: stylex.firstThatWorks(
-      layerViewportInset.gutterInline,
-      layerViewportInset.gutterInlineFallback,
-    ),
-    insetInlineEnd: 0,
   },
 });
 
@@ -576,25 +554,21 @@ function getGutterStyles(
   alignment: LayerAlignment,
 ): ReadonlyArray<StyleXStyles> {
   if (placement === 'above' || placement === 'below') {
-    const placementInset =
-      placement === 'above' ? styles.insetAbove : styles.insetBelow;
     if (alignment === 'start') {
-      return [placementInset, styles.gutterInlineEnd];
+      return [styles.gutterInlineEnd];
     }
     if (alignment === 'end') {
-      return [placementInset, styles.gutterInlineStart];
+      return [styles.gutterInlineStart];
     }
-    return [placementInset, styles.gutterInlineStart, styles.gutterInlineEnd];
+    return [styles.gutterInlineStart, styles.gutterInlineEnd];
   }
-  const placementInset =
-    placement === 'start' ? styles.insetStart : styles.insetEnd;
   if (alignment === 'start') {
-    return [placementInset, styles.gutterBlockEnd];
+    return [styles.gutterBlockEnd];
   }
   if (alignment === 'end') {
-    return [placementInset, styles.gutterBlockStart];
+    return [styles.gutterBlockStart];
   }
-  return [placementInset, styles.gutterBlockStart, styles.gutterBlockEnd];
+  return [styles.gutterBlockStart, styles.gutterBlockEnd];
 }
 
 /**
@@ -1093,11 +1067,16 @@ function useLayerImplementation(
               ...getSelfAlignment(placement, alignment, isAnchorInView),
             };
 
+      const clearance = offset ? toCssLength(offset) : '0px';
       const offsetStyle =
-        positioning === 'anchor' && offset
-          ? placement === 'above' || placement === 'below'
-            ? styles.offsetBlock(toCssLength(offset))
-            : styles.offsetInline(toCssLength(offset))
+        positioning === 'anchor'
+          ? placement === 'above'
+            ? styles.placementAbove(clearance)
+            : placement === 'below'
+              ? styles.placementBelow(clearance)
+              : placement === 'start'
+                ? styles.placementStart(clearance)
+                : styles.placementEnd(clearance)
           : null;
 
       const viewportStyles =

@@ -135,14 +135,17 @@ portal cannot lose it, and a layer with no provider — nothing written, every
 property reading `0px` — renders exactly as one under a default provider. A
 hand-written property is an unsupported escape hatch. The inline gutter reads
 the larger of the two physical safe-area insets so a flipped layer still clears
-a notch. `Layer/layerViewportInset.stylex.ts` holds the one definition. On the
-alignment axis the gutter rides the far viewport edge as a margin; on the
-placement axis it is an inset on the far edge of the position-area region, so a
-layer that would end inside the gutter or under a declared bar overflows its
-region and the next option is tried. The flip tactics mirror both declarations
-with the area, so the placement-axis inset carries one value for both edges —
-the larger of the two block gutters — and a bar declared on one block edge
-keeps a layer the same distance from the opposite edge.
+a notch. `Layer/layerViewportInset.stylex.ts` holds the one definition. The
+gutter is a margin on the far viewport edge of each axis — on the placement
+axis beside the anchor clearance, which rides the anchor-facing edge — so the
+margin box is what must fit a position option and what the browser's overflow
+shift keeps inside the viewport: a layer that would end inside the gutter or
+under a declared bar does not fit there and the next option is tried. The flip
+tactics swap the two margins with the area, so the clearance stays on the
+anchor side and the gutter on the far side, and the placement-axis gutter is
+one value for both edges — the larger of the two block gutters — so a bar
+declared on one block edge keeps a layer the same distance from the opposite
+edge.
 
 The layer box is capped to the viewport minus both gutters on both axes, never
 to the span of viewport beside the trigger, and never exceeds that cap. An
@@ -160,8 +163,9 @@ placement axis; flip across the alignment axis; both; then, while the anchor is
 in view, the browser's position-area overflow alignment slides an aligned layer
 that fits on neither side the least distance that brings it inside the gutters.
 Content taller than the placement axis can hold on either side is capped to the
-viewport minus both gutters and shifted into the viewport by the browser,
-keeping its anchor clearance rather than the gutter from the edge it meets.
+viewport minus both gutters and shifted into the viewport by the browser; its
+margin box stays inside the viewport, so it keeps its anchor clearance from the
+edge it meets.
 Once the anchor has left the viewport the runtime pins the layer's
 self-alignment `unsafe` toward the anchor, so the layer holds the position its
 flips give it and holds its size rather than sliding to the edge. Components
