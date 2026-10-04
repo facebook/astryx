@@ -6,8 +6,8 @@ id: architecture:container-padding
 authority: current
 archive_reason: null
 superseded_by: null
-approved_by: cixzhang
-approved_at: 2026-09-22
+approved_by: imdreamrunner
+approved_at: 2026-10-04
 owners: [cixzhang, imdreamrunner]
 applies_to:
   [
