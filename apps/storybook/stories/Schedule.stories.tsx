@@ -2,6 +2,7 @@
 
 import {useMemo, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
+import {Text} from '@astryxdesign/core';
 import {
   Schedule,
   createScheduleDayView,
@@ -530,6 +531,50 @@ export const OverlappingEvents: Story = {
     const [date, setDate] = useState<Instant>(FIXTURE_DATE);
     const view = useMemo(
       () => createScheduleWeeklyView({minHour: 8, maxHour: 18}),
+      [],
+    );
+
+    return (
+      <Schedule
+        view={view}
+        events={overlappingEvents}
+        categories={categories}
+        date={date}
+        focusDate={FIXTURE_DATE}
+        onChangeDate={setDate}
+        timezoneID={FIXTURE_TIMEZONE}
+      />
+    );
+  },
+};
+
+/**
+ * The week view owns a popover for its events: each event is a button that
+ * opens the system's standard Popover with the content the story returns.
+ * "Quick check-in" returns no content and stays read-only.
+ */
+export const EventPopover: Story = {
+  render: () => {
+    const [date, setDate] = useState<Instant>(FIXTURE_DATE);
+    const view = useMemo(
+      () =>
+        createScheduleWeeklyView({
+          minHour: 8,
+          maxHour: 18,
+          renderPopover: event =>
+            event.id === 'quarter' ? null : (
+              <div
+                data-event-details={event.id}
+                style={{display: 'flex', flexDirection: 'column', gap: 4}}>
+                <Text type="label" weight="bold">
+                  {event.title}
+                </Text>
+                <Text type="supporting" color="secondary">
+                  {event.category ?? 'No category'} · {event.id}
+                </Text>
+              </div>
+            ),
+        }),
       [],
     );
 

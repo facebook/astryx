@@ -10,7 +10,7 @@ export const docs = {
 
   usage: {
     description:
-      'Schedule is a read-only calendar surface that renders events as a month grid, a day or week time grid, or a list grouped by day: the layout comes from a view object you pass in. It handles timezone-aware date math, paging between ranges, and async event loading, and exposes header slots that plugins fill with navigation controls. Use it to display an existing schedule; it has no event selection, creation, or editing affordances.',
+      "Schedule is a calendar surface that renders events as a month grid, a day or week time grid, or a list grouped by day: the layout comes from a view object you pass in. It handles timezone-aware date math, paging between ranges, and async event loading, and exposes header slots that plugins fill with navigation controls. Use it to display an existing schedule; build the week or day view with renderPopover to let people open an event's details in a popover the view manages. It has no event selection, creation, or editing affordances.",
     bestPractices: [
       {
         guidance: true,
@@ -83,7 +83,7 @@ export const docs = {
         name: 'Event',
         required: false,
         description:
-          'One pill (grid views) or row with a color dot (list view) per event, tinted by its category and dimmed once it is in the past.',
+          "One pill (grid views) or row with a color dot (list view) per event, tinted by its category and dimmed once it is in the past. In the day and week grids, events that happen at the same time share the column side by side, and when the view is built with renderPopover each event with content is a button that opens the view's popover.",
       },
       {
         name: 'Current time line',
@@ -99,7 +99,7 @@ export const docs = {
       name: 'view',
       type: 'ScheduleView<Options>',
       description:
-        'The view object that owns the layout and the date range each page covers. Build one with createScheduleMonthlyView, createScheduleWeeklyView, createScheduleDayView, or createScheduleListView; each factory takes its own options (weekStartsOn, minHour/maxHour/hourHeight, days).',
+        "The view object that owns the layout and the date range each page covers. Build one with createScheduleMonthlyView, createScheduleWeeklyView, createScheduleDayView, or createScheduleListView; each factory takes its own options (weekStartsOn, minHour/maxHour/hourHeight, days). The week and day factories also take renderPopover(event): return the content for an event and the view renders that event as a button that opens a popover it manages — one popover for the grid, named by the event title, with the system's standard surface, padding, Escape and light dismiss, and focus return; return null to leave an event read-only. The month and list views have no interaction option.",
       required: true,
     },
     {
@@ -134,7 +134,7 @@ export const docs = {
       name: 'onChangeDate',
       type: '(date: Instant) => void',
       description:
-        "Called with the epoch milliseconds to render next when a pagination plugin pages backward or forward, or when Today is pressed. Paging preserves the time of day; Today passes the current time. This is the component's only callback; there is no event-level interaction.",
+        'Called with the epoch milliseconds to render next when a pagination plugin pages backward or forward, or when Today is pressed. Paging preserves the time of day; Today passes the current time.',
     },
     {
       name: 'timezoneID',

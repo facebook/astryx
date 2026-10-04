@@ -11,15 +11,24 @@
  */
 
 import {
+  useCallback,
   useContext,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
   type UIEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Locale} from '@astryxdesign/core/i18n';
+import {layerAnimations} from '@astryxdesign/core/Layer';
+import {usePopover} from '@astryxdesign/core/Popover';
+import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {
+  focusOutlineStyles,
   plainDateAddDays,
   plainDateFromInstant,
   plainDateIsBefore,
@@ -75,6 +84,7 @@ export function TimeGridView({
   maxHour,
   hourHeight,
   label,
+  renderPopover,
 }: {
   days: PlainDate[];
   events: ReadonlyArray<CalendarEvent>;
@@ -85,8 +95,11 @@ export function TimeGridView({
   hourHeight: number;
   /** Accessible name of the rendered range; names the scroll viewport. */
   label: string;
+  /** Content of the view-owned event popover; absent keeps the grid read-only. */
+  renderPopover?: (event: CalendarEvent) => ReactNode;
 }) {
   const {categories, headingLevel, locale, range} = useScheduleContext();
+  const hasPopover = renderPopover != null;
   const normalizedMinHour = Math.max(0, Math.min(23, Math.floor(minHour)));
   const normalizedMaxHour = Math.max(
     normalizedMinHour + 1,
@@ -211,32 +224,135 @@ export function TimeGridView({
     }
   };
 
+  // Event popover (component:Schedule FR11–FR12, DEC-1, DEC-5). The grid
+  // owns one popover and remembers which painted block opened it, by event id
+  // and day so a multi-day event's blocks open it separately. The popover is
+  // the system's standard Popover: dialog named by the event's title, modal,
+  // auto-focus, hidden fallback close, Escape and light dismiss, standard
+  // surface and padding. Content comes from the caller for the open event
+  // only; it re-renders with that event's current object while the event
+  // stays in range, and the popover closes when its block is no longer
+  // painted.
+  const [openBlock, setOpenBlock] = useState<{
+    eventID: string;
+    dayISO: string;
+  } | null>(null);
+  const openBlockRef = useRef(openBlock);
+  openBlockRef.current = openBlock;
+  const openEvent =
+    openBlock == null
+      ? null
+      : (events.find(event => event.id === openBlock.eventID) ?? null);
+  const popover = usePopover({
+    dialogLabel: openEvent?.title,
+    // Popover's own defaults, spelled out where the hook's differ.
+    padding: 3,
+    surfaceTarget: 'popover',
+    onHide: useCallback(() => {
+      setOpenBlock(null);
+    }, []),
+  });
+  const popoverRef = useRef(popover);
+  popoverRef.current = popover;
+  // A pointer press on a block while the popover is open would close it by
+  // the browser's light dismiss before the click arrives, and the layer then
+  // absorbs a show() from that same press. So the press itself decides: a
+  // press on another block closes the popover here, ahead of the browser,
+  // and the click that follows opens the pressed block; a press on the open
+  // block is remembered so its click ends closed, whichever of the two
+  // closed it. A key press starts a new gesture and forgets the press.
+  const openBlockAtPressRef = useRef<string | null>(null);
+  const handlePointerDownCapture = (
+    pointerEvent: ReactPointerEvent<HTMLDivElement>,
+  ) => {
+    const target = pointerEvent.target as Element | null;
+    const pressedKey =
+      target
+        ?.closest('[data-schedule-event-block]')
+        ?.getAttribute('data-schedule-event-block') ?? null;
+    const current = openBlockRef.current;
+    const currentKey =
+      current == null ? null : blockKeyOf(current.eventID, current.dayISO);
+    openBlockAtPressRef.current = pressedKey == null ? null : currentKey;
+    if (
+      pressedKey != null &&
+      currentKey != null &&
+      pressedKey !== currentKey &&
+      popover.isOpen
+    ) {
+      popover.hide();
+    }
+  };
+  const forgetPress = () => {
+    openBlockAtPressRef.current = null;
+  };
+  const toggleBlock = (
+    event: CalendarEvent,
+    dayISO: string,
+    button: HTMLButtonElement,
+  ) => {
+    const key = blockKeyOf(event.id, dayISO);
+    const openAtPress = openBlockAtPressRef.current;
+    openBlockAtPressRef.current = null;
+    const current = openBlockRef.current;
+    const isCurrent =
+      current != null && blockKeyOf(current.eventID, current.dayISO) === key;
+    if (openAtPress === key || (isCurrent && popover.isOpen)) {
+      if (popover.isOpen) {
+        popover.hide();
+      }
+      return;
+    }
+    setOpenBlock({eventID: event.id, dayISO});
+    popover.triggerRef(button);
+    popover.show();
+  };
+  // Blocks painted this render; the popover may stay open only for one of
+  // them.
+  const paintedBlockKeys = new Set<string>();
+  const openBlockKey =
+    openBlock == null ? null : blockKeyOf(openBlock.eventID, openBlock.dayISO);
+  let openContent: ReactNode = null;
+  useEffect(() => {
+    if (openBlockKey != null && !paintedBlockKeys.has(openBlockKey)) {
+      popoverRef.current.hide();
+      setOpenBlock(null);
+    }
+  });
+
   const viewportProps = getViewportProps<HTMLDivElement>({
     ref: viewportRef,
     onScroll: rememberScroll,
+    onPointerDownCapture: handlePointerDownCapture,
+    onKeyDownCapture: forgetPress,
     ...stylex.props(styles.timeGridViewport, timeGridViewportScope),
   });
   const contentProps = getContentProps<HTMLDivElement>(
     stylex.props(styles.timeGridContent(days.length)),
   );
 
-  // Everything painted below is decoration for sighted users; the hidden grid
-  // above is what assistive technology reads. Each painted part is hidden on
-  // its own, rather than the whole viewport, so the viewport itself can stay
-  // a reachable, named keyboard scroll owner.
+  // Read-only: everything painted is decoration for sighted users and the
+  // hidden grid is what assistive technology reads. With renderPopover the
+  // painted events are the accessible representation themselves — buttons
+  // that open the popover, or static text for an event without content,
+  // grouped by day — so the hidden grid is not rendered twice over. Either
+  // way each decorative part is hidden on its own, never the viewport, so
+  // the viewport stays a reachable, named keyboard scroll owner.
   return (
     <>
-      <TimeGridAccessibilityGrid
-        allDayEvents={allDayEvents}
-        categories={categories}
-        days={days}
-        events={instantEvents}
-        focusDate={focusDate}
-        hours={hours}
-        locale={locale}
-        timezoneID={timezoneID}
-        timezoneLabel={timezoneLabel}
-      />
+      {!hasPopover && (
+        <TimeGridAccessibilityGrid
+          allDayEvents={allDayEvents}
+          categories={categories}
+          days={days}
+          events={instantEvents}
+          focusDate={focusDate}
+          hours={hours}
+          locale={locale}
+          timezoneID={timezoneID}
+          timezoneLabel={timezoneLabel}
+        />
+      )}
       <div {...stylex.props(styles.timeGridFrame)}>
         <div {...viewportProps}>
           <div {...contentProps}>
@@ -275,11 +391,14 @@ export function TimeGridView({
               </Text>
             </div>
             <div
-              aria-hidden
+              {...(hasPopover
+                ? {role: 'group', 'aria-label': 'All-day events'}
+                : {'aria-hidden': true})}
               {...stylex.props(styles.allDayRow(allDayLevelCount))}>
               {days.map((day, index) => (
                 <div
                   key={plainDateToISO(day)}
+                  aria-hidden
                   {...stylex.props(
                     styles.allDayCell,
                     styles.allDaySubgridPlacement(index),
@@ -287,16 +406,11 @@ export function TimeGridView({
                   )}
                 />
               ))}
-              {allDaySegments.map(segment => (
-                <div
-                  key={`${segment.event.id}:${segment.columnStart}`}
-                  {...stylex.props(
-                    styles.allDayEventSpan(
-                      segment.columnStart,
-                      segment.columnEnd,
-                      segment.level,
-                    ),
-                  )}>
+              {allDaySegments.map(segment => {
+                const day = days[segment.columnStart] ?? focusDate;
+                const dayISO = plainDateToISO(day);
+                const key = `${segment.event.id}:${segment.columnStart}`;
+                const pill = (
                   <EventPill
                     event={segment.event}
                     isPast={isEventInPast(
@@ -305,8 +419,70 @@ export function TimeGridView({
                       timezoneID,
                     )}
                   />
-                </div>
-              ))}
+                );
+                const placement = styles.allDayEventSpan(
+                  segment.columnStart,
+                  segment.columnEnd,
+                  segment.level,
+                );
+                const content = renderPopover?.(segment.event);
+                if (!hasPopover) {
+                  return (
+                    <div key={key} {...stylex.props(placement)}>
+                      {pill}
+                    </div>
+                  );
+                }
+                if (content == null) {
+                  return (
+                    <div
+                      key={key}
+                      aria-label={formatEventButtonLabel(
+                        segment.event,
+                        day,
+                        timezoneID,
+                        categories,
+                        locale,
+                      )}
+                      {...stylex.props(placement)}>
+                      {pill}
+                    </div>
+                  );
+                }
+                const blockKey = blockKeyOf(segment.event.id, dayISO);
+                paintedBlockKeys.add(blockKey);
+                const isOpen = popover.isOpen && openBlockKey === blockKey;
+                if (isOpen) {
+                  openContent = content;
+                }
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    aria-label={formatEventButtonLabel(
+                      segment.event,
+                      day,
+                      timezoneID,
+                      categories,
+                      locale,
+                    )}
+                    aria-haspopup="dialog"
+                    aria-expanded={isOpen}
+                    aria-controls={popover.id}
+                    data-schedule-event-block={blockKey}
+                    onClick={domEvent =>
+                      toggleBlock(segment.event, dayISO, domEvent.currentTarget)
+                    }
+                    {...stylex.props(
+                      styles.eventButtonReset,
+                      placement,
+                      styles.eventButtonFocus,
+                      focusOutlineStyles.focusVisible,
+                    )}>
+                    {pill}
+                  </button>
+                );
+              })}
             </div>
             <div aria-hidden {...stylex.props(styles.timeLabels)}>
               {hours.slice(1).map((hour, index) => (
@@ -331,7 +507,12 @@ export function TimeGridView({
               return (
                 <div
                   key={plainDateToISO(day)}
-                  aria-hidden
+                  {...(hasPopover
+                    ? {
+                        role: 'group',
+                        'aria-label': formatFullDate(day, timezoneID, locale),
+                      }
+                    : {'aria-hidden': true})}
                   {...stylex.props(
                     styles.timeColumn,
                     styles.dayColumnPlacement(index),
@@ -341,6 +522,7 @@ export function TimeGridView({
                   {hours.map((hour, hourIndex) => (
                     <div
                       key={hour}
+                      aria-hidden
                       {...stylex.props(
                         styles.hourSlot,
                         hourIndex === hours.length - 1 && styles.hourSlotLast,
@@ -371,21 +553,20 @@ export function TimeGridView({
                         locale,
                       );
                       const category = getEventCategory(event, categories);
-                      return (
-                        <div
-                          key={event.id}
-                          {...stylex.props(
-                            styles.timedEvent,
-                            styles.timedEventPosition(
-                              clamp(top, 0, 100),
-                              clamp(height, 4, 100),
-                              (columnStart / columnCount) * 100,
-                              (columnSpan / columnCount) * 100,
-                            ),
-                            isEventInPast(event, currentTime, timezoneID)
-                              ? eventPastSurfaceColorStyle(category.color)
-                              : eventSurfaceColorStyle(category.color),
-                          )}>
+                      const blockStyles = [
+                        styles.timedEvent,
+                        styles.timedEventPosition(
+                          clamp(top, 0, 100),
+                          clamp(height, 4, 100),
+                          (columnStart / columnCount) * 100,
+                          (columnSpan / columnCount) * 100,
+                        ),
+                        isEventInPast(event, currentTime, timezoneID)
+                          ? eventPastSurfaceColorStyle(category.color)
+                          : eventSurfaceColorStyle(category.color),
+                      ];
+                      const blockContent = (
+                        <>
                           <Text
                             type="supporting"
                             color="inherit"
@@ -399,13 +580,68 @@ export function TimeGridView({
                             xstyle={styles.eventTime}>
                             {timeLabel}
                           </Text>
-                        </div>
+                        </>
+                      );
+                      if (!hasPopover) {
+                        return (
+                          <div key={event.id} {...stylex.props(...blockStyles)}>
+                            {blockContent}
+                          </div>
+                        );
+                      }
+                      const popoverContent = renderPopover(event);
+                      const buttonLabel = formatEventButtonLabel(
+                        event,
+                        day,
+                        timezoneID,
+                        categories,
+                        locale,
+                      );
+                      if (popoverContent == null) {
+                        return (
+                          <div
+                            key={event.id}
+                            aria-label={buttonLabel}
+                            {...stylex.props(...blockStyles)}>
+                            {blockContent}
+                          </div>
+                        );
+                      }
+                      const dayISO = plainDateToISO(day);
+                      const blockKey = blockKeyOf(event.id, dayISO);
+                      paintedBlockKeys.add(blockKey);
+                      const isOpen =
+                        popover.isOpen && openBlockKey === blockKey;
+                      if (isOpen) {
+                        openContent = popoverContent;
+                      }
+                      return (
+                        <button
+                          key={event.id}
+                          type="button"
+                          aria-label={buttonLabel}
+                          aria-haspopup="dialog"
+                          aria-expanded={isOpen}
+                          aria-controls={popover.id}
+                          data-schedule-event-block={blockKey}
+                          onClick={domEvent =>
+                            toggleBlock(event, dayISO, domEvent.currentTarget)
+                          }
+                          {...stylex.props(
+                            styles.eventButtonReset,
+                            ...blockStyles,
+                            styles.eventButtonFocus,
+                            focusOutlineStyles.focusVisible,
+                          )}>
+                          {blockContent}
+                        </button>
                       );
                     },
                   )}
                   {plainDateIsEqual(day, currentDate) &&
                     currentTimeTop != null && (
                       <div
+                        aria-hidden
                         {...stylex.props(
                           styles.currentTimeLine(currentTimeTop),
                         )}
@@ -418,6 +654,13 @@ export function TimeGridView({
         </div>
         <div aria-hidden {...stylex.props(styles.timeGridFocusRing)} />
       </div>
+      {hasPopover &&
+        popover.render(openContent, {
+          placement: 'below',
+          alignment: 'start',
+          offset: spacingVars['--spacing-1'],
+          xstyle: [styles.eventPopover, layerAnimations.below],
+        })}
     </>
   );
 }
@@ -546,6 +789,34 @@ function formatTimeGridAccessibilityCellLabel({
     formatEventAccessibilityLabel(event, day, timezoneID, categories, locale),
   );
   return `${label}. ${eventLabels.join('. ')}`;
+}
+
+/** One painted block: an event on one day. Ids may contain any character. */
+function blockKeyOf(eventID: string, dayISO: string): string {
+  return `${dayISO}/${eventID}`;
+}
+
+/**
+ * A block exposed on its own, rather than inside a dated cell, carries the day
+ * in its name. The visible text — title, then time — leads the name, then the
+ * category and the full date.
+ */
+function formatEventButtonLabel(
+  event: CalendarEvent,
+  day: PlainDate,
+  timezoneID: string,
+  categories: ReadonlyArray<ScheduleCategory>,
+  locale: Locale,
+): string {
+  const category = getEventCategory(event, categories);
+  const timeLabel = isDayEvent(event)
+    ? 'all day'
+    : formatEventTime(event, day, timezoneID, locale);
+  return `${event.title}, ${timeLabel}, ${category.label}, ${formatFullDate(
+    day,
+    timezoneID,
+    locale,
+  )}`;
 }
 
 function eventOverlapsHour(

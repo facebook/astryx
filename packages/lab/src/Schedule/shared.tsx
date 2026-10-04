@@ -1082,6 +1082,48 @@ export const styles = stylex.create({
     lineHeight: typeScaleVars['--text-supporting-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
   },
+  // An event that opens the popover is a native button that keeps the block's
+  // own paint: the reset removes only what the user agent adds to a button.
+  // Block display lets an all-day pill fill the days its button spans; a
+  // timed block's own flex display wins over it.
+  eventButtonReset: {
+    appearance: 'none',
+    display: 'block',
+    // A button grid item would otherwise size to its content.
+    justifySelf: 'stretch',
+    margin: 0,
+    padding: 0,
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
+    color: 'inherit',
+    font: 'inherit',
+    textAlign: 'start',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
+  },
+  // A focused block rises above its neighbours inside the isolated column so
+  // its ring is never clipped by a later sibling; nothing outside the column
+  // can see the value.
+  eventButtonFocus: {
+    zIndex: {
+      default: null,
+      ':focus-visible': 1,
+    },
+  },
+  // The event popover keeps to the viewport the way the Popover component
+  // does: it never grows past the visible block size, and scrolls inside
+  // when its content is taller.
+  eventPopover: {
+    boxSizing: 'border-box',
+    maxBlockSize: stylex.firstThatWorks(
+      `calc(100dvb - 2 * ${spacingVars['--spacing-4']})`,
+      `calc(100vh - 2 * ${spacingVars['--spacing-4']})`,
+    ),
+    overflowY: 'auto',
+  },
   // Blocks in one overlap cluster split the column into equal tracks and never
   // overlap, so they carry no z-index of their own; the 2px insets keep the
   // same gutter a lone block has at the column's edges.
