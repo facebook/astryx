@@ -788,9 +788,13 @@ export function CodeBlock({
   const regionId = useId();
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const scrollStyle: CSSProperties | undefined = maxHeight
-    ? {maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight}
-    : undefined;
+  const scrollStyle: CSSProperties | undefined =
+    maxHeight != null
+      ? {
+          maxHeight:
+            typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight,
+        }
+      : undefined;
 
   const copyButtonEl = hasCopyButton ? (
     <IconButton
@@ -835,6 +839,11 @@ export function CodeBlock({
         tabIndex={canCollapse ? 0 : undefined}
         aria-expanded={canCollapse ? !isCollapsed : undefined}
         aria-controls={canCollapse ? regionId : undefined}
+        aria-label={
+          canCollapse && !title?.trim() && !languageLabel
+            ? t('@astryx.codeBlock.code')
+            : undefined
+        }
         onClick={canCollapse ? () => setIsCollapsed(prev => !prev) : undefined}
         onKeyDown={
           canCollapse

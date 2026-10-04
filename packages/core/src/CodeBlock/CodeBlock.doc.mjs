@@ -114,6 +114,11 @@ export const docs = {
       default: '10',
     },
     {
+      name: 'ref',
+      type: 'React.Ref<HTMLPreElement>',
+      description: 'Ref forwarded to the root code-block element.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description: 'StyleX styles for layout customization. Must be a stylex.create() value.',
@@ -172,6 +177,7 @@ export const docs = {
     ],
     anatomy: [
       {name: 'Header Bar', required: false, description: 'Shows the title, visible language label, and copy button when a header is present. A title or visible language label creates the header; the copy button alone floats at the top-end of a headerless block.'},
+      {name: 'Header Title', required: false, description: 'Groups the optional title, visible language label, and collapsible chevron inside the header bar.'},
       {name: 'Line Numbers', required: false, description: 'Numbered gutter along the left edge. Enable with hasLineNumbers.'},
       {name: 'Code Body', required: true, description: 'The syntax-highlighted code content.'},
       {name: 'Highlighted Lines', required: false, description: 'Background accent on specific lines to draw attention.'},

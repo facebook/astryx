@@ -11,6 +11,7 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {act, render, screen, fireEvent, waitFor} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {CodeBlock} from './CodeBlock';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {dracula} from '../theme/syntax';
@@ -62,6 +63,27 @@ describe('CodeBlock', () => {
     const region = screen.getByRole('group');
     expect(region).toHaveAttribute('tabindex', '0');
     expect(region).toHaveAttribute('aria-label', 'Code');
+  });
+
+  it('names a collapsible header when the visible title is empty', () => {
+    render(
+      <CodeBlock
+        code={LONG_CODE}
+        language="plaintext"
+        title=""
+        isCollapsible
+      />,
+    );
+
+    const header = screen
+      .getAllByRole('button')
+      .find(element => element.hasAttribute('aria-expanded'));
+    expect(header).toHaveAccessibleName('Code');
+  });
+
+  it('applies a zero-pixel max height', () => {
+    render(<CodeBlock code="hello" maxHeight={0} />);
+    expect(screen.getByRole('group')).toHaveStyle({maxHeight: '0px'});
   });
 
   it('copies code when the copy button is clicked', () => {
@@ -417,6 +439,27 @@ describe('CodeBlock', () => {
       expect(css).toContain('.astryx-codeblock-header');
       expect(css).toContain('.astryx-codeblock-title');
     });
+  });
+
+  it('toggles collapse with Enter and Space', async () => {
+    const user = userEvent.setup();
+    render(
+      <CodeBlock
+        code={LONG_CODE}
+        language="javascript"
+        title="example"
+        isCollapsible
+      />,
+    );
+    const header = screen
+      .getAllByRole('button')
+      .find(el => el.hasAttribute('aria-expanded'))!;
+
+    header.focus();
+    await user.keyboard('{Enter}');
+    expect(header).toHaveAttribute('aria-expanded', 'false');
+    await user.keyboard(' ');
+    expect(header).toHaveAttribute('aria-expanded', 'true');
   });
 });
 
