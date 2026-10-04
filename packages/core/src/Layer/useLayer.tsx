@@ -114,7 +114,212 @@ const styles = stylex.create({
       layerViewportInset.gutterBlockStartFallback,
     ),
   },
+  // The gutter on the placement axis is an inset on the far edge of the
+  // position-area region, so a layer that would end inside the gutter — or
+  // under an app-declared bar — overflows its region and the browser tries
+  // the next option, instead of fitting flush against the viewport edge. The
+  // anchor-facing edge stays at 0. Flipped options carry their own insets
+  // (see the @position-try rules below), because a flip tactic would mirror
+  // these values and put the block-end gutter at the top.
+  insetBelow: {
+    insetBlockStart: 0,
+    insetBlockEnd: layerViewportInset.gutterBlockEnd,
+  },
+  insetAbove: {
+    insetBlockStart: layerViewportInset.gutterBlockStart,
+    insetBlockEnd: 0,
+  },
+  insetEnd: {
+    insetInlineStart: 0,
+    insetInlineEnd: layerViewportInset.gutterInline,
+  },
+  insetStart: {
+    insetInlineStart: layerViewportInset.gutterInline,
+    insetInlineEnd: 0,
+  },
 });
+
+// Position options for anchor mode (spec:AST-059 FR4). Each carries the full
+// position-area of the option and the far-edge inset of the placement axis it
+// lands on; the alignment-axis flip remains a `flip-*` tactic composed onto
+// the option, which also mirrors the alignment-axis gutter margin and the
+// off-screen pin (FR5). The final option spans the viewport on the placement
+// axis — the layer may then cover its anchor — for content no side can hold.
+// StyleX types `positionArea` as single keywords; the two-keyword values are
+// valid CSS and pass through unchanged. Each rule is a top-level literal so
+// the compiler can emit it.
+type PositionAreaValue = NonNullable<
+  Parameters<typeof stylex.positionTry>[0]['positionArea']
+>;
+
+// Flips across the placement axis, per original placement and alignment.
+const flipAboveStart = stylex.positionTry({
+  positionArea: 'self-block-end span-self-inline-end' as PositionAreaValue,
+  insetBlockStart: 0,
+  insetBlockEnd: layerViewportInset.gutterBlockEnd,
+});
+const flipAboveCenter = stylex.positionTry({
+  positionArea: 'self-block-end' as PositionAreaValue,
+  insetBlockStart: 0,
+  insetBlockEnd: layerViewportInset.gutterBlockEnd,
+});
+const flipAboveEnd = stylex.positionTry({
+  positionArea: 'self-block-end span-self-inline-start' as PositionAreaValue,
+  insetBlockStart: 0,
+  insetBlockEnd: layerViewportInset.gutterBlockEnd,
+});
+const flipBelowStart = stylex.positionTry({
+  positionArea: 'self-block-start span-self-inline-end' as PositionAreaValue,
+  insetBlockStart: layerViewportInset.gutterBlockStart,
+  insetBlockEnd: 0,
+});
+const flipBelowCenter = stylex.positionTry({
+  positionArea: 'self-block-start' as PositionAreaValue,
+  insetBlockStart: layerViewportInset.gutterBlockStart,
+  insetBlockEnd: 0,
+});
+const flipBelowEnd = stylex.positionTry({
+  positionArea: 'self-block-start span-self-inline-start' as PositionAreaValue,
+  insetBlockStart: layerViewportInset.gutterBlockStart,
+  insetBlockEnd: 0,
+});
+const flipStartStart = stylex.positionTry({
+  positionArea: 'self-inline-end span-self-block-end' as PositionAreaValue,
+  insetInlineStart: 0,
+  insetInlineEnd: layerViewportInset.gutterInline,
+});
+const flipStartCenter = stylex.positionTry({
+  positionArea: 'self-inline-end' as PositionAreaValue,
+  insetInlineStart: 0,
+  insetInlineEnd: layerViewportInset.gutterInline,
+});
+const flipStartEnd = stylex.positionTry({
+  positionArea: 'self-inline-end span-self-block-start' as PositionAreaValue,
+  insetInlineStart: 0,
+  insetInlineEnd: layerViewportInset.gutterInline,
+});
+const flipEndStart = stylex.positionTry({
+  positionArea: 'self-inline-start span-self-block-end' as PositionAreaValue,
+  insetInlineStart: layerViewportInset.gutterInline,
+  insetInlineEnd: 0,
+});
+const flipEndCenter = stylex.positionTry({
+  positionArea: 'self-inline-start' as PositionAreaValue,
+  insetInlineStart: layerViewportInset.gutterInline,
+  insetInlineEnd: 0,
+});
+const flipEndEnd = stylex.positionTry({
+  positionArea: 'self-inline-start span-self-block-start' as PositionAreaValue,
+  insetInlineStart: layerViewportInset.gutterInline,
+  insetInlineEnd: 0,
+});
+
+// Slides for centered layers along the alignment axis (#3671).
+const slideTopLeft = stylex.positionTry({
+  positionArea: 'top span-left' as PositionAreaValue,
+  insetBlockStart: layerViewportInset.gutterBlockStart,
+  insetBlockEnd: 0,
+});
+const slideTopRight = stylex.positionTry({
+  positionArea: 'top span-right' as PositionAreaValue,
+  insetBlockStart: layerViewportInset.gutterBlockStart,
+  insetBlockEnd: 0,
+});
+const slideBottomLeft = stylex.positionTry({
+  positionArea: 'bottom span-left' as PositionAreaValue,
+  insetBlockStart: 0,
+  insetBlockEnd: layerViewportInset.gutterBlockEnd,
+});
+const slideBottomRight = stylex.positionTry({
+  positionArea: 'bottom span-right' as PositionAreaValue,
+  insetBlockStart: 0,
+  insetBlockEnd: layerViewportInset.gutterBlockEnd,
+});
+const slideLeftTop = stylex.positionTry({
+  positionArea: 'left span-top' as PositionAreaValue,
+  insetInlineStart: layerViewportInset.gutterInline,
+  insetInlineEnd: 0,
+});
+const slideLeftBottom = stylex.positionTry({
+  positionArea: 'left span-bottom' as PositionAreaValue,
+  insetInlineStart: layerViewportInset.gutterInline,
+  insetInlineEnd: 0,
+});
+const slideRightTop = stylex.positionTry({
+  positionArea: 'right span-top' as PositionAreaValue,
+  insetInlineStart: 0,
+  insetInlineEnd: layerViewportInset.gutterInline,
+});
+const slideRightBottom = stylex.positionTry({
+  positionArea: 'right span-bottom' as PositionAreaValue,
+  insetInlineStart: 0,
+  insetInlineEnd: layerViewportInset.gutterInline,
+});
+
+// Content no side can hold: span the placement axis inside both gutters.
+const spanBlockStart = stylex.positionTry({
+  positionArea: 'span-all span-self-inline-end' as PositionAreaValue,
+  insetBlockStart: layerViewportInset.gutterBlockStart,
+  insetBlockEnd: layerViewportInset.gutterBlockEnd,
+  marginBlockStart: 0,
+  marginBlockEnd: 0,
+});
+const spanBlockCenter = stylex.positionTry({
+  positionArea: 'span-all' as PositionAreaValue,
+  insetBlockStart: layerViewportInset.gutterBlockStart,
+  insetBlockEnd: layerViewportInset.gutterBlockEnd,
+  marginBlockStart: 0,
+  marginBlockEnd: 0,
+});
+const spanBlockEnd = stylex.positionTry({
+  positionArea: 'span-all span-self-inline-start' as PositionAreaValue,
+  insetBlockStart: layerViewportInset.gutterBlockStart,
+  insetBlockEnd: layerViewportInset.gutterBlockEnd,
+  marginBlockStart: 0,
+  marginBlockEnd: 0,
+});
+const spanInlineStart = stylex.positionTry({
+  positionArea: 'span-self-block-end span-all' as PositionAreaValue,
+  insetInlineStart: layerViewportInset.gutterInline,
+  insetInlineEnd: layerViewportInset.gutterInline,
+  marginInlineStart: 0,
+  marginInlineEnd: 0,
+});
+const spanInlineCenter = stylex.positionTry({
+  positionArea: 'span-all' as PositionAreaValue,
+  insetInlineStart: layerViewportInset.gutterInline,
+  insetInlineEnd: layerViewportInset.gutterInline,
+  marginInlineStart: 0,
+  marginInlineEnd: 0,
+});
+const spanInlineEnd = stylex.positionTry({
+  positionArea: 'span-self-block-start span-all' as PositionAreaValue,
+  insetInlineStart: layerViewportInset.gutterInline,
+  insetInlineEnd: layerViewportInset.gutterInline,
+  marginInlineStart: 0,
+  marginInlineEnd: 0,
+});
+
+const flipOptions = {
+  above: {start: flipAboveStart, center: flipAboveCenter, end: flipAboveEnd},
+  below: {start: flipBelowStart, center: flipBelowCenter, end: flipBelowEnd},
+  start: {start: flipStartStart, center: flipStartCenter, end: flipStartEnd},
+  end: {start: flipEndStart, center: flipEndCenter, end: flipEndEnd},
+} as const;
+const slideOptions = {
+  top: {left: slideTopLeft, right: slideTopRight},
+  bottom: {left: slideBottomLeft, right: slideBottomRight},
+  left: {top: slideLeftTop, bottom: slideLeftBottom},
+  right: {top: slideRightTop, bottom: slideRightBottom},
+} as const;
+const spanOptions = {
+  block: {start: spanBlockStart, center: spanBlockCenter, end: spanBlockEnd},
+  inline: {
+    start: spanInlineStart,
+    center: spanInlineCenter,
+    end: spanInlineEnd,
+  },
+} as const;
 
 /**
  * Props for a control that sits on the trigger but must not dismiss the layer.
@@ -471,37 +676,47 @@ function getPositionArea(
 }
 
 /**
- * Compute the `position-try-fallbacks` list for a placement/alignment pair.
+ * Compute the `position-try-fallbacks` list for a placement/alignment pair
+ * (spec:AST-059 FR4).
  *
- * Flips alone cannot rescue a centered layer — flipping along the alignment
- * axis maps center → center, so overflow on that axis renders clipped
- * (#3671). Centered alignments therefore append span-based fallbacks letting
- * the browser slide the layer along the alignment axis as a last resort
- * (same-side spans first). Flips already resolve non-centered alignments; an
- * aligned layer that fits on neither side keeps its size and is shifted into
- * the viewport by the browser's own position-area overflow alignment
- * (spec:AST-059 FR4), which `getSelfAlignment` withdraws once the anchor has
- * left the viewport (FR5).
+ * The flip across the placement axis is a named option carrying that side's
+ * far-edge gutter inset — a `flip-block`/`flip-inline` tactic would mirror
+ * the base inset and put the block-end gutter at the top. The flip across the
+ * alignment axis stays a tactic, composed onto the base and onto the named
+ * option, so it also mirrors the alignment-axis gutter margin and the
+ * off-screen pin. Centered layers then slide along the alignment axis (flips
+ * alone map center → center, #3671): same side first, opposite side second.
+ * Last, a span of the whole placement axis for content no side can hold.
  */
 export function getPositionTryFallbacks(
   placement: LayerPlacement = 'above',
   alignment: LayerAlignment = 'center',
 ): string {
-  const flips = 'flip-block, flip-inline, flip-block flip-inline';
+  const isBlock = placement === 'above' || placement === 'below';
+  const alignTactic = isBlock ? 'flip-inline' : 'flip-block';
+  const flipped = flipOptions[placement][alignment];
+  const options = [flipped, alignTactic, `${flipped} ${alignTactic}`];
 
-  if (alignment !== 'center') {
-    return flips;
+  if (alignment === 'center') {
+    if (isBlock) {
+      const [same, opposite] =
+        placement === 'above'
+          ? [slideOptions.top, slideOptions.bottom]
+          : [slideOptions.bottom, slideOptions.top];
+      options.push(same.left, same.right, opposite.left, opposite.right);
+    } else {
+      const [same, opposite] =
+        placement === 'start'
+          ? [slideOptions.left, slideOptions.right]
+          : [slideOptions.right, slideOptions.left];
+      options.push(same.top, same.bottom, opposite.top, opposite.bottom);
+    }
   }
 
-  if (placement === 'above' || placement === 'below') {
-    const [same, opposite] =
-      placement === 'above' ? ['top', 'bottom'] : ['bottom', 'top'];
-    return `${flips}, ${same} span-left, ${same} span-right, ${opposite} span-left, ${opposite} span-right`;
-  }
-
-  const [same, opposite] =
-    placement === 'start' ? ['left', 'right'] : ['right', 'left'];
-  return `${flips}, ${same} span-top, ${same} span-bottom, ${opposite} span-top, ${opposite} span-bottom`;
+  options.push(
+    isBlock ? spanOptions.block[alignment] : spanOptions.inline[alignment],
+  );
+  return options.join(', ');
 }
 
 /**
@@ -541,21 +756,25 @@ function getGutterStyles(
   alignment: LayerAlignment,
 ): ReadonlyArray<StyleXStyles> {
   if (placement === 'above' || placement === 'below') {
+    const placementInset =
+      placement === 'above' ? styles.insetAbove : styles.insetBelow;
     if (alignment === 'start') {
-      return [styles.gutterInlineEnd];
+      return [placementInset, styles.gutterInlineEnd];
     }
     if (alignment === 'end') {
-      return [styles.gutterInlineStart];
+      return [placementInset, styles.gutterInlineStart];
     }
-    return [styles.gutterInlineStart, styles.gutterInlineEnd];
+    return [placementInset, styles.gutterInlineStart, styles.gutterInlineEnd];
   }
+  const placementInset =
+    placement === 'start' ? styles.insetStart : styles.insetEnd;
   if (alignment === 'start') {
-    return [styles.gutterBlockEnd];
+    return [placementInset, styles.gutterBlockEnd];
   }
   if (alignment === 'end') {
-    return [styles.gutterBlockStart];
+    return [placementInset, styles.gutterBlockStart];
   }
-  return [styles.gutterBlockStart, styles.gutterBlockEnd];
+  return [placementInset, styles.gutterBlockStart, styles.gutterBlockEnd];
 }
 
 /**

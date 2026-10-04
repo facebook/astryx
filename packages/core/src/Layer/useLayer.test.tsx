@@ -190,41 +190,59 @@ describe('useLayer identity', () => {
   });
 });
 
-describe('getPositionTryFallbacks (issue #3671)', () => {
-  const FLIPS = 'flip-block, flip-inline, flip-block flip-inline';
+describe('getPositionTryFallbacks (issue #3671, spec:AST-059 FR4)', () => {
+  const RULE = /^--[\w-]+$/;
+  const split = (list: string) => list.split(', ');
+  const alignTactic = (placement: LayerPlacement) =>
+    placement === 'above' || placement === 'below'
+      ? 'flip-inline'
+      : 'flip-block';
 
-  it('appends inline span fallbacks for centered above/below layers so inline overflow can resolve (flip-inline is a no-op on center)', () => {
-    expect(getPositionTryFallbacks('above', 'center')).toBe(
-      `${FLIPS}, top span-left, top span-right, bottom span-left, bottom span-right`,
-    );
-    expect(getPositionTryFallbacks('below', 'center')).toBe(
-      `${FLIPS}, bottom span-left, bottom span-right, top span-left, top span-right`,
-    );
-  });
-
-  it('appends block span fallbacks for centered start/end layers so block overflow can resolve (flip-block is a no-op on center)', () => {
-    expect(getPositionTryFallbacks('start', 'center')).toBe(
-      `${FLIPS}, left span-top, left span-bottom, right span-top, right span-bottom`,
-    );
-    expect(getPositionTryFallbacks('end', 'center')).toBe(
-      `${FLIPS}, right span-top, right span-bottom, left span-top, left span-bottom`,
-    );
-  });
-
-  it('keeps flip-only fallbacks for non-centered alignments (flips already resolve overflow there)', () => {
-    const nonCentered: [LayerPlacement, LayerAlignment][] = [
-      ['above', 'start'],
-      ['above', 'end'],
-      ['below', 'start'],
-      ['below', 'end'],
-      ['start', 'start'],
-      ['start', 'end'],
-      ['end', 'start'],
-      ['end', 'end'],
-    ];
-    for (const [placement, alignment] of nonCentered) {
-      expect(getPositionTryFallbacks(placement, alignment)).toBe(FLIPS);
+  it('leads with the placement-axis flip as a named option, then the alignment-axis tactic alone and composed', () => {
+    for (const placement of ['above', 'below', 'start', 'end'] as const) {
+      for (const alignment of ['start', 'center', 'end'] as const) {
+        const [flip, tactic, both] = split(
+          getPositionTryFallbacks(placement, alignment),
+        );
+        expect(flip).toMatch(RULE);
+        expect(tactic).toBe(alignTactic(placement));
+        expect(both).toBe(`${flip} ${alignTactic(placement)}`);
+      }
     }
+  });
+
+  it('appends four slide options for centered layers and none for aligned ones, then one span option last', () => {
+    for (const placement of ['above', 'below', 'start', 'end'] as const) {
+      for (const alignment of ['start', 'center', 'end'] as const) {
+        const items = split(getPositionTryFallbacks(placement, alignment));
+        expect(items.length).toBe(alignment === 'center' ? 8 : 4);
+        for (const item of items.slice(3)) {
+          expect(item).toMatch(RULE);
+        }
+        expect(new Set(items).size).toBe(items.length);
+      }
+    }
+  });
+
+  it('gives each placement/alignment pair its own flip option and shares slide and span options where the geometry is the same', () => {
+    const flipOf = (p: LayerPlacement, a: LayerAlignment) =>
+      split(getPositionTryFallbacks(p, a))[0];
+    // Twelve distinct flips: the option carries the full position-area.
+    const flips = new Set<string>();
+    for (const placement of ['above', 'below', 'start', 'end'] as const) {
+      for (const alignment of ['start', 'center', 'end'] as const) {
+        flips.add(flipOf(placement, alignment));
+      }
+    }
+    expect(flips.size).toBe(12);
+    // Above and below centered layers slide through the same four span
+    // options, same side first.
+    const above = split(getPositionTryFallbacks('above', 'center')).slice(3, 7);
+    const below = split(getPositionTryFallbacks('below', 'center')).slice(3, 7);
+    expect(below).toEqual([...above.slice(2), ...above.slice(0, 2)]);
+    const start = split(getPositionTryFallbacks('start', 'center')).slice(3, 7);
+    const end = split(getPositionTryFallbacks('end', 'center')).slice(3, 7);
+    expect(end).toEqual([...start.slice(2), ...start.slice(0, 2)]);
   });
 
   it('defaults to above/center when called without arguments (matches renderContext defaults)', () => {
@@ -232,37 +250,8 @@ describe('getPositionTryFallbacks (issue #3671)', () => {
       getPositionTryFallbacks('above', 'center'),
     );
     expect(getPositionTryFallbacks(undefined, undefined)).toBe(
-      `${FLIPS}, top span-left, top span-right, bottom span-left, bottom span-right`,
+      getPositionTryFallbacks('above', 'center'),
     );
-  });
-
-  it('produces well-formed, duplicate-free lists with flips first and axis-correct spans for every placement/alignment combo', () => {
-    const placements: LayerPlacement[] = ['above', 'below', 'start', 'end'];
-    const alignments: LayerAlignment[] = ['start', 'center', 'end'];
-    const spanPattern: Record<LayerPlacement, RegExp> = {
-      above: /^(top|bottom) span-(left|right)$/,
-      below: /^(top|bottom) span-(left|right)$/,
-      start: /^(left|right) span-(top|bottom)$/,
-      end: /^(left|right) span-(top|bottom)$/,
-    };
-
-    for (const placement of placements) {
-      for (const alignment of alignments) {
-        const list = getPositionTryFallbacks(placement, alignment);
-        const items = list.split(', ');
-
-        expect(items.slice(0, 3)).toEqual([
-          'flip-block',
-          'flip-inline',
-          'flip-block flip-inline',
-        ]);
-        expect(new Set(items).size).toBe(items.length);
-        for (const item of items.slice(3)) {
-          expect(item).toMatch(spanPattern[placement]);
-        }
-        expect(items.length).toBe(alignment === 'center' ? 7 : 3);
-      }
-    }
   });
 
   it('updates the fallback list when placement/alignment props change on re-render', async () => {
@@ -272,14 +261,18 @@ describe('getPositionTryFallbacks (issue #3671)', () => {
     );
     await user.click(container.querySelector('button')!);
     const layerEl = container.querySelector('[popover]') as HTMLElement;
-    expect(layerEl.style.positionTryFallbacks).toContain('top span-left');
+    expect(layerEl.style.positionTryFallbacks).toBe(
+      getPositionTryFallbacks('above', 'center'),
+    );
 
     rerender(<ContextLayerHarness placement="above" alignment="start" />);
-    expect(layerEl.style.positionTryFallbacks).toBe(FLIPS);
+    expect(layerEl.style.positionTryFallbacks).toBe(
+      getPositionTryFallbacks('above', 'start'),
+    );
 
     rerender(<ContextLayerHarness placement="start" alignment="center" />);
     expect(layerEl.style.positionTryFallbacks).toBe(
-      `${FLIPS}, left span-top, left span-bottom, right span-top, right span-bottom`,
+      getPositionTryFallbacks('start', 'center'),
     );
   });
 
@@ -295,14 +288,14 @@ describe('getPositionTryFallbacks (issue #3671)', () => {
     expect(layerEl.style.top).toBe('20px');
   });
 
-  it('applies span fallbacks to the rendered popover for the default (above/center) layer', async () => {
+  it('applies the default (above/center) fallback list to the rendered popover', async () => {
     const user = userEvent.setup();
     const {container} = render(<ContextLayerHarness />);
     await user.click(container.querySelector('button')!);
     const layerEl = container.querySelector('[popover]') as HTMLElement;
     expect(layerEl).not.toBeNull();
     expect(layerEl.style.positionTryFallbacks).toBe(
-      `${FLIPS}, top span-left, top span-right, bottom span-left, bottom span-right`,
+      getPositionTryFallbacks('above', 'center'),
     );
   });
 });
@@ -315,12 +308,32 @@ describe('viewport inset (spec:AST-059)', () => {
   it('caps every anchor-mode layer on the placement axis and keeps the far-edge gutter of its alignment axis (FR1, FR3)', async () => {
     const user = userEvent.setup();
     const cases: [LayerPlacement, LayerAlignment, string[], string[]][] = [
-      ['below', 'start', ['gutterInlineEnd'], ['gutterInlineStart']],
-      ['below', 'end', ['gutterInlineStart'], ['gutterInlineEnd']],
-      ['above', 'center', ['gutterInlineStart', 'gutterInlineEnd'], []],
-      ['end', 'start', ['gutterBlockEnd'], ['gutterBlockStart']],
-      ['start', 'end', ['gutterBlockStart'], ['gutterBlockEnd']],
-      ['end', 'center', ['gutterBlockStart', 'gutterBlockEnd'], []],
+      [
+        'below',
+        'start',
+        ['insetBelow', 'gutterInlineEnd'],
+        ['gutterInlineStart', 'insetAbove'],
+      ],
+      [
+        'below',
+        'end',
+        ['insetBelow', 'gutterInlineStart'],
+        ['gutterInlineEnd'],
+      ],
+      [
+        'above',
+        'center',
+        ['insetAbove', 'gutterInlineStart', 'gutterInlineEnd'],
+        ['insetBelow'],
+      ],
+      [
+        'end',
+        'start',
+        ['insetEnd', 'gutterBlockEnd'],
+        ['gutterBlockStart', 'insetStart'],
+      ],
+      ['start', 'end', ['insetStart', 'gutterBlockStart'], ['gutterBlockEnd']],
+      ['end', 'center', ['insetEnd', 'gutterBlockStart', 'gutterBlockEnd'], []],
     ];
     for (const [placement, alignment, present, absent] of cases) {
       const {container, unmount} = render(
@@ -416,9 +429,9 @@ describe('viewport inset (spec:AST-059)', () => {
       );
     });
     expect(layerEl.style.justifySelf).toBe('unsafe self-start');
-    // The flips stay; only the slide is withdrawn.
+    // The fallback list stays; only the slide is withdrawn.
     expect(layerEl.style.positionTryFallbacks).toBe(
-      'flip-block, flip-inline, flip-block flip-inline',
+      getPositionTryFallbacks('below', 'start'),
     );
 
     act(() => {
@@ -905,7 +918,7 @@ describe('useLayer context positioning', () => {
         <Harness placement="below" alignment="start" />,
       );
       expect(style).toContain(
-        'position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline',
+        `position-try-fallbacks: ${getPositionTryFallbacks('below', 'start')}`,
       );
     });
   });

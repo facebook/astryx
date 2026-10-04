@@ -471,6 +471,7 @@ const viewportStyles = stylex.create({
   nowrap: {whiteSpace: 'nowrap'},
   tall: {
     blockSize: 2000,
+    inlineSize: 200,
     background:
       'repeating-linear-gradient(to bottom, transparent 0 39px, var(--color-border-default) 39px 40px)',
   },
@@ -751,8 +752,11 @@ export const TriggerNearEdgeFlips: Story = {
   play: async ({canvasElement}) => {
     const r = await open(canvasElement);
     assertWidth(r, 320, 'flip');
+    // A flip is the answer where the end side has room for 320px (desktop);
+    // on a phone neither side does and the layer slides instead (FR4).
+    const roomOnEndSide = r.trigger.right - GUTTER;
     if (
-      r.layer.width < inlineCap(r) - TOLERANCE &&
+      roomOnEndSide >= 320 &&
       Math.abs(r.layer.right - r.trigger.right) > TOLERANCE
     ) {
       throw new Error(
@@ -788,7 +792,7 @@ export const TallerThanTheViewport: Story = {
     <ViewportLayer
       at={{top: 120, left: 40}}
       caption="FR3 — Content 2000px tall. The layer box is capped to the viewport minus both block gutters; the surface inside scrolls.">
-      <div {...stylex.props(viewportStyles.tall)} />
+      <div {...stylex.props(viewportStyles.tall)}>2000px of rows</div>
     </ViewportLayer>
   ),
   play: async ({canvasElement}) => {
@@ -842,7 +846,20 @@ export const AnchorLeavesTheViewport: Story = {
     }
     await scrollAndSettle(0);
     const back = rects(canvasElement);
-    if (Math.abs(back.layer.left - before.layer.left) > TOLERANCE) {
+    assertOnScreen(back, 'after the anchor returned');
+    if (Math.abs(back.layer.width - before.layer.width) > TOLERANCE) {
+      throw new Error(
+        `Layer changed size after its anchor returned: ${before.layer.width} → ${back.layer.width}`,
+      );
+    }
+    // Where the layer fit beside its trigger it comes back to the same
+    // place; a layer that had to slide (a phone) may settle on either valid
+    // slide, so only its presence on screen at its size is asserted there.
+    const fitBeside = before.layer.left >= before.trigger.left - TOLERANCE;
+    if (
+      fitBeside &&
+      Math.abs(back.layer.left - before.layer.left) > TOLERANCE
+    ) {
       throw new Error(
         `Layer did not return with its anchor: ${before.layer.left} → ${back.layer.left}`,
       );
@@ -894,7 +911,7 @@ function AppInsetDemo({
   return (
     <LayerProvider inset={{blockEnd: inset}}>
       <ViewportLayer
-        at={{bottom: 140, left: 40}}
+        at={{bottom: 230, left: 40}}
         isOpenInitially={isOpenInitially}
         caption={`FR6, FR8 — The app floats a ${inset}px bar over the bottom edge and declares it once: <LayerProvider inset={{blockEnd: ${inset}}}>. The layer's bottom gutter becomes ${inset + 16}px, so a layer that would end under the bar flips above its trigger instead; a toast under the same provider rises by the same amount. Change the inset while the layer is open: the layer and the bar move in the same frame.`}
         extra={
@@ -924,7 +941,7 @@ function AppInsetDemo({
             </div>
           </>
         }>
-        <div style={{blockSize: 200}}>200px of rows</div>
+        <div style={{blockSize: 90}}>90px of rows</div>
       </ViewportLayer>
     </LayerProvider>
   );
@@ -941,10 +958,10 @@ function assertAboveBar(r: Rects, bar: number, label: string) {
 export const AppDeclaredInset: Story = {
   name: 'Viewport inset: app-declared inset (floating bar)',
   parameters: viewportParameters,
-  render: () => <AppInsetDemo initialInset={80} />,
+  render: () => <AppInsetDemo initialInset={160} />,
   play: async ({canvasElement}) => {
     const r = await open(canvasElement);
-    assertAboveBar(r, 80, 'declared 80px');
+    assertAboveBar(r, 160, 'declared 160px');
     if (r.layer.bottom > r.trigger.top) {
       throw new Error('Expected the layer to flip above the trigger');
     }
@@ -956,7 +973,11 @@ export const InsetChangesWhileOpen: Story = {
   parameters: viewportParameters,
   render: () => <AppInsetDemo initialInset={80} />,
   play: async ({canvasElement}) => {
-    await open(canvasElement);
+    const at80 = await open(canvasElement);
+    // With an 80px bar the 90px layer fits below its trigger.
+    if (at80.layer.top < at80.trigger.bottom) {
+      throw new Error('Fixture: expected the layer below its trigger at 80px');
+    }
     canvasElement
       .querySelector<HTMLElement>('[data-testid="inset-160"]')
       ?.click();
@@ -996,7 +1017,7 @@ function MeasuredBarDemo() {
   return (
     <LayerProvider inset={{blockEnd: measured}}>
       <ViewportLayer
-        at={{bottom: 140, left: 40}}
+        at={{bottom: 230, left: 40}}
         caption={`FR6, FR8 — The bar's height is measured by the app (${measured}px) and declared on LayerProvider. The runtime measures nothing: it renders at whatever the provider declares, in the same frame the declaration changes.`}
         extra={
           <>
@@ -1019,7 +1040,7 @@ function MeasuredBarDemo() {
             </div>
           </>
         }>
-        <div style={{blockSize: 200}}>200px of rows</div>
+        <div style={{blockSize: 90}}>90px of rows</div>
       </ViewportLayer>
     </LayerProvider>
   );
@@ -1054,7 +1075,7 @@ function PortaledLayerDemo() {
           still reaches it: the value travels by context and is written on the
           layer itself, not inherited from the provider&apos;s subtree.
         </p>
-        <p style={{position: 'absolute', bottom: 140, left: 40, margin: 0}}>
+        <p style={{position: 'absolute', bottom: 230, left: 40, margin: 0}}>
           <Button
             ref={layer.ref}
             label="Open"
@@ -1064,7 +1085,7 @@ function PortaledLayerDemo() {
           />
           {layer.render(
             <div {...stylex.props(viewportStyles.surface)}>
-              <div style={{blockSize: 200}}>200px of rows</div>
+              <div style={{blockSize: 90}}>90px of rows</div>
             </div>,
             {placement: 'below', alignment: 'start', offset: 4},
           )}

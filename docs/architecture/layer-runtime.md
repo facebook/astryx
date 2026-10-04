@@ -135,9 +135,14 @@ portal cannot lose it, and a layer with no provider — nothing written, every
 property reading `0px` — renders exactly as one under a default provider. A
 hand-written property is an unsupported escape hatch. The inline gutter reads
 the larger of the two physical safe-area insets so a flipped layer still clears
-a notch. `Layer/layerViewportInset.stylex.ts` holds the one definition; the
-gutter rides the far viewport edge of the alignment axis as a margin the flip
-tactics swap with the area.
+a notch. `Layer/layerViewportInset.stylex.ts` holds the one definition. On the
+alignment axis the gutter rides the far viewport edge as a margin the
+alignment-axis flip tactic mirrors with the area; on the placement axis it is an
+inset on the far edge of the position-area region, so a layer that would end
+inside the gutter or under a declared bar overflows its region and the next
+option is tried. Because a flip tactic would mirror that inset onto the wrong
+edge, the placement-axis flip is a named `@position-try` option carrying its
+own side's inset, and the alignment-axis flip is composed onto it as a tactic.
 
 The layer box is capped to the viewport minus both gutters on both axes, never
 to the span of viewport beside the trigger, and never exceeds that cap. An
@@ -153,7 +158,9 @@ expression, because a CSS minimum otherwise wins over a maximum.
 The fallback order is the runtime's: preferred position; flip across the
 placement axis; flip across the alignment axis; both; then, while the anchor is
 in view, the browser's position-area overflow alignment slides an aligned layer
-that fits on neither side the least distance that brings it inside the gutters.
+that fits on neither side the least distance that brings it inside the gutters;
+last, for content no side can hold on the placement axis, a span of the whole
+placement axis inside both gutters, which may cover the anchor.
 Once the anchor has left the viewport the runtime pins the layer's
 self-alignment `unsafe` toward the anchor, so the layer holds the position its
 flips give it and holds its size rather than sliding to the edge. Components
