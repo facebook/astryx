@@ -806,10 +806,12 @@ export const TallerThanTheViewport: Story = {
   },
 };
 
+// Anchor visibility is observed, not polled; give the observer its
+// rendering opportunity and the fallback re-evaluation that follows.
 const scrollAndSettle = async (x: number) => {
   window.scrollTo(x, 0);
   await settle();
-  await new Promise(resolve => setTimeout(resolve, 250));
+  await new Promise(resolve => setTimeout(resolve, 600));
   await settle();
 };
 

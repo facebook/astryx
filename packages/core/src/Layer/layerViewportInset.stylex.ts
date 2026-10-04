@@ -50,6 +50,9 @@ const GUTTER_INLINE_RIGHT = `calc(max(${SPACING}, env(safe-area-inset-right, 0px
 // A flipped layer may land on either inline side, so one gutter serves both
 // edges: the larger safe-area inset plus the larger app inset.
 const GUTTER_INLINE = `calc(max(${SPACING}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)) + max(${INSET_INLINE_START}, ${INSET_INLINE_END}))`;
+// The positional gutter on the block axis is an inset the flip tactics mirror
+// between the two edges, so one value serves both: the larger of the two.
+const GUTTER_BLOCK = `calc(max(${SPACING}, env(safe-area-inset-top, 0px), env(safe-area-inset-bottom, 0px)) + max(${INSET_BLOCK_START}, ${INSET_BLOCK_END}))`;
 
 /**
  * The viewport gutter and the caps derived from it. Every value has an
@@ -63,6 +66,9 @@ export const layerViewportInset = stylex.defineConsts({
   gutterBlockEnd: GUTTER_BLOCK_END,
   /** Gutter from either inline viewport edge. */
   gutterInline: GUTTER_INLINE,
+  /** Positional gutter from either block viewport edge: the larger of the two. */
+  gutterBlock: GUTTER_BLOCK,
+  gutterBlockFallback: `calc(${SPACING} + max(${INSET_BLOCK_START}, ${INSET_BLOCK_END}))`,
   gutterBlockStartFallback: `calc(${SPACING} + ${INSET_BLOCK_START})`,
   gutterBlockEndFallback: `calc(${SPACING} + ${INSET_BLOCK_END})`,
   gutterInlineFallback: `calc(${SPACING} + max(${INSET_INLINE_START}, ${INSET_INLINE_END}))`,
