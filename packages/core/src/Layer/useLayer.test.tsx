@@ -318,39 +318,24 @@ describe('viewport inset (spec:AST-059)', () => {
       [
         'below',
         'start',
-        ['placementBelow', 'gutterInlineEnd'],
-        ['gutterInlineStart', 'placementAbove'],
+        ['farBelow', 'gutterInlineEnd'],
+        ['gutterInlineStart', 'farAbove'],
       ],
-      [
-        'below',
-        'end',
-        ['placementBelow', 'gutterInlineStart'],
-        ['gutterInlineEnd'],
-      ],
+      ['below', 'end', ['farBelow', 'gutterInlineStart'], ['gutterInlineEnd']],
       [
         'above',
         'center',
-        ['placementAbove', 'gutterInlineStart', 'gutterInlineEnd'],
-        ['placementBelow'],
+        ['farAbove', 'gutterInlineStart', 'gutterInlineEnd'],
+        ['farBelow'],
       ],
       [
         'end',
         'start',
-        ['placementEnd', 'gutterBlockEnd'],
-        ['gutterBlockStart', 'placementStart'],
+        ['farEnd', 'gutterBlockEnd'],
+        ['gutterBlockStart', 'farStart'],
       ],
-      [
-        'start',
-        'end',
-        ['placementStart', 'gutterBlockStart'],
-        ['gutterBlockEnd'],
-      ],
-      [
-        'end',
-        'center',
-        ['placementEnd', 'gutterBlockStart', 'gutterBlockEnd'],
-        [],
-      ],
+      ['start', 'end', ['farStart', 'gutterBlockStart'], ['gutterBlockEnd']],
+      ['end', 'center', ['farEnd', 'gutterBlockStart', 'gutterBlockEnd'], []],
     ];
     for (const [placement, alignment, present, absent] of cases) {
       const {container, unmount} = render(
@@ -1068,7 +1053,7 @@ describe('useLayer context positioning', () => {
     it('is flush against the anchor by default', async () => {
       expect(
         await openAndGetOffsets(<OffsetHarness placement="below" />),
-      ).toEqual({...NONE, blockStart: '0px'});
+      ).toEqual(NONE);
     });
 
     // The flip tactic swaps the two block margins with the area, so the gap

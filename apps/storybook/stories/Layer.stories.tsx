@@ -950,7 +950,7 @@ function AppInsetDemo({
   return (
     <LayerProvider inset={{blockEnd: inset}}>
       <ViewportLayer
-        at={{bottom: 230, left: 40}}
+        at={{bottom: 270, left: 40}}
         isOpenInitially={isOpenInitially}
         caption={`FR6, FR8 — The app floats a ${inset}px bar over the bottom edge and declares it once: <LayerProvider inset={{blockEnd: ${inset}}}>. The layer's bottom gutter becomes ${inset + 16}px, so a layer that would end under the bar flips above its trigger instead. (Storybook already mounts the root provider, so this one is nested and narrows the inset for the layers in this story; an app declares it on its root provider and its toasts rise too.) Change the inset while the layer is open: the layer and the bar move in the same frame.`}
         extra={
@@ -1056,7 +1056,7 @@ function MeasuredBarDemo() {
   return (
     <LayerProvider inset={{blockEnd: measured}}>
       <ViewportLayer
-        at={{bottom: 230, left: 40}}
+        at={{bottom: 270, left: 40}}
         caption={`FR6, FR8 — The bar's height is measured by the app (${measured}px) and declared on LayerProvider. The runtime measures nothing: it renders at whatever the provider declares, in the same frame the declaration changes.`}
         extra={
           <>
@@ -1106,45 +1106,47 @@ export const MeasuredInset: Story = {
 function PortaledLayerDemo() {
   const layer = useLayer({mode: 'context', lightDismiss: true});
   return (
-    <LayerProvider inset={{blockEnd: 160}}>
-      <div {...stylex.props(viewportStyles.canvas)} data-testid="canvas">
-        <p {...stylex.props(viewportStyles.caption)}>
-          FR6, FR8 — The trigger sits inside a paragraph, which cannot contain
-          the layer, so the layer portals out of it. The declared 160px inset
-          still reaches it: the value travels by context and is written on the
-          layer itself, not inherited from the provider&apos;s subtree.
-        </p>
-        <p style={{position: 'absolute', bottom: 230, left: 40, margin: 0}}>
-          <Button
-            ref={layer.ref}
-            label="Open"
-            size="sm"
-            data-testid="trigger"
-            onClick={() => (layer.isOpen ? layer.hide() : layer.show())}
-          />
-          {layer.render(
-            <div {...stylex.props(viewportStyles.surface)}>
-              <div style={{blockSize: 90}}>90px of rows</div>
-            </div>,
-            {placement: 'below', alignment: 'start', offset: 4},
-          )}
-        </p>
-        <div
-          {...stylex.props(
-            viewportStyles.bottomBar,
-            viewportStyles.barHeight(160),
-          )}>
-          persistent bar — 160px
-        </div>
+    <div {...stylex.props(viewportStyles.canvas)} data-testid="canvas">
+      <p {...stylex.props(viewportStyles.caption)}>
+        FR6, FR8 — The trigger sits inside a paragraph, which cannot contain the
+        layer, so the layer portals out of it. The declared 160px inset still
+        reaches it: the value travels by context and is written on the layer
+        itself, not inherited from the provider&apos;s subtree.
+      </p>
+      <p style={{position: 'absolute', bottom: 270, left: 40, margin: 0}}>
+        <Button
+          ref={layer.ref}
+          label="Open"
+          size="sm"
+          data-testid="trigger"
+          onClick={() => (layer.isOpen ? layer.hide() : layer.show())}
+        />
+        {layer.render(
+          <div {...stylex.props(viewportStyles.surface)}>
+            <div style={{blockSize: 90}}>90px of rows</div>
+          </div>,
+          {placement: 'below', alignment: 'start', offset: 4},
+        )}
+      </p>
+      <div
+        {...stylex.props(
+          viewportStyles.bottomBar,
+          viewportStyles.barHeight(160),
+        )}>
+        persistent bar — 160px
       </div>
-    </LayerProvider>
+    </div>
   );
 }
 
 export const PortaledOutsideTheProviderSubtree: Story = {
   name: 'Viewport inset: layer portaled out of its JSX position',
   parameters: viewportParameters,
-  render: () => <PortaledLayerDemo />,
+  render: () => (
+    <LayerProvider inset={{blockEnd: 160}}>
+      <PortaledLayerDemo />
+    </LayerProvider>
+  ),
   play: async ({canvasElement}) => {
     const r = await open(canvasElement);
     const layer = document.querySelector<HTMLElement>(

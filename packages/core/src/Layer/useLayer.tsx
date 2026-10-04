@@ -84,6 +84,11 @@ const styles = stylex.create({
     marginInlineStart: layerViewportInset.gutterInline,
     marginInlineEnd: offset,
   }),
+  // Flush against the anchor (no offset): only the far-edge gutter.
+  farBelow: {marginBlockEnd: layerViewportInset.gutterBlock},
+  farAbove: {marginBlockStart: layerViewportInset.gutterBlock},
+  farEnd: {marginInlineEnd: layerViewportInset.gutterInline},
+  farStart: {marginInlineStart: layerViewportInset.gutterInline},
   // The viewport inset (spec:AST-059 FR1–FR3). Every anchor-mode layer is
   // capped to the viewport minus both gutters on both axes and keeps the
   // runtime's gutter from the far viewport edge of its alignment axis as a
@@ -1067,17 +1072,25 @@ function useLayerImplementation(
               ...getSelfAlignment(placement, alignment, isAnchorInView),
             };
 
-      const clearance = offset ? toCssLength(offset) : '0px';
+      const clearance = offset ? toCssLength(offset) : null;
       const offsetStyle =
-        positioning === 'anchor'
-          ? placement === 'above'
-            ? styles.placementAbove(clearance)
-            : placement === 'below'
-              ? styles.placementBelow(clearance)
-              : placement === 'start'
-                ? styles.placementStart(clearance)
-                : styles.placementEnd(clearance)
-          : null;
+        positioning !== 'anchor'
+          ? null
+          : clearance == null
+            ? placement === 'above'
+              ? styles.farAbove
+              : placement === 'below'
+                ? styles.farBelow
+                : placement === 'start'
+                  ? styles.farStart
+                  : styles.farEnd
+            : placement === 'above'
+              ? styles.placementAbove(clearance)
+              : placement === 'below'
+                ? styles.placementBelow(clearance)
+                : placement === 'start'
+                  ? styles.placementStart(clearance)
+                  : styles.placementEnd(clearance);
 
       const viewportStyles =
         positioning === 'anchor'
