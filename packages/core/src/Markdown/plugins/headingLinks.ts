@@ -97,6 +97,17 @@ function createPortableConfig(
   });
 }
 
+const PERMALINK_VALIDATION_BASE = 'https://astryx.invalid/';
+
+function isParsablePermalinkBaseUrl(url: string): boolean {
+  try {
+    new URL(url, PERMALINK_VALIDATION_BASE);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function readPortableConfig(
   entry: MarkdownPluginEntry,
 ): PortableMarkdownHeadingLinksConfig | undefined {
@@ -120,6 +131,7 @@ function readPortableConfig(
       typeof config.headingIdPrefix !== 'string') ||
     typeof config.permalinkBaseUrl !== 'string' ||
     config.permalinkBaseUrl.includes('#') ||
+    !isParsablePermalinkBaseUrl(config.permalinkBaseUrl) ||
     (config.permalinkBaseUrl !== '' &&
       sanitizeMarkdownLinkUrl(config.permalinkBaseUrl) !==
         config.permalinkBaseUrl)
@@ -154,8 +166,11 @@ export function createMarkdownHeadingLinks(
   const rawBaseUrl = options.permalinkBaseUrl ?? '';
   const sanitizedBaseUrl =
     rawBaseUrl === '' ? '' : sanitizeMarkdownLinkUrl(rawBaseUrl);
-  if (sanitizedBaseUrl == null) {
-    fail('permalinkBaseUrl must be a safe navigation URL');
+  if (
+    sanitizedBaseUrl == null ||
+    !isParsablePermalinkBaseUrl(sanitizedBaseUrl)
+  ) {
+    fail('permalinkBaseUrl must be a safe, parseable navigation URL');
   }
   const permalinkBaseUrl = sanitizedBaseUrl.replace(/#.*$/u, '');
 

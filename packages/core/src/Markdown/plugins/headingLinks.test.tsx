@@ -117,6 +117,12 @@ const incompatibleHeadingLinksEntries: ReadonlyArray<
     createBrandedSameNameEntry({config: createConfig({apiVersion: 2})}),
   ],
   [
+    'unparseable URL configuration',
+    createBrandedSameNameEntry({
+      config: createConfig({permalinkBaseUrl: 'https://%'}),
+    }),
+  ],
+  [
     'wrong module configuration shape',
     createBrandedSameNameEntry({
       config: createConfig({headingIdPrefix: 42}),
@@ -604,7 +610,10 @@ describe('createMarkdownHeadingLinks', () => {
     );
     expect(() =>
       createMarkdownHeadingLinks({permalinkBaseUrl: 'javascript:alert(1)'}),
-    ).toThrow(/safe navigation URL/);
+    ).toThrow(/safe, parseable navigation URL/);
+    expect(() =>
+      createMarkdownHeadingLinks({permalinkBaseUrl: 'https://%'}),
+    ).toThrow(/safe, parseable navigation URL/);
   });
 
   it('leaves permalink output to a custom heading renderer at every depth', () => {
