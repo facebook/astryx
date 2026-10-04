@@ -273,10 +273,9 @@ test('Tab reaches the time grid after the header controls', async ({page}) => {
     ring?.outlineOffset ?? 1,
     'the ring sits inside the clipped frame',
   ).toBeLessThanOrEqual(0);
-  // At least the ring's perimeter changed between rest and focus.
-  expect(ringPixels).toBeGreaterThan(
-    2 * ((clip?.width ?? 0) + (clip?.height ?? 0)),
-  );
+  // A painted ring changes at least half the viewport's perimeter in pixels
+  // (the classic scrollbar covers one edge of an inset ring).
+  expect(ringPixels).toBeGreaterThan((clip?.width ?? 0) + (clip?.height ?? 0));
   const before = await readTimeGrid(page);
   await page.keyboard.press('ArrowDown');
   await page.waitForTimeout(150);
