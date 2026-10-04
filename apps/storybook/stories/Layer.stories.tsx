@@ -566,6 +566,10 @@ function ViewportLayer({
 }
 
 const nextFrame = () => new Promise(r => requestAnimationFrame(() => r(null)));
+// React commits a discrete event's state update in a microtask; microtasks
+// run before the browser paints, so a read after this is still the first
+// frame's geometry.
+const committed = () => new Promise(r => queueMicrotask(() => r(null)));
 const settle = async () => {
   await nextFrame();
   await nextFrame();
@@ -1020,6 +1024,7 @@ export const InsetChangesWhileOpen: Story = {
     canvasElement
       .querySelector<HTMLElement>('[data-testid="inset-160"]')
       ?.click();
+    await committed();
     const first = rects(canvasElement);
     assertAboveBar(first, 160, 'first frame after the inset changed');
     await settle();
@@ -1095,6 +1100,7 @@ export const MeasuredInset: Story = {
     canvasElement
       .querySelector<HTMLElement>('[data-testid="toggle-bar"]')
       ?.click();
+    await committed();
     // The app's layout effect re-measured and re-declared before this paint.
     const first = rects(canvasElement);
     assertAboveBar(first, 160, 'first frame after the bar grew');
