@@ -218,9 +218,10 @@ intentional decision. A `current` contract contains no unresolved rows.
   owner under `spec:AST-025` FR12: it is in the tab order only while an axis
   overflows, exposes `role="region"` named by the rendered range title
   followed by "time grid", and native Arrow and Page keys scroll it. Its
-  keyboard focus ring is drawn inside its own edge, because the frame clips
-  its border box, and paints above the pinned header and gutter. Losing
-  overflow does not move focus.
+  keyboard focus ring is a pointer-transparent overlay painted after the
+  viewport, inside the edge the frame clips at, so every edge of the ring
+  shows above the pinned header and gutter. Losing overflow does not move
+  focus.
 - **AR2 — Named event buttons.** With `onEventActivate`, each button's
   accessible name is the event's title, its time range (or "all day"), its
   category label, and the full date, in that order: the visible text leads
