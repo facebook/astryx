@@ -1185,6 +1185,36 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
+      # The Schedule time grid owns scroll geometry: sticky header and gutter
+      # alignment under classic scrollbars, the one-time initial scroll, the
+      # side-by-side layout of simultaneous events, and keyboard reach into
+      # the grid. None of that exists in jsdom, so the contract runs here, in
+      # the same real Chromium artifact, whenever the PR scope names Schedule.
+      - name: Run Schedule time-grid contract
+        if: github.event_name == 'pull_request'
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          COMPONENTS=$(node .github/scripts/a11y-pr-scope.mjs analysis.json)
+          case ",${COMPONENTS}," in
+            *,lab/Schedule,*)
+              pnpm exec playwright test \
+                packages/lab/src/Schedule/__tests__/ScheduleTimeGrid.a11y.chromium.spec.ts \
+                --project chromium \
+                --output schedule-time-grid-output
+              ;;
+            *) echo "Schedule not in PR scope; skipping time-grid evidence." ;;
+          esac
+
+      - name: Upload Schedule time-grid evidence
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: schedule-time-grid-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: test-results/schedule-time-grid-evidence/
+          retention-days: 30
+          if-no-files-found: ignore
+
       # ChatMessageBubble is nested under the shared Chat source directory, so
       # the generic stable-visual owner cannot select its dedicated fixture.
       # Run the component's bounded evidence matrix only when the PR scope names

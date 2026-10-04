@@ -343,6 +343,210 @@ export const AsyncLoader: Story = {
   },
 };
 
+// A fixed week in UTC, so the overlap layout is identical on every machine and
+// in CI. Each day exercises one overlap shape of the time grid.
+const FIXTURE_TIMEZONE = 'UTC';
+const FIXTURE_DATE = Date.UTC(2026, 4, 13, 12) as Instant;
+
+function fixtureEvent({
+  id,
+  title,
+  category,
+  day,
+  start,
+  end,
+}: {
+  id: string;
+  title: string;
+  category: string;
+  day: number;
+  start: [hour: number, minute?: number];
+  end: [hour: number, minute?: number];
+}): CalendarEvent {
+  const iso = ([hour, minute = 0]: [number, number?]) =>
+    `2026-05-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00.000Z`;
+  return createEventFromISO({
+    id,
+    title,
+    category,
+    start: iso(start),
+    end: iso(end),
+  });
+}
+
+const overlappingEvents: CalendarEvent[] = [
+  // Monday: an exact tie — same title, same minutes, different ids.
+  fixtureEvent({
+    id: 'tie-a',
+    title: 'Pair review',
+    category: 'Design',
+    day: 11,
+    start: [9],
+    end: [10],
+  }),
+  fixtureEvent({
+    id: 'tie-b',
+    title: 'Pair review',
+    category: 'Design',
+    day: 11,
+    start: [9],
+    end: [10],
+  }),
+  // Tuesday: three simultaneous events.
+  fixtureEvent({
+    id: 'trio-1',
+    title: 'Interview loop 1',
+    category: 'Company',
+    day: 12,
+    start: [13],
+    end: [14],
+  }),
+  fixtureEvent({
+    id: 'trio-2',
+    title: 'Interview loop 2',
+    category: 'Launch',
+    day: 12,
+    start: [13],
+    end: [14],
+  }),
+  fixtureEvent({
+    id: 'trio-3',
+    title: 'Interview loop 3',
+    category: 'Focus',
+    day: 12,
+    start: [13],
+    end: [14],
+  }),
+  // Wednesday: five simultaneous events.
+  fixtureEvent({
+    id: 'quint-1',
+    title: 'Office hours A',
+    category: 'Company',
+    day: 13,
+    start: [10],
+    end: [11],
+  }),
+  fixtureEvent({
+    id: 'quint-2',
+    title: 'Office hours B',
+    category: 'Design',
+    day: 13,
+    start: [10],
+    end: [11],
+  }),
+  fixtureEvent({
+    id: 'quint-3',
+    title: 'Office hours C',
+    category: 'Launch',
+    day: 13,
+    start: [10],
+    end: [11],
+  }),
+  fixtureEvent({
+    id: 'quint-4',
+    title: 'Office hours D',
+    category: 'Focus',
+    day: 13,
+    start: [10],
+    end: [11],
+  }),
+  fixtureEvent({
+    id: 'quint-5',
+    title: 'Office hours E',
+    category: 'Retro',
+    day: 13,
+    start: [10],
+    end: [11],
+  }),
+  // Thursday: a chain — the first and last do not overlap each other.
+  fixtureEvent({
+    id: 'chain-1',
+    title: 'Standup',
+    category: 'Company',
+    day: 14,
+    start: [9],
+    end: [10],
+  }),
+  fixtureEvent({
+    id: 'chain-2',
+    title: 'Design sync',
+    category: 'Design',
+    day: 14,
+    start: [9, 30],
+    end: [10, 30],
+  }),
+  fixtureEvent({
+    id: 'chain-3',
+    title: 'Retro',
+    category: 'Retro',
+    day: 14,
+    start: [10],
+    end: [11],
+  }),
+  // Friday: containment plus the shortest block the grid draws.
+  fixtureEvent({
+    id: 'contain-long',
+    title: 'Workshop',
+    category: 'Launch',
+    day: 15,
+    start: [9],
+    end: [12],
+  }),
+  fixtureEvent({
+    id: 'contain-short',
+    title: 'Coffee chat',
+    category: 'Focus',
+    day: 15,
+    start: [10],
+    end: [10, 30],
+  }),
+  fixtureEvent({
+    id: 'quarter',
+    title: 'Quick check-in',
+    category: 'Company',
+    day: 15,
+    start: [14],
+    end: [14, 15],
+  }),
+  // All-day spans that overlap each other.
+  createEventFromISO({
+    id: 'offsite',
+    title: 'Offsite',
+    category: 'Company',
+    start: '2026-05-11',
+    end: '2026-05-12',
+  }),
+  createEventFromISO({
+    id: 'hack-week',
+    title: 'Hack week',
+    category: 'Launch',
+    start: '2026-05-12',
+    end: '2026-05-13',
+  }),
+];
+
+export const OverlappingEvents: Story = {
+  render: () => {
+    const [date, setDate] = useState<Instant>(FIXTURE_DATE);
+    const view = useMemo(
+      () => createScheduleWeeklyView({minHour: 8, maxHour: 18}),
+      [],
+    );
+
+    return (
+      <Schedule
+        view={view}
+        events={overlappingEvents}
+        categories={categories}
+        date={date}
+        focusDate={FIXTURE_DATE}
+        onChangeDate={setDate}
+        timezoneID={FIXTURE_TIMEZONE}
+      />
+    );
+  },
+};
+
 export const ViewSelectorPlugin: Story = {
   render: () => {
     const views = useMemo(
