@@ -69,6 +69,7 @@ function ScheduleWeeklyView({
         minHour={minHour}
         maxHour={maxHour}
         hourHeight={hourHeight}
+        label={titleLabel}
       />
     </ScheduleFrame>
   );

@@ -4,14 +4,16 @@
 
 /**
  * @file TimeGridView.tsx
- * @input Schedule context, visible days, timezone, and hour bounds
- * @output Shared weekly/day time-grid layout
+ * @input Schedule context, visible days, timezone, hour bounds, and the range label
+ * @output Shared weekly/day time-grid layout: one scroll viewport whose sticky
+ *   day header, all-day row, and hour gutter share the day columns' grid tracks
  * @position Internal view primitive shared by WeeklyView and DayView
  */
 
 import * as stylex from '@stylexjs/stylex';
 import type {Locale} from '@astryxdesign/core/i18n';
 import {
+  focusOutlineStyles,
   plainDateAddDays,
   plainDateFromInstant,
   plainDateIsBefore,
@@ -20,6 +22,7 @@ import {
   plainDateToISO,
   type PlainDate,
 } from '@astryxdesign/core/utils';
+import {useScrollableArea} from '@astryxdesign/core/hooks';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {useScheduleContext} from './context';
 import {eventOccursOnDate, isDayEvent} from './dateMath';
@@ -57,6 +60,7 @@ export function TimeGridView({
   minHour,
   maxHour,
   hourHeight,
+  label,
 }: {
   days: PlainDate[];
   events: ReadonlyArray<CalendarEvent>;
@@ -65,6 +69,8 @@ export function TimeGridView({
   minHour: number;
   maxHour: number;
   hourHeight: number;
+  /** Accessible name of the rendered range; names the scroll viewport. */
+  label: string;
 }) {
   const {categories, headingLevel, locale} = useScheduleContext();
   const normalizedMinHour = Math.max(0, Math.min(23, Math.floor(minHour)));
@@ -93,6 +99,25 @@ export function TimeGridView({
     locale,
   );
 
+  const {getViewportProps, getContentProps} = useScrollableArea({
+    axis: 'both',
+    keyboardAccess: {
+      owner: 'viewport',
+      label: `${label} time grid`,
+      role: 'region',
+    },
+  });
+  const viewportProps = getViewportProps<HTMLDivElement>(
+    stylex.props(styles.timeGridViewport, focusOutlineStyles.focusVisible),
+  );
+  const contentProps = getContentProps<HTMLDivElement>(
+    stylex.props(styles.timeGridContent(days.length)),
+  );
+
+  // Everything painted below is decoration for sighted users; the hidden grid
+  // above is what assistive technology reads. Each painted part is hidden on
+  // its own, rather than the whole viewport, so the viewport itself can stay
+  // a reachable, named keyboard scroll owner.
   return (
     <>
       <TimeGridAccessibilityGrid
@@ -106,14 +131,16 @@ export function TimeGridView({
         timezoneID={timezoneID}
         timezoneLabel={timezoneLabel}
       />
-      <div aria-hidden {...stylex.props(styles.timeGrid)}>
-        <div {...stylex.props(styles.timeGridCorner)} />
-        <div {...stylex.props(styles.timeGridHeader)}>
+      <div {...viewportProps}>
+        <div {...contentProps}>
+          <div aria-hidden {...stylex.props(styles.timeGridCorner)} />
           {days.map((day, index) => (
             <div
               key={plainDateToISO(day)}
+              aria-hidden
               {...stylex.props(
                 styles.timeGridHeaderCell,
+                styles.dayColumnPlacement(index),
                 index === days.length - 1 && styles.timeGridHeaderCellLast,
               )}>
               <Heading
@@ -135,54 +162,42 @@ export function TimeGridView({
               </Heading>
             </div>
           ))}
-        </div>
-        <div {...stylex.props(styles.allDayLabel)}>
-          <Text type="supporting" color="secondary" weight="bold">
-            {timezoneLabel}
-          </Text>
-        </div>
-        <div {...stylex.props(styles.allDayRow)}>
-          <div
-            {...stylex.props(
-              styles.allDayRowSurface(days.length, allDayLevelCount),
-            )}>
-            <div {...stylex.props(styles.allDayCellGrid(days.length))}>
-              {days.map((day, index) => (
-                <div
-                  key={plainDateToISO(day)}
-                  {...stylex.props(
-                    styles.allDayCell,
-                    index === days.length - 1 && styles.allDayCellLast,
-                  )}
-                />
-              ))}
-            </div>
-            <div {...stylex.props(styles.allDayEventOverlay(days.length))}>
-              {allDaySegments.map(segment => (
-                <div
-                  key={`${segment.event.id}:${segment.columnStart}`}
-                  {...stylex.props(
-                    styles.allDayEventSpan(
-                      segment.columnStart,
-                      segment.columnEnd,
-                      segment.level,
-                    ),
-                  )}>
-                  <EventPill
-                    event={segment.event}
-                    isPast={isEventInPast(
-                      segment.event,
-                      currentTime,
-                      timezoneID,
-                    )}
-                  />
-                </div>
-              ))}
-            </div>
+          <div aria-hidden {...stylex.props(styles.allDayLabel)}>
+            <Text type="supporting" color="secondary" weight="bold">
+              {timezoneLabel}
+            </Text>
           </div>
-        </div>
-        <div {...stylex.props(styles.timeGridBody)}>
-          <div {...stylex.props(styles.timeLabels)}>
+          <div
+            aria-hidden
+            {...stylex.props(styles.allDayRow(allDayLevelCount))}>
+            {days.map((day, index) => (
+              <div
+                key={plainDateToISO(day)}
+                {...stylex.props(
+                  styles.allDayCell,
+                  styles.allDaySubgridPlacement(index),
+                  index === days.length - 1 && styles.allDayCellLast,
+                )}
+              />
+            ))}
+            {allDaySegments.map(segment => (
+              <div
+                key={`${segment.event.id}:${segment.columnStart}`}
+                {...stylex.props(
+                  styles.allDayEventSpan(
+                    segment.columnStart,
+                    segment.columnEnd,
+                    segment.level,
+                  ),
+                )}>
+                <EventPill
+                  event={segment.event}
+                  isPast={isEventInPast(segment.event, currentTime, timezoneID)}
+                />
+              </div>
+            ))}
+          </div>
+          <div aria-hidden {...stylex.props(styles.timeLabels)}>
             {hours.slice(1).map((hour, index) => (
               <div
                 key={hour}
@@ -194,91 +209,88 @@ export function TimeGridView({
               </div>
             ))}
           </div>
-          <div {...stylex.props(styles.timeColumns)}>
-            {days.map((day, index) => {
-              const currentTimeTop = getCurrentTimeTop({
-                currentTime,
-                day,
-                timezoneID,
-                minHour: normalizedMinHour,
-                maxHour: normalizedMaxHour,
-              });
-              return (
-                <div
-                  key={plainDateToISO(day)}
-                  {...stylex.props(
-                    styles.timeColumn,
-                    styles.timeColumnRows(hourHeight),
-                    index === days.length - 1 && styles.timeColumnLast,
-                  )}>
-                  {hours.map((hour, index) => (
-                    <div
-                      key={hour}
-                      {...stylex.props(
-                        styles.hourSlot,
-                        index === hours.length - 1 && styles.hourSlotLast,
-                      )}
-                    />
-                  ))}
-                  {getTimedEventLayouts({
-                    events: instantEvents.filter(event =>
-                      eventOccursOnDate(event, day, timezoneID),
-                    ),
+          {days.map((day, index) => {
+            const currentTimeTop = getCurrentTimeTop({
+              currentTime,
+              day,
+              timezoneID,
+              minHour: normalizedMinHour,
+              maxHour: normalizedMaxHour,
+            });
+            return (
+              <div
+                key={plainDateToISO(day)}
+                aria-hidden
+                {...stylex.props(
+                  styles.timeColumn,
+                  styles.dayColumnPlacement(index),
+                  styles.timeColumnRows(hourHeight),
+                  index === days.length - 1 && styles.timeColumnLast,
+                )}>
+                {hours.map((hour, hourIndex) => (
+                  <div
+                    key={hour}
+                    {...stylex.props(
+                      styles.hourSlot,
+                      hourIndex === hours.length - 1 && styles.hourSlotLast,
+                    )}
+                  />
+                ))}
+                {getTimedEventLayouts({
+                  events: instantEvents.filter(event =>
+                    eventOccursOnDate(event, day, timezoneID),
+                  ),
+                  day,
+                  timezoneID,
+                  minHour: normalizedMinHour,
+                  maxHour: normalizedMaxHour,
+                }).map(({event, height, level, top}) => {
+                  const timeLabel = formatEventTime(
+                    event,
                     day,
                     timezoneID,
-                    minHour: normalizedMinHour,
-                    maxHour: normalizedMaxHour,
-                  }).map(({event, height, level, top}) => {
-                    const timeLabel = formatEventTime(
-                      event,
-                      day,
-                      timezoneID,
-                      locale,
-                    );
-                    const category = getEventCategory(event, categories);
-                    return (
-                      <div
-                        key={event.id}
-                        {...stylex.props(
-                          styles.timedEvent,
-                          styles.timedEventPosition(
-                            clamp(top, 0, 100),
-                            clamp(height, 4, 100),
-                            level,
-                          ),
-                          isEventInPast(event, currentTime, timezoneID)
-                            ? eventPastSurfaceColorStyle(category.color)
-                            : eventSurfaceColorStyle(category.color),
-                        )}>
-                        <Text
-                          type="supporting"
-                          color="inherit"
-                          weight="bold"
-                          xstyle={styles.eventTitle}>
-                          {event.title}
-                        </Text>
-                        <Text
-                          type="supporting"
-                          color="inherit"
-                          xstyle={styles.eventTime}>
-                          {timeLabel}
-                        </Text>
-                      </div>
-                    );
-                  })}
-                  {plainDateIsEqual(day, currentDate) &&
-                    currentTimeTop != null && (
-                      <div
-                        aria-hidden
-                        {...stylex.props(
-                          styles.currentTimeLine(currentTimeTop),
-                        )}
-                      />
-                    )}
-                </div>
-              );
-            })}
-          </div>
+                    locale,
+                  );
+                  const category = getEventCategory(event, categories);
+                  return (
+                    <div
+                      key={event.id}
+                      {...stylex.props(
+                        styles.timedEvent,
+                        styles.timedEventPosition(
+                          clamp(top, 0, 100),
+                          clamp(height, 4, 100),
+                          level,
+                        ),
+                        isEventInPast(event, currentTime, timezoneID)
+                          ? eventPastSurfaceColorStyle(category.color)
+                          : eventSurfaceColorStyle(category.color),
+                      )}>
+                      <Text
+                        type="supporting"
+                        color="inherit"
+                        weight="bold"
+                        xstyle={styles.eventTitle}>
+                        {event.title}
+                      </Text>
+                      <Text
+                        type="supporting"
+                        color="inherit"
+                        xstyle={styles.eventTime}>
+                        {timeLabel}
+                      </Text>
+                    </div>
+                  );
+                })}
+                {plainDateIsEqual(day, currentDate) &&
+                  currentTimeTop != null && (
+                    <div
+                      {...stylex.props(styles.currentTimeLine(currentTimeTop))}
+                    />
+                  )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </>

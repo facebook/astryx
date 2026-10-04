@@ -1199,7 +1199,7 @@ jobs:
           case ",${COMPONENTS}," in
             *,lab/Schedule,*)
               pnpm exec playwright test \
-                packages/lab/src/Schedule/__tests__/ScheduleTimeGrid.a11y.chromium.spec.ts \
+                packages/lab/src/Schedule/__tests__/ \
                 --project chromium \
                 --output schedule-time-grid-output
               ;;

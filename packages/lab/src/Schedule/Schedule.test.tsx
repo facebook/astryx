@@ -401,6 +401,69 @@ describe('Schedule', () => {
     ).toBeInTheDocument();
   });
 
+  it('renders the time grid inside one named scroll viewport', () => {
+    render(
+      <Schedule
+        view={createScheduleWeeklyView({minHour: 8, maxHour: 17})}
+        events={events}
+        categories={categories}
+        date={Date.UTC(2026, 4, 13)}
+        focusDate={Date.UTC(2026, 4, 13)}
+        timezoneID="UTC"
+      />,
+    );
+
+    const viewport = screen.getByRole('region', {name: 'May 2026 time grid'});
+    const content = viewport.querySelector('[data-scroll-content]');
+    expect(content).not.toBeNull();
+    // Header cells, the all-day row, the hour gutter, and the day columns are
+    // items of the same grid, so no part of the painted header lives outside
+    // the viewport's own scrolling content.
+    const headerCells = viewport.querySelectorAll('h3');
+    expect(headerCells).toHaveLength(7);
+    headerCells.forEach(cell => {
+      expect(cell.parentElement?.parentElement).toBe(content);
+    });
+    expect(
+      screen.getByText('Visible sync').closest('[data-scroll-content]'),
+    ).toBe(content);
+    // The hidden read-only grid repeats the hour as a row header; the painted
+    // gutter label is the one inside the viewport.
+    const gutterLabel = screen
+      .getAllByText('9 AM')
+      .find(label => viewport.contains(label));
+    expect(gutterLabel?.closest('[data-scroll-content]')).toBe(content);
+  });
+
+  it('keeps every painted time-grid part hidden from assistive technology', () => {
+    render(
+      <Schedule
+        view={createScheduleWeeklyView({minHour: 8, maxHour: 10})}
+        events={events}
+        categories={categories}
+        date={Date.UTC(2026, 4, 13)}
+        timezoneID="UTC"
+      />,
+    );
+
+    const viewport = screen.getByRole('region', {name: 'May 2026 time grid'});
+    const content = viewport.querySelector('[data-scroll-content]');
+    expect(content).not.toBeNull();
+    const parts = Array.from(content?.children ?? []);
+    // corner + 7 header cells + all-day label + all-day row + gutter + 7 columns
+    expect(parts).toHaveLength(18);
+    parts.forEach(part => {
+      expect(part).toHaveAttribute('aria-hidden', 'true');
+    });
+    // The read-only grid stays the accessible representation of the events.
+    expect(
+      screen.getByRole('gridcell', {
+        name: 'Wednesday, May 13, 2026 all day. Design review, Design, all day',
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: /Visible sync/})).toBeNull();
+  });
+
   it('labels list day headings with the full date', () => {
     render(
       <Schedule
