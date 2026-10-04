@@ -9,6 +9,8 @@
  * SYNC: When CodeBlock.tsx changes, update tests to match new behavior
  */
 
+import {createRef} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {act, render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -34,6 +36,10 @@ const LONG_CODE = Array.from(
   (_, i) => `const line${i} = ${i};`,
 ).join('\n');
 
+const rootContractStyles = stylex.create({
+  root: {marginBlockStart: '1px'},
+});
+
 describe('CodeBlock', () => {
   beforeEach(() => {
     // jsdom does not implement the async Clipboard API.
@@ -51,6 +57,30 @@ describe('CodeBlock', () => {
     expect(screen.getByText(/const/)).toBeInTheDocument();
   });
 
+  it('forwards the public ref and composes supported root props', () => {
+    const ref = createRef<HTMLPreElement>();
+    render(
+      <CodeBlock
+        ref={ref}
+        code="const x = 1;"
+        data-testid="code-block-root"
+        aria-describedby="code-help"
+        className="consumer-code-block"
+        style={{opacity: 0.75}}
+        xstyle={rootContractStyles.root}
+      />,
+    );
+
+    const root = screen.getByTestId('code-block-root');
+    const xstyleClass = stylex.props(rootContractStyles.root).className;
+    expect(ref.current).toBe(root);
+    expect(root.tagName).toBe('PRE');
+    expect(root).toHaveAttribute('aria-describedby', 'code-help');
+    expect(xstyleClass).toBeTruthy();
+    expect(root).toHaveClass('consumer-code-block', xstyleClass!);
+    expect(root).toHaveStyle({opacity: '0.75'});
+  });
+
   it('makes the scroll container keyboard-focusable', () => {
     render(<CodeBlock code="const x = 1;" language="javascript" />);
     const region = screen.getByRole('group');
@@ -65,21 +95,24 @@ describe('CodeBlock', () => {
     expect(region).toHaveAttribute('aria-label', 'Code');
   });
 
-  it('names a collapsible header when the visible title is empty', () => {
-    render(
-      <CodeBlock
-        code={LONG_CODE}
-        language="plaintext"
-        title=""
-        isCollapsible
-      />,
-    );
+  it.each(['', '   '])(
+    'names a collapsible header when the visible title is %p',
+    title => {
+      render(
+        <CodeBlock
+          code={LONG_CODE}
+          language="plaintext"
+          title={title}
+          isCollapsible
+        />,
+      );
 
-    const header = screen
-      .getAllByRole('button')
-      .find(element => element.hasAttribute('aria-expanded'));
-    expect(header).toHaveAccessibleName('Code');
-  });
+      const header = screen
+        .getAllByRole('button')
+        .find(element => element.hasAttribute('aria-expanded'));
+      expect(header).toHaveAccessibleName('Code');
+    },
+  );
 
   it('applies a zero-pixel max height', () => {
     render(<CodeBlock code="hello" maxHeight={0} />);
@@ -235,6 +268,44 @@ describe('CodeBlock', () => {
     expect(header).toHaveAttribute('aria-expanded', 'true');
     fireEvent.click(header);
     expect(header).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('expands when rerendering removes the collapse control', () => {
+    const {rerender} = render(
+      <CodeBlock
+        code={LONG_CODE}
+        language="javascript"
+        title="example"
+        isCollapsible
+      />,
+    );
+    const header = screen
+      .getAllByRole('button')
+      .find(el => el.hasAttribute('aria-expanded'))!;
+    fireEvent.click(header);
+    expect(screen.getByRole('group').closest('[inert]')).not.toBeNull();
+
+    rerender(<CodeBlock code={LONG_CODE} language="plaintext" isCollapsible />);
+    expect(
+      screen
+        .queryAllByRole('button')
+        .find(el => el.hasAttribute('aria-expanded')),
+    ).toBeUndefined();
+    expect(screen.getByRole('group').closest('[inert]')).toBeNull();
+
+    rerender(
+      <CodeBlock
+        code={LONG_CODE}
+        language="javascript"
+        title="example"
+        isCollapsible
+      />,
+    );
+    expect(
+      screen
+        .getAllByRole('button')
+        .find(el => el.hasAttribute('aria-expanded')),
+    ).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('links the collapsible header to its code region via aria-controls', () => {
