@@ -222,9 +222,10 @@ intentional decision. A `current` contract contains no unresolved rows.
   its border box, and paints above the pinned header and gutter. Losing
   overflow does not move focus.
 - **AR2 — Named event buttons.** With `onEventActivate`, each button's
-  accessible name is the event's title, category label, time range (or "all
-  day"), and full date, in that order — the same words the read-only grid
-  announces for the event.
+  accessible name is the event's title, its time range (or "all day"), its
+  category label, and the full date, in that order: the visible text leads
+  the name, and the day is added because a button is reached on its own
+  rather than inside a dated cell.
 - **AR3 — Visible focus.** A focused event button shows the shared focus ring
   entirely within its day column; it rises above neighbouring blocks locally
   so the ring is never clipped by a later sibling.
