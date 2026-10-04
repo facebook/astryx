@@ -190,7 +190,10 @@ the app reaches every layer instead of the components that happen to read it.
   layer or toast with no provider renders exactly as one under a provider with
   the default inset. The declaration reaches a layer wherever the layer is
   hosted — a layer portaled out of its JSX position receives it the same as
-  one hosted in place. The inset is app state, not a theme value (DEC-4).
+  one hosted in place. A provider nested under another is otherwise inert, but
+  one that declares an inset narrows it for the anchored layers in its
+  subtree; the toast viewport is the root provider's and reads the root's
+  declaration. The inset is app state, not a theme value (DEC-4).
 - **FR7 — Consumers inherit; a consumer's own size rule cannot defeat the
   cap.** Every component that renders through `useLayer` in anchor mode or
   through `usePopover` receives FR1–FR6 and FR8 with no record change and no
@@ -335,6 +338,13 @@ for any row.
 | FR6           | Stories "app-declared inset (floating bar)" and "layer portaled out of its JSX position"; `LayerProvider` and `ToastViewport` unit suites                                                                                           | An 80px bar declared as `inset={{blockEnd: 80}}`; a toast under the same provider; a `toast.inset` override; no provider; a layer hosted outside the paragraph it was rendered in            | A layer or toast ends under the bar, an unset edge moves anything, a `toast.inset` edge stops overriding, no-provider geometry differs from the default provider's, or a portaled layer loses the inset |
 | FR8           | Every story above (first frame compared with settled); stories "inset changes while the layer is open", "layer opens in the frame the inset arrives", "inset measured by the app", "anchor already off-screen when the layer opens" | The provider's inset changes 80→160 with the layer open; a layer mounted open in the provider's first commit; a bar the app measures before paint and declares; an off-screen anchor at open | The first frame's rectangle differs from the settled one, or the first frame after a declaration change is not already at the new geometry                                                              |
 | FR1 safe area | A device run: `env(safe-area-inset-*)` is set only by a real device and Chromium emulation does not populate it, so no Storybook story can show it.                                                                                 | Landscape phone with a notch on one side                                                                                                                                                     | A layer under the notch                                                                                                                                                                                 |
+
+**Verification gap — VG1.** A layer that had to slide (it fit on neither
+side of its trigger) and whose anchor leaves and returns can come back
+start-aligned to its anchor and off-screen until its next layout: Chromium
+does not re-run the slide when the off-screen pin is withdrawn. The "anchor
+leaves the viewport" story asserts the return only where the layer fit beside
+its trigger. FR5's hold is verified; the return after a slide is not.
 
 The first-frame assertion observes style and layout after the commit and
 before any animation frame; it cannot observe compositor-only effects, and a
