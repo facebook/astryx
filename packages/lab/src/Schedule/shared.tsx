@@ -818,9 +818,15 @@ export const styles = stylex.create({
   // position: sticky, so a scrollbar, a zoom level, or an inline scroll cannot
   // separate header tracks from body tracks. Local z-index values order the
   // pinned parts inside the isolated viewport only.
+  // A 640px flex basis, not a height: inside the frame's indefinite-height
+  // column a `height` with `flex: 1` resolves to content size, so the grid
+  // would grow to its full hours and the page, not the viewport, would scroll.
+  // The basis gives a 640px scrolling viewport by default and still fills or
+  // shrinks to a root the caller sizes.
   timeGridViewport: {
-    flex: 1,
-    height: '640px',
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: '640px',
     minHeight: 0,
     minWidth: 0,
     scrollbarGutter: 'stable',
