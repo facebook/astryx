@@ -99,6 +99,31 @@ describe('LayerProvider inset (spec:AST-059 FR6)', () => {
     ).toBe('24px');
   });
 
+  it('lets a nested provider narrow the inset for the layers in its subtree', () => {
+    const {container} = render(
+      <LayerProvider inset={{blockEnd: 56}}>
+        <LayerProvider inset={{blockEnd: 120}}>
+          <AnchoredLayer />
+        </LayerProvider>
+      </LayerProvider>,
+    );
+    fireEvent.click(container.querySelector('button')!);
+    const layer = container.querySelector<HTMLElement>(
+      '[popover="manual"][id]',
+    );
+    expect(
+      layer?.style.getPropertyValue('--astryx-layer-inset-block-end'),
+    ).toBe('120px');
+    // One toast viewport, the root's, at the root's declaration.
+    const viewports = Array.from(
+      container.querySelectorAll<HTMLElement>('[popover="manual"]:not([id])'),
+    );
+    expect(viewports.length).toBe(1);
+    expect(
+      viewports[0].style.getPropertyValue('--astryx-layer-inset-block-end'),
+    ).toBe('56px');
+  });
+
   it('lets toast.inset replace the provider value for the toast viewport on the edges it sets', () => {
     const {container} = render(
       <LayerProvider inset={{blockEnd: 56}} toast={{inset: {bottom: 120}}}>

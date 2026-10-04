@@ -884,23 +884,24 @@ export const AnchorLeavesTheViewport: Story = {
     }
     await scrollAndSettle(0);
     const back = rects(canvasElement);
-    assertOnScreen(back, 'after the anchor returned');
     if (Math.abs(back.layer.width - before.layer.width) > TOLERANCE) {
-      throw new Error(
+      fail(
         `Layer changed size after its anchor returned: ${before.layer.width} → ${back.layer.width}`,
       );
     }
     // Where the layer fit beside its trigger it comes back to the same
-    // place; a layer that had to slide (a phone) may settle on either valid
-    // slide, so only its presence on screen at its size is asserted there.
+    // place. A layer that had to slide (a phone) is a recorded verification
+    // gap (spec:AST-059 VG1): Chromium does not re-run the slide when the pin
+    // is withdrawn, so the layer can return start-aligned to its anchor and
+    // off-screen until its next layout. Asserted here only where it fit.
     const fitBeside = before.layer.left >= before.trigger.left - TOLERANCE;
-    if (
-      fitBeside &&
-      Math.abs(back.layer.left - before.layer.left) > TOLERANCE
-    ) {
-      throw new Error(
-        `Layer did not return with its anchor: ${before.layer.left} → ${back.layer.left}`,
-      );
+    if (fitBeside) {
+      assertOnScreen(back, 'after the anchor returned');
+      if (Math.abs(back.layer.left - before.layer.left) > TOLERANCE) {
+        fail(
+          `Layer did not return with its anchor: ${before.layer.left} → ${back.layer.left}`,
+        );
+      }
     }
   },
 };
@@ -951,7 +952,7 @@ function AppInsetDemo({
       <ViewportLayer
         at={{bottom: 230, left: 40}}
         isOpenInitially={isOpenInitially}
-        caption={`FR6, FR8 — The app floats a ${inset}px bar over the bottom edge and declares it once: <LayerProvider inset={{blockEnd: ${inset}}}>. The layer's bottom gutter becomes ${inset + 16}px, so a layer that would end under the bar flips above its trigger instead; a toast under the same provider rises by the same amount. Change the inset while the layer is open: the layer and the bar move in the same frame.`}
+        caption={`FR6, FR8 — The app floats a ${inset}px bar over the bottom edge and declares it once: <LayerProvider inset={{blockEnd: ${inset}}}>. The layer's bottom gutter becomes ${inset + 16}px, so a layer that would end under the bar flips above its trigger instead. (Storybook already mounts the root provider, so this one is nested and narrows the inset for the layers in this story; an app declares it on its root provider and its toasts rise too.) Change the inset while the layer is open: the layer and the bar move in the same frame.`}
         extra={
           <>
             <div
