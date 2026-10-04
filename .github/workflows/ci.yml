@@ -236,7 +236,8 @@ jobs:
   release-sync:
     name: release-sync
     if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
-    runs-on: 2-core-ubuntu-arm
+    # Match the stable publisher so byte parity covers the same packed manifest.
+    runs-on: 4-core-ubuntu
     permissions:
       contents: read
     steps:

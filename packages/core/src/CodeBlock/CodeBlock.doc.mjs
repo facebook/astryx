@@ -104,7 +104,7 @@ export const docs = {
     {
       name: 'isCollapsible',
       type: 'boolean',
-      description: 'Allow collapsing the code body into just the header bar. Starts expanded; the header becomes clickable to toggle. Only shows the toggle when the code exceeds collapsibleThreshold lines.',
+      description: 'Allow collapsing the code body into just the header bar. Starts expanded; a visible header becomes clickable when the code exceeds collapsibleThreshold lines. Headerless blocks never collapse, and removing the header expands a previously collapsed block.',
       default: 'false',
     },
     {
@@ -112,6 +112,11 @@ export const docs = {
       type: 'number',
       description: 'Minimum number of lines before the collapse toggle appears. Below this threshold the code block renders normally even when isCollapsible is true.',
       default: '10',
+    },
+    {
+      name: 'ref',
+      type: 'React.Ref<HTMLPreElement>',
+      description: 'Ref forwarded to the root code-block element.',
     },
     {
       name: 'xstyle',
@@ -172,6 +177,7 @@ export const docs = {
     ],
     anatomy: [
       {name: 'Header Bar', required: false, description: 'Shows the title, visible language label, and copy button when a header is present. A title or visible language label creates the header; the copy button alone floats at the top-end of a headerless block.'},
+      {name: 'Header Title', required: false, description: 'Groups the optional title, visible language label, and collapsible chevron inside the header bar.'},
       {name: 'Line Numbers', required: false, description: 'Numbered gutter along the left edge. Enable with hasLineNumbers.'},
       {name: 'Code Body', required: true, description: 'The syntax-highlighted code content.'},
       {name: 'Highlighted Lines', required: false, description: 'Background accent on specific lines to draw attention.'},
