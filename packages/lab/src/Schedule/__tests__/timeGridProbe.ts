@@ -501,3 +501,7 @@ export function ringEdgeCoverage(
     right: right / height,
   };
 }
+
+// Main proof: this comment touches the Schedule scope so the pull request's
+// pr-a11y job runs every Schedule browser contract against main's code.
+// Never merge this branch.
