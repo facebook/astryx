@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "state": "active",
+  "attemptId": "v0.6.6-20261004T150227Z-a1",
+  "startedAt": "2026-10-04T15:02:27Z",
+  "version": "0.6.6",
+  "branch": "release/v0.6.6",
+  "cutSha": "c3016f8f054b917cdaa1d888c8023426521adfb6",
+  "planDigest": "4b06f0e7c0288e20ffd3098c1d4946270a52bd181272e725aa5a3e2b84305cee"
+}

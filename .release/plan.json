@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "version": "0.6.6",
+  "branch": "release/v0.6.6",
+  "cutSha": "c3016f8f054b917cdaa1d888c8023426521adfb6",
+  "changesets": [
+    {
+      "path": ".changeset/announce-the-empty-state-shown.md",
+      "sha256": "fa0682de4f0e88a1a09bfe33d0422642c5c2fae6ef48e0a1f31d6f2f13a6dc9c"
+    },
+    {
+      "path": ".changeset/clickable-card-disabled-link.md",
+      "sha256": "1af3c1068ffc3548fe743f3972cedb68cee874d1d228b9659cee49018d31b1e8"
+    },
+    {
+      "path": ".changeset/code-api-discovery.md",
+      "sha256": "65e81c9cf5c985b9b602daa22c8ef8a4af71b2d993b88e19b8a93b5c4e7fb14f"
+    },
+    {
+      "path": ".changeset/codeblock-audit-contract.md",
+      "sha256": "ad6f6eb87ed9092ee370ba4e871cfd54d3ec2bedb866cf6d57e8ae4d6816fbef"
+    },
+    {
+      "path": ".changeset/collapsible-audit-theming.md",
+      "sha256": "a02cd967c3bc0cc8e6b20b938b39ac463de98e025453d85e7b9151cf47873513"
+    },
+    {
+      "path": ".changeset/complex-selector-trigger.md",
+      "sha256": "08b998a06f678d0289e2ed5e5e3bf6522d354c1e35eaa9786bb55e887c3a0029"
+    },
+    {
+      "path": ".changeset/context-menu-trigger-as.md",
+      "sha256": "2e9536928141ddf321e3cbbe81e141c9a3b098e43d104285f89621e28d1a5a7b"
+    },
+    {
+      "path": ".changeset/empty-search-text-one-name.md",
+      "sha256": "caa24b795f90850ae44b973e6d30829dae3243eb31223f4005f6abcc49ef705f"
+    },
+    {
+      "path": ".changeset/markdown-heading-permalinks.md",
+      "sha256": "eb9705dc3c840bdc02571668913e273708fded90ac566905cf069fcda665dfe6"
+    },
+    {
+      "path": ".changeset/menu-close-focus.md",
+      "sha256": "b4db4abee703c5d5d37e1639b1af267a70c6bedc3b0a13412798970c76a573ee"
+    },
+    {
+      "path": ".changeset/menu-custom-trigger.md",
+      "sha256": "5376578ec785a8cbc55193817af58c949a6f7b9343227cf23087124df01f4db8"
+    },
+    {
+      "path": ".changeset/menu-hover-disabled-midhover.md",
+      "sha256": "0e05eabe9891fb72099c024edea7ee26eee47baaaa2e90f9251111f3db34abfe"
+    },
+    {
+      "path": ".changeset/menu-keyboard.md",
+      "sha256": "f8ae696babbcffc227825f30d9067933d0f94ba1e9899dc0c4c8be65f5e3512b"
+    },
+    {
+      "path": ".changeset/menu-link-rows.md",
+      "sha256": "569cfe6d70ba9089249f4099c3e3f8fdb440baf8a3cf8d7210389bcde796c9fd"
+    },
+    {
+      "path": ".changeset/menu-max-height.md",
+      "sha256": "9494f8257d6db6cba451b5fe02728f5702a3b3b5f33edb51c831b722e0474b8a"
+    },
+    {
+      "path": ".changeset/menu-press-model.md",
+      "sha256": "8339287ecc61d9052b6ca3483adfdff6eb369f177a0f0cfc3d18a388a65d5269"
+    },
+    {
+      "path": ".changeset/menu-press-trigger.md",
+      "sha256": "9c5a12a1898d6151ff4fb805de51492555db908527b64ec5e3e500697e5ae54f"
+    },
+    {
+      "path": ".changeset/menu-submenu-drill-in.md",
+      "sha256": "849eaadb365cf51a4c2b8eb4d666bc3ab963282709ab6308295448d2d18b760a"
+    },
+    {
+      "path": ".changeset/outline-visible-focus.md",
+      "sha256": "138956c1570dcbaeb51ce3fe01d0844ae967bfd1248824a96632996ead190b33"
+    },
+    {
+      "path": ".changeset/submenu-safe-triangle.md",
+      "sha256": "420b96a0e41122bb9ed3393f8c39b12a1eea45312892a92e2bb682bfee173d19"
+    },
+    {
+      "path": ".changeset/toolbar-center-slot-unclipped.md",
+      "sha256": "c30b1d73a84ae4785f1426c5e6e006c8b1855e603043d8af28bf91d6b1ba3ab2"
+    }
+  ]
+}
