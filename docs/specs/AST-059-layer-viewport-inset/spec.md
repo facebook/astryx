@@ -165,9 +165,13 @@ the app reaches every layer instead of the components that happen to read it.
   preferred position; the flip across the placement axis; the flip across the
   alignment axis; both flips; then, while its anchor is in view, a slide
   along the alignment axis that keeps the layer's size and moves it the least
-  distance that brings it inside the gutters. Side placements slide along the
-  block axis. The runtime authors this order; a component passes no fallbacks
-  of its own to an anchor-mode layer.
+  distance that brings it inside the gutters; last, for content no side can
+  hold on the placement axis, a span of the whole placement axis inside both
+  gutters, which may cover the anchor. Side placements slide along the block
+  axis. The gutter bounds position as well as size: a layer that would end
+  inside a gutter, or under a declared bar, does not fit there and the next
+  option is tried. The runtime authors this order; a component passes no
+  fallbacks of its own to an anchor-mode layer.
 - **FR5 — An off-screen anchor holds.** A layer whose anchor has left the
   viewport does not slide. It keeps the position the flips give it and its
   size until the anchor returns (DEC-3).
