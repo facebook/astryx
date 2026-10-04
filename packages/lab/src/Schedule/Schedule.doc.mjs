@@ -89,7 +89,7 @@ export const docs = {
         name: 'Current time line',
         required: false,
         description:
-          'A line across the day or week time grid at the current time, on the current day only. It ticks once a minute and is absent during server rendering.',
+          'A line across the day or week time grid at the current time, on the current day only. It ticks once a minute and is absent during server rendering. When the rendered range includes today, the grid opens scrolled to one hour before this line (clamped to the grid) once per range, and then leaves the scroll position alone until the person pages to another range or switches views.',
       },
     ],
   },

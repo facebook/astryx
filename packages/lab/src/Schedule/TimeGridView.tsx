@@ -10,6 +10,13 @@
  * @position Internal view primitive shared by WeeklyView and DayView
  */
 
+import {
+  useContext,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  type UIEvent,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Locale} from '@astryxdesign/core/i18n';
 import {
@@ -45,6 +52,12 @@ import {
   styles,
 } from './shared';
 import {layoutTimedEvents, type TimedEventPlacement} from './timeGridLayout';
+import {
+  getInitialTimeGridOffset,
+  isSameRangeKey,
+  TimeGridScrollMemoryContext,
+  type TimeGridScrollMemory,
+} from './timeGridScrollMemory';
 import {useCurrentTime} from './useCurrentTime';
 import type {
   CalendarDayEvent,
@@ -73,7 +86,7 @@ export function TimeGridView({
   /** Accessible name of the rendered range; names the scroll viewport. */
   label: string;
 }) {
-  const {categories, headingLevel, locale} = useScheduleContext();
+  const {categories, headingLevel, locale, range} = useScheduleContext();
   const normalizedMinHour = Math.max(0, Math.min(23, Math.floor(minHour)));
   const normalizedMaxHour = Math.max(
     normalizedMinHour + 1,
@@ -100,7 +113,11 @@ export function TimeGridView({
     locale,
   );
 
-  const {getViewportProps, getContentProps} = useScrollableArea({
+  const {
+    getViewportProps,
+    getContentProps,
+    state: scrollState,
+  } = useScrollableArea({
     axis: 'both',
     keyboardAccess: {
       owner: 'viewport',
@@ -108,9 +125,97 @@ export function TimeGridView({
       role: 'region',
     },
   });
-  const viewportProps = getViewportProps<HTMLDivElement>(
-    stylex.props(styles.timeGridViewport, timeGridViewportScope),
+
+  // Initial position (component:Schedule FR4–FR6): once per rendered range,
+  // the viewport opens one hour above now when the range includes today, or
+  // at the top of the hour window. The record is shared with the suspended
+  // fallback's viewport, so a late loader restores the person's own offset
+  // instead of positioning again; clock ticks, data, theme, and resizes never
+  // reach this effect because the key does not change.
+  const sharedScrollMemory = useContext(TimeGridScrollMemoryContext);
+  const localScrollMemory = useRef<TimeGridScrollMemory>({
+    key: null,
+    offset: 0,
+  });
+  const scrollMemory = sharedScrollMemory ?? localScrollMemory;
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const rangeKey = useMemo(
+    () => ({
+      start: range.start,
+      end: range.end,
+      timezoneID,
+      minHour: normalizedMinHour,
+      maxHour: normalizedMaxHour,
+      hourHeight,
+    }),
+    [
+      hourHeight,
+      normalizedMaxHour,
+      normalizedMinHour,
+      range.end,
+      range.start,
+      timezoneID,
+    ],
   );
+  const positioning = useRef({
+    currentTime,
+    days,
+    minHour: normalizedMinHour,
+    hourHeight,
+  });
+  positioning.current = {
+    currentTime,
+    days,
+    minHour: normalizedMinHour,
+    hourHeight,
+  };
+  const isBlockScrollable = scrollState.block.isScrollable;
+  // The clock is 0 only in the server snapshot; wait for the client's.
+  const hasClock = currentTime !== 0;
+  useLayoutEffect(() => {
+    const viewport = viewportRef.current;
+    if (viewport == null || !isBlockScrollable || !hasClock) {
+      return;
+    }
+    const memory = scrollMemory.current;
+    if (
+      memory != null &&
+      memory.key != null &&
+      isSameRangeKey(memory.key, rangeKey)
+    ) {
+      if (Math.abs(viewport.scrollTop - memory.offset) > 1) {
+        viewport.scrollTop = memory.offset;
+      }
+      return;
+    }
+    const offset = getInitialTimeGridOffset({
+      ...positioning.current,
+      timezoneID,
+      scrollHeight: viewport.scrollHeight,
+      clientHeight: viewport.clientHeight,
+    });
+    viewport.scrollTop = offset;
+    if (memory != null) {
+      memory.key = rangeKey;
+      memory.offset = offset;
+    }
+  }, [hasClock, isBlockScrollable, rangeKey, scrollMemory, timezoneID]);
+  const rememberScroll = (event: UIEvent<HTMLDivElement>) => {
+    const memory = scrollMemory.current;
+    if (
+      memory != null &&
+      memory.key != null &&
+      isSameRangeKey(memory.key, rangeKey)
+    ) {
+      memory.offset = event.currentTarget.scrollTop;
+    }
+  };
+
+  const viewportProps = getViewportProps<HTMLDivElement>({
+    ref: viewportRef,
+    onScroll: rememberScroll,
+    ...stylex.props(styles.timeGridViewport, timeGridViewportScope),
+  });
   const contentProps = getContentProps<HTMLDivElement>(
     stylex.props(styles.timeGridContent(days.length)),
   );
