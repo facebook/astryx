@@ -34,6 +34,11 @@ import {resolveLayerPortalTarget} from './layerHost';
 import {layerTextReset} from './layerTextReset.stylex';
 import {layerViewportInset} from './layerViewportInset.stylex';
 import {layerInsetProperties} from './layerInset';
+import {
+  LAYER_CLEARANCE_PROPERTY,
+  ensureSlideRules,
+  slideRuleName,
+} from './layerSlideRules';
 import {useLayerContext} from './LayerContext';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
@@ -107,56 +112,33 @@ const styles = stylex.create({
       layerViewportInset.maxBlockSizeFallback,
     ),
   },
-  // Alignment-axis gutter (spec:AST-059 FR1). Both edges carry the gutter
-  // as a margin, so wherever the browser's overflow shift or a span option
-  // lands the layer, its margin box — and so a gutter on both sides — stays
-  // inside the viewport. On the anchor-facing edge of an aligned layer a
-  // negative inset of the same size widens the position-area region by the
-  // margin, so the layer's own edge still meets the trigger's; the flip
-  // tactic mirrors inset and margin together. A centered layer needs no
-  // inset: it is centered on its anchor, not aligned to an edge.
-  gutterInline: {
-    marginInlineStart: stylex.firstThatWorks(
-      layerViewportInset.gutterInline,
-      layerViewportInset.gutterInlineFallback,
-    ),
+  // Alignment-axis gutter (spec:AST-059 FR1): a margin on the far viewport
+  // edge of the alignment axis — one on the anchor-facing edge would push an
+  // aligned layer off its anchor — or both edges for a centered layer. The
+  // flip tactic mirrors it with the area. The slide options carry both
+  // (see layerSlideRules.ts).
+  gutterInlineEnd: {
     marginInlineEnd: stylex.firstThatWorks(
       layerViewportInset.gutterInline,
       layerViewportInset.gutterInlineFallback,
     ),
   },
-  alignInlineStart: {
-    insetInlineStart: stylex.firstThatWorks(
-      `calc(-1 * ${layerViewportInset.gutterInline})`,
-      `calc(-1 * ${layerViewportInset.gutterInlineFallback})`,
+  gutterInlineStart: {
+    marginInlineStart: stylex.firstThatWorks(
+      layerViewportInset.gutterInline,
+      layerViewportInset.gutterInlineFallback,
     ),
   },
-  alignInlineEnd: {
-    insetInlineEnd: stylex.firstThatWorks(
-      `calc(-1 * ${layerViewportInset.gutterInline})`,
-      `calc(-1 * ${layerViewportInset.gutterInlineFallback})`,
-    ),
-  },
-  gutterBlock: {
-    marginBlockStart: stylex.firstThatWorks(
-      layerViewportInset.gutterBlock,
-      layerViewportInset.gutterBlockFallback,
-    ),
+  gutterBlockEnd: {
     marginBlockEnd: stylex.firstThatWorks(
       layerViewportInset.gutterBlock,
       layerViewportInset.gutterBlockFallback,
     ),
   },
-  alignBlockStart: {
-    insetBlockStart: stylex.firstThatWorks(
-      `calc(-1 * ${layerViewportInset.gutterBlock})`,
-      `calc(-1 * ${layerViewportInset.gutterBlockFallback})`,
-    ),
-  },
-  alignBlockEnd: {
-    insetBlockEnd: stylex.firstThatWorks(
-      `calc(-1 * ${layerViewportInset.gutterBlock})`,
-      `calc(-1 * ${layerViewportInset.gutterBlockFallback})`,
+  gutterBlockStart: {
+    marginBlockStart: stylex.firstThatWorks(
+      layerViewportInset.gutterBlock,
+      layerViewportInset.gutterBlockFallback,
     ),
   },
 });
@@ -520,15 +502,15 @@ function getPositionArea(
  * (spec:AST-059 FR4).
  *
  * Flips first; they mirror the placement-axis margins (clearance and gutter)
- * and the alignment-axis inset with the area. Then the slide: position
- * options that span the whole alignment axis, same side of the trigger first,
- * opposite side second. Flips alone cannot rescue a layer wider than the room
- * on either side of its trigger — every flipped option overflows the
- * alignment axis too, and the browser keeps the base option, so the layer
- * never moves to the side of the trigger that has room on the placement axis
- * (#3671 for centered layers, where a flip maps center → center). A span
- * option's region is the whole axis, so it fits wherever the layer fits the
- * viewport, and its default anchor-center alignment plus the browser's
+ * and the alignment-axis gutter with the area. Then the slide: named
+ * `@position-try` options whose area spans the whole alignment axis
+ * (`layerSlideRules.ts`), same side of the trigger first, opposite side
+ * second. Flips alone cannot rescue a layer wider than the room on either
+ * side of its trigger — every flipped option overflows the alignment axis
+ * too, and the browser keeps the base option, so the layer never moves to the
+ * side of the trigger that has room on the placement axis (#3671 for centered
+ * layers, where a flip maps center → center). A slide option fits wherever
+ * the layer fits the viewport; its anchor-center alignment plus the browser's
  * overflow shift keep the layer's margin box — and so the gutter on both
  * edges — inside the viewport. Centered layers keep their one-sided spans
  * ahead of the full span so they slide the least distance first.
@@ -538,30 +520,21 @@ export function getPositionTryFallbacks(
   alignment: LayerAlignment = 'center',
 ): string {
   const flips = 'flip-block, flip-inline, flip-block flip-inline';
+  const slides = `${slideRuleName(placement, alignment, 'same')}, ${slideRuleName(placement, alignment, 'opposite')}`;
+
+  if (alignment !== 'center') {
+    return `${flips}, ${slides}`;
+  }
 
   if (placement === 'above' || placement === 'below') {
     const [same, opposite] =
-      placement === 'above'
-        ? ['self-block-start', 'self-block-end']
-        : ['self-block-end', 'self-block-start'];
-    if (alignment !== 'center') {
-      return `${flips}, ${same} span-all, ${opposite} span-all`;
-    }
-    const [samePhysical, oppositePhysical] =
       placement === 'above' ? ['top', 'bottom'] : ['bottom', 'top'];
-    return `${flips}, ${samePhysical} span-left, ${samePhysical} span-right, ${oppositePhysical} span-left, ${oppositePhysical} span-right, ${same} span-all, ${opposite} span-all`;
+    return `${flips}, ${same} span-left, ${same} span-right, ${opposite} span-left, ${opposite} span-right, ${slides}`;
   }
 
   const [same, opposite] =
-    placement === 'start'
-      ? ['self-inline-start', 'self-inline-end']
-      : ['self-inline-end', 'self-inline-start'];
-  if (alignment !== 'center') {
-    return `${flips}, ${same} span-all, ${opposite} span-all`;
-  }
-  const [samePhysical, oppositePhysical] =
     placement === 'start' ? ['left', 'right'] : ['right', 'left'];
-  return `${flips}, ${samePhysical} span-top, ${samePhysical} span-bottom, ${oppositePhysical} span-top, ${oppositePhysical} span-bottom, ${same} span-all, ${opposite} span-all`;
+  return `${flips}, ${same} span-top, ${same} span-bottom, ${opposite} span-top, ${opposite} span-bottom, ${slides}`;
 }
 
 /**
@@ -602,20 +575,20 @@ function getGutterStyles(
 ): ReadonlyArray<StyleXStyles> {
   if (placement === 'above' || placement === 'below') {
     if (alignment === 'start') {
-      return [styles.gutterInline, styles.alignInlineStart];
+      return [styles.gutterInlineEnd];
     }
     if (alignment === 'end') {
-      return [styles.gutterInline, styles.alignInlineEnd];
+      return [styles.gutterInlineStart];
     }
-    return [styles.gutterInline];
+    return [styles.gutterInlineStart, styles.gutterInlineEnd];
   }
   if (alignment === 'start') {
-    return [styles.gutterBlock, styles.alignBlockStart];
+    return [styles.gutterBlockEnd];
   }
   if (alignment === 'end') {
-    return [styles.gutterBlock, styles.alignBlockEnd];
+    return [styles.gutterBlockStart];
   }
-  return [styles.gutterBlock];
+  return [styles.gutterBlockStart, styles.gutterBlockEnd];
 }
 
 /**
@@ -1032,6 +1005,19 @@ function useLayerImplementation(
     };
   }, [handleToggle, bindToggleListener]);
 
+  // The slide options' `@position-try` rules (FR4) are installed in the
+  // layer's document before its first paint; one sheet serves every layer.
+  useIsomorphicLayoutEffect(() => {
+    if (mode !== 'context') {
+      return;
+    }
+    const doc =
+      popoverRef.current?.ownerDocument ?? sentinelRef.current?.ownerDocument;
+    if (doc) {
+      ensureSlideRules(doc);
+    }
+  }, [mode, contextMount]);
+
   // Anchor visibility (FR5). The first frame must already be right (FR8), so
   // the opening read is synchronous — a layout effect runs before paint, and a
   // state change inside it re-renders before paint — against the visual
@@ -1115,6 +1101,10 @@ function useLayerImplementation(
             };
 
       const clearance = offset ? toCssLength(offset) : null;
+      const clearanceProperty: Record<string, string> =
+        positioning === 'anchor' && clearance != null
+          ? {[LAYER_CLEARANCE_PROPERTY]: clearance}
+          : {};
       const offsetStyle =
         positioning !== 'anchor'
           ? null
@@ -1165,6 +1155,7 @@ function useLayerImplementation(
           style={{
             ...stylexResult.style,
             ...anchorStyle,
+            ...clearanceProperty,
             ...layerInsetProperties(declaredInset),
             ...contextMount.portalStyle,
             ...extraStyle,

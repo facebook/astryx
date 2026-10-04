@@ -192,38 +192,61 @@ describe('useLayer identity', () => {
 
 describe('getPositionTryFallbacks (issue #3671, spec:AST-059 FR4)', () => {
   const FLIPS = 'flip-block, flip-inline, flip-block flip-inline';
+  const slides = (p: LayerPlacement, a: LayerAlignment) =>
+    `--astryx-layer-slide-${p}-${a}-same, --astryx-layer-slide-${p}-${a}-opposite`;
 
-  it('appends inline span fallbacks for centered above/below layers so inline overflow can resolve (flip-inline is a no-op on center), then the full-axis spans', () => {
+  it('appends inline span fallbacks for centered above/below layers so inline overflow can resolve (flip-inline is a no-op on center), then the named slides', () => {
     expect(getPositionTryFallbacks('above', 'center')).toBe(
-      `${FLIPS}, top span-left, top span-right, bottom span-left, bottom span-right, self-block-start span-all, self-block-end span-all`,
+      `${FLIPS}, top span-left, top span-right, bottom span-left, bottom span-right, ${slides('above', 'center')}`,
     );
     expect(getPositionTryFallbacks('below', 'center')).toBe(
-      `${FLIPS}, bottom span-left, bottom span-right, top span-left, top span-right, self-block-end span-all, self-block-start span-all`,
+      `${FLIPS}, bottom span-left, bottom span-right, top span-left, top span-right, ${slides('below', 'center')}`,
     );
   });
 
-  it('appends block span fallbacks for centered start/end layers so block overflow can resolve (flip-block is a no-op on center), then the full-axis spans', () => {
+  it('appends block span fallbacks for centered start/end layers so block overflow can resolve (flip-block is a no-op on center), then the named slides', () => {
     expect(getPositionTryFallbacks('start', 'center')).toBe(
-      `${FLIPS}, left span-top, left span-bottom, right span-top, right span-bottom, self-inline-start span-all, self-inline-end span-all`,
+      `${FLIPS}, left span-top, left span-bottom, right span-top, right span-bottom, ${slides('start', 'center')}`,
     );
     expect(getPositionTryFallbacks('end', 'center')).toBe(
-      `${FLIPS}, right span-top, right span-bottom, left span-top, left span-bottom, self-inline-end span-all, self-inline-start span-all`,
+      `${FLIPS}, right span-top, right span-bottom, left span-top, left span-bottom, ${slides('end', 'center')}`,
     );
   });
 
-  it('gives aligned layers the flips, then a full-axis span on the same side and on the opposite side', () => {
-    expect(getPositionTryFallbacks('below', 'start')).toBe(
-      `${FLIPS}, self-block-end span-all, self-block-start span-all`,
+  it('gives aligned layers the flips, then the named slide on the same side and on the opposite side', () => {
+    for (const placement of ['above', 'below', 'start', 'end'] as const) {
+      for (const alignment of ['start', 'end'] as const) {
+        expect(getPositionTryFallbacks(placement, alignment)).toBe(
+          `${FLIPS}, ${slides(placement, alignment)}`,
+        );
+      }
+    }
+  });
+
+  it('installs the slide rules once in the document head, with the gutter on both alignment-axis edges and the clearance facing the anchor on the landing side', async () => {
+    const user = userEvent.setup();
+    const {container} = render(
+      <ContextLayerHarness placement="below" alignment="start" />,
     );
-    expect(getPositionTryFallbacks('above', 'end')).toBe(
-      `${FLIPS}, self-block-start span-all, self-block-end span-all`,
+    await user.click(container.querySelector('button')!);
+    const popover = container.querySelector('[popover]');
+    // One sheet in the document head: never inside the layer, where a
+    // role-bearing layer's text would name it to assistive technology, and
+    // never beside it, where it would change a parent's last child.
+    expect(popover?.querySelector('style')).toBeNull();
+    expect(container.querySelector('style')).toBeNull();
+    const css =
+      document.getElementById('astryx-layer-slide-rules')?.textContent ?? '';
+    expect(css).toContain(
+      '@position-try --astryx-layer-slide-below-start-same{position-area:self-block-end span-all;margin-block-start:var(--_astryx-layer-clearance, 0px);',
     );
-    expect(getPositionTryFallbacks('end', 'start')).toBe(
-      `${FLIPS}, self-inline-end span-all, self-inline-start span-all`,
+    expect(css).toContain(
+      '@position-try --astryx-layer-slide-below-start-opposite{position-area:self-block-start span-all;margin-block-end:var(--_astryx-layer-clearance, 0px);',
     );
-    expect(getPositionTryFallbacks('start', 'end')).toBe(
-      `${FLIPS}, self-inline-start span-all, self-inline-end span-all`,
+    expect(css).toMatch(
+      /margin-inline-start:[^;]*;margin-inline-start:[^;]*env\(safe-area-inset-left/,
     );
+    expect(css).toContain('inset-inline-start:0;inset-inline-end:0;');
   });
 
   it('defaults to above/center when called without arguments (matches renderContext defaults)', () => {
@@ -239,13 +262,10 @@ describe('getPositionTryFallbacks (issue #3671, spec:AST-059 FR4)', () => {
     const placements: LayerPlacement[] = ['above', 'below', 'start', 'end'];
     const alignments: LayerAlignment[] = ['start', 'center', 'end'];
     const spanPattern: Record<LayerPlacement, RegExp> = {
-      above:
-        /^(top|bottom) span-(left|right)$|^self-block-(start|end) span-all$/,
-      below:
-        /^(top|bottom) span-(left|right)$|^self-block-(start|end) span-all$/,
-      start:
-        /^(left|right) span-(top|bottom)$|^self-inline-(start|end) span-all$/,
-      end: /^(left|right) span-(top|bottom)$|^self-inline-(start|end) span-all$/,
+      above: /^(top|bottom) span-(left|right)$|^--astryx-layer-slide-above-/,
+      below: /^(top|bottom) span-(left|right)$|^--astryx-layer-slide-below-/,
+      start: /^(left|right) span-(top|bottom)$|^--astryx-layer-slide-start-/,
+      end: /^(left|right) span-(top|bottom)$|^--astryx-layer-slide-end-/,
     };
     for (const placement of placements) {
       for (const alignment of alignments) {
@@ -319,39 +339,24 @@ describe('viewport inset (spec:AST-059)', () => {
       [
         'below',
         'start',
-        ['farBelow', 'gutterInline', 'alignInlineStart'],
-        ['alignInlineEnd', 'farAbove'],
+        ['farBelow', 'gutterInlineEnd'],
+        ['gutterInlineStart', 'farAbove'],
       ],
-      [
-        'below',
-        'end',
-        ['farBelow', 'gutterInline', 'alignInlineEnd'],
-        ['alignInlineStart'],
-      ],
+      ['below', 'end', ['farBelow', 'gutterInlineStart'], ['gutterInlineEnd']],
       [
         'above',
         'center',
-        ['farAbove', 'gutterInline'],
-        ['alignInlineStart', 'alignInlineEnd', 'farBelow'],
+        ['farAbove', 'gutterInlineStart', 'gutterInlineEnd'],
+        ['farBelow'],
       ],
       [
         'end',
         'start',
-        ['farEnd', 'gutterBlock', 'alignBlockStart'],
-        ['alignBlockEnd', 'farStart'],
+        ['farEnd', 'gutterBlockEnd'],
+        ['gutterBlockStart', 'farStart'],
       ],
-      [
-        'start',
-        'end',
-        ['farStart', 'gutterBlock', 'alignBlockEnd'],
-        ['alignBlockStart'],
-      ],
-      [
-        'end',
-        'center',
-        ['farEnd', 'gutterBlock'],
-        ['alignBlockStart', 'alignBlockEnd'],
-      ],
+      ['start', 'end', ['farStart', 'gutterBlockStart'], ['gutterBlockEnd']],
+      ['end', 'center', ['farEnd', 'gutterBlockStart', 'gutterBlockEnd'], []],
     ];
     for (const [placement, alignment, present, absent] of cases) {
       const {container, unmount} = render(

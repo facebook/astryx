@@ -140,13 +140,13 @@ gutter is a margin, so the margin box is what must fit a position option and
 what the browser's overflow shift keeps inside the viewport: a layer that would
 end inside the gutter or under a declared bar does not fit there and the next
 option is tried. On the placement axis the gutter rides the far edge beside
-the anchor clearance on the near edge; on the alignment axis it rides both
-edges, and an aligned layer carries a negative inset of the same size on its
-anchor-facing edge so its own edge still meets the trigger's. The flip tactics
-swap margins and insets with the area, so the clearance stays on the anchor
-side and the gutter on the far side, and the placement-axis gutter is one value
-for both edges — the larger of the two block gutters — so a bar declared on one
-block edge keeps a layer the same distance from the opposite edge.
+the anchor clearance on the near edge; on the alignment axis it rides the far
+edge of an aligned layer — one on the anchor-facing edge would push the layer
+off its anchor — and both edges of a centered one. The flip tactics swap the
+margins with the area, so the clearance stays on the anchor side and the gutter
+on the far side, and the placement-axis gutter is one value for both edges —
+the larger of the two block gutters — so a bar declared on one block edge keeps
+a layer the same distance from the opposite edge.
 
 The layer box is capped to the viewport minus both gutters on both axes, never
 to the span of viewport beside the trigger, and never exceeds that cap. An
@@ -161,14 +161,20 @@ expression, because a CSS minimum otherwise wins over a maximum.
 
 The fallback order is the runtime's: preferred position; flip across the
 placement axis; flip across the alignment axis; both; then, while the anchor is
-in view, the slide: position options whose area spans the whole alignment axis
-(`span-all`), same side of the trigger first, opposite side second, which the
-browser's overflow alignment shifts the least distance that brings the margin
-box inside the viewport. Centered layers keep their one-sided spans ahead of
-the full span. The slide is its own option because a layer wider than the room
-on either side of its trigger overflows every flipped option on the alignment
-axis, and the browser would otherwise keep the base option and never move the
-layer to the side of the trigger with room on the placement axis.
+in view, the slide: named `@position-try` options (`Layer/layerSlideRules.ts`)
+whose area spans the whole alignment axis, same side of the trigger first,
+opposite side second, each carrying the gutter on both alignment-axis edges and
+the clearance-and-gutter pair of the side it lands on, which the browser's
+overflow alignment shifts the least distance that brings the margin box inside
+the viewport. Centered layers keep their one-sided spans ahead of the full
+span. The slide is its own option because a layer wider than the room on either
+side of its trigger overflows every flipped option on the alignment axis, and
+the browser would otherwise keep the base option and never move the layer to
+the side of the trigger with room on the placement axis. The rules are one
+static style sheet the runtime installs in the layer's document head before
+the layer's first paint — never inside the layer, where a role-bearing layer's
+text would name them to assistive technology, and never beside it, where they
+would change a parent's last child.
 Content taller than the placement axis can hold on either side is capped to the
 viewport minus both gutters and shifted into the viewport by the browser; its
 margin box stays inside the viewport, so it keeps its anchor clearance from the
@@ -420,6 +426,7 @@ be updated only as that work ships.
 - `Layer/layerHost.ts` owns safe inline versus nearest corrective portal placement.
 - `Layer/anchorName.ts` owns composition of anchor names on one trigger.
 - `Layer/layerViewportInset.stylex.ts` owns the gutter and the viewport caps;
+  `Layer/layerSlideRules.ts` owns the slide options' `@position-try` rules;
   `LayerProvider` publishes the declared inset through `LayerContext`, and
   `Layer/layerInset.ts` owns the `--astryx-layer-inset-*` properties a layer or
   the toast viewport writes on itself to carry it; `Layer/clampInlineSize.ts`

@@ -521,9 +521,10 @@ describe('DropdownMenu', () => {
       .getByRole('menu', {hidden: true})
       .closest('[popover]');
     // The gutter is the layer runtime's (spec:AST-059 FR1, FR7).
-    expect(popover?.className).toContain('useLayer__styles.gutterBlock');
-    expect(popover?.className).toContain('useLayer__styles.alignBlockStart');
-    expect(popover?.className).not.toContain('useLayer__styles.gutterInline');
+    expect(popover?.className).toContain('useLayer__styles.gutterBlockEnd');
+    expect(popover?.className).not.toContain(
+      'useLayer__styles.gutterInlineEnd',
+    );
   });
 
   it('emits the direction-independent logical mapping under an RTL ancestor (#3389)', async () => {
@@ -600,7 +601,7 @@ describe('DropdownMenu', () => {
         'DropdownMenu__styles.popoverCustomIntrinsicWidth',
       );
       expect(popover?.getAttribute('style')).toContain(menuWidth);
-      expect(popover?.className).toContain('useLayer__styles.gutterInline');
+      expect(popover?.className).toContain('useLayer__styles.gutterInlineEnd');
       expect(popover?.getAttribute('style')).not.toContain(`min(${menuWidth},`);
     },
   );
