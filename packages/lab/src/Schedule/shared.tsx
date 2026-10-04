@@ -803,6 +803,10 @@ export const styles = stylex.create({
     minWidth: 0,
   },
   eventTime: {
+    display: {
+      default: 'block',
+      '@container (max-width: 72px)': 'none',
+    },
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
@@ -1065,6 +1069,9 @@ export const styles = stylex.create({
     minHeight: '24px',
     minWidth: 0,
     overflow: 'hidden',
+    // The block is a container so a narrow track can drop its time line
+    // (eventTime below) while the title keeps its single ellipsized line.
+    containerType: 'inline-size',
     borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
     borderRadius: radiusVars['--radius-inner'],
@@ -1075,15 +1082,19 @@ export const styles = stylex.create({
     lineHeight: typeScaleVars['--text-supporting-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
   },
-  timedEventPosition: (top: number, height: number, level: number) => ({
+  // Blocks in one overlap cluster split the column into equal tracks and never
+  // overlap, so they carry no z-index of their own; the 2px insets keep the
+  // same gutter a lone block has at the column's edges.
+  timedEventPosition: (
+    top: number,
+    height: number,
+    inlineStart: number,
+    inlineSize: number,
+  ) => ({
     top: `calc(${top}% + 2px)`,
     height: `calc(${height}% - 5px)`,
-    insetInlineStart:
-      level === 0
-        ? spacingVars['--spacing-0-5']
-        : `calc(${spacingVars['--spacing-0-5']} + ${level * 8}%)`,
-    insetInlineEnd: spacingVars['--spacing-0-5'],
-    zIndex: level + 1,
+    insetInlineStart: `calc(${inlineStart}% + ${spacingVars['--spacing-0-5']})`,
+    inlineSize: `calc(${inlineSize}% - ${spacingVars['--spacing-0-5']} * 2)`,
   }),
   currentTimeLine: (top: number) => ({
     position: 'absolute',
@@ -1092,7 +1103,8 @@ export const styles = stylex.create({
     borderTopWidth: '2px',
     borderTopStyle: 'solid',
     borderTopColor: colorVars['--color-border-orange'],
-    zIndex: 20,
+    // Local to the isolated day column: above its blocks, nothing else.
+    zIndex: 1,
     pointerEvents: 'none',
     '::before': {
       content: '""',

@@ -44,6 +44,7 @@ import {
   isEventInPast,
   styles,
 } from './shared';
+import {layoutTimedEvents, type TimedEventPlacement} from './timeGridLayout';
 import {useCurrentTime} from './useCurrentTime';
 import type {
   CalendarDayEvent,
@@ -249,44 +250,54 @@ export function TimeGridView({
                     timezoneID,
                     minHour: normalizedMinHour,
                     maxHour: normalizedMaxHour,
-                  }).map(({event, height, level, top}) => {
-                    const timeLabel = formatEventTime(
+                  }).map(
+                    ({
                       event,
-                      day,
-                      timezoneID,
-                      locale,
-                    );
-                    const category = getEventCategory(event, categories);
-                    return (
-                      <div
-                        key={event.id}
-                        {...stylex.props(
-                          styles.timedEvent,
-                          styles.timedEventPosition(
-                            clamp(top, 0, 100),
-                            clamp(height, 4, 100),
-                            level,
-                          ),
-                          isEventInPast(event, currentTime, timezoneID)
-                            ? eventPastSurfaceColorStyle(category.color)
-                            : eventSurfaceColorStyle(category.color),
-                        )}>
-                        <Text
-                          type="supporting"
-                          color="inherit"
-                          weight="bold"
-                          xstyle={styles.eventTitle}>
-                          {event.title}
-                        </Text>
-                        <Text
-                          type="supporting"
-                          color="inherit"
-                          xstyle={styles.eventTime}>
-                          {timeLabel}
-                        </Text>
-                      </div>
-                    );
-                  })}
+                      height,
+                      top,
+                      columnStart,
+                      columnSpan,
+                      columnCount,
+                    }) => {
+                      const timeLabel = formatEventTime(
+                        event,
+                        day,
+                        timezoneID,
+                        locale,
+                      );
+                      const category = getEventCategory(event, categories);
+                      return (
+                        <div
+                          key={event.id}
+                          {...stylex.props(
+                            styles.timedEvent,
+                            styles.timedEventPosition(
+                              clamp(top, 0, 100),
+                              clamp(height, 4, 100),
+                              (columnStart / columnCount) * 100,
+                              (columnSpan / columnCount) * 100,
+                            ),
+                            isEventInPast(event, currentTime, timezoneID)
+                              ? eventPastSurfaceColorStyle(category.color)
+                              : eventSurfaceColorStyle(category.color),
+                          )}>
+                          <Text
+                            type="supporting"
+                            color="inherit"
+                            weight="bold"
+                            xstyle={styles.eventTitle}>
+                            {event.title}
+                          </Text>
+                          <Text
+                            type="supporting"
+                            color="inherit"
+                            xstyle={styles.eventTime}>
+                            {timeLabel}
+                          </Text>
+                        </div>
+                      );
+                    },
+                  )}
                   {plainDateIsEqual(day, currentDate) &&
                     currentTimeTop != null && (
                       <div
@@ -514,13 +525,6 @@ function getAvailableAllDayLevel(
   return level >= 0 ? level : levels.length;
 }
 
-interface TimedEventLayout {
-  event: CalendarInstantEvent;
-  top: number;
-  height: number;
-  level: number;
-}
-
 function getTimedEventLayouts({
   events,
   day,
@@ -533,69 +537,26 @@ function getTimedEventLayouts({
   timezoneID: string;
   minHour: number;
   maxHour: number;
-}): TimedEventLayout[] {
-  const totalMinutes = (maxHour - minHour) * 60;
-  const levelEndMinutes: number[] = [];
-
-  return events
-    .map(event => {
-      const startDate = plainDateFromInstant(event.start, timezoneID);
-      const rawStart = plainDateIsBefore(startDate, day)
-        ? 0
-        : getMinutesSinceStartOfDay(event.start, timezoneID);
-      const rawEnd = eventSpansPastDay(event, day, timezoneID)
-        ? 24 * 60
-        : getMinutesSinceStartOfDay(event.end, timezoneID);
-      const minMinute = minHour * 60;
-      const maxMinute = maxHour * 60;
-      if (rawEnd <= minMinute || rawStart >= maxMinute) {
-        return null;
-      }
-      const visibleStart = Math.max(rawStart, minMinute);
-      const visibleEnd = Math.min(
-        maxMinute,
-        Math.max(visibleStart + 15, rawEnd),
-      );
-      return {event, visibleStart, visibleEnd};
-    })
-    .filter(
-      (
-        layout,
-      ): layout is {
-        event: CalendarInstantEvent;
-        visibleStart: number;
-        visibleEnd: number;
-      } => layout != null && layout.visibleEnd > layout.visibleStart,
-    )
-    .sort((a, b) => {
-      if (a.visibleStart !== b.visibleStart) {
-        return a.visibleStart - b.visibleStart;
-      }
-      return (
-        a.visibleEnd - b.visibleEnd ||
-        a.event.title.localeCompare(b.event.title)
-      );
-    })
-    .map(({event, visibleEnd, visibleStart}) => {
-      const level = getAvailableTimedEventLevel(levelEndMinutes, visibleStart);
-      levelEndMinutes[level] = visibleEnd;
-      return {
-        event,
-        level,
-        top: ((visibleStart - minHour * 60) / totalMinutes) * 100,
-        height: ((visibleEnd - visibleStart) / totalMinutes) * 100,
-      };
-    });
-}
-
-function getAvailableTimedEventLevel(
-  levelEndMinutes: number[],
-  visibleStart: number,
-): number {
-  const level = levelEndMinutes.findIndex(
-    endMinute => visibleStart >= endMinute,
-  );
-  return level >= 0 ? level : levelEndMinutes.length;
+}): TimedEventPlacement<CalendarInstantEvent>[] {
+  const minMinute = minHour * 60;
+  const maxMinute = maxHour * 60;
+  const intervals = events.flatMap(event => {
+    const startDate = plainDateFromInstant(event.start, timezoneID);
+    const rawStart = plainDateIsBefore(startDate, day)
+      ? 0
+      : getMinutesSinceStartOfDay(event.start, timezoneID);
+    const rawEnd = eventSpansPastDay(event, day, timezoneID)
+      ? 24 * 60
+      : getMinutesSinceStartOfDay(event.end, timezoneID);
+    if (rawEnd <= minMinute || rawStart >= maxMinute) {
+      return [];
+    }
+    const visibleStart = Math.max(rawStart, minMinute);
+    // A block is at least fifteen minutes tall so a short event stays legible.
+    const visibleEnd = Math.min(maxMinute, Math.max(visibleStart + 15, rawEnd));
+    return visibleEnd > visibleStart ? [{event, visibleStart, visibleEnd}] : [];
+  });
+  return layoutTimedEvents(intervals, minMinute, maxMinute);
 }
 
 function getCurrentTimeTop({
