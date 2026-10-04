@@ -59,20 +59,21 @@ export function LayerProvider({
     () => ({toastConfig, inset, isProvider: true}),
     [toastConfig, inset],
   );
+  const nestedValue = useMemo<LayerContextValue | null>(
+    () =>
+      existingContext && inset != null ? {...existingContext, inset} : null,
+    [existingContext, inset],
+  );
 
   // Nested provider — pass through. One that declares an inset narrows it
   // for the anchored layers in its subtree (an app hosted inside another
   // provider can still declare its own bar); the toast viewport is the
   // root's and reads the root's declaration.
   if (existingContext) {
-    if (inset == null) {
+    if (nestedValue == null) {
       return <>{children}</>;
     }
-    return (
-      <LayerContext value={{...existingContext, inset}}>
-        {children}
-      </LayerContext>
-    );
+    return <LayerContext value={nestedValue}>{children}</LayerContext>;
   }
 
   // The declared inset reaches anchored layers through context — each layer
