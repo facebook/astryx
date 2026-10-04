@@ -572,6 +572,175 @@ describe('useLayer', () => {
     });
   });
 
+  describe('show() while another popover is mid show/hide', () => {
+    /**
+     * Mirror the Popover API's re-entrancy rule: hiding a popover hands focus
+     * back to the element that had it, synchronously and while the document
+     * still counts that popover as hiding, and `showPopover()` throws while
+     * any popover in the document is being shown or hidden.
+     */
+    function installReentrantPopoverApi(
+      duringHide?: (popover: HTMLElement) => void,
+    ) {
+      let operationsInFlight = 0;
+      const previouslyFocused = new WeakMap<HTMLElement, Element | null>();
+      const showSpy = vi.fn(function (this: HTMLElement) {
+        if (operationsInFlight > 0) {
+          throw new DOMException(
+            "Failed to execute 'showPopover' on 'HTMLElement': Invalid to show a popover during another show operation",
+            'InvalidStateError',
+          );
+        }
+        operationsInFlight += 1;
+        try {
+          previouslyFocused.set(this, this.ownerDocument.activeElement);
+          this.dataset.open = 'true';
+        } finally {
+          operationsInFlight -= 1;
+        }
+      });
+      const hideSpy = vi.fn(function (this: HTMLElement) {
+        operationsInFlight += 1;
+        try {
+          delete this.dataset.open;
+          const target = previouslyFocused.get(this);
+          previouslyFocused.delete(this);
+          if (
+            target instanceof HTMLElement &&
+            this.contains(document.activeElement)
+          ) {
+            target.focus();
+          }
+          duringHide?.(this);
+        } finally {
+          operationsInFlight -= 1;
+        }
+      });
+      HTMLElement.prototype.showPopover = showSpy;
+      HTMLElement.prototype.hidePopover = hideSpy;
+      return {showSpy, hideSpy};
+    }
+
+    /**
+     * A trigger that opens a dismissible layer and also carries a focus-driven
+     * layer (a tooltip), the shape every tooltip-bearing popover trigger has.
+     */
+    function FocusReturnHarness({onTooltipShow}: {onTooltipShow: () => void}) {
+      const popover = useLayer({mode: 'context'});
+      const tooltip = useLayer({mode: 'context', onShow: onTooltipShow});
+      return (
+        <>
+          <button
+            type="button"
+            ref={el => {
+              popover.ref(el);
+              tooltip.ref(el);
+            }}
+            onFocus={tooltip.show}
+            onBlur={tooltip.hide}
+            onClick={popover.show}>
+            Trigger
+          </button>
+          {popover.render(
+            <button
+              type="button"
+              onKeyDown={e => {
+                if (e.key === 'Escape') {
+                  popover.hide();
+                }
+              }}>
+              Inside
+            </button>,
+            {role: 'dialog'},
+          )}
+          {tooltip.render(<span>Tip</span>, {role: 'tooltip'})}
+        </>
+      );
+    }
+
+    it('defers the show a returning focus requests until the hide has returned', async () => {
+      const {showSpy} = installReentrantPopoverApi();
+      const errors: unknown[] = [];
+      const onError = (event: ErrorEvent) => {
+        errors.push(event.error);
+        event.preventDefault();
+      };
+      window.addEventListener('error', onError);
+      const onTooltipShow = vi.fn();
+      const {getByRole} = render(
+        <FocusReturnHarness onTooltipShow={onTooltipShow} />,
+      );
+      const trigger = getByRole('button', {name: 'Trigger'});
+      const inside = getByRole('button', {name: 'Inside', hidden: true});
+
+      // Keyboard-open the popover: the tooltip shows on focus, the popover on
+      // the press, and focus moves inside — the tooltip closes behind it.
+      act(() => trigger.focus());
+      fireEvent.click(trigger);
+      act(() => inside.focus());
+      expect(onTooltipShow).toHaveBeenCalledTimes(1);
+      expect(getByRole('dialog', {hidden: true})).toHaveAttribute(
+        'data-open',
+        'true',
+      );
+      expect(getByRole('tooltip', {hidden: true})).not.toHaveAttribute(
+        'data-open',
+      );
+
+      // Escape hides the popover; the browser returns focus to the trigger
+      // inside that hide, and the tooltip asks to show.
+      fireEvent.keyDown(inside, {key: 'Escape'});
+      window.removeEventListener('error', onError);
+
+      expect(errors).toEqual([]);
+      expect(document.activeElement).toBe(trigger);
+      expect(getByRole('dialog', {hidden: true})).not.toHaveAttribute(
+        'data-open',
+      );
+      // Nothing reached the browser while the hide was running; the deferred
+      // show runs exactly once, after the press has unwound.
+      expect(onTooltipShow).toHaveBeenCalledTimes(1);
+      await act(async () => {});
+      expect(showSpy.mock.results.every(r => r.type === 'return')).toBe(true);
+      expect(getByRole('tooltip', {hidden: true})).toHaveAttribute(
+        'data-open',
+        'true',
+      );
+      expect(onTooltipShow).toHaveBeenCalledTimes(2);
+    });
+
+    it('drops a deferred show that hide() cancels before it replays', async () => {
+      const api: {popover?: FixedLayerReturn; tooltip?: FixedLayerReturn} = {};
+      // While the popover hides, the tooltip asks to show and then changes
+      // its mind before the hide returns.
+      const {showSpy} = installReentrantPopoverApi(() => {
+        api.tooltip?.show();
+        api.tooltip?.hide();
+      });
+      function Harness() {
+        api.popover = useLayer({mode: 'fixed'});
+        api.tooltip = useLayer({mode: 'fixed'});
+        return (
+          <>
+            {api.popover.render(<span>Popover</span>, {x: 0, y: 0})}
+            {api.tooltip.render(<span>Tip</span>, {x: 0, y: 0})}
+          </>
+        );
+      }
+      const {getByText} = render(<Harness />);
+
+      act(() => api.popover?.show());
+      act(() => api.popover?.hide());
+      await act(async () => {});
+
+      // Only the popover's own show reached the browser.
+      expect(showSpy).toHaveBeenCalledTimes(1);
+      expect(getByText('Tip').closest('[popover]')).not.toHaveAttribute(
+        'data-open',
+      );
+    });
+  });
+
   describe('when the Popover API is unsupported (Safari <17 / Firefox <125)', () => {
     it('show() does not throw when showPopover is undefined and the layer becomes visible', () => {
       // Simulate a browser without the Popover API (finding infra-4).

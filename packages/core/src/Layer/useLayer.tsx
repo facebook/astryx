@@ -346,6 +346,43 @@ function toCssLength(value: number | string): string {
   return typeof value === 'number' ? `${value}px` : value;
 }
 
+/**
+ * Popover operations in flight, per document.
+ *
+ * The Popover API refuses to show a popover while the document is in the
+ * middle of showing or hiding ANY popover: `showPopover()` throws an
+ * `InvalidStateError` ("Invalid to show a popover during another show
+ * operation"); an engine still rolling the rule out instead refuses silently
+ * with a console warning, which would leave this hook open with nothing
+ * shown. Hiding a popover restores focus to the element that had it —
+ * synchronously, inside that window — so a focus-driven layer on the element
+ * receiving focus (a tooltip on the trigger that just closed a popover) asks
+ * to show while the hide is still running. Every layer's show and hide passes
+ * through here, so the window is observable: a `show()` that arrives inside
+ * it is replayed in a microtask, which runs once the script that started the
+ * operation — and the event dispatch it answered — has unwound.
+ */
+const popoverOperationsByDocument = new WeakMap<Document, number>();
+
+function runPopoverOperation(doc: Document, operation: () => void): void {
+  popoverOperationsByDocument.set(
+    doc,
+    (popoverOperationsByDocument.get(doc) ?? 0) + 1,
+  );
+  try {
+    operation();
+  } finally {
+    popoverOperationsByDocument.set(
+      doc,
+      (popoverOperationsByDocument.get(doc) ?? 1) - 1,
+    );
+  }
+}
+
+function isPopoverOperationInFlight(doc: Document): boolean {
+  return (popoverOperationsByDocument.get(doc) ?? 0) > 0;
+}
+
 interface ContextLayerMount {
   /** Null means the marker's parent is safe and the layer stays inline. */
   portalTarget: HTMLElement | null;
@@ -535,8 +572,10 @@ function useLayerImplementation(
   const [contextMount, setContextMount] = useState<ContextLayerMount | null>(
     null,
   );
-  // A show() that arrives before the final layer mounts is replayed when its
-  // popover ref attaches.
+  // A show() that cannot run yet is remembered here and replayed: one that
+  // arrives before the final layer mounts runs when its popover ref attaches;
+  // one that arrives while another popover is mid show/hide runs once that
+  // operation has unwound. hide() forgets it either way.
   const pendingShowRef = useRef(false);
 
   // Ref mirrors isOpen for synchronous reads inside show/hide.
@@ -560,11 +599,13 @@ function useLayerImplementation(
     // Firefox <125. On those browsers `showPopover` does not exist, so fall
     // back to plain visibility instead of throwing.
     if (typeof popover.showPopover === 'function') {
-      // The trigger is passed as the popover's invoker `source`: a layer
-      // hosted away from its trigger then still takes its sequential focus
-      // order (and its popover nesting) from the trigger rather than from its
-      // own DOM position. Browsers without the option ignore it.
-      popover.showPopover({source: triggerRef.current ?? undefined});
+      runPopoverOperation(popover.ownerDocument, () => {
+        // The trigger is passed as the popover's invoker `source`: a layer
+        // hosted away from its trigger then still takes its sequential focus
+        // order (and its popover nesting) from the trigger rather than from
+        // its own DOM position. Browsers without the option ignore it.
+        popover.showPopover({source: triggerRef.current ?? undefined});
+      });
     } else {
       popover.style.display = 'block';
     }
@@ -634,6 +675,19 @@ function useLayerImplementation(
       return;
     }
     if (!isOpenRef.current) {
+      // Another popover is mid show/hide (typically one whose hide is handing
+      // focus back to this layer's trigger): the browser would refuse the
+      // show, so replay this call once that operation has returned.
+      if (isPopoverOperationInFlight(popover.ownerDocument)) {
+        pendingShowRef.current = true;
+        queueMicrotask(() => {
+          if (pendingShowRef.current) {
+            pendingShowRef.current = false;
+            showRef.current();
+          }
+        });
+        return;
+      }
       showPopoverElement(popover);
       isOpenRef.current = true;
       setIsOpen(true);
@@ -660,7 +714,13 @@ function useLayerImplementation(
       // unsupported browsers degrade gracefully instead of throwing.
       if (el) {
         if (typeof el.hidePopover === 'function') {
-          el.hidePopover();
+          // Hiding hands focus back to the previously focused element while
+          // the browser still counts this popover as hiding; a layer that
+          // focus wakes (a tooltip on that element) defers its show until
+          // this returns.
+          runPopoverOperation(el.ownerDocument, () => {
+            el.hidePopover();
+          });
         } else {
           el.style.display = 'none';
         }
@@ -670,6 +730,11 @@ function useLayerImplementation(
     }
     clearContextMount();
   }, [onHide, clearContextMount]);
+
+  // A deferred show() replays through a ref so the queued closure reaches the
+  // current callback rather than the one captured when it was queued.
+  const showRef = useRef(show);
+  showRef.current = show;
 
   // Stable ref for the trigger element (context mode only).
   const contextRef = useCallback(
