@@ -3,6 +3,8 @@
 /**
  * @file FunctionDoc for `swizzle()` / `astryx swizzle`. Colocated with the API
  * function it documents; the shape source of truth stays in `swizzle.type.mjs`.
+ * Documents recursive core copying, flat integration copying, and destination
+ * symlink and path-shape rejection.
  * @position packages/cli/api/swizzle — function documentation
  */
 
@@ -19,7 +21,11 @@ export const doc = {
     'It copies from the locally resolved @astryxdesign/core (or the owning integration) ' +
     'package source, rewriting imports that escape the component directory to the owner ' +
     "package's subpaths and flagging whether any copied file uses StyleX. With no name " +
-    '(or list) it returns the swizzlable component names instead.',
+    '(or list) it returns the swizzlable component names instead. Core component ' +
+    'directories include nested source files; integration source directories retain ' +
+    'their flat copy behavior. Destination symlinks and paths already taken by the wrong ' +
+    'kind of entry (a file where a directory must go, or a directory where a file must go) ' +
+    'are rejected before any writes.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'swizzle(component?: string, options?: SwizzleOptions): Promise<SwizzleListResponse | SwizzleCopyResponse>',
@@ -73,7 +79,7 @@ export const doc = {
     {
       type: 'swizzle.copy',
       description:
-        'A receipt after copying the component into the project: the component name, owning package, output directory, files-copied count, the written file names, whether any file uses StyleX, and, when the owner has an issues URL, feedback ({issuesUrl, ghCommand?}): where to report the gap that led to swizzling.',
+        'A receipt after copying the component into the project: the component name, owning package, output directory, files-copied count, the written file paths (relative to the output directory, nested subdirectories included), whether any file uses StyleX, and, when the owner has an issues URL, feedback ({issuesUrl, ghCommand?}): where to report the gap that led to swizzling.',
     },
   ],
   throws: [
@@ -83,7 +89,7 @@ export const doc = {
     },
     {
       code: 'ERR_PATH_TRAVERSAL',
-      when: 'the component name contains a path separator or traversal, output is absolute or resolves outside cwd, or an existing output file or directory is a symlink that resolves outside cwd',
+      when: 'the component name contains a path separator or traversal, output is absolute or resolves outside cwd, or any existing destination directory or file below cwd is a symlink, whether or not it resolves outside cwd',
     },
     {
       code: 'ERR_UNKNOWN_COMPONENT',
@@ -100,6 +106,10 @@ export const doc = {
     {
       code: 'ERR_FILE_EXISTS',
       when: 'copying would overwrite existing files and overwrite is not set',
+    },
+    {
+      code: 'ERR_WRITE_FAILED',
+      when: 'an existing destination path segment is not a directory, an existing destination file is a directory or other non-regular file, or a destination path cannot be inspected (e.g. no permission); checked before any write, even with overwrite',
     },
   ],
   examples: [
