@@ -43,7 +43,7 @@ system_specs: [spec:AST-029]
 | Behavior                | Direct children with a `value` read group state; opening an item replaces or extends the open-value set according to mode. The group renders no wrapper unless divider chrome is enabled.                                       |
 | End-user impact         | People can reveal one section or several sections without disclosure state drifting between sibling rows; divided groups keep one coherent visual and directional treatment.                                                    |
 | Builder impact          | Builders choose state ownership and selection mode, give participating items stable values, and may opt into divided-row presentation.                                                                                          |
-| Compatibility/readiness | This observational draft records released behavior. It changes no prop, export, default, runtime output, theme target, or migration promise.                                                                                    |
+| Compatibility/readiness | Released DOM output, props, defaults, targets, and migration promises are unchanged. An unchanged controlled string preserves the coordination broadcast identity instead of rerendering every consumer.                        |
 | Review checks           | Reject lost single/multiple coordination, controlled state that mutates internally, uncontrolled state that stops updating, presentation leakage into nested disclosures, or a wrapper appearing when dividers are absent.      |
 | Governing rules         | `component:Collapsible/FR7–FR9,DEC-2`; `architecture:public-component-api/INV1,INV5–INV9`; `architecture:react-component-runtime/INV1,INV8–INV9`; `architecture:component-theming-surface/INV3–INV7`.                           |
 
@@ -56,7 +56,7 @@ Coordinate a set of disclosure items so their open state follows one group owner
 ## Compatibility and migration
 
 - Released default preserved: yes
-- Compatibility class: observational ownership record only; no runtime, type, default, target, or export change
+- Compatibility class: compatible runtime efficiency correction; no DOM output, public type, default, target, export, or migration change
 - Controlled/uncontrolled behavior: unchanged
 - Migration decision: none
 
