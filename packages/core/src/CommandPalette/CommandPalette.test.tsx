@@ -418,7 +418,7 @@ describe('CommandPalette', () => {
       />,
     );
 
-    const input = screen.getByRole('combobox');
+    const input = screen.getByRole<HTMLInputElement>('combobox');
     await waitFor(() =>
       expect(screen.getByText('Settings')).toBeInTheDocument(),
     );
