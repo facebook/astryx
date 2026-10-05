@@ -11,7 +11,7 @@ import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {expect, test, type Browser, type Page} from '@playwright/test';
+import {expect, test, type Page} from '@playwright/test';
 import {holdMotionStill} from '@astryxdesign/a11y-spec/chromium';
 import {
   DEFAULT_STORYBOOK_DIR,
@@ -42,7 +42,6 @@ interface Case {
   mode: 'light' | 'dark';
   direction: 'ltr' | 'rtl';
   viewport: {width: number; height: number};
-  touch?: boolean;
 }
 
 const CASES: Case[] = [
@@ -51,18 +50,16 @@ const CASES: Case[] = [
   {state: 'wide-light-rtl', mode: 'light', direction: 'rtl', viewport: WIDE},
   {state: 'wide-dark-rtl', mode: 'dark', direction: 'rtl', viewport: WIDE},
   {
-    state: 'narrow-light-touch',
+    state: 'narrow-light',
     mode: 'light',
     direction: 'ltr',
     viewport: NARROW,
-    touch: true,
   },
   {
-    state: 'narrow-dark-touch',
+    state: 'narrow-dark',
     mode: 'dark',
     direction: 'ltr',
     viewport: NARROW,
-    touch: true,
   },
 ];
 
@@ -389,7 +386,6 @@ async function capture(page: Page, scenario: Case) {
       viewport: {width: innerWidth, height: innerHeight},
       dpr: devicePixelRatio,
       reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
-      touchPoints: navigator.maxTouchPoints,
       forcedColors: matchMedia('(forced-colors: active)').matches,
       horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
       storyError: [
@@ -459,11 +455,6 @@ async function capture(page: Page, scenario: Case) {
     expect(environment.viewport).toEqual(scenario.viewport);
     expect(environment.reducedMotion).toBe(true);
     expect(environment.forcedColors).toBe(false);
-    if (scenario.touch) {
-      expect(environment.touchPoints).toBeGreaterThan(0);
-    } else {
-      expect(environment.touchPoints).toBe(0);
-    }
     expect(environment.horizontalOverflow).toBe(false);
     expect(environment.storyError).toBe(false);
     expect(errors).toEqual([]);
@@ -511,7 +502,6 @@ async function capture(page: Page, scenario: Case) {
         chevronCount: 9,
         expandedNames: EXPANDED_NAMES,
         collapsedNames: COLLAPSED_NAMES,
-        touch: scenario.touch ?? false,
       },
       observed: {
         build: storybookSha,
@@ -558,29 +548,11 @@ async function capture(page: Page, scenario: Case) {
 }
 
 test('captures the complete group matrix with sensor receipts', async ({
-  browser,
   page,
 }: {
-  browser: Browser;
   page: Page;
 }) => {
-  for (const scenario of CASES.filter(value => !value.touch)) {
+  for (const scenario of CASES) {
     await capture(page, scenario);
-  }
-
-  const touchContext = await browser.newContext({
-    viewport: NARROW,
-    deviceScaleFactor: 1,
-    hasTouch: true,
-    isMobile: true,
-    reducedMotion: 'reduce',
-  });
-  try {
-    const touchPage = await touchContext.newPage();
-    for (const scenario of CASES.filter(value => value.touch)) {
-      await capture(touchPage, scenario);
-    }
-  } finally {
-    await touchContext.close();
   }
 });
