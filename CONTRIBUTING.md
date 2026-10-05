@@ -678,6 +678,11 @@ pnpm changeset:new --category fix --summary "…" --pr 2717 --contributor yourha
 
 - **0.x (current): bump follows the category.** We track standard semver for the `0.x.y` range, where a minor bump is the stable breaking tier (under a caret range like `^0.1.8`, npm resolves `<0.2.0`). A `[breaking]` change bumps the **minor** (`0.x.y → 0.(x+1).0`). A change confined to a surface that was explicitly marked experimental before its first stable publication uses `[experimental]` and bumps the **patch**, even when that experimental API changes incompatibly. Every other category (`feat`, `fix`, `component`, `perf`, `docs`, `chore`) also bumps the patch. If stable defaults, behavior, props, imports, CLI commands, or machine schemas break, the change remains `[breaking]`. `major` is never used while 0.x — it would jump to `1.0.0`. `pnpm changeset:new` writes the right bump from the category you pick; `pnpm check:changesets` enforces the coupling both ways.
 - All publishable packages are a `fixed` group, so a single change co-bumps them to the same version. Only genuinely-affected packages get a changelog entry — the rest get a clean version-only bump.
+- **Main targets a patch by default, and `[breaking]` waits for a scheduled minor.** Because the packages are a fixed group, one `[breaking]` entry moves every package to a new minor — so `pnpm check:changesets` refuses one while main is on its patch default. There are two ways forward, and the refusal prints both:
+  - **Keep the release patch-compatible** (the usual answer): leave the released surface working and deprecate it instead. Ship the replacement, keep the old usage equivalent, and take the patch bump; the removal lands once a minor is scheduled.
+  - **Wait for the scheduled minor**: minors are scheduled for a specific day. A release owner adds `.release/target.json` with the target version and that day, and from then until the release your `[breaking]` changeset can land. Removing that file afterwards is part of normal post-release setup, and an expired date stops admitting breaking changes on its own.
+
+  As a contributor you never author that file or decide the schedule — say what you intend in the PR and a maintainer handles it. The rule is `spec:AST-017` FR46–FR50.
 
 ### How a release is cut
 

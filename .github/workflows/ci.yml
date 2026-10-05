@@ -236,7 +236,8 @@ jobs:
   release-sync:
     name: release-sync
     if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
-    runs-on: 2-core-ubuntu-arm
+    # Match the stable publisher so byte parity covers the same packed manifest.
+    runs-on: 4-core-ubuntu
     permissions:
       contents: read
     steps:
@@ -1142,6 +1143,113 @@ jobs:
       - name: Run story play guard
         run: node .github/scripts/story-play-guard.js --storybook-dir apps/storybook/dist
 
+      # The empty-state announcement is a live-region claim: what a screen
+      # reader receives when a search dead-ends, and that the message element
+      # stays presentational so `role="listbox"` keeps only option/group
+      # children. jsdom proves the wiring; only a real engine shows the
+      # accessibility tree that results, and this contract is cheap enough to
+      # run on every PR rather than waiting for the release matrix. Its own
+      # --output directory so a later audit run cannot clear it, and it cannot
+      # clear theirs (Playwright wipes the default directory per run).
+      - name: Run empty-state announcement contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Selector/__tests__/EmptyStateAnnouncement.a11y.chromium.spec.ts \
+            --project chromium \
+            --output empty-state-announcement-output
+
+      # Outline owns real DOM focus through roving tabindex. Computed paint,
+      # pointer modality, clipping, forced colors, and exact pixels require the
+      # same real Chromium artifact this blocking accessibility lane already owns.
+      - name: Run Outline focus indicator contract
+        if: github.event_name == 'pull_request'
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          COMPONENTS=$(node .github/scripts/a11y-pr-scope.mjs analysis.json)
+          case ",${COMPONENTS}," in
+            *,core/Outline,*)
+              pnpm exec playwright test \
+                packages/core/src/Outline/OutlineFocus.a11y.chromium.spec.ts \
+                --project chromium \
+                --output outline-focus-output
+              ;;
+            *) echo "Outline not in PR scope; skipping focus evidence." ;;
+          esac
+
+      - name: Upload Outline focus evidence
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: outline-focus-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: test-results/outline-focus-evidence/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      # The Schedule time grid owns scroll geometry — pinned header and gutter
+      # alignment under classic scrollbars, inline scroll ownership, keyboard
+      # reach and its focus ring — none of which exists in jsdom. Every
+      # contract file under the Schedule tests directory runs here, in the
+      # same real Chromium artifact, whenever the PR scope names Schedule.
+      - name: Run Schedule time-grid contract
+        if: github.event_name == 'pull_request'
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          COMPONENTS=$(node .github/scripts/a11y-pr-scope.mjs analysis.json)
+          case ",${COMPONENTS}," in
+            *,lab/Schedule,*)
+              pnpm exec playwright test \
+                packages/lab/src/Schedule/__tests__/ \
+                --project chromium \
+                --output schedule-time-grid-output
+              ;;
+            *) echo "Schedule not in PR scope; skipping time-grid evidence." ;;
+          esac
+
+      - name: Upload Schedule time-grid evidence
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: schedule-time-grid-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: test-results/schedule-time-grid-evidence/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      # The heading-links module contract is broader than axe: exact fragments,
+      # native sibling anchors, hover/focus/touch discovery, forced colors,
+      # reduced motion, dark mode, and RTL geometry all need a real engine.
+      # Keep it scoped to Markdown plugin changes and bind its receipt to the verified head.
+      - name: Run heading-links module browser evidence
+        id: markdown-heading-links
+        if: github.event_name == 'pull_request'
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          COMPONENTS=$(node .github/scripts/a11y-pr-scope.mjs analysis.json)
+          case ",${COMPONENTS}," in
+            *,core/Markdown,*)
+              echo 'should_run=true' >> "$GITHUB_OUTPUT"
+              pnpm exec playwright test \
+                packages/core/src/Markdown/plugins/headingLinks.a11y.chromium.spec.ts \
+                --project chromium \
+                --output markdown-heading-links-output
+              ;;
+            *)
+              echo 'should_run=false' >> "$GITHUB_OUTPUT"
+              echo "Markdown not in PR scope; skipping heading-link evidence."
+              ;;
+          esac
+
+      - name: Upload heading-links module browser evidence
+        if: always() && github.event_name == 'pull_request' && steps.markdown-heading-links.outputs.should_run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: markdown-heading-links-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: test-results/markdown-heading-links/
+          retention-days: 30
+          if-no-files-found: error
+
       # ChatMessageBubble is nested under the shared Chat source directory, so
       # the generic stable-visual owner cannot select its dedicated fixture.
       # Run the component's bounded evidence matrix only when the PR scope names
@@ -1198,6 +1306,35 @@ jobs:
             test-results/chat-message-list-audit-evidence/
           retention-days: 30
           if-no-files-found: ignore
+
+      # CollapsibleGroup's shared Collapsible story previously left the audit
+      # owner with no routable browser fixture. Its dedicated matrix now emits
+      # semantic-state, geometry, direction, theme, and viewport receipts.
+      - name: Run CollapsibleGroup audit browser evidence
+        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] CollapsibleGroup:')
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output collapsible-group-a11y-report.json \
+            --components CollapsibleGroup \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new
+          pnpm exec playwright test \
+            packages/core/src/Collapsible/__tests__/CollapsibleGroup.a11y.chromium.spec.ts \
+            --project chromium
+
+      - name: Upload CollapsibleGroup audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] CollapsibleGroup:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: collapsible-group-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            collapsible-group-a11y-report.json
+            test-results/collapsible-group-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
 
       # Component-owned metadata fixtures retain exact-head browser receipts on
       # audit PRs, including failed pre-fix cases for before/after comparison.

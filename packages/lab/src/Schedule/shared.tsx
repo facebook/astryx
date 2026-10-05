@@ -15,6 +15,7 @@ import type {Locale} from '@astryxdesign/core/i18n';
 import {
   borderVars,
   colorVars,
+  focusVars,
   fontWeightVars,
   radiusVars,
   spacingVars,
@@ -33,6 +34,7 @@ import {
 } from '@astryxdesign/core/utils';
 import {isDayEvent} from './dateMath';
 import {useScheduleContext} from './context';
+import {timeGridViewportScope} from './schedule.stylex';
 import type {
   CalendarEvent,
   CalendarInstantEvent,
@@ -801,6 +803,10 @@ export const styles = stylex.create({
     minWidth: 0,
   },
   eventTime: {
+    display: {
+      default: 'block',
+      '@container (max-width: 72px)': 'none',
+    },
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
@@ -813,44 +819,110 @@ export const styles = stylex.create({
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
   },
-  timeGrid: {
-    flex: 1,
-    display: 'grid',
-    gridTemplateColumns: '60px minmax(0, 1fr)',
-    gridTemplateRows: '56px auto 1fr',
-    height: '640px',
+  // The time grid is one scroll viewport. Its day header, all-day row, hour
+  // gutter, and day columns are items of a single grid inside it, pinned with
+  // position: sticky, so a scrollbar, a zoom level, or an inline scroll cannot
+  // separate header tracks from body tracks. Local z-index values order the
+  // pinned parts inside the isolated viewport only.
+  // A 640px flex basis, not a height: inside the frame's indefinite-height
+  // column a `height` with `flex: 1` resolves to content size, so the grid
+  // would grow to its full hours and the page, not the viewport, would scroll.
+  // The basis gives a 640px scrolling viewport by default and still fills or
+  // shrinks to a root the caller sizes.
+  timeGridFrame: {
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: '640px',
     minHeight: 0,
-    overflow: 'hidden',
+    minWidth: 0,
   },
+  // The viewport paints no focus outline of its own: the frame clips outside
+  // its border box, and an inset outline is painted under the viewport's
+  // pinned header and gutter. The ring is the overlay below instead.
+  timeGridViewport: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    minHeight: 0,
+    minWidth: 0,
+    scrollbarGutter: 'stable',
+    isolation: 'isolate',
+    outlineStyle: 'none',
+  },
+  // The keyboard focus ring of the viewport: a pointer-transparent overlay
+  // laid over the whole viewport (scrollbar included) and painted after the
+  // viewport's stacking context, so every edge of the ring is visible above
+  // the pinned parts. It shows while the viewport before it has keyboard
+  // focus, drawn just inside the edge the frame clips at.
+  timeGridFocusRing: {
+    position: 'absolute',
+    inset: 0,
+    pointerEvents: 'none',
+    outlineWidth: {
+      default: 0,
+      [stylex.when.siblingBefore(':focus-visible', timeGridViewportScope)]:
+        focusVars['--focus-outline-width'],
+    },
+    outlineStyle: {
+      default: 'none',
+      [stylex.when.siblingBefore(':focus-visible', timeGridViewportScope)]:
+        focusVars['--focus-outline-style'],
+    },
+    outlineColor: {
+      default: 'transparent',
+      [stylex.when.siblingBefore(':focus-visible', timeGridViewportScope)]:
+        focusVars['--focus-outline-color'],
+    },
+    outlineOffset: `calc(-1 * ${focusVars['--focus-outline-width']})`,
+  },
+  // The minimum width keeps the grid box as wide as its tracks when the
+  // viewport is narrower, so the pinned gutter has the whole scrolled extent as
+  // its sticky containing block instead of only the first viewport width.
+  timeGridContent: (columnCount: number) => ({
+    display: 'grid',
+    gridTemplateColumns: `60px repeat(${Math.max(1, columnCount)}, minmax(140px, 1fr))`,
+    gridTemplateRows: '56px auto auto',
+    minWidth: `${60 + Math.max(1, columnCount) * 140}px`,
+  }),
+  dayColumnPlacement: (index: number) => ({
+    gridColumn: `${index + 2}`,
+  }),
   timeGridCorner: {
     gridColumn: 1,
     gridRow: 1,
+    position: 'sticky',
+    insetBlockStart: 0,
+    insetInlineStart: 0,
+    zIndex: 3,
+    backgroundColor: colorVars['--color-background-card'],
     borderInlineEndWidth: borderVars['--border-width'],
     borderInlineEndStyle: 'solid',
     borderInlineEndColor: colorVars['--color-border'],
-    borderBottomWidth: borderVars['--border-width'],
-    borderBottomStyle: 'solid',
-    borderBottomColor: colorVars['--color-border'],
-  },
-  timeGridHeader: {
-    gridColumn: 2,
-    gridRow: 1,
-    display: 'grid',
-    gridAutoFlow: 'column',
-    gridAutoColumns: 'minmax(140px, 1fr)',
     borderBottomWidth: borderVars['--border-width'],
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border'],
   },
   timeGridHeaderCell: {
+    gridRow: 1,
+    position: 'sticky',
+    insetBlockStart: 0,
+    zIndex: 2,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacingVars['--spacing-0-5'],
+    minWidth: 0,
+    backgroundColor: colorVars['--color-background-card'],
     borderInlineEndWidth: borderVars['--border-width'],
     borderInlineEndStyle: 'solid',
     borderInlineEndColor: colorVars['--color-border'],
+    borderBottomWidth: borderVars['--border-width'],
+    borderBottomStyle: 'solid',
+    borderBottomColor: colorVars['--color-border'],
   },
   timeGridHeaderCellLast: {
     borderInlineEndWidth: 0,
@@ -880,11 +952,16 @@ export const styles = stylex.create({
   allDayLabel: {
     gridColumn: 1,
     gridRow: 2,
+    position: 'sticky',
+    insetBlockStart: '56px',
+    insetInlineStart: 0,
+    zIndex: 3,
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-2'],
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'flex-end',
+    backgroundColor: colorVars['--color-background-card'],
     borderInlineEndWidth: borderVars['--border-width'],
     borderInlineEndStyle: 'solid',
     borderInlineEndColor: colorVars['--color-border'],
@@ -892,35 +969,28 @@ export const styles = stylex.create({
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border'],
   },
-  allDayRow: {
-    gridColumn: 2,
+  // A subgrid, so all-day cells and spans sit on the day columns' own tracks.
+  allDayRow: (levelCount: number) => ({
+    gridColumn: '2 / -1',
     gridRow: 2,
-    overflowX: 'auto',
-    minHeight: 0,
+    display: 'grid',
+    gridTemplateColumns: 'subgrid',
+    position: 'sticky',
+    insetBlockStart: '56px',
+    zIndex: 2,
+    isolation: 'isolate',
+    minHeight: levelCount > 0 ? `${3 + levelCount * 27}px` : '26px',
+    minWidth: 0,
+    backgroundColor: colorVars['--color-background-card'],
     borderBottomWidth: borderVars['--border-width'],
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border'],
-  },
-  allDayRowSurface: (columnCount: number, levelCount: number) => ({
-    position: 'relative',
-    width: '100%',
-    minWidth: `${Math.max(1, columnCount) * 140}px`,
-    minHeight: levelCount > 0 ? `${3 + levelCount * 27}px` : '26px',
   }),
-  allDayCellGrid: (columnCount: number) => ({
-    position: 'absolute',
-    inset: 0,
-    display: 'grid',
-    gridTemplateColumns: `repeat(${Math.max(1, columnCount)}, minmax(0, 1fr))`,
-  }),
-  allDayEventOverlay: (columnCount: number) => ({
-    position: 'absolute',
-    inset: 0,
-    display: 'grid',
-    gridTemplateColumns: `repeat(${Math.max(1, columnCount)}, minmax(0, 1fr))`,
-    pointerEvents: 'none',
+  allDaySubgridPlacement: (index: number) => ({
+    gridColumn: `${index + 1}`,
   }),
   allDayCell: {
+    gridRow: 1,
     minWidth: 0,
     borderInlineEndWidth: borderVars['--border-width'],
     borderInlineEndStyle: 'solid',
@@ -930,25 +1000,21 @@ export const styles = stylex.create({
     borderInlineEndWidth: 0,
   },
   allDayEventSpan: (columnStart: number, columnEnd: number, level: number) => ({
+    gridRow: 1,
     gridColumn: `${columnStart + 1} / ${columnEnd + 2}`,
     alignSelf: 'start',
     minWidth: 0,
     marginInlineStart: spacingVars['--spacing-0-5'],
     marginInlineEnd: `calc(${spacingVars['--spacing-0-5']} + ${borderVars['--border-width']})`,
     marginBlockStart: `${2 + level * 27}px`,
-    pointerEvents: 'auto',
   }),
-  timeGridBody: {
-    gridColumn: '1 / -1',
-    gridRow: 3,
-    display: 'grid',
-    gridTemplateColumns: '60px minmax(0, 1fr)',
-    overflow: 'auto',
-    minHeight: 0,
-  },
   timeLabels: {
     gridColumn: 1,
-    position: 'relative',
+    gridRow: 3,
+    position: 'sticky',
+    insetInlineStart: 0,
+    zIndex: 2,
+    backgroundColor: colorVars['--color-background-card'],
     borderInlineEndWidth: borderVars['--border-width'],
     borderInlineEndStyle: 'solid',
     borderInlineEndColor: colorVars['--color-border'],
@@ -968,15 +1034,12 @@ export const styles = stylex.create({
   timeLabelPosition: (index: number, hourHeight: number) => ({
     top: `${index * hourHeight - 1}px`,
   }),
-  timeColumns: {
-    gridColumn: 2,
-    display: 'grid',
-    gridAutoFlow: 'column',
-    gridAutoColumns: 'minmax(140px, 1fr)',
-    minWidth: 0,
-  },
+  // Each day column isolates its own paint order: blocks, the now-line, and a
+  // raised focused block never rank against anything outside the column.
   timeColumn: {
+    gridRow: 3,
     position: 'relative',
+    isolation: 'isolate',
     display: 'grid',
     minWidth: 0,
     borderInlineEndWidth: borderVars['--border-width'],
@@ -1006,6 +1069,9 @@ export const styles = stylex.create({
     minHeight: '24px',
     minWidth: 0,
     overflow: 'hidden',
+    // The block is a container so a narrow track can drop its time line
+    // (eventTime below) while the title keeps its single ellipsized line.
+    containerType: 'inline-size',
     borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
     borderRadius: radiusVars['--radius-inner'],
@@ -1016,15 +1082,61 @@ export const styles = stylex.create({
     lineHeight: typeScaleVars['--text-supporting-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
   },
-  timedEventPosition: (top: number, height: number, level: number) => ({
+  // An event that opens the popover is a native button that keeps the block's
+  // own paint: the reset removes only what the user agent adds to a button.
+  // Block display lets an all-day pill fill the days its button spans; a
+  // timed block's own flex display wins over it.
+  eventButtonReset: {
+    appearance: 'none',
+    display: 'block',
+    // A button grid item would otherwise size to its content.
+    justifySelf: 'stretch',
+    margin: 0,
+    padding: 0,
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
+    color: 'inherit',
+    font: 'inherit',
+    textAlign: 'start',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
+  },
+  // A focused block rises above its neighbours inside the isolated column so
+  // its ring is never clipped by a later sibling; nothing outside the column
+  // can see the value.
+  eventButtonFocus: {
+    zIndex: {
+      default: null,
+      ':focus-visible': 1,
+    },
+  },
+  // The event popover keeps to the viewport the way the Popover component
+  // does: it never grows past the visible block size, and scrolls inside
+  // when its content is taller.
+  eventPopover: {
+    boxSizing: 'border-box',
+    maxBlockSize: stylex.firstThatWorks(
+      `calc(100dvb - 2 * ${spacingVars['--spacing-4']})`,
+      `calc(100vh - 2 * ${spacingVars['--spacing-4']})`,
+    ),
+    overflowY: 'auto',
+  },
+  // Blocks in one overlap cluster split the column into equal tracks and never
+  // overlap, so they carry no z-index of their own; the 2px insets keep the
+  // same gutter a lone block has at the column's edges.
+  timedEventPosition: (
+    top: number,
+    height: number,
+    inlineStart: number,
+    inlineSize: number,
+  ) => ({
     top: `calc(${top}% + 2px)`,
     height: `calc(${height}% - 5px)`,
-    insetInlineStart:
-      level === 0
-        ? spacingVars['--spacing-0-5']
-        : `calc(${spacingVars['--spacing-0-5']} + ${level * 8}%)`,
-    insetInlineEnd: spacingVars['--spacing-0-5'],
-    zIndex: level + 1,
+    insetInlineStart: `calc(${inlineStart}% + ${spacingVars['--spacing-0-5']})`,
+    inlineSize: `calc(${inlineSize}% - ${spacingVars['--spacing-0-5']} * 2)`,
   }),
   currentTimeLine: (top: number) => ({
     position: 'absolute',
@@ -1033,7 +1145,8 @@ export const styles = stylex.create({
     borderTopWidth: '2px',
     borderTopStyle: 'solid',
     borderTopColor: colorVars['--color-border-orange'],
-    zIndex: 20,
+    // Local to the isolated day column: above its blocks, nothing else.
+    zIndex: 1,
     pointerEvents: 'none',
     '::before': {
       content: '""',

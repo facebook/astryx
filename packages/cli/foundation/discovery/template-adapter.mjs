@@ -102,6 +102,7 @@ export function effectiveTemplateDiscovery(templates) {
  * @property {string} name
  * @property {string} [displayName]
  * @property {string} description
+ * @property {string[]} [keywords]
  * @property {string} [category]
  * @property {boolean} [isReady]
  * @property {boolean} [scaffold]
@@ -648,6 +649,7 @@ async function discoverPages() {
       name: doc?.name || dir.name,
       description: doc?.description || '',
       category: doc?.category || '',
+      keywords: doc?.keywords ?? [],
       isReady: doc?.isReady ?? true,
       scaffold: doc?.scaffold ?? false,
       filePath: path.join(dirPath, 'page.tsx'),
@@ -676,6 +678,7 @@ async function discoverBlocks() {
       dirName: basename,
       name: doc?.name || basename,
       description: doc?.description || '',
+      keywords: doc?.keywords ?? [],
       isReady: doc?.isReady ?? true,
       aspectRatio: doc?.aspectRatio ?? 1,
       componentsUsed: doc?.componentsUsed ?? [],
@@ -717,6 +720,7 @@ async function discoverExternalBlocks(cwd = process.cwd()) {
         dirName: basename,
         name: doc?.name || basename,
         description: doc?.description || '',
+        keywords: doc?.keywords ?? [],
         isReady: doc?.isReady ?? true,
         aspectRatio: doc?.aspectRatio ?? 1,
         componentsUsed: doc?.componentsUsed ?? [],
@@ -1284,6 +1288,7 @@ export async function discoverIntegrationTemplatesForOne(integration) {
       name: doc?.name || id,
       displayName: doc?.displayName,
       description: doc?.description || '',
+      keywords: doc?.keywords ?? [],
       category: doc?.category || '',
       isReady: doc?.isReady ?? true,
       scaffold: doc?.scaffold ?? false,

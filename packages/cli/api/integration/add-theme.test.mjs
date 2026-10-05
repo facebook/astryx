@@ -84,7 +84,7 @@ describe('integrationAddTheme', () => {
     const pkg = JSON.parse(
       fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'),
     );
-    expect(pkg.peerDependencies).toEqual({'@astryxdesign/cli': '>=0.7.0'});
+    expect(pkg.peerDependencies).toEqual({'@astryxdesign/cli': '>=0.6.4'});
     expect(pkg.peerDependenciesMeta).toEqual({
       '@astryxdesign/cli': {optional: true},
     });

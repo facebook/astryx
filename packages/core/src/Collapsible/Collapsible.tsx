@@ -213,13 +213,15 @@ export interface CollapsibleProps extends BaseProps {
   children?: ReactNode;
 
   /**
-   * Default open state for uncontrolled usage.
+   * Default open state for standalone uncontrolled usage. Ignored when `value`
+   * binds this item to a surrounding CollapsibleGroup.
    * @default true
    */
   defaultIsOpen?: boolean;
 
   /**
-   * Controlled open state. When provided, the component is fully controlled.
+   * Controlled open state for standalone usage. Ignored when `value` binds this
+   * item to a surrounding CollapsibleGroup.
    */
   isOpen?: boolean;
 
@@ -235,7 +237,8 @@ export interface CollapsibleProps extends BaseProps {
   isDisabled?: boolean;
 
   /**
-   * Callback when the open state changes.
+   * Callback when standalone open state changes. A surrounding
+   * CollapsibleGroup owns grouped state and calls its `onChange` instead.
    */
   onOpenChange?: (isOpen: boolean) => void;
 
@@ -255,8 +258,9 @@ export interface CollapsibleProps extends BaseProps {
   chevronPosition?: CollapsibleChevronPosition;
 
   /**
-   * Unique identifier for this collapsible within an CollapsibleGroup.
-   * Required when using inside a group for coordination.
+   * Unique identifier for this collapsible within a CollapsibleGroup. When set
+   * inside a group, the group owns open state and its `onChange` is the
+   * notification callback.
    */
   value?: string;
 
@@ -385,6 +389,7 @@ export function Collapsible({
       {...mergeProps(
         themeProps('collapsible', {
           density: density ?? undefined,
+          divided: isDivided ? 'divided' : null,
         }),
         stylex.props(styles.root, isDivided && styles.divided, xstyle),
         className,
@@ -406,6 +411,9 @@ export function Collapsible({
         {...mergeProps(
           themeProps('collapsible-trigger', {
             density: density ?? undefined,
+            chevronPosition: position,
+            open: isOpen ? 'open' : null,
+            disabled: isDisabled ? 'disabled' : null,
           }),
           focusOutlineProps.focusVisible(
             styles.trigger,
@@ -426,6 +434,7 @@ export function Collapsible({
         {...mergeProps(
           themeProps('collapsible-content', {
             density: density ?? undefined,
+            open: isOpen ? 'open' : null,
           }),
           stylex.props(
             styles.content,

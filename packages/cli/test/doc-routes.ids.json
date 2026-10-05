@@ -216,6 +216,7 @@
     "useLocale",
     "useLongPress",
     "useMediaQuery",
+    "useMenuPress",
     "useMergedRefs",
     "useOverflow",
     "usePopover",

@@ -53,6 +53,12 @@ export const doc = {
       description: 'One-sentence description of what the template provides.',
     },
     {
+      name: 'keywords',
+      type: 'string[]',
+      description:
+        "Search keywords for CLI discovery: the ideas, domains, and other names a builder might use for what the template serves (e.g. ['monitoring', 'uptime', 'on-call'] for a service-health dashboard). Lowercase. `astryx search` matches them as it matches the description and `astryx build` ranks page templates on them, so keep them out of `description`. Integration templates need @astryxdesign/cli 0.7.0 or later: earlier CLIs reject the field, drop that template, and hide the package's doc topics.",
+    },
+    {
       name: 'replaces',
       type: 'string',
       description:

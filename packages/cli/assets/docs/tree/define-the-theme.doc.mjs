@@ -106,7 +106,7 @@ export const oceanContrastTheme = defineTheme({
           lang: 'json',
           code: `"peerDependencies": {
   "@astryxdesign/core": "^0.7.0",
-  "@astryxdesign/cli": ">=0.7.0"
+  "@astryxdesign/cli": ">=0.6.4"
 },
 "peerDependenciesMeta": {
   "@astryxdesign/cli": {"optional": true}
