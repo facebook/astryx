@@ -101,8 +101,8 @@ described.
   variable records or selects the app's themes (`spec:AST-017/FR14`,
   `spec:AST-017/FR19`). In a project with a theme module, a command that reads
   the app's default theme reads the module's record; in a project with no theme
-  module, an existing `astryx.theme` field keeps its released meaning.
-  `ASTRYX_THEME` follows FR12.
+  module, an existing `astryx.theme` field keeps its released meaning. The CLI
+  does not read `ASTRYX_THEME` (DEC-7).
 - **FR4 — The set and the default are managed by command.**
   `theme remove <slug>` removes a theme from the app, and `theme use <slug>`
   makes an added theme the default. Removing the default theme MUST fail and
@@ -182,11 +182,9 @@ described.
 
   Each failure names the exact command that fixes it.
 
-- **FR12 — The copy default and `ASTRYX_THEME` leave through their lifecycles.**
-  The copying `theme add`, its options, and its `theme.add` response are
-  released contracts, and the CLI reading `ASTRYX_THEME` is released behavior
-  that `spec:AST-017/FR14` forbids. Each reaches FR1 and FR3 through its
-  `spec:AST-017` lifecycle:
+- **FR12 — The copy default leaves through its lifecycle.** The copying
+  `theme add`, its options, and its `theme.add` response are released
+  contracts. `theme add` reaches FR1 through its `spec:AST-017` lifecycle:
   1. **The copy default is deprecated.** Without `--import`,
      `theme add <slug> [path] [--overwrite] [--package <package>]` copies the
      theme's source and returns `theme.add` as released. It emits at most one
@@ -196,16 +194,12 @@ described.
      `spec:AST-017/FR29`). Its exit status, canonical output, and the rest of
      its machine result are the released ones. `theme add --list` is unchanged
      at every stage.
-  2. **`ASTRYX_THEME` is in correction transition.** Its removal is an
-     incompatible fix (`spec:AST-017/FR32`, `spec:AST-017/FR34`). The CLI reads
-     it with its released precedence and emits at most one stderr warning per
-     invocation that names `theme use` and `astryx.theme`.
-  3. **Cleanup is a scheduled minor.** Once a minor's frozen manifest carries
-     both lifecycle ids and their cleanup ids (`spec:AST-017/FR31`),
+  2. **Cleanup is a scheduled minor.** Once a minor's frozen manifest carries
+     the deprecation id and its cleanup id (`spec:AST-017/FR31`),
      `theme add <slug>` imports as FR1 states, with or without `--import`, and
-     returns `theme.app`; `theme add` accepts no target path or `--overwrite`,
-     which stay on `theme eject`; and the CLI reads no `ASTRYX_THEME`. That
-     minor carries no other delta from this record (`spec:AST-017/FR39`).
+     returns `theme.app`, and `theme add` accepts no target path or
+     `--overwrite`, which stay on `theme eject`. That minor carries no other
+     delta from this record (`spec:AST-017/FR39`).
 
   Existing projects migrate as follows (`spec:AST-017/FR8`):
   1. A script that copies with `theme add` runs `theme eject` with the same
@@ -265,9 +259,9 @@ described.
   report in a project without one;
 - `astryx upgrade` carries the codemod that gives copies their descriptors
   (FR12);
-- `ASTRYX_THEME` is in correction transition and then unread; the `component`
-  command reads the default theme from the theme module's record, or from
-  `astryx.theme` in a project with no theme module;
+- the CLI stops reading `ASTRYX_THEME` (DEC-7); the `component` command reads
+  the default theme from the theme module's record, or from `astryx.theme` in a
+  project with no theme module;
 - the theme guide, the integration guide, agent docs, and `init` next steps
   describe the FR13 workflow.
 
@@ -276,18 +270,18 @@ unchanged.
 
 ## Verification
 
-| Contract | Verification                                                                                        | Representative states                                                                                                                                                                                                                | Mutation or failure expectation                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| -------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| FR1, FR2 | Theme command tests and a real consumer                                                             | first import; repeat import; a slug imported again from another owner; the module's exports; `--import` with a target path or `--overwrite`; hand-written file at the module home; no TypeScript; no `src` folder; `src` added later | Source is copied, app code changes, a repeat import changes files, a second owner's import keeps the old owner, `--import` with a copy option writes anything, an export is missing or renamed, the theme record is exported, a user file is replaced, or an existing module moves                                                                                                                                                                                                   |
-| FR3, FR4 | Theme record tests                                                                                  | import, remove, use; removing the default; using a theme not added; a hand-edited module; two modules; no module with `astryx.theme`                                                                                                 | The default is not an added theme, a hand-edited or second module is overwritten, theme state is written outside the module, or `astryx.theme` stops resolving                                                                                                                                                                                                                                                                                                                       |
-| FR5      | Response type and text field tests                                                                  | every command; first import                                                                                                                                                                                                          | An import emits `theme.add`, a field has no text projection, or the first import shows no wiring                                                                                                                                                                                                                                                                                                                                                                                     |
-| FR6      | Eject tests against the copy fixtures                                                               | bundled, integration, and nested-file themes; eject then list                                                                                                                                                                        | Copied source bytes or copy receipt fields differ from the copying `theme add`, the descriptor is missing, or the ejected theme is not listed as local                                                                                                                                                                                                                                                                                                                               |
-| FR7, FR8 | Integration verify and real provider-to-consumer tests                                              | multi-theme package; single-theme package; missing export; font stylesheet missing from the tarball; stale build; a local theme sharing a package theme's slug; local themes in a project with no `src` folder                       | A theme without a resolvable built module is imported, verify passes a stale or missing export, a shared slug imports the package theme without `--package`, the copying `theme add` resolves a local theme, or local themes are looked for outside `src/themes`                                                                                                                                                                                                                     |
-| FR9      | Generated module tests                                                                              | package and local themes                                                                                                                                                                                                             | The module imports source                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| FR10     | List tests                                                                                          | added, default, bundled, package, local                                                                                                                                                                                              | A listed theme lacks its app fields                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| FR11     | Doctor tests, one planted fault per check                                                           | each of the ten faults; a correct app                                                                                                                                                                                                | A check passes on its fault, or passes without positive evidence                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| FR12     | Lifecycle tests against the latest stable CLI, migration tests on a project it made, and docs tests | plain `theme add`; `ASTRYX_THEME` set; the cleanup build; a copy made by the latest stable `theme add`; the upgrade codemod run twice; no theme module                                                                               | Before the cleanup, plain `theme add` stops copying, changes its exit status, stdout, or `theme.add` fields, omits the deprecation id, or warns more than once, or `ASTRYX_THEME` stops resolving; after it, plain `theme add` copies or the variable is read; a theme command or doctor fails on an unmigrated copy; the codemod changes more than the descriptor or changes anything on its second run; a copy is moved or deleted; or doctor fails a project with no theme module |
-| FR13     | Docs and agent-docs tests                                                                           | theme guide, integration guide, agent block, init next steps                                                                                                                                                                         | A surface teaches copying as the way to use a theme, or names a different import command than the current lifecycle stage                                                                                                                                                                                                                                                                                                                                                            |
+| Contract | Verification                                                                                        | Representative states                                                                                                                                                                                                                | Mutation or failure expectation                                                                                                                                                                                                                                                                                                                                                                                           |
+| -------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1, FR2 | Theme command tests and a real consumer                                                             | first import; repeat import; a slug imported again from another owner; the module's exports; `--import` with a target path or `--overwrite`; hand-written file at the module home; no TypeScript; no `src` folder; `src` added later | Source is copied, app code changes, a repeat import changes files, a second owner's import keeps the old owner, `--import` with a copy option writes anything, an export is missing or renamed, the theme record is exported, a user file is replaced, or an existing module moves                                                                                                                                        |
+| FR3, FR4 | Theme record tests                                                                                  | import, remove, use; removing the default; using a theme not added; a hand-edited module; two modules; no module with `astryx.theme`; `ASTRYX_THEME` set                                                                             | The default is not an added theme, a hand-edited or second module is overwritten, theme state is written outside the module, `astryx.theme` stops resolving, or `ASTRYX_THEME` changes which theme a command reads                                                                                                                                                                                                        |
+| FR5      | Response type and text field tests                                                                  | every command; first import                                                                                                                                                                                                          | An import emits `theme.add`, a field has no text projection, or the first import shows no wiring                                                                                                                                                                                                                                                                                                                          |
+| FR6      | Eject tests against the copy fixtures                                                               | bundled, integration, and nested-file themes; eject then list                                                                                                                                                                        | Copied source bytes or copy receipt fields differ from the copying `theme add`, the descriptor is missing, or the ejected theme is not listed as local                                                                                                                                                                                                                                                                    |
+| FR7, FR8 | Integration verify and real provider-to-consumer tests                                              | multi-theme package; single-theme package; missing export; font stylesheet missing from the tarball; stale build; a local theme sharing a package theme's slug; local themes in a project with no `src` folder                       | A theme without a resolvable built module is imported, verify passes a stale or missing export, a shared slug imports the package theme without `--package`, the copying `theme add` resolves a local theme, or local themes are looked for outside `src/themes`                                                                                                                                                          |
+| FR9      | Generated module tests                                                                              | package and local themes                                                                                                                                                                                                             | The module imports source                                                                                                                                                                                                                                                                                                                                                                                                 |
+| FR10     | List tests                                                                                          | added, default, bundled, package, local                                                                                                                                                                                              | A listed theme lacks its app fields                                                                                                                                                                                                                                                                                                                                                                                       |
+| FR11     | Doctor tests, one planted fault per check                                                           | each of the ten faults; a correct app                                                                                                                                                                                                | A check passes on its fault, or passes without positive evidence                                                                                                                                                                                                                                                                                                                                                          |
+| FR12     | Lifecycle tests against the latest stable CLI, migration tests on a project it made, and docs tests | plain `theme add`; the cleanup build; a copy made by the latest stable `theme add`; the upgrade codemod run twice; no theme module                                                                                                   | Before the cleanup, plain `theme add` stops copying, changes its exit status, stdout, or `theme.add` fields, omits the deprecation id, or warns more than once; after it, plain `theme add` copies; a theme command or doctor fails on an unmigrated copy; the codemod changes more than the descriptor or changes anything on its second run; a copy is moved or deleted; or doctor fails a project with no theme module |
+| FR13     | Docs and agent-docs tests                                                                           | theme guide, integration guide, agent block, init next steps                                                                                                                                                                         | A surface teaches copying as the way to use a theme, or names a different import command than the current lifecycle stage                                                                                                                                                                                                                                                                                                 |
 
 ## Decision log
 
@@ -399,17 +393,32 @@ single command several jobs.
 Every replacement ships first, in a compatible patch: `theme add --import`,
 `theme eject`, `theme remove`, `theme use`, the generated module, the package
 exports, and doctor, while the copy default keeps working with its warning. The
-import default and the end of `ASTRYX_THEME` follow in a minor an owner
-schedules (`spec:AST-017/FR28`, `spec:AST-017/FR34`, `spec:AST-017/FR47`), so
-every builder can reach the import path before it becomes the default. The
-opt-in is an option on `theme add`, so the command builders learn during the
-deprecation is the command that imports after it.
+import default follows in a minor an owner schedules (`spec:AST-017/FR28`,
+`spec:AST-017/FR47`), so every builder can reach the import path before it
+becomes the default. The opt-in is an option on `theme add`, so the command
+builders learn during the deprecation is the command that imports after it.
 
 Rejected: switching the default in one release, which `spec:AST-017/FR48`
 refuses while main targets a patch.
 
 Rejected: opting in by the presence of a theme module, which changes what
 `theme add` does without a visible control (`spec:AST-017/FR14`).
+
+### DEC-7 — The CLI reads no theme environment variable
+
+**Reference:** `spec:AST-050/DEC-7`
+**Decider:** `josephfarina`, `2026-10-05`
+
+`spec:AST-017/FR14` forbids the CLI from defining or reading any Astryx-owned
+environment variable, so `ASTRYX_THEME` is not a supported way to choose a
+theme, and the CLI does not read it in either step. An app's default theme lives
+in its theme module's record (FR3), or in `astryx.theme` in a project with no
+theme module.
+
+Rejected: reading `ASTRYX_THEME` with a warning until the minor, which keeps
+reading a variable `spec:AST-017/FR14` forbids.
+
+Rejected: warning when `ASTRYX_THEME` is set, which reads the variable to warn.
 
 ## Open questions
 
