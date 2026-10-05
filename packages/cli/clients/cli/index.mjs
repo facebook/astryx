@@ -276,7 +276,19 @@ const commands = [
   {name: 'doctor', path: './commands/doctor.mjs', register: 'registerDoctor'},
 ];
 
-const SETUP_NUDGE_EXEMPT = new Set(['init', 'agent-docs']);
+/**
+ * The reads that list what exists, where someone orients. The setup reminder
+ * shows on these when they run without a subject (`docs`, `component --list`,
+ * `build` with no query) and stays quiet on reads and writes of one thing.
+ */
+const SETUP_NUDGE_LISTS = new Set([
+  'docs',
+  'component',
+  'template',
+  'hook',
+  'discover',
+  'build',
+]);
 /** An integration package's manifest: the package is not an app to set up. */
 const INTEGRATION_MANIFEST_FILES = [
   'astryx.integration.ts',
@@ -531,8 +543,14 @@ export async function createProgram() {
    * yet (no Astryx marker in any agent-doc file — see isAstryxInitialized), remind
    * the user/agent that setup is missing.
    *
-   * Uses `preAction` (not postAction) so it fires for EVERY valid command — even
-   * ones whose action errors or calls process.exit (postAction is skipped then).
+   * Only on the reads that list what exists, run without a subject
+   * (SETUP_NUDGE_LISTS): a reminder on every command was noise, since an agent
+   * that runs thirty commands saw it thirty times and nothing but init silences
+   * it. `doctor` reports the missing agent docs with the fix, and both
+   * postinstall scripts remind once at install.
+   *
+   * Uses `preAction` (not postAction) so it fires even when the action errors or
+   * calls process.exit (postAction is skipped then).
    *
    * Suppressed in --json: that is machine output with a strict clean stdout+stderr
    * contract (json-shim.test: "error envelopes have empty stderr"), and --json
@@ -544,7 +562,8 @@ export async function createProgram() {
   program.hook('preAction', (thisCommand, actionCommand) => {
     try {
       if (program.opts().json) return; // machine mode — keep --json output clean
-      if (SETUP_NUDGE_EXEMPT.has(actionCommand.name())) return;
+      if (!SETUP_NUDGE_LISTS.has(actionCommand.name())) return; // not a list
+      if (actionCommand.args.length > 0) return; // a read of one thing
       const cwd = process.cwd();
       if (!fs.existsSync(path.join(cwd, 'package.json'))) return; // not a project
       // An integration package is not an app: `init` is not its next step.

@@ -6,9 +6,9 @@
  * Unit: isAstryxInitialized() detects the Astryx marker across EVERY agent-doc
  * location (including the previously-missed Hermes files) and legacy XDS blocks.
  *
- * Integration: the CLI nudges (stderr) before a command when the project hasn't
- * run init — INCLUDING in --json mode (agents pass --json, and stderr never
- * corrupts the stdout JSON envelope). Quiet once set up, outside a project, and
+ * Integration: the CLI nudges (stderr) before a read that lists what exists
+ * when the project hasn't run init. Quiet on reads and writes of one thing, in
+ * --json mode, once set up, outside a project, in an integration package, and
  * for the installer command itself.
  */
 
@@ -61,18 +61,32 @@ describe('isAstryxInitialized — centralized setup check (one place)', () => {
   });
 });
 
-describe('enforcement layer 3 — per-command setup nudge', () => {
+describe('enforcement layer 3 — setup nudge on the reads that list what exists', () => {
   const asProject = () => write('package.json', '{"name":"t"}');
 
-  it('nudges on stderr after a command when not set up', async () => {
+  it('nudges on stderr on a list when not set up', async () => {
     asProject();
-    const r = await runCli(['docs', 'tokens'], tmp);
-    expect(r.stderr).toMatch(NUDGE);
+    for (const args of [['docs'], ['build'], ['discover']]) {
+      const r = await runCli(args, tmp);
+      expect(r.stderr, args.join(' ')).toMatch(NUDGE);
+    }
+  });
+
+  it('is quiet on a read of one thing', async () => {
+    asProject();
+    for (const args of [
+      ['docs', 'tokens'],
+      ['docs', 'tokens', '--index'],
+      ['search', 'button'],
+    ]) {
+      const r = await runCli(args, tmp);
+      expect(r.stderr, args.join(' ')).not.toMatch(NUDGE);
+    }
   });
 
   it('is suppressed in --json (machine mode stays clean), stdout valid JSON', async () => {
     asProject();
-    const r = await runCli(['--json', 'docs', 'tokens'], tmp);
+    const r = await runCli(['--json', 'docs'], tmp);
     // --json is machine output with a clean stdout+stderr contract; the human
     // nudge must NOT leak into it (json-shim: error envelopes have empty stderr).
     expect(r.stderr).not.toMatch(NUDGE);
@@ -82,17 +96,17 @@ describe('enforcement layer 3 — per-command setup nudge', () => {
   it('is quiet once set up (marker present)', async () => {
     asProject();
     write('AGENTS.md', MARKER);
-    expect((await runCli(['docs', 'tokens'], tmp)).stderr).not.toMatch(NUDGE);
+    expect((await runCli(['docs'], tmp)).stderr).not.toMatch(NUDGE);
   });
 
   it('is quiet outside a project (no package.json)', async () => {
-    expect((await runCli(['docs', 'tokens'], tmp)).stderr).not.toMatch(NUDGE);
+    expect((await runCli(['docs'], tmp)).stderr).not.toMatch(NUDGE);
   });
 
   it('is quiet in an integration package, which is not an app', async () => {
     asProject();
     write('astryx.integration.mjs', 'export default {};\n');
-    expect((await runCli(['docs', 'tokens'], tmp)).stderr).not.toMatch(NUDGE);
+    expect((await runCli(['docs'], tmp)).stderr).not.toMatch(NUDGE);
   });
 
   it('does not nudge for the installer command itself', async () => {
