@@ -20,7 +20,7 @@ import {
 } from 'vitest';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {Profiler, type ProfilerOnRenderCallback} from 'react';
+import {createRef, Profiler, type ProfilerOnRenderCallback} from 'react';
 import {Typeahead} from './Typeahead';
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
@@ -31,6 +31,7 @@ import {
 } from './busyIndicatorLane';
 import type {SearchSource, SearchableItem} from './types';
 import {InternationalizationProvider} from '../i18n';
+import {InputGroup} from '../InputGroup';
 
 // Store original matches to restore later
 const originalMatches = HTMLElement.prototype.matches;
@@ -737,17 +738,90 @@ describe('Typeahead', () => {
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
-  it('renders with data-testid', () => {
+  it('forwards DOM props and ref while preserving edit and blur behavior', async () => {
+    const ref = createRef<HTMLDivElement>();
+    const onClick = vi.fn();
+    const onBlur = vi.fn();
+    const onChange = vi.fn();
     render(
       <Typeahead
+        ref={ref}
+        id="fruit-field"
+        data-tracking="fruit-picker"
+        data-testid="fruit-surface"
+        aria-label="Picker region"
+        className="custom-typeahead"
+        style={{marginTop: 7}}
         label="Fruit"
         searchSource={fruitSource}
-        value={null}
-        onChange={() => {}}
-        data-testid="my-typeahead"
+        value={fruits[0]}
+        onChange={onChange}
+        onClick={onClick}
+        onBlur={onBlur}
+        debounceMs={0}
       />,
     );
-    expect(screen.getByTestId('my-typeahead')).toBeInTheDocument();
+    const surface = screen.getByTestId('fruit-surface');
+    const input = screen.getByRole('combobox');
+
+    expect(ref.current).toHaveClass('astryx-field');
+    expect(surface).toHaveClass('astryx-typeahead');
+    expect(input).toHaveAccessibleName('Fruit');
+
+    fireEvent.click(surface);
+    await waitFor(() => expect(input).toHaveFocus());
+    expect(input).toHaveValue('Apple');
+    expect(onClick).toHaveBeenCalledOnce();
+
+    fireEvent.blur(input);
+    expect(onBlur).toHaveBeenCalledOnce();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('forwards DOM props and ref inside InputGroup without replacing built-in handlers', async () => {
+    const ref = createRef<HTMLDivElement>();
+    const onClick = vi.fn();
+    const onBlur = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <InputGroup label="Produce">
+        <Typeahead
+          ref={ref}
+          id="fruit-field"
+          data-tracking="fruit-picker"
+          data-testid="fruit-surface"
+          aria-label="Picker region"
+          className="custom-typeahead"
+          style={{marginTop: 7}}
+          label="Fruit"
+          searchSource={fruitSource}
+          value={fruits[0]}
+          onChange={onChange}
+          onClick={onClick}
+          onBlur={onBlur}
+          debounceMs={0}
+        />
+      </InputGroup>,
+    );
+    const surface = screen.getByTestId('fruit-surface');
+    const input = screen.getByRole('combobox');
+
+    expect(ref.current).toBe(surface);
+    expect(surface).toHaveAttribute('id', 'fruit-field');
+    expect(surface).toHaveAttribute('data-tracking', 'fruit-picker');
+    expect(surface).toHaveAttribute('aria-label', 'Picker region');
+    expect(surface).toHaveClass('astryx-typeahead', 'custom-typeahead');
+    expect(surface).toHaveStyle({marginTop: '7px'});
+    expect(input).toHaveAccessibleName('Produce Fruit');
+
+    fireEvent.click(surface);
+    await waitFor(() => expect(input).toHaveFocus());
+    expect(input).toHaveValue('Apple');
+    expect(onClick).toHaveBeenCalledOnce();
+
+    fireEvent.blur(input);
+    expect(onBlur).toHaveBeenCalledOnce();
+    expect(onChange).not.toHaveBeenCalled();
   });
 });
 
