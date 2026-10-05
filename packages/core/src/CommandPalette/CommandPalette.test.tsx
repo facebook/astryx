@@ -423,11 +423,31 @@ describe('CommandPalette', () => {
       expect(screen.getByText('Settings')).toBeInTheDocument(),
     );
     await user.click(input);
-    await user.keyboard('{Home}{End}');
+    await user.type(input, 'e');
+    await waitFor(() =>
+      expect(screen.getByText('Settings')).toBeInTheDocument(),
+    );
+    const homeOption = screen.getByText('Home').closest('[role="option"]');
+    const settingsOption = screen
+      .getByText('Settings')
+      .closest('[role="option"]');
+
+    expect(input).toHaveValue('e');
+    expect(input.selectionStart).toBe(1);
+    await user.keyboard('{Home}');
+    expect(input.selectionStart).toBe(0);
+    await user.keyboard('{End}');
+    expect(input.selectionStart).toBe(1);
     expect(input).not.toHaveAttribute('aria-activedescendant');
 
-    await user.keyboard('{PageDown}{Enter}');
-    expect(handleValueChange).toHaveBeenCalledWith('settings');
+    await user.keyboard('{PageDown}');
+    expect(input.getAttribute('aria-activedescendant')).toBe(
+      settingsOption?.id,
+    );
+    await user.keyboard('{PageUp}');
+    expect(input.getAttribute('aria-activedescendant')).toBe(homeOption?.id);
+    await user.keyboard('{Enter}');
+    expect(handleValueChange).toHaveBeenCalledWith('home');
     expect(handleOpenChange).toHaveBeenCalledWith(false);
   });
 
