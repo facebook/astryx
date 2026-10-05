@@ -378,6 +378,166 @@ describe('parseMarkdownIncremental cache', () => {
     expect(worst).toEqual([3, 3, 3]);
   });
 
+  // A list item's content can continue after blank lines, so the cache
+  // settles inside open items as well as between top-level blocks. One huge
+  // item, or a nested list inside it, must stream with the same tail-bounded
+  // parser work as ordinary paragraphs.
+  describe.each([
+    [
+      'paragraphs in one item',
+      '- item',
+      (index: number, eol: string) =>
+        `${eol}${eol}  paragraph ${String(index).padStart(3, '0')} text`,
+    ],
+    [
+      'a nested list in one item',
+      '- item',
+      (index: number, eol: string) =>
+        `${eol}  - sub ${String(index).padStart(3, '0')}${eol}${eol}    detail`,
+    ],
+    [
+      'fenced blocks in one ordered item',
+      '1. step',
+      (index: number, eol: string) =>
+        `${eol}${eol}   \`\`\`ts${eol}   const v${String(index).padStart(3, '0')} = 1;${eol}${eol}   const w = 2;${eol}   \`\`\``,
+    ],
+  ] as const)('streaming %s', (label, head, part) => {
+    const streamedWork = (
+      parts: number,
+      eol: string,
+      sourceRanges: boolean,
+    ) => {
+      const source = `${head}${Array.from({length: parts}, (_, index) =>
+        part(index, eol),
+      ).join('')}`;
+      const state = createIncrementalState();
+      const total = {
+        splitCharacters: 0,
+        boundaryLines: 0,
+        definitionCharacters: 0,
+        renderedBlocks: 0,
+        copiedListEntries: 0,
+        cachedListEntries: 0,
+      };
+      let result: BlockNode[] = [];
+      for (let end = 1; end <= source.length; end++) {
+        result = parseMarkdownIncremental(source.slice(0, end), state, {
+          sourceRanges,
+        });
+        const work = getIncrementalParseWork(state);
+        for (const key of Object.keys(total) as (keyof typeof total)[]) {
+          total[key] += work[key];
+        }
+      }
+      expect(result).toEqual(parseMarkdown(source, {sourceRanges}));
+      return total;
+    };
+
+    it.each(['\n', '\r\n'])('keeps parser work linear (eol=%j)', eol => {
+      for (const sourceRanges of [false, true]) {
+        const short = streamedWork(8, eol, sourceRanges);
+        const long = streamedWork(32, eol, sourceRanges);
+        console.log(
+          `  ${label} ${JSON.stringify(eol)} ranges=${String(sourceRanges)} (8/32): ${JSON.stringify(short)} / ${JSON.stringify(long)}`,
+        );
+        // Four times the content keeps every parser operation within a linear
+        // bound: only the open block inside the open item is reparsed.
+        for (const key of [
+          'splitCharacters',
+          'boundaryLines',
+          'definitionCharacters',
+          'renderedBlocks',
+          'cachedListEntries',
+        ] as const) {
+          expect(long[key]).toBeLessThan(short[key] * 5);
+        }
+        // Immutable snapshots copy the open list path on each call; that copy
+        // is tracked rather than bounded, like the returned block array.
+        expect(long.copiedListEntries).toBeGreaterThan(short.copiedListEntries);
+      }
+    });
+  });
+
+  it('streams items with mixed continuation indents without cache resets', () => {
+    const item = (index: number) =>
+      `- Step ${index}\n\n    \`\`\`bash\n    run ${index}\n    \`\`\`\n\n    Output ${index}\n\n  Then check ${index}.`;
+    const streamedSplit = (items: number) => {
+      const source = Array.from({length: items}, (_, index) =>
+        item(index),
+      ).join('\n');
+      const state = createIncrementalState();
+      let split = 0;
+      let settled = 0;
+      for (let end = 4; end < source.length + 4; end += 4) {
+        parseMarkdownIncremental(
+          source.slice(0, Math.min(end, source.length)),
+          state,
+        );
+        split += getIncrementalParseWork(state).splitCharacters;
+        // A later shallower line never invalidates settled item content.
+        expect(state.settledText.length).toBeGreaterThanOrEqual(settled);
+        settled = state.settledText.length;
+      }
+      return split;
+    };
+    expect(streamedSplit(64)).toBeLessThan(streamedSplit(16) * 5);
+  });
+
+  it.each([
+    ['item paragraphs', '- a\n', (index: number) => `\n  p ${index}\nlazy`],
+    [
+      'deeper item paragraphs',
+      '- a\n\n  first\n',
+      (index: number) => `\n    p ${index}\nlazy`,
+    ],
+    [
+      'a nested item',
+      '- a\n  - b\n',
+      (index: number) => `\n    p ${index}\nlazy`,
+    ],
+    ['quotes', '- a\n', (index: number) => `\n  > q ${index}\nlazy`],
+  ] as const)(
+    'keeps lazy-continuation probes linear for %s in one item',
+    (_label, head, part) => {
+      const source = (segments: number) =>
+        `${head}${Array.from({length: segments}, (_, index) => part(index)).join('\n')}`;
+      const parseTime = (segments: number) =>
+        measureBest(3, () => parseMarkdown(source(segments))).elapsed;
+      parseTime(500);
+      // Linear work quadruples; reparsing the whole item for each lazy line
+      // would grow sixteenfold.
+      expect(parseTime(2000)).toBeLessThan(parseTime(500) * 8 + 5);
+    },
+  );
+
+  it('reuses a settled list snapshot while a following paragraph streams', () => {
+    const list = Array.from(
+      {length: 500},
+      (_, index) => `- item ${index}`,
+    ).join('\n');
+    const state = createIncrementalState();
+    const first = parseMarkdownIncremental(`${list}\n\nx`, state);
+    let copiedListEntries = 0;
+    let cachedListEntries = 0;
+    let latest = first;
+
+    for (let length = 2; length <= 2000; length++) {
+      latest = parseMarkdownIncremental(
+        `${list}\n\n${'x'.repeat(length)}`,
+        state,
+      );
+      const work = getIncrementalParseWork(state);
+      copiedListEntries += work.copiedListEntries;
+      cachedListEntries += work.cachedListEntries;
+    }
+
+    expect(latest[0]).toBe(first[0]);
+    expect({copiedListEntries, cachedListEntries}).toEqual({
+      copiedListEntries: 0,
+      cachedListEntries: 0,
+    });
+  });
+
   it('keeps the cache when source ranges are asked for', () => {
     const text = generateAIResponse(200);
     const chunkSize = 50;

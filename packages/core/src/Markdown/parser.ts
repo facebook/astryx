@@ -4,7 +4,9 @@
  * @file parser.ts
  * @input Markdown string, released parse options, and optional ordered plugins
  * @output Canonical MDAST-aligned nodes for public/server consumers plus unchanged
- *   released parser-node projections; shared heading slug helpers
+ *   released parser-node projections, including blank-separated list-item
+ *   continuation and incremental settlement inside open list items; shared
+ *   heading slug helpers
  * @position Core parser and compatibility boundary; consumed by public parser entry,
  *   Markdown, and Outline
  */
@@ -552,7 +554,80 @@ type ResolvedOptions = {
    * to resolve full/collapsed/shortcut reference links and images.
    */
   readonly linkDefs?: ReadonlyMap<string, string>;
+  /**
+   * Internal incremental continuation: the open list item, and any open item
+   * nested in it, whose content this parse continues after a blank line.
+   */
+  readonly resume?: ListResume;
+  /** Internal record of list-item geometry for incremental continuation. */
+  readonly settlement?: ListSettlement;
+  /**
+   * Internal block-structure scan. A scan skips inline parsing and extension
+   * tokenizers, so it never invokes caller callbacks; `null` requests the
+   * same structure-only parse without recording anything.
+   */
+  readonly scan?: BlockScan | null;
+  /** Maps a scanned line of this parse to its line in the scanned tail. */
+  readonly scanLine?: (line: number) => number;
+  /** Input lines of this scanned parse that were lazy continuations. */
+  readonly scanLazyLines?: ReadonlySet<number>;
+  /** Whether this parse's container can still grow at the end of the tail. */
+  readonly openAtEnd?: boolean;
 };
+
+/** Marker geometry of a list item whose content may continue. */
+type ListFrame = {
+  readonly ordered: boolean;
+  readonly delimiter: '.' | ')';
+  readonly indent: number;
+  /** CommonMark content indent: marker indent, width, and owned spaces. */
+  readonly contentIndent: number;
+  /** Indent removed from blank-separated continuation lines, once known. */
+  readonly continuationIndent?: number;
+  /** Whether the item already has content before a continuation. */
+  readonly hasContent: boolean;
+  /** Whether the item has only a blank first line, so a blank line ends it. */
+  readonly startsEmpty: boolean;
+  /** Definitions local to this item's content. */
+  readonly linkDefs?: ReadonlyMap<string, string>;
+};
+
+type ListResume = ListFrame & {readonly inner?: ListResume};
+
+type ListSettlement = {
+  readonly frames: WeakMap<object, ListFrame>;
+  /** Continued content would change already-settled item content. */
+  invalidated: boolean;
+};
+
+type BlockScan = {
+  /** The scanned tail's lines. */
+  readonly tailLines: ReadonlyArray<string>;
+  /** Scanned-tail lines owned as content by a fence or display-math block. */
+  readonly contentLines: Set<number>;
+  /**
+   * Tail lines where an unmatched display-math opener became literal because
+   * a deeper quote began; later openers stay literal until a blank line.
+   */
+  readonly literalMathFrom: number[];
+  /** Closing lines of empty `$$` pairs, which stay literal text. */
+  readonly literalMathLines: Set<number>;
+  /** First tail line of an unmatched display-math opener the parser may close. */
+  closableMathLine: number;
+  /** First tail line of an opener streaming withholds as incomplete math. */
+  pendingMathLine: number;
+  /** Whether a fence is still open at the end of the scanned tail. */
+  openFence: boolean;
+  /** Lines visited by every block loop in the scan, nested ones included. */
+  lines: number;
+  /** Nonzero while a lazy-continuation probe reads lines without recording. */
+  probing: number;
+};
+
+/** Released block-boundary whitespace test, shared by every line decision. */
+function isBlankLine(line: string): boolean {
+  return line.trim() === '';
+}
 
 /**
  * Every resolved options object is built here, so all of them share one key
@@ -576,6 +651,12 @@ function makeResolvedOptions(
     allowBlockSyntax: fields.allowBlockSyntax ?? true,
     baseOffset: fields.baseOffset,
     linkDefs: fields.linkDefs,
+    resume: fields.resume,
+    settlement: fields.settlement,
+    scan: fields.scan,
+    scanLine: fields.scanLine,
+    scanLazyLines: fields.scanLazyLines,
+    openAtEnd: fields.openAtEnd,
   };
 }
 
@@ -1436,6 +1517,9 @@ function parseInlineEntry(
   opts: ResolvedOptions,
   context: 'default' | 'tableCell' = 'default',
 ): MarkdownAstPhrasingContent<RuntimeExtensionNode>[] {
+  if (opts.scan !== undefined) {
+    return [];
+  }
   const nodes = parseInlineImpl(text, opts, context);
   return opts.autolink === 'gfm' ? transformAutolinks(nodes) : nodes;
 }
@@ -2126,7 +2210,9 @@ function isTableSeparator(line: string): boolean {
  */
 function nested(opts: ResolvedOptions): ResolvedOptions {
   const nestedOptions =
-    opts.allowBlockSyntax === false ? opts : {...opts, allowBlockSyntax: false};
+    opts.allowBlockSyntax === false && opts.resume === undefined
+      ? opts
+      : {...opts, allowBlockSyntax: false, resume: undefined};
   return nestedOptions.sourceRanges || nestedOptions.astPositions
     ? {...nestedOptions, sourceRanges: false, astPositions: false}
     : nestedOptions;
@@ -2219,8 +2305,34 @@ function endsInParagraph(
   return false;
 }
 
-function sourceEndsInParagraph(source: string, opts: ResolvedOptions): boolean {
-  return endsInParagraph(parseMarkdownImpl(source, nested(opts)));
+/**
+ * Lazy continuation depends only on block structure, so the probe is a
+ * structure-only parse: it never runs inline parsing or caller tokenizers.
+ */
+function sourceEndsInParagraph(
+  source: string,
+  opts: ResolvedOptions,
+  resume?: ListResume,
+): boolean {
+  // A scan counts the probe's lines without recording ownership from them.
+  const scan = opts.scan ?? null;
+  if (scan != null) {
+    scan.probing++;
+  }
+  try {
+    return endsInParagraph(
+      parseMarkdownImpl(source, {
+        ...nested(opts),
+        resume,
+        settlement: undefined,
+        scan,
+      }),
+    );
+  } finally {
+    if (scan != null) {
+      scan.probing--;
+    }
+  }
 }
 
 function splitTableRow(line: string): string[] {
@@ -2317,150 +2429,460 @@ function parseTable(
   };
 }
 
-function listItemSource(
-  itemText: string,
-  subLines: ReadonlyArray<string>,
-  lazyLineIndexes: ReadonlySet<number>,
-): string {
-  if (subLines.length === 0) {
-    return itemText;
+type ListMarkerMatch = {
+  readonly ordered: boolean;
+  readonly indent: number;
+  readonly contentIndent: number;
+  /** Released item text: the marker and one following space removed. */
+  readonly content: string;
+  readonly delimiter: '.' | ')';
+  readonly number?: number;
+};
+
+function matchListMarker(line: string): ListMarkerMatch | null {
+  const match = /^( {0,9})(?:([-*+])|(\d+)([.)]))( +)/.exec(line);
+  if (match == null) {
+    return null;
   }
-  const nonBlankIndents = subLines
-    .filter((line, index) => line.trim() !== '' && !lazyLineIndexes.has(index))
-    .map(getIndent);
-  const minSubIndent =
-    nonBlankIndents.length === 0 ? 0 : Math.min(...nonBlankIndents);
-  return `${itemText}\n${subLines
-    .map((line, index) =>
-      line.trim() === ''
-        ? ''
-        : line.slice(
-            lazyLineIndexes.has(index) ? getIndent(line) : minSubIndent,
-          ),
-    )
-    .join('\n')}`;
+  const indent = match[1].length;
+  const markerWidth = match[2] == null ? match[3].length + 1 : 1;
+  const spaces = match[5].length;
+  // CommonMark owns one to four spaces after the marker; five or more, or an
+  // empty first line, leave the content indent one space past the marker.
+  const ownedSpaces =
+    spaces > 4 || isBlankLine(line.slice(match[0].length)) ? 1 : spaces;
+  return {
+    ordered: match[2] == null,
+    indent,
+    contentIndent: indent + markerWidth + ownedSpaces,
+    content: line.slice(indent + markerWidth + 1),
+    delimiter: match[4] === ')' ? ')' : '.',
+    number: match[3] == null ? undefined : Number.parseInt(match[3], 10),
+  };
 }
 
+/**
+ * Item content geometry. Tight lines keep the released rule: the least indent
+ * of the tight lines is removed. Lines after the first blank-separated
+ * continuation lose up to that continuation line's indent, so content never
+ * changes when later lines arrive. Lazy lines lose all leading spaces.
+ */
+type ItemLines = {
+  readonly itemText: string | undefined;
+  readonly subLines: ReadonlyArray<string>;
+  readonly lazyLineIndexes: ReadonlySet<number>;
+  /** First sub-line of the continuation region, or Infinity before one. */
+  readonly continuationStart: number;
+  readonly continuationIndent: number;
+};
+
+function tightIndent(item: ItemLines): number {
+  let indent = Infinity;
+  const end = Math.min(item.subLines.length, item.continuationStart);
+  for (let index = 0; index < end; index++) {
+    const line = item.subLines[index];
+    if (!isBlankLine(line) && !item.lazyLineIndexes.has(index)) {
+      indent = Math.min(indent, getIndent(line));
+    }
+  }
+  return indent;
+}
+
+/** Released item reassembly; blank lines keep only a CRLF line's CR. */
+function listItemSource(item: ItemLines, from = -1): string {
+  const tight = from < 0 ? tightIndent(item) : 0;
+  const body = item.subLines
+    .slice(Math.max(from, 0))
+    .map((line, offset) => {
+      const index = Math.max(from, 0) + offset;
+      if (isBlankLine(line)) {
+        return line.endsWith('\r') ? '\r' : '';
+      }
+      const indent = getIndent(line);
+      return line.slice(
+        item.lazyLineIndexes.has(index)
+          ? indent
+          : index < item.continuationStart
+            ? tight
+            : Math.min(indent, item.continuationIndent),
+      );
+    })
+    .join('\n');
+  if (from >= 0 || item.itemText == null) {
+    return body;
+  }
+  return item.subLines.length === 0
+    ? item.itemText
+    : `${item.itemText}\n${body}`;
+}
+
+/** Marks continuation fragments returned by a resumed parse. */
+const continuationLists = new WeakSet<object>();
+const continuedItems = new WeakSet<object>();
+
+/**
+ * Parse one list, or continue the open item described by `resume`.
+ *
+ * Tight lines follow the released rule: a line indented past the marker is
+ * item content, and a less-indented line may be a lazy paragraph continuation.
+ * After blank lines the item continues only when the next nonblank line
+ * reaches the marker's content indent; otherwise the blank lines end it.
+ */
 function parseList(
   lines: string[],
   startIndex: number,
   ordered: boolean,
   opts: ResolvedOptions,
   interruptsLazyContinuation: (lineIndex: number) => boolean,
-): {node: MarkdownAstBlockContent<RuntimeExtensionNode>; nextIndex: number} {
+  strippedIndent: (from: number, to: number) => number,
+  scanLine: ((lineIndex: number) => number) | undefined,
+  resume?: ListResume,
+): {node: MarkdownAstList<RuntimeExtensionNode> | null; nextIndex: number} {
   const items: MarkdownAstListItem<RuntimeExtensionNode>[] = [];
-  const baseIndent = getIndent(lines[startIndex]);
+  const firstMarker =
+    resume == null ? matchListMarker(lines[startIndex]) : null;
+  const baseIndent =
+    resume?.indent ?? firstMarker?.indent ?? getIndent(lines[startIndex]);
   // Ordered lists may use either '.' or ')' as the marker delimiter
   // (CommonMark 5.2). Capture which one this list starts with so its items
   // must all share it — a change of delimiter starts a new list.
-  const orderedStart = ordered
-    ? lines[startIndex].match(/^ *(\d+)([.)]) /)
-    : null;
-  const delim = orderedStart ? orderedStart[2] : '.';
-  const escDelim = `\\${delim}`;
-  const itemPattern = ordered
-    ? new RegExp(`^ {${baseIndent}}\\d+${escDelim} `)
-    : new RegExp(`^ {${baseIndent}}[-*+] `);
-
-  const start = orderedStart ? parseInt(orderedStart[1], 10) : undefined;
+  const delimiter = resume?.delimiter ?? firstMarker?.delimiter ?? '.';
+  const start = ordered ? firstMarker?.number : undefined;
 
   let loose = false;
   let index = startIndex;
-  while (index < lines.length && itemPattern.test(lines[index])) {
-    const content = ordered
-      ? lines[index].replace(new RegExp(`^ *\\d+${escDelim} `), '')
-      : lines[index].replace(/^ *[-*+] /, '');
-
-    const taskMatch = content.match(/^\[([ xX])\] (.*)/);
+  let continuing = resume;
+  while (index < lines.length) {
+    const itemStart = index;
+    let itemText: string | undefined;
     let checked: boolean | undefined;
-    let itemText: string;
-    if (taskMatch) {
-      checked = taskMatch[1].toLowerCase() === 'x';
-      itemText = taskMatch[2];
+    let contentIndent: number;
+    if (continuing == null) {
+      const marker = matchListMarker(lines[index]);
+      if (
+        marker == null ||
+        marker.ordered !== ordered ||
+        marker.indent !== baseIndent ||
+        (ordered && marker.delimiter !== delimiter)
+      ) {
+        break;
+      }
+      const taskMatch = marker.content.match(/^\[([ xX])\] (.*)/);
+      checked =
+        taskMatch == null ? undefined : taskMatch[1].toLowerCase() === 'x';
+      itemText = taskMatch == null ? marker.content : taskMatch[2];
+      contentIndent = marker.contentIndent;
+      index++;
     } else {
-      itemText = content;
+      contentIndent = continuing.contentIndent;
     }
 
-    index++;
-
-    // Collect sub-content. Lines indented past the marker remain ordinary
-    // nested content. A less-indented nonblank line can still belong to the
-    // item when the deepest open leaf is a paragraph: CommonMark's lazy
-    // continuation rule permits deleting some or all of that indentation.
     const subLines: string[] = [];
+    const subLineIndexes: number[] = [];
     const lazyLineIndexes = new Set<number>();
-    let lazyParagraphOpen: boolean | undefined = canContinueParagraphLazily(
-      [itemText],
-      0,
-      true,
-    )
-      ? true
-      : undefined;
-    while (index < lines.length && lines[index].trim() !== '') {
-      if (getIndent(lines[index]) > baseIndent) {
-        subLines.push(lines[index]);
+    const item = {
+      itemText,
+      subLines,
+      lazyLineIndexes,
+      continuationStart: continuing == null ? Infinity : 0,
+      continuationIndent: continuing?.continuationIndent ?? Infinity,
+    };
+    // A lazy-continuation probe needs only the item's last block, so after a
+    // blank line it restarts at a continuation line that begins a new block
+    // of this item: one at the item's own margin, or any line while no nested
+    // list item is open. Item-level fences block a restart; a display-math
+    // pair that closes moves the restart back before its opener.
+    let probeFrom = continuing == null ? -1 : 0;
+    let openFence: string | null = null;
+    let fenceLike = false;
+    let nestedList = continuing?.inner != null;
+    let openMath = false;
+    let mathHasContent = false;
+    let mathProbeFrom = probeFrom;
+    let mathFence: string | null = null;
+    const trackContinuation = (line: string) => {
+      if (/^(`{3,}|~{3,})/.test(line.trimStart())) {
+        fenceLike = true;
+      }
+      if (openFence == null && opts.math === true) {
+        // Display math pairs a `$$` line with the next one; an empty pair
+        // stays literal and its second line may open math again.
+        if (line.trim() === '$$') {
+          if (openMath && mathHasContent) {
+            openMath = false;
+            probeFrom = mathProbeFrom;
+            openFence = mathFence;
+            return;
+          }
+          openMath = true;
+          mathProbeFrom = probeFrom;
+          mathFence = openFence;
+          mathHasContent = false;
+          return;
+        }
+        if (openMath && !isBlankLine(line)) {
+          mathHasContent = true;
+        }
+      }
+      if (openFence == null && matchListMarker(line) != null) {
+        nestedList = true;
+      }
+      if (getIndent(line) > 0) {
+        return;
+      }
+      const fence = /^(`{3,}|~{3,})/.exec(line)?.[1];
+      if (openFence == null) {
+        openFence = fence ?? null;
+      } else if (line.startsWith(openFence)) {
+        openFence = null;
+      }
+    };
+    let lazyParagraphOpen: boolean | undefined =
+      itemText != null && canContinueParagraphLazily([itemText], 0, true)
+        ? true
+        : undefined;
+    let reachesEnd = false;
+    let trailingBlankStart = lines.length;
+    while (index < lines.length) {
+      const line = lines[index];
+      if (isBlankLine(line)) {
+        let lookahead = index + 1;
+        while (lookahead < lines.length && isBlankLine(lines[lookahead])) {
+          lookahead++;
+        }
+        if (lookahead === lines.length) {
+          reachesEnd = true;
+          trailingBlankStart = index;
+          break;
+        }
+        if (
+          getIndent(lines[lookahead]) < contentIndent ||
+          strippedIndent(index, lookahead) < contentIndent ||
+          // An item that starts with a blank line ends at the next one.
+          (subLines.length === 0 &&
+            (continuing == null
+              ? itemText != null && isBlankLine(itemText)
+              : continuing.startsEmpty))
+        ) {
+          break;
+        }
+        if (item.continuationStart === Infinity) {
+          // The tight region is final now. Continuation keeps indentation
+          // relative to it, or to the first continuation line without one.
+          const tight = tightIndent(item);
+          item.continuationIndent =
+            tight === Infinity ? getIndent(lines[lookahead]) : tight;
+          listItemSource(item).split('\n').forEach(trackContinuation);
+          item.continuationStart = subLines.length;
+        } else if (item.continuationIndent === Infinity) {
+          item.continuationIndent = getIndent(lines[lookahead]);
+        }
+        for (; index < lookahead; index++) {
+          subLines.push(lines[index]);
+          subLineIndexes.push(index);
+        }
+        const continuation = lines[index];
+        const margin = continuation.slice(
+          Math.min(getIndent(continuation), item.continuationIndent),
+        );
+        const startsBlock =
+          openFence == null && (getIndent(margin) === 0 || !nestedList);
+        if (startsBlock) {
+          probeFrom = subLines.length;
+          fenceLike = false;
+          nestedList = false;
+        }
+        // Plain text after a blank line opens a paragraph wherever it lands
+        // unless fenced code may still be open around it.
+        lazyParagraphOpen =
+          canContinueParagraphLazily([margin.trimStart()], 0) &&
+          margin.trim() !== '$$' &&
+          (startsBlock || (openFence == null && !fenceLike))
+            ? true
+            : undefined;
+        continue;
+      }
+      if (getIndent(line) > baseIndent) {
+        subLines.push(line);
+        subLineIndexes.push(index);
+        if (item.continuationStart !== Infinity) {
+          trackContinuation(
+            line.slice(Math.min(getIndent(line), item.continuationIndent)),
+          );
+        }
         if (
           lazyParagraphOpen === true &&
-          !canContinueParagraphLazily([lines[index].trimStart()], 0)
+          !canContinueParagraphLazily([line.trimStart()], 0)
         ) {
           lazyParagraphOpen = undefined;
         }
         index++;
         continue;
       }
-
       if (
         interruptsLazyContinuation(index) ||
         !canContinueParagraphLazily(lines, index, true)
       ) {
         break;
       }
-      if (lazyParagraphOpen === undefined) {
-        lazyParagraphOpen = sourceEndsInParagraph(
-          listItemSource(itemText, subLines, lazyLineIndexes),
-          opts,
-        );
-      }
+      lazyParagraphOpen ??= sourceEndsInParagraph(
+        listItemSource(item, probeFrom),
+        opts,
+        probeFrom === 0 ? continuing?.inner : undefined,
+      );
       if (!lazyParagraphOpen) {
         break;
       }
+      if (item.continuationStart !== Infinity) {
+        trackContinuation(line.trimStart());
+      }
       lazyLineIndexes.add(subLines.length);
-      subLines.push(lines[index]);
+      subLines.push(line);
+      subLineIndexes.push(index);
       index++;
     }
+    if (index === lines.length) {
+      reachesEnd = true;
+    }
 
-    const source = listItemSource(itemText, subLines, lazyLineIndexes);
-
-    items.push({
-      type: 'listItem',
-      checked,
-      children: parseMarkdownImpl(source, nested(opts)),
-    });
+    if (continuing == null || subLines.length > 0) {
+      const linkDefs =
+        continuing?.linkDefs == null
+          ? opts.linkDefs
+          : new Map([...continuing.linkDefs, ...(opts.linkDefs ?? [])]);
+      const lineOffset = itemText == null ? 0 : 1;
+      const openFenceBefore = opts.scan?.openFence;
+      const closableMathBefore = opts.scan?.closableMathLine;
+      const info: BlockParseInfo = {
+        blankBetweenBlocks: false,
+        afterContent: continuing?.hasContent === true,
+      };
+      const children = parseMarkdownImpl(
+        listItemSource(item),
+        {
+          ...nested(opts),
+          linkDefs,
+          resume: continuing?.inner,
+          scanLine:
+            scanLine == null
+              ? undefined
+              : line =>
+                  scanLine(
+                    line < lineOffset
+                      ? itemStart
+                      : (subLineIndexes[line - lineOffset] ?? itemStart),
+                  ),
+          scanLazyLines:
+            scanLine == null
+              ? undefined
+              : new Set([...lazyLineIndexes].map(line => line + lineOffset)),
+          openAtEnd: opts.openAtEnd !== false && reachesEnd,
+        },
+        info,
+      );
+      if (info.blankBetweenBlocks) {
+        loose = true;
+      }
+      const hasLocalDefinitions = info.defs != null && info.defs.size > 0;
+      if (opts.scan != null && scanLine != null) {
+        // An open fence or display math may continue past the blank lines that
+        // end the stream, and an item-local definition applies to the item's
+        // earlier content: none of those blank lines can settle.
+        const fenceOpened = opts.scan.openFence && openFenceBefore !== true;
+        if (fenceOpened || opts.scan.closableMathLine !== closableMathBefore) {
+          for (let line = trailingBlankStart; line < lines.length; line++) {
+            opts.scan.contentLines.add(scanLine(line));
+          }
+        }
+        if (hasLocalDefinitions) {
+          subLines.forEach((line, subIndex) => {
+            if (isBlankLine(line)) {
+              opts.scan?.contentLines.add(scanLine(subLineIndexes[subIndex]));
+            }
+          });
+        }
+      }
+      if (
+        continuing != null &&
+        hasLocalDefinitions &&
+        opts.settlement != null
+      ) {
+        // Item-local definitions apply to the item's settled content too.
+        opts.settlement.invalidated = true;
+      }
+      const listItem: MarkdownAstListItem<RuntimeExtensionNode> = {
+        type: 'listItem',
+        checked,
+        children,
+      };
+      if (continuing != null) {
+        continuedItems.add(listItem);
+      }
+      opts.settlement?.frames.set(listItem, {
+        ordered,
+        delimiter,
+        indent: baseIndent,
+        contentIndent,
+        continuationIndent:
+          item.continuationIndent !== Infinity
+            ? item.continuationIndent
+            : tightIndent(item) === Infinity
+              ? undefined
+              : tightIndent(item),
+        hasContent: continuing?.hasContent === true || children.length > 0,
+        startsEmpty:
+          subLines.length === 0 &&
+          (continuing == null
+            ? itemText != null && isBlankLine(itemText)
+            : continuing.startsEmpty),
+        linkDefs: hasLocalDefinitions
+          ? new Map([...(continuing?.linkDefs ?? []), ...(info.defs ?? [])])
+          : continuing?.linkDefs,
+      });
+      items.push(listItem);
+    }
+    continuing = undefined;
 
     // CommonMark loose list: blank line(s) between items of the same style
     // and indent still form one list. Skip the blanks and continue if the
-    // next non-blank line matches the same item pattern.
+    // next non-blank line matches the same marker shape.
     let lookahead = index;
-    while (lookahead < lines.length && lines[lookahead].trim() === '') {
+    while (lookahead < lines.length && isBlankLine(lines[lookahead])) {
       lookahead++;
     }
+    const nextMarker =
+      lookahead > index && lookahead < lines.length
+        ? matchListMarker(lines[lookahead])
+        : null;
     if (
-      lookahead > index &&
-      lookahead < lines.length &&
-      itemPattern.test(lines[lookahead])
+      nextMarker != null &&
+      nextMarker.ordered === ordered &&
+      nextMarker.indent === baseIndent &&
+      (!ordered || nextMarker.delimiter === delimiter)
     ) {
       loose = true;
       index = lookahead;
+    } else if (lookahead === index && index < lines.length) {
+      // A tight line ended the item; the next iteration tests it as a marker.
+      continue;
+    } else {
+      break;
     }
+  }
+  if (items.length === 0) {
+    return {node: null, nextIndex: index};
   }
   const node: MarkdownAstList<RuntimeExtensionNode> = {
     type: 'list',
     ordered,
     start,
-    delimiter: ordered ? (delim as '.' | ')') : undefined,
+    delimiter: ordered ? delimiter : undefined,
     spread: loose || undefined,
     children: items,
   };
+  if (resume != null) {
+    continuationLists.add(node);
+  }
   return {node, nextIndex: index};
 }
 
@@ -2553,9 +2975,20 @@ export function parseMarkdownAstInternal(
   );
 }
 
+/** Facts a block loop reports to the list item that owns its content. */
+type BlockParseInfo = {
+  /** A blank line separated two of this parse's top-level blocks. */
+  blankBetweenBlocks: boolean;
+  /** This parse continues an item that already has content. */
+  readonly afterContent?: boolean;
+  /** Definitions collected from this parse's own input. */
+  defs?: ReadonlyMap<string, string>;
+};
+
 function parseMarkdownImpl(
   input: string,
   baseOpts: ResolvedOptions,
+  info?: BlockParseInfo,
 ): MarkdownAstBlockContent<RuntimeExtensionNode>[] {
   // Collect this input's link reference definitions and strip their lines,
   // then merge them with any definitions inherited from an enclosing parse
@@ -2565,6 +2998,9 @@ function parseMarkdownImpl(
   // in document order; locally-nested definitions still resolve within this
   // parse.
   const {defs, cleaned, lineMap} = extractLinkDefinitions(input, baseOpts.math);
+  if (info != null) {
+    info.defs = defs;
+  }
   const inherited = baseOpts.linkDefs;
   let linkDefs: ReadonlyMap<string, string> | undefined;
   if (defs.size === 0) {
@@ -2579,7 +3015,106 @@ function parseMarkdownImpl(
   const lines = cleaned.split('\n');
   const hasBlockExtensionSyntax =
     opts.allowBlockSyntax !== false &&
+    opts.scan === undefined &&
     (opts.plugins?.blockByFirstCharacter.size ?? 0) > 0;
+  // A scan reports content lines against the tail it scans; a structure-only
+  // probe records nothing.
+  const scan =
+    opts.scan == null || opts.scan.probing > 0 ? undefined : opts.scan;
+  // Definitions are stripped before block parsing; a list item never
+  // continues across a stripped line shallower than its content indent.
+  let inputLines: string[] | undefined;
+  const strippedIndent = (from: number, to: number): number => {
+    let indent = Infinity;
+    if (lineMap != null) {
+      inputLines ??= input.split('\n');
+      for (let line = from; line < to; line++) {
+        for (
+          let stripped = lineMap[line] + 1;
+          stripped < lineMap[line + 1];
+          stripped++
+        ) {
+          indent = Math.min(indent, getIndent(inputLines[stripped]));
+        }
+      }
+    }
+    return indent;
+  };
+  const tailLineOf = (line: number): number => {
+    const inputLine = lineMap == null ? line : lineMap[line];
+    return opts.scanLine == null ? inputLine : opts.scanLine(inputLine);
+  };
+  const scanLine = scan == null ? undefined : tailLineOf;
+  if (opts.scan != null) {
+    opts.scan.lines += lines.length;
+  }
+  if (scan != null && lineMap != null) {
+    // A stripped definition line ends open list items, but settled list
+    // geometry cannot see it: keep the blank lines after it unsettled.
+    for (let line = 0; line < lines.length; line++) {
+      const stripped = lineMap[line] > (line === 0 ? 0 : lineMap[line - 1] + 1);
+      for (let blank = line; stripped && blank < lines.length; blank++) {
+        if (!isBlankLine(lines[blank])) {
+          break;
+        }
+        scan.contentLines.add(tailLineOf(blank));
+      }
+    }
+  }
+  const mayCloseMath =
+    scan != null && opts.math === true && opts.openAtEnd !== false;
+  // An unmatched opener may close while its container can still grow, so
+  // nothing after it settles. Streaming withholds it as incomplete math unless
+  // a deeper quote or a lazy container exit followed it; later openers then
+  // stay literal until a blank line, matching the streaming contract.
+  const notePendingMath = (lineIndex: number) => {
+    if (
+      !mayCloseMath ||
+      lines[lineIndex].trim() !== '$$' ||
+      matchDisplayMathBlock(lines, lineIndex) != null
+    ) {
+      return;
+    }
+    const tailLine = tailLineOf(lineIndex);
+    let closer = lineIndex + 1;
+    while (closer < lines.length && lines[closer].trim() !== '$$') {
+      closer++;
+    }
+    if (closer < lines.length) {
+      // An empty pair is literal however the stream continues.
+      scan.literalMathLines.add(tailLineOf(closer));
+      return;
+    }
+    scan.closableMathLine = Math.min(scan.closableMathLine, tailLine);
+    if (scan.literalMathLines.has(tailLine)) {
+      return;
+    }
+    const literal = scan.literalMathFrom.some(from => {
+      if (from >= tailLine) {
+        return false;
+      }
+      for (let line = from + 1; line < tailLine; line++) {
+        if (isBlankLine(scan.tailLines[line])) {
+          return false;
+        }
+      }
+      return true;
+    });
+    if (literal) {
+      return;
+    }
+    for (let line = lineIndex + 1; line < lines.length; line++) {
+      const inputLine = lineMap == null ? line : lineMap[line];
+      if (
+        /^ {0,3}>/.test(lines[line]) ||
+        opts.scanLazyLines?.has(inputLine) === true
+      ) {
+        scan.literalMathFrom.push(tailLineOf(line));
+        return;
+      }
+    }
+    scan.pendingMathLine = Math.min(scan.pendingMathLine, tailLine);
+  };
   // Derived from the already-split lines rather than a second character
   // scan: every line contributes its own length plus the newline it ended on.
   const lineOffsets = [0];
@@ -2623,20 +3158,45 @@ function parseMarkdownImpl(
   const blockEndLines: (number | undefined)[] | null =
     opts.astPositions === true ? [] : null;
   let blockStartLine = 0;
+  let afterBlock = info?.afterContent === true;
+  let blankAfterBlock = false;
   const pushBlock = (
     node: MarkdownAstBlockContent<RuntimeExtensionNode>,
     endLine?: number,
   ) => {
+    if (blankAfterBlock && info != null) {
+      info.blankBetweenBlocks = true;
+    }
+    afterBlock = true;
+    blankAfterBlock = false;
     blocks.push(node);
     blockStartLines?.push(blockStartLine);
     blockEndLines?.push(endLine);
   };
   let index = 0;
+  if (opts.resume != null) {
+    // Continue the open list item before parsing any new block.
+    const continuation = parseList(
+      lines,
+      0,
+      opts.resume.ordered,
+      opts,
+      interruptsWithBlockExtension,
+      strippedIndent,
+      scanLine,
+      opts.resume,
+    );
+    if (continuation.node != null) {
+      pushBlock(continuation.node);
+    }
+    index = continuation.nextIndex;
+  }
 
   while (index < lines.length) {
     blockStartLine = index;
     const line = lines[index];
-    if (line.trim() === '') {
+    if (isBlankLine(line)) {
+      blankAfterBlock = afterBlock;
       index++;
       continue;
     }
@@ -2655,8 +3215,14 @@ function parseMarkdownImpl(
       const codeLines: string[] = [];
       index++;
       while (index < lines.length && !lines[index].startsWith(fence)) {
+        if (scan != null && isBlankLine(lines[index])) {
+          scan.contentLines.add(tailLineOf(index));
+        }
         codeLines.push(lines[index]);
         index++;
+      }
+      if (scan != null && index >= lines.length && opts.openAtEnd !== false) {
+        scan.openFence = true;
       }
       index++; // skip closing fence
       // A fence owns its blank lines, and an unterminated one (mid-stream)
@@ -2680,6 +3246,15 @@ function parseMarkdownImpl(
     // --- Display math (opt-in; fenced code takes precedence) ---
     if (opts.math) {
       const displayMath = matchDisplayMathBlock(lines, index);
+      if (displayMath == null) {
+        notePendingMath(index);
+      } else if (scan != null) {
+        for (let line = index + 1; line < displayMath.endLine; line++) {
+          if (isBlankLine(lines[line])) {
+            scan.contentLines.add(tailLineOf(line));
+          }
+        }
+      }
       if (displayMath != null) {
         pushBlock(
           {type: 'math', value: displayMath.value},
@@ -2738,12 +3313,15 @@ function parseMarkdownImpl(
     // --- Blockquote ---
     if (line.startsWith('> ') || line === '>') {
       const quoteLines: string[] = [];
+      const quoteLineIndexes: number[] = [];
+      const lazyQuoteLines = new Set<number>();
       let lazyParagraphOpen: boolean | undefined;
       while (index < lines.length) {
         const quoteLine = lines[index];
         if (quoteLine.startsWith('> ') || quoteLine === '>') {
           const content = quoteLine.replace(/^> ?/, '');
           quoteLines.push(content);
+          quoteLineIndexes.push(index);
           if (content.trim() === '') {
             lazyParagraphOpen = false;
           } else if (
@@ -2772,12 +3350,26 @@ function parseMarkdownImpl(
         if (!lazyParagraphOpen) {
           break;
         }
+        lazyQuoteLines.add(quoteLines.length);
         quoteLines.push(quoteLine);
+        quoteLineIndexes.push(index);
         index++;
       }
+      // Only a quote that reaches the stream's final line can still grow.
+      const quoteReachesEnd =
+        index === lines.length ||
+        (index === lines.length - 1 && isBlankLine(lines[index]));
       pushBlock({
         type: 'blockquote',
-        children: parseMarkdownImpl(quoteLines.join('\n'), nested(opts)),
+        children: parseMarkdownImpl(quoteLines.join('\n'), {
+          ...nested(opts),
+          scanLine:
+            scanLine == null
+              ? undefined
+              : line => scanLine(quoteLineIndexes[line]),
+          scanLazyLines: scanLine == null ? undefined : lazyQuoteLines,
+          openAtEnd: opts.openAtEnd !== false && quoteReachesEnd,
+        }),
       });
       continue;
     }
@@ -2790,8 +3382,10 @@ function parseMarkdownImpl(
         false,
         opts,
         interruptsWithBlockExtension,
+        strippedIndent,
+        scanLine,
       );
-      pushBlock(listResult.node);
+      pushBlock(listResult.node as MarkdownAstList<RuntimeExtensionNode>);
       index = listResult.nextIndex;
       continue;
     }
@@ -2804,8 +3398,10 @@ function parseMarkdownImpl(
         true,
         opts,
         interruptsWithBlockExtension,
+        strippedIndent,
+        scanLine,
       );
-      pushBlock(listResult.node);
+      pushBlock(listResult.node as MarkdownAstList<RuntimeExtensionNode>);
       index = listResult.nextIndex;
       continue;
     }
@@ -2870,6 +3466,8 @@ function parseMarkdownImpl(
       if (interruptsWithBlockExtension(index)) {
         break;
       }
+      // A literal `$$` line becomes a display-math boundary if it closes.
+      notePendingMath(index);
       paraLines.push(nextLine);
       index++;
     }
@@ -2939,13 +3537,17 @@ function stampSourceRanges(
     // range that dropped it would slice to something that re-parses
     // differently.
     const end = lineStart(endLine) + lines[endLine].length;
+    const original = blocks[i];
     blocks[i] = {
-      ...blocks[i],
+      ...original,
       position: {
         start: {offset: lineStart(startLine)},
         end: {offset: end},
       },
     };
+    if (continuationLists.has(original)) {
+      continuationLists.add(blocks[i]);
+    }
   }
 }
 
@@ -2996,12 +3598,22 @@ export interface IncrementalState<MathEnabled extends boolean = false> {
 type IncrementalWork = {
   /** Characters copied into the tail line array. */
   readonly splitCharacters: number;
-  /** Tail lines visited by fence and blank-boundary detection. */
+  /**
+   * Lines visited by the structure-only settlement scan, counting each nested
+   * list-item and blockquote line again for every block loop that reads it.
+   */
   readonly boundaryLines: number;
   /** Characters visited while collecting document-global definitions. */
   readonly definitionCharacters: number;
   /** Block nodes parsed anew this call (settled delta + unsettled tail). */
   readonly renderedBlocks: number;
+  /**
+   * List and list-item child pointers copied to keep snapshots immutable: the
+   * settled cache's and this call's open list path, plus released projections.
+   */
+  readonly copiedListEntries: number;
+  /** List items and item children newly settled into the private cache. */
+  readonly cachedListEntries: number;
 };
 
 type IncrementalCache = {
@@ -3021,7 +3633,20 @@ type IncrementalCache = {
   projectedSettledBlocks: RuntimeBlockNode[];
   /** Preserves released settled-node identity across projected snapshots. */
   projectionCache: LegacyProjectionCache;
+  /** Marker geometry the block parser recorded for settled list items. */
+  frames: WeakMap<object, ListFrame>;
+  /** The open list items the settled prefix ends inside, outermost first. */
+  chain: ListResume | undefined;
   work: IncrementalWork;
+};
+
+const EMPTY_INCREMENTAL_WORK: IncrementalWork = {
+  splitCharacters: 0,
+  boundaryLines: 0,
+  definitionCharacters: 0,
+  renderedBlocks: 0,
+  copiedListEntries: 0,
+  cachedListEntries: 0,
 };
 
 const incrementalCaches = new WeakMap<
@@ -3044,12 +3669,9 @@ function makeIncrementalCache(
     projectedRevision: -1,
     projectedSettledBlocks: [],
     projectionCache: new WeakMap(),
-    work: {
-      splitCharacters: 0,
-      boundaryLines: 0,
-      definitionCharacters: 0,
-      renderedBlocks: 0,
-    },
+    frames: new WeakMap(),
+    chain: undefined,
+    work: EMPTY_INCREMENTAL_WORK,
   };
   incrementalCaches.set(state, cache);
   return cache;
@@ -3079,116 +3701,67 @@ export function createIncrementalState<
 export function getIncrementalParseWork(
   state: IncrementalState<boolean>,
 ): IncrementalWork {
-  return (
-    incrementalCaches.get(state)?.work ?? {
-      splitCharacters: 0,
-      boundaryLines: 0,
-      definitionCharacters: 0,
-      renderedBlocks: 0,
-    }
-  );
+  return incrementalCaches.get(state)?.work ?? EMPTY_INCREMENTAL_WORK;
 }
 
 /**
- * Find the line-index of the last blank line that is NOT inside a fenced code
- * block, and report whether a fence is still open at the end of the input.
- * Returns -1 when nothing is settled.
- *
- * This index must never move backwards as more of the document arrives. The
- * caller's cache is keyed on the settled text staying a prefix of what it was,
- * so a boundary that retracts by one line costs a re-parse of every block in
- * the document. Two things used to retract it: a blank last line, which is
- * just the newline the stream has written so far and stops being blank as soon
- * as the next chunk appends to it; and an open fence, which used to collapse
- * the boundary to -1 even though the content before the fence opened cannot be
- * changed by anything typed inside it.
+ * Scan the mutable tail with the real block parser in structure-only mode, so
+ * list items, blockquotes, fences, and display math own lines exactly as they
+ * do in a full parse. The scan skips inline parsing and extension tokenizers:
+ * it never invokes a caller callback, and each settled or unsettled slice is
+ * still parsed once afterward.
  */
-function findSettledBoundary(
-  lines: string[],
-  math = false,
-): {
-  boundary: number;
-  openFence: boolean;
-  openMath: boolean;
-} {
-  let inFence = false;
-  let fenceMarker = '';
-  let mathContainer: DisplayMathContainer | null = null;
-  let suppressMathUntilBoundary = false;
-  let lastBoundary = -1;
-  let boundaryBeforeFence = -1;
-  let boundaryBeforeMath = -1;
+function scanSettlement(
+  tail: string,
+  tailLines: ReadonlyArray<string>,
+  opts: ResolvedOptions,
+  chain: ListResume | undefined,
+): {scan: BlockScan; invalidated: boolean} {
+  const scan: BlockScan = {
+    tailLines,
+    contentLines: new Set(),
+    literalMathFrom: [],
+    literalMathLines: new Set(),
+    closableMathLine: Infinity,
+    pendingMathLine: Infinity,
+    openFence: false,
+    lines: 0,
+    probing: 0,
+  };
+  const settlement: ListSettlement = {
+    frames: new WeakMap(),
+    invalidated: false,
+  };
+  parseMarkdownImpl(tail, {
+    ...opts,
+    astPositions: false,
+    baseOffset: undefined,
+    linkDefs: undefined,
+    resume: chain,
+    settlement,
+    scan,
+    scanLine: undefined,
+    scanLazyLines: undefined,
+    openAtEnd: true,
+  });
+  return {scan, invalidated: settlement.invalidated};
+}
 
-  for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-    const line = lines[lineIndex];
-
-    if (inFence) {
-      const fenceMatch = line.match(/^(`{3,}|~{3,})/);
-      if (
-        fenceMatch &&
-        fenceMatch[1].startsWith(fenceMarker[0]) &&
-        fenceMatch[1].length >= fenceMarker.length
-      ) {
-        inFence = false;
-        fenceMarker = '';
-      }
-      continue;
-    }
-
-    if (mathContainer != null) {
-      const state = displayMathLineState(line, mathContainer);
-      if (state === 'close') {
-        mathContainer = null;
-        continue;
-      }
-      if (state === 'inside') {
-        continue;
-      }
-      // The list item or blockquote ended before a closer arrived. The parser
-      // treats that unmatched opener literally, so resume ordinary boundary
-      // detection on this first line outside the container.
-      mathContainer = null;
-      suppressMathUntilBoundary = true;
-    }
-
-    // A complete same-line `$$…$$` expression never changes boundary state.
-    // A standalone marker may belong to the top level, a blockquote, or one
-    // list item; remember that container so its continuation marker closes the
-    // same expression instead of opening a new one.
-    if (math && !suppressMathUntilBoundary) {
-      const container = displayMathContainer(line);
-      if (container != null) {
-        mathContainer = container;
-        boundaryBeforeMath = lastBoundary;
-        continue;
-      }
-    }
-
-    const fenceMatch = line.match(/^(`{3,}|~{3,})/);
-    if (fenceMatch) {
-      inFence = true;
-      fenceMarker = fenceMatch[1];
-      boundaryBeforeFence = lastBoundary;
-      continue;
-    }
-
-    if (line.trim() === '') {
-      suppressMathUntilBoundary = false;
-      if (lineIndex > 0 && lineIndex < lines.length - 1) {
-        lastBoundary = lineIndex;
-      }
+/**
+ * The last blank tail line that no fence or display-math block owns and that
+ * precedes any display-math opener that may still close. Such a line is a
+ * parser block boundary, or a blank line inside open list items that the next
+ * slice continues. It never moves backward as more text arrives, and a blank
+ * final line is excluded because the next chunk may extend it.
+ */
+function findSettledBoundary(lines: string[], scan: BlockScan): number {
+  const limit = Math.min(lines.length - 1, scan.closableMathLine);
+  for (let line = limit - 1; line > 0; line--) {
+    if (isBlankLine(lines[line]) && !scan.contentLines.has(line)) {
+      return line;
     }
   }
-
-  return {
-    boundary: inFence
-      ? boundaryBeforeFence
-      : mathContainer != null
-        ? boundaryBeforeMath
-        : lastBoundary,
-    openFence: inFence,
-    openMath: mathContainer != null,
-  };
+  return -1;
 }
 
 /**
@@ -3531,91 +4104,128 @@ function atOffset(opts: ResolvedOptions, offset: number): ResolvedOptions {
   return opts.astPositions === true ? {...opts, baseOffset: offset} : opts;
 }
 
+type ListCopyWork = {
+  /** Child pointers copied into new list or list-item arrays. */
+  copied: number;
+  /** Items and item children a continuation adds to the open path. */
+  added: number;
+};
+
 /**
- * Concatenate freshly-parsed delta blocks with previously-settled blocks,
- * merging adjacent same-style lists into a single loose list. The boundary
- * detector settles each pre-blank segment independently, so without this
- * merge an incrementally-streamed `1.\n\n1.\n\n1.` would land as N separate
- * lists even though the full-text parser joins them per CommonMark §5.3.
+ * Join a resumed parse's leading continuation list to the settled list it
+ * continues. A continued first item joins the settled list's last item, whose
+ * children may continue a nested list the same way. Only nodes on that open
+ * path are copied; every other settled node is shared.
  */
-function mergeSettledBlocks(
-  prev: MarkdownAstBlockContent<RuntimeExtensionNode>[],
-  delta: MarkdownAstBlockContent<RuntimeExtensionNode>[],
-): MarkdownAstBlockContent<RuntimeExtensionNode>[] {
-  if (prev.length === 0 || delta.length === 0) {
-    return [...prev, ...delta];
-  }
-  const prevLast = prev[prev.length - 1];
-  const deltaFirst = delta[0];
-  if (
-    prevLast.type === 'list' &&
-    deltaFirst.type === 'list' &&
-    prevLast.ordered === deltaFirst.ordered &&
-    prevLast.delimiter === deltaFirst.delimiter
-  ) {
-    const merged: MarkdownAstBlockContent<RuntimeExtensionNode> = {
-      type: 'list',
-      ordered: prevLast.ordered,
-      start: prevLast.start,
-      delimiter: prevLast.delimiter,
-      spread: true,
-      children: [...prevLast.children, ...deltaFirst.children],
-      // One list now, so one position spans both halves.
-      ...(prevLast.position != null && deltaFirst.position != null
-        ? {
-            position: {
-              start: prevLast.position.start,
-              end: deltaFirst.position.end,
-            },
-          }
-        : null),
+function joinContinuationList(
+  target: MarkdownAstList<RuntimeExtensionNode>,
+  continuation: MarkdownAstList<RuntimeExtensionNode>,
+  frames: WeakMap<object, ListFrame>,
+  work: ListCopyWork,
+): MarkdownAstList<RuntimeExtensionNode> {
+  const [first, ...added] = continuation.children;
+  let children: MarkdownAstListItem<RuntimeExtensionNode>[];
+  if (first != null && continuedItems.has(first)) {
+    const last = target.children[target.children.length - 1];
+    const joined: MarkdownAstListItem<RuntimeExtensionNode> = {
+      ...last,
+      children: joinBlocks(last.children, first.children, frames, work),
     };
-    return [...prev.slice(0, -1), merged, ...delta.slice(1)];
+    work.copied += joined.children.length;
+    const frame = frames.get(first) ?? frames.get(last);
+    if (frame != null) {
+      frames.set(joined, frame);
+    }
+    children = [...target.children.slice(0, -1), joined, ...added];
+    work.added += added.length;
+  } else {
+    children = [...target.children, ...continuation.children];
+    work.added += continuation.children.length;
   }
-  return [...prev, ...delta];
+  work.copied += children.length;
+  return {
+    ...target,
+    spread: target.spread || continuation.spread || undefined,
+    children,
+    ...(target.position != null && continuation.position != null
+      ? {
+          position: {
+            start: target.position.start,
+            end: continuation.position.end,
+          },
+        }
+      : null),
+  };
 }
 
-/** Append a newly-settled slice without copying the already-settled prefix. */
-function appendSettledBlocks(
-  prev: MarkdownAstBlockContent<RuntimeExtensionNode>[],
-  delta: MarkdownAstBlockContent<RuntimeExtensionNode>[],
-): boolean {
-  if (delta.length === 0) {
-    return false;
-  }
-  if (prev.length === 0) {
-    prev.push(...delta);
-    return false;
-  }
-  const prevLast = prev[prev.length - 1];
-  const deltaFirst = delta[0];
+function joinBlocks(
+  settled: ReadonlyArray<MarkdownAstBlockContent<RuntimeExtensionNode>>,
+  next: ReadonlyArray<MarkdownAstBlockContent<RuntimeExtensionNode>>,
+  frames: WeakMap<object, ListFrame>,
+  work: ListCopyWork,
+): MarkdownAstBlockContent<RuntimeExtensionNode>[] {
+  const first = next[0];
+  const target = settled[settled.length - 1];
   if (
-    prevLast.type === 'list' &&
-    deltaFirst.type === 'list' &&
-    prevLast.ordered === deltaFirst.ordered &&
-    prevLast.delimiter === deltaFirst.delimiter
+    first?.type === 'list' &&
+    continuationLists.has(first) &&
+    target?.type === 'list'
   ) {
-    prev[prev.length - 1] = {
-      type: 'list',
-      ordered: prevLast.ordered,
-      start: prevLast.start,
-      delimiter: prevLast.delimiter,
-      spread: true,
-      children: [...prevLast.children, ...deltaFirst.children],
-      ...(prevLast.position != null && deltaFirst.position != null
-        ? {
-            position: {
-              start: prevLast.position.start,
-              end: deltaFirst.position.end,
-            },
-          }
-        : null),
-    };
-    prev.push(...delta.slice(1));
-    return true;
+    return [
+      ...settled.slice(0, -1),
+      joinContinuationList(target, first, frames, work),
+      ...next.slice(1),
+    ];
   }
-  prev.push(...delta);
-  return false;
+  work.added += next.length;
+  return [...settled, ...next];
+}
+
+/** The open list items a settled prefix ends inside, from parser frames. */
+function settledChain(
+  blocks: ReadonlyArray<MarkdownAstBlockContent<RuntimeExtensionNode>>,
+  frames: WeakMap<object, ListFrame>,
+): ListResume | undefined {
+  const last = blocks[blocks.length - 1];
+  if (last?.type !== 'list') {
+    return undefined;
+  }
+  const item = last.children[last.children.length - 1];
+  const frame = item == null ? undefined : frames.get(item);
+  return frame == null
+    ? undefined
+    : {...frame, inner: settledChain(item.children, frames)};
+}
+
+/** List and item child pointers a released projection copies for new nodes. */
+function projectedListEntries(
+  block: MarkdownAstBlockContent<RuntimeExtensionNode>,
+  cache: LegacyProjectionCache,
+): number {
+  if (cache.has(block)) {
+    return 0;
+  }
+  if (block.type === 'blockquote') {
+    return block.children.reduce(
+      (total, child) => total + projectedListEntries(child, cache),
+      0,
+    );
+  }
+  if (block.type !== 'list') {
+    return 0;
+  }
+  return block.children.reduce(
+    (total, item) =>
+      cache.has(item)
+        ? total
+        : total +
+          item.children.length +
+          item.children.reduce(
+            (nested, child) => nested + projectedListEntries(child, cache),
+            0,
+          ),
+    block.children.length,
+  );
 }
 
 function sameUnsettledDefinitions(
@@ -3658,12 +4268,9 @@ function resetIncrementalCache(
   cache.projectedRevision = -1;
   cache.projectedSettledBlocks = [];
   cache.projectionCache = new WeakMap();
-  cache.work = {
-    splitCharacters: 0,
-    boundaryLines: 0,
-    definitionCharacters: 0,
-    renderedBlocks: 0,
-  };
+  cache.frames = new WeakMap();
+  cache.chain = undefined;
+  cache.work = EMPTY_INCREMENTAL_WORK;
 }
 
 /**
@@ -3714,11 +4321,22 @@ export function parseMarkdownIncremental(
   const withRanges = wantsLegacyRanges(arg);
   const root = parseMarkdownAstIncremental(input, state, arg);
   const cache = incrementalCaches.get(state) ?? makeIncrementalCache(state);
+  const projectedEntries = root.children.reduce(
+    (total, block) =>
+      total + projectedListEntries(block, cache.projectionCache),
+    0,
+  );
   const projected = projectMarkdownRoot(
     root,
     withRanges,
     cache.projectionCache,
   );
+  if (projectedEntries > 0) {
+    cache.work = {
+      ...cache.work,
+      copiedListEntries: cache.work.copiedListEntries + projectedEntries,
+    };
+  }
   if (cache.projectedRevision !== cache.settledRevision) {
     cache.projectedSettledBlocks = cache.settledAstBlocks.map(block =>
       projectBlockNode(block, cache.projectionCache, withRanges),
@@ -3802,15 +4420,33 @@ function parseMarkdownIncrementalAstBlocks(
   }
 
   // The recurring parse costs are confined to the mutable suffix: splitting,
-  // fence/boundary detection, definition collection, and block construction.
-  // An open fence simply keeps the suffix growing until its closing marker.
-  const oldSettledEnd = cache.settledEnd;
-  const tailRaw = input.slice(oldSettledEnd);
-  const tailLines = tailRaw.split('\n');
-  const {boundary, openFence, openMath} = findSettledBoundary(
-    tailLines,
-    opts.math,
-  );
+  // structure scanning, definition collection, and block construction. An
+  // open fence or display-math block keeps the suffix growing until it closes.
+  let oldSettledEnd = cache.settledEnd;
+  let tailRaw = input.slice(oldSettledEnd);
+  let tailLines = tailRaw.split('\n');
+  const initialScan = scanSettlement(tailRaw, tailLines, opts, cache.chain);
+  let scan = initialScan.scan;
+  // Work spent on a scan that a reset discards still counts.
+  let discardedSplit = 0;
+  let discardedLines = 0;
+  if (initialScan.invalidated) {
+    discardedSplit = tailRaw.length;
+    discardedLines = scan.lines;
+    // An item-local definition applies to settled item content: start over.
+    resetIncrementalCache(state, cache);
+    state.autolink = opts.autolink;
+    state.math = opts.math;
+    state.sourceRanges = opts.sourceRanges;
+    state.sourceIdsKey = nextSourceIdsKey;
+    state.pluginSyntaxIdentity = nextPluginSyntaxIdentity;
+    reparseSettled = false;
+    oldSettledEnd = 0;
+    tailRaw = input;
+    tailLines = tailRaw.split('\n');
+    ({scan} = scanSettlement(tailRaw, tailLines, opts, undefined));
+  }
+  const boundary = findSettledBoundary(tailLines, scan);
   const settledDelta =
     boundary >= 0 ? tailLines.slice(0, boundary).join('\n') : '';
   const nextSettledEnd = oldSettledEnd + settledDelta.length;
@@ -3856,7 +4492,6 @@ function parseMarkdownIncrementalAstBlocks(
   state.linkDefsKey = cache.linkDefsKey;
   const parseOpts: ResolvedOptions =
     cache.linkDefs.size > 0 ? {...opts, linkDefs: cache.linkDefs} : opts;
-
   if (settledDelta !== '') {
     state.settledText += settledDelta;
     state.settledUpTo += settledDelta.split('\n').length - 1;
@@ -3866,28 +4501,47 @@ function parseMarkdownIncrementalAstBlocks(
     cache.settledEnd = nextSettledEnd;
   }
 
-  const trimmedUnsettledInput = unsettledInput.trim();
-  // String#trim removes the CR that belongs to the final content line of a
-  // CRLF snapshot along with trailing blank lines. Keep that one byte so
-  // source ranges and delimiter content remain identical to a full parse.
+  // Keep the unsettled slice's leading lines: they may continue an open list
+  // item. Trailing blank lines are dropped, but String#trimEnd also removes
+  // the CR that belongs to the final content line of a CRLF snapshot; keep
+  // that one byte so ranges and delimiter content match a full parse.
+  const trimmedUnsettledInput = unsettledInput.trimEnd();
   const unsettledRaw =
     trimmedUnsettledInput !== '' && /\r(?:\n[\s]*)?$/.test(unsettledInput)
       ? `${trimmedUnsettledInput}\r`
       : trimmedUnsettledInput;
   // Structural trimming holds back lines that look like an incomplete list or
-  // table, which inside a fence is ordinary code: a TypeScript union or a `- `
-  // would disappear from the code block as it streams.
-  const unsettledText = openFence
-    ? unsettledRaw
-    : openMath
-      ? trimOpenDisplayMath(unsettledRaw)
-      : trimUnsettledStructural(unsettledRaw);
+  // table, which inside a fence is ordinary code. An incomplete display-math
+  // opener is withheld from its own line, wherever the parser found it.
+  let unsettledText: string;
+  if (scan.openFence) {
+    // An open fence owns its trailing blank lines, exactly as in a full parse.
+    unsettledText = unsettledInput;
+  } else if (scan.pendingMathLine < tailLines.length) {
+    // The unsettled slice starts with the newline that ends the settled text.
+    let mathStart = boundary < 0 ? 0 : 1;
+    for (
+      let line = Math.max(boundary, 0);
+      line < scan.pendingMathLine;
+      line++
+    ) {
+      mathStart += tailLines[line].length + 1;
+    }
+    unsettledText = unsettledRaw.slice(0, mathStart).trimEnd();
+  } else {
+    unsettledText = trimUnsettledStructural(unsettledRaw);
+  }
 
   const legacyRanges = opts.sourceRanges === true;
+  const cacheWork: ListCopyWork = {copied: 0, added: 0};
   let parsedSettledBlocks = 0;
   if (reparseSettled) {
+    cache.frames = new WeakMap();
     cache.settledAstBlocks = state.settledText
-      ? parseMarkdownImpl(state.settledText, parseOpts)
+      ? parseMarkdownImpl(state.settledText, {
+          ...parseOpts,
+          settlement: {frames: cache.frames, invalidated: false},
+        })
       : [];
     parsedSettledBlocks = cache.settledAstBlocks.length;
     cache.settledRevision++;
@@ -3895,65 +4549,80 @@ function parseMarkdownIncrementalAstBlocks(
       projectBlockNode(block, cache.projectionCache, legacyRanges),
     );
     cache.projectedRevision = cache.settledRevision;
+    cache.chain = settledChain(cache.settledAstBlocks, cache.frames);
   } else if (settledDelta !== '') {
-    const deltaBlocks = parseMarkdownImpl(
-      settledDelta,
-      atOffset(parseOpts, oldSettledEnd),
-    );
-    const mergeIndex = cache.settledAstBlocks.length - 1;
-    const mergedList = appendSettledBlocks(cache.settledAstBlocks, deltaBlocks);
+    const deltaBlocks = parseMarkdownImpl(settledDelta, {
+      ...atOffset(parseOpts, oldSettledEnd),
+      resume: cache.chain,
+      settlement: {frames: cache.frames, invalidated: false},
+    });
     parsedSettledBlocks = deltaBlocks.length;
+    const first = deltaBlocks[0];
+    const lastIndex = cache.settledAstBlocks.length - 1;
+    const target = cache.settledAstBlocks[lastIndex];
+    const joins =
+      first?.type === 'list' &&
+      continuationLists.has(first) &&
+      target?.type === 'list';
+    if (joins) {
+      cache.settledAstBlocks[lastIndex] = joinContinuationList(
+        target,
+        first,
+        cache.frames,
+        cacheWork,
+      );
+    }
+    const added = joins ? deltaBlocks.slice(1) : deltaBlocks;
+    cache.settledAstBlocks.push(...added);
     cache.settledRevision++;
-    const projectedDelta = deltaBlocks.map(block =>
-      projectBlockNode(block, cache.projectionCache, legacyRanges),
-    );
-    if (mergedList) {
-      const canonicalMerged = cache.settledAstBlocks[mergeIndex];
-      const projectedMerged = projectBlockNode(
-        canonicalMerged,
+    if (joins) {
+      const joined = cache.settledAstBlocks[lastIndex];
+      cacheWork.copied += projectedListEntries(joined, cache.projectionCache);
+      cache.projectedSettledBlocks[lastIndex] = projectBlockNode(
+        joined,
         cache.projectionCache,
         legacyRanges,
       );
-      cache.projectedSettledBlocks[mergeIndex] = projectedMerged;
-      cache.projectedSettledBlocks.push(...projectedDelta.slice(1));
-    } else {
-      cache.projectedSettledBlocks.push(...projectedDelta);
     }
+    cache.projectedSettledBlocks.push(
+      ...added.map(block =>
+        projectBlockNode(block, cache.projectionCache, legacyRanges),
+      ),
+    );
     cache.projectedRevision = cache.settledRevision;
+    cache.chain = settledChain(cache.settledAstBlocks, cache.frames);
   }
 
-  // The unsettled tail is trimmed before parsing, so its offset in the
-  // document is where that trimmed text actually starts — not the boundary,
-  // which is a line index. If it somehow cannot be located, parse it without
-  // positions rather than report wrong ones. The search starts at the
-  // settled end, so it scans the tail and never the prefix.
-  const unsettledStart =
-    unsettledText && opts.astPositions === true
-      ? input.indexOf(unsettledText, cache.settledEnd)
-      : -1;
+  // The unsettled slice starts exactly where the settled prefix ends, so its
+  // blocks report ranges from that offset.
   const unsettledBlocks = unsettledText
-    ? parseMarkdownImpl(
-        unsettledText,
-        unsettledStart >= 0
-          ? atOffset(parseOpts, unsettledStart)
-          : nested(parseOpts),
-      )
+    ? parseMarkdownImpl(unsettledText, {
+        ...atOffset(parseOpts, nextSettledEnd),
+        resume: cache.chain,
+      })
     : [];
 
   state.prevInput = input;
 
   // Snapshot semantics: hand back a fresh array so later calls never mutate
-  // an earlier return. The settled block objects inside it are reused by
-  // reference — they are immutable, so sharing them is what keeps this cheap:
-  // assembling the result copies one pointer per settled block and never
-  // re-visits the settled characters.
+  // an earlier return. Settled block objects are reused by reference; only a
+  // list path that the unsettled slice continues is copied.
+  const outputWork: ListCopyWork = {copied: 0, added: 0};
+  const blocks = joinBlocks(
+    cache.settledAstBlocks,
+    unsettledBlocks,
+    cache.frames,
+    outputWork,
+  );
   cache.work = {
-    splitCharacters: tailRaw.length,
-    boundaryLines: tailLines.length,
+    splitCharacters: discardedSplit + tailRaw.length,
+    boundaryLines: discardedLines + scan.lines,
     definitionCharacters: settledDelta.length + unsettledInput.length,
     renderedBlocks: parsedSettledBlocks + unsettledBlocks.length,
+    copiedListEntries: cacheWork.copied + outputWork.copied,
+    cachedListEntries: cacheWork.added,
   };
-  return mergeSettledBlocks(cache.settledAstBlocks, unsettledBlocks);
+  return blocks;
 }
 
 // ---------------------------------------------------------------------------

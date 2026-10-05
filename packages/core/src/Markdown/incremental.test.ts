@@ -14,6 +14,8 @@ import type {
   InlineNode,
   InlineNodeWithMath,
 } from './parser';
+import {createMarkdownPlugin} from './plugins/protocol';
+import type {MarkdownExtensionNode} from './plugins/protocol';
 
 function simulateStreaming(fullText: string, chunkSize = 10) {
   const state = createIncrementalState();
@@ -69,6 +71,37 @@ describe('parseMarkdownIncremental', () => {
     }
   });
 
+  it.each([false, true])(
+    'keeps a loose nested fence attached at every stream split (sourceRanges=%s)',
+    sourceRanges => {
+      const text =
+        '- item\n\n  ```ts\n  const first = 1;\n\n  const second = 2;\n  ```\n- next';
+      const options = {sourceRanges};
+      const full = parseMarkdown(text, options);
+      const state = createIncrementalState();
+      let streamed = parseMarkdownIncremental('', state, options);
+
+      for (let end = 1; end <= text.length; end++) {
+        streamed = parseMarkdownIncremental(text.slice(0, end), state, options);
+      }
+
+      expect(streamed).toEqual(full);
+    },
+  );
+
+  it('settles before a list-owned open fence, never inside it', () => {
+    const state = createIncrementalState();
+    const text =
+      'Intro\n\n- item\n\n  ```ts\n  const first = 1;\n\n  const second = 2;';
+    const blocks = parseMarkdownIncremental(text, state);
+
+    // The open item continues after its blank line; the fence's own blank
+    // line stays mutable until the fence closes.
+    expect(state.settledText).toBe('Intro\n\n- item');
+    expect(state.settledBlocks).toEqual(parseMarkdown(state.settledText));
+    expect(blocks).toEqual(parseMarkdown(text));
+  });
+
   it('does not merge ordered lists with different delimiters across chunks', () => {
     // A change of delimiter (. -> )) starts a new list (CommonMark 5.2), so
     // the streamed result must match the full parse and stay two lists.
@@ -76,6 +109,436 @@ describe('parseMarkdownIncremental', () => {
     const {final} = simulateStreaming(text, 4);
     expect(final).toEqual(parseMarkdown(text));
     expect(final.filter(b => b.type === 'list')).toHaveLength(2);
+  });
+
+  it.each([
+    ['ordered markers inside prose', 'lazy\n2. b\n2. b\n2. b'],
+    ['ordered marker after a lazy blockquote', '- a\n> q\n2. b\nTail'],
+    ['thematic-looking peer item', '- a\n* * *\n- b'],
+  ] as const)(
+    'preserves full-parse boundaries for %s while streaming',
+    (_label, text) => {
+      const full = parseMarkdown(text);
+      const wholeState = createIncrementalState();
+      expect(parseMarkdownIncremental(text, wholeState)).toEqual(full);
+
+      const characterState = createIncrementalState();
+      let streamed: BlockNode[] = [];
+      for (let end = 1; end <= text.length; end++) {
+        streamed = parseMarkdownIncremental(text.slice(0, end), characterState);
+      }
+      expect(streamed).toEqual(full);
+    },
+  );
+
+  describe.each([false, true])(
+    'parser-authored list/fence settlement (sourceRanges=%s)',
+    sourceRanges => {
+      it.each([
+        [
+          'keeps a non-interrupting ordered marker in prose after a fenced item',
+          [
+            '1. Install',
+            '   ```sh',
+            '   echo install',
+            '   ```',
+            'Then restart.',
+            '2. Configure',
+            'more',
+          ],
+        ],
+        [
+          'keeps table-like code in a nested-list-owned open fence',
+          [
+            '- outer',
+            '  - inner',
+            '',
+            '    ```ts',
+            '    type Value =',
+            '      | string',
+          ],
+        ],
+        [
+          'keeps table-like code in a blockquote-owned open fence',
+          ['> ```ts', '> type Value =', '> | string'],
+        ],
+        [
+          'keeps a blank inside an open list fence tight',
+          [
+            '- item',
+            '  ```ts',
+            '  const first = 1;',
+            '',
+            '  const second = 2;',
+            '  ```',
+          ],
+        ],
+        [
+          'uses the effective content indent of a spaced bullet marker',
+          ['-   item', '', '    ```ts', '    value', '    ```', '- next'],
+        ],
+        [
+          'uses the effective content indent of a spaced ordered marker',
+          ['1.  item', '', '    ```ts', '    value', '    ```', '2. next'],
+        ],
+        [
+          'preserves fenced blank lines when an open list fence ends',
+          ['- five', '  ```ts', '  a', '', 'outside'],
+        ],
+        [
+          'keeps a blank-separated thematic marker in its parser list',
+          ['- a', '', '- - -', '- c'],
+        ],
+        [
+          'does not merge adjacent lists with different marker indents',
+          ['-   wide', '  - nested', 'lazy'],
+        ],
+        [
+          'keeps a context-dependent link definition with its blockquote',
+          ['>', '[ref]: https://example.com', '', '[value][ref]'],
+        ],
+      ] as const)('%s with LF and CRLF', (_label, lines) => {
+        for (const eol of ['\n', '\r\n']) {
+          const text = lines.join(eol);
+          const options = {sourceRanges};
+          const full = parseMarkdown(text, options);
+          if (_label.includes('blank inside')) {
+            expect(full[0]).toMatchObject({type: 'list'});
+            if (full[0]?.type === 'list') {
+              expect(full[0].loose).toBeUndefined();
+            }
+          }
+          const wholeState = createIncrementalState();
+          expect(parseMarkdownIncremental(text, wholeState, options)).toEqual(
+            full,
+          );
+
+          const characterState = createIncrementalState();
+          let streamed: BlockNode[] = [];
+          for (let end = 1; end <= text.length; end++) {
+            streamed = parseMarkdownIncremental(
+              text.slice(0, end),
+              characterState,
+              options,
+            );
+          }
+          expect(streamed).toEqual(full);
+        }
+      });
+
+      it('preserves CR bytes on blank lines inside a list-owned fence', () => {
+        const text = [
+          '- item',
+          '  ```txt',
+          '  first',
+          '',
+          '  second',
+          '  ```',
+        ].join('\r\n');
+        const options = {sourceRanges};
+        const full = parseMarkdown(text, options);
+        const state = createIncrementalState();
+        let streamed: BlockNode[] = [];
+        for (let end = 1; end <= text.length; end++) {
+          streamed = parseMarkdownIncremental(
+            text.slice(0, end),
+            state,
+            options,
+          );
+        }
+
+        expect(streamed).toEqual(full);
+        expect(JSON.stringify(streamed)).toContain(
+          JSON.stringify('first\r\n\r\nsecond\r'),
+        );
+      });
+
+      it('keeps an open display-math container mutable across blank lines', () => {
+        for (const eol of ['\n', '\r\n']) {
+          const text = ['$$', 'a', '', 'b', '$$'].join(eol);
+          const options = {math: true as const, sourceRanges};
+          const full = parseMarkdown(text, options);
+          const state = createIncrementalState<true>();
+          let streamed: BlockNodeWithMath[] = [];
+          for (let end = 1; end <= text.length; end++) {
+            streamed = parseMarkdownIncremental(
+              text.slice(0, end),
+              state,
+              options,
+            );
+          }
+          expect(streamed).toEqual(full);
+        }
+      });
+    },
+  );
+
+  describe('list continuation across blank lines', () => {
+    type Options = {math?: true; sourceRanges: boolean};
+    // Every character boundary, and every two-chunk split, converges on the
+    // full parse of the complete text.
+    const expectStreamParity = (text: string, options: Options) => {
+      const full = parseMarkdown(text, options as never);
+      const characterState = createIncrementalState<boolean>();
+      let streamed: unknown = [];
+      for (let end = 1; end <= text.length; end++) {
+        streamed = parseMarkdownIncremental(
+          text.slice(0, end),
+          characterState as never,
+          options as never,
+        );
+      }
+      expect(streamed).toEqual(full);
+      for (let split = 0; split <= text.length; split++) {
+        const state = createIncrementalState<boolean>();
+        parseMarkdownIncremental(
+          text.slice(0, split),
+          state as never,
+          options as never,
+        );
+        expect(
+          parseMarkdownIncremental(text, state as never, options as never),
+        ).toEqual(full);
+      }
+    };
+
+    describe.each([false, true])('sourceRanges=%s', sourceRanges => {
+      it.each([
+        [
+          'multi-paragraph item',
+          ['- item', '', '  one', '', '  two', '- next'],
+        ],
+        [
+          'continued nested list',
+          ['- topic', '  - a', '', '  - b', '', '    detail', '', '  after'],
+        ],
+        [
+          'deep nested continuation',
+          ['- a', '  - b', '    - c', '', '      more', '', '  back', 'Tail'],
+        ],
+        [
+          'later line lowers settled item indent',
+          [
+            '- a',
+            '',
+            '    deep',
+            '',
+            '    ```',
+            '    code',
+            '    ```',
+            '  low',
+          ],
+        ],
+        [
+          'item-local definition after settled content',
+          ['1. [x][r]', '', '    [r]: https://example.com', '', 'Tail'],
+        ],
+        [
+          'open item fence with trailing blank',
+          ['- a', '  ```', '  x', '', ''],
+        ],
+        ['open loose item fence', ['- a', '', '  ```', '  x', '']],
+        [
+          'blank inside fence before next item',
+          ['- a', '  ```', '  x', '', '- b'],
+        ],
+        ['top-level open fence newline', ['```', 'code', '']],
+        [
+          'NBSP blank list merge',
+          ['x', '', '- a', '\u00a0', '\u00a0', '- b', '', 'Tail'],
+        ],
+        ['NBSP blank continuation', ['- a', '\u00a0', '  b']],
+        ['NBSP blank before fence', ['- a', '\u00a0', '  ```', '  x', '  ```']],
+        ['blank-separated quote in item', ['- > a', '', '  > b', 'lazy']],
+        [
+          'deeper continuation before a shallower one',
+          ['- a', '', '    ```', '    b', '    ```', '', '    c', '', '  d'],
+        ],
+        ['shallower definition between blanks', ['- a', '', '[r]: /u', '  b']],
+        ['blank-start item', ['- ', '', '  foo']],
+        ['definition-only first line', ['- [r]: /u', '', '  b']],
+        ['definition between blank lines', ['- a', '', '[r]: /u', '', '  b']],
+        [
+          'continuation under a tight nested item',
+          ['- a', '  - x', '', '    b'],
+        ],
+        [
+          'fence under a tight nested ordered item',
+          [
+            '1. Step',
+            '   - sub',
+            '',
+            '     ```',
+            '     code',
+            '     ```',
+            'Tail',
+          ],
+        ],
+        [
+          'lazy paragraphs after blanks',
+          ['- a', '', '  p1', 'lazy', '', '  p2', 'lazy'],
+        ],
+      ] as const)('%s with LF and CRLF', (_label, lines) => {
+        for (const eol of ['\n', '\r\n']) {
+          expectStreamParity(lines.join(eol), {sourceRanges});
+        }
+      });
+
+      it.each([
+        ['after a paragraph', ['para', '$$', 'x', '', 'y', '$$']],
+        ['in a list item', ['- para', '  $$', '  x', '', '  y', '  $$']],
+        ['after a lazy item line', ['- $$', 'lazy', '', '  x', '', '  $$']],
+        ['after an empty pair', ['$$', '', '$$', '', 'x', '', '$$']],
+      ] as const)(
+        'keeps display math %s mutable across blank lines',
+        (_label, lines) => {
+          for (const eol of ['\n', '\r\n']) {
+            expectStreamParity(lines.join(eol), {math: true, sourceRanges});
+          }
+        },
+      );
+    });
+
+    it('never retracts settlement when a shallower continuation arrives', () => {
+      const text = '- a\n\n    b\n\n    c\n\n  d\n\nTail';
+      const state = createIncrementalState();
+      let settled = 0;
+      for (let end = 1; end <= text.length; end++) {
+        parseMarkdownIncremental(text.slice(0, end), state);
+        expect(state.settledText.length).toBeGreaterThanOrEqual(settled);
+        settled = state.settledText.length;
+      }
+      expect(parseMarkdownIncremental(text, state)).toEqual(
+        parseMarkdown(text),
+      );
+    });
+
+    it('withholds an open display-math line without trimming the paragraph', () => {
+      const state = createIncrementalState<true>();
+      expect(
+        parseMarkdownIncremental('Intro\n\npara\n$$\nx', state, {math: true}),
+      ).toEqual(parseMarkdown('Intro\n\npara', {math: true}));
+    });
+
+    it('keeps a blank line inside an item fence from loosening the list', () => {
+      const text = '- a\n  ```\n  x\n\n  y\n  ```\n- b';
+      const [list] = parseMarkdown(text);
+      expect(list).toMatchObject({type: 'list', loose: undefined});
+      expectStreamParity(text, {sourceRanges: false});
+    });
+
+    it('runs each syntax tokenizer once per parsed region', () => {
+      type Mention = MarkdownExtensionNode<
+        'count-mentions',
+        'mention',
+        {readonly label: string},
+        'inline'
+      >;
+      type Note = MarkdownExtensionNode<
+        'count-notes',
+        'note',
+        {readonly body: string},
+        'block'
+      >;
+      const calls = {inline: 0, block: 0};
+      const mentions = createMarkdownPlugin<'count-mentions', Mention>({
+        name: 'count-mentions',
+        apiVersion: 1,
+        parseKey: 'v1',
+        syntax: {
+          inline: [
+            {
+              startsWith: ['@{'],
+              maxSpan: 40,
+              tokenize({source, offset, end, isFinal}) {
+                calls.inline++;
+                const close = source.indexOf('}', offset + 2);
+                if (close < 0 || close >= end) {
+                  return isFinal ? {status: 'no-match'} : {status: 'defer'};
+                }
+                return {
+                  status: 'match',
+                  end: close + 1,
+                  node: {
+                    type: 'extension',
+                    plugin: 'count-mentions',
+                    name: 'mention',
+                    display: 'inline',
+                    data: {label: source.slice(offset + 2, close)},
+                  },
+                };
+              },
+            },
+          ],
+        },
+        renderers: {
+          mention: {render: () => null, toText: node => node.data.label},
+        },
+      });
+      const notes = createMarkdownPlugin<'count-notes', Note>({
+        name: 'count-notes',
+        apiVersion: 1,
+        parseKey: 'v1',
+        syntax: {
+          block: [
+            {
+              startsWith: [':::note'],
+              maxSpan: 200,
+              tokenize({source, offset, end, isFinal}) {
+                calls.block++;
+                const close = source.indexOf('\n:::', offset + 7);
+                const lineEnd =
+                  close + 4 + (source[close + 4] === '\r' ? 1 : 0);
+                if (close < 0 || lineEnd > end) {
+                  return isFinal ? {status: 'no-match'} : {status: 'defer'};
+                }
+                return {
+                  status: 'match',
+                  end: lineEnd,
+                  node: {
+                    type: 'extension',
+                    plugin: 'count-notes',
+                    name: 'note',
+                    display: 'block',
+                    data: {body: source.slice(offset + 7, close).trim()},
+                  },
+                };
+              },
+            },
+          ],
+        },
+        renderers: {note: {render: () => null, toText: node => node.data.body}},
+      });
+      const plugins = [mentions, notes] as const;
+      for (const eol of ['\n', '\r\n']) {
+        const text = [
+          '@{Ada} intro',
+          '',
+          '- item @{Bob}',
+          '',
+          '  continued @{Cy}',
+          '',
+          ':::note',
+          'body',
+          ':::',
+          '',
+          '- tail @{Dee}',
+          'lazy @{Eve}',
+        ].join(eol);
+        calls.inline = 0;
+        calls.block = 0;
+        const full = parseMarkdown(text, {plugins});
+        const fullCalls = {...calls};
+        calls.inline = 0;
+        calls.block = 0;
+        const state = createIncrementalState();
+        expect(parseMarkdownIncremental(text, state, {plugins})).toEqual(full);
+        // The settlement scan never calls tokenizers, and the settled and
+        // unsettled slices are parsed once each.
+        expect(calls).toEqual(fullCalls);
+        expect(fullCalls).toEqual({inline: 5, block: 1});
+      }
+    });
   });
 
   it('handles empty input', () => {

@@ -713,6 +713,233 @@ describe('parseMarkdown', () => {
     }
   });
 
+  it('keeps a blank-separated fenced block inside its unordered list item', () => {
+    const result = parseMarkdown(
+      '- item\n\n  ```ts\n  const first = 1;\n\n  const second = 2;\n  ```\n- next',
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe('list');
+    if (result[0].type === 'list') {
+      expect(result[0].loose).toBe(true);
+      expect(result[0].items).toHaveLength(2);
+      expect(result[0].items[0].children.map(block => block.type)).toEqual([
+        'paragraph',
+        'codeblock',
+      ]);
+      expect(result[0].items[0].children[1]).toMatchObject({
+        type: 'codeblock',
+        language: 'ts',
+        content: 'const first = 1;\n\nconst second = 2;',
+      });
+    }
+  });
+
+  it('uses the ordered marker width when owning a loose fenced block', () => {
+    const result = parseMarkdown(
+      '10. item\n\n    ~~~sql\n    select 1;\n    ~~~\n11. next',
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({type: 'list', ordered: true, start: 10});
+    if (result[0].type === 'list') {
+      expect(result[0].items).toHaveLength(2);
+      expect(result[0].items[0].children[1]).toMatchObject({
+        type: 'codeblock',
+        language: 'sql',
+        content: 'select 1;',
+      });
+    }
+  });
+
+  it.each([
+    ['spaced bullet', '-   item', '- next', false],
+    ['spaced ordered marker', '1.  item', '2. next', true],
+  ] as const)(
+    'uses every marker space in the effective content indent for a %s',
+    (_label, marker, next, ordered) => {
+      const result = parseMarkdown(
+        `${marker}\n\n    \`\`\`ts\n    value\n    \`\`\`\n${next}`,
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({type: 'list', ordered});
+      if (result[0].type === 'list') {
+        expect(result[0].items).toHaveLength(2);
+        expect(result[0].items[0].children[1]).toMatchObject({
+          type: 'codeblock',
+          language: 'ts',
+          content: 'value',
+        });
+      }
+    },
+  );
+
+  it('keeps a CRLF fenced block inside its loose list item', () => {
+    const result = parseMarkdown(
+      '- item\r\n\r\n  ```ts\r\n  const value = 1;\r\n  ```\r\n- next',
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe('list');
+    if (result[0].type === 'list') {
+      expect(result[0].items).toHaveLength(2);
+      expect(
+        result[0].items[0].children.some(block => block.type === 'codeblock'),
+      ).toBe(true);
+    }
+  });
+
+  it('does not capture a loose block below the ordered marker content indent', () => {
+    const result = parseMarkdown(
+      '10. item\n\n   ```ts\n   const value = 1;\n   ```',
+    );
+
+    expect(result[0].type).toBe('list');
+    if (result[0].type === 'list') {
+      expect(
+        result[0].items[0].children.some(block => block.type === 'codeblock'),
+      ).toBe(false);
+    }
+  });
+
+  it.each([
+    ['ordered item with a two-space bullet', '1. a\n  - b'],
+    ['one-space nested bullet', '- a\n - b'],
+    ['wide marker with a shallower bullet', '-   wide\n  - nested'],
+  ] as const)('keeps the released tight nesting for a %s', (_label, text) => {
+    const [list] = parseMarkdown(text);
+    expect(parseMarkdown(text)).toHaveLength(1);
+    expect(list).toMatchObject({type: 'list'});
+    if (list.type === 'list') {
+      expect(list.items).toHaveLength(1);
+      expect(list.items[0].children.map(block => block.type)).toEqual([
+        'paragraph',
+        'list',
+      ]);
+    }
+  });
+
+  it('keeps blank-separated paragraphs and nested lists in their item', () => {
+    const result = parseMarkdown(
+      '- topic\n\n  more\n  - a\n\n  - b\n\n    detail\n- next',
+    );
+
+    expect(result).toHaveLength(1);
+    const [list] = result;
+    expect(list).toMatchObject({type: 'list', loose: true});
+    if (list.type === 'list') {
+      expect(list.items).toHaveLength(2);
+      const [topic] = list.items;
+      expect(topic.children.map(block => block.type)).toEqual([
+        'paragraph',
+        'paragraph',
+        'list',
+      ]);
+      expect(topic.children[2]).toMatchObject({type: 'list', loose: true});
+    }
+    const nested = parseMarkdown('- a\n  - b\n\n  - c\n\n    detail')[0];
+    expect(nested).toMatchObject({type: 'list', loose: undefined});
+    if (nested.type === 'list') {
+      const inner = nested.items[0].children[1];
+      expect(inner).toMatchObject({type: 'list', loose: true});
+      if (inner.type === 'list') {
+        expect(inner.items.map(item => item.children.length)).toEqual([1, 2]);
+      }
+    }
+  });
+
+  it('keeps a list tight when its only blank line is fenced code', () => {
+    const [list] = parseMarkdown('- a\n  ```\n  x\n\n  y\n  ```\n- b');
+
+    expect(list).toMatchObject({type: 'list', loose: undefined});
+    if (list.type === 'list') {
+      expect(list.items[0].children[1]).toMatchObject({
+        type: 'codeblock',
+        content: 'x\n\ny',
+      });
+    }
+  });
+
+  it.each([
+    ['LF', '\n'],
+    ['CRLF', '\r\n'],
+  ] as const)(
+    'ends an unclosed item fence before trailing blank lines (%s)',
+    (_label, eol) => {
+      for (const text of [
+        ['- a', '  ```', '  x', '', ''].join(eol),
+        ['- a', '  ```', '  x', '', 'outside'].join(eol),
+      ]) {
+        const [list] = parseMarkdown(text);
+        expect(list).toMatchObject({type: 'list', loose: undefined});
+        if (list.type === 'list') {
+          expect(list.items[0].children[1]).toMatchObject({
+            type: 'codeblock',
+            content: eol === '\r\n' ? 'x\r' : 'x',
+          });
+        }
+      }
+    },
+  );
+
+  it('ends an item at a shallower definition line between blank lines', () => {
+    const exited = parseMarkdown('- a\n\n[r]: /u\n  b');
+    expect(exited.map(block => block.type)).toEqual(['list', 'paragraph']);
+    expect(exited[0]).toEqual(parseMarkdown('- a')[0]);
+    const [list] = parseMarkdown('- a\n\n  [r]: /u\n\n  [b][r]');
+    expect(list).toMatchObject({type: 'list'});
+    if (list.type === 'list') {
+      expect(list.items[0].children[1]).toMatchObject({type: 'paragraph'});
+    }
+  });
+
+  it('ends an item that starts with a blank line at the next blank line', () => {
+    const result = parseMarkdown('- \n\n  foo');
+
+    expect(result.map(block => block.type)).toEqual(['list', 'paragraph']);
+  });
+
+  it('removes the first continuation indent, independent of later lines', () => {
+    const deep = parseMarkdown('- a\n\n    ```\n    b\n    ```\n\n  c');
+
+    expect(deep[0]).toMatchObject({type: 'list'});
+    if (deep[0].type === 'list') {
+      expect(deep[0].items[0].children.map(block => block.type)).toEqual([
+        'paragraph',
+        'codeblock',
+        'paragraph',
+      ]);
+    }
+    expect(parseMarkdown('- a\n\n    b\n\n  c')).toEqual(
+      parseMarkdown('- a\n\n    b\n\n    c'),
+    );
+  });
+
+  it('continues a tight nested item after a blank line', () => {
+    for (const text of ['- a\n  - x\n\n    b', '1. Step\n   - sub\n\n     b']) {
+      const [list] = parseMarkdown(text);
+      expect(list).toMatchObject({type: 'list', loose: undefined});
+      if (list.type === 'list') {
+        const nested = list.items[0].children[1];
+        expect(nested).toMatchObject({type: 'list', loose: true});
+        if (nested.type === 'list') {
+          expect(nested.items[0].children.map(block => block.type)).toEqual([
+            'paragraph',
+            'paragraph',
+          ]);
+        }
+      }
+    }
+  });
+
+  it('treats a whitespace-only NBSP line as the blank before continuation', () => {
+    const [list] = parseMarkdown('- a\n\u00a0\n  b');
+
+    expect(parseMarkdown('- a\n\u00a0\n  b')).toHaveLength(1);
+    expect(list).toMatchObject({type: 'list', loose: true});
+  });
+
   it('does not join lists of different styles across a blank line', () => {
     // Bulleted then numbered — these are two distinct lists.
     const result = parseMarkdown('- a\n\n1. b');

@@ -206,6 +206,20 @@ item indentation does not close the deepest open paragraph; a blank line or an
 interrupting block start does. The owning top-level block's source range includes
 the lazy lines.
 
+FR23 also includes blank-separated blocks in their owning list item. After one
+or more blank lines, an item continues when the next nonblank line reaches the
+marker's effective content indent: the marker indent and width plus one to four
+following spaces, or one space when five or more follow or the first line is
+blank. Fenced code, paragraphs, and nested lists all continue this way. After
+blank lines, a shallower line ends the item, and so does a shallower
+link-definition line; an item with a blank first line and no content yet ends
+at its first blank line; and blank lines at the end of the input never join an
+item. Continuation lines keep their indentation relative to the item's tight
+content lines, or to its first blank-separated continuation line when it has
+none, so later lines never change earlier item content. A blank line separating two of an item's own
+blocks makes its list loose; one inside fenced code or a nested list does not.
+Without a blank line, any line indented past the marker is item content.
+
 FR23 also includes table-level escaping inside inline-code spans: `\|` keeps the pipe
 inside its authored cell, contributes only `|` to the code value and rendered
 text, and produces the same result in full and incremental parsing. A completed
@@ -399,6 +413,13 @@ and this change preserves the existing spelling exactly.
 | Public syntax/types    | `Markdown.public.test.ts`, core typecheck, and `Markdown.doc.mjs`                 | Legacy exhaustive switches, math opt-ins, inferred extension-node unions                                                                             | A released union widens, an enabled union loses nodes, or docs drift from declarations.                                                                                                                    |
 | Navigation contract    | `parser.test.ts`, `Markdown.test.tsx`, and `Markdown.renderBoundary.test.tsx`     | Parsed and rendered links, including transformed built-in links; accepted ordinary schemes; rejected destinations; links versus images               | A blocked destination reaches navigation or a custom link renderer, or resource policy narrows accepted navigation.                                                                                        |
 | Security/accessibility | `parser.test.ts`, `Markdown.test.tsx`, and renderer guidance                      | Inert expression strings and renderer-owned semantics                                                                                                | Astryx executes math as HTML or silently claims renderer-owned accessibility.                                                                                                                              |
+
+FR11 and FR23 verification streams blank-separated list continuation at every
+character and two-chunk split with LF and CRLF and both source-range settings:
+paragraphs, nested lists, open and closed item fences, display math across
+blank lines, whitespace-only blank lines, and syntax plugins. Work-count tests
+keep parser work linear for one large item and its nested list, and count list
+snapshot copies separately.
 
 Focused tests continue to pin all nine current target names and default block
 placement. Math intentionally adds no target and no default anatomy.
