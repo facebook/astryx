@@ -354,8 +354,9 @@ export function detectStylingSystem(targetDir) {
  * Generate the agent cheat sheet from live CLI metadata.
  *
  * Structured as: workflow (behavioral) → rules (error prevention) → CLI reference.
- * Templates are positioned first in the workflow to teach agents the
- * "look at reference code" reflex before writing any UI.
+ * Templates lead the workflow: every page starts from a scaffolded template,
+ * because the template already carries the frame and spacing that an agent
+ * composing from components would have to re-derive, and usually gets wrong.
  *
  * `stylingSystem` tailors the custom-styling guidance to what the project has
  * configured (see {@link detectStylingSystem}) so the agent never reaches for a
@@ -428,17 +429,19 @@ export function generateCompressedIndex(
   lines.push('  import "@astryxdesign/core/astryx.css";');
   lines.push('');
 
-  // Workflow — `build` is the front door; discover before writing UI.
-  lines.push("WORKFLOW — discover, don't guess. Before writing UI:");
-  lines.push('1. `astryx build "<idea>"` — START HERE: returns a kit (closest [page] + [block]s + [component]s). No args = full playbook.');
-  lines.push('2. `astryx template <name> [--skeleton]` — scaffold the [page]/[block]s it named, or study their layout. Templates are reference code.');
-  lines.push('3. `astryx component <Name>` — props + examples for every component you use.');
+  // Workflow — `build` is the front door, and every page starts from the
+  // template it names.
+  lines.push('WORKFLOW — start every page from a template. Never lay out a page from scratch:');
+  lines.push('1. `astryx build "<idea>"` — START HERE: names the [page] template to start from (always one: the closest match, or the app shell), two other templates, and the [block]s + [component]s for parts it lacks. No args = full playbook.');
+  lines.push('2. `astryx template <name> <path>` — scaffold that template into your project. Keep its frame, gap and padding; replace its data, copy and sections; delete sections you do not need.');
+  lines.push('3. `astryx template <Block>` for a part the template lacks; `astryx component <Name>` for props + examples before you use or change a component.');
+  lines.push('Changing a page you already have? Keep it: skip step 2 and add blocks and components inside its sections.');
   lines.push('');
 
   // Rules — the top error-preventers.
   lines.push('RULES:');
   lines.push('- No <div> — components do all layout/spacing, page frame included.');
-  lines.push('- Frame first: read `astryx docs layout` before writing any page or screen — page frame, region widths, breakpoint behavior.');
+  lines.push('- Frame first: the template you scaffold sets the page frame. Read `astryx docs layout` before you change it — region widths, breakpoint behavior.');
   lines.push('- Dense data = rows (Table, List/Item), never Card-wrapped list items; Card is for standalone widgets. Status = StatusDot/Token; Badge = counts only.');
   // Styling guidance tailored to the project's configured system — never
   // recommend a path that isn't compiled here (xstyle needs the StyleX compiler;
@@ -463,7 +466,7 @@ export function generateCompressedIndex(
     css: 'replace any raw <div>/<span> layout, imported .css/@apply, or hardcoded value (#hex, 16px) with the component or a token (var(--color-*|--spacing-*|…))',
   };
   lines.push(
-    `- SELF-CHECK before you finish: re-read the file and ${selfCheckFix[stylingSystem] ?? selfCheckFix.css}. If unsure a component/prop exists, run \`astryx component <Name>\` / \`astryx search "<thing>"\`; don't hand-roll CSS.`,
+    `- SELF-CHECK before you finish: re-read the file and ${selfCheckFix[stylingSystem] ?? selfCheckFix.css}. Confirm the page kept its template's frame, gap and padding. If unsure a component/prop exists, run \`astryx component <Name>\` / \`astryx search "<thing>"\`; don't hand-roll CSS.`,
   );
   lines.push('');
 
@@ -488,7 +491,7 @@ export function generateCompressedIndex(
   }
   lines.push('  docs cli           commands, API reference, integration authoring (one level at a time)');
   lines.push('  swizzle <Name>     eject component source for deep customization');
-  lines.push('  upgrade --apply    run after any Astryx or integration dependency bump');
+  lines.push('  upgrade --from <old version> --apply   run after any Astryx or integration dependency bump');
   const appendCount = agentDocs.reduce(
     (count, contribution) => count + contribution.append.length,
     0,

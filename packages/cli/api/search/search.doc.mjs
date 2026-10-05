@@ -48,7 +48,7 @@ export const doc = {
       name: 'options.cwd',
       type: 'string',
       description:
-        "Directory to resolve @astryxdesign/core from. A docs-only search (`type: 'doc'`) does not need it.",
+        "Directory to resolve @astryxdesign/core from. A docs-only search (`type: 'doc'`) does not need it, and a search with no `type` covers the docs alone when core is missing.",
     },
   ],
   returns: [
@@ -65,7 +65,7 @@ export const doc = {
     },
     {
       code: 'ERR_CORE_NOT_FOUND',
-      when: '@astryxdesign/core cannot be found from the cwd, and the search reads it: every `type` but `doc`',
+      when: '@astryxdesign/core cannot be found from the cwd, and `type` names a domain that reads it: `component`, `hook`, or `template`',
     },
   ],
   examples: [

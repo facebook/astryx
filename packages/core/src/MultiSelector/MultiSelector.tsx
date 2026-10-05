@@ -72,6 +72,7 @@ import {
 import {useMultiCombobox} from './hooks';
 import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
@@ -318,7 +319,8 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     outline: 'none',
   },
   itemHighlighted: {
@@ -639,9 +641,10 @@ export interface MultiSelectorProps<
    * Content shown in the panel when a search query matches no options, and
    * announced in a polite live region at the same time.
    *
-   * The panel message is `role="presentation"`, so the live region is the only
-   * route to assistive tech: a string is announced verbatim, a richer node
-   * falls back to the default text since it cannot be spoken.
+   * The panel message is `role="presentation"`, so the live region is the
+   * only route to assistive tech. It announces the text this content renders,
+   * read from the DOM, so an element is announced as written and anything
+   * marked `aria-hidden` is left out of both.
    * @default 'No results found'
    */
   emptySearchText?: ReactNode;
@@ -820,6 +823,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const inputLabelId = useId();
   const readOnlyDescriptionId = useId();
   const searchId = useId();
+  // Read by the live region above so it speaks what this element renders.
+  const emptyStateRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const listboxRef = useRef<HTMLDivElement>(null);
@@ -885,18 +890,6 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   // Toggling options / select-all previously produced no audible feedback.
   const announce = useAnnounce();
 
-  // The panel's empty message is role="presentation" and reaches assistive tech
-  // only through this live region, so the region has to speak whatever the
-  // panel shows. A ReactNode override cannot be spoken; fall back to the
-  // catalog copy for that case rather than announcing nothing.
-  const emptyAnnouncement =
-    typeof emptyText === 'string'
-      ? emptyText
-      : t('@astryx.multiSelector.empty');
-  const emptySearchAnnouncement =
-    typeof emptySearchText === 'string'
-      ? emptySearchText
-      : t('@astryx.multiSelector.emptySearchResults');
   const announceSelection = useCallback(
     (nextValue: string[]) => {
       const total = selectableItems.length;
@@ -1052,45 +1045,38 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         return;
       }
       const count = filterOptionsByQuery(selectableItems, nextQuery).length;
-      announce(
-        count === 0
-          ? emptySearchAnnouncement
-          : t('@astryx.multiSelector.resultCount', {count}),
-      );
+      if (count === 0) {
+        // The empty panel is announced from the rendered message below, not
+        // from here. Two speakers for one transition would say it twice, and
+        // this one cannot cover an empty result that arrives after the
+        // keystroke — an async load landing with nothing that matches.
+        return;
+      }
+      announce(t('@astryx.multiSelector.resultCount', {count}));
     },
-    [announce, isLoading, selectableItems, emptySearchAnnouncement, t],
+    [announce, isLoading, selectableItems, t],
   );
 
-  // The panel's empty message is role="presentation", so this region is the
-  // only route to assistive tech. It has to watch the STATE rather than the
-  // open event: the panel can become empty either on open or when a fetch
-  // lands with nothing in it, and an open-only announcement leaves the second
-  // case silent while the message sits on screen. The ref makes it fire once
-  // per arrival at that state rather than on every re-render.
-  const announcedEmptyRef = useRef<string | null>(null);
-  useEffect(() => {
-    const isPanelEmpty =
-      surface.isOpen &&
-      !isLoading &&
-      searchQuery === '' &&
-      selectableItems.length === 0;
-    if (!isPanelEmpty) {
-      announcedEmptyRef.current = null;
-      return;
-    }
-    if (announcedEmptyRef.current === emptyAnnouncement) {
-      return;
-    }
-    announcedEmptyRef.current = emptyAnnouncement;
-    announce(emptyAnnouncement);
-  }, [
-    surface.isOpen,
-    isLoading,
-    searchQuery,
-    selectableItems.length,
-    emptyAnnouncement,
-    announce,
-  ]);
+  // The panel's empty message is role="presentation" — role="listbox" permits
+  // only option and group children — so this region is its only route to
+  // assistive tech, and the region has to say what the panel says. Both
+  // `emptyText` and `emptySearchText` take a ReactNode, so the words are read
+  // off the rendered element rather than guessed from the prop: a caller who
+  // puts a link in the dead end is announced their link, not a default
+  // (`spec:AST-056` AR1).
+  //
+  // Watching the rendered STATE rather than the keystroke also covers the
+  // case the old keystroke-time announcement could not: a fetch that lands
+  // with nothing matching an active query left the message on screen and the
+  // region silent.
+  //
+  // `realItemCount` mirrors renderOptions exactly: the select-all sentinel
+  // rides in `sortedItems` but is not an option anybody can match.
+  const realItemCount = hasSelectAll
+    ? sortedItems.length - 1
+    : sortedItems.length;
+  const isPanelEmpty = surface.isOpen && !isLoading && realItemCount === 0;
+  useAnnounceRenderedText(emptyStateRef, isPanelEmpty, searchQuery);
 
   // Handle toggle
   // Clear all selected values. Shared by the clear button and the keyboard
@@ -1516,11 +1502,6 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     const elements: ReactNode[] = [];
     let cursor = 0;
 
-    // Number of real items (excluding the select-all sentinel)
-    const realItemCount = hasSelectAll
-      ? sortedItems.length - 1
-      : sortedItems.length;
-
     // Show select-all only when there are real items to select. It reads as
     // the first row of the list, not a section of its own — no divider under
     // it (the checkbox column already lines it up with the options below).
@@ -1543,6 +1524,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       elements.push(
         <div
           key="empty"
+          ref={emptyStateRef}
           role="presentation"
           {...mergeProps(
             themeProps('multi-selector-empty-state'),
@@ -1642,6 +1624,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     options,
     renderItem,
     sortedItems,
+    realItemCount,
     searchQuery,
     hasSelectAll,
     isLoading,

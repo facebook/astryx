@@ -1,9 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** Chromium positive and mutation proof for the shared Spinbutton contract. */
+/** Chromium positive, exact-debt, and mutation proof for the shared Spinbutton contract. */
 
 import {expect, test, type Page} from '@playwright/test';
-import {checkAccessibilitySpec, requiredLayers} from '../index';
+import {
+  checkAccessibilitySpec,
+  requiredLayers,
+  unmatchedKnownFailures,
+  type BindingResult,
+} from '../index';
 import {CHROMIUM_OBSERVES, createChromiumHarness} from '../harness/chromium';
 import {SPINBUTTON_PATTERN} from './spinbutton';
 import {
@@ -12,6 +17,7 @@ import {
   SPINBUTTON_SUBJECT_SELECTOR,
   spinbuttonFixture,
 } from './spinbutton.fixtures';
+import {SPINBUTTON_FIXTURE_KNOWN_FAILURES} from './spinbutton.known-failures';
 
 async function run(page: Page, id: string, only?: readonly string[]) {
   const fixture = spinbuttonFixture(id);
@@ -22,6 +28,7 @@ async function run(page: Page, id: string, only?: readonly string[]) {
     state: id,
     facts: fixture.facts,
     only,
+    knownFailures: SPINBUTTON_FIXTURE_KNOWN_FAILURES,
     mount: async () => {
       await page.setContent(fixture.html);
       return createChromiumHarness({
@@ -34,7 +41,7 @@ async function run(page: Page, id: string, only?: readonly string[]) {
 }
 
 for (const expectation of SPINBUTTON_PATTERN.expectations) {
-  test(`${expectation.id} has Chromium coverage`, async ({page}) => {
+  test(`${expectation.id} has Chromium evidence`, async ({page}) => {
     expect(
       requiredLayers(expectation).every(layer =>
         CHROMIUM_OBSERVES.includes(layer),
@@ -48,7 +55,13 @@ for (const expectation of SPINBUTTON_PATTERN.expectations) {
       throw new Error(`no conforming fixture exercises ${expectation.id}`);
     }
     const result = await run(page, conforming, [expectation.id]);
-    expect(result.results[0]?.status).toBe('pass');
+    const recorded = SPINBUTTON_FIXTURE_KNOWN_FAILURES.some(
+      failure =>
+        failure.expectation === expectation.id &&
+        failure.binding === 'fixture' &&
+        failure.state === conforming,
+    );
+    expect(result.results[0]?.status).toBe(recorded ? 'known-failure' : 'pass');
   });
 
   for (const mutation of SPINBUTTON_MUTATIONS[expectation.id] ?? []) {
@@ -59,3 +72,15 @@ for (const expectation of SPINBUTTON_PATTERN.expectations) {
     });
   }
 }
+
+test('every fixture known failure matches exactly one result', async ({
+  page,
+}) => {
+  const results: BindingResult[] = [];
+  for (const failure of SPINBUTTON_FIXTURE_KNOWN_FAILURES) {
+    results.push(await run(page, failure.state, [failure.expectation]));
+  }
+  expect(
+    unmatchedKnownFailures(SPINBUTTON_FIXTURE_KNOWN_FAILURES, results),
+  ).toEqual([]);
+});

@@ -435,6 +435,10 @@
     "defaultMessage": "Back",
     "description": "Button label that returns from a nested action list to its parent inside a DropdownMenu bottom sheet. Imperative navigation action."
   },
+  "@astryx.dropdownMenu.backTo": {
+    "defaultMessage": "Back to {parent}",
+    "description": "Menu row that returns from a drilled-in sub-menu to the menu it came from. {parent} is that menu's name (e.g. \"Back to Actions\"). Imperative navigation action."
+  },
   "@astryx.lightbox.close": {
     "defaultMessage": "Close",
     "description": "\"Close\" = shut/dismiss (not \"nearby\"). Screen-reader-only label on the X button that dismisses a Lightbox."
@@ -523,6 +527,14 @@
     "defaultMessage": "This {itemName} is already {boundary, select, first {first} last {last} other {}}.",
     "description": "Screen-reader-only live announcement when an arrow-key reorder attempt has no effect because the record is already at that end of the list. `{itemName}` is the consumer's singular noun for one record; `{boundary}` is always exactly \"first\" or \"last\"."
   },
+  "@astryx.markdownHeadingLinks.copied": {
+    "defaultMessage": "Link copied",
+    "description": "Accessible name on the Markdown heading copy button and text announced to a polite live region for ~1.5s after a successful copy. Sentence meaning \"Link copied\"; pairs with `markdownHeadingLinks.copy`."
+  },
+  "@astryx.markdownHeadingLinks.copy": {
+    "defaultMessage": "Copy link to {heading}",
+    "description": "Accessible name on the Markdown heading copy button in its default state. `{heading}` is the heading's plain text, or its generated id when the text is empty; pairs with `markdownHeadingLinks.copied`."
+  },
   "@astryx.markdown.taskList": {
     "defaultMessage": "Task list",
     "description": "Screen-reader-only accessible name for a GitHub-flavored Markdown task list (rendered from `- [ ] item` / `- [x] done` syntax)."
@@ -610,6 +622,18 @@
   "@astryx.table.rowStatus.columnHeader": {
     "defaultMessage": "Row status",
     "description": "Screen-reader-only column header for the narrow status-indicator gutter a Table gains from useTableRowStatus. Sighted users see a blank gutter; assistive tech announces this as the column name."
+  },
+  "@astryx.table.selection.bulkActionsLabel": {
+    "defaultMessage": "Bulk actions",
+    "description": "Accessible name for the contextual Toolbar shown while Table rows are selected."
+  },
+  "@astryx.table.selection.clearAll": {
+    "defaultMessage": "Unselect All",
+    "description": "Visible button label that clears the complete controlled Table row selection, including keys outside the current view."
+  },
+  "@astryx.table.selection.selectedCount": {
+    "defaultMessage": "{count, number} selected",
+    "description": "Visible status in TableSelectionToolbar showing the number of selected rows."
   },
   "@astryx.table.selection.selectAllRows": {
     "defaultMessage": "Select all rows",
@@ -1238,6 +1262,10 @@
   "@astryx.step.status.error": {
     "defaultMessage": "error",
     "description": "Screen-reader-only status word rendered next to a Stepper step label when status=error. Lowercase noun; read mid-sentence after the step label."
+  },
+  "@astryx.switch.loading": {
+    "defaultMessage": "Loading",
+    "description": "Screen-reader-only live-region announcement while a Switch is in its busy state (spinner shown, action in flight)."
   },
   "@astryx.tableTree.collapseRow": {
     "defaultMessage": "Collapse row",

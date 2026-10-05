@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Contribution inventory for integration pack-check.
+ * @file Contribution inventory for `astryx integration verify`.
  *
  * Enumerates the files and contribution identities an integration package
  * declares, for cross-referencing against the npm tarball. The file inventory

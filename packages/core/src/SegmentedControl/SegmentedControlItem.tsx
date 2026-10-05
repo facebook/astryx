@@ -88,6 +88,9 @@ const styles = stylex.create({
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     whiteSpace: 'nowrap',
+    // In both layouts a segment may be narrower than its label, so the
+    // label's ellipsis can engage when the control is capped by its container.
+    minWidth: 0,
     transitionProperty: 'color, background-color, box-shadow',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -124,6 +127,10 @@ const styles = stylex.create({
     flex: 1,
     minWidth: 0,
     justifyContent: 'center',
+  },
+  // An icon-only segment has no label to truncate, so it keeps its size.
+  iconOnly: {
+    flexShrink: 0,
   },
   icon: {
     display: 'inline-flex',
@@ -240,6 +247,7 @@ export function SegmentedControlItem({
           styles.base,
           sizeStyles[size],
           isFill && styles.fill,
+          isLabelHidden && styles.iconOnly,
           isSelected && styles.selected,
           // The shared hover and pressed overlay, on the segments a press can
           // change: the selected segment keeps its raised surface as it is.

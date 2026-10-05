@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Exact-main release dispatch contracts.
+ * @file Exact-release-branch dispatch contracts.
  * @input CI workflow and independent event, dependency, scope, and API fixtures
  * @output Fail-closed release routing and unchanged maintenance/PR assertions
  * @position Node contracts for AST-030 FR12 and DEC-5
@@ -96,9 +96,17 @@ function shell(script, env = {}, prefix = '') {
 }
 
 const sha = 'a'.repeat(40);
+const releaseBranch = 'release/v0.6.5';
+const planDigest = 'b'.repeat(64);
 async function githubScript(
   script,
-  {ref = 'refs/heads/main', mainSha = sha, needs, apiFails = false} = {},
+  {
+    ref = `refs/heads/${releaseBranch}`,
+    remoteSha = sha,
+    expectedHead = sha,
+    needs,
+    apiFails = false,
+  } = {},
 ) {
   const summary = {
     addHeading() {
@@ -122,15 +130,22 @@ async function githubScript(
       rest: {
         git: {
           async getRef(request) {
-            expect(request.ref).toBe('heads/main');
+            expect(request.ref).toBe(`heads/${releaseBranch}`);
             if (apiFails) throw new Error('API unavailable');
-            return {data: {object: {sha: mainSha}}};
+            return {data: {object: {sha: remoteSha}}};
           },
         },
       },
     },
     {summary},
-    {env: {RELEASE_NEEDS: JSON.stringify(needs)}},
+    {
+      env: {
+        RELEASE_NEEDS: JSON.stringify(needs),
+        RELEASE_BRANCH: releaseBranch,
+        EXPECTED_HEAD: expectedHead,
+        PLAN_DIGEST: planDigest,
+      },
+    },
   );
 }
 
@@ -217,23 +232,17 @@ describe('explicit release routing', () => {
   });
 });
 
-describe('exact current main request and completion', () => {
-  const request = step('check-scope', 'Require exact current main for release')
-    .with.script;
+describe('exact release branch completion', () => {
   const join = step(
     'release-check',
-    'Require complete exact-main release checks',
+    'Require complete exact-head release branch checks',
   ).with.script;
   const complete = Object.fromEntries(
     jobs['release-check'].needs.map(name => [name, {result: 'success'}]),
   );
 
-  it('checks main before checkout and accepts only complete exact-main evidence', async () => {
-    expect(jobs['check-scope'].steps[0].with.script).toBe(request);
-    await expect(githubScript(request)).resolves.toBeUndefined();
-    await expect(
-      githubScript(join, {needs: complete}),
-    ).resolves.toBeUndefined();
+  it('accepts only complete exact-branch evidence', async () => {
+    await expect(githubScript(join, {needs: complete})).resolves.toBeUndefined();
     expect(jobs['release-check'].needs).toEqual([
       'check-scope',
       'check-components',
@@ -244,34 +253,34 @@ describe('exact current main request and completion', () => {
     ]);
   });
 
-  it.each(['refs/heads/feature', 'refs/tags/main', ''])(
-    'rejects ref %s at request and completion',
+  it.each(['refs/heads/main', 'refs/tags/v0.6.5', ''])(
+    'rejects ref %s',
     async ref => {
-      for (const script of [request, join]) {
-        await expect(
-          githubScript(script, {ref, needs: complete}),
-        ).rejects.toThrow('dispatched from main');
-      }
+      await expect(
+        githubScript(join, {ref, needs: complete}),
+      ).rejects.toThrow('marked release branch');
     },
   );
+
+  it('rejects checkout drift from the expected head', async () => {
+    await expect(
+      githubScript(join, {expectedHead: 'b'.repeat(40), needs: complete}),
+    ).rejects.toThrow('does not match expected head');
+  });
 
   it.each(['b'.repeat(40), undefined])(
-    'rejects main drift or missing SHA %s',
-    async mainSha => {
-      for (const script of [request, join]) {
-        await expect(
-          githubScript(script, {mainSha: mainSha ?? '', needs: complete}),
-        ).rejects.toThrow('Main changed');
-      }
+    'rejects release-branch drift or a missing remote SHA %s',
+    async remoteSha => {
+      await expect(
+        githubScript(join, {remoteSha: remoteSha ?? '', needs: complete}),
+      ).rejects.toThrow('Release branch moved');
     },
   );
 
-  it('fails closed when current main cannot be read', async () => {
-    for (const script of [request, join]) {
-      await expect(
-        githubScript(script, {apiFails: true, needs: complete}),
-      ).rejects.toThrow('API unavailable');
-    }
+  it('fails closed when the release branch cannot be read', async () => {
+    await expect(
+      githubScript(join, {apiFails: true, needs: complete}),
+    ).rejects.toThrow('API unavailable');
   });
 
   it.each(['failure', 'cancelled', 'skipped', 'neutral', ''])(
@@ -299,7 +308,12 @@ describe('full release scope without PR metadata or maintenance writes', () => {
         [
           'check-scope',
           'Determine change scope',
-          {docsite_only: 'false', spec_only: 'false', tooling_only: 'false'},
+          {
+            docsite_only: 'false',
+            spec_only: 'false',
+            tooling_only: 'false',
+            release_bump: 'false',
+          },
         ],
         [
           'check-components',
@@ -318,7 +332,12 @@ describe('full release scope without PR metadata or maintenance writes', () => {
         );
         const result = shell(
           script,
-          {GITHUB_OUTPUT: output},
+          {
+            GITHUB_OUTPUT: output,
+            ...(job === 'check-scope'
+              ? {EVENT_NAME: 'workflow_dispatch', BASE_REF: ''}
+              : {}),
+          },
           'git() { echo "must not inspect changed files" >&2; return 99; }',
         );
         expect(result.status, result.stderr).toBe(0);
@@ -515,7 +534,7 @@ describe('full release scope without PR metadata or maintenance writes', () => {
     );
   });
 
-  it('does not run candidate capture, validation, or publication during release checks', () => {
+  it('does not run candidate capture or validation during release checks', () => {
     for (const name of [
       'Build canonical maintenance Storybook',
       'Capture canonical visual baseline',
@@ -524,7 +543,7 @@ describe('full release scope without PR metadata or maintenance writes', () => {
       expect(runs(step('pr-visual', name)), name).toBe(false);
     }
     expect(runs(jobs['maintenance-request'])).toBe(false);
-    expect(runs(jobs['baseline-publication'])).toBe(false);
+    expect(jobs).not.toHaveProperty('baseline-publication');
     expect(runs(step('pr-visual', 'Download Storybook artifact'))).toBe(true);
     const visual = step('pr-visual', 'Run full release visual check');
     expect(visual.run).toContain('gate.mjs release');

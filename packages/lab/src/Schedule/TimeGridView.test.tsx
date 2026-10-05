@@ -1,0 +1,268 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {useState} from 'react';
+import {createEventFromISO} from './CalendarEvent';
+import {Schedule} from './Schedule';
+import {createScheduleDayView} from './DayView';
+import {createScheduleWeeklyView} from './WeeklyView';
+import {getInitialTimeGridOffset} from './timeGridScrollMemory';
+import type {CalendarEvent, Instant, ScheduleEventSource} from './types';
+
+const VIEWPORT = {clientWidth: 1000, clientHeight: 600, scrollWidth: 1000};
+// 24 hours at 100px plus the pinned header (56px) and all-day row (~27px).
+const SCROLL_HEIGHT = 2483;
+
+const events: CalendarEvent[] = [
+  createEventFromISO({
+    id: 'visible',
+    title: 'Visible sync',
+    start: '2026-05-13T16:00:00.000Z',
+    end: '2026-05-13T16:30:00.000Z',
+  }),
+];
+
+function isViewport(element: unknown): element is HTMLElement {
+  return (
+    element instanceof HTMLElement && element.hasAttribute('data-scroll-axis')
+  );
+}
+
+/**
+ * jsdom lays out nothing, so the time-grid viewport is given the geometry a
+ * browser would measure: 24 hours of content in a 600px-tall viewport.
+ */
+function mockViewportGeometry(scrollHeight = SCROLL_HEIGHT) {
+  const geometry: Record<string, number> = {...VIEWPORT, scrollHeight};
+  for (const key of Object.keys(geometry)) {
+    Object.defineProperty(HTMLElement.prototype, key, {
+      configurable: true,
+      get(this: HTMLElement) {
+        return isViewport(this) ? geometry[key] : 0;
+      },
+    });
+  }
+  const nativeGetComputedStyle = window.getComputedStyle.bind(window);
+  vi.spyOn(window, 'getComputedStyle').mockImplementation(element => {
+    const computed = nativeGetComputedStyle(element);
+    if (!isViewport(element)) {
+      return computed;
+    }
+    return new Proxy(computed, {
+      get(target, property) {
+        if (property === 'overflowX' || property === 'overflowY') {
+          return 'auto';
+        }
+        return Reflect.get(target, property, target);
+      },
+    });
+  });
+}
+
+function restoreViewportGeometry() {
+  for (const key of [...Object.keys(VIEWPORT), 'scrollHeight']) {
+    // Deleting the shadowing getter exposes jsdom's own again.
+    delete (HTMLElement.prototype as unknown as Record<string, unknown>)[key];
+  }
+  vi.restoreAllMocks();
+}
+
+function viewport(): HTMLElement {
+  return screen.getByRole('region', {name: /time grid$/});
+}
+
+function Harness({
+  initialDate,
+  eventSource = events,
+  view = createScheduleWeeklyView(),
+}: {
+  initialDate: Instant;
+  eventSource?: ScheduleEventSource;
+  view?: ReturnType<typeof createScheduleWeeklyView>;
+}) {
+  const [date, setDate] = useState<Instant>(initialDate);
+  return (
+    <Schedule
+      view={view}
+      events={eventSource}
+      date={date}
+      onChangeDate={setDate}
+      timezoneID="UTC"
+    />
+  );
+}
+
+describe('getInitialTimeGridOffset', () => {
+  const days = [
+    {year: 2026, month: 5, day: 10},
+    {year: 2026, month: 5, day: 11},
+    {year: 2026, month: 5, day: 12},
+    {year: 2026, month: 5, day: 13},
+  ];
+  const geometry = {
+    timezoneID: 'UTC',
+    minHour: 0,
+    hourHeight: 100,
+    scrollHeight: SCROLL_HEIGHT,
+    clientHeight: 600,
+  };
+
+  it('opens one hour above now when today is in the range', () => {
+    expect(
+      getInitialTimeGridOffset({
+        ...geometry,
+        currentTime: Date.UTC(2026, 4, 13, 14, 0),
+        days,
+      }),
+    ).toBe(1302);
+  });
+
+  it('opens at the top when today is not in the range', () => {
+    expect(
+      getInitialTimeGridOffset({
+        ...geometry,
+        currentTime: Date.UTC(2026, 6, 1, 14, 0),
+        days,
+      }),
+    ).toBe(0);
+  });
+
+  it('clamps to the top shortly after the window starts', () => {
+    expect(
+      getInitialTimeGridOffset({
+        ...geometry,
+        currentTime: Date.UTC(2026, 4, 13, 0, 20),
+        days,
+      }),
+    ).toBe(0);
+  });
+
+  it('clamps to the end of the grid near midnight', () => {
+    expect(
+      getInitialTimeGridOffset({
+        ...geometry,
+        currentTime: Date.UTC(2026, 4, 13, 23, 50),
+        days,
+      }),
+    ).toBe(SCROLL_HEIGHT - 600);
+  });
+
+  it('measures from the configured first hour', () => {
+    expect(
+      getInitialTimeGridOffset({
+        ...geometry,
+        minHour: 7,
+        currentTime: Date.UTC(2026, 4, 13, 9, 0),
+        days,
+      }),
+    ).toBe(102);
+  });
+});
+
+describe('time grid initial position', () => {
+  beforeEach(() => {
+    mockViewportGeometry();
+  });
+
+  afterEach(() => {
+    restoreViewportGeometry();
+    vi.useRealTimers();
+  });
+
+  it('opens a week containing today one hour before now', () => {
+    vi.setSystemTime(Date.UTC(2026, 4, 13, 14, 0));
+    render(<Harness initialDate={Date.UTC(2026, 4, 13, 14, 0) as Instant} />);
+    expect(viewport().scrollTop).toBe(1302);
+  });
+
+  it('opens a day containing today one hour before now', () => {
+    vi.setSystemTime(Date.UTC(2026, 4, 13, 9, 30));
+    render(
+      <Harness
+        initialDate={Date.UTC(2026, 4, 13, 9, 30) as Instant}
+        view={createScheduleDayView()}
+      />,
+    );
+    expect(viewport().scrollTop).toBe(852);
+  });
+
+  it('opens a range without today at its configured start', () => {
+    vi.setSystemTime(Date.UTC(2026, 6, 1, 14, 0));
+    render(<Harness initialDate={Date.UTC(2026, 4, 13, 14, 0) as Instant} />);
+    expect(viewport().scrollTop).toBe(0);
+  });
+
+  it('leaves the person\u2019s own scroll alone across a clock tick and a data refresh', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(Date.UTC(2026, 4, 13, 14, 0));
+    const {rerender} = render(
+      <Harness initialDate={Date.UTC(2026, 4, 13, 14, 0) as Instant} />,
+    );
+    expect(viewport().scrollTop).toBe(1302);
+
+    viewport().scrollTop = 500;
+    fireEvent.scroll(viewport());
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+    expect(viewport().scrollTop).toBe(500);
+
+    rerender(
+      <Harness
+        initialDate={Date.UTC(2026, 4, 13, 14, 0) as Instant}
+        eventSource={[...events]}
+      />,
+    );
+    expect(viewport().scrollTop).toBe(500);
+  });
+
+  it('positions again when the person opens another range', () => {
+    vi.setSystemTime(Date.UTC(2026, 4, 13, 14, 0));
+    render(<Harness initialDate={Date.UTC(2026, 4, 13, 14, 0) as Instant} />);
+    expect(viewport().scrollTop).toBe(1302);
+
+    fireEvent.click(screen.getByRole('button', {name: 'Next week'}));
+    expect(viewport().scrollTop).toBe(0);
+
+    fireEvent.click(screen.getByRole('button', {name: 'Previous week'}));
+    expect(viewport().scrollTop).toBe(1302);
+  });
+
+  it('restores the offset when loaded content replaces the suspended fallback', async () => {
+    vi.setSystemTime(Date.UTC(2026, 4, 13, 14, 0));
+    let resolveEvents: (value: ReadonlyArray<CalendarEvent>) => void = () => {};
+    const loader = vi.fn(
+      () =>
+        new Promise<ReadonlyArray<CalendarEvent>>(resolve => {
+          resolveEvents = resolve;
+        }),
+    );
+    render(
+      <Harness
+        initialDate={Date.UTC(2026, 4, 13, 14, 0) as Instant}
+        eventSource={loader}
+      />,
+    );
+    const fallbackViewport = viewport();
+    expect(fallbackViewport.scrollTop).toBe(1302);
+
+    fallbackViewport.scrollTop = 700;
+    fireEvent.scroll(fallbackViewport);
+
+    // The loader is invoked in a microtask after the first render.
+    await waitFor(() => {
+      expect(loader).toHaveBeenCalled();
+    });
+    await act(async () => {
+      resolveEvents(events);
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Visible sync')).toBeInTheDocument();
+    });
+    const loadedViewport = viewport();
+    expect(loadedViewport).not.toBe(fallbackViewport);
+    expect(loadedViewport.scrollTop).toBe(700);
+  });
+});

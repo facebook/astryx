@@ -47,6 +47,12 @@ import {
   cliDocIndex,
   cliDocSection,
 } from '../../foundation/discovery/cli-self-docs.mjs';
+import {
+  loadAuthoringSelfDocs,
+  schemaFieldTable,
+  selfDocSection,
+} from '../../foundation/discovery/authoring-self-docs.mjs';
+import {CLI_PROVIDER_ID} from '../../foundation/identity/providers.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
@@ -119,6 +125,7 @@ function lowerRawTopic(catalog, entry, lang = null) {
  * @typedef {import('../../foundation/doc-compiler/tree.mjs').TreeNode} TreeNode
  * @typedef {import('../../foundation/doc-compiler/links.mjs').LinkProblem} LinkProblem
  * @typedef {import('../../foundation/doc-compiler/links.mjs').LinkResolver} LinkResolver
+ * @typedef {import('../../foundation/doc-compiler/links.mjs').DocIncluder} DocIncluder
  * @typedef {import('../../foundation/discovery/docs-discovery.mjs').DocsTopicEntry} DocsTopicEntry
  */
 
@@ -146,8 +153,9 @@ function providerOf(entry) {
 /**
  * One topic, lowered for `lang` with every link between docs resolved
  * (spec:AST-047 FR9): an inline `{@link <target>}` reads as the command that
- * opens its doc, and a `reference` or `workflow` block carries the doc it
- * names. Memoized per catalog and frozen, like the lowered node.
+ * opens its doc, and a `reference` block carries the doc it names and the
+ * `content` it includes of it. Memoized per catalog and frozen, like the
+ * lowered node.
  * @param {DocsCatalog} catalog
  * @param {DocsTopicEntry} entry
  * @param {string | null} [lang]
@@ -183,16 +191,19 @@ function linkTopic(catalog, entry, lang) {
   if (!linked) {
     linked = (async () => {
       const raw = await lowerRawTopic(catalog, entry, lang);
-      /** @type {Map<string, LinkResolver>} */
-      const resolvers = new Map();
+      /** @type {Map<string, {resolve: LinkResolver, include: DocIncluder}>} */
+      const linkers = new Map();
       /** @param {string} provider */
-      const resolverFor = async provider => {
-        let resolve = resolvers.get(provider);
-        if (!resolve) {
-          resolve = await linkResolver(catalog, provider);
-          resolvers.set(provider, resolve);
+      const linkerFor = async provider => {
+        let linker = linkers.get(provider);
+        if (!linker) {
+          linker = {
+            resolve: await linkResolver(catalog, provider),
+            include: await docIncluder(catalog, provider),
+          };
+          linkers.set(provider, linker);
         }
-        return resolve;
+        return linker;
       };
       /** @type {LinkProblem[]} */
       const problems = [];
@@ -202,12 +213,14 @@ function linkTopic(catalog, entry, lang) {
       // base topic's.
       for (const section of raw.doc.sections) {
         const provider = raw.sectionProviders?.[section.id];
+        const {resolve, include} = await linkerFor(
+          provider == null ? providerOf(entry) : normalizeProviderId(provider),
+        );
         const linked = await linkBlocks(
           section.content,
-          await resolverFor(
-            provider == null ? providerOf(entry) : normalizeProviderId(provider),
-          ),
+          resolve,
           {section: section.id ?? section.title},
+          include,
         );
         problems.push(...linked.problems);
         sections.push({...section, content: linked.content});
@@ -333,14 +346,51 @@ function identitiesOf(tree) {
 }
 
 /**
+ * The CLI's authoring docs, by kind and name. `astryx docs authoring` reads
+ * each as one section keyed by its name, so a link to one opens that section.
+ * Loaded once per process, like the CLI's tree files.
+ * @type {Promise<Map<string, any>> | undefined}
+ */
+let authoringDocs;
+
+/**
+ * The CLI authoring doc a link names, while `astryx docs authoring` is the
+ * CLI's own topic.
+ * @param {DocsCatalog} catalog
+ * @param {string} kind
+ * @param {string} name
+ * @returns {Promise<any | null>}
+ */
+async function authoringDoc(catalog, kind, name) {
+  if (catalog.resolve('authoring')?.package !== CLI_PROVIDER_ID) return null;
+  authoringDocs ??= loadAuthoringSelfDocs().then(
+    ({loaded}) =>
+      new Map(loaded.map(({doc}) => [`${doc.type}\u0000${doc.name}`, doc])),
+  );
+  return (await authoringDocs).get(`${kind}\u0000${name}`) ?? null;
+}
+
+/**
+ * A doc a link found: what a read shows of the link, and the typed doc behind
+ * it when a reference block can include it.
+ * @typedef {object} FoundDoc
+ * @property {import('../../foundation/doc-compiler/links.mjs').DocLink} link
+ * @property {string} kind the doc's kind
+ * @property {{doc: any, providerId: string, tree: boolean} | null} typed a
+ *   schema, command, function, or enum doc: a leaf of the docs tree (`tree`),
+ *   or a section of `astryx docs authoring`; null for any other kind
+ */
+
+/**
  * How a doc's links find their targets (spec:AST-047 FR9): a doc in the
- * project's docs tree by its identity, or a flat topic by its provider and
- * name. A target that matches neither is a problem, never a guess.
+ * project's docs tree by its identity, a CLI authoring doc (a section of
+ * `astryx docs authoring`), or a flat topic by its provider and name. A
+ * target that matches none is a problem, never a guess.
  * @param {DocsCatalog} catalog
  * @param {string} fromProvider the provider id of the doc the links sit in
- * @returns {Promise<LinkResolver>}
+ * @returns {Promise<(target: string) => Promise<FoundDoc | {problem: string}>>}
  */
-export async function linkResolver(catalog, fromProvider) {
+async function docFinder(catalog, fromProvider) {
   const identities = identitiesOf(await projectTree(catalog));
   return async target => {
     const parsed = parseLinkTarget(target);
@@ -356,12 +406,36 @@ export async function linkResolver(catalog, fromProvider) {
     const node = identities.get(identityKey(provider, parsed.kind, parsed.name));
     if (node) {
       return {
-        target,
-        id: /** @type {string} */ (node.id),
-        route: node.route,
-        title: node.title,
-        summary: node.summary,
-        command: `astryx docs ${node.route}`,
+        link: {
+          target,
+          id: /** @type {string} */ (node.id),
+          route: node.route,
+          title: node.title,
+          summary: node.summary,
+          command: `astryx docs ${node.route}`,
+        },
+        kind: node.kind,
+        typed: node.ref?.selfDoc
+          ? {doc: node.ref.selfDoc, providerId: node.providerId, tree: true}
+          : null,
+      };
+    }
+    const authored =
+      provider === CLI_PROVIDER_ID
+        ? await authoringDoc(catalog, parsed.kind, parsed.name)
+        : null;
+    if (authored) {
+      return {
+        link: {
+          target,
+          id: createDocId(provider, authored.type, authored.name),
+          route: 'authoring',
+          title: authored.displayName ?? authored.name,
+          summary: authored.description ?? '',
+          command: `astryx docs authoring ${authored.name}`,
+        },
+        kind: parsed.kind,
+        typed: {doc: authored, providerId: CLI_PROVIDER_ID, tree: false},
       };
     }
     if (parsed.kind === 'generic') {
@@ -383,12 +457,16 @@ export async function linkResolver(catalog, fromProvider) {
           // link still opens it.
         }
         return {
-          target,
-          id: createDocId(provider, 'generic', parsed.name),
-          route: entry.name,
-          title,
-          summary,
-          command: `astryx docs ${entry.name}`,
+          link: {
+            target,
+            id: createDocId(provider, 'generic', parsed.name),
+            route: entry.name,
+            title,
+            summary,
+            command: `astryx docs ${entry.name}`,
+          },
+          kind: 'generic',
+          typed: null,
         };
       }
     }
@@ -399,19 +477,157 @@ export async function linkResolver(catalog, fromProvider) {
 }
 
 /**
+ * How a doc's links find their targets (spec:AST-047 FR9), as
+ * {@link docFinder} finds them: each resolves to the link a read shows.
+ * @param {DocsCatalog} catalog
+ * @param {string} fromProvider the provider id of the doc the links sit in
+ * @returns {Promise<LinkResolver>}
+ */
+export async function linkResolver(catalog, fromProvider) {
+  const find = await docFinder(catalog, fromProvider);
+  return async target => {
+    const found = await find(target);
+    return 'problem' in found ? found : found.link;
+  };
+}
+
+/** How a problem names a doc kind that a reference block cannot include. */
+const KIND_NAMES = /** @type {Record<string, string>} */ ({
+  generic: 'topic',
+  namespace: 'namespace',
+});
+
+/**
+ * How a topic's reference blocks include the docs they name (spec:AST-047
+ * FR9): a schema, command, function, or enum doc as `astryx docs` prints
+ * it, narrowed by the block's projection and presentation, with the included
+ * doc's own links resolved against its own provider. Any other doc shows its
+ * title and summary. Each part a block names that it cannot include is a
+ * problem, and a read marks where it is missing; a target that names no doc
+ * is the resolver's problem.
+ * @param {DocsCatalog} catalog
+ * @param {string} fromProvider the provider id of the doc the blocks sit in
+ * @returns {Promise<DocIncluder>}
+ */
+async function docIncluder(catalog, fromProvider) {
+  const find = await docFinder(catalog, fromProvider);
+  const tree = await projectTree(catalog);
+  return async block => {
+    const found = await find(block.target);
+    if ('problem' in found) return {content: [], problems: []};
+    return includedContent(catalog, tree, block, found);
+  };
+}
+
+/**
+ * What one reference block includes of the doc it found.
+ * @param {DocsCatalog} catalog
+ * @param {DocsTree} tree
+ * @param {any} block
+ * @param {FoundDoc} found
+ * @returns {Promise<{content: any[], problems: string[]}>}
+ */
+async function includedContent(catalog, tree, block, found) {
+  /** @type {string[]} */
+  const problems = [];
+  const {fields, sections} = block.projection ?? {};
+  const presentation = block.presentation ?? 'full';
+  if (sections != null) {
+    problems.push(
+      'projection.sections: a reference block does not include topic sections; reference a schema, command, function, or enum doc, and name the fields of a schema with projection.fields',
+    );
+  }
+  const typed = found.typed;
+  if (typed == null) {
+    // A reference shows any other doc only by its title and summary.
+    if (fields != null || (block.presentation ?? 'summary') !== 'summary') {
+      problems.push(
+        `"${block.target}" is a ${KIND_NAMES[found.kind] ?? `${found.kind} doc`}, which a reference block shows only by its title and summary; remove the projection and the presentation, or reference a schema, command, function, or enum doc`,
+      );
+    }
+    return {content: [], problems};
+  }
+  if (presentation === 'summary') {
+    if (fields != null) {
+      problems.push(
+        "projection.fields: a summary includes no fields; remove projection.fields or presentation: 'summary'",
+      );
+    }
+    return {content: [], problems};
+  }
+  /** @type {any[]} */
+  let content;
+  if (fields != null && typed.doc.type === 'schema') {
+    /** @type {Map<string, any>} */
+    const byName = new Map(
+      (typed.doc.fields ?? []).map((/** @type {any} */ field) => [
+        field.name,
+        field,
+      ]),
+    );
+    const selected = [];
+    /** @type {any[]} */
+    const missing = [];
+    for (const name of fields) {
+      const field = byName.get(name);
+      if (field) {
+        selected.push(field);
+        continue;
+      }
+      problems.push(
+        `projection.fields: "${name}" is not a field of ${found.link.title} (${block.target}). Its fields: ${[...byName.keys()].join(', ')}`,
+      );
+      missing.push({
+        type: 'prose',
+        text: `[reference: field "${name}" not found in "${block.target}"]`,
+      });
+    }
+    const table = schemaFieldTable(selected);
+    content = [...(table ? [table] : []), ...missing];
+  } else {
+    if (fields != null) {
+      problems.push(
+        `projection.fields: names the fields of a schema doc, and "${block.target}" is a ${typed.doc.type} doc; remove it to include the whole doc`,
+      );
+    }
+    content = typed.tree
+      ? cliDocSection(typed.doc, typedDocIndex(tree)).content
+      : selfDocSection(typed.doc).content;
+  }
+  if (presentation === 'compact') {
+    content = content.filter(each => each?.type !== 'code');
+  }
+  // The included doc's own links resolve against its own provider. A link in
+  // it that names no doc is that doc's problem, reported where it is written.
+  const linked = await linkBlocks(
+    content,
+    await linkResolver(catalog, typed.providerId),
+  );
+  return {content: linked.content, problems};
+}
+
+/**
  * Every link in the project's docs that names no doc: in each topic, each
  * guide the tree places, and each typed doc.
  * @param {DocsCatalog} catalog
  * @param {DocsTree} tree
- * @param {{owner?: string}} [options] `owner`: only the docs this package owns
+ * @param {{owner?: string, references?: boolean}} [options] `owner`: only the
+ *   docs this package owns. `references`: instead of the links, each reference
+ *   block that cannot include what it names; a reader loses that content,
+ *   where a link that names no doc still prints as written
  * @returns {Promise<string[]>}
  */
-export async function docsLinkProblems(catalog, tree, {owner} = {}) {
+export async function docsLinkProblems(
+  catalog,
+  tree,
+  {owner, references = false} = {},
+) {
   /** @type {string[]} */
   const problems = [];
   /** @param {string} where @param {LinkProblem[]} found */
   const note = (where, found) => {
     for (const problem of found) {
+      if ((problem.include === true) !== references) continue;
       problems.push(
         `${where}${problem.section ? ` \u00a7 ${problem.section}` : ''}: ${problem.message}`,
       );
@@ -451,10 +667,12 @@ export async function docsLinkProblems(catalog, tree, {owner} = {}) {
 /**
  * What \`astryx doctor integration docs\` checks in one integration's docs: the
  * docs tree they build beside the CLI's (namespaces, placements, routes) and
- * every link in them (spec:AST-046, spec:AST-047).
+ * every link in them (spec:AST-046, spec:AST-047). A tree problem hides a doc,
+ * so it is an error; a link that names no doc prints as written, so it is a
+ * warning.
  * @param {{name: string}} integration
  * @param {{records: import('../../foundation/discovery/docs-discovery.mjs').DocsTopicRecord[], namespaces: import('../../foundation/doc-compiler/tree.mjs').TreeNamespaceInput[], guides: import('../../foundation/doc-compiler/tree.mjs').TreeDocInput[]}} discovered
- * @returns {Promise<string[]>}
+ * @returns {Promise<Array<{severity: 'error' | 'warning', message: string}>>}
  */
 export async function packageDocsProblems(integration, discovered) {
   const catalog = DocsCatalog.fromBuiltins();
@@ -464,12 +682,18 @@ export async function packageDocsProblems(integration, discovered) {
     guides: discovered.guides.map(input => ({...input, rank: 1})),
   });
   const tree = await projectTree(catalog);
+  /** @type {Array<{severity: 'error' | 'warning', message: string}>} */
   const problems = tree.diagnostics
     .filter(d => d.severity === 'error' && d.provider === integration.name)
-    .map(d => `${d.source ?? integration.name}: ${d.message}`);
-  problems.push(
-    ...(await docsLinkProblems(catalog, tree, {owner: integration.name})),
-  );
+    .map(d => ({
+      severity: /** @type {const} */ ('error'),
+      message: `${d.source ?? integration.name}: ${d.message}`,
+    }));
+  for (const message of await docsLinkProblems(catalog, tree, {
+    owner: integration.name,
+  })) {
+    problems.push({severity: 'warning', message});
+  }
   return problems;
 }
 
@@ -485,6 +709,28 @@ export function referenceTargets(catalog, lang) {
     const target = catalog.resolve(topic);
     return target ? lowerTopic(catalog, target, lang) : null;
   };
+}
+
+/**
+ * Each reference block in one integration's docs that cannot include what it
+ * names (spec:AST-047 FR9): a target that names no doc, a field its schema
+ * does not have, or a projection its doc cannot take. A reader would lose
+ * that content, so `astryx doctor integration docs` fails on each.
+ * @param {{name: string}} integration
+ * @param {{records: import('../../foundation/discovery/docs-discovery.mjs').DocsTopicRecord[], namespaces: import('../../foundation/doc-compiler/tree.mjs').TreeNamespaceInput[], guides: import('../../foundation/doc-compiler/tree.mjs').TreeDocInput[]}} discovered
+ * @returns {Promise<string[]>}
+ */
+export async function packageReferenceProblems(integration, discovered) {
+  const catalog = DocsCatalog.fromBuiltins();
+  for (const record of discovered.records) catalog.add(record);
+  catalog.addTreeInputs({
+    namespaces: discovered.namespaces.map(input => ({...input, rank: 1})),
+    guides: discovered.guides.map(input => ({...input, rank: 1})),
+  });
+  return docsLinkProblems(catalog, await projectTree(catalog), {
+    owner: integration.name,
+    references: true,
+  });
 }
 
 /**
@@ -535,6 +781,20 @@ const typedDocIndexes = new WeakMap();
  */
 export async function nodeContent(catalog, tree, node) {
   if (!node.ref?.selfDoc) return {content: [], problems: []};
+  const resolve = await linkResolver(catalog, node.providerId);
+  return linkBlocks(
+    cliDocSection(node.ref.selfDoc, typedDocIndex(tree)).content,
+    resolve,
+  );
+}
+
+/**
+ * The index a typed doc's content reads its cross-links from: every typed doc
+ * in the tree. Built once per tree.
+ * @param {DocsTree} tree
+ * @returns {ReturnType<typeof cliDocIndex>}
+ */
+function typedDocIndex(tree) {
   let index = typedDocIndexes.get(tree);
   if (!index) {
     index = cliDocIndex(
@@ -544,8 +804,7 @@ export async function nodeContent(catalog, tree, node) {
     );
     typedDocIndexes.set(tree, index);
   }
-  const resolve = await linkResolver(catalog, node.providerId);
-  return linkBlocks(cliDocSection(node.ref.selfDoc, index).content, resolve);
+  return index;
 }
 
 /**

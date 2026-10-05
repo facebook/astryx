@@ -220,11 +220,11 @@
     "description": "PowerSearch date operator, inclusive range. Example: `Created is between 2024-01-01 and 2024-06-30`. The `and <end>` portion is composed separately."
   },
   "@astryx.powersearch.operator.isTrue": {
-    "defaultMessage": "True",
+    "defaultMessage": "真である",
     "description": "PowerSearch boolean operator: matches truthy. Example: `Is admin is true`. Pairs with `is false`; field may be affirmative or a yes/no question."
   },
   "@astryx.powersearch.operator.isFalse": {
-    "defaultMessage": "False",
+    "defaultMessage": "偽である",
     "description": "PowerSearch boolean operator: matches falsy. Example: `Is admin is false`. Pairs with `is true`."
   },
   "@astryx.powersearch.operator.isAnyOf": {
@@ -522,6 +522,14 @@
   "@astryx.listInput.announceAlreadyAtBoundary": {
     "defaultMessage": "この {itemName} はすでに{boundary, select, first {先頭} last {末尾} other {}}です。",
     "description": "Screen-reader-only live announcement when an arrow-key reorder attempt has no effect because the record is already at that end of the list. `{itemName}` is the consumer's singular noun for one record; `{boundary}` is always exactly \"first\" or \"last\"."
+  },
+  "@astryx.markdownHeadingLinks.copied": {
+    "defaultMessage": "リンクをコピーしました",
+    "description": "Accessible name on the Markdown heading copy button and text announced to a polite live region for ~1.5s after a successful copy. Sentence meaning \"Link copied\"; pairs with `markdownHeadingLinks.copy`."
+  },
+  "@astryx.markdownHeadingLinks.copy": {
+    "defaultMessage": "{heading} へのリンクをコピー",
+    "description": "Accessible name on the Markdown heading copy button in its default state. `{heading}` is the heading's plain text, or its generated id when the text is empty; pairs with `markdownHeadingLinks.copied`."
   },
   "@astryx.markdown.taskList": {
     "defaultMessage": "タスクリスト",
@@ -1480,4 +1488,3 @@
     "description": "Default summary on the closed trigger of a lab TransferListSelector, stating how many options are currently chosen. Consumers usually override this with a domain phrase (e.g. \"7 columns\")."
   }
 }
-

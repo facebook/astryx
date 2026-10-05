@@ -2,10 +2,18 @@
 
 /**
  * @file Command-level coverage for `astryx doctor integration` authoring checks.
+ * @input Integration fixtures and the post-0.7 conflict projection.
+ * @output Assertions for human and typed command responses.
+ * @position CLI adapter coverage; 0.6.x API shape is verified separately.
  */
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+
+vi.mock('../../../foundation/discovery/template-conflict-release.mjs', () => ({
+  expandedTemplateConflictSchemaActive: () => true,
+}));
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import {Command} from 'commander';
 import {discoverCoreTemplates} from '../../../foundation/discovery/template-adapter.mjs';
@@ -337,6 +345,35 @@ describe('doctor integration — command', () => {
     expect(process.exitCode).toBe(1);
   });
 
+  it('components exits 1 when Core is missing, with no [ok] after the failure', async () => {
+    // Outside the repo, so nothing above the package resolves Core.
+    const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-no-core-'));
+    const previousTmp = tmpDir;
+    tmpDir = outside;
+    try {
+      writeComponentIntegration('AcmeCarousel');
+      expect(findCoreDir(outside)).toBeNull();
+      process.chdir(outside);
+
+      await createProgram().parseAsync([
+        'node',
+        'astryx',
+        'doctor',
+        'integration',
+        'components',
+      ]);
+
+      const printed = logCalls.join('\n');
+      expect(printed).toContain('core_not_found');
+      expect(printed).not.toContain('[ok]');
+      expect(process.exitCode).toBe(1);
+    } finally {
+      tmpDir = previousTmp;
+      process.chdir(previousCwd);
+      fs.rmSync(outside, {recursive: true, force: true});
+    }
+  });
+
   it('components warns with the exact package-qualified command', async () => {
     const coreDir = findCoreDir(tmpDir);
     expect(coreDir).not.toBeNull();
@@ -424,6 +461,29 @@ describe('doctor integration — command', () => {
     expect(output).toContain('[info]');
     expect(output).toContain('Intentional extension');
     expect(process.exitCode).toBeUndefined();
+  });
+
+  it('docs exits 1 for a placement that hides a guide, with no [ok] after the failure', async () => {
+    writeDocIntegration({name: 'deploying'});
+    fs.writeFileSync(
+      path.join(tmpDir, 'docs', 'deploying.doc.mjs'),
+      "export default {type: 'generic', name: 'deploying', title: 'Deploying', description: 'Deploy.', placement: {parent: 'namespace:nope', slot: 'guides'}, sections: [{title: 'Deploy', content: [{type: 'prose', text: 'Deploy.'}]}]};\n",
+    );
+    process.chdir(tmpDir);
+
+    await createProgram().parseAsync([
+      'node',
+      'astryx',
+      'doctor',
+      'integration',
+      'docs',
+    ]);
+
+    const printed = logCalls.join('\n');
+    expect(printed).toContain('[fail]');
+    expect(printed).toContain('invalid_doc_graph');
+    expect(printed).not.toContain('[ok]');
+    expect(process.exitCode).toBe(1);
   });
 
   it('docs exits 1 for an accidental same-name Core topic', async () => {

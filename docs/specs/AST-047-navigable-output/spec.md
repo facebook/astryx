@@ -86,9 +86,14 @@ This record owns the moves a read offers and how they appear in text and JSON.
   allows, and a name that matches docs of more than one allowed kind is an
   error, never a silent pick. Inside a doc's text, a link MUST be written
   `{@link <target>}` and read as the command that opens its doc; a link that
-  names no doc MUST print as written. A topic's sections hold only the stable
-  content blocks, so `reference` and `workflow` blocks (GraphContentBlock)
-  belong to a namespace doc's `blocks`, which a later phase renders. A target without a
+  names no doc MUST print as written. A topic's section MAY hold a `reference`
+  block, which includes the doc it names instead of a copy: a read MUST inline
+  it as that doc's content (a schema's content narrowed to the fields its
+  projection names), then a line naming that doc and the command that opens
+  it, so a read still returns only the stable content blocks. A target, field,
+  or projection the block cannot include MUST fail the authoring check.
+  `workflow` and `collection` blocks (GraphContentBlock) belong to a namespace
+  doc's `blocks`, which a later phase renders. A target without a
   provider names a doc of the provider that wrote the link: in a topic that
   merges sections from several providers, each section resolves against its
   own. The CLI MUST resolve

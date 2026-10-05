@@ -3,6 +3,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {Badge} from '@astryxdesign/core/Badge';
+import {IconButton} from '@astryxdesign/core/IconButton';
 import {useState} from 'react';
 import {
   DropdownMenu,
@@ -152,48 +153,8 @@ const PROJECT_DESTINATIONS = [
   ['Website refresh', 'Brand'],
 ] as const;
 
-// Open action sheet used by the stable visual surface.
+// Basic usage
 export const Default: Story = {
-  parameters: {
-    layout: 'fullscreen',
-    docs: {
-      story: {inline: false, height: '560px'},
-      description: {
-        story:
-          'Shows titled sections in the bottom-sheet presentation. Section headings and spacious action rows share the same inline content edge.',
-      },
-    },
-  },
-  globals: {viewport: {value: 'mobile1', isRotated: false}},
-  render: () => (
-    <div {...stylex.props(readinessStyles.viewportStoryCanvas)}>
-      <DropdownMenu
-        presentation="bottom-sheet"
-        button={{label: 'File actions'}}
-        items={[
-          {
-            type: 'section',
-            title: 'Create',
-            items: [{label: 'New file'}, {label: 'New folder'}],
-          },
-          {
-            type: 'section',
-            title: 'Manage',
-            items: [{label: 'Share file'}, {label: 'Archive file'}],
-          },
-        ]}
-      />
-    </div>
-  ),
-  play: async ({canvasElement}) => {
-    const trigger = canvasElement.querySelector('button');
-    if (trigger instanceof HTMLElement) {
-      trigger.click();
-    }
-  },
-};
-
-export const BasicPopover: Story = {
   render: () => (
     <DropdownMenu
       button={{label: 'Actions'}}
@@ -1056,6 +1017,47 @@ export const ActionSheetPresentation: Story = {
   },
 };
 
+export const SectionedActionSheetPresentation: Story = {
+  name: 'Presentation / sectioned action sheet',
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      story: {inline: false, height: '560px'},
+      description: {
+        story:
+          'Shows titled sections in the bottom-sheet presentation. Section headings and spacious action rows share the same inline content edge.',
+      },
+    },
+  },
+  globals: {viewport: {value: 'mobile1', isRotated: false}},
+  render: () => (
+    <div {...stylex.props(readinessStyles.viewportStoryCanvas)}>
+      <DropdownMenu
+        presentation="bottom-sheet"
+        button={{label: 'File actions'}}
+        items={[
+          {
+            type: 'section',
+            title: 'Create',
+            items: [{label: 'New file'}, {label: 'New folder'}],
+          },
+          {
+            type: 'section',
+            title: 'Manage',
+            items: [{label: 'Share file'}, {label: 'Archive file'}],
+          },
+        ]}
+      />
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const trigger = canvasElement.querySelector('button');
+    if (trigger instanceof HTMLElement) {
+      trigger.click();
+    }
+  },
+};
+
 export const AdaptiveActionPresentation: Story = {
   name: 'Presentation / adaptive action menu',
   parameters: {
@@ -1268,4 +1270,127 @@ export const SubmenuViewportFit: Story = {
       }
     }
   },
+};
+
+export const CustomTrigger: Story = {
+  name: 'Custom trigger (any control)',
+  render: () => (
+    <DropdownMenu
+      renderTrigger={props => (
+        <IconButton
+          icon={<EllipsisHorizontalIcon />}
+          label="More actions"
+          variant="ghost"
+          {...props}
+        />
+      )}>
+      <DropdownMenuItem icon={PencilIcon} label="Rename" onClick={() => {}} />
+      <DropdownMenuItem
+        icon={DocumentDuplicateIcon}
+        label="Duplicate"
+        onClick={() => {}}
+      />
+      <DropdownMenuItem
+        icon={TrashIcon}
+        label="Delete"
+        variant="destructive"
+        onClick={() => {}}
+      />
+    </DropdownMenu>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Any control can open a menu: `trigger` renders it and receives the props to spread — the press model (a mouse opens on press-down, a held finger opens with the finger down), the keyboard opens, the toggle click, and the ARIA wiring. The menu is named by that control through `aria-labelledby`.',
+      },
+    },
+  },
+};
+
+export const LinkRows: Story = {
+  name: 'Rows that navigate (href)',
+  render: () => (
+    <DropdownMenu button={{label: 'Places'}}>
+      <DropdownMenuItem icon={UserIcon} label="Profile" href="/profile" />
+      <DropdownMenuItem
+        icon={Cog6ToothIcon}
+        label="Settings"
+        href="/settings"
+        onClick={() => console.log('leaving for settings')}
+      />
+      <DropdownMenuItem
+        icon={ShareIcon}
+        label="Help center"
+        description="Opens in a new tab"
+        href="https://example.com/help"
+        target="_blank"
+      />
+      <DropdownMenuDivider />
+      <DropdownMenuItem
+        icon={TrashIcon}
+        label="Delete"
+        variant="destructive"
+        onClick={() => {}}
+      />
+    </DropdownMenu>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A row whose act is navigation takes an `href` and renders as a real anchor with role="menuitem", routed through LinkProvider. A ⌘-click, Ctrl-click or middle click keeps the browser\'s meaning (a new tab) and skips `onClick`; a plain click runs `onClick`, closes the menu and navigates. Enter and Space synthesize a click that keeps the key\'s modifiers.',
+      },
+    },
+  },
+};
+
+export const SubmenuDrillIn: Story = {
+  name: 'Submenu / drill-in on a phone',
+  parameters: {
+    viewport: {defaultViewport: 'mobile1'},
+    docs: {
+      description: {
+        story:
+          'On a phone (a coarse pointer, decided when the menu opened) a sub-menu row drills in: its rows replace the menu\'s rows in the same box, led by a "Back to <parent>" row; Back, Escape or ArrowLeft return to the row. `presentation="drill-in"` forces it, `"flyout"` keeps the flyout; the default `"adaptive"` follows the pointer.',
+      },
+    },
+  },
+  render: () => (
+    <DropdownMenu button={{label: 'Actions'}}>
+      <DropdownMenuItem icon={PencilIcon} label="Rename" onClick={() => {}} />
+      <DropdownMenuSubMenu
+        icon={FolderPlusIcon}
+        label="Move to"
+        presentation="drill-in">
+        <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        <DropdownMenuItem label="Folder B" onClick={() => {}} />
+        <DropdownMenuSubMenu icon={ArchiveBoxIcon} label="Archive">
+          <DropdownMenuItem label="2025" onClick={() => {}} />
+          <DropdownMenuItem label="2024" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenuSubMenu>
+      <DropdownMenuItem icon={TrashIcon} label="Delete" onClick={() => {}} />
+    </DropdownMenu>
+  ),
+};
+
+export const SubmenuAdaptiveFixture: Story = {
+  name: 'Submenu / adaptive fixture',
+  parameters: {docs: {disable: true}},
+  render: () => (
+    <div data-testid="drill-in-fixture" style={{padding: 16}}>
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem icon={PencilIcon} label="Rename" onClick={() => {}} />
+        <DropdownMenuSubMenu icon={FolderPlusIcon} label="Move to">
+          <DropdownMenuItem label="Folder A" onClick={() => {}} />
+          <DropdownMenuItem label="Folder B" onClick={() => {}} />
+          <DropdownMenuSubMenu icon={ArchiveBoxIcon} label="Archive">
+            <DropdownMenuItem label="2025" onClick={() => {}} />
+          </DropdownMenuSubMenu>
+        </DropdownMenuSubMenu>
+        <DropdownMenuItem icon={TrashIcon} label="Delete" onClick={() => {}} />
+      </DropdownMenu>
+    </div>
+  ),
 };

@@ -64,7 +64,7 @@ export const WIKI_BRANCH = 'master';
  * are PR previews and must never be linked from anything durable.
  */
 export const SCORES_PAGE_URL =
-  'https://facebook.github.io/astryx/sandbox/pages/component-scores/';
+  'https://astryx.atmeta.com/sandbox/pages/component-scores/';
 
 const USAGE = `
 Usage: node scripts/score-ledger.mjs <subcommand> [options]

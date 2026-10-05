@@ -35,12 +35,13 @@ export const doc = {
     {
       flag: '--preview <path>',
       param: 'options.preview',
-      description: 'Write a standardized self-contained HTML preview',
+      description: 'Write a self-contained HTML preview page; the path must end in .html',
     },
     {
       flag: '-f, --overwrite',
       param: 'options.overwrite',
-      description: 'Replace existing candidate and receipt files',
+      description:
+        'Replace existing candidate, receipt, and preview files. Without it, if any of them exists, nothing is written',
     },
   ],
   examples: [

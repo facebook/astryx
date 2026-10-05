@@ -310,6 +310,46 @@ describe('problemsInTopic', () => {
     }
   });
 
+  it('takes a reference block, and checks its projection and presentation', () => {
+    /** @param {any[]} content */
+    const withBlocks = content =>
+      problemsInTopic(topic({sections: [{title: 'Overview', content}]}));
+    expect(
+      withBlocks([
+        {type: 'reference', target: 'schema:integration'},
+        {
+          type: 'reference',
+          target: '@astryxdesign/cli:schema:integration',
+          projection: {fields: ['docs']},
+          presentation: 'compact',
+        },
+      ]),
+    ).toEqual([]);
+    expect(
+      withBlocks([
+        {type: 'reference', target: ''},
+        {type: 'reference', target: 'schema:x', presentation: 'card'},
+        {type: 'reference', target: 'schema:x', projection: {fields: []}},
+        {type: 'reference', target: 'schema:x', projection: {rows: ['a']}},
+        {type: 'reference', target: 'schema:x', projection: ['docs']},
+        {type: 'reference', target: 'schema:x', link: {}},
+      ]),
+    ).toEqual([
+      'sections[0].content[0].target: expected a non-empty string',
+      'sections[0].content[1].presentation: "card" is not one of summary, compact, full',
+      'sections[0].content[2].projection.fields: expected a non-empty array of names',
+      'sections[0].content[3].projection.rows: not a field of a projection',
+      'sections[0].content[4].projection: expected {fields?, sections?}, naming the parts of the doc to include',
+      'sections[0].content[5].link: not a field of a reference block',
+    ]);
+    // Workflow and collection blocks stay in a namespace doc's `blocks`.
+    for (const type of ['workflow', 'collection']) {
+      expect(withBlocks([{type}]).join('\n')).toContain(
+        'requires the compiled graph renderer',
+      );
+    }
+  });
+
   it('rejects a name that is not URL-safe', () => {
     expect(problemsInTopic(topic({name: 'not a topic'})).join('\n')).toContain(
       'URL-safe',
@@ -467,6 +507,27 @@ describe('mergeTopic', () => {
     expect(merged.sections[1].content[0].text).toBe('use tokens');
     // The base is untouched.
     expect(base.sections[0].content[0].text).toBe('npm i');
+  });
+
+  it('finds a retitled base section by the key its old title derives', () => {
+    // A base section retitled later keeps its old key as its `id`; an
+    // extension that still names it by the old title replaces it.
+    const merged = mergeTopic(
+      {
+        ...base,
+        sections: [
+          {id: 'quick-start', title: 'Wrap your app in a theme', content: []},
+          {id: 'tokens', title: 'Tokens', content: []},
+        ],
+      },
+      {sections: [{title: 'Quick Start', content: []}]},
+    );
+    expect(merged.sections.map(section => [section.id, section.title])).toEqual(
+      [
+        ['quick-start', 'Quick Start'],
+        ['tokens', 'Tokens'],
+      ],
+    );
   });
 
   it('replaces a section by stable ID even when its title changes', () => {

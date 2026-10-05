@@ -63,7 +63,9 @@ describe('authoring self-docs', () => {
 describe('what the authoring docs say about the docs tree', () => {
   it('marks exactly the fields the docs tree does not read yet', () => {
     const notReadYet = graphFieldsDoc.fields
-      .filter(field => /Not read yet/.test(field.description))
+      .filter(field =>
+        /^Reserved: .*Nothing reads it today/.test(field.description),
+      )
       .map(field => field.name);
     // The tree reads `placement` for every guide (spec:AST-046); the other
     // graph fields are still refused by every topic reader.
@@ -79,18 +81,25 @@ describe('what the authoring docs say about the docs tree', () => {
     expect(placement.description).toMatch(
       /Read for every guide, the CLI's and each integration's/,
     );
-    expect(graphFieldsDoc.description).toMatch(/not built yet/);
+    expect(graphFieldsDoc.description).toMatch(
+      /Nothing reads `aliases` or `audience` today/,
+    );
   });
 
-  it('keeps graph blocks behind the separate GraphContentBlock type', () => {
+  it('keeps graph blocks behind the separate GraphContentBlock type, and a section takes a reference block', () => {
     const content = referenceDoc.fields
       .flatMap(field => [field, ...(field.fields ?? [])])
       .find(field => field.name === 'sections[].content');
-    expect(content.type).toBe('ReferenceContentBlock[]');
+    expect(content.type).toBe('(ReferenceContentBlock | ReferenceDocBlock)[]');
     expect(content.description).toContain('GraphContentBlock');
     for (const type of GRAPH_BLOCK_TYPES) {
       expect(content.description).toContain(type);
     }
+    // A section's reference block reads as the doc it includes.
+    expect(GRAPH_BLOCK_TYPES.has('reference')).toBe(false);
+    expect(content.description).toMatch(
+      /A `reference` block .* includes another doc/,
+    );
   });
 
   it('says where namespace docs live: the CLI tree, and each integration', () => {

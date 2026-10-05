@@ -20,13 +20,14 @@ export const doc = {
     'ReferenceDoc, and `index: true` returns its section index (each ' +
     'section\'s key, title, and summary); a topic plus a section returns ' +
     'that one section. Token-ref blocks are ' +
-    'inlined in every read. The topic set is the CLI\'s own docs plus the ' +
+    'inlined in every read, and so is a section\'s reference block: the doc it ' +
+    'includes, then the command that opens that doc. The topic set is the CLI\'s own docs plus the ' +
     'ones the project\'s configured integrations contribute, including any ' +
     'topic an integration replaces or extends, so it depends on the cwd. ' +
     'A route opens a node of the docs tree instead: a namespace such as ' +
     "`cli/api` returns its children one level down, a typed doc such as " +
     "`cli/api/functions/search` returns its content, and a guide the tree " +
-    'places (`cli/integrations`) reads like any topic. ' +
+    'places (`cli/integrations/quick-start`) reads like any topic. ' +
     'Every read but the list carries `links`, the commands that move from it: ' +
     '`up` to the level it sits in, `previous` and `next` to its neighbors, and, ' +
     'for a typed doc, `related` to the docs it names (its command or function, ' +
@@ -97,7 +98,7 @@ export const doc = {
     {
       type: 'docs.detail',
       description:
-        "One topic's full ReferenceDoc, with token-ref blocks inlined, plus links.",
+        "One topic's full ReferenceDoc, with token-ref and reference blocks inlined, plus links.",
     },
     {
       type: 'docs.index',
@@ -107,7 +108,7 @@ export const doc = {
     {
       type: 'docs.detail.section',
       description:
-        'One ReferenceSection of the topic, found by key or title, with token-ref blocks inlined.',
+        'One ReferenceSection of the topic, found by key or title, with token-ref and reference blocks inlined.',
     },
     {
       type: 'docs.node',
@@ -136,7 +137,7 @@ export const doc = {
     {label: 'One API function', code: "await docs('cli/api/functions/search');"},
     {
       label: 'A whole guide from the docs tree',
-      code: "await docs('cli/integrations');",
+      code: "await docs('cli/integrations/quick-start');",
     },
     {label: 'One section by key', code: "await docs('tokens', 'spacing');"},
   ],

@@ -101,12 +101,10 @@ const styles = stylex.create({
     // Focus ring via focus-visible
   },
   overlap: {
-    // Matches Avatar's own overlap rule: the first item in the row must not be
-    // pulled outside the group's box.
-    marginInlineStart: {
-      default: null,
-      ':not(:first-child)': 'var(--_avatar-group-overlap)',
-    },
+    // Matches Avatar's own overlap rule. AvatarGroup pads its start edge by
+    // the same amount, so the indicator stays inside the group's box even
+    // when it is the first child.
+    marginInlineStart: 'var(--_avatar-group-overlap)',
   },
 });
 

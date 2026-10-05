@@ -198,7 +198,6 @@ const styles = stylex.create({
     },
     display: 'flex',
     fontWeight: fontWeightVars['--font-weight-normal'],
-    outline: 'none',
     position: 'relative',
     textAlign: 'start',
     textDecoration: 'none',

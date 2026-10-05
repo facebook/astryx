@@ -3,7 +3,12 @@
 /**
  * @file `astryx doctor` project health and integration-authoring diagnostics.
  * Human output uses plain stable tokens; every leaf also has a typed JSON
- * response. Exit 1 means a check found an error, while warnings remain exit 0.
+ * response. Template-conflict fields follow the package release boundary.
+ * Exit 1 means a check found an error, while warnings remain exit 0.
+ *
+ * @input Typed Doctor and integration-authoring API responses.
+ * @output Human-readable records or pass-through typed JSON.
+ * @position CLI presentation adapter for project and integration health.
  */
 
 import {runChecks} from '../../../api/doctor/doctor.mjs';
@@ -31,6 +36,8 @@ import {doc as integrationTemplateConflictsFn} from '../../../api/integration/in
 import {doc as integrationComponentConflictsFn} from '../../../api/integration/integrationComponentConflicts.doc.mjs';
 import {doc as integrationDocConflictsFn} from '../../../api/integration/integrationDocConflicts.doc.mjs';
 import {NO_RESULT_SET} from '../../../foundation/debug/index.mjs';
+import {cliError} from '../lib/cli-error.mjs';
+import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 
 const STATUS = {
   pass: '[ok]',
@@ -126,26 +133,41 @@ function printTemplateConflicts(data) {
     ...issueBlocks(data.issues),
   ];
   if (data.conflicts.length === 0 && data.issues.length === 0) {
-    output.push(
-      text('[ok] No template replacements or id conflicts with Core.'),
-    );
+    output.push(text('[ok] No template ids conflict with Core.'));
   } else if (data.conflicts.length > 0) {
+    const expanded = data.conflicts.some(
+      conflict => 'relationship' in conflict,
+    );
     output.push(
       records(data.conflicts, {
-        fields: [
-          'severity',
-          'relationship',
-          'id',
-          'replaces',
-          'integrationPackage',
-          'integrationType',
-          'integrationName',
-          'message',
-          'command',
-        ],
+        fields: expanded
+          ? [
+              'severity',
+              'relationship',
+              'id',
+              'replaces',
+              'integrationPackage',
+              'integrationType',
+              'integrationName',
+              'message',
+              'command',
+            ]
+          : [
+              'severity',
+              'id',
+              'integrationPackage',
+              'integrationType',
+              'integrationName',
+              'message',
+              'command',
+            ],
         format: {severity: statusToken},
       }),
-      text(`${data.conflicts.length} Core template relationship(s).`),
+      text(
+        expanded
+          ? `${data.conflicts.length} Core template relationship(s).`
+          : `${data.conflicts.length} Core template conflict(s). Renaming is recommended but optional; keep the package-qualified command if the overlap is intentional.`,
+      ),
     );
   }
   emit(...output);
@@ -161,8 +183,10 @@ function printComponentConflicts(data) {
     ),
     ...issueBlocks(data.issues),
   ];
+  // An [ok] after a failed check reads as a pass: say nothing it could not check.
+  const failed = data.issues.some(issue => issue.severity === 'error');
   if (data.conflicts.length === 0) {
-    output.push(text('[ok] No component names conflict with Core.'));
+    if (!failed) output.push(text('[ok] No component names conflict with Core.'));
   } else {
     output.push(
       records(data.conflicts, {
@@ -199,10 +223,14 @@ function printDocConflicts(data) {
       issue => issue.severity === 'error' || issue.code === 'invalid_doc_graph',
     )
   ) {
-    output.push(text('[ok] The docs tree and every link in these docs check out.'));
+    output.push(
+      text('[ok] The docs tree and every link in these docs check out.'),
+    );
   }
   if (data.findings.length === 0) {
-    output.push(text('[ok] No doc topics overlap with Core.'));
+    if (!data.issues.some(issue => issue.severity === 'error')) {
+      output.push(text('[ok] No doc topics overlap with Core.'));
+    }
   } else {
     output.push(
       records(data.findings, {
@@ -294,18 +322,56 @@ async function runAuthoringCheck(program, pkg, kind) {
 }
 
 /**
+ * The first word after a command group, which names a subcommand it does not
+ * have, or null.
+ * @param {import('commander').Command | undefined} invoked
+ * @returns {string | null}
+ */
+function unknownWord(invoked) {
+  const word = (invoked?.args ?? []).find(arg => !String(arg).startsWith('-'));
+  return word == null ? null : String(word);
+}
+
+/**
+ * Report an unknown subcommand, in text as in JSON, with the ones the group has.
+ * @param {import('commander').Command} group
+ * @param {string} label the group's full name
+ * @param {string} word
+ */
+function unknownSubcommand(group, label, word) {
+  return cliError(`unknown subcommand '${label} ${word}'`, {
+    suggestions: group.commands.map(child => ({
+      name: child.name(),
+      reason: 'available subcommand',
+    })),
+    code: ERROR_CODES.ERR_UNKNOWN_SUBCOMMAND,
+  });
+}
+
+/**
  * Register `astryx doctor` and its integration-authoring leaves.
  * @param {import('commander').Command} program
  */
 export function registerDoctor(program) {
-  const doctorCmd = defineCommand(program, doctorCommand, {
+  /** @type {import('commander').Command} */
+  let doctorCmd;
+  doctorCmd = defineCommand(program, doctorCommand, {
     fn: doctorFn,
-    action: async () => runProjectDoctor(program),
+    // `doctor integrations` is a mistyped subcommand, not a project check.
+    action: async (options, invoked) => {
+      const word = unknownWord(invoked);
+      if (word != null) return unknownSubcommand(doctorCmd, 'doctor', word);
+      return runProjectDoctor(program);
+    },
   });
   /** @type {import('commander').Command} */
   let integrationCmd;
   integrationCmd = defineCommand(doctorCmd, doctorIntegrationGroup, {
-    action: () => {
+    action: (options, invoked) => {
+      const word = unknownWord(invoked);
+      if (word != null) {
+        return unknownSubcommand(integrationCmd, 'doctor integration', word);
+      }
       integrationCmd.outputHelp();
       return NO_RESULT_SET;
     },

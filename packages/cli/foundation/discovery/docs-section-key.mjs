@@ -95,7 +95,7 @@ function legacyTitleMatchIndex(sections, query) {
 
 /**
  * A name as a docs-tree route segment: lowercase words joined by hyphens, so
- * `integrationPackCheck` and `integration pack` both read naturally.
+ * `integrationPackCheck` and `integration verify` both read naturally.
  * @param {string} name
  * @returns {string}
  */

@@ -26,7 +26,11 @@ import * as path from 'node:path';
 import {MIN_NODE_VERSION, isNodeVersionSupported} from '../../foundation/env/node-version.mjs';
 import {CLI_ROOT, findCoreDir, findInstalledPackage} from '../../foundation/fs/paths.mjs';
 import {explainPackageManager, getCliInvocation} from '../../foundation/env/package-manager.mjs';
-import {findConfigPath, Project} from '../../foundation/config/project.mjs';
+import {
+  findConfigPath,
+  Project,
+  providerLedgerOf,
+} from '../../foundation/config/project.mjs';
 import {DocsCatalog} from '../../foundation/discovery/docs-discovery.mjs';
 import {buildDocsIndexData} from '../../foundation/discovery/docs-section-key.mjs';
 import {
@@ -76,6 +80,8 @@ import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env
  * @property {string|null} [docsCatalogError] - Why the project's docs catalog
  *   could not be built, when it could not.
  * @property {Array<{package: string, code: string, severity: 'warning'|'error', message: string}>|null} [integrationIssues]
+ * @property {Array<{spec: string, error: string}>|null} [autolinkFailures]
+ *   installed dependencies whose integration manifest could not be loaded
  *   Combined project-level integration issues, including cross-package template replacement warnings.
  * @property {Error|null} [configError] - Error thrown while resolving the config
  *   path (e.g. multiple config files present), surfaced by checkConfig as a FAIL.
@@ -417,6 +423,9 @@ export function checkImplicitIntegrations(ctx) {
   const implicit = ctx.integrations.filter(
     integration => integration.__autolinked,
   );
+  // A dependency whose manifest cannot be loaded leaves no loaded record, so
+  // without this line doctor would say no dependency ships a manifest at all.
+  const unreadable = describeUnreadableManifests(ctx.autolinkFailures ?? []);
 
   if (implicit.length === 0) {
     return {
@@ -424,9 +433,12 @@ export function checkImplicitIntegrations(ctx) {
       label,
       status: 'info',
       message:
-        ctx.integrations.length > 0
+        (ctx.integrations.length > 0
           ? 'None — every loaded integration is named in astryx.config.'
-          : 'None — no installed dependency ships an astryx.integration.* manifest.',
+          : unreadable
+            ? 'None loaded.'
+            : 'None — no installed dependency ships an astryx.integration.* manifest.') +
+        unreadable,
     };
   }
 
@@ -439,11 +451,25 @@ export function checkImplicitIntegrations(ctx) {
       integration.__spec && integration.__spec !== integration.name
         ? ` (declared as "${integration.__spec}")`
         : '';
-    const roots = ['components', 'templates', 'themes', 'docs', 'codemods'].filter(
+    // A declared root counts only when it exists: the manifest's keys are a
+    // claim, and `integration-issues` reports the ones that are not true.
+    const declared = ['components', 'templates', 'themes', 'docs', 'codemods'].filter(
       root => integration[/** @type {'components'} */ (root)],
     );
+    const missing = declared.filter(root => {
+      const dir = integration[/** @type {'components'} */ (root)];
+      if (typeof dir !== 'string') return false;
+      const base =
+        typeof integration.__packageDir === 'string'
+          ? integration.__packageDir
+          : (ctx.cwd ?? process.cwd());
+      return !fs.existsSync(path.isAbsolute(dir) ? dir : path.resolve(base, dir));
+    });
+    const roots = declared.filter(root => !missing.includes(root));
     const contributes = roots.length > 0 ? roots.join(', ') : 'nothing';
-    return `${integration.name}${version}${alias} from ${integration.__dependencyField}, contributing ${contributes}`;
+    const absent =
+      missing.length > 0 ? ` (declared ${missing.join(', ')} missing on disk)` : '';
+    return `${integration.name}${version}${alias} from ${integration.__dependencyField}, contributing ${contributes}${absent}`;
   });
 
   const plural = implicit.length === 1 ? '' : 's';
@@ -453,13 +479,38 @@ export function checkImplicitIntegrations(ctx) {
     status: 'info',
     message:
       `${implicit.length} integration${plural} loaded from installed ` +
-      `dependencies with no astryx.config entry: ${described.join('; ')}.`,
+      `dependencies with no astryx.config entry: ${described.join('; ')}.` +
+      unreadable,
     fix:
       'Nothing to fix. Keep these dependencies installed. The CLI links them ' +
       'from package.json, so an unused-dependency check that looks only for ' +
       'source imports will report them as unused. Add them to `integrations` ' +
       'in astryx.config.* to make the link explicit.',
   };
+}
+
+/**
+ * The sentence `implicit-integrations` adds for dependencies whose manifest
+ * could not be loaded, or '' when there are none. Still informational: the
+ * package is a dependency's own bug, which `doctor integration validate`
+ * diagnoses, but doctor must not report it as absent.
+ * @param {Array<{spec: string, error: string}>} failures
+ * @returns {string}
+ */
+function describeUnreadableManifests(failures) {
+  if (failures.length === 0) return '';
+  const one = failures.length === 1;
+  const listed = failures
+    .map(({spec, error}) => {
+      const reason = String(error).split('\n')[0].slice(0, 160);
+      return `${spec} (${reason})`;
+    })
+    .join('; ');
+  return (
+    ` ${failures.length} installed ${one ? 'dependency ships' : 'dependencies ship'} ` +
+    `an astryx.integration.* manifest that could not be loaded, so ${one ? 'it contributes' : 'they contribute'} ` +
+    `nothing: ${listed}. Run \`astryx doctor integration validate <package>\` for details.`
+  );
 }
 
 /**
@@ -738,12 +789,26 @@ export function checkProviderIdentity(ctx) {
     integration =>
       integration.providerId != null && integration.__loadError == null,
   ).length;
+  // An integration that could not be read has no provider ID to check, so the
+  // count above is not a complete survey. Say so instead of counting silently.
+  const unread = ctx.integrations.filter(
+    integration => integration.__loadError != null,
+  ).length;
+  const unreadNote =
+    unread === 0
+      ? ''
+      : unread === 1
+        ? ' 1 loaded integration could not be read, so its provider ID is unknown.'
+        : ` ${unread} loaded integrations could not be read, so their provider IDs are unknown.`;
   if (count === 0) {
     return {
       id,
       label,
       status: 'info',
-      message: 'None — no loaded integration has a provider identity.',
+      message:
+        (unread === 0
+          ? 'None — no loaded integration has a provider identity.'
+          : 'No readable integration has a provider identity.') + unreadNote,
     };
   }
   return {
@@ -751,9 +816,10 @@ export function checkProviderIdentity(ctx) {
     label,
     status: 'pass',
     message:
-      count === 1
+      (count === 1
         ? '1 loaded integration has its own provider ID.'
-        : `${count} loaded integrations each have their own provider ID.`,
+        : `${count} loaded integrations each have their own provider ID.`) +
+      unreadNote,
   };
 }
 
@@ -1032,13 +1098,17 @@ export async function checkDocsTree(_ctx, options = {}) {
         }
       }
       // Every link between docs names a doc that exists (spec:AST-047 FR9):
-      // typed fields, reference and workflow blocks, and inline links.
+      // typed fields, reference and workflow blocks, and inline links. A
+      // reference block also includes all it names.
       for (const node of tree.nodes.values()) {
         for (const edge of typedEdges(tree, node).unresolved) {
           problems.push(`${node.route}: ${edge}`);
         }
       }
       problems.push(...(await docsLinkProblems(catalog, tree)));
+      problems.push(
+        ...(await docsLinkProblems(catalog, tree, {references: true})),
+      );
     }
     // New findings warn: a project that passed before keeps passing
     // (0.6 compatibility), and the warning names what to fix.
@@ -1194,11 +1264,25 @@ export async function runChecks(options = {}) {
   let docsCatalogError = null;
   /** @type {Array<{package: string, code: string, severity: 'warning'|'error', message: string}>|null} */
   let integrationIssues = null;
+  /** @type {Array<{spec: string, error: string}>|null} */
+  let autolinkFailures = null;
   try {
     const project = await Project.load(cwd);
     configTheme =
       /** @type {{theme?: string}} */ (project.config ?? {}).theme ?? null;
     integrations = project.loadedIntegrations;
+    // An installed dependency whose manifest cannot be loaded is kept out of
+    // loadedIntegrations on purpose. The provider ledger still records it.
+    autolinkFailures = [...providerLedgerOf(project).values()]
+      .filter(
+        entry =>
+          entry.outcome === 'load-failed' &&
+          entry.candidate.source === 'autolinked',
+      )
+      .map(entry => ({
+        spec: entry.candidate.spec ?? entry.label,
+        error: entry.error ?? 'its manifest could not be loaded',
+      }));
     try {
       docsCatalog = await project.docs();
       docsCatalogIssues = (await project.issues()).filter(
@@ -1225,6 +1309,7 @@ export async function runChecks(options = {}) {
     docsCatalogIssues,
     docsCatalogError,
     integrationIssues,
+    autolinkFailures,
     configError,
   };
 

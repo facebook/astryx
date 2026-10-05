@@ -50,10 +50,18 @@ export interface ItemProps extends BaseProps<HTMLElement> {
   ref?: React.Ref<HTMLElement>;
 
   /**
-   * HTML element to render as the root.
+   * What the root renders as: an HTML element, or a component for a caller
+   * that needs the root to be something else. A menu row that navigates
+   * passes the application's link component here, so the row's root IS the
+   * anchor and a modified or middle click keeps the browser's meaning.
+   *
+   * Give a component only when the row carries a `role`, so the parent owns
+   * keyboard access and the row adds no second tab stop; and only when no
+   * interactive node sits in `startContent` or `endContent`, since a control
+   * nested inside an anchor is invalid.
    * @default 'div'
    */
-  as?: 'div' | 'li' | 'span';
+  as?: 'div' | 'li' | 'span' | React.ElementType;
 
   /**
    * Marker rendered before startContent as a direct flex child.
@@ -138,7 +146,9 @@ export interface ItemProps extends BaseProps<HTMLElement> {
   interactiveRef?: React.RefObject<HTMLElement | null>;
 
   /**
-   * Link URL. Makes the item a link via an invisible anchor element.
+   * Link URL. Makes the item a link via an invisible anchor element. A row
+   * whose root is already a link component (see `as`) carries the address on
+   * that root instead, and no invisible anchor is rendered.
    */
   href?: string;
 
@@ -243,16 +253,19 @@ const styles = stylex.create({
     cursor: 'default',
     pointerEvents: 'none' as const,
   },
+  // A row whose root is the link: the browser's anchor paint stays out of it.
+  linkRoot: {
+    color: 'inherit',
+    textDecoration: 'none',
+  },
   disabledContent: {
     opacity: 0.5,
   },
   invisibleButton: {
-    all: 'unset',
     cursor: {
       default: 'inherit',
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
-    font: 'inherit',
     color: 'inherit',
     display: 'flex',
     flexDirection: 'column',
@@ -262,12 +275,10 @@ const styles = stylex.create({
     outline: 'none',
   },
   invisibleAnchor: {
-    all: 'unset',
     cursor: {
       default: 'inherit',
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
-    font: 'inherit',
     color: 'inherit',
     display: 'flex',
     flexDirection: 'column',
@@ -442,6 +453,18 @@ export function Item({
   // handles keyboard access. Skip the invisible button/anchor and put
   // onClick directly on the root element instead.
   const hasParentRole = role != null;
+  // The root is whatever `as` says it is. A caller that passed a link
+  // component means the root itself is the anchor, so the address rides it
+  // and the invisible anchor below is not rendered.
+  const isLinkRoot = typeof Component !== 'string' && href != null;
+  const linkRootProps = isLinkRoot
+    ? {
+        // A disabled row keeps its place in the tree but goes nowhere.
+        href: isDisabled ? undefined : href,
+        target: isDisabled ? undefined : target,
+        rel: isDisabled ? undefined : rel,
+      }
+    : null;
   // aria-selected is only valid on selectable roles (option, tab, treeitem,
   // grid cells). On the default div/li root the attribute is invalid ARIA
   // (axe: aria-allowed-attr), so selection stays visual-only there — callers
@@ -542,7 +565,7 @@ export function Item({
           )}>
           {labelAndDescription}
         </span>
-      ) : href != null ? (
+      ) : href != null && !isLinkRoot ? (
         <LinkComponent
           href={href}
           target={target}
@@ -597,6 +620,7 @@ export function Item({
     <Component
       ref={(isDelegate ? mergedRef : ref) as React.Ref<never>}
       {...restProps}
+      {...linkRootProps}
       aria-selected={(allowsAriaSelected && isSelected) || undefined}
       // aria-selected is invalid on roles that don't permit it (listitem, a
       // bare div, etc.). For those, convey selection via aria-current — valid
@@ -615,6 +639,7 @@ export function Item({
           align === 'start' && styles.alignStart,
           isInteractive && styles.interactive,
           isInteractive && interactionOverlayStyles.backgroundColor,
+          isLinkRoot && styles.linkRoot,
           isHighlighted && styles.highlighted,
           isSelected && styles.selected,
           isDisabled && !hasParentRole && styles.disabled,
