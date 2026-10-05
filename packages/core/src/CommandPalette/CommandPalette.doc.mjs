@@ -226,6 +226,8 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Provide a searchSource with bootstrap results so users see useful options before typing.' },
       { guidance: true, description: 'Use auxiliaryData.group on items to automatically organize results into labeled sections.' },
+      { guidance: true, description: 'Provide a specific label when more than one command palette can appear in the same product surface.' },
+      { guidance: false, description: 'Intercept query-field keyboard events without preserving active IME composition and native Home/End caret movement.' },
       { guidance: false, description: 'Use CommandPalette for simple dropdowns or menus; use Menu or Selector for inline selections.' },
       { guidance: false, description: 'Add too many groups or items; curate results to keep the palette fast and scannable.' },
     ],
@@ -240,6 +242,8 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: 'Provide a searchSource with bootstrap results so users see useful options before typing.' },
       { guidance: true, description: 'Use auxiliaryData.group on items to automatically organize results into labeled sections.' },
+      { guidance: true, description: 'Provide a specific label when more than one command palette can appear in the same product surface.' },
+      { guidance: false, description: 'Intercept query-field keyboard events without preserving active IME composition and native Home/End caret movement.' },
       { guidance: false, description: 'Use CommandPalette for simple dropdowns or menus; use Menu or Selector for inline selections.' },
       { guidance: false, description: 'Add too many groups or items; curate results to keep the palette fast and scannable.' },
     ],
@@ -256,6 +260,8 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Provide a searchSource with bootstrap results so users see useful options before typing.' },
       { guidance: true, description: 'Use auxiliaryData.group on items to automatically organize results into labeled sections.' },
+      { guidance: true, description: 'Provide a specific label when more than one command palette can appear in the same product surface.' },
+      { guidance: false, description: 'Intercept query-field keyboard events without preserving active IME composition and native Home/End caret movement.' },
       { guidance: false, description: 'Use CommandPalette for simple dropdowns or menus; use Menu or Selector for inline selections.' },
       { guidance: false, description: 'Add too many groups or items; curate results to keep the palette fast and scannable.' },
     ],

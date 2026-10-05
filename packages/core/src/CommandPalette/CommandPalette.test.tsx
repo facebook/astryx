@@ -9,8 +9,11 @@
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor, fireEvent, act} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
 import {CommandPalette} from './CommandPalette';
+import {CommandPaletteInput} from './CommandPaletteInput';
+import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {createStaticSource} from '@astryxdesign/core/Typeahead';
 import type {SearchSource, SearchableItem} from '@astryxdesign/core/Typeahead';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -26,6 +29,11 @@ const groupedSource = createStaticSource([
 ]);
 
 const emptySource = createStaticSource([]);
+
+function NestedDismissible({onDismiss}: {onDismiss: () => void}) {
+  useLayerDismissal({isActive: true, onDismiss});
+  return null;
+}
 
 // Mock showModal and close since jsdom doesn't implement them
 beforeEach(() => {
@@ -230,6 +238,46 @@ describe('CommandPalette', () => {
     expect(handleOpenChange).toHaveBeenCalledWith(false);
   });
 
+  it('lets the topmost nested layer handle Escape before the palette', () => {
+    const handleOpenChange = vi.fn();
+    const handleNestedDismiss = vi.fn();
+    render(
+      <CommandPalette
+        isOpen={true}
+        onOpenChange={handleOpenChange}
+        searchSource={simpleSource}
+        input={
+          <>
+            <CommandPaletteInput />
+            <NestedDismissible onDismiss={handleNestedDismiss} />
+          </>
+        }
+      />,
+    );
+
+    fireEvent.keyDown(screen.getByRole('combobox'), {key: 'Escape'});
+
+    expect(handleNestedDismiss).toHaveBeenCalledOnce();
+    expect(handleOpenChange).not.toHaveBeenCalled();
+  });
+
+  it('preserves local Escape closing for inline previews', () => {
+    const handleOpenChange = vi.fn();
+    render(
+      <CommandPalette
+        isOpen={true}
+        isInline
+        onOpenChange={handleOpenChange}
+        searchSource={simpleSource}
+      />,
+    );
+
+    fireEvent.keyDown(screen.getByRole('combobox'), {key: 'Escape'});
+
+    expect(handleOpenChange).toHaveBeenCalledOnce();
+    expect(handleOpenChange).toHaveBeenCalledWith(false);
+  });
+
   it('keeps the empty state mounted while a no-result search is pending', async () => {
     // A source whose searches resolve only when we release them, so we can
     // observe the render output while a search transition is in flight.
@@ -355,6 +403,32 @@ describe('CommandPalette', () => {
     fireEvent.keyDown(input, {key: 't'});
 
     expect(input).not.toHaveAttribute('aria-activedescendant');
+  });
+
+  it('keeps Home and End on the query field and uses Page keys for results', async () => {
+    const user = userEvent.setup();
+    const handleOpenChange = vi.fn();
+    const handleValueChange = vi.fn();
+    render(
+      <CommandPalette
+        isOpen={true}
+        onOpenChange={handleOpenChange}
+        onValueChange={handleValueChange}
+        searchSource={simpleSource}
+      />,
+    );
+
+    const input = screen.getByRole('combobox');
+    await waitFor(() =>
+      expect(screen.getByText('Settings')).toBeInTheDocument(),
+    );
+    await user.click(input);
+    await user.keyboard('{Home}{End}');
+    expect(input).not.toHaveAttribute('aria-activedescendant');
+
+    await user.keyboard('{PageDown}{Enter}');
+    expect(handleValueChange).toHaveBeenCalledWith('settings');
+    expect(handleOpenChange).toHaveBeenCalledWith(false);
   });
 
   it('highlights on hover without scrolling and scrolls once per key (#6077)', async () => {

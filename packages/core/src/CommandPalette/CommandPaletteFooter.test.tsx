@@ -11,11 +11,25 @@ import {render, screen} from '@testing-library/react';
 import {CommandPaletteFooter} from './CommandPaletteFooter';
 
 describe('CommandPaletteFooter', () => {
-  it('renders default keyboard hints', () => {
+  it('renders default keyboard hint text', () => {
     render(<CommandPaletteFooter />);
     expect(screen.getByText(/Navigate/)).toBeInTheDocument();
     expect(screen.getByText(/Select/)).toBeInTheDocument();
     expect(screen.getByText(/Close/)).toBeInTheDocument();
+  });
+
+  it('renders default keyboard hints through four Kbd targets', () => {
+    const {container} = render(<CommandPaletteFooter />);
+    const shortcuts = screen.getAllByRole('img');
+
+    expect(container.firstElementChild).toHaveClass(
+      'astryx-command-palette-footer',
+    );
+    expect(shortcuts).toHaveLength(4);
+    expect(shortcuts.every(node => node.classList.contains('astryx-kbd'))).toBe(
+      true,
+    );
+    expect(container.querySelectorAll('kbd')).toHaveLength(4);
   });
 
   it('renders custom children instead of defaults', () => {

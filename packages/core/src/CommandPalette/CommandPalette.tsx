@@ -253,9 +253,10 @@ function ItemRenderer<T extends SearchableItem>({
  * Uses `searchSource` for all search logic — same interface as Typeahead.
  * For static lists, use `createStaticSource` from `@astryxdesign/core/Typeahead`.
  *
- * Keyboard navigation is handled by `useCombobox` from Selector,
- * ensuring consistent arrow key, Home/End, Enter, and Escape behavior
- * across all combobox-pattern components.
+ * Keyboard navigation is handled by `useCombobox` from Selector for arrows,
+ * PageUp/PageDown, and Enter. Home/End remain native caret keys. Modal Escape
+ * dismissal delegates to Dialog's shared layer stack so nested surfaces handle
+ * the first press.
  *
  * Input and footer are rendered by default — only pass them to replace the defaults.
  *
@@ -494,14 +495,19 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
     }
   }, [isOpen]);
 
-  // Wrap combobox's onKeyDown to intercept Escape (close palette) and
-  // Enter on highlight (select + close), since we're not using combobox's
-  // built-in open/close lifecycle.
+  // Wrap combobox's onKeyDown to preserve inline-preview Escape handling and
+  // select + close on Enter. Modal Escape stays unclaimed here so Dialog's
+  // shared dismissal stack can route it to the topmost surface.
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'Escape') {
-        e.preventDefault();
-        handleClose();
+        // Modal CommandPalette delegates Escape to Dialog's shared dismissal
+        // stack so a nested layer handles the first press. Inline previews do
+        // not join that stack, so preserve their local close behavior.
+        if (isInline) {
+          e.preventDefault();
+          handleClose();
+        }
         return;
       }
       if (e.key === 'Enter') {
@@ -518,13 +524,18 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
         }
         return;
       }
+      // Home and End remain native caret-movement keys for this editable
+      // combobox. PageUp/PageDown provide first/last result navigation.
+      if (e.key === 'Home' || e.key === 'End') {
+        return;
+      }
       // Space should type in the input, not trigger selection
       if (e.key === ' ') {
         return;
       }
       combobox.onKeyDown(e);
     },
-    [combobox, handleClose, selectableItems, selectItem],
+    [combobox, handleClose, isInline, selectableItems, selectItem],
   );
 
   // Hover highlight is owned here by a single delegated handler on the list

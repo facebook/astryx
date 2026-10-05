@@ -1336,6 +1336,35 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # CommandPalette's interactive stories previously rendered only closed
+      # triggers. Its owned matrix keeps grouped, empty, and pending anatomy
+      # reachable for semantic, contrast, direction, and viewport receipts.
+      - name: Run CommandPalette audit browser evidence
+        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] CommandPalette:')
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output command-palette-a11y-report.json \
+            --components CommandPalette \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new
+          pnpm exec playwright test \
+            packages/core/src/CommandPalette/__tests__/CommandPalette.a11y.chromium.spec.ts \
+            --project chromium
+
+      - name: Upload CommandPalette audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] CommandPalette:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: command-palette-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            command-palette-a11y-report.json
+            test-results/command-palette-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # Component-owned metadata fixtures retain exact-head browser receipts on
       # audit PRs, including failed pre-fix cases for before/after comparison.
       - name: Run ChatMessageMetadata audit browser evidence

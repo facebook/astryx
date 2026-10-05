@@ -20,6 +20,18 @@ describe('CommandPaletteInput', () => {
     expect(screen.getByPlaceholderText('Search…')).toBeInTheDocument();
   });
 
+  it('renders the local input target and delegated search icon', () => {
+    const {container} = render(<CommandPaletteInput />);
+
+    expect(container.firstElementChild).toHaveClass(
+      'astryx-command-palette-input',
+    );
+    expect(container.querySelector('.astryx-icon')).toHaveAttribute(
+      'aria-hidden',
+      'true',
+    );
+  });
+
   it('renders with custom placeholder', () => {
     render(<CommandPaletteInput placeholder="Type a command..." />);
     expect(
@@ -130,6 +142,34 @@ describe('CommandPaletteInput dialog context', () => {
       ...overrides,
     };
   }
+
+  it('renders the delegated loading spinner while busy', () => {
+    render(
+      <CommandPaletteContext value={makeContext({isBusy: true})}>
+        <CommandPaletteInput />
+      </CommandPaletteContext>,
+    );
+
+    expect(screen.getByRole('status', {name: 'Loading'})).toHaveClass(
+      'astryx-spinner',
+    );
+  });
+
+  it('does not route IME composition keys to palette commands', () => {
+    const onKeyDown = vi.fn();
+    render(
+      <CommandPaletteContext value={makeContext({onKeyDown})}>
+        <CommandPaletteInput />
+      </CommandPaletteContext>,
+    );
+
+    fireEvent.keyDown(screen.getByRole('combobox'), {
+      key: 'Enter',
+      isComposing: true,
+    });
+
+    expect(onKeyDown).not.toHaveBeenCalled();
+  });
 
   it('does not auto-focus inside an inline dialog', () => {
     const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus');

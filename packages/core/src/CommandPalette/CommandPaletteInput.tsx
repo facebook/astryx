@@ -16,7 +16,7 @@ import {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
-import {mergeProps} from '../utils';
+import {isImeKeyEvent, mergeProps} from '../utils';
 import {
   colorVars,
   typeScaleVars,
@@ -202,7 +202,10 @@ export function CommandPaletteInput({
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       onKeyDown?.(e);
-      if (e.defaultPrevented) {
+      if (e.defaultPrevented || isImeKeyEvent(e.nativeEvent)) {
+        // An in-progress IME composition owns Enter, Escape, and arrows. Let
+        // the input method finish or cancel composition without selecting or
+        // dismissing palette content.
         return;
       }
       // Delegate to useCombobox's keyboard handler from context

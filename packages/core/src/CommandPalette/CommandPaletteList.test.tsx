@@ -31,6 +31,17 @@ describe('CommandPaletteList', () => {
     expect(screen.getByRole('listbox')).toBeInTheDocument();
   });
 
+  it('carries the stable list theme target', () => {
+    render(
+      <CommandPaletteList>
+        <div>Item</div>
+      </CommandPaletteList>,
+    );
+    expect(screen.getByRole('listbox')).toHaveClass(
+      'astryx-command-palette-list',
+    );
+  });
+
   it('has default aria-label', () => {
     render(
       <CommandPaletteList>
