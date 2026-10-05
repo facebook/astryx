@@ -3,6 +3,7 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {Collapsible, CollapsibleGroup} from '@astryxdesign/core/Collapsible';
+import {Heading} from '@astryxdesign/core/Heading';
 import {VStack} from '@astryxdesign/core/Layout';
 import {
   colorVars,
@@ -17,13 +18,6 @@ const styles = stylex.create({
     fontFamily: typographyVars['--font-family-body'],
     maxWidth: 720,
     padding: spacingVars['--spacing-6'],
-  },
-  heading: {
-    fontFamily: typographyVars['--font-family-heading'],
-    fontSize: typographyVars['--text-heading-4-size'],
-    fontWeight: typographyVars['--text-heading-4-weight'],
-    lineHeight: typographyVars['--text-heading-4-leading'],
-    marginBlock: 0,
   },
   body: {
     color: colorVars['--color-text-secondary'],
@@ -46,11 +40,9 @@ export const AuditMatrix: Story = {
     <VStack gap={6} xstyle={styles.canvas}>
       <section aria-labelledby="collapsible-group-single-heading">
         <VStack gap={2}>
-          <h2
-            id="collapsible-group-single-heading"
-            {...stylex.props(styles.heading)}>
+          <Heading level={2} id="collapsible-group-single-heading">
             Single selection with leading chevrons
-          </h2>
+          </Heading>
           <CollapsibleGroup
             type="single"
             hasDividers
@@ -72,11 +64,9 @@ export const AuditMatrix: Story = {
 
       <section aria-labelledby="collapsible-group-multiple-heading">
         <VStack gap={2}>
-          <h2
-            id="collapsible-group-multiple-heading"
-            {...stylex.props(styles.heading)}>
+          <Heading level={2} id="collapsible-group-multiple-heading">
             Multiple selection with compact rows
-          </h2>
+          </Heading>
           <CollapsibleGroup
             type="multiple"
             hasDividers
