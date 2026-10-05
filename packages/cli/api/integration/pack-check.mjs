@@ -663,7 +663,7 @@ export async function integrationPackCheck(options = {}) {
       ])
     ) {
       // A section `id` is also a field an older CLI rejects, hiding the
-      // package's doc topics; the same peer range fixes both.
+      // package's doc topics. It needs an older CLI than the docs tree does.
       const idProblem = sectionIdsCliProblem(pkg);
       if (idProblem != null) {
         issues.push(error('section_ids_need_cli', idProblem));

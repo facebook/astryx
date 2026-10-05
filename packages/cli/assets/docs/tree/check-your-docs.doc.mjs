@@ -110,7 +110,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: '`integration verify` fails a package that ships a docs section, a placed guide, or a doc section with an `id` without an `@astryxdesign/cli` peer of `>=0.7.0`. It does not run the docs check, so run both.',
+          text: '`integration verify` fails a package that ships a docs section or a placed guide without an `@astryxdesign/cli` peer of `>=0.7.0`, or a doc section with an `id` without one of `>=0.6.4`. It does not run the docs check, so run both.',
         },
         {
           type: 'code',

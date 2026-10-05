@@ -25,8 +25,9 @@ import {loadManifestObject} from '../../foundation/integrations/integrations.mjs
 import {themeDescriptorSource} from '../../foundation/integrations/theme-descriptor.mjs';
 import {assertContributionVisible} from '../../foundation/integrations/contribution-inventory.mjs';
 import {
+  THEMES_CLI,
   themesCliProblem,
-  withDocsTreeCli,
+  withCliPeer,
 } from '../../foundation/integrations/cli-requirement.mjs';
 import {
   applyWrites,
@@ -253,7 +254,7 @@ export async function integrationAddTheme(name, options = {}) {
     if (themesCliProblem(current) != null) {
       packageUpdate = {
         contents:
-          JSON.stringify(withDocsTreeCli(current), null, 2) +
+          JSON.stringify(withCliPeer(current, THEMES_CLI), null, 2) +
           (text.endsWith('\n') ? '\n' : ''),
         expectedOriginal,
       };

@@ -1,11 +1,18 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import fs from 'node:fs';
 import {describe, expect, it} from 'vitest';
+import {semverCompare} from '../env/semver.mjs';
 import {
   DOCS_TREE_CLI,
+  SECTION_IDS_CLI,
+  THEMES_CLI,
   lowestAdmitted,
   docsTreeCliProblem,
   replacesCliProblem,
+  sectionIdsCliProblem,
+  themesCliProblem,
+  withCliPeer,
   withDocsTreeCli,
 } from './cli-requirement.mjs';
 
@@ -85,5 +92,59 @@ describe('replacesCliProblem', () => {
     expect(
       replacesCliProblem({peerDependencies: {'@astryxdesign/cli': '>=0.7.0'}}),
     ).toBeNull();
+  });
+});
+
+describe('themesCliProblem and sectionIdsCliProblem', () => {
+  // Published 0.6.4 reads typed theme descriptors and section ids. Published
+  // 0.6.3 rejects both and hides the package's doc topics.
+  it.each([
+    ['a theme', themesCliProblem, 'ships a theme'],
+    ['a section id', sectionIdsCliProblem, 'sets `id`'],
+  ])('asks for a CLI from 0.6.4 for %s', (_name, problem, feature) => {
+    expect(problem({name: '@acme/kit'})).toContain(feature);
+    expect(problem({name: '@acme/kit'})).toContain('A stable CLI before 0.6.4');
+    for (const range of ['>=0.6.4', '^0.6.4', '>=0.6.5', '>=0.7.0']) {
+      expect(
+        problem({peerDependencies: {'@astryxdesign/cli': range}}),
+      ).toBeNull();
+    }
+    for (const range of ['^0.6.0', '>=0.6.3', '*']) {
+      expect(
+        problem({peerDependencies: {'@astryxdesign/cli': range}}),
+      ).toContain('admits a stable CLI before 0.6.4');
+    }
+  });
+
+  it('keeps 0.7.0 for the docs tree and for replaces', () => {
+    const pkg = {peerDependencies: {'@astryxdesign/cli': '>=0.6.4'}};
+    expect(docsTreeCliProblem(pkg)).toContain(
+      'admits a stable CLI before 0.7.0',
+    );
+    expect(replacesCliProblem(pkg)).toContain(
+      'admits a stable CLI before 0.7.0',
+    );
+  });
+
+  it('names a released CLI for a feature that already shipped', () => {
+    const {version} = JSON.parse(
+      fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf-8'),
+    );
+    for (const floor of [THEMES_CLI, SECTION_IDS_CLI]) {
+      expect(semverCompare(floor, version.split('-')[0])).toBeLessThanOrEqual(
+        0,
+      );
+    }
+  });
+
+  it('declares the floor a theme needs as an optional peer', () => {
+    const declared = withCliPeer({name: '@acme/kit'}, THEMES_CLI);
+    expect(declared.peerDependencies).toEqual({
+      '@astryxdesign/cli': '>=0.6.4',
+    });
+    expect(declared.peerDependenciesMeta).toEqual({
+      '@astryxdesign/cli': {optional: true},
+    });
+    expect(themesCliProblem(declared)).toBeNull();
   });
 });

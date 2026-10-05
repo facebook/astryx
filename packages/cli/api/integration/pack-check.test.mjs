@@ -37,7 +37,7 @@ function writePackage({
 } = {}) {
   const pkg = {name, version};
   // A theme needs a CLI that reads typed theme descriptors.
-  if (themes) pkg.peerDependencies = {'@astryxdesign/cli': '>=0.7.0'};
+  if (themes) pkg.peerDependencies = {'@astryxdesign/cli': '>=0.6.4'};
   if (files !== undefined) pkg.files = files;
   if (scripts !== undefined) pkg.scripts = scripts;
   fs.writeFileSync(
@@ -116,6 +116,14 @@ describe('integrationPackCheck', () => {
     fs.writeFileSync(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
     const old = await integrationPackCheck({cwd: tmpDir});
     expect(old.data.issues).toContainEqual(
+      expect.objectContaining({code: 'themes_need_cli'}),
+    );
+
+    // Published 0.6.4 reads typed theme descriptors.
+    pkg.peerDependencies = {'@astryxdesign/cli': '>=0.6.4'};
+    fs.writeFileSync(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
+    const current = await integrationPackCheck({cwd: tmpDir});
+    expect(current.data.issues).not.toContainEqual(
       expect.objectContaining({code: 'themes_need_cli'}),
     );
   });
@@ -421,7 +429,11 @@ describe('integrationPackCheck', () => {
     expect(await codes()).toContain('section_ids_need_cli');
     const pkgFile = path.join(tmpDir, 'package.json');
     const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
-    pkg.peerDependencies = {'@astryxdesign/cli': '>=0.7.0'};
+    pkg.peerDependencies = {'@astryxdesign/cli': '^0.6.3'};
+    fs.writeFileSync(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
+    expect(await codes()).toContain('section_ids_need_cli');
+    // Published 0.6.4 reads a section id.
+    pkg.peerDependencies = {'@astryxdesign/cli': '>=0.6.4'};
     fs.writeFileSync(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
     expect(await codes()).not.toContain('section_ids_need_cli');
   }, 120_000);
