@@ -119,7 +119,9 @@ async function capture(page: Page, scenario: Case) {
     await page.goto(
       `${storybook.origin}/iframe.html?id=${STORY_ID}&viewMode=story&globals=colorMode:${scenario.mode};astryxTheme:neutral;direction:${scenario.direction}`,
     );
-    const subject = page.locator('#storybook-root > *').first();
+    const canvas = page.locator('#storybook-root');
+    const subject = canvas.locator(':scope > *').first();
+    await canvas.waitFor();
     await subject.waitFor();
     await holdMotionStill(page);
     await page.evaluate(async () => document.fonts.ready);
@@ -129,26 +131,29 @@ async function capture(page: Page, scenario: Case) {
       scenario.mode,
     );
 
+    await expect(canvas).toBeVisible();
     await expect(subject).toBeVisible();
-    await subject.scrollIntoViewIfNeeded();
+    await canvas.scrollIntoViewIfNeeded();
     await page.evaluate(async () => {
       await new Promise<void>(resolve =>
         requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
       );
     });
-    const initialBox = await subject.boundingBox();
+    const initialBox = await canvas.boundingBox();
     if (initialBox == null) {
-      throw new Error(`${scenario.state}: the audit matrix has no layout box`);
+      throw new Error(
+        `${scenario.state}: the Storybook canvas has no layout box`,
+      );
     }
     await page.evaluate(async () => {
       await new Promise<void>(resolve =>
         requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
       );
     });
-    const box = await subject.boundingBox();
+    const box = await canvas.boundingBox();
     if (box == null) {
       throw new Error(
-        `${scenario.state}: the audit matrix lost its layout box before capture`,
+        `${scenario.state}: the Storybook canvas lost its layout box before capture`,
       );
     }
     const geometryDelta = Math.max(
@@ -236,12 +241,13 @@ async function capture(page: Page, scenario: Case) {
     expect(errors).toEqual([]);
 
     const file = `CollapsibleGroup__${scenario.state}.png`;
-    const png = await subject.screenshot({animations: 'disabled'});
+    const png = await canvas.screenshot({animations: 'disabled'});
     expect(png.length).toBeGreaterThan(100);
     const receipt = {
       expected: {
         build: checkoutSha,
         storyId: STORY_ID,
+        captureRoot: '#storybook-root',
         theme: 'neutral',
         mode: scenario.mode,
         direction: scenario.direction,
@@ -263,6 +269,7 @@ async function capture(page: Page, scenario: Case) {
         ...environment,
         pageErrors: errors.length,
         selectorVisible: await subject.isVisible(),
+        captureRootVisible: await canvas.isVisible(),
         geometry: box,
         settledRender: {
           initial: initialBox,
