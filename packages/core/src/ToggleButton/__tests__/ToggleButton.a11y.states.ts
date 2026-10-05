@@ -148,7 +148,7 @@ export type ToggleButtonStateId = ToggleButtonBindingRow['id'];
 export const TOGGLE_BUTTON_PATTERN_EXCLUSIONS = [
   {
     id: 'group-semantics',
-    owner: 'ToggleButtonGroup.test.tsx',
+    owner: 'ToggleButton.test.tsx',
     reason:
       'The reusable toggle-button contract owns each pressed button. Group naming, single/multiple selection policy, and sibling coordination remain ToggleButtonGroup behavior.',
   },
