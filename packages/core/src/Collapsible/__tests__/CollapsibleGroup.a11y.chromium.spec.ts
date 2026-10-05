@@ -130,6 +130,22 @@ async function capture(page: Page, scenario: Case) {
   try {
     await page.setViewportSize(scenario.viewport);
     await page.emulateMedia({reducedMotion: 'reduce'});
+    if (scenario.coarsePointer) {
+      const session = await page.context().newCDPSession(page);
+      try {
+        await session.send('Emulation.setEmulatedMedia', {
+          features: [
+            {name: 'prefers-reduced-motion', value: 'reduce'},
+            {name: 'pointer', value: 'coarse'},
+            {name: 'any-pointer', value: 'coarse'},
+            {name: 'hover', value: 'none'},
+            {name: 'any-hover', value: 'none'},
+          ],
+        });
+      } finally {
+        await session.detach();
+      }
+    }
     browserVersion = page.context().browser()?.version() ?? 'unknown';
     await page.goto(
       `${storybook.origin}/iframe.html?id=${STORY_ID}&viewMode=story&globals=colorMode:${scenario.mode};astryxTheme:neutral;direction:${scenario.direction}`,
