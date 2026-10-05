@@ -520,6 +520,8 @@ export const TOGGLE_BUTTON_PATTERN: PatternContract<ToggleButtonStateFacts> =
         outcome:
           'Changing the pressed state leaves focus on the toggle button.',
         sources: [WCAG_3_2_2],
+        // Partly: see the 3.2.2 exemption for context changes caused by the
+        // caller rather than by the ToggleButton itself.
         covers: ['3.2.2-on-input'],
         appliesWhen: {
           condition: 'the state is operable and focusable',
@@ -699,6 +701,14 @@ export const TOGGLE_BUTTON_PATTERN: PatternContract<ToggleButtonStateFacts> =
         owner: 'the page',
         verifiedBy: 'page-level review',
         reason: 'A component does not own the document language.',
+      },
+      '3.2.2-on-input': {
+        owner: 'the caller, for its response to onPressedChange',
+        verifiedBy:
+          'integration and page-level review of any navigation, reload, or surrounding content change triggered by the caller',
+        reason:
+          'This contract proves that changing pressed state keeps focus on the ToggleButton. It cannot observe whether caller code changes the wider page context in response to onPressedChange.',
+        coversRemainderOnly: true,
       },
       '3.2.4-consistent-identification': {
         owner: 'the design system and caller content',

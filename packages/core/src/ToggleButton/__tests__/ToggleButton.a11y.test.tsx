@@ -79,6 +79,15 @@ describe('ToggleButton — toggle-button pattern, jsdom lane', () => {
 });
 
 describe('ToggleButton binding inventory', () => {
+  it('retains disabled ownership through both member and group paths', () => {
+    expect(TOGGLE_BUTTON_BINDING_STATES.map(state => state.id)).toEqual(
+      expect.arrayContaining([
+        'single-group-member-disabled',
+        'single-group-disabled-member-silent',
+      ]),
+    );
+  });
+
   it('gives every representative state a distinct story', () => {
     const stories = TOGGLE_BUTTON_BINDING_STATES.map(state => state.storyId);
     expect(new Set(stories).size).toBe(stories.length);

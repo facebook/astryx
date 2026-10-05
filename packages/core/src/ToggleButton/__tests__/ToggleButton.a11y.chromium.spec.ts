@@ -1,10 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file ToggleButton.pattern.a11y.chromium.spec.ts
+ * @file ToggleButton.a11y.chromium.spec.ts
  * @input Uses the reusable toggle-button contract and checked-in Storybook states
  * @output Accessibility-tree and real-browser evidence for ToggleButton
  * @position Component binding; jsdom covers only the DOM layer.
+ *
+ * SYNC: States and story IDs live in ToggleButton.a11y.states.ts and
+ *   apps/storybook/stories/ToggleButtonPatternA11y.stories.tsx.
  */
 
 import {expect, test, type CDPSession, type Page} from '@playwright/test';

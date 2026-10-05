@@ -22,6 +22,8 @@ export interface ToggleButtonBindingState {
     | 'multiple-group';
   readonly facts: ToggleButtonStateFacts;
   readonly tooltip?: string;
+  readonly groupDisabled?: boolean;
+  readonly memberDisabled?: boolean;
 }
 
 const facts = (
@@ -102,6 +104,24 @@ export const TOGGLE_BUTTON_BINDING_STATES = [
     visibleLabel: 'List',
     renderKind: 'single-group',
     facts: facts(true),
+  },
+  {
+    id: 'single-group-member-disabled',
+    summary: 'a disabled member inside an enabled ToggleButtonGroup',
+    storyId: 'a11y-toggle-button-pattern--single-group-member-disabled',
+    visibleLabel: 'List',
+    renderKind: 'single-group',
+    memberDisabled: true,
+    facts: facts(false, {operable: false, focusable: false, unavailable: true}),
+  },
+  {
+    id: 'single-group-disabled-member-silent',
+    summary: 'an otherwise enabled member inside a disabled ToggleButtonGroup',
+    storyId: 'a11y-toggle-button-pattern--single-group-disabled-member-silent',
+    visibleLabel: 'List',
+    renderKind: 'single-group',
+    groupDisabled: true,
+    facts: facts(false, {operable: false, focusable: false, unavailable: true}),
   },
   {
     id: 'multiple-group-unpressed',

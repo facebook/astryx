@@ -47,5 +47,11 @@ export const DisabledWithTooltipPressed = storyFor(
 );
 export const SingleGroupUnpressed = storyFor('single-group-unpressed');
 export const SingleGroupPressed = storyFor('single-group-pressed');
+export const SingleGroupMemberDisabled = storyFor(
+  'single-group-member-disabled',
+);
+export const SingleGroupDisabledMemberSilent = storyFor(
+  'single-group-disabled-member-silent',
+);
 export const MultipleGroupUnpressed = storyFor('multiple-group-unpressed');
 export const MultipleGroupPressed = storyFor('multiple-group-pressed');

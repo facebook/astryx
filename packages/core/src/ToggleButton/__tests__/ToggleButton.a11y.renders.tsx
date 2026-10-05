@@ -52,11 +52,22 @@ function StatefulToggle({
   return <ToggleButton {...common} label="Bold" />;
 }
 
-function SingleGroup({pressed}: {pressed: boolean}): ReactElement {
-  const [value, setValue] = useState<string | null>(pressed ? 'list' : null);
+function SingleGroup({state}: {state: ToggleButtonBindingRow}): ReactElement {
+  const bindingState = state as ToggleButtonBindingState;
+  const [value, setValue] = useState<string | null>(
+    state.facts.pressed ? 'list' : null,
+  );
   return (
-    <ToggleButtonGroup label="View" value={value} onChange={setValue}>
-      <ToggleButton value="list" label="List" />
+    <ToggleButtonGroup
+      label="View"
+      value={value}
+      isDisabled={bindingState.groupDisabled}
+      onChange={setValue}>
+      <ToggleButton
+        value="list"
+        label="List"
+        isDisabled={bindingState.memberDisabled}
+      />
     </ToggleButtonGroup>
   );
 }
@@ -81,7 +92,7 @@ function renderState(state: ToggleButtonBindingRow): ReactElement {
     case 'composed-label':
       return <StatefulToggle state={state} />;
     case 'single-group':
-      return <SingleGroup pressed={state.facts.pressed} />;
+      return <SingleGroup state={state} />;
     case 'multiple-group':
       return <MultipleGroup pressed={state.facts.pressed} />;
   }
@@ -99,6 +110,10 @@ export const TOGGLE_BUTTON_STATE_RENDERS: Readonly<
     renderStateById('disabled-with-tooltip-pressed'),
   'single-group-unpressed': () => renderStateById('single-group-unpressed'),
   'single-group-pressed': () => renderStateById('single-group-pressed'),
+  'single-group-member-disabled': () =>
+    renderStateById('single-group-member-disabled'),
+  'single-group-disabled-member-silent': () =>
+    renderStateById('single-group-disabled-member-silent'),
   'multiple-group-unpressed': () => renderStateById('multiple-group-unpressed'),
   'multiple-group-pressed': () => renderStateById('multiple-group-pressed'),
 };
