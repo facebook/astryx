@@ -14,6 +14,20 @@ import {AstryxError} from '../error.mjs';
 
 const SLOW = 30_000;
 
+/**
+ * The first guide a namespace places, read from the tree rather than named,
+ * so a restructure of the guides does not break the reads under test.
+ * @param {any} node the data of a docs.node read
+ * @returns {string}
+ */
+function placedGuide(node) {
+  const guide = node.slots
+    .flatMap((/** @type {any} */ slot) => slot.children)
+    .find((/** @type {any} */ child) => child.kind === 'generic');
+  if (guide == null) throw new Error(`${node.route} places no guide`);
+  return guide.route;
+}
+
 describe('docs() dispatcher routing', () => {
   it('no topic -> docs.list', async () => {
     const r = await docs();
@@ -35,6 +49,15 @@ describe('docs() dispatcher routing', () => {
     const {data} = await docs();
     const r = await docs(data[0].topic, undefined, {index: true});
     expect(r.type).toBe('docs.index');
+  }, SLOW);
+
+  it('reads a shortened section by its old key, which its title still derives', async () => {
+    const r = await docs(
+      'styling',
+      'stylex-build-setup-required-for-swizzled-components',
+    );
+    expect(r.type).toBe('docs.detail.section');
+    expect(r.data).toMatchObject({id: 'stylex-setup'});
   }, SLOW);
 
   it('topic + section -> docs.detail.section', async () => {
@@ -126,11 +149,15 @@ describe('docs() dispatcher routing', () => {
   }, SLOW);
 
   it('a guide the tree places reads like a topic: the whole doc, its index, a section', async () => {
-    expect((await docs('cli/integrations')).type).toBe('docs.detail');
-    const index = await docs('cli/integrations', undefined, {index: true});
-    expect(index).toMatchObject({type: 'docs.index', data: {name: 'cli/integrations'}});
+    // cli/integrations is a namespace of short guides; each guide reads like a topic.
+    const integrations = await docs('cli/integrations');
+    expect(integrations.type).toBe('docs.node');
+    const guide = placedGuide(integrations.data);
+    expect((await docs(guide)).type).toBe('docs.detail');
+    const index = await docs(guide, undefined, {index: true});
+    expect(index).toMatchObject({type: 'docs.index', data: {name: guide}});
     expect(index.data.sections.length).toBeGreaterThan(1);
-    expect((await docs('cli/integrations', 'components')).type).toBe(
+    expect((await docs(guide, index.data.sections[0].id)).type).toBe(
       'docs.detail.section',
     );
   }, SLOW);
@@ -142,23 +169,31 @@ describe('docs() dispatcher routing', () => {
     expect(leaf.links.up).toBe('astryx docs cli/api/functions');
     expect(leaf.links.previous).toMatch(/^astryx docs cli\/api\/functions\/[a-z-]+$/);
     expect(leaf.links.next).toMatch(/^astryx docs cli\/api\/functions\/[a-z-]+$/);
-    const index = await docs('cli/integrations', undefined, {index: true});
+    const integrations = (await docs('cli/integrations')).data;
+    const guide = placedGuide(integrations);
+    const siblings = integrations.slots
+      .find(slot => slot.children.some(child => child.route === guide))
+      .children.map(child => child.route);
+    const at = siblings.indexOf(guide);
+    const index = await docs(guide, undefined, {index: true});
     // A guide moves across its namespace's slot, as any tree node does.
     expect(index.data.links).toEqual({
-      up: 'astryx docs cli',
-      previous: 'astryx docs cli/component-lookups',
-      next: 'astryx docs cli/writing-docs',
+      up: 'astryx docs cli/integrations',
+      ...(at > 0 ? {previous: `astryx docs ${siblings[at - 1]}`} : {}),
+      ...(at < siblings.length - 1
+        ? {next: `astryx docs ${siblings[at + 1]}`}
+        : {}),
     });
-    const first = (await docs('cli/integrations', index.data.sections[0].id)).data;
+    const first = (await docs(guide, index.data.sections[0].id)).data;
     expect(first.links).toEqual({
-      up: 'astryx docs cli/integrations --index',
-      next: `astryx docs cli/integrations ${index.data.sections[1].id}`,
+      up: `astryx docs ${guide} --index`,
+      next: `astryx docs ${guide} ${index.data.sections[1].id}`,
     });
     const last = index.data.sections.at(-1).id;
-    const end = (await docs('cli/integrations', last)).data;
+    const end = (await docs(guide, last)).data;
     expect(end.links.next).toBeUndefined();
     expect(end.links.previous).toBe(
-      `astryx docs cli/integrations ${index.data.sections.at(-2).id}`,
+      `astryx docs ${guide} ${index.data.sections.at(-2).id}`,
     );
     // A flat topic's home is the Unorganized level, and it moves across it.
     const flat = (await docs('principles')).data.links;
@@ -209,13 +244,12 @@ describe('docs() dispatcher routing', () => {
     const err = await docs('cli', 'commands').catch(e => e);
     expect(err).toBeInstanceOf(AstryxError);
     expect(err.code).toBe('ERR_UNKNOWN_SECTION');
-    expect(err.suggestions.map(s => s.name)).toEqual([
-      'cli/component-lookups',
-      'cli/integrations',
-      'cli/writing-docs',
-      'cli/commands',
-      'cli/api',
-    ]);
+    // It names the namespace's children, in the order its slots list them.
+    const cli = (await docs('cli')).data;
+    expect(err.suggestions.map(s => s.name)).toEqual(
+      cli.slots.flatMap(slot => slot.children.map(child => child.route)),
+    );
+    expect(err.suggestions.map(s => s.name)).toContain('cli/commands');
   }, SLOW);
 
   it('an unknown route suggests the children of the deepest namespace it reaches', async () => {

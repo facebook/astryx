@@ -243,7 +243,7 @@ describe('integration-contributed topics', () => {
       const english = await docs('theme', undefined, {full: true});
       const englishTitles = english.data.sections.map(section => section.title);
       expect(englishTitles).toEqual(
-        expect.arrayContaining(['Quick Start', 'Theme Props']),
+        expect.arrayContaining(['Available Themes', 'Theme Props']),
       );
       scaffold({
         'theme-internal.doc.mjs': topic({
@@ -251,9 +251,9 @@ describe('integration-contributed topics', () => {
           extends: 'theme',
           sections: [
             {
-              id: 'acme-quick-start',
-              title: 'Quick Start',
-              content: [{type: 'prose', text: 'Acme quick start.'}],
+              id: 'acme-available-themes',
+              title: 'Available Themes',
+              content: [{type: 'prose', text: 'Acme themes.'}],
             },
             {
               title: 'Theme Props',
@@ -271,7 +271,7 @@ describe('integration-contributed topics', () => {
       expect(extended.data.sections).toHaveLength(base.data.sections.length);
       expect(
         extended.data.sections.filter(
-          section => section.id === 'acme-quick-start',
+          section => section.id === 'acme-available-themes',
         ),
       ).toHaveLength(1);
       expect(
@@ -303,6 +303,28 @@ describe('integration-contributed topics', () => {
       name: 'deploying',
       command: 'astryx docs deploying',
     });
+  }, SLOW);
+
+  it('ranks the topics that match every word of the query first', async () => {
+    // Dozens of CLI docs match `integration` alone, by name or in a code
+    // tick; the topics that hold both words, this one and the CLI's own
+    // troubleshooting guide, must still come first.
+    scaffold({
+      'troubleshooting.doc.mjs': topic({
+        name: 'troubleshooting',
+        title: 'Troubleshooting',
+        description: 'What to check when an integration does not load.',
+      }),
+    });
+    const {data} = await search('troubleshoot integration', {cwd: tmpDir, type: 'doc'});
+    const top = data.results.slice(0, 2).map(result => result.name);
+    // This topic, and the CLI's own troubleshooting guide wherever the tree
+    // places it.
+    expect(top).toContain('troubleshooting');
+    expect(
+      top.some(name => /^cli\/integrations\/(?:.+\/)?troubleshooting$/.test(name)),
+      top.join(', '),
+    ).toBe(true);
   }, SLOW);
 
   it("falls back to the CLI's own topics when the project config is unreadable", async () => {
