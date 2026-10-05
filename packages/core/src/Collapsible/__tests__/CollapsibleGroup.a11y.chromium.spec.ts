@@ -130,6 +130,12 @@ async function capture(page: Page, scenario: Case) {
         document.documentElement.getAttribute('data-theme') === expected,
       scenario.mode,
     );
+    await page.waitForFunction(
+      expected =>
+        document.querySelector('#storybook-root [dir]')?.getAttribute('dir') ===
+        expected,
+      scenario.direction,
+    );
 
     await expect(canvas).toBeVisible();
     await expect(subject).toBeVisible();
@@ -196,6 +202,9 @@ async function capture(page: Page, scenario: Case) {
       theme: document
         .querySelector('[data-astryx-theme]')
         ?.getAttribute('data-astryx-theme'),
+      declaredDirection: document
+        .querySelector('#storybook-root [dir]')
+        ?.getAttribute('dir'),
       mode: document.documentElement.getAttribute('data-theme'),
       colorScheme: getComputedStyle(document.documentElement).colorScheme,
       fonts: document.fonts.status,
@@ -246,6 +255,7 @@ async function capture(page: Page, scenario: Case) {
       expect(geometry.height).toBeGreaterThan(0);
     }
     expect(environment.theme).toBe('neutral');
+    expect(environment.declaredDirection).toBe(scenario.direction);
     expect(environment.mode).toBe(scenario.mode);
     expect(environment.colorScheme).toBe(scenario.mode);
     expect(environment.fonts).toBe('loaded');
