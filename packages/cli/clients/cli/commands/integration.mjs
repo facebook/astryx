@@ -115,6 +115,7 @@ export function registerIntegration(program) {
           extends: options.extends,
           parent: options.parent,
           to: options.to,
+          from: options.from,
         });
       } catch (error) {
         const err =

@@ -57,6 +57,12 @@ export const doc = {
         "Namespace of this package to place the doc in, as a guide in its `guides` slot; writes the namespace doc when it is missing, and declares the CLI that reads it as an optional `@astryxdesign/cli` peer. Only valid for doc, and not with --replaces or --extends",
     },
     {
+      flag: '--from <theme>',
+      param: 'options.from',
+      description:
+        'Existing theme slug to fork as a starting point instead of a blank scaffold; the new theme copies the base and has no link back. Only valid for theme',
+    },
+    {
       flag: '--to <version>',
       param: 'options.to',
       description:
@@ -102,6 +108,10 @@ export const doc = {
       cli: "astryx integration add agent-doc 'Run acme verify before finishing.'",
     },
     {label: 'Add a source theme', cli: 'astryx integration add theme ocean'},
+    {
+      label: 'Fork an existing theme',
+      cli: 'astryx integration add theme ocean --from neutral',
+    },
   ],
   exitCodes: [
     {code: 0, when: 'the contribution is written or the dry run succeeds'},

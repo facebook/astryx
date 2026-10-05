@@ -285,10 +285,6 @@ const WRONG_ON_PURPOSE = new Map([
  * cannot outlive the decision.
  */
 const AWAITING_DECISION = new Map([
-  [
-    'astryx integration add theme ocean --from neutral',
-    'the add-a-theme guide shows a fork option the CLI does not have: build it, or drop the paragraph',
-  ],
 ]);
 
 /** The CLI's own reads whose hint lines show commands. */
