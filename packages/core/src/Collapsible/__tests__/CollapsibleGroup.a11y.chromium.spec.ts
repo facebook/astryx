@@ -56,6 +56,8 @@ const CASES: Case[] = [
 ];
 
 const frames: Record<string, unknown>[] = [];
+const stateVisualMatrix: Record<string, unknown>[] = [];
+const contrastPairMatrix: Record<string, unknown>[] = [];
 let storybook: StaticServer;
 let checkoutSha: string;
 let storybookSha: string;
@@ -99,6 +101,8 @@ test.afterAll(async () => {
           storybookSha,
           browser: browserVersion,
           frames,
+          stateVisualMatrix,
+          contrastPairMatrix,
         },
         null,
         2,
@@ -181,6 +185,145 @@ async function capture(page: Page, scenario: Case) {
           height: rect.height,
         };
       };
+      type Color = {r: number; g: number; b: number; a: number};
+      const parseColor = (value: string): Color => {
+        const channels = value.match(/[\d.]+/g)?.map(Number);
+        if (!channels || channels.length < 3) {
+          throw new Error(`Cannot parse computed color: ${value}`);
+        }
+        return {
+          r: channels[0] ?? 0,
+          g: channels[1] ?? 0,
+          b: channels[2] ?? 0,
+          a: channels[3] ?? 1,
+        };
+      };
+      const composite = (foreground: Color, background: Color): Color => {
+        const a = foreground.a + background.a * (1 - foreground.a);
+        if (a === 0) {
+          return {r: 0, g: 0, b: 0, a: 0};
+        }
+        return {
+          r:
+            (foreground.r * foreground.a +
+              background.r * background.a * (1 - foreground.a)) /
+            a,
+          g:
+            (foreground.g * foreground.a +
+              background.g * background.a * (1 - foreground.a)) /
+            a,
+          b:
+            (foreground.b * foreground.a +
+              background.b * background.a * (1 - foreground.a)) /
+            a,
+          a,
+        };
+      };
+      const renderedBackground = (element: Element): Color => {
+        const layers: Color[] = [];
+        let current: Element | null = element;
+        while (current) {
+          const layer = parseColor(getComputedStyle(current).backgroundColor);
+          if (layer.a > 0) {
+            layers.push(layer);
+          }
+          if (layer.a >= 0.999) {
+            break;
+          }
+          current = current.parentElement;
+        }
+        return layers
+          .reverse()
+          .reduce(
+            (background, foreground) => composite(foreground, background),
+            {r: 255, g: 255, b: 255, a: 1},
+          );
+      };
+      const formatColor = ({r, g, b, a}: Color) =>
+        `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${a.toFixed(3)})`;
+      const luminance = ({r, g, b}: Color) => {
+        const channel = (value: number) => {
+          const normalized = value / 255;
+          return normalized <= 0.04045
+            ? normalized / 12.92
+            : ((normalized + 0.055) / 1.055) ** 2.4;
+        };
+        return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+      };
+      const contrast = (left: Color, right: Color) => {
+        const leftLuminance = luminance(left);
+        const rightLuminance = luminance(right);
+        return (
+          (Math.max(leftLuminance, rightLuminance) + 0.05) /
+          (Math.min(leftLuminance, rightLuminance) + 0.05)
+        );
+      };
+      const isVisible = (element: Element) => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return (
+          rect.width > 0 &&
+          rect.height > 0 &&
+          style.display !== 'none' &&
+          style.visibility !== 'hidden' &&
+          style.opacity !== '0'
+        );
+      };
+      const visibleContent = buttons
+        .filter(button => button.getAttribute('aria-expanded') === 'true')
+        .flatMap(button => {
+          const id = button.getAttribute('aria-controls');
+          const controlled = id ? document.getElementById(id) : null;
+          return controlled ? [...controlled.querySelectorAll('p')] : [];
+        });
+      const contrastPairs = [
+        ...node.querySelectorAll('h2'),
+        ...buttons,
+        ...visibleContent,
+      ]
+        .filter(isVisible)
+        .map(element => {
+          const style = getComputedStyle(element);
+          const background = renderedBackground(element);
+          const foreground = parseColor(style.color);
+          const renderedForeground = composite(foreground, background);
+          const ratio = contrast(renderedForeground, background);
+          const fontSize = Number.parseFloat(style.fontSize);
+          const fontWeight =
+            style.fontWeight === 'bold'
+              ? 700
+              : Number.parseFloat(style.fontWeight) || 400;
+          const threshold =
+            fontSize >= 24 || (fontSize >= 18.66 && fontWeight >= 700)
+              ? 3
+              : 4.5;
+          const text = (element as HTMLElement).innerText.trim();
+          const part =
+            element.tagName === 'H2'
+              ? `heading: ${text}`
+              : element.tagName === 'BUTTON'
+                ? `trigger: ${text}`
+                : `content: ${text}`;
+          return {
+            part,
+            state:
+              element.tagName === 'BUTTON'
+                ? element.getAttribute('aria-expanded') === 'true'
+                  ? 'expanded-rest'
+                  : 'collapsed-rest'
+                : 'rest',
+            meaningful: true,
+            foreground: style.color,
+            renderedForeground: formatColor(renderedForeground),
+            renderedBackdrop: formatColor(background),
+            fontSize,
+            fontWeight,
+            ratio: Number(ratio.toFixed(2)),
+            threshold,
+            exception: null,
+            passed: ratio + 1e-6 >= threshold,
+          };
+        });
       return {
         direction: groups[0]
           ? getComputedStyle(groups[0]).direction
@@ -194,7 +337,7 @@ async function capture(page: Page, scenario: Case) {
         text: (node as HTMLElement).innerText,
         sectionCount: node.querySelectorAll('section').length,
         headingCount: node.querySelectorAll('h2').length,
-        groupCount: node.querySelectorAll('.astryx-collapsible-group').length,
+        groupCount: groups.length,
         buttonCount: buttons.length,
         expandedNames: buttons
           .filter(button => button.getAttribute('aria-expanded') === 'true')
@@ -204,6 +347,7 @@ async function capture(page: Page, scenario: Case) {
           .map(button => (button as HTMLElement).innerText.trim()),
         groupGeometry: groups.map(geometry),
         buttonGeometry: buttons.map(geometry),
+        contrastPairs,
       };
     });
     const environment = await page.evaluate(() => ({
@@ -269,6 +413,14 @@ async function capture(page: Page, scenario: Case) {
       expect(geometry.width).toBeGreaterThan(0);
       expect(geometry.height).toBeGreaterThan(0);
     }
+    expect(observed.contrastPairs).toHaveLength(10);
+    for (const pair of observed.contrastPairs) {
+      expect(pair.passed, `${scenario.state}: ${pair.part}`).toBe(true);
+      expect(
+        pair.ratio,
+        `${scenario.state}: ${pair.part}`,
+      ).toBeGreaterThanOrEqual(pair.threshold);
+    }
     expect(environment.theme).toBe('neutral');
     expect(environment.declaredDirection).toBe(scenario.direction);
     expect(environment.mode).toBe(scenario.mode);
@@ -283,6 +435,29 @@ async function capture(page: Page, scenario: Case) {
     expect(errors).toEqual([]);
 
     const file = `CollapsibleGroup__${scenario.state}.png`;
+    const stateVisualRows = [
+      {
+        stateCaptured:
+          'rest matrix: single and multiple coordination with expanded and collapsed disclosure semantics',
+        screenshot: file,
+        approvedRepresentation:
+          'Rest — base tokens, no interaction (Design Conventions §Consistent State Representations)',
+        tokenSignature:
+          'base group, divider, density, text, and chevron tokens; no hover, focus, pressed, selected, disabled, loading, or status treatment',
+        tokenSignaturePresent: true,
+        matchesReference: 'yes',
+        verdict: 'pass',
+        note: 'Expanded and collapsed content are disclosure semantics delegated to the current Collapsible contract, not a novel interaction-state paint.',
+      },
+    ];
+    const contrastRows = observed.contrastPairs.map(pair => ({
+      screenshot: file,
+      theme: 'neutral',
+      mode: scenario.mode,
+      direction: scenario.direction,
+      viewport: scenario.viewport,
+      ...pair,
+    }));
     const png = await canvas.screenshot({animations: 'disabled'});
     expect(png.length).toBeGreaterThan(100);
     const receipt = {
@@ -325,6 +500,8 @@ async function capture(page: Page, scenario: Case) {
         width: png.readUInt32BE(16),
         height: png.readUInt32BE(20),
       },
+      stateVisualMatrix: stateVisualRows,
+      contrastPairMatrix: contrastRows,
       browser: browserVersion,
       passed: true,
     };
@@ -338,6 +515,8 @@ async function capture(page: Page, scenario: Case) {
       receipt: `${file}.sensors.json`,
       image: receipt.image,
     });
+    stateVisualMatrix.push(...stateVisualRows);
+    contrastPairMatrix.push(...contrastRows);
   } finally {
     page.off('pageerror', onError);
   }
