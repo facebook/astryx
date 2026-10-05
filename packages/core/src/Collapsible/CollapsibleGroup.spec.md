@@ -16,6 +16,7 @@ verified_by:
     packages/core/src/Collapsible/Collapsible.test.tsx,
     packages/core/src/Collapsible/__tests__/Collapsible.a11y.test.tsx,
     packages/core/src/Collapsible/__tests__/Collapsible.a11y.chromium.spec.ts,
+    packages/core/src/Collapsible/__tests__/CollapsibleGroup.a11y.chromium.spec.ts,
     packages/core/src/theme/themingTargets.test.ts,
     apps/storybook/stories/CollapsibleGroup.stories.tsx,
   ]

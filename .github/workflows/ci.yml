@@ -1307,6 +1307,35 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
+      # CollapsibleGroup's shared Collapsible story previously left the audit
+      # owner with no routable browser fixture. Its dedicated matrix now emits
+      # semantic-state, geometry, direction, theme, and viewport receipts.
+      - name: Run CollapsibleGroup audit browser evidence
+        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] CollapsibleGroup:')
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output collapsible-group-a11y-report.json \
+            --components CollapsibleGroup \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new
+          pnpm exec playwright test \
+            packages/core/src/Collapsible/__tests__/CollapsibleGroup.a11y.chromium.spec.ts \
+            --project chromium
+
+      - name: Upload CollapsibleGroup audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] CollapsibleGroup:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: collapsible-group-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            collapsible-group-a11y-report.json
+            test-results/collapsible-group-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # Component-owned metadata fixtures retain exact-head browser receipts on
       # audit PRs, including failed pre-fix cases for before/after comparison.
       - name: Run ChatMessageMetadata audit browser evidence
