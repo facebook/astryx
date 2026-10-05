@@ -23,8 +23,19 @@ const OUTPUT = path.resolve('test-results/collapsible-group-audit-evidence');
 const STORY_ID = 'core-collapsiblegroup--audit-matrix';
 const WIDE = {width: 1024, height: 900};
 const NARROW = {width: 320, height: 720};
-const EXPANDED_NAMES = ['Profile settings', 'Deployment details', 'Build logs'];
-const COLLAPSED_NAMES = ['Privacy settings', 'Environment variables'];
+const EXPANDED_NAMES = [
+  'Profile settings',
+  'Deployment details',
+  'Build logs',
+  'Account access',
+  'Data retention',
+];
+const COLLAPSED_NAMES = [
+  'Privacy settings',
+  'Environment variables',
+  'Notifications',
+  'Audit exports',
+];
 
 interface Case {
   state: string;
@@ -176,6 +187,10 @@ async function capture(page: Page, scenario: Case) {
     const observed = await subject.evaluate(node => {
       const buttons = [...node.querySelectorAll('button')];
       const groups = [...node.querySelectorAll('.astryx-collapsible-group')];
+      const chevrons = buttons.flatMap(button => {
+        const chevron = button.querySelector('svg');
+        return chevron ? [chevron] : [];
+      });
       const geometry = (element: Element) => {
         const rect = element.getBoundingClientRect();
         return {
@@ -280,6 +295,7 @@ async function capture(page: Page, scenario: Case) {
         ...node.querySelectorAll('h2'),
         ...buttons,
         ...visibleContent,
+        ...chevrons,
       ]
         .filter(isVisible)
         .map(element => {
@@ -294,21 +310,28 @@ async function capture(page: Page, scenario: Case) {
               ? 700
               : Number.parseFloat(style.fontWeight) || 400;
           const threshold =
-            fontSize >= 24 || (fontSize >= 18.66 && fontWeight >= 700)
+            element.tagName === 'svg'
               ? 3
-              : 4.5;
+              : fontSize >= 24 || (fontSize >= 18.66 && fontWeight >= 700)
+                ? 3
+                : 4.5;
+          const ownerButton = element.closest('button');
+          const ownerText = ownerButton?.innerText.trim();
           const text = (element as HTMLElement).innerText.trim();
           const part =
-            element.tagName === 'H2'
-              ? `heading: ${text}`
-              : element.tagName === 'BUTTON'
-                ? `trigger: ${text}`
-                : `content: ${text}`;
+            element.tagName === 'svg'
+              ? `chevron: ${ownerText ?? 'unknown trigger'}`
+              : element.tagName === 'H2'
+                ? `heading: ${text}`
+                : element.tagName === 'BUTTON'
+                  ? `trigger: ${text}`
+                  : `content: ${text}`;
           return {
             part,
             state:
-              element.tagName === 'BUTTON'
-                ? element.getAttribute('aria-expanded') === 'true'
+              element.tagName === 'BUTTON' || element.tagName === 'svg'
+                ? (ownerButton ?? element).getAttribute('aria-expanded') ===
+                  'true'
                   ? 'expanded-rest'
                   : 'collapsed-rest'
                 : 'rest',
@@ -339,6 +362,7 @@ async function capture(page: Page, scenario: Case) {
         headingCount: node.querySelectorAll('h2').length,
         groupCount: groups.length,
         buttonCount: buttons.length,
+        chevronCount: chevrons.length,
         expandedNames: buttons
           .filter(button => button.getAttribute('aria-expanded') === 'true')
           .map(button => (button as HTMLElement).innerText.trim()),
@@ -347,6 +371,7 @@ async function capture(page: Page, scenario: Case) {
           .map(button => (button as HTMLElement).innerText.trim()),
         groupGeometry: groups.map(geometry),
         buttonGeometry: buttons.map(geometry),
+        chevronGeometry: chevrons.map(geometry),
         contrastPairs,
       };
     });
@@ -394,26 +419,30 @@ async function capture(page: Page, scenario: Case) {
       scenario.direction,
     ]);
     expect(observed.buttonDirections).toEqual(
-      Array.from({length: 5}, () => scenario.direction),
+      Array.from({length: 9}, () => scenario.direction),
     );
-    expect(observed.sectionCount).toBe(2);
-    expect(observed.headingCount).toBe(2);
+    expect(observed.sectionCount).toBe(4);
+    expect(observed.headingCount).toBe(4);
     expect(observed.groupCount).toBe(2);
-    expect(observed.buttonCount).toBe(5);
+    expect(observed.buttonCount).toBe(9);
+    expect(observed.chevronCount).toBe(9);
     expect(observed.expandedNames).toEqual(EXPANDED_NAMES);
     expect(observed.collapsedNames).toEqual(COLLAPSED_NAMES);
     expect(observed.text).toContain('Single selection with leading chevrons');
     expect(observed.text).toContain('Multiple selection with compact rows');
+    expect(observed.text).toContain('Plain group with default unpadded rows');
+    expect(observed.text).toContain('Spacious group without dividers');
     expect(box.width).toBeGreaterThan(0);
     expect(box.height).toBeGreaterThan(0);
     for (const geometry of [
       ...observed.groupGeometry,
       ...observed.buttonGeometry,
+      ...observed.chevronGeometry,
     ]) {
       expect(geometry.width).toBeGreaterThan(0);
       expect(geometry.height).toBeGreaterThan(0);
     }
-    expect(observed.contrastPairs).toHaveLength(10);
+    expect(observed.contrastPairs).toHaveLength(27);
     for (const pair of observed.contrastPairs) {
       expect(pair.passed, `${scenario.state}: ${pair.part}`).toBe(true);
       expect(
@@ -438,12 +467,12 @@ async function capture(page: Page, scenario: Case) {
     const stateVisualRows = [
       {
         stateCaptured:
-          'rest matrix: single and multiple coordination with expanded and collapsed disclosure semantics',
+          'rest matrix: divided balanced, divided compact, plain default-unpadded, and plain spacious groups with expanded and collapsed disclosure semantics',
         screenshot: file,
         approvedRepresentation:
           'Rest — base tokens, no interaction (Design Conventions §Consistent State Representations)',
         tokenSignature:
-          'base group, divider, density, text, and chevron tokens; no hover, focus, pressed, selected, disabled, loading, or status treatment',
+          'base group, divider, default-unpadded, compact, balanced, spacious, text, and chevron tokens; no hover, focus, pressed, selected, disabled, loading, or status treatment',
         tokenSignaturePresent: true,
         matchesReference: 'yes',
         verdict: 'pass',
@@ -470,10 +499,11 @@ async function capture(page: Page, scenario: Case) {
         direction: scenario.direction,
         viewport: scenario.viewport,
         rootCount: 1,
-        sectionCount: 2,
-        headingCount: 2,
+        sectionCount: 4,
+        headingCount: 4,
         groupCount: 2,
-        buttonCount: 5,
+        buttonCount: 9,
+        chevronCount: 9,
         expandedNames: EXPANDED_NAMES,
         collapsedNames: COLLAPSED_NAMES,
         coarsePointer: scenario.coarsePointer ?? false,

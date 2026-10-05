@@ -90,6 +90,49 @@ export const AuditMatrix: Story = {
           </CollapsibleGroup>
         </VStack>
       </section>
+
+      <section aria-labelledby="collapsible-group-plain-heading">
+        <VStack gap={2}>
+          <Heading level={2} id="collapsible-group-plain-heading">
+            Plain group with default unpadded rows
+          </Heading>
+          <CollapsibleGroup type="single" defaultValue="access">
+            <Collapsible trigger="Account access" value="access">
+              <p {...stylex.props(styles.body)}>
+                People with access can sign in to this workspace.
+              </p>
+            </Collapsible>
+            <Collapsible trigger="Notifications" value="notifications">
+              <p {...stylex.props(styles.body)}>
+                Email notifications are sent for important changes.
+              </p>
+            </Collapsible>
+          </CollapsibleGroup>
+        </VStack>
+      </section>
+
+      <section aria-labelledby="collapsible-group-spacious-heading">
+        <VStack gap={2}>
+          <Heading level={2} id="collapsible-group-spacious-heading">
+            Spacious group without dividers
+          </Heading>
+          <CollapsibleGroup
+            type="multiple"
+            density="spacious"
+            defaultValue={['retention']}>
+            <Collapsible trigger="Data retention" value="retention">
+              <p {...stylex.props(styles.body)}>
+                Records are retained for the configured period.
+              </p>
+            </Collapsible>
+            <Collapsible trigger="Audit exports" value="exports">
+              <p {...stylex.props(styles.body)}>
+                Exports are available to workspace administrators.
+              </p>
+            </Collapsible>
+          </CollapsibleGroup>
+        </VStack>
+      </section>
     </VStack>
   ),
 };
