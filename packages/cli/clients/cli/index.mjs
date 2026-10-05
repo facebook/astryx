@@ -547,7 +547,8 @@ export async function createProgram() {
    * (SETUP_NUDGE_LISTS): a reminder on every command was noise, since an agent
    * that runs thirty commands saw it thirty times and nothing but init silences
    * it. `doctor` reports the missing agent docs with the fix, and both
-   * postinstall scripts remind once at install.
+   * postinstall scripts remind once at install under npm and yarn (pnpm 10+
+   * and Bun skip them unless the project allowlists them).
    *
    * Uses `preAction` (not postAction) so it fires even when the action errors or
    * calls process.exit (postAction is skipped then).
