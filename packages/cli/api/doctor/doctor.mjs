@@ -169,19 +169,85 @@ function findThemePackages(cwd) {
 }
 
 /**
- * Detect whether a theme appears to be wired up via the ASTRYX_THEME env var or
- * an `xds.theme` field in the nearest package.json. Config-based wiring is
- * handled by the caller (ctx.configTheme). This only inspects static signals.
+ * Detect whether a theme appears to be wired up. Looks for config signals
+ * (ASTRYX_THEME env var, package.json `astryx.theme`) and source-level signals
+ * (an import from a theme package's `/built` subpath or `/theme.css`).
+ * Config-based wiring via `astryx.config.mjs` is handled by the caller
+ * (ctx.configTheme).
  * @param {string} cwd
  * @returns {{wired: boolean, source: string|null}}
  */
 function detectThemeWiring(cwd) {
+  // Config signal: ASTRYX_THEME env var.
   if (process.env.ASTRYX_THEME) return {wired: true, source: 'ASTRYX_THEME env var'};
+
+  // Config signal: package.json `astryx.theme`.
   const nm = findNodeModules(cwd);
   const projectDir = nm ? path.dirname(nm) : cwd;
   const pkg = readPkg(path.join(projectDir, 'package.json'));
   if (pkg?.astryx?.theme) return {wired: true, source: 'package.json astryx.theme'};
+
+  // Source-level signal: a JS/TS/JSX/TSX/CSS file imports from a theme
+  // package's `/built` subpath or its `/theme.css`. This catches the setup
+  // that `astryx init` recommends without requiring a config entry.
+  const sourceWired = detectThemeImportInSource(cwd);
+  if (sourceWired) return {wired: true, source: sourceWired};
+
   return {wired: false, source: null};
+}
+
+/**
+ * Scan the project's `src/` directory (and a few root files like `globals.css`,
+ * `layout.tsx`, `app.tsx`) for an import from any `@astryxdesign/theme-*`
+ * package. Returns the description of the signal, or null.
+ *
+ * This is intentionally shallow — it reads file contents looking for import
+ * patterns, not an AST parse. The false-positive rate is near zero because the
+ * package names are distinctive.
+ * @param {string} cwd
+ * @returns {string|null}
+ */
+function detectThemeImportInSource(cwd) {
+  // Pattern matches:
+  //   import ... from '@astryxdesign/theme-...'
+  //   import '@astryxdesign/theme-.../theme.css'
+  //   @import '@astryxdesign/theme-.../theme.css'
+  //   require('@astryxdesign/theme-...')
+  const THEME_IMPORT_RE = /['"]@astryxdesign\/theme-[a-z][\w-]*/;
+
+  /** @type {string[]} */
+  const candidates = [];
+  // Common root files that often contain theme imports.
+  for (const name of [
+    'globals.css', 'global.css', 'styles.css',
+    'layout.tsx', 'layout.jsx', 'layout.ts', 'layout.js',
+    'app.tsx', 'app.jsx', 'app.ts', 'app.js',
+    'App.tsx', 'App.jsx', 'App.ts', 'App.js',
+    'main.tsx', 'main.jsx', 'main.ts', 'main.js',
+    'index.tsx', 'index.jsx', 'index.ts', 'index.js',
+  ]) {
+    candidates.push(path.join(cwd, name));
+    candidates.push(path.join(cwd, 'src', name));
+    candidates.push(path.join(cwd, 'app', name));
+    candidates.push(path.join(cwd, 'src', 'app', name));
+  }
+
+  for (const filePath of candidates) {
+    try {
+      if (!fs.existsSync(filePath)) continue;
+      const stat = fs.statSync(filePath);
+      // Skip large files (>256 KB) to keep the check fast.
+      if (!stat.isFile() || stat.size > 256 * 1024) continue;
+      const content = fs.readFileSync(filePath, 'utf-8');
+      if (THEME_IMPORT_RE.test(content)) {
+        const rel = path.relative(cwd, filePath) || filePath;
+        return `theme import in ${rel}`;
+      }
+    } catch {
+      // Skip unreadable files.
+    }
+  }
+  return null;
 }
 
 /* ── individual checks ────────────────────────────────────────────────── */
@@ -301,7 +367,7 @@ export function checkThemes(ctx) {
       label: 'Theme packages',
       status: 'warn',
       message: 'No @astryxdesign/theme-* packages are installed.',
-      fix: 'Install a theme, e.g. `npm install @astryxdesign/theme-neutral`, then import its CSS or set astryx.theme.',
+      fix: 'Install a theme, e.g. `npm install @astryxdesign/theme-neutral`, then import it: `import { neutralTheme } from \'@astryxdesign/theme-neutral/built\'` and `import \'@astryxdesign/theme-neutral/theme.css\'`.',
     };
   }
 
@@ -312,7 +378,7 @@ export function checkThemes(ctx) {
       label: 'Theme packages',
       status: 'warn',
       message: `Theme package(s) installed (${names}) but no theme appears wired.`,
-      fix: 'Wire a theme via the `astryx.theme` field in package.json, the ASTRYX_THEME env var, or your astryx.config.mjs.',
+      fix: 'Wire a theme: import the built theme (`import { <name>Theme } from \'@astryxdesign/theme-<name>/built\'` and `import \'@astryxdesign/theme-<name>/theme.css\'`), or set `astryx.theme` in package.json or astryx.config.mjs.',
     };
   }
 

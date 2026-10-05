@@ -32,7 +32,7 @@ export const docs = {
           type: 'code',
           lang: 'text',
           label: 'Give it a look',
-          code: "Ask me what look and feel this app should have. Run `npx @astryxdesign/cli theme list` and start from the closest available theme with `theme add <slug>`; the list includes bundled themes and themes from installed integrations, with each owner shown. Use `--package` if owners share a slug. The command copies the theme in as editable source. If none fit, run `npx @astryxdesign/cli theme template` and fill in the annotated template it writes. Default to neutral if I have no preference, and show me the result before moving on.",
+          code: "Ask me what look and feel this app should have. Run `npx @astryxdesign/cli theme list` to see every available theme. Use a theme by importing its built output: `import { <name>Theme } from '@astryxdesign/theme-<name>/built'` and `import '@astryxdesign/theme-<name>/theme.css'`. Customize with `defineTheme({extends: <name>Theme, ...})`. Use `theme add <slug>` only to fork a theme as editable source. Default to neutral if I have no preference, and show me the result before moving on.",
         },
       ],
     },
