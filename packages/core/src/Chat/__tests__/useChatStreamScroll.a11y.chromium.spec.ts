@@ -24,38 +24,11 @@ const diagnostics = new WeakMap<
 
 test.beforeAll(async () => {
   const result = await build({
-    stdin: {
-      contents: `
-        import {useEffect, useRef, useState} from 'react';
-        import {createRoot} from 'react-dom/client';
-        import {useChatStreamScroll} from './useChatStreamScroll';
-
-        function App() {
-          const scrollRef = useRef(null);
-          const scroll = useChatStreamScroll({scrollRef});
-          const [extra, setExtra] = useState(0);
-          const [height, setHeight] = useState(384);
-          useEffect(() => scroll.scrollIfLocked(), [extra, height, scroll.scrollIfLocked]);
-          return <>
-            <div ref={scrollRef} role="region" aria-label="Conversation" tabIndex={0}
-              style={{height, width: 414, overflow: 'auto', border: '1px solid'}}>
-              <div style={{height: 1800}}>Earlier messages</div>
-              <p>Latest message</p>
-              {extra > 0 && <div style={{height: extra}}>New messages</div>}
-            </div>
-            <button onClick={() => scroll.scrollToBottom()}>Scroll to bottom</button>
-            <button onClick={() => scroll.scrollToBottom({behavior: 'instant'})}>Jump instantly</button>
-            <button onClick={() => setExtra(value => value + 400)}>Append messages</button>
-            <button onClick={() => setHeight(value => value === 384 ? 160 : 384)}>Resize viewport</button>
-            <output data-locked={String(scroll.isLocked)} />
-          </>;
-        }
-        createRoot(document.getElementById('root')).render(<App />);
-      `,
-      resolveDir: fileURLToPath(new URL('..', import.meta.url)),
-      sourcefile: 'scroll-fixture.tsx',
-      loader: 'tsx',
-    },
+    entryPoints: [
+      fileURLToPath(
+        new URL('./useChatStreamScroll.fixture.tsx', import.meta.url),
+      ),
+    ],
     bundle: true,
     write: false,
     format: 'iife',
@@ -91,16 +64,18 @@ test.beforeAll(async () => {
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
   const address = server.address();
-  if (!address || typeof address === 'string')
+  if (!address || typeof address === 'string') {
     throw new Error('Missing fixture address');
+  }
   origin = `http://127.0.0.1:${address.port}`;
 });
 
 test.afterAll(async () => {
-  if (server)
+  if (server) {
     await new Promise<void>((resolve, reject) =>
       server.close(error => (error ? reject(error) : resolve())),
     );
+  }
 });
 
 function viewport(page: Page) {
@@ -145,7 +120,7 @@ test.beforeEach(async ({page}) => {
   const observed = {errors: [] as string[], externalRequests: [] as string[]};
   diagnostics.set(page, observed);
   page.on('pageerror', error => observed.errors.push(error.message));
-  await page.route('**/*', route => {
+  await page.route('**/*', async route => {
     if (new URL(route.request().url()).origin !== origin) {
       observed.externalRequests.push(route.request().url());
       return route.abort();
@@ -244,20 +219,40 @@ test('an instant jump cancels follow and a later keyboard jump starts from the r
   ).toBeFocused();
 });
 
-test('an upward wheel interrupts a running spring', async ({page}) => {
+test('an upward wheel interrupts a running spring', async ({page}, info) => {
   await scrollAway(page, -1000);
+  const readingPosition = await position(page);
   await keyboardFollow(page);
   await expect(page.locator('output')).toHaveAttribute('data-locked', 'true');
-  await scrollAway(page, -600);
+  await expect
+    .poll(async () => (await position(page)).top)
+    .toBeGreaterThan(readingPosition.top);
+  const beforeWheel = await position(page);
+  expect(beforeWheel.following).toBe(true);
+  expect(beforeWheel.gap).toBeGreaterThan(100);
+  // scrollAway left the pointer over the viewport. Interrupt immediately,
+  // before another pointer-positioning action can let the spring settle.
+  await page.mouse.wheel(0, -600);
+  await info.attach('native-spring-before-interruption', {
+    contentType: 'application/json',
+    body: JSON.stringify({readingPosition, beforeWheel}),
+  });
+  await expect
+    .poll(async () => (await position(page)).gap)
+    .toBeGreaterThan(100);
+  await expect(page.locator('output')).toHaveAttribute('data-locked', 'false');
   const tops = await viewport(page).evaluate(
-    element =>
+    async element =>
       new Promise<number[]>(resolve => {
         const samples: number[] = [];
         const end = performance.now() + 250;
         const sample = () => {
           samples.push(element.scrollTop);
-          if (performance.now() < end) requestAnimationFrame(sample);
-          else resolve(samples);
+          if (performance.now() < end) {
+            requestAnimationFrame(sample);
+          } else {
+            resolve(samples);
+          }
         };
         requestAnimationFrame(sample);
       }),
