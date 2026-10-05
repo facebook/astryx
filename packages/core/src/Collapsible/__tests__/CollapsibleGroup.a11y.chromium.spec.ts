@@ -165,6 +165,16 @@ async function capture(page: Page, scenario: Case) {
 
     const observed = await subject.evaluate(node => {
       const buttons = [...node.querySelectorAll('button')];
+      const groups = [...node.querySelectorAll('.astryx-collapsible-group')];
+      const geometry = (element: Element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+          x: rect.x,
+          y: rect.y,
+          width: rect.width,
+          height: rect.height,
+        };
+      };
       return {
         direction: getComputedStyle(node).direction,
         text: (node as HTMLElement).innerText,
@@ -178,8 +188,8 @@ async function capture(page: Page, scenario: Case) {
         collapsedNames: buttons
           .filter(button => button.getAttribute('aria-expanded') === 'false')
           .map(button => (button as HTMLElement).innerText.trim()),
-        width: node.getBoundingClientRect().width,
-        height: node.getBoundingClientRect().height,
+        groupGeometry: groups.map(geometry),
+        buttonGeometry: buttons.map(geometry),
       };
     });
     const environment = await page.evaluate(() => ({
@@ -226,8 +236,15 @@ async function capture(page: Page, scenario: Case) {
     expect(observed.collapsedNames).toEqual(COLLAPSED_NAMES);
     expect(observed.text).toContain('Single selection with leading chevrons');
     expect(observed.text).toContain('Multiple selection with compact rows');
-    expect(observed.width).toBeGreaterThan(0);
-    expect(observed.height).toBeGreaterThan(0);
+    expect(box.width).toBeGreaterThan(0);
+    expect(box.height).toBeGreaterThan(0);
+    for (const geometry of [
+      ...observed.groupGeometry,
+      ...observed.buttonGeometry,
+    ]) {
+      expect(geometry.width).toBeGreaterThan(0);
+      expect(geometry.height).toBeGreaterThan(0);
+    }
     expect(environment.theme).toBe('neutral');
     expect(environment.mode).toBe(scenario.mode);
     expect(environment.colorScheme).toBe(scenario.mode);
