@@ -9,6 +9,8 @@
  * SYNC: When CodeBlock.tsx changes, update tests to match new behavior
  */
 
+import {createRoot, hydrateRoot, type Root} from 'react-dom/client';
+import {renderToString} from 'react-dom/server';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {act, render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {CodeBlock} from './CodeBlock';
@@ -25,6 +27,17 @@ function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
 
 function politeRegion(): HTMLElement | null {
   return document.querySelector('[data-astryx-live-region="polite"]');
+}
+
+function selectText(node: Node): string {
+  const selection = window.getSelection();
+  const range = document.createRange();
+  range.selectNodeContents(node);
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+  const text = selection?.toString() ?? '';
+  selection?.removeAllRanges();
+  return text;
 }
 
 // A code sample long enough to exceed the default collapsible threshold (10).
@@ -350,6 +363,202 @@ describe('CodeBlock', () => {
     const scrollContainer = screen.getByRole('group');
     expect(scrollContainer.closest('[inert]')).toBeNull();
     expect(scrollContainer).toHaveAttribute('tabindex', '0');
+  });
+
+  it.each(['spans', 'ranges'] as const)(
+    'preserves exact DOM text in %s mode',
+    highlightMode => {
+      const code = 'const alpha = 1;\nlet beta = 2;\n\nreturn gamma;\n';
+      const {container} = render(
+        <CodeBlock
+          code={code}
+          language="javascript"
+          hasLanguageLabel={false}
+          highlightMode={highlightMode}
+        />,
+      );
+
+      const codeElement = container.querySelector('code');
+      expect(codeElement?.textContent).toBe(code);
+      expect(selectText(codeElement!)).toBe(code);
+      expect(container.querySelectorAll('[data-line]')).toHaveLength(4);
+      expect(codeElement?.querySelector('br')).toBeNull();
+      const follower = codeElement?.querySelector(
+        '[data-astryx-code-selection-follower]',
+      );
+      expect(follower?.tagName).toBe('METER');
+      expect(follower).toHaveAttribute('min', '0');
+      expect(follower).toHaveAttribute('max', '1');
+      expect(follower).toHaveAttribute('value', '0');
+      expect(follower).toHaveAttribute('aria-hidden', 'true');
+      expect(container.textContent).not.toContain('\u200b');
+      if (highlightMode === 'spans') {
+        expect(
+          codeElement?.querySelector('.astryx-token-keyword'),
+        ).not.toBeNull();
+      }
+    },
+  );
+
+  it.each(['spans', 'ranges'] as const)(
+    'preserves newlines across rendering chunks in %s mode',
+    highlightMode => {
+      const code =
+        Array.from({length: 105}, (_, index) => `line ${index + 1}`).join(
+          '\n',
+        ) + '\n';
+      const {container} = render(
+        <CodeBlock
+          code={code}
+          language="plaintext"
+          highlightMode={highlightMode}
+        />,
+      );
+
+      const codeElement = container.querySelector('code');
+      expect(codeElement?.textContent).toBe(code);
+      expect(selectText(codeElement!)).toBe(code);
+      expect(container.querySelectorAll('[data-line]')).toHaveLength(105);
+    },
+  );
+
+  it.each(['spans', 'ranges'] as const)(
+    'preserves CRLF source text in %s mode',
+    highlightMode => {
+      const code = 'const alpha = 1;\r\n\r\nlet beta = 2;\r\n';
+      const {container} = render(
+        <CodeBlock
+          code={code}
+          language="javascript"
+          hasLanguageLabel={false}
+          hasLineNumbers
+          isWrapped
+          highlightMode={highlightMode}
+        />,
+      );
+
+      const codeElement = container.querySelector('code');
+      expect(codeElement?.textContent).toBe(code);
+      expect(selectText(codeElement!)).toBe(code);
+      expect(container.querySelectorAll('[data-line]')).toHaveLength(3);
+      const separators = Array.from(
+        codeElement?.querySelectorAll('[data-astryx-code-separator]') ?? [],
+      );
+      expect(separators).toHaveLength(3);
+      expect(separators.map(node => node.textContent)).toEqual([
+        '\r\n',
+        '\r\n',
+        '\r\n',
+      ]);
+      expect(
+        separators.map(node => node.getAttribute('data-astryx-code-separator')),
+      ).toEqual(['crlf', 'crlf', 'crlf']);
+    },
+  );
+
+  it.each(['spans', 'ranges'] as const)(
+    'restores SSR CRLF and client-renders without HTML sinks in %s mode',
+    async highlightMode => {
+      const code = 'const alpha = 1;\r\n\r\nlet beta = 2;\r\n';
+      const element = (
+        <CodeBlock
+          code={code}
+          language="javascript"
+          hasCopyButton={false}
+          hasLanguageLabel={false}
+          hasLineNumbers
+          isWrapped
+          highlightMode={highlightMode}
+        />
+      );
+      const host = document.createElement('div');
+      host.innerHTML = renderToString(element);
+      const clientHost = document.createElement('div');
+      document.body.append(host, clientHost);
+
+      const serverCode = code.replace(/\r\n/g, '\n');
+      expect(host.querySelector('code')?.textContent).toBe(serverCode);
+      expect(
+        Array.from(
+          host.querySelectorAll('[data-astryx-code-separator="crlf"]'),
+        ).map(node => node.textContent),
+      ).toEqual(['\n', '\n', '\n']);
+
+      const innerHTMLDescriptor = Object.getOwnPropertyDescriptor(
+        Element.prototype,
+        'innerHTML',
+      );
+      expect(innerHTMLDescriptor).toBeDefined();
+      Object.defineProperty(Element.prototype, 'innerHTML', {
+        ...innerHTMLDescriptor,
+        set() {
+          throw new TypeError('Trusted Types blocked innerHTML');
+        },
+      });
+
+      const recoverableErrors: unknown[] = [];
+      let root: Root | null = null;
+      let clientRoot: Root | null = null;
+      try {
+        await act(async () => {
+          root = hydrateRoot(host, element, {
+            onRecoverableError: error => recoverableErrors.push(error),
+          });
+          clientRoot = createRoot(clientHost);
+          clientRoot.render(element);
+        });
+
+        for (const codeElement of [
+          host.querySelector('code'),
+          clientHost.querySelector('code'),
+        ]) {
+          expect(codeElement?.textContent).toBe(code);
+          expect(selectText(codeElement!)).toBe(code);
+        }
+        expect(recoverableErrors).toEqual([]);
+      } finally {
+        await act(async () => {
+          root?.unmount();
+          clientRoot?.unmount();
+        });
+        Object.defineProperty(
+          Element.prototype,
+          'innerHTML',
+          innerHTMLDescriptor!,
+        );
+        host.remove();
+        clientHost.remove();
+      }
+    },
+  );
+
+  it('keeps range token text separate from exact line separators', () => {
+    const {container} = render(
+      <CodeBlock
+        code={'alpha\n\nbeta'}
+        language="plaintext"
+        highlightMode="ranges"
+      />,
+    );
+    const lines = container.querySelectorAll('[data-line]');
+    const lineContent = (line: Element) => line.firstElementChild!;
+
+    expect(lineContent(lines[0]).firstChild?.nodeType).toBe(Node.TEXT_NODE);
+    expect(lineContent(lines[0]).firstChild?.textContent).toBe('alpha');
+    expect(
+      lineContent(lines[0]).querySelector('[data-astryx-code-separator]')
+        ?.textContent,
+    ).toBe('\n');
+    expect(lineContent(lines[1]).firstElementChild).toHaveAttribute(
+      'data-astryx-code-separator',
+      'lf',
+    );
+    expect(lineContent(lines[1]).firstChild?.textContent).toBe('\n');
+    expect(lineContent(lines[2]).firstChild?.textContent).toBe('beta');
+    expect(container.querySelector('br')).toBeNull();
+    expect(
+      container.querySelector('[data-astryx-code-selection-follower]'),
+    ).toBeNull();
   });
 
   it('applies a per-instance syntax theme via the syntaxTheme prop', () => {

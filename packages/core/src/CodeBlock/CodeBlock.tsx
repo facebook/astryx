@@ -4,7 +4,7 @@
 /**
  * @file CodeBlock.tsx
  * @input Uses React, StyleX, theme tokens, CSS Custom Highlight API, SyntaxTheme provider
- * @output Exports CodeBlock component and CodeBlockProps
+ * @output Exports CodeBlock and CodeBlockProps with source-faithful rendered text
  * @position Core implementation; read-only syntax-highlighted code display
  */
 
@@ -262,7 +262,21 @@ const styles = stylex.create({
     },
   },
   line: {
+    minHeight: '1lh',
     lineHeight: typeScaleVars['--text-code-leading'],
+  },
+  // Chromium trims a terminal newline from Selection.toString() when it is the
+  // final rendered descendant. A zero-size hidden meter gives the newline a
+  // following inert replaced element without textContent, requests, or a line box.
+  // Keep the meter's native appearance and border: Chromium stops treating it
+  // as the atomic follower selection needs when either is author-reset.
+  selectionFollower: {
+    position: 'absolute',
+    width: 0,
+    height: 0,
+    padding: 0,
+    overflow: 'hidden',
+    pointerEvents: 'none',
   },
   // Per-line number gutter: a two-column grid ([number] [code]). The number is
   // a ::before generated from the data-line attribute. Because the number and
@@ -324,26 +338,105 @@ const styles = stylex.create({
 const LINE_CHUNK_SIZE = 20;
 const LINE_CHUNK_THRESHOLD = 100;
 
+type SourceLineSeparator = '' | '\n' | '\r\n';
+
+function SourceSeparator({separator}: {separator: SourceLineSeparator}) {
+  // The HTML parser normalizes raw CRLF to LF in server markup. Hydration owns
+  // that expected one-node difference, and this callback restores the authored
+  // separator synchronously during commit, before layout effects or paint.
+  // textContent is intentionally used instead of an HTML/Trusted Types sink.
+  const restoreExactSeparator = useCallback(
+    (node: HTMLSpanElement | null) => {
+      if (node != null && node.textContent !== separator) {
+        node.textContent = separator;
+      }
+    },
+    [separator],
+  );
+
+  if (separator === '') {
+    return null;
+  }
+  return (
+    <span
+      ref={restoreExactSeparator}
+      suppressHydrationWarning
+      data-astryx-code-separator={separator === '\r\n' ? 'crlf' : 'lf'}>
+      {separator}
+    </span>
+  );
+}
+
+function SelectionFollower() {
+  return (
+    <meter
+      min={0}
+      max={1}
+      value={0}
+      aria-hidden="true"
+      data-astryx-code-selection-follower=""
+      {...stylex.props(styles.selectionFollower)}
+    />
+  );
+}
+
+function splitSourceLines(code: string): {
+  lines: string[];
+  separators: SourceLineSeparator[];
+} {
+  const lines = code.split('\n');
+  const hasTrailingLF = code.endsWith('\n');
+  if (hasTrailingLF) {
+    lines.pop();
+  }
+
+  const separators = lines.map<SourceLineSeparator>((line, index) => {
+    const hasLF = index < lines.length - 1 || hasTrailingLF;
+    if (!hasLF) {
+      return '';
+    }
+    if (line.endsWith('\r')) {
+      lines[index] = line.slice(0, -1);
+      return '\r\n';
+    }
+    return '\n';
+  });
+
+  return {lines, separators};
+}
+
 /**
  * Memoized chunk component — cheaper than memoizing every individual line.
  */
 const CodeChunk = React.memo(function CodeChunk({
   lines,
+  separators,
   startIndex,
+  totalLineCount,
   highlightSet,
   renderLineContent,
   lineNumbers,
 }: {
   lines: string[];
+  separators: SourceLineSeparator[];
   startIndex: number;
+  totalLineCount: number;
   highlightSet: Set<number> | null;
-  renderLineContent: (line: string, lineIndex: number) => React.ReactNode;
+  renderLineContent: (
+    line: string,
+    lineIndex: number,
+    separator: SourceLineSeparator,
+    isTerminalSeparator: boolean,
+  ) => React.ReactNode;
   lineNumbers: boolean;
 }) {
   return (
     <>
       {lines.map((line, j) => {
         const i = startIndex + j;
+        const separator = separators[i] ?? '';
+        const isTerminalSeparator =
+          i === totalLineCount - 1 && separator !== '';
         return (
           <div
             key={i}
@@ -353,7 +446,7 @@ const CodeChunk = React.memo(function CodeChunk({
               lineNumbers && styles.lineNumbered,
               (highlightSet?.has(i + 1) ?? false) && styles.lineHighlighted,
             )}>
-            {renderLineContent(line, i)}
+            {renderLineContent(line, i, separator, isTerminalSeparator)}
           </div>
         );
       })}
@@ -363,8 +456,14 @@ const CodeChunk = React.memo(function CodeChunk({
 
 function renderLines(
   lines: string[],
+  separators: SourceLineSeparator[],
   highlightSet: Set<number> | null,
-  renderLineContent: (line: string, lineIndex: number) => React.ReactNode,
+  renderLineContent: (
+    line: string,
+    lineIndex: number,
+    separator: SourceLineSeparator,
+    isTerminalSeparator: boolean,
+  ) => React.ReactNode,
   lineNumbers: boolean,
   chunkSize: number = LINE_CHUNK_SIZE,
 ): React.ReactNode {
@@ -374,7 +473,9 @@ function renderLines(
     return (
       <CodeChunk
         lines={lines}
+        separators={separators}
         startIndex={0}
+        totalLineCount={lines.length}
         highlightSet={highlightSet}
         renderLineContent={renderLineContent}
         lineNumbers={lineNumbers}
@@ -396,7 +497,9 @@ function renderLines(
         })}>
         <CodeChunk
           lines={chunkLines}
+          separators={separators}
           startIndex={start}
+          totalLineCount={lines.length}
           highlightSet={highlightSet}
           renderLineContent={renderLineContent}
           lineNumbers={lineNumbers}
@@ -562,7 +665,7 @@ function buildSpanLine(
   tokens: SyntaxToken[],
 ): React.ReactNode {
   if (tokens.length === 0) {
-    return lineText || '\u200b';
+    return lineText;
   }
 
   const parts: React.ReactNode[] = [];
@@ -586,11 +689,12 @@ function buildSpanLine(
   if (cursor < lineText.length) {
     parts.push(lineText.slice(cursor));
   }
-  return parts.length > 0 ? parts : '\u200b';
+  return parts.length > 0 ? parts : lineText;
 }
 
 function SpanCodeContent({
   lines,
+  separators,
   tokenLines,
   highlightSet,
   isWrapped,
@@ -599,6 +703,7 @@ function SpanCodeContent({
   maxDigits,
 }: {
   lines: string[];
+  separators: SourceLineSeparator[];
   tokenLines: TokenLine[];
   highlightSet: Set<number> | null;
   isWrapped: boolean;
@@ -611,13 +716,20 @@ function SpanCodeContent({
   }, []);
 
   const renderLineContent = useCallback(
-    (line: string, lineIndex: number): React.ReactNode => {
+    (
+      line: string,
+      lineIndex: number,
+      separator: SourceLineSeparator,
+      isTerminalSeparator: boolean,
+    ): React.ReactNode => {
       const tokens = tokenLines[lineIndex] ?? [];
       // Wrap tokens in a single element so they occupy one grid cell when line
       // numbers are on (see `lineNumbered`); an inline span is a no-op when off.
       return (
         <span {...stylex.props(styles.lineContent)}>
           {buildSpanLine(line, tokens)}
+          <SourceSeparator separator={separator} />
+          {isTerminalSeparator ? <SelectionFollower /> : null}
         </span>
       );
     },
@@ -633,7 +745,13 @@ function SpanCodeContent({
         hasLineNumbers && styles.codeNumbered,
         hasLineNumbers && dynamicStyles.gutterWidth(maxDigits),
       )}>
-      {renderLines(lines, highlightSet, renderLineContent, hasLineNumbers)}
+      {renderLines(
+        lines,
+        separators,
+        highlightSet,
+        renderLineContent,
+        hasLineNumbers,
+      )}
     </code>
   );
 }
@@ -644,6 +762,7 @@ function SpanCodeContent({
 
 function RangeCodeContent({
   lines,
+  separators,
   tokenLines,
   highlightSet,
   isWrapped,
@@ -652,6 +771,7 @@ function RangeCodeContent({
   maxDigits,
 }: {
   lines: string[];
+  separators: SourceLineSeparator[];
   tokenLines: TokenLine[];
   highlightSet: Set<number> | null;
   isWrapped: boolean;
@@ -675,11 +795,23 @@ function RangeCodeContent({
     return applyHighlightRangesChunked(codeEl, tokenLines);
   }, [tokenLines]);
 
-  // Range mode keeps the line's text as a bare text node (its firstChild) so
-  // applyHighlightRangesChunked can map token offsets onto it \u2014 no wrapper. The
-  // number ::before is a pseudo-element, so it never becomes a child node here.
+  // Range mode keeps each line's source in the line-content span's first text
+  // node so applyHighlightRangesChunked can map token offsets directly. The
+  // wrapper makes whitespace-only lines a real grid item when line numbers are
+  // enabled; the number ::before never becomes a child node here.
   const renderLineContent = useCallback(
-    (line: string): React.ReactNode => line || '\u200b',
+    (
+      line: string,
+      _lineIndex: number,
+      separator: SourceLineSeparator,
+      isTerminalSeparator: boolean,
+    ): React.ReactNode => (
+      <span {...stylex.props(styles.lineContent)}>
+        {line}
+        <SourceSeparator separator={separator} />
+        {isTerminalSeparator ? <SelectionFollower /> : null}
+      </span>
+    ),
     [],
   );
 
@@ -693,7 +825,13 @@ function RangeCodeContent({
         hasLineNumbers && styles.codeNumbered,
         hasLineNumbers && dynamicStyles.gutterWidth(maxDigits),
       )}>
-      {renderLines(lines, highlightSet, renderLineContent, hasLineNumbers)}
+      {renderLines(
+        lines,
+        separators,
+        highlightSet,
+        renderLineContent,
+        hasLineNumbers,
+      )}
     </code>
   );
 }
@@ -749,13 +887,7 @@ export function CodeBlock({
     (highlightMode === 'auto' && !hasHighlightAPI()) ||
     (highlightMode === 'auto' && isSafari());
 
-  const lines = useMemo(() => {
-    const l = code.split('\n');
-    if (l.length > 1 && l[l.length - 1] === '') {
-      l.pop();
-    }
-    return l;
-  }, [code]);
+  const {lines, separators} = useMemo(() => splitSourceLines(code), [code]);
 
   const tokenLines = useTokenLines(code, language, customTokenizer);
 
@@ -914,6 +1046,7 @@ export function CodeBlock({
         {useSpans ? (
           <SpanCodeContent
             lines={lines}
+            separators={separators}
             tokenLines={tokenLines}
             highlightSet={highlightSet}
             isWrapped={isWrapped}
@@ -924,6 +1057,7 @@ export function CodeBlock({
         ) : (
           <RangeCodeContent
             lines={lines}
+            separators={separators}
             tokenLines={tokenLines}
             highlightSet={highlightSet}
             isWrapped={isWrapped}

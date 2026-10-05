@@ -95,6 +95,31 @@ describe('applyHighlightRangesChunked', () => {
     expect(kwHighlight!.size).toBe(0);
   });
 
+  it('maps token offsets through the range-mode line-content wrapper', () => {
+    const codeEl = document.createElement('code');
+    const line = document.createElement('div');
+    line.setAttribute('data-line', '1');
+    const lineContent = document.createElement('span');
+    lineContent.append('const x = 1;');
+    const separator = document.createElement('span');
+    separator.textContent = '\r\n';
+    lineContent.appendChild(separator);
+    line.appendChild(lineContent);
+    codeEl.appendChild(line);
+
+    const cleanup = applyHighlightRangesChunked(codeEl, [
+      [{type: 'keyword', start: 0, end: 5}],
+    ]);
+
+    const range = Array.from(mockHighlightsMap.get('astryx-keyword')!)[0];
+    expect(range.startContainer).toBe(lineContent.firstChild);
+    expect(range.startOffset).toBe(0);
+    expect(range.endContainer).toBe(lineContent.firstChild);
+    expect(range.endOffset).toBe(5);
+
+    cleanup();
+  });
+
   it('keeps every parser-accepted tokenizer type coloured under its raw name', () => {
     // The dotted type that crashed the block, plus names a narrow allowlist
     // would wrongly reject even though the CSS parser accepts them all.

@@ -122,8 +122,8 @@ interface RangeEntry {
 
 /**
  * Apply highlight ranges for a single line's tokens.
- * The line div is expected to contain a single text node as its
- * first child (or a zero-width space placeholder for empty lines).
+ * The line-content wrapper's first child is its source text node. Blank lines
+ * without a source line break have no tokens and return before the node lookup.
  */
 function applyLineRanges(
   lineDiv: Element,
@@ -135,9 +135,11 @@ function applyLineRanges(
     return;
   }
 
-  // The text node is the first child of the line div.
-  // In range mode, lines render plain text so this is always a Text node.
-  const textNode = lineDiv.firstChild;
+  const lineContent = lineDiv.firstChild;
+  const textNode =
+    lineContent?.nodeType === Node.TEXT_NODE
+      ? lineContent
+      : lineContent?.firstChild;
   if (!textNode || textNode.nodeType !== Node.TEXT_NODE) {
     return;
   }

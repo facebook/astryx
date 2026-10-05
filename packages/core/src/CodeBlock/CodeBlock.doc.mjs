@@ -14,7 +14,7 @@ export const docs = {
     {
       name: 'code',
       type: 'string',
-      description: 'The code string to display.',
+      description: 'The code string to display. Hydrated and client-rendered DOM text plus clipboard output preserve source line breaks exactly; static server HTML normalizes CRLF to LF until hydration.',
       required: true,
     },
     {
