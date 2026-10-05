@@ -34,14 +34,6 @@ describe('CommandPaletteEmpty', () => {
     expect(root.textContent).toBe('No results found');
   });
 
-  it('renders as a disabled option so an empty listbox stays valid', () => {
-    const root = renderRoot(
-      <CommandPaletteEmpty>No results found</CommandPaletteEmpty>,
-    );
-    expect(root).toHaveAttribute('role', 'option');
-    expect(root).toHaveAttribute('aria-disabled', 'true');
-  });
-
   it('renders element children, not just text', () => {
     render(
       <CommandPaletteEmpty>

@@ -129,6 +129,7 @@ describe('CommandPaletteInput dialog context', () => {
       value: '',
       setValue: vi.fn(),
       listId: 'list-1',
+      hasListbox: true,
       highlightedIndex: -1,
       setHighlightedIndex: vi.fn(),
       getItemId: (i: number) => `item-${i}`,
@@ -153,6 +154,19 @@ describe('CommandPaletteInput dialog context', () => {
     expect(screen.getByRole('status', {name: 'Loading'})).toHaveClass(
       'astryx-spinner',
     );
+  });
+
+  it('omits popup ARIA while the result surface has no listbox', () => {
+    render(
+      <CommandPaletteContext value={makeContext({hasListbox: false})}>
+        <CommandPaletteInput />
+      </CommandPaletteContext>,
+    );
+
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+    expect(input).not.toHaveAttribute('aria-controls');
+    expect(input).not.toHaveAttribute('aria-activedescendant');
   });
 
   it('does not route IME composition keys to palette commands', () => {

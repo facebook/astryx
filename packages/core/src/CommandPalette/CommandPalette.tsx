@@ -579,6 +579,7 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
       value,
       setValue,
       listId,
+      hasListbox: selectableItems.length > 0,
       highlightedIndex: combobox.highlightedIndex,
       setHighlightedIndex: combobox.setHighlightedIndex,
       getItemId: combobox.getItemId,

@@ -53,8 +53,10 @@ export interface CommandPaletteListProps extends BaseProps<HTMLDivElement> {
 }
 
 /**
- * Scrollable results container for the command palette.
- * Renders as a listbox for ARIA compliance.
+ * Scrollable results container for the command palette. Standalone composition
+ * renders as a listbox. Inside CommandPalette, listbox semantics are present
+ * only while selectable results exist; empty and pending states retain the same
+ * styled container without exposing an empty interactive popup.
  *
  * When used inside CommandPalette, automatically gets the correct
  * ID for aria-controls linking with the input.
@@ -83,14 +85,15 @@ export function CommandPaletteList({
   const t = useTranslator();
   const label = labelFromProps ?? t('@astryx.commandPalette.list.label');
   const ctx = useCommandPaletteContext();
+  const hasListbox = ctx?.hasListbox ?? true;
 
   return (
     <div
       ref={ref}
       {...props}
       id={ctx?.listId}
-      role="listbox"
-      aria-label={label}
+      role={hasListbox ? 'listbox' : undefined}
+      aria-label={hasListbox ? label : undefined}
       {...mergeProps(
         themeProps('command-palette-list'),
         stylex.props(styles.list, xstyle),

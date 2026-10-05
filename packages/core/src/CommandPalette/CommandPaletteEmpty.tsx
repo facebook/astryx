@@ -46,21 +46,20 @@ export interface CommandPaletteEmptyProps extends BaseProps<HTMLDivElement> {
 }
 
 /**
- * Empty state for the command palette list area. It defaults to a disabled
- * option so the containing listbox preserves its required child semantics
- * when no selectable commands are available.
+ * Empty state for the command palette list area.
  *
  * Rendered automatically by CommandPalette in two situations:
  * - `emptyBootstrapText`: no search term and bootstrap() returns nothing
  * - `emptySearchText`: a search query returned no results
  *
- * Can also be composed manually inside a custom render function.
+ * Can also be composed as a standalone empty result surface. Render actionable
+ * empty content outside listbox and option semantics.
  *
  * @example
  * ```
  * <CommandPalette
- *   emptyBootstrapText={<CommandPaletteEmpty>Start typing to search</CommandPaletteEmpty>}
- *   emptySearchText={<CommandPaletteEmpty>No results found</CommandPaletteEmpty>}
+ *   emptyBootstrapText="Start typing to search"
+ *   emptySearchText="No results found"
  *   searchSource={source}
  * />
  * ```
@@ -76,8 +75,6 @@ export function CommandPaletteEmpty({
   return (
     <div
       ref={ref}
-      role="option"
-      aria-disabled={true}
       {...mergeProps(
         themeProps('command-palette-empty'),
         stylex.props(styles.empty, xstyle),

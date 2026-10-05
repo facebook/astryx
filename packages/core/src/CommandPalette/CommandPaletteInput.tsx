@@ -229,11 +229,11 @@ export function CommandPaletteInput({
         ref={useMergedRefs(ref, inputRef)}
         type="text"
         role="combobox"
-        aria-expanded={ctx?.isOpen ?? true}
+        aria-expanded={ctx ? ctx.isOpen && ctx.hasListbox : true}
         aria-autocomplete="list"
-        aria-controls={ctx?.listId}
+        aria-controls={ctx?.hasListbox ? ctx.listId : undefined}
         aria-activedescendant={
-          ctx && ctx.highlightedIndex >= 0
+          ctx && ctx.hasListbox && ctx.highlightedIndex >= 0
             ? ctx.getItemId(ctx.highlightedIndex)
             : undefined
         }

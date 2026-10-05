@@ -206,6 +206,31 @@ describe('CommandPalette', () => {
     });
   });
 
+  it('keeps actionable empty content outside listbox semantics', async () => {
+    const {container} = render(
+      <CommandPalette
+        isOpen={true}
+        onOpenChange={() => {}}
+        searchSource={emptySource}
+        emptyBootstrapText={<a href="/commands/new">Create a command</a>}
+      />,
+    );
+
+    expect(
+      await screen.findByRole('link', {name: 'Create a command'}),
+    ).toHaveAttribute('href', '/commands/new');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('option')).not.toBeInTheDocument();
+    expect(
+      container.querySelectorAll('.astryx-command-palette-empty'),
+    ).toHaveLength(1);
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-controls');
+  });
+
   it('shows default emptyBootstrapText when not provided', async () => {
     render(
       <CommandPalette

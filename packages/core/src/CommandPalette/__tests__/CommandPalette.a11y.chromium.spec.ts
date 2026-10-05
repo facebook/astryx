@@ -468,8 +468,8 @@ async function capture(page: Page, scenario: Case) {
     expect(observed.counts).toEqual({
       regions: 3,
       inputs: 3,
-      lists: 3,
-      options: 6,
+      lists: 1,
+      options: 4,
       groups: 2,
       groupHeadings: 2,
       empties: 2,
@@ -481,8 +481,16 @@ async function capture(page: Page, scenario: Case) {
     });
     expect(observed.inputLinks).toEqual([
       expect.objectContaining({controlsExistingList: true, expanded: 'true'}),
-      expect.objectContaining({controlsExistingList: true, expanded: 'true'}),
-      expect.objectContaining({controlsExistingList: true, expanded: 'true'}),
+      expect.objectContaining({
+        controls: null,
+        controlsExistingList: false,
+        expanded: 'false',
+      }),
+      expect.objectContaining({
+        controls: null,
+        controlsExistingList: false,
+        expanded: 'false',
+      }),
     ]);
     expect(observed.selectedValues).toEqual(['settings']);
     expect(observed.text).toContain('Grouped results');
@@ -514,6 +522,8 @@ async function capture(page: Page, scenario: Case) {
         state: 'empty-bootstrap',
         visible: true,
         emptyCount: 1,
+        listboxPresent: false,
+        comboboxExpanded: false,
       },
       {
         scenario: scenario.state,
@@ -521,6 +531,8 @@ async function capture(page: Page, scenario: Case) {
         visible: true,
         spinnerCount: 1,
         emptyStateRemainsMounted: true,
+        listboxPresent: false,
+        comboboxExpanded: false,
       },
     ];
     const contrastRows = observed.contrastPairs.map(pair => ({
