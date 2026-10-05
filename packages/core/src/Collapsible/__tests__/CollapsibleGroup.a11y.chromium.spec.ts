@@ -42,7 +42,7 @@ interface Case {
   mode: 'light' | 'dark';
   direction: 'ltr' | 'rtl';
   viewport: {width: number; height: number};
-  coarsePointer?: boolean;
+  touch?: boolean;
 }
 
 const CASES: Case[] = [
@@ -55,14 +55,14 @@ const CASES: Case[] = [
     mode: 'light',
     direction: 'ltr',
     viewport: NARROW,
-    coarsePointer: true,
+    touch: true,
   },
   {
     state: 'narrow-dark-touch',
     mode: 'dark',
     direction: 'ltr',
     viewport: NARROW,
-    coarsePointer: true,
+    touch: true,
   },
 ];
 
@@ -130,22 +130,6 @@ async function capture(page: Page, scenario: Case) {
   try {
     await page.setViewportSize(scenario.viewport);
     await page.emulateMedia({reducedMotion: 'reduce'});
-    if (scenario.coarsePointer) {
-      const session = await page.context().newCDPSession(page);
-      try {
-        await session.send('Emulation.setEmulatedMedia', {
-          features: [
-            {name: 'prefers-reduced-motion', value: 'reduce'},
-            {name: 'pointer', value: 'coarse'},
-            {name: 'any-pointer', value: 'coarse'},
-            {name: 'hover', value: 'none'},
-            {name: 'any-hover', value: 'none'},
-          ],
-        });
-      } finally {
-        await session.detach();
-      }
-    }
     browserVersion = page.context().browser()?.version() ?? 'unknown';
     await page.goto(
       `${storybook.origin}/iframe.html?id=${STORY_ID}&viewMode=story&globals=colorMode:${scenario.mode};astryxTheme:neutral;direction:${scenario.direction}`,
@@ -405,7 +389,7 @@ async function capture(page: Page, scenario: Case) {
       viewport: {width: innerWidth, height: innerHeight},
       dpr: devicePixelRatio,
       reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
-      coarsePointer: matchMedia('(pointer: coarse)').matches,
+      touchPoints: navigator.maxTouchPoints,
       forcedColors: matchMedia('(forced-colors: active)').matches,
       horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
       storyError: [
@@ -475,7 +459,11 @@ async function capture(page: Page, scenario: Case) {
     expect(environment.viewport).toEqual(scenario.viewport);
     expect(environment.reducedMotion).toBe(true);
     expect(environment.forcedColors).toBe(false);
-    expect(environment.coarsePointer).toBe(scenario.coarsePointer ?? false);
+    if (scenario.touch) {
+      expect(environment.touchPoints).toBeGreaterThan(0);
+    } else {
+      expect(environment.touchPoints).toBe(0);
+    }
     expect(environment.horizontalOverflow).toBe(false);
     expect(environment.storyError).toBe(false);
     expect(errors).toEqual([]);
@@ -523,7 +511,7 @@ async function capture(page: Page, scenario: Case) {
         chevronCount: 9,
         expandedNames: EXPANDED_NAMES,
         collapsedNames: COLLAPSED_NAMES,
-        coarsePointer: scenario.coarsePointer ?? false,
+        touch: scenario.touch ?? false,
       },
       observed: {
         build: storybookSha,
@@ -576,7 +564,7 @@ test('captures the complete group matrix with sensor receipts', async ({
   browser: Browser;
   page: Page;
 }) => {
-  for (const scenario of CASES.filter(value => !value.coarsePointer)) {
+  for (const scenario of CASES.filter(value => !value.touch)) {
     await capture(page, scenario);
   }
 
@@ -589,7 +577,7 @@ test('captures the complete group matrix with sensor receipts', async ({
   });
   try {
     const touchPage = await touchContext.newPage();
-    for (const scenario of CASES.filter(value => value.coarsePointer)) {
+    for (const scenario of CASES.filter(value => value.touch)) {
       await capture(touchPage, scenario);
     }
   } finally {
