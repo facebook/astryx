@@ -129,7 +129,35 @@ async function capture(page: Page, scenario: Case) {
       scenario.mode,
     );
 
+    await expect(subject).toBeVisible();
+    await subject.scrollIntoViewIfNeeded();
+    await page.evaluate(async () => {
+      await new Promise<void>(resolve =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+    });
+    const initialBox = await subject.boundingBox();
+    if (initialBox == null) {
+      throw new Error(`${scenario.state}: the audit matrix has no layout box`);
+    }
+    await page.evaluate(async () => {
+      await new Promise<void>(resolve =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+    });
     const box = await subject.boundingBox();
+    if (box == null) {
+      throw new Error(
+        `${scenario.state}: the audit matrix lost its layout box before capture`,
+      );
+    }
+    const geometryDelta = Math.max(
+      Math.abs(box.x - initialBox.x),
+      Math.abs(box.y - initialBox.y),
+      Math.abs(box.width - initialBox.width),
+      Math.abs(box.height - initialBox.height),
+    );
+
     const observed = await subject.evaluate(node => {
       const buttons = [...node.querySelectorAll('button')];
       return {
@@ -182,8 +210,8 @@ async function capture(page: Page, scenario: Case) {
     // Every expectation is authored from the fixture and current component
     // contract before the page is observed. A failed sensor mints no frame.
     expect(await page.locator('#storybook-root > *').count()).toBe(1);
-    expect(box).not.toBeNull();
     expect(await subject.isVisible()).toBe(true);
+    expect(geometryDelta).toBeLessThanOrEqual(0.5);
     expect(observed.direction).toBe(scenario.direction);
     expect(observed.sectionCount).toBe(2);
     expect(observed.headingCount).toBe(2);
@@ -236,6 +264,11 @@ async function capture(page: Page, scenario: Case) {
         pageErrors: errors.length,
         selectorVisible: await subject.isVisible(),
         geometry: box,
+        settledRender: {
+          initial: initialBox,
+          final: box,
+          maxDelta: geometryDelta,
+        },
       },
       image: {
         file,
