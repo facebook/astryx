@@ -259,9 +259,7 @@ described.
   report in a project without one;
 - `astryx upgrade` carries the codemod that gives copies their descriptors
   (FR12);
-- the CLI stops reading `ASTRYX_THEME` (DEC-7); the `component` command reads
-  the default theme from the theme module's record, or from `astryx.theme` in a
-  project with no theme module;
+- the CLI stops reading `ASTRYX_THEME` (DEC-7);
 - the theme guide, the integration guide, agent docs, and `init` next steps
   describe the FR13 workflow.
 
