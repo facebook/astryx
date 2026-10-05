@@ -536,6 +536,11 @@ export const AuditMatrix: Story = {
             label="Empty command palette"
             onOpenChange={() => {}}
             searchSource={emptySource}
+            emptyBootstrapText={
+              <span>
+                No commands yet. <a href="#new-command">Create a command</a>
+              </span>
+            }
             width="100%"
             maxHeight={420}
           />

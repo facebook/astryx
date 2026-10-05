@@ -747,6 +747,10 @@
     "defaultMessage": "Search…",
     "description": "Grey placeholder inside the CommandPalette's search input. Imperative verb; trailing `…` is one character."
   },
+  "@astryx.commandPalette.input.label": {
+    "defaultMessage": "Search commands",
+    "description": "Screen-reader-only accessible name for the CommandPalette query input. Distinguish it from the visible placeholder; verb followed by the app actions being searched."
+  },
   "@astryx.commandPalette.list.label": {
     "defaultMessage": "Commands",
     "description": "\"Command\" = an app action a user can invoke (metaphor from CLI), not a Unix command. Screen-reader-only name for the matching-commands list."

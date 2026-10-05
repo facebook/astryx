@@ -118,8 +118,7 @@ export interface CommandPaletteInputProps extends Omit<
 
   /**
    * Accessible label for the combobox input, announced by screen readers.
-   * Falls back to the placeholder text (`'Search…'` by default), since a
-   * placeholder alone is not a reliable accessible name.
+   * @default 'Search commands'
    */
   label?: string;
 
@@ -177,6 +176,7 @@ export function CommandPaletteInput({
   const t = useTranslator();
   const placeholder =
     placeholderFromProps ?? t('@astryx.commandPalette.input.placeholder');
+  const accessibleLabel = label ?? t('@astryx.commandPalette.input.label');
   const ctx = useCommandPaletteContext();
   const dialogContext = useDialogContext();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -233,13 +233,14 @@ export function CommandPaletteInput({
         aria-autocomplete="list"
         aria-controls={ctx?.hasListbox ? ctx.listId : undefined}
         aria-activedescendant={
-          ctx && ctx.hasListbox && ctx.highlightedIndex >= 0
+          ctx &&
+          ctx.hasListbox &&
+          ctx.highlightedIndex >= 0 &&
+          ctx.highlightedIndex < ctx.selectableItems.length
             ? ctx.getItemId(ctx.highlightedIndex)
             : undefined
         }
-        // A placeholder alone is not a reliable accessible name; give the
-        // combobox an explicit one (consumer aria-label via rest props wins).
-        aria-label={label ?? placeholder}
+        aria-label={accessibleLabel}
         placeholder={placeholder}
         value={value}
         data-autofocus={effectiveAutoFocus || undefined}

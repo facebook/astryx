@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] Keep modal dismissal, query-field caret movement, active IME composition, and empty-result semantics safe when CommandPalette handles keyboard and result states.
+[fix] Keep CommandPalette dismissal, text entry, result focus, and empty-state accessibility aligned with shared contracts.
 
 @cixzhang

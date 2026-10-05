@@ -44,12 +44,11 @@ describe('CommandPaletteInput', () => {
     expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
 
-  it('has an accessible name by default', () => {
-    render(<CommandPaletteInput />);
-    expect(screen.getByRole('combobox')).toHaveAttribute(
-      'aria-label',
-      'Search…',
-    );
+  it('has an accessible name independent of its placeholder by default', () => {
+    render(<CommandPaletteInput placeholder="Find an action…" />);
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveAttribute('aria-label', 'Search commands');
+    expect(input).toHaveAttribute('placeholder', 'Find an action…');
   });
 
   it('uses the label prop as the accessible name', () => {
@@ -58,14 +57,6 @@ describe('CommandPaletteInput', () => {
     expect(input).toHaveAttribute('aria-label', 'Search commands');
     // The label prop does not affect the visible placeholder
     expect(input).toHaveAttribute('placeholder', 'Search…');
-  });
-
-  it('falls back to a custom placeholder for the accessible name', () => {
-    render(<CommandPaletteInput placeholder="Type a command..." />);
-    expect(screen.getByRole('combobox')).toHaveAttribute(
-      'aria-label',
-      'Type a command...',
-    );
   });
 
   it('lets a consumer-passed aria-label override the default', () => {
@@ -167,6 +158,22 @@ describe('CommandPaletteInput dialog context', () => {
     expect(input).toHaveAttribute('aria-expanded', 'false');
     expect(input).not.toHaveAttribute('aria-controls');
     expect(input).not.toHaveAttribute('aria-activedescendant');
+  });
+
+  it('omits an active descendant whose highlighted index has no option', () => {
+    render(
+      <CommandPaletteContext
+        value={makeContext({
+          highlightedIndex: 1,
+          selectableItems: [{value: 'home'}],
+        })}>
+        <CommandPaletteInput />
+      </CommandPaletteContext>,
+    );
+
+    expect(screen.getByRole('combobox')).not.toHaveAttribute(
+      'aria-activedescendant',
+    );
   });
 
   it('does not route IME composition keys to palette commands', () => {

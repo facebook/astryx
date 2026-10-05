@@ -436,6 +436,7 @@ async function capture(page: Page, scenario: Case) {
           targets: targets.length,
         },
         inputLinks: inputs.map(input => ({
+          name: input.getAttribute('aria-label'),
           controls: input.getAttribute('aria-controls'),
           controlsExistingList:
             input.getAttribute('aria-controls') != null &&
@@ -480,13 +481,19 @@ async function capture(page: Page, scenario: Case) {
       targets: 19,
     });
     expect(observed.inputLinks).toEqual([
-      expect.objectContaining({controlsExistingList: true, expanded: 'true'}),
       expect.objectContaining({
+        name: 'Search commands',
+        controlsExistingList: true,
+        expanded: 'true',
+      }),
+      expect.objectContaining({
+        name: 'Search commands',
         controls: null,
         controlsExistingList: false,
         expanded: 'false',
       }),
       expect.objectContaining({
+        name: 'Search commands',
         controls: null,
         controlsExistingList: false,
         expanded: 'false',
@@ -497,6 +504,7 @@ async function capture(page: Page, scenario: Case) {
     expect(observed.text).toContain('Empty bootstrap');
     expect(observed.text).toContain('Pending bootstrap');
     expect(observed.text).toContain('Type to search');
+    expect(observed.text).toContain('Create a command');
     expect(observed.text).toContain('Navigate');
     expect(observed.text).toContain('Select');
     expect(observed.text).toContain('Close');

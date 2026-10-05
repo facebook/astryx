@@ -3,7 +3,8 @@
 'use client';
 /**
  * @file CommandPalette.tsx
- * @input Uses React, Dialog, Layout, CommandPaletteContext, SearchSource, useCombobox, useAnnounce
+ * @input Uses React, Dialog, Layout, CommandPaletteContext, SearchSource,
+ *   useCombobox, useAnnounce, useAnnounceRenderedText
  * @output Exports CommandPalette root component and props
  * @position Core root component; dialog shell with searchSource-driven items
  *
@@ -37,6 +38,7 @@ import {CommandPaletteFooter} from './CommandPaletteFooter';
 import {CommandPaletteEmpty} from './CommandPaletteEmpty';
 import type {BaseProps} from '../BaseProps';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
 import {useTranslator} from '../i18n';
 
 export interface CommandPaletteProps<
@@ -312,6 +314,7 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
     useOptimistic(searchResults);
   const isBusy = isPending;
   const searchVersionRef = useRef(0);
+  const emptyStateRef = useRef<HTMLDivElement>(null);
 
   // Announce search status to screen readers through the shared polite live
   // region (comboboxes-7 announce path, mirroring Selector / BaseTypeahead).
@@ -394,6 +397,10 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
     (query: string) => {
       searchSource.cancel?.();
       const version = ++searchVersionRef.current;
+      // A highlight belongs to the query that created it. Clear it before any
+      // optimistic narrowing so aria-activedescendant never shifts to a
+      // different command at the same index while the next result set loads.
+      combobox.setHighlightedIndex(-1);
 
       startTransition(async () => {
         const isBootstrap = query === '';
@@ -430,16 +437,12 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
 
           // Announce the outcome from the search commit (not a reactive
           // effect), matching Selector / BaseTypeahead: exactly one
-          // announcement per committed query, and the version check above
-          // already discards stale keystrokes. Bootstrap stays silent — the
-          // same role PowerSearch's mount guard plays — so opening the
-          // palette announces nothing; clearing the query only clears any
-          // lingering status text.
+          // announcement per committed non-empty query. Empty results are
+          // announced from their rendered content below so a caller-supplied
+          // ReactNode reaches assistive technology as written.
           if (isBootstrap) {
             announce('');
-          } else if (items.length === 0) {
-            announce(t('@astryx.commandPalette.noResultsFor', {query}));
-          } else {
+          } else if (items.length > 0) {
             announce(
               t('@astryx.commandPalette.resultCount', {count: items.length}),
             );
@@ -617,14 +620,21 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
   // the empty state is never unmounted and re-added mid-search (which flashed).
   const showEmptyBootstrap = search === '' && optimisticResults.length === 0;
   const showEmptySearch = search !== '' && optimisticResults.length === 0;
+  useAnnounceRenderedText(emptyStateRef, showEmptySearch, search);
 
   let listContent: ReactNode;
   if (showEmptyBootstrap) {
     listContent = (
-      <CommandPaletteEmpty>{emptyBootstrapText}</CommandPaletteEmpty>
+      <CommandPaletteEmpty ref={emptyStateRef}>
+        {emptyBootstrapText}
+      </CommandPaletteEmpty>
     );
   } else if (showEmptySearch) {
-    listContent = <CommandPaletteEmpty>{emptySearchText}</CommandPaletteEmpty>;
+    listContent = (
+      <CommandPaletteEmpty ref={emptyStateRef}>
+        {emptySearchText}
+      </CommandPaletteEmpty>
+    );
   } else {
     listContent = (
       <ItemRenderer

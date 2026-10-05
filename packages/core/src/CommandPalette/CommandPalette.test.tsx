@@ -244,6 +244,40 @@ describe('CommandPalette', () => {
     });
   });
 
+  it('clears a stale highlight across empty and repopulated results', async () => {
+    render(
+      <CommandPalette
+        isOpen={true}
+        onOpenChange={() => {}}
+        searchSource={simpleSource}
+      />,
+    );
+    await waitFor(() =>
+      expect(screen.getByText('Settings')).toBeInTheDocument(),
+    );
+
+    const input = screen.getByRole('combobox');
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    expect(input.getAttribute('aria-activedescendant')).toMatch(/-item-1$/);
+
+    fireEvent.change(input, {target: {value: 'zzz'}});
+    await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull());
+    expect(input).not.toHaveAttribute('aria-activedescendant');
+
+    fireEvent.change(input, {target: {value: 'hom'}});
+    await waitFor(() =>
+      expect(screen.getByRole('option', {name: 'Home'})).toBeInTheDocument(),
+    );
+    expect(input).not.toHaveAttribute('aria-activedescendant');
+
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    expect(input).toHaveAttribute(
+      'aria-activedescendant',
+      screen.getByRole('option', {name: 'Home'}).id,
+    );
+  });
+
   it('calls onOpenChange(false) when Escape is pressed', () => {
     const handleOpenChange = vi.fn();
     render(
@@ -572,7 +606,7 @@ describe('CommandPalette', () => {
       });
     });
 
-    it('announces the empty state with the query when nothing matches', async () => {
+    it('announces the rendered default empty state when nothing matches', async () => {
       render(
         <CommandPalette
           isOpen={true}
@@ -583,7 +617,33 @@ describe('CommandPalette', () => {
       await waitFor(() => expect(screen.getByText('Home')).toBeInTheDocument());
       fireEvent.change(screen.getByRole('combobox'), {target: {value: 'zzz'}});
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('No results for zzz');
+        expect(politeRegion()).toHaveTextContent(/^No results$/);
+      });
+    });
+
+    it('announces rich emptySearchText exactly as rendered', async () => {
+      render(
+        <CommandPalette
+          isOpen={true}
+          onOpenChange={() => {}}
+          searchSource={simpleSource}
+          emptySearchText={
+            <span>
+              Nothing like that here. <a href="/commands/new">Add a command</a>
+            </span>
+          }
+        />,
+      );
+      await waitFor(() => expect(screen.getByText('Home')).toBeInTheDocument());
+      fireEvent.change(screen.getByRole('combobox'), {target: {value: 'zzz'}});
+
+      expect(
+        await screen.findByRole('link', {name: 'Add a command'}),
+      ).toHaveAttribute('href', '/commands/new');
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent(
+          /^Nothing like that here\. Add a command$/,
+        );
       });
     });
 
