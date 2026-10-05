@@ -113,19 +113,10 @@ const dynamicStyles = stylex.create({
 });
 
 /**
- * Default axis padding per toolbar size. Compact toolbars own a 4px inset on
- * every edge. Larger toolbars preserve Section's theme-owned inline padding
- * while keeping their existing 8px block inset.
+ * Default block padding per toolbar size. Inline padding stays owned by the
+ * surrounding Section/container so nested toolbars preserve the same content
+ * line as adjacent body content.
  */
-const defaultInlinePaddingForSize: Record<
-  ElementSize,
-  SpacingStep | undefined
-> = {
-  sm: 1,
-  md: undefined,
-  lg: undefined,
-};
-
 const defaultBlockPaddingForSize: Record<ElementSize, SpacingStep> = {
   sm: 1,
   md: 2,
@@ -173,10 +164,11 @@ export interface ToolbarProps extends BaseProps<HTMLDivElement> {
    */
   label: string;
   /**
-   * Size of the toolbar. Coordinates padding and child components through
-   * SizeContext. Compact (`sm`) toolbars use 4px padding on every side.
+   * Size of the toolbar. Coordinates block padding and child components through
+   * SizeContext. Inline padding remains container-owned so nested toolbars share
+   * the surrounding content line.
    *
-   * - `'sm'`: Compact — 4px inset, fits sm buttons/inputs (28px elements)
+   * - `'sm'`: Compact — 4px block inset, fits sm buttons/inputs (28px elements)
    * - `'md'`: Standard — fits md buttons/inputs (32px elements)
    * - `'lg'`: Spacious — fits lg buttons/inputs (36px elements)
    * @default 'md'
@@ -309,7 +301,6 @@ export function Toolbar({
       <Section
         ref={ref}
         variant={variant}
-        paddingInline={defaultInlinePaddingForSize[size]}
         paddingBlock={defaultBlockPaddingForSize[size]}
         dividers={dividers}
         xstyle={xstyle}

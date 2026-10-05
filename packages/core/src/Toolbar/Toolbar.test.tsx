@@ -153,18 +153,29 @@ describe('Toolbar', () => {
     expect(toolbar).toHaveAttribute('data-size', 'sm');
   });
 
-  it('uses the 4px spacing step on every edge at sm size', () => {
-    const {container} = render(<Toolbar label="Actions" size="sm" />);
-    const sectionInner = container.querySelector('.astryx-section');
-    const expectedPaddingClasses = stylex
-      .props(paddingInlineStyles[1], paddingBlockStyles[1])
-      .className?.split(' ')
-      .filter(Boolean);
+  it.each([
+    ['sm', 1],
+    ['md', 2],
+  ] as const)(
+    'uses the %s block inset without overriding container inline padding',
+    (size, blockPadding) => {
+      const {container} = render(<Toolbar label="Actions" size={size} />);
+      const sectionInner = container.querySelector('.astryx-section');
+      const expectedBlockClasses = stylex
+        .props(paddingBlockStyles[blockPadding])
+        .className?.split(' ')
+        .filter(Boolean);
+      const compactInlineClasses = stylex
+        .props(paddingInlineStyles[1])
+        .className?.split(' ')
+        .filter(Boolean);
 
-    expect(sectionInner).toBeInTheDocument();
-    expect(expectedPaddingClasses).not.toHaveLength(0);
-    expect(sectionInner).toHaveClass(...(expectedPaddingClasses ?? []));
-  });
+      expect(sectionInner).toBeInTheDocument();
+      expect(expectedBlockClasses).not.toHaveLength(0);
+      expect(sectionInner).toHaveClass(...(expectedBlockClasses ?? []));
+      expect(sectionInner).not.toHaveClass(...(compactInlineClasses ?? []));
+    },
+  );
 
   it('defaults to md size', () => {
     render(<Toolbar label="Actions" />);
