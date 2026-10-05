@@ -113,18 +113,27 @@ const dynamicStyles = stylex.create({
 });
 
 /**
- * Default block padding per toolbar size. Inline padding comes from the
- * parent container (Card, Section, LayoutHeader) via the Section's
- * theme default — the toolbar only controls its vertical tightness.
+ * Default axis padding per toolbar size. Compact toolbars own a 4px inset on
+ * every edge. Larger toolbars preserve Section's theme-owned inline padding
+ * while keeping their existing 8px block inset.
  */
+const defaultInlinePaddingForSize: Record<
+  ElementSize,
+  SpacingStep | undefined
+> = {
+  sm: 1,
+  md: undefined,
+  lg: undefined,
+};
+
 const defaultBlockPaddingForSize: Record<ElementSize, SpacingStep> = {
-  sm: 2,
+  sm: 1,
   md: 2,
   lg: 2,
 };
 
 const blockPaddingVarForSize: Record<ElementSize, string> = {
-  sm: spacingVars['--spacing-2'],
+  sm: spacingVars['--spacing-1'],
   md: spacingVars['--spacing-2'],
   lg: spacingVars['--spacing-2'],
 };
@@ -135,7 +144,7 @@ const blockPaddingVarForSize: Record<ElementSize, string> = {
  * creating even spacing around edge-compensated items (ghost buttons, tabs).
  */
 const edgeCompInsetForSize: Record<ElementSize, string> = {
-  sm: `calc(var(--container-padding-inline-start, ${spacingVars['--spacing-4']}) - ${spacingVars['--spacing-2']})`,
+  sm: `calc(var(--container-padding-inline-start, ${spacingVars['--spacing-4']}) - ${spacingVars['--spacing-1']})`,
   md: `calc(var(--container-padding-inline-start, ${spacingVars['--spacing-4']}) - ${spacingVars['--spacing-2']})`,
   lg: `calc(var(--container-padding-inline-start, ${spacingVars['--spacing-4']}) - ${spacingVars['--spacing-2']})`,
 };
@@ -164,10 +173,10 @@ export interface ToolbarProps extends BaseProps<HTMLDivElement> {
    */
   label: string;
   /**
-   * Size of the toolbar. Coordinates with Button, TextInput, TabList, and Selector —
-   * children inherit this size as their default via SizeContext.
+   * Size of the toolbar. Coordinates padding and child components through
+   * SizeContext. Compact (`sm`) toolbars use 4px padding on every side.
    *
-   * - `'sm'`: Compact — fits sm buttons/inputs (28px elements)
+   * - `'sm'`: Compact — 4px inset, fits sm buttons/inputs (28px elements)
    * - `'md'`: Standard — fits md buttons/inputs (32px elements)
    * - `'lg'`: Spacious — fits lg buttons/inputs (36px elements)
    * @default 'md'
@@ -300,6 +309,7 @@ export function Toolbar({
       <Section
         ref={ref}
         variant={variant}
+        paddingInline={defaultInlinePaddingForSize[size]}
         paddingBlock={defaultBlockPaddingForSize[size]}
         dividers={dividers}
         xstyle={xstyle}

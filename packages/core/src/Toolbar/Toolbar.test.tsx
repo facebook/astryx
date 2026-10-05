@@ -12,7 +12,12 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import * as stylex from '@stylexjs/stylex';
 import {Toolbar} from './Toolbar';
+import {
+  paddingBlockStyles,
+  paddingInlineStyles,
+} from '../Layout/padding.stylex';
 
 describe('Toolbar', () => {
   it('renders with toolbar role', () => {
@@ -146,6 +151,19 @@ describe('Toolbar', () => {
     render(<Toolbar label="Actions" size="sm" />);
     const toolbar = screen.getByRole('toolbar');
     expect(toolbar).toHaveAttribute('data-size', 'sm');
+  });
+
+  it('uses the 4px spacing step on every edge at sm size', () => {
+    const {container} = render(<Toolbar label="Actions" size="sm" />);
+    const sectionInner = container.querySelector('.astryx-section');
+    const expectedPaddingClasses = stylex
+      .props(paddingInlineStyles[1], paddingBlockStyles[1])
+      .className?.split(' ')
+      .filter(Boolean);
+
+    expect(sectionInner).toBeInTheDocument();
+    expect(expectedPaddingClasses).not.toHaveLength(0);
+    expect(sectionInner).toHaveClass(...(expectedPaddingClasses ?? []));
   });
 
   it('defaults to md size', () => {
