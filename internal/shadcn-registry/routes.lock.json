@@ -1302,9 +1302,11 @@
       "aliases": []
     },
     {
-      "name": "example-bottom-sheet-switcher-review-flow",
-      "path": "examples/bottom-sheet-switcher/review-flow",
-      "aliases": []
+      "name": "example-bottom-sheet-switcher-multi-step-flow-singular-form",
+      "path": "examples/bottom-sheet-switcher/multi-step-flow-singular-form",
+      "aliases": [
+        "examples/bottom-sheet-switcher/review-flow"
+      ]
     },
     {
       "name": "example-bottom-sheet-height-variants",

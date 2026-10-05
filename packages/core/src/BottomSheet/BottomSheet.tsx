@@ -10,9 +10,10 @@
  *
  * BottomSheet selects one of two focused hosts. A standalone host owns its
  * native dialog lifecycle; a switcher item participates in the parent's shared
- * dialog and transition state machine. Both render the same BottomSheetPanel,
- * which owns sheet presentation, gestures, mobile-keyboard accommodation, and
- * motion completion.
+ * dialog, ordered sheet path, and transition state machine — registering its
+ * id, receding while covered, and recording covered focus for a later pop.
+ * Both render the same BottomSheetPanel, which owns sheet presentation,
+ * gestures, mobile-keyboard accommodation, and motion completion.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/BottomSheet/BottomSheetPanel.tsx
@@ -38,7 +39,12 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import type {DialogPurpose} from '../Dialog';
-import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
+import {
+  colorVars,
+  durationVars,
+  easeVars,
+  spacingVars,
+} from '../theme/tokens.stylex';
 import {useDevWarning, useScrollLock} from '../hooks';
 import {isImeKeyEvent} from '../utils';
 import {
@@ -55,6 +61,41 @@ import {
 
 export type {BottomSheetHeight, BottomSheetSnapPoint} from './BottomSheetPanel';
 import type {BottomSheetHeight, BottomSheetSnapPoint} from './BottomSheetPanel';
+
+// Covered sheets recede behind the top sheet with a bounded visual depth:
+// every covered level stays mounted and inert, but only the nearest levels
+// remain visually distinguishable (spec:AST-044/FR25). The exact geometry is
+// stack-owned and internal; it is not a public theming surface.
+const STACK_VISUAL_DEPTH_LIMIT = 2;
+const STACK_SCALE_STEP = 0.04;
+// PROTOTYPE (spec:AST-044 OQ5): covered sheets also blur and dim with depth.
+// Pending design review; not accepted recede geometry.
+const STACK_BLUR_STEP_PX = 1;
+const STACK_BRIGHTNESS_STEP = 0.04;
+
+function transformForStackDepth(depth: number): string {
+  const visualDepth = Math.min(STACK_VISUAL_DEPTH_LIMIT, Math.max(0, depth));
+  if (visualDepth === 0) {
+    return 'translateY(0) scale(1)';
+  }
+  const scale = (1 - visualDepth * STACK_SCALE_STEP).toFixed(2);
+  return `translateY(calc(${spacingVars['--spacing-2']} * -${visualDepth})) scale(${scale})`;
+}
+
+// PROTOTYPE (spec:AST-044 OQ5): depth-scaled filter for covered levels —
+// d1: blur(1px) brightness(0.96), d2: blur(2px) brightness(0.92). Applied
+// only at depth > 0, where the positioner already carries a transform, so the
+// filter's containing-block effect on fixed descendants adds nothing new; the
+// filtered level is inert either way. Rides the same transition (and the same
+// reduced-motion collapse) as the recede transform — no per-frame JS.
+function filterForStackDepth(depth: number): string {
+  const visualDepth = Math.min(STACK_VISUAL_DEPTH_LIMIT, Math.max(0, depth));
+  if (visualDepth === 0) {
+    return 'none';
+  }
+  const brightness = (1 - visualDepth * STACK_BRIGHTNESS_STEP).toFixed(2);
+  return `blur(${visualDepth * STACK_BLUR_STEP_PX}px) brightness(${brightness})`;
+}
 
 const styles = stylex.create({
   dialog: {
@@ -126,6 +167,29 @@ const styles = stylex.create({
   positionerTop: {
     zIndex: 1,
   },
+  // Stacked-path positioner treatment: recede and return use state plus
+  // CSS-native motion only, with no per-frame measurement (spec:AST-044/FR43).
+  // The depth filter (prototype, OQ5) rides the same transition and the same
+  // reduced-motion collapse; willChange stays on transform alone.
+  positionerStackMotion: {
+    transformOrigin: '50% 0',
+    transitionProperty: 'transform, filter',
+    transitionDuration: durationVars['--duration-medium'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+    willChange: 'transform',
+    '@media (prefers-reduced-motion: reduce)': {
+      transitionDuration: '0.01s',
+    },
+  },
+  positionerStackTransform: (transform: string) => ({
+    transform,
+  }),
+  positionerStackFilter: (filter: string) => ({
+    filter,
+  }),
+  positionerStackLayer: (zIndex: number) => ({
+    zIndex,
+  }),
 });
 
 interface BottomSheetSharedProps extends BaseProps<HTMLDivElement> {
@@ -414,11 +478,15 @@ function SwitcherBottomSheetItem({
   ...props
 }: SwitcherBottomSheetItemProps) {
   const {
-    activeSheet,
+    topSheet,
     hasScrim,
-    onActiveSheetChange,
+    isStackedFlow,
+    requestSwipeDismiss,
     getSheetPhase,
     getSheetAlignmentOffset,
+    getSheetDepth,
+    getSheetStackLayer,
+    registerSheetPresence,
     registerSheetElement,
     registerSheetLabel,
     registerSheetPurpose,
@@ -431,6 +499,10 @@ function SwitcherBottomSheetItem({
   const alignmentOffset = hasValidSheetId
     ? getSheetAlignmentOffset(sheetId)
     : 0;
+  const stackDepth =
+    hasValidSheetId && isStackedFlow ? getSheetDepth(sheetId) : 0;
+  const stackLayer =
+    hasValidSheetId && isStackedFlow ? getSheetStackLayer(sheetId) : 0;
   const panelState = panelStateForSwitcherPhase(phase, alignmentOffset);
   const isInteractive = phase === 'active' || phase === 'entering';
   const isInactive =
@@ -441,6 +513,7 @@ function SwitcherBottomSheetItem({
   const isPresented = phase !== 'hidden';
   const isTopSheet = phase === 'active' || phase === 'entering';
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const coveredFocusRef = useRef<HTMLElement | null>(null);
   const previousPhaseRef = useRef(phase);
   const previousPhase = previousPhaseRef.current;
   const hasPresentedRef = useRef(false);
@@ -449,11 +522,39 @@ function SwitcherBottomSheetItem({
     previousPhaseRef.current = phase;
   }, [phase]);
 
-  const dismissOnSwipe = useCallback(() => {
-    if (purpose === 'info' && hasValidSheetId && activeSheet === sheetId) {
-      onActiveSheetChange(null);
+  // Participating destinations register with the nearest controller so the
+  // controlled path can validate its ids against exactly-one mounted sheet.
+  useLayoutEffect(() => {
+    if (!hasValidSheetId) {
+      return;
     }
-  }, [activeSheet, hasValidSheetId, onActiveSheetChange, purpose, sheetId]);
+    return registerSheetPresence(sheetId);
+  }, [hasValidSheetId, registerSheetPresence, sheetId]);
+
+  // A push records the focused element of the sheet it covers before focus
+  // moves into the new top. The record is discarded once the sheet leaves
+  // presentation, so a later registration lifetime cannot inherit it.
+  useLayoutEffect(() => {
+    const wasInteractive =
+      previousPhase === 'active' || previousPhase === 'entering';
+    if (wasInteractive && phase === 'covered' && stackDepth > 0) {
+      const activeElement = document.activeElement;
+      if (
+        activeElement instanceof HTMLElement &&
+        panelRef.current?.contains(activeElement)
+      ) {
+        coveredFocusRef.current = activeElement;
+      }
+    } else if (phase === 'hidden') {
+      coveredFocusRef.current = null;
+    }
+  }, [phase, previousPhase, stackDepth]);
+
+  const dismissOnSwipe = useCallback(() => {
+    if (purpose === 'info' && hasValidSheetId && topSheet === sheetId) {
+      requestSwipeDismiss(sheetId);
+    }
+  }, [hasValidSheetId, purpose, requestSwipeDismiss, sheetId, topSheet]);
   const handlePanelElementChange = useCallback(
     (element: HTMLDivElement | null) => {
       panelRef.current = element;
@@ -509,7 +610,20 @@ function SwitcherBottomSheetItem({
       const wasInteractive =
         previousPhase === 'active' || previousPhase === 'entering';
       if (!hasPresentedRef.current || !wasInteractive) {
-        focusPanel(panelRef.current, hasScrim);
+        // A pop restores the covered sheet's recorded focus while it remains
+        // connected and owned by this sheet; otherwise focus entry follows
+        // the shared autofocus rule.
+        const coveredFocus = coveredFocusRef.current;
+        coveredFocusRef.current = null;
+        if (
+          coveredFocus != null &&
+          coveredFocus.isConnected &&
+          panelRef.current?.contains(coveredFocus) === true
+        ) {
+          coveredFocus.focus({preventScroll: true});
+        } else {
+          focusPanel(panelRef.current, hasScrim);
+        }
       }
       hasPresentedRef.current = true;
     } else if (phase === 'hidden') {
@@ -528,8 +642,17 @@ function SwitcherBottomSheetItem({
     <div
       {...stylex.props(
         styles.positioner,
+        isStackedFlow && styles.positionerStackMotion,
+        isStackedFlow &&
+          stackDepth > 0 &&
+          styles.positionerStackTransform(transformForStackDepth(stackDepth)),
+        isStackedFlow &&
+          stackDepth > 0 &&
+          styles.positionerStackFilter(filterForStackDepth(stackDepth)),
+        isStackedFlow
+          ? styles.positionerStackLayer(stackLayer)
+          : isTopSheet && styles.positionerTop,
         !isPresented && styles.positionerHidden,
-        isTopSheet && styles.positionerTop,
       )}
       hidden={!isPresented}
       aria-hidden={isInactive ? 'true' : undefined}
