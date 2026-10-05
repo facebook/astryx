@@ -234,6 +234,16 @@ describe('ToggleButton', () => {
     expect(hiddenSpan).not.toBeInTheDocument();
   });
 
+  it('preserves caller className alongside theme classes', () => {
+    render(<ToggleButton label="All" className="my-filter" />);
+
+    expect(screen.getByRole('button', {name: 'All'})).toHaveClass(
+      'my-filter',
+      'astryx-toggle-button',
+      'astryx-button',
+    );
+  });
+
   it('passes data-testid through', () => {
     render(
       <ToggleButton
