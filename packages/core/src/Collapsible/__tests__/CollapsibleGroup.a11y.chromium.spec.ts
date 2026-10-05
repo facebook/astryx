@@ -182,7 +182,15 @@ async function capture(page: Page, scenario: Case) {
         };
       };
       return {
-        direction: getComputedStyle(node).direction,
+        direction: groups[0]
+          ? getComputedStyle(groups[0]).direction
+          : getComputedStyle(node).direction,
+        groupDirections: groups.map(
+          element => getComputedStyle(element).direction,
+        ),
+        buttonDirections: buttons.map(
+          element => getComputedStyle(element).direction,
+        ),
         text: (node as HTMLElement).innerText,
         sectionCount: node.querySelectorAll('section').length,
         headingCount: node.querySelectorAll('h2').length,
@@ -237,6 +245,13 @@ async function capture(page: Page, scenario: Case) {
     expect(await subject.isVisible()).toBe(true);
     expect(geometryDelta).toBeLessThanOrEqual(0.5);
     expect(observed.direction).toBe(scenario.direction);
+    expect(observed.groupDirections).toEqual([
+      scenario.direction,
+      scenario.direction,
+    ]);
+    expect(observed.buttonDirections).toEqual(
+      Array.from({length: 5}, () => scenario.direction),
+    );
     expect(observed.sectionCount).toBe(2);
     expect(observed.headingCount).toBe(2);
     expect(observed.groupCount).toBe(2);
