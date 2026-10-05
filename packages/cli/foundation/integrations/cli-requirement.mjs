@@ -109,7 +109,13 @@ export function lowestAdmitted(range) {
  *   floor
  * @returns {string | null}
  */
-function cliRangeProblem(pkg, feature, loss, floor = DOCS_TREE_CLI) {
+export function cliRangeProblem(pkg, feature, loss, floor = DOCS_TREE_CLI) {
+  // A floor that is not a version means the arguments are out of order, as
+  // after a merge with a caller written for another parameter order. Fail
+  // loudly rather than compare a range against feature text.
+  if (lowerVersion(floor) == null) {
+    throw new TypeError(`cliRangeProblem: floor "${floor}" is not a version`);
+  }
   const range = pkg?.peerDependencies?.[CLI_PACKAGE];
   const fix = `"${CLI_PACKAGE}": ">=${floor}" in peerDependencies (optional in peerDependenciesMeta, if the CLI is not required)`;
   if (typeof range !== 'string') {

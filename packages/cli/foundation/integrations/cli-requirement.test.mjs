@@ -6,6 +6,7 @@ import {semverCompare} from '../env/semver.mjs';
 import {
   DOCS_TREE_CLI,
   SECTION_IDS_CLI,
+  cliRangeProblem,
   THEMES_CLI,
   lowestAdmitted,
   docsTreeCliProblem,
@@ -146,5 +147,19 @@ describe('themesCliProblem and sectionIdsCliProblem', () => {
       '@astryxdesign/cli': {optional: true},
     });
     expect(themesCliProblem(declared)).toBeNull();
+  });
+});
+
+describe('cliRangeProblem', () => {
+  it('uses the docs-tree floor when a caller names none', () => {
+    expect(
+      cliRangeProblem({name: '@acme/kit'}, 'ships x', 'drops x'),
+    ).toContain('A stable CLI before 0.7.0');
+  });
+
+  it('fails loudly when the floor is not a version', () => {
+    expect(() =>
+      cliRangeProblem({name: '@acme/kit'}, '0.6.4', 'ships x', 'drops x'),
+    ).toThrow(TypeError);
   });
 });
