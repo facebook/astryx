@@ -374,7 +374,10 @@ describe('integrationPackCheck', () => {
     expect(await codes()).toContain('docs_tree_needs_cli');
     peer('^0.6.0 || >=0.7.0');
     expect(await codes()).toContain('docs_tree_needs_cli');
-    peer('>=0.7.0');
+    peer('>=0.6.3');
+    expect(await codes()).toContain('docs_tree_needs_cli');
+    // Published 0.6.4 reads the docs tree.
+    peer('>=0.6.4');
     expect(await codes()).not.toContain('docs_tree_needs_cli');
   }, 120_000);
 
@@ -464,6 +467,9 @@ describe('integrationPackCheck', () => {
     peer(undefined);
     expect(await codes()).toContain('replaces_needs_cli');
     peer('^0.6.0');
+    expect(await codes()).toContain('replaces_needs_cli');
+    // `replaces` still needs 0.7.0.
+    peer('>=0.6.4');
     expect(await codes()).toContain('replaces_needs_cli');
     peer('>=0.7.0');
     expect(await codes()).not.toContain('replaces_needs_cli');

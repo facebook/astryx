@@ -18,13 +18,19 @@ import {semverCompare} from '../env/semver.mjs';
 export const CLI_PACKAGE = '@astryxdesign/cli';
 
 /**
- * The first CLI release that reads an integration's docs tree (namespace docs
- * and placed guides) and its templates' `replaces` and `keywords`. A release
- * before it can hide every doc topic a package with a namespace doc or a
- * placed guide ships, with no warning; and it rejects `replaces` or
- * `keywords`, drops that template, and hides the package's doc topics.
+ * The first stable CLI release that reads an integration's docs tree:
+ * namespace docs and placed guides. Published 0.6.3 rejects a namespace doc
+ * and hides every doc topic the package ships, with no warning; published
+ * 0.6.4 lists the namespace and reads its guides.
  */
-export const DOCS_TREE_CLI = '0.7.0';
+export const NAMESPACE_DOCS_CLI = '0.6.4';
+
+/**
+ * The first CLI release that reads a template's `replaces` and `keywords`. A
+ * release before it rejects either field, drops that template, and hides the
+ * package's doc topics.
+ */
+export const REPLACES_CLI = '0.7.0';
 
 /**
  * The first stable CLI release that reads typed theme descriptors, the theme
@@ -104,16 +110,15 @@ export function lowestAdmitted(range) {
  * @param {any} pkg package.json
  * @param {string} feature what the package does, e.g. "ships a namespace doc"
  * @param {string} loss what an older CLI does with it
- * @param {string} [floor] the first stable CLI release that reads it; the
- *   docs tree's by default, so a caller that names none keeps the strictest
- *   floor
+ * @param {string} floor the first stable CLI release that reads it
  * @returns {string | null}
  */
-export function cliRangeProblem(pkg, feature, loss, floor = DOCS_TREE_CLI) {
-  // A floor that is not a version means the arguments are out of order, as
-  // after a merge with a caller written for another parameter order. Fail
-  // loudly rather than compare a range against feature text.
-  if (lowerVersion(floor) == null) {
+export function cliRangeProblem(pkg, feature, loss, floor) {
+  // A floor that is missing or not a version means a caller passed the
+  // arguments in another order, as after a merge with a caller written for
+  // another signature. Fail loudly rather than compare a range against
+  // feature text, or against nothing.
+  if (typeof floor !== 'string' || lowerVersion(floor) == null) {
     throw new TypeError(`cliRangeProblem: floor "${floor}" is not a version`);
   }
   const range = pkg?.peerDependencies?.[CLI_PACKAGE];
@@ -133,7 +138,7 @@ export function cliRangeProblem(pkg, feature, loss, floor = DOCS_TREE_CLI) {
  * docs on an older CLI, or null when its declared CLI range admits only CLIs
  * that read the docs tree. Published 0.6.3 hides every topic of a package
  * with a namespace doc; builds of main before the docs tree also do so for a
- * placed guide.
+ * placed guide. Published 0.6.4 reads both.
  * @param {any} pkg package.json
  * @returns {string | null}
  */
@@ -142,7 +147,7 @@ export function docsTreeCliProblem(pkg) {
     pkg,
     'ships a namespace doc or a placed guide',
     'does not read the docs tree, and can hide every doc topic the package ships',
-    DOCS_TREE_CLI,
+    NAMESPACE_DOCS_CLI,
   );
 }
 
@@ -158,7 +163,7 @@ export function replacesCliProblem(pkg) {
     pkg,
     'has a template that sets `replaces`',
     "rejects the field, drops that template, and hides the package's doc topics",
-    DOCS_TREE_CLI,
+    REPLACES_CLI,
   );
 }
 
@@ -210,7 +215,7 @@ export function keywordsCliProblem(pkg) {
     pkg,
     'has a template that sets `keywords`',
     "rejects the field, drops that template, and hides the package's doc topics",
-    DOCS_TREE_CLI,
+    REPLACES_CLI,
   );
 }
 
@@ -242,5 +247,5 @@ export function withCliPeer(pkg, floor) {
  * @returns {any}
  */
 export function withDocsTreeCli(pkg) {
-  return withCliPeer(pkg, DOCS_TREE_CLI);
+  return withCliPeer(pkg, NAMESPACE_DOCS_CLI);
 }

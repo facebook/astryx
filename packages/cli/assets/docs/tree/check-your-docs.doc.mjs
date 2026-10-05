@@ -110,7 +110,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: '`integration verify` fails a package that ships a docs section or a placed guide without an `@astryxdesign/cli` peer of `>=0.7.0`, or a doc section with an `id` without one of `>=0.6.4`. It does not run the docs check, so run both.',
+          text: '`integration verify` fails a package that ships a docs section, a placed guide, or a doc section with an `id` without an `@astryxdesign/cli` peer of `>=0.6.4`. It does not run the docs check, so run both.',
         },
         {
           type: 'code',
@@ -120,7 +120,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'text',
-          code: '- [fail] The package ships a namespace doc or a placed guide but declares no @astryxdesign/cli peer. A stable CLI before 0.7.0 does not read the docs tree, and can hide every doc topic the package ships. Declare "@astryxdesign/cli": ">=0.7.0" in peerDependencies (optional in peerDependenciesMeta, if the CLI is not required).',
+          code: '- [fail] The package ships a namespace doc or a placed guide but declares no @astryxdesign/cli peer. A stable CLI before 0.6.4 does not read the docs tree, and can hide every doc topic the package ships. Declare "@astryxdesign/cli": ">=0.6.4" in peerDependencies (optional in peerDependenciesMeta, if the CLI is not required).',
         },
         {
           type: 'list',

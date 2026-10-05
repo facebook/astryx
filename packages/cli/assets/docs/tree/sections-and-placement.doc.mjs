@@ -40,7 +40,7 @@ export const docs = {
           items: [
             'Edit its `title` and `summary`: readers see them in the docs list and at the top of your section.',
             "The guide, `docs/deploying.doc.mjs`, gets `placement: {parent: 'namespace:acme', slot: 'guides'}`. Later runs with `--parent acme` reuse the namespace doc.",
-            '`package.json` gets the optional peer `"@astryxdesign/cli": ">=0.7.0"`, because an older CLI does not read sections; see {@link generic:versioning}.',
+            '`package.json` gets the optional peer `"@astryxdesign/cli": ">=0.6.4"`, because an older CLI does not read sections; see {@link generic:versioning}.',
           ],
         },
       ],
