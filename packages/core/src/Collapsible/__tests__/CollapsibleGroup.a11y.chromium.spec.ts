@@ -317,7 +317,8 @@ async function capture(page: Page, scenario: Case) {
                 : 4.5;
           const ownerButton = element.closest('button');
           const ownerText = ownerButton?.innerText.trim();
-          const text = (element as HTMLElement).innerText.trim();
+          const text =
+            element instanceof HTMLElement ? element.innerText.trim() : '';
           const part =
             element.tagName === 'svg'
               ? `chevron: ${ownerText ?? 'unknown trigger'}`
