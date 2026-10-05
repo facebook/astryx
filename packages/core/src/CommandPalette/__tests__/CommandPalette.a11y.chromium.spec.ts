@@ -469,7 +469,7 @@ async function capture(page: Page, scenario: Case) {
       regions: 3,
       inputs: 3,
       lists: 3,
-      options: 4,
+      options: 6,
       groups: 2,
       groupHeadings: 2,
       empties: 2,
