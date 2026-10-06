@@ -22,12 +22,12 @@ affects_consumer_docs: [Markdown, RichTextEditor, RichTextView]
 
 ## Intent
 
-A person reads a Markdown document in core `Markdown` and edits the same
-document in `RichTextEditor`, or views it in `RichTextView`. They see one
-document: the same typography, block spacing, measure, structure, and
-direction on every surface. Switching between reading and editing in place
-moves no block relative to the others and reflows no line; only editing
-affordances appear or disappear.
+When core `Markdown` and the RichText surfaces, `RichTextEditor` and
+`RichTextView`, show the same Markdown document, a person sees one document:
+the same typography, block spacing, measure, structure, and direction on
+every surface. Where a product switches between reading and editing that
+document in place, the switch moves no block relative to the others and
+reflows no line; only editing affordances appear or disappear.
 
 ## Non-goals
 
@@ -38,6 +38,9 @@ affordances appear or disappear.
   once rendered, not which source text produces it or how source round-trips.
 - Collaboration, persistence, document hosting, and plugin adapters between
   Markdown plugins and the editor.
+- Which editor engine serves document editing, and the stored value an editor
+  reads and writes. This record governs how the surfaces render the same
+  document, not which surface a product chooses to edit documents with.
 - RichText's release channel. RichText stays canary-only.
 - Equivalent internal implementations remain valid when they satisfy this
   contract.
@@ -73,14 +76,15 @@ affordances appear or disappear.
   thematic breaks render as those structures, never as their literal source.
 - **FR6 — Same direction.** Content blocks lay out in the direction of the
   surrounding Internationalization provider on every surface. A surface does
-  not choose a block's direction from its text.
+  not choose a block's direction from its text; text that runs against the
+  provider direction follows normal bidirectional ordering inside its
+  block.
 - **FR7 — Same semantics.** Strong, emphasis, strikethrough, inline code, and
   links expose the same element semantics on every surface. A link's
   destination never contains its title; a title is exposed as the link's
   title. Named and numeric character references in text, such as `&copy;`
   and `&#169;`, render as the characters they name on every surface; inside
-  inline code and fenced code they stay literal. Rendering decodes them; the
-  authored source keeps them as written.
+  inline code and fenced code they stay literal.
 - **FR8 — Same code block frame.** A fenced code block shows the same header,
   its language label and copy action, at the same height in read and edit
   mode, so the switch does not move the code. In edit mode the header sits
@@ -151,15 +155,14 @@ every line stays where it was relative to the others, and the scroll anchor
 stays at the top of the view. 2 px absorbs subpixel rounding between
 renderers; it does not admit a different spacing value.
 
-### DEC-3 — Character references render decoded; source keeps them
+### DEC-3 — Character references render decoded
 
 **Reference:** `spec:AST-061/DEC-3`
 **Decider:** cixzhang, 2026-10-06
 
 A reader who sees `&copy;` on one surface and `©` on the other is looking at
 two documents. CommonMark renders references as the characters they name, so
-both surfaces do; code shows exactly what was typed. Decoding is a rendering
-fact, not a rewrite: the authored Markdown keeps the reference.
+both surfaces do; code shows exactly what was typed.
 
 ### DEC-4 — Read and edit share the code block header
 
