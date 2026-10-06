@@ -1601,7 +1601,7 @@ describe('pressed state', () => {
     // release, and the surface paints the pressed token at that strength on
     // both touch arms.
     expect(hasReleaseFade(tab)).toBe(true);
-    expect(readsPressStrength(surface, '[data-pressed="on"]')).toBe(true);
+    expect(readsPressStrength(surface, '[data-astryx-press="on"]')).toBe(true);
     expect(readsPressStrength(surface)).toBe(true);
   });
 });

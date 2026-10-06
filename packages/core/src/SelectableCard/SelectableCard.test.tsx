@@ -200,7 +200,7 @@ describe('SelectableCard pressed state (touch)', () => {
       throw new Error('the card carries no pressable marker');
     }
     expect(hasReleaseFade(card)).toBe(true);
-    expect(readsPressStrength(card, '[data-pressed="on"]')).toBe(true);
+    expect(readsPressStrength(card, '[data-astryx-press="on"]')).toBe(true);
     expect(readsPressStrength(card)).toBe(true);
   });
 });

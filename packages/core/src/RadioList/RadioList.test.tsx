@@ -909,10 +909,10 @@ describe('pressed state', () => {
     // release, and the owner-drawn layer over the circle paints the pressed
     // token at that strength on both touch arms.
     expect(hasReleaseFade(row)).toBe(true);
-    expect(readsPressStrength(wrapper, '[data-pressed="on"]')).toBe(true);
+    expect(readsPressStrength(wrapper, '[data-astryx-press="on"]')).toBe(true);
     expect(readsPressStrength(wrapper)).toBe(true);
     // The row itself paints nothing under a finger, as under a mouse: only
     // the circle answers.
-    expect(readsPressStrength(row, '[data-pressed="on"]')).toBe(false);
+    expect(readsPressStrength(row, '[data-astryx-press="on"]')).toBe(false);
   });
 });

@@ -847,7 +847,7 @@ describe('pressed state', () => {
     // release, and the owner-drawn layer over the indicator paints the pressed
     // token at that strength on both touch arms.
     expect(hasReleaseFade(row)).toBe(true);
-    expect(readsPressStrength(wrapper, '[data-pressed="on"]')).toBe(true);
+    expect(readsPressStrength(wrapper, '[data-astryx-press="on"]')).toBe(true);
     expect(readsPressStrength(wrapper)).toBe(true);
   });
 });

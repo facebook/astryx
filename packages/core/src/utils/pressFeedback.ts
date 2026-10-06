@@ -7,7 +7,7 @@
  * @output Exports PRESSABLE_ATTRIBUTE, PRESSED_ATTRIBUTE, pressableProps and
  *   installPressFeedback
  * @position The DOM half of the touch press model: one delegated controller
- *   per document that writes `data-pressed` on the nearest pressable surface.
+ *   per document that writes `data-astryx-press` on the nearest pressable surface.
  *   Installed by usePressFeedback (hooks/usePressFeedback.ts) on first mount;
  *   the CSS arms that read the attribute live in interactionOverlay.stylex.ts
  *   and in each component with its own `:active` rule. Tested by
@@ -25,8 +25,8 @@
  *
  * Under a mouse the controller does nothing and CSS `:active` keeps the press,
  * as it always has. Under a finger the `:active` arm is dropped by the CSS
- * (`@media (pointer: coarse)`) and this writes `data-pressed="on"` when the
- * press is believed and `data-pressed="fading"` for the release's exit.
+ * (`@media (pointer: coarse)`) and this writes `data-astryx-press="on"` when the
+ * press is believed and `data-astryx-press="fading"` for the release's exit.
  *
  * SYNC: When modified, update pressGesture.ts, hooks/usePressFeedback.ts,
  * utils/interactionOverlay.stylex.ts and pressFeedback.test.ts.
@@ -52,7 +52,7 @@ import {
 export const PRESSABLE_ATTRIBUTE = 'data-astryx-pressable';
 
 /** `on` while the press is believed and the finger is down; `fading` for the release's exit. */
-export const PRESSED_ATTRIBUTE = 'data-pressed';
+export const PRESSED_ATTRIBUTE = 'data-astryx-press';
 
 /** Spread onto the element that paints the press. */
 export const pressableProps: {readonly [PRESSABLE_ATTRIBUTE]: ''} = {
@@ -135,10 +135,10 @@ function clearTimer(): void {
  *    every real finger; only a synthetic touch holds perfectly still) kills
  *    the onset timer, so the press never paints at all;
  *  - a `pointercancel` or a scroll inside a quick tap's 100 ms flash kills
- *    `flashEnd`, leaving `data-pressed="on"` painted indefinitely. iOS Safari
+ *    `flashEnd`, leaving `data-astryx-press="on"` painted indefinitely. iOS Safari
  *    delivers that cancel at `scrollend`, seconds after the tap, so it is not
  *    a corner case;
- *  - the same inside the 200 ms fade strands `data-pressed="fading"` and the
+ *  - the same inside the 200 ms fade strands `data-astryx-press="fading"` and the
  *    controller's single tracking slot, holding a reference to an element a
  *    virtualized list may already have unmounted.
  */

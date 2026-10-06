@@ -8,8 +8,8 @@
  * @file Shared hover and pressed overlay states
  * @input Uses StyleX and the semantic interaction-overlay color tokens
  * @output Exports reusable background-color and background-image state styles,
- *   the touch press's registered strength variable (`pressVars`) and the
- *   release animation's duration (`PRESS_RELEASE_DURATION`)
+ *   the touch press's registered strength variable (`pressVars`) and its
+ *   clocks (`pressConsts`)
  * @position Internal styling utility for interactive core surfaces
  *
  * Every surface that paints a press composes one of these (or carries its own
@@ -29,8 +29,8 @@
  * on iOS Safari `:active` paints on the touch itself and can outlive the start
  * of a scroll, so under `@media (pointer: coarse)` the bare `:active` arm is
  * dropped and the press is written by the touch press controller
- * (`utils/pressFeedback.ts`) as `data-pressed="on"` once the press is
- * believed (150 ms, no travel, no scroll) and `data-pressed="fading"` for the
+ * (`utils/pressFeedback.ts`) as `data-astryx-press="on"` once the press is
+ * believed (150 ms, no travel, no scroll) and `data-astryx-press="fading"` for the
  * 200 ms release. The two arms paint those through ONE number:
  *
  *  - `--astryx-press-alpha` is the press's strength, 0 to 1. It is a
@@ -40,11 +40,12 @@
  *    interpolate, but a registered number does, and every declaration that
  *    reads it is re-resolved on each frame. The touch paint is the pressed
  *    token at that strength — `color-mix(in srgb, pressed calc(alpha * 100%),
- *    transparent)` — painted as a background IMAGE: an image change is
- *    discrete, so a composer's colour transition cannot fade the onset in.
- *  - `[data-pressed="on"]` sets the strength to 1 and paints, on the first
- *    frame. Nothing transitions a custom property a composer never named.
- *  - `[data-pressed="fading"]` keeps the same paint and runs the release
+ *    transparent)` — declared once here as `--_press-paint` and painted as a
+ *    background IMAGE: an image change is discrete, so a composer's colour
+ *    transition cannot fade the onset in.
+ *  - `[data-astryx-press="on"]` sets the strength to 1 and paints, on the
+ *    first frame. Nothing transitions a custom property a composer never named.
+ *  - `[data-astryx-press="fading"]` keeps the same paint and runs the release
  *    animation, strength 1 → 0 over {@link PRESS_RELEASE_DURATION} (UIKit's
  *    deselect crossfade; the controller removes the attribute when the same
  *    clock runs out, and by then the paint is gone). It fades to nothing, not
@@ -92,7 +93,7 @@ import {colorVars} from '../theme/tokens.stylex';
  * strength reaches the descendant that paints for it (a switch's track and
  * thumb, a tab's hover layer) and a card's or an indicator wrapper's
  * `::after`. Read it with `pressVars['--astryx-press-alpha']`, only inside a
- * `data-pressed` arm:
+ * `data-astryx-press` arm:
  * a pressed row's strength is 1 for everything inside the row.
  */
 export const pressVars = stylex.defineVars({
@@ -100,22 +101,33 @@ export const pressVars = stylex.defineVars({
 });
 
 /**
- * How long the release takes, as the CSS clock the animation runs on.
+ * The touch press's clocks that both the stylesheet and the controller read.
  *
- * SYNC: equals `PRESS_FADE_MS` in pressGesture.ts, the timer after which the
- * controller removes the attribute; pressFeedback.test.ts holds the two equal.
- * StyleX resolves imported `defineVars` and nothing else, so the number is
- * written here rather than derived from the machine's constant.
+ * `defineConsts`, so the one number is inlined here at build time and is the
+ * controller's constant at run time (`PRESS_FADE_MS` in pressGesture.ts):
+ * the release animation and the timer that removes the attribute after it
+ * cannot drift apart.
  */
-export const PRESS_RELEASE_DURATION = '200ms';
+export const pressConsts = stylex.defineConsts({
+  /** How long the release takes, in ms. UIKit's deselect clock. */
+  releaseMs: 200,
+});
+
+/** The release's clock as CSS. */
+const PRESS_RELEASE_DURATION = `${pressConsts.releaseMs}ms`;
 
 const ENABLED = ':where(:not(:disabled,[aria-disabled="true"]))';
 const HOVER_HOVER = '@media (hover: hover)';
 const COARSE = '@media (pointer: coarse)';
-/** Written by the touch press controller while a press is believed. */
-const PRESSED_ON = '[data-pressed="on"]';
+/**
+ * Written by the touch press controller while a press is believed. The
+ * attribute is the system's own (`data-astryx-*`, like the pressable marker),
+ * outside the namespace a theme's state keys generate into (`[data-<state>]`),
+ * so a theme state can never collide with it.
+ */
+const PRESSED_ON = '[data-astryx-press="on"]';
 /** Written by the touch press controller for the release's exit. */
-const PRESSED_FADING = '[data-pressed="fading"]';
+const PRESSED_FADING = '[data-astryx-press="fading"]';
 
 const PRESS_ALPHA = pressVars['--astryx-press-alpha'];
 
@@ -124,16 +136,25 @@ const pressedImage = `linear-gradient(${colorVars['--color-overlay-pressed']}, $
 const neutralImage = `linear-gradient(${colorVars['--color-neutral']}, ${colorVars['--color-neutral']})`;
 
 /**
- * The pressed token at the touch press's current strength.
- *
- * NOT usable inside another file's `stylex.create` (StyleX resolves imported
- * `defineVars` and nothing else): a component that paints the touch press off
- * an ancestor scope or a pseudo-element rebuilds this from `colorVars` and
- * {@link pressVars}, in this exact shape.
+ * The pressed token at the touch press's current strength: the one
+ * declaration of the press's paint. Declared as `--_press-paint` on the
+ * element the controller writes to (every style below carries it), where the
+ * strength is 1 while a press is believed and animates 1 → 0 over the
+ * release, so its computed value follows the fade frame by frame and is
+ * inherited, resolved, by whatever paints it: the element's own arms, a
+ * descendant (a switch's track and thumb, a tab's hover layer), or a `::after`
+ * (a card, an indicator owner). Those paint `var(--_press-paint)` or
+ * `var(--_press-paint-image)` and never rebuild the expression;
+ * pressPaintSource.test.ts holds it to this file.
  */
-export const pressedOverlayColor = `color-mix(in srgb, ${colorVars['--color-overlay-pressed']} calc(${PRESS_ALPHA} * 100%), transparent)`;
-/** {@link pressedOverlayColor} as the overlay's gradient layer. */
-export const pressedOverlayImage = `linear-gradient(${pressedOverlayColor}, ${pressedOverlayColor})`;
+const pressedOverlayColor = `color-mix(in srgb, ${colorVars['--color-overlay-pressed']} calc(${PRESS_ALPHA} * 100%), transparent)`;
+const pressPaint = {
+  '--_press-paint': pressedOverlayColor,
+  '--_press-paint-image':
+    'linear-gradient(var(--_press-paint), var(--_press-paint))',
+};
+/** The paint, read back off the element: the overlay's gradient layer. */
+const pressedOverlayImage = 'var(--_press-paint-image)';
 
 /** Strength 1 → 0; the release arm runs it over {@link PRESS_RELEASE_DURATION}. */
 const pressRelease = stylex.keyframes({
@@ -171,26 +192,30 @@ const RELEASE_EASE = 'cubic-bezier(0, 0, 0.2, 1)';
  */
 const pressStrength = {
   default: null,
-  '[data-pressed="on"]': 1,
-  '[data-pressed="fading"]': 1,
+  '[data-astryx-press="on"]': 1,
+  '[data-astryx-press="fading"]': 1,
 };
 const pressReleaseAnimation = {
-  animationName: {default: null, '[data-pressed="fading"]': pressRelease},
+  animationName: {
+    default: null,
+    '[data-astryx-press="fading"]': pressRelease,
+  },
   animationDuration: {
     default: null,
-    '[data-pressed="fading"]': PRESS_RELEASE_DURATION,
+    '[data-astryx-press="fading"]': PRESS_RELEASE_DURATION,
   },
   animationTimingFunction: {
     default: null,
-    '[data-pressed="fading"]': RELEASE_EASE,
+    '[data-astryx-press="fading"]': RELEASE_EASE,
   },
-  animationFillMode: {default: null, '[data-pressed="fading"]': 'both'},
+  animationFillMode: {default: null, '[data-astryx-press="fading"]': 'both'},
 };
 
 export const interactionOverlayStyles = stylex.create({
   backgroundColor: {
     [PRESS_ALPHA]: pressStrength,
     ...pressReleaseAnimation,
+    ...pressPaint,
     backgroundColor: {
       default: 'transparent',
       [ENABLED]: {
@@ -224,6 +249,7 @@ export const interactionOverlayStyles = stylex.create({
   backgroundImage: {
     [PRESS_ALPHA]: pressStrength,
     ...pressReleaseAnimation,
+    ...pressPaint,
     backgroundImage: {
       default: null,
       [ENABLED]: {
@@ -245,6 +271,7 @@ export const interactionOverlayStyles = stylex.create({
   backgroundImageOnNeutral: {
     [PRESS_ALPHA]: pressStrength,
     ...pressReleaseAnimation,
+    ...pressPaint,
     backgroundImage: {
       default: neutralImage,
       [ENABLED]: {
@@ -272,6 +299,7 @@ export const interactionOverlayStyles = stylex.create({
   pressedBackgroundColor: {
     [PRESS_ALPHA]: pressStrength,
     ...pressReleaseAnimation,
+    ...pressPaint,
     backgroundColor: {
       default: null,
       [ENABLED]: {
@@ -300,12 +328,13 @@ export const interactionOverlayStyles = stylex.create({
    * element the controller writes to when the pressed paint lives elsewhere:
    * a switch row (its track and thumb paint), a checkbox or radio row (the
    * owner's layer over the indicator paints), a tab (its hover layer paints),
-   * a card (its `::after` paints). Those read
-   * `pressVars['--astryx-press-alpha']` off this element, so the owner and
-   * the paint fade as one.
+   * a card (its `::after` paints). Those paint `var(--_press-paint)` (or
+   * `var(--_press-paint-image)`), which this element declares at its
+   * strength, so the owner and the paint fade as one.
    */
   pressedAlpha: {
     [PRESS_ALPHA]: pressStrength,
     ...pressReleaseAnimation,
+    ...pressPaint,
   },
 });

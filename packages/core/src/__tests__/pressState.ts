@@ -27,7 +27,9 @@ import {PRESS_FADE_MS} from '../utils/pressGesture';
 
 const PRESSED_TOKEN = '--color-overlay-pressed';
 const PRESS_STRENGTH = '--astryx-press-alpha';
-const FADING_ARM = '[data-pressed="fading"]';
+/** The press's paint at its strength, declared once by the shared styles. */
+const PRESS_PAINT = '--_press-paint';
+const FADING_ARM = '[data-astryx-press="fading"]';
 
 function walk(list: CSSRuleList, visit: (rule: CSSRule) => void): void {
   for (const rule of Array.from(list)) {
@@ -112,7 +114,24 @@ export function declaresPressedOverlay(el: Element): boolean {
  */
 export function readsPressStrength(el: Element, arm = FADING_ARM): boolean {
   return rulesWithSelector(el, arm).some(
-    rule => rule.includes(PRESSED_TOKEN) && rule.includes(PRESS_STRENGTH),
+    rule =>
+      rule.includes(`var(${PRESS_PAINT}`) ||
+      (rule.includes(PRESSED_TOKEN) && rule.includes(PRESS_STRENGTH)),
+  );
+}
+
+/**
+ * Does the element declare the press's paint, `--_press-paint`, as the pressed
+ * token at the press's strength? That declaration lives in the shared overlay
+ * styles and nowhere else; an element that composes one of them carries it,
+ * and whatever paints for it reads the variable.
+ */
+export function declaresPressPaint(el: Element): boolean {
+  return rulesDeclaredFor(el).some(
+    rule =>
+      rule.includes(`${PRESS_PAINT}:`) &&
+      rule.includes(PRESSED_TOKEN) &&
+      rule.includes(PRESS_STRENGTH),
   );
 }
 
@@ -139,7 +158,7 @@ export function hasReleaseFade(el: Element): boolean {
     return match == null ? [] : [durationToMs(match[1])];
   });
   const named = fading.some(rule => /animation-name:\s*(?!none)/.test(rule));
-  const onArmAnimates = rulesWithSelector(el, '[data-pressed="on"]').some(
+  const onArmAnimates = rulesWithSelector(el, '[data-astryx-press="on"]').some(
     rule => rule.includes('animation'),
   );
   return (

@@ -39,7 +39,7 @@ const meta: Meta = {
     docs: {
       description: {
         component:
-          'The touch press model on every pressable surface. View with a coarse pointer (DevTools device toolbar, or a phone). Under a finger the bare `:active` arm is dropped and one document-level controller writes `data-pressed="on"` once a press is believed (150 ms, no travel, no scroll) and `data-pressed="fading"` for the 200 ms release; a scroll or 10 px of travel cancels with no fade, and nothing repaints until a new touch. A mouse keeps `:active`. Scroll the list stories with a finger: no row paints while the list moves.',
+          'The touch press model on every pressable surface. View with a coarse pointer (DevTools device toolbar, or a phone). Under a finger the bare `:active` arm is dropped and one document-level controller writes `data-astryx-press="on"` once a press is believed (150 ms, no travel, no scroll) and `data-astryx-press="fading"` for the 200 ms release; a scroll or 10 px of travel cancels with no fade, and nothing repaints until a new touch. A mouse keeps `:active`. Scroll the list stories with a finger: no row paints while the list moves.',
       },
     },
   },

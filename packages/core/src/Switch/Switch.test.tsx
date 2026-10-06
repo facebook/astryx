@@ -865,7 +865,7 @@ describe('Switch', () => {
       // on both touch arms, so they fade together.
       expect(hasReleaseFade(row)).toBe(true);
       for (const part of [track, thumb]) {
-        expect(readsPressStrength(part, '[data-pressed="on"]')).toBe(true);
+        expect(readsPressStrength(part, '[data-astryx-press="on"]')).toBe(true);
         expect(readsPressStrength(part)).toBe(true);
       }
     });

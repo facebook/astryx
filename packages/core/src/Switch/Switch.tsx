@@ -44,10 +44,7 @@ import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import {switchScope} from './switch.markers.stylex';
-import {
-  interactionOverlayStyles,
-  pressVars,
-} from '../utils/interactionOverlay.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
@@ -137,13 +134,11 @@ const thumbOnSizeStyles = stylex.create({
 // hover tint already is: pressing the input, the track or the label all
 // activate the row.
 const pressedImage = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
-// The touch press's paint: the pressed token at the strength the row's
-// `pressedAlpha` arms set (1 while on, 1 → 0 over the release), inherited by
-// the track and the thumb. Same shape as `pressedOverlayImage` in
-// interactionOverlay.stylex.ts, rebuilt here because StyleX resolves imported
-// `defineVars` and nothing else.
-const pressedOverlayColor = `color-mix(in srgb, ${colorVars['--color-overlay-pressed']} calc(${pressVars['--astryx-press-alpha']} * 100%), transparent)`;
-const pressedOverlayImage = `linear-gradient(${pressedOverlayColor}, ${pressedOverlayColor})`;
+// The touch press's paint, declared by the shared overlay styles on the
+// element the controller writes to (`pressedAlpha`) at the press's strength,
+// 1 while on and 1 → 0 over the release, and inherited resolved by the layer
+// that paints it. See interactionOverlay.stylex.ts.
+const pressedOverlayImage = 'var(--_press-paint-image)';
 
 const labelWrapperSizeStyles = stylex.create({
   sm: {
@@ -238,21 +233,21 @@ const styles = stylex.create({
         default: null,
         '@media (forced-colors: none)': {
           default: pressedImage,
-          // Under a coarse pointer the touch press model writes `data-pressed`
+          // Under a coarse pointer the touch press model writes `data-astryx-press`
           // on the row instead; see interactionOverlay.stylex.ts.
           '@media (pointer: coarse)': 'none',
         },
       },
       // Nested in the same media as the arm above so it outranks the drop: an
       // ancestor-scoped attribute selector gets no priority of its own.
-      [stylex.when.ancestor('[data-pressed="on"]', switchScope)]: {
+      [stylex.when.ancestor('[data-astryx-press="on"]', switchScope)]: {
         default: null,
         '@media (forced-colors: none)': {
           default: null,
           '@media (pointer: coarse)': pressedOverlayImage,
         },
       },
-      [stylex.when.ancestor('[data-pressed="fading"]', switchScope)]: {
+      [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
         default: null,
         '@media (forced-colors: none)': {
           default: null,
@@ -345,14 +340,14 @@ const styles = stylex.create({
       },
       // Nested in the same media as the arm above so it outranks the drop: an
       // ancestor-scoped attribute selector gets no priority of its own.
-      [stylex.when.ancestor('[data-pressed="on"]', switchScope)]: {
+      [stylex.when.ancestor('[data-astryx-press="on"]', switchScope)]: {
         default: null,
         '@media (forced-colors: none)': {
           default: null,
           '@media (pointer: coarse)': pressedOverlayImage,
         },
       },
-      [stylex.when.ancestor('[data-pressed="fading"]', switchScope)]: {
+      [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
         default: null,
         '@media (forced-colors: none)': {
           default: null,

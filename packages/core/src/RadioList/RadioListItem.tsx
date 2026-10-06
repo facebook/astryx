@@ -26,20 +26,17 @@ import {RadioListContext} from './RadioList';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {mergeProps, isRenderable, rtlStyles} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
-import {pressVars} from '../utils/interactionOverlay.stylex';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useIndicator} from '../Indicator';
 import {Item} from '../Item';
 import {themeProps} from '../utils/themeProps';
 
-// The touch press's paint: the pressed token at the strength the row's
-// `pressedAlpha` arms set (1 while on, 1 → 0 over the release), inherited by
-// the indicator wrapper's overlay layer. Same shape as `pressedOverlayImage`
-// in interactionOverlay.stylex.ts, rebuilt here because StyleX resolves
-// imported `defineVars` and nothing else.
-const pressedOverlayColor = `color-mix(in srgb, ${colorVars['--color-overlay-pressed']} calc(${pressVars['--astryx-press-alpha']} * 100%), transparent)`;
-const pressedOverlayImage = `linear-gradient(${pressedOverlayColor}, ${pressedOverlayColor})`;
+// The touch press's paint, declared by the shared overlay styles on the
+// element the controller writes to (`pressedAlpha`) at the press's strength,
+// 1 while on and 1 → 0 over the release, and inherited resolved by the layer
+// that paints it. See interactionOverlay.stylex.ts.
+const pressedOverlayImage = 'var(--_press-paint-image)';
 
 const styles = stylex.create({
   radioWrapper: {
@@ -55,7 +52,7 @@ const styles = stylex.create({
   // owner-drawn layer also survives a theme replacing the indicator component.
   // Two pointers, two press models (see interactionOverlay.stylex.ts): a
   // mouse keeps `:active`; under a coarse pointer that arm is dropped and the
-  // touch press controller writes `data-pressed` on the row, which this layer
+  // touch press controller writes `data-astryx-press` on the row, which this layer
   // reads off the same scope marker as the hover tint. The controller paints
   // the innermost pressable, so a nested link or button takes the press
   // itself and the row never carries the attribute for it.
@@ -82,14 +79,15 @@ const styles = stylex.create({
       // what moves. Coarse pointers only, like the drop above.
       backgroundImage: {
         default: null,
-        [stylex.when.ancestor('[data-pressed="on"]', indicatorScope)]: {
+        [stylex.when.ancestor('[data-astryx-press="on"]', indicatorScope)]: {
           default: null,
           '@media (pointer: coarse)': pressedOverlayImage,
         },
-        [stylex.when.ancestor('[data-pressed="fading"]', indicatorScope)]: {
-          default: null,
-          '@media (pointer: coarse)': pressedOverlayImage,
-        },
+        [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
+          {
+            default: null,
+            '@media (pointer: coarse)': pressedOverlayImage,
+          },
       },
     },
   },

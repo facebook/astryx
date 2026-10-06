@@ -11,7 +11,6 @@ export const docs = {
     'touch',
     'tap',
     'coarse pointer',
-    'data-pressed',
     'pressable',
     'interaction state',
   ],
@@ -21,7 +20,7 @@ export const docs = {
       name: 'pressableProps',
       type: "{'data-astryx-pressable': ''}",
       description:
-        'The marker attribute to spread on the element that paints the press. The controller writes `data-pressed="on"` on it while a touch press is believed and `data-pressed="fading"` for the release; your styles paint the pressed overlay off those arms — the pressed token at the press\'s strength, `var(--astryx-press-alpha)`, which `interactionOverlayStyles.pressedAlpha` (from `@astryxdesign/core/utils`) sets to 1 while on and fades 1 → 0 over the release — and keep `:active` for a mouse.',
+        "The marker attribute to spread on the element that paints the press. Compose one of `interactionOverlayStyles` (from `@astryxdesign/core/utils`) on the same element — `backgroundColor` or `backgroundImage` for a surface whose hover and press are the system's overlays, `pressedBackgroundColor` for one whose hover is its own — and it paints the pressed token at the press's strength on the first frame of a believed press and fades it over the release, keeping `:active` for a mouse. A press is themed through `--color-overlay-pressed`.",
     },
   ],
   usage: {
@@ -31,12 +30,12 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Spread the result on the element whose background paints the press, compose `interactionOverlayStyles.pressedAlpha` on it, and paint both `[data-pressed="on"]` and `[data-pressed="fading"]` as a background image of the pressed token at the press\'s strength: `color-mix(in srgb, var(--color-overlay-pressed) calc(var(--astryx-press-alpha) * 100%), transparent)`. The strength is 1 on the first frame of a believed press and animates to 0 over the release, so the same declaration is the instant onset and the fade.',
+          'Spread the result on the element whose background paints the press and compose one of `interactionOverlayStyles` on it; the composed style is the instant onset, the hold and the fade, and it is themed through `--color-overlay-pressed`.',
       },
       {
         guidance: true,
         description:
-          'Keep `:active` for the mouse and drop it under `@media (pointer: coarse)`, so a finger sees only the press model and a mouse sees only `:active`.',
+          'Let the composed style own the press on every pointer: it keeps `:active` for a mouse and drops it under `@media (pointer: coarse)`, so a finger sees only the press model. A rule of your own that paints `:active` would paint under a finger too, on the touch and through a scroll.',
       },
       {
         guidance: false,
@@ -59,11 +58,11 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').HookTranslationDoc} */
 export const docsDense = {
   description:
-    'Marks an element as a pressable surface of the touch press model (150 ms onset, 10 px slop, cancel on scroll, tap answers at lift, 200 ms fade) and installs the shared document controller. Returns the data-astryx-pressable marker to spread; the controller writes data-pressed="on"/"fading".',
+    'Marks an element as a pressable surface of the touch press model (150 ms onset, 10 px slop, cancel on scroll, tap answers at lift, 200 ms fade) and installs the shared document controller. Returns the data-astryx-pressable marker to spread; compose one of interactionOverlayStyles on the same element to paint.',
   paramDescriptions: {},
   returnDescriptions: {
     pressableProps:
-      'marker attribute to spread on the painting element; compose interactionOverlayStyles.pressedAlpha there, paint [data-pressed="on"] and [data-pressed="fading"] as the pressed token at var(--astryx-press-alpha) strength, keep :active for mouse.',
+      'marker attribute to spread on the painting element; compose one of interactionOverlayStyles (backgroundColor, backgroundImage, pressedBackgroundColor) there, which paints the press on every pointer; themed through --color-overlay-pressed.',
   },
   usage: {
     description:
@@ -72,7 +71,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Spread on the painting element; compose pressedAlpha; paint both data-pressed arms through var(--astryx-press-alpha); drop :active under @media (pointer: coarse).',
+          'Spread on the painting element and compose one of interactionOverlayStyles there; add no :active rule of your own.',
       },
       {
         guidance: false,

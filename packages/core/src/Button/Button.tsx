@@ -111,12 +111,12 @@ const styles = stylex.create({
       default: 'scale(1)',
       // A mouse press. Under a coarse pointer `:active` is not a press (it
       // paints on the touch and outlives a scroll), so the touch press model
-      // writes `data-pressed` instead; see interactionOverlay.stylex.ts.
+      // writes `data-astryx-press` instead; see interactionOverlay.stylex.ts.
       ':active:where(:not(:disabled,[aria-disabled="true"]))': {
         default: 'scale(0.98)',
         '@media (pointer: coarse)': 'scale(1)',
       },
-      '[data-pressed="on"]': 'scale(0.98)',
+      '[data-astryx-press="on"]': 'scale(0.98)',
     },
   },
   inactive: {
@@ -125,7 +125,7 @@ const styles = stylex.create({
     transform: {
       default: 'none',
       ':active': 'none',
-      '[data-pressed="on"]': 'none',
+      '[data-astryx-press="on"]': 'none',
     },
   },
   disabled: {
@@ -138,7 +138,7 @@ const styles = stylex.create({
     backgroundImage: {
       default: 'none',
       ':active': 'none',
-      '[data-pressed="on"]': 'none',
+      '[data-astryx-press="on"]': 'none',
     },
   },
   iconOnly: {

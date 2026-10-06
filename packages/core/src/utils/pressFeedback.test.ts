@@ -17,12 +17,13 @@ import {
   durationToMs,
   hasReleaseFade,
   readsPressStrength,
+  declaresPressPaint,
   rulesDeclaredFor,
   rulesWithSelector,
 } from '../__tests__/pressState';
 import {
   interactionOverlayStyles,
-  PRESS_RELEASE_DURATION,
+  pressConsts,
 } from './interactionOverlay.stylex';
 import {
   installPressFeedback,
@@ -494,23 +495,49 @@ describe('the release fades: the arms the controller writes to', () => {
 
   it("runs the release animation on the fading arm, for the machine's clock, on every variant", () => {
     for (const variant of variants) {
-      expect(hasReleaseFade(surface(interactionOverlayStyles[variant])), variant).toBe(true);
+      expect(
+        hasReleaseFade(surface(interactionOverlayStyles[variant])),
+        variant,
+      ).toBe(true);
     }
-    expect(hasReleaseFade(surface(interactionOverlayStyles.pressedAlpha))).toBe(true);
+    expect(hasReleaseFade(surface(interactionOverlayStyles.pressedAlpha))).toBe(
+      true,
+    );
   });
 
-  it("the CSS clock IS the machine's clock (StyleX cannot read the constant, so this holds them equal)", () => {
-    expect(durationToMs(PRESS_RELEASE_DURATION)).toBe(PRESS_FADE_MS);
+  it("the machine's clock is the stylesheet's constant: one number", () => {
+    expect(PRESS_FADE_MS).toBe(pressConsts.releaseMs);
+    expect(hasReleaseFade(surface(interactionOverlayStyles.pressedAlpha))).toBe(
+      true,
+    );
+  });
+
+  it("declares the press's paint at its strength on every variant, the one place the formula lives", () => {
+    for (const variant of variants) {
+      expect(
+        declaresPressPaint(surface(interactionOverlayStyles[variant])),
+        variant,
+      ).toBe(true);
+    }
+    expect(
+      declaresPressPaint(surface(interactionOverlayStyles.pressedAlpha)),
+    ).toBe(true);
   });
 
   it("paints both touch arms as the pressed token at the press's strength, and declares the strength 1 on both", () => {
     for (const variant of variants) {
       const element = surface(interactionOverlayStyles[variant]);
-      expect(readsPressStrength(element, '[data-pressed="on"]'), variant).toBe(true);
+      expect(
+        readsPressStrength(element, '[data-astryx-press="on"]'),
+        variant,
+      ).toBe(true);
       expect(readsPressStrength(element), variant).toBe(true);
       // The fading arm declares 1, like the on arm: only the animation moves
       // the strength, so nothing a composer transitions changes at the lift.
-      for (const arm of ['[data-pressed="on"]', '[data-pressed="fading"]']) {
+      for (const arm of [
+        '[data-astryx-press="on"]',
+        '[data-astryx-press="fading"]',
+      ]) {
         expect(
           rulesWithSelector(element, arm).some(rule =>
             /--astryx-press-alpha:\s*1\b/.test(rule),
@@ -521,7 +548,7 @@ describe('the release fades: the arms the controller writes to', () => {
       // ...and lands on nothing, not on the hover strength: under a finger
       // there is no hover.
       expect(
-        rulesWithSelector(element, '[data-pressed="fading"]').some(rule =>
+        rulesWithSelector(element, '[data-astryx-press="fading"]').some(rule =>
           rule.includes('--color-overlay-hover'),
         ),
         variant,
@@ -531,7 +558,9 @@ describe('the release fades: the arms the controller writes to', () => {
 
   it('pressedAlpha owns the strength and the release and paints nothing itself', () => {
     const element = surface(interactionOverlayStyles.pressedAlpha);
-    expect(rulesDeclaredFor(element).some(rule => rule.includes('background'))).toBe(false);
+    expect(
+      rulesDeclaredFor(element).some(rule => rule.includes('background')),
+    ).toBe(false);
     expect(readsPressStrength(element)).toBe(false);
   });
 });

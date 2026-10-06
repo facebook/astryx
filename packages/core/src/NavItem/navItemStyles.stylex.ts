@@ -113,14 +113,14 @@ export const navItemStyles = stylex.create({
     // The touch press model writes these instead of `:active`; the selected
     // item keeps its fill under a finger the way it does under a mouse, and
     // paints no overlay at any phase of the press.
-    '[data-pressed="on"]': {
+    '[data-astryx-press="on"]': {
       backgroundColor: {
         default: colorVars['--color-neutral'],
         '@media (forced-colors: active)': 'Highlight',
       },
       backgroundImage: 'none',
     },
-    '[data-pressed="fading"]': {
+    '[data-astryx-press="fading"]': {
       backgroundColor: {
         default: colorVars['--color-neutral'],
         '@media (forced-colors: active)': 'Highlight',

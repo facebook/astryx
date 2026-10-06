@@ -33,10 +33,7 @@ import type {BaseProps} from '../BaseProps';
 import {useTabListContext} from './TabListContext';
 import type {TabListSize} from './TabListContext';
 import {tabScope} from './tab.markers.stylex';
-import {
-  interactionOverlayStyles,
-  pressVars,
-} from '../utils/interactionOverlay.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
@@ -103,13 +100,11 @@ export interface TabProps extends BaseProps<HTMLButtonElement> {
 // Styles
 // =============================================================================
 
-// The touch press's paint: the pressed token at the strength the tab's
-// `pressedAlpha` arms set (1 while on, 1 → 0 over the release), inherited by
-// the hover layer. Same shape as `pressedOverlayImage` in
-// interactionOverlay.stylex.ts, rebuilt here because StyleX resolves imported
-// `defineVars` and nothing else.
-const pressedOverlayColor = `color-mix(in srgb, ${colorVars['--color-overlay-pressed']} calc(${pressVars['--astryx-press-alpha']} * 100%), transparent)`;
-const pressedOverlayImage = `linear-gradient(${pressedOverlayColor}, ${pressedOverlayColor})`;
+// The touch press's paint, declared by the shared overlay styles on the
+// element the controller writes to (`pressedAlpha`) at the press's strength,
+// 1 while on and 1 → 0 over the release, and inherited resolved by the layer
+// that paints it. See interactionOverlay.stylex.ts.
+const pressedOverlayImage = 'var(--_press-paint-image)';
 
 const styles = stylex.create({
   base: {
@@ -158,7 +153,7 @@ const styles = stylex.create({
       [stylex.when.ancestor(':active', tabScope)]: {
         default: colorVars['--color-overlay-pressed'],
         '@media (hover: hover)': colorVars['--color-overlay-pressed'],
-        // Under a coarse pointer the touch press model writes `data-pressed`
+        // Under a coarse pointer the touch press model writes `data-astryx-press`
         // on the tab instead, and paints as an image below.
         '@media (pointer: coarse)': 'transparent',
       },
@@ -170,11 +165,11 @@ const styles = stylex.create({
     // arms above; see interactionOverlay.stylex.ts.
     backgroundImage: {
       default: null,
-      [stylex.when.ancestor('[data-pressed="on"]', tabScope)]: {
+      [stylex.when.ancestor('[data-astryx-press="on"]', tabScope)]: {
         default: null,
         '@media (pointer: coarse)': pressedOverlayImage,
       },
-      [stylex.when.ancestor('[data-pressed="fading"]', tabScope)]: {
+      [stylex.when.ancestor('[data-astryx-press="fading"]', tabScope)]: {
         default: null,
         '@media (pointer: coarse)': pressedOverlayImage,
       },

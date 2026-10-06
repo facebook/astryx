@@ -45,10 +45,7 @@ import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
-import {
-  interactionOverlayStyles,
-  pressVars,
-} from '../utils/interactionOverlay.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useTranslator} from '../i18n';
 
@@ -125,11 +122,11 @@ export interface ThumbnailProps extends BaseProps<HTMLDivElement> {
 // Styles
 // =============================================================================
 
-// The touch press's paint: the pressed token at the strength the container's
-// `pressedAlpha` arms set (1 while on, 1 → 0 over the release). Same shape as
-// `pressedOverlayColor` in interactionOverlay.stylex.ts, rebuilt here because
-// StyleX resolves imported `defineVars` and nothing else.
-const pressedOverlayColor = `color-mix(in srgb, ${colorVars['--color-overlay-pressed']} calc(${pressVars['--astryx-press-alpha']} * 100%), transparent)`;
+// The touch press's paint, declared by the shared overlay styles on the
+// element the controller writes to (`pressedAlpha`) at the press's strength,
+// 1 while on and 1 → 0 over the release, and inherited resolved by the
+// `::after` that paints it. See interactionOverlay.stylex.ts.
+const pressedOverlayColor = 'var(--_press-paint)';
 
 const styles = stylex.create({
   root: {
@@ -184,7 +181,7 @@ const styles = stylex.create({
     // interaction arms set that variable on the element itself. Setting the
     // pseudo-element's colour from compound keys (`:active::after`) would
     // leave the touch arms unable to outrank the mouse arm: a pseudo-element
-    // key carries the highest generated priority, and the `data-pressed`
+    // key carries the highest generated priority, and the `data-astryx-press`
     // attribute the touch press model writes must win over `:active`, which
     // still matches under a finger (see interactionOverlay.stylex.ts). Same
     // enabled guard as the shared overlay utility.
@@ -206,8 +203,8 @@ const styles = stylex.create({
         // container's `pressedAlpha` arms own: 1 on the first frame of a
         // believed press, then 1 → 0 over the release. The `::after` inherits
         // the resolved colour and repaints with it on every frame of the fade.
-        '[data-pressed="on"]': pressedOverlayColor,
-        '[data-pressed="fading"]': pressedOverlayColor,
+        '[data-astryx-press="on"]': pressedOverlayColor,
+        '[data-astryx-press="fading"]': pressedOverlayColor,
       },
     },
     // A believed touch press paints on the first frame, and the release is the
@@ -216,8 +213,8 @@ const styles = stylex.create({
     // The mouse states keep the fast fade.
     '--_press-overlay-transition': {
       default: durationVars['--duration-fast'],
-      '[data-pressed="on"]': '0s',
-      '[data-pressed="fading"]': '0s',
+      '[data-astryx-press="on"]': '0s',
+      '[data-astryx-press="fading"]': '0s',
     },
     '::after': {
       content: '""',

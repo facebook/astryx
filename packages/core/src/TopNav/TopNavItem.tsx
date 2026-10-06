@@ -75,13 +75,13 @@ const styles = stylex.create({
       // The touch press model writes these instead of `:active`; the selected
       // item keeps its fill under a finger the way it does under a mouse, and
       // paints no overlay at any phase of the press.
-      '[data-pressed="on"]': colorVars['--color-neutral'],
-      '[data-pressed="fading"]': colorVars['--color-neutral'],
+      '[data-astryx-press="on"]': colorVars['--color-neutral'],
+      '[data-astryx-press="fading"]': colorVars['--color-neutral'],
     },
     backgroundImage: {
       default: null,
-      '[data-pressed="on"]': 'none',
-      '[data-pressed="fading"]': 'none',
+      '[data-astryx-press="on"]': 'none',
+      '[data-astryx-press="fading"]': 'none',
     },
   },
   iconOnly: {

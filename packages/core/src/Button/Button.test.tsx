@@ -656,7 +656,7 @@ describe('Button pressed state (touch)', () => {
     // release animation on the machine's clock. A mouse keeps `:active`.
     expect(button).toHaveAttribute('data-astryx-pressable');
     expect(hasPressedArm(button)).toBe(true);
-    expect(readsPressStrength(button, '[data-pressed="on"]')).toBe(true);
+    expect(readsPressStrength(button, '[data-astryx-press="on"]')).toBe(true);
     expect(readsPressStrength(button)).toBe(true);
     expect(hasReleaseFade(button)).toBe(true);
   });

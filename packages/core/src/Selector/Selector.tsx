@@ -247,12 +247,12 @@ const styles = stylex.create({
     transform: {
       default: 'scale(1)',
       // A mouse press; under a coarse pointer the touch press model writes
-      // `data-pressed` instead (see interactionOverlay.stylex.ts).
+      // `data-astryx-press` instead (see interactionOverlay.stylex.ts).
       ':active': {
         default: 'scale(0.98)',
         '@media (pointer: coarse)': 'scale(1)',
       },
-      '[data-pressed="on"]': 'scale(0.98)',
+      '[data-astryx-press="on"]': 'scale(0.98)',
     },
   },
   triggerGhostDisabled: {
@@ -260,7 +260,7 @@ const styles = stylex.create({
     transform: {
       default: 'none',
       ':active': 'none',
-      '[data-pressed="on"]': 'none',
+      '[data-astryx-press="on"]': 'none',
     },
   },
   triggerReadOnly: {
@@ -271,7 +271,7 @@ const styles = stylex.create({
     transform: {
       default: 'none',
       ':active': 'none',
-      '[data-pressed="on"]': 'none',
+      '[data-astryx-press="on"]': 'none',
     },
   },
 

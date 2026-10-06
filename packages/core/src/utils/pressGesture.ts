@@ -29,6 +29,8 @@
  * pressGesture.test.ts.
  */
 
+import {pressConsts} from './interactionOverlay.stylex';
+
 /**
  * How long a finger must stay put before the surface believes it.
  *
@@ -62,13 +64,12 @@ export const PRESS_SLOP_PX = 10;
 export const PRESS_FLASH_MS = 100;
 
 /**
- * How long the paint takes to leave after a release: UIKit's deselect crossfade.
- *
- * SYNC: the CSS release animation runs on the same clock,
- * `PRESS_RELEASE_DURATION` in interactionOverlay.stylex.ts (StyleX cannot read
- * this constant); pressFeedback.test.ts holds the two equal.
+ * How long the paint takes to leave after a release: UIKit's deselect
+ * crossfade. The one number, shared with the stylesheet: the release
+ * animation in interactionOverlay.stylex.ts runs on the same constant, so the
+ * timer that removes the attribute and the fade cannot drift apart.
  */
-export const PRESS_FADE_MS = 200;
+export const PRESS_FADE_MS: number = pressConsts.releaseMs;
 
 /**
  * How recently a scroller must have moved for a touch on it to be a BRAKE

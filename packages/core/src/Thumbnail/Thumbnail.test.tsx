@@ -255,7 +255,7 @@ describe('Thumbnail pressed state (touch)', () => {
       throw new Error('the interactive thumbnail carries no pressable marker');
     }
     expect(hasReleaseFade(surface)).toBe(true);
-    expect(readsPressStrength(surface, '[data-pressed="on"]')).toBe(true);
+    expect(readsPressStrength(surface, '[data-astryx-press="on"]')).toBe(true);
     expect(readsPressStrength(surface)).toBe(true);
   });
 

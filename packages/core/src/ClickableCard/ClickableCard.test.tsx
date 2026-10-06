@@ -259,7 +259,7 @@ describe('ClickableCard pressed state (touch)', () => {
     // release, and `--_press-overlay` (what the `::after` paints) is the
     // pressed token at that strength on both touch arms.
     expect(hasReleaseFade(card)).toBe(true);
-    expect(readsPressStrength(card, '[data-pressed="on"]')).toBe(true);
+    expect(readsPressStrength(card, '[data-astryx-press="on"]')).toBe(true);
     expect(readsPressStrength(card)).toBe(true);
   });
 

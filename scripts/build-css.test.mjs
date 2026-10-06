@@ -15,7 +15,29 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {ensureCoreBuilt} from '../packages/cli/clients/cli/commands/ensure-core-built.mjs';
-import {PRESS_FADE_MS} from '../packages/core/src/utils/pressGesture.ts';
+
+/**
+ * The release clock, read off its one source: `pressConsts.releaseMs` in
+ * utils/interactionOverlay.stylex.ts, which both the stylesheet (at build
+ * time) and the controller (at run time) take it from. The module itself
+ * cannot be imported here, since a StyleX source file only runs compiled.
+ */
+async function readReleaseMs() {
+  const source = await fs.readFile(
+    path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      '../packages/core/src/utils/interactionOverlay.stylex.ts',
+    ),
+    'utf8',
+  );
+  const match = source.match(/releaseMs:\s*(\d+)/);
+  if (match == null) {
+    throw new Error(
+      'pressConsts.releaseMs not found in interactionOverlay.stylex.ts',
+    );
+  }
+  return Number(match[1]);
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -239,13 +261,13 @@ describe('build-css astryx.css', () => {
       expect(astryxCss).toMatch(/:root[^{]*\{--astryx-press-alpha:0;?\}/);
     });
 
-    it("animates the strength 1 → 0 on the fading arm, on the machine's own clock", () => {
+    it("animates the strength 1 → 0 on the fading arm, on the machine's own clock", async () => {
       const keyframes = astryxCss.match(
         /@keyframes ([\w-]+)\{from\{--astryx-press-alpha:1;?\}to\{--astryx-press-alpha:0;?\}\}/,
       );
       expect(keyframes).not.toBeNull();
       const fading = lines().filter(line =>
-        line.includes('[data-pressed="fading"]'),
+        line.includes('[data-astryx-press="fading"]'),
       );
       expect(
         fading.some(line => line.includes(`animation-name:${keyframes[1]}`)),
@@ -255,32 +277,51 @@ describe('build-css astryx.css', () => {
         .filter(Boolean)
         .map(match => toMs(match[1]));
       // One clock, the one the controller removes the attribute on.
-      expect(durations).toEqual([PRESS_FADE_MS]);
+      expect(durations).toEqual([await readReleaseMs()]);
       // The onset is instant: nothing animates on the on arm.
-      const on = lines().filter(line => line.includes('[data-pressed="on"]'));
+      const on = lines().filter(line =>
+        line.includes('[data-astryx-press="on"]'),
+      );
       expect(on.length).toBeGreaterThan(0);
       expect(on.some(line => line.includes('animation'))).toBe(false);
     });
 
-    it('paints every touch arm through the strength, and lands the release on nothing', () => {
+    it('declares the press paint once, as the pressed token at the strength, and paints every touch arm through it', () => {
+      // The one source: `--_press-paint`, the pressed token mixed at the
+      // press's strength, declared by the shared overlay styles on the element
+      // the controller writes to. StyleX deduplicates the identical
+      // declaration across the variants, so the shipped sheet carries it once.
+      const declarations = lines().filter(line =>
+        /\{--_press-paint:/.test(line),
+      );
+      expect(declarations).toHaveLength(1);
+      expect(declarations[0]).toContain('var(--color-overlay-pressed)');
+      expect(declarations[0]).toContain('var(--astryx-press-alpha)');
+      expect(declarations[0]).not.toContain('--color-overlay-hover');
+      // No second copy of the formula anywhere in the sheet.
+      const formulas = astryxCss.match(
+        /color-mix\(in srgb,\s*var\(--color-overlay-pressed\)\s*calc\(/g,
+      );
+      expect(formulas).toHaveLength(1);
+      // Every overlay variant, the cards' `--_press-overlay`, and the
+      // ancestor-scoped paints (switch, the checkbox and radio overlays, tab)
+      // read it back: twelve lines today, fewer than the arms because StyleX
+      // deduplicates identical rules. A regex that stopped matching would
+      // fall well below this floor.
       const paints = lines().filter(
         line =>
-          /\[data-pressed="(?:on|fading)"\]/.test(line) &&
-          line.includes('--color-overlay-'),
+          /\[data-astryx-press="(?:on|fading)"\]/.test(line) &&
+          line.includes('var(--_press-paint'),
       );
-      // Every overlay variant, the cards' `--_press-overlay`, and the
-      // ancestor-scoped paints (switch, the checkbox and radio overlays, tab):
-      // twelve lines today, fewer than the arms because StyleX deduplicates
-      // identical rules. A regex that stopped matching would fall well below
-      // this floor.
       expect(paints.length).toBeGreaterThanOrEqual(10);
-      for (const line of paints) {
-        expect(line).toContain('var(--color-overlay-pressed)');
-        expect(line).toContain('var(--astryx-press-alpha)');
-        // Not the hover strength: under a finger there is no hover to land
-        // on, and a paint that stepped there would still have to step off.
-        expect(line).not.toContain('--color-overlay-hover');
-      }
+      // Not the hover strength: under a finger there is no hover to land on,
+      // and a paint that stepped there would still have to step off.
+      const arms = lines().filter(line =>
+        /\[data-astryx-press="(?:on|fading)"\]/.test(line),
+      );
+      expect(arms.some(line => line.includes('--color-overlay-hover'))).toBe(
+        false,
+      );
     });
   });
 });

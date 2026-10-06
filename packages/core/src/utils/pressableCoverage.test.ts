@@ -15,12 +15,12 @@
  * holds it equal to the marked set:
  *
  *  - A file paints a press when its StyleX carries an `':active` key, a
- *    `[data-pressed` arm, or composes `interactionOverlayStyles`.
+ *    `[data-astryx-press` arm, or composes `interactionOverlayStyles`.
  *  - A file is marked when it calls `usePressFeedback(`.
  *  - A file whose press arms are read off an ancestor scope marker
  *    (`stylex.when.ancestor(':active', someScope)`, the way an indicator
  *    reads its owner row) is covered when every file that applies that scope
- *    marker is marked, since the controller writes `data-pressed` on the
+ *    marker is marked, since the controller writes `data-astryx-press` on the
  *    element carrying the scope.
  *  - A styles-only module (`*.stylex.ts`) is covered when every file that
  *    imports it is marked.
@@ -63,9 +63,9 @@ const source = new Map(
   files.map(file => [path.relative(SRC, file), fs.readFileSync(file, 'utf8')]),
 );
 
-const PRESS_ARM = /':active|'\[data-pressed=|interactionOverlayStyles\./;
+const PRESS_ARM = /':active|'\[data-astryx-press=|interactionOverlayStyles\./;
 const ANCESTOR_ARM =
-  /stylex\.when\.ancestor\(\s*'(?::active|\[data-pressed=[^)]*)',\s*(\w+)\s*\)/g;
+  /stylex\.when\.ancestor\(\s*'(?::active|\[data-astryx-press=[^)]*)',\s*(\w+)\s*\)/g;
 
 function isMarked(file: string): boolean {
   return (source.get(file) ?? '').includes('usePressFeedback(');

@@ -22,20 +22,19 @@ import {installPressFeedback, pressableProps} from '../utils/pressFeedback';
  * Mark an element as a pressable surface of the touch press model, and make
  * sure the document-level controller that drives it is installed.
  *
- * Spread the result on the element that paints the press. The controller
- * writes `data-pressed="on"` on it while a touch press is believed (after the
- * 150 ms onset delay, cancelled by travel or by a scroll) and
- * `data-pressed="fading"` for the 200 ms release; the element's styles paint
- * the pressed overlay off those arms, and keep `:active` for a mouse. The
- * paint is the pressed token at the press's strength, `--astryx-press-alpha`
- * (a registered custom property the release arm animates 1 → 0), so compose
- * `interactionOverlayStyles.pressedAlpha` from `@astryxdesign/core/utils` on
- * the same element to own that strength, and read it as
- * `color-mix(in srgb, var(--color-overlay-pressed) calc(var(--astryx-press-alpha) * 100%), transparent)`
- * in both arms; see utils/interactionOverlay.stylex.ts. Every Astryx component
- * that paints a press already does this; reach for it when a local component
- * paints its own press and must behave like the rest of the system under a
- * finger.
+ * Spread the result on the element that paints the press, and compose one of
+ * `interactionOverlayStyles` (from `@astryxdesign/core/utils`) on the same
+ * element: `backgroundColor` or `backgroundImage` for a surface whose hover
+ * and press are the system's overlays, `pressedBackgroundColor` for one
+ * whose hover is its own. The controller writes its attribute on the element
+ * while a touch press is believed (after the onset delay, cancelled by travel
+ * or by a scroll) and for the release, and the composed style paints the
+ * pressed token at the press's strength on the first frame and fades it over
+ * the release, keeping `:active` for a mouse. A press is themed through
+ * `--color-overlay-pressed`, which the hold, the flash and the fade all read.
+ * Every Astryx component that paints a press already does this; reach for it
+ * when a local component paints its own press and must behave like the rest
+ * of the system under a finger.
  *
  * Installation is shared and counted: the first mounted pressable installs
  * the controller, the last one to unmount removes it. No per-element listener
