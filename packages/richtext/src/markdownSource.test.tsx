@@ -77,6 +77,11 @@ const CORPUS: Record<string, string> = {
   malformedEmphasis: '**unclosed strong and *unclosed em\n',
   malformedLink: '[no destination] and [broken](\n',
   tabsAndMixedIndent: '\t- tab list\n  \t- mixed\n',
+  tableCanonical: '| Name | Role |\n| --- | --- |\n| Ada | Engineer |\n',
+  tableNonCanonical:
+    'Area|Owner |Status\n:-|:-:|-:\n`a \\| b`|**Ada**|  done  \n\nAfter\n',
+  tableRaggedAndEscaped:
+    '| A | B \\| C |\n|---|---|\n| only one |\n| 1 | 2 | 3 |\n',
   mixedDocument:
     '# Release notes\n\nIntro with **bold** and a [link](https://example.com).\n\n- One\n  - Two\n\n```ts\nconst a = 1;\n```\n\n> Quote\n\nEnd\n',
 };
@@ -123,6 +128,13 @@ function $appendToBlock(index: number, text: string): void {
   }
   const textNode = block.getAllTextNodes()[0];
   textNode.setTextContent(textNode.getTextContent() + text);
+}
+
+function $appendToTextContaining(needle: string, text: string): void {
+  const node = $getRoot()
+    .getAllTextNodes()
+    .find(candidate => candidate.getTextContent().includes(needle));
+  node?.setTextContent(node.getTextContent() + text);
 }
 
 function $appendToBlockContaining(needle: string, text: string): void {
@@ -295,6 +307,15 @@ describe('Markdown source preservation (spec:AST-062)', () => {
       ).not.toBeNull(),
     );
     expect(ref.current?.getMarkdown()).toBe(markdown);
+  });
+
+  it('regenerates only an edited table, in canonical form, and keeps the rest (FR2, FR6)', () => {
+    const source = 'Intro  \n\nArea|Owner\n:-|-:\nSearch|Ada\n\n\\# Outro\n';
+    expect(
+      editAndExport(source, () => $appendToTextContaining('Search', ' 2')),
+    ).toBe(
+      'Intro  \n\n| Area | Owner |\n| :--- | ---: |\n| Search 2 | Ada |\n\n\\# Outro\n',
+    );
   });
 
   it('gives a custom transformer array the same preservation (FR6)', () => {

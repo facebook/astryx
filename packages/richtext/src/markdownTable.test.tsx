@@ -108,9 +108,8 @@ describe('GFM tables', () => {
       ['Name', 'Role'],
       ['Ada', 'Engineer'],
     ]);
-    expect(roundTrip(source)).toBe(
-      '| Name | Role |\n| --- | --- |\n| Ada | Engineer |',
-    );
+    // Imported tables come back exactly as written (spec:AST-062).
+    expect(roundTrip(source)).toBe(source);
   });
 
   it('leaves a line with pipes but no delimiter row as text', () => {
