@@ -480,7 +480,7 @@ async function capture(page: Page, scenario: Case) {
       empties: 2,
       footers: 3,
       icons: 3,
-      spinners: 1,
+      spinners: 3,
       shortcuts: 12,
       targets: 19,
     });
