@@ -535,11 +535,11 @@ describe('Markdown', () => {
       document.querySelector('ol')?.querySelectorAll(':scope > li'),
     ).toHaveLength(2);
     expect(
-      (screen.getByRole('checkbox', {name: 'First step'}))
+      screen.getByRole<HTMLInputElement>('checkbox', {name: 'First step'})
         .checked,
     ).toBe(false);
     expect(
-      (screen.getByRole('checkbox', {name: 'Nested done'}))
+      screen.getByRole<HTMLInputElement>('checkbox', {name: 'Nested done'})
         .checked,
     ).toBe(true);
     expect(document.querySelectorAll('input[type="checkbox"]')).toHaveLength(2);
