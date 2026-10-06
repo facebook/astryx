@@ -184,6 +184,22 @@ All three rows block that stable release until they have passing durable receipt
 
 The [Popover contract](../../../packages/core/src/Popover/Popover.spec.md), [layer runtime](../../architecture/layer-runtime.md), and [overlay dismissal](../../families/overlay-dismissal.md) continue to own focus, runtime, and dismissal behavior. AST-009 owns only the real-AT evidence and stable-release block for the claimed outcome.
 
+### Pending release block — pull request #6950
+
+| Field            | Value                                                                                                                                                                                                                                                                                                                                                 |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Source change    | Pull request [#6950](https://github.com/facebook/astryx/pull/6950) changes CommandPalette's empty-result live-region content and query-state announcement timing. Bind the final receipt to the landed commit after merge.                                                                                                                            |
+| Affected release | The first stable release containing the landed pull request.                                                                                                                                                                                                                                                                                          |
+| Trigger          | FR4. The intended result depends on what the live region announces, when the result set becomes empty, and whether the update repeats or is skipped.                                                                                                                                                                                                  |
+| Scenario         | Open the checked-in `CommandPalette / Audit Matrix` story, focus the query, enter a query that produces the rich empty-result state, and confirm the rendered empty-result message is announced once after the result transition without substituting the built-in default. Repeat from a populated result set so the timing transition is exercised. |
+
+| Required pairing            | State     |
+| --------------------------- | --------- |
+| NVDA + Chrome on Windows    | `pending` |
+| VoiceOver + Safari on macOS | `pending` |
+
+Both rows block the first affected stable release until each has a passing durable receipt or a current owner-recorded exception. DOM, axe, accessibility-tree, and browser evidence continue to prove their assigned claims but do not clear this announcement gate.
+
 This accepted spec creates no runtime or process implementation.
 
 **Current enforcement status: missing.** No automated fail-closed check currently reads this block before publication. Implementing that check is non-blocking stack work for this documentation slice. Until it lands, this record states the required hold but does not itself prevent publication.
