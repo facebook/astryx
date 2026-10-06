@@ -77,17 +77,25 @@ affordances appear or disappear.
 - **FR7 — Same semantics.** Strong, emphasis, strikethrough, inline code, and
   links expose the same element semantics on every surface. A link's
   destination never contains its title; a title is exposed as the link's
-  title.
-- **FR8 — Reading and editing in place.** Edit mode may add a caret,
+  title. Named and numeric character references in text, such as `&copy;`
+  and `&#169;`, render as the characters they name on every surface; inside
+  inline code and fenced code they stay literal. Rendering decodes them; the
+  authored source keeps them as written.
+- **FR8 — Same code block frame.** A fenced code block shows the same header,
+  its language label and copy action, at the same height in read and edit
+  mode, so the switch does not move the code. In edit mode the header sits
+  outside the editable text: it is not part of the document and cannot be
+  edited.
+- **FR9 — Reading and editing in place.** Edit mode may add a caret,
   selection, placeholder, focus ring, field border and inset, and a toolbar.
   Together these offset the whole document by one constant amount: after that
   offset, every block's top and height match read mode within 2 px and every
   paragraph keeps its line count. The toolbar either overlays content or holds
   space that read mode reserves too, so the offset does not change while
   editing.
-- **FR9 — Scroll position survives the switch.** The block at the top of the
-  view before a switch between reading and editing is still at the top of the
-  view after it, within the FR8 offset.
+- **FR10 — Scroll position survives the switch.** The block at the top of
+  the view before a switch between reading and editing is still at the top of
+  the view after it, within the FR9 offset.
 
 ### Platform support
 
@@ -102,18 +110,20 @@ affordances appear or disappear.
 ## Current-state impact
 
 `Markdown` already renders FR2–FR6 for its own output except where FR7 names
-a link title. `RichTextEditor` and `RichTextView` adopt FR2–FR9 for the
+a link title and FR7 names character references. `RichTextEditor` and
+`RichTextView` adopt FR2–FR10 for the
 constructs they render, and their default editor theme follows FR2 and FR3.
 
 ## Verification
 
-| Contract | Verification                                                                                    | Representative states                                                            | Mutation or failure expectation                                                                     |
-| -------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| FR2–FR4  | Real-browser computed style and block geometry of the parity fixture on `Markdown` and RichText | 390px and 1440px; light and dark; default density                                | Restoring a hard-coded heading size or a different block margin moves a block past 2 px and fails   |
-| FR5      | Real-browser structure and line counts of the parity fixture                                    | Nested lists at 2- and 3-space indentation; soft breaks; blockquote continuation | Flattening a nested list or turning a soft break into a line break fails                            |
-| FR6      | Real-browser computed direction per block                                                       | Right-to-left provider with left-to-right text, and the reverse                  | Per-block automatic direction fails                                                                 |
-| FR7      | Semantic DOM of inline marks and links on every surface                                         | Titled link, bare link, strong, emphasis, strikethrough                          | A title inside a destination, or a styled span in place of a semantic element, fails                |
-| FR8–FR9  | Real-browser read/edit switch of the parity fixture and a long document                         | Short document at the top; long document halfway down                            | A per-block shift beyond the constant offset, or an anchor block leaving the top of the view, fails |
+| Contract | Verification                                                                                    | Representative states                                                                                    | Mutation or failure expectation                                                                                     |
+| -------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| FR2–FR4  | Real-browser computed style and block geometry of the parity fixture on `Markdown` and RichText | 390px and 1440px; light and dark; default density                                                        | Restoring a hard-coded heading size or a different block margin moves a block past 2 px and fails                   |
+| FR5      | Real-browser structure and line counts of the parity fixture                                    | Nested lists at 2- and 3-space indentation; soft breaks; blockquote continuation                         | Flattening a nested list or turning a soft break into a line break fails                                            |
+| FR6      | Real-browser computed direction per block                                                       | Right-to-left provider with left-to-right text, and the reverse                                          | Per-block automatic direction fails                                                                                 |
+| FR7      | Semantic DOM of inline marks, links, and character references on every surface                  | Titled link, bare link, strong, emphasis, strikethrough; `&amp;`, `&copy;`, `&#169;` in text and in code | A title inside a destination, a styled span in place of a semantic element, or an undecoded reference in text fails |
+| FR8      | Real-browser code block header geometry in both modes                                           | Fenced code with an info string                                                                          | A header missing from one mode moves the code and fails                                                             |
+| FR9–FR10 | Real-browser read/edit switch of the parity fixture and a long document                         | Short document at the top; long document halfway down                                                    | A per-block shift beyond the constant offset, or an anchor block leaving the top of the view, fails                 |
 
 ## Decision log
 
@@ -141,14 +151,26 @@ every line stays where it was relative to the others, and the scroll anchor
 stays at the top of the view. 2 px absorbs subpixel rounding between
 renderers; it does not admit a different spacing value.
 
+### DEC-3 — Character references render decoded; source keeps them
+
+**Reference:** `spec:AST-061/DEC-3`
+**Decider:** cixzhang, 2026-10-06
+
+A reader who sees `&copy;` on one surface and `©` on the other is looking at
+two documents. CommonMark renders references as the characters they name, so
+both surfaces do; code shows exactly what was typed. Decoding is a rendering
+fact, not a rewrite: the authored Markdown keeps the reference.
+
+### DEC-4 — Read and edit share the code block header
+
+**Reference:** `spec:AST-061/DEC-4`
+**Decider:** cixzhang, 2026-10-06
+
+The language label tells a reader what the code is in both modes, and a
+header present in only one mode moves every line of code on the switch. The
+header is a frame around the document, not document content, so editing never
+reaches it.
+
 ## Open questions
 
-- **OQ1 — Does edit mode show the fenced-code header (language label) that
-  read mode shows?** (`human-design`) Read mode renders a language label and
-  a copy action above the code; edit mode has neither. Showing a
-  non-interactive label keeps FR8 geometry; omitting it requires read mode to
-  drop or overlay its header instead.
-- **OQ2 — Do `Markdown` and RichText decode character references such as
-  `&copy;`?** (`human-design`) CommonMark decodes them; `Markdown` shows them
-  literally and RichText decodes only numeric references. FR1 makes this one
-  answer for both surfaces once decided.
+- None.
