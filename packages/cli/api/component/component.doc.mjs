@@ -23,7 +23,8 @@ export const doc = {
     'Boolean flags narrow each resolved component to just its props, source, ' +
     'showcase, or example blocks. When Core is not installed, details, props, and ' +
     'lists come from the version-matched Core snapshot shipped with the CLI; the ' +
-    'response meta identifies that package version.',
+    'response meta identifies that package version. Configured integration ' +
+    'components remain available only when Core is installed.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'component(name?: string | string[], options?: ComponentOptions): Promise<ComponentListResponse | ComponentBatchResponse | ComponentDetailResponse | ComponentDetailPropsResponse | ComponentDetailSourceResponse | ComponentDetailShowcaseResponse | ComponentDetailBlocksResponse>',

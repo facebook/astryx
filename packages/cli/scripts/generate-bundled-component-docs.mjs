@@ -56,8 +56,31 @@ const CLI_ROOT = path.resolve(
   '..',
 );
 const REPO_ROOT = path.resolve(CLI_ROOT, '../..');
-const CORE_ROOT = path.join(REPO_ROOT, 'packages/core');
-const OUTPUT = path.join(CLI_ROOT, 'assets/generated/core-component-docs.json');
+
+/** @param {string} flag */
+function argumentValue(flag) {
+  const index = process.argv.indexOf(flag);
+  if (index === -1) return null;
+  const value = process.argv[index + 1];
+  if (!value || value.startsWith('--')) {
+    throw new Error(`${flag} requires a path.`);
+  }
+  return value;
+}
+
+const CORE_ROOT = path.resolve(
+  argumentValue('--core-root') ?? path.join(REPO_ROOT, 'packages/core'),
+);
+const OUTPUT = path.resolve(
+  argumentValue('--output') ??
+    path.join(CLI_ROOT, 'assets/generated/core-component-docs.json'),
+);
+const CLI_PACKAGE_JSON = path.resolve(
+  argumentValue('--cli-package-json') ?? path.join(CLI_ROOT, 'package.json'),
+);
+const CORE_PACKAGE_JSON = path.resolve(
+  argumentValue('--core-package-json') ?? path.join(CORE_ROOT, 'package.json'),
+);
 const CHECK = process.argv.includes('--check');
 
 /** @param {string} file */
@@ -65,8 +88,8 @@ function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
-const cliVersion = readJson(path.join(CLI_ROOT, 'package.json')).version;
-const coreVersion = readJson(path.join(CORE_ROOT, 'package.json')).version;
+const cliVersion = readJson(CLI_PACKAGE_JSON).version;
+const coreVersion = readJson(CORE_PACKAGE_JSON).version;
 if (cliVersion !== coreVersion) {
   throw new Error(
     `Cannot bundle Core docs: CLI ${cliVersion} and Core ${coreVersion} are not version-matched.`,

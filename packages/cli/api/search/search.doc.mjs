@@ -48,7 +48,7 @@ export const doc = {
       name: 'options.cwd',
       type: 'string',
       description:
-        "Directory to resolve @astryxdesign/core from. A docs-only search (`type: 'doc'`) does not need it. Without Core, component results come from the version-matched snapshot bundled with the CLI; an open search covers those components plus docs, while hook and template searches still require Core.",
+        "Directory to resolve @astryxdesign/core from. A docs-only search (`type: 'doc'`) does not need it. Without Core, component results come from the version-matched snapshot bundled with the CLI; an open search covers those components plus docs, while hook, template, and configured integration searches still require Core.",
     },
   ],
   returns: [

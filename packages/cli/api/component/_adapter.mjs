@@ -38,11 +38,14 @@ import {
 } from '../../foundation/discovery/component-discovery.mjs';
 import {Project} from '../../foundation/config/project.mjs';
 import {loadComponentDoc as loadValidatedComponentDoc} from '../../foundation/discovery/component-loader.mjs';
-import {searchComponents, levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {
-  BUNDLED_COMPONENT_DOCS_META,
-  bundledCoreVersion,
+  searchComponents,
+  levenshteinDistance,
+} from '../../foundation/text/string-utils.mjs';
+import {
+  getBundledCoreVersion,
   getBundledComponentDoc,
+  getBundledComponentDocsMeta,
   getBundledComponentGroups,
   getBundledComponentRecords,
 } from '../../foundation/discovery/bundled-component-docs.mjs';
@@ -50,9 +53,9 @@ import {AstryxError} from '../error.mjs';
 
 export {
   CORE_PACKAGE,
-  BUNDLED_COMPONENT_DOCS_META,
-  bundledCoreVersion,
+  getBundledCoreVersion,
   getBundledComponentDoc,
+  getBundledComponentDocsMeta,
   getBundledComponentGroups,
   getBundledComponentRecords,
   levenshteinDistance,

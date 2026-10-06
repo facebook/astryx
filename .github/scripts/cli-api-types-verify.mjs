@@ -2,20 +2,20 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Verify the PUBLISHED `@astryxdesign/cli/api` and `/authoring` type surfaces.
+ * Verify the PUBLISHED `@astryxdesign/cli` generated surfaces.
  *
- * Both sets of declarations (`api/**\/*.d.mts`, `authoring/**\/*.d.mts`) are
- * generated from the JSDoc in their `.mjs` at `prepack` — they are NOT
- * committed. This test proves the surface a consumer actually installs is
- * correct, end to end:
+ * API declarations and the bundled Core component-doc snapshot are generated at
+ * `prepack` rather than committed. This test proves the surface a consumer
+ * actually installs is correct, end to end:
  *
- *   1. `pnpm pack` the CLI (fires `prepack` → `sync:api-types`), producing the
- *      exact tarball that would be published.
- *   2. Extract it into a throwaway `node_modules/@astryxdesign/cli` and assert
- *      `api/index.d.mts` is present. `@astryxdesign/core` is linked as a sibling
- *      so the packed declarations' `../../../core/src` specifiers resolve just
- *      like a real install.
- *   3. Type-check a representative consumer import against the packed package
+ *   1. `pnpm pack` the CLI (fires `prepack` → bundled docs + API types),
+ *      producing the exact tarball that would be published.
+ *   2. Extract it into a throwaway `node_modules/@astryxdesign/cli`, assert the
+ *      generated declarations and component docs are present, and run component
+ *      lookup plus search from a directory with no local Core installation.
+ *      `@astryxdesign/core` is linked as a sibling only for declaration
+ *      resolution, matching a real typed consumer.
+ *   3. Type-check representative consumer imports against the packed package
  *      with `skipLibCheck` OFF, so a stale, missing, malformed, or internal-
  *      `lib`-leaking surface fails here — before it can ship. The scenario's
  *      tsconfig extends the repo base so lib/target/@types/node are inherited.
@@ -25,6 +25,7 @@
 
 import {execFileSync, spawnSync} from 'node:child_process';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -35,9 +36,12 @@ const CORE_DIR = path.join(ROOT, 'packages/core');
 // Scratch area inside the repo so the repo tsconfig (lib/target/@types/node) and
 // the workspace's installed typescript are all inherited without any setup.
 const VERIFY_DIR = path.join(CLI_DIR, '.api-verify');
+/** @type {string|undefined} */
+let noCoreDir;
 
 function cleanup() {
   fs.rmSync(VERIFY_DIR, {recursive: true, force: true});
+  if (noCoreDir) fs.rmSync(noCoreDir, {recursive: true, force: true});
 }
 function fail(msg, detail) {
   console.error(`\u2717 ${msg}`);
@@ -48,6 +52,9 @@ function fail(msg, detail) {
 process.on('exit', cleanup);
 
 cleanup();
+noCoreDir = fs.mkdtempSync(
+  path.join(os.tmpdir(), 'astryx-packed-cli-no-core-'),
+);
 const nm = path.join(VERIFY_DIR, 'node_modules', '@astryxdesign');
 fs.mkdirSync(nm, {recursive: true});
 
@@ -100,6 +107,67 @@ fs.writeFileSync(
   JSON.stringify({name: 'packed-cli-consumer', private: true, type: 'module'}),
 );
 
+const bundledDocsPath = path.join(
+  pkgDir,
+  'assets',
+  'generated',
+  'core-component-docs.json',
+);
+if (!fs.existsSync(bundledDocsPath)) {
+  fail('packaged tarball is missing generated Core component docs');
+}
+const packedManifest = JSON.parse(
+  fs.readFileSync(path.join(pkgDir, 'package.json'), 'utf8'),
+);
+const bundledDocs = JSON.parse(fs.readFileSync(bundledDocsPath, 'utf8'));
+if (bundledDocs.version !== packedManifest.version) {
+  fail(
+    'packaged Core component docs do not match the CLI package version',
+    `docs=${bundledDocs.version} cli=${packedManifest.version}`,
+  );
+}
+console.log(`✓ tarball ships Core component docs for ${bundledDocs.version}`);
+
+function runPackedCli(args) {
+  const run = spawnSync(
+    process.execPath,
+    [path.join(pkgDir, 'clients', 'cli', 'bin', 'astryx.mjs'), '--json', ...args],
+    {cwd: noCoreDir, encoding: 'utf8'},
+  );
+  if (run.status !== 0) {
+    fail(
+      `packed CLI failed without a local Core installation: ${args.join(' ')}`,
+      `${run.stdout || ''}\n${run.stderr || ''}`.trim(),
+    );
+  }
+  try {
+    return JSON.parse(run.stdout);
+  } catch (error) {
+    fail(
+      `packed CLI returned invalid JSON: ${args.join(' ')}`,
+      `${run.stdout || ''}\n${run.stderr || ''}\n${String(error)}`.trim(),
+    );
+  }
+}
+
+for (const [label, response] of [
+  ['component detail', runPackedCli(['component', 'Button', '--detail', 'brief'])],
+  [
+    'component search',
+    runPackedCli(['search', 'button', '--type', 'component', '--limit', '1']),
+  ],
+]) {
+  const provenance = response?.meta?.componentDocs;
+  if (
+    provenance?.source !== 'bundled' ||
+    provenance?.package !== '@astryxdesign/core' ||
+    provenance?.version !== packedManifest.version
+  ) {
+    fail(`${label} did not report version-matched bundled Core docs`);
+  }
+}
+console.log('✓ packed CLI serves version-matched component docs without Core');
+
 // 3. Type-check a representative consumer against the packed types.
 const scenario = `
 import {
@@ -127,6 +195,16 @@ import type {
 async function main() {
   const r = await component('Button');
   if (r.type === 'component.detail') { const n: string = r.data.name; void n; }
+  if (r.meta?.componentDocs) {
+    const source: 'bundled' = r.meta.componentDocs.source;
+    const version: string = r.meta.componentDocs.version;
+    void [source, version];
+  }
+  const searchResult: SearchResponse = await search('button', {type: 'component'});
+  if (searchResult.meta) {
+    const packageName: string = searchResult.meta.componentDocs.package;
+    void packageName;
+  }
   const batch = await component(['Button']) as ComponentBatchResponse;
   const sharedBatch: BatchResponse<
     'component.batch', ComponentSingleResponse, ComponentBatchCandidate

@@ -28,9 +28,9 @@ import {
   scopeSubComponent,
   ComponentAmbiguityError,
   installedComponentPackageVersion,
-  BUNDLED_COMPONENT_DOCS_META,
-  bundledCoreVersion,
+  getBundledCoreVersion,
   getBundledComponentDoc,
+  getBundledComponentDocsMeta,
   getBundledComponentGroups,
   getBundledComponentRecords,
   levenshteinDistance,
@@ -235,7 +235,7 @@ async function componentBatch(selectors, options, coreDir) {
 
 /** @param {{type: string, data: any}} response */
 function fromBundledDocs(response) {
-  return {...response, meta: BUNDLED_COMPONENT_DOCS_META};
+  return {...response, meta: getBundledComponentDocsMeta()};
 }
 
 /**
@@ -357,6 +357,7 @@ async function componentFromBundledDocs(name, options) {
       ERROR_CODES.ERR_UNKNOWN_PACKAGE,
     );
   }
+  const bundledCoreVersion = getBundledCoreVersion();
   if (target.version && target.version !== bundledCoreVersion) {
     throw new AstryxError(
       `Bundled component docs describe ${CORE_PACKAGE}@${bundledCoreVersion}, not ${target.version}`,

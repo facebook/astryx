@@ -13,6 +13,7 @@ authoring/*.d.mts
 foundation/**/*.d.mts
 foundation/*.d.mts
 .api-verify/
+assets/generated/core-component-docs.json
 
 # Transient fixture dir written by authoring-migration.tsc.test.mjs (runs the
 # real tsc over migrated output); created + removed per test run.
