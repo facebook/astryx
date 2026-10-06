@@ -250,7 +250,7 @@ export function registerBuild(program) {
                 'Page templates keyword search matched, best first.',
               )
             : text(
-                `Keyword search matched these page templates: ${pages.map(p => p.name).join(', ')}.`,
+                `Keyword search matched these page templates: ${pages.map(p => `${p.name} (${p.package})`).join(', ')}.`,
               ),
         );
         if (verbose) out.push(records(pages, full));

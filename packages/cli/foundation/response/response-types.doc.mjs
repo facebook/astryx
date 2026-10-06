@@ -244,7 +244,7 @@ export const doc = {
     {
       value: 'theme.add',
       description:
-        'A scaffold receipt: resolved slug, displayName, maintained flag, owner package, outputDir (relative to cwd), the theme entry file, its exportName, and the files written. The envelope\'s package names the same owner package.',
+        'A scaffold receipt: resolved slug, displayName, maintained flag, owner package, outputDir (relative to cwd), the theme entry file, its exportName, and the files written.',
     },
     {
       value: 'theme.template',

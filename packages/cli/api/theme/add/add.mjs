@@ -176,7 +176,6 @@ export async function themeAdd(slug, options = {}) {
   const relDir = path.relative(cwd, resolvedDir) || '.';
   return {
     type: 'theme.add',
-    package: match.package,
     data: {
       slug: match.slug,
       displayName: match.displayName,
