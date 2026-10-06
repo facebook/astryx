@@ -359,7 +359,7 @@ export async function swizzleCopy(component, options = {}) {
     usesStyleX,
   };
   if (feedback) data.feedback = feedback;
-  return {type: 'swizzle.copy', data};
+  return {type: 'swizzle.copy', package: data.package, data};
 }
 
 /**

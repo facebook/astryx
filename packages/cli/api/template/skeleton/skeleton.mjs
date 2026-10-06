@@ -245,10 +245,10 @@ export function templateSkeleton(match, templates) {
   const src = fs.readFileSync(match.filePath, 'utf-8');
   return {
     type: 'template.skeleton',
+    package: pkgOf(match),
     data: {
       template: match.dirName,
       description: match.description,
-      package: pkgOf(match),
       components: extractComponents(match.filePath),
       skeleton: extractSkeleton(src),
     },

@@ -366,7 +366,7 @@ export async function createProgram() {
     )
     .option(
       '--json',
-      'Output as typed JSON. Success envelope: { apiVersion, type, data, meta? }. Error envelope: { apiVersion, error, code, suggestions? }.',
+      'Output as typed JSON. Success envelope: { apiVersion, type, package?, data, meta? }. Error envelope: { apiVersion, error, code, suggestions? }.',
     )
     .addHelpCommand('help', 'Show all commands')
     .action((options, cmd) => {

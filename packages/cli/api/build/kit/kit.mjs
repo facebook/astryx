@@ -113,9 +113,9 @@ const ALWAYS = new Set([...FRAME, ...FOUNDATION]);
  */
 const asTemplate = t => ({
   name: t.name,
+  package: t.package,
   displayName: t.displayName,
   description: t.description,
-  package: t.package ?? '@astryxdesign/core',
   command: `${t.command} <path>`,
 });
 

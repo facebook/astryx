@@ -56,6 +56,12 @@ async function legacyImport(ext, name, coreDir, docOpts) {
 }
 
 /**
+ * A full Core ComponentDoc list entry, naming the package that owns it.
+ * @param {any} doc
+ */
+const coreEntry = doc => ({name: doc.name, package: CORE_PACKAGE, ...doc});
+
+/**
  * Build the `component.list` envelope. The list taxonomy is collapsed: all
  * three detail levels emit ONE `component.list` type; the depth rides in
  * `data.detail` and the grouped map in `data.components`.
@@ -97,12 +103,14 @@ export async function componentList(
             const docs = await loadComponentDoc(readme, {zh, lang});
             entries.push({
               name: comp,
+              package: CORE_PACKAGE,
               description: docs.usage?.description || docs.description || '',
               import: resolveImportPath(coreDir, comp),
             });
           } catch {
             entries.push({
               name: comp,
+              package: CORE_PACKAGE,
               description: '',
               import: resolveImportPath(coreDir, comp),
             });
@@ -110,6 +118,7 @@ export async function componentList(
         } else {
           entries.push({
             name: comp,
+            package: CORE_PACKAGE,
             description: '',
             import: resolveImportPath(coreDir, comp),
           });
@@ -128,12 +137,12 @@ export async function componentList(
         const readme = findComponentReadme(coreDir, comp);
         if (readme && readme.endsWith('.doc.mjs')) {
           try {
-            entries.push(await loadComponentDoc(readme, {zh, lang, dense}));
+            entries.push(coreEntry(await loadComponentDoc(readme, {zh, lang, dense})));
           } catch {
-            entries.push({name: `XDS${comp}`, description: ''});
+            entries.push({name: `XDS${comp}`, package: CORE_PACKAGE, description: ''});
           }
         } else {
-          entries.push({name: `XDS${comp}`, description: ''});
+          entries.push({name: `XDS${comp}`, package: CORE_PACKAGE, description: ''});
         }
       }
       return {
@@ -169,12 +178,14 @@ export async function componentList(
             const docs = await loadComponentDoc(readme, {zh, lang});
             result[cat].push({
               name: comp,
+              package: CORE_PACKAGE,
               description: docs.usage?.description || docs.description || '',
               import: resolveImportPath(coreDir, comp),
             });
           } catch {
             result[cat].push({
               name: comp,
+              package: CORE_PACKAGE,
               description: '',
               import: resolveImportPath(coreDir, comp),
             });
@@ -182,6 +193,7 @@ export async function componentList(
         } else {
           result[cat].push({
             name: comp,
+            package: CORE_PACKAGE,
             description: '',
             import: resolveImportPath(coreDir, comp),
           });
@@ -203,12 +215,12 @@ export async function componentList(
         const readme = findComponentReadme(coreDir, comp);
         if (readme && readme.endsWith('.doc.mjs')) {
           try {
-            result[cat].push(await loadComponentDoc(readme, {zh, lang, dense}));
+            result[cat].push(coreEntry(await loadComponentDoc(readme, {zh, lang, dense})));
           } catch {
-            result[cat].push({name: `XDS${comp}`, description: ''});
+            result[cat].push({name: `XDS${comp}`, package: CORE_PACKAGE, description: ''});
           }
         } else {
-          result[cat].push({name: `XDS${comp}`, description: ''});
+          result[cat].push({name: `XDS${comp}`, package: CORE_PACKAGE, description: ''});
         }
       }
     }

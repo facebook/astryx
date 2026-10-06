@@ -44,15 +44,21 @@ export interface CLIUnsupportedError {
 }
 
 /**
- * A success response: a `type` discriminator, its `data` payload, and an
- * optional `meta` sidecar (emitted as a sibling of `data`, never merged in).
- * `--json` prints it with `apiVersion` added (see `parseResponse`).
+ * A success response: a `type` discriminator, the `package` that owns what the
+ * response is about, its `data` payload, and an optional `meta` sidecar
+ * (emitted as a sibling of `data`, never merged in). `--json` prints it with
+ * `apiVersion` added (see `parseResponse`).
+ *
+ * `package` is present when the response is about one thing: one component,
+ * one doc, one template. A response that lists things from more than one
+ * package leaves it out, and each listed item names its own `package`.
  *
  * Structural by design — there is no central union of every response `type`.
  * A specific command narrows `data` via its own return type.
  */
 export interface CLIResponse {
   type: string;
+  package?: string;
   data: unknown;
   meta?: Record<string, unknown>;
 }

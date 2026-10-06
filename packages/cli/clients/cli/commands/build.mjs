@@ -169,6 +169,7 @@ export function registerBuild(program) {
       const full = {
         fields: [
           'name',
+          'package',
           'domain',
           'displayName',
           'score',
@@ -220,10 +221,10 @@ export function registerBuild(program) {
             start,
             verbose
               ? {
-                  fields: ['name', 'displayName', 'description', 'command'],
+                  fields: ['name', 'package', 'displayName', 'description', 'command'],
                   format: {command: formatCliCommand},
                 }
-              : brief(['name', 'description', 'command']),
+              : brief(['name', 'package', 'description', 'command']),
           ),
         );
         if (start.alternatives.length) {
@@ -234,7 +235,7 @@ export function registerBuild(program) {
             ),
             records(
               start.alternatives,
-              verbose ? full : brief(['name', 'description', 'command']),
+              verbose ? full : brief(['name', 'package', 'description', 'command']),
             ),
           );
         }
@@ -262,7 +263,7 @@ export function registerBuild(program) {
           ),
           records(
             shown(blocks),
-            verbose ? full : brief(['name', 'description']),
+            verbose ? full : brief(['name', 'package', 'description']),
           ),
         );
       }
@@ -275,7 +276,7 @@ export function registerBuild(program) {
           ? [
               records(
                 shown(domain),
-                verbose ? full : brief(['name', 'description']),
+                verbose ? full : brief(['name', 'package', 'description']),
               ),
             ]
           : []),

@@ -11,7 +11,7 @@
  */
 
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {emit, section, list, text, WARN} from '../formatters/index.mjs';
+import {emit, section, list, text, WARN, record} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {swizzle as swizzleApi} from '../../../api/swizzle/swizzle.mjs';
@@ -60,6 +60,7 @@ export function registerSwizzle(program) {
       if (result.type === 'swizzle.list') {
         const components = result.data;
         emit(
+          record({package: result.package}),
           section('Available components'),
           list(components),
           text(`Usage: ${run} swizzle <component>`),

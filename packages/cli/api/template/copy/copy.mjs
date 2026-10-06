@@ -18,7 +18,7 @@ import {
 } from '../../../foundation/fs/path-safety.mjs';
 import {AstryxError, writeFailed} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
-import {replaceDemoMedia} from '../../../foundation/discovery/template-adapter.mjs';
+import {pkgOf, replaceDemoMedia} from '../../../foundation/discovery/template-adapter.mjs';
 
 /**
  * Scaffold an already-resolved template to `targetPath` (relative to `cwd`) and
@@ -96,6 +96,7 @@ export function templateCopy(match, {targetPath, cwd, overwrite = false}) {
   const relOutput = path.relative(cwd, outputDir) || '.';
   return {
     type: 'template.copy',
+    package: pkgOf(match),
     data: {
       template: match.dirName,
       outputDir: relOutput,

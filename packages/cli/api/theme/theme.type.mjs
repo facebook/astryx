@@ -69,6 +69,7 @@
  * astryx --json theme add <slug>
  * @typedef {object} ThemeAddResponse
  * @property {'theme.add'} type
+ * @property {string} package The npm package that owns the theme (as `data.package`).
  * @property {{slug: string, displayName: string, maintained: boolean, package: string, outputDir: string, entry: string, exportName: string, files: string[]}} data
  */
 

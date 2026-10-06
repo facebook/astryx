@@ -40,11 +40,11 @@ export function templateShow(match) {
 
   return {
     type: 'template.show',
+    package: pkgOf(match),
     data: {
       template: match.dirName,
       description: match.description,
       type: match.type,
-      package: pkgOf(match),
       components: extractComponents(match.filePath),
       source,
       demoMediaReplaced,

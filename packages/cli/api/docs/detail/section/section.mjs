@@ -26,7 +26,11 @@ import {
   readerSections,
   sectionView,
 } from '../../../../foundation/doc-compiler/lenses.mjs';
-import {referenceTargets, resolveTopicDocs} from '../../_adapter.mjs';
+import {
+  referenceTargets,
+  resolveTopicDocs,
+  sectionPackageOf,
+} from '../../_adapter.mjs';
 
 /**
  * @param {string} topic
@@ -84,6 +88,8 @@ export async function section(topic, sectionName, options = {}) {
   }
   return {
     type: 'docs.detail.section',
-    data: {...sectionView(node, linked), package: entry.package, links},
+    // The package that wrote this section: the topic's own, or an extension's.
+    package: sectionPackageOf(entry, node)(match.id),
+    data: {...sectionView(node, linked), links},
   };
 }

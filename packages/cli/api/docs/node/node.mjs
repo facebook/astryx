@@ -55,10 +55,10 @@ export async function nodeView(catalog, tree, node) {
           return {
             route: child.route,
             name: child.route.slice(child.route.lastIndexOf('/') + 1),
+            package: child.provider,
             kind: child.kind,
             title: child.title,
             summary: child.summary,
-            package: child.provider,
           };
         }),
       })),
@@ -188,6 +188,7 @@ export async function node(route, options = {}) {
     throw await unknownTopicError(route, found.catalog);
   return {
     type: 'docs.node',
+    package: found.node.provider,
     data: await nodeView(found.catalog, found.tree, found.node),
   };
 }

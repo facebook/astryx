@@ -32,6 +32,7 @@ import {
   text,
   code,
   wrapText,
+  record,
 } from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
@@ -203,20 +204,27 @@ function linkLines(links) {
  * A topic's section index: what the topic is, one line per section with the
  * key to read it by, and how to read further.
  * @param {import('../../../api/docs/docs.type.mjs').DocsIndex} index
+ * @param {string} owner the package that owns the topic
  * @param {string} run
  */
-function emitIndex(index, run) {
+function emitIndex(index, owner, run) {
   emit(
     section(
       index.title,
       index.description ? wrapText(index.description) : undefined,
     ),
+    record({package: owner}),
     // Summaries wrap rather than being cut: the summary is how a reader picks
-    // the one section to open.
-    records(index.sections, {
-      fields: ['id', 'title', 'summary'],
-      layout: 'inline',
-    }),
+    // the one section to open. A section another package wrote says which one.
+    records(
+      index.sections.map(s =>
+        s.package === owner ? s : {...s, title: `${s.title} (${s.package})`},
+      ),
+      {
+        fields: ['id', 'title', 'summary'],
+        layout: 'inline',
+      },
+    ),
     text(
       [
         `Read one section: ${run} docs ${index.name} <section>`,
@@ -233,15 +241,17 @@ function emitIndex(index, run) {
  * template`). Typed docs keep a distinct title when it carries the real symbol
  * name (`assert-response  assertResponse()`).
  * @param {import('../../../api/docs/docs.type.mjs').DocsNodeChild} child
+ * @param {string} owner the package that owns the namespace
  * @returns {{name: string, summary: string}}
  */
-function childRow(child) {
+function childRow(child, owner) {
   const titleAddsIdentity =
     child.kind !== 'namespace' &&
     child.kind !== 'generic' &&
     child.title !== child.name;
   return {
-    name: child.name,
+    // A child another package owns says which one.
+    name: child.package === owner ? child.name : `${child.name} (${child.package})`,
     summary: titleAddsIdentity
       ? `${child.title}: ${child.summary}`
       : child.summary,
@@ -260,6 +270,7 @@ function emitNode(node, detail, run) {
   if (node.kind === 'namespace') {
     emit(
       section(node.title, wrapText(node.summary)),
+      record({package: node.package}),
       // A namespace may author intro `blocks`; they render above its children.
       ...(node.content?.length
         ? [
@@ -276,7 +287,7 @@ function emitNode(node, detail, run) {
         ...(node.slots.length === 1 && slot.title === node.title
           ? []
           : [section(slot.title)]),
-        records(slot.children.map(childRow), {
+        records(slot.children.map(child => childRow(child, node.package)), {
           fields: ['name', 'summary'],
           layout: 'inline',
         }),
@@ -297,6 +308,7 @@ function emitNode(node, detail, run) {
     return;
   }
   emit(
+    record({package: node.package}),
     code(formatSection({title: node.title, content: node.content}, detail)),
     text(linkLines(node.links).join('\n')),
   );
@@ -439,13 +451,28 @@ export function registerDocs(program) {
         }
 
         case 'docs.index': {
-          emitIndex(result.data, run);
+          emitIndex(result.data, result.package, run);
           break;
         }
 
         case 'docs.detail': {
+          const owner = result.package;
           emit(
-            code(formatReferenceFull(result.data, detail)),
+            record({package: owner}),
+            code(
+              formatReferenceFull(
+                {
+                  ...result.data,
+                  // A section another package wrote says which one.
+                  sections: result.data.sections.map(s =>
+                    s.package === owner
+                      ? s
+                      : {...s, title: `${s.title} (${s.package})`},
+                  ),
+                },
+                detail,
+              ),
+            ),
             text(linkLines(result.data.links).join('\n')),
           );
           break;
@@ -455,6 +482,7 @@ export function registerDocs(program) {
           // One section ends with its moves: up to its topic's index, and to
           // the sections before and after it.
           emit(
+            record({package: result.package}),
             code(formatSection(result.data, detail)),
             text(linkLines(result.data.links).join('\n')),
           );

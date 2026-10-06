@@ -15,7 +15,7 @@
  */
 
 import {indexView} from '../../../foundation/doc-compiler/lenses.mjs';
-import {resolveTopicDocs, topicLinks} from '../_adapter.mjs';
+import {resolveTopicDocs, sectionPackageOf, topicLinks} from '../_adapter.mjs';
 
 /**
  * @param {string} topic
@@ -29,13 +29,21 @@ import {resolveTopicDocs, topicLinks} from '../_adapter.mjs';
 export async function index(topic, options = {}) {
   const {node, entry, catalog} = await resolveTopicDocs(topic, options);
   const view = indexView(node);
+  const sectionPackage = sectionPackageOf(entry, node);
   /** @type {import('../docs.type.mjs').DocsIndex} */
   const data = {
     ...view,
     // A guide the docs tree places is read by its route, not its doc name.
     name: entry.tree ? entry.name : view.name,
-    package: entry.package,
+    // Each section names the package that wrote it: the topic's own, or an
+    // extension's.
+    sections: view.sections.map(({id, title, ...rest}) => ({
+      id,
+      title,
+      package: sectionPackage(id),
+      ...rest,
+    })),
     links: await topicLinks(catalog, entry),
   };
-  return {type: 'docs.index', data};
+  return {type: 'docs.index', package: entry.package, data};
 }

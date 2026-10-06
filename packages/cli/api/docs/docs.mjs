@@ -77,6 +77,7 @@ export async function docs(topic, section, options = {}) {
     }
     return {
       type: 'docs.node',
+      package: found.node.provider,
       data: await nodeView(found.catalog, found.tree, found.node),
     };
   }
