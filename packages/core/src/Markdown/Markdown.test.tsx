@@ -329,6 +329,17 @@ describe('Markdown', () => {
     expect(link.getAttribute('href')).toBe('https://example.com');
   });
 
+  it('links to the destination, not the destination plus its title', () => {
+    render(
+      <Markdown>
+        {'[notes](https://example.com/notes "Release notes")'}
+      </Markdown>,
+    );
+    expect(screen.getByText('notes').getAttribute('href')).toBe(
+      'https://example.com/notes',
+    );
+  });
+
   it('adds target="_blank" to external links', () => {
     render(<Markdown>{'[ext](https://example.com)'}</Markdown>);
     const link = screen.getByText('ext');

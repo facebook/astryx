@@ -283,6 +283,45 @@ describe('parseInline', () => {
     }
   });
 
+  it('keeps a link title out of the destination', () => {
+    const cases = [
+      ['[t](https://example.com/notes "Notes")', 'https://example.com/notes'],
+      ["[t](https://example.com/notes 'Notes')", 'https://example.com/notes'],
+      ['[t](https://example.com/notes (Notes))', 'https://example.com/notes'],
+      ['[t](https://example.com "Say \\"hi\\"")', 'https://example.com'],
+      ['[t](<https://example.com/a b> "Spaced")', 'https://example.com/a b'],
+      [
+        '[t](https://example.com/wiki/Foo_(bar) "Wiki")',
+        'https://example.com/wiki/Foo_(bar)',
+      ],
+    ] as const;
+    for (const [source, href] of cases) {
+      expect(parseInline(source)[0], source).toMatchObject({
+        type: 'link',
+        href,
+      });
+    }
+  });
+
+  it('keeps an image title out of the source, inline and standalone', () => {
+    expect(parseInline('![alt](img.png "Caption")')).toEqual([
+      {type: 'image', src: 'img.png', alt: 'alt'},
+    ]);
+    expect(parseMarkdown('![alt](img.png "Caption")')[0]).toMatchObject({
+      type: 'image',
+      src: 'img.png',
+    });
+  });
+
+  it('keeps link content that has no title shape as the destination', () => {
+    // A space without a quoted title is not a destination and title pair, so
+    // the content keeps its released meaning.
+    expect(parseInline('[t](https://example.com/a b)')[0]).toMatchObject({
+      type: 'link',
+      href: 'https://example.com/a b',
+    });
+  });
+
   it('handles parentheses in image URLs', () => {
     const result = parseInline('![alt](https://example.com/img_(1).png)');
     expect(result[0].type).toBe('image');

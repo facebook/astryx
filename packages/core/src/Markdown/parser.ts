@@ -1046,6 +1046,21 @@ function matchReferenceImage(
 // ---------------------------------------------------------------------------
 
 /** Find closing ')' that balances nested parentheses. */
+// The content between an inline link's or image's parentheses: a `<…>`
+// destination or one without spaces, then an optional `"…"`, `'…'`, or `(…)`
+// title after whitespace (CommonMark 0.31, link destinations and titles).
+const INLINE_DESTINATION_WITH_TITLE =
+  /^\s*(?:<([^<>\n]*)>|([^\s<]\S*?))(?:\s+(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\((?:[^()\\]|\\.)*\)))?\s*$/s;
+
+/**
+ * The destination of an inline link or image, without its title. Content in
+ * any other shape keeps its released meaning: all of it is the destination.
+ */
+function inlineDestination(content: string): string {
+  const match = INLINE_DESTINATION_WITH_TITLE.exec(content);
+  return match == null ? content : (match[1] ?? match[2] ?? content);
+}
+
 function findClosingParen(text: string, start: number): number {
   let depth = 1;
   for (let index = start; index < text.length; index++) {
@@ -1511,7 +1526,7 @@ function parseInlineImpl(
       if (altClose !== -1 && text[altClose + 1] === '(') {
         const srcClose = findClosingParen(text, altClose + 2);
         if (srcClose !== -1) {
-          const src = text.slice(altClose + 2, srcClose);
+          const src = inlineDestination(text.slice(altClose + 2, srcClose));
           if (!isSafeMarkdownParserUrl(src)) {
             // Dangerous scheme — emit as plain text.
             nodes.push({type: 'text', value: text.slice(i, srcClose + 1)});
@@ -1554,7 +1569,7 @@ function parseInlineImpl(
       if (textClose !== -1 && text[textClose + 1] === '(') {
         const urlClose = findClosingParen(text, textClose + 2);
         if (urlClose !== -1) {
-          const href = text.slice(textClose + 2, urlClose);
+          const href = inlineDestination(text.slice(textClose + 2, urlClose));
           if (!isSafeMarkdownParserUrl(href)) {
             // Dangerous scheme — emit as plain text instead of a link.
             nodes.push({type: 'text', value: text.slice(i, urlClose + 1)});
@@ -2713,12 +2728,13 @@ function parseMarkdownImpl(
     // An unsafe src falls through to the paragraph path and renders as
     // literal text, the same rule the inline image path applies.
     const imageMatch = line.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
+    const imageSrc = imageMatch ? inlineDestination(imageMatch[2]) : '';
     if (
       imageMatch &&
       line.trim() === imageMatch[0] &&
-      isSafeMarkdownParserUrl(imageMatch[2])
+      isSafeMarkdownParserUrl(imageSrc)
     ) {
-      pushBlock({type: 'image', alt: imageMatch[1], url: imageMatch[2]});
+      pushBlock({type: 'image', alt: imageMatch[1], url: imageSrc});
       index++;
       continue;
     }
