@@ -49,6 +49,7 @@ system_specs:
     spec:AST-036/DEC-4,
     spec:AST-061/DEC-5,
     spec:AST-061/DEC-6,
+    spec:AST-064/DEC-6,
   ]
 ---
 
@@ -156,6 +157,18 @@ composition, and this component owns aggregate application and fallback.
 exactly as `Markdown` does. It decodes valid named and numeric references in
 plain text and leaves everything else as written; the named reference table
 stays private. `spec:AST-061/DEC-5` owns its contract.
+
+`getMarkdownPluginCapabilities(plugin)`, exported from the server-safe
+`@astryxdesign/core/Markdown/plugins` subpath, reports only whether an entry
+declares syntax and whether it declares a transform; the entry stays opaque.
+`MarkdownPluginNodeRenderer`, exported from the client-only
+`@astryxdesign/core/Markdown/plugin-renderer` subpath, renders one parsed
+extension node with the given plugins — its plugin's renderer inside
+Markdown's error boundary and suspense fallback, with Markdown's fallback text
+and failure reporting — and adds no element or theme target of its own.
+`Markdown` renders every extension node through it. `spec:AST-064/DEC-6` owns
+both, so the RichText surfaces adopt plugins without reading their
+definitions or copying their rendering.
 
 ### Acceptance and implementation state
 
@@ -389,6 +402,9 @@ and this change preserves the existing spelling exactly.
   actually scrolls. FR28 projects those claims onto Markdown's table block: it
   requires Markdown to add no competing scroll container, name, or tab stop,
   and it neither restates nor narrows what Table and the shared behavior own.
+- `spec:AST-064` owns how the RichText surfaces adopt Markdown plugins. Its
+  DEC-6 limits what this component exposes for them to the capability report
+  and the single-node renderer above.
 - Nested Astryx primitives retain ownership of their own anatomy and targets;
   Markdown owns the outer block targets listed here.
 
