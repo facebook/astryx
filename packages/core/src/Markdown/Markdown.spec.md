@@ -47,6 +47,7 @@ system_specs:
     spec:AST-036/DEC-2,
     spec:AST-036/DEC-3,
     spec:AST-036/DEC-4,
+    spec:AST-061/DEC-5,
   ]
 ---
 
@@ -146,6 +147,14 @@ owns the shared protocol and limited Remark compatibility profile,
 `module:Markdown/remark` owns that profile's adapter,
 `module:Markdown/headingLinks` owns its opt-in identity projection and permalink
 composition, and this component owns aggregate application and fallback.
+
+`decodeMarkdownCharacterReferences(text)` is the character reference decoder
+`Markdown` renders with, exported from the server-safe
+`@astryxdesign/core/Markdown/parser` subpath and from
+`@astryxdesign/core/Markdown` so the RichText surfaces decode references
+exactly as `Markdown` does. It decodes valid named and numeric references in
+plain text and leaves everything else as written; the named reference table
+stays private. `spec:AST-061/DEC-5` owns its contract.
 
 ### Acceptance and implementation state
 

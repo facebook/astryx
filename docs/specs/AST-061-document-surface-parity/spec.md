@@ -36,6 +36,7 @@ reflows no line; only editing affordances appear or disappear.
 - The Markdown dialect itself, and how RichText imports and exports Markdown
   source. This record governs what a supported construct looks like and means
   once rendered, not which source text produces it or how source round-trips.
+  The one exception is the character reference decoder that DEC-5 shares.
 - Collaboration, persistence, document hosting, and plugin adapters between
   Markdown plugins and the editor.
 - Which editor engine serves document editing, and the stored value an editor
@@ -43,7 +44,8 @@ reflows no line; only editing affordances appear or disappear.
   document, not which surface a product chooses to edit documents with.
 - RichText's release channel. RichText stays canary-only.
 - Equivalent internal implementations remain valid when they satisfy this
-  contract.
+  contract, except the character reference decoder, which DEC-5 makes one
+  shared public function.
 
 ## Requirements
 
@@ -118,8 +120,9 @@ reflows no line; only editing affordances appear or disappear.
 a link title and FR7 names character references. `RichTextEditor` and
 `RichTextView` adopt FR2–FR10 for the
 constructs they render, and their default editor theme follows FR2 and FR3.
-`@astryxdesign/core/Markdown` exports `decodeMarkdownCharacterReferences`, the
-DEC-5 decoder the RichText surfaces import with.
+`@astryxdesign/core/Markdown/parser` and `@astryxdesign/core/Markdown` export
+`decodeMarkdownCharacterReferences`, the DEC-5 decoder the RichText surfaces
+import with.
 
 ## Verification
 
@@ -183,16 +186,20 @@ reaches it.
 **Reference:** `spec:AST-061/DEC-5`
 **Decider:** cixzhang, 2026-10-06
 
-`decodeMarkdownCharacterReferences(text)`, exported from
+`decodeMarkdownCharacterReferences(text)`, exported from the server-safe
+`@astryxdesign/core/Markdown/parser` subpath and from
 `@astryxdesign/core/Markdown`, returns `text` with every valid named or
 numeric character reference replaced by the characters it names, and a
 numeric reference to NUL, a surrogate, or a code point past U+10FFFF replaced
 by U+FFFD, as CommonMark specifies; an unknown name, a reference without its
 semicolon, and all other text stay as written.
 It works on plain text and knows nothing of Markdown: each caller decides
-where it applies, so backslash escapes and code stay literal. The named
-reference table and its parser stay private to `Markdown`, so the surfaces
-cannot drift apart; no general HTML entity utility is exported.
+where it applies, so backslash escapes and code stay literal. It is the
+decoder `Markdown` itself renders with: one implementation and one named
+reference table, private to `Markdown`, so the surfaces cannot drift apart.
+This is the narrow exception to this record's non-goals on import mechanism
+and equivalent internals; every other internal stays free, and no general
+HTML entity utility is exported.
 
 ## Open questions
 
