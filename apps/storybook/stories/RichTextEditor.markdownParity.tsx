@@ -14,7 +14,8 @@
  *
  * Stable hooks for browser tests: `data-parity-sandbox` (the view),
  * `data-parity-surface` (markdown | richtext | toggle) with
- * `data-parity-mode` on the toggled surface, `data-parity-block` and
+ * `data-parity-mode` on the toggled surface, `data-parity-body` on the
+ * measured element inside each surface, `data-parity-block` and
  * `data-parity-copy` on every paired block, `data-parity-row` on each
  * measurement row, and `data-parity-anchor` on the scroll-anchor readout.
  */
@@ -30,21 +31,15 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import {Banner} from '@astryxdesign/core/Banner';
 import {Markdown} from '@astryxdesign/core/Markdown';
-import {
-  SegmentedControl,
-  SegmentedControlItem,
-} from '@astryxdesign/core/SegmentedControl';
 import {Text} from '@astryxdesign/core/Text';
+import {ToggleButton} from '@astryxdesign/core/ToggleButton';
 import {colorVars, spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {
   RichTextEditor,
   RichTextEditorAutoLinkPlugin,
   RichTextEditorToolbar,
   markdownToEditorStateJSON,
-  type Transformer,
 } from '@astryxdesign/richtext';
-import {CHECK_LIST, TRANSFORMERS} from '@lexical/markdown';
-import {CheckListPlugin} from '@lexical/react/LexicalCheckListPlugin';
 import {markdownDemoPlugins} from './Markdown.demoPlugins';
 import {
   MARKDOWN_PARITY_BLOCKS,
@@ -62,12 +57,6 @@ export const LONG_DOCUMENT_COPIES = 12;
  */
 const PAIRING_LOOKAHEAD = 4;
 
-/** Task lists need CHECK_LIST ahead of the unordered-list transformer. */
-const PLUGIN_TRANSFORMERS: readonly Transformer[] = [
-  CHECK_LIST,
-  ...TRANSFORMERS,
-];
-
 export type ParityView = 'side-by-side' | 'toggle' | 'overlay';
 export type ParityHostWidth = 'fill' | '680px';
 
@@ -77,15 +66,15 @@ export interface MarkdownParitySandboxProps {
   /** Repeat the fixture so the document is long enough to scroll. */
   isLongDocument: boolean;
   /**
-   * Render each side with the plugins it has today: the demo Markdown plugins
-   * on the read side, task lists and autolinks on the edit side.
+   * Render each side with the plugins it has today: the Storybook demo
+   * Markdown plugins on the read side, RichText's autolink plugin on the edit
+   * side.
    */
   hasPlugins: boolean;
   /** Width of each column, the way a host page might constrain it. */
   hostWidth: ParityHostWidth;
 }
 
-type Surface = 'markdown' | 'richtext';
 type Mode = 'read' | 'edit';
 
 interface Box {
@@ -106,7 +95,6 @@ interface ParityContent {
   readonly source: string;
   readonly copies: number;
   readonly hasPlugins: boolean;
-  readonly transformers: readonly Transformer[];
   readonly editorState: string;
 }
 
@@ -218,7 +206,8 @@ function rendersBlock(element: Element, block: MarkdownParityBlock): boolean {
     return normalizedText(element).includes(block.probe);
   }
   return (
-    element.tagName === 'HR' ||
+    element.matches('hr') ||
+    element.querySelector('hr') != null ||
     normalizedText(element) === block.markdown.trim()
   );
 }
@@ -249,12 +238,6 @@ function pairBlocks(root: Element, copies: number): void {
       }
     }
   }
-}
-
-function contentRoot(body: HTMLElement, surface: Surface): Element | null {
-  return surface === 'richtext'
-    ? body.querySelector('[contenteditable]')
-    : body.firstElementChild;
 }
 
 function measure(body: HTMLElement, surface: Surface): Geometry {
@@ -297,7 +280,7 @@ function useMeasuredSurface(
     const schedule = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
-        const root = contentRoot(body, surface);
+        const root = SURFACES[surface].contentRoot(body);
         if (root == null) {
           return;
         }
@@ -395,19 +378,47 @@ function RichTextEdit({content}: {content: ParityContent}) {
       label="Document"
       isLabelHidden
       defaultValue={content.editorState}
-      transformers={content.transformers}
       toolbar={<RichTextEditorToolbar />}
       plugins={
-        content.hasPlugins ? (
-          <>
-            <CheckListPlugin />
-            <RichTextEditorAutoLinkPlugin />
-          </>
-        ) : undefined
+        content.hasPlugins ? <RichTextEditorAutoLinkPlugin /> : undefined
       }
     />
   );
 }
+
+interface SurfaceDefinition {
+  /** Accessible name and caption of the surface. */
+  readonly label: string;
+  /** The element whose children are the document's top-level blocks. */
+  readonly contentRoot: (body: HTMLElement) => Element | null;
+  readonly render: (content: ParityContent) => ReactNode;
+}
+
+/**
+ * Every renderer the sandbox can measure. Pairing and measurement only need
+ * `contentRoot`, so another surface (a second editor, a compatibility spike)
+ * is one more entry here.
+ */
+const SURFACES = {
+  markdown: {
+    label: 'Markdown, read mode',
+    contentRoot: body => body.firstElementChild,
+    render: content => <MarkdownRead content={content} />,
+  },
+  richtext: {
+    label: 'RichText, edit mode',
+    contentRoot: body => body.querySelector('[contenteditable]'),
+    render: content => <RichTextEdit content={content} />,
+  },
+} satisfies Record<string, SurfaceDefinition>;
+
+type Surface = keyof typeof SURFACES;
+
+/** The in-place toggle swaps the read renderer for the edit renderer. */
+const TOGGLE_SURFACES: Readonly<Record<Mode, Surface>> = {
+  read: 'markdown',
+  edit: 'richtext',
+};
 
 interface SurfaceSectionProps {
   surface: Surface | 'toggle';
@@ -448,7 +459,9 @@ function SurfaceSection({
           {label}
         </Text>
       ) : null}
-      <div ref={bodyRef}>{children}</div>
+      <div ref={bodyRef} data-parity-body="">
+        {children}
+      </div>
     </section>
   );
 }
@@ -598,19 +611,19 @@ function PairView({
         )}>
         <SurfaceSection
           surface="markdown"
-          label="Markdown, read mode"
+          label={SURFACES.markdown.label}
           bodyRef={markdownBody}
           isHosted={isHosted && !isOverlay}
           layer={isOverlay ? 'base' : undefined}>
-          <MarkdownRead content={content} />
+          {SURFACES.markdown.render(content)}
         </SurfaceSection>
         <SurfaceSection
           surface="richtext"
-          label="RichText, edit mode"
+          label={SURFACES.richtext.label}
           bodyRef={richTextBody}
           isHosted={isHosted && !isOverlay}
           layer={isOverlay ? 'difference' : undefined}>
-          <RichTextEdit content={content} />
+          {SURFACES.richtext.render(content)}
         </SurfaceSection>
       </div>
       <Measurements
@@ -665,7 +678,7 @@ function ToggleView({
   const controls = useRef<HTMLDivElement | null>(null);
 
   const onMeasure = useCallback((geometry: Geometry) => {
-    if (geometry.surface === 'markdown') {
+    if (geometry.surface === TOGGLE_SURFACES.read) {
       setRead(geometry);
     } else {
       setEdit(geometry);
@@ -684,11 +697,8 @@ function ToggleView({
     }
   }, []);
 
-  const measuredBody = useMeasuredSurface(
-    mode === 'read' ? 'markdown' : 'richtext',
-    content.copies,
-    onMeasure,
-  );
+  const surface = TOGGLE_SURFACES[mode];
+  const measuredBody = useMeasuredSurface(surface, content.copies, onMeasure);
   const bodyRef = useCallback(
     (element: HTMLElement | null) => {
       bodyElement.current = element;
@@ -697,15 +707,15 @@ function ToggleView({
     [measuredBody],
   );
 
-  const onModeChange = (value: string) => {
-    const next: Mode = value === 'edit' ? 'edit' : 'read';
+  const onEditingChange = (isEditing: boolean) => {
+    const next: Mode = isEditing ? 'edit' : 'read';
     if (next === mode) {
       return;
     }
     pendingAnchor.current = captureAnchor(
       bodyElement.current,
       controls.current,
-      mode === 'read' ? 'markdown' : 'richtext',
+      surface,
     );
     setShift(null);
     setMode(next);
@@ -714,31 +724,25 @@ function ToggleView({
   return (
     <>
       <div ref={controls} {...stylex.props(styles.controls)}>
-        <SegmentedControl
-          label="Document mode"
-          value={mode}
-          onChange={onModeChange}>
-          <SegmentedControlItem value="read" label="Read" />
-          <SegmentedControlItem value="edit" label="Edit" />
-        </SegmentedControl>
+        <ToggleButton
+          label="Edit mode"
+          isPressed={mode === 'edit'}
+          onPressedChange={onEditingChange}
+        />
         <AnchorReadout shift={shift} />
       </div>
       <Text as="p" type="supporting">
-        Read mode renders Markdown; edit mode mounts RichTextEditor from the
-        same source. Read mode always shows the source as authored, so edits are
+        Edit mode swaps Markdown for a RichTextEditor imported from the same
+        source. Read mode always shows the source as authored, so edits are
         discarded when you switch back.
       </Text>
       <SurfaceSection
         surface="toggle"
         mode={mode}
-        label={mode === 'read' ? 'Markdown, read mode' : 'RichText, edit mode'}
+        label={SURFACES[surface].label}
         bodyRef={bodyRef}
         isHosted={hostWidth === '680px'}>
-        {mode === 'read' ? (
-          <MarkdownRead content={content} />
-        ) : (
-          <RichTextEdit content={content} />
-        )}
+        {SURFACES[surface].render(content)}
       </SurfaceSection>
       <Measurements
         left={{label: 'Read (last measured)', geometry: read}}
@@ -765,13 +769,11 @@ export function MarkdownParitySandbox({
       {length: copies},
       () => MARKDOWN_PARITY_SOURCE,
     ).join('\n');
-    const transformers = hasPlugins ? PLUGIN_TRANSFORMERS : TRANSFORMERS;
     return {
       source,
       copies,
       hasPlugins,
-      transformers,
-      editorState: markdownToEditorStateJSON(source, {transformers}),
+      editorState: markdownToEditorStateJSON(source),
     };
   }, [copies, hasPlugins]);
   // Remount on a content change: the editor reads its value once, on mount.

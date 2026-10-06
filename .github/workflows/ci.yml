@@ -1158,6 +1158,33 @@ jobs:
             --project chromium \
             --output empty-state-announcement-output
 
+      # The RichTextEditor "Markdown parity" stories render one Markdown
+      # document with core Markdown and RichTextEditor and measure where each
+      # block lands; geometry, the read/edit switch and the scroll anchor only
+      # exist in a real engine. The spec proves the sandbox still works and
+      # banks screenshots plus a geometry manifest of today's differences. It
+      # asserts no parity. Cheap enough to run on every PR, like the contract
+      # above, so a Markdown or RichText change cannot silently break it. Its
+      # own --output directory, with the upload immediately after.
+      - name: Run Markdown/RichText parity sandbox evidence
+        if: ${{ !cancelled() }}
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          pnpm exec playwright test \
+            packages/richtext/src/__tests__/MarkdownParitySandbox.a11y.chromium.spec.ts \
+            --project chromium \
+            --output richtext-markdown-parity-output
+
+      - name: Upload Markdown/RichText parity sandbox evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: richtext-markdown-parity-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: test-results/richtext-markdown-parity/
+          retention-days: 30
+          if-no-files-found: warn
+
       # Outline owns real DOM focus through roving tabindex. Computed paint,
       # pointer modality, clipping, forced colors, and exact pixels require the
       # same real Chromium artifact this blocking accessibility lane already owns.
