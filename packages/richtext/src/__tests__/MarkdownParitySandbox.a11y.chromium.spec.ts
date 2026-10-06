@@ -259,64 +259,163 @@ const MARKDOWN = '[data-parity-surface="markdown"]';
 const RICH_TEXT = '[data-parity-surface="richtext"]';
 const TOGGLE = '[data-parity-surface="toggle"]';
 
-// A wide table must scroll inside its own wrapper in the editor and the view,
-// whatever lays the editor out. Grid and flex items take their content's
-// min-content width unless told otherwise, so a wrapper sized by its table
-// widens the whole page. The Markdown Serializers story renders both surfaces
-// in a grid; the same page is then measured with the grid swapped for flex.
-test('a wide table scrolls inside its wrapper in grid and flex hosts at phone width', async ({
-  page,
-}) => {
-  const columns = Array.from({length: 20}, (_, index) => `Column ${index + 1}`);
-  const table = [
+// A table must stay inside its own wrapper in the editor and the view, however
+// the host lays them out. Grid and flex items default to their content's
+// min-content width, so a wrapper that reports its table's width widens the
+// page; a shrink-to-fit host (a chat bubble, an inline-block) must still give
+// a small table its natural width. The Markdown Serializers story renders the
+// editor and the view; each case restyles the story's layout into one host.
+// `surfaces` names which of the story's two surfaces stay in the host: a flex
+// row holds one at a time, because the editor's toolbar has its own minimum
+// width that has nothing to do with tables.
+const TABLE_HOSTS = {
+  grid: {
+    layout: 'display:grid;gap:24px;max-width:720px',
+    view: '',
+    surfaces: 'both',
+  },
+  'flex row with the editor': {
+    layout: 'display:flex;flex-direction:row;max-width:720px',
+    view: '',
+    surfaces: 'editor',
+  },
+  'flex row with the view': {
+    layout: 'display:flex;flex-direction:row;max-width:720px',
+    view: '',
+    surfaces: 'view',
+  },
+  'fit-content bubble': {
+    layout: 'display:block;max-width:720px',
+    view: 'width:fit-content;max-width:100%',
+    surfaces: 'both',
+  },
+  'inline-block': {
+    layout: 'display:block;max-width:720px',
+    view: 'display:inline-block;width:auto;max-width:100%;vertical-align:top',
+    surfaces: 'both',
+  },
+} as const;
+
+const tableSource = (columnCount: number) => {
+  const columns = Array.from(
+    {length: columnCount},
+    (_, index) => `Column ${index + 1}`,
+  );
+  return [
     `| ${columns.join(' | ')} |`,
     `| ${columns.map(() => '---').join(' | ')} |`,
     `| ${columns.map((_, index) => `value-${index + 1}`).join(' | ')} |`,
   ].join('\n');
+};
+
+for (const viewport of [PHONE, {width: 1280, height: 900}] as const) {
   for (const globals of [
     'colorMode:light;direction:ltr',
     'colorMode:dark;direction:rtl',
   ]) {
-    await page.setViewportSize(PHONE);
-    await page.goto(
-      `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;${globals}`,
-      {waitUntil: 'load'},
-    );
-    await page.locator('textarea').fill(table);
-    for (const display of ['grid', 'flex'] as const) {
-      await page.evaluate(value => {
-        const host = document
-          .querySelector('textarea')
-          ?.closest<HTMLElement>('div[style*="grid"], div[style*="flex"]');
-        if (host != null) {
-          host.style.display = value;
-          host.style.flexDirection = 'column';
+    test(`tables stay inside their wrappers in grid, flex, and shrink-to-fit hosts (${viewport.width}px, ${globals})`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await page.goto(
+        `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;${globals}`,
+        {waitUntil: 'load'},
+      );
+      for (const columnCount of [2, 20]) {
+        // Show every section so the story's textarea can take the table.
+        await page.evaluate(() => {
+          const layout = document.querySelector('[data-table-host-layout]');
+          for (const section of Array.from(layout?.children ?? [])) {
+            section.setAttribute('style', '');
+          }
+        });
+        await page.locator('textarea').fill(tableSource(columnCount));
+        await expect(page.locator('table:visible')).toHaveCount(2);
+        for (const [host, styles] of Object.entries(TABLE_HOSTS)) {
+          await page.evaluate(
+            ({layout: layoutStyle, view: viewStyle, surfaces}) => {
+              // The story lays its sections out in a grid; mark it once so later
+              // cases find it after its style changes.
+              let layout = document.querySelector<HTMLElement>(
+                '[data-table-host-layout]',
+              );
+              if (layout == null) {
+                layout =
+                  document
+                    .querySelector('textarea')
+                    ?.closest<HTMLElement>('div[style*="grid"]') ?? null;
+                layout?.setAttribute('data-table-host-layout', '');
+              }
+              if (layout == null) {
+                throw new Error('Story layout not found');
+              }
+              layout.setAttribute('style', layoutStyle);
+              // Only the surfaces this host holds stay in it.
+              for (const section of Array.from(layout.children)) {
+                const table = section.querySelector('table');
+                const isView =
+                  table?.closest('[contenteditable="false"]') != null;
+                const keep =
+                  table != null &&
+                  (surfaces === 'both' || (surfaces === 'view') === isView);
+                section.setAttribute('style', keep ? '' : 'display:none');
+              }
+              // The view itself is the shrink-to-fit box, as in a chat bubble.
+              const viewRoot = document
+                .querySelector('[contenteditable="false"] table')
+                ?.closest('[contenteditable]')?.parentElement;
+              viewRoot?.setAttribute('style', viewStyle);
+            },
+            styles,
+          );
+          await settle(page);
+          const layout = await page.evaluate(() => ({
+            pageOverflow:
+              document.documentElement.scrollWidth - window.innerWidth,
+            wrappers: [...document.querySelectorAll('table')]
+              .filter(element => element.getBoundingClientRect().width > 0)
+              .map(element => {
+                const wrapper = element.parentElement as HTMLElement;
+                return {
+                  inView: element.closest('[contenteditable="false"]') != null,
+                  clientWidth: wrapper.clientWidth,
+                  scrollWidth: wrapper.scrollWidth,
+                };
+              }),
+          }));
+          const label = `${columnCount} columns, ${host} host`;
+          expect(layout.pageOverflow, label).toBeLessThanOrEqual(0);
+          expect(layout.wrappers, label).toHaveLength(
+            styles.surfaces === 'both' ? 2 : 1,
+          );
+          for (const wrapper of layout.wrappers) {
+            expect(wrapper.clientWidth, label).toBeGreaterThan(0);
+            expect(wrapper.clientWidth, label).toBeLessThanOrEqual(
+              viewport.width,
+            );
+            if (columnCount === 20 && viewport.width === PHONE.width) {
+              // A table wider than the phone scrolls inside its wrapper.
+              expect(wrapper.scrollWidth, label).toBeGreaterThan(
+                wrapper.clientWidth,
+              );
+            } else if (columnCount === 2) {
+              // A small table fits without scrolling.
+              expect(wrapper.scrollWidth, label).toBeLessThanOrEqual(
+                wrapper.clientWidth + 1,
+              );
+            }
+          }
+          if (columnCount === 2 && styles.view !== '') {
+            // A shrink-to-fit host gives the view's small table its natural
+            // width instead of stretching or collapsing it.
+            const view = layout.wrappers.find(wrapper => wrapper.inView);
+            expect(view?.clientWidth, label).toBeLessThan(viewport.width / 2);
+          }
         }
-      }, display);
-      await settle(page);
-      const layout = await page.evaluate(() => ({
-        pageOverflow: document.documentElement.scrollWidth - window.innerWidth,
-        wrappers: [...document.querySelectorAll('table')]
-          .filter(element => element.getBoundingClientRect().width > 0)
-          .map(element => {
-            const wrapper = element.parentElement as HTMLElement;
-            return {
-              clientWidth: wrapper.clientWidth,
-              scrollWidth: wrapper.scrollWidth,
-            };
-          }),
-      }));
-      const label = `${globals}, ${display} host`;
-      expect(layout.pageOverflow, label).toBeLessThanOrEqual(0);
-      // The editor and the view each show the table.
-      expect(layout.wrappers, label).toHaveLength(2);
-      for (const wrapper of layout.wrappers) {
-        expect(wrapper.clientWidth, label).toBeLessThanOrEqual(PHONE.width);
-        expect(wrapper.scrollWidth, label).toBeGreaterThan(wrapper.clientWidth);
       }
-    }
+    });
   }
-});
+}
 
 test('side by side: one fixture renders on both surfaces', async ({page}) => {
   const errors = await openStory(page, STORY.sideBySide, DESKTOP);

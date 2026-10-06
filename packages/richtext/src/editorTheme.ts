@@ -126,10 +126,12 @@ const editorTheme = stylex.create({
   tableScrollableWrapper: {
     overflowX: 'auto',
     maxWidth: '100%',
-    // The wrapper's width comes from its container, never from the table.
-    // Without this, a grid or flex host sizes the editor to the table's
-    // min-content width and the page scrolls instead of the wrapper.
-    contain: 'inline-size',
+    // One grid track that may shrink to nothing: the wrapper asks its host
+    // for no minimum width, so a grid or flex host never grows to fit a wide
+    // table and the wrapper scrolls instead, while a shrink-to-fit host still
+    // sizes to the table's natural width.
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1fr)',
   },
   table: {
     borderCollapse: 'collapse',

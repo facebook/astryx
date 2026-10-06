@@ -186,7 +186,9 @@ describe('GFM tables', () => {
     await waitFor(() => {
       const wrapper = container.querySelector('table')?.parentElement;
       expect(wrapper?.getAttribute('contenteditable')).toBeNull();
-      expect(wrapper).toHaveStyle({contain: 'inline-size'});
+      // jsdom keeps `display` but not grid track sizes; the browser test
+      // checks what the track does.
+      expect(wrapper).toHaveStyle({display: 'grid'});
     });
   });
 
