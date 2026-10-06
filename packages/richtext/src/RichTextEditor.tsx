@@ -72,10 +72,11 @@ import {TabIndentationPlugin} from '@lexical/react/LexicalTabIndentationPlugin';
 import {MarkdownShortcutPlugin} from '@lexical/react/LexicalMarkdownShortcutPlugin';
 import {OnChangePlugin} from '@lexical/react/LexicalOnChangePlugin';
 import {TablePlugin} from '@lexical/react/LexicalTablePlugin';
-import {$convertToMarkdownString, type Transformer} from '@lexical/markdown';
+import {type Transformer} from '@lexical/markdown';
 export type {Transformer} from '@lexical/markdown';
 import {$generateHtmlFromNodes} from '@lexical/html';
 import {DEFAULT_NODES} from './editorNodes';
+import {exportMarkdownKeepingSource} from './markdownSource';
 import {DEFAULT_TRANSFORMERS} from './markdownTable';
 import {
   BLUR_COMMAND,
@@ -274,8 +275,10 @@ export interface RichTextEditorRef {
   /**
    * Serialize the current content to a Markdown string, using the same
    * `transformers` the editor is configured with (so custom transformers
-   * layered in via the `transformers` prop are honored). Equivalent to
-   * `$convertToMarkdownString` run in a read context.
+   * layered in via the `transformers` prop are honored). Content imported
+   * with `markdownToEditorStateJSON` comes back as written: blocks nobody
+   * changed byte for byte, and only edited or added blocks in canonical
+   * Markdown.
    */
   getMarkdown: () => string;
   /**
@@ -545,6 +548,11 @@ export const RichTextEditor = forwardRef<
   // and the content it holds — is unaffected by later renders (a consumer
   // passing an inline `nodes={[...]}` array would otherwise blow away the
   // editor's content on every render).
+  // The node set is fixed for the editor's lifetime, like the extension below;
+  // getMarkdown() exports through a headless editor with the same nodes.
+  const [editorNodes] = useState<ReadonlyArray<Klass<LexicalNode>>>(() =>
+    nodes ? [...DEFAULT_NODES, ...nodes] : DEFAULT_NODES,
+  );
   const extensionRef = useRef<AnyLexicalExtension | null>(null);
   if (extensionRef.current === null) {
     extensionRef.current = defineExtension({
@@ -698,6 +706,7 @@ export const RichTextEditor = forwardRef<
                 editorRef={ref}
                 editable={editable}
                 transformers={markdownTransformers}
+                nodes={editorNodes}
               />
               {maxLength != null && (
                 <CharCountPlugin onCountChange={setCharCount} />
@@ -847,10 +856,12 @@ function EditorRefBridge({
   editorRef,
   editable,
   transformers,
+  nodes,
 }: {
   editorRef: Ref<RichTextEditorRef>;
   editable: boolean;
   transformers: Array<Transformer>;
+  nodes: ReadonlyArray<Klass<LexicalNode>>;
 }): null {
   const [editor] = useLexicalComposerContext();
 
@@ -891,13 +902,15 @@ function EditorRefBridge({
       },
       getEditorState: () => editor.getEditorState(),
       getMarkdown: () =>
-        // $convertToMarkdownString must run inside a read context. Honors the
-        // same transformers the editor uses for shortcuts, so custom
-        // transformers round-trip to Markdown. `@lexical/markdown` is a
-        // subpackage (built dist) — safe, unlike a top-level `lexical` import.
-        editor
-          .getEditorState()
-          .read(() => $convertToMarkdownString(transformers)),
+        // Untouched blocks export exactly as imported and changed blocks in
+        // canonical form (spec:AST-062). Honors the same transformers the
+        // editor uses for shortcuts, so custom transformers round-trip, and
+        // runs on a throwaway headless editor, so this editor is untouched.
+        exportMarkdownKeepingSource(
+          editor.getEditorState(),
+          transformers,
+          nodes,
+        ),
       getHTML: () =>
         // $generateHtmlFromNodes serializes the whole document (null selection)
         // to HTML; must run in a read context and requires a DOM.
@@ -907,7 +920,7 @@ function EditorRefBridge({
           .read(() => $generateHtmlFromNodes(editor, null)),
       getEditor: () => editor,
     }),
-    [editor, editable, transformers],
+    [editor, editable, transformers, nodes],
   );
   return null;
 }

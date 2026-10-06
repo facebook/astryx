@@ -3,8 +3,8 @@
 /**
  * @file markdownSerializers.ts
  * @input Uses @lexical/headless (createHeadlessEditor), @lexical/markdown
- *   ($convertFromMarkdownString / $convertToMarkdownString), the shared
- *   DEFAULT_NODES set, and DEFAULT_TRANSFORMERS.
+ *   (transformer types), the shared DEFAULT_NODES set, DEFAULT_TRANSFORMERS,
+ *   and the source-preserving import and export in markdownSource.ts.
  * @output Standalone Markdown <-> serialized EditorState helpers:
  *   markdownToEditorStateJSON, editorStateJSONToMarkdown.
  * @position Re-exported from RichTextEditor/index.ts and the @astryxdesign/richtext
@@ -23,12 +23,12 @@
  */
 
 import {createHeadlessEditor} from '@lexical/headless';
-import {
-  $convertFromMarkdownString,
-  $convertToMarkdownString,
-  type Transformer,
-} from '@lexical/markdown';
+import {type Transformer} from '@lexical/markdown';
 import {DEFAULT_NODES} from './editorNodes';
+import {
+  exportMarkdownKeepingSource,
+  importMarkdownKeepingSource,
+} from './markdownSource';
 import {DEFAULT_TRANSFORMERS} from './markdownTable';
 import type {Klass, LexicalNode} from 'lexical';
 
@@ -75,12 +75,7 @@ export function markdownToEditorStateJSON(
 ): string {
   const {transformers = DEFAULT_TRANSFORMERS, nodes} = options;
   const editor = createSerializerEditor(nodes);
-  editor.update(
-    () => {
-      $convertFromMarkdownString(markdown, [...transformers]);
-    },
-    {discrete: true},
-  );
+  importMarkdownKeepingSource(editor, markdown, [...transformers]);
   return JSON.stringify(editor.getEditorState().toJSON());
 }
 
@@ -99,7 +94,9 @@ export function editorStateJSONToMarkdown(
   options: MarkdownSerializerOptions = {},
 ): string {
   const {transformers = DEFAULT_TRANSFORMERS, nodes} = options;
-  const editor = createSerializerEditor(nodes);
-  const state = editor.parseEditorState(editorStateJSON);
-  return state.read(() => $convertToMarkdownString([...transformers]));
+  return exportMarkdownKeepingSource(
+    editorStateJSON,
+    transformers,
+    nodes ? [...DEFAULT_NODES, ...nodes] : DEFAULT_NODES,
+  );
 }
