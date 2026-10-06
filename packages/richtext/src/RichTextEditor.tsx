@@ -74,6 +74,7 @@ import {OnChangePlugin} from '@lexical/react/LexicalOnChangePlugin';
 import {TablePlugin} from '@lexical/react/LexicalTablePlugin';
 import {HorizontalRuleExtension} from '@lexical/extension';
 import {TableColumnFloorPlugin} from './TableColumnFloorPlugin';
+import {CodeBlockHeaderPlugin} from './CodeBlockHeaderPlugin';
 import {type Transformer} from '@lexical/markdown';
 export type {Transformer} from '@lexical/markdown';
 import {$generateHtmlFromNodes} from '@lexical/html';
@@ -688,6 +689,7 @@ export const RichTextEditor = forwardRef<
                 hasHorizontalScroll
               />
               <TableColumnFloorPlugin />
+              <CodeBlockHeaderPlugin />
               <TabIndentationPlugin />
               <TabFocusEscapePlugin />
               {hasMarkdownShortcuts && (

@@ -22,6 +22,7 @@ import {
   fontWeightVars,
   borderVars,
   focusVars,
+  sizeVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import type {EditorThemeClasses} from 'lexical';
 
@@ -46,6 +47,10 @@ const LIST_ROW_GAP = `calc(${spacingVars['--spacing-0-5']})`;
 const LIST_ROW_FLUSH = `calc(${spacingVars['--spacing-0']})`;
 const NESTED_LIST_SPACE = `calc(${spacingVars['--spacing-2']})`;
 const RULE_SPACE = `calc(${spacingVars['--spacing-6']})`;
+const CODE_SPACE = `calc(${spacingVars['--spacing-3']})`;
+// Core CodeBlock's header (8px, a small control, 8px) overlaps the code's
+// 12px top padding by 8px, so its code starts 8px + control + 12px down.
+const CODE_HEADER_SPACE = `calc(${spacingVars['--spacing-2']} + ${sizeVars['--size-element-sm']} + ${spacingVars['--spacing-3']})`;
 
 const editorTheme = stylex.create({
   // Lexical marks every top-level block `dir="auto"`, which picks each
@@ -352,13 +357,28 @@ const editorTheme = stylex.create({
     outlineColor: focusVars['--focus-outline-color'],
     outlineOffset: focusVars['--focus-outline-offset'],
   },
+  // Fenced code in core CodeBlock's frame: syntax background, a border, the
+  // code type size, and room at the top for the header that
+  // CodeBlockHeaderPlugin draws over a block that names its language. Long
+  // lines wrap rather than scroll: a scrolling region inside the editable
+  // text cannot take keyboard focus of its own, so keyboard users could not
+  // scroll it (axe scrollable-region-focusable).
   code: {
     display: 'block',
     fontFamily: typographyVars['--font-family-code'],
-    backgroundColor: colorVars['--color-background-muted'],
-    padding: spacingVars['--spacing-3'],
-    borderRadius: radiusVars['--radius-inner'],
-    fontSize: typeScaleVars['--text-supporting-size'],
+    fontSize: typeScaleVars['--text-code-size'],
+    lineHeight: typeScaleVars['--text-code-leading'],
+    backgroundColor: 'var(--color-syntax-background)',
+    borderWidth: borderVars['--border-width'],
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-border'],
+    borderRadius: radiusVars['--radius-element'],
+    paddingBlockStart: {
+      default: CODE_SPACE,
+      ':is([data-language])': CODE_HEADER_SPACE,
+    },
+    paddingBlockEnd: spacingVars['--spacing-3'],
+    paddingInline: spacingVars['--spacing-4'],
     marginBlockStart: {
       default: WIDE_BLOCK_SPACE,
       ':first-child': spacingVars['--spacing-0'],
@@ -368,6 +388,8 @@ const editorTheme = stylex.create({
       ':last-child': spacingVars['--spacing-0'],
     },
     whiteSpace: 'pre-wrap',
+    // An unbroken token wider than the block (a long URL or hash) wraps too.
+    overflowWrap: 'anywhere',
   },
 });
 

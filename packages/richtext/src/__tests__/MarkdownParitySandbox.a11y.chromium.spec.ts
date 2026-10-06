@@ -52,7 +52,7 @@ const AXE_DISABLED_RULES = [
 const DESKTOP = {width: 1440, height: 900} as const;
 const PHONE = {width: 390, height: 844} as const;
 
-type Viewport = typeof DESKTOP | typeof PHONE;
+type Viewport = {readonly width: number; readonly height: number};
 
 interface BlockGeometry {
   readonly key: string;
@@ -340,6 +340,109 @@ test('a rule at either edge of the document adds no outer margin', async ({
     ['0px', '24px', '24px', '0px'],
     ['0px', '24px', '24px', '0px'],
   ]);
+});
+
+// spec:AST-061 FR8: a fenced code block has the same frame and header on
+// both surfaces, so the code sits at the same place; the header is not part
+// of the editable text.
+for (const viewport of [DESKTOP, {width: 2200, height: 900}] as const) {
+  test(`side by side: a fenced code block has core Markdown's frame and header (${viewport.width}px)`, async ({
+    page,
+  }) => {
+    const errors = await openStory(page, STORY.sideBySide, viewport);
+    await waitForDocument(page, MARKDOWN);
+    await waitForDocument(page, RICH_TEXT);
+    const markdown = await surfaceGeometry(page, MARKDOWN);
+    const richText = await surfaceGeometry(page, RICH_TEXT);
+    const code = (geometry: SurfaceGeometry) =>
+      geometry.blocks.find(block => block.key === 'code-fence');
+    expect(
+      Math.abs((code(richText)?.height ?? 0) - (code(markdown)?.height ?? 0)),
+    ).toBeLessThanOrEqual(2);
+    // A wide block spans the editor's content box, past the prose measure
+    // on a wide surface (spec:AST-061 FR4).
+    const span = await page.evaluate(selector => {
+      const root = document.querySelector<HTMLElement>(
+        `${selector} [data-lexical-editor]`,
+      );
+      // The fenced block, not the inline code in the first paragraph.
+      const block = root?.querySelector(':scope > code');
+      if (root == null || block == null) {
+        return null;
+      }
+      const style = getComputedStyle(root);
+      return {
+        block: block.getBoundingClientRect().width,
+        content:
+          root.clientWidth -
+          parseFloat(style.paddingLeft) -
+          parseFloat(style.paddingRight),
+      };
+    }, RICH_TEXT);
+    expect(
+      Math.abs((span?.block ?? 0) - (span?.content ?? 0)),
+    ).toBeLessThanOrEqual(1);
+    if (viewport.width > DESKTOP.width) {
+      expect(span?.block ?? 0).toBeGreaterThan(680);
+    }
+    const header = page.locator(`${RICH_TEXT} [data-richtext-code-header]`);
+    await expect(header).toHaveCount(1);
+    await expect(header).toContainText('ts');
+    await expect(header.getByRole('button', {name: 'Copy code'})).toBeVisible();
+    expect(
+      await header.evaluate(element => element.closest('[contenteditable]')),
+    ).toBeNull();
+    // The header spans the block, inside its border.
+    const widths = await page.evaluate(selector => {
+      const block = document.querySelector(`${selector} code[data-language]`);
+      const head = document.querySelector(
+        `${selector} [data-richtext-code-header]`,
+      );
+      return [
+        (block as HTMLElement | null)?.clientWidth,
+        head?.getBoundingClientRect().width,
+      ];
+    }, RICH_TEXT);
+    expect(widths[1]).toBe(widths[0]);
+    expect(errors).toEqual([]);
+  });
+}
+
+// A long unbroken line wraps inside the code frame at phone width instead of
+// widening the page, and the copy button copies the block from the keyboard,
+// in the editor and the view.
+test('code blocks wrap long lines at phone width and copy from the keyboard', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.setViewportSize(PHONE);
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
+    {waitUntil: 'load'},
+  );
+  const token = 'x'.repeat(160);
+  await page
+    .locator('textarea')
+    .fill(`\`\`\`ts\nconst id = "${token}";\n\`\`\``);
+  await expect(page.locator('[data-richtext-code-header]')).toHaveCount(2);
+  const layout = await page.evaluate(() => ({
+    pageOverflow: document.documentElement.scrollWidth - window.innerWidth,
+    blocks: [...document.querySelectorAll('[data-lexical-editor] code')].map(
+      code => code.scrollWidth - code.clientWidth,
+    ),
+  }));
+  expect(layout.pageOverflow).toBeLessThanOrEqual(0);
+  expect(layout.blocks).toEqual([0, 0]);
+  const copy = page
+    .locator('[data-richtext-code-header]')
+    .last()
+    .getByRole('button', {name: 'Copy code'});
+  await copy.focus();
+  await page.keyboard.press('Enter');
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    `const id = "${token}";`,
+  );
 });
 
 for (const viewport of [PHONE, {width: 1280, height: 900}] as const) {

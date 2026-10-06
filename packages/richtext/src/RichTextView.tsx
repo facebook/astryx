@@ -32,6 +32,7 @@ import {LexicalErrorBoundary} from '@lexical/react/LexicalErrorBoundary';
 import {TablePlugin} from '@lexical/react/LexicalTablePlugin';
 import {TableScrollRegionPlugin} from './TableScrollRegionPlugin';
 import {TableColumnFloorPlugin} from './TableColumnFloorPlugin';
+import {CodeBlockHeaderPlugin} from './CodeBlockHeaderPlugin';
 import type {
   AnyLexicalExtension,
   Klass,
@@ -45,6 +46,8 @@ import {DEFAULT_NODES} from './editorNodes';
 const styles = stylex.create({
   root: {
     width: '100%',
+    // Holds the code block headers drawn over the content.
+    position: 'relative',
   },
 });
 
@@ -285,6 +288,8 @@ export function RichTextView({
           placeholder={null}
           ErrorBoundary={LexicalErrorBoundary}
         />
+        {/* After the content, so the copy buttons follow it in tab order. */}
+        <CodeBlockHeaderPlugin />
         {plugins}
       </LexicalExtensionComposer>
     </div>
