@@ -113,6 +113,8 @@ import {setResultCoverage} from './coverage.mjs';
  * @typedef {object} Candidate
  * @property {'component'|'hook'|'doc'|'template'|'theme'} domain
  * @property {string} name
+ * @property {string[]} [aliases] - Other names the candidate answers to, scored
+ *   with the same name signals: a theme's display name.
  * @property {string[]} [keywords]
  * @property {string[]} [weakKeywords]
  * @property {string} [description]
@@ -717,6 +719,7 @@ export function scoreQuery(term, tokens, candidate) {
  * @param {string} term - Lowercased search term.
  * @param {object} candidate
  * @param {string} candidate.name - Primary identifier (component/hook name, topic, template name).
+ * @param {string[]} [candidate.aliases] - Other names, scored like the name (a theme's display name).
  * @param {string} [candidate.domain] - A component, hook, or template name
  *   also matches typed as words: `command palette` is CommandPalette.
  * @param {string[]} [candidate.keywords] - Authored intent (componentsUsed, category words).
@@ -731,6 +734,7 @@ export function scoreCandidate(
   term,
   {
     name,
+    aliases = [],
     domain,
     keywords = [],
     weakKeywords = [],
@@ -753,40 +757,44 @@ export function scoreCandidate(
     }
   };
 
-  const nameLower = name.toLowerCase();
-  // A placed guide's name is its route, and the route's last segment is its
-  // name too, as a flat topic's is: `codemods` is cli/integrations/codemods.
-  const leafLower = nameLower.slice(nameLower.lastIndexOf('/') + 1);
-
   // ── Name signals ────────────────────────────────────────────────
-  // A plural of the name is the name: `integration` is the `integrations`
-  // guides, `tab` the `tabs` doc.
-  // A component, hook, or template name typed as words is its name:
-  // `command palette` is CommandPalette. A doc's name is a route or key,
-  // matched as written.
-  const spelled =
-    domain !== 'doc' &&
-    !/[\s_-]/.test(nameLower) &&
-    nameLower === term.replace(/\s+/g, '');
-  if (nameLower === term || leafLower === term || spelled) {
-    consider(100, 'exact name');
-  } else if (pluralOf(nameLower, term) || pluralOf(term, nameLower)) {
-    // One point under the exact spelling, so the doc named `tokens` still
-    // outranks the Token component for `tokens`.
-    consider(99, 'plural of the name');
-  } else {
-    if (sameWord(term, nameLower)) consider(95, `name "${name}"`);
-    // The term is a word of the name, or starts one: "input" in TextInput.
-    else if (startsAWordOf(term, name)) {
-      consider(60, `name contains "${term}"`);
-    }
-    if (fuzzy) {
-      const dist = levenshteinDistance(term, nameLower);
-      if (isTypo(term, nameLower, dist)) {
-        consider(
-          dist === 1 ? 80 : dist === 2 ? 40 : 20,
-          `similar name (distance ${dist})`,
-        );
+  // An alias is a name too: a theme answers to its display name as well as
+  // its slug.
+  for (const candidateName of [name, ...aliases.filter(Boolean)]) {
+    const nameLower = candidateName.toLowerCase();
+    // A placed guide's name is its route, and the route's last segment is its
+    // name too, as a flat topic's is: `codemods` is cli/integrations/codemods.
+    const leafLower = nameLower.slice(nameLower.lastIndexOf('/') + 1);
+
+    // A plural of the name is the name: `integration` is the `integrations`
+    // guides, `tab` the `tabs` doc.
+    // A component, hook, or template name typed as words is its name:
+    // `command palette` is CommandPalette. A doc's name is a route or key,
+    // matched as written.
+    const spelled =
+      domain !== 'doc' &&
+      !/[\s_-]/.test(nameLower) &&
+      nameLower === term.replace(/\s+/g, '');
+    if (nameLower === term || leafLower === term || spelled) {
+      consider(100, 'exact name');
+    } else if (pluralOf(nameLower, term) || pluralOf(term, nameLower)) {
+      // One point under the exact spelling, so the doc named `tokens` still
+      // outranks the Token component for `tokens`.
+      consider(99, 'plural of the name');
+    } else {
+      if (sameWord(term, nameLower)) consider(95, `name "${candidateName}"`);
+      // The term is a word of the name, or starts one: "input" in TextInput.
+      else if (startsAWordOf(term, candidateName)) {
+        consider(60, `name contains "${term}"`);
+      }
+      if (fuzzy) {
+        const dist = levenshteinDistance(term, nameLower);
+        if (isTypo(term, nameLower, dist)) {
+          consider(
+            dist === 1 ? 80 : dist === 2 ? 40 : 20,
+            `similar name (distance ${dist})`,
+          );
+        }
       }
     }
   }
@@ -1487,6 +1495,12 @@ async function gatherTemplates(cwd) {
  * Build theme candidates from bundled and integration-provided themes. Without
  * this, an integration's themes are invisible to `search` even though
  * `theme list` and `discover` already resolve them.
+ *
+ * A theme's slug and display name are its names, and its description is prose
+ * (`spec:AST-050/FR14`). A theme declares no keywords, so a word it shares with
+ * the query only through its description is a description mention: read as a
+ * keyword, every word of the description would outrank the components and docs
+ * that declare that word.
  * @param {string} cwd
  * @returns {Promise<Candidate[]>}
  */
@@ -1500,10 +1514,7 @@ async function gatherThemes(cwd) {
   return themes.map(t => ({
     domain: 'theme',
     name: t.slug,
-    keywords: [
-      t.displayName,
-      ...(t.description ? t.description.split(/[^A-Za-z0-9]+/).filter(w => w.length > 3) : []),
-    ],
+    aliases: t.displayName ? [t.displayName] : [],
     description: t.description || '',
     _displayName: t.displayName,
     _package: t.package,
