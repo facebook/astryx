@@ -174,7 +174,7 @@ describe('GFM tables', () => {
     });
   });
 
-  it('renders a table from the editor in RichTextView', () => {
+  it('renders a table from the editor in RichTextView, inside a scroll wrapper', async () => {
     const {container} = render(
       <RichTextView
         value={markdownToEditorStateJSON(
@@ -188,5 +188,10 @@ describe('GFM tables', () => {
     expect(
       [...container.querySelectorAll('td')].map(cell => cell.textContent),
     ).toEqual(['Ada', 'Engineer']);
+    await waitFor(() => {
+      const wrapper = container.querySelector('table')?.parentElement;
+      expect(wrapper?.tagName).toBe('DIV');
+      expect(wrapper?.getAttribute('contenteditable')).toBeNull();
+    });
   });
 });
