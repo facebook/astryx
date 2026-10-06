@@ -907,6 +907,88 @@ for (const globals of [
     }
   });
 }
+// spec:AST-061 FR7: struck-through text is a deletion on both surfaces, as
+// core Markdown's <del> is, and nothing else is.
+test('side by side: strikethrough is a deletion on both surfaces', async ({
+  page,
+}) => {
+  const errors = await openStory(page, STORY.sideBySide, DESKTOP);
+  await waitForDocument(page, MARKDOWN);
+  await waitForDocument(page, RICH_TEXT);
+  const markdown = page.locator(MARKDOWN).getByRole('deletion');
+  const richText = page.locator(RICH_TEXT).getByRole('deletion');
+  await expect(markdown).toHaveCount(1);
+  await expect(richText).toHaveCount(1);
+  expect(await richText.textContent()).toBe(await markdown.textContent());
+  expect(errors).toEqual([]);
+});
+
+// spec:AST-061 FR7: struck text is a deletion around the strong, emphasis,
+// or link text it also is, in the editor and the view, and stays one as it
+// is edited.
+test('struck text is a deletion around its other marks, and stays one while edited', async ({
+  page,
+}) => {
+  await page.setViewportSize(DESKTOP);
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
+    {waitUntil: 'load'},
+  );
+  await page
+    .locator('textarea')
+    .fill(
+      'Keep ~~plain~~, **~~bold~~**, *~~italic~~*, ***~~both~~***, and [~~link~~](https://example.com).',
+    );
+  const surfaces = page.locator('[data-lexical-editor]:visible');
+  await expect(surfaces).toHaveCount(2);
+  for (const surface of [surfaces.nth(0), surfaces.nth(1)]) {
+    const deletions = surface.getByRole('deletion');
+    await expect(deletions).toHaveCount(5);
+    await expect(deletions).toHaveText([
+      'plain',
+      'bold',
+      'italic',
+      'both',
+      'link',
+    ]);
+    // Each deletion keeps the role of what is inside it.
+    await expect(deletions.nth(1).getByRole('strong')).toHaveText('bold');
+    await expect(deletions.nth(2).getByRole('emphasis')).toHaveText('italic');
+    await expect(deletions.nth(3).getByRole('strong')).toHaveText('both');
+    await expect(
+      surface.getByRole('link', {name: 'link'}).getByRole('deletion'),
+    ).toHaveText('link');
+    // Nothing is a deletion by role in place of its own role.
+    await expect(surface.locator('[role="deletion"]')).toHaveCount(0);
+  }
+  // Typing in struck text, at its end or inside it, stays struck; undo
+  // takes it back.
+  const editor = page.locator('[data-lexical-editor][contenteditable="true"]');
+  // The caret, at the end of the struck word; Lexical reads the selection
+  // when the browser reports it changed, so wait for the browser to have it.
+  const caret = () =>
+    page.evaluate(() => {
+      const selection = getSelection();
+      return `${selection?.anchorNode?.textContent}@${selection?.anchorOffset}`;
+    });
+  await editor.getByText('plain', {exact: true}).dblclick();
+  await expect(editor).toBeFocused();
+  await page.keyboard.press('ArrowRight');
+  await expect.poll(caret).toBe('plain@5');
+  await page.waitForTimeout(50);
+  await page.keyboard.type('er');
+  await expect(editor.getByRole('deletion').first()).toHaveText('plainer');
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(editor.getByRole('deletion').first()).toHaveText('plain');
+  await editor.getByText('plain', {exact: true}).dblclick();
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowRight');
+  await expect.poll(caret).toBe('plain@2');
+  await page.waitForTimeout(50);
+  await page.keyboard.type('XY');
+  await expect(editor.getByRole('deletion').first()).toHaveText('plXYain');
+});
 
 for (const viewport of [PHONE, {width: 1280, height: 900}] as const) {
   for (const globals of [

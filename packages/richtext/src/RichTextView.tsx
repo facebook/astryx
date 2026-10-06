@@ -41,6 +41,7 @@ import type {
   EditorThemeClasses,
 } from 'lexical';
 import {defineExtension} from 'lexical';
+import {StrikethroughDeletionExtension} from './strikethroughDeletion';
 // The same node set as the editor, so anything it writes renders here.
 import {DEFAULT_NODES} from './editorNodes';
 
@@ -260,6 +261,8 @@ export function RichTextView({
       theme: themeRef.current,
       editable: false,
       nodes: nodes ? [...DEFAULT_NODES, ...nodes] : [...DEFAULT_NODES],
+      // Struck text is a deletion.
+      dependencies: [StrikethroughDeletionExtension],
       $initialEditorState: value,
       // A read-only view renders persisted content; a bad node/schema should not
       // crash the host. Surface it via onParseError + fallback instead of re-throwing.

@@ -73,6 +73,7 @@ import {MarkdownShortcutPlugin} from '@lexical/react/LexicalMarkdownShortcutPlug
 import {OnChangePlugin} from '@lexical/react/LexicalOnChangePlugin';
 import {TablePlugin} from '@lexical/react/LexicalTablePlugin';
 import {HorizontalRuleExtension} from '@lexical/extension';
+import {StrikethroughDeletionExtension} from './strikethroughDeletion';
 import {TableColumnFloorPlugin} from './TableColumnFloorPlugin';
 import {CodeBlockHeaderPlugin} from './CodeBlockHeaderPlugin';
 import {TaskCheckboxPlugin} from './TaskCheckboxPlugin';
@@ -560,8 +561,9 @@ export const RichTextEditor = forwardRef<
       theme: themeRef.current,
       editable,
       nodes: nodes ? [...DEFAULT_NODES, ...nodes] : [...DEFAULT_NODES],
-      // Horizontal rules select on click and show their selection.
-      dependencies: [HorizontalRuleExtension],
+      // Horizontal rules select on click and show their selection; struck
+      // text is a deletion.
+      dependencies: [HorizontalRuleExtension, StrikethroughDeletionExtension],
       // `undefined` (not `null`) leaves Lexical's default initializer in place,
       // which seeds the empty document with one paragraph — what
       // LexicalComposer did when no `editorState` was given. `null` would mean
