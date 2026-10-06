@@ -45,6 +45,7 @@ const LIST_ITEM_SPACE = `calc(${spacingVars['--spacing-1']})`;
 const LIST_ROW_GAP = `calc(${spacingVars['--spacing-0-5']})`;
 const LIST_ROW_FLUSH = `calc(${spacingVars['--spacing-0']})`;
 const NESTED_LIST_SPACE = `calc(${spacingVars['--spacing-2']})`;
+const RULE_SPACE = `calc(${spacingVars['--spacing-6']})`;
 
 const editorTheme = stylex.create({
   paragraph: {
@@ -322,7 +323,14 @@ const editorTheme = stylex.create({
     borderTopWidth: borderVars['--border-width'],
     borderTopStyle: 'solid',
     borderTopColor: colorVars['--color-border'],
-    marginBlock: spacingVars['--spacing-6'],
+    marginBlockStart: {
+      default: RULE_SPACE,
+      ':first-child': spacingVars['--spacing-0'],
+    },
+    marginBlockEnd: {
+      default: RULE_SPACE,
+      ':last-child': spacingVars['--spacing-0'],
+    },
   },
   // A selected rule (click, or arrow onto it) shows the focus ring, so
   // keyboard users can see what Backspace will delete.

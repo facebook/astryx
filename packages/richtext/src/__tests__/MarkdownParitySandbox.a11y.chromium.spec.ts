@@ -308,6 +308,40 @@ const tableSource = (columnCount: number) => {
   ].join('\n');
 };
 
+// spec:AST-061 FR3: a rule at the start or end of a document adds no margin
+// at that edge, like every other block, in the editor and the view.
+test('a rule at either edge of the document adds no outer margin', async ({
+  page,
+}) => {
+  await page.setViewportSize(DESKTOP);
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
+    {waitUntil: 'load'},
+  );
+  await page.locator('textarea').fill('---\n\nBetween the rules.\n\n---');
+  await expect(page.locator('hr:visible')).toHaveCount(4);
+  const margins = await page.evaluate(() =>
+    [...document.querySelectorAll('[data-lexical-editor]')]
+      .filter(root => root.querySelector('hr') != null)
+      .map(root => {
+        const rules = root.querySelectorAll('hr');
+        const first = getComputedStyle(rules[0]);
+        const last = getComputedStyle(rules[rules.length - 1]);
+        return [
+          first.marginTop,
+          first.marginBottom,
+          last.marginTop,
+          last.marginBottom,
+        ];
+      }),
+  );
+  // Editor and view: no margin at the outer edges, the full 24px inside.
+  expect(margins).toEqual([
+    ['0px', '24px', '24px', '0px'],
+    ['0px', '24px', '24px', '0px'],
+  ]);
+});
+
 for (const viewport of [PHONE, {width: 1280, height: 900}] as const) {
   for (const globals of [
     'colorMode:light;direction:ltr',
@@ -488,6 +522,7 @@ test('side by side: shared blocks match core Markdown typography, spacing, and m
                 padding: getComputedStyle(rows[0]).paddingTop,
               };
         })(),
+        rule: styleOf(block('thematic-break', 'hr')),
         // The text inside a header cell, where each surface draws it.
         tableHeader: (() => {
           const cell = block('table', 'table')?.querySelector('th');
@@ -523,6 +558,15 @@ test('side by side: shared blocks match core Markdown typography, spacing, and m
   }
   expect(richText.strong).toBe(markdown.strong);
   expect(richText.listRows, 'list rows').toEqual(markdown.listRows);
+  for (const property of [
+    'marginTop',
+    'marginBottom',
+    'borderLeftWidth',
+  ] as const) {
+    expect(richText.rule?.[property], `rule ${property}`).toBe(
+      markdown.rule?.[property],
+    );
+  }
   expect(richText.tableHeader, 'table header text').toEqual(
     markdown.tableHeader,
   );
