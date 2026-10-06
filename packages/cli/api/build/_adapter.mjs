@@ -101,13 +101,14 @@ let weights;
  * @returns {import('./kit/weights.mjs').WeightsFile | null}
  */
 export function loadWeights() {
-  if (weights !== undefined) return weights;
-  try {
-    weights = JSON.parse(
-      fs.readFileSync(new URL('./kit/weights.json', import.meta.url), 'utf8'),
-    );
-  } catch {
-    weights = null;
+  if (weights === undefined) {
+    try {
+      weights = JSON.parse(
+        fs.readFileSync(new URL('./kit/weights.json', import.meta.url), 'utf8'),
+      );
+    } catch {
+      weights = null;
+    }
   }
-  return weights;
+  return weights ?? null;
 }

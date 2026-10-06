@@ -23,6 +23,7 @@ export const SHELL = 'SHELL';
 const SHELL_FAMILY = 'Shell';
 
 // The Porter (1980) stemmer.
+/** @type {Record<string, string>} */
 const STEP2 = {
   ational: 'ate',
   tional: 'tion',
@@ -46,6 +47,7 @@ const STEP2 = {
   biliti: 'ble',
   logi: 'log',
 };
+/** @type {Record<string, string>} */
 const STEP3 = {
   icate: 'ic',
   ative: '',
@@ -177,6 +179,7 @@ function tableScores(table, index, words, n) {
   return out;
 }
 
+/** @param {number} x */
 const round4 = x => Math.round(x * 1e4) / 1e4;
 
 /**
