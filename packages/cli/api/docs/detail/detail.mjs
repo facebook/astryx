@@ -44,12 +44,12 @@ export async function detail(topic, options = {}) {
       ...view,
       // Each section names the package that wrote it: the topic's own, or an
       // extension's.
-      sections: view.sections.map(({id, title, ...rest}) => ({
-        id,
-        title,
-        package: sectionPackage(id),
-        ...rest,
-      })),
+      sections: view.sections.map(
+        (/** @type {import('../docs.type.mjs').DocsReadSection} */ section) => {
+          const {id, title, ...rest} = section;
+          return {id, title, package: sectionPackage(id), ...rest};
+        },
+      ),
       // A guide the docs tree places is read by its route, not its doc name.
       ...(entry.tree ? {name: entry.name} : {}),
       links: await topicLinks(catalog, entry),

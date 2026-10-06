@@ -124,13 +124,18 @@
  */
 
 /**
- * @typedef {object} DocsIndexSection
+ * One section of a topic's index, before it names its package.
+ * @typedef {object} DocsIndexEntry
  * @property {string} id stable key; pass it as the section argument
  * @property {string} title
- * @property {string} package the npm package that wrote the section: the
- *   topic's own, or the extension's that contributed it
  * @property {string} summary the section's first line of text, at most 240
  *   characters
+ */
+
+/**
+ * One section of a topic's index, naming the package that wrote it: the
+ * topic's own, or the extension's that contributed it.
+ * @typedef {DocsIndexEntry & {package: string}} DocsIndexSection
  */
 
 /**

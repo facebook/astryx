@@ -2,11 +2,6 @@
 '@astryxdesign/cli': patch
 ---
 
-[feat] Every CLI artifact response now names its source package. Component detail
-projections (props, blocks, showcase, source), docs reads (topic, index,
-section), docs-tree node children, build-kit recommendations, and upgrade
-codemod lists all carry a `package` field identifying the npm package that
-owns the artifact. Props uses `meta.package` (array data). Verbatim-piped
-source and showcase bodies are exempt.
+[feat] Every result now names the package it comes from. A `--json` result about one artifact (a component and each of its projections, a doc topic, index, section, or docs-tree node, a template, a hook, `swizzle`, and `theme add`) carries `package` in its envelope, directly after `type`. A result that lists artifacts gives each item its own `package`: every `search` hit, `build`'s start, alternatives, blocks, and components, a doc's sections, a docs-tree node's children, `--blocks` entries, and the `component --list` and `upgrade --list` entries. Text names the same package; `--source`, `--showcase`, and a template's source still print only the source. Existing fields are unchanged.
 
 @josephfarina

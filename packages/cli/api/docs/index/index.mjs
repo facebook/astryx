@@ -37,11 +37,11 @@ export async function index(topic, options = {}) {
     name: entry.tree ? entry.name : view.name,
     // Each section names the package that wrote it: the topic's own, or an
     // extension's.
-    sections: view.sections.map(({id, title, ...rest}) => ({
-      id,
-      title,
-      package: sectionPackage(id),
-      ...rest,
+    sections: view.sections.map(s => ({
+      id: s.id,
+      title: s.title,
+      package: sectionPackage(s.id),
+      summary: s.summary,
     })),
     links: await topicLinks(catalog, entry),
   };
