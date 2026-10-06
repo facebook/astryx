@@ -1819,6 +1819,8 @@ export interface DocSection {
   /** Stable key readers address the section by: astryx docs <topic> <id>. */
   id?: string;
   title: string;
+  /** The npm package that wrote the section, as the CLI's docs read names it. */
+  package?: string;
   content: ContentBlock[];
   previewType?: string;
   category?: string;
