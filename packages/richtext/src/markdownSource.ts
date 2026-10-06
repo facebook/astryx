@@ -47,6 +47,7 @@ import {
   type LexicalNode,
 } from 'lexical';
 import {isMarkedHardLineBreak} from './markdownHardLineBreak';
+import {normalizeListIndentation} from './markdownListIndentation';
 
 /** The whitespace and content one chunk of Markdown source was split into. */
 export interface MarkdownChunk {
@@ -290,6 +291,10 @@ export function importMarkdownKeepingSource(
   const byteOrderMark = markdown.startsWith('\uFEFF');
   const body = byteOrderMark ? markdown.slice(1) : markdown;
   const chunks = splitMarkdownChunks(body);
+  // Lexical reads the same chunks with list nesting spelled its way; the
+  // records keep the authored bytes. Only list item indentation changes, so
+  // the chunks line up one for one.
+  const importChunks = splitMarkdownChunks(normalizeListIndentation(body));
   const lineEnding = lineEndingOf(body, '\n');
   editor.update(
     () => {
@@ -304,7 +309,7 @@ export function importMarkdownKeepingSource(
         root.append(holder);
         // Lexical imports LF lines; the record keeps the authored endings.
         $convertFromMarkdownString(
-          withoutCarriageReturns(chunk.content),
+          withoutCarriageReturns(importChunks[index]?.content ?? chunk.content),
           transformers,
           holder,
         );

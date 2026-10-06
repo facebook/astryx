@@ -23,6 +23,7 @@ import {
   type SerializedLexicalNode,
 } from 'lexical';
 import {DEFAULT_NODES} from './editorNodes';
+import {normalizeListIndentation} from './markdownListIndentation';
 import {DEFAULT_TRANSFORMERS} from './markdownTable';
 import {
   editorStateJSONToMarkdown,
@@ -335,8 +336,9 @@ describe('Markdown source preservation (spec:AST-062)', () => {
 
   it('imports the same structure as importing the whole document at once', () => {
     // Node state aside, chunked import must build exactly the tree Lexical's
-    // own import builds, soft breaks joined: lazy continuation lines, loose
-    // lists, and line breaks all land in the same blocks.
+    // own import builds from the list-normalized document, soft breaks
+    // joined: lazy continuation lines, loose lists, and line breaks all land
+    // in the same blocks.
     const structureOf = (json: string): unknown =>
       JSON.parse(json, (key, value: unknown) =>
         key === '$' ? undefined : value,
@@ -352,7 +354,9 @@ describe('Markdown source preservation (spec:AST-062)', () => {
       editor.update(
         () => {
           $convertFromMarkdownString(
-            markdown.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n'),
+            normalizeListIndentation(
+              markdown.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n'),
+            ),
             [...DEFAULT_TRANSFORMERS],
           );
           $joinSoftLineBreaks($getRoot());
