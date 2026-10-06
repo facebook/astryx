@@ -569,6 +569,40 @@ describe('nodes inside marks (spec:AST-064 FR5, FR10)', () => {
   });
 });
 
+describe('a mark on a node alone (spec:AST-064 FR10)', () => {
+  it('exports when only the node changes, and reads back inside the mark', () => {
+    const editor = createHeadlessEditor({
+      nodes: [...DEFAULT_NODES],
+      onError(error) {
+        throw error;
+      },
+    });
+    importMarkdownKeepingSource(
+      editor,
+      'Ping @{ada} about it.\n',
+      [...DEFAULT_TRANSFORMERS],
+      PLUGINS,
+    );
+    editor.update(
+      () => {
+        const node = $getRoot().getAllTextNodes()[0]?.getNextSibling();
+        if (!$isRichTextExtensionNode(node)) {
+          throw new Error('No plugin node');
+        }
+        node.setFormatFlag('bold', true);
+      },
+      {discrete: true},
+    );
+    const exported = editor
+      .getEditorState()
+      .read(() => $exportMarkdownKeepingSource([...DEFAULT_TRANSFORMERS]));
+    expect(exported).toBe('Ping **@{ada}** about it.\n');
+    expect(
+      formatsOf(markdownToEditorStateJSON(exported, {extensions: EXTENSIONS})),
+    ).toEqual([['@{ada}', 1]]);
+  });
+});
+
 describe('a block after a paragraph line (spec:AST-064 FR5)', () => {
   it('splits the paragraph around the block node, as core reads it', () => {
     const markdown = 'Intro line\n:::note\nBody\n:::\nAfter line\n';
@@ -634,7 +668,7 @@ describe('plugin nodes as HTML (spec:AST-064 FR7)', () => {
     const source = editorWith();
     importMarkdownKeepingSource(
       source,
-      'Hi @{ada}.\n\n:::note\nBody **bold**\n:::\n',
+      'Hi @{ada}, *see @{grace}*.\n\n:::note\nBody **bold**\n:::\n',
       [...DEFAULT_TRANSFORMERS],
       PLUGINS,
     );
@@ -651,26 +685,30 @@ describe('plugin nodes as HTML (spec:AST-064 FR7)', () => {
       {discrete: true},
     );
     const facts = (editor: typeof source) =>
-      editor
-        .getEditorState()
-        .read(() =>
-          [...$getRoot().getChildren()]
-            .flatMap(node =>
-              $isRichTextExtensionNode(node)
-                ? [node]
-                : 'getChildren' in node &&
-                    typeof node.getChildren === 'function'
-                  ? (node.getChildren() as Array<unknown>).filter(
-                      $isRichTextExtensionNode as (value: unknown) => boolean,
-                    )
-                  : [],
-            )
-            .map(node => (node as RichTextExtensionNode).getFacts()),
-        );
+      editor.getEditorState().read(() =>
+        [...$getRoot().getChildren()]
+          .flatMap(node =>
+            $isRichTextExtensionNode(node)
+              ? [node]
+              : 'getChildren' in node && typeof node.getChildren === 'function'
+                ? (node.getChildren() as Array<unknown>).filter(
+                    $isRichTextExtensionNode as (value: unknown) => boolean,
+                  )
+                : [],
+          )
+          .map(node => ({
+            ...(node as RichTextExtensionNode).getFacts(),
+            format: (node as RichTextExtensionNode).getFormat(),
+          })),
+      );
     expect(facts(target)).toEqual(facts(source));
-    expect(facts(source).map(({source: text}) => text)).toEqual([
-      '@{ada}',
-      ':::note\nBody **bold**\n:::',
+    // The node inside emphasis keeps its italic format (2) through the HTML.
+    expect(
+      facts(source).map(({source: text, format}) => [text, format]),
+    ).toEqual([
+      ['@{ada}', 0],
+      ['@{grace}', 2],
+      [':::note\nBody **bold**\n:::', 0],
     ]);
   });
 });

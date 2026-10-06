@@ -599,10 +599,23 @@ function $canonicalMarkdown(
   ) {
     return cached;
   }
-  const markdown = $convertToMarkdownString(
-    withExtensionExport(transformers),
-    childrenOf(nodes),
+  // Inline plugin nodes read as text inside the marks around them, so a mark
+  // put on or taken off a node alone changes the canonical form too.
+  const {placeholders, sources} = extensionPlaceholders(
+    descendants,
+    descendants.map(node => node.getTextContent()).join(''),
   );
+  let markdown = $convertToMarkdownString(
+    withExtensionExport(transformers),
+    childrenOf(
+      placeholders.size === 0
+        ? nodes
+        : nodes.map(node => markedView(node, null, placeholders)),
+    ),
+  );
+  for (const [placeholder, source] of sources) {
+    markdown = markdown.split(placeholder).join(source);
+  }
   const entry = {descendants, transformers, markdown, hash: hashOf(markdown)};
   canonicalCache.set(nodes[0], entry);
   return entry;
@@ -663,12 +676,14 @@ export function absentToken(text: string): string {
 
 /**
  * A view of `node` whose text marks every character that needs a backslash
- * with `token`. Views delegate everything else to the node they wrap, so
- * Lexical's exporter reads them like the real tree without changing it.
+ * with `token` (none when `token` is null), and whose inline plugin nodes read
+ * as text holding their placeholders. Views delegate everything else to the
+ * node they wrap, so Lexical's exporter reads them like the real tree without
+ * changing it.
  */
 function markedView(
   node: LexicalNode,
-  token: string,
+  token: string | null,
   placeholders: ReadonlyMap<NodeKey, string>,
 ): LexicalNode {
   const placeholder = placeholders.get(node.getKey());
@@ -678,6 +693,9 @@ function markedView(
   if ($isTextNode(node)) {
     if (node.hasFormat('code') || $isCodeNode(node.getParent())) {
       return node;
+    }
+    if (token == null) {
+      return Object.create(node) as typeof node;
     }
     let text = node
       .getTextContent()
@@ -717,6 +735,33 @@ function markedView(
 }
 
 /**
+ * A placeholder for each inline plugin node among `nodes`, absent from
+ * `text`, and the source each placeholder stands for.
+ */
+function extensionPlaceholders(
+  nodes: ReadonlyArray<LexicalNode>,
+  text: string,
+): {
+  readonly placeholders: ReadonlyMap<NodeKey, string>;
+  readonly sources: ReadonlyMap<string, string>;
+} {
+  const placeholders = new Map<NodeKey, string>();
+  const sources = new Map<string, string>();
+  const free = absentCharacters(text);
+  for (const node of nodes) {
+    if ($isRichTextExtensionNode(node) && node.isInline()) {
+      const placeholder = free.next().value;
+      if (placeholder == null) {
+        break;
+      }
+      placeholders.set(node.getKey(), placeholder);
+      sources.set(placeholder, node.getSource());
+    }
+  }
+  return {placeholders, sources};
+}
+
+/**
  * The canonical Markdown of a changed group, with literal text escaped so it
  * imports again as the structure the editor showed (spec:AST-062 FR3).
  */
@@ -732,19 +777,10 @@ function $regeneratedMarkdown(
   // Inline plugin nodes export as placeholders inside the text around them,
   // so the marks around a node wrap it; each placeholder becomes the node's
   // exact source afterwards.
-  const placeholders = new Map<NodeKey, string>();
-  const sources = new Map<string, string>();
-  const free = absentCharacters(text + token);
-  for (const node of descendantsOf(nodes)) {
-    if ($isRichTextExtensionNode(node) && node.isInline()) {
-      const placeholder = free.next().value;
-      if (placeholder == null) {
-        break;
-      }
-      placeholders.set(node.getKey(), placeholder);
-      sources.set(placeholder, node.getSource());
-    }
-  }
+  const {placeholders, sources} = extensionPlaceholders(
+    descendantsOf(nodes),
+    text + token,
+  );
   let marked = $convertToMarkdownString(
     withExtensionExport(transformers),
     childrenOf(nodes.map(node => markedView(node, token, placeholders))),

@@ -33,7 +33,9 @@ import {
   HISTORY_MERGE_TAG,
   TEXT_TYPE_TO_FORMAT,
   type LexicalEditor,
+  type RangeSelection,
   type TextFormatType,
+  type TextNode,
 } from 'lexical';
 import {MarkdownPluginNodeRenderer} from '@astryxdesign/core/Markdown/plugin-renderer';
 import {
@@ -144,6 +146,44 @@ function redrawExtensionNodes(editor: LexicalEditor): void {
   );
 }
 
+/**
+ * Whether `format` will be on for the text a range selects once it is
+ * toggled, as Lexical's formatText decides it from the first selected
+ * character; null when the range selects no text, only nodes.
+ */
+function $nextTextFormat(
+  selection: RangeSelection,
+  format: TextFormatType,
+): boolean | null {
+  const texts = selection.getNodes().filter($isTextNode);
+  const isBackward = selection.isBackward();
+  const start = isBackward ? selection.focus : selection.anchor;
+  const end = isBackward ? selection.anchor : selection.focus;
+  let first: TextNode | undefined = texts[0];
+  let startOffset = start.type === 'element' ? 0 : start.offset;
+  // A range that starts at the end of a text node starts in the next one.
+  if (
+    first != null &&
+    start.type === 'text' &&
+    startOffset === first.getTextContentSize()
+  ) {
+    first = texts[1];
+    startOffset = 0;
+  }
+  const last = texts[texts.length - 1];
+  if (first == null || last == null) {
+    return null;
+  }
+  const endOffset =
+    end.type === 'text' ? end.offset : last.getTextContentSize();
+  if (first.is(last) && startOffset === endOffset) {
+    return null;
+  }
+  return (
+    (first.getFormatFlags(format, null) & TEXT_TYPE_TO_FORMAT[format]) !== 0
+  );
+}
+
 export interface MarkdownExtensionsPluginProps {
   extensions: ReadonlyArray<RichTextMarkdownExtension>;
   /** The surface's Markdown transformers, checked against the extensions. */
@@ -171,15 +211,16 @@ export function MarkdownExtensionsPlugin({
     };
   }, [editor, plugins]);
 
-  // Bold, italic, or strikethrough toggled on a range takes the plugin nodes
-  // in it along, so they stay inside the marks the text around them gets.
+  // Bold, italic, or strikethrough toggled on a selection takes the plugin
+  // nodes in it along, so they stay inside the marks the text around them
+  // gets — and a selection of nodes alone toggles them by themselves.
   useEffect(
     () =>
       editor.registerCommand(
         FORMAT_TEXT_COMMAND,
         format => {
           const selection = $getSelection();
-          if (!$isRangeSelection(selection) || !NODE_FORMATS.has(format)) {
+          if (!NODE_FORMATS.has(format) || selection == null) {
             return false;
           }
           const nodes = selection
@@ -191,12 +232,16 @@ export function MarkdownExtensionsPlugin({
           if (nodes.length === 0) {
             return false;
           }
-          selection.formatText(format);
-          const text = selection.getNodes().find($isTextNode);
+          // The state Lexical gives the selected text, read before it does;
+          // null when no text is selected, only nodes.
+          const textState = $isRangeSelection(selection)
+            ? $nextTextFormat(selection, format)
+            : null;
+          if ($isRangeSelection(selection)) {
+            selection.formatText(format);
+          }
           const isOn =
-            text != null
-              ? text.hasFormat(format)
-              : !nodes.every(node => node.hasFormat(format));
+            textState ?? !nodes.every(node => node.hasFormat(format));
           for (const node of nodes) {
             node.setFormatFlag(format, isOn);
           }
