@@ -22,7 +22,6 @@ import {
   fontWeightVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import type {EditorThemeClasses} from 'lexical';
-import {documentSpacing} from './documentSpacing.stylex';
 
 // Document blocks follow core Markdown's typography, spacing, and measure
 // (spec:AST-061 FR2–FR4): type-scale tokens for text, one block spacing table
@@ -30,16 +29,27 @@ import {documentSpacing} from './documentSpacing.stylex';
 // at Markdown's default content width while code and tables span the editor.
 const PROSE_MEASURE = '680px';
 
+// Block margins wrap their spacing tokens in calc(). The value is unique to
+// these rules, so its atomic class never matches a margin declared by other
+// code; a stylesheet in a later cascade layer therefore cannot outrank the
+// :first-child and :last-child rules that remove the outer margins.
+const MAJOR_HEADING_BEFORE = `calc(${spacingVars['--spacing-6']})`;
+const MAJOR_HEADING_AFTER = `calc(${spacingVars['--spacing-3']})`;
+const MINOR_HEADING_BEFORE = `calc(${spacingVars['--spacing-4']})`;
+const MINOR_HEADING_AFTER = `calc(${spacingVars['--spacing-2']})`;
+const TEXT_BLOCK_SPACE = `calc(${spacingVars['--spacing-3']})`;
+const WIDE_BLOCK_SPACE = `calc(${spacingVars['--spacing-4']})`;
+
 const editorTheme = stylex.create({
   paragraph: {
     // The first block's leading margin would stack with the input inset, so
     // the first line aligns with TextArea and the empty-editor placeholder.
     marginBlockStart: {
-      default: documentSpacing.textBlock,
+      default: TEXT_BLOCK_SPACE,
       ':first-child': spacingVars['--spacing-0'],
     },
     marginBlockEnd: {
-      default: documentSpacing.textBlock,
+      default: TEXT_BLOCK_SPACE,
       ':last-child': spacingVars['--spacing-0'],
     },
     maxWidth: PROSE_MEASURE,
@@ -50,11 +60,11 @@ const editorTheme = stylex.create({
     fontWeight: typeScaleVars['--text-heading-1-weight'],
     lineHeight: typeScaleVars['--text-heading-1-leading'],
     marginBlockStart: {
-      default: documentSpacing.majorHeadingBefore,
+      default: MAJOR_HEADING_BEFORE,
       ':first-child': spacingVars['--spacing-0'],
     },
     marginBlockEnd: {
-      default: documentSpacing.majorHeadingAfter,
+      default: MAJOR_HEADING_AFTER,
       ':last-child': spacingVars['--spacing-0'],
     },
     maxWidth: PROSE_MEASURE,
@@ -65,11 +75,11 @@ const editorTheme = stylex.create({
     fontWeight: typeScaleVars['--text-heading-2-weight'],
     lineHeight: typeScaleVars['--text-heading-2-leading'],
     marginBlockStart: {
-      default: documentSpacing.majorHeadingBefore,
+      default: MAJOR_HEADING_BEFORE,
       ':first-child': spacingVars['--spacing-0'],
     },
     marginBlockEnd: {
-      default: documentSpacing.majorHeadingAfter,
+      default: MAJOR_HEADING_AFTER,
       ':last-child': spacingVars['--spacing-0'],
     },
     maxWidth: PROSE_MEASURE,
@@ -80,11 +90,11 @@ const editorTheme = stylex.create({
     fontWeight: typeScaleVars['--text-heading-3-weight'],
     lineHeight: typeScaleVars['--text-heading-3-leading'],
     marginBlockStart: {
-      default: documentSpacing.majorHeadingBefore,
+      default: MAJOR_HEADING_BEFORE,
       ':first-child': spacingVars['--spacing-0'],
     },
     marginBlockEnd: {
-      default: documentSpacing.majorHeadingAfter,
+      default: MAJOR_HEADING_AFTER,
       ':last-child': spacingVars['--spacing-0'],
     },
     maxWidth: PROSE_MEASURE,
@@ -95,11 +105,11 @@ const editorTheme = stylex.create({
     fontWeight: typeScaleVars['--text-heading-4-weight'],
     lineHeight: typeScaleVars['--text-heading-4-leading'],
     marginBlockStart: {
-      default: documentSpacing.minorHeadingBefore,
+      default: MINOR_HEADING_BEFORE,
       ':first-child': spacingVars['--spacing-0'],
     },
     marginBlockEnd: {
-      default: documentSpacing.minorHeadingAfter,
+      default: MINOR_HEADING_AFTER,
       ':last-child': spacingVars['--spacing-0'],
     },
     maxWidth: PROSE_MEASURE,
@@ -110,11 +120,11 @@ const editorTheme = stylex.create({
     fontWeight: typeScaleVars['--text-heading-5-weight'],
     lineHeight: typeScaleVars['--text-heading-5-leading'],
     marginBlockStart: {
-      default: documentSpacing.minorHeadingBefore,
+      default: MINOR_HEADING_BEFORE,
       ':first-child': spacingVars['--spacing-0'],
     },
     marginBlockEnd: {
-      default: documentSpacing.minorHeadingAfter,
+      default: MINOR_HEADING_AFTER,
       ':last-child': spacingVars['--spacing-0'],
     },
     maxWidth: PROSE_MEASURE,
@@ -125,22 +135,22 @@ const editorTheme = stylex.create({
     fontWeight: typeScaleVars['--text-heading-6-weight'],
     lineHeight: typeScaleVars['--text-heading-6-leading'],
     marginBlockStart: {
-      default: documentSpacing.minorHeadingBefore,
+      default: MINOR_HEADING_BEFORE,
       ':first-child': spacingVars['--spacing-0'],
     },
     marginBlockEnd: {
-      default: documentSpacing.minorHeadingAfter,
+      default: MINOR_HEADING_AFTER,
       ':last-child': spacingVars['--spacing-0'],
     },
     maxWidth: PROSE_MEASURE,
   },
   quote: {
     marginBlockStart: {
-      default: documentSpacing.wideBlock,
+      default: WIDE_BLOCK_SPACE,
       ':first-child': spacingVars['--spacing-0'],
     },
     marginBlockEnd: {
-      default: documentSpacing.wideBlock,
+      default: WIDE_BLOCK_SPACE,
       ':last-child': spacingVars['--spacing-0'],
     },
     marginInline: 0,
@@ -153,11 +163,11 @@ const editorTheme = stylex.create({
   },
   ul: {
     marginBlockStart: {
-      default: documentSpacing.textBlock,
+      default: TEXT_BLOCK_SPACE,
       ':first-child': spacingVars['--spacing-0'],
     },
     marginBlockEnd: {
-      default: documentSpacing.textBlock,
+      default: TEXT_BLOCK_SPACE,
       ':last-child': spacingVars['--spacing-0'],
     },
     maxWidth: PROSE_MEASURE,
@@ -167,11 +177,11 @@ const editorTheme = stylex.create({
   },
   ol: {
     marginBlockStart: {
-      default: documentSpacing.textBlock,
+      default: TEXT_BLOCK_SPACE,
       ':first-child': spacingVars['--spacing-0'],
     },
     marginBlockEnd: {
-      default: documentSpacing.textBlock,
+      default: TEXT_BLOCK_SPACE,
       ':last-child': spacingVars['--spacing-0'],
     },
     maxWidth: PROSE_MEASURE,
@@ -242,11 +252,11 @@ const editorTheme = stylex.create({
     display: 'grid',
     gridTemplateColumns: 'minmax(0, 1fr)',
     marginBlockStart: {
-      default: documentSpacing.wideBlock,
+      default: WIDE_BLOCK_SPACE,
       ':first-child': spacingVars['--spacing-0'],
     },
     marginBlockEnd: {
-      default: documentSpacing.wideBlock,
+      default: WIDE_BLOCK_SPACE,
       ':last-child': spacingVars['--spacing-0'],
     },
   },
@@ -281,11 +291,11 @@ const editorTheme = stylex.create({
     borderRadius: radiusVars['--radius-inner'],
     fontSize: typeScaleVars['--text-supporting-size'],
     marginBlockStart: {
-      default: documentSpacing.wideBlock,
+      default: WIDE_BLOCK_SPACE,
       ':first-child': spacingVars['--spacing-0'],
     },
     marginBlockEnd: {
-      default: documentSpacing.wideBlock,
+      default: WIDE_BLOCK_SPACE,
       ':last-child': spacingVars['--spacing-0'],
     },
     whiteSpace: 'pre-wrap',

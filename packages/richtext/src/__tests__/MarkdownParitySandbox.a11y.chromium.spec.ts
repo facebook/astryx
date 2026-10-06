@@ -417,6 +417,94 @@ for (const viewport of [PHONE, {width: 1280, height: 900}] as const) {
   }
 }
 
+// spec:AST-061 FR2–FR4: the same blocks use the same type scale, spacing,
+// and measure on both surfaces. Geometry still differs where structure does
+// (lists, code, rules); these blocks already share their structure.
+test('side by side: shared blocks match core Markdown typography, spacing, and measure', async ({
+  page,
+}) => {
+  const errors = await openStory(page, STORY.sideBySide, DESKTOP);
+  await waitForDocument(page, MARKDOWN);
+  await waitForDocument(page, RICH_TEXT);
+  const read = (surface: string) =>
+    page.evaluate(selector => {
+      const properties = [
+        'fontFamily',
+        'fontSize',
+        'lineHeight',
+        'fontWeight',
+        'marginTop',
+        'marginBottom',
+        'maxWidth',
+        'paddingLeft',
+        'borderLeftWidth',
+      ] as const;
+      const styleOf = (element: Element | null | undefined) => {
+        if (element == null) {
+          return null;
+        }
+        const computed = getComputedStyle(element);
+        return Object.fromEntries(
+          properties.map(property => [property, computed[property]]),
+        );
+      };
+      const block = (key: string, inner?: string) => {
+        const element = document.querySelector(
+          `${selector} [data-parity-block="${key}"]`,
+        );
+        if (inner == null || element?.matches(inner)) {
+          return element;
+        }
+        return element?.querySelector(inner);
+      };
+      // RichText draws the inline-code chip on the text inside <code>.
+      const code = block('paragraph-inline')?.querySelector('code');
+      return {
+        heading1: styleOf(block('heading-1', 'h1')),
+        heading2: styleOf(block('heading-2', 'h2')),
+        heading3: styleOf(block('heading-3', 'h3')),
+        heading4: styleOf(block('heading-4', 'h4')),
+        paragraph: styleOf(block('paragraph-escapes', 'p, div')),
+        lastParagraph: styleOf(block('paragraph-final', 'p, div')),
+        blockquote: styleOf(block('blockquote', 'blockquote')),
+        strong: getComputedStyle(
+          block('paragraph-inline')?.querySelector('strong') as Element,
+        ).fontWeight,
+        inlineCode: styleOf(code?.firstElementChild ?? code),
+      };
+    }, surface);
+  const markdown = await read(MARKDOWN);
+  const richText = await read(RICH_TEXT);
+  for (const key of [
+    'heading1',
+    'heading2',
+    'heading3',
+    'heading4',
+    'paragraph',
+    'lastParagraph',
+  ] as const) {
+    expect(richText[key], key).toEqual(markdown[key]);
+  }
+  for (const property of [
+    'marginTop',
+    'marginBottom',
+    'maxWidth',
+    'paddingLeft',
+    'borderLeftWidth',
+  ] as const) {
+    expect(richText.blockquote?.[property], `blockquote ${property}`).toBe(
+      markdown.blockquote?.[property],
+    );
+  }
+  expect(richText.strong).toBe(markdown.strong);
+  for (const property of ['fontSize', 'lineHeight', 'paddingLeft'] as const) {
+    expect(richText.inlineCode?.[property], `inline code ${property}`).toBe(
+      markdown.inlineCode?.[property],
+    );
+  }
+  expect(errors).toEqual([]);
+});
+
 test('side by side: one fixture renders on both surfaces', async ({page}) => {
   const errors = await openStory(page, STORY.sideBySide, DESKTOP);
   await waitForDocument(page, MARKDOWN);
