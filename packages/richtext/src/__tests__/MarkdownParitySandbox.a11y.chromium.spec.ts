@@ -523,6 +523,10 @@ test('side by side: shared blocks match core Markdown typography, spacing, and m
               };
         })(),
         rule: styleOf(block('thematic-break', 'hr')),
+        // Each column's readable width floor, set on its header cell.
+        tableFloors: [
+          ...(block('table', 'table')?.querySelectorAll('th') ?? []),
+        ].map(cell => getComputedStyle(cell).minWidth),
         // The text inside a header cell, where each surface draws it.
         tableHeader: (() => {
           const cell = block('table', 'table')?.querySelector('th');
@@ -567,6 +571,9 @@ test('side by side: shared blocks match core Markdown typography, spacing, and m
       markdown.rule?.[property],
     );
   }
+  expect(richText.tableFloors, 'table column floors').toEqual(
+    markdown.tableFloors,
+  );
   expect(richText.tableHeader, 'table header text').toEqual(
     markdown.tableHeader,
   );

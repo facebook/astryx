@@ -307,6 +307,9 @@ const editorTheme = stylex.create({
     },
   },
   tableCell: {
+    // Column floors (TableColumnFloorPlugin) size the text box, not the
+    // padding, as in core Markdown's tables.
+    boxSizing: 'content-box',
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-2'],
     textAlign: 'start',

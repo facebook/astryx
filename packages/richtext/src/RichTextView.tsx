@@ -31,6 +31,7 @@ import {ContentEditable} from '@lexical/react/LexicalContentEditable';
 import {LexicalErrorBoundary} from '@lexical/react/LexicalErrorBoundary';
 import {TablePlugin} from '@lexical/react/LexicalTablePlugin';
 import {TableScrollRegionPlugin} from './TableScrollRegionPlugin';
+import {TableColumnFloorPlugin} from './TableColumnFloorPlugin';
 import type {
   AnyLexicalExtension,
   Klass,
@@ -278,6 +279,7 @@ export function RichTextView({
           hasHorizontalScroll
         />
         <TableScrollRegionPlugin />
+        <TableColumnFloorPlugin />
         <RichTextPlugin
           contentEditable={<ContentEditable {...VIEW_CONTENT_EDITABLE_PROPS} />}
           placeholder={null}
