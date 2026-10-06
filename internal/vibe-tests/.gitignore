@@ -22,3 +22,7 @@ results/
 # Canonical fixture run sandboxes
 .fixture-runs/
 # .baseline/ is committed (real shadcn components for type checking)
+
+# Local delivery-mode launcher and asset profiles
+/delivery-modes/runner-profile.local.json
+/delivery-modes/static-config.local.json
