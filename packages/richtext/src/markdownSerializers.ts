@@ -3,8 +3,8 @@
 /**
  * @file markdownSerializers.ts
  * @input Uses @lexical/headless (createHeadlessEditor), @lexical/markdown
- *   ($convertFromMarkdownString / $convertToMarkdownString), and the shared
- *   DEFAULT_NODES set.
+ *   ($convertFromMarkdownString / $convertToMarkdownString), the shared
+ *   DEFAULT_NODES set, and DEFAULT_TRANSFORMERS.
  * @output Standalone Markdown <-> serialized EditorState helpers:
  *   markdownToEditorStateJSON, editorStateJSONToMarkdown.
  * @position Re-exported from RichTextEditor/index.ts and the @astryxdesign/richtext
@@ -24,20 +24,21 @@
 
 import {createHeadlessEditor} from '@lexical/headless';
 import {
-  TRANSFORMERS,
   $convertFromMarkdownString,
   $convertToMarkdownString,
   type Transformer,
 } from '@lexical/markdown';
 import {DEFAULT_NODES} from './editorNodes';
+import {DEFAULT_TRANSFORMERS} from './markdownTable';
 import type {Klass, LexicalNode} from 'lexical';
 
 /** Options shared by the Markdown serializer helpers. */
 export interface MarkdownSerializerOptions {
   /**
-   * Markdown transformers to use. Defaults to the standard `@lexical/markdown`
-   * `TRANSFORMERS`. Pass the same array you give `RichTextEditor`'s
-   * `transformers` prop so content round-trips consistently.
+   * Markdown transformers to use. Defaults to the editor's default set: the
+   * standard `@lexical/markdown` `TRANSFORMERS` plus GFM tables. Pass the same
+   * array you give `RichTextEditor`'s `transformers` prop so content
+   * round-trips consistently.
    */
   transformers?: ReadonlyArray<Transformer>;
   /**
@@ -72,7 +73,7 @@ export function markdownToEditorStateJSON(
   markdown: string,
   options: MarkdownSerializerOptions = {},
 ): string {
-  const {transformers = TRANSFORMERS, nodes} = options;
+  const {transformers = DEFAULT_TRANSFORMERS, nodes} = options;
   const editor = createSerializerEditor(nodes);
   editor.update(
     () => {
@@ -97,7 +98,7 @@ export function editorStateJSONToMarkdown(
   editorStateJSON: string,
   options: MarkdownSerializerOptions = {},
 ): string {
-  const {transformers = TRANSFORMERS, nodes} = options;
+  const {transformers = DEFAULT_TRANSFORMERS, nodes} = options;
   const editor = createSerializerEditor(nodes);
   const state = editor.parseEditorState(editorStateJSON);
   return state.read(() => $convertToMarkdownString([...transformers]));

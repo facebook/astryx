@@ -30,6 +30,7 @@ import {ListNode, ListItemNode} from '@lexical/list';
 import {HeadingNode, QuoteNode} from '@lexical/rich-text';
 import {LinkNode, AutoLinkNode} from '@lexical/link';
 import {CodeNode, CodeHighlightNode} from '@lexical/code';
+import {TableNode, TableRowNode, TableCellNode} from '@lexical/table';
 import type {
   AnyLexicalExtension,
   Klass,
@@ -53,6 +54,9 @@ const DEFAULT_NODES: ReadonlyArray<Klass<LexicalNode>> = [
   AutoLinkNode,
   CodeNode,
   CodeHighlightNode,
+  TableNode,
+  TableRowNode,
+  TableCellNode,
 ];
 
 export interface RichTextViewProps extends BaseProps {

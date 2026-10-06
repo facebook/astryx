@@ -120,6 +120,37 @@ const editorTheme = stylex.create({
     borderRadius: radiusVars['--radius-inner'],
     fontSize: '0.9em',
   },
+  // GFM tables, styled like core Markdown's table: semibold secondary header
+  // text, a divider under every row but the last, and a wide table that
+  // scrolls inside its own wrapper instead of widening the editor.
+  tableScrollableWrapper: {
+    overflowX: 'auto',
+    maxWidth: '100%',
+  },
+  table: {
+    borderCollapse: 'collapse',
+    width: '100%',
+    marginBlock: spacingVars['--spacing-4'],
+  },
+  tableRow: {
+    borderBottomWidth: '1px',
+    borderBottomStyle: 'solid',
+    borderBottomColor: {
+      default: colorVars['--color-border'],
+      ':last-child': 'transparent',
+    },
+  },
+  tableCell: {
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-2'],
+    textAlign: 'start',
+    verticalAlign: 'middle',
+    overflowWrap: 'break-word',
+  },
+  tableCellHeader: {
+    fontWeight: fontWeightVars['--font-weight-semibold'],
+    color: colorVars['--color-text-secondary'],
+  },
   code: {
     display: 'block',
     fontFamily: typographyVars['--font-family-code'],
@@ -181,5 +212,11 @@ export function sharedEditorTheme(): EditorThemeClasses {
       code: stylex.props(editorTheme.textCode).className,
     },
     code: stylex.props(editorTheme.code).className,
+    table: stylex.props(editorTheme.table).className,
+    tableRow: stylex.props(editorTheme.tableRow).className,
+    tableCell: stylex.props(editorTheme.tableCell).className,
+    tableCellHeader: stylex.props(editorTheme.tableCellHeader).className,
+    tableScrollableWrapper: stylex.props(editorTheme.tableScrollableWrapper)
+      .className,
   };
 }

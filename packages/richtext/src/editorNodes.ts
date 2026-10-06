@@ -15,12 +15,13 @@ import {ListNode, ListItemNode} from '@lexical/list';
 import {HeadingNode, QuoteNode} from '@lexical/rich-text';
 import {LinkNode, AutoLinkNode} from '@lexical/link';
 import {CodeNode, CodeHighlightNode} from '@lexical/code';
+import {TableNode, TableRowNode, TableCellNode} from '@lexical/table';
 import type {Klass, LexicalNode} from 'lexical';
 
 /**
  * The default OSS node set registered with the editor: headings, quotes,
- * lists, links, and code. Extend via the `nodes` prop / option rather than
- * editing this list.
+ * lists, links, code, and tables. Extend via the `nodes` prop / option rather
+ * than editing this list.
  */
 export const DEFAULT_NODES: ReadonlyArray<Klass<LexicalNode>> = [
   HeadingNode,
@@ -31,4 +32,7 @@ export const DEFAULT_NODES: ReadonlyArray<Klass<LexicalNode>> = [
   AutoLinkNode,
   CodeNode,
   CodeHighlightNode,
+  TableNode,
+  TableRowNode,
+  TableCellNode,
 ];

@@ -70,14 +70,12 @@ import {LinkPlugin} from '@lexical/react/LexicalLinkPlugin';
 import {TabIndentationPlugin} from '@lexical/react/LexicalTabIndentationPlugin';
 import {MarkdownShortcutPlugin} from '@lexical/react/LexicalMarkdownShortcutPlugin';
 import {OnChangePlugin} from '@lexical/react/LexicalOnChangePlugin';
-import {
-  TRANSFORMERS,
-  $convertToMarkdownString,
-  type Transformer,
-} from '@lexical/markdown';
+import {TablePlugin} from '@lexical/react/LexicalTablePlugin';
+import {$convertToMarkdownString, type Transformer} from '@lexical/markdown';
 export type {Transformer} from '@lexical/markdown';
 import {$generateHtmlFromNodes} from '@lexical/html';
 import {DEFAULT_NODES} from './editorNodes';
+import {DEFAULT_TRANSFORMERS} from './markdownTable';
 import {
   BLUR_COMMAND,
   COMMAND_PRIORITY_LOW,
@@ -394,13 +392,14 @@ export interface RichTextEditorProps extends Omit<
   /**
    * Whether to enable Markdown shortcut typing (e.g. `# ` for a heading,
    * `- ` for a list). Uses the `transformers` prop (defaults to the standard
-   * `@lexical/markdown` transformers).
+   * `@lexical/markdown` transformers plus GFM tables).
    * @default true
    */
   hasMarkdownShortcuts?: boolean;
   /**
    * Markdown transformers — the single source of truth for markdown behaviour.
-   * Defaults to the standard `@lexical/markdown` `TRANSFORMERS`.
+   * Defaults to the standard `@lexical/markdown` `TRANSFORMERS` plus GFM
+   * tables. A custom array replaces the default, tables included.
    *
    * The same array drives all three markdown operations in Lexical (see the
    * lexical-playground reference, where one `PLAYGROUND_TRANSFORMERS` array
@@ -492,7 +491,7 @@ export const RichTextEditor = forwardRef<
     toolbar,
     plugins,
     hasMarkdownShortcuts = true,
-    transformers = TRANSFORMERS,
+    transformers = DEFAULT_TRANSFORMERS,
     hasAutoFocus = false,
     tabEscapeHint = DEFAULT_TAB_ESCAPE_HINT,
     maxLength,
@@ -662,6 +661,16 @@ export const RichTextEditor = forwardRef<
               <HistoryPlugin />
               <ListPlugin />
               <LinkPlugin />
+              {/* Tab keeps its editor meaning inside a table (indent, and
+                  Escape then Tab to leave the editor); arrow keys move
+                  between cells. GFM tables have no merged cells or cell
+                  colors, and a wide table scrolls inside its own wrapper. */}
+              <TablePlugin
+                hasCellMerge={false}
+                hasCellBackgroundColor={false}
+                hasTabHandler={false}
+                hasHorizontalScroll
+              />
               <TabIndentationPlugin />
               <TabFocusEscapePlugin />
               {hasMarkdownShortcuts && (
