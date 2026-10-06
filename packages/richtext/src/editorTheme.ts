@@ -53,6 +53,10 @@ const editorTheme = stylex.create({
       ':last-child': spacingVars['--spacing-0'],
     },
     maxWidth: PROSE_MEASURE,
+    // The base reset gives every <p> body weight and primary color; a
+    // paragraph inside a table header cell takes the cell's instead.
+    fontWeight: 'inherit',
+    color: 'inherit',
   },
   h1: {
     fontFamily: typographyVars['--font-family-heading'],

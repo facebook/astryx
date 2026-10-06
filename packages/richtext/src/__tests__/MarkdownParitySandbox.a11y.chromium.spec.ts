@@ -471,6 +471,14 @@ test('side by side: shared blocks match core Markdown typography, spacing, and m
           block('paragraph-inline')?.querySelector('strong') as Element,
         ).fontWeight,
         inlineCode: styleOf(code?.firstElementChild ?? code),
+        // The text inside a header cell, where each surface draws it.
+        tableHeader: (() => {
+          const cell = block('table', 'table')?.querySelector('th');
+          const text = cell?.querySelector('p') ?? cell;
+          return text == null
+            ? null
+            : [getComputedStyle(text).fontWeight, getComputedStyle(text).color];
+        })(),
       };
     }, surface);
   const markdown = await read(MARKDOWN);
@@ -497,6 +505,9 @@ test('side by side: shared blocks match core Markdown typography, spacing, and m
     );
   }
   expect(richText.strong).toBe(markdown.strong);
+  expect(richText.tableHeader, 'table header text').toEqual(
+    markdown.tableHeader,
+  );
   for (const property of ['fontSize', 'lineHeight', 'paddingLeft'] as const) {
     expect(richText.inlineCode?.[property], `inline code ${property}`).toBe(
       markdown.inlineCode?.[property],
