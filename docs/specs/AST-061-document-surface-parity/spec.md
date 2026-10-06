@@ -128,16 +128,16 @@ the second bulleted level as a disc; both adopt the DEC-6 marker cycle.
 
 ## Verification
 
-| Contract   | Verification                                                                                    | Representative states                                                                                    | Mutation or failure expectation                                                                                     |
-| ---------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| FR2–FR4    | Real-browser computed style and block geometry of the parity fixture on `Markdown` and RichText | 390px and 1440px; light and dark; default density                                                        | Restoring a hard-coded heading size or a different block margin moves a block past 2 px and fails                   |
-| FR5        | Real-browser structure and line counts of the parity fixture                                    | Nested lists at 2- and 3-space indentation; soft breaks; blockquote continuation                         | Flattening a nested list or turning a soft break into a line break fails                                            |
-| FR6        | Real-browser computed direction per block                                                       | Right-to-left provider with left-to-right text, and the reverse                                          | Per-block automatic direction fails                                                                                 |
-| FR7        | Semantic DOM of inline marks, links, and character references on every surface                  | Titled link, bare link, strong, emphasis, strikethrough; `&amp;`, `&copy;`, `&#169;` in text and in code | A title inside a destination, a styled span in place of a semantic element, or an undecoded reference in text fails |
-| FR7, DEC-5 | Shared conformance cases through `Markdown` rendering and RichText import                       | Named, decimal, and hexadecimal references; an unknown name; a missing semicolon; an invalid code point  | A second reference table, or a decoder that changes an unknown name or an unterminated reference, fails             |
-| FR5, DEC-6 | Real-browser marker style per depth on both surfaces                                            | Bulleted and numbered lists nested 0–8 deep, mixed types, a start value; right-to-left; light and dark   | A level that draws another level's marker, or one surface differing from the other, fails                           |
-| FR8        | Real-browser code block header geometry in both modes                                           | Fenced code with an info string                                                                          | A header missing from one mode moves the code and fails                                                             |
-| FR9–FR10   | Real-browser read/edit switch of the parity fixture and a long document                         | Short document at the top; long document halfway down                                                    | A per-block shift beyond the constant offset, or an anchor block leaving the top of the view, fails                 |
+| Contract   | Verification                                                                                    | Representative states                                                                                                                                            | Mutation or failure expectation                                                                                     |
+| ---------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| FR2–FR4    | Real-browser computed style and block geometry of the parity fixture on `Markdown` and RichText | 390px and 1440px; light and dark; default density                                                                                                                | Restoring a hard-coded heading size or a different block margin moves a block past 2 px and fails                   |
+| FR5        | Real-browser structure and line counts of the parity fixture                                    | Nested lists at 2- and 3-space indentation; soft breaks; blockquote continuation                                                                                 | Flattening a nested list or turning a soft break into a line break fails                                            |
+| FR6        | Real-browser computed direction per block                                                       | Right-to-left provider with left-to-right text, and the reverse                                                                                                  | Per-block automatic direction fails                                                                                 |
+| FR7        | Semantic DOM of inline marks, links, and character references on every surface                  | Titled link, bare link, strong, emphasis, strikethrough; `&amp;`, `&copy;`, `&#169;` in text and in code                                                         | A title inside a destination, a styled span in place of a semantic element, or an undecoded reference in text fails |
+| FR7, DEC-5 | Shared conformance cases through `Markdown` rendering and RichText import                       | Named, decimal, and hexadecimal references; an unknown name; a missing semicolon; an invalid code point                                                          | A second reference table, or a decoder that changes an unknown name or an unterminated reference, fails             |
+| FR5, DEC-6 | Real-browser marker style per depth on both surfaces                                            | Bulleted and numbered lists nested 0–8 deep and of mixed types; starts of 0, −1, 26, 27, 3999, and 4000 at alpha and roman depths; right-to-left; light and dark | A level that draws another level's marker, or one surface differing from the other, fails                           |
+| FR8        | Real-browser code block header geometry in both modes                                           | Fenced code with an info string                                                                                                                                  | A header missing from one mode moves the code and fails                                                             |
+| FR9–FR10   | Real-browser read/edit switch of the parity fixture and a long document                         | Short document at the top; long document halfway down                                                                                                            | A per-block shift beyond the constant offset, or an anchor block leaving the top of the view, fails                 |
 
 ## Decision log
 
@@ -216,9 +216,12 @@ numbers as decimal, lower-alpha, or lower-roman the same way. The cycle
 repeats without end, so each level differs from the levels beside it and a
 reader can tell depth apart on every surface. Numbering keeps the list's
 start value and counts the same items; only how each number is written
-changes. Letters past `z` continue as `aa`, `ab`, and so on, and roman
-numerals past 3999 fall back to decimal, as the CSS counter styles do. Task
-list items show checkboxes instead of markers. Markers are presentation: the
+changes. Letters past `z` continue as `aa`, `ab`, and so on. A number outside
+its style's range — zero or a negative number under lower-alpha or
+lower-roman, as a start of 0 or below gives, or a number past 3999 under
+lower-roman — is written in decimal, as the CSS counter styles fall back; the
+start value and the items stay as written. Task list items show checkboxes
+instead of markers. Markers are presentation: the
 list keeps its list semantics, and the source does not change.
 
 ## Open questions
