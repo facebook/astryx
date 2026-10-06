@@ -101,7 +101,7 @@ The evaluator always captures the default state. A solution may opt into as many
 }
 ```
 
-Each `url` must be a query or hash on the main page. State names are unique, short labels; `default` is reserved. Every screenshot starts in a fresh browser context at the same 1440 × 900 viewport, so state setup cannot depend on a prior capture. The page's own code must render each state from that URL; separate state HTML pages are rejected. Runs without the manifest remain default-only.
+Each `url` must be a query or hash on the main page. State names are unique, short labels; `default` is reserved. Every screenshot starts in a fresh browser context at the same 1440 × 900 viewport, so state setup cannot depend on a prior capture. The page's own code must render each state in the original document. A state fails if its final origin or path changes, if the top-level frame navigates after the initial load, or if any additional HTML document is requested; this rejects redirects, `location.replace()`, iframed state pages, and separate state HTML files. Runs without the manifest remain default-only.
 
 The manifest contract is identical for every delivery configuration, and the task prompt only says that state declaration is optional. The blind judge receives generic screenshot filenames mapped to state labels, never configuration details. Labels help navigation but are not evidence: the judge must cite visible pixels for every state. Invalid, duplicate, off-page, or over-cap declarations fail evaluation rather than silently changing the evidence set.
 

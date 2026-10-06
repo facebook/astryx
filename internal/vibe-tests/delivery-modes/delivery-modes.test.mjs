@@ -17,6 +17,7 @@ import {
   STATE_MANIFEST_FILE,
 } from './constants.mjs';
 import {
+  assessDeclaredStateNavigation,
   buildBlindJudgePrompt,
   captureAuthoredSources,
   readDeclaredStates,
@@ -116,9 +117,57 @@ test('hidden fixture state reaches the blind judge only when declared', async ()
     declaredPrompt,
     /State labels are navigation labels, not evidence/,
   );
+  assert.match(
+    declaredPrompt,
+    /Inspect every supplied screenshot in the working directory/,
+  );
+  assert.doesNotMatch(declaredPrompt, /Use the /);
   assert.equal(
     resolveDeclaredStateUrl('http://127.0.0.1:3000/', declared[0].url),
     'http://127.0.0.1:3000/#state=success',
+  );
+});
+
+test('reviewer redirect probe rejects location.replace and an extra state document', () => {
+  const fixture = `<!doctype html><main>Default state</main><script>if (location.search === '?state=done') location.replace('/fake.html');</script>`;
+  assert.match(fixture, /location\.replace\('\/fake\.html'\)/);
+  const target = 'http://127.0.0.1:3000/?state=done';
+  const fakePage = 'http://127.0.0.1:3000/fake.html';
+  const assessment = assessDeclaredStateNavigation({
+    baseUrl: 'http://127.0.0.1:3000/',
+    finalUrl: fakePage,
+    documentRequests: [target, fakePage],
+    topLevelNavigations: [target, fakePage],
+  });
+  assert.equal(assessment.passed, false);
+  assert.equal(assessment.documentRequestCount, 2);
+  assert.equal(assessment.topLevelNavigationCount, 2);
+  assert.match(assessment.error, /left the original document path/);
+  assert.match(assessment.error, /top-level navigation/);
+  assert.match(assessment.error, /additional HTML document/);
+
+  const extraDocument = assessDeclaredStateNavigation({
+    baseUrl: 'http://127.0.0.1:3000/',
+    finalUrl: target,
+    documentRequests: [target, fakePage],
+    topLevelNavigations: [target],
+  });
+  assert.equal(extraDocument.passed, false);
+  assert.match(extraDocument.error, /additional HTML document/);
+
+  assert.deepEqual(
+    assessDeclaredStateNavigation({
+      baseUrl: 'http://127.0.0.1:3000/',
+      finalUrl: target,
+      documentRequests: [target],
+      topLevelNavigations: [target],
+    }),
+    {
+      passed: true,
+      error: null,
+      documentRequestCount: 1,
+      topLevelNavigationCount: 1,
+    },
   );
 });
 

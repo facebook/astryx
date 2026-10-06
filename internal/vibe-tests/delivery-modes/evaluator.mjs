@@ -226,7 +226,7 @@ export async function evaluateRun({
       consoleErrors,
       pageErrors,
       starterTyping,
-      passed: defaultPassed,
+      passed: stateCaptures.every(capture => capture.passed),
       url: server.url,
       states: stateCaptures.map(stateCaptureReceipt),
     };
@@ -235,13 +235,16 @@ export async function evaluateRun({
       render.adoptedElementCount = 0;
     }
     const judge = !render.passed
-      ? zeroJudgment('Render failed, was blank, or emitted runtime errors')
+      ? zeroJudgment(
+          'Render failed, a declared state left the original document, was blank, or emitted runtime errors',
+        )
       : skipJudge
         ? {skipped: true, stateEvidence: []}
         : await runBlindJudge({
             prompt,
-            screenshots: stateCaptures.filter(capture =>
-              fs.existsSync(capture.screenshotPath),
+            screenshots: stateCaptures.filter(
+              capture =>
+                capture.passed && fs.existsSync(capture.screenshotPath),
             ),
             profile: judgeProfile,
           });
@@ -277,17 +280,55 @@ export async function evaluateRun({
   }
 }
 
+export function assessDeclaredStateNavigation({
+  baseUrl,
+  finalUrl,
+  documentRequests,
+  topLevelNavigations,
+}) {
+  const base = new URL(baseUrl);
+  const final = new URL(finalUrl);
+  const violations = [];
+  if (final.origin !== base.origin || final.pathname !== base.pathname) {
+    violations.push('final URL left the original document path');
+  }
+  if (topLevelNavigations.length > 1) {
+    violations.push('top-level navigation occurred after the initial load');
+  }
+  if (documentRequests.length > 1) {
+    violations.push('an additional HTML document was requested');
+  }
+  return {
+    passed: violations.length === 0,
+    error: violations.length > 0 ? violations.join('; ') : null,
+    documentRequestCount: documentRequests.length,
+    topLevelNavigationCount: topLevelNavigations.length,
+  };
+}
+
 async function captureDeclaredState({browser, baseUrl, state, screenshotPath}) {
   const context = await browser.newContext({viewport: VIEWPORT});
   const page = await context.newPage();
   const consoleErrors = [];
   const pageErrors = [];
+  const documentRequests = [];
+  const topLevelNavigations = [];
   page.on('console', message => {
     if (message.type() === 'error') {
       consoleErrors.push(message.text());
     }
   });
   page.on('pageerror', error => pageErrors.push(error.message));
+  page.on('request', request => {
+    if (request.resourceType() === 'document') {
+      documentRequests.push(request.url());
+    }
+  });
+  page.on('framenavigated', frame => {
+    if (frame === page.mainFrame()) {
+      topLevelNavigations.push(frame.url());
+    }
+  });
 
   try {
     const url = resolveDeclaredStateUrl(baseUrl, state.url);
@@ -297,6 +338,12 @@ async function captureDeclaredState({browser, baseUrl, state, screenshotPath}) {
     await page.screenshot({path: screenshotPath, fullPage: true});
     const nonBlank =
       metrics.textLength >= 20 && metrics.visibleElementCount >= 3;
+    const navigation = assessDeclaredStateNavigation({
+      baseUrl,
+      finalUrl: page.url(),
+      documentRequests,
+      topLevelNavigations,
+    });
     return {
       name: state.name,
       target: state.url,
@@ -304,7 +351,14 @@ async function captureDeclaredState({browser, baseUrl, state, screenshotPath}) {
       nonBlank,
       consoleErrors,
       pageErrors,
-      passed: nonBlank && consoleErrors.length === 0 && pageErrors.length === 0,
+      documentRequestCount: navigation.documentRequestCount,
+      topLevelNavigationCount: navigation.topLevelNavigationCount,
+      passed:
+        nonBlank &&
+        consoleErrors.length === 0 &&
+        pageErrors.length === 0 &&
+        navigation.passed,
+      error: navigation.error,
     };
   } catch (error) {
     return {
@@ -314,6 +368,8 @@ async function captureDeclaredState({browser, baseUrl, state, screenshotPath}) {
       nonBlank: false,
       consoleErrors,
       pageErrors,
+      documentRequestCount: documentRequests.length,
+      topLevelNavigationCount: topLevelNavigations.length,
       passed: false,
       error: error instanceof Error ? error.message : String(error),
     };
@@ -329,6 +385,8 @@ function stateCaptureReceipt(capture) {
     nonBlank: capture.nonBlank,
     consoleErrors: capture.consoleErrors,
     pageErrors: capture.pageErrors,
+    documentRequestCount: capture.documentRequestCount ?? 1,
+    topLevelNavigationCount: capture.topLevelNavigationCount ?? 1,
     passed: capture.passed,
     screenshotCaptured: fs.existsSync(capture.screenshotPath),
     error: capture.error ?? null,
@@ -904,7 +962,7 @@ export function buildBlindJudgePrompt(prompt, screenshots) {
   const screenshotList = screenshots
     .map(screenshot => `- ${screenshot.name}: ${screenshot.fileName}`)
     .join('\n');
-  return `You are a blind UI evaluator. Use the Read tool to inspect every supplied screenshot. You are not told which component system or delivery configuration produced them.
+  return `You are a blind UI evaluator. Inspect every supplied screenshot in the working directory. You are not told which component system or delivery configuration produced them.
 
 Screenshots, all captured from fresh loads at the same viewport:
 ${screenshotList}
