@@ -955,6 +955,7 @@ test('struck text is a deletion around its other marks, and stays one while edit
     await expect(deletions.nth(1).getByRole('strong')).toHaveText('bold');
     await expect(deletions.nth(2).getByRole('emphasis')).toHaveText('italic');
     await expect(deletions.nth(3).getByRole('strong')).toHaveText('both');
+    await expect(deletions.nth(3).getByRole('emphasis')).toHaveText('both');
     await expect(
       surface.getByRole('link', {name: 'link'}).getByRole('deletion'),
     ).toHaveText('link');
@@ -1190,6 +1191,27 @@ test('edited code is colored again as it changes', async ({page}) => {
   await page.keyboard.type('return value;');
   await expect.poll(editorTokens).toContain('astryx-keyword:return');
   expect(await editorTokens()).toContain('astryx-keyword:let');
+});
+
+// spec:AST-061 FR7: bold italic text is emphasis and strong in the editor
+// and the view, as core Markdown's `<strong><em>` is.
+test('bold italic text is emphasis and strong in the editor and the view', async ({
+  page,
+}) => {
+  await page.setViewportSize(DESKTOP);
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
+    {waitUntil: 'load'},
+  );
+  await page.locator('textarea').fill('Keep ***both*** and **bold** here.');
+  const surfaces = page.locator('[data-lexical-editor]:visible');
+  await expect(surfaces).toHaveCount(2);
+  for (const surface of [surfaces.nth(0), surfaces.nth(1)]) {
+    const emphasis = surface.getByRole('emphasis');
+    await expect(emphasis).toHaveText(['both']);
+    await expect(emphasis.getByRole('strong')).toHaveText('both');
+    await expect(surface.getByRole('strong')).toHaveText(['both', 'bold']);
+  }
 });
 
 for (const viewport of [PHONE, {width: 1280, height: 900}] as const) {
