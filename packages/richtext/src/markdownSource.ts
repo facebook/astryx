@@ -55,6 +55,7 @@ import {
   $restoreCharacterReferences,
   protectBackslashEscapes,
   protectCharacterReferences,
+  protectLinkDestinationParentheses,
 } from './markdownCharacterReferences';
 import {
   $restoreExtensionSources,
@@ -362,20 +363,28 @@ export function importMarkdownKeepingSource(
         const holder = $createParagraphNode();
         root.append(holder);
         // Lexical imports LF lines; the record keeps the authored endings.
-        // Adopted plugins' nodes, then backslash escapes, then character
-        // references go through as stand-ins: plugin nodes come back as
-        // extension nodes holding their source, escapes as the literal
-        // characters, references decoded.
+        // Adopted plugins' nodes, then backslash escapes and parentheses in
+        // link destinations, then character references go through as
+        // stand-ins: plugin nodes come back as extension nodes holding their
+        // source, escapes and parentheses as the literal characters,
+        // references decoded.
         const shielded = shieldExtensionSources(
           withoutCarriageReturns(importChunks[index]?.content ?? chunk.content),
           plugins,
         );
         const escaped = protectBackslashEscapes(shielded.markdown);
-        const referenced = protectCharacterReferences(escaped.markdown);
+        const destinations = protectLinkDestinationParentheses(
+          escaped.markdown,
+        );
+        const referenced = protectCharacterReferences(destinations.markdown);
         $convertFromMarkdownString(referenced.markdown, transformers, holder);
         $restoreCharacterReferences(
           holder,
-          new Map([...escaped.standIns, ...referenced.standIns]),
+          new Map([
+            ...escaped.standIns,
+            ...destinations.standIns,
+            ...referenced.standIns,
+          ]),
         );
         $restoreExtensionSources(holder, shielded.standIns);
         $joinSoftLineBreaks(holder);

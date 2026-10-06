@@ -4,8 +4,9 @@
  * @file markdownCharacterReferences.ts
  * @input Uses lexical, @lexical/link, @lexical/code, and core Markdown's
  *   decodeMarkdownCharacterReferences.
- * @output Exports protectBackslashEscapes and protectCharacterReferences,
- *   which swap every backslash escape and every character reference in
+ * @output Exports protectBackslashEscapes, protectLinkDestinationParentheses,
+ *   and protectCharacterReferences, which swap every backslash escape, every
+ *   parenthesis inside a link destination, and every character reference in
  *   Markdown source for a private-use stand-in before Lexical imports it, and
  *   $restoreCharacterReferences, which puts the literal or decoded text in
  *   place of the stand-ins afterwards.
@@ -20,7 +21,9 @@
  *   Backslash escapes go through the same way, so an escaped character is
  *   literal text wherever it is — `\[x](y)` is text, not a link, as in core
  *   Markdown (spec:AST-061 FR7, spec:AST-062 FR3) — and code keeps its
- *   backslashes.
+ *   backslashes. Parentheses inside a link destination go through the same
+ *   way, so Lexical, which reads none in a destination, reads balanced ones
+ *   as core does.
  */
 
 import {$isCodeNode} from '@lexical/code';
@@ -253,6 +256,93 @@ export function protectBackslashEscapes(markdown: string): ProtectedMarkdown {
       continue;
     }
     index = markdown.indexOf('\\', index + 1);
+  }
+  return {markdown: output + markdown.slice(copied), standIns};
+}
+
+/**
+ * Returns `markdown` with every parenthesis inside an inline link
+ * destination — between the destination's own parentheses, balanced, as core
+ * Markdown and CommonMark read them — replaced by a private-use stand-in for
+ * itself, outside code. Run after protectBackslashEscapes, so an escaped
+ * parenthesis is already a stand-in and never counts toward the balance.
+ */
+export function protectLinkDestinationParentheses(
+  markdown: string,
+): ProtectedMarkdown {
+  const standIns = new Map<string, StandIn>();
+  if (!markdown.includes('](')) {
+    return {markdown, standIns};
+  }
+  const available = absentCharacters(markdown);
+  const byCharacter = new Map<string, string>();
+  const standInFor = (character: '(' | ')'): string | null => {
+    const existing = byCharacter.get(character);
+    if (existing != null) {
+      return existing;
+    }
+    const next = available.next();
+    if (next.done === true) {
+      return null;
+    }
+    byCharacter.set(character, next.value);
+    standIns.set(next.value, {kind: 'escape', character});
+    return next.value;
+  };
+  const code = codeRanges(markdown);
+  const inner: Array<number> = [];
+  let codeIndex = 0;
+  let index = markdown.indexOf('](');
+  while (index !== -1) {
+    while (code[codeIndex] != null && code[codeIndex][1] <= index) {
+      codeIndex++;
+    }
+    const range = code[codeIndex];
+    if (range != null && range[0] <= index) {
+      index = markdown.indexOf('](', range[1]);
+      continue;
+    }
+    // The destination's own parentheses are depth one; any inside it are
+    // deeper. A space at depth one ends the destination (a title follows);
+    // a space deeper, or no closing parenthesis, means no link.
+    const parentheses: Array<number> = [];
+    let depth = 1;
+    let position = index + 2;
+    let isLink = markdown[position] !== '<';
+    for (; isLink && position < markdown.length; position++) {
+      const character = markdown[position];
+      if (/\s/.test(character)) {
+        isLink = depth === 1;
+        break;
+      }
+      if (character === '(') {
+        depth++;
+        parentheses.push(position);
+      } else if (character === ')') {
+        depth--;
+        if (depth === 0) {
+          break;
+        }
+        parentheses.push(position);
+      }
+    }
+    if (isLink && depth <= 1) {
+      inner.push(...parentheses);
+    }
+    index = markdown.indexOf('](', position + 1);
+  }
+  if (inner.length === 0) {
+    return {markdown, standIns};
+  }
+  let output = '';
+  let copied = 0;
+  for (const position of inner) {
+    const standIn = standInFor(markdown[position] as '(' | ')');
+    if (standIn == null) {
+      break;
+    }
+    output += markdown.slice(copied, position) + standIn;
+    copied = position + 1;
   }
   return {markdown: output + markdown.slice(copied), standIns};
 }

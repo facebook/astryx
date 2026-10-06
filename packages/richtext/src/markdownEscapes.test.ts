@@ -2,7 +2,13 @@
 
 import {describe, expect, it} from 'vitest';
 import {createHeadlessEditor} from '@lexical/headless';
-import {$getRoot, $isTextNode} from 'lexical';
+import {$createLinkNode} from '@lexical/link';
+import {
+  $createParagraphNode,
+  $createTextNode,
+  $getRoot,
+  $isTextNode,
+} from 'lexical';
 import {parseMarkdownAst} from '@astryxdesign/core/Markdown/parser';
 import {DEFAULT_NODES} from './editorNodes';
 import {DEFAULT_TRANSFORMERS} from './markdownTable';
@@ -130,4 +136,99 @@ describe('an edited block with escaped syntax (spec:AST-062 FR3)', () => {
       );
     },
   );
+});
+
+/** Each link's destination and text, in order. */
+function linksOf(markdown: string): Array<[string, string]> {
+  const found: Array<[string, string]> = [];
+  const visit = (node: Json) => {
+    if (node.type === 'link') {
+      found.push([
+        node.url as string,
+        ((node.children as Array<Json>) ?? [])
+          .map(child => child.text as string)
+          .join(''),
+      ]);
+    }
+    ((node.children as Array<Json>) ?? []).forEach(visit);
+  };
+  visit((JSON.parse(markdownToEditorStateJSON(markdown)) as {root: Json}).root);
+  return found;
+}
+
+/** Imports `markdown`, appends `!` to its last text, and exports it. */
+function editedExport(markdown: string): string {
+  const editor = createHeadlessEditor({
+    nodes: [...DEFAULT_NODES],
+    onError(error) {
+      throw error;
+    },
+  });
+  importMarkdownKeepingSource(editor, markdown, [...DEFAULT_TRANSFORMERS]);
+  editor.update(
+    () => {
+      const last = $getRoot().getAllTextNodes().at(-1);
+      if (!$isTextNode(last)) {
+        throw new Error('No text');
+      }
+      last.setTextContent(`${last.getTextContent()}!`);
+    },
+    {discrete: true},
+  );
+  return editor
+    .getEditorState()
+    .read(() => $exportMarkdownKeepingSource([...DEFAULT_TRANSFORMERS]));
+}
+
+describe('parentheses in link destinations (spec:AST-062 FR3)', () => {
+  it.each([
+    ['[x](https://e.com/\\(bar\\)) text\n', 'https://e.com/(bar)'],
+    ['[x](a\\)b) text\n', 'a)b'],
+    ['[x](a\\(b) text\n', 'a(b'],
+    ['[x](https://e.com/foo(bar)) text\n', 'https://e.com/foo(bar)'],
+    ['[x](https://e.com/foo(bar) "Title") text\n', 'https://e.com/foo(bar)'],
+  ] as const)(
+    'reads %j as one link, round-trips it, and keeps it through an edit',
+    (markdown, url) => {
+      expect(linksOf(markdown)).toEqual([[url, 'x']]);
+      expect(
+        editorStateJSONToMarkdown(markdownToEditorStateJSON(markdown)),
+      ).toBe(markdown);
+      const edited = editedExport(markdown);
+      expect(linksOf(edited)).toEqual([[url, 'x']]);
+      expect(edited).toContain('text!');
+    },
+  );
+
+  it('reads balanced parentheses in a destination as core does', () => {
+    const markdown = '[x](https://e.com/foo(bar)) text\n';
+    expect(richTextLine(markdown)).toEqual(coreLine(markdown));
+  });
+
+  it('writes a link made in the editor so it reads back as the same link', () => {
+    const editor = createHeadlessEditor({
+      nodes: [...DEFAULT_NODES],
+      onError(error) {
+        throw error;
+      },
+    });
+    for (const url of [
+      'https://e.com/a(b',
+      'https://e.com/a)b',
+      'https://e.com/(ok)',
+    ]) {
+      editor.update(
+        () => {
+          const link = $createLinkNode(url);
+          link.append($createTextNode('x'));
+          $getRoot().clear().append($createParagraphNode().append(link));
+        },
+        {discrete: true},
+      );
+      const exported = editor
+        .getEditorState()
+        .read(() => $exportMarkdownKeepingSource([...DEFAULT_TRANSFORMERS]));
+      expect(linksOf(exported)).toEqual([[url, 'x']]);
+    }
+  });
 });
