@@ -4,8 +4,8 @@
  * @file RichTextEditor.test.tsx
  * @input Uses vitest, @testing-library/react, RichTextEditor + RichTextView
  * @output Unit tests for the opt-in Lexical editor components, including
- *   accessible label wiring, shared input visuals/status variants,
- *   placeholder semantics, canonical link-dialog layout, top-toolbar
+ *   accessible label wiring, shared input visuals/status variants, theme-target
+ *   metadata, placeholder semantics, canonical link-dialog layout, top-toolbar
  *   ordering and horizontal scrolling, and the read-only vs disabled split
  *   with editable-state sync across prop toggles
  * @position Testing; validates RichTextEditor.tsx and RichTextView.tsx
@@ -46,6 +46,7 @@ import {
   NEW_TAB_LINK_ATTRIBUTES,
 } from './RichTextEditorAutoLinkPlugin';
 import {sanitizeUrl, validateUrl} from './linkUtils';
+import {docs as richTextEditorDoc} from './RichTextEditor.doc.mjs';
 
 // Closed popover-backed tooltips are intentionally hidden from the default
 // accessibility tree until their trigger opens them.
@@ -283,6 +284,30 @@ const HELLO_STATE = JSON.stringify({
 });
 
 describe('RichTextEditor', () => {
+  it('declares exactly the visual props its theme target reflects', () => {
+    // The core theming guards walk packages/core/src (and Lab) only, so
+    // nothing else compares this package's doc metadata with its
+    // themeProps() call. Set equality fails on drift in either direction: a
+    // reflected axis left undeclared, or a declared axis nothing reflects.
+    const target = richTextEditorDoc.theming?.targets.find(
+      ({className}) => className === 'astryx-rich-text-editor',
+    );
+    const {container} = render(
+      <RichTextEditor label="Notes" size="lg" status={{type: 'error'}} />,
+    );
+    const wrapper = container.querySelector('.astryx-rich-text-editor');
+    expect(wrapper).not.toBeNull();
+
+    const reflected = [...(wrapper?.attributes ?? [])]
+      .filter(({name}) => name.startsWith('data-'))
+      .map(({name}) => name.slice('data-'.length))
+      .sort();
+    expect([...(target?.visualProps ?? [])].sort()).toEqual(reflected);
+    // The reflected values are the props, not stale defaults.
+    expect(wrapper).toHaveAttribute('data-size', 'lg');
+    expect(wrapper).toHaveAttribute('data-status', 'error');
+  });
+
   it('keeps TextArea-style input visuals alongside consumer props', () => {
     const {container} = render(
       <RichTextEditor
