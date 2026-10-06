@@ -49,7 +49,8 @@ export const THEMATIC_BREAK: ElementTransformer = {
     ) {
       const [line] = children;
       if ($isTextNode(line)) {
-        line.setTextContent(match.input ?? match[0]);
+        // The pattern is anchored to the whole line, so its match is the line.
+        line.setTextContent(match[0]);
       }
       return false;
     }
