@@ -1083,6 +1083,115 @@ for (const globals of [
   });
 }
 
+// spec:AST-061 FR1: fenced code takes the same syntax colors on both
+// surfaces — the same tokenizer finds the same tokens, and each token type
+// takes its `--color-syntax-*` token.
+/** Each block's highlighted tokens on one surface, as `type:text`. */
+async function syntaxTokens(
+  page: Page,
+  surface: string,
+): Promise<Record<string, Array<string>>> {
+  return page.evaluate(selector => {
+    const tokens: Record<string, Array<string>> = {};
+    for (const [name, highlight] of CSS.highlights) {
+      if (!name.startsWith('astryx-')) {
+        continue;
+      }
+      for (const range of highlight) {
+        const element = range.startContainer.parentElement;
+        const block = element?.closest(selector)?.contains(element)
+          ? element.closest('[data-parity-block]')
+          : null;
+        if (block == null || !(range instanceof Range)) {
+          continue;
+        }
+        const key = block.getAttribute('data-parity-block') ?? '';
+        (tokens[key] ??= []).push(
+          `${name.slice('astryx-'.length)}:${range.toString()}`,
+        );
+      }
+    }
+    for (const list of Object.values(tokens)) {
+      list.sort();
+    }
+    return tokens;
+  }, surface);
+}
+
+for (const globals of [
+  'colorMode:light;direction:ltr',
+  'colorMode:dark;direction:rtl',
+]) {
+  test(`side by side: fenced code takes core Markdown's syntax colors (${globals})`, async ({
+    page,
+  }) => {
+    const errors = await openStory(page, STORY.sideBySide, DESKTOP, globals);
+    await waitForDocument(page, MARKDOWN);
+    await waitForDocument(page, RICH_TEXT);
+    await expect
+      .poll(async () => (await syntaxTokens(page, RICH_TEXT))['code-fence'])
+      .toBeDefined();
+    const markdown = await syntaxTokens(page, MARKDOWN);
+    const richText = await syntaxTokens(page, RICH_TEXT);
+    for (const key of ['code-fence', 'code-long']) {
+      expect(markdown[key]?.length ?? 0, key).toBeGreaterThan(0);
+      expect(richText[key], key).toEqual(markdown[key]);
+    }
+    // A fence with no language core CodeBlock knows stays plain on both.
+    for (const key of ['code-plain', 'code-plaintext', 'code-unknown']) {
+      expect(richText[key], key).toBeUndefined();
+      expect(markdown[key], key).toBeUndefined();
+    }
+    // Each token type takes the same syntax color token as core CodeBlock.
+    const rules = await page.evaluate(
+      () =>
+        document.querySelector('style[data-astryx-richtext-code-syntax]')
+          ?.textContent ?? '',
+    );
+    expect(rules).toContain(
+      '::highlight(astryx-keyword) { color: var(--color-syntax-keyword); }',
+    );
+    expect(rules).toContain(
+      '::highlight(astryx-string) { color: var(--color-syntax-string); }',
+    );
+    expect(errors).toEqual([]);
+  });
+}
+
+test('edited code is colored again as it changes', async ({page}) => {
+  await page.setViewportSize(DESKTOP);
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
+    {waitUntil: 'load'},
+  );
+  await page.locator('textarea').fill('```ts\nlet value = 1;\n```');
+  const editor = page.locator('[data-lexical-editor][contenteditable="true"]');
+  const editorTokens = () =>
+    page.evaluate(() => {
+      const root = document.querySelector(
+        '[data-lexical-editor][contenteditable="true"]',
+      );
+      const tokens: Array<string> = [];
+      for (const [name, highlight] of CSS.highlights) {
+        for (const range of highlight) {
+          if (range instanceof Range && root?.contains(range.startContainer)) {
+            tokens.push(`${name}:${range.toString()}`);
+          }
+        }
+      }
+      return tokens.sort();
+    });
+  await expect.poll(editorTokens).toContain('astryx-keyword:let');
+  // Type a keyword on a new line: it is colored, and the first line keeps
+  // its colors.
+  await editor.getByText('let value = 1;').click();
+  await page.keyboard.press('End');
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('return value;');
+  await expect.poll(editorTokens).toContain('astryx-keyword:return');
+  expect(await editorTokens()).toContain('astryx-keyword:let');
+});
+
 for (const viewport of [PHONE, {width: 1280, height: 900}] as const) {
   for (const globals of [
     'colorMode:light;direction:ltr',

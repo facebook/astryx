@@ -24,6 +24,7 @@ import {
   focusVars,
   sizeVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
+import {CODE_SYNTAX_CLASS} from './CodeSyntaxPlugin';
 import type {EditorThemeClasses} from 'lexical';
 
 // Document blocks follow core Markdown's typography, spacing, and measure
@@ -446,7 +447,8 @@ export function sharedEditorTheme(): EditorThemeClasses {
       strikethrough: stylex.props(editorTheme.textStrikethrough).className,
       code: stylex.props(editorTheme.textCode).className,
     },
-    code: block(editorTheme.code),
+    // The plain class lets CodeSyntaxPlugin's highlight rules find code blocks.
+    code: `${block(editorTheme.code)} ${CODE_SYNTAX_CLASS}`,
     hr: stylex.props(editorTheme.hr).className,
     hrSelected: stylex.props(editorTheme.hrSelected).className,
     table: block(editorTheme.table),

@@ -33,6 +33,7 @@ import {TablePlugin} from '@lexical/react/LexicalTablePlugin';
 import {TableScrollRegionPlugin} from './TableScrollRegionPlugin';
 import {TableColumnFloorPlugin} from './TableColumnFloorPlugin';
 import {CodeBlockHeaderPlugin} from './CodeBlockHeaderPlugin';
+import {CodeSyntaxPlugin} from './CodeSyntaxPlugin';
 import {TaskCheckboxPlugin} from './TaskCheckboxPlugin';
 import type {
   AnyLexicalExtension,
@@ -296,6 +297,7 @@ export function RichTextView({
         {/* After the content, so the copy buttons and checkboxes follow it
             in tab order. */}
         <CodeBlockHeaderPlugin />
+        <CodeSyntaxPlugin />
         <TaskCheckboxPlugin isReadOnly />
         {plugins}
       </LexicalExtensionComposer>

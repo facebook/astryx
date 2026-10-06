@@ -76,6 +76,7 @@ import {HorizontalRuleExtension} from '@lexical/extension';
 import {StrikethroughDeletionExtension} from './strikethroughDeletion';
 import {TableColumnFloorPlugin} from './TableColumnFloorPlugin';
 import {CodeBlockHeaderPlugin} from './CodeBlockHeaderPlugin';
+import {CodeSyntaxPlugin} from './CodeSyntaxPlugin';
 import {TaskCheckboxPlugin} from './TaskCheckboxPlugin';
 import {type Transformer} from '@lexical/markdown';
 export type {Transformer} from '@lexical/markdown';
@@ -694,6 +695,7 @@ export const RichTextEditor = forwardRef<
               />
               <TableColumnFloorPlugin />
               <CodeBlockHeaderPlugin />
+              <CodeSyntaxPlugin />
               <TabIndentationPlugin />
               <TabFocusEscapePlugin />
               {hasMarkdownShortcuts && (
