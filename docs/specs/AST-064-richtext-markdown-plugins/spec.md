@@ -23,36 +23,42 @@ affects_consumer_docs: [RichTextEditor, RichTextView]
 ## Intent
 
 A product that extends Markdown with a plugin writes the plugin once. The
-same syntax becomes the same node, drawn by the same renderer, whether a
-person reads the document in `Markdown`, views it in `RichTextView`, or
-edits it in `RichTextEditor`. Each surface uses only the plugins its caller
-gives it, and a plugin RichText cannot honor exactly is refused rather than
-half applied. Syntax a surface does not adopt stays as the author wrote it.
+same inline syntax, and the same block syntax at the top level of a document,
+becomes the same node, drawn by the same renderer, whether a person reads the
+document in `Markdown`, views it in `RichTextView`, or edits it in
+`RichTextEditor`. Each surface uses only the plugins its caller gives it, and
+a plugin RichText cannot honor exactly is refused rather than half applied.
+Syntax a surface does not adopt stays as the author wrote it.
 
 ## Non-goals
 
+- Block extension syntax nested inside a list item, a quote, or a table cell.
+  It stays literal text in RichText.
 - Editing inside an extension node, plugin-supplied editing commands or
   toolbars, and inserting new extension nodes from the editor's interface.
 - Running a plugin's immutable document transform while editing, and
   plugin-derived heading projection or outlines. Plugins that need them are
   refused (FR3).
-- Block extension syntax nested inside a list item, a quote, or a table cell.
-  RichText recognizes block extension syntax at the top level of the
-  document; nested block syntax stays literal text.
+- Moving RichText's own Markdown import onto core's parser. Core's parser
+  recognizes adopted plugin syntax only (FR4); RichText's transformers import
+  everything else.
+- Deprecating or removing the `transformers` prop and option.
+- A public theme target for extension nodes; each plugin's renderer owns its
+  node's visuals.
+- Server-rendering `RichTextView`'s content, which stays filled in the
+  browser.
 - Exposing the editor engine's own plugin, node, or extension types through
-  RichText's public API.
-- Package discovery, global registration, and plugin ordering across
-  surfaces.
-- Streaming input. RichText imports complete documents.
+  RichText's public API; package discovery; global registration; streaming
+  input.
 
 ## Requirements
 
 - **FR1 — One definition.** A plugin is the entry core's
   `createMarkdownPlugin` returns. RichText adopts that same entry through
   `createRichTextExtension(plugin)`, exported from `@astryxdesign/richtext`,
-  which returns an opaque `RichTextMarkdownExtension`. RichText recognizes
-  syntax with the plugin's own tokenizers through core's parser and draws
-  nodes with the plugin's own renderers; there is no RichText-specific plugin
+  which returns an opaque `RichTextMarkdownExtension`. RichText recognizes the
+  plugin's syntax through core's parser and plugin protocol and draws its
+  nodes with the plugin's renderers; there is no RichText-specific plugin
   format and no second copy of a plugin's parsing or rendering.
 - **FR2 — Adopted per surface, never globally.** A RichText surface uses
   exactly the extensions its caller passes it: `markdownExtensions` on
@@ -68,63 +74,96 @@ half applied. Syntax a surface does not adopt stays as the author wrote it.
   `RichTextExtensionError` naming the plugin and the capability, before any
   surface uses it. A refused or absent plugin's syntax imports as literal text
   (`spec:AST-062` FR5).
-- **FR4 — Same recognition.** With the same plugin, RichText recognizes the
-  spans core `Markdown` recognizes, in the contexts this record covers —
-  inline syntax wherever inline content imports, block syntax at the top
-  level: the same start, end, display, node name, and data, and nothing
-  inside code, after an escaping backslash, or anywhere else core shields from
-  plugins. A span core does not recognize stays text.
-- **FR5 — Extension nodes are atomic.** A recognized span is one node in the
+- **FR4 — Core recognizes plugin syntax first.** Before RichText's own
+  Markdown import reads a top-level block, core's parser, given exactly the
+  adopted plugins, finds their nodes in it. Each node's exact source is
+  shielded from RichText's import and becomes one extension node; RichText's
+  transformers import everything else as they do without plugins. Where core
+  recognizes plugin syntax, the plugin's node wins for that range. The
+  recognized spans are the spans core `Markdown` recognizes with the same
+  plugins — the same start, end, display, node name, and data, and nothing
+  inside code, after an escaping backslash, or anywhere else core shields
+  from plugins — for inline syntax wherever inline content imports and block
+  syntax at the top level.
+- **FR5 — Extensions and transformers never both claim source.**
+  `markdownExtensions` run before the `transformers` prop or option. If a
+  transformer claims what an adopted extension claims — its import pattern
+  matches the source of a span the extension recognized, or it imports or
+  exports the extension's nodes — the surface or serializer throws a
+  `RichTextExtensionError` naming the plugin and the transformer. Neither
+  silently wins.
+- **FR6 — Extension nodes are atomic.** A recognized span is one node in the
   editor that cannot be typed into. The caret moves over it in one step; it is
   selected, deleted, cut, copied, pasted, moved, undone, and redone whole. An
   inline node sits in its line of text; a block node is a top-level block.
   Assistive technology meets each node once, in document order, with the
   semantics its renderer gives it; the node adds no tab stop of its own.
-- **FR6 — Same rendering, same fallback.** A node renders through its
-  plugin's renderer for its node name in both RichText surfaces, exactly as
-  core `Markdown` renders it. If the renderer throws, returns nothing, or the
-  surface was not given the plugin, the node shows its readable text — the
-  renderer's `toText` when the plugin is present, its source otherwise — in
-  place, and the rest of the surface keeps working.
-- **FR7 — Plugin syntax is kept losslessly.** An extension node exports
+- **FR7 — Rendering matches core.** A node renders through its plugin's
+  renderer for its node name, exactly as core `Markdown` renders an extension
+  node. A renderer that returns nothing renders nothing. If the renderer
+  throws when called or while rendering, the node shows its readable text in
+  place — its source, or the renderer's `toText` for a node with no source —
+  and shows the same text while the renderer suspends. A surface without the
+  node's plugin shows its source. A failure never breaks the rest of the
+  surface.
+- **FR8 — Diagnostics match core.** RichText reports a plugin's failures
+  through core's plugin failure reporting, as `Markdown` does: once per plugin
+  and phase, `plugin "<name>" failed in <phase>; rendered readable fallback.`
+  It adds no diagnostics channel of its own.
+- **FR9 — The authored source is authoritative.** An extension node exports
   exactly its source bytes wherever it is, so documents with plugin syntax
   keep `spec:AST-062` FR1–FR5: an unchanged document round-trips byte for
   byte; editing around a node never rewrites it; moving it moves its bytes. A
   document imported without the plugin keeps the syntax as literal text and
-  exports it unchanged. Stored editor state carries each node's source and
-  data, so it exports, and renders its fallback, without the plugin.
-- **FR8 — Server and client agree.** `RichTextView` renders extension nodes
-  the same on the server and in the browser, and `createRichTextExtension`
-  does no browser-only work.
+  exports it unchanged.
+- **FR10 — Stored state is re-derived from source.** Stored editor state
+  keeps each extension node's exact source, its plugin's name, `parseKey`,
+  and protocol version, and the data derived for rendering. When a surface
+  loads stored state, it derives each node again from its source with the
+  adopted plugin and never renders stored data on its own. A node whose
+  source the adopted plugin no longer recognizes as that node — the plugin's
+  syntax, `parseKey`, or protocol version changed without a migration, or the
+  plugin is absent — loads as its source, literal text that exports
+  unchanged.
+- **FR11 — Headless and hydration safe.** Recognition, import, and export,
+  `createRichTextExtension` included, run headless in Node and in server code
+  with no DOM. `RichTextView` keeps its client boundary: its content fills in
+  the browser, and a server-rendered page that contains it hydrates without
+  mismatches when extensions are adopted.
 
 ### Platform support
 
-- Supported feature/engine floor: wherever RichText renders; recognition and
-  export also run headless in Node.
+- Supported feature/engine floor: wherever RichText renders; recognition,
+  import, and export also run headless in Node.
 - Unsupported behavior: none beyond the non-goals.
-- Browser evidence: required for FR5 and FR6 (keyboard, selection,
-  clipboard, history, and assistive-technology order in the editor).
+- Browser evidence: required for FR6 and FR7 (keyboard, selection,
+  clipboard, history, rendering, and assistive-technology order in the
+  editor) and for FR11's hydration.
 
 ## Current-state impact
 
 RichText does not adopt Markdown plugins: plugin syntax imports as literal
 text and exports as authored (`spec:AST-062` FR5), and `RichTextEditor`,
 `RichTextView`, and `markdownToEditorStateJSON` take no Markdown plugins.
-Their `nodes` and `plugins` props, which take editor-engine nodes and React
-plugins, are unchanged and separate from `markdownExtensions`.
+Their `nodes`, `plugins`, and `transformers` props and options, which take
+editor-engine nodes, React plugins, and editor-engine Markdown transformers,
+keep working beside `markdownExtensions`.
 
 ## Verification
 
-| Contract | Verification                                                                                  | Representative states                                                                                                                                                             | Mutation or failure expectation                                                                                       |
-| -------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| FR1      | The same plugin entry passed to `Markdown` and to `createRichTextExtension`                   | A plugin with inline and block contributions and data                                                                                                                             | A RichText-only definition, or a second tokenizer or renderer, fails                                                  |
-| FR2      | Two surfaces on one page, one with the extension and one without; import with and without it  | Editor and view; `markdownToEditorStateJSON` with and without `extensions`                                                                                                        | One surface's extension changing the other, or any recognition without an explicit extension, fails                   |
-| FR3      | `createRichTextExtension` over the capability matrix                                          | Syntax with renderers; a transform; a transform with syntax; a node name without a renderer; a refused plugin's syntax in a document                                              | Accepting an unsupported capability, a refusal without the plugin and capability named, or dropped syntax fails       |
-| FR4      | Conformance corpus parsed by core and imported by RichText with the same plugin, node by node | Inline and block matches; a deferred and a failed match; syntax in inline code and fenced code; an escaped start; adjacent nodes; inline syntax in lists, quotes, and table cells | Any span, display, node name, or data that differs from core fails                                                    |
-| FR5      | Real-browser editing of inline and block nodes                                                | Arrow keys across, Shift-selection, Backspace and Delete, cut, copy, paste into another editor with and without the extension, undo, redo, typing beside a node                   | A caret inside a node, a partial deletion, or a node split by an edit fails                                           |
-| FR6      | Rendering in both surfaces                                                                    | A renderer that returns content; one that throws; one that returns nothing; a surface without the extension                                                                       | Output that differs from core's, a fallback other than `toText` or source, or a failure that breaks the surface fails |
-| FR7      | `spec:AST-062`'s conformance corpus with plugin syntax added                                  | Unchanged documents; an edit beside a node; a node moved; import without the plugin; stored state exported and rendered without the plugin                                        | Any byte of a node's source changing, or source lost without the plugin, fails                                        |
-| FR8      | Server render and hydration of `RichTextView` with an extension                               | Inline and block nodes; a renderer fallback                                                                                                                                       | Different server and client output, or browser-only work in `createRichTextExtension`, fails                          |
+| Contract | Verification                                                                              | Representative states                                                                                                                                                                                                                                                     | Mutation or failure expectation                                                                                                              |
+| -------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1      | The same plugin entry passed to `Markdown` and to `createRichTextExtension`               | A plugin with inline and block contributions and data                                                                                                                                                                                                                     | A RichText-only definition, or a second tokenizer or renderer, fails                                                                         |
+| FR2      | Two surfaces on one page, one with the extension and one without; import with and without | Editor and view; `markdownToEditorStateJSON` with and without `extensions`                                                                                                                                                                                                | One surface's extension changing the other, or recognition without an explicit extension, fails                                              |
+| FR3      | `createRichTextExtension` over the capability matrix                                      | Syntax with renderers; a transform; a transform with syntax; a node name without a renderer; a refused plugin's syntax in a document                                                                                                                                      | Accepting an unsupported capability, a refusal that does not name the plugin and capability, or dropped syntax fails                         |
+| FR4      | A corpus parsed by core and imported by RichText with the same plugins, node by node      | Inline and block matches; a deferred and a failed match; syntax inside inline code and fenced code; an escaped start; plugin syntax that base Markdown would also read (an emphasis-like delimiter); inline syntax in lists, quotes, and table cells; nested block syntax | A span, display, node name, or data that differs from core, base Markdown read inside a plugin span, or nested block syntax recognized fails |
+| FR5      | Extensions with transformers that overlap and that do not                                 | A transformer whose pattern matches a recognized span; one that handles the extension's nodes; an unrelated custom transformer                                                                                                                                            | An overlap that does not throw, a thrown error without both names, or an unrelated transformer refused fails                                 |
+| FR6      | Real-browser editing of inline and block nodes                                            | Arrow keys across, Shift-selection, Backspace and Delete, cut, copy, paste into another editor with and without the extension, undo, redo, typing beside a node                                                                                                           | A caret inside a node, a partial deletion, or a node split by an edit fails                                                                  |
+| FR7      | Rendering in both surfaces against core's output for the same nodes                       | A renderer that returns content; one that returns nothing; one that throws when called; one whose component throws; one that suspends; a node with no source; a surface without the extension                                                                             | Output that differs from core's, or a fallback other than source, `toText`, or nothing as core shows, fails                                  |
+| FR8      | Failure reporting from both surfaces                                                      | A syntax failure; a render failure, repeated                                                                                                                                                                                                                              | A report that differs from core's message or frequency, or a RichText-only diagnostic, fails                                                 |
+| FR9      | `spec:AST-062`'s conformance corpus with plugin syntax added                              | Unchanged documents; an edit beside a node; a node moved; import without the plugin                                                                                                                                                                                       | Any byte of a node's source changing, or source lost without the plugin, fails                                                               |
+| FR10     | Stored state loaded under changed plugins                                                 | The same plugin; a changed `parseKey`; a changed protocol version; changed syntax that no longer matches; stored data edited to disagree with the source; no plugin                                                                                                       | Rendering stale stored data, or a lost or changed source byte, fails                                                                         |
+| FR11     | Headless runs and a server-rendered page hydrating a `RichTextView` with extensions       | Node import and export with extensions; `createRichTextExtension` without a DOM; hydration with inline and block nodes                                                                                                                                                    | Browser-only work during creation, import, or export, or a hydration mismatch, fails                                                         |
 
 ## Decision log
 
@@ -161,16 +200,29 @@ RichText adopts a plugin only when it honors every capability, and refuses
 it loudly otherwise, leaving its syntax as text. Rejected: partial adoption
 with a warning.
 
-### DEC-4 — Extension nodes are atomic and keep their source
+### DEC-4 — Core recognizes plugin syntax; RichText imports the rest
 
 **Reference:** `spec:AST-064/DEC-4`
 **Decider:** pending
 
+Plugin syntax means what core's parser says it means, so core finds it
+first and its range is closed to RichText's import; base Markdown stays with
+RichText's transformers, and an overlap between an extension and a
+transformer is an error, not an ordering accident. Rejected: moving all of
+RichText's import onto core's parser in this record, and last-one-wins
+between extensions and transformers.
+
+### DEC-5 — Extension nodes are atomic, and their source is the truth
+
+**Reference:** `spec:AST-064/DEC-5`
+**Decider:** pending
+
 Core's protocol reads syntax into nodes and renders them; it has no way to
-write a changed node back to Markdown. An atomic node that keeps its source
-exports exactly what was read and never needs to. Rejected: editable
-extension content, which would need a serializer per plugin that the
-protocol does not have.
+write a changed node back to Markdown. An atomic node keeps its authored
+source, exports exactly that, and is derived again from it whenever it
+loads, so stored data can never drift from the document. Rejected: editable
+extension content, which would need a serializer per plugin, and trusting
+stored data across plugin versions.
 
 ## Open questions
 
