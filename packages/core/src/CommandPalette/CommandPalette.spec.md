@@ -233,8 +233,9 @@ current audit gap and does not authorize a new target.
 - `family:overlay-dismissal` owns topmost Escape and close-request ordering;
   CommandPalette adopts it through Dialog while preserving local inline-preview
   closing because inline mode does not register as a layer.
-- No layer-runtime record is linked because no current record with that scope is
-  present in this checkout.
+- `architecture:layer-runtime` records that the modal path delegates Escape to
+  Dialog's shared dismissal registration while the unregistered inline preview
+  preserves local closing.
 
 ## Verification map
 

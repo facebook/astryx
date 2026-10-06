@@ -131,9 +131,11 @@ async function capture(page: Page, scenario: Case) {
     const subject = canvas.locator('[data-command-palette-audit-matrix]');
     await subject.waitFor();
     await expect(subject.locator('[role="region"]')).toHaveCount(3);
-    await expect(subject.locator('.astryx-spinner[role="status"]')).toHaveCount(
-      1,
-    );
+    await expect(
+      subject
+        .getByRole('region', {name: 'Pending command palette'})
+        .locator('.astryx-spinner[role="status"]'),
+    ).toHaveCount(1);
     await page.waitForTimeout(200);
     await holdMotionStill(page);
     await page.evaluate(async () => document.fonts.ready);
