@@ -13,10 +13,10 @@
  * @output `weighStart(idea, ranked, pick, catalog)`: the template id to start
  *   from, null for the app shell, or undefined when no table is available, in
  *   which case the ranker's own pick stands.
- * @position Beside rank.mjs (api/build/kit/); kit.mjs calls it for a whole
- *   page that search matched no template for directly. The ranker's pick of a
- *   template the tables do not list stands, so a new template can start a
- *   build.
+ * @position Beside rank.mjs (api/build/kit/); kit.mjs calls it for every
+ *   whole page (a part or an edit follows the ranker's placement rules). The
+ *   ranker's pick of a template the tables do not list stands, so a new
+ *   template can start a build.
  */
 
 /** The app shell, as one candidate. */

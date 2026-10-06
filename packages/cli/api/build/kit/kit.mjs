@@ -233,7 +233,9 @@ function chooseStart(ranked, kind, pages, directMatch, catalog, idea) {
           : place
             ? placed(place, shell.name)
             : direct
-              ? `Search matched \`${direct}\` by name, but too little of the idea fits it, so start from the app shell.`
+              ? weighed === null
+                ? `Search matched \`${direct}\` by name, but the app shell is the closer start.`
+                : `Search matched \`${direct}\` by name, but too little of the idea fits it, so start from the app shell.`
               : nearest
                 ? 'No template is a clear match; the app shell is the closest.'
                 : loose

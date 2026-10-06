@@ -477,6 +477,21 @@ describe('build kit — every page starts from a template', () => {
     expect(r.data.pages.map(p => p.name)).not.toContain('side-gallery');
   });
 
+  it('names a direct match the start does not use, and calls the start direct only when it is', async () => {
+    for (const idea of ['a login form', 'a docs site for our API', 'contact form']) {
+      const r = await build(idea, {cwd: REPO});
+      if (r.type !== 'build.kit') throw new Error(r.type);
+      expect(r.data.directMatch).toBe(true);
+      const match = r.data.pages[0].name;
+      if (r.data.start?.name === match) {
+        expect(r.data.start?.basis).toBe('direct');
+      } else {
+        expect(['closest', 'fallback']).toContain(r.data.start?.basis);
+        expect(r.data.start?.reason).toContain(`\`${match}\``);
+      }
+    }
+  });
+
   it('starts a part that names no page from the app shell', async () => {
     for (const idea of ['a kanban card', 'an inbox list']) {
       const r = await build(idea, {cwd: REPO});
