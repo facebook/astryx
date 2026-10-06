@@ -25,7 +25,7 @@ import {createRequire} from 'node:module';
 import {join, dirname, relative} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import docsiteConfig from '../astryx.config.mjs';
-import {getTarget} from './resolve-content-root.mjs';
+import {getTarget, latestDocumentedPackageNames} from './resolve-content-root.mjs';
 import {integrationPackagesForTarget} from '../src/lib/integrationTargets.mjs';
 
 // Resolves from this script, so docsite's own dependencies are found wherever
@@ -318,7 +318,13 @@ function buildThemeTypes() {
 // for a follow-up.
 function buildIntegrationTypes() {
   const files = {};
-  for (const pkg of integrationPackagesForTarget(getTarget(), docsiteConfig)) {
+  const target = getTarget();
+  const admitted = integrationPackagesForTarget(
+    target,
+    docsiteConfig,
+    target === 'latest' ? latestDocumentedPackageNames() : null,
+  );
+  for (const pkg of admitted) {
     files[pkg] = {'index.d.ts': `declare module '${pkg}';\n`};
   }
   return files;

@@ -21,9 +21,12 @@ theme tokens directly (StyleX build mirrors `@astryxdesign/lab`).
 
 ## Status
 
-Under active development. The config-model chart and its marks/chrome are in place;
-API and visuals are still being refined. See [`docs/`](./docs/) for the plan, design research, readiness audit, and
-verification checklist.
+Stable from its first stable release on the `latest` tag. From then on, its
+package exports, its six documented components and their props, and its two block
+templates follow Astryx's stable compatibility promise: no breaking change outside
+a scheduled minor, and removal only after deprecation. Canary builds keep
+publishing under `@canary`. See [`docs/`](./docs/) for the plan, design research,
+readiness audit, and verification checklist.
 
 ## Install
 

@@ -1,8 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Astryx CLI integrations documented by the canary site.
- * Production uses published stable packages and never loads this catalog.
+ * Astryx CLI integrations the docsite documents. The canary site documents
+ * every one; production documents one only once it has released stable
+ * (src/lib/integrationTargets.mjs).
  */
 export default {
   integrations: [
