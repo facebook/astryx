@@ -4,7 +4,8 @@
 
 /**
  * @file ListItem.tsx
- * @input Uses React, ReactNode, StyleXStyles, theme tokens, List edge compensation
+ * @input Uses React, ReactNode, StyleXStyles, theme tokens, List edge compensation,
+ *   and the marker a ListMarkerScope sets (Markdown's nested lists)
  * @output Exports ListItem component, ListItemProps type
  * @position Core implementation; consumed by List, index.ts, tested by List.test.tsx
  *
@@ -28,7 +29,7 @@ import {
   borderVars,
 } from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
-import {ListContext} from './ListContext';
+import {ListContext, type ListMarker} from './ListContext';
 import {mergeProps} from '../utils';
 import {Item} from '../Item';
 import {themeProps} from '../utils/themeProps';
@@ -189,6 +190,11 @@ const markerStyles = stylex.create({
     borderColor: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
   },
+  square: {
+    width: MARKER_DOT_SIZE,
+    height: MARKER_DOT_SIZE,
+    backgroundColor: colorVars['--color-text-primary'],
+  },
   number: {
     alignSelf: 'baseline',
     flexShrink: 0,
@@ -196,11 +202,32 @@ const markerStyles = stylex.create({
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
     width: spacingVars['--spacing-4'],
+  },
+  // A number outside a counter style's range (zero or below, or past 3999
+  // in roman) is written in decimal, as CSS counter styles fall back.
+  decimal: {
     '::before': {
       content: 'counter(astryx-list) "."',
     },
   },
+  lowerAlpha: {
+    '::before': {
+      content: 'counter(astryx-list, lower-alpha) "."',
+    },
+  },
+  lowerRoman: {
+    '::before': {
+      content: 'counter(astryx-list, lower-roman) "."',
+    },
+  },
 });
+
+/** The number styles, by marker. */
+const NUMBER_STYLES = {
+  decimal: markerStyles.decimal,
+  'lower-alpha': markerStyles.lowerAlpha,
+  'lower-roman': markerStyles.lowerRoman,
+} as const;
 
 const embeddedStyles = stylex.create({
   noRadius: {
@@ -250,18 +277,27 @@ export function ListItem({
   const listStyle = ctx?.listStyle ?? 'none';
   const edgeCompensation = ctx?.edgeCompensation;
   const hasMarkers = listStyle !== 'none';
+  // ListMarkerScope may name another marker for this item.
+  const markerKind: ListMarker | null =
+    listStyle === 'none' ? null : (ctx?.marker ?? listStyle);
 
   const marker =
-    listStyle === 'disc' ? (
+    markerKind === 'disc' ||
+    markerKind === 'circle' ||
+    markerKind === 'square' ? (
       <span {...stylex.props(markerStyles.container)}>
-        <span {...stylex.props(markerStyles.dot)} />
+        <span
+          {...stylex.props(
+            markerKind === 'disc'
+              ? markerStyles.dot
+              : markerKind === 'circle'
+                ? markerStyles.circle
+                : markerStyles.square,
+          )}
+        />
       </span>
-    ) : listStyle === 'circle' ? (
-      <span {...stylex.props(markerStyles.container)}>
-        <span {...stylex.props(markerStyles.circle)} />
-      </span>
-    ) : listStyle === 'decimal' ? (
-      <span {...stylex.props(markerStyles.number)} />
+    ) : markerKind != null ? (
+      <span {...stylex.props(markerStyles.number, NUMBER_STYLES[markerKind])} />
     ) : null;
 
   return (

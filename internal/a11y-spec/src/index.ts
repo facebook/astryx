@@ -119,6 +119,11 @@ export {
 } from './patterns/spinbutton';
 
 export {
+  TOGGLE_BUTTON_PATTERN,
+  type ToggleButtonStateFacts,
+} from './patterns/toggle-button';
+
+export {
   DISCLOSURE_PATTERN,
   type DisclosureStateFacts,
 } from './patterns/disclosure';

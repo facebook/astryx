@@ -85,9 +85,15 @@ export const Overview: Story = {
           id="heading-links-compact"
           density="compact"
           plugins={compactPlugins}>
-          {
-            '# Compact first-level heading\n\n###### Compact sixth-level heading\n\n###### Compact sixth-level heading'
-          }
+          {[
+            '# Compact first-level heading',
+            '## Compact second-level heading',
+            '### Compact third-level heading',
+            '#### Compact fourth-level heading',
+            '##### Compact fifth-level heading',
+            '###### Compact sixth-level heading',
+            '###### Compact sixth-level heading',
+          ].join('\n\n')}
         </Markdown>
       </section>
       <div aria-hidden="true" {...stylex.props(styles.geometryReference)}>

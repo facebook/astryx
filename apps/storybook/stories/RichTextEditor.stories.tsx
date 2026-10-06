@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useRef, useState} from 'react';
+import {useId, useRef, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
   RichTextEditor,
@@ -14,6 +14,11 @@ import {
 import type {EditorState} from 'lexical';
 import {BOLD_STAR, ITALIC_STAR, UNORDERED_LIST} from '@lexical/markdown';
 import {$getRoot} from 'lexical';
+import {
+  LONG_DOCUMENT_COPIES,
+  MarkdownParitySandbox,
+  type MarkdownParitySandboxProps,
+} from './RichTextEditor.markdownParity';
 
 const meta: Meta<typeof RichTextEditor> = {
   title: 'Lab/RichTextEditor',
@@ -375,6 +380,7 @@ Supports **bold**, _italic_, and lists:
 export const MarkdownSerializers = {
   render: () => {
     const [markdown, setMarkdown] = useState<string>(SAMPLE_MARKDOWN);
+    const inputLabelID = useId();
 
     const json = markdownToEditorStateJSON(markdown);
     const roundTripped = editorStateJSONToMarkdown(json);
@@ -392,10 +398,11 @@ export const MarkdownSerializers = {
     return (
       <div style={{display: 'grid', gap: 24, maxWidth: 720}}>
         <div>
-          <div style={{fontWeight: 600, marginBottom: 8}}>
+          <div id={inputLabelID} style={{fontWeight: 600, marginBottom: 8}}>
             1. Input Markdown (edit me)
           </div>
           <textarea
+            aria-labelledby={inputLabelID}
             value={markdown}
             onChange={e => setMarkdown(e.target.value)}
             rows={10}
@@ -447,5 +454,96 @@ export const MarkdownSerializers = {
         </details>
       </div>
     );
+  },
+};
+
+/**
+ * Markdown parity sandbox: one Markdown document rendered by core Markdown
+ * (read) and RichTextEditor (edit). It is diagnostic: it shows current behavior
+ * and promises no parity. Theme, color mode, and direction come from the
+ * toolbar; the viewport menu offers 390px and 1440px.
+ */
+type MarkdownParityStory = StoryObj<MarkdownParitySandboxProps>;
+
+const markdownParity: MarkdownParityStory = {
+  render: args => <MarkdownParitySandbox {...args} />,
+  // Page-sized diagnostics, not usage examples: keep them off the docs page.
+  tags: ['!autodocs'],
+  argTypes: {
+    view: {
+      control: 'inline-radio',
+      options: ['side-by-side', 'toggle', 'overlay'],
+    },
+    isLongDocument: {
+      control: 'boolean',
+      description: `Repeat the fixture ${LONG_DOCUMENT_COPIES} times.`,
+    },
+    hasPlugins: {
+      control: 'boolean',
+      description:
+        "Read side: Markdown's GFM autolinks and the demo plugins. Edit side: RichText's autolink plugin.",
+    },
+    hostWidth: {control: 'inline-radio', options: ['fill', '680px']},
+  },
+  parameters: {
+    controls: {include: ['view', 'isLongDocument', 'hasPlugins', 'hostWidth']},
+    viewport: {
+      options: {
+        parityPhone: {
+          name: 'Phone (390px)',
+          styles: {width: '390px', height: '844px'},
+          type: 'mobile',
+        },
+        parityDesktop: {
+          name: 'Desktop (1440px)',
+          styles: {width: '1440px', height: '900px'},
+          type: 'desktop',
+        },
+      },
+    },
+  },
+};
+
+export const MarkdownParity: MarkdownParityStory = {
+  ...markdownParity,
+  name: 'Markdown parity: side by side',
+  args: {
+    view: 'side-by-side',
+    isLongDocument: false,
+    hasPlugins: true,
+    hostWidth: 'fill',
+  },
+};
+
+export const MarkdownParityToggle: MarkdownParityStory = {
+  ...markdownParity,
+  name: 'Markdown parity: read/edit toggle',
+  args: {
+    view: 'toggle',
+    isLongDocument: false,
+    hasPlugins: true,
+    hostWidth: '680px',
+  },
+};
+
+export const MarkdownParityOverlay: MarkdownParityStory = {
+  ...markdownParity,
+  name: 'Markdown parity: overlay',
+  args: {
+    view: 'overlay',
+    isLongDocument: false,
+    hasPlugins: true,
+    hostWidth: '680px',
+  },
+};
+
+export const MarkdownParityLongDocument: MarkdownParityStory = {
+  ...markdownParity,
+  name: 'Markdown parity: long document',
+  args: {
+    view: 'toggle',
+    isLongDocument: true,
+    hasPlugins: true,
+    hostWidth: '680px',
   },
 };

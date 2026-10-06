@@ -667,16 +667,15 @@ describe('Selector', () => {
       const popover = screen
         .getByRole('listbox', {hidden: true})
         .closest('[popover]') as HTMLElement;
-      // Both block edges, so the gap survives a position-try-fallbacks flip
-      // to the opposite side (#4803).
+      // The clearance rides the edge facing the trigger — the block end for
+      // placement="above" — and a position-try flip carries it to the other
+      // side with the area, so the gap survives the flip (#4803).
       await waitFor(() => {
-        expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe(
+        expect(popover.style.getPropertyValue('--x-marginBlockEnd')).toBe(
           spacingVars['--spacing-1'],
         );
       });
-      expect(popover.style.getPropertyValue('--x-marginBlockEnd')).toBe(
-        spacingVars['--spacing-1'],
-      );
+      expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe('');
     });
 
     it('clears the trigger in search mode', async () => {

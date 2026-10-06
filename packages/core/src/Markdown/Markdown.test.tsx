@@ -329,6 +329,36 @@ describe('Markdown', () => {
     expect(link.getAttribute('href')).toBe('https://example.com');
   });
 
+  it('links to the destination, not the destination plus its title', () => {
+    render(
+      <Markdown>
+        {'[notes](https://example.com/notes "Release notes")'}
+      </Markdown>,
+    );
+    expect(screen.getByText('notes').getAttribute('href')).toBe(
+      'https://example.com/notes',
+    );
+  });
+
+  it('shows character references as the characters they name', () => {
+    const {container} = render(
+      <Markdown>{'Fish &amp; chips &copy; 2026 and `&amp;` in code'}</Markdown>,
+    );
+    expect(container.textContent).toContain('Fish & chips \u00a9 2026');
+    expect(container.querySelector('code')?.textContent).toBe('&amp;');
+  });
+
+  it('names an image with decoded alt text', () => {
+    render(
+      <Markdown>
+        {'![Fish &amp; chips \\*fresh\\*](https://example.com/fish.png)'}
+      </Markdown>,
+    );
+    expect(
+      screen.getByRole('img', {name: 'Fish & chips *fresh*'}),
+    ).toBeInTheDocument();
+  });
+
   it('adds target="_blank" to external links', () => {
     render(<Markdown>{'[ext](https://example.com)'}</Markdown>);
     const link = screen.getByText('ext');

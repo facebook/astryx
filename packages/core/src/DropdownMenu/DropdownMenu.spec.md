@@ -112,6 +112,7 @@ released default.
 | FR11                  | When a compact touch display opened the pointer menu (`COMPACT_TOUCH_PRESENTATION_QUERY`, the same query the root presentation uses for its bottom sheet, sampled once as it opens) an `adaptive` sub-menu row MUST drill in: its rows and a leading Back row named "Back to <parent>" replace the menu's rows in the same Pointer menu surface, no flyout opens, the drilled list is a `menu` named by the row's label, and Back, Escape and ArrowLeft MUST return to the row with focus on it; a pick inside closes the whole menu. Roving focus and typeahead scope to the shown rows; sibling rows and dividers need no knowledge of it. `presentation="flyout"` keeps the flyout; `"drill-in"` drills in on any pointer. | `component:DropdownMenu/DEC-2`; `architecture:interaction-modality`                                                                                                           | Proposed; verified in jsdom and Chromium (coarse pointer); owner to confirm DEC-5 |
 | FR12                  | In the pointer menu ArrowDown on the last enabled row wraps to the first and ArrowUp on the first to the last; PageDown and PageUp move to the last and first fully visible enabled row and, pressed there again, one viewport further without wrapping; ArrowUp on the trigger opens with the last enabled row highlighted; the key that opened the menu and its auto-repeats do not activate; typeahead matches the row's label element alone and ignores Control/Command chords and input-method composition.                                                                                                                                                                                                              | Proposed in this change; `DropdownMenu.test.tsx` keyboard suite, `useListFocus.test.tsx`, `useTypeahead.test.tsx`                                                             | Proposed; verified in jsdom, pending owner review                                 |
 | FR13                  | On a mouse, a nested flyout stays open while the pointer is inside the triangle from where it left its row to the flyout's near edge — including while the pointer is paused there — and closes after the existing delay once the pointer has left both the row and that triangle. The row's click toggle and its guard window are unchanged.                                                                                                                                                                                                                                                                                                                                                                                 | Proposed in this change; `DropdownMenuSubMenu.test.tsx` safe-triangle suite, `useMenuHover.test.tsx`                                                                          | Proposed; verified in jsdom, pending owner review                                 |
+| FR14                  | A compound `DropdownMenuGroup` is one `role="group"` named by its heading through `aria-labelledby`; the heading carries `dropdown-menu-section-heading`, is plain text rather than a menu item, and is skipped by roving focus and typeahead. An untitled group is an unnamed `role="group"`.                                                                                                                                                                                                                                                                                                                                                                                                                                | DEC-1, docs, and tests                                                                                                                                                        | Proposed; awaiting owner approval                                                 |
 
 ### Allowed variation
 
@@ -279,10 +280,9 @@ than adding a DropdownMenu-owned heading target.
 
 ### DEC-1 — Pointer dismissal returns focus to the trigger, ring suppressed
 
-### DEC-2 — Arrow keys wrap in a menu
-
 **Reference:** `component:DropdownMenu/DEC-1`
-**Decider:** pending owner review
+
+**Decider:** `cixzhang`, 2026-10-02
 
 The shipped behavior blurred the trigger after a pointer dismissal so Safari
 would not paint a ring after a touch pick. Focus falling to the page loses a
@@ -293,25 +293,6 @@ bottom-sheet presentation already did. The press model's own decisions remain
 in `module:DropdownMenu/useMenuPress`.
 
 ### DEC-2 — `menuMaxHeight` is a number of pixels
-
-### DEC-3 — A safe triangle protects the diagonal to a flyout
-
-**Reference:** `component:DropdownMenu/DEC-2`
-**Decider:** `cixzhang`, `2026-10-02`
-
-`menuMaxHeight` replaces only the 300px term of the cap; the viewport gutters
-still bound the menu, so a menu that must show all of its rows (a docked phone
-menu of eleven 44px rows) can, without ever overflowing the screen. The dynamic
-value uses `100dvb` alone; every browser with anchor positioning has it.
-
-A prop rather than a theme variable, because the need is situational — one
-menu with many rows — rather than a product-wide preference, and a prop reads
-more clearly at the callsite that has the problem.
-
-The value is a number of pixels. Rejected: an arbitrary CSS length (`50vh`,
-`calc(...)`), which is product-shaped tuning on a shared component that
-`spec:AST-002` does not admit, and which lets a caller write a cap the
-viewport term cannot reason about.
 
 ### DEC-3 — Any control can open a menu
 
@@ -412,3 +393,49 @@ None.
 This file does not duplicate consumer prop tables, item examples, focus and
 positioning algorithms, implementation steps, or shared modality, layer,
 dismissal, and theming rules. It links to their owners.
+
+### DEC-6 — A titled group of rows is `DropdownMenuGroup`
+
+**Reference:** `component:DropdownMenu/DEC-6`
+
+**Decider:** `cixzhang`, 2026-10-03
+
+Data mode could title a run of rows through `{type: 'section', title}` and
+compound mode could not, so the menus that most need grouping — checkbox
+rows, radio groups, rows mounted conditionally, all of which must be
+compound — left a screen reader a run of loose rows where a sighted user saw
+two clusters. The compound peer names its rows through `aria-labelledby` on
+the visible heading and reuses the `dropdown-menu-section-heading` treatment,
+so one heading looks and reads the same in both modes.
+
+The component is named for the `role="group"` it renders. The data model
+keeps `DropdownMenuSection` for its `{type: 'section'}` entry: the two words
+describe the same concept, and one name across both would collide with that
+exported type. Rejected: renaming the component to `DropdownMenuSection`,
+which collides; renaming both, which breaks a public type for a wording
+change.
+
+`title` is `ReactNode`. A rich heading is a legitimate need, and the data
+mode's string title is the narrower case rather than the model to match. A
+focusable node inside a heading lands in the group but outside the roving
+focus order, so the arrow keys cannot reach it; the type does not prevent
+that and a case pins the behavior instead.
+
+### DEC-7 — A safe triangle protects the diagonal to a flyout
+
+**Reference:** `component:DropdownMenu/DEC-7`
+**Decider:** `cixzhang`, `2026-10-02`
+
+`menuMaxHeight` replaces only the 300px term of the cap; the viewport gutters
+still bound the menu, so a menu that must show all of its rows (a docked phone
+menu of eleven 44px rows) can, without ever overflowing the screen. The dynamic
+value uses `100dvb` alone; every browser with anchor positioning has it.
+
+A prop rather than a theme variable, because the need is situational — one
+menu with many rows — rather than a product-wide preference, and a prop reads
+more clearly at the callsite that has the problem.
+
+The value is a number of pixels. Rejected: an arbitrary CSS length (`50vh`,
+`calc(...)`), which is product-shaped tuning on a shared component that
+`spec:AST-002` does not admit, and which lets a caller write a cap the
+viewport term cannot reason about.

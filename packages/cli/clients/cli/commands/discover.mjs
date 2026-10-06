@@ -268,18 +268,46 @@ export function registerDiscover(program) {
             // No discover source: the list of what this project has, as always.
             if (available === undefined) {
               if (result.data.length === 0) {
-                if (result.meta && result.meta.configured === false) {
+                if (options.available) {
+                  // The user specifically asked for available packages but
+                  // there is no source to answer from. Say so honestly.
+                  emit(
+                    text('No discover source is configured.'),
+                    text(
+                      [
+                        'Available integrations are listed by discover sources.',
+                        'A project can set one in astryx.config.mjs, and installed',
+                        'integrations can provide one.',
+                      ].join(' '),
+                    ),
+                    text(
+                      [
+                        `Find Astryx packages on npm: npm search @astryxdesign`,
+                        `Learn more: ${run} docs cli/integrations`,
+                      ].join('\n'),
+                    ),
+                  );
+                } else if (result.meta && result.meta.configured === false) {
                   emit(
                     text('No integrations configured.'),
                     text('Add integration package names to astryx.config.mjs:'),
                     code(
                       "export default {\n  integrations: ['@scope/your-integration'],\n};",
                     ),
+                    text(
+                      [
+                        `Find Astryx packages on npm: npm search @astryxdesign`,
+                        `Learn more: ${run} docs cli/integrations`,
+                      ].join('\n'),
+                    ),
                   );
                 } else {
                   emit(
                     text(
                       'No external components found in configured integrations.',
+                    ),
+                    text(
+                      `Find more packages: ${run} discover --available (needs a discover source)`,
                     ),
                   );
                 }
