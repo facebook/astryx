@@ -670,6 +670,90 @@ export const EventEndingAtMidnight: Story = {
   },
 };
 
+// A fixed UTC month for the month view's overflow contract: Wednesday May 13
+// needs five levels (a three-day span sits on its third) and Friday May 15
+// needs four, so both trade their third level for "+N more"; the other days
+// fit and paint every chip.
+function monthFixtureEvent(
+  id: string,
+  title: string,
+  category: string,
+  day: number,
+  hour: number,
+): CalendarEvent {
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return createEventFromISO({
+    id,
+    title,
+    category,
+    start: `2026-05-${pad(day)}T${pad(hour)}:00:00.000Z`,
+    end: `2026-05-${pad(day)}T${pad(hour + 1)}:00:00.000Z`,
+  });
+}
+
+const busyMonthEvents: CalendarEvent[] = [
+  createEventFromISO({
+    id: 'conference',
+    title: 'Design conference',
+    category: 'Design',
+    start: '2026-05-10',
+    end: '2026-05-13',
+  }),
+  createEventFromISO({
+    id: 'hack-week',
+    title: 'Hack week',
+    category: 'Launch',
+    start: '2026-05-10',
+    end: '2026-05-12',
+  }),
+  createEventFromISO({
+    id: 'offsite',
+    title: 'Team offsite',
+    category: 'Company',
+    start: '2026-05-11',
+    end: '2026-05-13',
+  }),
+  monthFixtureEvent('standup', 'Standup', 'Company', 13, 9),
+  monthFixtureEvent('incident-review', 'Incident review', 'Incident', 13, 11),
+  monthFixtureEvent('launch-check', 'Launch check', 'Launch', 13, 14),
+  monthFixtureEvent('planning', 'Planning', 'Company', 15, 9),
+  monthFixtureEvent('critique', 'Design critique', 'Design', 15, 10),
+  monthFixtureEvent('retro', 'Weekly retro', 'Retro', 15, 13),
+  monthFixtureEvent('focus', 'Focus block', 'Focus', 15, 15),
+  monthFixtureEvent('one-on-one', '1:1', 'Company', 5, 10),
+  createEventFromISO({
+    id: 'holiday',
+    title: 'Company holiday',
+    category: 'Holiday',
+    start: '2026-05-25',
+    end: '2026-05-25',
+  }),
+];
+
+/**
+ * A week row of the month paints at most three levels of chips. A busy day
+ * shows two and a "+N more" button that opens a popover listing every event
+ * of that day.
+ */
+export const MonthOverflow: Story = {
+  render: () => {
+    const [date, setDate] = useState<Instant>(FIXTURE_DATE);
+    const view = useMemo(() => createScheduleMonthlyView(), []);
+
+    return (
+      <Schedule
+        view={view}
+        events={busyMonthEvents}
+        categories={categories}
+        date={date}
+        focusDate={FIXTURE_DATE}
+        onChangeDate={setDate}
+        timezoneID={FIXTURE_TIMEZONE}
+      />
+    );
+  },
+};
+
 export const ViewSelectorPlugin: Story = {
   render: () => {
     const views = useMemo(

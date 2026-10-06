@@ -48,6 +48,12 @@ const DEFAULT_EVENT_CATEGORY: ScheduleCategory = {
   color: 'blue',
 };
 
+// Month week rows are 128px. A chip level starts below the day number and the
+// next one a chip's height plus a gap further down, so three levels fit in a
+// row in every shipped theme.
+const MONTH_CHIP_TOP = 30;
+const MONTH_LEVEL_PITCH = 29;
+
 export function ScheduleFrame({
   title,
   titleLabel,
@@ -698,10 +704,14 @@ export const styles = stylex.create({
   monthGrid: {
     overflowX: 'auto',
   },
+  // The month surface isolates its paint order: chips rise above the cells
+  // and a focused "+N more" above the chips, and nothing outside the surface
+  // can see either value.
   monthGridSurface: {
     position: 'relative',
     width: '100%',
     minWidth: '784px',
+    isolation: 'isolate',
   },
   monthCellGrid: {
     display: 'grid',
@@ -720,6 +730,7 @@ export const styles = stylex.create({
     pointerEvents: 'none',
   },
   monthCell: {
+    position: 'relative',
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-1'],
@@ -777,10 +788,64 @@ export const styles = stylex.create({
     minWidth: 0,
     marginInlineStart: spacingVars['--spacing-0-5'],
     marginInlineEnd: `calc(${spacingVars['--spacing-0-5']} + ${borderVars['--border-width']})`,
-    marginBlockStart: `${30 + level * 29}px`,
+    marginBlockStart: `${MONTH_CHIP_TOP + level * MONTH_LEVEL_PITCH}px`,
     pointerEvents: 'auto',
     zIndex: 1,
   }),
+  // A busy day's "+N more" takes the slot of the level it stands in for, with
+  // a chip's insets and height, and keeps its focus ring above the chips.
+  monthMoreButton: {
+    position: 'absolute',
+    insetInlineStart: spacingVars['--spacing-0-5'],
+    insetInlineEnd: `calc(${spacingVars['--spacing-0-5']} + ${borderVars['--border-width']})`,
+    display: 'flex',
+    alignItems: 'center',
+    minWidth: 0,
+    overflow: 'hidden',
+    borderWidth: borderVars['--border-width'],
+    borderStyle: 'solid',
+    borderColor: 'transparent',
+    borderRadius: radiusVars['--radius-inner'],
+    paddingBlock: spacingVars['--spacing-0-5'],
+    paddingInline: spacingVars['--spacing-1-5'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    color: colorVars['--color-text-secondary'],
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    backgroundColor: {
+      default: 'transparent',
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        default: null,
+        '@media (hover: hover)': colorVars['--color-overlay-hover'],
+      },
+    },
+    zIndex: {
+      default: null,
+      ':focus-visible': 2,
+    },
+  },
+  monthMoreButtonPosition: (level: number) => ({
+    insetBlockStart: `${MONTH_CHIP_TOP + level * MONTH_LEVEL_PITCH}px`,
+  }),
+  // The day popover lists rows that ellipsize their titles, so its content
+  // has a cap for the titles to fit within.
+  monthDayEvents: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-2'],
+    maxInlineSize: '360px',
+  },
+  monthDayEventList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-2'],
+    margin: 0,
+    padding: 0,
+    listStyle: 'none',
+  },
   eventPill: {
     ...baseText,
     display: 'flex',

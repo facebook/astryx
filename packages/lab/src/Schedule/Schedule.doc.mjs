@@ -88,7 +88,7 @@ export const docs = {
         name: 'Event',
         required: false,
         description:
-          "One pill (grid views) or row with a color dot (list view) per event, tinted by its category and dimmed once it is in the past. In the day and week grids, events that happen at the same time share the column side by side, and when the view is built with renderPopover each event with content is a button that opens the view's popover.",
+          'One pill (grid views) or row with a color dot (list view) per event, tinted by its category and dimmed once it is in the past. In the day and week grids, events that happen at the same time share the column side by side, and when the view is built with renderPopover each event with content is a button that opens the view\'s popover. In the month grid a week row shows at most three levels of chips; a busy day shows two and a "+N more" button that opens a popover listing every event of that day.',
       },
       {
         name: 'Current time line',
