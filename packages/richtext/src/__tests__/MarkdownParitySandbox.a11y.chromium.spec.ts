@@ -1214,6 +1214,50 @@ test('bold italic text is emphasis and strong in the editor and the view', async
   }
 });
 
+// spec:AST-061 DEC-6: a nested numbered list keeps its start, so `27.`
+// under `1.` reads as item 27 at its depth's marker ("aa." in lower-alpha).
+test('nested numbered lists keep their start in the editor and the view', async ({
+  page,
+}) => {
+  await page.setViewportSize(DESKTOP);
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
+    {waitUntil: 'load'},
+  );
+  await page
+    .locator('textarea')
+    // `28. ` puts its content at column seven, so `0.` nests under it.
+    .fill('1. one\n   27. twenty-seven\n   28. twenty-eight\n       0. zero\n');
+  const surfaces = page.locator('[data-lexical-editor]:visible');
+  await expect(surfaces).toHaveCount(2);
+  for (const surface of [surfaces.nth(0), surfaces.nth(1)]) {
+    await expect(surface.getByText('zero', {exact: true})).toBeVisible();
+    const starts = await surface.evaluate(root =>
+      [...root.querySelectorAll('ol')].map(list => list.start),
+    );
+    expect(starts).toEqual([1, 27, 0]);
+  }
+  // The accessibility tree names each item by its own number.
+  const cdp = await page.context().newCDPSession(page);
+  const {nodes} = (await cdp.send('Accessibility.getFullAXTree')) as {
+    nodes: Array<{role?: {value?: string}; name?: {value?: string}}>;
+  };
+  const markers = nodes
+    .filter(node => node.role?.value === 'ListMarker')
+    .map(node => (node.name?.value ?? '').trim());
+  // Two surfaces, each: 1. / aa. ab. / 0. (the tree is not in DOM order).
+  expect(markers.sort()).toEqual([
+    '0.',
+    '0.',
+    '1.',
+    '1.',
+    'aa.',
+    'aa.',
+    'ab.',
+    'ab.',
+  ]);
+});
+
 for (const viewport of [PHONE, {width: 1280, height: 900}] as const) {
   for (const globals of [
     'colorMode:light;direction:ltr',
