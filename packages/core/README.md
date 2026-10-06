@@ -316,6 +316,8 @@ npx astryx template --cdn        # writes cdn.template.html
       import {neutralTheme} from '@astryxdesign/theme-neutral';
       const e = React.createElement;
       const themedIcon = e(Icon, {icon: 'check'});
+      // The provider supplies neutralTheme's semantic icon registry; the
+      // data-astryx-theme attribute above only scopes the theme stylesheet.
       createRoot(document.getElementById('root')).render(
         e(
           Theme,

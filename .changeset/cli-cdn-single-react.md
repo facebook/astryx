@@ -2,8 +2,8 @@
 '@astryxdesign/cli': patch
 ---
 
-[fix] Enforce one React instance across every Astryx esm.sh import in the no-build CDN recipes.
+[docs] Demonstrate a themed icon in the no-build CDN starter and guard every documented Astryx esm.sh import against bundling another React copy.
 
-The generated starter now renders a theme-provided semantic icon, and its browser smoke test verifies that icon loads without a second React copy.
+Repository tests scan tracked Markdown, HTML, and module files for Astryx esm.sh URLs, while the browser smoke verifies that the generated page fetches exactly one React implementation module.
 
 @ejhammond
