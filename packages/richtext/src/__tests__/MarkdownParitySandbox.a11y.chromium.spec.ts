@@ -750,8 +750,70 @@ for (const direction of ['ltr', 'rtl'] as const) {
         .filter(block => block.direction !== direction)
         .map(block => block.key);
       expect(otherDirection, surface).toEqual([]);
+      // Inside blocks too: table rows and cells, list items, and paragraphs.
+      const nested = await page.evaluate(
+        ({selector, expected}) =>
+          [
+            ...document.querySelectorAll(
+              `${selector} [data-parity-body] :is(tr, th, td, li, p)`,
+            ),
+          ]
+            .filter(element => getComputedStyle(element).direction !== expected)
+            .map(element => element.tagName),
+        {selector: surface, expected: direction},
+      );
+      expect(nested, `${surface} nested`).toEqual([]);
     }
     expect(errors).toEqual([]);
+  });
+
+  // Mixed English and Hebrew cells take the document's direction, so each
+  // cell's text starts at the document's start edge, whatever its script.
+  test(`table cells take the provider direction with mixed scripts (${direction})`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(DESKTOP);
+    await page.goto(
+      `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:${direction}`,
+      {waitUntil: 'load'},
+    );
+    await page
+      .locator('textarea')
+      .fill(
+        '| Name | \u05e9\u05dd |\n| --- | :---: |\n| Ada | \u05e2\u05d3\u05d4 |\n| \u05e9\u05dc\u05d5\u05dd **bold** | Hello |',
+      );
+    await expect(page.locator('table:visible')).toHaveCount(2);
+    const cells = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-lexical-editor] :is(th, td)')].map(
+        cell => {
+          const style = getComputedStyle(cell);
+          const paragraph = cell.querySelector('p') ?? cell;
+          const range = document.createRange();
+          range.selectNodeContents(paragraph);
+          const text = range.getBoundingClientRect();
+          const box = cell.getBoundingClientRect();
+          return {
+            column: (cell as HTMLTableCellElement).cellIndex,
+            direction: style.direction,
+            paragraphDirection: getComputedStyle(paragraph).direction,
+            startGap:
+              style.direction === 'rtl'
+                ? box.right - parseFloat(style.paddingRight) - text.right
+                : text.left - box.left - parseFloat(style.paddingLeft),
+          };
+        },
+      ),
+    );
+    // Editor and view, three rows of two cells each.
+    expect(cells).toHaveLength(12);
+    for (const cell of cells) {
+      expect(cell.direction).toBe(direction);
+      expect(cell.paragraphDirection).toBe(direction);
+      if (cell.column === 0) {
+        // The first column is start-aligned: its text touches the start edge.
+        expect(Math.abs(cell.startGap)).toBeLessThanOrEqual(1);
+      }
+    }
   });
 }
 

@@ -434,9 +434,11 @@ export function sharedEditorTheme(): EditorThemeClasses {
     hr: stylex.props(editorTheme.hr).className,
     hrSelected: stylex.props(editorTheme.hrSelected).className,
     table: block(editorTheme.table),
-    tableRow: stylex.props(editorTheme.tableRow).className,
-    tableCell: stylex.props(editorTheme.tableCell).className,
-    tableCellHeader: stylex.props(editorTheme.tableCellHeader).className,
+    // Lexical stamps rows and cells `dir="auto"` too, which would set a cell
+    // of English text left-to-right inside a right-to-left document.
+    tableRow: block(editorTheme.tableRow),
+    tableCell: block(editorTheme.tableCell),
+    tableCellHeader: block(editorTheme.tableCellHeader),
     tableScrollableWrapper: block(editorTheme.tableScrollableWrapper),
   };
 }
