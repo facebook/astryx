@@ -157,22 +157,32 @@ function captureOutput() {
         try {
           const text = typeof chunk === 'string' ? chunk : String(chunk);
           const len = Buffer.byteLength(text);
-          // Keep the part that still fits. Adding the length first and then
-          // testing would drop a single oversized write whole, leaving nothing
-          // at all for the commands whose output is most worth reading.
+          sink.bytes += len;
+          // Keep the part that still fits. Testing a running total that already
+          // counts this write would drop an oversized write whole, leaving
+          // nothing for the commands whose output is most worth reading.
           const room = MAX_CAPTURED_OUTPUT - sink.captured;
           if (room > 0) {
             if (len <= room) {
               sink.chunks.push(text);
               sink.captured += len;
             } else {
-              sink.chunks.push(sliceToBytes(text, room));
-              // A character boundary can leave a byte or two of room. Spend it
-              // anyway, or a later write would land after the cut.
+              // The capture ends here, even if scrubbing throws. A character
+              // boundary can leave a byte or two of room: spend it anyway, or a
+              // later write would land after the cut.
               sink.captured = MAX_CAPTURED_OUTPUT;
+              // Scrub before cutting. The patterns need a whole token, or a
+              // private key's END line, and a cut can leave a fragment none of
+              // them match. The kept chunks join in, so a token an earlier
+              // write started is whole too.
+              const whole = scrubText(
+                sink.chunks.join('') + text,
+                outputRedactor(),
+              );
+              sink.chunks.length = 0;
+              sink.chunks.push(sliceToBytes(whole, MAX_CAPTURED_OUTPUT));
             }
           }
-          sink.bytes += len;
         } catch {
           /* a chunk we cannot stringify is simply not captured */
         }
@@ -659,6 +669,15 @@ function scrubText(text, redact) {
 }
 
 /**
+ * The redactor for captured output: every content rule, no per-value length
+ * clamp. The tee uses it on a write it cuts, and `finish` on the whole capture.
+ * @returns {import('./redact.mjs').Redactor}
+ */
+function outputRedactor() {
+  return createRedactor({maxLength: Number.MAX_SAFE_INTEGER});
+}
+
+/**
  * Seal the event and deliver it. Idempotent.
  *
  * @param {{exitCode?: number}} [options]
@@ -715,7 +734,7 @@ export function finish({exitCode} = {}) {
 
     const redact = createRedactor();
     // Same rules, but no length clamp — see the output note below.
-    const settingsRedact = createRedactor({maxLength: Number.MAX_SAFE_INTEGER});
+    const settingsRedact = outputRedactor();
     /** @type {import('./event.mjs').DebugEvent} */
     const sealed = {
       ..._event,

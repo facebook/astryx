@@ -577,6 +577,83 @@ describe('captured output — what the CLI answered', () => {
     );
   });
 
+  it('backs off over every byte of a 3- or 4-byte character at the cut', () => {
+    for (const {char, size} of [
+      {char: '€', size: 3},
+      {char: '😀', size: 4},
+    ]) {
+      for (let into = 1; into < size; into += 1) {
+        resetRecorder();
+        const seen = collect();
+        begin({argv: []});
+        process.stdout.write(
+          'e'.repeat(MAX_CAPTURED_OUTPUT - into) + char.repeat(3),
+        );
+        finish({exitCode: 0});
+        expect(seen[0].output.stdout.split('\n')[0]).toBe(
+          'e'.repeat(MAX_CAPTURED_OUTPUT - into),
+        );
+      }
+    }
+  });
+
+  it('keeps output of exactly the cap whole, with no marker', () => {
+    const seen = collect();
+    begin({argv: []});
+    process.stdout.write('x'.repeat(MAX_CAPTURED_OUTPUT));
+    finish({exitCode: 0});
+
+    const {output} = seen[0];
+    expect(output.stdout).toBe('x'.repeat(MAX_CAPTURED_OUTPUT));
+    expect(output.truncated).toBe(false);
+  });
+
+  it('caps each stream at 32 KiB', () => {
+    expect(MAX_CAPTURED_OUTPUT).toBe(32 * 1024);
+  });
+
+  it('scrubs a token that the cut would split', () => {
+    const seen = collect();
+    begin({argv: []});
+    // Only `ghp_` and 12 more characters fit under the cap: too few for the
+    // token pattern to recognize the fragment on its own.
+    process.stdout.write(
+      `${'a'.repeat(MAX_CAPTURED_OUTPUT - 17)} ghp_${'B'.repeat(36)} tail`,
+    );
+    finish({exitCode: 0});
+    expect(seen[0].output.stdout).not.toContain('ghp_');
+  });
+
+  it('scrubs a token that an earlier write started', () => {
+    const seen = collect();
+    begin({argv: []});
+    // The first write fits whole and ends 8 characters into the token. The
+    // second is cut 7 bytes in, before the token ends.
+    process.stdout.write(
+      `${'a'.repeat(MAX_CAPTURED_OUTPUT - 20)} ghp_${'B'.repeat(8)}`,
+    );
+    process.stdout.write(`${'B'.repeat(28)} tail`);
+    finish({exitCode: 0});
+    expect(seen[0].output.stdout).not.toContain('ghp_');
+  });
+
+  it('scrubs a private key whose END line falls past the cut', () => {
+    const label = ['RSA PRIV', 'ATE KEY'].join('');
+    const key = [
+      `-----BEGIN ${label}-----`,
+      ...Array.from({length: 20}, () => `MIIE${'A'.repeat(60)}`),
+      `-----END ${label}-----`,
+    ].join('\n');
+    const seen = collect();
+    begin({argv: []});
+    process.stdout.write(`${'a'.repeat(MAX_CAPTURED_OUTPUT - 500)}\n${key}\n`);
+    finish({exitCode: 0});
+
+    const kept = seen[0].output.stdout;
+    expect(kept).not.toContain('BEGIN');
+    expect(kept).not.toContain('MIIE');
+  });
+
   it('scrubs captured output like every other value', () => {
     const seen = collect();
     begin({argv: []});
