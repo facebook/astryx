@@ -479,7 +479,7 @@ const markdownParity: MarkdownParityStory = {
     hasPlugins: {
       control: 'boolean',
       description:
-        'Demo Markdown plugins on the read side; task lists and autolinks on the edit side.',
+        "Read side: Markdown's GFM autolinks and the demo plugins. Edit side: RichText's autolink plugin.",
     },
     hostWidth: {control: 'inline-radio', options: ['fill', '680px']},
   },

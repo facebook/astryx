@@ -66,9 +66,9 @@ export interface MarkdownParitySandboxProps {
   /** Repeat the fixture so the document is long enough to scroll. */
   isLongDocument: boolean;
   /**
-   * Render each side with the plugins it has today: the Storybook demo
-   * Markdown plugins on the read side, RichText's autolink plugin on the edit
-   * side.
+   * Render each side with the extensions it has today: Markdown's GFM
+   * autolinks and the Storybook demo plugins on the read side, RichText's
+   * autolink plugin on the edit side.
    */
   hasPlugins: boolean;
   /** Width of each column, the way a host page might constrain it. */
@@ -366,7 +366,9 @@ const labelOf = (key: string): string =>
 
 function MarkdownRead({content}: {content: ParityContent}) {
   return (
-    <Markdown plugins={content.hasPlugins ? markdownDemoPlugins : undefined}>
+    <Markdown
+      autolink={content.hasPlugins ? 'gfm' : undefined}
+      plugins={content.hasPlugins ? markdownDemoPlugins : undefined}>
       {content.source}
     </Markdown>
   );
