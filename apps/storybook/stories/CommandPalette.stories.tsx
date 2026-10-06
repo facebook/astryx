@@ -541,6 +541,12 @@ export const AuditMatrix: Story = {
                 No commands yet. <a href="#new-command">Create a command</a>
               </span>
             }
+            emptySearchText={
+              <span>
+                No matching commands.{' '}
+                <a href="#new-command">Create a command</a>
+              </span>
+            }
             width="100%"
             maxHeight={420}
           />
