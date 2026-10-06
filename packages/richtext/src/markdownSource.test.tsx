@@ -17,6 +17,7 @@ import {
   $getRoot,
   $isElementNode,
   $parseSerializedNode,
+  INSERT_LINE_BREAK_COMMAND,
   REDO_COMMAND,
   UNDO_COMMAND,
   type SerializedLexicalNode,
@@ -405,6 +406,63 @@ describe('Markdown source preservation (spec:AST-062)', () => {
         $appendToTextContaining('One line', ' edited'),
       ),
     ).toBe('One line same paragraph edited\n\nNext\n');
+  });
+
+  it('writes a line break typed in the editor as a hard break that survives a reload (FR3)', async () => {
+    const markdown =
+      'Ada Lovelace\n\n- item one\n\n> quoted text\n\nTwo spaces  \nkept\n\n```\ncode line\n```\n';
+    const ref = createRef<RichTextEditorRef>();
+    render(
+      <RichTextEditor
+        label="Notes"
+        ref={ref}
+        defaultValue={markdownToEditorStateJSON(markdown)}
+      />,
+    );
+    await waitFor(() => expect(ref.current).not.toBeNull());
+    const editor = ref.current?.getEditor();
+    // Shift+Enter after the first word of the paragraph, the list item, the
+    // quote, and the code line.
+    for (const text of [
+      'Ada Lovelace',
+      'item one',
+      'quoted text',
+      'code line',
+    ]) {
+      editor?.update(
+        () => {
+          const node = $getRoot()
+            .getAllTextNodes()
+            .find(candidate => candidate.getTextContent().startsWith(text));
+          node?.select(text.indexOf(' '), text.indexOf(' '));
+        },
+        {discrete: true},
+      );
+      editor?.dispatchCommand(INSERT_LINE_BREAK_COMMAND, false);
+    }
+    const edited =
+      'Ada\\\n Lovelace\n\n- item\\\n one\n\n> quoted\\\n>  text\n\nTwo spaces  \nkept\n\n```\ncode\n line\n```\n';
+    await waitFor(() => expect(ref.current?.getMarkdown()).toBe(edited));
+    // A reload keeps every typed break as a line break.
+    const reloaded = JSON.parse(markdownToEditorStateJSON(edited)) as {
+      root: SerializedShapeNode;
+    };
+    const lineBreaks = (node: SerializedShapeNode): number =>
+      (node.type === 'linebreak' ? 1 : 0) +
+      (node.children ?? []).reduce(
+        (count, child) => count + lineBreaks(child),
+        0,
+      );
+    // Paragraph, list item, quote, and the imported two-space break; the
+    // code line break is part of the code text.
+    expect(lineBreaks(reloaded.root)).toBe(4);
+    expect(editorStateJSONToMarkdown(markdownToEditorStateJSON(edited))).toBe(
+      edited,
+    );
+    editor?.dispatchCommand(UNDO_COMMAND, undefined);
+    await waitFor(() => expect(ref.current?.getMarkdown()).not.toBe(edited));
+    editor?.dispatchCommand(REDO_COMMAND, undefined);
+    await waitFor(() => expect(ref.current?.getMarkdown()).toBe(edited));
   });
 
   it('keeps document facts at the document when blocks move, repeat, or go (FR4)', () => {

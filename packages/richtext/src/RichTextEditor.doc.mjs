@@ -109,14 +109,14 @@ export const docs = {
       name: 'hasMarkdownShortcuts',
       type: 'boolean',
       description:
-        'Enable Markdown shortcut typing (e.g. "# " for a heading). Uses the transformers prop (defaults to the standard @lexical/markdown transformers plus GFM tables).',
+        'Enable Markdown shortcut typing (e.g. "# " for a heading). Uses the transformers prop (defaults to the standard @lexical/markdown transformers, hard line breaks, and GFM tables).',
       default: 'true',
     },
     {
       name: 'transformers',
       type: 'ReadonlyArray<Transformer>',
       description:
-        'Markdown transformers: the single source of truth for markdown behaviour. Defaults to the standard @lexical/markdown TRANSFORMERS plus GFM tables; a custom array replaces the default, tables included. In Lexical the same array drives all three markdown operations (shortcut typing, markdown->state import, state->markdown export); this prop wires shortcut typing today and is the intended input for the serialization APIs added in later phases. Pass a custom array to support additional node types (e.g. transformers layered in via the nodes extension point) consistently across all three. Shortcut typing is only applied when hasMarkdownShortcuts is true.',
+        'Markdown transformers: the single source of truth for markdown behaviour. Defaults to the standard @lexical/markdown TRANSFORMERS, hard line breaks (a line break typed with Shift+Enter exports as a backslash before the line ending, so it reads back as a line break), and GFM tables; a custom array replaces the default, tables included. In Lexical the same array drives all three markdown operations (shortcut typing, markdown->state import, state->markdown export); this prop wires shortcut typing today and is the intended input for the serialization APIs added in later phases. Pass a custom array to support additional node types (e.g. transformers layered in via the nodes extension point) consistently across all three. Shortcut typing is only applied when hasMarkdownShortcuts is true.',
       default: 'TRANSFORMERS',
     },
     {

@@ -37,6 +37,7 @@ import {
   TableRowNode,
 } from '@lexical/table';
 import type {ElementFormatType} from 'lexical';
+import {HARD_LINE_BREAK} from './markdownHardLineBreak';
 
 /**
  * Cells hold inline Markdown only, so they are imported and exported with the
@@ -234,10 +235,11 @@ export const TABLE: MultilineElementTransformer = {
 };
 
 /**
- * The editor's default Markdown transformers: Lexical's standard set plus GFM
- * tables.
+ * The editor's default Markdown transformers: Lexical's standard set, hard
+ * line breaks for breaks typed in the editor, and GFM tables.
  */
 export const DEFAULT_TRANSFORMERS: ReadonlyArray<Transformer> = [
   ...TRANSFORMERS,
+  HARD_LINE_BREAK,
   TABLE,
 ];

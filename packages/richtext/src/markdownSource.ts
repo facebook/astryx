@@ -46,6 +46,7 @@ import {
   type LexicalEditor,
   type LexicalNode,
 } from 'lexical';
+import {isMarkedHardLineBreak} from './markdownHardLineBreak';
 
 /** The whitespace and content one chunk of Markdown source was split into. */
 export interface MarkdownChunk {
@@ -358,7 +359,7 @@ export function $joinSoftLineBreaks(element: ElementNode): void {
     }
   }
   for (const child of element.getChildren()) {
-    if (!$isLineBreakNode(child) || $isHardLineBreak(child)) {
+    if (!$isLineBreakNode(child) || isMarkedHardLineBreak(child)) {
       continue;
     }
     // The spaces around a soft break are part of it.
@@ -372,12 +373,6 @@ export function $joinSoftLineBreaks(element: ElementNode): void {
     }
     child.replace($createTextNode(' '));
   }
-}
-
-/** Whether Lexical's Markdown import marked this line break as a hard one. */
-function $isHardLineBreak(node: LexicalNode): boolean {
-  const serialized = node.exportJSON() as {$?: {mdHardLineBreak?: unknown}};
-  return serialized.$?.mdHardLineBreak != null;
 }
 
 /**
