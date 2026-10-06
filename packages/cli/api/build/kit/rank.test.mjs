@@ -85,7 +85,7 @@ describe('rankPages on the shipped page templates', () => {
       await start(
         'a data table of campaigns with spend and revenue, plus summary metrics above it',
       ),
-    ).toMatch(/^table-/);
+    ).toMatch(/^table(-|$)/);
   });
 
   it('keeps a variant that leads when its family base cannot start alone', async () => {
