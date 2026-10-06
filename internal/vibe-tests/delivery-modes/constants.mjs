@@ -69,7 +69,7 @@ Implement the complete runnable solution in ${spec.outputFile}. Preserve the pro
 Optional evaluated states:
 The evaluator always captures the default state. You may declare up to ${MAX_DECLARED_STATES} additional named states by creating ${STATE_MANIFEST_FILE} in the project root:
 {"states":[{"name":"loading","url":"#state=loading"}]}
-Each url must be a query or hash on the same page (for example, ?state=success or #state=loading). Every state is opened from a fresh browser context at the same viewport. Render the state in the original document from the main page's own code; top-level navigation, redirects, and additional HTML documents are rejected. Omit ${STATE_MANIFEST_FILE} when the default state is sufficient.`;
+Each url must be a query or hash on the same page (for example, ?state=success or #state=loading). Every state is opened from a fresh browser context at the same viewport. Render the state in the original document from the main page's own code; top-level navigation, redirects, additional HTML documents, and later same-origin HTML responses are rejected. Omit ${STATE_MANIFEST_FILE} when the default state is sufficient.`;
 }
 
 export function selectPrompts(testSet, {sample, promptIds, seed} = {}) {

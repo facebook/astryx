@@ -288,11 +288,26 @@ export async function evaluateRun({
   }
 }
 
+export function isSameOriginHtmlResponse({
+  baseUrl,
+  responseUrl,
+  contentType = '',
+}) {
+  const base = new URL(baseUrl);
+  const response = new URL(responseUrl);
+  return (
+    response.origin === base.origin &&
+    (contentType.toLowerCase().split(';', 1)[0].trim() === 'text/html' ||
+      /\.html?$/i.test(response.pathname))
+  );
+}
+
 export function assessDeclaredStateNavigation({
   baseUrl,
   finalUrl,
   documentRequests,
   topLevelNavigations,
+  additionalHtmlResponses = [],
 }) {
   const base = new URL(baseUrl);
   const final = new URL(finalUrl);
@@ -306,21 +321,32 @@ export function assessDeclaredStateNavigation({
   if (documentRequests.length > 1) {
     violations.push('an additional HTML document was requested');
   }
+  if (additionalHtmlResponses.length > 0) {
+    violations.push('an additional same-origin HTML response was received');
+  }
   return {
     passed: violations.length === 0,
     error: violations.length > 0 ? violations.join('; ') : null,
     documentRequestCount: documentRequests.length,
     topLevelNavigationCount: topLevelNavigations.length,
+    additionalHtmlResponseCount: additionalHtmlResponses.length,
   };
 }
 
-async function captureDeclaredState({browser, baseUrl, state, screenshotPath}) {
+export async function captureDeclaredState({
+  browser,
+  baseUrl,
+  state,
+  screenshotPath,
+}) {
   const context = await browser.newContext({viewport: VIEWPORT});
   const page = await context.newPage();
   const consoleErrors = [];
   const pageErrors = [];
   const documentRequests = [];
   const topLevelNavigations = [];
+  const additionalHtmlResponses = [];
+  let initialDocumentResponseSeen = false;
   page.on('console', message => {
     if (message.type() === 'error') {
       consoleErrors.push(message.text());
@@ -330,6 +356,24 @@ async function captureDeclaredState({browser, baseUrl, state, screenshotPath}) {
   page.on('request', request => {
     if (request.resourceType() === 'document') {
       documentRequests.push(request.url());
+    }
+  });
+  page.on('response', response => {
+    if (
+      response.request().resourceType() === 'document' &&
+      !initialDocumentResponseSeen
+    ) {
+      initialDocumentResponseSeen = true;
+      return;
+    }
+    if (
+      isSameOriginHtmlResponse({
+        baseUrl,
+        responseUrl: response.url(),
+        contentType: response.headers()['content-type'],
+      })
+    ) {
+      additionalHtmlResponses.push(response.url());
     }
   });
   page.on('framenavigated', frame => {
@@ -351,6 +395,7 @@ async function captureDeclaredState({browser, baseUrl, state, screenshotPath}) {
       finalUrl: page.url(),
       documentRequests,
       topLevelNavigations,
+      additionalHtmlResponses,
     });
     return {
       name: state.name,
@@ -361,6 +406,7 @@ async function captureDeclaredState({browser, baseUrl, state, screenshotPath}) {
       pageErrors,
       documentRequestCount: navigation.documentRequestCount,
       topLevelNavigationCount: navigation.topLevelNavigationCount,
+      additionalHtmlResponseCount: navigation.additionalHtmlResponseCount,
       passed:
         nonBlank &&
         consoleErrors.length === 0 &&
@@ -378,6 +424,7 @@ async function captureDeclaredState({browser, baseUrl, state, screenshotPath}) {
       pageErrors,
       documentRequestCount: documentRequests.length,
       topLevelNavigationCount: topLevelNavigations.length,
+      additionalHtmlResponseCount: additionalHtmlResponses.length,
       passed: false,
       error: error instanceof Error ? error.message : String(error),
     };
@@ -395,6 +442,7 @@ function stateCaptureReceipt(capture) {
     pageErrors: capture.pageErrors,
     documentRequestCount: capture.documentRequestCount ?? 1,
     topLevelNavigationCount: capture.topLevelNavigationCount ?? 1,
+    additionalHtmlResponseCount: capture.additionalHtmlResponseCount ?? 0,
     passed: capture.passed,
     screenshotCaptured: fs.existsSync(capture.screenshotPath),
     error: capture.error ?? null,

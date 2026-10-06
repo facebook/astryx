@@ -20,7 +20,9 @@ import {
   assessDeclaredStateNavigation,
   buildBlindJudgePrompt,
   captureAuthoredSources,
+  captureDeclaredState,
   evaluateRun,
+  isSameOriginHtmlResponse,
   readDeclaredStates,
   resolveDeclaredStateUrl,
   resolveJudgeAttempts,
@@ -77,6 +79,7 @@ test('generated prompts differ only by factual delivery details', () => {
     assert.match(task, /vibe-states\.json/);
     assert.match(task, /up to 4 additional named states/);
     assert.match(task, /fresh browser context/);
+    assert.match(task, /same-origin HTML responses/);
   }
   const normalized = generated.map(task =>
     task.replace(/Delivery environment:\n[^\n]+/, 'Delivery environment:\n<x>'),
@@ -168,8 +171,107 @@ test('reviewer redirect probe rejects location.replace and an extra state docume
       error: null,
       documentRequestCount: 1,
       topLevelNavigationCount: 1,
+      additionalHtmlResponseCount: 0,
     },
   );
+});
+
+test('reviewer fetch-swap probe rejects an extra same-origin HTML response', async () => {
+  const fixture = `<!doctype html><main>Default state</main><script>if (location.search === '?state=done') fetch('/fake.html').then(response => response.text()).then(html => { document.documentElement.innerHTML = html; });</script>`;
+  assert.match(fixture, /fetch\('\/fake\.html'\)/);
+  assert.match(fixture, /document\.documentElement\.innerHTML = html/);
+
+  const baseUrl = 'http://127.0.0.1:3000/';
+  const target = `${baseUrl}?state=done`;
+  const fakePage = `${baseUrl}fake.html`;
+  assert.equal(
+    isSameOriginHtmlResponse({
+      baseUrl,
+      responseUrl: fakePage,
+      contentType: 'application/octet-stream',
+    }),
+    true,
+  );
+  assert.equal(
+    isSameOriginHtmlResponse({
+      baseUrl,
+      responseUrl: `${baseUrl}state`,
+      contentType: 'text/html; charset=utf-8',
+    }),
+    true,
+  );
+  assert.equal(
+    isSameOriginHtmlResponse({
+      baseUrl,
+      responseUrl: 'https://cdn.example.com/fragment.html',
+      contentType: 'text/html',
+    }),
+    false,
+  );
+
+  const assessment = assessDeclaredStateNavigation({
+    baseUrl,
+    finalUrl: target,
+    documentRequests: [target],
+    topLevelNavigations: [target],
+    additionalHtmlResponses: [fakePage],
+  });
+  assert.equal(assessment.passed, false);
+  assert.equal(assessment.documentRequestCount, 1);
+  assert.equal(assessment.topLevelNavigationCount, 1);
+  assert.equal(assessment.additionalHtmlResponseCount, 1);
+  assert.match(assessment.error, /additional same-origin HTML response/);
+
+  const handlers = new Map();
+  const mainFrame = {url: () => target};
+  const page = {
+    on(event, handler) {
+      handlers.set(event, handler);
+    },
+    mainFrame: () => mainFrame,
+    url: () => target,
+    async goto() {
+      handlers.get('request')?.({
+        resourceType: () => 'document',
+        url: () => target,
+      });
+      handlers.get('response')?.({
+        url: () => target,
+        headers: () => ({'content-type': 'text/html'}),
+        request: () => ({resourceType: () => 'document'}),
+      });
+      handlers.get('framenavigated')?.(mainFrame);
+      handlers.get('response')?.({
+        url: () => fakePage,
+        headers: () => ({'content-type': 'text/html; charset=utf-8'}),
+        request: () => ({resourceType: () => 'fetch'}),
+      });
+    },
+    async waitForTimeout() {},
+    async evaluate() {
+      return {textLength: 100, visibleElementCount: 3};
+    },
+    async screenshot({path: outputPath}) {
+      await fs.promises.writeFile(outputPath, 'fetch-swap-image');
+    },
+  };
+  const context = {newPage: async () => page, close: async () => {}};
+  const browser = {newContext: async () => context};
+  const directory = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), 'delivery-fetch-swap-'),
+  );
+  temporaryDirectories.push(directory);
+  const capture = await captureDeclaredState({
+    browser,
+    baseUrl,
+    state: {name: 'done', url: '?state=done'},
+    screenshotPath: path.join(directory, 'done.png'),
+  });
+  assert.equal(capture.passed, false);
+  assert.equal(capture.documentRequestCount, 1);
+  assert.equal(capture.topLevelNavigationCount, 1);
+  assert.equal(capture.additionalHtmlResponseCount, 1);
+  assert.match(capture.error, /additional same-origin HTML response/);
 });
 
 test('blind judge scores the hidden-state fixture only when its screenshot is declared', async () => {
