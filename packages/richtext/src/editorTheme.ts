@@ -382,6 +382,13 @@ const editorTheme = stylex.create({
     },
     paddingBlockEnd: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-4'],
+    // Sized like core Markdown's code frame: as wide as its longest line, at
+    // least the prose measure (or the whole width when that is narrower), and
+    // never wider than the editor, where long lines wrap.
+    boxSizing: 'border-box',
+    width: 'fit-content',
+    minWidth: `min(${PROSE_MEASURE}, 100%)`,
+    maxWidth: '100%',
     marginBlockStart: {
       default: WIDE_BLOCK_SPACE,
       ':first-child': spacingVars['--spacing-0'],

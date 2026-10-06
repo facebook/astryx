@@ -150,6 +150,18 @@ export const MARKDOWN_PARITY_BLOCKS: readonly MarkdownParityBlock[] = [
     probe: 'unknownFence',
     markdown: lines('```notalanguage', 'unknownFence()', '```'),
   },
+  // A line longer than the prose measure: the frame grows to fit it, up to
+  // the full width, and wraps beyond that.
+  {
+    key: 'code-long',
+    label: 'Fenced code, long line',
+    probe: 'longFenceLine',
+    markdown: lines(
+      '```sh',
+      'echo "longFenceLine: the quick brown fox jumps over the lazy dog, then runs back across the field to do it again"',
+      '```',
+    ),
+  },
   {
     key: 'table',
     label: 'Table',

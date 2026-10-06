@@ -345,7 +345,24 @@ test('a rule at either edge of the document adds no outer margin', async ({
 // spec:AST-061 FR8: a fenced code block has the same frame and header on
 // both surfaces, so the code sits at the same place; the header is not part
 // of the editable text.
-for (const viewport of [DESKTOP, {width: 2200, height: 900}] as const) {
+/**
+ * Whether core Markdown scrolls a fence's lines sideways. RichText wraps them
+ * instead (a scrolling region inside the editable text cannot take focus), so
+ * a fence whose lines do not fit is taller in RichText by its wrapped lines.
+ */
+async function markdownFenceScrolls(page: Page, key: string): Promise<boolean> {
+  return page.evaluate(
+    ({surface, block}) =>
+      [
+        ...document.querySelectorAll<HTMLElement>(
+          `${surface} [data-parity-block="${block}"] *`,
+        ),
+      ].some(element => element.scrollWidth > element.clientWidth + 1),
+    {surface: MARKDOWN, block: key},
+  );
+}
+
+for (const viewport of [PHONE, DESKTOP, {width: 2200, height: 900}] as const) {
   test(`side by side: a fenced code block has core Markdown's frame and header (${viewport.width}px)`, async ({
     page,
   }) => {
@@ -356,39 +373,100 @@ for (const viewport of [DESKTOP, {width: 2200, height: 900}] as const) {
     const richText = await surfaceGeometry(page, RICH_TEXT);
     const code = (geometry: SurfaceGeometry) =>
       geometry.blocks.find(block => block.key === 'code-fence');
-    expect(
-      Math.abs((code(richText)?.height ?? 0) - (code(markdown)?.height ?? 0)),
-    ).toBeLessThanOrEqual(2);
-    // A wide block spans the editor's content box, past the prose measure
-    // on a wide surface (spec:AST-061 FR4).
-    const span = await page.evaluate(selector => {
-      const root = document.querySelector<HTMLElement>(
-        `${selector} [data-lexical-editor]`,
-      );
-      // The fenced block, not the inline code in the first paragraph.
-      const block = root?.querySelector(':scope > code');
-      if (root == null || block == null) {
-        return null;
-      }
-      const style = getComputedStyle(root);
-      return {
-        block: block.getBoundingClientRect().width,
-        content:
-          root.clientWidth -
-          parseFloat(style.paddingLeft) -
-          parseFloat(style.paddingRight),
-      };
-    }, RICH_TEXT);
-    expect(
-      Math.abs((span?.block ?? 0) - (span?.content ?? 0)),
-    ).toBeLessThanOrEqual(1);
-    if (viewport.width > DESKTOP.width) {
-      expect(span?.block ?? 0).toBeGreaterThan(680);
+    if (!(await markdownFenceScrolls(page, 'code-fence'))) {
+      expect(
+        Math.abs((code(richText)?.height ?? 0) - (code(markdown)?.height ?? 0)),
+      ).toBeLessThanOrEqual(2);
     }
+    // Each frame is sized like core Markdown's: as wide as its longest line,
+    // at least the 680px measure (or the whole width when narrower), and no
+    // wider than the surface. Each surface is measured against its own width.
+    const frames = await page.evaluate(
+      ({markdownSurface, richTextSurface, keys}) =>
+        keys.map(key => {
+          const markdownBlock = document.querySelector<HTMLElement>(
+            `${markdownSurface} [data-parity-block="${key}"]`,
+          );
+          const markdownFrame = [
+            markdownBlock,
+            ...(markdownBlock?.querySelectorAll<HTMLElement>('*') ?? []),
+          ].find(element => {
+            const style = element == null ? null : getComputedStyle(element);
+            return (
+              style != null &&
+              style.borderTopStyle !== 'none' &&
+              parseFloat(style.borderTopWidth) > 0
+            );
+          });
+          const richTextFrame = document.querySelector<HTMLElement>(
+            `${richTextSurface} [data-parity-block="${key}"]`,
+          );
+          const editable = richTextFrame?.parentElement;
+          const editableStyle =
+            editable == null ? null : getComputedStyle(editable);
+          return {
+            key,
+            markdown: markdownFrame?.getBoundingClientRect().width ?? 0,
+            markdownRoom: markdownBlock?.getBoundingClientRect().width ?? 0,
+            richText: richTextFrame?.getBoundingClientRect().width ?? 0,
+            richTextRoom:
+              editable == null || editableStyle == null
+                ? 0
+                : editable.clientWidth -
+                  parseFloat(editableStyle.paddingLeft) -
+                  parseFloat(editableStyle.paddingRight),
+          };
+        }),
+      {
+        markdownSurface: MARKDOWN,
+        richTextSurface: RICH_TEXT,
+        keys: ['code-fence', 'code-plain', 'code-unknown', 'code-long'],
+      },
+    );
+    for (const frame of frames) {
+      if (frame.key === 'code-long') {
+        // A long line widens the frame past the measure, up to the room.
+        const markdownWide = Math.min(frame.markdownRoom, frame.markdown);
+        expect(frame.markdown, frame.key).toBeGreaterThan(
+          Math.min(680, frame.markdownRoom) - 1,
+        );
+        expect(frame.richText, frame.key).toBeLessThanOrEqual(
+          frame.richTextRoom + 1,
+        );
+        if (frame.markdown < frame.markdownRoom - 1) {
+          // Room to spare on both surfaces: the same width as core's frame.
+          expect(
+            Math.abs(frame.richText - markdownWide),
+            frame.key,
+          ).toBeLessThanOrEqual(2);
+        } else {
+          // Both fill their surface and wrap.
+          expect(
+            Math.abs(frame.richText - frame.richTextRoom),
+            frame.key,
+          ).toBeLessThanOrEqual(1);
+        }
+      } else {
+        // A short block is the measure wide, or the whole width if narrower.
+        expect(
+          Math.abs(frame.markdown - Math.min(680, frame.markdownRoom)),
+          `${frame.key} markdown`,
+        ).toBeLessThanOrEqual(1);
+        expect(
+          Math.abs(frame.richText - Math.min(680, frame.richTextRoom)),
+          `${frame.key} rich text`,
+        ).toBeLessThanOrEqual(1);
+      }
+    }
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth - window.innerWidth,
+      ),
+    ).toBeLessThanOrEqual(0);
     // One header per fenced block; the first is the `ts` block's.
     await expect(
       page.locator(`${RICH_TEXT} [data-richtext-code-header]`),
-    ).toHaveCount(5);
+    ).toHaveCount(6);
     const header = page
       .locator(`${RICH_TEXT} [data-richtext-code-header]`)
       .first();
@@ -470,10 +548,14 @@ for (const globals of [
       'code-blank': '',
       'code-plaintext': '',
       'code-unknown': 'notalanguage',
+      'code-long': 'sh',
     } as const;
     const markdown = await surfaceGeometry(page, MARKDOWN);
     const richText = await surfaceGeometry(page, RICH_TEXT);
     for (const key of Object.keys(fences)) {
+      if (await markdownFenceScrolls(page, key)) {
+        continue;
+      }
       const height = (geometry: SurfaceGeometry) =>
         geometry.blocks.find(block => block.key === key)?.height ?? 0;
       expect(
@@ -491,7 +573,7 @@ for (const globals of [
           const label = [...(block?.querySelectorAll('*') ?? [])].find(
             element =>
               element.childElementCount === 0 &&
-              ['ts', 'notalanguage', 'plaintext'].includes(
+              ['ts', 'notalanguage', 'plaintext', 'sh'].includes(
                 element.textContent?.trim() ?? '',
               ),
           );
@@ -503,14 +585,14 @@ for (const globals of [
     // RichText draws one header per fence, in order, each with a copy button
     // and the same label.
     const headers = page.locator(`${RICH_TEXT} [data-richtext-code-header]`);
-    await expect(headers).toHaveCount(5);
+    await expect(headers).toHaveCount(6);
     const richTextLabels = await headers.evaluateAll(elements =>
       elements.map(element =>
         (element.textContent ?? '').replace('Copy code', '').trim(),
       ),
     );
     expect(richTextLabels).toEqual(Object.values(fences));
-    for (const index of [0, 1, 2, 3, 4]) {
+    for (const index of [0, 1, 2, 3, 4, 5]) {
       await expect(
         headers.nth(index).getByRole('button', {name: 'Copy code'}),
       ).toBeVisible();
