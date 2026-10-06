@@ -15,6 +15,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {ensureCoreBuilt} from '../packages/cli/clients/cli/commands/ensure-core-built.mjs';
+import {dataTokenDefaults} from '../packages/core/src/theme/domainTokens/dataTokens';
 
 /**
  * The release clock, read off its one source: `pressConsts.releaseMs` in
@@ -135,6 +136,13 @@ describe('build-css astryx.css', () => {
     ensureCoreBuilt();
     astryxCss = await fs.readFile(path.join(CORE_DIST, 'astryx.css'), 'utf8');
   }, 180_000);
+
+  it('owns every data-token default once inside astryx-base', () => {
+    expect(astryxCss.match(/@layer astryx-base/g)).toHaveLength(1);
+    for (const [name, value] of Object.entries(dataTokenDefaults)) {
+      expect(astryxCss.split(`${name}:${value}`)).toHaveLength(2);
+    }
+  });
 
   it('contains @media rules', () => {
     const mediaRules = extractMediaRules(astryxCss);

@@ -40,8 +40,11 @@ import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
 import type {ThemeMode} from './types';
 import {colorVars, typographyVars} from './tokens.stylex';
+// Keep the canonical data-color defaults in every source-compiled Core graph.
+// This StyleX variable module is marked as a package side effect, so bundlers
+// retain its declarations even though Theme does not read the map in JS.
+import './dataTokens.stylex';
 import {generateThemeCSS, type DefinedTheme} from './defineTheme';
-import {generateDataTokenDefaultsCSS} from './generateThemeRules';
 import {registerTheme} from './themeRegistry';
 import {dataAttr} from '../naming';
 import {ThemeContext} from './useTheme';
@@ -99,16 +102,6 @@ ThemeNestingContext.displayName = 'ThemeNestingContext';
 const injectedThemes = new Set<string>();
 
 /**
- * How many mounted `Theme`s are relying on the injected data-token defaults.
- *
- * The defaults are one document-wide `:root` block, shared by every theme, so
- * they are injected once and removed only when the last theme that took a
- * reference unmounts — tearing them down with whichever provider happened to
- * inject them would strip the palette from the providers still mounted.
- */
-let dataTokenDefaultsRefCount = 0;
-
-/**
  * Hook to inject theme CSS into the document.
  * Built themes (from `astryx theme build`) skip injection — their CSS
  * is in a separate file imported by the consumer.
@@ -142,27 +135,8 @@ function useThemeStyleInjection(theme: DefinedTheme): void {
     );
 
     const {prose, component} = generateThemeCSS(theme);
-    const base = generateDataTokenDefaultsCSS();
     injectedThemes.add(themeKey);
     const cleanups: (() => void)[] = [() => injectedThemes.delete(themeKey)];
-
-    // Data token defaults go into @layer astryx-base, where StyleX puts the
-    // core token defaults, so a theme's own `--color-data-*` outranks them by
-    // layer. Appended (never prepended) so it cannot register `astryx-base`
-    // ahead of `reset` and invert the layer order.
-    if (base) {
-      if (dataTokenDefaultsRefCount++ === 0) {
-        const baseStyle = document.createElement('style');
-        baseStyle.setAttribute(dataAttr('theme-base'), '');
-        baseStyle.textContent = `@layer astryx-base {\n${base}\n}`;
-        document.head.appendChild(baseStyle);
-      }
-      cleanups.push(() => {
-        if (--dataTokenDefaultsRefCount === 0) {
-          document.querySelector(`style[${dataAttr('theme-base')}]`)?.remove();
-        }
-      });
-    }
 
     // Prose defaults go into @layer reset — lowest priority, scoped to
     // the theme region. Any class-based style (StyleX, .xds-*) wins.

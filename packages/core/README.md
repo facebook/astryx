@@ -97,7 +97,7 @@ The fastest way to get started. No build plugins, no PostCSS, no Babel config �
 @import '@astryxdesign/theme-neutral/theme.css';
 ```
 
-The import order maps to the layer cascade: `reset.css` (`@layer reset`) → `astryx.css` component styles (`@layer astryx-base`) → `theme.css` token overrides (`@layer astryx-theme`).
+The import order maps to the layer cascade: `reset.css` (`@layer reset`) → `astryx.css` component styles and theme-independent token defaults (`@layer astryx-base`) → `theme.css` authored token overrides (`@layer astryx-theme`). Theme packages and runtime `<Theme>` injection do not repeat the core defaults.
 
 **`src/app/providers.tsx`**
 

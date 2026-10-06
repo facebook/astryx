@@ -530,7 +530,9 @@ function linkStylesheetsForEveryPage(
 /**
  * StyleX runs its collected CSS through lightningcss before emitting it, so
  * anything replacing that output has to run the same pass or the build quietly
- * loses the vendor prefixes and lowering the original had.
+ * loses the vendor prefixes and lowering the original had. Astryx's prebuilt
+ * stylesheet ships native `light-dark()`, so source builds exclude only that
+ * lowering to keep the two supported distribution paths behaviorally equal.
  *
  * lightningcss ships with both Vite and the StyleX plugin, either of which must
  * be installed for this plugin to run at all. If it somehow is not resolvable,
@@ -541,10 +543,12 @@ function postProcessCss(css: string, lightningcssOptions: unknown): string {
   if (!css) return css;
   try {
     const require_ = createRequire(import.meta.url);
-    const {transform, browserslistToTargets} = require_('lightningcss');
+    const {transform, browserslistToTargets, Features} =
+      require_('lightningcss');
     const browserslist = require_('browserslist');
     const {code} = transform({
       targets: browserslistToTargets(browserslist()),
+      exclude: Features.LightDark,
       ...(lightningcssOptions as object),
       filename: 'stylex.css',
       code: Buffer.from(css),

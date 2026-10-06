@@ -8,7 +8,6 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {
-  dataTokenDefaults,
   defineTheme,
   generateAdaptationCSS,
   generateThemeCSS,
@@ -16,7 +15,6 @@ import {
   generateThemeRules,
   type DefinedTheme,
 } from './index';
-import {generateDataTokenDefaultsCSS} from './generateThemeRules';
 
 function topLevelCSSBlocks(css: string): string[] {
   const blocks: string[] = [];
@@ -1367,15 +1365,6 @@ describe('data visualization tokens', () => {
   const scopeBlock = (theme: Parameters<typeof generateThemeRules>[0]) =>
     generateThemeRules(theme).find(r => r.includes(':scope'));
 
-  it('seeds the whole palette once, at :root', () => {
-    const css = generateDataTokenDefaultsCSS();
-
-    expect(css.startsWith(':root {')).toBe(true);
-    for (const [name, value] of Object.entries(dataTokenDefaults)) {
-      expect(css).toContain(`${name}: ${value};`);
-    }
-  });
-
   it('leaves the defaults out of a theme scope block', () => {
     // A scope block that re-declared them would shadow a parent theme's
     // override in every nested <Theme>, which no other token family does.
@@ -1398,8 +1387,8 @@ describe('data visualization tokens', () => {
   });
 
   it('keeps the palette out of the scoped stylesheet', () => {
-    // The palette's own contents are asserted once, against
-    // `dataTokenDefaults`, in `seeds the whole palette once, at :root` above.
+    // The required core stylesheet owns the palette; runtime theme CSS owns
+    // only authored overrides.
     const {component, prose} = generateThemeCSS(
       defineTheme({name: 'data-css'}),
     );
@@ -1409,9 +1398,8 @@ describe('data visualization tokens', () => {
   });
 
   it('keeps generateThemeCSS to its two scoped blocks', () => {
-    // The defaults are theme-independent, so they are not part of the theme
-    // CSS contract: `astryx theme build` formats them from the public
-    // `dataTokenDefaults` export instead.
+    // Core CSS owns the theme-independent defaults, so the runtime generator's
+    // return shape remains only the two theme-owned blocks.
     expect(
       Object.keys(generateThemeCSS(defineTheme({name: 'data-shape'}))).sort(),
     ).toEqual(['component', 'prose']);

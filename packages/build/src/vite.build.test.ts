@@ -201,6 +201,14 @@ function itSplitsCorrectly(get: () => Built) {
     expect(outside).not.toContain('@layer priority');
   });
 
+  it('preserves native light-dark defaults in source builds', () => {
+    const library = layerBlock(get().css, 'astryx-base');
+    expect(library).toMatch(
+      /--color-data-categorical-orange:\s*light-dark\(\s*#eb6e00\s*,\s*#eb6e00\s*\)/i,
+    );
+    expect(library).not.toContain('--lightningcss-light');
+  });
+
   // StyleX runs its CSS through lightningcss before emitting it. Replacing that
   // output means running the same pass, or the build quietly loses the prefixes
   // the original had.
