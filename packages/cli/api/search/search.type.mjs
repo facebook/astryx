@@ -9,7 +9,7 @@
 
 /**
  * The domain a search result belongs to.
- * @typedef {'component' | 'hook' | 'doc' | 'template'} SearchDomain
+ * @typedef {'component' | 'hook' | 'doc' | 'template' | 'theme'} SearchDomain
  */
 
 /**

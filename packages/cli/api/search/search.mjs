@@ -89,6 +89,7 @@ import {loadIntegrationsSafely} from '../component/_adapter.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {discoverTemplates, extractComponents} from '../template/template.mjs';
 import {templateLookupIds} from '../../foundation/discovery/template-adapter.mjs';
+import {listAvailableThemes} from '../theme/_adapter.mjs';
 import {
   guideEntry,
   loadDocsCatalog,
@@ -110,7 +111,7 @@ import {setResultCoverage} from './coverage.mjs';
  * A search candidate gathered from one content domain. Extra underscore-
  * prefixed fields carry domain-specific payload used only by {@link toResult}.
  * @typedef {object} Candidate
- * @property {'component'|'hook'|'doc'|'template'} domain
+ * @property {'component'|'hook'|'doc'|'template'|'theme'} domain
  * @property {string} name
  * @property {string[]} [keywords]
  * @property {string[]} [weakKeywords]
@@ -291,7 +292,7 @@ const isTypo = (a, b, dist) =>
     TYPO_MIN_LENGTH[/** @type {1 | 2 | 3} */ (dist)];
 
 /** Valid domain filters for `--type`. */
-export const SEARCH_DOMAINS = ['component', 'hook', 'doc', 'template'];
+export const SEARCH_DOMAINS = ['component', 'hook', 'doc', 'template', 'theme'];
 
 /**
  * Filler words stripped from multi-word queries so natural-language phrasing
@@ -618,6 +619,7 @@ export function scoreQuery(term, tokens, candidate) {
   // strong hits, then reward coverage so candidates matching more terms win.
   let strongest = 0;
   let matched = 0;
+  let tokenSum = 0;
   /** @type {string[]} */
   const hitTerms = [];
   for (const tok of tokens) {
@@ -626,6 +628,7 @@ export function scoreQuery(term, tokens, candidate) {
       if (h.score > strongest) strongest = h.score;
       matched++;
       hitTerms.push(tok);
+      tokenSum += h.score;
     }
   }
   // The reverse of the title tier, a step lower: the query holds a whole title
@@ -650,14 +653,25 @@ export function scoreQuery(term, tokens, candidate) {
   // (50 + bonus + coverage = 77) lost to thirty docs that each match
   // `integration` alone, by name or in a code tick (98-108). The reader asked for
   // both; a candidate that has both comes first, ordered among its peers by
-  // how strong its strongest match is. It needs one keyword-strength hit:
+  // how strong its matches are. It needs one keyword-strength hit:
   // every word mentioned in prose, or rendered by a page, is breadth, and
   // stays on the token sum below an exact hit on one word.
+  //
+  // The TOTAL quality of matches orders candidates within this tier, not
+  // just the strongest single hit. A doc matching both words by keyword
+  // (90 + 90 = 180) outranks one matching keyword + prose (90 + 50 = 140).
+  // Before this, every all-word match whose strongest hit was a keyword (90)
+  // scored 157, burying the better match among dozens of ties.
   if (matched === tokens.length && strongest >= STRONG_TOKEN_SCORE) {
     return {
       score:
         FULL_COVERAGE_SCORE +
-        Math.floor((strongest - MIN_TOKEN_SCORE) / 6.25),
+        Math.min(
+          Math.floor(
+            (tokenSum - matched * MIN_TOKEN_SCORE) / (matched * 5),
+          ),
+          8,
+        ),
       reason,
       matched,
       total,
@@ -1464,6 +1478,33 @@ async function gatherTemplates(cwd) {
 }
 
 /**
+ * Build theme candidates from bundled and integration-provided themes. Without
+ * this, an integration's themes are invisible to `search` even though
+ * `theme list` and `discover` already resolve them.
+ * @param {string} cwd
+ * @returns {Promise<Candidate[]>}
+ */
+async function gatherThemes(cwd) {
+  let themes;
+  try {
+    themes = await listAvailableThemes(cwd);
+  } catch {
+    return [];
+  }
+  return themes.map(t => ({
+    domain: 'theme',
+    name: t.slug,
+    keywords: [
+      t.displayName,
+      ...(t.description ? t.description.split(/[^A-Za-z0-9]+/).filter(w => w.length > 3) : []),
+    ],
+    description: t.description || '',
+    _displayName: t.displayName,
+    _package: t.package,
+  }));
+}
+
+/**
  * Map a scored candidate to its public, actionable result shape. Each result
  * carries enough to act on it: the domain, name, a one-line description, and
  * the follow-up command (and import path where relevant).
@@ -1519,6 +1560,14 @@ function toResult(c, score, reason, matchedTerms, queryTerms) {
         command: `astryx template ${c._commandName ?? c.name} --type ${c._kind}`,
       };
       break;
+    case 'theme':
+      result = {
+        ...base,
+        displayName: c._displayName,
+        command: `astryx theme add ${c.name}`,
+        ...(c._package ? {package: c._package} : {}),
+      };
+      break;
     default:
       result = base;
   }
@@ -1531,7 +1580,7 @@ function toResult(c, score, reason, matchedTerms, queryTerms) {
  * @param {string} query - Free-text search term.
  * @param {object} [options]
  * @param {string} [options.cwd]
- * @param {'component'|'hook'|'doc'|'template'} [options.type] - Restrict to one domain.
+ * @param {'component'|'hook'|'doc'|'template'|'theme'} [options.type] - Restrict to one domain.
  * @param {number} [options.limit] - Max results (default 20).
  * @returns {Promise<import('./search.type.mjs').SearchResponse>}
  */
@@ -1584,16 +1633,17 @@ export async function search(query, options = {}) {
   // Gather candidates from each requested domain in parallel.
   /** @param {string} d */
   const wants = d => (!type && (coreDir != null || d === 'doc')) || type === d;
-  const [components, hooks, docTopics, templates] = await Promise.all([
+  const [components, hooks, docTopics, templates, themes] = await Promise.all([
     wants('component')
       ? gatherComponents(/** @type {string} */ (coreDir), cwd)
       : [],
     wants('hook') ? gatherHooks(/** @type {string} */ (coreDir)) : [],
     wants('doc') ? gatherDocs(cwd) : [],
     wants('template') ? gatherTemplates(cwd) : [],
+    wants('theme') ? gatherThemes(cwd) : [],
   ]);
 
-  const all = [...components, ...hooks, ...docTopics, ...templates];
+  const all = [...components, ...hooks, ...docTopics, ...templates, ...themes];
 
   // Score every candidate on its own merits. The consumer groups results by
   // role (page / block / component) and takes the top of each, so there's no
@@ -1610,7 +1660,7 @@ export async function search(query, options = {}) {
 
   // Sort by score desc, then domain (stable order), then name.
   /** @type {Record<string, number>} */
-  const domainOrder = {component: 0, hook: 1, doc: 2, template: 3};
+  const domainOrder = {component: 0, hook: 1, doc: 2, template: 3, theme: 4};
   scored.sort(
     (a, b) =>
       b.score - a.score ||
