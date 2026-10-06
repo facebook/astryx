@@ -7,6 +7,7 @@ import * as http from 'node:http';
 import * as path from 'node:path';
 import {AxeBuilder} from '@axe-core/playwright';
 import {chromium} from 'playwright';
+import {MAX_DECLARED_STATES, STATE_MANIFEST_FILE} from './constants.mjs';
 import {
   auditTranscript,
   createPrivateRunRoot,
@@ -15,6 +16,92 @@ import {
 } from './process.mjs';
 
 const fsp = fs.promises;
+const VIEWPORT = {width: 1440, height: 900};
+const STATE_NAME_PATTERN = /^[a-z0-9][a-z0-9 _-]{0,31}$/i;
+
+export async function readDeclaredStates(projectDir) {
+  const manifestPath = path.join(projectDir, STATE_MANIFEST_FILE);
+  if (!fs.existsSync(manifestPath)) {
+    return [];
+  }
+
+  let manifest;
+  try {
+    manifest = JSON.parse(await fsp.readFile(manifestPath, 'utf8'));
+  } catch (error) {
+    throw new Error(
+      `${STATE_MANIFEST_FILE} must contain valid JSON: ${error instanceof Error ? error.message : String(error)}`,
+      {cause: error},
+    );
+  }
+  if (
+    !manifest ||
+    typeof manifest !== 'object' ||
+    Array.isArray(manifest) ||
+    !Array.isArray(manifest.states)
+  ) {
+    throw new Error(
+      `${STATE_MANIFEST_FILE} must be an object with a states array.`,
+    );
+  }
+  const extraKeys = Object.keys(manifest).filter(key => key !== 'states');
+  if (extraKeys.length > 0) {
+    throw new Error(
+      `${STATE_MANIFEST_FILE} has unsupported keys: ${extraKeys.join(', ')}.`,
+    );
+  }
+  if (manifest.states.length > MAX_DECLARED_STATES) {
+    throw new Error(
+      `${STATE_MANIFEST_FILE} may declare at most ${MAX_DECLARED_STATES} states.`,
+    );
+  }
+
+  const names = new Set();
+  return manifest.states.map((state, index) => {
+    if (!state || typeof state !== 'object' || Array.isArray(state)) {
+      throw new Error(`State ${index + 1} must be an object.`);
+    }
+    const stateExtraKeys = Object.keys(state).filter(
+      key => key !== 'name' && key !== 'url',
+    );
+    if (stateExtraKeys.length > 0) {
+      throw new Error(
+        `State ${index + 1} has unsupported keys: ${stateExtraKeys.join(', ')}.`,
+      );
+    }
+    if (
+      typeof state.name !== 'string' ||
+      !STATE_NAME_PATTERN.test(state.name)
+    ) {
+      throw new Error(
+        `State ${index + 1} name must be 1-32 letters, numbers, spaces, underscores, or hyphens.`,
+      );
+    }
+    const normalizedName = state.name.toLowerCase();
+    if (normalizedName === 'default' || names.has(normalizedName)) {
+      throw new Error(`State names must be unique and may not be "default".`);
+    }
+    names.add(normalizedName);
+    if (
+      typeof state.url !== 'string' ||
+      !(state.url.startsWith('?') || state.url.startsWith('#'))
+    ) {
+      throw new Error(
+        `State ${state.name} url must start with ? or # and stay on the main page.`,
+      );
+    }
+    return {name: state.name, url: state.url};
+  });
+}
+
+export function resolveDeclaredStateUrl(baseUrl, suffix) {
+  const base = new URL(baseUrl);
+  const resolved = new URL(suffix, base);
+  if (resolved.origin !== base.origin || resolved.pathname !== base.pathname) {
+    throw new Error('Declared states must stay on the main page.');
+  }
+  return resolved.href;
+}
 
 export async function evaluateRun({
   config,
@@ -51,6 +138,18 @@ export async function evaluateRun({
     });
   }
 
+  let declaredStates;
+  try {
+    declaredStates = await readDeclaredStates(projectDir);
+  } catch (error) {
+    return failedEvaluation({
+      build,
+      typecheck,
+      source,
+      reason: error instanceof Error ? error.message : String(error),
+    });
+  }
+
   await fsp.mkdir(path.dirname(screenshotPath), {recursive: true});
   const server =
     config === 'react-build'
@@ -60,9 +159,7 @@ export async function evaluateRun({
   let browser;
   try {
     browser = await chromium.launch({headless: true});
-    const context = await browser.newContext({
-      viewport: {width: 1440, height: 900},
-    });
+    const context = await browser.newContext({viewport: VIEWPORT});
     const page = await context.newPage();
     const consoleErrors = [];
     const pageErrors = [];
@@ -93,18 +190,45 @@ export async function evaluateRun({
 
     const nonBlank =
       renderMetrics.textLength >= 20 && renderMetrics.visibleElementCount >= 3;
+    const defaultPassed =
+      nonBlank &&
+      consoleErrors.length === 0 &&
+      pageErrors.length === 0 &&
+      (starterTyping?.passed ?? true);
+    const stateCaptures = [
+      {
+        name: 'default',
+        target: '',
+        screenshotPath,
+        nonBlank,
+        consoleErrors,
+        pageErrors,
+        passed: defaultPassed,
+      },
+    ];
+    for (const [index, state] of declaredStates.entries()) {
+      stateCaptures.push(
+        await captureDeclaredState({
+          browser,
+          baseUrl: server.url,
+          state,
+          screenshotPath: path.join(
+            path.dirname(screenshotPath),
+            `${path.basename(screenshotPath, path.extname(screenshotPath))}-state-${index + 1}.png`,
+          ),
+        }),
+      );
+    }
+
     const render = {
       ...renderMetrics,
       nonBlank,
       consoleErrors,
       pageErrors,
       starterTyping,
-      passed:
-        nonBlank &&
-        consoleErrors.length === 0 &&
-        pageErrors.length === 0 &&
-        (starterTyping?.passed ?? true),
+      passed: defaultPassed,
       url: server.url,
+      states: stateCaptures.map(stateCaptureReceipt),
     };
     if (!render.passed) {
       render.adoptionShare = 0;
@@ -113,10 +237,12 @@ export async function evaluateRun({
     const judge = !render.passed
       ? zeroJudgment('Render failed, was blank, or emitted runtime errors')
       : skipJudge
-        ? {skipped: true}
+        ? {skipped: true, stateEvidence: []}
         : await runBlindJudge({
             prompt,
-            screenshotPath,
+            screenshots: stateCaptures.filter(capture =>
+              fs.existsSync(capture.screenshotPath),
+            ),
             profile: judgeProfile,
           });
 
@@ -135,6 +261,7 @@ export async function evaluateRun({
         })),
       },
       judge,
+      stateCaptures,
     };
   } catch (error) {
     return failedEvaluation({
@@ -148,6 +275,64 @@ export async function evaluateRun({
     await browser?.close();
     await server.stop();
   }
+}
+
+async function captureDeclaredState({browser, baseUrl, state, screenshotPath}) {
+  const context = await browser.newContext({viewport: VIEWPORT});
+  const page = await context.newPage();
+  const consoleErrors = [];
+  const pageErrors = [];
+  page.on('console', message => {
+    if (message.type() === 'error') {
+      consoleErrors.push(message.text());
+    }
+  });
+  page.on('pageerror', error => pageErrors.push(error.message));
+
+  try {
+    const url = resolveDeclaredStateUrl(baseUrl, state.url);
+    await page.goto(url, {waitUntil: 'networkidle', timeout: 90_000});
+    await page.waitForTimeout(1500);
+    const metrics = await page.evaluate(measureAdoptionInDocument);
+    await page.screenshot({path: screenshotPath, fullPage: true});
+    const nonBlank =
+      metrics.textLength >= 20 && metrics.visibleElementCount >= 3;
+    return {
+      name: state.name,
+      target: state.url,
+      screenshotPath,
+      nonBlank,
+      consoleErrors,
+      pageErrors,
+      passed: nonBlank && consoleErrors.length === 0 && pageErrors.length === 0,
+    };
+  } catch (error) {
+    return {
+      name: state.name,
+      target: state.url,
+      screenshotPath,
+      nonBlank: false,
+      consoleErrors,
+      pageErrors,
+      passed: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  } finally {
+    await context.close();
+  }
+}
+
+function stateCaptureReceipt(capture) {
+  return {
+    name: capture.name,
+    target: capture.target,
+    nonBlank: capture.nonBlank,
+    consoleErrors: capture.consoleErrors,
+    pageErrors: capture.pageErrors,
+    passed: capture.passed,
+    screenshotCaptured: fs.existsSync(capture.screenshotPath),
+    error: capture.error ?? null,
+  };
 }
 
 function failedEvaluation({build, typecheck, source, reason}) {
@@ -180,6 +365,7 @@ function zeroJudgment(reason) {
     success: false,
     notes: reason,
     failureReasons: [reason],
+    stateEvidence: [],
     automaticFailure: true,
   };
 }
@@ -656,7 +842,7 @@ async function waitForUrl(url, child, logPath) {
   throw new Error(`Timed out waiting for ${url}`);
 }
 
-async function runBlindJudge({prompt, screenshotPath, profile}) {
+export async function runBlindJudge({prompt, screenshots, profile}) {
   const schema = {
     type: 'object',
     properties: {
@@ -665,6 +851,21 @@ async function runBlindJudge({prompt, screenshotPath, profile}) {
       success: {type: 'boolean'},
       notes: {type: 'string'},
       failureReasons: {type: 'array', items: {type: 'string'}},
+      stateEvidence: {
+        type: 'array',
+        minItems: screenshots.length,
+        maxItems: screenshots.length,
+        items: {
+          type: 'object',
+          properties: {
+            state: {type: 'string', enum: screenshots.map(value => value.name)},
+            visibleEvidence: {type: 'string'},
+            concerns: {type: 'array', items: {type: 'string'}},
+          },
+          required: ['state', 'visibleEvidence', 'concerns'],
+          additionalProperties: false,
+        },
+      },
     },
     required: [
       'promptFulfillment',
@@ -672,27 +873,22 @@ async function runBlindJudge({prompt, screenshotPath, profile}) {
       'success',
       'notes',
       'failureReasons',
+      'stateEvidence',
     ],
     additionalProperties: false,
   };
-  const judgePrompt = `You are a blind UI evaluator. Inspect screenshot.png in the working directory. You are not told which component system or delivery configuration produced it.
-
-Original task:
-${prompt.prompt}
-
-Score only visible evidence:
-- promptFulfillment (0-100): how completely and correctly the screenshot fulfills the requested UI and states.
-- visualQuality (0-100): hierarchy, spacing, alignment, legibility, affordances, polish, and apparent accessibility.
-- success: true only when the requested interface is recognizably complete and has no critical visible failure.
-
-Do not infer implementation details, identify the system, inspect other files, or reward a particular visual style. Return the requested JSON only.`;
+  const anonymousScreenshots = screenshots.map((screenshot, index) => ({
+    ...screenshot,
+    fileName: `state-${String(index).padStart(2, '0')}.png`,
+  }));
+  const judgePrompt = buildBlindJudgePrompt(prompt, anonymousScreenshots);
   const attempts = [];
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     attempts.push(
       await runBlindJudgeAttempt({
         judgePrompt,
         schema,
-        screenshotPath,
+        screenshots: anonymousScreenshots,
         profile,
       }),
     );
@@ -702,6 +898,27 @@ Do not infer implementation details, identify the system, inspect other files, o
     }
   }
   throw new Error('Judge retry resolution did not terminate');
+}
+
+export function buildBlindJudgePrompt(prompt, screenshots) {
+  const screenshotList = screenshots
+    .map(screenshot => `- ${screenshot.name}: ${screenshot.fileName}`)
+    .join('\n');
+  return `You are a blind UI evaluator. Use the Read tool to inspect every supplied screenshot. You are not told which component system or delivery configuration produced them.
+
+Screenshots, all captured from fresh loads at the same viewport:
+${screenshotList}
+
+Original task:
+${prompt.prompt}
+
+Score only visible evidence across the complete screenshot set:
+- promptFulfillment (0-100): how completely and correctly the screenshots fulfill the requested UI and states.
+- visualQuality (0-100): hierarchy, spacing, alignment, legibility, affordances, polish, and apparent accessibility.
+- success: true only when the requested interface is recognizably complete and has no critical visible failure.
+- stateEvidence: one entry per screenshot, in the supplied order, naming visible evidence and concerns for that state.
+
+State labels are navigation labels, not evidence. Do not infer features from a label that are not visible in its screenshot. Do not infer implementation details, identify the system, inspect other files, or reward a particular visual style. Return the requested JSON only.`;
 }
 
 export function resolveJudgeAttempts(attempts, exhausted = false) {
@@ -727,6 +944,7 @@ export function resolveJudgeAttempts(attempts, exhausted = false) {
     success: null,
     notes: null,
     failureReasons: [],
+    stateEvidence: [],
     error: 'Judge unavailable after two failed attempts',
     judgeUnavailable: true,
     contextAudit: last.contextAudit ?? null,
@@ -743,25 +961,29 @@ function judgeAttemptSucceeded(attempt) {
     Number.isFinite(attempt.visualQuality) &&
     typeof attempt.success === 'boolean' &&
     typeof attempt.notes === 'string' &&
-    Array.isArray(attempt.failureReasons)
+    Array.isArray(attempt.failureReasons) &&
+    Array.isArray(attempt.stateEvidence)
   );
 }
 
 async function runBlindJudgeAttempt({
   judgePrompt,
   schema,
-  screenshotPath,
+  screenshots,
   profile,
 }) {
   if (!profile?.judge) {
     throw new Error('A judge command is required for blind evaluation.');
   }
   const privateRun = await createPrivateRunRoot('judge-');
-  const anonymousScreenshot = path.join(
-    privateRun.projectDir,
-    'screenshot.png',
+  await Promise.all(
+    screenshots.map(screenshot =>
+      fsp.copyFile(
+        screenshot.screenshotPath,
+        path.join(privateRun.projectDir, screenshot.fileName),
+      ),
+    ),
   );
-  await fsp.copyFile(screenshotPath, anonymousScreenshot);
 
   try {
     const result = await runProfileCommand(
@@ -802,7 +1024,10 @@ async function runBlindJudgeAttempt({
     let parsed;
     try {
       parsed = parseStructuredOutput(result.stdout, profile.judge.resultPath);
-      assertValidJudgment(parsed);
+      assertValidJudgment(
+        parsed,
+        screenshots.map(screenshot => screenshot.name),
+      );
     } catch (error) {
       return {
         configBlind: true,
@@ -877,7 +1102,19 @@ function readResultPath(value, dottedPath) {
     );
 }
 
-function assertValidJudgment(value) {
+function assertValidJudgment(value, expectedStateNames) {
+  const stateEvidenceValid =
+    Array.isArray(value.stateEvidence) &&
+    value.stateEvidence.length === expectedStateNames.length &&
+    value.stateEvidence.every(
+      (evidence, index) =>
+        evidence &&
+        typeof evidence === 'object' &&
+        evidence.state === expectedStateNames[index] &&
+        typeof evidence.visibleEvidence === 'string' &&
+        Array.isArray(evidence.concerns) &&
+        evidence.concerns.every(concern => typeof concern === 'string'),
+    );
   if (
     !Number.isFinite(value.promptFulfillment) ||
     value.promptFulfillment < 0 ||
@@ -888,7 +1125,8 @@ function assertValidJudgment(value) {
     typeof value.success !== 'boolean' ||
     typeof value.notes !== 'string' ||
     !Array.isArray(value.failureReasons) ||
-    !value.failureReasons.every(reason => typeof reason === 'string')
+    !value.failureReasons.every(reason => typeof reason === 'string') ||
+    !stateEvidenceValid
   ) {
     throw new Error('Judge result did not match the required score schema');
   }

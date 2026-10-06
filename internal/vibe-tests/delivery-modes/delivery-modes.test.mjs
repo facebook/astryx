@@ -1,4 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
+/* global process, structuredClone */
 
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
@@ -11,11 +12,17 @@ import {checkpointIsComplete} from './checkpoint.mjs';
 import {
   buildTaskPrompt,
   getDeliverySpecs,
+  MAX_DECLARED_STATES,
   selectPrompts,
+  STATE_MANIFEST_FILE,
 } from './constants.mjs';
 import {
+  buildBlindJudgePrompt,
   captureAuthoredSources,
+  readDeclaredStates,
+  resolveDeclaredStateUrl,
   resolveJudgeAttempts,
+  runBlindJudge,
   scanAuthoredSource,
 } from './evaluator.mjs';
 import {
@@ -65,6 +72,9 @@ test('generated prompts differ only by factual delivery details', () => {
     assert.match(task, /Build a settings card\./);
     assert.match(task, /use only the documentation and tools installed there/);
     assert.match(task, /You have up to 15 minutes/);
+    assert.match(task, /vibe-states\.json/);
+    assert.match(task, /up to 4 additional named states/);
+    assert.match(task, /fresh browser context/);
   }
   const normalized = generated.map(task =>
     task.replace(/Delivery environment:\n[^\n]+/, 'Delivery environment:\n<x>'),
@@ -72,6 +82,190 @@ test('generated prompts differ only by factual delivery details', () => {
   assert.equal(new Set(normalized).size, 2);
   assert.match(generated[0], /src\/App\.tsx/);
   assert.match(generated[1], /index\.html/);
+});
+
+test('hidden fixture state reaches the blind judge only when declared', async () => {
+  const directory = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), 'delivery-states-'),
+  );
+  temporaryDirectories.push(directory);
+  await fs.promises.writeFile(
+    path.join(directory, 'index.html'),
+    `<!doctype html><main><p>Default dashboard</p><p id="hidden" hidden>Upload complete</p></main><script>if (location.hash === '#state=success') document.querySelector('#hidden').hidden = false;</script>`,
+  );
+
+  const originalTask = {prompt: 'Build a status dashboard.'};
+  assert.deepEqual(await readDeclaredStates(directory), []);
+  const defaultPrompt = buildBlindJudgePrompt(originalTask, [
+    {name: 'default', fileName: 'state-00.png'},
+  ]);
+  assert.doesNotMatch(defaultPrompt, /^- success: state-\d+\.png$/m);
+
+  await fs.promises.writeFile(
+    path.join(directory, STATE_MANIFEST_FILE),
+    `${JSON.stringify({states: [{name: 'success', url: '#state=success'}]})}\n`,
+  );
+  const declared = await readDeclaredStates(directory);
+  assert.deepEqual(declared, [{name: 'success', url: '#state=success'}]);
+  const declaredPrompt = buildBlindJudgePrompt(originalTask, [
+    {name: 'default', fileName: 'state-00.png'},
+    {name: declared[0].name, fileName: 'state-01.png'},
+  ]);
+  assert.match(declaredPrompt, /^- success: state-01\.png$/m);
+  assert.match(
+    declaredPrompt,
+    /State labels are navigation labels, not evidence/,
+  );
+  assert.equal(
+    resolveDeclaredStateUrl('http://127.0.0.1:3000/', declared[0].url),
+    'http://127.0.0.1:3000/#state=success',
+  );
+});
+
+test('blind judge scores the hidden-state fixture only when its screenshot is declared', async () => {
+  const directory = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), 'delivery-state-judge-'),
+  );
+  temporaryDirectories.push(directory);
+  const judgeScript = path.join(directory, 'judge.mjs');
+  await fs.promises.writeFile(
+    judgeScript,
+    `import * as fs from 'node:fs';
+let prompt = '';
+for await (const chunk of process.stdin) prompt += chunk;
+const states = [...prompt.matchAll(/^- ([^:]+): state-\\d+\\.png$/gm)].map(match => match[1]);
+const files = fs.readdirSync(process.argv[2]).filter(file => /^state-\\d+\\.png$/.test(file));
+console.log(JSON.stringify({promptFulfillment: files.length > 1 ? 90 : 30, visualQuality: 80, success: files.length > 1, notes: 'fixture judge', failureReasons: [], stateEvidence: states.map(state => ({state, visibleEvidence: state === 'success' ? 'Upload complete is visible.' : 'Default upload form is visible.', concerns: []}))}));
+`,
+  );
+  const defaultScreenshot = path.join(directory, 'default.png');
+  const successScreenshot = path.join(directory, 'success.png');
+  await fs.promises.writeFile(defaultScreenshot, 'default-image');
+  await fs.promises.writeFile(successScreenshot, 'success-image');
+  const profile = {
+    sandbox: {root: '/unused', projectDir: '/unused/project'},
+    launcher: {
+      command: '/usr/bin/env',
+      args: ['{runnerCommand}', '{runnerArgs}'],
+    },
+    judge: {
+      command: process.execPath,
+      args: [judgeScript, '{projectDir}'],
+      stdin: 'prompt',
+      transcript: structuredClone(exampleTranscriptAdapter),
+      audit: {rules: []},
+    },
+  };
+  const prompt = {prompt: 'Build an upload flow with a success state.'};
+  const defaultOnly = await runBlindJudge({
+    prompt,
+    screenshots: [{name: 'default', screenshotPath: defaultScreenshot}],
+    profile,
+  });
+  const withSuccess = await runBlindJudge({
+    prompt,
+    screenshots: [
+      {name: 'default', screenshotPath: defaultScreenshot},
+      {name: 'success', screenshotPath: successScreenshot},
+    ],
+    profile,
+  });
+  assert.equal(defaultOnly.promptFulfillment, 30, JSON.stringify(defaultOnly));
+  assert.equal(defaultOnly.stateEvidence.length, 1);
+  assert.equal(withSuccess.promptFulfillment, 90);
+  assert.deepEqual(
+    withSuccess.stateEvidence.map(evidence => evidence.state),
+    ['default', 'success'],
+  );
+});
+
+test('state declarations reject alternate pages, duplicates, and over-cap evidence', async () => {
+  const directory = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), 'delivery-state-guard-'),
+  );
+  temporaryDirectories.push(directory);
+  const manifestPath = path.join(directory, STATE_MANIFEST_FILE);
+
+  await fs.promises.writeFile(
+    manifestPath,
+    JSON.stringify({states: [{name: 'loading', url: 'loading.html'}]}),
+  );
+  await assert.rejects(
+    () => readDeclaredStates(directory),
+    /start with \? or #/,
+  );
+
+  await fs.promises.writeFile(
+    manifestPath,
+    JSON.stringify({
+      states: [
+        {name: 'loading', url: '#loading'},
+        {name: 'Loading', url: '#loading-again'},
+      ],
+    }),
+  );
+  await assert.rejects(() => readDeclaredStates(directory), /unique/);
+
+  await fs.promises.writeFile(
+    manifestPath,
+    JSON.stringify({
+      states: Array.from({length: MAX_DECLARED_STATES + 1}, (_, index) => ({
+        name: `state-${index}`,
+        url: `#state-${index}`,
+      })),
+    }),
+  );
+  await assert.rejects(
+    () => readDeclaredStates(directory),
+    new RegExp(`at most ${MAX_DECLARED_STATES}`),
+  );
+});
+
+test('reports preserve screenshots and visible evidence for each state', async () => {
+  const outputDir = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), 'delivery-state-report-'),
+  );
+  temporaryDirectories.push(outputDir);
+  const defaultPath = path.join(outputDir, 'default.png');
+  const successPath = path.join(outputDir, 'success.png');
+  await fs.promises.writeFile(defaultPath, 'default-image');
+  await fs.promises.writeFile(successPath, 'success-image');
+
+  const result = makeResult({passed: true, value: 80});
+  Object.assign(result, {
+    id: 'x-react-build-sample',
+    promptId: 'x',
+    outputDir,
+    screenshotPath: defaultPath,
+    screenshots: [
+      {name: 'default', path: defaultPath},
+      {name: 'success', path: successPath},
+    ],
+  });
+  result.evaluation.render.states = [
+    {name: 'default', passed: true},
+    {name: 'success', passed: true},
+  ];
+  result.evaluation.judge.stateEvidence = [
+    {state: 'default', visibleEvidence: 'Upload is ready.', concerns: []},
+    {
+      state: 'success',
+      visibleEvidence: 'Completion message is visible.',
+      concerns: ['Low contrast'],
+    },
+  ];
+
+  const report = await buildReports({
+    outputDir,
+    iterationId: 'state-evidence',
+    results: [result],
+  });
+  const markdown = await fs.promises.readFile(report.markdownPath, 'utf8');
+  const html = await fs.promises.readFile(report.htmlPath, 'utf8');
+  assert.match(markdown, /success: \[screenshot\]/);
+  assert.match(markdown, /Completion message is visible/);
+  assert.match(html, /<h4>success<\/h4>/);
+  assert.match(html, /Low contrast/);
 });
 
 test('stratified sampling is stable and covers categories first', () => {
@@ -421,6 +615,9 @@ test('judge crashes retry once and report recovery', () => {
     success: true,
     notes: 'Complete.',
     failureReasons: [],
+    stateEvidence: [
+      {state: 'default', visibleEvidence: 'Complete.', concerns: []},
+    ],
     contextAudit: {passed: true},
   };
   assert.equal(resolveJudgeAttempts([crashed], false), null);

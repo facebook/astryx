@@ -88,6 +88,23 @@ VIBE_RUNNER_PROFILE=/absolute/path/to/runner-profile.json \
 
 Concurrency defaults to 1 so local browser servers and launcher resources do not interfere. Every attempted cell writes `runs/<id>/run.json`. Successfully scored cells are reusable checkpoints. Setup, runner-launch, and evaluator crashes are classified as retryable infrastructure failures, excluded from score denominators, and rerun by the same command with `--resume`; `--max-new-jobs <n>` can stop after a checkpoint batch.
 
+## Optional evaluated states
+
+The evaluator always captures the default state. A solution may opt into as many as four additional states by writing `vibe-states.json` in the generated project root:
+
+```json
+{
+  "states": [
+    {"name": "loading", "url": "#state=loading"},
+    {"name": "success", "url": "?state=success"}
+  ]
+}
+```
+
+Each `url` must be a query or hash on the main page. State names are unique, short labels; `default` is reserved. Every screenshot starts in a fresh browser context at the same 1440 × 900 viewport, so state setup cannot depend on a prior capture. The page's own code must render each state from that URL; separate state HTML pages are rejected. Runs without the manifest remain default-only.
+
+The manifest contract is identical for every delivery configuration, and the task prompt only says that state declaration is optional. The blind judge receives generic screenshot filenames mapped to state labels, never configuration details. Labels help navigation but are not evidence: the judge must cite visible pixels for every state. Invalid, duplicate, off-page, or over-cap declarations fail evaluation rather than silently changing the evidence set.
+
 ## React no-build starter
 
 The no-build starter exercises an icon-bearing Banner, component hooks, theme context, and a controlled TextInput. Both the core and theme ESM imports include `?external=react,react-dom`, so the CDN modules reuse the import-mapped React runtime instead of creating a second instance. A real run renders and types into this starter before scheduling matrix cells.
@@ -98,11 +115,11 @@ The shared evaluator:
 
 1. runs `vite build` for `react-build` and records `tsc --noEmit` diagnostics as a non-gating quality metric;
 2. serves the result and checks for a non-blank render, browser console errors, and page errors;
-3. captures a full-page screenshot;
+3. captures the default state plus each valid same-page state declared in `vibe-states.json`, always from fresh browser contexts at one viewport;
 4. measures visible semantic targets from Astryx React and static class taxonomies;
 5. scans only runner-authored changes after removing comments, separating hard-coded values from custom-property and theme definitions;
-6. runs axe-core;
-7. asks the profile's blind judge to score prompt fulfillment and visual quality from an anonymized screenshot and the task prompt only.
+6. runs axe-core on the default state;
+7. asks the profile's blind judge to score prompt fulfillment and visual quality from the anonymized screenshot set and task prompt only, with per-state visible evidence.
 
 A build failure, page error, blank render, runner failure, timeout, or strict audit failure receives adoption, prompt-fulfillment, and visual-quality scores of 0. Those scored rows remain in every median and pass-rate denominator. A timeout separately records the last complete on-disk state as **best before timeout** without changing the primary score. Infrastructure failures are reported separately, contribute no score, and remain retryable checkpoints.
 

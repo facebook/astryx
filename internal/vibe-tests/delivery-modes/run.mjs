@@ -289,6 +289,13 @@ function jobId(promptId, config, runner) {
   return `${promptId}-${config}-${runner}`;
 }
 
+function slugStateName(name) {
+  return name
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9]+/g, '-')
+    .replaceAll(/^-|-$/g, '');
+}
+
 async function verifyStarter(spec, outputDir) {
   const privateRun = await createPrivateRunRoot('starter-');
   const privateScreenshot = path.join(privateRun.root, 'starter.png');
@@ -309,6 +316,7 @@ async function verifyStarter(spec, outputDir) {
         `React no-build starter failed verification: ${JSON.stringify(verification.render)}`,
       );
     }
+    delete verification.stateCaptures;
     await fsp.copyFile(
       privateScreenshot,
       path.join(outputDir, 'screenshots', 'react-nobuild-starter.png'),
@@ -414,11 +422,40 @@ async function runOne({
 
   await fsp.rm(sharedRunDir, {recursive: true, force: true});
   await fsp.mkdir(sharedRunDir, {recursive: true});
-  if (fs.existsSync(privateScreenshot)) {
-    await fsp.copyFile(privateScreenshot, sharedScreenshot);
-  } else {
+  const screenshotsDir = path.join(outputDir, 'screenshots');
+  for (const file of await fsp.readdir(screenshotsDir)) {
+    if (file.startsWith(`${id}--`)) {
+      await fsp.rm(path.join(screenshotsDir, file), {force: true});
+    }
+  }
+  const capturedScreenshots =
+    result.evaluation?.stateCaptures ??
+    (fs.existsSync(privateScreenshot)
+      ? [{name: 'default', screenshotPath: privateScreenshot}]
+      : []);
+  result.screenshots = [];
+  for (const [index, capture] of capturedScreenshots.entries()) {
+    if (!fs.existsSync(capture.screenshotPath)) {
+      continue;
+    }
+    const sharedPath =
+      capture.name === 'default'
+        ? sharedScreenshot
+        : path.join(
+            screenshotsDir,
+            `${id}--${index}-${slugStateName(capture.name)}.png`,
+          );
+    await fsp.copyFile(capture.screenshotPath, sharedPath);
+    result.screenshots.push({name: capture.name, path: sharedPath});
+  }
+  result.screenshotPath =
+    result.screenshots.find(screenshot => screenshot.name === 'default')
+      ?.path ?? null;
+  if (!result.screenshotPath) {
     await fsp.rm(sharedScreenshot, {force: true});
-    result.screenshotPath = null;
+  }
+  if (result.evaluation) {
+    delete result.evaluation.stateCaptures;
   }
   await copyProjectEvidence(
     privateRun.projectDir,
@@ -490,6 +527,7 @@ function forceFailedScores(evaluation, reason) {
     success: false,
     notes: reason,
     failureReasons: [reason],
+    stateEvidence: [],
     automaticFailure: true,
   };
 }

@@ -4,6 +4,8 @@ import {createHash} from 'node:crypto';
 
 export const DEFAULT_REACT_VERSION = '0.6.5';
 export const DEFAULT_REACT_RUNTIME_VERSION = '19.2.7';
+export const MAX_DECLARED_STATES = 4;
+export const STATE_MANIFEST_FILE = 'vibe-states.json';
 export const DEFAULT_CONFIG_NAMES = ['react-build', 'react-nobuild'];
 export const CONFIG_NAMES = [...DEFAULT_CONFIG_NAMES, 'static-html'];
 
@@ -62,7 +64,12 @@ Task:
 ${prompt.prompt}
 
 Output:
-Implement the complete runnable solution in ${spec.outputFile}. Preserve the project's delivery mechanism. Work directly in the project files; do not merely describe the solution. Ensure the result can be opened or built using the scripts and dependencies already provided.`;
+Implement the complete runnable solution in ${spec.outputFile}. Preserve the project's delivery mechanism. Work directly in the project files; do not merely describe the solution. Ensure the result can be opened or built using the scripts and dependencies already provided.
+
+Optional evaluated states:
+The evaluator always captures the default state. You may declare up to ${MAX_DECLARED_STATES} additional named states by creating ${STATE_MANIFEST_FILE} in the project root:
+{"states":[{"name":"loading","url":"#state=loading"}]}
+Each url must be a query or hash on the same page (for example, ?state=success or #state=loading). Every state is opened from a fresh browser context at the same viewport. Render the state from the main page's own code; do not create separate HTML pages for declared states. Omit ${STATE_MANIFEST_FILE} when the default state is sufficient.`;
 }
 
 export function selectPrompts(testSet, {sample, promptIds, seed} = {}) {

@@ -143,7 +143,7 @@ function markdownReport(iterationId, summary, results) {
     '',
     'The same prompt battery and evaluator were used for every configuration. A build failure, runtime page error, or blank render contributes adoption, prompt-fulfillment, and visual-quality scores of 0 and remains in every scored median and pass-rate denominator. Infrastructure failures are classified separately, unscored, and retryable.',
     '',
-    'TypeScript errors are reported for `react-build` as a non-gating quality metric; only `vite build` gates its render. Hard-coded values exclude comments and token/theme definitions, which have their own column. A timed-out run keeps primary scores at 0 and separately reports the last complete on-disk state as best-before-timeout. The visual judge receives one anonymized default-state screenshot and the task prompt in its own filesystem namespace, so multi-step flows are judged from their default state equally across configs.',
+    'TypeScript errors are reported for `react-build` as a non-gating quality metric; only `vite build` gates its render. Hard-coded values exclude comments and token/theme definitions, which have their own column. A timed-out run keeps primary scores at 0 and separately reports the last complete on-disk state as best-before-timeout. The visual judge receives an anonymized default-state screenshot plus up to four declared same-page states, each captured from a fresh load at the same viewport. Undeclared runs remain default-only, and the report preserves per-state visible evidence.',
     '',
     'Runner and launcher details come from the local profile and are identical across delivery configs. Strict transcript-audit findings fail a cell; adjusted findings remain visible without changing its score. Any judge crash, invalid result, or failed audit is retried once; exhausted attempts leave judge scores null and are reported. Runner and judge processes use the profile launcher, while project preparation and evaluation run host-side inside a mode-0700 private root.',
     '',
@@ -211,16 +211,28 @@ function markdownReport(iterationId, summary, results) {
     }
     lines.push('');
   }
-  lines.push('## Screenshots', '');
+  lines.push('## Screenshots and per-state evidence', '');
   for (const promptId of [...new Set(results.map(result => result.promptId))]) {
     lines.push(`### ${promptId}`, '');
     for (const result of results.filter(run => run.promptId === promptId)) {
-      if (result.screenshotPath && fs.existsSync(result.screenshotPath)) {
-        lines.push(
-          `- ${result.config} / ${result.agent}: [screenshot](${path.relative(path.dirname(path.join(result.outputDir, 'report.md')), result.screenshotPath)})`,
-        );
-      } else {
+      const screenshots = screenshotsForResult(result);
+      if (screenshots.length === 0) {
         lines.push(`- ${result.config} / ${result.agent}: no screenshot`);
+        continue;
+      }
+      lines.push(`- **${result.config} / ${result.agent}**`);
+      for (const screenshot of screenshots) {
+        const evidence = stateEvidenceFor(result, screenshot.name);
+        const image = screenshot.path
+          ? `[screenshot](${path.relative(path.dirname(path.join(result.outputDir, 'report.md')), screenshot.path)})`
+          : 'no screenshot';
+        const captureFailure =
+          screenshot.capture?.passed === false
+            ? ` — capture failed${screenshot.capture.error ? `: ${screenshot.capture.error}` : ''}`
+            : '';
+        lines.push(
+          `  - ${screenshot.name}: ${image}${captureFailure}${evidence ? ` — ${evidence.visibleEvidence}${evidence.concerns?.length ? `; concerns: ${evidence.concerns.join('; ')}` : ''}` : ''}`,
+        );
       }
     }
     lines.push('');
@@ -246,13 +258,27 @@ async function htmlReport(iterationId, summary, results) {
   for (const promptId of promptIds) {
     const cards = [];
     for (const result of results.filter(run => run.promptId === promptId)) {
-      let image = '<div class="missing">No screenshot</div>';
-      if (result.screenshotPath && fs.existsSync(result.screenshotPath)) {
-        const bytes = await fsp.readFile(result.screenshotPath);
-        image = `<img loading="lazy" src="data:image/png;base64,${bytes.toString('base64')}" alt="${escapeHtml(promptId)} ${escapeHtml(result.config)} ${escapeHtml(result.agent)}" />`;
-      }
-      cards.push(`<article><h3>${escapeHtml(result.config)} · ${escapeHtml(result.agent)}</h3>${image}<dl>
+      const stateImages = screenshotsForResult(result)
+        .map(screenshot => {
+          const image =
+            screenshot.path && fs.existsSync(screenshot.path)
+              ? `<img loading="lazy" src="data:image/png;base64,${fs.readFileSync(screenshot.path).toString('base64')}" alt="${escapeHtml(promptId)} ${escapeHtml(result.config)} ${escapeHtml(result.agent)} ${escapeHtml(screenshot.name)}" />`
+              : '<div class="missing">No screenshot</div>';
+          const evidence = stateEvidenceFor(result, screenshot.name);
+          const concerns = evidence?.concerns?.length
+            ? `<p><strong>Concerns:</strong> ${escapeHtml(evidence.concerns.join('; '))}</p>`
+            : '';
+          const captureFailure =
+            screenshot.capture?.passed === false
+              ? `<p><strong>Capture failed:</strong> ${escapeHtml(screenshot.capture.error ?? 'state was blank or emitted runtime errors')}</p>`
+              : '';
+          return `<section class="state"><h4>${escapeHtml(screenshot.name)}</h4>${image}${captureFailure}${evidence ? `<p>${escapeHtml(evidence.visibleEvidence)}</p>${concerns}` : ''}</section>`;
+        })
+        .join('');
+      const images = stateImages || '<div class="missing">No screenshot</div>';
+      cards.push(`<article><h3>${escapeHtml(result.config)} · ${escapeHtml(result.agent)}</h3><div class="states">${images}</div><dl>
 <dt>Status</dt><dd>${result.infrastructureFailure ? 'infrastructure failure' : result.evaluation?.render?.passed ? 'render pass' : 'render fail'}</dd>
+<dt>Declared states</dt><dd>${Math.max(0, (result.evaluation?.render?.states?.length ?? 1) - 1)}</dd>
 <dt>Adoption (coarse)</dt><dd>${percent(result.evaluation?.render?.adoptionShare)}</dd>
 <dt>axe</dt><dd>${formatNumber(result.evaluation?.accessibility?.violationCount)}</dd>
 <dt>Type errors</dt><dd>${formatNumber(result.evaluation?.typecheck?.errorCount)}</dd>
@@ -324,11 +350,11 @@ async function htmlReport(iterationId, summary, results) {
 <html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Delivery-mode vibe test — ${escapeHtml(iterationId)}</title>
 <style>
-:root{color-scheme:light dark;font-family:Inter,system-ui,sans-serif}body{max-width:1800px;margin:auto;padding:24px;background:#f4f6f8;color:#18202a}h1,h2{letter-spacing:-.02em}p{max-width:90ch}table{border-collapse:collapse;width:100%;background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px #0002}th,td{padding:10px;border-bottom:1px solid #d9dee5;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}th:first-child,th:nth-child(2),td:first-child,td:nth-child(2){text-align:left}.table-wrap{overflow:auto}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}article{background:white;border:1px solid #d9dee5;border-radius:12px;padding:12px;box-shadow:0 1px 4px #0001}article h3{margin:0 0 10px}img{width:100%;max-height:420px;object-fit:contain;object-position:top;background:#eef1f4;border-radius:8px}.missing{height:180px;display:grid;place-items:center;background:#eef1f4;border-radius:8px}dl{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:0}dt{font-weight:600}dd{margin:0;text-align:right}@media(prefers-color-scheme:dark){body{background:#111820;color:#e8edf2}table,article{background:#1b2530;border-color:#34404d}th,td{border-color:#34404d}.missing,img{background:#10161d}}
+:root{color-scheme:light dark;font-family:Inter,system-ui,sans-serif}body{max-width:1800px;margin:auto;padding:24px;background:#f4f6f8;color:#18202a}h1,h2{letter-spacing:-.02em}p{max-width:90ch}table{border-collapse:collapse;width:100%;background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px #0002}th,td{padding:10px;border-bottom:1px solid #d9dee5;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}th:first-child,th:nth-child(2),td:first-child,td:nth-child(2){text-align:left}.table-wrap{overflow:auto}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}article{background:white;border:1px solid #d9dee5;border-radius:12px;padding:12px;box-shadow:0 1px 4px #0001}article h3{margin:0 0 10px}.states{display:grid;gap:12px}.state{border-top:1px solid #d9dee5;padding-top:10px}.state:first-child{border-top:0;padding-top:0}.state h4{margin:0 0 8px}.state p{font-size:.875rem;margin:6px 0}img{width:100%;max-height:420px;object-fit:contain;object-position:top;background:#eef1f4;border-radius:8px}.missing{height:180px;display:grid;place-items:center;background:#eef1f4;border-radius:8px}dl{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:0}dt{font-weight:600}dd{margin:0;text-align:right}@media(prefers-color-scheme:dark){body{background:#111820;color:#e8edf2}table,article{background:#1b2530;border-color:#34404d}th,td,.state{border-color:#34404d}.missing,img{background:#10161d}}
 </style></head><body>
 <h1>Delivery-mode vibe test</h1>
 <p>Iteration <code>${escapeHtml(iterationId)}</code>. Every config uses the same evaluator. Failed builds, runtime errors, and blank renders contribute 0 to adoption, prompt, and visual metrics and stay in every scored denominator. Infrastructure failures are unscored and retryable. Parenthetical <code>n</code> is the sample count for each median.</p>
-<p>TypeScript diagnostics are non-gating. Comments are excluded from hard-coded scanning, and token/theme definitions are reported separately. Timed-out runs keep zero primary scores and expose their last complete screenshot under best-before-timeout. The blind judge sees only an anonymized default-state screenshot and prompt in a private filesystem namespace. Runner and launcher details come from the local profile and remain identical across delivery configs. Strict audit findings fail a cell; adjusted findings are reported without changing its score. Any judge crash, invalid result, or failed audit is retried once; exhausted attempts leave scores null. Runner and judge processes use the profile launcher, while project preparation and evaluation run host-side inside a mode-0700 private root.</p>
+<p>TypeScript diagnostics are non-gating. Comments are excluded from hard-coded scanning, and token/theme definitions are reported separately. Timed-out runs keep zero primary scores and expose their last complete screenshot under best-before-timeout. The blind judge sees an anonymized default-state screenshot plus up to four declared same-page states, each captured from a fresh load at the same viewport. Undeclared runs remain default-only, and each state retains visible evidence in this report. Runner and launcher details come from the local profile and remain identical across delivery configs. Strict audit findings fail a cell; adjusted findings are reported without changing its score. Any judge crash, invalid result, or failed audit is retried once; exhausted attempts leave scores null. Runner and judge processes use the profile launcher, while project preparation and evaluation run host-side inside a mode-0700 private root.</p>
 <p><strong>Adoption is coarse.</strong> Ancestor credit can include hand-rolled controls inside Astryx content slots. Render, blind-judge, axe, hard-coded-style, theme-definition, and efficiency metrics lead the comparison.</p>
 <div class="table-wrap"><table><thead><tr><th>Config</th><th>Runner</th><th>Attempts</th><th>Scored</th><th>Infra</th><th>Judge unavailable</th><th>Pass</th><th>Timeouts</th><th>Strict audit</th><th>Adjusted audit</th><th>Wall</th><th>Tokens</th><th>CLI</th><th>Adoption (coarse)</th><th>Hard-coded</th><th>Theme defs</th><th>axe</th><th>Type errors</th><th>Prompt</th><th>Visual</th><th>Best-before P/V</th></tr></thead><tbody>${rows}</tbody></table></div>
 <section><h2>Transcript audit flags</h2>${transcriptAuditHtml}</section>
@@ -336,6 +362,36 @@ async function htmlReport(iterationId, summary, results) {
 <section><h2>Judge retries and failures</h2>${judgeRetryHtml}</section>
 ${grids.join('\n')}
 </body></html>\n`;
+}
+
+function screenshotsForResult(result) {
+  const screenshots = Array.isArray(result.screenshots)
+    ? result.screenshots.filter(
+        screenshot =>
+          screenshot &&
+          typeof screenshot.name === 'string' &&
+          typeof screenshot.path === 'string',
+      )
+    : result.screenshotPath && fs.existsSync(result.screenshotPath)
+      ? [{name: 'default', path: result.screenshotPath}]
+      : [];
+  const captures = result.evaluation?.render?.states;
+  if (!Array.isArray(captures)) {
+    return screenshots;
+  }
+  return captures.map(capture => ({
+    name: capture.name,
+    path:
+      screenshots.find(screenshot => screenshot.name === capture.name)?.path ??
+      null,
+    capture,
+  }));
+}
+
+function stateEvidenceFor(result, stateName) {
+  return result.evaluation?.judge?.stateEvidence?.find(
+    evidence => evidence.state === stateName,
+  );
 }
 
 function metric(values) {
