@@ -76,6 +76,11 @@ export function matchCharacterReference(
   return {value: isValid ? String.fromCodePoint(codePoint) : '\uFFFD', end};
 }
 
+/** The characters a backslash escapes: ASCII punctuation (CommonMark 0.31). */
+export function isAsciiPunctuation(character: string | undefined): boolean {
+  return character != null && /^[!-/:-@[-`{-~]$/.test(character);
+}
+
 /**
  * Resolves backslash escapes and character references the way inline parsing
  * does, for text that is shown as written rather than parsed as Markdown, such
@@ -89,7 +94,11 @@ export function decodeLiteralText(text: string): string {
   let index = 0;
   while (index < text.length) {
     const character = text[index];
-    if (character === '\\' && index + 1 < text.length) {
+    if (
+      character === '\\' &&
+      index + 1 < text.length &&
+      isAsciiPunctuation(text[index + 1])
+    ) {
       output += text[index + 1];
       index += 2;
       continue;

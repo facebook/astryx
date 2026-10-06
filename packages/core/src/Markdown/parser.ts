@@ -40,6 +40,7 @@ import type {
 } from './plugins/protocol';
 import {
   decodeLiteralText,
+  isAsciiPunctuation,
   matchCharacterReference,
 } from './characterReferences';
 import {isSafeMarkdownParserUrl} from './url';
@@ -1482,11 +1483,20 @@ function parseInlineImpl(
   let i = 0;
 
   while (i < text.length) {
-    // --- Escape ---
+    // --- Escape: a backslash escapes ASCII punctuation, and before a line
+    // break it is a hard break; before anything else it is a literal
+    // backslash (CommonMark 0.31, backslash escapes and hard line breaks).
     if (text[i] === '\\' && i + 1 < text.length) {
-      nodes.push({type: 'text', value: text[i + 1]});
-      i += 2;
-      continue;
+      if (text[i + 1] === '\n') {
+        nodes.push({type: 'break'});
+        i += 2;
+        continue;
+      }
+      if (isAsciiPunctuation(text[i + 1])) {
+        nodes.push({type: 'text', value: text[i + 1]});
+        i += 2;
+        continue;
+      }
     }
 
     // --- Inline code ---

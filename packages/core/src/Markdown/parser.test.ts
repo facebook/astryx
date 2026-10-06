@@ -380,6 +380,32 @@ describe('parseInline', () => {
     ]);
   });
 
+  it('escapes only ASCII punctuation and keeps other backslashes literal', () => {
+    const textOf = (source: string) =>
+      parseInline(source)
+        .map(node => (node.type === 'text' ? node.content : `<${node.type}>`))
+        .join('');
+    expect(textOf('C:\\Users\\Ada')).toBe('C:\\Users\\Ada');
+    expect(textOf('\\*not emphasis\\* and \\\\ one backslash')).toBe(
+      '*not emphasis* and \\ one backslash',
+    );
+    expect(textOf('caf\\\u00e9 \\a \\1')).toBe('caf\\\u00e9 \\a \\1');
+  });
+
+  it('makes a backslash before a line break a hard break', () => {
+    expect(parseInline('line\\\nnext')).toEqual([
+      {type: 'text', content: 'line'},
+      {type: 'break'},
+      {type: 'text', content: 'next'},
+    ]);
+  });
+
+  it('keeps non-punctuation backslashes in image alt text', () => {
+    expect(parseInline('![C:\\Users \\& more](x.png)')).toEqual([
+      {type: 'image', src: 'x.png', alt: 'C:\\Users & more'},
+    ]);
+  });
+
   it('handles parentheses in image URLs', () => {
     const result = parseInline('![alt](https://example.com/img_(1).png)');
     expect(result[0].type).toBe('image');
