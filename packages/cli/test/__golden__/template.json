@@ -6,6 +6,7 @@
     "description": "A zorblax hero block.",
     "type": "block",
     "components": [],
-    "source": "export default function Hero() { return <section>zorblax</section>; }\n"
+    "source": "export default function Hero() { return <section>zorblax</section>; }\n",
+    "demoMediaReplaced": 0
   }
 }

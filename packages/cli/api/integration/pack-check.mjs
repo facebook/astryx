@@ -29,6 +29,7 @@ import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {resolvePackageDir} from '../../foundation/integrations/integrations.mjs';
 import {
   docsTreeCliProblem,
+  keywordsCliProblem,
   replacesCliProblem,
   sectionIdsCliProblem,
   themesCliProblem,
@@ -663,15 +664,16 @@ export async function integrationPackCheck(options = {}) {
       ])
     ) {
       // A section `id` is also a field an older CLI rejects, hiding the
-      // package's doc topics; the same peer range fixes both.
+      // package's doc topics. It needs an older CLI than the docs tree does.
       const idProblem = sectionIdsCliProblem(pkg);
       if (idProblem != null) {
         issues.push(error('section_ids_need_cli', idProblem));
       }
     }
   }
-  // A template that sets `replaces` needs a CLI that reads the field
-  // (spec:AST-035): an older CLI drops that template and hides the package's docs.
+  // A template that sets `replaces` (spec:AST-035) or `keywords` needs a CLI
+  // that reads the field: an older CLI drops that template and hides the
+  // package's docs.
   if (loaded.templates) {
     const found = await discoverIntegrationTemplatesForOne(loaded).catch(
       () => ({templates: [], errors: []}),
@@ -683,6 +685,13 @@ export async function integrationPackCheck(options = {}) {
       );
     const problem = setsReplaces ? replacesCliProblem(pkg) : null;
     if (problem != null) issues.push(error('replaces_needs_cli', problem));
+    const setsKeywords = found.templates.some(
+      template => template.keywords != null && template.keywords.length > 0,
+    );
+    const keywordsProblem = setsKeywords ? keywordsCliProblem(pkg) : null;
+    if (keywordsProblem != null) {
+      issues.push(error('keywords_needs_cli', keywordsProblem));
+    }
   }
   // A theme needs a CLI that reads typed theme descriptors: an older CLI
   // rejects the themes root and withholds the package's themes and docs.

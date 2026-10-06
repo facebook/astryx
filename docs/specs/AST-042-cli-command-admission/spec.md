@@ -140,12 +140,12 @@ restates FR4 and FR5 for contributors. It does not yet restate FR7, and CommandD
 has no typed AST-053 eligibility field; projecting the rule there and adding the
 repository check are known enforcement gaps that land separately.
 
-The CLI has 16 top-level commands. The command docs of 25 commands and
+The CLI has 17 top-level commands. The command docs of 28 commands and
 subcommands name the function they call. Known gaps, for which this record does
 not assign migrations:
 
-- the component, discover, search, template, and theme handlers read project
-  state or files themselves (FR1);
+- the component, discover, layout, search, template, and theme handlers read
+  project state or files themselves (FR1);
 - the theme handler draws its target table from characters, and the docs
   handler renders authored headings and tables with its own code (FR3); both
   are candidates for one shared block kind under FR3, not two command

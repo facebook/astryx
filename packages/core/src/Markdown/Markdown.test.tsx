@@ -115,7 +115,6 @@ describe('Markdown', () => {
       );
       expect(received).toEqual(['overview', 'overview-1']);
     });
-
     it('does not assign ids to headings nested inside blockquotes', () => {
       // parseOutlineFromMarkdown only lists top-level headings. If nested
       // headings consumed slugs too, duplicate numbering would drift and
@@ -128,6 +127,7 @@ describe('Markdown', () => {
       expect(container.querySelector('blockquote')).toContainElement(nested);
       expect(nested).not.toHaveAttribute('id');
       expect(topLevel).toHaveAttribute('id', 'quoted');
+      expect(screen.queryByRole('link', {name: /Permalink to/})).toBeNull();
     });
   });
 
@@ -327,6 +327,36 @@ describe('Markdown', () => {
     const link = screen.getByText('click');
     expect(link.tagName).toBe('A');
     expect(link.getAttribute('href')).toBe('https://example.com');
+  });
+
+  it('links to the destination, not the destination plus its title', () => {
+    render(
+      <Markdown>
+        {'[notes](https://example.com/notes "Release notes")'}
+      </Markdown>,
+    );
+    expect(screen.getByText('notes').getAttribute('href')).toBe(
+      'https://example.com/notes',
+    );
+  });
+
+  it('shows character references as the characters they name', () => {
+    const {container} = render(
+      <Markdown>{'Fish &amp; chips &copy; 2026 and `&amp;` in code'}</Markdown>,
+    );
+    expect(container.textContent).toContain('Fish & chips \u00a9 2026');
+    expect(container.querySelector('code')?.textContent).toBe('&amp;');
+  });
+
+  it('names an image with decoded alt text', () => {
+    render(
+      <Markdown>
+        {'![Fish &amp; chips \\*fresh\\*](https://example.com/fish.png)'}
+      </Markdown>,
+    );
+    expect(
+      screen.getByRole('img', {name: 'Fish & chips *fresh*'}),
+    ).toBeInTheDocument();
   });
 
   it('adds target="_blank" to external links', () => {

@@ -179,9 +179,9 @@ describe('DebugEvent result summary', () => {
   it(
     'says so explicitly when a command has no result set',
     async () => {
-      // Bare `integration` prints its subcommand list: nothing was looked
+      // `layout check` returns a verdict on one expression: nothing was looked
       // up, and the run says that rather than leaving four ambiguous nulls.
-      const {event} = await runWithDebug(['integration']);
+      const {event} = await runWithDebug(['layout', 'check', 'VStack>Text']);
       expect(event.output).toMatchObject({
         resultKind: 'none',
         resultCount: null,

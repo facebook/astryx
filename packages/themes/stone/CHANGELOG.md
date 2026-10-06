@@ -1,5 +1,9 @@
 # @xds/theme-stone
 
+# 0.6.5
+
+---
+
 # 0.6.4
 
 #### New Features

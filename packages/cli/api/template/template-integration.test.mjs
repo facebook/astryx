@@ -19,6 +19,7 @@ import {
 } from './template.mjs';
 import {search} from '../search/search.mjs';
 import {build} from '../build/build.mjs';
+import {layoutExpand} from '../layout/layout.mjs';
 import {runCli} from '../../test-utils/run-cli.mjs';
 
 let tmpDir;
@@ -122,6 +123,20 @@ describe('integration template discovery', () => {
     expect(entry.package).toBe('@acme/widgets');
     expect(entry.name).toBe('pricing name');
     expect(entry.description).toBe('pricing desc');
+  });
+
+  it("reads an integration template's keywords in search and build", async () => {
+    const pkgDir = installWidgets(tmpDir);
+    writeTemplate(pkgDir, 'observatory', {
+      kind: 'page',
+      body: "export default {type: 'page', name: 'Observatory', description: 'Live tiles over a sky view.', category: 'Dashboard - Observatory', keywords: ['telescope', 'star map']};\n",
+    });
+
+    const found = await search('telescope', {cwd: tmpDir, type: 'template'});
+    expect(found.data.results.map(r => r.name)).toContain('observatory');
+    const kit = await build('telescope star map page', {cwd: tmpDir});
+    if (kit.type !== 'build.kit') throw new Error(kit.type);
+    expect(kit.data.start?.name).toBe('observatory');
   });
 
   it('preserves integration block showcase metadata in list output', async () => {
@@ -517,7 +532,53 @@ describe('integration template discovery', () => {
     });
   });
 
-  it('resolves chained block aliases consistently in template', async () => {
+  it('resolves a replacement block through the layout alias', async () => {
+    const pkgDir = installWidgets(tmpDir);
+    writeTemplate(pkgDir, 'acme-card-callout', {
+      kind: 'block',
+      source:
+        'export default function AcmeCardCallout() { return <span>Acme replacement block</span>; }\n',
+    });
+    declareReplaces(pkgDir, {
+      'acme-card-callout': 'CardCallout',
+    });
+
+    const accidental = path.join(tmpDir, 'node_modules', '@acme', 'extra');
+    fs.mkdirSync(path.join(accidental, 'templates'), {recursive: true});
+    fs.writeFileSync(
+      path.join(accidental, 'package.json'),
+      JSON.stringify({name: '@acme/extra', version: '1.0.0'}),
+    );
+    fs.writeFileSync(
+      path.join(accidental, 'astryx.integration.mjs'),
+      `export default {templates: './templates'};\n`,
+    );
+    writeTemplate(accidental, 'CardCallout', {
+      kind: 'block',
+      body: `export default {type: 'block', name: 'ZZZ accidental block', description: 'collision'};\n`,
+      source:
+        'export default function Accidental() { return <span>Accidental block</span>; }\n',
+    });
+    fs.writeFileSync(
+      path.join(tmpDir, 'astryx.config.mjs'),
+      `export default { integrations: ['@acme/widgets', '@acme/extra'] };\n`,
+    );
+
+    const result = await layoutExpand('C{card-callout}', {
+      name: 'ReplacementLayout',
+      cwd: tmpDir,
+    });
+
+    expect(result.data.code).toContain('Acme replacement block');
+    expect(result.data.code).not.toContain('Accidental block');
+    expect(result.data.blocksReferenced).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({name: 'CardCallout', mode: 'splice'}),
+      ]),
+    );
+  }, 30_000);
+
+  it('resolves chained block aliases consistently in template and layout', async () => {
     const [firstTarget, secondTarget] = (await discoverCoreTemplates()).filter(
       candidate => candidate.type === 'block',
     );
@@ -545,12 +606,29 @@ describe('integration template discovery', () => {
       cwd: tmpDir,
     });
     expect(firstTemplate.data.source).toContain('First chain replacement');
+    const layoutId = id =>
+      id.replace(/([a-z0-9])([A-Z])/gu, '$1-$2').toLowerCase();
+    const firstLayout = await layoutExpand(
+      `C{${layoutId(firstTarget.dirName)}}`,
+      {
+        cwd: tmpDir,
+      },
+    );
+    expect(firstLayout.data.code).toContain('First chain replacement');
+    expect(firstLayout.data.code).not.toContain('Final chain replacement');
 
     const secondTemplate = await template(secondTarget.dirName, {
       show: true,
       cwd: tmpDir,
     });
     expect(secondTemplate.data.source).toContain('Final chain replacement');
+    const secondLayout = await layoutExpand(
+      `C{${layoutId(secondTarget.dirName)}}`,
+      {
+        cwd: tmpDir,
+      },
+    );
+    expect(secondLayout.data.code).toContain('Final chain replacement');
   }, 30_000);
 
   it('keeps the old discovery behavior when no replacement is declared', async () => {

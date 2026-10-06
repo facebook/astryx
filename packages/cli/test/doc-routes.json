@@ -4381,7 +4381,7 @@
       "kind": "hook",
       "id": "@astryxdesign/core/hook",
       "provider": "@astryxdesign/core",
-      "count": 55,
+      "count": 56,
       "oldCliRoute": "astryx hook <id>",
       "oldDocsiteUrl": "/components/<id>",
       "placement": "generated:@astryxdesign/core/hook",

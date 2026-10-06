@@ -174,11 +174,21 @@ describe('integration authoring CLI', () => {
     expect(text.stdout).toBe(verifyText.stdout);
     expect(text.stderr).toContain('`integration pack --check` is deprecated');
     expect(text.stderr).toContain('astryx integration verify');
-    // Without --check it fails, as it did, and names both spellings.
+    // Without --check it fails, as it did, and points only at the new name:
+    // suggesting `--check` would send people to the deprecated spelling.
     const bare = await runCli(['integration', 'pack'], tmpDir);
     expect(bare.status).not.toBe(0);
-    expect(bare.stderr).toContain('--check');
+    expect(bare.stderr).toContain(
+      '`integration pack` is now `integration verify`',
+    );
     expect(bare.stderr).toContain('astryx integration verify');
+    expect(bare.stderr).toContain('npm pack');
+    expect(bare.stderr).not.toContain('--check');
+    const bareJson = await runCli(['--json', 'integration', 'pack'], tmpDir);
+    expect(parseEnvelope(bareJson.stdout)).toMatchObject({
+      code: 'ERR_INVALID_ARGUMENT',
+      error: expect.stringContaining('astryx integration verify'),
+    });
     // Help lists it, marked deprecated: nothing is hidden.
     const help = await runCli(['integration', '--help'], tmpDir);
     expect(help.stdout).toMatch(

@@ -37,7 +37,7 @@ function writePackage({
 } = {}) {
   const pkg = {name, version};
   // A theme needs a CLI that reads typed theme descriptors.
-  if (themes) pkg.peerDependencies = {'@astryxdesign/cli': '>=0.7.0'};
+  if (themes) pkg.peerDependencies = {'@astryxdesign/cli': '>=0.6.4'};
   if (files !== undefined) pkg.files = files;
   if (scripts !== undefined) pkg.scripts = scripts;
   fs.writeFileSync(
@@ -116,6 +116,14 @@ describe('integrationPackCheck', () => {
     fs.writeFileSync(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
     const old = await integrationPackCheck({cwd: tmpDir});
     expect(old.data.issues).toContainEqual(
+      expect.objectContaining({code: 'themes_need_cli'}),
+    );
+
+    // Published 0.6.4 reads typed theme descriptors.
+    pkg.peerDependencies = {'@astryxdesign/cli': '>=0.6.4'};
+    fs.writeFileSync(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
+    const current = await integrationPackCheck({cwd: tmpDir});
+    expect(current.data.issues).not.toContainEqual(
       expect.objectContaining({code: 'themes_need_cli'}),
     );
   });
@@ -366,7 +374,10 @@ describe('integrationPackCheck', () => {
     expect(await codes()).toContain('docs_tree_needs_cli');
     peer('^0.6.0 || >=0.7.0');
     expect(await codes()).toContain('docs_tree_needs_cli');
-    peer('>=0.7.0');
+    peer('>=0.6.3');
+    expect(await codes()).toContain('docs_tree_needs_cli');
+    // Published 0.6.4 reads the docs tree.
+    peer('>=0.6.4');
     expect(await codes()).not.toContain('docs_tree_needs_cli');
   }, 120_000);
 
@@ -421,7 +432,11 @@ describe('integrationPackCheck', () => {
     expect(await codes()).toContain('section_ids_need_cli');
     const pkgFile = path.join(tmpDir, 'package.json');
     const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
-    pkg.peerDependencies = {'@astryxdesign/cli': '>=0.7.0'};
+    pkg.peerDependencies = {'@astryxdesign/cli': '^0.6.3'};
+    fs.writeFileSync(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
+    expect(await codes()).toContain('section_ids_need_cli');
+    // Published 0.6.4 reads a section id.
+    pkg.peerDependencies = {'@astryxdesign/cli': '>=0.6.4'};
     fs.writeFileSync(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
     expect(await codes()).not.toContain('section_ids_need_cli');
   }, 120_000);
@@ -453,8 +468,42 @@ describe('integrationPackCheck', () => {
     expect(await codes()).toContain('replaces_needs_cli');
     peer('^0.6.0');
     expect(await codes()).toContain('replaces_needs_cli');
+    // `replaces` still needs 0.7.0.
+    peer('>=0.6.4');
+    expect(await codes()).toContain('replaces_needs_cli');
     peer('>=0.7.0');
     expect(await codes()).not.toContain('replaces_needs_cli');
+  }, 120_000);
+
+  it('fails a package with a template that sets keywords on a CLI range that rejects the field', async () => {
+    writePackage({manifest: "export default {templates: './templates'};\n", themes: false});
+    fs.mkdirSync(path.join(tmpDir, 'templates'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, 'templates', 'acme-health.doc.mjs'),
+      "export default {type: 'page', name: 'acme-health', description: 'Status tiles.', keywords: ['uptime']};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'templates', 'acme-health.tsx'),
+      'export default function AcmeHealth() { return null; }\n',
+    );
+    const file = path.join(tmpDir, 'package.json');
+    const peer = (/** @type {string | undefined} */ range) => {
+      const pkg = JSON.parse(fs.readFileSync(file, 'utf-8'));
+      if (range == null) delete pkg.peerDependencies;
+      else pkg.peerDependencies = {'@astryxdesign/cli': range};
+      fs.writeFileSync(file, `${JSON.stringify(pkg, null, 2)}\n`);
+    };
+    const codes = async () =>
+      (await integrationPackCheck({cwd: tmpDir})).data.issues.map(
+        (/** @type {{code: string}} */ issue) => issue.code,
+      );
+
+    peer(undefined);
+    expect(await codes()).toContain('keywords_needs_cli');
+    peer('^0.6.0');
+    expect(await codes()).toContain('keywords_needs_cli');
+    peer('>=0.7.0');
+    expect(await codes()).not.toContain('keywords_needs_cli');
   }, 120_000);
 
   it('passes when package.json has no files field', async () => {

@@ -38,6 +38,11 @@ import type {
   PreparedMarkdownPlugins,
   PreparedSyntaxContribution,
 } from './plugins/protocol';
+import {
+  decodeLiteralText,
+  isAsciiPunctuation,
+  matchCharacterReference,
+} from './characterReferences';
 import {isSafeMarkdownParserUrl} from './url';
 
 // ---------------------------------------------------------------------------
@@ -1026,7 +1031,10 @@ function matchReferenceImage(
       const label = rawLabel === '' ? alt : rawLabel;
       const src = linkDefs.get(normalizeLinkLabel(label));
       if (src != null && isSafeMarkdownParserUrl(src)) {
-        return {node: {type: 'image', url: src, alt}, end: labelClose + 1};
+        return {
+          node: {type: 'image', url: src, alt: decodeLiteralText(alt)},
+          end: labelClose + 1,
+        };
       }
       // No match — fall back to a shortcut `![alt]`.
     }
@@ -1038,7 +1046,10 @@ function matchReferenceImage(
   if (src == null || !isSafeMarkdownParserUrl(src)) {
     return null;
   }
-  return {node: {type: 'image', url: src, alt}, end: altClose + 1};
+  return {
+    node: {type: 'image', url: src, alt: decodeLiteralText(alt)},
+    end: altClose + 1,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -1046,6 +1057,21 @@ function matchReferenceImage(
 // ---------------------------------------------------------------------------
 
 /** Find closing ')' that balances nested parentheses. */
+// The content between an inline link's or image's parentheses: a `<…>`
+// destination or one without spaces, then an optional `"…"`, `'…'`, or `(…)`
+// title after whitespace (CommonMark 0.31, link destinations and titles).
+const INLINE_DESTINATION_WITH_TITLE =
+  /^\s*(?:<([^<>\n]*)>|([^\s<]\S*?))(?:\s+(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\((?:[^()\\]|\\.)*\)))?\s*$/s;
+
+/**
+ * The destination of an inline link or image, without its title. Content in
+ * any other shape keeps its released meaning: all of it is the destination.
+ */
+function inlineDestination(content: string): string {
+  const match = INLINE_DESTINATION_WITH_TITLE.exec(content);
+  return match == null ? content : (match[1] ?? match[2] ?? content);
+}
+
 function findClosingParen(text: string, start: number): number {
   let depth = 1;
   for (let index = start; index < text.length; index++) {
@@ -1338,6 +1364,17 @@ type IncrementalMathParseOptionsWithoutPlugins = Omit<
   'plugins'
 >;
 
+/**
+ * The length of the line ending at `index` in inline text: 1 for LF, 2 for
+ * CRLF (the parser keeps a CRLF line's `\r`), or 0 when none starts there.
+ */
+function lineEndingLengthAt(text: string, index: number): number {
+  if (text[index] === '\n') {
+    return 1;
+  }
+  return text[index] === '\r' && text[index + 1] === '\n' ? 2 : 0;
+}
+
 export function parseInline(
   text: string,
   sourceIds?: ReadonlySet<string>,
@@ -1457,11 +1494,21 @@ function parseInlineImpl(
   let i = 0;
 
   while (i < text.length) {
-    // --- Escape ---
+    // --- Escape: a backslash escapes ASCII punctuation, and before a line
+    // break it is a hard break; before anything else it is a literal
+    // backslash (CommonMark 0.31, backslash escapes and hard line breaks).
     if (text[i] === '\\' && i + 1 < text.length) {
-      nodes.push({type: 'text', value: text[i + 1]});
-      i += 2;
-      continue;
+      const lineEnding = lineEndingLengthAt(text, i + 1);
+      if (lineEnding > 0) {
+        nodes.push({type: 'break'});
+        i += 1 + lineEnding;
+        continue;
+      }
+      if (isAsciiPunctuation(text[i + 1])) {
+        nodes.push({type: 'text', value: text[i + 1]});
+        i += 2;
+        continue;
+      }
     }
 
     // --- Inline code ---
@@ -1511,7 +1558,7 @@ function parseInlineImpl(
       if (altClose !== -1 && text[altClose + 1] === '(') {
         const srcClose = findClosingParen(text, altClose + 2);
         if (srcClose !== -1) {
-          const src = text.slice(altClose + 2, srcClose);
+          const src = inlineDestination(text.slice(altClose + 2, srcClose));
           if (!isSafeMarkdownParserUrl(src)) {
             // Dangerous scheme — emit as plain text.
             nodes.push({type: 'text', value: text.slice(i, srcClose + 1)});
@@ -1519,7 +1566,7 @@ function parseInlineImpl(
             nodes.push({
               type: 'image',
               url: src,
-              alt: text.slice(i + 2, altClose),
+              alt: decodeLiteralText(text.slice(i + 2, altClose)),
             });
           }
           i = srcClose + 1;
@@ -1554,7 +1601,7 @@ function parseInlineImpl(
       if (textClose !== -1 && text[textClose + 1] === '(') {
         const urlClose = findClosingParen(text, textClose + 2);
         if (urlClose !== -1) {
-          const href = text.slice(textClose + 2, urlClose);
+          const href = inlineDestination(text.slice(textClose + 2, urlClose));
           if (!isSafeMarkdownParserUrl(href)) {
             // Dangerous scheme — emit as plain text instead of a link.
             nodes.push({type: 'text', value: text.slice(i, urlClose + 1)});
@@ -1706,11 +1753,29 @@ function parseInlineImpl(
       }
     }
 
+    // --- Character reference: the characters it names, as plain text ---
+    if (text[i] === '&') {
+      const reference = matchCharacterReference(text, i);
+      if (reference != null) {
+        const last = nodes[nodes.length - 1];
+        if (last?.type === 'text') {
+          nodes[nodes.length - 1] = {
+            ...last,
+            value: last.value + reference.value,
+          };
+        } else {
+          nodes.push({type: 'text', value: reference.value});
+        }
+        i = reference.end;
+        continue;
+      }
+    }
+
     // --- Plain text (with line-break detection) ---
     let end = i + 1;
     while (
       end < text.length &&
-      !'*_~`[!\\\n\u3010'.includes(text[end]) &&
+      !'*_~`[!\\\n\u3010&'.includes(text[end]) &&
       !(opts.math && text[end] === '$') &&
       (inlineExtensionStarts === undefined ||
         !inlineExtensionStarts.has(text[end]))
@@ -1720,10 +1785,13 @@ function parseInlineImpl(
 
     const content = text.slice(i, end);
 
-    // Detect trailing-space line break: 2+ spaces immediately before \n
+    // Detect trailing-space line break: 2+ spaces immediately before the
+    // line ending. A CRLF line keeps its `\r` in the text; it belongs to the
+    // line ending, not to the spaces before it.
     if (end < text.length && text[end] === '\n') {
-      const trimmed = content.replace(/ +$/, '');
-      if (content.length - trimmed.length >= 2) {
+      const line = content.endsWith('\r') ? content.slice(0, -1) : content;
+      const trimmed = line.replace(/ +$/, '');
+      if (line.length - trimmed.length >= 2) {
         if (trimmed.length > 0) {
           const last = nodes[nodes.length - 1];
           if (last?.type === 'text') {
@@ -2713,12 +2781,17 @@ function parseMarkdownImpl(
     // An unsafe src falls through to the paragraph path and renders as
     // literal text, the same rule the inline image path applies.
     const imageMatch = line.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
+    const imageSrc = imageMatch ? inlineDestination(imageMatch[2]) : '';
     if (
       imageMatch &&
       line.trim() === imageMatch[0] &&
-      isSafeMarkdownParserUrl(imageMatch[2])
+      isSafeMarkdownParserUrl(imageSrc)
     ) {
-      pushBlock({type: 'image', alt: imageMatch[1], url: imageMatch[2]});
+      pushBlock({
+        type: 'image',
+        alt: decodeLiteralText(imageMatch[1]),
+        url: imageSrc,
+      });
       index++;
       continue;
     }

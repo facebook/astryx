@@ -435,6 +435,10 @@
     "defaultMessage": "Back",
     "description": "Button label that returns from a nested action list to its parent inside a DropdownMenu bottom sheet. Imperative navigation action."
   },
+  "@astryx.dropdownMenu.backTo": {
+    "defaultMessage": "Back to {parent}",
+    "description": "Menu row that returns from a drilled-in sub-menu to the menu it came from. {parent} is that menu's name (e.g. \"Back to Actions\"). Imperative navigation action."
+  },
   "@astryx.lightbox.close": {
     "defaultMessage": "Close",
     "description": "\"Close\" = shut/dismiss (not \"nearby\"). Screen-reader-only label on the X button that dismisses a Lightbox."
@@ -522,6 +526,14 @@
   "@astryx.listInput.announceAlreadyAtBoundary": {
     "defaultMessage": "This {itemName} is already {boundary, select, first {first} last {last} other {}}.",
     "description": "Screen-reader-only live announcement when an arrow-key reorder attempt has no effect because the record is already at that end of the list. `{itemName}` is the consumer's singular noun for one record; `{boundary}` is always exactly \"first\" or \"last\"."
+  },
+  "@astryx.markdownHeadingLinks.copied": {
+    "defaultMessage": "Link copied",
+    "description": "Accessible name on the Markdown heading copy button and text announced to a polite live region for ~1.5s after a successful copy. Sentence meaning \"Link copied\"; pairs with `markdownHeadingLinks.copy`."
+  },
+  "@astryx.markdownHeadingLinks.copy": {
+    "defaultMessage": "Copy link to {heading}",
+    "description": "Accessible name on the Markdown heading copy button in its default state. `{heading}` is the heading's plain text, or its generated id when the text is empty; pairs with `markdownHeadingLinks.copied`."
   },
   "@astryx.markdown.taskList": {
     "defaultMessage": "Task list",

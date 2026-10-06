@@ -451,6 +451,90 @@ describe('ComplexSelector popup theme target', () => {
   });
 });
 
+describe('ComplexSelector trigger render prop', () => {
+  it('renders the caller control instead of the field and button', () => {
+    render(
+      <ComplexSelector
+        label="View options"
+        value={[]}
+        renderTrigger={props => (
+          <button type="button" {...props}>
+            Options
+          </button>
+        )}>
+        {() => <button type="button">Apply</button>}
+      </ComplexSelector>,
+    );
+    const opener = screen.getByRole('button', {name: 'Options'});
+    expect(opener).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(opener).toHaveAttribute('aria-expanded', 'false');
+    expect(opener).toHaveAttribute('aria-controls');
+    expect(screen.queryByText('View options')).toBeNull();
+    expect(screen.queryByRole('button', {name: 'View options'})).toBeNull();
+  });
+
+  it('opens against the caller control and returns focus to it on close', async () => {
+    const user = userEvent.setup();
+    const handleRef = React.createRef<ComplexSelectorHandle>();
+    render(
+      <ComplexSelector
+        label="View options"
+        value={[]}
+        handleRef={handleRef}
+        renderTrigger={props => (
+          <button type="button" {...props}>
+            Options
+          </button>
+        )}>
+        {(_value, _onChange, close) => (
+          <button type="button" onClick={close}>
+            Apply
+          </button>
+        )}
+      </ComplexSelector>,
+    );
+    const opener = screen.getByRole('button', {name: 'Options'});
+    await user.click(opener);
+    expect(opener).toHaveAttribute('aria-expanded', 'true');
+    expect(handleRef.current?.isOpen()).toBe(true);
+    const content = document.getElementById(
+      opener.getAttribute('aria-controls')!,
+    );
+    expect(content).not.toBeNull();
+
+    await user.click(screen.getByRole('button', {name: 'Apply', hidden: true}));
+    await waitFor(() => {
+      expect(opener).toHaveAttribute('aria-expanded', 'false');
+    });
+    // Focus return lands after the attribute flips, so it needs its own
+    // wait: asserting it synchronously passes alone and fails in a full-file
+    // run, where the surrounding work shifts the timing.
+    await waitFor(() => {
+      expect(opener).toHaveFocus();
+    });
+  });
+
+  it('ArrowDown on the caller control opens the popup', async () => {
+    render(
+      <ComplexSelector
+        label="View options"
+        value={[]}
+        renderTrigger={props => (
+          <button type="button" {...props}>
+            Options
+          </button>
+        )}>
+        {() => <button type="button">Apply</button>}
+      </ComplexSelector>,
+    );
+    const opener = screen.getByRole('button', {name: 'Options'});
+    fireEvent.keyDown(opener, {key: 'ArrowDown'});
+    await waitFor(() => {
+      expect(opener).toHaveAttribute('aria-expanded', 'true');
+    });
+  });
+});
+
 describe('ComplexSelector onOpenChange', () => {
   function renderSelector(onOpenChange: (isOpen: boolean) => void) {
     render(

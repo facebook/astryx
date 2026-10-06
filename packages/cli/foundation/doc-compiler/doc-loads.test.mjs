@@ -61,13 +61,13 @@ const RUNNERS = {
     sites: ['child_process.execFileSync'],
   },
   'api/theme/build/build.mjs': {
-    runs: 'theme source modules, through jiti; eval for legacy theme object literals',
+    runs: "theme source modules, through jiti; eval for legacy theme object literals; the project's installed Core",
     sites: [
       '.evalModule() ×2',
       '.import()',
       'createJiti ×4',
       'eval ×2',
-      'import(<computed>)',
+      'import(<computed>) ×3',
     ],
   },
   'api/theme/build/core-interception.mjs': {
@@ -190,6 +190,18 @@ const RUNNERS = {
       'import ./integration-pack.doc.mjs',
       'import ./integration-verify.doc.mjs',
       'import ./integration.doc.mjs',
+    ],
+  },
+  'clients/cli/commands/layout.mjs': {
+    runs: SELF_DOCS,
+    sites: [
+      'import ../../../api/layout/layoutCheck.doc.mjs',
+      'import ../../../api/layout/layoutExpand.doc.mjs',
+      'import ../../../api/layout/layoutGrammar.doc.mjs',
+      'import ./layout-check.doc.mjs',
+      'import ./layout-expand.doc.mjs',
+      'import ./layout-grammar.doc.mjs',
+      'import ./layout.doc.mjs',
     ],
   },
   'clients/cli/commands/search.mjs': {

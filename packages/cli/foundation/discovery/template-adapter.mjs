@@ -4,7 +4,7 @@
  * @file Shared template discovery + IO.
  *
  * Owns everything the template leaves (list/show/skeleton/copy) AND other
- * commands (component, search, init, discover, Doctor integration)
+ * commands (component, layout, search, init, discover, Doctor integration)
  * share: template discovery across core/external/integration sources, the
  * template-spec loaders, and the cross-command helpers (stripTemplateAssetRefs,
  * findShowcase, findRelatedBlocks, extractComponents, listTemplates). The
@@ -102,6 +102,7 @@ export function effectiveTemplateDiscovery(templates) {
  * @property {string} name
  * @property {string} [displayName]
  * @property {string} description
+ * @property {string[]} [keywords]
  * @property {string} [category]
  * @property {boolean} [isReady]
  * @property {boolean} [scaffold]
@@ -320,9 +321,23 @@ function toPosixPath(p) {
  * @returns {string} Source with demo asset references replaced.
  */
 export function stripTemplateAssetRefs(source) {
+  return replaceDemoMedia(source).source;
+}
+
+/**
+ * {@link stripTemplateAssetRefs}, plus how many references it replaced: one per
+ * replaced reference, however many fixture paths its URL carries (a reference
+ * is replaced whole, query included), and none for a prose mention or a
+ * third-party URL left as written. That count is what a receipt discloses.
+ *
+ * @param {string} source - Template source code.
+ * @returns {{source: string, demoMediaReplaced: number}}
+ */
+export function replaceDemoMedia(source) {
   const needle = `/${FIXTURE_SEGMENT}`;
   let output = '';
   let copied = 0;
+  let demoMediaReplaced = 0;
   /** @type {Array<[number, number]> | undefined} */
   let comments;
   let at = source.indexOf(needle);
@@ -343,10 +358,11 @@ export function stripTemplateAssetRefs(source) {
     if (edit) {
       output += source.slice(copied, start) + edit.text;
       copied = edit.end;
+      demoMediaReplaced += 1;
     }
     at = source.indexOf(needle, end);
   }
-  return output + source.slice(copied);
+  return {source: output + source.slice(copied), demoMediaReplaced};
 }
 
 /** @param {string | undefined} char */
@@ -633,6 +649,7 @@ async function discoverPages() {
       name: doc?.name || dir.name,
       description: doc?.description || '',
       category: doc?.category || '',
+      keywords: doc?.keywords ?? [],
       isReady: doc?.isReady ?? true,
       scaffold: doc?.scaffold ?? false,
       filePath: path.join(dirPath, 'page.tsx'),
@@ -661,6 +678,7 @@ async function discoverBlocks() {
       dirName: basename,
       name: doc?.name || basename,
       description: doc?.description || '',
+      keywords: doc?.keywords ?? [],
       isReady: doc?.isReady ?? true,
       aspectRatio: doc?.aspectRatio ?? 1,
       componentsUsed: doc?.componentsUsed ?? [],
@@ -702,6 +720,7 @@ async function discoverExternalBlocks(cwd = process.cwd()) {
         dirName: basename,
         name: doc?.name || basename,
         description: doc?.description || '',
+        keywords: doc?.keywords ?? [],
         isReady: doc?.isReady ?? true,
         aspectRatio: doc?.aspectRatio ?? 1,
         componentsUsed: doc?.componentsUsed ?? [],
@@ -1269,6 +1288,7 @@ export async function discoverIntegrationTemplatesForOne(integration) {
       name: doc?.name || id,
       displayName: doc?.displayName,
       description: doc?.description || '',
+      keywords: doc?.keywords ?? [],
       category: doc?.category || '',
       isReady: doc?.isReady ?? true,
       scaffold: doc?.scaffold ?? false,

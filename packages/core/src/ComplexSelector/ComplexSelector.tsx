@@ -191,6 +191,26 @@ export type ComplexSelectorVariant = 'input' | 'ghost';
 
 export type ComplexSelectorSize = 'sm' | 'md' | 'lg';
 
+/**
+ * Props the `renderTrigger` render prop hands to the control the caller
+ * renders.
+ * Spread them onto that control: it becomes the popup's anchor, the element
+ * focus returns to, and the control that announces the popup's state.
+ */
+export interface ComplexSelectorRenderTriggerProps {
+  /** Attaches the control as the popup's anchor and focus-return target. */
+  ref: (element: HTMLElement | null) => void;
+  /** The id the field would have given its own button. */
+  id: string;
+  onClick: (event: React.MouseEvent<HTMLElement>) => void;
+  /** ArrowDown opens the popup, as it does on the built-in button. */
+  onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void;
+  'aria-haspopup': 'dialog';
+  'aria-expanded': boolean;
+  'aria-controls': string;
+  'aria-busy': boolean | undefined;
+}
+
 export interface ComplexSelectorRenderState {
   /** Whether the selector surface is open. */
   isOpen: boolean;
@@ -287,6 +307,35 @@ export interface ComplexSelectorProps<Value> extends Omit<
    */
   handleRef?: React.Ref<ComplexSelectorHandle>;
   /**
+   * Render the control the popup hangs off — a glyph in a list row, a chip,
+   * an icon button — instead of the selector's own field and button. Spread
+   * the given props onto it; the popup is then anchored to that control and
+   * still labelled by `label`. The field chrome (`Field`, status, spinner,
+   * chevron) is not rendered; the caller owns the opener. Pair with
+   * `handleRef` to open the popup from a keystroke elsewhere.
+   *
+   * Hover and pressed paint stay yours. The open state reaches your control
+   * as `aria-expanded` on the given props, so style it from the rendered
+   * attribute. A pressed look keyed to `:active` is not a substitute:
+   * `:active` does not behave the same under a coarse pointer, which is why
+   * menu rows drop coarse-pointer `:active` paint entirely.
+   *
+   * @example
+   * ```
+   * <ComplexSelector
+   *   label="Assignee"
+   *   renderTrigger={props => <IconButton icon="user" label="Assign" {...props} />}
+   * />
+   * ```
+   *
+   * @example
+   * ```
+   * // Styling the open state from the rendered attribute:
+   * // .my-trigger[aria-expanded='true'] { background: var(--color-overlay-pressed); }
+   * ```
+   */
+  renderTrigger?: (props: ComplexSelectorRenderTriggerProps) => ReactNode;
+  /**
    * Called whenever the selector surface opens or closes, however it happened
    * — the trigger, the keyboard, a light dismiss, Escape, content that calls
    * `close()`, or the imperative handle. Pair it with `handleRef` to drive the
@@ -350,6 +399,7 @@ export function ComplexSelector<Value>({
   placement = 'below',
   alignment = 'start',
   handleRef,
+  renderTrigger,
   onOpenChange,
   contentXstyle,
   xstyle,
@@ -380,7 +430,7 @@ export function ComplexSelector<Value>({
       .filter((id): id is string => id != null)
       .join(' ') || undefined;
 
-  const triggerRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLElement>(null);
 
   const [isPending, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -478,6 +528,43 @@ export function ComplexSelector<Value>({
     </div>
   );
 
+  const popup = popover.render(content, {
+    placement,
+    alignment,
+    offset: spacingVars['--spacing-1'],
+    xstyle: [styles.popover, layerAnimations[placement]],
+  });
+
+  if (renderTrigger != null) {
+    // Anchor-only mode: the caller renders the opener and spreads these props
+    // on it. No Field, no status, no chevron — the caller owns the control;
+    // the selector owns the popup, its anchor, and focus return.
+    const triggerProps: ComplexSelectorRenderTriggerProps = {
+      ref: el => {
+        popover.triggerRef(el);
+        triggerRef.current = el;
+      },
+      id: triggerId,
+      onClick: handleTriggerClick,
+      onKeyDown: event => {
+        if (event.key === 'ArrowDown' && !isOpen && !isDisabled) {
+          event.preventDefault();
+          popover.show();
+        }
+      },
+      'aria-haspopup': 'dialog',
+      'aria-expanded': isOpen,
+      'aria-controls': contentId,
+      'aria-busy': isBusy || undefined,
+    };
+    return (
+      <>
+        {renderTrigger(triggerProps)}
+        {popup}
+      </>
+    );
+  }
+
   const selectorContent = (
     <>
       <div
@@ -513,7 +600,7 @@ export function ComplexSelector<Value>({
         )}>
         {isRenderable(startIconSlot) && startIconSlot}
         <button
-          ref={triggerRef}
+          ref={triggerRef as React.Ref<HTMLButtonElement>}
           id={triggerId}
           type="button"
           aria-haspopup="dialog"
@@ -554,12 +641,7 @@ export function ComplexSelector<Value>({
         />
       </div>
 
-      {popover.render(content, {
-        placement,
-        alignment,
-        offset: spacingVars['--spacing-1'],
-        xstyle: [styles.popover, layerAnimations[placement]],
-      })}
+      {popup}
     </>
   );
 
