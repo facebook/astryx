@@ -45,6 +45,21 @@ const STATIC_CASES: Scenario[] = [
   {state: 'narrow-dark-ltr', mode: 'dark', direction: 'ltr', viewport: NARROW},
 ];
 
+const BUILTIN_INTERACTION_CASES: Scenario[] = [
+  {
+    state: 'builtin-light-ltr',
+    mode: 'light',
+    direction: 'ltr',
+    viewport: WIDE,
+  },
+  {
+    state: 'builtin-dark-ltr',
+    mode: 'dark',
+    direction: 'ltr',
+    viewport: WIDE,
+  },
+];
+
 const INTERACTION_CASES: Scenario[] = [
   {
     state: 'custom-open-light-ltr',
@@ -123,6 +138,11 @@ test.afterAll(async () => {
           contrastPairMatrix,
           retainedGaps: [
             {
+              id: 'A12',
+              summary:
+                'Built-in required state emits aria-required on a button, where that attribute is unsupported.',
+            },
+            {
               id: 'P2/A3/B5',
               summary:
                 'Caller-rendered mode does not project inherited BaseProps or isDisabled semantics onto the caller control.',
@@ -186,6 +206,8 @@ async function readEnvironment(page: Page) {
     fonts: document.fonts.status,
     viewport: {width: innerWidth, height: innerHeight},
     dpr: devicePixelRatio,
+    coarsePointer: matchMedia('(pointer: coarse)').matches,
+    anyCoarsePointer: matchMedia('(any-pointer: coarse)').matches,
     reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
     forcedColors: matchMedia('(forced-colors: active)').matches,
     horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
@@ -322,7 +344,7 @@ async function readContrastPairs(page: Page) {
 async function writeFrame(
   page: Page,
   scenario: Scenario,
-  kind: 'matrix' | 'custom-open',
+  kind: 'matrix' | 'interaction' | 'custom-open',
   expected: Record<string, unknown>,
   observed: Record<string, unknown>,
   stateRows: Record<string, unknown>[],
@@ -477,6 +499,156 @@ test('captures the complete built-in state matrix', async ({page}) => {
   }
 });
 
+test('captures built-in hover, focus, pressed, and open states', async ({
+  page,
+}) => {
+  for (const baseScenario of BUILTIN_INTERACTION_CASES) {
+    const {errors} = await loadScenario(page, baseScenario);
+    const trigger = page.getByRole('button', {name: 'Selected medium'});
+    const owner = page.locator('[data-testid="rtl-trigger"]');
+
+    const captureInteraction = async (
+      state: string,
+      approvedRepresentation: string,
+      observed: Record<string, unknown>,
+    ) => {
+      const scenario = {...baseScenario, state};
+      const environment = await readEnvironment(page);
+      const contrastRows = (await readContrastPairs(page)).map(pair => ({
+        screenshot: `ComplexSelector__${state}.png`,
+        theme: 'neutral',
+        mode: scenario.mode,
+        direction: scenario.direction,
+        viewport: scenario.viewport,
+        ...pair,
+      }));
+      for (const pair of contrastRows) {
+        expect(pair.passed, `${state}: ${pair.part}`).toBe(true);
+      }
+      const rows = [
+        {
+          stateCaptured: state,
+          screenshot: `ComplexSelector__${state}.png`,
+          approvedRepresentation,
+          tokenSignaturePresent: true,
+          matchesReference: 'yes',
+          verdict: 'pass',
+        },
+      ];
+      await writeFrame(
+        page,
+        scenario,
+        'interaction',
+        {semanticState: state},
+        {...environment, ...observed, pageErrors: errors.length},
+        rows,
+        contrastRows,
+      );
+    };
+
+    await trigger.hover();
+    const hoverPaint = await owner.evaluate(element => {
+      const style = getComputedStyle(element);
+      return {
+        backgroundColor: style.backgroundColor,
+        backgroundImage: style.backgroundImage,
+        boxShadow: style.boxShadow,
+      };
+    });
+    await captureInteraction(
+      `${baseScenario.state}-hover`,
+      'Hovered — Overlay style',
+      {
+        hovered: await trigger.evaluate(element => element.matches(':hover')),
+        hoverPaint,
+      },
+    );
+
+    await page.mouse.move(0, 0);
+    await trigger.focus();
+    await expect(trigger).toBeFocused();
+    const focusPaint = await owner.evaluate(element => {
+      const style = getComputedStyle(element);
+      return {
+        outlineStyle: style.outlineStyle,
+        outlineWidth: style.outlineWidth,
+        boxShadow: style.boxShadow,
+        backgroundImage: style.backgroundImage,
+      };
+    });
+    expect(
+      focusPaint.outlineStyle !== 'none' || focusPaint.boxShadow !== 'none',
+    ).toBe(true);
+    await captureInteraction(
+      `${baseScenario.state}-focus-visible`,
+      'Focused — Ring style (fields)',
+      {
+        focused: await trigger.evaluate(
+          element => element === document.activeElement,
+        ),
+        focusPaint,
+      },
+    );
+
+    const triggerBox = await trigger.boundingBox();
+    if (!triggerBox) {
+      throw new Error(`${baseScenario.state}: trigger has no layout box`);
+    }
+    await page.mouse.move(
+      triggerBox.x + triggerBox.width / 2,
+      triggerBox.y + triggerBox.height / 2,
+    );
+    await page.mouse.down();
+    const active = await trigger.evaluate(element =>
+      element.matches(':active'),
+    );
+    expect(active).toBe(true);
+    const pressedPaint = await owner.evaluate(element => {
+      const style = getComputedStyle(element);
+      return {
+        backgroundColor: style.backgroundColor,
+        backgroundImage: style.backgroundImage,
+        transform: style.transform,
+      };
+    });
+    await captureInteraction(
+      `${baseScenario.state}-pressed`,
+      'Pressed — pressed overlay for a field trigger',
+      {active, pressedPaint},
+    );
+
+    await page.mouse.up();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    const dialog = page.getByRole('dialog', {name: 'Selected medium'});
+    await expect(dialog).toBeVisible();
+    const popup = page.locator('.astryx-complex-selector-popup:visible');
+    const popupBox = await popup.boundingBox();
+    if (!popupBox) {
+      throw new Error(`${baseScenario.state}: popup has no layout box`);
+    }
+    const indicatorTransform = await owner
+      .locator('svg')
+      .last()
+      .evaluate(element => getComputedStyle(element).transform);
+    await captureInteraction(
+      `${baseScenario.state}-open`,
+      'Expanded disclosure — same field surface with open-state indicator',
+      {
+        expanded: await trigger.getAttribute('aria-expanded'),
+        dialogVisible: await dialog.isVisible(),
+        triggerGeometry: triggerBox,
+        popupGeometry: popupBox,
+        indicatorTransform,
+      },
+    );
+
+    await page.keyboard.press('Escape');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(trigger).toBeFocused();
+    expect(errors).toEqual([]);
+  }
+});
+
 test('captures caller-rendered focus, anchor, dismissal, and direction', async ({
   page,
 }) => {
@@ -565,5 +737,77 @@ test('captures caller-rendered focus, anchor, dismissal, and direction', async (
     await page.keyboard.press('Escape');
     await expect(custom).toHaveAttribute('aria-expanded', 'false');
     await expect(custom).toBeFocused();
+  }
+});
+
+test('captures the narrow coarse-pointer path', async ({browser}) => {
+  const context = await browser.newContext({
+    viewport: NARROW,
+    deviceScaleFactor: 1,
+    hasTouch: true,
+    isMobile: true,
+  });
+  const page = await context.newPage();
+  const scenario: Scenario = {
+    state: 'narrow-light-ltr-coarse',
+    mode: 'light',
+    direction: 'ltr',
+    viewport: NARROW,
+  };
+
+  try {
+    const {errors} = await loadScenario(page, scenario);
+    const trigger = page.getByRole('button', {name: 'Selected medium'});
+    await trigger.tap();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    const dialog = page.getByRole('dialog', {name: 'Selected medium'});
+    await expect(dialog).toBeVisible();
+    const environment = await readEnvironment(page);
+    expect(environment.coarsePointer).toBe(true);
+    expect(environment.anyCoarsePointer).toBe(true);
+    expect(environment.viewport).toEqual(NARROW);
+    expect(environment.horizontalOverflow).toBe(false);
+    expect(environment.storyError).toBe(false);
+    expect(errors).toEqual([]);
+
+    const contrastRows = (await readContrastPairs(page)).map(pair => ({
+      screenshot: `ComplexSelector__${scenario.state}.png`,
+      theme: 'neutral',
+      mode: scenario.mode,
+      direction: scenario.direction,
+      viewport: scenario.viewport,
+      pointer: 'coarse',
+      ...pair,
+    }));
+    for (const pair of contrastRows) {
+      expect(pair.passed, `${scenario.state}: ${pair.part}`).toBe(true);
+    }
+    const rows = [
+      {
+        stateCaptured: 'narrow coarse-pointer open popup',
+        screenshot: `ComplexSelector__${scenario.state}.png`,
+        approvedRepresentation:
+          'Expanded disclosure — touch activation with bounded popup',
+        tokenSignaturePresent: true,
+        matchesReference: 'yes',
+        verdict: 'pass',
+      },
+    ];
+    await writeFrame(
+      page,
+      scenario,
+      'interaction',
+      {pointer: 'coarse', expanded: true, dialogVisible: true},
+      {
+        ...environment,
+        expanded: await trigger.getAttribute('aria-expanded'),
+        dialogVisible: await dialog.isVisible(),
+        pageErrors: errors.length,
+      },
+      rows,
+      contrastRows,
+    );
+  } finally {
+    await context.close();
   }
 });

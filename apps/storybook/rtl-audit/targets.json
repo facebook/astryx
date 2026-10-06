@@ -417,11 +417,11 @@
     "storyId": "core-complexselector--audit-matrix",
     "dims": ["D4"],
     "setup": {
-      "click": "button[aria-haspopup=\"dialog\"]:has-text(\"Design systems\")"
+      "click": "[data-testid=\"rtl-trigger\"] button"
     },
     "selectors": {
       "overlay": ".astryx-complex-selector-popup",
-      "overlayRoot": "button[aria-haspopup=\"dialog\"]:has-text(\"Design systems\")"
+      "overlayRoot": "[data-testid=\"rtl-trigger\"]"
     }
   },
   {

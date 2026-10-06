@@ -1397,19 +1397,21 @@ jobs:
       # caller-rendered trigger anchor/focus behavior, RTL, and 320px reflow from
       # exact-head Chromium receipts. Keep this with the existing pr-a11y owner.
       - name: Run ComplexSelector audit browser evidence
-        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ComplexSelector:')
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ComplexSelector:') }}
         env:
           ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
+          status=0
           node .github/scripts/accessibility-audit.js \
             --storybook-dir apps/storybook/dist \
             --output complex-selector-a11y-report.json \
             --components ComplexSelector \
             --baseline .github/a11y-baseline.json \
-            --fail-on-new
+            --fail-on-new || status=1
           pnpm exec playwright test \
             packages/core/src/ComplexSelector/__tests__/ComplexSelector.a11y.chromium.spec.ts \
-            --project chromium
+            --project chromium || status=1
+          exit "$status"
 
       - name: Upload ComplexSelector audit evidence
         if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ComplexSelector:')

@@ -847,7 +847,8 @@ export const AuditMatrix: Story = {
         <ComplexSelector
           label="Selected medium"
           value="Design systems"
-          triggerLabel="Design systems">
+          triggerLabel="Design systems"
+          data-testid="rtl-trigger">
           {content}
         </ComplexSelector>
         <ComplexSelector
