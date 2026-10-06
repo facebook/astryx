@@ -340,6 +340,14 @@ describe('Markdown', () => {
     );
   });
 
+  it('shows character references as the characters they name', () => {
+    const {container} = render(
+      <Markdown>{'Fish &amp; chips &copy; 2026 and `&amp;` in code'}</Markdown>,
+    );
+    expect(container.textContent).toContain('Fish & chips \u00a9 2026');
+    expect(container.querySelector('code')?.textContent).toBe('&amp;');
+  });
+
   it('adds target="_blank" to external links', () => {
     render(<Markdown>{'[ext](https://example.com)'}</Markdown>);
     const link = screen.getByText('ext');

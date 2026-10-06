@@ -322,6 +322,42 @@ describe('parseInline', () => {
     });
   });
 
+  it('decodes named and numeric character references in text', () => {
+    expect(
+      parseInline('Fish &amp; chips &copy; &#169; &#x1F600; a&nbsp;b'),
+    ).toEqual([
+      {type: 'text', content: 'Fish & chips \u00a9 \u00a9 \u{1F600} a\u00a0b'},
+    ]);
+  });
+
+  it('keeps unknown names, missing semicolons, and escaped ampersands literal', () => {
+    const nodes = parseInline('&notareference; &amp no semicolon \\&amp;');
+    expect(nodes.every(node => node.type === 'text')).toBe(true);
+    expect(
+      nodes.map(node => (node.type === 'text' ? node.content : '')).join(''),
+    ).toBe('&notareference; &amp no semicolon &amp;');
+  });
+
+  it('replaces NUL, surrogate, and out-of-range numeric references', () => {
+    expect(parseInline('&#0; &#xD800; &#1114112;')).toEqual([
+      {type: 'text', content: '\uFFFD \uFFFD \uFFFD'},
+    ]);
+  });
+
+  it('never turns a decoded character into markup', () => {
+    expect(
+      parseInline('&ast;not emphasis&ast; &lsqb;not a link&rsqb;(x)'),
+    ).toEqual([{type: 'text', content: '*not emphasis* [not a link](x)'}]);
+  });
+
+  it('keeps character references literal in inline and fenced code', () => {
+    expect(parseInline('`&amp;`')).toEqual([{type: 'code', content: '&amp;'}]);
+    expect(parseMarkdown('```\n&copy; &#169;\n```')[0]).toMatchObject({
+      type: 'codeblock',
+      content: '&copy; &#169;',
+    });
+  });
+
   it('handles parentheses in image URLs', () => {
     const result = parseInline('![alt](https://example.com/img_(1).png)');
     expect(result[0].type).toBe('image');

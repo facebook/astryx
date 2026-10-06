@@ -38,6 +38,7 @@ import type {
   PreparedMarkdownPlugins,
   PreparedSyntaxContribution,
 } from './plugins/protocol';
+import {matchCharacterReference} from './characterReferences';
 import {isSafeMarkdownParserUrl} from './url';
 
 // ---------------------------------------------------------------------------
@@ -1721,11 +1722,29 @@ function parseInlineImpl(
       }
     }
 
+    // --- Character reference: the characters it names, as plain text ---
+    if (text[i] === '&') {
+      const reference = matchCharacterReference(text, i);
+      if (reference != null) {
+        const last = nodes[nodes.length - 1];
+        if (last?.type === 'text') {
+          nodes[nodes.length - 1] = {
+            ...last,
+            value: last.value + reference.value,
+          };
+        } else {
+          nodes.push({type: 'text', value: reference.value});
+        }
+        i = reference.end;
+        continue;
+      }
+    }
+
     // --- Plain text (with line-break detection) ---
     let end = i + 1;
     while (
       end < text.length &&
-      !'*_~`[!\\\n\u3010'.includes(text[end]) &&
+      !'*_~`[!\\\n\u3010&'.includes(text[end]) &&
       !(opts.math && text[end] === '$') &&
       (inlineExtensionStarts === undefined ||
         !inlineExtensionStarts.has(text[end]))
