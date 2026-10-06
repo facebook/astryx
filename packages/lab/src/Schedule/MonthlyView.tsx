@@ -243,7 +243,9 @@ function ScheduleMonthlyView(
                             ),
                             focusOutlineStyles.focusVisible,
                           )}>
-                          +{hiddenCount} more
+                          {/* Isolated, so the count reads "+3 more" in either
+                              direction. */}
+                          <bdi>+{hiddenCount} more</bdi>
                         </button>
                       )}
                     </div>

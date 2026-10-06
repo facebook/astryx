@@ -53,6 +53,8 @@ interface MonthReading {
     readonly overflowPx: number;
   }>;
   readonly chipCount: number;
+  /** Whether the "+" of a "+N more" paints before its "more", as read. */
+  readonly countReadsInOrder: boolean | null;
   /** Per busy day: chips painted across its cell and its "+N more" count. */
   readonly days: Record<
     string,
@@ -73,6 +75,19 @@ interface MonthReading {
 function readMonth(page: Page): Promise<MonthReading> {
   return page.evaluate(
     ([dayNames]) => {
+      const findText = (root: Node): Text | null => {
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        for (
+          let node = walker.nextNode();
+          node != null;
+          node = walker.nextNode()
+        ) {
+          if ((node.textContent ?? '').includes('more')) {
+            return node as Text;
+          }
+        }
+        return null;
+      };
       const grid = document.querySelector<HTMLElement>(
         '.astryx-schedule [role="table"], .astryx-schedule [role="grid"]',
       );
@@ -163,9 +178,27 @@ function readMonth(page: Page): Promise<MonthReading> {
             moreRect.bottom <= day.rect.bottom + 1,
         };
       }
+      // The visual order of the count's "+" and its "more" in the label.
+      const wednesdayMore = [...grid.querySelectorAll('button')].find(button =>
+        /^3 more events,/.test(button.getAttribute('aria-label') ?? ''),
+      );
+      let countReadsInOrder: boolean | null = null;
+      const text = wednesdayMore == null ? null : findText(wednesdayMore);
+      if (text != null) {
+        const value = text.textContent ?? '';
+        const range = document.createRange();
+        range.setStart(text, value.indexOf('+'));
+        range.setEnd(text, value.indexOf('+') + 1);
+        const plus = range.getBoundingClientRect();
+        range.setStart(text, value.indexOf('more'));
+        range.setEnd(text, value.indexOf('more') + 4);
+        const more = range.getBoundingClientRect();
+        countReadsInOrder = plus.right <= more.left + 1;
+      }
       return {
         chipsOutsideRow,
         chipCount: chips.length,
+        countReadsInOrder,
         days,
         surfaceIsolation:
           overlay?.parentElement == null
@@ -220,6 +253,7 @@ function readMore(page: Page, day: string) {
 
 function expectNothingLost(reading: MonthReading) {
   expect(reading.chipsOutsideRow).toEqual([]);
+  expect(reading.countReadsInOrder, '"+N more" reads in order').toBe(true);
   expect(reading.surfaceIsolation).toBe('isolate');
   for (const [day, total] of Object.entries(EVENTS_ON)) {
     const {paintedChips, counted, moreInsideCell} = reading.days[day];
@@ -582,7 +616,7 @@ test('when a refresh takes away an open day\'s "+N more", focus lands on that da
     ).scheduleMonthOverflowStory.removeEvent('focus');
   });
   await expect.poll(async () => (await readDialog(page)).openCount).toBe(0);
-  const focus = await page.evaluate(() => {
+  const focus = await page.evaluate(day => {
     const active = document.activeElement as HTMLElement | null;
     const computed = active == null ? null : getComputedStyle(active);
     return {
@@ -592,10 +626,10 @@ test('when a refresh takes away an open day\'s "+N more", focus lands on that da
       outlineStyle: computed?.outlineStyle ?? null,
       outlineWidth: Number.parseFloat(computed?.outlineWidth ?? '0'),
       fridayMore: [...document.querySelectorAll('button')].some(button =>
-        button.getAttribute('aria-label')?.endsWith(`, ${FRIDAY}`),
+        button.getAttribute('aria-label')?.endsWith(`, ${day}`),
       ),
     };
-  });
+  }, FRIDAY);
   const cell = page.getByRole('cell', {name: FRIDAY});
   const box = await cell.boundingBox();
   expect(box).not.toBeNull();
