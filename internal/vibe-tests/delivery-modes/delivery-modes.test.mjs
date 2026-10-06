@@ -26,17 +26,22 @@ import {
   createPrivateRunRoot,
   extractToolCommands,
   parseUsage,
+  probeBrowserHelper,
   runCommand,
   sanitizeChildEnv,
 } from './process.mjs';
 import {renderCommand, validateRunnerProfile, wrapCommand} from './profile.mjs';
+import {
+  compareCapabilities,
+  parseCapabilityReceipt,
+} from './runner-adapter.mjs';
 import {
   prepareProject,
   reactNoBuildStarter,
   staticHtmlStarter,
   validateStaticConfig,
 } from './projects.mjs';
-import {buildReports, summarize} from './report.mjs';
+import {buildReports, summarize, summarizeRunnerVersions} from './report.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const temporaryDirectories = [];
@@ -64,6 +69,11 @@ test('generated prompts differ only by factual delivery details', () => {
     assert.doesNotMatch(task, /expectedComponents|Switch/);
     assert.match(task, /Build a settings card\./);
     assert.match(task, /use only the documentation and tools installed there/);
+    assert.match(task, /available on PATH as `screenshot`/);
+    assert.match(
+      task,
+      /Invoke it as `screenshot <file-or-url> \[output\.png\]`/,
+    );
     assert.match(task, /You have up to 15 minutes/);
   }
   const normalized = generated.map(task =>
@@ -169,8 +179,13 @@ const exampleTranscriptAdapter = {
 
 function exampleProfile() {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     sandbox: {root: '/isolated', projectDir: '/isolated/project'},
+    browserHelper: {
+      name: 'screenshot',
+      usage: 'screenshot <file-or-url> [output.png]',
+      probeArgs: ['--help'],
+    },
     launcher: {
       command: '/path/to/launcher',
       args: [
@@ -193,6 +208,19 @@ function exampleProfile() {
         command: '/path/to/runner',
         args: ['--workspace', '{sandboxProject}'],
         stdin: 'prompt',
+        versionArgs: ['--version'],
+        capabilities: {
+          expected: {
+            builtIns: [],
+            skills: [],
+            mcpServers: [],
+            hooks: [],
+          },
+          probe: {
+            command: '/path/to/capability-adapter',
+            args: [],
+          },
+        },
         transcript: structuredClone(exampleTranscriptAdapter),
         audit: {rules: []},
       },
@@ -207,8 +235,8 @@ function exampleProfile() {
   };
 }
 
-test('runner profile validates generic commands and audit classes', () => {
-  assert.equal(validateRunnerProfile(exampleProfile()).schemaVersion, 1);
+test('runner profile validates commands, capabilities, transcripts, and audits', () => {
+  assert.equal(validateRunnerProfile(exampleProfile()).schemaVersion, 2);
   const invalid = exampleProfile();
   invalid.runners.sample.audit.rules = [
     {
@@ -220,6 +248,20 @@ test('runner profile validates generic commands and audit classes', () => {
     },
   ];
   assert.throws(() => validateRunnerProfile(invalid), /class is invalid/);
+
+  const mismatchedHelper = exampleProfile();
+  mismatchedHelper.browserHelper.usage = 'other-helper screenshot.png';
+  assert.throws(
+    () => validateRunnerProfile(mismatchedHelper),
+    /must start with browserHelper.name/,
+  );
+
+  const missingCapabilityList = exampleProfile();
+  delete missingCapabilityList.runners.sample.capabilities.expected.hooks;
+  assert.throws(
+    () => validateRunnerProfile(missingCapabilityList),
+    /expected.hooks must be an array/,
+  );
 });
 
 test('runner profile is removed from child environments', () => {
@@ -374,6 +416,34 @@ test('profile adapter controls generic JSONL tool and usage parsing', () => {
     inputTokens: 20,
     outputTokens: 4,
   });
+  assert.equal(countToolCalls(transcript, {format: 'jsonl'}), null);
+  assert.deepEqual(parseUsage(transcript, {format: 'jsonl'}), {
+    inputTokens: null,
+    outputTokens: null,
+  });
+});
+
+test('capability audit requires expected subsets and records additions', () => {
+  const observed = parseCapabilityReceipt(
+    JSON.stringify({
+      schemaVersion: 1,
+      builtIns: ['write', 'read', 'write'],
+      skills: ['ui-authoring', 'extra-skill'],
+      mcpServers: ['browser'],
+      hooks: [],
+    }),
+  );
+  const audit = compareCapabilities(
+    {
+      builtIns: ['read', 'write'],
+      skills: ['ui-authoring'],
+      mcpServers: ['browser'],
+      hooks: [],
+    },
+    observed,
+  );
+  assert.equal(audit.passed, true);
+  assert.deepEqual(audit.additional.skills, ['extra-skill']);
 });
 
 test('source scanner separates comments and theme definitions', async () => {
@@ -431,6 +501,29 @@ test('judge crashes retry once and report recovery', () => {
   assert.equal(resolved.attempts[0].error, crashed.error);
 });
 
+test('browser helper probe proves the advertised name is on launcher PATH', async () => {
+  const directory = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), 'delivery-browser-helper-'),
+  );
+  temporaryDirectories.push(directory);
+  const bin = path.join(directory, 'bin');
+  await fs.promises.mkdir(bin);
+  const helper = path.join(bin, 'screenshot');
+  await fs.promises.writeFile(helper, '#!/bin/sh\nprintf available\n');
+  await fs.promises.chmod(helper, 0o755);
+
+  const profile = exampleProfile();
+  profile.launcher = {
+    command: '/usr/bin/env',
+    args: ['{runnerCommand}', '{runnerArgs}'],
+    env: {PATH: `${bin}:${process.env.PATH}`},
+  };
+  const receipt = await probeBrowserHelper(profile);
+  assert.equal(receipt.passed, true);
+  assert.equal(receipt.name, 'screenshot');
+  assert.equal(receipt.usage, 'screenshot <file-or-url> [output.png]');
+});
+
 test('private run roots use mode 0700', async () => {
   const privateRun = await createPrivateRunRoot('test-');
   temporaryDirectories.push(privateRun.root);
@@ -451,6 +544,9 @@ test('summary includes failure zeros in medians and sample counts', () => {
   assert.equal(summary.runs, 2);
   assert.equal(summary.passed, 1);
   assert.equal(summary.medianVisualQuality, 40);
+  assert.equal(summary.medianToolCalls, 40);
+  assert.deepEqual(summary.runnerVersions, ['example-agent 1.0.0']);
+  assert.equal(summary.mixedRunnerVersions, false);
   assert.equal(summary.samples.visual, 2);
 });
 
@@ -529,6 +625,49 @@ test('reports expose infrastructure and judge attempt failures', async () => {
   assert.match(markdown, /attempt 1: process — judge crashed/);
 });
 
+test('reports unavailable runner metrics without guessing zeros', async () => {
+  const outputDir = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), 'delivery-report-unavailable-'),
+  );
+  temporaryDirectories.push(outputDir);
+  const result = makeResult({passed: true, value: 10});
+  Object.assign(result, {
+    id: 'prompt-react-build-sample',
+    promptId: 'prompt',
+    outputDir,
+    screenshotPath: null,
+  });
+  result.runner.usage = {inputTokens: null, outputTokens: null};
+  result.runner.toolCalls = null;
+  result.runner.version = {status: 'unavailable'};
+  const report = await buildReports({
+    outputDir,
+    iterationId: 'unavailable-metrics',
+    results: [result],
+  });
+  const markdown = await fs.promises.readFile(report.markdownPath, 'utf8');
+  assert.match(markdown, /\| unavailable \| unavailable \|/);
+  assert.match(
+    markdown,
+    /## Runner version provenance\n\n- \*\*sample\*\* — unavailable/,
+  );
+});
+
+test('report provenance detects version mixing across delivery configs', () => {
+  const first = makeResult({passed: true, value: 10});
+  const second = makeResult({passed: true, value: 20});
+  second.config = 'react-nobuild';
+  second.runner.version = {status: 'available', value: 'example-agent 2.0.0'};
+  second.runner.versionChanged = true;
+  const [receipt] = summarizeRunnerVersions([first, second]);
+  assert.deepEqual(receipt.versions, [
+    'example-agent 1.0.0',
+    'example-agent 2.0.0',
+  ]);
+  assert.equal(receipt.mixed, true);
+  assert.equal(receipt.changedRuns, 1);
+});
+
 test('--dry-run needs neither a runner profile nor an agent CLI', () => {
   const result = spawnSync(
     process.execPath,
@@ -557,7 +696,10 @@ function makeResult({passed, value}) {
       durationMs: value * 1000,
       timedOut: false,
       usage: {inputTokens: value, outputTokens: 0},
+      toolCalls: value,
       cliLookups: value,
+      version: {status: 'available', value: 'example-agent 1.0.0'},
+      versionChanged: false,
       transcriptAudit: {passed: true, adjustedFindings: []},
     },
     evaluation: {

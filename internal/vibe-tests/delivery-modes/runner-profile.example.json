@@ -1,10 +1,14 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "sandbox": {
     "root": "/isolated-run",
     "projectDir": "/isolated-run/project"
   },
-  "browserCommand": "screenshot <file-or-url> [output.png]",
+  "browserHelper": {
+    "name": "screenshot",
+    "usage": "screenshot <file-or-url> [output.png]",
+    "probeArgs": ["--help"]
+  },
   "launcher": {
     "command": "/path/to/isolation-launcher",
     "args": [
@@ -38,6 +42,19 @@
       "versionArgs": ["--version"],
       "limits": {
         "maxModelSteps": 80
+      },
+      "capabilities": {
+        "expected": {
+          "builtIns": ["read", "shell", "write"],
+          "skills": ["ui-authoring"],
+          "mcpServers": ["browser"],
+          "hooks": ["before-tool"]
+        },
+        "probe": {
+          "command": "/path/to/capability-adapter",
+          "args": ["--runner", "{runnerCommand}"],
+          "cwd": "{sandboxProject}"
+        }
       },
       "transcript": {
         "format": "jsonl",

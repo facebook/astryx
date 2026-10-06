@@ -42,7 +42,10 @@ export function buildTaskPrompt(
   projectDir = '<project-dir>',
   {
     timeoutMinutes = 15,
-    browserCommand = 'screenshot <file-or-url> [output.png]',
+    browserHelper = {
+      name: 'screenshot',
+      usage: 'screenshot <file-or-url> [output.png]',
+    },
   } = {},
 ) {
   return `You are implementing a UI in an isolated consumer project.
@@ -54,7 +57,7 @@ Project directory:
 ${projectDir}
 
 Time and browser:
-You have up to ${timeoutMinutes} minutes. A headless browser helper is available as \`${browserCommand}\`.
+You have up to ${timeoutMinutes} minutes. A headless browser helper is available on PATH as \`${browserHelper.name}\`. Invoke it as \`${browserHelper.usage}\`.
 
 First inspect the project and use only the documentation and tools installed there. Do not read files outside this project.
 

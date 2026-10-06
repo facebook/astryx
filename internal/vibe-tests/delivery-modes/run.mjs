@@ -22,7 +22,9 @@ import {
   countToolCalls,
   createPrivateRunRoot,
   parseUsage,
-  runCommand,
+  probeBrowserHelper,
+  probeRunnerCapabilities,
+  probeRunnerVersion,
   runProfileCommand,
   runProfilePreflight,
 } from './process.mjs';
@@ -67,6 +69,23 @@ async function main() {
     );
   }
   const isolationReceipt = await runProfilePreflight(profile);
+  const browserHelperReceipt = await probeBrowserHelper(profile);
+  const runnerCapabilities = {};
+  const runnerVersionBaselines = {};
+  for (const runner of runners) {
+    const capabilityReceipt = await probeRunnerCapabilities(profile, runner);
+    runnerCapabilities[runner] = capabilityReceipt;
+    if (!capabilityReceipt.passed) {
+      const missing = Object.entries(capabilityReceipt.missing)
+        .filter(([, values]) => values.length > 0)
+        .map(([group, values]) => `${group}: ${values.join(', ')}`)
+        .join('; ');
+      throw new Error(
+        `Runner ${runner} is missing required capabilities (${missing}).`,
+      );
+    }
+    runnerVersionBaselines[runner] = await probeRunnerVersion(profile, runner);
+  }
   const iterationId =
     options.iteration ??
     new Date().toISOString().replaceAll(/[:.]/g, '-').replace('Z', '');
@@ -129,7 +148,19 @@ async function main() {
         )
       : null,
     isolation: isolationReceipt,
-    runnerVersions: await runnerVersions(profile, runners),
+    browserHelper: browserHelperReceipt,
+    runnerCapabilities,
+    runnerProvenance: Object.fromEntries(
+      runners.map(name => [
+        name,
+        {
+          baseline: runnerVersionBaselines[name],
+          observed: [],
+          mixed: false,
+          unavailableRuns: 0,
+        },
+      ]),
+    ),
   };
   if (priorManifest) {
     assertCompatibleManifest(priorManifest, manifest);
@@ -183,6 +214,7 @@ async function main() {
       outputDir,
       options,
       profile,
+      baselineRunnerVersion: runnerVersionBaselines[job.agent],
     });
     results.push(result);
     completed += 1;
@@ -194,6 +226,23 @@ async function main() {
   const completedJobs = results.filter(checkpointIsComplete).length;
   manifest.completedJobs = completedJobs;
   manifest.totalJobs = jobs.length;
+  for (const runner of runners) {
+    const runnerResults = results.filter(
+      result => result.agent === runner && !result.infrastructureFailure,
+    );
+    const observed = [
+      runnerVersionBaselines[runner],
+      ...runnerResults.map(result => result.runner?.version),
+    ]
+      .filter(receipt => receipt?.status === 'available')
+      .map(receipt => receipt.value);
+    manifest.runnerProvenance[runner].observed = [...new Set(observed)];
+    manifest.runnerProvenance[runner].mixed =
+      manifest.runnerProvenance[runner].observed.length > 1;
+    manifest.runnerProvenance[runner].unavailableRuns = runnerResults.filter(
+      result => result.runner?.version?.status !== 'available',
+    ).length;
+  }
   if (completedJobs === jobs.length) {
     manifest.completedAt = new Date().toISOString();
   }
@@ -263,7 +312,7 @@ async function loadCheckpointResults({
       profile.sandbox.projectDir,
       {
         timeoutMinutes: options.timeoutMinutes,
-        browserCommand: profile.browserCommand,
+        browserHelper: profile.browserHelper,
       },
     );
     if (
@@ -330,6 +379,7 @@ async function runOne({
   outputDir,
   options,
   profile,
+  baselineRunnerVersion,
 }) {
   const id = jobId(prompt.id, config, agent);
   const sharedRunDir = path.join(outputDir, 'runs', id);
@@ -338,7 +388,7 @@ async function runOne({
   const privateScreenshot = path.join(privateRun.root, 'screenshot.png');
   const taskPrompt = buildTaskPrompt(prompt, spec, profile.sandbox.projectDir, {
     timeoutMinutes: options.timeoutMinutes,
-    browserCommand: profile.browserCommand,
+    browserHelper: profile.browserHelper,
   });
   const result = {
     id,
@@ -370,6 +420,7 @@ async function runOne({
       privateRun,
       taskPrompt,
       timeoutMs: options.timeoutMinutes * 60 * 1000,
+      baselineRunnerVersion,
     });
 
     phase = 'evaluation';
@@ -438,8 +489,16 @@ async function runOne({
   return result;
 }
 
-async function runAgent({name, profile, privateRun, taskPrompt, timeoutMs}) {
+async function runAgent({
+  name,
+  profile,
+  privateRun,
+  taskPrompt,
+  timeoutMs,
+  baselineRunnerVersion,
+}) {
   const entry = profile.runners[name];
+  const version = await probeRunnerVersion(profile, name, privateRun);
   const execution = await runProfileCommand(
     profile,
     entry,
@@ -455,6 +514,10 @@ async function runAgent({name, profile, privateRun, taskPrompt, timeoutMs}) {
     entry.audit,
     entry.transcript,
   );
+  const versionChanged =
+    baselineRunnerVersion?.status === 'available' &&
+    version.status === 'available' &&
+    baselineRunnerVersion.value !== version.value;
   return {
     command: name,
     code: execution.code,
@@ -469,6 +532,8 @@ async function runAgent({name, profile, privateRun, taskPrompt, timeoutMs}) {
       /\b(?:unable to complete|cannot complete|giving up|could not complete)\b/i.test(
         combined,
       ),
+    version,
+    versionChanged,
     usage,
     toolCalls: countToolCalls(execution.stdout, entry.transcript),
     cliLookups: countCliLookups(execution.stdout, entry.transcript),
@@ -492,24 +557,6 @@ function forceFailedScores(evaluation, reason) {
     failureReasons: [reason],
     automaticFailure: true,
   };
-}
-
-async function runnerVersions(profile, runners) {
-  const entries = [];
-  for (const name of runners) {
-    const entry = profile.runners[name];
-    if (!entry.versionArgs) {
-      entries.push([name, null]);
-      continue;
-    }
-    const result = await runCommand(entry.command, entry.versionArgs, {
-      cwd: vibeTestsRoot,
-      env: entry.env,
-      timeoutMs: 30_000,
-    });
-    entries.push([name, (result.stdout || result.stderr).trim()]);
-  }
-  return Object.fromEntries(entries);
 }
 
 async function copyProjectEvidence(source, destination) {
@@ -550,7 +597,10 @@ function printDryRun(options, prompts, specs) {
       console.log(
         buildTaskPrompt(prompt, specs[config], '<project-dir>', {
           timeoutMinutes: options.timeoutMinutes,
-          browserCommand: '<browser-helper> <file-or-url> [output.png]',
+          browserHelper: {
+            name: '<browser-helper>',
+            usage: '<browser-helper> <file-or-url> [output.png]',
+          },
         }),
       );
     }

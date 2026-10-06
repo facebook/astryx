@@ -6,6 +6,10 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {renderCommand, wrapCommand} from './profile.mjs';
+import {
+  compareCapabilities,
+  parseCapabilityReceipt,
+} from './runner-adapter.mjs';
 
 const DEFAULT_CAPTURE_LIMIT = 20 * 1024 * 1024;
 const PRIVATE_PROFILE_ENV_PREFIX = 'VIBE_RUNNER_PROFILE';
@@ -157,6 +161,93 @@ export async function runProfilePreflight(profile) {
   }
 }
 
+export async function probeBrowserHelper(profile) {
+  const privateRun = await createPrivateRunRoot('browser-helper-');
+  try {
+    const result = await runProfileCommand(
+      profile,
+      {
+        command: profile.browserHelper.name,
+        args: profile.browserHelper.probeArgs,
+        cwd: profile.sandbox.projectDir,
+      },
+      privateRun,
+      {},
+      {timeoutMs: 30_000},
+    );
+    if (result.code !== 0 || result.timedOut) {
+      throw new Error(
+        `Browser helper ${profile.browserHelper.name} is not discoverable on the launcher PATH.`,
+      );
+    }
+    return {
+      passed: true,
+      name: profile.browserHelper.name,
+      usage: profile.browserHelper.usage,
+      durationMs: result.durationMs,
+    };
+  } finally {
+    await fs.promises.rm(privateRun.root, {recursive: true, force: true});
+  }
+}
+
+export async function probeRunnerCapabilities(profile, name) {
+  const privateRun = await createPrivateRunRoot(`capabilities-${name}-`);
+  try {
+    const entry = profile.runners[name];
+    const result = await runProfileCommand(
+      profile,
+      entry.capabilities.probe,
+      privateRun,
+      {runnerCommand: entry.command},
+      {timeoutMs: 30_000},
+    );
+    if (result.code !== 0 || result.timedOut) {
+      throw new Error(`Capability probe failed for runner ${name}.`);
+    }
+    return compareCapabilities(
+      entry.capabilities.expected,
+      parseCapabilityReceipt(result.stdout),
+    );
+  } finally {
+    await fs.promises.rm(privateRun.root, {recursive: true, force: true});
+  }
+}
+
+export async function probeRunnerVersion(profile, name, privateRun = null) {
+  const entry = profile.runners[name];
+  if (!entry.versionArgs) {
+    return {status: 'unavailable'};
+  }
+  const ownedPrivateRun =
+    privateRun ?? (await createPrivateRunRoot(`version-${name}-`));
+  try {
+    const result = await runProfileCommand(
+      profile,
+      {
+        command: entry.command,
+        args: entry.versionArgs,
+        cwd: entry.cwd,
+        env: entry.env,
+      },
+      ownedPrivateRun,
+      {},
+      {timeoutMs: 30_000},
+    );
+    const value = (result.stdout || result.stderr).trim();
+    return result.code === 0 && !result.timedOut && value
+      ? {status: 'available', value}
+      : {status: 'unavailable'};
+  } finally {
+    if (!privateRun) {
+      await fs.promises.rm(ownedPrivateRun.root, {
+        recursive: true,
+        force: true,
+      });
+    }
+  }
+}
+
 function terminate(child) {
   try {
     if (process.platform !== 'win32' && child.pid) {
@@ -228,6 +319,9 @@ export function parseUsage(text, adapter) {
 }
 
 export function countToolCalls(text, adapter) {
+  if (!Array.isArray(adapter?.toolCalls)) {
+    return null;
+  }
   const records = parseTranscript(text, adapter);
   return records.reduce(
     (total, record) =>

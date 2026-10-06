@@ -34,25 +34,38 @@ VIBE_RUNNER_PROFILE_JSON="$(cat /absolute/path/to/runner-profile.json)" \
 
 Do not commit a working profile. `runner-profile.local.json` is ignored, and [`runner-profile.example.json`](runner-profile.example.json) contains placeholders only.
 
-Schema version 1 defines:
+Schema version 2 defines:
 
 - `sandbox.root` and `sandbox.projectDir`: paths visible inside the isolated run.
 - `launcher`: the local isolation wrapper. Its argument list may use `{privateRoot}`, `{sandboxRoot}`, `{runnerCommand}`, `{runnerCwd}`, and the whole-argument `{runnerArgs}` expansion.
 - `preflight`: a command that must succeed through the launcher before any cell runs.
+- `browserHelper`: one executable basename, its identical prompt syntax, and probe arguments. The harness invokes that basename through the launcher before the run, proving every runner can discover it on `PATH` under the advertised name.
 - `runners`: named command entries. Arguments may use `{sandboxProject}` and `{taskFile}`; `stdin: "prompt"` sends the shared task prompt.
-- `transcript`: a declarative adapter for each runner and judge. The shipped public adapter format is JSONL: `toolCalls` selects records with field-path matchers and extracts a command path, while optional `usage` paths select input and output token counts. The harness has no built-in knowledge of any agent CLI event schema.
+- `runners.<name>.capabilities`: required built-in, skill, MCP-server, and hook lists plus a probe command. Missing requirements stop the run; additional capabilities are recorded without failing it.
+- `transcript`: a declarative adapter for each runner and judge. The shipped public adapter format is JSONL: `toolCalls` selects records with field-path matchers and extracts a command path, while optional `usage` paths select input and output token counts. The harness has no built-in knowledge of any agent CLI event schema. Missing usage or tool-call measurements are reported as `unavailable`, never guessed.
 - `judge`: the blind screenshot evaluator. Its arguments may use `{sandboxProject}` and `{schema}`; the prompt is available through stdin. Optional `resultPath` selects the score object from the judge's JSON or last JSONL record.
-- `browserCommand`: the identical browser-helper syntax advertised to every runner.
 - `audit.rules`: required or forbidden regular expressions over `stdout`, `stderr`, `combined`, or adapter-extracted tool `command` records.
+
+Capability probes emit exactly one JSON object. The profile's `expected` lists are required subsets, so executable updates do not fail cells while the required surface remains present:
+
+```json
+{
+  "schemaVersion": 1,
+  "builtIns": ["read", "shell", "write"],
+  "skills": ["ui-authoring"],
+  "mcpServers": ["browser"],
+  "hooks": ["before-tool"]
+}
+```
 
 Every audit rule is classified as:
 
 - `strict`: a finding fails the cell and forces primary scores to zero.
 - `adjusted`: a finding is reported but does not change the score.
 
-Runner commands, executable paths, launcher flags, environment variables, transcript adapters, context expectations, limits, audit patterns, and version probes belong in the local profile. None are hard-coded in the harness. The profile path and inline profile variables are removed from every launcher, runner, judge, and version-probe child environment; agents receive only the task prompt, project, and configured browser-helper syntax.
+Runner commands, executable paths, launcher flags, environment variables, transcript and capability adapters, context expectations, limits, audit patterns, and version probes belong in the local profile. None are hard-coded in the harness. Use `versionArgs` for executable provenance rather than pinning version text in an audit rule. Versions are recorded before the run and per cell; mixed versions remain runnable but are called out in the manifest and report. The profile path and inline profile variables are removed from every launcher, runner, judge, and version-probe child environment; agents receive only the task prompt, project, and configured browser-helper syntax.
 
-The launcher owns OS-level isolation for runner and judge processes. It should expose only the private run root and required runtime assets, map the host project to `sandbox.projectDir`, keep sibling and host-user data inaccessible, and provide the browser helper named by `browserCommand`. Project preparation, builds, preview servers, browser evaluation, and evidence copying run host-side under a mode-`0700` private root; they do not run through the profile launcher. The harness runs the launcher preflight before any cell and records its receipt in the manifest.
+The launcher owns OS-level isolation for runner and judge processes. It should expose only the private run root and required runtime assets, map the host project to `sandbox.projectDir`, keep sibling and host-user data inaccessible, and put the configured `browserHelper.name` on `PATH`. Project preparation, builds, preview servers, browser evaluation, and evidence copying run host-side under a mode-`0700` private root; they do not run through the profile launcher. The harness runs the isolation, helper-discovery, and capability probes before any cell and records their receipts in the manifest.
 
 ## Static HTML
 
@@ -108,4 +121,4 @@ A build failure, page error, blank render, runner failure, timeout, or strict au
 
 The blind judge prompt describes only the requested UI and visible scoring criteria. A judge process crash, nonzero exit, invalid result, or strict context-audit failure is retried once. Each attempt and error is recorded; if both attempts fail, judge scores remain null and the report marks the judge unavailable rather than assigning zero.
 
-The output directory contains `report.md`, a self-contained `report.html`, `report.json`, screenshots, transcripts, per-run receipts, and a manifest. The manifest records the selected prompts, config hash, concurrency, time limits, profile schema version, runner limits, audit-rule counts, opaque transcript-adapter hashes, version receipts, and resumable completion state without copying the local profile.
+The output directory contains `report.md`, a self-contained `report.html`, `report.json`, screenshots, transcripts, per-run receipts, and a manifest. The manifest records the selected prompts, config hash, concurrency, time limits, profile schema version, runner limits, helper and capability-probe receipts, opaque transcript-adapter hashes, baseline and observed runner versions, audit-rule counts, and resumable completion state without copying the local profile. Reports mark unavailable token or tool-call measurements explicitly and flag any runner whose executable version changed within the run.

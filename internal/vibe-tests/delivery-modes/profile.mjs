@@ -3,7 +3,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 export async function loadRunnerProfile({env = process.env} = {}) {
   const inline = env.VIBE_RUNNER_PROFILE_JSON;
@@ -41,6 +41,7 @@ export function validateRunnerProfile(profile) {
       throw new Error(`Runner profile sandbox.${key} must be a string.`);
     }
   }
+  validateBrowserHelper(profile.browserHelper);
   validateCommand(profile.launcher, 'launcher', {allowWrappedArgs: true});
   validateCommand(profile.preflight, 'preflight');
   if (!profile.runners || typeof profile.runners !== 'object') {
@@ -54,6 +55,7 @@ export function validateRunnerProfile(profile) {
     validateName(name, 'runner');
     validateCommand(runner, `runners.${name}`);
     validateTranscript(runner.transcript, `runners.${name}.transcript`);
+    validateCapabilities(runner.capabilities, `runners.${name}.capabilities`);
     validateAudit(runner.audit, `runners.${name}.audit`);
   }
   if (profile.judge != null) {
@@ -64,13 +66,51 @@ export function validateRunnerProfile(profile) {
     }
     validateAudit(profile.judge.audit, 'judge.audit');
   }
-  if (
-    profile.browserCommand != null &&
-    !isNonEmptyString(profile.browserCommand)
-  ) {
-    throw new Error('browserCommand must be a non-empty string.');
-  }
   return profile;
+}
+
+function validateBrowserHelper(helper) {
+  if (!helper || typeof helper !== 'object' || Array.isArray(helper)) {
+    throw new Error('Runner profile requires browserHelper settings.');
+  }
+  validateName(helper.name, 'browserHelper');
+  if (!isNonEmptyString(helper.usage)) {
+    throw new Error('browserHelper.usage must be a non-empty string.');
+  }
+  if (helper.usage.split(/\s+/, 1)[0] !== helper.name) {
+    throw new Error('browserHelper.usage must start with browserHelper.name.');
+  }
+  if (!Array.isArray(helper.probeArgs) || !helper.probeArgs.every(isString)) {
+    throw new Error('browserHelper.probeArgs must be an array of strings.');
+  }
+}
+
+function validateCapabilities(capabilities, label) {
+  if (
+    !capabilities ||
+    typeof capabilities !== 'object' ||
+    Array.isArray(capabilities)
+  ) {
+    throw new Error(`${label} must be an object.`);
+  }
+  validateCommand(capabilities.probe, `${label}.probe`);
+  if (
+    !capabilities.expected ||
+    typeof capabilities.expected !== 'object' ||
+    Array.isArray(capabilities.expected)
+  ) {
+    throw new Error(`${label}.expected must be an object.`);
+  }
+  for (const group of ['builtIns', 'skills', 'mcpServers', 'hooks']) {
+    if (
+      !Array.isArray(capabilities.expected[group]) ||
+      !capabilities.expected[group].every(isString)
+    ) {
+      throw new Error(
+        `${label}.expected.${group} must be an array of strings.`,
+      );
+    }
+  }
 }
 
 function validateName(name, label) {
@@ -131,10 +171,10 @@ function validateTranscript(transcript, label) {
   if (transcript.format !== 'jsonl') {
     throw new Error(`${label}.format must be "jsonl".`);
   }
-  if (!Array.isArray(transcript.toolCalls)) {
+  if (transcript.toolCalls != null && !Array.isArray(transcript.toolCalls)) {
     throw new Error(`${label}.toolCalls must be an array.`);
   }
-  for (const [index, rule] of transcript.toolCalls.entries()) {
+  for (const [index, rule] of (transcript.toolCalls ?? []).entries()) {
     validateMatches(rule.matches, `${label}.toolCalls[${index}].matches`);
     validatePath(rule.commandPath, `${label}.toolCalls[${index}].commandPath`);
   }
