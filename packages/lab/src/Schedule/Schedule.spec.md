@@ -81,7 +81,7 @@ event. Interaction is a property of a view, not of Schedule.
   in three ways that no caller can observe through API: initial scroll
   position when the range contains today, side-by-side placement of
   simultaneous events, and one scroll owner with sticky header, all-day row,
-  and gutter. The month view's default changes in two ways: its accessible
+  and gutter. The month view's default changes in three ways: its accessible
   structure is a table rather than a read-only grid, a day with more
   events than three levels shows two chips and a "+N more" button, and a
   chip shows its title before its time.
