@@ -43,6 +43,10 @@ import {
   isAsciiPunctuation,
   matchCharacterReference,
 } from './characterReferences';
+
+// The decoder Markdown renders with, public from the parser subpath
+// (spec:AST-061 DEC-5).
+export {decodeMarkdownCharacterReferences} from './characterReferences';
 import {isSafeMarkdownParserUrl} from './url';
 
 // ---------------------------------------------------------------------------
