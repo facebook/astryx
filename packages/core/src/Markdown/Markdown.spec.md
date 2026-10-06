@@ -163,12 +163,12 @@ stays private. `spec:AST-061/DEC-5` owns its contract.
 declares syntax and whether it declares a transform; the entry stays opaque.
 `MarkdownPluginNodeRenderer`, exported from the client-only
 `@astryxdesign/core/Markdown/plugin-renderer` subpath, renders one parsed
-extension node with the given plugins — its plugin's renderer inside
-Markdown's error boundary and suspense fallback, with Markdown's fallback text
-and failure reporting — and adds no element or theme target of its own.
-`Markdown` renders every extension node through it. `spec:AST-064/DEC-6` owns
-both, so the RichText surfaces adopt plugins without reading their
-definitions or copying their rendering.
+extension node with the given plugins with exactly the DOM, accessibility,
+theme targets, fallback, and failure reporting that `Markdown` presents for
+that same node — its plugin's renderer inside Markdown's error boundary and
+suspense fallback — and adds no element or theme target of its own.
+`spec:AST-064/DEC-6` owns both, so the RichText surfaces adopt plugins
+without reading their definitions or copying their rendering.
 
 ### Acceptance and implementation state
 
