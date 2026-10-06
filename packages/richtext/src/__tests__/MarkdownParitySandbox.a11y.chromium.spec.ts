@@ -471,6 +471,23 @@ test('side by side: shared blocks match core Markdown typography, spacing, and m
           block('paragraph-inline')?.querySelector('strong') as Element,
         ).fontWeight,
         inlineCode: styleOf(code?.firstElementChild ?? code),
+        // The distance from one list row to the next, and a row's padding.
+        listRows: (() => {
+          // The list's first two rows, both single lines on each surface.
+          const rows = [
+            ...(block('list-unordered', 'ul')?.querySelectorAll(
+              ':scope > li',
+            ) ?? []),
+          ].slice(0, 2);
+          return rows.length < 2
+            ? null
+            : {
+                pitch:
+                  rows[1].getBoundingClientRect().top -
+                  rows[0].getBoundingClientRect().top,
+                padding: getComputedStyle(rows[0]).paddingTop,
+              };
+        })(),
         // The text inside a header cell, where each surface draws it.
         tableHeader: (() => {
           const cell = block('table', 'table')?.querySelector('th');
@@ -505,6 +522,7 @@ test('side by side: shared blocks match core Markdown typography, spacing, and m
     );
   }
   expect(richText.strong).toBe(markdown.strong);
+  expect(richText.listRows, 'list rows').toEqual(markdown.listRows);
   expect(richText.tableHeader, 'table header text').toEqual(
     markdown.tableHeader,
   );
