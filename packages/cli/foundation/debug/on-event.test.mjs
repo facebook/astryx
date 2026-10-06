@@ -512,6 +512,69 @@ describe('captured output — what the CLI answered', () => {
     expect(output.stdoutBytes).toBeGreaterThan(MAX_CAPTURED_OUTPUT);
     expect(output.stdout).toContain('truncated');
     expect(output.stdout.length).toBeLessThan(MAX_CAPTURED_OUTPUT + 200);
+    // A marker on its own is not a truncated answer, it is a lost one.
+    expect(output.stdout.length).toBeGreaterThan(MAX_CAPTURED_OUTPUT - 200);
+  });
+
+  it('keeps the prefix of a single write larger than the cap', () => {
+    const seen = collect();
+    begin({argv: ['template', '--list']});
+    // One write, not many: this is how a rendered list or a JSON envelope
+    // arrives, and it used to be discarded whole rather than truncated.
+    process.stdout.write('A'.repeat(MAX_CAPTURED_OUTPUT + 5000));
+    finish({exitCode: 0});
+
+    const {output} = seen[0];
+    expect(output.stdoutBytes).toBe(MAX_CAPTURED_OUTPUT + 5000);
+    expect(output.truncated).toBe(true);
+    expect(output.stdout.startsWith('A'.repeat(1000))).toBe(true);
+    expect(
+      output.stdout.slice(0, MAX_CAPTURED_OUTPUT).split('A').length - 1,
+    ).toBe(MAX_CAPTURED_OUTPUT);
+  });
+
+  it('fills the cap exactly when one write straddles it', () => {
+    const seen = collect();
+    begin({argv: []});
+    process.stdout.write('a'.repeat(MAX_CAPTURED_OUTPUT - 10));
+    process.stdout.write('b'.repeat(1000));
+    finish({exitCode: 0});
+
+    const {output} = seen[0];
+    expect(output.stdoutBytes).toBe(MAX_CAPTURED_OUTPUT + 990);
+    // The tail of the second write is dropped; its first 10 bytes are not.
+    // Count in the prefix only — the truncation marker contains a 'b' too.
+    const prefix = output.stdout.split('\n')[0];
+    expect(prefix.split('b').length - 1).toBe(10);
+    expect(Buffer.byteLength(prefix)).toBe(MAX_CAPTURED_OUTPUT);
+  });
+
+  it('never splits a character when cutting at the cap', () => {
+    const seen = collect();
+    begin({argv: []});
+    // 'é' is two bytes, so the budget runs out mid-character.
+    process.stdout.write('e'.repeat(MAX_CAPTURED_OUTPUT - 1) + 'é'.repeat(10));
+    finish({exitCode: 0});
+
+    const kept = seen[0].output.stdout.split('\n')[0];
+    expect(kept).not.toContain('\uFFFD');
+    expect(Buffer.byteLength(kept)).toBeLessThanOrEqual(MAX_CAPTURED_OUTPUT);
+    expect(kept.endsWith('e')).toBe(true);
+  });
+
+  it('keeps nothing written after a cut, so the capture stays a prefix', () => {
+    const seen = collect();
+    begin({argv: []});
+    // The cut backs off one byte before the 'é', leaving one byte of room.
+    process.stdout.write('e'.repeat(MAX_CAPTURED_OUTPUT - 1) + 'é');
+    process.stdout.write('z');
+    finish({exitCode: 0});
+
+    const {output} = seen[0];
+    expect(output.stdoutBytes).toBe(MAX_CAPTURED_OUTPUT + 2);
+    expect(output.stdout.split('\n')[0]).toBe(
+      'e'.repeat(MAX_CAPTURED_OUTPUT - 1),
+    );
   });
 
   it('scrubs captured output like every other value', () => {

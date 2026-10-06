@@ -64,6 +64,26 @@ const SIGNAL_EXIT_CODES = {SIGINT: 130, SIGTERM: 143, SIGHUP: 129};
  */
 export const MAX_CAPTURED_OUTPUT = 32 * 1024;
 
+/**
+ * The leading `maxBytes` bytes of `text`, never splitting a character.
+ *
+ * The cap counts bytes but `String.slice` counts UTF-16 units, so slicing by
+ * the byte budget would overshoot on any non-ASCII output. Cutting the buffer
+ * instead can land mid-sequence, so back off over the trailing continuation
+ * bytes rather than emitting a replacement character.
+ *
+ * @param {string} text
+ * @param {number} maxBytes
+ * @returns {string}
+ */
+function sliceToBytes(text, maxBytes) {
+  const buf = Buffer.from(text, 'utf8');
+  if (buf.length <= maxBytes) return text;
+  let end = maxBytes;
+  while (end > 0 && (buf[end] & 0xc0) === 0x80) end--;
+  return buf.subarray(0, end).toString('utf8');
+}
+
 /** @type {import('./event.mjs').InFlightEvent | null} */
 let _event = null;
 /**
@@ -90,12 +110,21 @@ let _startedAt = 0;
 let _cliVersion;
 
 /**
- * Captured stdout/stderr, and the originals to restore.
- * @type {{chunks: string[], bytes: number}}
+ * A captured stream: the kept chunks, the true byte total the command wrote,
+ * and how much of the cap the kept chunks have spent. A write cut at the cap
+ * spends all of it, so nothing written later is kept and the capture stays a
+ * prefix of the output.
+ *
+ * @typedef {{chunks: string[], bytes: number, captured: number}} OutputSink
  */
-const _stdout = {chunks: [], bytes: 0};
-/** @type {{chunks: string[], bytes: number}} */
-const _stderr = {chunks: [], bytes: 0};
+
+/**
+ * Captured stdout/stderr, and the originals to restore.
+ * @type {OutputSink}
+ */
+const _stdout = {chunks: [], bytes: 0, captured: 0};
+/** @type {OutputSink} */
+const _stderr = {chunks: [], bytes: 0, captured: 0};
 /** @type {null | {out: typeof process.stdout.write, err: typeof process.stderr.write}} */
 let _originalWrites = null;
 
@@ -119,7 +148,7 @@ function captureOutput() {
 
   /**
    * @param {NodeJS.WriteStream} stream
-   * @param {{chunks: string[], bytes: number}} sink
+   * @param {OutputSink} sink
    * @param {Function} original
    */
   const tee = (stream, sink, original) =>
@@ -127,8 +156,23 @@ function captureOutput() {
       function (/** @type {any} */ chunk, /** @type {any[]} */ ...rest) {
         try {
           const text = typeof chunk === 'string' ? chunk : String(chunk);
-          sink.bytes += Buffer.byteLength(text);
-          if (sink.bytes <= MAX_CAPTURED_OUTPUT) sink.chunks.push(text);
+          const len = Buffer.byteLength(text);
+          // Keep the part that still fits. Adding the length first and then
+          // testing would drop a single oversized write whole, leaving nothing
+          // at all for the commands whose output is most worth reading.
+          const room = MAX_CAPTURED_OUTPUT - sink.captured;
+          if (room > 0) {
+            if (len <= room) {
+              sink.chunks.push(text);
+              sink.captured += len;
+            } else {
+              sink.chunks.push(sliceToBytes(text, room));
+              // A character boundary can leave a byte or two of room. Spend it
+              // anyway, or a later write would land after the cut.
+              sink.captured = MAX_CAPTURED_OUTPUT;
+            }
+          }
+          sink.bytes += len;
         } catch {
           /* a chunk we cannot stringify is simply not captured */
         }
@@ -149,13 +193,13 @@ function releaseOutput() {
 }
 
 /**
- * @param {{chunks: string[], bytes: number}} sink
+ * @param {OutputSink} sink
  * @returns {string}
  */
 function collected(sink) {
   const text = sink.chunks.join('');
   return sink.bytes > MAX_CAPTURED_OUTPUT
-    ? `${text.slice(0, MAX_CAPTURED_OUTPUT)}\n…[truncated, ${sink.bytes} bytes total]`
+    ? `${text}\n…[truncated, ${sink.bytes} bytes total]`
     : text;
 }
 
@@ -798,8 +842,10 @@ export function resetRecorder() {
   releaseOutput();
   _stdout.chunks.length = 0;
   _stdout.bytes = 0;
+  _stdout.captured = 0;
   _stderr.chunks.length = 0;
   _stderr.bytes = 0;
+  _stderr.captured = 0;
   _event = null;
   _projectHandler = null;
   _integrationHandlers = [];
