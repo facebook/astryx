@@ -16,6 +16,7 @@ import {
 } from '@astryxdesign/core/Markdown/plugins';
 import {
   createIncrementalState,
+  decodeMarkdownCharacterReferences,
   parseInline,
   parseInlineAst,
   parseMarkdown,
@@ -30,6 +31,15 @@ import type {
 } from '@astryxdesign/core/Markdown/parser';
 
 describe('@astryxdesign/core/Markdown/parser', () => {
+  it('exports the character reference decoder Markdown renders with (spec:AST-061 DEC-5)', () => {
+    expectTypeOf(decodeMarkdownCharacterReferences).toEqualTypeOf<
+      (text: string) => string
+    >();
+    expect(decodeMarkdownCharacterReferences('&copy; &unknown;')).toBe(
+      '© &unknown;',
+    );
+  });
+
   it('is a generated public package subpath', () => {
     const packageJson = JSON.parse(
       readFileSync(join(process.cwd(), 'packages/core/package.json'), 'utf8'),

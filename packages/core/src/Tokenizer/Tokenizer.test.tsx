@@ -20,7 +20,7 @@ import {
   afterEach,
 } from 'vitest';
 import {render, screen, fireEvent, act, waitFor} from '@testing-library/react';
-import {Profiler} from 'react';
+import {createRef, Profiler} from 'react';
 import userEvent from '@testing-library/user-event';
 import {Tokenizer} from './Tokenizer';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -154,21 +154,43 @@ describe('Tokenizer minQueryLength', () => {
 });
 
 describe('Tokenizer', () => {
-  it('forwards ref to the root field element', () => {
-    let root: HTMLDivElement | null = null;
+  it('forwards DOM props and ref while preserving focus callbacks', () => {
+    const ref = createRef<HTMLDivElement>();
+    const onClick = vi.fn();
+    const onFocus = vi.fn();
+    const onBlur = vi.fn();
     render(
       <Tokenizer
-        ref={el => {
-          root = el;
-        }}
+        ref={ref}
+        id="members-field"
+        data-tracking="members-picker"
+        data-testid="members-surface"
+        aria-label="Picker region"
+        className="custom-tokenizer"
+        style={{marginTop: 7}}
         label="Members"
         searchSource={userSource}
-        value={[]}
+        value={[users[0]]}
         onChange={() => {}}
+        onClick={onClick}
+        onFocus={onFocus}
+        onBlur={onBlur}
       />,
     );
-    expect(root).toBeInstanceOf(HTMLDivElement);
-    expect(root).toHaveClass('astryx-field');
+    const surface = screen.getByTestId('members-surface');
+    const input = screen.getByRole('combobox');
+
+    expect(ref.current).toBeInstanceOf(HTMLDivElement);
+    expect(ref.current).toHaveClass('astryx-field');
+    expect(surface).toHaveClass('astryx-tokenizer');
+    expect(surface).toHaveAttribute('aria-label', 'Members');
+
+    fireEvent.click(surface);
+    expect(onClick).toHaveBeenCalledOnce();
+    expect(onFocus).toHaveBeenCalledOnce();
+
+    fireEvent.blur(input);
+    expect(onBlur).toHaveBeenCalledOnce();
   });
 
   it('exposes focus control through handleRef', () => {

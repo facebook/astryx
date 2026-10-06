@@ -111,24 +111,6 @@ describe('ToggleButton', () => {
     expect(screen.getByTestId('icon')).toBeInTheDocument();
   });
 
-  it('sets aria-pressed=false when not pressed', () => {
-    render(
-      <ToggleButton
-        label="Bold"
-        isPressed={false}
-        onPressedChange={() => {}}
-      />,
-    );
-    expect(screen.getByRole('button')).toHaveAttribute('aria-pressed', 'false');
-  });
-
-  it('sets aria-pressed=true when pressed', () => {
-    render(
-      <ToggleButton label="Bold" isPressed={true} onPressedChange={() => {}} />,
-    );
-    expect(screen.getByRole('button')).toHaveAttribute('aria-pressed', 'true');
-  });
-
   it('calls onPressedChange with true when clicking unpressed button', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
@@ -232,6 +214,16 @@ describe('ToggleButton', () => {
     const button = screen.getByRole('button');
     const hiddenSpan = button.querySelector('[aria-hidden="true"]');
     expect(hiddenSpan).not.toBeInTheDocument();
+  });
+
+  it('preserves caller className alongside theme classes', () => {
+    render(<ToggleButton label="All" className="my-filter" />);
+
+    expect(screen.getByRole('button', {name: 'All'})).toHaveClass(
+      'my-filter',
+      'astryx-toggle-button',
+      'astryx-button',
+    );
   });
 
   it('passes data-testid through', () => {

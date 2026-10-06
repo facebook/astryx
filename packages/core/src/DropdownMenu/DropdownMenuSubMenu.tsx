@@ -71,6 +71,7 @@ import {isMenuPressActivation, useMenuPress} from '../hooks/useMenuPress';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useMenuOverflow} from './useMenuOverflow';
 import {resolveMenuWidth} from './menuWidth';
+import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
 import {
   colorVars,
   spacingVars,
@@ -99,13 +100,11 @@ import {focusMenuItemOnHover} from './menuItemHover';
 import {DropdownMenuItem} from './DropdownMenuItem';
 import {useTranslator} from '../i18n';
 
-const MENU_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
-// `useLayer` adds 4px of anchor clearance. An 8px collision margin resolves
-// to a 4px visible gap after the browser flips the flyout.
-const MENU_MAX_INLINE_SIZE = `calc(100vi - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px)) - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-right, 0px)))`;
-const MENU_MAX_INLINE_SIZE_FALLBACK = `calc(100vw - ${MENU_VIEWPORT_GUTTER} - ${MENU_VIEWPORT_GUTTER})`;
-const MENU_MAX_BLOCK_SIZE = `min(300px, calc(100dvb - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px)) - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))))`;
-const MENU_MAX_BLOCK_SIZE_FALLBACK = `min(300px, calc(100vh - ${MENU_VIEWPORT_GUTTER} - ${MENU_VIEWPORT_GUTTER}))`;
+// The flyout's own lower cap on the placement axis; the viewport cap under
+// it and the inline gutter beside it are the layer runtime's (spec:AST-059).
+const MENU_BLOCK_CAP = '300px';
+const MENU_MAX_BLOCK_SIZE = `min(${MENU_BLOCK_CAP}, ${layerViewportInset.maxBlockSize})`;
+const MENU_MAX_BLOCK_SIZE_FALLBACK = `min(${MENU_BLOCK_CAP}, ${layerViewportInset.maxBlockSizeFallback})`;
 
 const triggerStyles = stylex.create({
   root: {
@@ -163,8 +162,8 @@ const flyoutStyles = stylex.create({
     flexDirection: 'column',
     gap: spacingVars['--spacing-0-5'],
     maxInlineSize: stylex.firstThatWorks(
-      MENU_MAX_INLINE_SIZE,
-      MENU_MAX_INLINE_SIZE_FALLBACK,
+      layerViewportInset.maxInlineSize,
+      layerViewportInset.maxInlineSizeFallback,
     ),
     maxHeight: stylex.firstThatWorks(
       MENU_MAX_BLOCK_SIZE,
@@ -210,8 +209,8 @@ const flyoutStyles = stylex.create({
   },
   popover: {
     minWidth: stylex.firstThatWorks(
-      `min(160px, ${MENU_MAX_INLINE_SIZE})`,
-      `min(160px, ${MENU_MAX_INLINE_SIZE_FALLBACK})`,
+      `min(160px, ${layerViewportInset.maxInlineSize})`,
+      `min(160px, ${layerViewportInset.maxInlineSizeFallback})`,
       '160px',
     ),
   },
@@ -714,7 +713,7 @@ export function DropdownMenuSubMenu(
   );
 
   const resolvedMenuWidth = menuWidth
-    ? resolveMenuWidth(menuWidth, MENU_MAX_INLINE_SIZE_FALLBACK)
+    ? resolveMenuWidth(menuWidth, layerViewportInset.maxInlineSizeFallback)
     : null;
   const popoverXstyle = resolvedMenuWidth
     ? resolvedMenuWidth.property === 'inlineSize'
