@@ -414,6 +414,7 @@ for (const viewport of [PHONE, {width: 1280, height: 900}] as const) {
                   inView: element.closest('[contenteditable="false"]') != null,
                   clientWidth: wrapper.clientWidth,
                   scrollWidth: wrapper.scrollWidth,
+                  tableWidth: element.getBoundingClientRect().width,
                 };
               }),
           }));
@@ -441,9 +442,13 @@ for (const viewport of [PHONE, {width: 1280, height: 900}] as const) {
           }
           if (columnCount === 2 && styles.view !== '') {
             // A shrink-to-fit host gives the view's small table its natural
-            // width instead of stretching or collapsing it.
+            // width instead of stretching or collapsing it: the wrapper hugs
+            // the table, whose columns keep their readable floors.
             const view = layout.wrappers.find(wrapper => wrapper.inView);
-            expect(view?.clientWidth, label).toBeLessThan(viewport.width / 2);
+            expect(
+              Math.abs((view?.clientWidth ?? 0) - (view?.tableWidth ?? 0)),
+              label,
+            ).toBeLessThanOrEqual(1);
           }
         }
       }
