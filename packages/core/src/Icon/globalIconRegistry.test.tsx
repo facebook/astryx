@@ -46,13 +46,14 @@ describe('iconRegistry (global, RSC-compatible)', () => {
     expect(icon).not.toBe(defaultIcons.chevronDown);
   });
 
-  it('provides a distinct upload-to-tray affordance', () => {
-    const {container} = render(<Icon icon="upload" />);
+  it('draws the default upload distinctly from arrowUp', () => {
+    const {container: upload} = render(<Icon icon="upload" />);
+    const {container: arrowUp} = render(<Icon icon="arrowUp" />);
 
     expect(getIcon('upload')).toBe(defaultIcons.upload);
-    expect(container.querySelector('path')).toHaveAttribute(
-      'd',
-      'M12 16V4m0 0L7 9m5-5l5 5M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4',
+    expect(upload.querySelector('svg')).not.toBeNull();
+    expect(upload.querySelector('svg')?.innerHTML).not.toBe(
+      arrowUp.querySelector('svg')?.innerHTML,
     );
   });
 
@@ -61,6 +62,29 @@ describe('iconRegistry (global, RSC-compatible)', () => {
     const legacyRegistry: IconRegistry = legacyIcons;
 
     expect(legacyRegistry.search).toBe(defaultIcons.search);
+  });
+
+  it('lets a theme draw upload without changing arrowUp', () => {
+    const theme = defineTheme({
+      name: 'upload-only',
+      icons: {upload: 'theme-upload'},
+    });
+
+    expect(getIcon('upload', theme)).toBe('theme-upload');
+    expect(getIcon('arrowUp', theme)).toBe(defaultIcons.arrowUp);
+    expect(getIconRegistry(theme).arrowUp).toBe(defaultIcons.arrowUp);
+  });
+
+  it('resolves the default upload for a theme that only draws arrowUp', () => {
+    const {upload: _upload, ...legacyIcons} = defaultIcons;
+    const theme = defineTheme({
+      name: 'legacy-complete',
+      icons: {...legacyIcons, arrowUp: 'theme-arrow-up'},
+    });
+
+    expect(getIcon('arrowUp', theme)).toBe('theme-arrow-up');
+    expect(getIcon('upload', theme)).toBe(defaultIcons.upload);
+    expect(getIconRegistry(theme).upload).toBe(defaultIcons.upload);
   });
 
   it('returns default icons when nothing is registered', () => {

@@ -84,11 +84,12 @@ export type NamespacedIconName = `${string}:${string}`;
 export type ExtendedIconName = IconName | (string & {});
 
 /**
- * Icon registry mapping semantic names to React nodes.
+ * A complete icon registry: every semantic name mapped to a React node.
  *
- * `upload` remains optional so complete registries authored before that semantic
- * name was introduced stay source-compatible. Resolved registry snapshots are
- * complete because missing entries fall back to {@link defaultIcons}.
+ * `upload` is the one name a complete registry may still omit. Requiring it
+ * would break registries written before it existed, so it becomes required in
+ * the next scheduled minor (`spec:AST-032` FR6). An omitted `upload` resolves
+ * the default artwork, so resolved registry snapshots are always complete.
  */
 export type IconRegistry = Record<Exclude<IconName, 'upload'>, ReactNode> &
   Partial<Record<'upload', ReactNode>>;
